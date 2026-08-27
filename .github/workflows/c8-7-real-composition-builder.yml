@@ -1,0 +1,40 @@
+name: c8-7-real-composition-builder
+
+on:
+  push:
+    branches:
+      - agent/c8-7-real-composition
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+      - name: Apply canonical C8.7 candidate patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse b772f8d3081ef47da7aad9334b11206f17eaa742^{tree})" = "204f5ef4115024abe37531de786ea541e59f2a50"
+          cat .c8-7-staging/patch.part-* > "$RUNNER_TEMP/patch.gz.b64"
+          base64 -d "$RUNNER_TEMP/patch.gz.b64" > "$RUNNER_TEMP/patch.gz"
+          echo "126b957fff373e3f6c6da6b2cdbef7d31426a856057345328725fd6f985b7791  $RUNNER_TEMP/patch.gz" | sha256sum -c -
+          gzip -dc "$RUNNER_TEMP/patch.gz" > "$RUNNER_TEMP/candidate.patch"
+          echo "531a65e83d9c604131beb954242e155916e2407517e8ffae6da9d972c589e216  $RUNNER_TEMP/candidate.patch" | sha256sum -c -
+          git worktree add "$RUNNER_TEMP/biz-candidate" b772f8d3081ef47da7aad9334b11206f17eaa742
+          cd "$RUNNER_TEMP/biz-candidate"
+          git apply --check "$RUNNER_TEMP/candidate.patch"
+          git apply --index "$RUNNER_TEMP/candidate.patch"
+          git diff --cached --check
+          echo "candidate_tree=$(git write-tree)" >> "$GITHUB_OUTPUT"
+      - name: Publish candidate tree artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: biz-c8-7-applied-tree
+          path: ${{ runner.temp }}/candidate.patch
+          if-no-files-found: error
