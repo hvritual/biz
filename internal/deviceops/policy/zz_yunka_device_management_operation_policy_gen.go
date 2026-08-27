@@ -10,6 +10,10 @@ const OperationGetDevice authz.OperationID = "device.get"
 const OperationListDevices authz.OperationID = "device.list"
 const OperationUpdateDevice authz.OperationID = "device.update"
 
+func Permissions() []authz.PermissionKey {
+	return []authz.PermissionKey{"device.create", "device.delete", "device.read", "device.update"}
+}
+
 func Resolver() authz.StaticResolver {
 	return authz.NewStaticResolver(map[string]authz.Policy{
 		"/deviceops.v1.DeviceApplication/CreateDevice": {Operation: OperationCreateDevice, Permissions: []authz.PermissionKey{"device.create"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},

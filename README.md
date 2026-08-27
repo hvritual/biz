@@ -1,29 +1,29 @@
-# biz — C8.4 reference business application
+# biz — Yunka C8.5 reference business application
 
-This repository is rebuilt on `hvritual/yunka.io` C8.4 and intentionally treats the framework as the source of mechanical complexity.
+This repository exercises the current Yunka Operation Security Boundary with a real multi-tenant DeviceOps domain and a separate Access/IAM business domain.
 
 ## Authority boundaries
 
 ```text
 PB DSL -> RPC + REST + DTO + Domain/Application + Operation + Permission
 PO     -> persistence schema
-Yunka  -> Entity + basic Repository CRUD + Application Port + adapters + static policy
-Business code -> use cases + DTO/domain mapping + data scope + complex repository behavior
+Yunka  -> Entity + basic Repository CRUD + Application Port + adapters + policy + security runtime
+Access/IAM domain -> Tenant/User/Membership/Role/Credential/PermissionGrant
+DeviceOps security -> interpret IAM scope grant as typed DeviceScope
+Application -> use cases + DTO/domain mapping + business invariants
 ```
 
-The device module preserves the original business requirements: tenant-bound identity, multiple roles per user, Role -> Permission authorization, per-permission `all/sites/self` data scope, request-owned transactions, tenant isolation, and optimistic version checks. RBAC and data scope are deliberately separate: Gateway `authz.RBACAuthorizer` checks Permission, while handwritten application/repository extensions apply resource scope.
+Permission and data scope are now one IAM `PermissionGrant`. Yunka's `OperationRuntime` resolves authentication/tenant/permission and runs the Device `OperationGuard` before the Application boundary. Application methods do not repeat authorization checks or permission strings.
 
 ## Workspace
 
-Clone as siblings:
-
 ```text
 workspace/
-├── yunka.io/   # must be main@cdf7d933758d3c94e03a5601801dbf84d8144d00 or later compatible C8.4
+├── yunka.io/
 └── biz/
 ```
 
-## Generate
+## Generate and verify
 
 ```bash
 cd ../yunka.io
@@ -31,44 +31,17 @@ make rpc-tools
 cd ../biz
 make generate
 make check
+go test ./...
+go test -race ./...
+go vet ./...
+go build ./...
 ```
 
-`make generate` runs the real Yunka project/domain/contract compilers plus standard protobuf Go/gRPC generation. Generated files are not handwritten.
-
-## Run
+MySQL 8.4 integration:
 
 ```bash
-docker compose up -d mysql
-export YUNKA_BIZ_MYSQL_DSN='root:root@tcp(127.0.0.1:3306)/biz?parseTime=true&charset=utf8mb4&loc=UTC'
-export YUNKA_BIZ_AUTO_MIGRATE=true
-export YUNKA_BIZ_BOOTSTRAP_TOKEN='replace-with-a-random-token'
-go run ./cmd/biz
+YUNKA_TEST_MYSQL_DSN='root:root@tcp(127.0.0.1:3306)/biz?parseTime=true&charset=utf8mb4&loc=UTC' \
+  go test -tags=integration ./integration
 ```
 
-HTTP defaults to `127.0.0.1:8080`, gRPC to `127.0.0.1:9090`. The bootstrap owner receives the four device permissions with `all` data scope and a default site.
-
-## API
-
-```bash
-curl http://127.0.0.1:8080/healthz
-curl -H "Authorization: Bearer $YUNKA_BIZ_BOOTSTRAP_TOKEN" http://127.0.0.1:8080/v1/devices
-curl -X POST http://127.0.0.1:8080/v1/devices \
-  -H "Authorization: Bearer $YUNKA_BIZ_BOOTSTRAP_TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d '{"siteId":"site-demo","name":"Coffee Machine A","serial":"SN-001"}'
-```
-
-The same PB service is also exposed over gRPC through the generated RPC adapter and the same static Operation/Permission policy.
-
-## Verification
-
-```bash
-make verify
-YUNKA_TEST_MYSQL_DSN='root:root@tcp(127.0.0.1:3306)/biz?parseTime=true&charset=utf8mb4&loc=UTC' go test -tags=integration ./integration
-```
-
-The integration test proves authenticated multi-tenant access, Role -> Permission denial, and per-permission site scope against MySQL 8.4.
-
-## Rewrite note
-
-The pre-C8.4 `modules/deviceops` model/repository/service/http stack is intentionally removed. No compatibility migration is provided for those tables; this repository is a reference rebuild and existing development data is disposable.
+The integration gate proves that stale pre-C8.5 role scope cannot escalate a permission from another role and that REST/gRPC share the same allow/deny security pipeline.
