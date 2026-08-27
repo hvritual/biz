@@ -4,7 +4,6 @@ package deviceops
 
 import (
 	"fmt"
-
 	"yunka.io/framework/core/modulecatalog"
 )
 
@@ -22,6 +21,7 @@ func GeneratedDescriptor() modulecatalog.Descriptor {
 }
 
 func generatedBuild(context modulecatalog.BuildContext) (modulecatalog.Instance, error) {
+	dependencies := Dependencies{}
 	config := DefaultConfig()
 	if err := context.Config().Decode(ModuleName, "modules.deviceops", &config); err != nil {
 		return nil, fmt.Errorf("%s config: %w", ModuleName, err)
@@ -29,13 +29,12 @@ func generatedBuild(context modulecatalog.BuildContext) (modulecatalog.Instance,
 	if err := config.Validate(); err != nil {
 		return nil, fmt.Errorf("%s config validation: %w", ModuleName, err)
 	}
-	database, err := context.Databases().GORM("primary")
+	dependencies.Config = config
+	dependencies.Logger = context.Logger()
+	primaryDatabase, err := context.Databases().GORM("primary")
 	if err != nil {
 		return nil, fmt.Errorf("%s database primary: %w", ModuleName, err)
 	}
-	return NewModule(Dependencies{
-		Config:          config,
-		Logger:          context.Logger(),
-		PrimaryDatabase: database,
-	})
+	dependencies.PrimaryDatabase = primaryDatabase
+	return NewModule(dependencies)
 }

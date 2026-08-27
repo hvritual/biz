@@ -1,0 +1,397 @@
+{
+  "schemaVersion": 2,
+  "files": [
+    {
+      "name": "deviceops/v1/deviceops.proto",
+      "package": "deviceops.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/deviceops/v1;deviceopsv1",
+      "domain": {
+        "name": "deviceops",
+        "version": "v1"
+      }
+    }
+  ],
+  "messages": [
+    {
+      "name": "CreateDeviceRequest",
+      "fullName": "deviceops.v1.CreateDeviceRequest",
+      "fields": [
+        {
+          "name": "site_id",
+          "jsonName": "siteId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "serial",
+          "jsonName": "serial",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "DeleteDeviceRequest",
+      "fullName": "deviceops.v1.DeleteDeviceRequest",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "DeleteDeviceResponse",
+      "fullName": "deviceops.v1.DeleteDeviceResponse",
+      "fields": null,
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "DeviceDTO",
+      "fullName": "deviceops.v1.DeviceDTO",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "site_id",
+          "jsonName": "siteId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "serial",
+          "jsonName": "serial",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "created_by",
+          "jsonName": "createdBy",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "GetDeviceRequest",
+      "fullName": "deviceops.v1.GetDeviceRequest",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListDevicesRequest",
+      "fullName": "deviceops.v1.ListDevicesRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListDevicesResponse",
+      "fullName": "deviceops.v1.ListDevicesResponse",
+      "fields": [
+        {
+          "name": "devices",
+          "jsonName": "devices",
+          "number": 1,
+          "kind": "message",
+          "type": "deviceops.v1.DeviceDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "UpdateDeviceRequest",
+      "fullName": "deviceops.v1.UpdateDeviceRequest",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "site_id",
+          "jsonName": "siteId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    }
+  ],
+  "enums": null,
+  "services": [
+    {
+      "name": "DeviceApplication",
+      "fullName": "deviceops.v1.DeviceApplication",
+      "domain": "deviceops",
+      "application": {
+        "name": "device_management"
+      },
+      "methods": [
+        {
+          "name": "CreateDevice",
+          "fullName": "deviceops.v1.DeviceApplication.CreateDevice",
+          "request": "deviceops.v1.CreateDeviceRequest",
+          "response": "deviceops.v1.DeviceDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/devices",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "device.create",
+            "useCase": "create_device",
+            "permissions": [
+              "device.create"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          },
+          "authorization": {
+            "operationId": "device.create",
+            "permissions": [
+              "device.create"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "DeleteDevice",
+          "fullName": "deviceops.v1.DeviceApplication.DeleteDevice",
+          "request": "deviceops.v1.DeleteDeviceRequest",
+          "response": "deviceops.v1.DeleteDeviceResponse",
+          "http": [
+            {
+              "method": "DELETE",
+              "path": "/v1/devices/{id}"
+            }
+          ],
+          "operation": {
+            "id": "device.delete",
+            "useCase": "delete_device",
+            "permissions": [
+              "device.delete"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          },
+          "authorization": {
+            "operationId": "device.delete",
+            "permissions": [
+              "device.delete"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "GetDevice",
+          "fullName": "deviceops.v1.DeviceApplication.GetDevice",
+          "request": "deviceops.v1.GetDeviceRequest",
+          "response": "deviceops.v1.DeviceDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/devices/{id}"
+            }
+          ],
+          "operation": {
+            "id": "device.get",
+            "useCase": "get_device",
+            "permissions": [
+              "device.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          },
+          "authorization": {
+            "operationId": "device.get",
+            "permissions": [
+              "device.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "ListDevices",
+          "fullName": "deviceops.v1.DeviceApplication.ListDevices",
+          "request": "deviceops.v1.ListDevicesRequest",
+          "response": "deviceops.v1.ListDevicesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/devices"
+            }
+          ],
+          "operation": {
+            "id": "device.list",
+            "useCase": "list_devices",
+            "permissions": [
+              "device.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          },
+          "authorization": {
+            "operationId": "device.list",
+            "permissions": [
+              "device.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "UpdateDevice",
+          "fullName": "deviceops.v1.DeviceApplication.UpdateDevice",
+          "request": "deviceops.v1.UpdateDeviceRequest",
+          "response": "deviceops.v1.DeviceDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/devices/{id}",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "device.update",
+            "useCase": "update_device",
+            "permissions": [
+              "device.update"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          },
+          "authorization": {
+            "operationId": "device.update",
+            "permissions": [
+              "device.update"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

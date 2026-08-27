@@ -1,0 +1,52 @@
+{
+  "version": 3,
+  "domain": "deviceops",
+  "tablePrefix": "biz",
+  "tenantScoped": true,
+  "objects": [
+    {
+      "name": "device",
+      "file": "device.go",
+      "tableName": "biz_deviceops_device",
+      "fields": [
+        {
+          "name": "created_by",
+          "type": "string",
+          "column": "created_by",
+          "poOwned": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "column": "name",
+          "poOwned": true
+        },
+        {
+          "name": "serial",
+          "type": "string",
+          "column": "serial",
+          "poOwned": true
+        },
+        {
+          "name": "site_id",
+          "type": "string",
+          "column": "site_id",
+          "poOwned": true
+        }
+      ]
+    },
+    {
+      "name": "site",
+      "file": "site.go",
+      "tableName": "biz_deviceops_site",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string",
+          "column": "name",
+          "poOwned": true
+        }
+      ]
+    }
+  ]
+}

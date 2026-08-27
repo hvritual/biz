@@ -1,0 +1,280 @@
+{
+  "components": {
+    "schemas": {
+      "deviceops_v1_CreateDeviceRequest": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "serial": {
+            "type": "string"
+          },
+          "siteId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "deviceops.v1.CreateDeviceRequest"
+      },
+      "deviceops_v1_DeleteDeviceRequest": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "deviceops.v1.DeleteDeviceRequest"
+      },
+      "deviceops_v1_DeleteDeviceResponse": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "deviceops.v1.DeleteDeviceResponse"
+      },
+      "deviceops_v1_DeviceDTO": {
+        "properties": {
+          "createdBy": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "serial": {
+            "type": "string"
+          },
+          "siteId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "deviceops.v1.DeviceDTO"
+      },
+      "deviceops_v1_GetDeviceRequest": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "deviceops.v1.GetDeviceRequest"
+      },
+      "deviceops_v1_ListDevicesRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "deviceops.v1.ListDevicesRequest"
+      },
+      "deviceops_v1_ListDevicesResponse": {
+        "properties": {
+          "devices": {
+            "items": {
+              "$ref": "#/components/schemas/deviceops_v1_DeviceDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "deviceops.v1.ListDevicesResponse"
+      },
+      "deviceops_v1_UpdateDeviceRequest": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "siteId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "deviceops.v1.UpdateDeviceRequest"
+      }
+    }
+  },
+  "info": {
+    "title": "biz API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/v1/devices": {
+      "get": {
+        "operationId": "deviceops.v1.DeviceApplication.ListDevices",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/deviceops_v1_ListDevicesResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "deviceops.v1.DeviceApplication"
+        ],
+        "x-yunka-rpc": "/deviceops.v1.DeviceApplication/ListDevices"
+      },
+      "post": {
+        "operationId": "deviceops.v1.DeviceApplication.CreateDevice",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/deviceops_v1_CreateDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/deviceops_v1_DeviceDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "deviceops.v1.DeviceApplication"
+        ],
+        "x-yunka-rpc": "/deviceops.v1.DeviceApplication/CreateDevice"
+      }
+    },
+    "/v1/devices/{id}": {
+      "delete": {
+        "operationId": "deviceops.v1.DeviceApplication.DeleteDevice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": false,
+            "schema": {
+              "format": "uint64",
+              "type": "string",
+              "x-yunka-protobuf-json-integer": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/deviceops_v1_DeleteDeviceResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "deviceops.v1.DeviceApplication"
+        ],
+        "x-yunka-rpc": "/deviceops.v1.DeviceApplication/DeleteDevice"
+      },
+      "get": {
+        "operationId": "deviceops.v1.DeviceApplication.GetDevice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/deviceops_v1_DeviceDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "deviceops.v1.DeviceApplication"
+        ],
+        "x-yunka-rpc": "/deviceops.v1.DeviceApplication/GetDevice"
+      },
+      "patch": {
+        "operationId": "deviceops.v1.DeviceApplication.UpdateDevice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/deviceops_v1_UpdateDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/deviceops_v1_DeviceDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "deviceops.v1.DeviceApplication"
+        ],
+        "x-yunka-rpc": "/deviceops.v1.DeviceApplication/UpdateDevice"
+      }
+    }
+  },
+  "x-yunka-contract-version": 2,
+  "x-yunka-rpc-methods": null
+}
