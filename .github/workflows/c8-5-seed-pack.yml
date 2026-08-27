@@ -1,0 +1,50 @@
+name: c8-5-seed-pack
+
+on:
+  push:
+    branches:
+      - agent/c8-5-operation-security-boundary
+    paths:
+      - .github/workflows/c8-5-seed-pack.yml
+
+permissions:
+  contents: write
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Pack exact biz main baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=bb718314cd129775d4421e52727b4ec4a7a2dadf
+          git cat-file -e "$BASE^{commit}"
+          rm -f tools/c8-5-biz-seed.part-* tools/c8-5-biz-seed.sha256 tools/c8-5-biz-seed.meta
+          mkdir -p tools
+          git archive --format=tar.gz --prefix=biz/ "$BASE" > "$RUNNER_TEMP/biz-seed.tar.gz"
+          sha256sum "$RUNNER_TEMP/biz-seed.tar.gz" | awk '{print $1}' > tools/c8-5-biz-seed.sha256
+          base64 -w0 "$RUNNER_TEMP/biz-seed.tar.gz" > "$RUNNER_TEMP/biz-seed.b64"
+          split -b 4000 -d -a 3 "$RUNNER_TEMP/biz-seed.b64" tools/c8-5-biz-seed.part-
+          FILES="$(git ls-tree -r --name-only "$BASE" | wc -l | tr -d ' ')"
+          PARTS="$(find tools -maxdepth 1 -name 'c8-5-biz-seed.part-*' | wc -l | tr -d ' ')"
+          cat > tools/c8-5-biz-seed.meta <<META
+          biz_main=$BASE
+          files=$FILES
+          parts=$PARTS
+          META
+
+      - name: Publish seed with local git
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "biz-c8-5-seed"
+          git config user.email "biz-c8-5-seed@users.noreply.github.com"
+          git add tools/c8-5-biz-seed.part-* tools/c8-5-biz-seed.sha256 tools/c8-5-biz-seed.meta
+          git commit -m "ci: publish C8.5 biz seed"
+          git push origin HEAD:agent/c8-5-operation-security-boundary
