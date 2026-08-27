@@ -22,9 +22,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat tools/c8-5-biz-seed.part-00{1,2,3,4} > tools/c8-5-biz-seed.super-a
-          cat tools/c8-5-biz-seed.part-00{5,6,7,8} > tools/c8-5-biz-seed.super-b
-          cat tools/c8-5-biz-seed.part-00{9} tools/c8-5-biz-seed.part-01{0,1} > tools/c8-5-biz-seed.super-c
+          cat tools/c8-5-biz-seed.part-001 tools/c8-5-biz-seed.part-002 tools/c8-5-biz-seed.part-003 tools/c8-5-biz-seed.part-004 > tools/c8-5-biz-seed.super-a
+          cat tools/c8-5-biz-seed.part-005 tools/c8-5-biz-seed.part-006 tools/c8-5-biz-seed.part-007 tools/c8-5-biz-seed.part-008 > tools/c8-5-biz-seed.super-b
+          cat tools/c8-5-biz-seed.part-009 tools/c8-5-biz-seed.part-010 tools/c8-5-biz-seed.part-011 > tools/c8-5-biz-seed.super-c
           git config user.name "biz-c8-5-seed"
           git config user.email "biz-c8-5-seed@users.noreply.github.com"
           git add tools/c8-5-biz-seed.super-*
