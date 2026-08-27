@@ -1,7 +1,4 @@
-.idea/
-.vscode/
 .env
-*.log
 bin/
-dist/
 coverage.out
+.DS_Store

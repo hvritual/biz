@@ -2,29 +2,40 @@ package deviceops
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
-	"gorm.io/gorm/clause"
+	"github.com/hvritual/biz/internal/access/store"
+	deviceapp "github.com/hvritual/biz/internal/deviceops/application"
+	"github.com/hvritual/biz/internal/deviceops/domain"
+	devicepersistence "github.com/hvritual/biz/internal/deviceops/infrastructure/persistence"
+	devicepolicy "github.com/hvritual/biz/internal/deviceops/policy"
+	devicerest "github.com/hvritual/biz/internal/deviceops/transport/rest"
+	devicerpc "github.com/hvritual/biz/internal/deviceops/transport/rpc"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+	"yunka.io/framework/core/identity"
+	"yunka.io/gateway/authz"
+	authzgrpc "yunka.io/gateway/rpc/transport/grpc"
 )
 
 const ModuleName = "deviceops"
 
 type Module struct {
 	dependencies Dependencies
-	service      *Service
-	auth         *Authenticator
-
-	mu       sync.RWMutex
-	server   *http.Server
-	listener net.Listener
-	serveErr error
+	mu           sync.RWMutex
+	httpServer   *http.Server
+	grpcServer   *grpc.Server
+	httpListener net.Listener
+	grpcListener net.Listener
+	serveErr     error
 }
 
 func NewModule(dependencies Dependencies) (*Module, error) {
@@ -37,64 +48,126 @@ func NewModule(dependencies Dependencies) (*Module, error) {
 	if err := dependencies.Config.Validate(); err != nil {
 		return nil, err
 	}
-	service, err := NewService(dependencies.PrimaryDatabase)
-	if err != nil {
-		return nil, err
-	}
-	auth, err := NewAuthenticator(dependencies.PrimaryDatabase)
-	if err != nil {
-		return nil, err
-	}
-	return &Module{dependencies: dependencies, service: service, auth: auth}, nil
+	return &Module{dependencies: dependencies}, nil
 }
-
 func (*Module) Name() string { return ModuleName }
 
 func (module *Module) Start(ctx context.Context) error {
-	if module == nil {
-		return errors.New("deviceops: module is nil")
+	accessStore, err := store.New(module.dependencies.PrimaryDatabase)
+	if err != nil {
+		return err
 	}
 	if module.dependencies.Config.AutoMigrate {
-		if err := module.dependencies.PrimaryDatabase.WithContext(ctx).AutoMigrate(
-			&Tenant{}, &User{}, &Membership{}, &Role{}, &MemberRole{}, &RolePermission{}, &MemberSite{}, &APIToken{}, &Site{}, &Device{},
-		); err != nil {
-			return fmt.Errorf("deviceops: migrate: %w", err)
+		if err := accessStore.AutoMigrate(ctx); err != nil {
+			return fmt.Errorf("deviceops: access migrate: %w", err)
+		}
+		if err := devicepersistence.AutoMigrate(ctx, module.dependencies.PrimaryDatabase); err != nil {
+			return fmt.Errorf("deviceops: domain migrate: %w", err)
+		}
+		if err := devicepersistence.EnsureIndexes(module.dependencies.PrimaryDatabase); err != nil {
+			return fmt.Errorf("deviceops: indexes: %w", err)
 		}
 	}
-	if module.dependencies.Config.Bootstrap.Token != "" {
-		if err := module.bootstrap(ctx); err != nil {
-			return fmt.Errorf("deviceops: bootstrap: %w", err)
+	if config := module.dependencies.Config.Bootstrap; config.Token != "" {
+		if err := accessStore.Bootstrap(ctx, store.Bootstrap{TenantID: config.TenantID, TenantName: config.TenantName, UserID: config.UserID, Email: config.Email, Token: config.Token}, []string{deviceapp.PermissionDeviceRead, deviceapp.PermissionDeviceCreate, deviceapp.PermissionDeviceUpdate, deviceapp.PermissionDeviceDelete}); err != nil {
+			return fmt.Errorf("deviceops: bootstrap identity: %w", err)
+		}
+		principal, err := accessStore.Authenticate(ctx, config.Token)
+		if err != nil {
+			return fmt.Errorf("deviceops: bootstrap authenticate: %w", err)
+		}
+		siteRepository, err := devicepersistence.NewSiteRepository(module.dependencies.PrimaryDatabase)
+		if err != nil {
+			return err
+		}
+		trusted := identity.WithPrincipal(ctx, principal)
+		if _, err := siteRepository.Get(trusted, config.SiteID); err != nil {
+			site := domain.Site{ID: config.SiteID, Name: config.SiteName}
+			if err := siteRepository.Create(trusted, &site); err != nil {
+				return fmt.Errorf("deviceops: bootstrap site: %w", err)
+			}
 		}
 	}
-	listener, err := net.Listen("tcp", module.dependencies.Config.ListenAddress)
+	authorizer, err := authz.NewRBACAuthorizer(accessStore)
 	if err != nil {
-		return fmt.Errorf("deviceops: listen: %w", err)
+		return err
 	}
-	server := &http.Server{
-		Handler:           NewHTTPHandler(module.service, module.auth, module.dependencies.PrimaryDatabase),
-		ReadHeaderTimeout: 5 * time.Second,
+	scopes, err := devicepersistence.NewScopedScopeFactory(module.dependencies.PrimaryDatabase)
+	if err != nil {
+		return err
 	}
+	service, err := deviceapp.NewService(scopes, accessStore)
+	if err != nil {
+		return err
+	}
+
+	apiMux := http.NewServeMux()
+	if err := devicerest.Register(apiMux, service, authorizer); err != nil {
+		return err
+	}
+	rootMux := http.NewServeMux()
+	rootMux.HandleFunc("GET /healthz", module.healthHTTP)
+	rootMux.Handle("/v1/", httpAuthentication(accessStore, apiMux))
+	httpListener, err := net.Listen("tcp", module.dependencies.Config.HTTPListenAddress)
+	if err != nil {
+		return fmt.Errorf("deviceops: HTTP listen: %w", err)
+	}
+	httpServer := &http.Server{Handler: rootMux, ReadHeaderTimeout: 5 * time.Second}
+
+	policyInterceptor, err := authzgrpc.AuthorizedUnaryServerInterceptor(authorizer, devicepolicy.Resolver())
+	if err != nil {
+		_ = httpListener.Close()
+		return err
+	}
+	grpcListener, err := net.Listen("tcp", module.dependencies.Config.GRPCListenAddress)
+	if err != nil {
+		_ = httpListener.Close()
+		return fmt.Errorf("deviceops: gRPC listen: %w", err)
+	}
+	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcAuthentication(accessStore), policyInterceptor))
+	devicerpc.Register(grpcServer, service)
+
 	module.mu.Lock()
-	module.listener = listener
-	module.server = server
+	module.httpServer = httpServer
+	module.grpcServer = grpcServer
+	module.httpListener = httpListener
+	module.grpcListener = grpcListener
 	module.serveErr = nil
 	module.mu.Unlock()
-	go func() {
-		err := server.Serve(listener)
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			module.mu.Lock()
-			module.serveErr = err
-			module.mu.Unlock()
-			module.dependencies.Logger.Errorf("deviceops HTTP server: %v", err)
-		}
-	}()
+	go module.serveHTTP()
+	go module.serveGRPC()
 	return nil
 }
 
-func (module *Module) Health(ctx context.Context) error {
-	if module == nil || module.dependencies.PrimaryDatabase == nil {
-		return errors.New("deviceops: module database unavailable")
+func (module *Module) serveHTTP() {
+	if err := module.httpServer.Serve(module.httpListener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		module.recordServeError(err)
 	}
+}
+func (module *Module) serveGRPC() {
+	if err := module.grpcServer.Serve(module.grpcListener); err != nil {
+		module.recordServeError(err)
+	}
+}
+func (module *Module) recordServeError(err error) {
+	module.mu.Lock()
+	if module.serveErr == nil {
+		module.serveErr = err
+	}
+	module.mu.Unlock()
+	module.dependencies.Logger.Errorf("deviceops server: %v", err)
+}
+
+func (module *Module) healthHTTP(writer http.ResponseWriter, request *http.Request) {
+	if err := module.Health(request.Context()); err != nil {
+		http.Error(writer, "unhealthy", http.StatusServiceUnavailable)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write([]byte(`{"status":"ok"}`))
+}
+
+func (module *Module) Health(ctx context.Context) error {
 	sqlDB, err := module.dependencies.PrimaryDatabase.DB()
 	if err != nil {
 		return err
@@ -104,51 +177,77 @@ func (module *Module) Health(ctx context.Context) error {
 	}
 	module.mu.RLock()
 	defer module.mu.RUnlock()
-	if module.server == nil || module.listener == nil {
-		return errors.New("deviceops: HTTP server is not started")
+	if module.httpListener == nil || module.grpcListener == nil {
+		return errors.New("deviceops: servers not started")
 	}
 	return module.serveErr
 }
 
-func (module *Module) Shutdown(ctx context.Context) error {
-	if module == nil {
-		return nil
-	}
+func (module *Module) HTTPAddress() string {
 	module.mu.RLock()
-	server := module.server
-	module.mu.RUnlock()
-	if server == nil {
-		return nil
+	defer module.mu.RUnlock()
+	if module.httpListener == nil {
+		return ""
 	}
-	return server.Shutdown(ctx)
+	return module.httpListener.Addr().String()
+}
+func (module *Module) GRPCAddress() string {
+	module.mu.RLock()
+	defer module.mu.RUnlock()
+	if module.grpcListener == nil {
+		return ""
+	}
+	return module.grpcListener.Addr().String()
 }
 
-func (module *Module) bootstrap(ctx context.Context) error {
-	config := module.dependencies.Config.Bootstrap
-	database := module.dependencies.PrimaryDatabase.WithContext(ctx)
-	tenant := Tenant{ID: config.TenantID, Name: config.TenantName, Status: "active"}
-	user := User{ID: config.UserID, Email: config.Email, Status: "active"}
-	membership := Membership{TenantID: config.TenantID, UserID: config.UserID, Status: "active"}
-	roleID := config.TenantID + ":owner"
-	role := Role{ID: roleID, TenantID: config.TenantID, Name: "owner", Status: "active"}
-	memberRole := MemberRole{TenantID: config.TenantID, UserID: config.UserID, RoleID: roleID}
-	permissions := []RolePermission{
-		{TenantID: config.TenantID, RoleID: roleID, Permission: PermissionDeviceRead, DataScope: DataScopeAll},
-		{TenantID: config.TenantID, RoleID: roleID, Permission: PermissionDeviceCreate, DataScope: DataScopeAll},
-		{TenantID: config.TenantID, RoleID: roleID, Permission: PermissionDeviceUpdate, DataScope: DataScopeAll},
-		{TenantID: config.TenantID, RoleID: roleID, Permission: PermissionDeviceDelete, DataScope: DataScopeAll},
+func (module *Module) Shutdown(ctx context.Context) error {
+	module.mu.RLock()
+	httpServer, grpcServer := module.httpServer, module.grpcServer
+	module.mu.RUnlock()
+	var httpErr error
+	if httpServer != nil {
+		httpErr = httpServer.Shutdown(ctx)
 	}
-	hash := sha256.Sum256([]byte(config.Token))
-	token := APIToken{TokenHash: hex.EncodeToString(hash[:]), TenantID: config.TenantID, UserID: config.UserID}
-	for _, value := range []any{&tenant, &user, &membership, &role, &memberRole, &token} {
-		if err := database.Clauses(clause.OnConflict{DoNothing: true}).Create(value).Error; err != nil {
-			return err
+	if grpcServer != nil {
+		done := make(chan struct{})
+		go func() { grpcServer.GracefulStop(); close(done) }()
+		select {
+		case <-done:
+		case <-ctx.Done():
+			grpcServer.Stop()
 		}
 	}
-	for index := range permissions {
-		if err := database.Clauses(clause.OnConflict{DoNothing: true}).Create(&permissions[index]).Error; err != nil {
-			return err
-		}
+	return httpErr
+}
+
+func parseBearer(value string) string {
+	value = strings.TrimSpace(value)
+	if len(value) < 7 || !strings.EqualFold(value[:7], "Bearer ") {
+		return ""
 	}
-	return nil
+	return strings.TrimSpace(value[7:])
+}
+func httpAuthentication(accessStore *store.Store, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		principal, err := accessStore.Authenticate(r.Context(), parseBearer(r.Header.Get("Authorization")))
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(identity.WithPrincipal(r.Context(), principal)))
+	})
+}
+func grpcAuthentication(accessStore *store.Store) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, request any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		md, _ := metadata.FromIncomingContext(ctx)
+		raw := ""
+		if values := md.Get("authorization"); len(values) > 0 {
+			raw = parseBearer(values[0])
+		}
+		principal, err := accessStore.Authenticate(ctx, raw)
+		if err != nil {
+			return nil, status.Error(codes.Unauthenticated, "unauthenticated")
+		}
+		return handler(identity.WithPrincipal(ctx, principal), request)
+	}
 }

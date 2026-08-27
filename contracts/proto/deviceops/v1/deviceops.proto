@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+package deviceops.v1;
+
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+
+option go_package = "github.com/hvritual/biz/contracts/gen/deviceops/v1;deviceopsv1";
+option (yunka.dsl.v1.domain) = {
+  name: "deviceops"
+  version: "v1"
+};
+
+message DeviceDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string id = 1;
+  string site_id = 2;
+  string name = 3;
+  string serial = 4;
+  string created_by = 5;
+  uint64 version = 6;
+}
+
+message ListDevicesRequest {}
+message ListDevicesResponse {
+  repeated DeviceDTO devices = 1;
+}
+message GetDeviceRequest { string id = 1; }
+message CreateDeviceRequest {
+  string site_id = 1;
+  string name = 2;
+  string serial = 3;
+}
+message UpdateDeviceRequest {
+  string id = 1;
+  string site_id = 2;
+  string name = 3;
+  uint64 version = 4;
+}
+message DeleteDeviceRequest {
+  string id = 1;
+  uint64 version = 2;
+}
+message DeleteDeviceResponse {}
+
+service DeviceApplication {
+  option (yunka.dsl.v1.application) = { name: "device_management" };
+
+  rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse) {
+    option (google.api.http) = { get: "/v1/devices" };
+    option (yunka.dsl.v1.operation) = {
+      id: "device.list"
+      use_case: "list_devices"
+      permissions: "device.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+    };
+  }
+
+  rpc GetDevice(GetDeviceRequest) returns (DeviceDTO) {
+    option (google.api.http) = { get: "/v1/devices/{id}" };
+    option (yunka.dsl.v1.operation) = {
+      id: "device.get"
+      use_case: "get_device"
+      permissions: "device.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+    };
+  }
+
+  rpc CreateDevice(CreateDeviceRequest) returns (DeviceDTO) {
+    option (google.api.http) = { post: "/v1/devices" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "device.create"
+      use_case: "create_device"
+      permissions: "device.create"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+    };
+  }
+
+  rpc UpdateDevice(UpdateDeviceRequest) returns (DeviceDTO) {
+    option (google.api.http) = { patch: "/v1/devices/{id}" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "device.update"
+      use_case: "update_device"
+      permissions: "device.update"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+    };
+  }
+
+  rpc DeleteDevice(DeleteDeviceRequest) returns (DeleteDeviceResponse) {
+    option (google.api.http) = { delete: "/v1/devices/{id}" };
+    option (yunka.dsl.v1.operation) = {
+      id: "device.delete"
+      use_case: "delete_device"
+      permissions: "device.delete"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+    };
+  }
+}

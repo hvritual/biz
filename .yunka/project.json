@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "database": {
+    "tablePrefix": "biz"
+  }
+}

@@ -6,9 +6,8 @@ services:
       MYSQL_DATABASE: biz
     ports:
       - "3306:3306"
-    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot", "--silent"]
       interval: 5s
-      timeout: 3s
+      timeout: 5s
       retries: 30
