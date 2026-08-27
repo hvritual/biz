@@ -1,0 +1,109 @@
+name: c8-4-apply
+
+on:
+  push:
+    branches:
+      - agent/biz-c8-4-rebuild
+    paths:
+      - tools/c8-4/result.sha256
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact staging commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Verify and extract canonical artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          export C8_WORK="$RUNNER_TEMP/c8-4"
+          mkdir -p "$C8_WORK/extract"
+          python3 - <<'PY'
+          import base64
+          import glob
+          import hashlib
+          import io
+          import os
+          import pathlib
+          import tarfile
+
+          root = pathlib.Path(os.environ["GITHUB_WORKSPACE"])
+          work = pathlib.Path(os.environ["C8_WORK"])
+          parts = [pathlib.Path(p) for p in sorted(glob.glob(str(root / "tools/c8-4/result.part-*")))]
+          if len(parts) != 12:
+              raise SystemExit(f"expected 12 artifact parts, got {len(parts)}")
+          encoded = b"".join(p.read_bytes() for p in parts)
+          payload = base64.b64decode(encoded, validate=True)
+          expected = (root / "tools/c8-4/result.sha256").read_text().strip()
+          actual = hashlib.sha256(payload).hexdigest()
+          if actual != expected:
+              raise SystemExit(f"artifact sha256 mismatch: expected={expected} actual={actual}")
+          meta = (root / "tools/c8-4/result.meta").read_text()
+          required = [
+              "framework_main=cdf7d933758d3c94e03a5601801dbf84d8144d00",
+              "framework_tree=0cb7ec037a4cb25379a1d870785980b76e6141da",
+              "mysql=8.4",
+              "files=40",
+              "parts=12",
+              "validation=domain-check,module-check,contract-check,test,race,vet,build,mysql-integration,determinism",
+          ]
+          for item in required:
+              if item not in meta:
+                  raise SystemExit(f"missing artifact metadata: {item}")
+          with tarfile.open(fileobj=io.BytesIO(payload), mode="r:gz") as archive:
+              members = archive.getmembers()
+              for member in members:
+                  path = pathlib.PurePosixPath(member.name)
+                  if path.is_absolute() or ".." in path.parts or not path.parts or path.parts[0] != "biz":
+                      raise SystemExit(f"unsafe artifact path: {member.name}")
+                  if member.issym() or member.islnk():
+                      raise SystemExit(f"artifact links are forbidden: {member.name}")
+              archive.extractall(work / "extract", filter="data")
+          source = work / "extract/biz"
+          files = sum(1 for p in source.rglob("*") if p.is_file())
+          if files != 40:
+              raise SystemExit(f"expected 40 extracted files, got {files}")
+          print(f"verified artifact sha256={actual} files={files}")
+          PY
+
+      - name: Replace biz worktree and publish with local git
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="$RUNNER_TEMP/c8-4/extract/biz"
+          test -f "$SRC/go.mod"
+          test -f "$SRC/Makefile"
+          test -f "$SRC/contracts/proto/deviceops/v1/deviceops.proto"
+          test -d "$SRC/internal/deviceops"
+          test -d "$SRC/modules/deviceops"
+
+          rsync -a --delete \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='tools/c8-4/' \
+            "$SRC/" "$GITHUB_WORKSPACE/"
+
+          test -f contracts/proto/deviceops/v1/deviceops.proto
+          test -d internal/deviceops/application
+          test -d internal/deviceops/domain
+          test -d internal/deviceops/infrastructure/persistence
+          test -d internal/deviceops/transport/rest
+          test -d internal/deviceops/transport/rpc
+
+          git config user.name "biz-c8-4-builder"
+          git config user.email "biz-c8-4-builder@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "expected whole-worktree replacement, but no changes were staged" >&2
+            exit 1
+          fi
+          git commit -m "refactor: rebuild biz on Yunka C8.4"
+          git push origin HEAD:agent/biz-c8-4-rebuild
