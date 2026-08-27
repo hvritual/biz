@@ -6,11 +6,12 @@ import (
 
 	"github.com/hvritual/biz/internal/deviceops/domain"
 	"github.com/hvritual/biz/internal/deviceops/ports"
+	devicesecurity "github.com/hvritual/biz/internal/deviceops/security"
 	"gorm.io/gorm"
 	"yunka.io/framework/requestscope"
 )
 
-func applyDeviceDataScope(query *gorm.DB, scope ports.DeviceScope) *gorm.DB {
+func applyDeviceDataScope(query *gorm.DB, scope devicesecurity.Scope) *gorm.DB {
 	if scope.All {
 		return query
 	}
@@ -32,7 +33,11 @@ func applyDeviceDataScope(query *gorm.DB, scope ports.DeviceScope) *gorm.DB {
 	return query.Where("1 = 0")
 }
 
-func (repository *DeviceRepository) ListScoped(ctx context.Context, scope ports.DeviceScope) ([]domain.Device, error) {
+func (repository *DeviceRepository) ListVisible(ctx context.Context) ([]domain.Device, error) {
+	scope, err := devicesecurity.RequireScope(ctx)
+	if err != nil {
+		return nil, err
+	}
 	query, err := repository.scoped(ctx)
 	if err != nil {
 		return nil, err
@@ -48,7 +53,11 @@ func (repository *DeviceRepository) ListScoped(ctx context.Context, scope ports.
 	return result, nil
 }
 
-func (repository *DeviceRepository) GetScoped(ctx context.Context, scope ports.DeviceScope, id string) (domain.Device, error) {
+func (repository *DeviceRepository) GetVisible(ctx context.Context, id string) (domain.Device, error) {
+	scope, err := devicesecurity.RequireScope(ctx)
+	if err != nil {
+		return domain.Device{}, err
+	}
 	query, err := repository.scoped(ctx)
 	if err != nil {
 		return domain.Device{}, err

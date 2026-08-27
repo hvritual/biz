@@ -6,32 +6,29 @@ import (
 	"errors"
 	deviceopsv1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
 	application "github.com/hvritual/biz/internal/deviceops/application"
-	policy "github.com/hvritual/biz/internal/deviceops/policy"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	io "io"
 	"net/http"
 	strconv "strconv"
-	identity "yunka.io/framework/core/identity"
 	authz "yunka.io/gateway/authz"
 )
 
 type Handler struct {
 	application application.DeviceApplication
-	authorizer  authz.Authorizer
-	resolver    authz.PolicyResolver
+	runtime     authz.OperationRuntime
 }
 
-func Register(mux *http.ServeMux, application application.DeviceApplication, authorizer authz.Authorizer) error {
+func Register(mux *http.ServeMux, application application.DeviceApplication, runtime authz.OperationRuntime) error {
 	if mux == nil {
 		return errors.New("contract REST adapter: mux is required")
 	}
 	if application == nil {
 		return errors.New("contract REST adapter: application is required")
 	}
-	if authorizer == nil {
-		return errors.New("contract REST adapter: authorizer is required for protected operations")
+	if runtime == nil {
+		return errors.New("contract REST adapter: operation runtime is required")
 	}
-	handler := &Handler{application: application, authorizer: authorizer, resolver: policy.Resolver()}
+	handler := &Handler{application: application, runtime: runtime}
 	mux.HandleFunc("POST /v1/devices", handler.handleCreateDevice)
 	mux.HandleFunc("DELETE /v1/devices/{id}", handler.handleDeleteDevice)
 	mux.HandleFunc("GET /v1/devices/{id}", handler.handleGetDevice)
@@ -40,26 +37,7 @@ func Register(mux *http.ServeMux, application application.DeviceApplication, aut
 	return nil
 }
 
-func (handler *Handler) authorize(request *http.Request, key string) error {
-	policyValue, ok := handler.resolver.ResolvePolicy(request.Context(), key)
-	if !ok || !policyValue.Protected() {
-		return nil
-	}
-	if handler.authorizer == nil {
-		return errors.New("authorization unavailable")
-	}
-	principal, _ := identity.FromContext(request.Context())
-	decision, err := handler.authorizer.Authorize(request.Context(), principal, policyValue)
-	if err != nil {
-		return err
-	}
-	if !decision.Allowed {
-		return authz.Denied(decision)
-	}
-	return nil
-}
-
-func writeAuthorizationError(writer http.ResponseWriter, err error) {
+func writeSecurityError(writer http.ResponseWriter, err error) {
 	if !authz.IsDenied(err) {
 		http.Error(writer, "authorization unavailable", http.StatusInternalServerError)
 		return
@@ -73,10 +51,6 @@ func writeAuthorizationError(writer http.ResponseWriter, err error) {
 }
 
 func (handler *Handler) handleCreateDevice(writer http.ResponseWriter, request *http.Request) {
-	if err := handler.authorize(request, "/deviceops.v1.DeviceApplication/CreateDevice"); err != nil {
-		writeAuthorizationError(writer, err)
-		return
-	}
 	wire := &deviceopsv1.CreateDeviceRequest{}
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -89,7 +63,12 @@ func (handler *Handler) handleCreateDevice(writer http.ResponseWriter, request *
 			return
 		}
 	}
-	output, err := handler.application.CreateDevice(request.Context(), wire)
+	secured, err := handler.runtime.Prepare(request.Context(), "/deviceops.v1.DeviceApplication/CreateDevice", wire)
+	if err != nil {
+		writeSecurityError(writer, err)
+		return
+	}
+	output, err := handler.application.CreateDevice(secured, wire)
 	if err != nil {
 		http.Error(writer, "application request failed", http.StatusBadRequest)
 		return
@@ -104,10 +83,6 @@ func (handler *Handler) handleCreateDevice(writer http.ResponseWriter, request *
 }
 
 func (handler *Handler) handleDeleteDevice(writer http.ResponseWriter, request *http.Request) {
-	if err := handler.authorize(request, "/deviceops.v1.DeviceApplication/DeleteDevice"); err != nil {
-		writeAuthorizationError(writer, err)
-		return
-	}
 	wire := &deviceopsv1.DeleteDeviceRequest{}
 	if raw := request.URL.Query().Get("version"); raw != "" {
 		parsed, err := strconv.ParseUint(raw, 10, 64)
@@ -118,7 +93,12 @@ func (handler *Handler) handleDeleteDevice(writer http.ResponseWriter, request *
 		wire.Version = uint64(parsed)
 	}
 	wire.Id = request.PathValue("id")
-	output, err := handler.application.DeleteDevice(request.Context(), wire)
+	secured, err := handler.runtime.Prepare(request.Context(), "/deviceops.v1.DeviceApplication/DeleteDevice", wire)
+	if err != nil {
+		writeSecurityError(writer, err)
+		return
+	}
+	output, err := handler.application.DeleteDevice(secured, wire)
 	if err != nil {
 		http.Error(writer, "application request failed", http.StatusBadRequest)
 		return
@@ -133,13 +113,14 @@ func (handler *Handler) handleDeleteDevice(writer http.ResponseWriter, request *
 }
 
 func (handler *Handler) handleGetDevice(writer http.ResponseWriter, request *http.Request) {
-	if err := handler.authorize(request, "/deviceops.v1.DeviceApplication/GetDevice"); err != nil {
-		writeAuthorizationError(writer, err)
-		return
-	}
 	wire := &deviceopsv1.GetDeviceRequest{}
 	wire.Id = request.PathValue("id")
-	output, err := handler.application.GetDevice(request.Context(), wire)
+	secured, err := handler.runtime.Prepare(request.Context(), "/deviceops.v1.DeviceApplication/GetDevice", wire)
+	if err != nil {
+		writeSecurityError(writer, err)
+		return
+	}
+	output, err := handler.application.GetDevice(secured, wire)
 	if err != nil {
 		http.Error(writer, "application request failed", http.StatusBadRequest)
 		return
@@ -154,12 +135,13 @@ func (handler *Handler) handleGetDevice(writer http.ResponseWriter, request *htt
 }
 
 func (handler *Handler) handleListDevices(writer http.ResponseWriter, request *http.Request) {
-	if err := handler.authorize(request, "/deviceops.v1.DeviceApplication/ListDevices"); err != nil {
-		writeAuthorizationError(writer, err)
+	wire := &deviceopsv1.ListDevicesRequest{}
+	secured, err := handler.runtime.Prepare(request.Context(), "/deviceops.v1.DeviceApplication/ListDevices", wire)
+	if err != nil {
+		writeSecurityError(writer, err)
 		return
 	}
-	wire := &deviceopsv1.ListDevicesRequest{}
-	output, err := handler.application.ListDevices(request.Context(), wire)
+	output, err := handler.application.ListDevices(secured, wire)
 	if err != nil {
 		http.Error(writer, "application request failed", http.StatusBadRequest)
 		return
@@ -174,10 +156,6 @@ func (handler *Handler) handleListDevices(writer http.ResponseWriter, request *h
 }
 
 func (handler *Handler) handleUpdateDevice(writer http.ResponseWriter, request *http.Request) {
-	if err := handler.authorize(request, "/deviceops.v1.DeviceApplication/UpdateDevice"); err != nil {
-		writeAuthorizationError(writer, err)
-		return
-	}
 	wire := &deviceopsv1.UpdateDeviceRequest{}
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -191,7 +169,12 @@ func (handler *Handler) handleUpdateDevice(writer http.ResponseWriter, request *
 		}
 	}
 	wire.Id = request.PathValue("id")
-	output, err := handler.application.UpdateDevice(request.Context(), wire)
+	secured, err := handler.runtime.Prepare(request.Context(), "/deviceops.v1.DeviceApplication/UpdateDevice", wire)
+	if err != nil {
+		writeSecurityError(writer, err)
+		return
+	}
+	output, err := handler.application.UpdateDevice(secured, wire)
 	if err != nil {
 		http.Error(writer, "application request failed", http.StatusBadRequest)
 		return

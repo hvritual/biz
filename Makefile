@@ -1,4 +1,4 @@
-YUNKA_ROOT ?= ../yunka.io
+YUNKA_ROOT ?= $(abspath ../yunka.io)
 YUNKA_APP := $(YUNKA_ROOT)/app
 PROTO_DIR := $(CURDIR)/contracts/proto
 THIRD_PARTY := $(CURDIR)/contracts/third_party

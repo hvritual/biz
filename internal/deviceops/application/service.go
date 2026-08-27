@@ -10,60 +10,26 @@ import (
 	deviceopsv1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
 	"github.com/hvritual/biz/internal/deviceops/domain"
 	"github.com/hvritual/biz/internal/deviceops/ports"
-	"yunka.io/framework/core/identity"
+	devicesecurity "github.com/hvritual/biz/internal/deviceops/security"
 	"yunka.io/framework/requestscope"
 )
 
-const (
-	PermissionDeviceRead   = "device.read"
-	PermissionDeviceCreate = "device.create"
-	PermissionDeviceUpdate = "device.update"
-	PermissionDeviceDelete = "device.delete"
-)
-
-var (
-	ErrInvalid   = errors.New("deviceops: invalid request")
-	ErrForbidden = errors.New("deviceops: data scope denied")
-)
-
-type ScopeResolver interface {
-	ResolveDeviceScope(context.Context, identity.Principal, string) (ports.DeviceScope, error)
-}
+var ErrInvalid = errors.New("deviceops: invalid request")
 
 type Service struct {
-	scopes        requestscope.ScopeFactory[ports.ScopedRepositories]
-	scopeResolver ScopeResolver
+	scopes requestscope.ScopeFactory[ports.ScopedRepositories]
 }
 
-func NewService(scopes requestscope.ScopeFactory[ports.ScopedRepositories], resolver ScopeResolver) (*Service, error) {
+func NewService(scopes requestscope.ScopeFactory[ports.ScopedRepositories]) (*Service, error) {
 	if scopes == nil {
 		return nil, errors.New("deviceops: request scope factory is required")
 	}
-	if resolver == nil {
-		return nil, errors.New("deviceops: data scope resolver is required")
-	}
-	return &Service{scopes: scopes, scopeResolver: resolver}, nil
-}
-
-func trustedPrincipal(ctx context.Context) (identity.Principal, error) {
-	principal, ok := identity.FromContext(ctx)
-	if !ok || !principal.Authenticated || principal.TenantID == "" || principal.UserID == "" {
-		return identity.Principal{}, ErrForbidden
-	}
-	return principal, nil
+	return &Service{scopes: scopes}, nil
 }
 
 func (service *Service) ListDevices(ctx context.Context, _ *deviceopsv1.ListDevicesRequest) (*deviceopsv1.ListDevicesResponse, error) {
-	principal, err := trustedPrincipal(ctx)
-	if err != nil {
-		return nil, err
-	}
-	access, err := service.scopeResolver.ResolveDeviceScope(ctx, principal, PermissionDeviceRead)
-	if err != nil {
-		return nil, err
-	}
 	devices, err := requestscope.ExecuteValue(ctx, service.scopes, func(scope *requestscope.Scope[ports.ScopedRepositories]) ([]domain.Device, error) {
-		return scope.Repositories().Device.ListScoped(scope.Context(), access)
+		return scope.Repositories().Device.ListVisible(scope.Context())
 	})
 	if err != nil {
 		return nil, err
@@ -79,16 +45,8 @@ func (service *Service) GetDevice(ctx context.Context, request *deviceopsv1.GetD
 	if request == nil || strings.TrimSpace(request.GetId()) == "" {
 		return nil, ErrInvalid
 	}
-	principal, err := trustedPrincipal(ctx)
-	if err != nil {
-		return nil, err
-	}
-	access, err := service.scopeResolver.ResolveDeviceScope(ctx, principal, PermissionDeviceRead)
-	if err != nil {
-		return nil, err
-	}
 	device, err := requestscope.ExecuteValue(ctx, service.scopes, func(scope *requestscope.Scope[ports.ScopedRepositories]) (domain.Device, error) {
-		return scope.Repositories().Device.GetScoped(scope.Context(), access, strings.TrimSpace(request.GetId()))
+		return scope.Repositories().Device.GetVisible(scope.Context(), strings.TrimSpace(request.GetId()))
 	})
 	if err != nil {
 		return nil, err
@@ -104,22 +62,15 @@ func (service *Service) CreateDevice(ctx context.Context, request *deviceopsv1.C
 	if siteID == "" || name == "" || serial == "" {
 		return nil, ErrInvalid
 	}
-	principal, err := trustedPrincipal(ctx)
-	if err != nil {
-		return nil, err
-	}
-	access, err := service.scopeResolver.ResolveDeviceScope(ctx, principal, PermissionDeviceCreate)
-	if err != nil {
-		return nil, err
-	}
-	if !access.AllowsSite(siteID) {
-		return nil, ErrForbidden
+	access, err := devicesecurity.RequireScope(ctx)
+	if err != nil || strings.TrimSpace(access.UserID) == "" {
+		return nil, devicesecurity.ErrAuthorizedScopeMissing
 	}
 	device, err := requestscope.ExecuteValue(ctx, service.scopes, func(scope *requestscope.Scope[ports.ScopedRepositories]) (domain.Device, error) {
 		if _, err := scope.Repositories().Site.Get(scope.Context(), siteID); err != nil {
 			return domain.Device{}, err
 		}
-		value := domain.Device{ID: newID(), SiteID: siteID, Name: name, Serial: serial, CreatedBy: principal.UserID}
+		value := domain.Device{ID: newID(), SiteID: siteID, Name: name, Serial: serial, CreatedBy: access.UserID}
 		if err := scope.Repositories().Device.Create(scope.Context(), &value); err != nil {
 			return domain.Device{}, err
 		}
@@ -135,16 +86,8 @@ func (service *Service) UpdateDevice(ctx context.Context, request *deviceopsv1.U
 	if request == nil || strings.TrimSpace(request.GetId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalid
 	}
-	principal, err := trustedPrincipal(ctx)
-	if err != nil {
-		return nil, err
-	}
-	access, err := service.scopeResolver.ResolveDeviceScope(ctx, principal, PermissionDeviceUpdate)
-	if err != nil {
-		return nil, err
-	}
 	device, err := requestscope.ExecuteValue(ctx, service.scopes, func(scope *requestscope.Scope[ports.ScopedRepositories]) (domain.Device, error) {
-		current, err := scope.Repositories().Device.GetScoped(scope.Context(), access, strings.TrimSpace(request.GetId()))
+		current, err := scope.Repositories().Device.GetVisible(scope.Context(), strings.TrimSpace(request.GetId()))
 		if err != nil {
 			return domain.Device{}, err
 		}
@@ -157,9 +100,6 @@ func (service *Service) UpdateDevice(ctx context.Context, request *deviceopsv1.U
 			siteID = current.SiteID
 		}
 		if siteID != current.SiteID {
-			if !access.AllowsSite(siteID) {
-				return domain.Device{}, ErrForbidden
-			}
 			if _, err := scope.Repositories().Site.Get(scope.Context(), siteID); err != nil {
 				return domain.Device{}, err
 			}
@@ -168,7 +108,7 @@ func (service *Service) UpdateDevice(ctx context.Context, request *deviceopsv1.U
 		if err := scope.Repositories().Device.Update(scope.Context(), &current, request.GetVersion()); err != nil {
 			return domain.Device{}, err
 		}
-		return scope.Repositories().Device.GetScoped(scope.Context(), access, current.ID)
+		return scope.Repositories().Device.GetVisible(scope.Context(), current.ID)
 	})
 	if err != nil {
 		return nil, err
@@ -180,16 +120,8 @@ func (service *Service) DeleteDevice(ctx context.Context, request *deviceopsv1.D
 	if request == nil || strings.TrimSpace(request.GetId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalid
 	}
-	principal, err := trustedPrincipal(ctx)
-	if err != nil {
-		return nil, err
-	}
-	access, err := service.scopeResolver.ResolveDeviceScope(ctx, principal, PermissionDeviceDelete)
-	if err != nil {
-		return nil, err
-	}
-	err = requestscope.Execute(ctx, service.scopes, func(scope *requestscope.Scope[ports.ScopedRepositories]) error {
-		current, err := scope.Repositories().Device.GetScoped(scope.Context(), access, strings.TrimSpace(request.GetId()))
+	err := requestscope.Execute(ctx, service.scopes, func(scope *requestscope.Scope[ports.ScopedRepositories]) error {
+		current, err := scope.Repositories().Device.GetVisible(scope.Context(), strings.TrimSpace(request.GetId()))
 		if err != nil {
 			return err
 		}
