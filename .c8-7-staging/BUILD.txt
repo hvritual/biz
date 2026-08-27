@@ -1,0 +1,1 @@
+Do not edit candidate business files on the staging branch. Apply the verified patch atomically in the Builder.
