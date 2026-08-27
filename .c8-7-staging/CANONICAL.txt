@@ -1,0 +1,1 @@
+Candidate patch verified locally against yunka.io main ed3c73b7899cd4a818d2a771006befa7bf9a5085. Canonical MySQL Builder runs in yunka.io.
