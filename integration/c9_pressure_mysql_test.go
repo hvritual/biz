@@ -5,6 +5,7 @@ package integration
 import (
 	"context"
 	"errors"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -97,6 +98,23 @@ func authenticatedContext(t *testing.T, store *accesspersistence.Store, token st
 	return identity.WithPrincipal(context.Background(), principal)
 }
 
+func jsonUint64(t *testing.T, value any) uint64 {
+	t.Helper()
+	switch typed := value.(type) {
+	case string:
+		parsed, err := strconv.ParseUint(typed, 10, 64)
+		if err != nil {
+			t.Fatalf("invalid protojson uint64 %q: %v", typed, err)
+		}
+		return parsed
+	case float64:
+		return uint64(typed)
+	default:
+		t.Fatalf("unexpected JSON uint64 type %T (%v)", value, value)
+		return 0
+	}
+}
+
 func TestC9LocalCompositionUsesOneExecutorAndOneUoW(t *testing.T) {
 	db := openDB(t)
 	tenant, ownerToken, sourceSite, targetSite := "tenant-c9-local", "owner-c9-local-token", "site-c9-source", "site-c9-target"
@@ -127,8 +145,8 @@ func TestC9LocalCompositionUsesOneExecutorAndOneUoW(t *testing.T) {
 	observer := newPressureObserver()
 	executor := pressureExecutor(t, db, accessStore, observer, devicepolicy.OperationLocalTransfer)
 	id, _ := created["id"].(string)
-	version, _ := created["version"].(float64)
-	response, err := operation.ExecuteTyped(ownerContext, executor, devicepolicy.LocalTransferPressurePlan(), &deviceopsv1.UpdateDeviceRequest{Id: id, SiteId: targetSite, Version: uint64(version)}, service.Transfer)
+	version := jsonUint64(t, created["version"])
+	response, err := operation.ExecuteTyped(ownerContext, executor, devicepolicy.LocalTransferPressurePlan(), &deviceopsv1.UpdateDeviceRequest{Id: id, SiteId: targetSite, Version: version}, service.Transfer)
 	if err != nil {
 		t.Fatal(err)
 	}
