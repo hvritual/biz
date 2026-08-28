@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc/status"
 	"yunka.io/framework/core/identity"
 	"yunka.io/framework/execution"
+	"yunka.io/framework/execution/idempotencygorm"
 	"yunka.io/framework/operation"
 	"yunka.io/framework/requestscope"
 	"yunka.io/gateway/authz"
@@ -114,7 +115,16 @@ func (module *Module) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	idempotency, err := execution.NewIdempotencyCoordinator(execution.NewMemoryIdempotencyStore())
+	idempotencyStore, err := idempotencygorm.NewStore(module.dependencies.PrimaryDatabase, idempotencygorm.Options{})
+	if err != nil {
+		return err
+	}
+	if module.dependencies.Config.AutoMigrate {
+		if err := idempotencyStore.EnsureSchema(ctx); err != nil {
+			return fmt.Errorf("deviceops: idempotency migrate: %w", err)
+		}
+	}
+	idempotency, err := execution.NewIdempotencyCoordinator(idempotencyStore)
 	if err != nil {
 		return err
 	}

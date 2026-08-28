@@ -16,10 +16,12 @@ import (
 	devicepersistence "github.com/hvritual/biz/internal/deviceops/infrastructure/persistence"
 	devicepolicy "github.com/hvritual/biz/internal/deviceops/policy"
 	devicesecurity "github.com/hvritual/biz/internal/deviceops/security"
+	"gorm.io/gorm"
 	"yunka.io/framework/core/identity"
 	"yunka.io/framework/event"
 	"yunka.io/framework/event/outbox"
 	"yunka.io/framework/execution"
+	"yunka.io/framework/execution/idempotencygorm"
 	"yunka.io/framework/operation"
 	"yunka.io/framework/requestscope"
 	"yunka.io/framework/workflow/saga"
@@ -72,7 +74,14 @@ func pressureExecutor(t *testing.T, database *gorm.DB, accessStore *accesspersis
 	if err != nil {
 		t.Fatal(err)
 	}
-	idempotency, err := execution.NewIdempotencyCoordinator(execution.NewMemoryIdempotencyStore())
+	idempotencyStore, err := idempotencygorm.NewStore(database, idempotencygorm.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := idempotencyStore.EnsureSchema(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	idempotency, err := execution.NewIdempotencyCoordinator(idempotencyStore)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,6 +197,10 @@ func TestC9RemoteSagaStagesBusinessWriteAndOutboxAtomically(t *testing.T) {
 	}
 	if observer.starts(devicepolicy.OperationRemoteProvision) != 1 {
 		t.Fatalf("remote saga security starts=%d want=1", observer.starts(devicepolicy.OperationRemoteProvision))
+	}
+	_, err = operation.ExecuteTyped(execution.WithIdempotencyKey(ownerContext, "provision:"+serial), executor, devicepolicy.RemoteProvisionPressurePlan(), &deviceopsv1.CreateDeviceRequest{SiteId: site, Name: "Saga", Serial: serial}, service.Provision)
+	if !errors.Is(err, execution.ErrIdempotencyCompleted) {
+		t.Fatalf("expected durable idempotency duplicate suppression, got %v", err)
 	}
 	snapshot, err := store.Snapshot(ownerContext)
 	if err != nil {
