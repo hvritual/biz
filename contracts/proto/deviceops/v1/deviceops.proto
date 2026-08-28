@@ -21,6 +21,13 @@ message DeviceDTO {
   uint64 version = 6;
 }
 
+message SiteDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string id = 1;
+  string name = 2;
+  uint64 version = 3;
+}
+
 message ListDevicesRequest {}
 message ListDevicesResponse {
   repeated DeviceDTO devices = 1;
@@ -42,6 +49,16 @@ message DeleteDeviceRequest {
   uint64 version = 2;
 }
 message DeleteDeviceResponse {}
+
+message ValidateTransferTargetRequest {
+  string site_id = 1;
+}
+
+message TransferDeviceRequest {
+  string id = 1;
+  string target_site_id = 2;
+  uint64 version = 3;
+}
 
 service DeviceApplication {
   option (yunka.dsl.v1.application) = { name: "device_management" };
@@ -107,6 +124,50 @@ service DeviceApplication {
       permission_mode: PERMISSION_ALL
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+}
+
+// SiteApplication intentionally exposes no HTTP binding for the transfer-target
+// child use case. It is still a protobuf RPC because OperationDeclaration is a
+// method option today; C9.8 records that contract pressure as FP-C9-001 evidence.
+service SiteApplication {
+  option (yunka.dsl.v1.application) = { name: "site_management" };
+
+  rpc ValidateTransferTarget(ValidateTransferTargetRequest) returns (SiteDTO) {
+    option (yunka.dsl.v1.operation) = {
+      id: "site.validate_transfer_target"
+      use_case: "validate_transfer_target"
+      permissions: "site.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+}
+
+service DeviceTransferApplication {
+  option (yunka.dsl.v1.application) = {
+    name: "device_transfer"
+    requires: "deviceops/site_management"
+    requires: "deviceops/device_management"
+  };
+
+  rpc TransferDevice(TransferDeviceRequest) returns (DeviceDTO) {
+    option (google.api.http) = { patch: "/v1/devices/{id}/transfer" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "device.transfer"
+      use_case: "transfer_device"
+      permissions: "site.read"
+      permissions: "device.update"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      requires_operations: "site.validate_transfer_target"
+      requires_operations: "device.update"
+      composition: COMPOSITION_LOCAL
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };
   }
