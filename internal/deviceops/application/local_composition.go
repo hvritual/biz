@@ -7,15 +7,17 @@ import (
 
 	deviceopsv1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
 	"github.com/hvritual/biz/internal/deviceops/domain"
-	devicepersistence "github.com/hvritual/biz/internal/deviceops/infrastructure/persistence"
+	"github.com/hvritual/biz/internal/deviceops/ports"
 	"yunka.io/framework/requestscope"
 )
 
+type localTransferRepositories = requestscope.Pair[ports.ScopedDeviceRepository, ports.SiteRepository]
+
 type LocalTransferService struct {
-	scopes requestscope.ScopeFactory[devicepersistence.LocalTransferRepositories]
+	scopes requestscope.ScopeFactory[localTransferRepositories]
 }
 
-func NewLocalTransferService(scopes requestscope.ScopeFactory[devicepersistence.LocalTransferRepositories]) (*LocalTransferService, error) {
+func NewLocalTransferService(scopes requestscope.ScopeFactory[localTransferRepositories]) (*LocalTransferService, error) {
 	if scopes == nil {
 		return nil, errors.New("deviceops local transfer: request scope factory is required")
 	}
@@ -28,7 +30,7 @@ func (service *LocalTransferService) Transfer(ctx context.Context, request *devi
 	if request == nil || strings.TrimSpace(request.GetId()) == "" || strings.TrimSpace(request.GetSiteId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalid
 	}
-	device, err := requestscope.ExecuteValue(ctx, service.scopes, func(scope *requestscope.Scope[devicepersistence.LocalTransferRepositories]) (domain.Device, error) {
+	device, err := requestscope.ExecuteValue(ctx, service.scopes, func(scope *requestscope.Scope[localTransferRepositories]) (domain.Device, error) {
 		repositories := scope.Repositories()
 		current, err := repositories.First.GetVisible(scope.Context(), strings.TrimSpace(request.GetId()))
 		if err != nil {
