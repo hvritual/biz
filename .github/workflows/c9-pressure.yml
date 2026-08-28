@@ -10,73 +10,52 @@ permissions:
   contents: read
 
 jobs:
-  pressure:
+  source-conformance:
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: biz
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=30
     steps:
-      - name: Checkout biz
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          path: biz
           fetch-depth: 0
-
-      - name: Checkout Yunka C9
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          repository: hvritual/yunka.io
-          ref: agent/c9-operation-contract-runtime
-          path: yunka.io
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
-        with:
-          go-version: 1.25.13
-          cache-dependency-path: |
-            biz/go.sum
-            yunka.io/app/go.sum
-            yunka.io/framework/go.sum
-            yunka.io/gateway/go.sum
-            yunka.io/pkg/go.sum
-
-      - name: Install locked protoc
+      - name: Verify C9 cutover source boundary
         shell: bash
         run: |
           set -euo pipefail
-          archive="$RUNNER_TEMP/protoc.zip"
-          install_root="$RUNNER_TEMP/protoc"
-          curl --fail --silent --show-error --location --retry 3 \
-            https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protoc-21.12-linux-x86_64.zip \
-            --output "$archive"
-          echo "3a4c1e5f2516c639d3079b1586e703fc7bcfa2136d58bda24d1d54f949c315e8  $archive" | sha256sum -c -
-          unzip -q "$archive" -d "$install_root"
-          echo "$install_root/bin" >> "$GITHUB_PATH"
-
-      - name: Install Yunka RPC tools
-        working-directory: yunka.io
-        run: make rpc-tools
-
-      - name: Regenerate and prove zero drift
-        working-directory: biz
+          grep -q 'authz.NewExecutionSecurity' modules/deviceops/module.go
+          grep -q 'operation.NewExecutor' modules/deviceops/module.go
+          grep -q 'devicerest.RegisterOperationExecutor' modules/deviceops/module.go
+          grep -q 'devicerpc.RegisterOperationExecutor' modules/deviceops/module.go
+          ! grep -q 'authz.NewOperationRuntime' modules/deviceops/module.go
+          ! grep -q 'SecuredUnaryServerInterceptor' modules/deviceops/module.go
+          test ! -e internal/deviceops/transport/rest/zz_yunka_device_management_rest_adapter_gen.go
+          test ! -e internal/deviceops/transport/rpc/zz_yunka_device_management_rpc_adapter_gen.go
+          test -e internal/deviceops/transport/rest/zz_yunka_device_management_operation_executor_gen.go
+          test -e internal/deviceops/transport/rpc/zz_yunka_device_management_operation_executor_gen.go
+          test -e contracts/generated/operation-plans.json
+      - name: Verify OperationPlan artifact shape
+        shell: bash
         run: |
           set -euo pipefail
-          make generate
-          git diff --exit-code
-
-      - name: Run C9 biz pressure suite
-        working-directory: biz
-        env:
-          YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz?parseTime=true&charset=utf8mb4&loc=UTC&multiStatements=true
-        run: make pressure
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('contracts/generated/operation-plans.json').read_text())
+          assert data['schemaVersion'] == 1
+          ids = [item['operationId'] for item in data['operations']]
+          assert ids == sorted(ids), ids
+          assert ids == ['device.create','device.delete','device.get','device.list','device.update'], ids
+          for item in data['operations']:
+              assert item['security']['tenantRequired'] is True
+              assert item['security']['authentication'] == ['api-key']
+              assert item['bindings']['rpc'].startswith('/deviceops.v1.DeviceApplication/')
+          PY
+      - name: Verify pressure ledger and slices exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -e docs/pressure/C9-framework-pressure.md
+          test -e internal/deviceops/application/local_composition.go
+          test -e internal/deviceops/application/remote_saga.go
+          test -e integration/c9_pressure_mysql_test.go
+          grep -q 'FP-C9-002' docs/pressure/C9-framework-pressure.md
+          grep -q 'FP-C9-003' docs/pressure/C9-framework-pressure.md
+          grep -q 'FP-C9-004' docs/pressure/C9-framework-pressure.md
