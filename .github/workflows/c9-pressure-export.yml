@@ -5,6 +5,7 @@ on:
     branches:
       - agent/c9-biz-pressure-conformance
       - agent/c9-7-biz-conformance
+      - agent/c9-8-cross-application-conformance
 
 permissions:
   contents: read
