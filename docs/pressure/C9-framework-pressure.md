@@ -124,6 +124,33 @@ The parent pressure plan declares `composition=remote_saga`, but concrete Saga s
 
 ---
 
+### FP-C9-006 — Child Application Operation + one shared local UoW has no proven composition seam
+
+**Observed while validating:** Local Device Transfer design against C8.7 semantics.
+
+C8.7 defines two separate mechanisms:
+
+- `requires_operations` means a real internal Operation dependency and drives permission closure;
+- `requestscope.Compose2/Compose3` means heterogeneous repository composition over one UoW.
+
+The current Local Transfer slice is deliberately the second form, so it **does not** declare a fake `device.get` child Operation. If the business instead needs to call a child Application Operation through its generated capability port while keeping parent + child repository work inside one local transaction, the current Application methods each own their own `requestscope.Execute` lifecycle and no shared execution-scope seam has yet been proven.
+
+**Escape used now:** none; the pressure suite uses repository-level local composition correctly.
+
+**Why record it:** attempting to claim `requires_operations=device.get` without actually invoking that Operation would make the graph and permission closure factually wrong. The absence of a shared child-Operation/UoW model is therefore a real future pressure point, not something to paper over with metadata.
+
+**Classification:** P1 design pressure; promote only when a real cross-Application use case requires both typed child Operation invocation and one local transaction.
+
+**Candidate direction:** if repeated, child capability execution should join an explicit current ExecutionScope/UoW rather than open a second requestscope or rely on a service locator.
+
+---
+
+## CI infrastructure note — not Framework Pressure
+
+The first cross-repository GitHub Actions gate failed before build because the repository-scoped `GITHUB_TOKEN` from private `hvritual/biz` cannot checkout private `hvritual/yunka.io`; GitHub returns `Repository not found` for the second checkout. This is an Actions credential boundary, not a Yunka runtime/framework defect and is intentionally excluded from the pressure count.
+
+A fully automatic two-private-repository gate therefore needs an explicitly authorized cross-repository GitHub App/PAT credential, or an equivalent trusted CI orchestration mechanism. The source-level sibling-workspace pressure contract remains unchanged.
+
 ## Pressure summary
 
 | ID | Pressure | Severity | Repeated | C9.7 candidate |
@@ -133,6 +160,7 @@ The parent pressure plan declares `composition=remote_saga`, but concrete Saga s
 | FP-C9-003 | repeated manual requestscope transaction lifecycle | P0 | 7+ use cases | **yes** |
 | FP-C9-004 | parent Operation idempotency missing | P0 | command class | **yes** |
 | FP-C9-005 | Saga topology absent from graph | P1 | 1 slice | later |
+| FP-C9-006 | child Operation + shared local UoW seam unproven | P1 | design probe | later |
 
 ## Current recommendation
 
