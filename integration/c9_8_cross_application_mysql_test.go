@@ -55,10 +55,10 @@ func (observer *c98Observer) snapshot() (int, map[string]int) {
 }
 
 type countingTransactionFactory struct {
-	inner execution.TransactionFactory
-	mu    sync.Mutex
-	begin int
-	commit int
+	inner    execution.TransactionFactory
+	mu       sync.Mutex
+	begin    int
+	commit   int
 	rollback int
 }
 
@@ -103,6 +103,16 @@ func (unit *countingUnit) Rollback(ctx context.Context) error {
 }
 
 func (unit *countingUnit) Close() error { return unit.inner.Close() }
+
+// GORM preserves the repository capability of the wrapped root UoW. The
+// wrapper exists only to count lifecycle calls and must otherwise be transparent.
+func (unit *countingUnit) GORM() *gorm.DB {
+	provider, ok := unit.inner.(requestscope.GORMUnitOfWork)
+	if !ok || provider == nil {
+		return nil
+	}
+	return provider.GORM()
+}
 
 func (unit *countingUnit) TransactionHandle() any {
 	provider, ok := unit.inner.(execution.TransactionHandleProvider)
