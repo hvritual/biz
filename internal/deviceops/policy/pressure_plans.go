@@ -23,6 +23,7 @@ func LocalTransferPressurePlan() operationplan.Plan {
 		UseCase:      "transfer_device_local",
 		RequestType:  "deviceops.v1.UpdateDeviceRequest",
 		ResponseType: "deviceops.v1.DeviceDTO",
+		Execution:    operationplan.Execution{Transaction: "local", Idempotency: "none"},
 		Security: operationplan.Security{
 			TenantRequired: true,
 			Authentication: []string{"api-key"},
@@ -44,6 +45,7 @@ func RemoteProvisionPressurePlan() operationplan.Plan {
 		UseCase:      "provision_device_remote",
 		RequestType:  "deviceops.v1.CreateDeviceRequest",
 		ResponseType: "deviceops.v1.DeviceDTO",
+		Execution:    operationplan.Execution{Transaction: "local", Idempotency: "required"},
 		Security: operationplan.Security{
 			TenantRequired: true,
 			Authentication: []string{"api-key"},

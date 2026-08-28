@@ -72,6 +72,7 @@ func postDevice(t *testing.T, base, token, site, name, serial string) map[string
 	req, _ := http.NewRequest(http.MethodPost, base+"/v1/devices", bytes.NewReader(payload))
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Idempotency-Key", "create:"+serial)
 	resp, err := (&http.Client{Timeout: 5 * time.Second}).Do(req)
 	if err != nil {
 		t.Fatal(err)

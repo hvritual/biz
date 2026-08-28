@@ -14,23 +14,23 @@ import (
 type localTransferRepositories = requestscope.Pair[ports.ScopedDeviceRepository, ports.SiteRepository]
 
 type LocalTransferService struct {
-	scopes requestscope.ScopeFactory[localTransferRepositories]
+	repositories requestscope.RepositoryFactory[localTransferRepositories]
 }
 
-func NewLocalTransferService(scopes requestscope.ScopeFactory[localTransferRepositories]) (*LocalTransferService, error) {
-	if scopes == nil {
-		return nil, errors.New("deviceops local transfer: request scope factory is required")
+func NewLocalTransferService(repositories requestscope.RepositoryFactory[localTransferRepositories]) (*LocalTransferService, error) {
+	if repositories == nil {
+		return nil, errors.New("deviceops local transfer: repository factory is required")
 	}
-	return &LocalTransferService{scopes: scopes}, nil
+	return &LocalTransferService{repositories: repositories}, nil
 }
 
 // Transfer moves one visible device to an existing site. Both repository ports
-// are backed by the same request-owned UnitOfWork composed by requestscope.Compose2.
+// are backed by the same root ExecutionScope UnitOfWork composed by requestscope.Compose2.
 func (service *LocalTransferService) Transfer(ctx context.Context, request *deviceopsv1.UpdateDeviceRequest) (*deviceopsv1.DeviceDTO, error) {
 	if request == nil || strings.TrimSpace(request.GetId()) == "" || strings.TrimSpace(request.GetSiteId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalid
 	}
-	device, err := requestscope.ExecuteValue(ctx, service.scopes, func(scope *requestscope.Scope[localTransferRepositories]) (domain.Device, error) {
+	device, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[localTransferRepositories]) (domain.Device, error) {
 		repositories := scope.Repositories()
 		current, err := repositories.First.GetVisible(scope.Context(), strings.TrimSpace(request.GetId()))
 		if err != nil {

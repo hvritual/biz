@@ -72,25 +72,34 @@ func (repository *DeviceRepository) GetVisible(ctx context.Context, id string) (
 	return row.Domain(), nil
 }
 
+func NewScopedRepositoryFactory(database *gorm.DB) (requestscope.RepositoryFactory[ports.ScopedRepositories], error) {
+	if database == nil {
+		return nil, errors.New("deviceops persistence: database is required")
+	}
+	return requestscope.GORMRepositories(func(ctx context.Context, transaction *gorm.DB) (ports.ScopedRepositories, error) {
+		devices, err := NewDeviceRepository(transaction)
+		if err != nil {
+			return ports.ScopedRepositories{}, err
+		}
+		sites, err := NewSiteRepository(transaction)
+		if err != nil {
+			return ports.ScopedRepositories{}, err
+		}
+		return ports.ScopedRepositories{Device: devices, Site: sites}, nil
+	}), nil
+}
+
+// NewScopedScopeFactory remains a compatibility seam for pre-C9.7 callers.
 func NewScopedScopeFactory(database *gorm.DB) (requestscope.ScopeFactory[ports.ScopedRepositories], error) {
 	unit, err := requestscope.NewGORMFactory(database, nil)
 	if err != nil {
 		return nil, err
 	}
-	return requestscope.NewFactory(requestscope.FactoryOptions[ports.ScopedRepositories]{
-		UnitOfWork: unit,
-		Repositories: requestscope.GORMRepositories(func(ctx context.Context, transaction *gorm.DB) (ports.ScopedRepositories, error) {
-			devices, err := NewDeviceRepository(transaction)
-			if err != nil {
-				return ports.ScopedRepositories{}, err
-			}
-			sites, err := NewSiteRepository(transaction)
-			if err != nil {
-				return ports.ScopedRepositories{}, err
-			}
-			return ports.ScopedRepositories{Device: devices, Site: sites}, nil
-		}),
-	})
+	repositories, err := NewScopedRepositoryFactory(database)
+	if err != nil {
+		return nil, err
+	}
+	return requestscope.NewFactory(requestscope.FactoryOptions[ports.ScopedRepositories]{UnitOfWork: unit, Repositories: repositories})
 }
 
 func EnsureIndexes(database *gorm.DB) error {

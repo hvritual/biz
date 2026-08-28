@@ -70,6 +70,8 @@ The atomicity guarantee is correct, but the Application is forced to know that i
 
 **Escape used:** explicit `GORMFrom` call in `ProvisioningService`.
 
+**C9.7 status:** closed by `saga.Stager` joining the root `ExecutionScope`; Application no longer obtains GORM or a transaction handle.
+
 **Classification:** P0 framework-mechanism pressure for the stated Yunka goal that Application should own use-case/business logic rather than transaction plumbing.
 
 **Candidate direction:** an execution-scope/transaction capability that lets Saga/Outbox stage against the current UoW without exposing the concrete database adapter to Application.
@@ -86,6 +88,8 @@ Even after C9 transport/security convergence, every transactional Application me
 
 **Escape used:** repeated requestscope lifecycle code in Application.
 
+**C9.7 status:** closed by explicit PB transaction policy + Executor-owned `ExecutionScope`; Application uses `requestscope.Join*` only.
+
 **Classification:** P0 repeated pressure and direct input to C9.7.
 
 **Candidate direction:** explicit PB execution policy / Operation Profile for `none`, `read_only`, or `local` transaction semantics, compiled into the immutable OperationPlan and executed by a fixed Executor phase.
@@ -101,6 +105,8 @@ Even after C9 transport/security convergence, every transactional Application me
 `saga.Plan.IdempotencyKey` deterministically deduplicates step envelopes, but the parent Operation can still repeat the local business write before/around Saga staging. The pressure slice currently has a business uniqueness constraint on `(tenant_id, serial)`, which prevents duplicate Device rows but is not a general Operation idempotency contract and does not replay the original result.
 
 **Escape used:** business unique key acts as accidental duplicate suppression.
+
+**C9.7 status:** mechanism closed for duplicate suppression with explicit Operation policy; response replay remains intentionally outside this pressure contract.
 
 **Classification:** P0 repeated command-safety pressure and direct C9.7 candidate.
 

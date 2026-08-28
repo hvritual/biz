@@ -23,7 +23,9 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"yunka.io/framework/core/identity"
+	"yunka.io/framework/execution"
 	"yunka.io/framework/operation"
+	"yunka.io/framework/requestscope"
 	"yunka.io/gateway/authz"
 )
 
@@ -108,12 +110,20 @@ func (module *Module) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	executor := operation.NewExecutor(security)
-	scopes, err := devicepersistence.NewScopedScopeFactory(module.dependencies.PrimaryDatabase)
+	transactions, err := requestscope.NewGORMExecutionFactory(module.dependencies.PrimaryDatabase)
 	if err != nil {
 		return err
 	}
-	service, err := deviceapp.NewService(scopes)
+	idempotency, err := execution.NewIdempotencyCoordinator(execution.NewMemoryIdempotencyStore())
+	if err != nil {
+		return err
+	}
+	executor := operation.NewExecutorWithOptions(security, operation.ExecutorOptions{Transactions: transactions, Idempotency: idempotency})
+	repositories, err := devicepersistence.NewScopedRepositoryFactory(module.dependencies.PrimaryDatabase)
+	if err != nil {
+		return err
+	}
+	service, err := deviceapp.NewService(repositories)
 	if err != nil {
 		return err
 	}
