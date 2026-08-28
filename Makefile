@@ -8,7 +8,7 @@ PROTOC_GEN_GO ?= $(YUNKA_ROOT)/.yunka/bin/protoc-gen-go
 PROTOC_GEN_GO_GRPC ?= $(YUNKA_ROOT)/.yunka/bin/protoc-gen-go-grpc
 PROTOC_INCLUDE ?=
 
-.PHONY: generate check test verify run
+.PHONY: generate check test verify pressure run
 
 generate:
 	@cd $(YUNKA_APP) && go run ./cmd init --root $(CURDIR) --db-prefix biz
@@ -32,6 +32,10 @@ test:
 verify: check test
 	@go vet ./...
 	@go build ./...
+
+pressure: verify
+	@: "$${YUNKA_TEST_MYSQL_DSN:?YUNKA_TEST_MYSQL_DSN is required for biz pressure tests}"
+	@go test -count=1 -tags=integration ./integration
 
 run:
 	@go run ./cmd/biz
