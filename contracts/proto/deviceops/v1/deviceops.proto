@@ -129,14 +129,13 @@ service DeviceApplication {
   }
 }
 
-// SiteApplication intentionally exposes no HTTP binding for the transfer-target
-// child use case. It is still a protobuf RPC because OperationDeclaration is a
-// method option today; C9.8 records that contract pressure as FP-C9-001 evidence.
+// SiteApplication declares an internal canonical Operation without exposing a
+// protobuf RPC method. The Operation remains available to typed child
+// capabilities, OperationPlan, and Application Graph only.
 service SiteApplication {
-  option (yunka.dsl.v1.application) = { name: "site_management" };
-
-  rpc ValidateTransferTarget(ValidateTransferTargetRequest) returns (SiteDTO) {
-    option (yunka.dsl.v1.operation) = {
+  option (yunka.dsl.v1.application) = {
+    name: "site_management"
+    operations: {
       id: "site.validate_transfer_target"
       use_case: "validate_transfer_target"
       permissions: "site.read"
@@ -144,8 +143,11 @@ service SiteApplication {
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
       execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
-    };
-  }
+      request_type: "deviceops.v1.ValidateTransferTargetRequest"
+      response_type: "deviceops.v1.SiteDTO"
+      application_method: "ValidateTransferTarget"
+    }
+  };
 }
 
 service DeviceTransferApplication {
