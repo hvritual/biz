@@ -2,177 +2,163 @@
 
 ## Purpose
 
-This ledger records only pressure discovered while migrating the real `hvritual/biz` DeviceOps application from C8.5 `OperationRuntime` to Yunka PR #31 (`OperationPlan + Unified Executor`) and while adding two real business slices:
+This ledger records pressure discovered while migrating the real `hvritual/biz` DeviceOps application from C8.5 `OperationRuntime` to C9 `OperationPlan + Unified Executor`, and while exercising two real business slices:
 
 1. local Device Transfer composition;
 2. remote Device Provisioning Saga/Outbox.
 
-A pressure item is not automatically a framework feature request. It becomes a C9.7 candidate only when the same mechanism pressure repeats across real use cases and can be expressed as a framework invariant without importing business semantics into Yunka.
+Pressure is evidence, not an automatic feature request. A mechanism is promoted into Yunka only when it can be expressed as a reusable execution invariant without importing business semantics into the framework.
 
-## Baseline
+## Current validated baseline
 
-- Yunka: PR #31, branch `agent/c9-operation-contract-runtime`, C9.1-C9.6.
-- Biz: branch `agent/c9-biz-pressure-conformance`.
-- Existing business boundary: Access/IAM + DeviceOps + MySQL 8.4 + REST + gRPC + typed requestscope.
+- Yunka C9.7 branch: `agent/c9-7-execution-semantics`.
+- Biz C9.7 branch: `agent/c9-7-biz-conformance`.
+- Real conformance control run: `33172479345`.
+- Runtime database: MySQL 8.4.11.
+- The control run passed C9.7 contract regeneration, `make verify`, Local Composition, Saga/Outbox atomicity, durable Operation idempotency and `make pressure`.
+- Regeneration produced only deterministic generated-file drift; no handwritten Application/business source drift was required.
 
 ## Positive conformance evidence
 
 | Area | Result | Escape count |
 |---|---|---:|
-| Existing DeviceOps REST migration | `OperationRuntime.Prepare` replaced by generated `RegisterOperationExecutor` | 0 |
-| Existing DeviceOps gRPC migration | security interceptor removed; generated gRPC adapter calls the same Executor | 0 |
-| IAM authorization | existing `GrantAuthorizer` adapts through `NewExecutionSecurity` | 0 |
-| Domain data scope | existing Device `OperationGuard` and typed scope context remain unchanged | 0 |
-| Application authorization | Application contains no role/permission evaluation after migration | 0 |
-| Local repository composition | `requestscope.Compose2` builds Device + Site ports over one UoW | 0 |
-| Saga/Outbox atomic rollback | framework Outbox/Saga rolls back the local business write when enqueue fails | 0 for atomicity |
+| REST migration | generated transport enters the shared C9 Executor | 0 |
+| gRPC migration | generated transport enters the same C9 Executor | 0 |
+| Authorization | `GrantAuthorizer` is adapted through `NewExecutionSecurity` | 0 |
+| Application authorization | no role/permission evaluation in Application | 0 |
+| Transaction lifecycle | Root Executor owns transaction/UoW; Application uses `requestscope.Join*` | 0 |
+| Local repository composition | `Compose2` joins repositories to the root UoW | 0 |
+| Child execution runtime | child execution joins the active `ExecutionScope` without a nested transaction | 0 framework escape |
+| Saga/Outbox | `saga.Stager` joins the active local transaction | 0 |
+| Application persistence coupling | no `requestscope.GORMFrom`, `gorm.io/gorm`, or transaction handle in Application | 0 |
+| Operation idempotency | durable store + lease/fencing + atomic success marker | 0 framework escape |
 
 ## Pressure items
 
-### FP-C9-001 — Internal-only Operation cannot be canonical PB without becoming RPC
+### FP-C9-001 — Internal-only Operation cannot yet be canonical PB without an RPC method
 
-**Observed in:** Local Device Transfer and remote Device Provisioning pressure slices.
+**Observed in:** Local Device Transfer and Device Provisioning pressure slices.
 
-`OperationDeclaration` is currently a protobuf method option. A business orchestration operation that should exist in the execution model but should not itself be an externally callable RPC has no canonical declaration surface. The pressure suite therefore has to construct two `operationplan.Plan` values in ordinary Go.
+The pressure Operations can execute through the C9 runtime, but their canonical declaration is still handwritten `operationplan.Plan` because the current PB declaration surface is method-option based.
 
-**Escape used:**
+**Status:** OPEN.
 
-```text
-business pressure use case
-    -> handwritten operationplan.Plan
-    -> OperationExecutor
-```
+**Severity:** P1.
 
-**Why this matters:** the Executor can run the use case correctly, but Contract Compiler / generated artifact / Application Graph do not own that internal Operation as PB-derived evidence.
+**Why it remains open:** C9.7 intentionally did not invent fake external endpoints merely to obtain a canonical internal Operation declaration.
 
-**Classification:** P1 design pressure, not a merge blocker.
-
-**Do not solve by:** inventing fake public HTTP routes or inferring operations from method names.
-
-**Candidate direction:** an explicit internal Operation declaration/profile that remains compiler-owned and does not imply an external transport binding.
+**Candidate direction:** compiler-owned internal Operation declarations with stable OperationID and optional/no external binding.
 
 ---
 
-### FP-C9-002 — Saga atomic staging leaks adapter-specific transaction into Application
+### FP-C9-002 — Saga atomic staging leaked adapter-specific transaction into Application
 
-**Observed in:** Device Provisioning Saga/Outbox.
-
-To guarantee `business row + outbox rows` atomicity, Application code currently must perform:
+Previous escape:
 
 ```text
 Scope.UnitOfWork()
-    -> requestscope.GORMFrom(...)
-    -> *gorm.DB
-    -> saga.EnqueueTx(...)
+  -> requestscope.GORMFrom(...)
+  -> *gorm.DB
+  -> saga.EnqueueTx(...)
 ```
 
-The atomicity guarantee is correct, but the Application is forced to know that its request UoW is GORM-backed and to pass an adapter-specific transaction handle to the framework Saga/Outbox mechanism.
+**C9.7 resolution:** `saga.Stager` obtains the current transaction capability from the root `ExecutionScope`; Application no longer sees GORM or a concrete transaction handle.
 
-**Escape used:** explicit `GORMFrom` call in `ProvisioningService`.
+The real MySQL pressure gate verifies business-row + Outbox atomic rollback.
 
-**C9.7 status:** closed by `saga.Stager` joining the root `ExecutionScope`; Application no longer obtains GORM or a transaction handle.
+**Status:** CLOSED.
 
-**Classification:** P0 framework-mechanism pressure for the stated Yunka goal that Application should own use-case/business logic rather than transaction plumbing.
-
-**Candidate direction:** an execution-scope/transaction capability that lets Saga/Outbox stage against the current UoW without exposing the concrete database adapter to Application.
-
-**Constraint:** must preserve the existing hard invariant that business write and outbox write use exactly the same transaction.
+**Severity:** P0 resolved.
 
 ---
 
-### FP-C9-003 — Executor does not own explicit transaction policy
+### FP-C9-003 — Application manually owned requestscope transaction lifecycle
 
-**Observed in:** all five existing DeviceOps methods plus Local Transfer and Provisioning.
+Previous escape: repeated `requestscope.Execute` / `ExecuteValue` across DeviceOps use cases.
 
-Even after C9 transport/security convergence, every transactional Application method still manually calls `requestscope.Execute` or `ExecuteValue`. This is repeated framework plumbing across query and command use cases.
+**C9.7 resolution:** PB declares explicit transaction policy (`none`, `read_only`, `local`), Compiler places it into immutable OperationPlan v2, Root Executor owns transaction/UoW lifecycle, and Application uses join-only repository views.
 
-**Escape used:** repeated requestscope lifecycle code in Application.
+**Status:** CLOSED.
 
-**C9.7 status:** closed by explicit PB transaction policy + Executor-owned `ExecutionScope`; Application uses `requestscope.Join*` only.
-
-**Classification:** P0 repeated pressure and direct input to C9.7.
-
-**Candidate direction:** explicit PB execution policy / Operation Profile for `none`, `read_only`, or `local` transaction semantics, compiled into the immutable OperationPlan and executed by a fixed Executor phase.
-
-**Constraint:** transaction policy must be explicit. Yunka must not infer transactionality from HTTP verb, method name, or `COMMAND` naming.
+**Severity:** P0 resolved.
 
 ---
 
-### FP-C9-004 — Saga step idempotency does not make the parent Operation idempotent
+### FP-C9-004 — Saga idempotency did not make the parent Operation idempotent
 
-**Observed in:** Device Provisioning.
+Previous state: deterministic Saga envelope IDs prevented duplicate remote steps, but the parent command could still repeat local business work.
 
-`saga.Plan.IdempotencyKey` deterministically deduplicates step envelopes, but the parent Operation can still repeat the local business write before/around Saga staging. The pressure slice currently has a business uniqueness constraint on `(tenant_id, serial)`, which prevents duplicate Device rows but is not a general Operation idempotency contract and does not replay the original result.
+**C9.7 resolution:** explicit Operation-level idempotency policy plus durable MySQL-backed record keyed by tenant + OperationID + hashed idempotency key. The implementation provides running/succeeded/failed state, lease takeover, fencing attempt protection, and stages the success marker inside the same local business transaction before commit.
 
-**Escape used:** business unique key acts as accidental duplicate suppression.
+The real Biz pressure test verifies that the same Provisioning idempotency key is rejected after the first successful execution.
 
-**C9.7 status:** mechanism closed for duplicate suppression with explicit Operation policy; response replay remains intentionally outside this pressure contract.
+**Status:** CLOSED for duplicate execution suppression and crash-window-safe success persistence.
 
-**Classification:** P0 repeated command-safety pressure and direct C9.7 candidate.
+**Explicit non-goal:** response/result replay is not claimed by C9.7.
 
-**Candidate direction:** explicit Operation idempotency policy with durable begin/complete/result semantics integrated with transaction/outbox ordering.
-
-**Constraint:** do not treat Saga envelope IDs as a substitute for parent command idempotency.
+**Severity:** P0 resolved for the C9.7 contract.
 
 ---
 
-### FP-C9-005 — Remote Saga step topology is invisible to OperationPlan-backed Graph
+### FP-C9-005 — Remote Saga step topology is not visible in the OperationPlan-backed graph
 
-**Observed in:** Device Provisioning.
+The parent Operation can declare `composition=remote_saga`, but concrete Saga steps, effect types/topics and compensations remain handwritten business facts in `saga.Plan` and are not yet represented as safe graph evidence.
 
-The parent pressure plan declares `composition=remote_saga`, but concrete Saga steps, command topics/types, and compensations are handwritten business facts in `saga.Plan`. C9.6 Application Graph therefore knows that the Operation is remote-composite but cannot show what remote effects are staged.
+**Status:** OPEN.
 
-**Escape used:** no runtime bypass; this is a control-plane evidence gap.
+**Severity:** P1.
 
-**Classification:** P1 observability/impact-analysis pressure.
-
-**Candidate direction:** let Saga expose safe declared/observed graph evidence through a framework adapter, without moving business step payloads or workflow semantics into PB.
+**Candidate direction:** expose safe declared/observed Saga topology evidence without moving business payloads or compensation semantics into PB.
 
 ---
 
-### FP-C9-006 — Child Application Operation + one shared local UoW has no proven composition seam
+### FP-C9-006 — Child Application Operation + shared local UoW needed a framework seam
 
-**Observed while validating:** Local Device Transfer design against C8.7 semantics.
+C9.7 now provides the framework mechanism:
 
-C8.7 defines two separate mechanisms:
+```text
+Root Operation
+  -> one authorization
+  -> one ExecutionScope / UoW
+  -> ExecuteChildTyped
+  -> child joins root transaction
+```
 
-- `requires_operations` means a real internal Operation dependency and drives permission closure;
-- `requestscope.Compose2/Compose3` means heterogeneous repository composition over one UoW.
+Generated capability code is required to route child invocation through `ExecuteChildTyped`; `JoinChild` prevents undeclared children and transaction-policy escalation.
 
-The current Local Transfer slice is deliberately the second form, so it **does not** declare a fake `device.get` child Operation. If the business instead needs to call a child Application Operation through its generated capability port while keeping parent + child repository work inside one local transaction, the current Application methods each own their own `requestscope.Execute` lifecycle and no shared execution-scope seam has yet been proven.
+**Status:** PARTIAL / mechanism closed, business proof still open.
 
-**Escape used now:** none; the pressure suite uses repository-level local composition correctly.
+**Why partial:** the runtime seam and architecture gate exist, but the current real Biz Local Transfer slice remains intentionally repository-level composition. A second real cross-Application business slice has not yet demonstrated the generated child capability end-to-end.
 
-**Why record it:** attempting to claim `requires_operations=device.get` without actually invoking that Operation would make the graph and permission closure factually wrong. The absence of a shared child-Operation/UoW model is therefore a real future pressure point, not something to paper over with metadata.
-
-**Classification:** P1 design pressure; promote only when a real cross-Application use case requires both typed child Operation invocation and one local transaction.
-
-**Candidate direction:** if repeated, child capability execution should join an explicit current ExecutionScope/UoW rather than open a second requestscope or rely on a service locator.
+**Severity:** P1 validation debt, not a C9.7 blocker.
 
 ---
 
 ## CI infrastructure note — not Framework Pressure
 
-The first cross-repository GitHub Actions gate failed before build because the repository-scoped `GITHUB_TOKEN` from private `hvritual/biz` cannot checkout private `hvritual/yunka.io`; GitHub returns `Repository not found` for the second checkout. This is an Actions credential boundary, not a Yunka runtime/framework defect and is intentionally excluded from the pressure count.
+Private repository-scoped `GITHUB_TOKEN` cannot directly checkout the sibling private repository. This is a GitHub Actions credential boundary, not a Yunka runtime defect.
 
-A fully automatic two-private-repository gate therefore needs an explicitly authorized cross-repository GitHub App/PAT credential, or an equivalent trusted CI orchestration mechanism. The source-level sibling-workspace pressure contract remains unchanged.
+C9.7 validation therefore used an exact source artifact bridge. The successful control run still materialized the real Biz sibling workspace, regenerated it with the current Yunka compiler, ran normal verification and executed MySQL 8.4 pressure tests. This infrastructure workaround is excluded from Framework Escape Count.
 
-## Pressure summary
+## Pressure summary after C9.7
 
-| ID | Pressure | Severity | Repeated | C9.7 candidate |
-|---|---|---:|---:|---:|
-| FP-C9-001 | internal-only Operation declaration | P1 | 2 slices | maybe |
-| FP-C9-002 | GORM transaction leak for Saga staging | P0 | 1 strong slice | yes |
-| FP-C9-003 | repeated manual requestscope transaction lifecycle | P0 | 7+ use cases | **yes** |
-| FP-C9-004 | parent Operation idempotency missing | P0 | command class | **yes** |
-| FP-C9-005 | Saga topology absent from graph | P1 | 1 slice | later |
-| FP-C9-006 | child Operation + shared local UoW seam unproven | P1 | design probe | later |
+| ID | Pressure | Severity | C9.7 status |
+|---|---|---:|---|
+| FP-C9-001 | canonical internal-only Operation declaration | P1 | OPEN |
+| FP-C9-002 | concrete transaction leak for Saga staging | P0 | **CLOSED** |
+| FP-C9-003 | Application-owned transaction/requestscope lifecycle | P0 | **CLOSED** |
+| FP-C9-004 | parent Operation durable idempotency | P0 | **CLOSED for duplicate suppression** |
+| FP-C9-005 | Saga topology absent from graph | P1 | OPEN |
+| FP-C9-006 | child Operation + shared local UoW | P1 | PARTIAL: framework seam closed, second real business proof pending |
 
-## Current recommendation
+## Post-C9.7 recommendation
 
-Do not expand C9 DSL merely because these entries exist. The strongest evidence now supports two C9.7 mechanisms first:
+Do not extend C9.7 further to absorb the remaining P1 items. C9.7 has closed the strongest execution-mechanism escapes: transaction ownership, Saga transaction leakage and durable parent-operation idempotency.
 
-1. **explicit transaction/execution-scope policy**;
-2. **Operation-level idempotency** integrated with the same execution scope and Outbox ordering.
+The remaining work should become later pressure-led waves:
 
-Audit remains useful but has not yet been forced by these two business slices. It should not outrank mechanisms that already produced concrete escape code.
+1. canonical internal Operation declaration only when real internal Operations need compiler ownership;
+2. Saga graph evidence when operational impact analysis needs step-level visibility;
+3. a second real cross-Application local-composition slice to turn FP-C9-006 from mechanism proof into business proof.
+
+Audit, cache policy, distributed transaction/2PC, BPMN and generic workflow/data-scope models remain outside this pressure contract.
