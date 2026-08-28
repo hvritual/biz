@@ -106,6 +106,10 @@ func (guard *Guard) Prepare(ctx context.Context, authorized authz.AuthorizedOper
 		if siteID := strings.TrimSpace(request.GetSiteId()); siteID != "" && !scope.AllowsSite(siteID) {
 			return nil, denied(authorized)
 		}
+	case *deviceopsv1.TransferDeviceRequest:
+		if siteID := strings.TrimSpace(request.GetTargetSiteId()); siteID != "" && !scope.AllowsSite(siteID) {
+			return nil, denied(authorized)
+		}
 	}
 	return WithScope(ctx, scope), nil
 }
