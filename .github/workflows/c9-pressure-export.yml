@@ -1,0 +1,33 @@
+name: c9-biz-pressure-export
+
+on:
+  push:
+    branches:
+      - agent/c9-biz-pressure-conformance
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Build source payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          git archive --format=tar.gz --output="$RUNNER_TEMP/biz-c9-pressure.tar.gz" HEAD
+          sha256sum "$RUNNER_TEMP/biz-c9-pressure.tar.gz" > "$RUNNER_TEMP/biz-c9-pressure.tar.gz.sha256"
+      - name: Upload source payload
+        uses: actions/upload-artifact@v4
+        with:
+          name: biz-c9-pressure-source
+          path: |
+            ${{ runner.temp }}/biz-c9-pressure.tar.gz
+            ${{ runner.temp }}/biz-c9-pressure.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 1
