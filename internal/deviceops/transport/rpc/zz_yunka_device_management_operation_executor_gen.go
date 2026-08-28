@@ -9,6 +9,8 @@ import (
 	application "github.com/hvritual/biz/internal/deviceops/application"
 	policy "github.com/hvritual/biz/internal/deviceops/policy"
 	grpc "google.golang.org/grpc"
+	grpcmetadata "google.golang.org/grpc/metadata"
+	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	gatewaygrpc "yunka.io/gateway/rpc/transport/grpc"
 )
@@ -34,6 +36,11 @@ func RegisterOperationExecutor(registrar grpc.ServiceRegistrar, application appl
 }
 
 func (server *OperationServer) CreateDevice(ctx context.Context, request *deviceopsv1.CreateDeviceRequest) (*deviceopsv1.DeviceDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanCreateDevice(), request, server.application.CreateDevice)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
@@ -42,6 +49,11 @@ func (server *OperationServer) CreateDevice(ctx context.Context, request *device
 }
 
 func (server *OperationServer) DeleteDevice(ctx context.Context, request *deviceopsv1.DeleteDeviceRequest) (*deviceopsv1.DeleteDeviceResponse, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanDeleteDevice(), request, server.application.DeleteDevice)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
@@ -50,6 +62,11 @@ func (server *OperationServer) DeleteDevice(ctx context.Context, request *device
 }
 
 func (server *OperationServer) GetDevice(ctx context.Context, request *deviceopsv1.GetDeviceRequest) (*deviceopsv1.DeviceDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanGetDevice(), request, server.application.GetDevice)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
@@ -58,6 +75,11 @@ func (server *OperationServer) GetDevice(ctx context.Context, request *deviceops
 }
 
 func (server *OperationServer) ListDevices(ctx context.Context, request *deviceopsv1.ListDevicesRequest) (*deviceopsv1.ListDevicesResponse, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanListDevices(), request, server.application.ListDevices)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
@@ -66,6 +88,11 @@ func (server *OperationServer) ListDevices(ctx context.Context, request *deviceo
 }
 
 func (server *OperationServer) UpdateDevice(ctx context.Context, request *deviceopsv1.UpdateDeviceRequest) (*deviceopsv1.DeviceDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanUpdateDevice(), request, server.application.UpdateDevice)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)

@@ -11,6 +11,7 @@ import (
 	io "io"
 	"net/http"
 	strconv "strconv"
+	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
 )
@@ -49,7 +50,15 @@ func writeOperationError(writer http.ResponseWriter, err error) {
 		http.Error(writer, http.StatusText(statusCode), statusCode)
 		return
 	}
-	if errors.Is(err, operation.ErrExecutorUnavailable) || errors.Is(err, operation.ErrSecurityUnavailable) || errors.Is(err, operation.ErrSecurityNilContext) {
+	if errors.Is(err, execution.ErrIdempotencyKeyRequired) {
+		http.Error(writer, "idempotency key required", http.StatusBadRequest)
+		return
+	}
+	if errors.Is(err, execution.ErrIdempotencyInProgress) || errors.Is(err, execution.ErrIdempotencyCompleted) {
+		http.Error(writer, "idempotency conflict", http.StatusConflict)
+		return
+	}
+	if errors.Is(err, operation.ErrExecutorUnavailable) || errors.Is(err, operation.ErrSecurityUnavailable) || errors.Is(err, operation.ErrSecurityNilContext) || errors.Is(err, operation.ErrIdempotencyUnavailable) {
 		http.Error(writer, "operation execution unavailable", http.StatusInternalServerError)
 		return
 	}
@@ -69,7 +78,8 @@ func (handler *OperationHandler) handleOperationCreateDevice(writer http.Respons
 			return
 		}
 	}
-	output, err := operation.ExecuteTyped(request.Context(), handler.executor, policy.OperationPlanCreateDevice(), wire, handler.application.CreateDevice)
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanCreateDevice(), wire, handler.application.CreateDevice)
 	if err != nil {
 		writeOperationError(writer, err)
 		return
@@ -94,7 +104,8 @@ func (handler *OperationHandler) handleOperationDeleteDevice(writer http.Respons
 		wire.Version = uint64(parsed)
 	}
 	wire.Id = request.PathValue("id")
-	output, err := operation.ExecuteTyped(request.Context(), handler.executor, policy.OperationPlanDeleteDevice(), wire, handler.application.DeleteDevice)
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanDeleteDevice(), wire, handler.application.DeleteDevice)
 	if err != nil {
 		writeOperationError(writer, err)
 		return
@@ -111,7 +122,8 @@ func (handler *OperationHandler) handleOperationDeleteDevice(writer http.Respons
 func (handler *OperationHandler) handleOperationGetDevice(writer http.ResponseWriter, request *http.Request) {
 	wire := &deviceopsv1.GetDeviceRequest{}
 	wire.Id = request.PathValue("id")
-	output, err := operation.ExecuteTyped(request.Context(), handler.executor, policy.OperationPlanGetDevice(), wire, handler.application.GetDevice)
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanGetDevice(), wire, handler.application.GetDevice)
 	if err != nil {
 		writeOperationError(writer, err)
 		return
@@ -127,7 +139,8 @@ func (handler *OperationHandler) handleOperationGetDevice(writer http.ResponseWr
 
 func (handler *OperationHandler) handleOperationListDevices(writer http.ResponseWriter, request *http.Request) {
 	wire := &deviceopsv1.ListDevicesRequest{}
-	output, err := operation.ExecuteTyped(request.Context(), handler.executor, policy.OperationPlanListDevices(), wire, handler.application.ListDevices)
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanListDevices(), wire, handler.application.ListDevices)
 	if err != nil {
 		writeOperationError(writer, err)
 		return
@@ -155,7 +168,8 @@ func (handler *OperationHandler) handleOperationUpdateDevice(writer http.Respons
 		}
 	}
 	wire.Id = request.PathValue("id")
-	output, err := operation.ExecuteTyped(request.Context(), handler.executor, policy.OperationPlanUpdateDevice(), wire, handler.application.UpdateDevice)
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanUpdateDevice(), wire, handler.application.UpdateDevice)
 	if err != nil {
 		writeOperationError(writer, err)
 		return

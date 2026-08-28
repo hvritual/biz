@@ -477,20 +477,20 @@ const file_deviceops_v1_deviceops_proto_rawDesc = "" +
 	"\x13DeleteDeviceRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\x04R\aversion\"\x16\n" +
-	"\x14DeleteDeviceResponse2\xb9\x06\n" +
-	"\x11DeviceApplication\x12\x98\x01\n" +
-	"\vListDevices\x12 .deviceops.v1.ListDevicesRequest\x1a!.deviceops.v1.ListDevicesResponse\"D\xe2\xf3\x18-\n" +
-	"\vdevice.list\x12\flist_devices\x1a\vdevice.read(\x012\x01\x02\x82\xd3\xe4\x93\x02\r\x12\v/v1/devices\x12\x8c\x01\n" +
-	"\tGetDevice\x12\x1e.deviceops.v1.GetDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"F\xe2\xf3\x18*\n" +
+	"\x14DeleteDeviceResponse2\xd7\x06\n" +
+	"\x11DeviceApplication\x12\x9e\x01\n" +
+	"\vListDevices\x12 .deviceops.v1.ListDevicesRequest\x1a!.deviceops.v1.ListDevicesResponse\"J\xe2\xf3\x183\n" +
+	"\vdevice.list\x12\flist_devices\x1a\vdevice.read(\x012\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\r\x12\v/v1/devices\x12\x92\x01\n" +
+	"\tGetDevice\x12\x1e.deviceops.v1.GetDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"L\xe2\xf3\x180\n" +
 	"\n" +
 	"device.get\x12\n" +
-	"get_device\x1a\vdevice.read(\x012\x01\x02\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/devices/{id}\x12\x98\x01\n" +
-	"\fCreateDevice\x12!.deviceops.v1.CreateDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"L\xe2\xf3\x182\n" +
-	"\rdevice.create\x12\rcreate_device\x1a\rdevice.create(\x012\x01\x02\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/v1/devices\x12\x9d\x01\n" +
-	"\fUpdateDevice\x12!.deviceops.v1.UpdateDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"Q\xe2\xf3\x182\n" +
-	"\rdevice.update\x12\rupdate_device\x1a\rdevice.update(\x012\x01\x02\x82\xd3\xe4\x93\x02\x15:\x01*2\x10/v1/devices/{id}\x12\xa5\x01\n" +
-	"\fDeleteDevice\x12!.deviceops.v1.DeleteDeviceRequest\x1a\".deviceops.v1.DeleteDeviceResponse\"N\xe2\xf3\x182\n" +
-	"\rdevice.delete\x12\rdelete_device\x1a\rdevice.delete(\x012\x01\x02\x82\xd3\xe4\x93\x02\x12*\x10/v1/devices/{id}\x1a\x17\xda\xf3\x18\x13\n" +
+	"get_device\x1a\vdevice.read(\x012\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/devices/{id}\x12\x9e\x01\n" +
+	"\fCreateDevice\x12!.deviceops.v1.CreateDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"R\xe2\xf3\x188\n" +
+	"\rdevice.create\x12\rcreate_device\x1a\rdevice.create(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/v1/devices\x12\xa3\x01\n" +
+	"\fUpdateDevice\x12!.deviceops.v1.UpdateDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"W\xe2\xf3\x188\n" +
+	"\rdevice.update\x12\rupdate_device\x1a\rdevice.update(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x15:\x01*2\x10/v1/devices/{id}\x12\xab\x01\n" +
+	"\fDeleteDevice\x12!.deviceops.v1.DeleteDeviceRequest\x1a\".deviceops.v1.DeleteDeviceResponse\"T\xe2\xf3\x188\n" +
+	"\rdevice.delete\x12\rdelete_device\x1a\rdevice.delete(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x12*\x10/v1/devices/{id}\x1a\x17\xda\xf3\x18\x13\n" +
 	"\x11device_managementBS\xca\xf3\x18\x0f\n" +
 	"\tdeviceops\x12\x02v1Z>github.com/hvritual/biz/contracts/gen/deviceops/v1;deviceopsv1b\x06proto3"
 

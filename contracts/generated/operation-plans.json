@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "operations": [
     {
       "operationId": "device.create",
@@ -17,6 +17,10 @@
           "device.create"
         ],
         "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
       },
       "composition": {},
       "bindings": {
@@ -47,6 +51,10 @@
         ],
         "permissionMode": "all"
       },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
       "composition": {},
       "bindings": {
         "rpc": "/deviceops.v1.DeviceApplication/DeleteDevice",
@@ -74,6 +82,10 @@
           "device.read"
         ],
         "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
       },
       "composition": {},
       "bindings": {
@@ -103,6 +115,10 @@
         ],
         "permissionMode": "all"
       },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
       "composition": {},
       "bindings": {
         "rpc": "/deviceops.v1.DeviceApplication/ListDevices",
@@ -130,6 +146,10 @@
           "device.update"
         ],
         "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
       },
       "composition": {},
       "bindings": {
