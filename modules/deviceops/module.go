@@ -101,11 +101,13 @@ func (module *Module) Start(ctx context.Context) error {
 		return err
 	}
 	guards := authz.NewStaticGuardResolver(map[authz.OperationID]authz.OperationGuard{
-		devicepolicy.OperationListDevices:  guard,
-		devicepolicy.OperationGetDevice:    guard,
-		devicepolicy.OperationCreateDevice: guard,
-		devicepolicy.OperationUpdateDevice: guard,
-		devicepolicy.OperationDeleteDevice: guard,
+		authz.OperationID("device.list"):                    guard,
+		authz.OperationID("device.get"):                     guard,
+		authz.OperationID("device.create"):                  guard,
+		authz.OperationID("device.update"):                  guard,
+		authz.OperationID("device.delete"):                  guard,
+		authz.OperationID("site.validate_transfer_target"): guard,
+		authz.OperationID("device.transfer"):                guard,
 	})
 	security, err := authz.NewExecutionSecurity(grantAuthorizer, guards)
 	if err != nil {
@@ -133,13 +135,32 @@ func (module *Module) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	service, err := deviceapp.NewService(repositories)
+	deviceService, err := deviceapp.NewService(repositories)
+	if err != nil {
+		return err
+	}
+	siteService, err := deviceapp.NewSiteManagementService(repositories)
+	if err != nil {
+		return err
+	}
+	siteCapability, err := deviceapp.NewDeviceopsSiteManagementChildCapability(siteService, executor)
+	if err != nil {
+		return err
+	}
+	deviceCapability, err := deviceapp.NewDeviceopsDeviceManagementChildCapability(deviceService, executor)
+	if err != nil {
+		return err
+	}
+	transferService, err := deviceapp.NewCrossApplicationTransferService(siteCapability, deviceCapability)
 	if err != nil {
 		return err
 	}
 
 	apiMux := http.NewServeMux()
-	if err := devicerest.RegisterOperationExecutor(apiMux, service, executor); err != nil {
+	if err := devicerest.RegisterDeviceManagementOperationExecutor(apiMux, deviceService, executor); err != nil {
+		return err
+	}
+	if err := devicerest.RegisterDeviceTransferOperationExecutor(apiMux, transferService, executor); err != nil {
 		return err
 	}
 	rootMux := http.NewServeMux()
@@ -157,7 +178,17 @@ func (module *Module) Start(ctx context.Context) error {
 		return fmt.Errorf("deviceops: gRPC listen: %w", err)
 	}
 	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcAuthentication(accessStore)))
-	if err := devicerpc.RegisterOperationExecutor(grpcServer, service, executor); err != nil {
+	if err := devicerpc.RegisterDeviceManagementOperationExecutor(grpcServer, deviceService, executor); err != nil {
+		_ = httpListener.Close()
+		_ = grpcListener.Close()
+		return err
+	}
+	if err := devicerpc.RegisterSiteManagementOperationExecutor(grpcServer, siteService, executor); err != nil {
+		_ = httpListener.Close()
+		_ = grpcListener.Close()
+		return err
+	}
+	if err := devicerpc.RegisterDeviceTransferOperationExecutor(grpcServer, transferService, executor); err != nil {
 		_ = httpListener.Close()
 		_ = grpcListener.Close()
 		return err
