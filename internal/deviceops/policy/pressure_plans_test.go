@@ -6,9 +6,8 @@ import (
 	"yunka.io/pkg/operationplan"
 )
 
-func TestPressurePlansPreserveCompositionAndPermissionClosure(t *testing.T) {
+func TestPressurePlansPreserveCompositionBoundaries(t *testing.T) {
 	set := operationplan.Set{Operations: []operationplan.Plan{
-		OperationPlanGetDevice(),
 		LocalTransferPressurePlan(),
 		RemoteProvisionPressurePlan(),
 	}}
@@ -16,8 +15,8 @@ func TestPressurePlansPreserveCompositionAndPermissionClosure(t *testing.T) {
 		t.Fatal(err)
 	}
 	local := LocalTransferPressurePlan()
-	if local.Composition.Boundary != "local" || len(local.Composition.RequiresOperations) != 1 || local.Composition.RequiresOperations[0] != "device.get" {
-		t.Fatalf("unexpected local composition plan: %#v", local.Composition)
+	if local.Composition.Boundary != "local" || len(local.Composition.RequiresOperations) != 0 || len(local.Composition.PermissionClosure) != 0 {
+		t.Fatalf("repository-level local composition must not invent child operations: %#v", local.Composition)
 	}
 	remote := RemoteProvisionPressurePlan()
 	if remote.Composition.Boundary != "remote_saga" {
