@@ -12,9 +12,7 @@ import (
 
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	deviceapp "github.com/hvritual/biz/internal/deviceops/application"
-	"github.com/hvritual/biz/internal/deviceops/domain"
 	devicepersistence "github.com/hvritual/biz/internal/deviceops/infrastructure/persistence"
-	devicepolicy "github.com/hvritual/biz/internal/deviceops/policy"
 	devicesecurity "github.com/hvritual/biz/internal/deviceops/security"
 	devicerest "github.com/hvritual/biz/internal/deviceops/transport/rest"
 	devicerpc "github.com/hvritual/biz/internal/deviceops/transport/rpc"
@@ -22,19 +20,33 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"yunka.io/framework/core/identity"
+	"gorm.io/gorm"
+	"yunka.io/framework/core"
 	"yunka.io/framework/execution"
 	"yunka.io/framework/execution/idempotencygorm"
+	"yunka.io/framework/modules"
 	"yunka.io/framework/operation"
 	"yunka.io/framework/requestscope"
+	"yunka.io/framework/workflow/saga"
 	"yunka.io/gateway/authz"
 )
 
-const ModuleName = "deviceops"
+const Name = "deviceops"
+
+type Config struct {
+	HTTPListenAddress string
+	GRPCListenAddress string
+}
+
+type Dependencies struct {
+	Database *gorm.DB
+	Config   Config
+}
 
 type Module struct {
 	dependencies Dependencies
-	mu           sync.RWMutex
+
+	mu           sync.Mutex
 	httpServer   *http.Server
 	grpcServer   *grpc.Server
 	httpListener net.Listener
@@ -42,96 +54,39 @@ type Module struct {
 	serveErr     error
 }
 
-func NewModule(dependencies Dependencies) (*Module, error) {
-	if dependencies.Logger == nil {
-		return nil, errors.New("deviceops: logger is required")
+func New(dependencies Dependencies) (*Module, error) {
+	if dependencies.Database == nil {
+		return nil, errors.New("deviceops: database is required")
 	}
-	if dependencies.PrimaryDatabase == nil {
-		return nil, errors.New("deviceops: primary database is required")
+	if strings.TrimSpace(dependencies.Config.HTTPListenAddress) == "" {
+		dependencies.Config.HTTPListenAddress = "127.0.0.1:0"
 	}
-	if err := dependencies.Config.Validate(); err != nil {
-		return nil, err
+	if strings.TrimSpace(dependencies.Config.GRPCListenAddress) == "" {
+		dependencies.Config.GRPCListenAddress = "127.0.0.1:0"
 	}
 	return &Module{dependencies: dependencies}, nil
 }
-func (*Module) Name() string { return ModuleName }
 
-func (module *Module) Start(ctx context.Context) error {
-	accessStore, err := accesspersistence.New(module.dependencies.PrimaryDatabase)
+func (module *Module) Descriptor() modules.Descriptor {
+	return modules.Descriptor{Name: Name}
+}
+
+func (module *Module) Start(_ core.Context) error {
+	if module == nil {
+		return errors.New("deviceops: module is nil")
+	}
+	database := module.dependencies.Database
+	accessStore, err := accesspersistence.New(database)
 	if err != nil {
 		return err
 	}
-	if module.dependencies.Config.AutoMigrate {
-		if err := accessStore.AutoMigrate(ctx); err != nil {
-			return fmt.Errorf("deviceops: access migrate: %w", err)
-		}
-		if err := devicepersistence.AutoMigrate(ctx, module.dependencies.PrimaryDatabase); err != nil {
-			return fmt.Errorf("deviceops: domain migrate: %w", err)
-		}
-		if err := devicepersistence.EnsureIndexes(module.dependencies.PrimaryDatabase); err != nil {
-			return fmt.Errorf("deviceops: indexes: %w", err)
-		}
-	}
-	if config := module.dependencies.Config.Bootstrap; config.Token != "" {
-		if err := accessStore.Bootstrap(ctx, accesspersistence.Bootstrap{TenantID: config.TenantID, TenantName: config.TenantName, UserID: config.UserID, Email: config.Email, Token: config.Token}, devicepolicy.Permissions()); err != nil {
-			return fmt.Errorf("deviceops: bootstrap identity: %w", err)
-		}
-		principal, err := accessStore.Authenticate(ctx, config.Token)
-		if err != nil {
-			return fmt.Errorf("deviceops: bootstrap authenticate: %w", err)
-		}
-		siteRepository, err := devicepersistence.NewSiteRepository(module.dependencies.PrimaryDatabase)
-		if err != nil {
-			return err
-		}
-		trusted := identity.WithPrincipal(ctx, principal)
-		if _, err := siteRepository.Get(trusted, config.SiteID); err != nil {
-			site := domain.Site{ID: config.SiteID, Name: config.SiteName}
-			if err := siteRepository.Create(trusted, &site); err != nil {
-				return fmt.Errorf("deviceops: bootstrap site: %w", err)
-			}
-		}
-	}
-	grantAuthorizer, err := authz.NewGrantAuthorizer(accessStore)
-	if err != nil {
+	if err := accessStore.EnsureSchema(context.Background()); err != nil {
 		return err
 	}
-	guard, err := devicesecurity.NewGuard(accessStore)
-	if err != nil {
+	if err := devicepersistence.EnsureSchema(database); err != nil {
 		return err
 	}
-	guards := authz.NewStaticGuardResolver(map[authz.OperationID]authz.OperationGuard{
-		authz.OperationID("device.list"):                    guard,
-		authz.OperationID("device.get"):                     guard,
-		authz.OperationID("device.create"):                  guard,
-		authz.OperationID("device.update"):                  guard,
-		authz.OperationID("device.delete"):                  guard,
-		authz.OperationID("site.validate_transfer_target"): guard,
-		authz.OperationID("device.transfer"):                guard,
-	})
-	security, err := authz.NewExecutionSecurity(grantAuthorizer, guards)
-	if err != nil {
-		return err
-	}
-	transactions, err := requestscope.NewGORMExecutionFactory(module.dependencies.PrimaryDatabase)
-	if err != nil {
-		return err
-	}
-	idempotencyStore, err := idempotencygorm.NewStore(module.dependencies.PrimaryDatabase, idempotencygorm.Options{})
-	if err != nil {
-		return err
-	}
-	if module.dependencies.Config.AutoMigrate {
-		if err := idempotencyStore.EnsureSchema(ctx); err != nil {
-			return fmt.Errorf("deviceops: idempotency migrate: %w", err)
-		}
-	}
-	idempotency, err := execution.NewIdempotencyCoordinator(idempotencyStore)
-	if err != nil {
-		return err
-	}
-	executor := operation.NewExecutorWithOptions(security, operation.ExecutorOptions{Transactions: transactions, Idempotency: idempotency})
-	repositories, err := devicepersistence.NewScopedRepositoryFactory(module.dependencies.PrimaryDatabase)
+	repositories, err := devicepersistence.NewScopedRepositoryFactory(database)
 	if err != nil {
 		return err
 	}
@@ -143,6 +98,54 @@ func (module *Module) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	authorizer, err := authz.NewGrantAuthorizer(accessStore)
+	if err != nil {
+		return err
+	}
+	guard, err := devicesecurity.NewGuard(accessStore)
+	if err != nil {
+		return err
+	}
+	guards := authz.NewStaticGuardResolver(map[authz.OperationID]authz.OperationGuard{
+		authz.OperationID("device.list"):   guard,
+		authz.OperationID("device.get"):    guard,
+		authz.OperationID("device.create"): guard,
+		authz.OperationID("device.update"): guard,
+		authz.OperationID("device.delete"): guard,
+		authz.OperationID("device.transfer"): guard,
+	})
+	security, err := authz.NewExecutionSecurity(authorizer, guards)
+	if err != nil {
+		return err
+	}
+	transactions, err := requestscope.NewGORMExecutionFactory(database)
+	if err != nil {
+		return err
+	}
+	idempotencyStore, err := idempotencygorm.NewStore(database, idempotencygorm.Options{})
+	if err != nil {
+		return err
+	}
+	if err := idempotencyStore.EnsureSchema(context.Background()); err != nil {
+		return err
+	}
+	idempotency, err := execution.NewIdempotencyCoordinator(idempotencyStore)
+	if err != nil {
+		return err
+	}
+	executor := operation.NewExecutorWithOptions(security, operation.ExecutorOptions{
+		Transactions: transactions,
+		Idempotency:  idempotency,
+	})
+	outboxStore, err := saga.NewGORMOutboxStore(database)
+	if err != nil {
+		return err
+	}
+	provisioningService, err := deviceapp.NewProvisioningService(repositories, saga.NewStager(outboxStore))
+	if err != nil {
+		return err
+	}
+	_ = provisioningService // pressure-only Application; exercised directly by integration tests.
 	siteCapability, err := deviceapp.NewDeviceopsSiteManagementChildCapability(siteService, executor)
 	if err != nil {
 		return err
@@ -183,11 +186,8 @@ func (module *Module) Start(ctx context.Context) error {
 		_ = grpcListener.Close()
 		return err
 	}
-	if err := devicerpc.RegisterSiteManagementOperationExecutor(grpcServer, siteService, executor); err != nil {
-		_ = httpListener.Close()
-		_ = grpcListener.Close()
-		return err
-	}
+	// site_management is an internal-only Application. Its canonical Operation
+	// is reachable only through generated child capabilities, not gRPC.
 	if err := devicerpc.RegisterDeviceTransferOperationExecutor(grpcServer, transferService, executor); err != nil {
 		_ = httpListener.Close()
 		_ = grpcListener.Close()
@@ -208,113 +208,93 @@ func (module *Module) Start(ctx context.Context) error {
 
 func (module *Module) serveHTTP() {
 	if err := module.httpServer.Serve(module.httpListener); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		module.recordServeError(err)
+		module.mu.Lock()
+		module.serveErr = err
+		module.mu.Unlock()
 	}
 }
+
 func (module *Module) serveGRPC() {
 	if err := module.grpcServer.Serve(module.grpcListener); err != nil {
-		module.recordServeError(err)
-	}
-}
-func (module *Module) recordServeError(err error) {
-	module.mu.Lock()
-	if module.serveErr == nil {
+		module.mu.Lock()
 		module.serveErr = err
+		module.mu.Unlock()
 	}
+}
+
+func (module *Module) Stop(_ core.Context) error {
+	if module == nil {
+		return nil
+	}
+	module.mu.Lock()
+	httpServer, grpcServer := module.httpServer, module.grpcServer
 	module.mu.Unlock()
-	module.dependencies.Logger.Errorf("deviceops server: %v", err)
-}
-
-func (module *Module) healthHTTP(writer http.ResponseWriter, request *http.Request) {
-	if err := module.Health(request.Context()); err != nil {
-		http.Error(writer, "unhealthy", http.StatusServiceUnavailable)
-		return
+	if grpcServer != nil {
+		grpcServer.GracefulStop()
 	}
-	writer.Header().Set("Content-Type", "application/json")
-	_, _ = writer.Write([]byte(`{"status":"ok"}`))
-}
-
-func (module *Module) Health(ctx context.Context) error {
-	sqlDB, err := module.dependencies.PrimaryDatabase.DB()
-	if err != nil {
-		return err
+	if httpServer != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := httpServer.Shutdown(ctx); err != nil {
+			return err
+		}
 	}
-	if err := sqlDB.PingContext(ctx); err != nil {
-		return err
-	}
-	module.mu.RLock()
-	defer module.mu.RUnlock()
-	if module.httpListener == nil || module.grpcListener == nil {
-		return errors.New("deviceops: servers not started")
-	}
-	return module.serveErr
+	return nil
 }
 
 func (module *Module) HTTPAddress() string {
-	module.mu.RLock()
-	defer module.mu.RUnlock()
+	module.mu.Lock()
+	defer module.mu.Unlock()
 	if module.httpListener == nil {
 		return ""
 	}
 	return module.httpListener.Addr().String()
 }
+
 func (module *Module) GRPCAddress() string {
-	module.mu.RLock()
-	defer module.mu.RUnlock()
+	module.mu.Lock()
+	defer module.mu.Unlock()
 	if module.grpcListener == nil {
 		return ""
 	}
 	return module.grpcListener.Addr().String()
 }
 
-func (module *Module) Shutdown(ctx context.Context) error {
-	module.mu.RLock()
-	httpServer, grpcServer := module.httpServer, module.grpcServer
-	module.mu.RUnlock()
-	var httpErr error
-	if httpServer != nil {
-		httpErr = httpServer.Shutdown(ctx)
-	}
-	if grpcServer != nil {
-		done := make(chan struct{})
-		go func() { grpcServer.GracefulStop(); close(done) }()
-		select {
-		case <-done:
-		case <-ctx.Done():
-			grpcServer.Stop()
-		}
-	}
-	return httpErr
+func (module *Module) ServeError() error {
+	module.mu.Lock()
+	defer module.mu.Unlock()
+	return module.serveErr
 }
 
-func parseBearer(value string) string {
-	value = strings.TrimSpace(value)
-	if len(value) < 7 || !strings.EqualFold(value[:7], "Bearer ") {
-		return ""
-	}
-	return strings.TrimSpace(value[7:])
+func (module *Module) healthHTTP(writer http.ResponseWriter, _ *http.Request) {
+	writer.WriteHeader(http.StatusOK)
+	_, _ = writer.Write([]byte("ok"))
 }
-func httpAuthentication(accessStore *accesspersistence.Store, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		principal, err := accessStore.Authenticate(r.Context(), parseBearer(r.Header.Get("Authorization")))
-		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+
+func httpAuthentication(store *accesspersistence.Store, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		token := strings.TrimSpace(strings.TrimPrefix(request.Header.Get("Authorization"), "Bearer "))
+		principal, ok := store.ResolveAPIKey(request.Context(), token)
+		if !ok {
+			http.Error(writer, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(identity.WithPrincipal(r.Context(), principal)))
+		next.ServeHTTP(writer, request.WithContext(authz.WithPrincipal(request.Context(), principal)))
 	})
 }
-func grpcAuthentication(accessStore *accesspersistence.Store) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, request any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		md, _ := metadata.FromIncomingContext(ctx)
-		raw := ""
-		if values := md.Get("authorization"); len(values) > 0 {
-			raw = parseBearer(values[0])
+
+func grpcAuthentication(store *accesspersistence.Store) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		incoming, _ := metadata.FromIncomingContext(ctx)
+		values := incoming.Get("authorization")
+		if len(values) == 0 {
+			return nil, status.Error(codes.Unauthenticated, "missing authorization")
 		}
-		principal, err := accessStore.Authenticate(ctx, raw)
-		if err != nil {
-			return nil, status.Error(codes.Unauthenticated, "unauthenticated")
+		token := strings.TrimSpace(strings.TrimPrefix(values[0], "Bearer "))
+		principal, ok := store.ResolveAPIKey(ctx, token)
+		if !ok {
+			return nil, status.Error(codes.Unauthenticated, "invalid authorization")
 		}
-		return handler(identity.WithPrincipal(ctx, principal), request)
+		return handler(authz.WithPrincipal(ctx, principal), req)
 	}
 }
