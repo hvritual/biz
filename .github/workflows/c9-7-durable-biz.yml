@@ -1,0 +1,44 @@
+name: c9-7-durable-biz
+
+on:
+  push:
+    branches:
+      - agent/c9-7-biz-conformance
+    paths:
+      - tools/c9_7_durable_biz.py
+      - .github/workflows/c9-7-durable-biz.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: agent/c9-7-biz-conformance
+          fetch-depth: 0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: 1.25.13
+          cache: false
+      - name: Apply durable idempotency wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/c9_7_durable_biz.py
+          gofmt -w modules/deviceops/module.go integration/c9_pressure_mysql_test.go
+          grep -q 'idempotencygorm.NewStore' modules/deviceops/module.go
+          grep -q 'idempotencyStore.EnsureSchema' modules/deviceops/module.go
+          grep -q 'durable idempotency duplicate suppression' integration/c9_pressure_mysql_test.go
+          git diff --check
+      - name: Commit non-workflow source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name hvritual
+          git config user.email 460657446@qq.com
+          git add modules/deviceops/module.go integration/c9_pressure_mysql_test.go
+          git commit -m 'feat: wire biz to durable C9.7 idempotency'
+          git push origin HEAD:agent/c9-7-biz-conformance
