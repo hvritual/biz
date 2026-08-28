@@ -23,8 +23,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"yunka.io/framework/core/identity"
+	"yunka.io/framework/operation"
 	"yunka.io/gateway/authz"
-	authzgrpc "yunka.io/gateway/rpc/transport/grpc"
 )
 
 const ModuleName = "deviceops"
@@ -104,10 +104,11 @@ func (module *Module) Start(ctx context.Context) error {
 		devicepolicy.OperationUpdateDevice: guard,
 		devicepolicy.OperationDeleteDevice: guard,
 	})
-	operationRuntime, err := authz.NewOperationRuntime(devicepolicy.Resolver(), grantAuthorizer, guards)
+	security, err := authz.NewExecutionSecurity(grantAuthorizer, guards)
 	if err != nil {
 		return err
 	}
+	executor := operation.NewExecutor(security)
 	scopes, err := devicepersistence.NewScopedScopeFactory(module.dependencies.PrimaryDatabase)
 	if err != nil {
 		return err
@@ -118,7 +119,7 @@ func (module *Module) Start(ctx context.Context) error {
 	}
 
 	apiMux := http.NewServeMux()
-	if err := devicerest.Register(apiMux, service, operationRuntime); err != nil {
+	if err := devicerest.RegisterOperationExecutor(apiMux, service, executor); err != nil {
 		return err
 	}
 	rootMux := http.NewServeMux()
@@ -130,18 +131,17 @@ func (module *Module) Start(ctx context.Context) error {
 	}
 	httpServer := &http.Server{Handler: rootMux, ReadHeaderTimeout: 5 * time.Second}
 
-	securityInterceptor, err := authzgrpc.SecuredUnaryServerInterceptor(operationRuntime)
-	if err != nil {
-		_ = httpListener.Close()
-		return err
-	}
 	grpcListener, err := net.Listen("tcp", module.dependencies.Config.GRPCListenAddress)
 	if err != nil {
 		_ = httpListener.Close()
 		return fmt.Errorf("deviceops: gRPC listen: %w", err)
 	}
-	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcAuthentication(accessStore), securityInterceptor))
-	devicerpc.Register(grpcServer, service)
+	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcAuthentication(accessStore)))
+	if err := devicerpc.RegisterOperationExecutor(grpcServer, service, executor); err != nil {
+		_ = httpListener.Close()
+		_ = grpcListener.Close()
+		return err
+	}
 
 	module.mu.Lock()
 	module.httpServer = httpServer
