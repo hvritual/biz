@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "operations": [
+    {
+      "operationId": "device.create",
+      "domain": "deviceops",
+      "application": "device_management",
+      "useCase": "create_device",
+      "requestType": "deviceops.v1.CreateDeviceRequest",
+      "responseType": "deviceops.v1.DeviceDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "device.create"
+        ],
+        "permissionMode": "all"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/deviceops.v1.DeviceApplication/CreateDevice",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/devices",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "device.delete",
+      "domain": "deviceops",
+      "application": "device_management",
+      "useCase": "delete_device",
+      "requestType": "deviceops.v1.DeleteDeviceRequest",
+      "responseType": "deviceops.v1.DeleteDeviceResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "device.delete"
+        ],
+        "permissionMode": "all"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/deviceops.v1.DeviceApplication/DeleteDevice",
+        "http": [
+          {
+            "method": "DELETE",
+            "path": "/v1/devices/{id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "device.get",
+      "domain": "deviceops",
+      "application": "device_management",
+      "useCase": "get_device",
+      "requestType": "deviceops.v1.GetDeviceRequest",
+      "responseType": "deviceops.v1.DeviceDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "device.read"
+        ],
+        "permissionMode": "all"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/deviceops.v1.DeviceApplication/GetDevice",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/devices/{id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "device.list",
+      "domain": "deviceops",
+      "application": "device_management",
+      "useCase": "list_devices",
+      "requestType": "deviceops.v1.ListDevicesRequest",
+      "responseType": "deviceops.v1.ListDevicesResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "device.read"
+        ],
+        "permissionMode": "all"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/deviceops.v1.DeviceApplication/ListDevices",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/devices"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "device.update",
+      "domain": "deviceops",
+      "application": "device_management",
+      "useCase": "update_device",
+      "requestType": "deviceops.v1.UpdateDeviceRequest",
+      "responseType": "deviceops.v1.DeviceDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "device.update"
+        ],
+        "permissionMode": "all"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/deviceops.v1.DeviceApplication/UpdateDevice",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/devices/{id}",
+            "body": "*"
+          }
+        ]
+      }
+    }
+  ]
+}
