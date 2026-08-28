@@ -11,6 +11,10 @@ const (
 // suite. OperationDeclaration currently exists only as a protobuf RPC method
 // option, so an internal-only orchestration use case cannot be canonical PB
 // without also becoming an RPC method. See Framework Pressure FP-C9-001.
+//
+// This slice is repository-level local composition, not child-Operation
+// composition: requestscope.Compose2 supplies both typed repository ports over
+// one UoW, so requires_operations must remain empty.
 func LocalTransferPressurePlan() operationplan.Plan {
 	return operationplan.Plan{
 		OperationID:  OperationLocalTransfer,
@@ -25,12 +29,8 @@ func LocalTransferPressurePlan() operationplan.Plan {
 			Permissions:    []string{"device.read", "device.update"},
 			PermissionMode: "all",
 		},
-		Composition: operationplan.Composition{
-			Boundary:           "local",
-			RequiresOperations: []string{"device.get"},
-			PermissionClosure:  []string{"device.read"},
-		},
-		Bindings: operationplan.Bindings{RPC: "internal://device.transfer.local"},
+		Composition: operationplan.Composition{Boundary: "local"},
+		Bindings:    operationplan.Bindings{RPC: "internal://device.transfer.local"},
 	}
 }
 
