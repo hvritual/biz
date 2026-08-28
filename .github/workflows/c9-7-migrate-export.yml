@@ -36,14 +36,13 @@ jobs:
           grep -R -q 'requestscope.Join' internal/deviceops/application
           grep -q 'service.stager.Stage' internal/deviceops/application/remote_saga.go
           git diff --check
-      - name: Commit migrated source
+      - name: Commit migrated non-workflow source
         shell: bash
         run: |
           set -euo pipefail
-          rm -f tools/c9_7_biz_migration.py .github/workflows/c9-7-migrate-export.yml
           git config user.name hvritual
           git config user.email 460657446@qq.com
-          git add -A
+          git add contracts/proto docs/pressure integration internal/deviceops modules/deviceops
           git commit -m "feat: migrate real biz to C9.7 execution scope"
           git push origin HEAD:agent/c9-7-biz-conformance
       - name: Export exact migrated source
