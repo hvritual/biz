@@ -17,18 +17,18 @@ import (
 var ErrInvalid = errors.New("deviceops: invalid request")
 
 type Service struct {
-	scopes requestscope.ScopeFactory[ports.ScopedRepositories]
+	repositories requestscope.RepositoryFactory[ports.ScopedRepositories]
 }
 
-func NewService(scopes requestscope.ScopeFactory[ports.ScopedRepositories]) (*Service, error) {
-	if scopes == nil {
-		return nil, errors.New("deviceops: request scope factory is required")
+func NewService(repositories requestscope.RepositoryFactory[ports.ScopedRepositories]) (*Service, error) {
+	if repositories == nil {
+		return nil, errors.New("deviceops: repository factory is required")
 	}
-	return &Service{scopes: scopes}, nil
+	return &Service{repositories: repositories}, nil
 }
 
 func (service *Service) ListDevices(ctx context.Context, _ *deviceopsv1.ListDevicesRequest) (*deviceopsv1.ListDevicesResponse, error) {
-	devices, err := requestscope.ExecuteValue(ctx, service.scopes, func(scope *requestscope.Scope[ports.ScopedRepositories]) ([]domain.Device, error) {
+	devices, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.ScopedRepositories]) ([]domain.Device, error) {
 		return scope.Repositories().Device.ListVisible(scope.Context())
 	})
 	if err != nil {
@@ -45,7 +45,7 @@ func (service *Service) GetDevice(ctx context.Context, request *deviceopsv1.GetD
 	if request == nil || strings.TrimSpace(request.GetId()) == "" {
 		return nil, ErrInvalid
 	}
-	device, err := requestscope.ExecuteValue(ctx, service.scopes, func(scope *requestscope.Scope[ports.ScopedRepositories]) (domain.Device, error) {
+	device, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.ScopedRepositories]) (domain.Device, error) {
 		return scope.Repositories().Device.GetVisible(scope.Context(), strings.TrimSpace(request.GetId()))
 	})
 	if err != nil {
@@ -66,7 +66,7 @@ func (service *Service) CreateDevice(ctx context.Context, request *deviceopsv1.C
 	if err != nil || strings.TrimSpace(access.UserID) == "" {
 		return nil, devicesecurity.ErrAuthorizedScopeMissing
 	}
-	device, err := requestscope.ExecuteValue(ctx, service.scopes, func(scope *requestscope.Scope[ports.ScopedRepositories]) (domain.Device, error) {
+	device, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.ScopedRepositories]) (domain.Device, error) {
 		if _, err := scope.Repositories().Site.Get(scope.Context(), siteID); err != nil {
 			return domain.Device{}, err
 		}
@@ -86,7 +86,7 @@ func (service *Service) UpdateDevice(ctx context.Context, request *deviceopsv1.U
 	if request == nil || strings.TrimSpace(request.GetId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalid
 	}
-	device, err := requestscope.ExecuteValue(ctx, service.scopes, func(scope *requestscope.Scope[ports.ScopedRepositories]) (domain.Device, error) {
+	device, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.ScopedRepositories]) (domain.Device, error) {
 		current, err := scope.Repositories().Device.GetVisible(scope.Context(), strings.TrimSpace(request.GetId()))
 		if err != nil {
 			return domain.Device{}, err
@@ -120,7 +120,7 @@ func (service *Service) DeleteDevice(ctx context.Context, request *deviceopsv1.D
 	if request == nil || strings.TrimSpace(request.GetId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalid
 	}
-	err := requestscope.Execute(ctx, service.scopes, func(scope *requestscope.Scope[ports.ScopedRepositories]) error {
+	err := requestscope.JoinDo(ctx, service.repositories, func(scope *requestscope.View[ports.ScopedRepositories]) error {
 		current, err := scope.Repositories().Device.GetVisible(scope.Context(), strings.TrimSpace(request.GetId()))
 		if err != nil {
 			return err

@@ -5,6 +5,7 @@ package integration
 import (
 	"context"
 	"errors"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -16,10 +17,15 @@ import (
 	devicepersistence "github.com/hvritual/biz/internal/deviceops/infrastructure/persistence"
 	devicepolicy "github.com/hvritual/biz/internal/deviceops/policy"
 	devicesecurity "github.com/hvritual/biz/internal/deviceops/security"
+	"gorm.io/gorm"
 	"yunka.io/framework/core/identity"
 	"yunka.io/framework/event"
 	"yunka.io/framework/event/outbox"
+	"yunka.io/framework/execution"
+	"yunka.io/framework/execution/idempotencygorm"
 	"yunka.io/framework/operation"
+	"yunka.io/framework/requestscope"
+	"yunka.io/framework/workflow/saga"
 	"yunka.io/gateway/authz"
 )
 
@@ -47,7 +53,7 @@ func (observer *pressureObserver) starts(operationID string) int {
 	return observer.securityStarts[operationID]
 }
 
-func pressureExecutor(t *testing.T, accessStore *accesspersistence.Store, observer operation.Observer, operationIDs ...string) operation.Executor {
+func pressureExecutor(t *testing.T, database *gorm.DB, accessStore *accesspersistence.Store, observer operation.Observer, operationIDs ...string) operation.Executor {
 	t.Helper()
 	authorizer, err := authz.NewGrantAuthorizer(accessStore)
 	if err != nil {
@@ -65,7 +71,22 @@ func pressureExecutor(t *testing.T, accessStore *accesspersistence.Store, observ
 	if err != nil {
 		t.Fatal(err)
 	}
-	return operation.NewExecutor(security, observer)
+	transactions, err := requestscope.NewGORMExecutionFactory(database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	idempotencyStore, err := idempotencygorm.NewStore(database, idempotencygorm.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := idempotencyStore.EnsureSchema(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	idempotency, err := execution.NewIdempotencyCoordinator(idempotencyStore)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return operation.NewExecutorWithOptions(security, operation.ExecutorOptions{Transactions: transactions, Idempotency: idempotency}, observer)
 }
 
 func authenticatedContext(t *testing.T, store *accesspersistence.Store, token string) context.Context {
@@ -75,6 +96,23 @@ func authenticatedContext(t *testing.T, store *accesspersistence.Store, token st
 		t.Fatal(err)
 	}
 	return identity.WithPrincipal(context.Background(), principal)
+}
+
+func jsonUint64(t *testing.T, value any) uint64 {
+	t.Helper()
+	switch typed := value.(type) {
+	case string:
+		parsed, err := strconv.ParseUint(typed, 10, 64)
+		if err != nil {
+			t.Fatalf("invalid protojson uint64 %q: %v", typed, err)
+		}
+		return parsed
+	case float64:
+		return uint64(typed)
+	default:
+		t.Fatalf("unexpected JSON uint64 type %T (%v)", value, value)
+		return 0
+	}
 }
 
 func TestC9LocalCompositionUsesOneExecutorAndOneUoW(t *testing.T) {
@@ -96,7 +134,7 @@ func TestC9LocalCompositionUsesOneExecutorAndOneUoW(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	scopes, err := devicepersistence.NewLocalTransferScopeFactory(db)
+	scopes, err := devicepersistence.NewLocalTransferRepositoryFactory(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,10 +143,10 @@ func TestC9LocalCompositionUsesOneExecutorAndOneUoW(t *testing.T) {
 		t.Fatal(err)
 	}
 	observer := newPressureObserver()
-	executor := pressureExecutor(t, accessStore, observer, devicepolicy.OperationLocalTransfer)
+	executor := pressureExecutor(t, db, accessStore, observer, devicepolicy.OperationLocalTransfer)
 	id, _ := created["id"].(string)
-	version, _ := created["version"].(float64)
-	response, err := operation.ExecuteTyped(ownerContext, executor, devicepolicy.LocalTransferPressurePlan(), &deviceopsv1.UpdateDeviceRequest{Id: id, SiteId: targetSite, Version: uint64(version)}, service.Transfer)
+	version := jsonUint64(t, created["version"])
+	response, err := operation.ExecuteTyped(ownerContext, executor, devicepolicy.LocalTransferPressurePlan(), &deviceopsv1.UpdateDeviceRequest{Id: id, SiteId: targetSite, Version: version}, service.Transfer)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +181,7 @@ func TestC9RemoteSagaStagesBusinessWriteAndOutboxAtomically(t *testing.T) {
 		t.Fatal(err)
 	}
 	ownerContext := authenticatedContext(t, accessStore, ownerToken)
-	scopes, err := devicepersistence.NewScopedScopeFactory(db)
+	scopes, err := devicepersistence.NewScopedRepositoryFactory(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,14 +195,18 @@ func TestC9RemoteSagaStagesBusinessWriteAndOutboxAtomically(t *testing.T) {
 	if err := store.AutoMigrate(ownerContext); err != nil {
 		t.Fatal(err)
 	}
-	service, err := deviceapp.NewProvisioningService(scopes, store)
+	stager, err := saga.NewStager(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service, err := deviceapp.NewProvisioningService(scopes, stager)
 	if err != nil {
 		t.Fatal(err)
 	}
 	observer := newPressureObserver()
-	executor := pressureExecutor(t, accessStore, observer, devicepolicy.OperationRemoteProvision)
+	executor := pressureExecutor(t, db, accessStore, observer, devicepolicy.OperationRemoteProvision)
 	serial := "SN-C9-SAGA-SUCCESS"
-	response, err := operation.ExecuteTyped(ownerContext, executor, devicepolicy.RemoteProvisionPressurePlan(), &deviceopsv1.CreateDeviceRequest{SiteId: site, Name: "Saga", Serial: serial}, service.Provision)
+	response, err := operation.ExecuteTyped(execution.WithIdempotencyKey(ownerContext, "provision:"+serial), executor, devicepolicy.RemoteProvisionPressurePlan(), &deviceopsv1.CreateDeviceRequest{SiteId: site, Name: "Saga", Serial: serial}, service.Provision)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,6 +215,10 @@ func TestC9RemoteSagaStagesBusinessWriteAndOutboxAtomically(t *testing.T) {
 	}
 	if observer.starts(devicepolicy.OperationRemoteProvision) != 1 {
 		t.Fatalf("remote saga security starts=%d want=1", observer.starts(devicepolicy.OperationRemoteProvision))
+	}
+	_, err = operation.ExecuteTyped(execution.WithIdempotencyKey(ownerContext, "provision:"+serial), executor, devicepolicy.RemoteProvisionPressurePlan(), &deviceopsv1.CreateDeviceRequest{SiteId: site, Name: "Saga", Serial: serial}, service.Provision)
+	if !errors.Is(err, execution.ErrIdempotencyCompleted) {
+		t.Fatalf("expected durable idempotency duplicate suppression, got %v", err)
 	}
 	snapshot, err := store.Snapshot(ownerContext)
 	if err != nil {
@@ -200,12 +246,16 @@ func TestC9RemoteSagaStagesBusinessWriteAndOutboxAtomically(t *testing.T) {
 	}
 
 	failure := errors.New("forced outbox failure")
-	failingService, err := deviceapp.NewProvisioningService(scopes, failingTransactionalOutbox{err: failure})
+	failingStager, err := saga.NewStager(failingTransactionalOutbox{err: failure})
+	if err != nil {
+		t.Fatal(err)
+	}
+	failingService, err := deviceapp.NewProvisioningService(scopes, failingStager)
 	if err != nil {
 		t.Fatal(err)
 	}
 	failedSerial := "SN-C9-SAGA-ROLLBACK"
-	_, err = operation.ExecuteTyped(ownerContext, executor, devicepolicy.RemoteProvisionPressurePlan(), &deviceopsv1.CreateDeviceRequest{SiteId: site, Name: "Rollback", Serial: failedSerial}, failingService.Provision)
+	_, err = operation.ExecuteTyped(execution.WithIdempotencyKey(ownerContext, "provision:"+failedSerial), executor, devicepolicy.RemoteProvisionPressurePlan(), &deviceopsv1.CreateDeviceRequest{SiteId: site, Name: "Rollback", Serial: failedSerial}, failingService.Provision)
 	if !errors.Is(err, failure) {
 		t.Fatalf("expected forced outbox failure, got %v", err)
 	}

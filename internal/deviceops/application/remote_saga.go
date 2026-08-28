@@ -10,24 +10,23 @@ import (
 	"github.com/hvritual/biz/internal/deviceops/domain"
 	"github.com/hvritual/biz/internal/deviceops/ports"
 	devicesecurity "github.com/hvritual/biz/internal/deviceops/security"
-	"yunka.io/framework/event/outbox"
 	"yunka.io/framework/requestscope"
 	"yunka.io/framework/workflow/saga"
 )
 
 type ProvisioningService struct {
-	scopes requestscope.ScopeFactory[ports.ScopedRepositories]
-	outbox outbox.TransactionalStore
+	repositories requestscope.RepositoryFactory[ports.ScopedRepositories]
+	stager       saga.Stager
 }
 
-func NewProvisioningService(scopes requestscope.ScopeFactory[ports.ScopedRepositories], store outbox.TransactionalStore) (*ProvisioningService, error) {
-	if scopes == nil {
-		return nil, errors.New("deviceops provisioning: request scope factory is required")
+func NewProvisioningService(repositories requestscope.RepositoryFactory[ports.ScopedRepositories], stager saga.Stager) (*ProvisioningService, error) {
+	if repositories == nil {
+		return nil, errors.New("deviceops provisioning: repository factory is required")
 	}
-	if store == nil {
-		return nil, errors.New("deviceops provisioning: transactional outbox is required")
+	if stager == nil {
+		return nil, errors.New("deviceops provisioning: saga stager is required")
 	}
-	return &ProvisioningService{scopes: scopes, outbox: store}, nil
+	return &ProvisioningService{repositories: repositories, stager: stager}, nil
 }
 
 // Provision creates the local device and stages remote inventory/activation
@@ -44,7 +43,7 @@ func (service *ProvisioningService) Provision(ctx context.Context, request *devi
 	if err != nil || strings.TrimSpace(access.UserID) == "" {
 		return nil, devicesecurity.ErrAuthorizedScopeMissing
 	}
-	device, err := requestscope.ExecuteValue(ctx, service.scopes, func(scope *requestscope.Scope[ports.ScopedRepositories]) (domain.Device, error) {
+	device, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.ScopedRepositories]) (domain.Device, error) {
 		if _, err := scope.Repositories().Site.Get(scope.Context(), siteID); err != nil {
 			return domain.Device{}, err
 		}
@@ -65,13 +64,9 @@ func (service *ProvisioningService) Provision(ctx context.Context, request *devi
 				{ID: "activate-device", Command: saga.Command{Topic: "device.commands", Type: "device.activate", Payload: payload}, Compensation: &saga.Command{Topic: "device.commands", Type: "device.deactivate", Payload: payload}},
 			},
 		}
-		// Framework Pressure FP-C9-002: Saga/Outbox atomic staging still leaks
-		// the adapter-specific transaction seam into Application composition.
-		transaction, err := requestscope.GORMFrom(scope.UnitOfWork())
-		if err != nil {
-			return domain.Device{}, err
-		}
-		if err := saga.EnqueueTx(scope.Context(), service.outbox, transaction, plan); err != nil {
+		// C9.7 closes FP-C9-002: Saga stages against the current ExecutionScope
+		// transaction without exposing GORM or a transaction handle to Application.
+		if err := service.stager.Stage(scope.Context(), plan); err != nil {
 			return domain.Device{}, err
 		}
 		return value, nil

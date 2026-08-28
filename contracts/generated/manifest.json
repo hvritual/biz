@@ -236,7 +236,11 @@
             "tenantRequired": true,
             "authentication": [
               "api-key"
-            ]
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
           },
           "authorization": {
             "operationId": "device.create",
@@ -271,7 +275,11 @@
             "tenantRequired": true,
             "authentication": [
               "api-key"
-            ]
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
           },
           "authorization": {
             "operationId": "device.delete",
@@ -306,7 +314,11 @@
             "tenantRequired": true,
             "authentication": [
               "api-key"
-            ]
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
           },
           "authorization": {
             "operationId": "device.get",
@@ -341,7 +353,11 @@
             "tenantRequired": true,
             "authentication": [
               "api-key"
-            ]
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
           },
           "authorization": {
             "operationId": "device.list",
@@ -377,7 +393,11 @@
             "tenantRequired": true,
             "authentication": [
               "api-key"
-            ]
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
           },
           "authorization": {
             "operationId": "device.update",
