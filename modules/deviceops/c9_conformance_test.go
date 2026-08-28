@@ -13,7 +13,17 @@ func TestC9ModuleUsesOneUnifiedExecutorPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := string(source)
-	for _, required := range []string{"authz.NewExecutionSecurity", "operation.NewExecutor", "devicerest.RegisterOperationExecutor", "devicerpc.RegisterOperationExecutor"} {
+	for _, required := range []string{
+		"authz.NewExecutionSecurity",
+		"operation.NewExecutorWithOptions",
+		"devicerest.RegisterDeviceManagementOperationExecutor",
+		"devicerest.RegisterDeviceTransferOperationExecutor",
+		"devicerpc.RegisterDeviceManagementOperationExecutor",
+		"devicerpc.RegisterSiteManagementOperationExecutor",
+		"devicerpc.RegisterDeviceTransferOperationExecutor",
+		"deviceapp.NewDeviceopsSiteManagementChildCapability",
+		"deviceapp.NewDeviceopsDeviceManagementChildCapability",
+	} {
 		if !strings.Contains(text, required) {
 			t.Fatalf("C9 executor composition missing %q", required)
 		}
@@ -26,6 +36,8 @@ func TestC9ModuleUsesOneUnifiedExecutorPath(t *testing.T) {
 	for _, stale := range []string{
 		"../../internal/deviceops/transport/rest/zz_yunka_device_management_rest_adapter_gen.go",
 		"../../internal/deviceops/transport/rpc/zz_yunka_device_management_rpc_adapter_gen.go",
+		"../../internal/deviceops/transport/rest/zz_yunka_device_transfer_rest_adapter_gen.go",
+		"../../internal/deviceops/transport/rpc/zz_yunka_device_transfer_rpc_adapter_gen.go",
 	} {
 		if _, err := os.Stat(filepath.Clean(stale)); err == nil {
 			t.Fatalf("legacy generated transport remains: %s", stale)
