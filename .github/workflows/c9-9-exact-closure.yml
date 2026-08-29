@@ -33,73 +33,68 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Materialize exact Yunka C9.9 closure tree
+      - name: Materialize exact Yunka C9.8 product tree
         shell: bash
         run: |
           set -euo pipefail
           work="$RUNNER_TEMP/c99"
           mkdir -p "$work"
           source_zip="$work/yunka-source.zip"
-          source_url='https://sdmntprpolandcentral.oaiusercontent.com/files/00000000-fd58-820a-9724-19b2e41a6172/raw?se=2026-08-29T00%3A31%3A45Z&sp=r&sv=2026-02-06&sr=b&scid=7ec966a2-22f2-56a0-b6e8-5953c08876c1&skoid=d4d17077-8f33-42a9-bd8b-aa9d5eaf5320&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-08-28T20%3A49%3A38Z&ske=2026-08-29T20%3A49%3A38Z&sks=b&skv=2026-02-06&sig=JwJDIuEt8FzgU4E63WBgmVCP3ajdd1ArIQWzeoLnzZg%3D'
+          source_url='https://sdmntprpolandcentral.oaiusercontent.com/files/00000000-0e18-820a-8bd9-ebefe223e10e/raw?se=2026-08-29T00%3A40%3A41Z&sp=r&sv=2026-02-06&sr=b&scid=1d190ea1-1c7a-5ff1-9bd2-a2f809831709&skoid=d4d17077-8f33-42a9-bd8b-aa9d5eaf5320&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-08-28T21%3A02%3A23Z&ske=2026-08-29T21%3A02%3A23Z&sks=b&skv=2026-02-06&sig=VyKLVZvyY81UZVGTbzmjg9afZWadRs/Wn9PPJv08Ip4%3D'
           curl --fail --silent --show-error --location --retry 3 "$source_url" -o "$source_zip"
           echo '34c61442846d9521215099c187dbfd43b948b644138f3554dd2eb07b475f91b1  '"$source_zip" | sha256sum -c -
           unzip -q "$source_zip" -d "$work/source"
           echo 'b86b15e8690b8162559af7ca3c5e200db402f81636e6ecfd10468b6e15f1d7a1  '"$work/source/yunka-c9-8.tar.gz" | sha256sum -c -
-          mkdir -p "$RUNNER_TEMP/yunka.io"
-          tar -xzf "$work/source/yunka-c9-8.tar.gz" -C "$RUNNER_TEMP/yunka.io"
-          cd "$RUNNER_TEMP/yunka.io"
+
+          YUNKA_ROOT="$(dirname "$GITHUB_WORKSPACE")/yunka.io"
+          rm -rf "$YUNKA_ROOT"
+          mkdir -p "$YUNKA_ROOT"
+          tar -xzf "$work/source/yunka-c9-8.tar.gz" -C "$YUNKA_ROOT"
+          cd "$YUNKA_ROOT"
           rm -f .github/workflows/c9-8-framework-export.yml .github/workflows/c9-8-real-biz-control.yml tools/c9-8-biz-source-url.txt .github/workflows/c9-production.yml
-
-          cat > "$work/overlay.tsv" <<'EOF'
-          contracts/proto/yunka/dsl/v1/options.proto	fb98c274b6c93b928faadd1e266e3ab1792fa61e	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/contracts/proto/yunka/dsl/v1/options.proto?token=AC2ZLPYFYFOEY372KPSL3WLKSITL7AA
-          pkg/applicationgraph/applicationgraph_test.go	2c79aa44749b3d4ad0d6418bf9dcdf5190acc92a	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/applicationgraph/applicationgraph_test.go?token=AC2ZLP33V5WGJYXJXMKUAJDKSITLLAA
-          pkg/applicationgraph/contract.go	dbf632ba836a8593b0e039b3e5c188996ce3ff76	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/applicationgraph/contract.go?token=AC2ZLP427UPU6DYUV26XCUDKSITLLAA
-          pkg/architecturepolicy/c8_4_test.go	31fd3ef3ebf8349a00cdfae5823e9edc06b1a74c	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/architecturepolicy/c8_4_test.go?token=AC2ZLPZNZ7GYCYS37HVSMEDKSITLVAA
-          pkg/contract/application_codegen.go	8c177928a38df134c4623bfe4feb9d817a9ff516	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/application_codegen.go?token=AC2ZLP34URRKTC2IUTJMTP3KSITALAA
-          pkg/contract/application_operations.go	2bffc636360b17c6c54934d0d3e254e772c9faad	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/application_operations.go?token=AC2ZLP3JE6TAU2WPQWHS7YTKSITALAA
-          pkg/contract/artifact.go	2a42fb7738bd0eaea1e40bbbcf82393c8bf527eb	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/artifact.go?token=AC2ZLP74AKVJ576BBQK2DKDKSITALAA
-          pkg/contract/c9_application_codegen.go	33b9205916854240387c4e4faf061495152f9a93	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/c9_application_codegen.go?token=AC2ZLP5DVWERESD72KT7Q63KSITALAA
-          pkg/contract/c9_application_codegen_test.go	289163489906a5a7e1390d21ebcf46ceb5ba6304	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/c9_application_codegen_test.go?token=AC2ZLP2AEBM7LYB5SCSK3ELKSITALAA
-          pkg/contract/compiler_test.go	b36ab076542a110d165402348789f2d089acfa19	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/compiler_test.go?token=AC2ZLP3XN6LIAMHOKH6PL7TKSITALAA
-          pkg/contract/diff.go	d7e69df53672120402852b60cf940b833ef1604f	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/diff.go?token=AC2ZLPZSEQP5244CGZQ73V3KSITALAA
-          pkg/contract/dsl_descriptor.go	004e5d65fb88356dc6f706635935a5accff46994	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/dsl_descriptor.go?token=AC2ZLPYZIO3P3RTF66RFXQ3KSITALAA
-          pkg/contract/external_contract.go	0c2abc6fc0b53652168f4387b536fdd9f5dd4058	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/external_contract.go?token=AC2ZLPZEHESPJXGEFT3QWYLKSITALAA
-          pkg/contract/external_contract_test.go	52fe334b4b472184266f01de42c05c9603ed5059	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/external_contract_test.go?token=AC2ZLP7FDALYGBQ45BEWA4TKSITALAA
-          pkg/contract/lint.go	9d88c2ccf08292577bd8848ffa3f0a4ace76a9d9	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/lint.go?token=AC2ZLP77CJNBQIUAVDDZ4BDKSITALAA
-          pkg/contract/model.go	e12dc418087a2f586152487931c8fe78fce76b07	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/model.go?token=AC2ZLP337L6DVZAVPSTIS73KSITALAA
-          pkg/contract/openapi.go	74b83b9a78e701fe5db55270eb95117b95c6e9ac	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/openapi.go?token=AC2ZLP3ZSX5R2XA4FDELPGDKSITALAA
-          pkg/contract/operation_plan.go	785c193eb57241ce3f9f86613422c3e4d5a09a54	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/operation_plan.go?token=AC2ZLP7HHSYDWDT2TWOOEVTKSITALAA
-          pkg/contract/operation_plan_test.go	90dacc0903549c9afabcedbe80d813dd084c4d5c	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/operation_plan_test.go?token=AC2ZLP3OODQW5HGVPJI55ELKSITALAA
-          pkg/contract/typescript.go	9e94df3e90bccd80128a756d3c186c33c8636b43	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contract/typescript.go?token=AC2ZLP6IK72OWDBATA6PJ33KSITALAA
-          pkg/contractdsl/v1/options.pb.go	d96ae7768a46b998ecb57271b06e0b716484f164	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/contractdsl/v1/options.pb.go?token=AC2ZLP7QHSFBSJW5RWJT7HTKSITMRAA
-          pkg/operationplan/plan.go	8df40dc79842d2c4d04b3720a7cd51c733a19e8f	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/operationplan/plan.go?token=AC2ZLP4M6YF4GYNSM4GHWILKSITMXAA
-          pkg/operationplan/plan_test.go	b771636580b6e90e320ca6d0e27205afe1c42533	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/pkg/operationplan/plan_test.go?token=AC2ZLPZAYNA7WR3DBA6BSCLKSITMXAA
-          AGENTS.md	570c4b91c5d683648ace6ddd4aa33cf6acfceea7	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/AGENTS.md?token=AC2ZLPYUOEKVQVDITILJAELKSHXILAA
-          PROJECT_MEMORY.md	893d2b1d12e5690db20267443eb340875fde4a84	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/PROJECT_MEMORY.md?token=AC2ZLP6UTEOZ6PCFORIGH4LKSHXILAA
-          README.md	be3f35738fe24ba43612cfedf43f205872f00319	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/README.md?token=AC2ZLP35RW4LERLGD2TSIJLKSHXILAA
-          .github/workflows/production.yml	085709ae1e949992f1616bd03886a618f2e1ccd1	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/.github/workflows/production.yml?token=AC2ZLPZ4H5PYRUUTY2MHDE3KSITRRAA
-          docs/waves/C9-operation-contract-runtime.md	507bdae343bca7e21e14438f565478126591f534	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/docs/waves/C9-operation-contract-runtime.md?token=AC2ZLPYFSR6BT5LM3BQQKUDKSITP5AA
-          docs/waves/C9.7-execution-semantics-closure.md	c1053ae7abc99416b13d2d976695cd6ed2818d59	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/docs/waves/C9.7-execution-semantics-closure.md?token=AC2ZLP3COUYHEZ4G6XSAMLTKSITP5AA
-          docs/waves/C9.8-canonical-internal-operations.md	d2624b64c00893643ec00b3c22f285b78bed27cc	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/docs/waves/C9.8-canonical-internal-operations.md?token=AC2ZLP3VQLET3F445AT4FH3KSITP5AA
-          docs/waves/C9.9-baseline-conformance-closure.md	66d06bc212effcd2f6e11dc6e938f5c8154b8cc4	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/docs/waves/C9.9-baseline-conformance-closure.md?token=AC2ZLP7Z6PNY4KEB3VD2RHDKSITP5AA
-          docs/waves/R0-c9-8-release-closure.md	fbd6442cb41caf56452a1477cc95b4607ea94e44	https://raw.githubusercontent.com/hvritual/yunka.io/agent/c9-9-baseline-conformance-closure/docs/waves/R0-c9-8-release-closure.md?token=AC2ZLP4DNFD5ATQUTRSP73LKSITP5AA
-          EOF
-
-          while IFS=$'\t' read -r path sha url; do
-            [[ -n "$path" ]] || continue
-            mkdir -p "$(dirname "$path")"
-            curl --fail --silent --show-error --location --retry 3 "$url" -o "$path"
-            actual="$(git hash-object "$path")"
-            test "$actual" = "$sha" || { echo "blob mismatch $path: $actual != $sha" >&2; exit 1; }
-          done < "$work/overlay.tsv"
 
           git init -q
           git config user.name c9-9-closure
           git config user.email c9-9-closure@invalid.local
           git add -A
-          git commit -qm 'C9.9 exact closure tree'
-          git status --short
-          echo "YUNKA_ROOT=$RUNNER_TEMP/yunka.io" >> "$GITHUB_ENV"
+          git commit -qm 'C9.7 exact base'
+          git apply --check "$GITHUB_WORKSPACE/.c9-9-control/c9-8-product.patch"
+          git apply "$GITHUB_WORKSPACE/.c9-9-control/c9-8-product.patch"
+
+          cat > "$work/expected.tsv" <<'EOF'
+          contracts/proto/yunka/dsl/v1/options.proto	fb98c274b6c93b928faadd1e266e3ab1792fa61e
+          pkg/applicationgraph/applicationgraph_test.go	2c79aa44749b3d4ad0d6418bf9dcdf5190acc92a
+          pkg/applicationgraph/contract.go	dbf632ba836a8593b0e039b3e5c188996ce3ff76
+          pkg/architecturepolicy/c8_4_test.go	31fd3ef3ebf8349a00cdfae5823e9edc06b1a74c
+          pkg/contract/application_codegen.go	8c177928a38df134c4623bfe4feb9d817a9ff516
+          pkg/contract/application_operations.go	2bffc636360b17c6c54934d0d3e254e772c9faad
+          pkg/contract/artifact.go	2a42fb7738bd0eaea1e40bbbcf82393c8bf527eb
+          pkg/contract/c9_application_codegen.go	33b9205916854240387c4e4faf061495152f9a93
+          pkg/contract/c9_application_codegen_test.go	289163489906a5a7e1390d21ebcf46ceb5ba6304
+          pkg/contract/compiler_test.go	b36ab076542a110d165402348789f2d089acfa19
+          pkg/contract/diff.go	d7e69df53672120402852b60cf940b833ef1604f
+          pkg/contract/dsl_descriptor.go	004e5d65fb88356dc6f706635935a5accff46994
+          pkg/contract/external_contract.go	0c2abc6fc0b53652168f4387b536fdd9f5dd4058
+          pkg/contract/external_contract_test.go	52fe334b4b472184266f01de42c05c9603ed5059
+          pkg/contract/lint.go	9d88c2ccf08292577bd8848ffa3f0a4ace76a9d9
+          pkg/contract/model.go	e12dc418087a2f586152487931c8fe78fce76b07
+          pkg/contract/openapi.go	74b83b9a78e701fe5db55270eb95117b95c6e9ac
+          pkg/contract/operation_plan.go	785c193eb57241ce3f9f86613422c3e4d5a09a54
+          pkg/contract/operation_plan_test.go	90dacc0903549c9afabcedbe80d813dd084c4d5c
+          pkg/contract/typescript.go	9e94df3e90bccd80128a756d3c186c33c8636b43
+          pkg/contractdsl/v1/options.pb.go	d96ae7768a46b998ecb57271b06e0b716484f164
+          pkg/operationplan/plan.go	8df40dc79842d2c4d04b3720a7cd51c733a19e8f
+          pkg/operationplan/plan_test.go	b771636580b6e90e320ca6d0e27205afe1c42533
+          EOF
+          while IFS=$'\t' read -r path want; do
+            got="$(git hash-object "$path")"
+            test "$got" = "$want" || { echo "exact-tree mismatch $path: $got != $want" >&2; exit 1; }
+          done < "$work/expected.tsv"
+
+          git add -A
+          git commit -qm 'C9.8 exact product tree'
+          echo "YUNKA_ROOT=$YUNKA_ROOT" >> "$GITHUB_ENV"
+          echo "exact C9.8 product overlay verified: 23/23 blobs"
 
       - name: Load locked Yunka toolchain
         id: lock
@@ -137,7 +132,7 @@ jobs:
           unzip -q "$archive" -d "$install_root"
           echo "$install_root/bin" >> "$GITHUB_PATH"
 
-      - name: Verify exact Yunka closure on MySQL 8.4
+      - name: Verify exact Yunka product tree on MySQL 8.4
         shell: bash
         env:
           YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/yunka_test?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
@@ -161,19 +156,19 @@ jobs:
         run: |
           set -euo pipefail
           ! grep -R -n 'rpc ValidateTransferTarget' contracts/proto contracts/gen
-          ! grep -R -n 'RegisterSiteManagementOperationExecutor' modules internal/deviceops/transport || true
+          ! grep -R -n 'RegisterSiteManagementOperationExecutor' modules internal/deviceops/transport
           test ! -e internal/deviceops/transport/rest/zz_yunka_site_management_operation_executor_gen.go
           test ! -e internal/deviceops/transport/rpc/zz_yunka_site_management_operation_executor_gen.go
-          grep -R -n 'operation.ExecuteChildTyped' internal/deviceops/application/zz_yunka_device_transfer_capability_ports_gen.go
-          grep -R -n 'ValidateTransferTarget' internal/deviceops/application/zz_yunka_device_transfer_capability_ports_gen.go
+          grep -n 'operation.ExecuteChildTyped' internal/deviceops/application/zz_yunka_device_transfer_capability_ports_gen.go
+          grep -n 'ValidateTransferTarget' internal/deviceops/application/zz_yunka_device_transfer_capability_ports_gen.go
           python3 - <<'PY'
           import json
           p=json.load(open('contracts/generated/operation-plans.json'))
           ops={x['operationId']:x for x in p['operations']}
           op=ops['site.validate_transfer_target']
+          assert op['application'] == 'site_management', op
           assert op['bindings'].get('rpc','') == '', op
           assert not op['bindings'].get('http'), op
-          assert op['application'] == 'site_management', op
           print('internal operation plan:', op['operationId'], op['bindings'])
           PY
           ! grep -n 'ValidateTransferTargetRequest' contracts/generated/openapi.json
@@ -193,10 +188,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tar --exclude=.git -czf "$RUNNER_TEMP/biz-c9-9-regenerated.tar.gz" .
+          tar --exclude=.git --exclude=.c9-9-control -czf "$RUNNER_TEMP/biz-c9-9-regenerated.tar.gz" .
           sha256sum "$RUNNER_TEMP/biz-c9-9-regenerated.tar.gz" > "$RUNNER_TEMP/biz-c9-9-regenerated.tar.gz.sha256"
-          cp "$RUNNER_TEMP/biz-generated-status.txt" "$RUNNER_TEMP/" 2>/dev/null || true
-          cp "$RUNNER_TEMP/biz-generated-files.txt" "$RUNNER_TEMP/" 2>/dev/null || true
+          test -e "$RUNNER_TEMP/biz-generated-status.txt" || : > "$RUNNER_TEMP/biz-generated-status.txt"
+          test -e "$RUNNER_TEMP/biz-generated-files.txt" || : > "$RUNNER_TEMP/biz-generated-files.txt"
 
       - name: Upload regenerated consumer evidence
         if: always()
@@ -208,5 +203,5 @@ jobs:
             ${{ runner.temp }}/biz-c9-9-regenerated.tar.gz.sha256
             ${{ runner.temp }}/biz-generated-status.txt
             ${{ runner.temp }}/biz-generated-files.txt
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 1
