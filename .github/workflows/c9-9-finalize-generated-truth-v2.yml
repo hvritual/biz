@@ -44,7 +44,7 @@ jobs:
             -o "$work/evidence.zip"
           echo '8dee870049ec0feb39475d2e1697c5cc49c44539d712b6742e299c3e59e2ae4b  '"$work/evidence.zip" | sha256sum -c -
           unzip -q "$work/evidence.zip" -d "$work/evidence"
-          (cd "$work/evidence" && sha256sum -c biz-c9-9-regenerated.tar.gz.sha256)
+          echo 'e8526f215d6b05c063f2d3823d323677a7df2e02a376a3ce22d4a15d00b6400b  '"$work/evidence/biz-c9-9-regenerated.tar.gz" | sha256sum -c -
           tar -xzf "$work/evidence/biz-c9-9-regenerated.tar.gz" -C "$work/regenerated"
           cat > "$work/generated.paths" <<'EOF'
           contracts/gen/deviceops/v1/deviceops.pb.go
