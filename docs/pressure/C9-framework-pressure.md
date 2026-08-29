@@ -8,7 +8,7 @@ Pressure is evidence, not an automatic feature request. A mechanism is promoted 
 
 ## Current evidence baseline
 
-Strong executable evidence already obtained:
+Strong executable evidence obtained across C9.7-C9.9:
 
 - C9.7 real Biz conformance run `33172479345` on MySQL 8.4.11:
   - C9.7 contract regeneration;
@@ -27,16 +27,31 @@ Strong executable evidence already obtained:
   - no child root authorization;
   - no nested child transaction;
   - permission closure enforced before mutation.
-
-C9.8 later replaced the fake Site RPC representation with a canonical application-level internal Operation. Final hosted-runner revalidation after that contract-projection refinement was blocked by jobs failing before any workflow step executed (`steps=null`). C9.9 owns exact-current revalidation and must not count those step-zero jobs as passing evidence.
+- C9.9 exact-current executable closure run `33242472137`:
+  - exact C9.8 Yunka product tree reconstructed from a SHA-verified source artifact plus the merged PR #35 product patch;
+  - locked Go `1.25.13` and protoc `3.21.12`;
+  - canonical Yunka contract regeneration;
+  - full Yunka `make verify-production` against MySQL 8.4.11;
+  - real Biz `make generate`;
+  - explicit assertions that `site.validate_transfer_target` has no REST/gRPC binding or generated transport while its typed child capability remains generated;
+  - real Biz `make verify` and `make pressure` against MySQL 8.4.11.
+- C9.9 generated-truth qualification run `33244218676`:
+  - restored the exact 21-file generated consumer truth from the all-green evidence artifact;
+  - built locked protobuf Go plugins from Yunka's pinned toolchain;
+  - committed generated truth only;
+  - re-ran `make generate` with zero worktree drift;
+  - re-ran current internal-Operation/composition assertions;
+  - re-ran Biz `make verify` and MySQL `make pressure`;
+  - pushed qualified generated commit `79e4a8105c510cb46ef3a881215eac0a8ade3bd8`.
+- Verification scaffolding was then removed in control-only commit `703a2d90bdb2c6acf71e4931a89e0050c30d0284`. The cleanup commit changes no product/generated files.
 
 ## Positive conformance evidence
 
 | Area | Result | Escape count |
 |---|---|---:|
-| REST execution | generated transport enters shared C9 Executor | 0 |
-| gRPC execution | generated transport enters same C9 Executor | 0 |
-| Internal child execution | generated capability enters `ExecuteChildTyped` without fake external endpoint | 0 framework escape |
+| REST execution | generated Device Management / Device Transfer transports enter shared C9 Executor | 0 |
+| gRPC execution | generated Device Management / Device Transfer transports enter the same C9 Executor | 0 |
+| Internal child execution | generated Site capability enters `ExecuteChildTyped` without fake external endpoint | 0 framework escape |
 | Authorization | root Operation uses `NewExecutionSecurity` once | 0 |
 | Application authorization | no role/permission evaluation in Application | 0 |
 | Transaction lifecycle | root Executor/ExecutionScope owns UoW; Application uses requestscope join views | 0 |
@@ -45,6 +60,7 @@ C9.8 later replaced the fake Site RPC representation with a canonical applicatio
 | Application persistence coupling | no `requestscope.GORMFrom`, `gorm.io/gorm`, or transaction handle in Application | 0 |
 | Operation idempotency | durable store + lease/fencing + atomic success marker | 0 framework escape |
 | External contract projection | internal-only Operation has no REST/gRPC binding; internal-only DTOs are not externally projected unless transport-reachable | 0 intended external exposure |
+| Generated truth | committed Biz generated state regenerates with zero drift | 0 |
 
 ## Pressure items
 
@@ -62,6 +78,8 @@ Internal Operations now:
 - may have empty HTTP/gRPC bindings;
 - do not require a protobuf RPC method;
 - keep internal-only DTOs out of external OpenAPI/TypeScript projections unless those types are reachable from a real external method.
+
+C9.9 exact-current regeneration and MySQL pressure reconfirmed this representation without a fake Site RPC.
 
 **Status:** **CLOSED by C9.8.**
 
@@ -120,7 +138,7 @@ Previous state: deterministic Saga envelope IDs prevented duplicate remote steps
 
 The parent Operation may declare `composition=remote_saga`, but concrete Saga steps, effect types/topics and compensation relations remain handwritten business facts in `saga.Plan` and are not yet represented as safe graph evidence.
 
-C9.8 produced no second independent real pressure signal requiring this topology in the control plane.
+C9.8/C9.9 produced no second independent real pressure signal requiring this topology in the control plane.
 
 **Status:** **OPEN / DEFERRED.**
 
@@ -151,7 +169,7 @@ device_transfer
   -> device.update
 ```
 
-The MySQL 8.4 run `33176909258` verified one root authorization, one transaction, two child invocations, no nested transaction, no second root authorization and Permission-closure fail-closed behavior.
+The MySQL 8.4 run `33176909258` verified one root authorization, one transaction, two child invocations, no nested transaction, no second root authorization and Permission-closure fail-closed behavior. C9.9 run `33242472137` reconfirmed the final internal-Operation consumer representation and MySQL pressure after deterministic regeneration.
 
 **Status:** **CLOSED by C9.7 mechanism + C9.8 real cross-Application proof.**
 
@@ -161,12 +179,13 @@ The MySQL 8.4 run `33176909258` verified one root authorization, one transaction
 
 ## CI infrastructure notes — not Framework Pressure
 
-1. Private repository-scoped `GITHUB_TOKEN` cannot directly checkout the sibling private Yunka/Biz repository. Previous conformance therefore used exact source-artifact bridging. This is a GitHub Actions credential boundary, not a Yunka runtime defect.
-2. Later hosted-runner attempts created jobs that failed before any workflow step executed (`steps=null`). These are unresolved verification gates, not passing evidence and not code-test failures.
+1. Repository-scoped `GITHUB_TOKEN` cannot directly checkout a sibling private repository. Exact source-artifact bridging remains a CI credential/infrastructure concern, not a Yunka runtime defect.
+2. Yunka-native hosted-runner jobs have repeatedly ended before any workflow step executes (`steps=null`), including the latest C9.9 branch CI/production attempts. This remains an external GitHub Actions allocation issue.
+3. C9.9 no longer depends on that native-runner condition for executable truth: the exact Yunka product tree was SHA-verified and exercised with the locked toolchain and MySQL 8.4.11 on the working Biz hosted runner in run `33242472137`.
 
-C9.9 must re-run the real consumer against the exact closure tree when executable runner capacity is available.
+The native Yunka runner issue remains operational CI debt, but it is no longer an unresolved framework/consumer verification result.
 
-## Pressure summary after C9.8
+## Pressure summary after C9.9
 
 | ID | Pressure | Severity | Current status |
 |---|---|---:|---|
@@ -177,19 +196,20 @@ C9.9 must re-run the real consumer against the exact closure tree when executabl
 | FP-C9-005 | Saga topology absent from graph | P1 | **OPEN / DEFERRED** |
 | FP-C9-006 | child Operation + shared local UoW | P1 | **CLOSED by C9.8 proof** |
 
-## C9.9 closure requirement
+## C9.9 closure state
 
-Do not promote more framework mechanisms from this ledger during C9.9.
-
-C9.9 exists to make the following exact-current facts agree:
+C9.9 has re-converged the real consumer execution facts:
 
 ```text
-Yunka main / closure branch
-== generated contract
-== this Pressure ledger
-== wave docs / durable memory / issues
-== real Biz regenerate + verify + pressure
-== repository verification gates
+canonical internal Operation contract
+== generated OperationPlan / OpenAPI / TypeScript / Go artifacts
+== Pressure ledger
+== real Biz source wiring
+== zero-drift regeneration
+== Biz verify + MySQL pressure
+== exact Yunka verify-production + MySQL integration
 ```
 
-Audit, cache policy, distributed transaction/2PC, BPMN/generic workflow, generic data-scope models and Saga graph expansion remain outside the current pressure contract.
+The qualified generated consumer commit is `79e4a8105c510cb46ef3a881215eac0a8ade3bd8`; verification-only scaffolding was removed immediately afterward without changing product/generated files.
+
+Do not promote more framework mechanisms from this ledger during C9.9. Audit, cache policy, distributed transaction/2PC, BPMN/generic workflow, generic data-scope models and Saga graph expansion remain outside the current pressure contract.
