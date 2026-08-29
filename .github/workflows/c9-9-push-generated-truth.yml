@@ -125,6 +125,12 @@ jobs:
           mkdir -p "$root" && unzip -q "$archive" -d "$root"
           echo "$root/bin" >> "$GITHUB_PATH"
 
+      - name: Install locked RPC plugins
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C "$YUNKA_ROOT" rpc-tools rpc-toolchain-check
+
       - name: Commit generated truth only
         shell: bash
         run: |
