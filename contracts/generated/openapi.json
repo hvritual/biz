@@ -87,6 +87,23 @@
         "type": "object",
         "x-yunka-proto-full-name": "deviceops.v1.ListDevicesResponse"
       },
+      "deviceops_v1_TransferDeviceRequest": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "targetSiteId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "deviceops.v1.TransferDeviceRequest"
+      },
       "deviceops_v1_UpdateDeviceRequest": {
         "properties": {
           "id": {
@@ -273,8 +290,49 @@
         ],
         "x-yunka-rpc": "/deviceops.v1.DeviceApplication/UpdateDevice"
       }
+    },
+    "/v1/devices/{id}/transfer": {
+      "patch": {
+        "operationId": "deviceops.v1.DeviceTransferApplication.TransferDevice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/deviceops_v1_TransferDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/deviceops_v1_DeviceDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "deviceops.v1.DeviceTransferApplication"
+        ],
+        "x-yunka-rpc": "/deviceops.v1.DeviceTransferApplication/TransferDevice"
+      }
     }
   },
-  "x-yunka-contract-version": 2,
+  "x-yunka-contract-version": 3,
   "x-yunka-rpc-methods": null
 }

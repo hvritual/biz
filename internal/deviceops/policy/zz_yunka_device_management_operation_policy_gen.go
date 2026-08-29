@@ -4,22 +4,26 @@ package policy
 
 import "yunka.io/gateway/authz"
 
-const OperationCreateDevice authz.OperationID = "device.create"
-const OperationDeleteDevice authz.OperationID = "device.delete"
-const OperationGetDevice authz.OperationID = "device.get"
-const OperationListDevices authz.OperationID = "device.list"
-const OperationUpdateDevice authz.OperationID = "device.update"
+const OperationDeviceManagementCreateDevice authz.OperationID = "device.create"
+const OperationDeviceManagementDeleteDevice authz.OperationID = "device.delete"
+const OperationDeviceManagementGetDevice authz.OperationID = "device.get"
+const OperationDeviceManagementListDevices authz.OperationID = "device.list"
+const OperationDeviceManagementUpdateDevice authz.OperationID = "device.update"
 
-func Permissions() []authz.PermissionKey {
+func DeviceManagementPermissions() []authz.PermissionKey {
 	return []authz.PermissionKey{"device.create", "device.delete", "device.read", "device.update"}
 }
 
-func Resolver() authz.StaticResolver {
-	return authz.NewStaticResolver(map[string]authz.Policy{
-		"/deviceops.v1.DeviceApplication/CreateDevice": {Operation: OperationCreateDevice, Permissions: []authz.PermissionKey{"device.create"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
-		"/deviceops.v1.DeviceApplication/DeleteDevice": {Operation: OperationDeleteDevice, Permissions: []authz.PermissionKey{"device.delete"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
-		"/deviceops.v1.DeviceApplication/GetDevice":    {Operation: OperationGetDevice, Permissions: []authz.PermissionKey{"device.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
-		"/deviceops.v1.DeviceApplication/ListDevices":  {Operation: OperationListDevices, Permissions: []authz.PermissionKey{"device.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
-		"/deviceops.v1.DeviceApplication/UpdateDevice": {Operation: OperationUpdateDevice, Permissions: []authz.PermissionKey{"device.update"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
-	})
+func DeviceManagementResolver() authz.StaticResolver {
+	return authz.NewStaticResolver(deviceManagementPolicies())
+}
+
+func deviceManagementPolicies() map[string]authz.Policy {
+	return map[string]authz.Policy{
+		"/deviceops.v1.DeviceApplication/CreateDevice": {Operation: OperationDeviceManagementCreateDevice, Permissions: []authz.PermissionKey{"device.create"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
+		"/deviceops.v1.DeviceApplication/DeleteDevice": {Operation: OperationDeviceManagementDeleteDevice, Permissions: []authz.PermissionKey{"device.delete"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
+		"/deviceops.v1.DeviceApplication/GetDevice":    {Operation: OperationDeviceManagementGetDevice, Permissions: []authz.PermissionKey{"device.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
+		"/deviceops.v1.DeviceApplication/ListDevices":  {Operation: OperationDeviceManagementListDevices, Permissions: []authz.PermissionKey{"device.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
+		"/deviceops.v1.DeviceApplication/UpdateDevice": {Operation: OperationDeviceManagementUpdateDevice, Permissions: []authz.PermissionKey{"device.update"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
+	}
 }

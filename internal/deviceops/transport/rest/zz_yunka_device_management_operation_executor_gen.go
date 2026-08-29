@@ -16,12 +16,12 @@ import (
 	authz "yunka.io/gateway/authz"
 )
 
-type OperationHandler struct {
-	application application.DeviceApplication
+type DeviceManagementOperationHandler struct {
+	application application.DeviceManagementApplication
 	executor    operation.Executor
 }
 
-func RegisterOperationExecutor(mux *http.ServeMux, application application.DeviceApplication, executor operation.Executor) error {
+func RegisterDeviceManagementOperationExecutor(mux *http.ServeMux, application application.DeviceManagementApplication, executor operation.Executor) error {
 	if mux == nil {
 		return errors.New("contract C9 REST adapter: mux is required")
 	}
@@ -31,7 +31,7 @@ func RegisterOperationExecutor(mux *http.ServeMux, application application.Devic
 	if executor == nil {
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
-	handler := &OperationHandler{application: application, executor: executor}
+	handler := &DeviceManagementOperationHandler{application: application, executor: executor}
 	mux.HandleFunc("POST /v1/devices", handler.handleOperationCreateDevice)
 	mux.HandleFunc("DELETE /v1/devices/{id}", handler.handleOperationDeleteDevice)
 	mux.HandleFunc("GET /v1/devices/{id}", handler.handleOperationGetDevice)
@@ -40,7 +40,7 @@ func RegisterOperationExecutor(mux *http.ServeMux, application application.Devic
 	return nil
 }
 
-func writeOperationError(writer http.ResponseWriter, err error) {
+func writeDeviceManagementOperationError(writer http.ResponseWriter, err error) {
 	if authz.IsDenied(err) {
 		statusCode := http.StatusForbidden
 		var denied *authz.DeniedError
@@ -65,7 +65,7 @@ func writeOperationError(writer http.ResponseWriter, err error) {
 	http.Error(writer, "application request failed", http.StatusBadRequest)
 }
 
-func (handler *OperationHandler) handleOperationCreateDevice(writer http.ResponseWriter, request *http.Request) {
+func (handler *DeviceManagementOperationHandler) handleOperationCreateDevice(writer http.ResponseWriter, request *http.Request) {
 	wire := &deviceopsv1.CreateDeviceRequest{}
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -79,9 +79,9 @@ func (handler *OperationHandler) handleOperationCreateDevice(writer http.Respons
 		}
 	}
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanCreateDevice(), wire, handler.application.CreateDevice)
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanDeviceManagementCreateDevice(), wire, handler.application.CreateDevice)
 	if err != nil {
-		writeOperationError(writer, err)
+		writeDeviceManagementOperationError(writer, err)
 		return
 	}
 	payload, err := protojson.Marshal(output)
@@ -93,7 +93,7 @@ func (handler *OperationHandler) handleOperationCreateDevice(writer http.Respons
 	_, _ = writer.Write(payload)
 }
 
-func (handler *OperationHandler) handleOperationDeleteDevice(writer http.ResponseWriter, request *http.Request) {
+func (handler *DeviceManagementOperationHandler) handleOperationDeleteDevice(writer http.ResponseWriter, request *http.Request) {
 	wire := &deviceopsv1.DeleteDeviceRequest{}
 	if raw := request.URL.Query().Get("version"); raw != "" {
 		parsed, err := strconv.ParseUint(raw, 10, 64)
@@ -105,9 +105,9 @@ func (handler *OperationHandler) handleOperationDeleteDevice(writer http.Respons
 	}
 	wire.Id = request.PathValue("id")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanDeleteDevice(), wire, handler.application.DeleteDevice)
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanDeviceManagementDeleteDevice(), wire, handler.application.DeleteDevice)
 	if err != nil {
-		writeOperationError(writer, err)
+		writeDeviceManagementOperationError(writer, err)
 		return
 	}
 	payload, err := protojson.Marshal(output)
@@ -119,13 +119,13 @@ func (handler *OperationHandler) handleOperationDeleteDevice(writer http.Respons
 	_, _ = writer.Write(payload)
 }
 
-func (handler *OperationHandler) handleOperationGetDevice(writer http.ResponseWriter, request *http.Request) {
+func (handler *DeviceManagementOperationHandler) handleOperationGetDevice(writer http.ResponseWriter, request *http.Request) {
 	wire := &deviceopsv1.GetDeviceRequest{}
 	wire.Id = request.PathValue("id")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanGetDevice(), wire, handler.application.GetDevice)
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanDeviceManagementGetDevice(), wire, handler.application.GetDevice)
 	if err != nil {
-		writeOperationError(writer, err)
+		writeDeviceManagementOperationError(writer, err)
 		return
 	}
 	payload, err := protojson.Marshal(output)
@@ -137,12 +137,12 @@ func (handler *OperationHandler) handleOperationGetDevice(writer http.ResponseWr
 	_, _ = writer.Write(payload)
 }
 
-func (handler *OperationHandler) handleOperationListDevices(writer http.ResponseWriter, request *http.Request) {
+func (handler *DeviceManagementOperationHandler) handleOperationListDevices(writer http.ResponseWriter, request *http.Request) {
 	wire := &deviceopsv1.ListDevicesRequest{}
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanListDevices(), wire, handler.application.ListDevices)
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanDeviceManagementListDevices(), wire, handler.application.ListDevices)
 	if err != nil {
-		writeOperationError(writer, err)
+		writeDeviceManagementOperationError(writer, err)
 		return
 	}
 	payload, err := protojson.Marshal(output)
@@ -154,7 +154,7 @@ func (handler *OperationHandler) handleOperationListDevices(writer http.Response
 	_, _ = writer.Write(payload)
 }
 
-func (handler *OperationHandler) handleOperationUpdateDevice(writer http.ResponseWriter, request *http.Request) {
+func (handler *DeviceManagementOperationHandler) handleOperationUpdateDevice(writer http.ResponseWriter, request *http.Request) {
 	wire := &deviceopsv1.UpdateDeviceRequest{}
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -169,9 +169,9 @@ func (handler *OperationHandler) handleOperationUpdateDevice(writer http.Respons
 	}
 	wire.Id = request.PathValue("id")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanUpdateDevice(), wire, handler.application.UpdateDevice)
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanDeviceManagementUpdateDevice(), wire, handler.application.UpdateDevice)
 	if err != nil {
-		writeOperationError(writer, err)
+		writeDeviceManagementOperationError(writer, err)
 		return
 	}
 	payload, err := protojson.Marshal(output)

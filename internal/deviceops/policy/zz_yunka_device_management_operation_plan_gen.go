@@ -4,22 +4,22 @@ package policy
 
 import "yunka.io/pkg/operationplan"
 
-func OperationPlanCreateDevice() operationplan.Plan {
+func OperationPlanDeviceManagementCreateDevice() operationplan.Plan {
 	return operationplan.Plan{OperationID: "device.create", Domain: "deviceops", Application: "device_management", UseCase: "create_device", RequestType: "deviceops.v1.CreateDeviceRequest", ResponseType: "deviceops.v1.DeviceDTO", Execution: operationplan.Execution{Transaction: "local", Idempotency: "required"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key"}, Permissions: []string{"device.create"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "/deviceops.v1.DeviceApplication/CreateDevice", HTTP: []operationplan.HTTPBinding{{Method: "POST", Path: "/v1/devices", Body: "*", ResponseBody: ""}}}}
 }
 
-func OperationPlanDeleteDevice() operationplan.Plan {
+func OperationPlanDeviceManagementDeleteDevice() operationplan.Plan {
 	return operationplan.Plan{OperationID: "device.delete", Domain: "deviceops", Application: "device_management", UseCase: "delete_device", RequestType: "deviceops.v1.DeleteDeviceRequest", ResponseType: "deviceops.v1.DeleteDeviceResponse", Execution: operationplan.Execution{Transaction: "local", Idempotency: "required"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key"}, Permissions: []string{"device.delete"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "/deviceops.v1.DeviceApplication/DeleteDevice", HTTP: []operationplan.HTTPBinding{{Method: "DELETE", Path: "/v1/devices/{id}", Body: "", ResponseBody: ""}}}}
 }
 
-func OperationPlanGetDevice() operationplan.Plan {
+func OperationPlanDeviceManagementGetDevice() operationplan.Plan {
 	return operationplan.Plan{OperationID: "device.get", Domain: "deviceops", Application: "device_management", UseCase: "get_device", RequestType: "deviceops.v1.GetDeviceRequest", ResponseType: "deviceops.v1.DeviceDTO", Execution: operationplan.Execution{Transaction: "read_only", Idempotency: "none"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key"}, Permissions: []string{"device.read"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "/deviceops.v1.DeviceApplication/GetDevice", HTTP: []operationplan.HTTPBinding{{Method: "GET", Path: "/v1/devices/{id}", Body: "", ResponseBody: ""}}}}
 }
 
-func OperationPlanListDevices() operationplan.Plan {
+func OperationPlanDeviceManagementListDevices() operationplan.Plan {
 	return operationplan.Plan{OperationID: "device.list", Domain: "deviceops", Application: "device_management", UseCase: "list_devices", RequestType: "deviceops.v1.ListDevicesRequest", ResponseType: "deviceops.v1.ListDevicesResponse", Execution: operationplan.Execution{Transaction: "read_only", Idempotency: "none"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key"}, Permissions: []string{"device.read"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "/deviceops.v1.DeviceApplication/ListDevices", HTTP: []operationplan.HTTPBinding{{Method: "GET", Path: "/v1/devices", Body: "", ResponseBody: ""}}}}
 }
 
-func OperationPlanUpdateDevice() operationplan.Plan {
+func OperationPlanDeviceManagementUpdateDevice() operationplan.Plan {
 	return operationplan.Plan{OperationID: "device.update", Domain: "deviceops", Application: "device_management", UseCase: "update_device", RequestType: "deviceops.v1.UpdateDeviceRequest", ResponseType: "deviceops.v1.DeviceDTO", Execution: operationplan.Execution{Transaction: "local", Idempotency: "required"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key"}, Permissions: []string{"device.update"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "/deviceops.v1.DeviceApplication/UpdateDevice", HTTP: []operationplan.HTTPBinding{{Method: "PATCH", Path: "/v1/devices/{id}", Body: "*", ResponseBody: ""}}}}
 }

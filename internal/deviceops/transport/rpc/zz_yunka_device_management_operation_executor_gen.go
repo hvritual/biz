@@ -15,13 +15,13 @@ import (
 	gatewaygrpc "yunka.io/gateway/rpc/transport/grpc"
 )
 
-type OperationServer struct {
+type DeviceManagementOperationServer struct {
 	deviceopsv1.UnimplementedDeviceApplicationServer
-	application application.DeviceApplication
+	application application.DeviceManagementApplication
 	executor    operation.Executor
 }
 
-func RegisterOperationExecutor(registrar grpc.ServiceRegistrar, application application.DeviceApplication, executor operation.Executor) error {
+func RegisterDeviceManagementOperationExecutor(registrar grpc.ServiceRegistrar, application application.DeviceManagementApplication, executor operation.Executor) error {
 	if registrar == nil {
 		return errors.New("contract C9 RPC adapter: registrar is required")
 	}
@@ -31,69 +31,69 @@ func RegisterOperationExecutor(registrar grpc.ServiceRegistrar, application appl
 	if executor == nil {
 		return errors.New("contract C9 RPC adapter: operation executor is required")
 	}
-	deviceopsv1.RegisterDeviceApplicationServer(registrar, &OperationServer{application: application, executor: executor})
+	deviceopsv1.RegisterDeviceApplicationServer(registrar, &DeviceManagementOperationServer{application: application, executor: executor})
 	return nil
 }
 
-func (server *OperationServer) CreateDevice(ctx context.Context, request *deviceopsv1.CreateDeviceRequest) (*deviceopsv1.DeviceDTO, error) {
+func (server *DeviceManagementOperationServer) CreateDevice(ctx context.Context, request *deviceopsv1.CreateDeviceRequest) (*deviceopsv1.DeviceDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
 			ctx = execution.WithIdempotencyKey(ctx, values[0])
 		}
 	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanCreateDevice(), request, server.application.CreateDevice)
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanDeviceManagementCreateDevice(), request, server.application.CreateDevice)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
 	return response, nil
 }
 
-func (server *OperationServer) DeleteDevice(ctx context.Context, request *deviceopsv1.DeleteDeviceRequest) (*deviceopsv1.DeleteDeviceResponse, error) {
+func (server *DeviceManagementOperationServer) DeleteDevice(ctx context.Context, request *deviceopsv1.DeleteDeviceRequest) (*deviceopsv1.DeleteDeviceResponse, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
 			ctx = execution.WithIdempotencyKey(ctx, values[0])
 		}
 	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanDeleteDevice(), request, server.application.DeleteDevice)
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanDeviceManagementDeleteDevice(), request, server.application.DeleteDevice)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
 	return response, nil
 }
 
-func (server *OperationServer) GetDevice(ctx context.Context, request *deviceopsv1.GetDeviceRequest) (*deviceopsv1.DeviceDTO, error) {
+func (server *DeviceManagementOperationServer) GetDevice(ctx context.Context, request *deviceopsv1.GetDeviceRequest) (*deviceopsv1.DeviceDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
 			ctx = execution.WithIdempotencyKey(ctx, values[0])
 		}
 	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanGetDevice(), request, server.application.GetDevice)
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanDeviceManagementGetDevice(), request, server.application.GetDevice)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
 	return response, nil
 }
 
-func (server *OperationServer) ListDevices(ctx context.Context, request *deviceopsv1.ListDevicesRequest) (*deviceopsv1.ListDevicesResponse, error) {
+func (server *DeviceManagementOperationServer) ListDevices(ctx context.Context, request *deviceopsv1.ListDevicesRequest) (*deviceopsv1.ListDevicesResponse, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
 			ctx = execution.WithIdempotencyKey(ctx, values[0])
 		}
 	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanListDevices(), request, server.application.ListDevices)
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanDeviceManagementListDevices(), request, server.application.ListDevices)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
 	return response, nil
 }
 
-func (server *OperationServer) UpdateDevice(ctx context.Context, request *deviceopsv1.UpdateDeviceRequest) (*deviceopsv1.DeviceDTO, error) {
+func (server *DeviceManagementOperationServer) UpdateDevice(ctx context.Context, request *deviceopsv1.UpdateDeviceRequest) (*deviceopsv1.DeviceDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
 			ctx = execution.WithIdempotencyKey(ctx, values[0])
 		}
 	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanUpdateDevice(), request, server.application.UpdateDevice)
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanDeviceManagementUpdateDevice(), request, server.application.UpdateDevice)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}

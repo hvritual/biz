@@ -53,6 +53,12 @@ export interface Deviceops_V1_ListDevicesResponse {
   devices?: readonly Deviceops_V1_DeviceDTO[];
 }
 
+export interface Deviceops_V1_TransferDeviceRequest {
+  id?: string;
+  targetSiteId?: string;
+  version?: string;
+}
+
 export interface Deviceops_V1_UpdateDeviceRequest {
   id?: string;
   siteId?: string;
@@ -106,6 +112,15 @@ export const operations = {
       { method: "PATCH", path: "/v1/devices/{id}", body: "*" },
     ]
   },
+  "deviceops.v1.DeviceTransferApplication.TransferDevice": {
+    fullName: "deviceops.v1.DeviceTransferApplication.TransferDevice",
+    rpcPath: "/deviceops.v1.DeviceTransferApplication/TransferDevice",
+    requestType: "deviceops.v1.TransferDeviceRequest",
+    responseType: "deviceops.v1.DeviceDTO",
+    http: [
+      { method: "PATCH", path: "/v1/devices/{id}/transfer", body: "*" },
+    ]
+  },
 } as const satisfies Record<string, RpcOperation>;
 
 export class Deviceops_V1_DeviceApplicationClient {
@@ -129,6 +144,15 @@ export class Deviceops_V1_DeviceApplicationClient {
 
   updateDevice(request: Deviceops_V1_UpdateDeviceRequest): Promise<Deviceops_V1_DeviceDTO> {
     return this.transport.call<Deviceops_V1_UpdateDeviceRequest, Deviceops_V1_DeviceDTO>(operations["deviceops.v1.DeviceApplication.UpdateDevice"], request);
+  }
+
+}
+
+export class Deviceops_V1_DeviceTransferApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  transferDevice(request: Deviceops_V1_TransferDeviceRequest): Promise<Deviceops_V1_DeviceDTO> {
+    return this.transport.call<Deviceops_V1_TransferDeviceRequest, Deviceops_V1_DeviceDTO>(operations["deviceops.v1.DeviceTransferApplication.TransferDevice"], request);
   }
 
 }

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "files": [
     {
       "name": "deviceops/v1/deviceops.proto",
@@ -167,6 +167,66 @@
       }
     },
     {
+      "name": "SiteDTO",
+      "fullName": "deviceops.v1.SiteDTO",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "TransferDeviceRequest",
+      "fullName": "deviceops.v1.TransferDeviceRequest",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "target_site_id",
+          "jsonName": "targetSiteId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "UpdateDeviceRequest",
       "fullName": "deviceops.v1.UpdateDeviceRequest",
       "fields": [
@@ -197,6 +257,22 @@
           "number": 4,
           "kind": "scalar",
           "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ValidateTransferTargetRequest",
+      "fullName": "deviceops.v1.ValidateTransferTargetRequest",
+      "fields": [
+        {
+          "name": "site_id",
+          "jsonName": "siteId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
@@ -412,6 +488,97 @@
           }
         }
       ]
+    },
+    {
+      "name": "DeviceTransferApplication",
+      "fullName": "deviceops.v1.DeviceTransferApplication",
+      "domain": "deviceops",
+      "application": {
+        "name": "device_transfer",
+        "requires": [
+          "deviceops/device_management",
+          "deviceops/site_management"
+        ]
+      },
+      "methods": [
+        {
+          "name": "TransferDevice",
+          "fullName": "deviceops.v1.DeviceTransferApplication.TransferDevice",
+          "request": "deviceops.v1.TransferDeviceRequest",
+          "response": "deviceops.v1.DeviceDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/devices/{id}/transfer",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "device.transfer",
+            "useCase": "transfer_device",
+            "permissions": [
+              "device.update",
+              "site.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "device.update",
+              "site.validate_transfer_target"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "device.transfer",
+            "permissions": [
+              "device.update",
+              "site.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "SiteApplication",
+      "fullName": "deviceops.v1.SiteApplication",
+      "domain": "deviceops",
+      "application": {
+        "name": "site_management",
+        "operations": [
+          {
+            "id": "site.validate_transfer_target",
+            "useCase": "validate_transfer_target",
+            "permissions": [
+              "site.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "deviceops.v1.ValidateTransferTargetRequest",
+            "responseType": "deviceops.v1.SiteDTO",
+            "applicationMethod": "ValidateTransferTarget"
+          }
+        ]
+      },
+      "methods": null
     }
   ]
 }

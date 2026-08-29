@@ -131,6 +131,54 @@
       }
     },
     {
+      "operationId": "device.transfer",
+      "domain": "deviceops",
+      "application": "device_transfer",
+      "useCase": "transfer_device",
+      "requestType": "deviceops.v1.TransferDeviceRequest",
+      "responseType": "deviceops.v1.DeviceDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "device.update",
+          "site.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "device.update",
+          "site.validate_transfer_target"
+        ],
+        "permissionClosure": [
+          "device.update",
+          "site.read"
+        ]
+      },
+      "applicationRequires": [
+        "deviceops/device_management",
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/deviceops.v1.DeviceTransferApplication/TransferDevice",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/devices/{id}/transfer",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "device.update",
       "domain": "deviceops",
       "application": "device_management",
@@ -162,6 +210,30 @@
           }
         ]
       }
+    },
+    {
+      "operationId": "site.validate_transfer_target",
+      "domain": "deviceops",
+      "application": "site_management",
+      "useCase": "validate_transfer_target",
+      "requestType": "deviceops.v1.ValidateTransferTargetRequest",
+      "responseType": "deviceops.v1.SiteDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "site.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {}
     }
   ]
 }

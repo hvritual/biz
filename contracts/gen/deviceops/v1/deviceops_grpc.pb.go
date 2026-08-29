@@ -269,3 +269,169 @@ var DeviceApplication_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "deviceops/v1/deviceops.proto",
 }
+
+// SiteApplicationClient is the client API for SiteApplication service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// SiteApplication declares an internal canonical Operation without exposing a
+// protobuf RPC method. The Operation remains available to typed child
+// capabilities, OperationPlan, and Application Graph only.
+type SiteApplicationClient interface {
+}
+
+type siteApplicationClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewSiteApplicationClient(cc grpc.ClientConnInterface) SiteApplicationClient {
+	return &siteApplicationClient{cc}
+}
+
+// SiteApplicationServer is the server API for SiteApplication service.
+// All implementations should embed UnimplementedSiteApplicationServer
+// for forward compatibility.
+//
+// SiteApplication declares an internal canonical Operation without exposing a
+// protobuf RPC method. The Operation remains available to typed child
+// capabilities, OperationPlan, and Application Graph only.
+type SiteApplicationServer interface {
+}
+
+// UnimplementedSiteApplicationServer should be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedSiteApplicationServer struct{}
+
+func (UnimplementedSiteApplicationServer) testEmbeddedByValue() {}
+
+// UnsafeSiteApplicationServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to SiteApplicationServer will
+// result in compilation errors.
+type UnsafeSiteApplicationServer interface {
+	mustEmbedUnimplementedSiteApplicationServer()
+}
+
+func RegisterSiteApplicationServer(s grpc.ServiceRegistrar, srv SiteApplicationServer) {
+	// If the following call panics, it indicates UnimplementedSiteApplicationServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&SiteApplication_ServiceDesc, srv)
+}
+
+// SiteApplication_ServiceDesc is the grpc.ServiceDesc for SiteApplication service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var SiteApplication_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "deviceops.v1.SiteApplication",
+	HandlerType: (*SiteApplicationServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams:     []grpc.StreamDesc{},
+	Metadata:    "deviceops/v1/deviceops.proto",
+}
+
+const (
+	DeviceTransferApplication_TransferDevice_FullMethodName = "/deviceops.v1.DeviceTransferApplication/TransferDevice"
+)
+
+// DeviceTransferApplicationClient is the client API for DeviceTransferApplication service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type DeviceTransferApplicationClient interface {
+	TransferDevice(ctx context.Context, in *TransferDeviceRequest, opts ...grpc.CallOption) (*DeviceDTO, error)
+}
+
+type deviceTransferApplicationClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewDeviceTransferApplicationClient(cc grpc.ClientConnInterface) DeviceTransferApplicationClient {
+	return &deviceTransferApplicationClient{cc}
+}
+
+func (c *deviceTransferApplicationClient) TransferDevice(ctx context.Context, in *TransferDeviceRequest, opts ...grpc.CallOption) (*DeviceDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeviceDTO)
+	err := c.cc.Invoke(ctx, DeviceTransferApplication_TransferDevice_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DeviceTransferApplicationServer is the server API for DeviceTransferApplication service.
+// All implementations should embed UnimplementedDeviceTransferApplicationServer
+// for forward compatibility.
+type DeviceTransferApplicationServer interface {
+	TransferDevice(context.Context, *TransferDeviceRequest) (*DeviceDTO, error)
+}
+
+// UnimplementedDeviceTransferApplicationServer should be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedDeviceTransferApplicationServer struct{}
+
+func (UnimplementedDeviceTransferApplicationServer) TransferDevice(context.Context, *TransferDeviceRequest) (*DeviceDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method TransferDevice not implemented")
+}
+func (UnimplementedDeviceTransferApplicationServer) testEmbeddedByValue() {}
+
+// UnsafeDeviceTransferApplicationServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to DeviceTransferApplicationServer will
+// result in compilation errors.
+type UnsafeDeviceTransferApplicationServer interface {
+	mustEmbedUnimplementedDeviceTransferApplicationServer()
+}
+
+func RegisterDeviceTransferApplicationServer(s grpc.ServiceRegistrar, srv DeviceTransferApplicationServer) {
+	// If the following call panics, it indicates UnimplementedDeviceTransferApplicationServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&DeviceTransferApplication_ServiceDesc, srv)
+}
+
+func _DeviceTransferApplication_TransferDevice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TransferDeviceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeviceTransferApplicationServer).TransferDevice(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DeviceTransferApplication_TransferDevice_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeviceTransferApplicationServer).TransferDevice(ctx, req.(*TransferDeviceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// DeviceTransferApplication_ServiceDesc is the grpc.ServiceDesc for DeviceTransferApplication service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var DeviceTransferApplication_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "deviceops.v1.DeviceTransferApplication",
+	HandlerType: (*DeviceTransferApplicationServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "TransferDevice",
+			Handler:    _DeviceTransferApplication_TransferDevice_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "deviceops/v1/deviceops.proto",
+}
