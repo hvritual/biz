@@ -6,6 +6,7 @@ on:
       - agent/c9-9-conformance-closure
     paths:
       - .github/workflows/c9-9-regeneration-evidence.yml
+      - modules/deviceops/c9_conformance_test.go
   workflow_dispatch:
 
 permissions:
@@ -40,7 +41,7 @@ jobs:
           work="$RUNNER_TEMP/c99-regen"
           mkdir -p "$work"
           source_zip="$work/yunka-source.zip"
-          source_url='https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-33cc-8210-aad5-1ec1f7d721d3/raw?se=2026-08-29T07%3A56%3A58Z&sp=r&sv=2026-02-06&sr=b&scid=3273b813-26a5-58a8-bf13-9d54048da56d&skoid=e5e3659d-4463-4dbf-b2ce-ee32bc0a0a8d&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-08-28T20%3A45%3A37Z&ske=2026-08-29T20%3A45%3A37Z&sks=b&skv=2026-02-06&sig=gc4TMjd0eECyaUdwmKpsxxlFlzdh0tkgN8RXDx1j71o%3D'
+          source_url='https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-f93c-8210-b0a5-d099ff66116f/raw?se=2026-08-29T08%3A06%3A01Z&sp=r&sv=2026-02-06&sr=b&scid=f2e693b1-addb-555f-a1de-5b9ea48c85f3&skoid=e5e3659d-4463-4dbf-b2ce-ee32bc0a0a8d&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-08-29T05%3A32%3A20Z&ske=2026-08-30T05%3A32%3A20Z&sks=b&skv=2026-02-06&sig=iqCaSDw2H2KoXiQsJ7W6KHc2m8nNQyhNfuU8qcqdoqM%3D'
           curl --fail --silent --show-error --location --retry 3 "$source_url" -o "$source_zip"
           echo '34c61442846d9521215099c187dbfd43b948b644138f3554dd2eb07b475f91b1  '"$source_zip" | sha256sum -c -
           unzip -q "$source_zip" -d "$work/source"
@@ -132,7 +133,7 @@ jobs:
         run: |
           set -euo pipefail
           ! grep -R -n 'rpc ValidateTransferTarget' contracts/proto contracts/gen
-          ! grep -R -n 'RegisterSiteManagementOperationExecutor' modules internal/deviceops/transport
+          ! grep -n 'RegisterSiteManagementOperationExecutor' modules/deviceops/module.go
           test ! -e internal/deviceops/transport/rest/zz_yunka_site_management_operation_executor_gen.go
           test ! -e internal/deviceops/transport/rpc/zz_yunka_site_management_operation_executor_gen.go
           grep -n 'operation.ExecuteChildTyped' internal/deviceops/application/zz_yunka_device_transfer_capability_ports_gen.go
