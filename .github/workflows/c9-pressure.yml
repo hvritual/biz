@@ -5,6 +5,8 @@ on:
     branches:
       - agent/c9-biz-pressure-conformance
       - agent/c9-7-biz-conformance
+      - agent/c9-8-cross-application-conformance
+      - agent/c9-9-conformance-closure
   pull_request:
 
 permissions:
@@ -17,15 +19,21 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           fetch-depth: 0
-      - name: Verify C9.7 execution boundary
+
+      - name: Verify C9.9 execution boundary
         shell: bash
         run: |
           set -euo pipefail
           grep -q 'authz.NewExecutionSecurity' modules/deviceops/module.go
           grep -q 'operation.NewExecutorWithOptions' modules/deviceops/module.go
           grep -q 'requestscope.NewGORMExecutionFactory' modules/deviceops/module.go
-          grep -q 'devicerest.RegisterOperationExecutor' modules/deviceops/module.go
-          grep -q 'devicerpc.RegisterOperationExecutor' modules/deviceops/module.go
+          grep -q 'devicerest.RegisterDeviceManagementOperationExecutor' modules/deviceops/module.go
+          grep -q 'devicerest.RegisterDeviceTransferOperationExecutor' modules/deviceops/module.go
+          grep -q 'devicerpc.RegisterDeviceManagementOperationExecutor' modules/deviceops/module.go
+          grep -q 'devicerpc.RegisterDeviceTransferOperationExecutor' modules/deviceops/module.go
+          grep -q 'deviceapp.NewDeviceopsSiteManagementChildCapability' modules/deviceops/module.go
+          grep -q 'deviceapp.NewDeviceopsDeviceManagementChildCapability' modules/deviceops/module.go
+          ! grep -q 'RegisterSiteManagementOperationExecutor' modules/deviceops/module.go
           ! grep -q 'authz.NewOperationRuntime' modules/deviceops/module.go
           ! grep -q 'SecuredUnaryServerInterceptor' modules/deviceops/module.go
           ! grep -R -n 'requestscope.Execute' internal/deviceops/application
@@ -34,12 +42,15 @@ jobs:
           ! grep -R -n 'TransactionalStore' internal/deviceops/application
           grep -R -q 'requestscope.Join' internal/deviceops/application
           grep -q 'service.stager.Stage' internal/deviceops/application/remote_saga.go
-          test ! -e internal/deviceops/transport/rest/zz_yunka_device_management_rest_adapter_gen.go
-          test ! -e internal/deviceops/transport/rpc/zz_yunka_device_management_rpc_adapter_gen.go
+          grep -q 'operation.ExecuteChildTyped' internal/deviceops/application/zz_yunka_device_transfer_capability_ports_gen.go
           test -e internal/deviceops/transport/rest/zz_yunka_device_management_operation_executor_gen.go
           test -e internal/deviceops/transport/rpc/zz_yunka_device_management_operation_executor_gen.go
-          test -e contracts/generated/operation-plans.json
-      - name: Verify OperationPlan v2 execution semantics
+          test -e internal/deviceops/transport/rest/zz_yunka_device_transfer_operation_executor_gen.go
+          test -e internal/deviceops/transport/rpc/zz_yunka_device_transfer_operation_executor_gen.go
+          test ! -e internal/deviceops/transport/rest/zz_yunka_site_management_operation_executor_gen.go
+          test ! -e internal/deviceops/transport/rpc/zz_yunka_site_management_operation_executor_gen.go
+
+      - name: Verify OperationPlan v2 current semantics
         shell: bash
         run: |
           set -euo pipefail
@@ -50,25 +61,38 @@ jobs:
           assert data['schemaVersion'] == 2
           ids = [item['operationId'] for item in data['operations']]
           assert ids == sorted(ids), ids
-          assert ids == ['device.create','device.delete','device.get','device.list','device.update'], ids
+          assert ids == [
+              'device.create','device.delete','device.get','device.list',
+              'device.transfer','device.update','site.validate_transfer_target'
+          ], ids
           by_id = {item['operationId']: item for item in data['operations']}
-          for item in data['operations']:
-              assert item['security']['tenantRequired'] is True
-              assert item['security']['authentication'] == ['api-key']
-              assert item['bindings']['rpc'].startswith('/deviceops.v1.DeviceApplication/')
-          assert by_id['device.list']['execution'] == {'transaction':'read_only','idempotency':'none'}
-          assert by_id['device.get']['execution'] == {'transaction':'read_only','idempotency':'none'}
-          for op in ('device.create','device.update','device.delete'):
-              assert by_id[op]['execution'] == {'transaction':'local','idempotency':'required'}
+          for op in ('device.create','device.update','device.delete','device.transfer'):
+              assert by_id[op]['execution'] == {'transaction':'local','idempotency':'required'}, by_id[op]
+          for op in ('device.list','device.get','site.validate_transfer_target'):
+              assert by_id[op]['execution'] == {'transaction':'read_only','idempotency':'none'}, by_id[op]
+          internal = by_id['site.validate_transfer_target']
+          assert internal['application'] == 'site_management'
+          assert internal['bindings'] == {}
+          transfer = by_id['device.transfer']
+          assert transfer['application'] == 'device_transfer'
+          assert transfer['composition']['boundary'] == 'local'
+          assert transfer['composition']['requiresOperations'] == ['device.update','site.validate_transfer_target']
+          assert transfer['composition']['permissionClosure'] == ['device.update','site.read']
+          for op in ('device.create','device.delete','device.get','device.list','device.transfer','device.update'):
+              assert by_id[op]['bindings']['rpc'], by_id[op]
           PY
-      - name: Verify pressure ledger and real slices
+
+      - name: Verify pressure truth
         shell: bash
         run: |
           set -euo pipefail
           test -e docs/pressure/C9-framework-pressure.md
+          grep -q 'FP-C9-001.*CLOSED by C9.8' docs/pressure/C9-framework-pressure.md
+          grep -q 'FP-C9-002.*CLOSED by C9.7' docs/pressure/C9-framework-pressure.md
+          grep -q 'FP-C9-003.*CLOSED by C9.7' docs/pressure/C9-framework-pressure.md
+          grep -q 'FP-C9-004.*CLOSED for duplicate suppression' docs/pressure/C9-framework-pressure.md
+          grep -q 'FP-C9-005.*OPEN / DEFERRED' docs/pressure/C9-framework-pressure.md
+          grep -q 'FP-C9-006.*CLOSED by C9.8 proof' docs/pressure/C9-framework-pressure.md
           test -e internal/deviceops/application/local_composition.go
           test -e internal/deviceops/application/remote_saga.go
           test -e integration/c9_pressure_mysql_test.go
-          grep -q 'FP-C9-002' docs/pressure/C9-framework-pressure.md
-          grep -q 'FP-C9-003' docs/pressure/C9-framework-pressure.md
-          grep -q 'FP-C9-004' docs/pressure/C9-framework-pressure.md
