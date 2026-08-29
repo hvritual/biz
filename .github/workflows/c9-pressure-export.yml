@@ -6,7 +6,6 @@ on:
       - agent/c9-biz-pressure-conformance
       - agent/c9-7-biz-conformance
       - agent/c9-8-cross-application-conformance
-      - agent/c9-9-conformance-closure
 
 permissions:
   contents: read
