@@ -1,0 +1,169 @@
+name: c9-9-push-generated-truth
+
+on:
+  push:
+    branches:
+      - agent/c9-9-conformance-closure
+    paths:
+      - .github/workflows/c9-9-push-generated-truth.yml
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  qualify-and-push:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: yunka_test
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Restore proven 21-file generated truth
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/c99-push"
+          mkdir -p "$work/evidence" "$work/regenerated"
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+            'https://api.github.com/repos/hvritual/biz/actions/artifacts/9711830002/zip' -o "$work/evidence.zip"
+          echo '8dee870049ec0feb39475d2e1697c5cc49c44539d712b6742e299c3e59e2ae4b  '"$work/evidence.zip" | sha256sum -c -
+          unzip -q "$work/evidence.zip" -d "$work/evidence"
+          echo 'e8526f215d6b05c063f2d3823d323677a7df2e02a376a3ce22d4a15d00b6400b  '"$work/evidence/biz-c9-9-regenerated.tar.gz" | sha256sum -c -
+          tar -xzf "$work/evidence/biz-c9-9-regenerated.tar.gz" -C "$work/regenerated"
+          cat > "$work/generated.paths" <<'EOF'
+          contracts/gen/deviceops/v1/deviceops.pb.go
+          contracts/gen/deviceops/v1/deviceops_grpc.pb.go
+          contracts/generated/client.ts
+          contracts/generated/manifest.json
+          contracts/generated/openapi.json
+          contracts/generated/operation-plans.json
+          internal/deviceops/application/zz_yunka_device_management_application_port_gen.go
+          internal/deviceops/application/zz_yunka_device_transfer_application_port_gen.go
+          internal/deviceops/application/zz_yunka_device_transfer_capability_ports_gen.go
+          internal/deviceops/application/zz_yunka_site_management_application_port_gen.go
+          internal/deviceops/policy/zz_yunka_device_management_operation_plan_gen.go
+          internal/deviceops/policy/zz_yunka_device_management_operation_policy_gen.go
+          internal/deviceops/policy/zz_yunka_device_transfer_operation_plan_gen.go
+          internal/deviceops/policy/zz_yunka_device_transfer_operation_policy_gen.go
+          internal/deviceops/policy/zz_yunka_domain_operation_policy_gen.go
+          internal/deviceops/policy/zz_yunka_site_management_operation_plan_gen.go
+          internal/deviceops/policy/zz_yunka_site_management_operation_policy_gen.go
+          internal/deviceops/transport/rest/zz_yunka_device_management_operation_executor_gen.go
+          internal/deviceops/transport/rest/zz_yunka_device_transfer_operation_executor_gen.go
+          internal/deviceops/transport/rpc/zz_yunka_device_management_operation_executor_gen.go
+          internal/deviceops/transport/rpc/zz_yunka_device_transfer_operation_executor_gen.go
+          EOF
+          while IFS= read -r path; do mkdir -p "$(dirname "$path")"; cp "$work/regenerated/$path" "$path"; done < "$work/generated.paths"
+          test "$(wc -l < "$work/generated.paths")" -eq 21
+          echo "GENERATED_PATHS=$work/generated.paths" >> "$GITHUB_ENV"
+
+      - name: Materialize exact Yunka compiler/runtime
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/c99-yunka"
+          mkdir -p "$work"
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+            'https://api.github.com/repos/hvritual/biz/actions/artifacts/9711750449/zip' -o "$work/base.zip"
+          echo 'fcf13e6f56f0dcfdf2997cf75f539d15af844e45033c23e0977dda98ce00d267  '"$work/base.zip" | sha256sum -c -
+          unzip -q "$work/base.zip" -d "$work"
+          echo 'b86b15e8690b8162559af7ca3c5e200db402f81636e6ecfd10468b6e15f1d7a1  '"$work/yunka-c9-8.tar.gz" | sha256sum -c -
+          test "$(git hash-object .c9-9-control/c9-8-product.patch)" = 'fdc99cc58007397b11d5b06958ce2c8f4facdf88'
+          YUNKA_ROOT="$(dirname "$GITHUB_WORKSPACE")/yunka.io"
+          rm -rf "$YUNKA_ROOT" && mkdir -p "$YUNKA_ROOT"
+          tar -xzf "$work/yunka-c9-8.tar.gz" -C "$YUNKA_ROOT"
+          cd "$YUNKA_ROOT"
+          rm -f .github/workflows/c9-8-framework-export.yml .github/workflows/c9-8-real-biz-control.yml tools/c9-8-biz-source-url.txt .github/workflows/c9-production.yml
+          git init -q; git config user.name c9-9-closure; git config user.email c9-9-closure@invalid.local
+          git add -A && git commit -qm 'C9.7 exact base'
+          git apply --check "$GITHUB_WORKSPACE/.c9-9-control/c9-8-product.patch"
+          git apply "$GITHUB_WORKSPACE/.c9-9-control/c9-8-product.patch"
+          echo "YUNKA_ROOT=$YUNKA_ROOT" >> "$GITHUB_ENV"
+
+      - name: Load locked toolchain
+        id: lock
+        shell: bash
+        run: |
+          source "$YUNKA_ROOT/tools/toolchain.env"
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "protoc_release=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "protoc_sha256=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Install locked protoc
+        shell: bash
+        env:
+          PROTOC_RELEASE: ${{ steps.lock.outputs.protoc_release }}
+          PROTOC_SHA256: ${{ steps.lock.outputs.protoc_sha256 }}
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/protoc.zip"; root="$RUNNER_TEMP/protoc"
+          curl --fail --silent --show-error --location --retry 3 "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_RELEASE}/protoc-${PROTOC_RELEASE}-linux-x86_64.zip" -o "$archive"
+          echo "$PROTOC_SHA256  $archive" | sha256sum -c -
+          mkdir -p "$root" && unzip -q "$archive" -d "$root"
+          echo "$root/bin" >> "$GITHUB_PATH"
+
+      - name: Commit generated truth only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          while IFS= read -r path; do git add "$path"; done < "$GENERATED_PATHS"
+          git commit -m 'build: sync C9.9 generated consumer truth'
+          echo "GENERATED_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Zero-drift and pressure qualification
+        shell: bash
+        env:
+          YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/yunka_test?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+        run: |
+          set -euo pipefail
+          make generate
+          test -z "$(git status --porcelain=v1)"
+          ! grep -R -n 'rpc ValidateTransferTarget' contracts/proto contracts/gen
+          ! grep -q 'RegisterSiteManagementOperationExecutor' modules/deviceops/module.go
+          test ! -e internal/deviceops/transport/rest/zz_yunka_site_management_operation_executor_gen.go
+          test ! -e internal/deviceops/transport/rpc/zz_yunka_site_management_operation_executor_gen.go
+          grep -q 'operation.ExecuteChildTyped' internal/deviceops/application/zz_yunka_device_transfer_capability_ports_gen.go
+          python3 - <<'PY'
+          import json
+          p=json.load(open('contracts/generated/operation-plans.json'))
+          ops={x['operationId']:x for x in p['operations']}
+          assert sorted(ops) == ['device.create','device.delete','device.get','device.list','device.transfer','device.update','site.validate_transfer_target']
+          assert ops['site.validate_transfer_target']['bindings'] == {}
+          assert ops['device.transfer']['composition']['requiresOperations'] == ['device.update','site.validate_transfer_target']
+          assert ops['device.transfer']['composition']['permissionClosure'] == ['device.update','site.read']
+          PY
+          make verify
+          make pressure
+          test -z "$(git status --porcelain=v1)"
+
+      - name: Push qualified generated commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GENERATED_COMMIT"
+          git push origin "HEAD:agent/c9-9-conformance-closure"
