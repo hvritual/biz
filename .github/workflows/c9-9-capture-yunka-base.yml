@@ -1,0 +1,37 @@
+name: c9-9-capture-yunka-base
+
+on:
+  push:
+    branches:
+      - agent/c9-9-conformance-closure
+    paths:
+      - .github/workflows/c9-9-capture-yunka-base.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Capture verified Yunka base artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_zip="$RUNNER_TEMP/yunka-source.zip"
+          source_url='https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-4fe8-8210-bae0-5f85c6813ef7/raw?se=2026-08-29T08%3A12%3A38Z&sp=r&sv=2026-02-06&sr=b&scid=da03f314-3d9b-5edf-b6a3-a98da3e0dfda&skoid=e5e3659d-4463-4dbf-b2ce-ee32bc0a0a8d&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-08-29T08%3A04%3A29Z&ske=2026-08-30T08%3A04%3A29Z&sks=b&skv=2026-02-06&sig=cQNy9KmOD0Svl07p5Jkh8F2JuZTee2xKMIUR/DnpnwU%3D'
+          curl --fail --silent --show-error --location --retry 3 "$source_url" -o "$source_zip"
+          echo '34c61442846d9521215099c187dbfd43b948b644138f3554dd2eb07b475f91b1  '"$source_zip" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/yunka-base"
+          unzip -q "$source_zip" -d "$RUNNER_TEMP/yunka-base"
+          echo 'b86b15e8690b8162559af7ca3c5e200db402f81636e6ecfd10468b6e15f1d7a1  '"$RUNNER_TEMP/yunka-base/yunka-c9-8.tar.gz" | sha256sum -c -
+          printf '%s  %s\n' 'b86b15e8690b8162559af7ca3c5e200db402f81636e6ecfd10468b6e15f1d7a1' 'yunka-c9-8.tar.gz' > "$RUNNER_TEMP/yunka-base/yunka-c9-8.tar.gz.sha256"
+
+      - name: Upload stable Yunka base
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: c9-9-yunka-base-source
+          path: ${{ runner.temp }}/yunka-base
+          if-no-files-found: error
+          retention-days: 1
