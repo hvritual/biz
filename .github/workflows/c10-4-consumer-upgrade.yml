@@ -27,7 +27,7 @@ jobs:
           --health-timeout=5s
           --health-retries=30
     env:
-      C104_FRAMEWORK_SHA: 27050aad72133d734cda78a7273513fc58d21981
+      C104_FRAMEWORK_SHA: ddd2d7a1325b68e2f4abe5b83d7b9bc0af102c96
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/yunka_test?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
     steps:
       - name: Checkout Biz migration branch
@@ -107,7 +107,35 @@ jobs:
           git -C yunka.io diff --exit-code
           test -z "$(git -C yunka.io status --porcelain --untracked-files=no)"
 
-      - name: Prove current C9.9 Biz truth against C10.4
+      - name: Prove committed C10 generation zero drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C biz generate \
+            YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" \
+            PROTOC="$(command -v protoc)" \
+            PROTOC_GEN_GO="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go" \
+            PROTOC_GEN_GO_GRPC="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go-grpc"
+          git -C biz diff --exit-code
+          test -z "$(git -C biz status --porcelain)"
+          {
+            sha256sum biz/contracts/generated/assembly-plan.json
+            find biz/internal/assembly -type f -print0 | sort -z | xargs -0 sha256sum
+          } > "$RUNNER_TEMP/c10-first.sha256"
+          make -C biz generate \
+            YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" \
+            PROTOC="$(command -v protoc)" \
+            PROTOC_GEN_GO="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go" \
+            PROTOC_GEN_GO_GRPC="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go-grpc"
+          {
+            sha256sum biz/contracts/generated/assembly-plan.json
+            find biz/internal/assembly -type f -print0 | sort -z | xargs -0 sha256sum
+          } > "$RUNNER_TEMP/c10-second.sha256"
+          diff -u "$RUNNER_TEMP/c10-first.sha256" "$RUNNER_TEMP/c10-second.sha256"
+          git -C biz diff --exit-code
+          test -z "$(git -C biz status --porcelain)"
+
+      - name: Prove current C9.9 execution truth on committed C10 assembly
         shell: bash
         run: |
           set -euo pipefail
@@ -122,44 +150,6 @@ jobs:
             PROTOC_GEN_GO="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go" \
             PROTOC_GEN_GO_GRPC="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go-grpc"
 
-      - name: Compile existing consumer facts through C10 assembly
-        shell: bash
-        run: |
-          set -euo pipefail
-          cp -a biz biz-c10
-          rm -rf biz-c10/.git
-          assembly_args=(
-            --proto-dir "$GITHUB_WORKSPACE/biz-c10/contracts/proto"
-            --proto-path "$GITHUB_WORKSPACE/biz-c10/contracts/third_party"
-            --proto-path "$GITHUB_WORKSPACE/yunka.io/contracts/proto"
-            --file deviceops/v1/deviceops.proto
-            --module-root "$GITHUB_WORKSPACE/biz-c10/modules"
-            --out "$GITHUB_WORKSPACE/biz-c10/contracts/generated"
-            --code-out "$GITHUB_WORKSPACE/biz-c10/internal"
-            --code-import github.com/hvritual/biz/internal
-            --protoc "$(command -v protoc)"
-          )
-          (
-            cd yunka.io/app
-            go run ./cmd assembly generate "${assembly_args[@]}"
-            go run ./cmd assembly check "${assembly_args[@]}"
-          )
-          {
-            sha256sum biz-c10/contracts/generated/assembly-plan.json
-            find biz-c10/internal/assembly -type f -print0 | sort -z | xargs -0 sha256sum
-          } > "$RUNNER_TEMP/c10-first.sha256"
-          (
-            cd yunka.io/app
-            go run ./cmd assembly generate "${assembly_args[@]}"
-            go run ./cmd assembly check "${assembly_args[@]}"
-          )
-          {
-            sha256sum biz-c10/contracts/generated/assembly-plan.json
-            find biz-c10/internal/assembly -type f -print0 | sort -z | xargs -0 sha256sum
-          } > "$RUNNER_TEMP/c10-second.sha256"
-          diff -u "$RUNNER_TEMP/c10-first.sha256" "$RUNNER_TEMP/c10-second.sha256"
-          (cd biz-c10 && go test ./...)
-
       - name: Record before plumbing pressure
         shell: bash
         run: |
@@ -173,16 +163,15 @@ jobs:
           grep -q 'RegisterDeviceTransferOperationExecutor' biz/modules/deviceops/module.go
           printf '%s\n' \
             'C10.4_FRAMEWORK_BINDING_SEAM=PASS' \
-            'C10.4_BASELINE_C9_VERIFY=PASS' \
-            'C10.4_BASELINE_MYSQL_PRESSURE=PASS' \
-            'C10.4_ASSEMBLY_GENERATE=PASS' \
+            'C10.4_COMMITTED_ASSEMBLY_GENERATE=PASS' \
             'C10.4_ASSEMBLY_CHECK=PASS' \
             'C10.4_SECOND_GENERATION_ZERO_DRIFT=PASS' \
-            'C10.4_GENERATED_CONSUMER_COMPILE=PASS'
+            'C10.4_BIZ_VERIFY=PASS' \
+            'C10.4_MYSQL_PRESSURE=PASS'
 
       - name: Assert Biz source worktree remains clean
         shell: bash
         run: |
           set -euo pipefail
           git -C biz diff --exit-code
-          test -z "$(git -C biz status --porcelain --untracked-files=no)"
+          test -z "$(git -C biz status --porcelain)"
