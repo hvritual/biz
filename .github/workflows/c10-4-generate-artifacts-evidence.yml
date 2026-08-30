@@ -88,3 +88,13 @@ jobs:
             cat "$file"
             echo "===== C10.4_ARTIFACT_END:$file ====="
           done
+      - name: Export canonical generated artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: c10-4-biz-assembly
+          path: |
+            biz/contracts/generated/assembly-plan.json
+            biz/internal/assembly/zz_yunka_assembly_gen.go
+            biz/internal/assembly/zz_yunka_modules_gen.go
+          if-no-files-found: error
+          retention-days: 1
