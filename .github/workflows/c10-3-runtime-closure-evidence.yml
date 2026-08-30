@@ -15,7 +15,7 @@ jobs:
   runtime-closure:
     runs-on: ubuntu-latest
     env:
-      C103_SHA: ed5c17f86e87a290c49905f5ca5d54dbbd3158af
+      C103_SHA: c979bb8719e52903ad073c4b6b6cde6b8ec096aa
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
