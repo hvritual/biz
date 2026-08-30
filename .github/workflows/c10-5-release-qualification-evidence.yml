@@ -1,0 +1,296 @@
+name: c10-5-release-qualification-evidence
+
+on:
+  push:
+    branches:
+      - agent/c10-5-release-qualification-evidence
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: yunka_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      C101_SHA: e9c54e9657ffc64d0e56bcd869d9a7bf61e72f7c
+      C102_SHA: f03306501ddb4a4f09e3ce0ea6f15eb23c03462e
+      C103_SHA: 561d9c779334371735acf8d394969cb752e3999d
+      C104_SHA: e8fef5f36bf1a704624ea49455894ab9ccbf9f8d
+      C105_SHA: 4c4beb72ffde79d97a28cf5c3b083c756b729d27
+      BIZ_SHA: 1818f1328189fbe6060ecccb8c658f2583b67cb8
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/yunka_test?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    steps:
+      - name: Checkout evidence carrier
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: carrier
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact C10.5 release candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.C105_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact real Biz consumer
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/biz
+          ref: ${{ env.BIZ_SHA }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Assert exact identities and predecessor ancestry
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C yunka.io rev-parse HEAD)" = "$C105_SHA"
+          test "$(git -C biz rev-parse HEAD)" = "$BIZ_SHA"
+          git -C yunka.io merge-base --is-ancestor "$C101_SHA" "$C102_SHA"
+          git -C yunka.io merge-base --is-ancestor "$C102_SHA" "$C103_SHA"
+          git -C yunka.io merge-base --is-ancestor "$C103_SHA" "$C104_SHA"
+          git -C yunka.io merge-base --is-ancestor "$C104_SHA" "$C105_SHA"
+          printf '%s\n' \
+            "C10.1=$C101_SHA" \
+            "C10.2=$C102_SHA" \
+            "C10.3=$C103_SHA" \
+            "C10.4=$C104_SHA" \
+            "C10.5=$C105_SHA" \
+            "BIZ=$BIZ_SHA" \
+            'C10.5_PREDECESSOR_ANCESTRY=PASS'
+
+      - name: Reconcile source facts before execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'State: \*\*Complete / qualified\*\*' yunka.io/docs/waves/C10.1-assembly-contract.md
+          grep -q 'State: \*\*Complete / qualified\*\*' yunka.io/docs/waves/C10.2-compiler.md
+          grep -q 'State: \*\*Complete / qualified\*\*' yunka.io/docs/waves/C10.3-runtime-closure.md
+          grep -q 'State: \*\*Complete / qualified by real-consumer gate\*\*' yunka.io/docs/waves/C10.4-consumer-upgrade.md
+          grep -q 'Release candidate / final qualification in progress' yunka.io/docs/waves/C10.5-release-qualification.md
+          grep -q 'C10.4 is complete' yunka.io/PROJECT_MEMORY.md
+          grep -q 'RuntimeBinder' yunka.io/PROJECT_MEMORY.md
+          grep -q 'C10.5 is a release qualification/fact-reconciliation wave' yunka.io/PROJECT_MEMORY.md
+          grep -q 'C10.4-P1-001' biz/docs/pressure/C10-framework-pressure.md
+          grep -q 'CLOSED by C10.4' biz/docs/pressure/C10-framework-pressure.md
+          grep -q 'FP-C9-005' biz/docs/pressure/C9-framework-pressure.md
+          grep -q 'OPEN / DEFERRED' biz/docs/pressure/C9-framework-pressure.md
+          echo 'C10.5_FACT_RECONCILIATION_PRECHECK=PASS'
+
+      - name: Load locked Yunka toolchain
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          : "${GO_VERSION:?}"
+          : "${PROTOC_RELEASE:?}"
+          : "${PROTOC_LINUX_X86_64_SHA256:?}"
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "protoc_release=${PROTOC_RELEASE}" >> "$GITHUB_OUTPUT"
+          echo "protoc_sha256=${PROTOC_LINUX_X86_64_SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Install locked protoc
+        shell: bash
+        env:
+          PROTOC_RELEASE: ${{ steps.lock.outputs.protoc_release }}
+          PROTOC_SHA256: ${{ steps.lock.outputs.protoc_sha256 }}
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/protoc.zip"
+          install_root="$RUNNER_TEMP/protoc"
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_RELEASE}/protoc-${PROTOC_RELEASE}-linux-x86_64.zip" \
+            -o "$archive"
+          echo "${PROTOC_SHA256}  ${archive}" | sha256sum -c -
+          mkdir -p "$install_root"
+          unzip -q "$archive" -d "$install_root"
+          echo "$install_root/bin" >> "$GITHUB_PATH"
+          "$install_root/bin/protoc" --version
+
+      - name: Canonical framework generation must be zero drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C yunka.io rpc-generate PROTOC="$(command -v protoc)"
+          make -C yunka.io rpc-check contract-check PROTOC="$(command -v protoc)"
+          git -C yunka.io diff --exit-code
+          test -z "$(git -C yunka.io status --porcelain)"
+          echo 'C10.5_FRAMEWORK_GENERATION_ZERO_DRIFT=PASS'
+
+      - name: C10.5 architecture regression audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd yunka.io/pkg && go test -count=1 ./architecturepolicy ./contract ./assemblyplan ./operationplan ./applicationgraph)
+          (cd yunka.io/framework && go test -count=1 ./core ./kernel ./platform ./operation ./requestscope ./runtimecomponent ./applicationgraph ./diagnostics)
+          ! git -C yunka.io grep -n -E 'modulecatalog\.Default\(\)' -- pkg/contract/assembly_runtime_codegen.go framework/kernel/bootstrap.go
+          ! git -C yunka.io grep -n -E 'reflect\.|plugin\.|go/packages|service[ _-]?locator' -- pkg/contract/assembly_runtime_codegen.go framework/kernel/bootstrap.go framework/core/runtime_component.go framework/runtimecomponent
+          ! git -C yunka.io grep -n -E 'authz\.|requestscope\.|idempotency|ExecutionScope' -- pkg/contract/assembly_runtime_codegen.go
+          grep -q 'RuntimeBinder' yunka.io/pkg/contract/assembly_runtime_codegen.go
+          grep -q 'kernel.Bootstrap' yunka.io/pkg/contract/assembly_runtime_codegen.go
+          echo 'C10.5_ARCHITECTURE_REGRESSION_AUDIT=PASS'
+
+      - name: Yunka exact release candidate verify-production
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C yunka.io verify-production PROTOC="$(command -v protoc)"
+          git -C yunka.io diff --exit-code
+          test -z "$(git -C yunka.io status --porcelain)"
+          echo 'C10.5_YUNKA_VERIFY_PRODUCTION=PASS'
+          echo 'C10.5_YUNKA_CLEAN_TREE=PASS'
+
+      - name: Biz regeneration pass one
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C biz generate \
+            YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" \
+            PROTOC="$(command -v protoc)" \
+            PROTOC_GEN_GO="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go" \
+            PROTOC_GEN_GO_GRPC="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go-grpc"
+          git -C biz diff --exit-code
+          test -z "$(git -C biz status --porcelain)"
+          {
+            sha256sum biz/contracts/generated/manifest.json
+            sha256sum biz/contracts/generated/operation-plans.json
+            sha256sum biz/contracts/generated/openapi.json
+            sha256sum biz/contracts/generated/client.ts
+            sha256sum biz/contracts/generated/assembly-plan.json
+            find biz/internal/assembly -type f -print0 | sort -z | xargs -0 sha256sum
+          } > "$RUNNER_TEMP/biz-first.sha256"
+          echo 'C10.5_BIZ_REGENERATE_1=PASS'
+
+      - name: Biz regeneration pass two and zero drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C biz generate \
+            YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" \
+            PROTOC="$(command -v protoc)" \
+            PROTOC_GEN_GO="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go" \
+            PROTOC_GEN_GO_GRPC="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go-grpc"
+          {
+            sha256sum biz/contracts/generated/manifest.json
+            sha256sum biz/contracts/generated/operation-plans.json
+            sha256sum biz/contracts/generated/openapi.json
+            sha256sum biz/contracts/generated/client.ts
+            sha256sum biz/contracts/generated/assembly-plan.json
+            find biz/internal/assembly -type f -print0 | sort -z | xargs -0 sha256sum
+          } > "$RUNNER_TEMP/biz-second.sha256"
+          diff -u "$RUNNER_TEMP/biz-first.sha256" "$RUNNER_TEMP/biz-second.sha256"
+          git -C biz diff --exit-code
+          test -z "$(git -C biz status --porcelain)"
+          echo 'C10.5_BIZ_REGENERATE_2=PASS'
+          echo 'C10.5_BIZ_SECOND_GENERATION_ZERO_DRIFT=PASS'
+
+      - name: Real consumer architecture and internal-operation audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -q 'kernel.New' biz/cmd/biz/main.go
+          ! grep -q 'modulecatalog.Default' biz/cmd/biz/main.go
+          grep -q 'bizruntime.Bootstrap' biz/cmd/biz/main.go
+          ! grep -q 'operation.NewExecutorWithOptions' biz/modules/deviceops/module.go
+          ! grep -q 'NewDeviceopsSiteManagementChildCapability' biz/modules/deviceops/module.go
+          ! grep -q 'NewDeviceopsDeviceManagementChildCapability' biz/modules/deviceops/module.go
+          ! grep -q 'RegisterDeviceManagementOperationExecutor' biz/modules/deviceops/module.go
+          ! grep -q 'RegisterDeviceTransferOperationExecutor' biz/modules/deviceops/module.go
+          ! grep -R -n -E 'gateway/authz|requestscope\.(Execute|ExecuteValue|GORMFrom)|gorm\.io/gorm' biz/internal/deviceops/application
+          grep -q 'RegisterDeviceManagementOperationExecutor' biz/internal/assembly/zz_yunka_assembly_gen.go
+          grep -q 'RegisterDeviceTransferOperationExecutor' biz/internal/assembly/zz_yunka_assembly_gen.go
+          test ! -e biz/internal/deviceops/transport/rest/zz_yunka_site_management_operation_executor_gen.go
+          test ! -e biz/internal/deviceops/transport/rpc/zz_yunka_site_management_operation_executor_gen.go
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          plans = json.loads(Path('biz/contracts/generated/operation-plans.json').read_text())
+          by_id = {item['operationId']: item for item in plans['operations']}
+          internal = by_id['site.validate_transfer_target']
+          assert internal['bindings'] == {}, internal
+          transfer = by_id['device.transfer']
+          assert transfer['composition']['requiresOperations'] == ['device.update', 'site.validate_transfer_target'], transfer
+          assert transfer['composition']['permissionClosure'] == ['device.update', 'site.read'], transfer
+          assert transfer['execution']['transaction'] == 'local', transfer
+          for op in ('device.create','device.delete','device.get','device.list','device.transfer','device.update'):
+              assert by_id[op]['bindings']['rpc'], by_id[op]
+          PY
+          echo 'C10.5_REAL_CONSUMER_ARCHITECTURE_AUDIT=PASS'
+          echo 'C10.5_INTERNAL_OPERATION_NON_EXPOSURE=PASS'
+
+      - name: Biz final verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C biz verify \
+            YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" \
+            PROTOC="$(command -v protoc)" \
+            PROTOC_GEN_GO="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go" \
+            PROTOC_GEN_GO_GRPC="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go-grpc"
+          echo 'C10.5_BIZ_VERIFY=PASS'
+
+      - name: Biz final MySQL pressure
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C biz pressure \
+            YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" \
+            PROTOC="$(command -v protoc)" \
+            PROTOC_GEN_GO="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go" \
+            PROTOC_GEN_GO_GRPC="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go-grpc"
+          echo 'C10.5_BIZ_MYSQL_PRESSURE=PASS'
+          echo 'C10.5_SHARED_SCOPE_AUTHZ_UOW_PRESSURE=PASS'
+
+      - name: Final exact-tree release record
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C yunka.io rev-parse HEAD)" = "$C105_SHA"
+          test "$(git -C biz rev-parse HEAD)" = "$BIZ_SHA"
+          git -C yunka.io diff --exit-code
+          git -C biz diff --exit-code
+          test -z "$(git -C yunka.io status --porcelain)"
+          test -z "$(git -C biz status --porcelain)"
+          printf '%s\n' \
+            "C10.5_YUNKA_HEAD=$C105_SHA" \
+            "C10.5_BIZ_HEAD=$BIZ_SHA" \
+            'C10.5_PREDECESSOR_ANCESTRY=PASS' \
+            'C10.5_FACT_RECONCILIATION_PRECHECK=PASS' \
+            'C10.5_FRAMEWORK_GENERATION_ZERO_DRIFT=PASS' \
+            'C10.5_ARCHITECTURE_REGRESSION_AUDIT=PASS' \
+            'C10.5_YUNKA_VERIFY_PRODUCTION=PASS' \
+            'C10.5_BIZ_REGENERATE_TWICE=PASS' \
+            'C10.5_BIZ_SECOND_GENERATION_ZERO_DRIFT=PASS' \
+            'C10.5_REAL_CONSUMER_ARCHITECTURE_AUDIT=PASS' \
+            'C10.5_INTERNAL_OPERATION_NON_EXPOSURE=PASS' \
+            'C10.5_BIZ_VERIFY=PASS' \
+            'C10.5_BIZ_MYSQL_PRESSURE=PASS' \
+            'C10.5_SHARED_SCOPE_AUTHZ_UOW_PRESSURE=PASS' \
+            'C10.5_FINAL_CLEAN_TREE=PASS' \
+            'C10.5_RELEASE_QUALIFICATION=PASS'
