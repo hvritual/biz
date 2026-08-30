@@ -7,6 +7,7 @@ on:
       - agent/c9-7-biz-conformance
       - agent/c9-8-cross-application-conformance
       - agent/c9-9-conformance-closure
+      - agent/c10-4-consumer-upgrade
   pull_request:
 
 permissions:
@@ -20,22 +21,30 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify C9.9 execution boundary
+      - name: Verify C9.9 execution boundary on C10 assembly
         shell: bash
         run: |
           set -euo pipefail
-          grep -q 'authz.NewExecutionSecurity' modules/deviceops/module.go
-          grep -q 'operation.NewExecutorWithOptions' modules/deviceops/module.go
-          grep -q 'requestscope.NewGORMExecutionFactory' modules/deviceops/module.go
-          grep -q 'devicerest.RegisterDeviceManagementOperationExecutor' modules/deviceops/module.go
-          grep -q 'devicerest.RegisterDeviceTransferOperationExecutor' modules/deviceops/module.go
-          grep -q 'devicerpc.RegisterDeviceManagementOperationExecutor' modules/deviceops/module.go
-          grep -q 'devicerpc.RegisterDeviceTransferOperationExecutor' modules/deviceops/module.go
-          grep -q 'deviceapp.NewDeviceopsSiteManagementChildCapability' modules/deviceops/module.go
-          grep -q 'deviceapp.NewDeviceopsDeviceManagementChildCapability' modules/deviceops/module.go
-          ! grep -q 'RegisterSiteManagementOperationExecutor' modules/deviceops/module.go
-          ! grep -q 'authz.NewOperationRuntime' modules/deviceops/module.go
-          ! grep -q 'SecuredUnaryServerInterceptor' modules/deviceops/module.go
+          grep -q 'authz.NewExecutionSecurity' internal/bizruntime/runtime.go
+          grep -q 'operation.NewExecutorWithOptions' internal/bizruntime/runtime.go
+          grep -q 'requestscope.NewGORMExecutionFactory' internal/bizruntime/runtime.go
+          grep -q 'deviceopsrest.RegisterDeviceManagementOperationExecutor' internal/assembly/zz_yunka_assembly_gen.go
+          grep -q 'deviceopsrest.RegisterDeviceTransferOperationExecutor' internal/assembly/zz_yunka_assembly_gen.go
+          grep -q 'deviceopsrpc.RegisterDeviceManagementOperationExecutor' internal/assembly/zz_yunka_assembly_gen.go
+          grep -q 'deviceopsrpc.RegisterDeviceTransferOperationExecutor' internal/assembly/zz_yunka_assembly_gen.go
+          grep -q 'NewDeviceopsSiteManagementChildCapability' internal/assembly/zz_yunka_assembly_gen.go
+          grep -q 'NewDeviceopsDeviceManagementChildCapability' internal/assembly/zz_yunka_assembly_gen.go
+          grep -q 'generatedassembly.Bootstrap' internal/bizruntime/runtime.go
+          ! grep -q 'operation.NewExecutorWithOptions' modules/deviceops/module.go
+          ! grep -q 'RegisterDeviceManagementOperationExecutor' modules/deviceops/module.go
+          ! grep -q 'RegisterDeviceTransferOperationExecutor' modules/deviceops/module.go
+          ! grep -q 'NewDeviceopsSiteManagementChildCapability' modules/deviceops/module.go
+          ! grep -q 'NewDeviceopsDeviceManagementChildCapability' modules/deviceops/module.go
+          ! grep -q 'NewDeviceopsSiteManagementChildCapability' internal/bizruntime/runtime.go
+          ! grep -q 'NewDeviceopsDeviceManagementChildCapability' internal/bizruntime/runtime.go
+          ! grep -q 'RegisterSiteManagementOperationExecutor' internal/assembly/zz_yunka_assembly_gen.go
+          ! grep -q 'authz.NewOperationRuntime' internal/bizruntime/runtime.go
+          ! grep -q 'SecuredUnaryServerInterceptor' internal/bizruntime/runtime.go
           ! grep -R -n 'requestscope.Execute' internal/deviceops/application
           ! grep -R -n 'requestscope.GORMFrom' internal/deviceops/application
           ! grep -R -n 'gorm.io/gorm' internal/deviceops/application
