@@ -14,9 +14,23 @@ permissions:
 jobs:
   runtime-closure:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: yunka_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
     env:
       C103_SHA: 7ff325411a3365f38f11161fcf9230b218077a12
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/yunka_test?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -68,20 +82,25 @@ jobs:
           unzip -q "$archive" -d "$install_root"
           echo "$install_root/bin" >> "$GITHUB_PATH"
 
-      - name: Qualify permanent C10.3-G runtime closure gate
+      - name: Run exact C10.3 full production verification
         shell: bash
         run: |
           set -euo pipefail
           cd yunka-c10-3
           test "$(git rev-parse HEAD)" = "$C103_SHA"
-          make c10-3-runtime-closure-check
-          cd app
-          go vet ./cmd/assembly
+          make verify-production
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=no)"
 
-      - name: Assert source worktree remains clean
+      - name: Record C10.3 qualification evidence
         shell: bash
         run: |
           set -euo pipefail
-          cd yunka-c10-3
-          git diff --exit-code
-          test -z "$(git status --porcelain --untracked-files=no)"
+          {
+            echo "C10.3_SHA=$C103_SHA"
+            echo "GO=$(go version)"
+            echo "PROTOC=$(protoc --version)"
+            echo "C10.3_G_ASSEMBLED_RUNTIME=PASS"
+            echo "C10.3_VERIFY_PRODUCTION=PASS"
+            echo "C10.3_TRACKED_WORKTREE=CLEAN"
+          } | tee "$RUNNER_TEMP/c10-3-qualification-evidence.txt"
