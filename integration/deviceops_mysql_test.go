@@ -14,6 +14,7 @@ import (
 
 	deviceopsv1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
+	"github.com/hvritual/biz/internal/bizruntime"
 	"github.com/hvritual/biz/modules/deviceops"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -22,6 +23,7 @@ import (
 	"google.golang.org/grpc/status"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"yunka.io/framework/platform"
 	"yunka.io/pkg/logExt"
 )
 
@@ -38,7 +40,7 @@ func openDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-func startModule(t *testing.T, db *gorm.DB, tenant, ownerToken, site string) *deviceops.Module {
+func startModule(t *testing.T, db *gorm.DB, tenant, ownerToken, site string) *bizruntime.Started {
 	t.Helper()
 	config := deviceops.DefaultConfig()
 	config.HTTPListenAddress = "127.0.0.1:0"
@@ -48,12 +50,21 @@ func startModule(t *testing.T, db *gorm.DB, tenant, ownerToken, site string) *de
 		TenantID: tenant, TenantName: tenant, UserID: tenant + "-owner",
 		Email: tenant + "-owner@example.invalid", Token: ownerToken, SiteID: site, SiteName: site,
 	}
-	module, err := deviceops.NewModule(deviceops.Dependencies{Config: config, Logger: logExt.NewBaseLogger(), PrimaryDatabase: db})
+	provider, err := platform.New(platform.Options{
+		Config: bizruntime.ConfigProvider{DeviceOps: config},
+		Logger: logExt.NewBaseLogger(),
+		Databases: map[string]platform.DatabaseFactory{
+			"primary": platform.DatabaseFactoryFunc(func(context.Context, string) (platform.DatabaseResource, error) {
+				return platform.BorrowedDatabase(db), nil
+			}),
+		},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	if err := module.Start(ctx); err != nil {
+	started, err := bizruntime.Bootstrap(ctx, provider, config)
+	if err != nil {
 		cancel()
 		t.Fatal(err)
 	}
@@ -61,9 +72,9 @@ func startModule(t *testing.T, db *gorm.DB, tenant, ownerToken, site string) *de
 		cancel()
 		shutdown, done := context.WithTimeout(context.Background(), 5*time.Second)
 		defer done()
-		_ = module.Shutdown(shutdown)
+		_ = started.App.Shutdown(shutdown)
 	})
-	return module
+	return started
 }
 
 func postDevice(t *testing.T, base, token, site, name, serial string) map[string]any {
