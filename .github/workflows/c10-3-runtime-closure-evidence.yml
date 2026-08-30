@@ -15,7 +15,7 @@ jobs:
   runtime-closure:
     runs-on: ubuntu-latest
     env:
-      C103_SHA: c979bb8719e52903ad073c4b6b6cde6b8ec096aa
+      C103_SHA: 81ee6ca015c6869e2fa735a66fda8a60520a4d6e
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -37,16 +37,16 @@ jobs:
           go-version: '1.25.13'
           cache: false
 
-      - name: Compile and test runtime closure and generated bootstrap
+      - name: Compile and test runtime closure transport adapters and codegen
         shell: bash
         run: |
           set -euo pipefail
           cd yunka-c10-3/framework
-          go test -count=1 ./core ./kernel ./applicationgraph
-          go vet ./core ./kernel ./applicationgraph
+          go test -count=1 ./core ./kernel ./applicationgraph ./runtimecomponent
+          go vet ./core ./kernel ./applicationgraph ./runtimecomponent
           cd ../pkg
-          go test -count=1 ./applicationgraph ./contract
-          go vet ./applicationgraph ./contract
+          go test -count=1 ./applicationgraph ./contract ./architecturepolicy
+          go vet ./applicationgraph ./contract ./architecturepolicy
 
       - name: Assert source worktree remains clean
         shell: bash
