@@ -135,7 +135,7 @@ jobs:
           git -C biz diff --exit-code
           test -z "$(git -C biz status --porcelain)"
 
-      - name: Prove current C9.9 execution truth on committed C10 assembly
+      - name: Prove C9.9 execution truth on assembled C10 runtime
         shell: bash
         run: |
           set -euo pipefail
@@ -150,22 +150,37 @@ jobs:
             PROTOC_GEN_GO="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go" \
             PROTOC_GEN_GO_GRPC="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go-grpc"
 
-      - name: Record before plumbing pressure
+      - name: Verify structural plumbing removal
         shell: bash
         run: |
           set -euo pipefail
-          grep -q 'kernel.New' biz/cmd/biz/main.go
-          grep -q 'modulecatalog.Default' biz/cmd/biz/main.go
-          grep -q 'operation.NewExecutorWithOptions' biz/modules/deviceops/module.go
-          grep -q 'NewDeviceopsSiteManagementChildCapability' biz/modules/deviceops/module.go
-          grep -q 'NewDeviceopsDeviceManagementChildCapability' biz/modules/deviceops/module.go
-          grep -q 'RegisterDeviceManagementOperationExecutor' biz/modules/deviceops/module.go
-          grep -q 'RegisterDeviceTransferOperationExecutor' biz/modules/deviceops/module.go
+          ! grep -q 'kernel.New' biz/cmd/biz/main.go
+          ! grep -q 'modulecatalog.Default' biz/cmd/biz/main.go
+          grep -q 'bizruntime.Bootstrap' biz/cmd/biz/main.go
+          ! grep -q 'operation.NewExecutorWithOptions' biz/modules/deviceops/module.go
+          ! grep -q 'RegisterDeviceManagementOperationExecutor' biz/modules/deviceops/module.go
+          ! grep -q 'RegisterDeviceTransferOperationExecutor' biz/modules/deviceops/module.go
+          ! grep -q 'NewDeviceopsSiteManagementChildCapability' biz/modules/deviceops/module.go
+          ! grep -q 'NewDeviceopsDeviceManagementChildCapability' biz/modules/deviceops/module.go
+          grep -q 'generatedassembly.Bootstrap' biz/internal/bizruntime/runtime.go
+          grep -q 'BindRuntime:' biz/internal/bizruntime/runtime.go
+          grep -q 'deviceopsrest.RegisterDeviceManagementOperationExecutor' biz/internal/assembly/zz_yunka_assembly_gen.go
+          grep -q 'deviceopsrest.RegisterDeviceTransferOperationExecutor' biz/internal/assembly/zz_yunka_assembly_gen.go
+          grep -q 'deviceopsrpc.RegisterDeviceManagementOperationExecutor' biz/internal/assembly/zz_yunka_assembly_gen.go
+          grep -q 'deviceopsrpc.RegisterDeviceTransferOperationExecutor' biz/internal/assembly/zz_yunka_assembly_gen.go
+          grep -q 'NewDeviceopsSiteManagementChildCapability' biz/internal/assembly/zz_yunka_assembly_gen.go
+          grep -q 'NewDeviceopsDeviceManagementChildCapability' biz/internal/assembly/zz_yunka_assembly_gen.go
+          ! grep -q 'RegisterSiteManagementOperationExecutor' biz/internal/assembly/zz_yunka_assembly_gen.go
+          ! grep -q 'NewDeviceopsSiteManagementChildCapability' biz/internal/bizruntime/runtime.go
+          ! grep -q 'NewDeviceopsDeviceManagementChildCapability' biz/internal/bizruntime/runtime.go
+          test ! -e biz/internal/deviceops/transport/rest/zz_yunka_site_management_operation_executor_gen.go
+          test ! -e biz/internal/deviceops/transport/rpc/zz_yunka_site_management_operation_executor_gen.go
           printf '%s\n' \
             'C10.4_FRAMEWORK_BINDING_SEAM=PASS' \
             'C10.4_COMMITTED_ASSEMBLY_GENERATE=PASS' \
             'C10.4_ASSEMBLY_CHECK=PASS' \
             'C10.4_SECOND_GENERATION_ZERO_DRIFT=PASS' \
+            'C10.4_STRUCTURAL_PLUMBING_REMOVED=PASS' \
             'C10.4_BIZ_VERIFY=PASS' \
             'C10.4_MYSQL_PRESSURE=PASS'
 
