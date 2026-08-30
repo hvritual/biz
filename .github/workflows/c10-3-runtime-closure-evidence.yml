@@ -15,7 +15,7 @@ jobs:
   runtime-closure:
     runs-on: ubuntu-latest
     env:
-      C103_SHA: 81ee6ca015c6869e2fa735a66fda8a60520a4d6e
+      C103_SHA: 185f2c28e2d9a9fcc319f5446ecb08682eaee772
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -37,7 +37,7 @@ jobs:
           go-version: '1.25.13'
           cache: false
 
-      - name: Compile and test runtime closure transport adapters and codegen
+      - name: Compile and test C10.3 dev closure hardening
         shell: bash
         run: |
           set -euo pipefail
@@ -45,8 +45,11 @@ jobs:
           go test -count=1 ./core ./kernel ./applicationgraph ./runtimecomponent
           go vet ./core ./kernel ./applicationgraph ./runtimecomponent
           cd ../pkg
-          go test -count=1 ./applicationgraph ./contract ./architecturepolicy
-          go vet ./applicationgraph ./contract ./architecturepolicy
+          go test -count=1 ./applicationgraph ./contract ./architecturepolicy ./devruntime
+          go vet ./applicationgraph ./contract ./architecturepolicy ./devruntime
+          cd ../app
+          go test -count=1 ./cmd/dev
+          go vet ./cmd/dev
 
       - name: Assert source worktree remains clean
         shell: bash
