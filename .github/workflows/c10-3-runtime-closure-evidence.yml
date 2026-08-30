@@ -15,7 +15,7 @@ jobs:
   runtime-closure:
     runs-on: ubuntu-latest
     env:
-      C103_SHA: 185f2c28e2d9a9fcc319f5446ecb08682eaee772
+      C103_SHA: 55641da77a8b51b6a9e7a564224be46420657821
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -37,7 +37,7 @@ jobs:
           go-version: '1.25.13'
           cache: false
 
-      - name: Compile and test C10.3 dev closure hardening
+      - name: Qualify C10.3-F dev closure hardening
         shell: bash
         run: |
           set -euo pipefail
