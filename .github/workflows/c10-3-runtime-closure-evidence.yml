@@ -1,0 +1,57 @@
+name: c10-3-runtime-closure-evidence
+
+on:
+  push:
+    branches:
+      - agent/c10-3-runtime-closure-evidence
+    paths:
+      - .github/workflows/c10-3-runtime-closure-evidence.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-closure:
+    runs-on: ubuntu-latest
+    env:
+      C103_SHA: 3fb251d52d2ece5f8d813390910a98c089e106c9
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.C103_SHA }}
+          path: yunka-c10-3
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Assert exact C10.3 source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C yunka-c10-3 rev-parse HEAD)" = "$C103_SHA"
+          git -C yunka-c10-3 status --short
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache: false
+
+      - name: Compile and test first runtime closure slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd yunka-c10-3/framework
+          go test -count=1 ./core ./kernel ./applicationgraph
+          go vet ./core ./kernel ./applicationgraph
+          cd ../pkg
+          go test -count=1 ./applicationgraph
+          go vet ./applicationgraph
+
+      - name: Assert source worktree remains clean
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd yunka-c10-3
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=no)"
