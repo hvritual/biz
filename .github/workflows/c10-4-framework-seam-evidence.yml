@@ -1,0 +1,43 @@
+name: c10-4-framework-seam-evidence
+
+on:
+  push:
+    branches:
+      - agent/c10-4-consumer-upgrade
+    paths:
+      - .github/workflows/c10-4-framework-seam-evidence.yml
+
+permissions:
+  contents: read
+
+jobs:
+  seam:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      C104_FRAMEWORK_SHA: ddd2d7a1325b68e2f4abe5b83d7b9bc0af102c96
+    steps:
+      - name: Checkout exact Yunka C10.4 head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.C104_FRAMEWORK_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Assert exact framework source
+        shell: bash
+        run: test "$(git -C yunka.io rev-parse HEAD)" = "$C104_FRAMEWORK_SHA"
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache: false
+      - name: Run C10.4 binding seam gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd yunka.io/pkg && go test -count=1 ./contract ./architecturepolicy)
+          (cd yunka.io/pkg && go vet ./contract ./architecturepolicy)
+          git -C yunka.io diff --exit-code
+          test -z "$(git -C yunka.io status --porcelain --untracked-files=no)"

@@ -10,28 +10,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hvritual/biz/internal/bizruntime"
 	"github.com/hvritual/biz/modules/deviceops"
-	_ "github.com/hvritual/biz/modules/deviceops/autoload"
 	"yunka.io/framework/core/eventBus"
-	"yunka.io/framework/core/modulecatalog"
-	"yunka.io/framework/kernel"
 	"yunka.io/framework/platform"
 	"yunka.io/pkg/logExt"
 )
-
-type configProvider struct{ deviceops deviceops.Config }
-
-func (provider configProvider) Decode(moduleName, key string, target any) error {
-	if moduleName != deviceops.ModuleName || key != "modules.deviceops" {
-		return fmt.Errorf("unsupported module config %s/%s", moduleName, key)
-	}
-	config, ok := target.(*deviceops.Config)
-	if !ok || config == nil {
-		return errors.New("deviceops config target must be *deviceops.Config")
-	}
-	*config = provider.deviceops
-	return nil
-}
 
 func main() {
 	if err := run(); err != nil {
@@ -39,6 +23,7 @@ func main() {
 		os.Exit(1)
 	}
 }
+
 func run() error {
 	dsn := os.Getenv("YUNKA_BIZ_MYSQL_DSN")
 	if dsn == "" {
@@ -67,30 +52,41 @@ func run() error {
 	if err := config.Validate(); err != nil {
 		return err
 	}
-	provider, err := platform.New(platform.Options{Config: configProvider{deviceops: config}, Logger: logExt.NewBaseLogger(), EventBus: eventBus.NewTrieEventBus(), Databases: map[string]platform.DatabaseFactory{"primary": platform.MySQLFactory{Configurations: map[string]platform.MySQLConfig{"primary": {DSN: dsn, MaxOpenConns: 32, MaxIdleConns: 8, ConnMaxLifetime: 30 * time.Minute, ConnMaxIdleTime: 5 * time.Minute}}}}})
-	if err != nil {
-		return err
-	}
-	app, err := kernel.New(kernel.Options{Platform: provider, Catalog: modulecatalog.Default()})
+	provider, err := platform.New(platform.Options{
+		Config:   bizruntime.ConfigProvider{DeviceOps: config},
+		Logger:   logExt.NewBaseLogger(),
+		EventBus: eventBus.NewTrieEventBus(),
+		Databases: map[string]platform.DatabaseFactory{
+			"primary": platform.MySQLFactory{Configurations: map[string]platform.MySQLConfig{
+				"primary": {
+					DSN: dsn, MaxOpenConns: 32, MaxIdleConns: 8,
+					ConnMaxLifetime: 30 * time.Minute, ConnMaxIdleTime: 5 * time.Minute,
+				},
+			}},
+		},
+	})
 	if err != nil {
 		return err
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
-	if err := app.Start(ctx); err != nil {
+	started, err := bizruntime.Bootstrap(ctx, provider, config)
+	if err != nil {
 		return err
 	}
 	<-ctx.Done()
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()
-	return app.Shutdown(shutdownCtx)
+	return started.App.Shutdown(shutdownCtx)
 }
+
 func envOr(name, fallback string) string {
 	if value := os.Getenv(name); value != "" {
 		return value
 	}
 	return fallback
 }
+
 func envBool(name string, fallback bool) bool {
 	value := os.Getenv(name)
 	if value == "" {

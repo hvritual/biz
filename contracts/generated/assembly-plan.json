@@ -1,0 +1,371 @@
+{
+  "schemaVersion": 1,
+  "identity": "root",
+  "applications": [
+    {
+      "id": "deviceops/device_management",
+      "domain": "deviceops",
+      "name": "device_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/deviceops/device_management"
+      }
+    },
+    {
+      "id": "deviceops/device_transfer",
+      "domain": "deviceops",
+      "name": "device_transfer",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/deviceops/device_transfer"
+      }
+    },
+    {
+      "id": "deviceops/site_management",
+      "domain": "deviceops",
+      "name": "site_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/deviceops/site_management"
+      }
+    }
+  ],
+  "applicationDependencies": [
+    {
+      "from": "deviceops/device_transfer",
+      "to": "deviceops/device_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/deviceops/device_transfer/requires/deviceops/device_management"
+      }
+    },
+    {
+      "from": "deviceops/device_transfer",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/deviceops/device_transfer/requires/deviceops/site_management"
+      }
+    }
+  ],
+  "applicationDependencyClosure": [
+    {
+      "from": "deviceops/device_transfer",
+      "to": "deviceops/device_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "deviceops/device_transfer-\u003edeviceops/device_management"
+      }
+    },
+    {
+      "from": "deviceops/device_transfer",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "deviceops/device_transfer-\u003edeviceops/site_management"
+      }
+    }
+  ],
+  "operations": [
+    {
+      "id": "device.create",
+      "application": "deviceops/device_management",
+      "bindings": [
+        {
+          "operationId": "device.create",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.create/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "device.create",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.create/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/device.create"
+      }
+    },
+    {
+      "id": "device.delete",
+      "application": "deviceops/device_management",
+      "bindings": [
+        {
+          "operationId": "device.delete",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.delete/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "device.delete",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.delete/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/device.delete"
+      }
+    },
+    {
+      "id": "device.get",
+      "application": "deviceops/device_management",
+      "bindings": [
+        {
+          "operationId": "device.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "device.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/device.get"
+      }
+    },
+    {
+      "id": "device.list",
+      "application": "deviceops/device_management",
+      "bindings": [
+        {
+          "operationId": "device.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "device.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/device.list"
+      }
+    },
+    {
+      "id": "device.transfer",
+      "application": "deviceops/device_transfer",
+      "bindings": [
+        {
+          "operationId": "device.transfer",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.transfer/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "device.transfer",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.transfer/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/device.transfer"
+      }
+    },
+    {
+      "id": "device.update",
+      "application": "deviceops/device_management",
+      "bindings": [
+        {
+          "operationId": "device.update",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.update/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "device.update",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.update/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/device.update"
+      }
+    },
+    {
+      "id": "site.validate_transfer_target",
+      "application": "deviceops/site_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/site.validate_transfer_target"
+      }
+    }
+  ],
+  "operationDependencies": [
+    {
+      "from": "device.transfer",
+      "to": "device.update",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/device.transfer/requiresOperations/device.update"
+      }
+    },
+    {
+      "from": "device.transfer",
+      "to": "site.validate_transfer_target",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/device.transfer/requiresOperations/site.validate_transfer_target"
+      }
+    }
+  ],
+  "modules": [
+    {
+      "name": "deviceops",
+      "version": "v0.1.0",
+      "requirements": {
+        "configKey": "modules.deviceops",
+        "logger": true,
+        "databases": [
+          "primary"
+        ]
+      },
+      "evidence": {
+        "ownership": "reused",
+        "source": "generated-module-source",
+        "ref": "deviceops/zz_yunka_module_gen.go"
+      }
+    }
+  ],
+  "requirements": [
+    {
+      "module": "deviceops",
+      "kind": "config",
+      "name": "modules.deviceops",
+      "evidence": {
+        "ownership": "reused",
+        "source": "generated-module-source",
+        "ref": "deviceops/zz_yunka_module_gen.go/requirements/configKey"
+      }
+    },
+    {
+      "module": "deviceops",
+      "kind": "database",
+      "name": "primary",
+      "evidence": {
+        "ownership": "reused",
+        "source": "generated-module-source",
+        "ref": "deviceops/zz_yunka_module_gen.go/requirements/databases/primary"
+      }
+    },
+    {
+      "module": "deviceops",
+      "kind": "logger",
+      "evidence": {
+        "ownership": "reused",
+        "source": "generated-module-source",
+        "ref": "deviceops/zz_yunka_module_gen.go/requirements/logger"
+      }
+    }
+  ],
+  "targets": [
+    {
+      "name": "root",
+      "applications": [
+        "deviceops/device_management",
+        "deviceops/device_transfer",
+        "deviceops/site_management"
+      ],
+      "modules": [
+        "deviceops"
+      ],
+      "externalOperations": [
+        "device.create",
+        "device.delete",
+        "device.get",
+        "device.list",
+        "device.transfer",
+        "device.update"
+      ],
+      "internalOperations": [
+        "site.validate_transfer_target"
+      ],
+      "evidence": {
+        "ownership": "derived",
+        "source": "assemblyplan",
+        "ref": "targets/root"
+      }
+    }
+  ]
+}
