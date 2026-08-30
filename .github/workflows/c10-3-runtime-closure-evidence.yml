@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      C103_SHA: b735e9be4ab83eb5422ad0d54894d48502be851e
+      C103_SHA: 7ff325411a3365f38f11161fcf9230b218077a12
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -68,23 +68,14 @@ jobs:
           unzip -q "$archive" -d "$install_root"
           echo "$install_root/bin" >> "$GITHUB_PATH"
 
-      - name: Execute C10.3-G assembled runtime fixture
+      - name: Qualify permanent C10.3-G runtime closure gate
         shell: bash
         run: |
           set -euo pipefail
           cd yunka-c10-3
           test "$(git rev-parse HEAD)" = "$C103_SHA"
-          make toolchain-check
-          make rpc-tools
-          make rpc-toolchain-check
-          root="$PWD"
-          protoc_path="$(command -v protoc)"
+          make c10-3-runtime-closure-check
           cd app
-          YUNKA_REQUIRE_C103_QUALIFICATION=1 \
-            PROTOC="$protoc_path" \
-            PROTOC_GEN_GO="$root/.yunka/bin/protoc-gen-go" \
-            PROTOC_GEN_GO_GRPC="$root/.yunka/bin/protoc-gen-go-grpc" \
-            go test -timeout=10m -count=1 ./cmd/assembly -run '^TestC103QualificationFullAssembledRuntimeClosure$'
           go vet ./cmd/assembly
 
       - name: Assert source worktree remains clean
