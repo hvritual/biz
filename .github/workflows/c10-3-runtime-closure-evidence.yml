@@ -29,7 +29,7 @@ jobs:
           --health-timeout=5s
           --health-retries=30
     env:
-      C103_SHA: 7ff325411a3365f38f11161fcf9230b218077a12
+      C103_SHA: 561d9c779334371735acf8d394969cb752e3999d
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/yunka_test?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
