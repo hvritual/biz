@@ -27,7 +27,7 @@ jobs:
           --health-timeout=5s
           --health-retries=30
     env:
-      C103_SHA: 561d9c779334371735acf8d394969cb752e3999d
+      C104_FRAMEWORK_SHA: 27050aad72133d734cda78a7273513fc58d21981
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/yunka_test?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
     steps:
       - name: Checkout Biz migration branch
@@ -37,11 +37,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Checkout qualified Yunka C10.3 exact head
+      - name: Checkout exact Yunka C10.4 framework head
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: hvritual/yunka.io
-          ref: ${{ env.C103_SHA }}
+          ref: ${{ env.C104_FRAMEWORK_SHA }}
           path: yunka.io
           fetch-depth: 0
           persist-credentials: false
@@ -51,9 +51,9 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C yunka.io rev-parse HEAD)" = "$C103_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$C104_FRAMEWORK_SHA"
           printf 'Biz exact head: %s\n' "$(git -C biz rev-parse HEAD)"
-          printf 'Yunka C10.3 exact head: %s\n' "$(git -C yunka.io rev-parse HEAD)"
+          printf 'Yunka C10.4 exact head: %s\n' "$(git -C yunka.io rev-parse HEAD)"
 
       - name: Load locked Yunka toolchain
         id: lock
@@ -97,7 +97,17 @@ jobs:
           set -euo pipefail
           make -C yunka.io rpc-tools
 
-      - name: Prove current C9.9 Biz truth against C10.3
+      - name: Verify C10.4 framework binding seam
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd yunka.io/pkg && go test -count=1 ./contract ./architecturepolicy)
+          (cd yunka.io/pkg && go vet ./contract ./architecturepolicy)
+          make -C yunka.io c10-3-runtime-closure-check
+          git -C yunka.io diff --exit-code
+          test -z "$(git -C yunka.io status --porcelain --untracked-files=no)"
+
+      - name: Prove current C9.9 Biz truth against C10.4
         shell: bash
         run: |
           set -euo pipefail
@@ -162,6 +172,7 @@ jobs:
           grep -q 'RegisterDeviceManagementOperationExecutor' biz/modules/deviceops/module.go
           grep -q 'RegisterDeviceTransferOperationExecutor' biz/modules/deviceops/module.go
           printf '%s\n' \
+            'C10.4_FRAMEWORK_BINDING_SEAM=PASS' \
             'C10.4_BASELINE_C9_VERIFY=PASS' \
             'C10.4_BASELINE_MYSQL_PRESSURE=PASS' \
             'C10.4_ASSEMBLY_GENERATE=PASS' \
