@@ -15,7 +15,7 @@ jobs:
   runtime-closure:
     runs-on: ubuntu-latest
     env:
-      C103_SHA: 3fb251d52d2ece5f8d813390910a98c089e106c9
+      C103_SHA: ed5c17f86e87a290c49905f5ca5d54dbbd3158af
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -37,7 +37,7 @@ jobs:
           go-version: '1.25.13'
           cache: false
 
-      - name: Compile and test first runtime closure slice
+      - name: Compile and test runtime closure and generated bootstrap
         shell: bash
         run: |
           set -euo pipefail
@@ -45,8 +45,8 @@ jobs:
           go test -count=1 ./core ./kernel ./applicationgraph
           go vet ./core ./kernel ./applicationgraph
           cd ../pkg
-          go test -count=1 ./applicationgraph
-          go vet ./applicationgraph
+          go test -count=1 ./applicationgraph ./contract
+          go vet ./applicationgraph ./contract
 
       - name: Assert source worktree remains clean
         shell: bash
