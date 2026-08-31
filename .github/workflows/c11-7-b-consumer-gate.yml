@@ -161,6 +161,12 @@ jobs:
           grep -Fq 'execution.NewIdempotencyCoordinator' biz/internal/bizruntime/runtime.go
           grep -Fq 'authz.NewExecutionSecurity' biz/internal/bizruntime/runtime.go
 
+      - name: Prove Biz compiles before runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd biz && go build ./...)
+
       - name: Build VCS-stamped Yunka CLI
         shell: bash
         run: |
@@ -173,7 +179,29 @@ jobs:
         run: |
           set -euo pipefail
           cd biz
+          evidence_dir="$RUNNER_TEMP/c11-7-b-runtime-evidence"
+          mkdir -p "$evidence_dir"
           rm -f .yunka/dev-runtime.json .yunka/runtime-graph.json
+
+          dump_evidence() {
+            cp -f .yunka/dev-runtime.json "$evidence_dir/dev-runtime.json" 2>/dev/null || true
+            cp -f .yunka/runtime-graph.json "$evidence_dir/runtime-graph.json" 2>/dev/null || true
+            cp -f "$RUNNER_TEMP/biz-dev.stdout" "$evidence_dir/biz-dev.stdout" 2>/dev/null || true
+            cp -f "$RUNNER_TEMP/biz-dev.stderr" "$evidence_dir/biz-dev.stderr" 2>/dev/null || true
+            cp -f "$RUNNER_TEMP/biz-diagnostics.json" "$evidence_dir/biz-diagnostics.json" 2>/dev/null || true
+            cp -f "$RUNNER_TEMP/biz-status.json" "$evidence_dir/biz-status.json" 2>/dev/null || true
+            {
+              printf 'candidate=%s\n' "$GITHUB_SHA"
+              printf 'framework=%s\n' "$C117_FRAMEWORK_SHA"
+              if test -n "${dev_pid:-}" && kill -0 "$dev_pid" 2>/dev/null; then
+                printf 'supervisor_alive=true\n'
+              else
+                printf 'supervisor_alive=false\n'
+              fi
+              curl --silent --show-error --max-time 2 http://127.0.0.1:8080/__yunka/diagnostics || true
+            } > "$evidence_dir/probe.txt" 2>&1
+          }
+
           "$RUNNER_TEMP/yunka" dev >"$RUNNER_TEMP/biz-dev.stdout" 2>"$RUNNER_TEMP/biz-dev.stderr" &
           dev_pid=$!
           cleanup() {
@@ -182,12 +210,21 @@ jobs:
               wait "$dev_pid" || true
             fi
           }
-          trap cleanup EXIT
+          on_exit() {
+            status=$?
+            trap - EXIT
+            dump_evidence
+            cleanup
+            dump_evidence
+            exit "$status"
+          }
+          trap on_exit EXIT
 
           ready=0
           for _ in $(seq 1 240); do
             if ! kill -0 "$dev_pid" 2>/dev/null; then
               wait "$dev_pid" || true
+              dump_evidence
               cat "$RUNNER_TEMP/biz-dev.stdout" || true
               cat "$RUNNER_TEMP/biz-dev.stderr" || true
               exit 1
@@ -222,9 +259,19 @@ jobs:
 
           kill -TERM "$dev_pid"
           wait "$dev_pid"
-          trap - EXIT
           jq -e '.state == "stopped" and .processes[0].state == "stopped"' .yunka/dev-runtime.json >/dev/null
+          dump_evidence
+          trap - EXIT
           cat "$RUNNER_TEMP/biz-dev.stderr"
+
+      - name: Export runtime closure evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: c11-7-b-runtime-evidence
+          path: ${{ runner.temp }}/c11-7-b-runtime-evidence
+          if-no-files-found: warn
+          retention-days: 1
 
       - name: Prove C9 and C10 regression gates on MySQL 8.4
         shell: bash
