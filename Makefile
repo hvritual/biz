@@ -8,25 +8,24 @@ PROTOC_GEN_GO ?= $(YUNKA_ROOT)/.yunka/bin/protoc-gen-go
 PROTOC_GEN_GO_GRPC ?= $(YUNKA_ROOT)/.yunka/bin/protoc-gen-go-grpc
 PROTOC_INCLUDE ?=
 
-.PHONY: generate check test verify pressure run
+.PHONY: init generate-proto generate check test verify pressure run
 
-generate:
+init:
 	@cd $(YUNKA_APP) && go run ./cmd init --root $(CURDIR) --db-prefix biz
-	@cd $(YUNKA_APP) && go run ./cmd domain generate --path $(CURDIR)/internal/deviceops
-	@$(PROTOC) -I $(PROTO_DIR) -I $(THIRD_PARTY) -I $(YUNKA_ROOT)/contracts/proto $(if $(PROTOC_INCLUDE),-I $(PROTOC_INCLUDE),) \
+
+generate-proto:
+	@$(PROTOC) -I $(PROTO_DIR) -I $(THIRD_PARTY) $(if $(PROTOC_INCLUDE),-I $(PROTOC_INCLUDE),) \
 		--plugin=protoc-gen-go=$(PROTOC_GEN_GO) --plugin=protoc-gen-go-grpc=$(PROTOC_GEN_GO_GRPC) \
 		--go_out=$(CURDIR) --go_opt=module=github.com/hvritual/biz \
 		--go-grpc_out=$(CURDIR) --go-grpc_opt=module=github.com/hvritual/biz,require_unimplemented_servers=false \
 		$(PROTO_DIR)/$(PROTO_FILE)
-	@cd $(YUNKA_APP) && go run ./cmd contract generate --proto-dir $(PROTO_DIR) --proto-path $(THIRD_PARTY) --proto-path $(YUNKA_ROOT)/contracts/proto --file $(PROTO_FILE) --out $(CURDIR)/contracts/generated --title "biz API" --version "1.0.0" --application-out $(CURDIR)/internal --application-import github.com/hvritual/biz/internal
-	@cd $(YUNKA_APP) && go run ./cmd assembly generate --proto-dir $(PROTO_DIR) --proto-path $(THIRD_PARTY) --proto-path $(YUNKA_ROOT)/contracts/proto --file $(PROTO_FILE) --module-root $(CURDIR)/modules --out $(CURDIR)/contracts/generated --code-out $(CURDIR)/internal --code-import github.com/hvritual/biz/internal --protoc $(PROTOC)
+
+generate: generate-proto
+	@cd $(YUNKA_APP) && go run ./cmd generate --root $(CURDIR) --protoc $(PROTOC)
 	@go mod tidy
 
 check:
-	@cd $(YUNKA_APP) && go run ./cmd domain check --root $(CURDIR)/internal
-	@cd $(YUNKA_APP) && go run ./cmd module check --root $(CURDIR)/modules
-	@cd $(YUNKA_APP) && go run ./cmd contract check --proto-dir $(PROTO_DIR) --proto-path $(THIRD_PARTY) --proto-path $(YUNKA_ROOT)/contracts/proto --file $(PROTO_FILE) --out $(CURDIR)/contracts/generated --title "biz API" --version "1.0.0" --application-out $(CURDIR)/internal --application-import github.com/hvritual/biz/internal
-	@cd $(YUNKA_APP) && go run ./cmd assembly check --proto-dir $(PROTO_DIR) --proto-path $(THIRD_PARTY) --proto-path $(YUNKA_ROOT)/contracts/proto --file $(PROTO_FILE) --module-root $(CURDIR)/modules --out $(CURDIR)/contracts/generated --code-out $(CURDIR)/internal --code-import github.com/hvritual/biz/internal --protoc $(PROTOC)
+	@cd $(YUNKA_APP) && go run ./cmd check --root $(CURDIR) --protoc $(PROTOC)
 
 test:
 	@go test ./...
