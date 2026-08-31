@@ -1,6 +1,21 @@
 {
-  "version": 1,
+  "version": 2,
   "database": {
     "tablePrefix": "biz"
+  },
+  "workflow": {
+    "contract": {
+      "sources": "contracts/sources.json",
+      "generated": "contracts/generated"
+    },
+    "modules": {
+      "root": "modules"
+    },
+    "generatedGo": {
+      "root": "internal"
+    },
+    "dev": {
+      "manifest": ".yunka/dev.json"
+    }
   }
 }
