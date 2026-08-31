@@ -84,9 +84,11 @@ func Bootstrap(ctx context.Context, provider *platform.Provider, config deviceop
 
 	authenticator := &runtimeAuthenticator{}
 	health := &runtimeHealth{}
+	diagnosticsEndpoint := &runtimeDiagnostics{}
 	apiMux := http.NewServeMux()
 	rootMux := http.NewServeMux()
 	rootMux.HandleFunc("GET /healthz", health.handle)
+	rootMux.Handle("GET "+diagnosticsPath, diagnosticsEndpoint)
 	rootMux.Handle("/v1/", httpAuthentication(authenticator, apiMux))
 	httpServer := &http.Server{Handler: rootMux, ReadHeaderTimeout: 5 * time.Second}
 	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcAuthentication(authenticator)))
@@ -127,6 +129,10 @@ func Bootstrap(ctx context.Context, provider *platform.Provider, config deviceop
 		return nil, err
 	}
 	health.set(result.App)
+	if err := diagnosticsEndpoint.set(result.App); err != nil {
+		_ = result.App.Shutdown(ctx)
+		return nil, fmt.Errorf("biz runtime: diagnostics: %w", err)
+	}
 	return &Started{
 		App: result.App, Applications: result.Applications,
 		httpAddress: httpListener.Addr().String(), grpcAddress: grpcListener.Addr().String(),
