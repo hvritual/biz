@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 3,
+  "runtime": {
+    "application": "biz",
+    "statePath": ".yunka/dev-runtime.json",
+    "graphPath": ".yunka/runtime-graph.json",
+    "contractManifest": "contracts/generated/manifest.json",
+    "shutdownTimeout": "10s",
+    "closure": true
+  },
+  "processes": [
+    {
+      "name": "biz",
+      "command": [
+        "go",
+        "run",
+        "./cmd/biz"
+      ],
+      "graphNodes": [
+        "application:deviceops/device_management",
+        "application:deviceops/device_transfer",
+        "application:deviceops/site_management"
+      ],
+      "inheritEnv": [
+        "YUNKA_BIZ_MYSQL_DSN",
+        "YUNKA_BIZ_AUTO_MIGRATE",
+        "YUNKA_BIZ_BOOTSTRAP_TOKEN",
+        "YUNKA_BIZ_BOOTSTRAP_TENANT_ID",
+        "YUNKA_BIZ_BOOTSTRAP_TENANT_NAME",
+        "YUNKA_BIZ_BOOTSTRAP_USER_ID",
+        "YUNKA_BIZ_BOOTSTRAP_EMAIL",
+        "YUNKA_BIZ_BOOTSTRAP_SITE_ID",
+        "YUNKA_BIZ_BOOTSTRAP_SITE_NAME"
+      ],
+      "readiness": {
+        "url": "http://127.0.0.1:8080/__yunka/diagnostics",
+        "timeout": "45s",
+        "interval": "250ms",
+        "expectedStatus": 200,
+        "diagnosticsReady": true,
+        "captureDiagnostics": true
+      }
+    }
+  ]
+}
