@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "sourceSets": [
+    {
+      "name": "biz",
+      "root": "contracts/proto",
+      "files": [
+        "deviceops/v1/deviceops.proto"
+      ],
+      "protoPaths": [
+        "contracts/third_party"
+      ]
+    }
+  ]
+}
