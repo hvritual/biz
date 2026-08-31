@@ -2,7 +2,7 @@
   "schemaVersion": 3,
   "files": [
     {
-      "name": "deviceops/v1/deviceops.proto",
+      "name": "contracts/proto/deviceops/v1/deviceops.proto",
       "package": "deviceops.v1",
       "syntax": "proto3",
       "goPackage": "github.com/hvritual/biz/contracts/gen/deviceops/v1;deviceopsv1",
