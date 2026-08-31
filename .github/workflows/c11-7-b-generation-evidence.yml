@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      C117_FRAMEWORK_SHA: 3b9c1e29f6379a47c3bc90cc86e4f20f1eecf576
+      C117_FRAMEWORK_SHA: d9bc214a0485a48fefae0826051142d741e54257
     steps:
       - name: Checkout exact Biz candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Checkout qualified Yunka C11.7-A head
+      - name: Checkout qualified Yunka C11.7 runtime head
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: hvritual/yunka.io
