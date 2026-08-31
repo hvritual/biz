@@ -3,3 +3,5 @@ bin/
 coverage.out
 .DS_Store
 .yunka/cache/
+.yunka/dev-runtime.json
+.yunka/runtime-graph.json
