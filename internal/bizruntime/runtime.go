@@ -53,8 +53,13 @@ func (started *Started) GRPCAddress() string {
 }
 
 func Bootstrap(ctx context.Context, provider *platform.Provider, config deviceops.Config) (*Started, error) {
+	return BootstrapWithOptions(ctx, provider, Options{DeviceOps: config})
+}
+
+func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, options Options) (*Started, error) {
 	if provider == nil { return nil, errors.New("biz runtime: platform provider is required") }
-	if err := config.Validate(); err != nil { return nil, err }
+	if err := options.Validate(); err != nil { return nil, err }
+	config := options.DeviceOps
 	if ctx == nil { ctx = context.Background() }
 
 	httpListener, err := net.Listen("tcp", config.HTTPListenAddress)
@@ -81,7 +86,7 @@ func Bootstrap(ctx context.Context, provider *platform.Provider, config deviceop
 	result, err := generatedassembly.Bootstrap(ctx, generatedassembly.BootstrapOptions{
 		Platform: provider,
 		BindRuntime: func(bindCtx context.Context, prepared *platform.Provider) (generatedassembly.RuntimeBindings, error) {
-			return bindRuntime(bindCtx, prepared, config, authenticator)
+			return bindRuntime(bindCtx, prepared, options, authenticator)
 		},
 		Transports: generatedassembly.TransportBindings{HTTP: apiMux, RPC: grpcServer},
 		RuntimeComponents: []core.RuntimeComponent{httpComponent, grpcComponent},
@@ -120,7 +125,8 @@ func (factory applicationFactories) BuildDeviceopsDeviceTransfer(dependencies ge
 	return deviceapp.NewCrossApplicationTransferService(dependencies.DeviceopsSiteManagement, dependencies.DeviceopsDeviceManagement)
 }
 
-func bindRuntime(ctx context.Context, provider *platform.Provider, config deviceops.Config, authenticator *runtimeAuthenticator) (generatedassembly.RuntimeBindings, error) {
+func bindRuntime(ctx context.Context, provider *platform.Provider, options Options, authenticator *runtimeAuthenticator) (generatedassembly.RuntimeBindings, error) {
+	config := options.DeviceOps
 	deviceContext, err := provider.ForModule(deviceops.GeneratedDescriptor())
 	if err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: deviceops capabilities: %w", err) }
 	deviceDatabase, err := deviceContext.Databases().GORM("primary")
@@ -135,6 +141,7 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, config device
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	if config.AutoMigrate {
 		if err := accessStore.AutoMigrate(ctx); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: access migrate: %w", err) }
+		if err := accessStore.EnsurePlatformSchema(ctx); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: platform IAM migrate: %w", err) }
 		if err := devicepersistence.AutoMigrate(ctx, deviceDatabase); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: domain migrate: %w", err) }
 		if err := devicepersistence.EnsureIndexes(deviceDatabase); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: indexes: %w", err) }
 	}
@@ -153,8 +160,19 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, config device
 			if err := sites.Create(trusted, &value); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: bootstrap site: %w", err) }
 		}
 	}
+	if options.PlatformBootstrap.Enabled() {
+		if err := accessStore.BootstrapPlatform(ctx, accesspersistence.PlatformBootstrap{
+			Subject: options.PlatformBootstrap.Subject,
+			Token: options.PlatformBootstrap.Token,
+			Permissions: options.PlatformBootstrap.Permissions,
+		}); err != nil {
+			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: platform bootstrap: %w", err)
+		}
+	}
 
-	grantAuthorizer, err := authz.NewGrantAuthorizer(accessStore)
+	grantResolver, err := accesspersistence.NewPrincipalGrantResolver(accessStore)
+	if err != nil { return generatedassembly.RuntimeBindings{}, err }
+	grantAuthorizer, err := authz.NewGrantAuthorizerWithResolver(grantResolver)
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	guard, err := devicesecurity.NewGuard(accessStore)
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
@@ -199,6 +217,9 @@ func (authenticator *runtimeAuthenticator) set(store *accesspersistence.Store) {
 func (authenticator *runtimeAuthenticator) authenticate(ctx context.Context, raw string) (identity.Principal, error) {
 	authenticator.mu.RLock(); store := authenticator.store; authenticator.mu.RUnlock()
 	if store == nil { return identity.Principal{}, accesspersistence.ErrUnauthorized }
+	principal, err := store.AuthenticatePlatform(ctx, raw)
+	if err == nil { return principal, nil }
+	if !errors.Is(err, accesspersistence.ErrUnauthorized) { return identity.Principal{}, err }
 	return store.Authenticate(ctx, raw)
 }
 
