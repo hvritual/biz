@@ -26,14 +26,14 @@ func (factory applicationFactories) BuildAccessTenantLifecycle(dependencies gene
 }
 
 type tenantLifecycleCapabilities struct {
-	members accessapp.AccessTenantMemberLifecycleChildCapability
-	roles   accessapp.AccessTenantRolePermissionChildCapability
+	members accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
+	roles   accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability
 }
 
-func (capabilities tenantLifecycleCapabilities) AccessTenantMemberLifecycle() accessapp.AccessTenantMemberLifecycleChildCapability {
+func (capabilities tenantLifecycleCapabilities) AccessTenantMemberLifecycle() accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability {
 	return capabilities.members
 }
 
-func (capabilities tenantLifecycleCapabilities) AccessTenantRolePermission() accessapp.AccessTenantRolePermissionChildCapability {
+func (capabilities tenantLifecycleCapabilities) AccessTenantRolePermission() accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability {
 	return capabilities.roles
 }

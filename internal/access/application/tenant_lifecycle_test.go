@@ -14,18 +14,18 @@ import (
 )
 
 type tenantTestCapabilities struct {
-	members AccessTenantMemberLifecycleChildCapability
-	roles   AccessTenantRolePermissionChildCapability
+	members TenantLifecycleToAccessTenantMemberLifecycleChildCapability
+	roles   TenantLifecycleToAccessTenantRolePermissionChildCapability
 }
 
-func (capabilities tenantTestCapabilities) AccessTenantMemberLifecycle() AccessTenantMemberLifecycleChildCapability {
+func (capabilities tenantTestCapabilities) AccessTenantMemberLifecycle() TenantLifecycleToAccessTenantMemberLifecycleChildCapability {
 	if capabilities.members != nil {
 		return capabilities.members
 	}
 	return tenantTestMemberChild{}
 }
 
-func (capabilities tenantTestCapabilities) AccessTenantRolePermission() AccessTenantRolePermissionChildCapability {
+func (capabilities tenantTestCapabilities) AccessTenantRolePermission() TenantLifecycleToAccessTenantRolePermissionChildCapability {
 	if capabilities.roles != nil {
 		return capabilities.roles
 	}
