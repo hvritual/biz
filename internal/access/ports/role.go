@@ -25,6 +25,7 @@ type TenantRoleRepository interface {
 	ReplacePermissions(context.Context, *domain.Role, uint64) error
 	AssignMember(context.Context, string, string, string) (domain.Role, error)
 	RevokeMember(context.Context, string, string, string) (domain.Role, error)
+	AssertMemberCanDeactivate(context.Context, string, string) error
 }
 
 type TenantRoleRepositories struct {
