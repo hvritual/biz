@@ -20,7 +20,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"gorm.io/gorm"
 )
 
 type b126HTTPResult struct {
