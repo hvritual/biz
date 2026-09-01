@@ -42,7 +42,9 @@ type membershipRecord struct {
 	TenantID  string    `gorm:"column:tenant_id;primaryKey;size:64"`
 	UserID    string    `gorm:"column:user_id;primaryKey;size:64"`
 	Status    string    `gorm:"column:status;size:32;not null;index"`
+	Version   uint64    `gorm:"column:version;not null;default:1"`
 	CreatedAt time.Time `gorm:"column:created_at;not null"`
+	UpdatedAt time.Time `gorm:"column:updated_at;not null"`
 }
 
 func (membershipRecord) TableName() string { return "biz_memberships" }
@@ -135,7 +137,7 @@ func (store *Store) Authenticate(ctx context.Context, rawToken string) (identity
 		return identity.Principal{}, err
 	}
 	var membership membershipRecord
-	if err := store.database.WithContext(ctx).Where("tenant_id = ? AND user_id = ? AND status = ?", token.TenantID, token.UserID, "active").First(&membership).Error; err != nil {
+	if err := store.database.WithContext(ctx).Where("tenant_id = ? AND user_id = ? AND status = ?", token.TenantID, token.UserID, accessdomain.TenantMemberStatusActive).First(&membership).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return identity.Principal{}, ErrUnauthorized
 		}
@@ -216,7 +218,7 @@ func (store *Store) Bootstrap(ctx context.Context, config Bootstrap, permissions
 	values := []any{
 		&tenantRecord{ID: config.TenantID, Name: config.TenantName, Status: accessdomain.TenantStatusActive, Version: 1, CreatedAt: now, UpdatedAt: now},
 		&userRecord{ID: config.UserID, Email: config.Email, Status: "active", CreatedAt: now},
-		&membershipRecord{TenantID: config.TenantID, UserID: config.UserID, Status: "active", CreatedAt: now},
+		&membershipRecord{TenantID: config.TenantID, UserID: config.UserID, Status: accessdomain.TenantMemberStatusActive, Version: 1, CreatedAt: now, UpdatedAt: now},
 		&roleRecord{ID: roleID, TenantID: config.TenantID, Name: "owner", Status: "active"},
 		&memberRoleRecord{TenantID: config.TenantID, UserID: config.UserID, RoleID: roleID},
 		&apiTokenRecord{TokenHash: TokenHash(config.Token), TenantID: config.TenantID, UserID: config.UserID, CreatedAt: now},
