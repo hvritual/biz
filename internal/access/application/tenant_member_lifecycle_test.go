@@ -88,6 +88,57 @@ func (repository *memoryTenantMemberRepository) Update(_ context.Context, member
 	return nil
 }
 
+type tenantMemberRoleCapabilityStub struct {
+	mu    sync.Mutex
+	calls []string
+	err   error
+}
+
+func (capability *tenantMemberRoleCapabilityStub) AssertTenantMemberDeactivationAllowed(_ context.Context, request *accessv1.AssertTenantMemberDeactivationAllowedRequest) (*accessv1.AssertTenantMemberDeactivationAllowedResponse, error) {
+	capability.mu.Lock()
+	capability.calls = append(capability.calls, request.GetUserId())
+	err := capability.err
+	capability.mu.Unlock()
+	if err != nil {
+		return nil, err
+	}
+	return &accessv1.AssertTenantMemberDeactivationAllowedResponse{}, nil
+}
+
+func (capability *tenantMemberRoleCapabilityStub) callCount() int {
+	capability.mu.Lock()
+	defer capability.mu.Unlock()
+	return len(capability.calls)
+}
+
+type tenantMemberCapabilitiesStub struct {
+	roles TenantMemberLifecycleToAccessTenantRolePermissionChildCapability
+}
+
+func (capabilities tenantMemberCapabilitiesStub) AccessTenantRolePermission() TenantMemberLifecycleToAccessTenantRolePermissionChildCapability {
+	return capabilities.roles
+}
+
+func allowTenantMemberCapabilities() tenantMemberCapabilitiesStub {
+	return tenantMemberCapabilitiesStub{roles: &tenantMemberRoleCapabilityStub{}}
+}
+
+func tenantMemberRoot(t *testing.T, unit execution.UnitOfWork, operation, tenantID string) context.Context {
+	t.Helper()
+	base := identity.WithPrincipal(context.Background(), identity.Principal{
+		Subject:       "user:admin-" + tenantID,
+		TenantID:      tenantID,
+		UserID:        "admin-" + tenantID,
+		Authenticated: true,
+		AuthMethod:    identity.AuthMethodAPIKey,
+	})
+	ctx, _, err := execution.BeginRoot(base, operation, execution.TransactionLocal, nil, tenantTestTransactionFactory{unit: unit})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ctx
+}
+
 func TestTenantMemberLifecycleRequiresTrustedTenantContext(t *testing.T) {
 	repository := newMemoryTenantMemberRepository()
 	unit := &tenantTestUnit{}
@@ -97,7 +148,7 @@ func TestTenantMemberLifecycleRequiresTrustedTenantContext(t *testing.T) {
 		}
 		return ports.TenantMemberRepositories{Member: repository}, nil
 	})
-	service, err := NewTenantMemberLifecycleService(factory)
+	service, err := NewTenantMemberLifecycleService(factory, allowTenantMemberCapabilities())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,24 +173,13 @@ func TestTenantMemberLifecycleUsesPrincipalTenantAndJoinedRootUoW(t *testing.T) 
 		}
 		return ports.TenantMemberRepositories{Member: repository}, nil
 	})
-	service, err := NewTenantMemberLifecycleService(factory)
+	service, err := NewTenantMemberLifecycleService(factory, allowTenantMemberCapabilities())
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	root := func(operation, tenantID string) context.Context {
-		base := identity.WithPrincipal(context.Background(), identity.Principal{
-			Subject: "user:admin-" + tenantID,
-			TenantID: tenantID,
-			UserID: "admin-" + tenantID,
-			Authenticated: true,
-			AuthMethod: identity.AuthMethodAPIKey,
-		})
-		ctx, _, err := execution.BeginRoot(base, operation, execution.TransactionLocal, nil, tenantTestTransactionFactory{unit: unit})
-		if err != nil {
-			t.Fatal(err)
-		}
-		return ctx
+		return tenantMemberRoot(t, unit, operation, tenantID)
 	}
 
 	invited, err := service.InviteTenantMember(root("tenant.member.invite", "tenant-a"), &accessv1.InviteTenantMemberRequest{Email: "member@example.com"})
@@ -190,6 +230,62 @@ func TestTenantMemberLifecycleUsesPrincipalTenantAndJoinedRootUoW(t *testing.T) 
 	}
 }
 
+func TestTenantMemberLifecycleLastOwnerGuardRunsAfterVersionCheckAndBeforeMutation(t *testing.T) {
+	repository := newMemoryTenantMemberRepository()
+	member, err := repository.Bootstrap(context.Background(), "tenant-a", "owner-a", "owner@example.com", time.Now().UTC())
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := &tenantTestUnit{}
+	factory := requestscope.RepositoryFactory[ports.TenantMemberRepositories](func(_ context.Context, got requestscope.UnitOfWork) (ports.TenantMemberRepositories, error) {
+		if got != unit {
+			t.Fatalf("joined unit=%T %p want=%p", got, got, unit)
+		}
+		return ports.TenantMemberRepositories{Member: repository}, nil
+	})
+	roleGuard := &tenantMemberRoleCapabilityStub{err: ports.ErrLastTenantOwner}
+	service, err := NewTenantMemberLifecycleService(factory, tenantMemberCapabilitiesStub{roles: roleGuard})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// A stale request must fail before the cross-Application owner lock/check.
+	_, err = service.SuspendTenantMember(tenantMemberRoot(t, unit, "tenant.member.suspend", "tenant-a"), &accessv1.SuspendTenantMemberRequest{UserId: member.UserID, Version: member.Version + 1})
+	if !errors.Is(err, ports.ErrTenantMemberConflict) {
+		t.Fatalf("stale suspend err=%v", err)
+	}
+	if roleGuard.callCount() != 0 {
+		t.Fatalf("owner guard calls after stale version=%d want=0", roleGuard.callCount())
+	}
+
+	_, err = service.SuspendTenantMember(tenantMemberRoot(t, unit, "tenant.member.suspend", "tenant-a"), &accessv1.SuspendTenantMemberRequest{UserId: member.UserID, Version: member.Version})
+	if !errors.Is(err, ports.ErrLastTenantOwner) {
+		t.Fatalf("sole-owner suspend err=%v", err)
+	}
+	current, err := repository.Get(context.Background(), "tenant-a", member.UserID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if current.Status != domain.TenantMemberStatusActive || current.Version != member.Version {
+		t.Fatalf("member mutated after rejected suspend: %+v", current)
+	}
+
+	_, err = service.RemoveTenantMember(tenantMemberRoot(t, unit, "tenant.member.remove", "tenant-a"), &accessv1.RemoveTenantMemberRequest{UserId: member.UserID, Version: member.Version})
+	if !errors.Is(err, ports.ErrLastTenantOwner) {
+		t.Fatalf("sole-owner remove err=%v", err)
+	}
+	current, err = repository.Get(context.Background(), "tenant-a", member.UserID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if current.Status != domain.TenantMemberStatusActive || current.Version != member.Version {
+		t.Fatalf("member mutated after rejected remove: %+v", current)
+	}
+	if roleGuard.callCount() != 2 {
+		t.Fatalf("owner guard calls=%d want=2", roleGuard.callCount())
+	}
+}
+
 func TestBootstrapTenantOwnerMemberUsesExplicitTenantInsideRootScope(t *testing.T) {
 	repository := newMemoryTenantMemberRepository()
 	unit := &tenantTestUnit{}
@@ -199,7 +295,7 @@ func TestBootstrapTenantOwnerMemberUsesExplicitTenantInsideRootScope(t *testing.
 		}
 		return ports.TenantMemberRepositories{Member: repository}, nil
 	})
-	service, err := NewTenantMemberLifecycleService(factory)
+	service, err := NewTenantMemberLifecycleService(factory, allowTenantMemberCapabilities())
 	if err != nil {
 		t.Fatal(err)
 	}
