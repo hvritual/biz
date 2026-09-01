@@ -6,9 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/hvritual/biz/internal/access/domain"
 	"github.com/hvritual/biz/internal/access/ports"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"yunka.io/framework/requestscope"
 )
 
@@ -39,10 +41,19 @@ func (repository *TenantMemberRepository) Invite(ctx context.Context, tenantID, 
 			return domain.Membership{}, err
 		}
 		user = userRecord{ID: proposedUserID, Email: email, Status: "active", CreatedAt: now}
-		if err := db.Create(&user).Error; err != nil {
-			// Another concurrent invite may have created the global identity first.
-			if lookupErr := db.Where("email = ?", email).First(&user).Error; lookupErr != nil {
-				return domain.Membership{}, err
+		if createErr := db.Create(&user).Error; createErr != nil {
+			var mysqlErr *mysql.MySQLError
+			if !errors.As(createErr, &mysqlErr) || mysqlErr.Number != 1062 {
+				return domain.Membership{}, createErr
+			}
+			// A concurrent invite won the unique email race. Reset the losing
+			// candidate so GORM cannot retain its primary key as an implicit
+			// predicate, then perform a locking current read. FOR UPDATE is
+			// intentional here: under MySQL REPEATABLE READ it observes the
+			// winner committed before the duplicate-key result was returned.
+			user = userRecord{}
+			if lookupErr := db.Clauses(clause.Locking{Strength: "UPDATE"}).Where("email = ?", email).First(&user).Error; lookupErr != nil {
+				return domain.Membership{}, lookupErr
 			}
 		}
 	}
