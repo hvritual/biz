@@ -7,8 +7,13 @@ import (
 	generatedassembly "github.com/hvritual/biz/internal/assembly"
 )
 
-func (factory applicationFactories) BuildAccessTenantMemberLifecycle(generatedassembly.AccessTenantMemberLifecycleDependencies) (accessapp.TenantMemberLifecycleApplication, error) {
-	return accessapp.NewTenantMemberLifecycleService(factory.memberRepositories)
+func (factory applicationFactories) BuildAccessTenantMemberLifecycle(dependencies generatedassembly.AccessTenantMemberLifecycleDependencies) (accessapp.TenantMemberLifecycleApplication, error) {
+	if dependencies.AccessTenantRolePermission == nil {
+		return nil, errors.New("biz access pressure: tenant member lifecycle role dependency is required")
+	}
+	return accessapp.NewTenantMemberLifecycleService(factory.memberRepositories, tenantMemberLifecycleCapabilities{
+		roles: dependencies.AccessTenantRolePermission,
+	})
 }
 
 func (factory applicationFactories) BuildAccessTenantRolePermission(generatedassembly.AccessTenantRolePermissionDependencies) (accessapp.TenantRolePermissionApplication, error) {
@@ -23,6 +28,14 @@ func (factory applicationFactories) BuildAccessTenantLifecycle(dependencies gene
 		members: dependencies.AccessTenantMemberLifecycle,
 		roles: dependencies.AccessTenantRolePermission,
 	})
+}
+
+type tenantMemberLifecycleCapabilities struct {
+	roles accessapp.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability
+}
+
+func (capabilities tenantMemberLifecycleCapabilities) AccessTenantRolePermission() accessapp.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability {
+	return capabilities.roles
 }
 
 type tenantLifecycleCapabilities struct {
