@@ -268,7 +268,7 @@ func TestB126ConcurrentTenantCreateSameIdempotencyKeyCreatesOneBootstrapTree(t *
 	}
 	statuses := []int{first.status, second.status}
 	sort.Ints(statuses)
-	if statuses[1] != http.StatusOK || (statuses[0] != http.StatusConflict && statuses[0] != http.StatusOK) {
+	if statuses[0] != http.StatusOK || statuses[1] != http.StatusConflict {
 		t.Fatalf("concurrent tenant create statuses=%v bodies=(%s,%s)", statuses, first.body, second.body)
 	}
 
