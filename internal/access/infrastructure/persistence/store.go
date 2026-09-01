@@ -54,6 +54,7 @@ type roleRecord struct {
 	TenantID string `gorm:"column:tenant_id;size:64;not null;index:idx_role_tenant;uniqueIndex:uniq_role_name,priority:1"`
 	Name     string `gorm:"column:name;size:100;not null;uniqueIndex:uniq_role_name,priority:2"`
 	Status   string `gorm:"column:status;size:32;not null"`
+	Version  uint64 `gorm:"column:version;not null;default:1"`
 }
 
 func (roleRecord) TableName() string { return "biz_roles" }
@@ -146,7 +147,7 @@ func (store *Store) Authenticate(ctx context.Context, rawToken string) (identity
 	var roles []string
 	if err := store.database.WithContext(ctx).Table("biz_member_roles mr").
 		Select("r.name").
-		Joins("JOIN biz_roles r ON r.id = mr.role_id AND r.tenant_id = mr.tenant_id AND r.status = ?", "active").
+		Joins("JOIN biz_roles r ON r.id = mr.role_id AND r.tenant_id = mr.tenant_id AND r.status = ?", accessdomain.TenantRoleStatusActive).
 		Where("mr.tenant_id = ? AND mr.user_id = ?", token.TenantID, token.UserID).
 		Scan(&roles).Error; err != nil {
 		return identity.Principal{}, err
@@ -180,7 +181,7 @@ func (store *Store) ResolveGrants(ctx context.Context, tenantID string, roles []
 	if err := store.database.WithContext(ctx).Table("biz_roles r").
 		Select("r.id AS role_id, pg.permission, pg.scope").
 		Joins("JOIN biz_permission_grants pg ON pg.role_id = r.id AND pg.tenant_id = r.tenant_id").
-		Where("r.tenant_id = ? AND r.status = ? AND r.name IN ? AND pg.permission IN ?", tenantID, "active", roles, keys).
+		Where("r.tenant_id = ? AND r.status = ? AND r.name IN ? AND pg.permission IN ?", tenantID, accessdomain.TenantRoleStatusActive, roles, keys).
 		Scan(&rows).Error; err != nil {
 		return nil, err
 	}
@@ -219,7 +220,7 @@ func (store *Store) Bootstrap(ctx context.Context, config Bootstrap, permissions
 		&tenantRecord{ID: config.TenantID, Name: config.TenantName, Status: accessdomain.TenantStatusActive, Version: 1, CreatedAt: now, UpdatedAt: now},
 		&userRecord{ID: config.UserID, Email: config.Email, Status: "active", CreatedAt: now},
 		&membershipRecord{TenantID: config.TenantID, UserID: config.UserID, Status: accessdomain.TenantMemberStatusActive, Version: 1, CreatedAt: now, UpdatedAt: now},
-		&roleRecord{ID: roleID, TenantID: config.TenantID, Name: "owner", Status: "active"},
+		&roleRecord{ID: roleID, TenantID: config.TenantID, Name: accessdomain.TenantOwnerRoleName, Status: accessdomain.TenantRoleStatusActive, Version: 1},
 		&memberRoleRecord{TenantID: config.TenantID, UserID: config.UserID, RoleID: roleID},
 		&apiTokenRecord{TokenHash: TokenHash(config.Token), TenantID: config.TenantID, UserID: config.UserID, CreatedAt: now},
 	}
