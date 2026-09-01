@@ -35,6 +35,11 @@ func (service *TenantLifecycleService) CreateTenant(ctx context.Context, request
 	if request == nil || strings.TrimSpace(request.GetName()) == "" || strings.TrimSpace(request.GetOwnerUserId()) == "" || strings.TrimSpace(request.GetOwnerEmail()) == "" {
 		return nil, ErrInvalidTenantRequest
 	}
+	members := service.capabilities.AccessTenantMemberLifecycle()
+	roles := service.capabilities.AccessTenantRolePermission()
+	if members == nil || roles == nil {
+		return nil, errors.New("access: tenant bootstrap child capabilities are required")
+	}
 	now := time.Now().UTC()
 	tenant := domain.NewTenant(newTenantID(), strings.TrimSpace(request.GetName()), now)
 	if err := requestscope.JoinDo(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRepositories]) error {
@@ -42,9 +47,21 @@ func (service *TenantLifecycleService) CreateTenant(ctx context.Context, request
 	}); err != nil {
 		return nil, err
 	}
-	// B12.2 intentionally stops at the Tenant aggregate. The declared owner
-	// member/role child capabilities are exercised in B12.5, where bootstrap
-	// atomicity across all three PB-owned Applications is pressure-tested.
+	ownerUserID := strings.TrimSpace(request.GetOwnerUserId())
+	ownerEmail := strings.TrimSpace(strings.ToLower(request.GetOwnerEmail()))
+	if _, err := members.BootstrapTenantOwnerMember(ctx, &accessv1.BootstrapTenantOwnerMemberRequest{
+		TenantId: tenant.ID,
+		UserId:   ownerUserID,
+		Email:    ownerEmail,
+	}); err != nil {
+		return nil, err
+	}
+	if _, err := roles.BootstrapTenantOwnerRole(ctx, &accessv1.BootstrapTenantOwnerRoleRequest{
+		TenantId: tenant.ID,
+		UserId:   ownerUserID,
+	}); err != nil {
+		return nil, err
+	}
 	return tenantDTO(tenant), nil
 }
 
