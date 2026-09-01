@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 )
 
@@ -28,7 +29,7 @@ type b126HTTPResult struct {
 	err    error
 }
 
-func b126PostProto(base, path, token, idempotencyKey string, message interface{ ProtoReflect() protoreflect.Message }) b126HTTPResult {
+func b126PostProto(base, path, token, idempotencyKey string, message proto.Message) b126HTTPResult {
 	payload, err := protojson.Marshal(message)
 	if err != nil {
 		return b126HTTPResult{err: err}
@@ -191,7 +192,7 @@ func TestB126ConcurrentOwnerRevokesCannotRemoveAllOwners(t *testing.T) {
 	if err := db.Exec("INSERT INTO biz_roles (id,tenant_id,name,status,version) VALUES (?,?,?,?,?)", ownerRoleID, tenantID, domain.TenantOwnerRoleName, domain.TenantRoleStatusActive, 1).Error; err != nil {
 		t.Fatal(err)
 	}
-	for _, permission := range domain.TenantOwnerRequiredPermissions() {
+	for _, permission := range domain.OwnerRequiredPermissions {
 		if err := db.Exec("INSERT INTO biz_permission_grants (tenant_id,role_id,permission,scope) VALUES (?,?,?,?)", tenantID, ownerRoleID, permission, "all").Error; err != nil {
 			t.Fatal(err)
 		}
