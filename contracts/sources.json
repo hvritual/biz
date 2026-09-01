@@ -5,6 +5,9 @@
       "name": "biz",
       "root": "contracts/proto",
       "files": [
+        "access/v1/tenant.proto",
+        "access/v1/tenant_member.proto",
+        "access/v1/tenant_role.proto",
         "deviceops/v1/deviceops.proto"
       ],
       "protoPaths": [

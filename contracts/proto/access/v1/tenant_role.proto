@@ -1,0 +1,232 @@
+syntax = "proto3";
+
+package access.v1;
+
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+
+option go_package = "github.com/hvritual/biz/contracts/gen/access/v1;accessv1";
+option (yunka.dsl.v1.domain) = {
+  name: "access"
+  version: "v1"
+};
+
+enum TenantRoleStatus {
+  TENANT_ROLE_STATUS_UNSPECIFIED = 0;
+  TENANT_ROLE_STATUS_ACTIVE = 1;
+  TENANT_ROLE_STATUS_DISABLED = 2;
+}
+
+enum DataScope {
+  DATA_SCOPE_UNSPECIFIED = 0;
+  DATA_SCOPE_NONE = 1;
+  DATA_SCOPE_SELF = 2;
+  DATA_SCOPE_SITES = 3;
+  DATA_SCOPE_ALL = 4;
+}
+
+message PermissionGrantInput {
+  string permission = 1;
+  DataScope scope = 2;
+}
+
+message PermissionGrantDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string permission = 1;
+  DataScope scope = 2;
+}
+
+message TenantRoleDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string id = 1;
+  string name = 2;
+  TenantRoleStatus status = 3;
+  repeated PermissionGrantDTO permissions = 4;
+  uint64 version = 5;
+}
+
+message CreateTenantRoleRequest {
+  string name = 1;
+}
+
+message GetTenantRoleRequest {
+  string role_id = 1;
+}
+
+message ListTenantRolesRequest {}
+
+message ListTenantRolesResponse {
+  repeated TenantRoleDTO roles = 1;
+}
+
+message UpdateTenantRoleRequest {
+  string role_id = 1;
+  string name = 2;
+  uint64 version = 3;
+}
+
+message DisableTenantRoleRequest {
+  string role_id = 1;
+  uint64 version = 2;
+}
+
+message EnableTenantRoleRequest {
+  string role_id = 1;
+  uint64 version = 2;
+}
+
+message SetTenantRolePermissionsRequest {
+  string role_id = 1;
+  repeated PermissionGrantInput permissions = 2;
+  uint64 version = 3;
+}
+
+message AssignTenantRoleMemberRequest {
+  string role_id = 1;
+  string user_id = 2;
+}
+
+message RevokeTenantRoleMemberRequest {
+  string role_id = 1;
+  string user_id = 2;
+}
+
+message BootstrapTenantOwnerRoleRequest {
+  string tenant_id = 1;
+  string user_id = 2;
+}
+
+service TenantRolePermissionApplication {
+  option (yunka.dsl.v1.application) = {
+    name: "tenant_role_permission"
+    operations: {
+      id: "tenant.role.bootstrap_owner"
+      use_case: "bootstrap_tenant_owner_role"
+      permissions: "platform.tenant.create"
+      permission_mode: PERMISSION_ALL
+      tenant_required: false
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_NONE }
+      request_type: "access.v1.BootstrapTenantOwnerRoleRequest"
+      response_type: "access.v1.TenantRoleDTO"
+      application_method: "BootstrapTenantOwnerRole"
+    }
+  };
+
+  rpc CreateTenantRole(CreateTenantRoleRequest) returns (TenantRoleDTO) {
+    option (google.api.http) = { post: "/v1/tenant/roles" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.role.create"
+      use_case: "create_tenant_role"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc GetTenantRole(GetTenantRoleRequest) returns (TenantRoleDTO) {
+    option (google.api.http) = { get: "/v1/tenant/roles/{role_id}" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.role.get"
+      use_case: "get_tenant_role"
+      permissions: "tenant.role.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc ListTenantRoles(ListTenantRolesRequest) returns (ListTenantRolesResponse) {
+    option (google.api.http) = { get: "/v1/tenant/roles" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.role.list"
+      use_case: "list_tenant_roles"
+      permissions: "tenant.role.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc UpdateTenantRole(UpdateTenantRoleRequest) returns (TenantRoleDTO) {
+    option (google.api.http) = { patch: "/v1/tenant/roles/{role_id}" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.role.update"
+      use_case: "update_tenant_role"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc DisableTenantRole(DisableTenantRoleRequest) returns (TenantRoleDTO) {
+    option (google.api.http) = { post: "/v1/tenant/roles/{role_id}/disable" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.role.disable"
+      use_case: "disable_tenant_role"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc EnableTenantRole(EnableTenantRoleRequest) returns (TenantRoleDTO) {
+    option (google.api.http) = { post: "/v1/tenant/roles/{role_id}/enable" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.role.enable"
+      use_case: "enable_tenant_role"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc SetTenantRolePermissions(SetTenantRolePermissionsRequest) returns (TenantRoleDTO) {
+    option (google.api.http) = { put: "/v1/tenant/roles/{role_id}/permissions" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.role.set_permissions"
+      use_case: "set_tenant_role_permissions"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc AssignTenantRoleMember(AssignTenantRoleMemberRequest) returns (TenantRoleDTO) {
+    option (google.api.http) = { post: "/v1/tenant/roles/{role_id}/members" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.role.assign_member"
+      use_case: "assign_tenant_role_member"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc RevokeTenantRoleMember(RevokeTenantRoleMemberRequest) returns (TenantRoleDTO) {
+    option (google.api.http) = { post: "/v1/tenant/roles/{role_id}/members/{user_id}/revoke" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.role.revoke_member"
+      use_case: "revoke_tenant_role_member"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+}
