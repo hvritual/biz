@@ -104,6 +104,25 @@ jobs:
           make -C yunka.io rpc-tools
           echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
 
+      - name: Check committed closure read-only before generation
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C biz check \
+            YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" \
+            PROTOC="$(command -v protoc)"
+          test -z "$(git -C biz status --porcelain)"
+
+      - name: Capture committed generated baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/b12"
+          (
+            cd biz
+            find contracts/generated contracts/gen internal -type f \( -name '*.json' -o -name '*.ts' -o -name '*.pb.go' -o -name 'zz_yunka*.go' \) -print0 | sort -z | xargs -0 sha256sum
+          ) > "$RUNNER_TEMP/b12/committed.sha256"
+
       - name: Generate full multi-PB closure
         shell: bash
         run: |
@@ -111,6 +130,7 @@ jobs:
           make -C biz generate \
             YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" \
             PROTOC="$(command -v protoc)"
+          test -z "$(git -C biz status --porcelain)"
 
       - name: Assert B12.1 generated contract inventory
         shell: bash
@@ -132,15 +152,15 @@ jobs:
           grep -Fq 'tenant_member_lifecycle' biz/contracts/generated/assembly-plan.json
           grep -Fq 'tenant_role_permission' biz/contracts/generated/assembly-plan.json
 
-      - name: Prove second generation byte stability
+      - name: Prove committed equivalence and second generation byte stability
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/b12"
           (
             cd biz
             find contracts/generated contracts/gen internal -type f \( -name '*.json' -o -name '*.ts' -o -name '*.pb.go' -o -name 'zz_yunka*.go' \) -print0 | sort -z | xargs -0 sha256sum
           ) > "$RUNNER_TEMP/b12/first.sha256"
+          diff -u "$RUNNER_TEMP/b12/committed.sha256" "$RUNNER_TEMP/b12/first.sha256"
           make -C biz generate \
             YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" \
             PROTOC="$(command -v protoc)"
@@ -149,14 +169,16 @@ jobs:
             find contracts/generated contracts/gen internal -type f \( -name '*.json' -o -name '*.ts' -o -name '*.pb.go' -o -name 'zz_yunka*.go' \) -print0 | sort -z | xargs -0 sha256sum
           ) > "$RUNNER_TEMP/b12/second.sha256"
           diff -u "$RUNNER_TEMP/b12/first.sha256" "$RUNNER_TEMP/b12/second.sha256"
+          test -z "$(git -C biz status --porcelain)"
 
-      - name: Check generated closure read-only
+      - name: Check generated closure read-only after generation
         shell: bash
         run: |
           set -euo pipefail
           make -C biz check \
             YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" \
             PROTOC="$(command -v protoc)"
+          test -z "$(git -C biz status --porcelain)"
 
       - name: Compile Biz against generated Access contracts
         shell: bash
@@ -165,25 +187,17 @@ jobs:
           go -C biz test ./...
           go -C biz vet ./...
           go -C biz build ./...
+          test -z "$(git -C biz status --porcelain)"
 
-      - name: Capture generated candidate
+      - name: Capture B12.1 evidence
         if: always()
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/b12-export"
-          if [ -d biz/contracts/generated ]; then cp -a biz/contracts/generated "$RUNNER_TEMP/b12-export/contracts-generated"; fi
-          if [ -d biz/contracts/gen ]; then cp -a biz/contracts/gen "$RUNNER_TEMP/b12-export/contracts-gen"; fi
-          if [ -d biz/internal ]; then
-            find biz/internal -type f -name 'zz_yunka*.go' -print0 | while IFS= read -r -d '' file; do
-              rel="${file#biz/}"
-              mkdir -p "$RUNNER_TEMP/b12-export/$(dirname "$rel")"
-              cp "$file" "$RUNNER_TEMP/b12-export/$rel"
-            done
-          fi
+          cp "$RUNNER_TEMP/b12/"*.sha256 "$RUNNER_TEMP/b12-export/" 2>/dev/null || true
           git -C biz status --porcelain > "$RUNNER_TEMP/b12-export/status.txt"
           git -C biz diff --no-ext-diff > "$RUNNER_TEMP/b12-export/generated.diff"
-          cp "$RUNNER_TEMP/b12/"*.sha256 "$RUNNER_TEMP/b12-export/" 2>/dev/null || true
 
       - name: Upload B12.1 evidence
         if: always()
