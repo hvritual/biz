@@ -13,10 +13,81 @@ import (
 	"yunka.io/framework/requestscope"
 )
 
-type tenantTestCapabilities struct{}
+type tenantTestCapabilities struct {
+	members AccessTenantMemberLifecycleChildCapability
+	roles   AccessTenantRolePermissionChildCapability
+}
 
-func (tenantTestCapabilities) AccessTenantMemberLifecycle() AccessTenantMemberLifecycleChildCapability { return nil }
-func (tenantTestCapabilities) AccessTenantRolePermission() AccessTenantRolePermissionChildCapability { return nil }
+func (capabilities tenantTestCapabilities) AccessTenantMemberLifecycle() AccessTenantMemberLifecycleChildCapability {
+	if capabilities.members != nil {
+		return capabilities.members
+	}
+	return tenantTestMemberChild{}
+}
+
+func (capabilities tenantTestCapabilities) AccessTenantRolePermission() AccessTenantRolePermissionChildCapability {
+	if capabilities.roles != nil {
+		return capabilities.roles
+	}
+	return tenantTestRoleChild{}
+}
+
+type tenantTestMemberChild struct{}
+
+func (tenantTestMemberChild) BootstrapTenantOwnerMember(context.Context, *accessv1.BootstrapTenantOwnerMemberRequest) (*accessv1.TenantMemberDTO, error) {
+	return &accessv1.TenantMemberDTO{}, nil
+}
+func (tenantTestMemberChild) ActivateTenantMember(context.Context, *accessv1.ActivateTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
+	return nil, errors.New("unexpected ActivateTenantMember")
+}
+func (tenantTestMemberChild) GetTenantMember(context.Context, *accessv1.GetTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
+	return nil, errors.New("unexpected GetTenantMember")
+}
+func (tenantTestMemberChild) InviteTenantMember(context.Context, *accessv1.InviteTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
+	return nil, errors.New("unexpected InviteTenantMember")
+}
+func (tenantTestMemberChild) ListTenantMembers(context.Context, *accessv1.ListTenantMembersRequest) (*accessv1.ListTenantMembersResponse, error) {
+	return nil, errors.New("unexpected ListTenantMembers")
+}
+func (tenantTestMemberChild) RemoveTenantMember(context.Context, *accessv1.RemoveTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
+	return nil, errors.New("unexpected RemoveTenantMember")
+}
+func (tenantTestMemberChild) SuspendTenantMember(context.Context, *accessv1.SuspendTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
+	return nil, errors.New("unexpected SuspendTenantMember")
+}
+
+type tenantTestRoleChild struct{}
+
+func (tenantTestRoleChild) BootstrapTenantOwnerRole(context.Context, *accessv1.BootstrapTenantOwnerRoleRequest) (*accessv1.TenantRoleDTO, error) {
+	return &accessv1.TenantRoleDTO{}, nil
+}
+func (tenantTestRoleChild) AssignTenantRoleMember(context.Context, *accessv1.AssignTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error) {
+	return nil, errors.New("unexpected AssignTenantRoleMember")
+}
+func (tenantTestRoleChild) CreateTenantRole(context.Context, *accessv1.CreateTenantRoleRequest) (*accessv1.TenantRoleDTO, error) {
+	return nil, errors.New("unexpected CreateTenantRole")
+}
+func (tenantTestRoleChild) DisableTenantRole(context.Context, *accessv1.DisableTenantRoleRequest) (*accessv1.TenantRoleDTO, error) {
+	return nil, errors.New("unexpected DisableTenantRole")
+}
+func (tenantTestRoleChild) EnableTenantRole(context.Context, *accessv1.EnableTenantRoleRequest) (*accessv1.TenantRoleDTO, error) {
+	return nil, errors.New("unexpected EnableTenantRole")
+}
+func (tenantTestRoleChild) GetTenantRole(context.Context, *accessv1.GetTenantRoleRequest) (*accessv1.TenantRoleDTO, error) {
+	return nil, errors.New("unexpected GetTenantRole")
+}
+func (tenantTestRoleChild) ListTenantRoles(context.Context, *accessv1.ListTenantRolesRequest) (*accessv1.ListTenantRolesResponse, error) {
+	return nil, errors.New("unexpected ListTenantRoles")
+}
+func (tenantTestRoleChild) RevokeTenantRoleMember(context.Context, *accessv1.RevokeTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error) {
+	return nil, errors.New("unexpected RevokeTenantRoleMember")
+}
+func (tenantTestRoleChild) SetTenantRolePermissions(context.Context, *accessv1.SetTenantRolePermissionsRequest) (*accessv1.TenantRoleDTO, error) {
+	return nil, errors.New("unexpected SetTenantRolePermissions")
+}
+func (tenantTestRoleChild) UpdateTenantRole(context.Context, *accessv1.UpdateTenantRoleRequest) (*accessv1.TenantRoleDTO, error) {
+	return nil, errors.New("unexpected UpdateTenantRole")
+}
 
 type tenantTestUnit struct{}
 func (*tenantTestUnit) Commit(context.Context) error   { return nil }
