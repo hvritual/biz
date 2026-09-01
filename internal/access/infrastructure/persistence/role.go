@@ -221,6 +221,44 @@ func (repository *TenantRoleRepository) RevokeMember(ctx context.Context, tenant
 	return repository.Get(ctx, tenantID, roleID)
 }
 
+func (repository *TenantRoleRepository) AssertMemberCanDeactivate(ctx context.Context, tenantID, userID string) error {
+	if repository == nil || repository.database == nil {
+		return errors.New("access persistence: tenant role repository unavailable")
+	}
+	tenantID, userID = strings.TrimSpace(tenantID), strings.TrimSpace(userID)
+	if tenantID == "" || userID == "" {
+		return errors.New("access persistence: owner deactivation check requires tenant and user")
+	}
+	db := repository.database.WithContext(ctx)
+	var owner roleRecord
+	if err := db.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("tenant_id = ? AND name = ?", tenantID, domain.TenantOwnerRoleName).
+		First(&owner).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return err
+	}
+	var assignment memberRoleRecord
+	if err := db.Where("tenant_id = ? AND role_id = ? AND user_id = ?", tenantID, owner.ID, userID).First(&assignment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return err
+	}
+	var activeOwners int64
+	if err := db.Table("biz_member_roles mr").
+		Joins("JOIN biz_memberships m ON m.tenant_id = mr.tenant_id AND m.user_id = mr.user_id AND m.status = ?", domain.TenantMemberStatusActive).
+		Where("mr.tenant_id = ? AND mr.role_id = ?", tenantID, owner.ID).
+		Count(&activeOwners).Error; err != nil {
+		return err
+	}
+	if activeOwners <= 1 {
+		return ports.ErrLastTenantOwner
+	}
+	return nil
+}
+
 func (repository *TenantRoleRepository) roleFromRecord(ctx context.Context, row roleRecord) (domain.Role, error) {
 	var grantRows []permissionGrantRecord
 	if err := repository.database.WithContext(ctx).Where("tenant_id = ? AND role_id = ?", row.TenantID, row.ID).Order("permission ASC").Find(&grantRows).Error; err != nil {
