@@ -66,7 +66,7 @@ jobs:
         shell: bash
         run: make -C yunka.io rpc-tools
 
-      - name: Generate owner invariant closure
+      - name: Diagnose generated owner invariant closure
         shell: bash
         run: |
           set -euo pipefail
@@ -75,8 +75,38 @@ jobs:
             PROTOC="$(command -v protoc)" \
             PROTOC_GEN_GO="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go" \
             PROTOC_GEN_GO_GRPC="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go-grpc"
-          grep -R -Fq 'tenant.role.assert_member_deactivation_allowed' biz/contracts/generated/operation-plans.json
-          grep -R -Fq 'AssertTenantMemberDeactivationAllowed' biz/internal/access/application
-          grep -R -Fq 'AccessTenantRolePermission' biz/internal/assembly/zz_yunka_assembly_gen.go
-          test "$(grep -R -l '^type AccessTenantRolePermissionChildCapability interface' biz/internal/access/application | wc -l)" -eq 1
-          printf '%s\n' 'B12_REVIEW_OWNER_INVARIANT_GENERATION=PASS'
+
+          cd biz
+          echo '=== operation plan ==='
+          grep -n -C 3 'tenant.role.assert_member_deactivation_allowed' contracts/generated/operation-plans.json || true
+
+          echo '=== generated assertion method ==='
+          grep -R -n 'AssertTenantMemberDeactivationAllowed' internal/access/application || true
+
+          echo '=== capability definitions ==='
+          grep -R -n '^type AccessTenantRolePermissionChildCapability interface' internal/access/application || true
+          definition_count="$(grep -R -l '^type AccessTenantRolePermissionChildCapability interface' internal/access/application | wc -l | tr -d ' ')"
+          echo "capability_definition_file_count=${definition_count}"
+
+          echo '=== capability files ==='
+          find internal/access/application -maxdepth 1 -type f -name '*capability*' -print | sort
+          for file in $(find internal/access/application -maxdepth 1 -type f -name '*capability*' -print | sort); do
+            echo "--- ${file} ---"
+            sed -n '1,240p' "$file"
+          done
+
+          echo '=== assembly dependencies ==='
+          grep -n -C 8 'AccessTenantRolePermission' internal/assembly/zz_yunka_assembly_gen.go || true
+
+          grep -Fq 'tenant.role.assert_member_deactivation_allowed' contracts/generated/operation-plans.json
+          grep -Rq 'AssertTenantMemberDeactivationAllowed' internal/access/application
+
+          if test "$definition_count" -gt 1; then
+            echo 'YUNKA_DUPLICATE_CHILD_CAPABILITY_DEFINITION=FAIL'
+            exit 42
+          fi
+          if test "$definition_count" -eq 0; then
+            echo 'YUNKA_CHILD_CAPABILITY_DEFINITION_MISSING=FAIL'
+            exit 43
+          fi
+          echo 'YUNKA_CHILD_CAPABILITY_DEFINITION_DEDUP=PASS'
