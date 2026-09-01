@@ -5,7 +5,6 @@ package integration
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,6 +17,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/encoding/protojson"
 	"gorm.io/gorm"
 	"yunka.io/framework/platform"
 	"yunka.io/gateway/authz"
@@ -47,7 +47,7 @@ func startB122Runtime(t *testing.T, db *gorm.DB, token string) *bizruntime.Start
 		DeviceOps: config,
 		PlatformBootstrap: bizruntime.PlatformBootstrap{
 			Subject: "platform-admin:b12",
-			Token: token,
+			Token:   token,
 			Permissions: []authz.PermissionKey{
 				"platform.tenant.create", "platform.tenant.read", "platform.tenant.manage",
 			},
@@ -73,11 +73,14 @@ func TestB122TenantLifecycleRESTAndGRPCUseUnifiedExecutor(t *testing.T) {
 	started := startB122Runtime(t, db, token)
 	base := "http://" + started.HTTPAddress()
 
-	payload, _ := json.Marshal(map[string]any{
-		"name": "Runtime Tenant " + stamp,
-		"ownerUserId": "owner-" + stamp,
-		"ownerEmail": "owner-" + stamp + "@example.invalid",
+	payload, err := protojson.Marshal(&accessv1.CreateTenantRequest{
+		Name:        "Runtime Tenant " + stamp,
+		OwnerUserId: "owner-" + stamp,
+		OwnerEmail:  "owner-" + stamp + "@example.invalid",
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// The PB-declared idempotency policy is enforced by the real REST adapter
 	// and Executor before Application code runs.
@@ -108,7 +111,7 @@ func TestB122TenantLifecycleRESTAndGRPCUseUnifiedExecutor(t *testing.T) {
 		t.Fatalf("create status=%d body=%s", createResp.StatusCode, createBody)
 	}
 	var created accessv1.TenantDTO
-	if err := json.Unmarshal(createBody, &created); err != nil {
+	if err := protojson.Unmarshal(createBody, &created); err != nil {
 		t.Fatal(err)
 	}
 	if created.GetId() == "" || created.GetStatus() != accessv1.TenantStatus_TENANT_STATUS_PENDING || created.GetVersion() != 1 {
@@ -144,7 +147,7 @@ func TestB122TenantLifecycleRESTAndGRPCUseUnifiedExecutor(t *testing.T) {
 		t.Fatalf("get status=%d body=%s", getResp.StatusCode, getBody)
 	}
 	var observed accessv1.TenantDTO
-	if err := json.Unmarshal(getBody, &observed); err != nil {
+	if err := protojson.Unmarshal(getBody, &observed); err != nil {
 		t.Fatal(err)
 	}
 	if observed.GetStatus() != accessv1.TenantStatus_TENANT_STATUS_ACTIVE || observed.GetVersion() != 2 {
