@@ -234,6 +234,802 @@
       },
       "composition": {},
       "bindings": {}
+    },
+    {
+      "operationId": "tenant.activate",
+      "domain": "access",
+      "application": "tenant_lifecycle",
+      "useCase": "activate_tenant",
+      "requestType": "access.v1.ActivateTenantRequest",
+      "responseType": "access.v1.TenantDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.tenant.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_member_lifecycle",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantLifecycleApplication/ActivateTenant",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenants/{id}/activate",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.close",
+      "domain": "access",
+      "application": "tenant_lifecycle",
+      "useCase": "close_tenant",
+      "requestType": "access.v1.CloseTenantRequest",
+      "responseType": "access.v1.TenantDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.tenant.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_member_lifecycle",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantLifecycleApplication/CloseTenant",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenants/{id}/close",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.create",
+      "domain": "access",
+      "application": "tenant_lifecycle",
+      "useCase": "create_tenant",
+      "requestType": "access.v1.CreateTenantRequest",
+      "responseType": "access.v1.TenantDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.tenant.create"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "tenant.member.bootstrap_owner",
+          "tenant.role.bootstrap_owner"
+        ],
+        "permissionClosure": [
+          "platform.tenant.create"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_member_lifecycle",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantLifecycleApplication/CreateTenant",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenants",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.get",
+      "domain": "access",
+      "application": "tenant_lifecycle",
+      "useCase": "get_tenant",
+      "requestType": "access.v1.GetTenantRequest",
+      "responseType": "access.v1.TenantDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_member_lifecycle",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantLifecycleApplication/GetTenant",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenants/{id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.list",
+      "domain": "access",
+      "application": "tenant_lifecycle",
+      "useCase": "list_tenants",
+      "requestType": "access.v1.ListTenantsRequest",
+      "responseType": "access.v1.ListTenantsResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_member_lifecycle",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantLifecycleApplication/ListTenants",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenants"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.member.activate",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "activate_tenant_member",
+      "requestType": "access.v1.ActivateTenantMemberRequest",
+      "responseType": "access.v1.TenantMemberDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.member.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/ActivateTenantMember",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/members/{user_id}/activate",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.member.bootstrap_owner",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "bootstrap_tenant_owner_member",
+      "requestType": "access.v1.BootstrapTenantOwnerMemberRequest",
+      "responseType": "access.v1.TenantMemberDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.tenant.create"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {}
+    },
+    {
+      "operationId": "tenant.member.get",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "get_tenant_member",
+      "requestType": "access.v1.GetTenantMemberRequest",
+      "responseType": "access.v1.TenantMemberDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.member.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/GetTenantMember",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/members/{user_id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.member.invite",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "invite_tenant_member",
+      "requestType": "access.v1.InviteTenantMemberRequest",
+      "responseType": "access.v1.TenantMemberDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.member.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/InviteTenantMember",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/members",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.member.list",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "list_tenant_members",
+      "requestType": "access.v1.ListTenantMembersRequest",
+      "responseType": "access.v1.ListTenantMembersResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.member.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/ListTenantMembers",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/members"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.member.remove",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "remove_tenant_member",
+      "requestType": "access.v1.RemoveTenantMemberRequest",
+      "responseType": "access.v1.TenantMemberDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.member.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/RemoveTenantMember",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/members/{user_id}/remove",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.member.suspend",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "suspend_tenant_member",
+      "requestType": "access.v1.SuspendTenantMemberRequest",
+      "responseType": "access.v1.TenantMemberDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.member.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/SuspendTenantMember",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/members/{user_id}/suspend",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.role.assign_member",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "assign_tenant_role_member",
+      "requestType": "access.v1.AssignTenantRoleMemberRequest",
+      "responseType": "access.v1.TenantRoleDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/AssignTenantRoleMember",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/roles/{role_id}/members",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.role.bootstrap_owner",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "bootstrap_tenant_owner_role",
+      "requestType": "access.v1.BootstrapTenantOwnerRoleRequest",
+      "responseType": "access.v1.TenantRoleDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.tenant.create"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {}
+    },
+    {
+      "operationId": "tenant.role.create",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "create_tenant_role",
+      "requestType": "access.v1.CreateTenantRoleRequest",
+      "responseType": "access.v1.TenantRoleDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/CreateTenantRole",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/roles",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.role.disable",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "disable_tenant_role",
+      "requestType": "access.v1.DisableTenantRoleRequest",
+      "responseType": "access.v1.TenantRoleDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/DisableTenantRole",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/roles/{role_id}/disable",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.role.enable",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "enable_tenant_role",
+      "requestType": "access.v1.EnableTenantRoleRequest",
+      "responseType": "access.v1.TenantRoleDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/EnableTenantRole",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/roles/{role_id}/enable",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.role.get",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "get_tenant_role",
+      "requestType": "access.v1.GetTenantRoleRequest",
+      "responseType": "access.v1.TenantRoleDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.role.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/GetTenantRole",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/roles/{role_id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.role.list",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "list_tenant_roles",
+      "requestType": "access.v1.ListTenantRolesRequest",
+      "responseType": "access.v1.ListTenantRolesResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.role.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/ListTenantRoles",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/roles"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.role.revoke_member",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "revoke_tenant_role_member",
+      "requestType": "access.v1.RevokeTenantRoleMemberRequest",
+      "responseType": "access.v1.TenantRoleDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/RevokeTenantRoleMember",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/roles/{role_id}/members/{user_id}/revoke",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.role.set_permissions",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "set_tenant_role_permissions",
+      "requestType": "access.v1.SetTenantRolePermissionsRequest",
+      "responseType": "access.v1.TenantRoleDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/SetTenantRolePermissions",
+        "http": [
+          {
+            "method": "PUT",
+            "path": "/v1/tenant/roles/{role_id}/permissions",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.role.update",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "update_tenant_role",
+      "requestType": "access.v1.UpdateTenantRoleRequest",
+      "responseType": "access.v1.TenantRoleDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/UpdateTenantRole",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/tenant/roles/{role_id}",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.suspend",
+      "domain": "access",
+      "application": "tenant_lifecycle",
+      "useCase": "suspend_tenant",
+      "requestType": "access.v1.SuspendTenantRequest",
+      "responseType": "access.v1.TenantDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.tenant.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_member_lifecycle",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantLifecycleApplication/SuspendTenant",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenants/{id}/suspend",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.update",
+      "domain": "access",
+      "application": "tenant_lifecycle",
+      "useCase": "update_tenant",
+      "requestType": "access.v1.UpdateTenantRequest",
+      "responseType": "access.v1.TenantDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.tenant.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_member_lifecycle",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantLifecycleApplication/UpdateTenant",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/tenants/{id}",
+            "body": "*"
+          }
+        ]
+      }
     }
   ]
 }

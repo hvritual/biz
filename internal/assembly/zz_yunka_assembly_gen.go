@@ -6,6 +6,9 @@ import (
 	"context"
 	errors "errors"
 	fmt "fmt"
+	accessapplication "github.com/hvritual/biz/internal/access/application"
+	accessrest "github.com/hvritual/biz/internal/access/transport/rest"
+	accessrpc "github.com/hvritual/biz/internal/access/transport/rpc"
 	deviceopsapplication "github.com/hvritual/biz/internal/deviceops/application"
 	deviceopsrest "github.com/hvritual/biz/internal/deviceops/transport/rest"
 	deviceopsrpc "github.com/hvritual/biz/internal/deviceops/transport/rpc"
@@ -18,7 +21,18 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "1d2d31c9b0c723aaadaede2ed0eb8d627a1684a74f1c5988b1b4d1468cdb5514"
+const AssemblyPlanDigest = "9a7b07251b09e671647ba2aa3260eadb60be12b7fbe6d45ce69da4f35d049aba"
+
+type AccessTenantLifecycleDependencies struct {
+	AccessTenantMemberLifecycle accessapplication.AccessTenantMemberLifecycleChildCapability
+	AccessTenantRolePermission  accessapplication.AccessTenantRolePermissionChildCapability
+}
+
+type AccessTenantMemberLifecycleDependencies struct {
+}
+
+type AccessTenantRolePermissionDependencies struct {
+}
 
 type DeviceopsDeviceManagementDependencies struct {
 }
@@ -32,15 +46,21 @@ type DeviceopsSiteManagementDependencies struct {
 }
 
 type ApplicationFactories interface {
+	BuildAccessTenantLifecycle(AccessTenantLifecycleDependencies) (accessapplication.TenantLifecycleApplication, error)
+	BuildAccessTenantMemberLifecycle(AccessTenantMemberLifecycleDependencies) (accessapplication.TenantMemberLifecycleApplication, error)
+	BuildAccessTenantRolePermission(AccessTenantRolePermissionDependencies) (accessapplication.TenantRolePermissionApplication, error)
 	BuildDeviceopsDeviceManagement(DeviceopsDeviceManagementDependencies) (deviceopsapplication.DeviceManagementApplication, error)
 	BuildDeviceopsDeviceTransfer(DeviceopsDeviceTransferDependencies) (deviceopsapplication.DeviceTransferApplication, error)
 	BuildDeviceopsSiteManagement(DeviceopsSiteManagementDependencies) (deviceopsapplication.SiteManagementApplication, error)
 }
 
 type Applications struct {
-	DeviceopsDeviceManagement deviceopsapplication.DeviceManagementApplication
-	DeviceopsDeviceTransfer   deviceopsapplication.DeviceTransferApplication
-	DeviceopsSiteManagement   deviceopsapplication.SiteManagementApplication
+	AccessTenantLifecycle       accessapplication.TenantLifecycleApplication
+	AccessTenantMemberLifecycle accessapplication.TenantMemberLifecycleApplication
+	AccessTenantRolePermission  accessapplication.TenantRolePermissionApplication
+	DeviceopsDeviceManagement   deviceopsapplication.DeviceManagementApplication
+	DeviceopsDeviceTransfer     deviceopsapplication.DeviceTransferApplication
+	DeviceopsSiteManagement     deviceopsapplication.SiteManagementApplication
 }
 
 func BuildApplications(factories ApplicationFactories, executor operation.Executor) (Applications, error) {
@@ -52,6 +72,35 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	}
 	var applications Applications
 	var err error
+	applications.AccessTenantMemberLifecycle, err = factories.BuildAccessTenantMemberLifecycle(AccessTenantMemberLifecycleDependencies{})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_member_lifecycle: %w", err)
+	}
+	if applications.AccessTenantMemberLifecycle == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_member_lifecycle")
+	}
+	applications.AccessTenantRolePermission, err = factories.BuildAccessTenantRolePermission(AccessTenantRolePermissionDependencies{})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_role_permission: %w", err)
+	}
+	if applications.AccessTenantRolePermission == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_role_permission")
+	}
+	accessTenantLifecycleAccessTenantMemberLifecycleCapability, err := accessapplication.NewAccessTenantMemberLifecycleChildCapability(applications.AccessTenantMemberLifecycle, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_lifecycle dependency access/tenant_member_lifecycle: %w", err)
+	}
+	accessTenantLifecycleAccessTenantRolePermissionCapability, err := accessapplication.NewAccessTenantRolePermissionChildCapability(applications.AccessTenantRolePermission, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_lifecycle dependency access/tenant_role_permission: %w", err)
+	}
+	applications.AccessTenantLifecycle, err = factories.BuildAccessTenantLifecycle(AccessTenantLifecycleDependencies{AccessTenantMemberLifecycle: accessTenantLifecycleAccessTenantMemberLifecycleCapability, AccessTenantRolePermission: accessTenantLifecycleAccessTenantRolePermissionCapability})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_lifecycle: %w", err)
+	}
+	if applications.AccessTenantLifecycle == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_lifecycle")
+	}
 	applications.DeviceopsDeviceManagement, err = factories.BuildDeviceopsDeviceManagement(DeviceopsDeviceManagementDependencies{})
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build application deviceops/device_management: %w", err)
@@ -117,6 +166,33 @@ func RegisterTransports(bindings TransportBindings, applications Applications, e
 	if bindings.RPC == nil {
 		return errors.New("yunka assembly: gRPC registrar is required")
 	}
+	if applications.AccessTenantLifecycle == nil {
+		return errors.New("yunka assembly: application access/tenant_lifecycle is required for transport registration")
+	}
+	if err := accessrest.RegisterTenantLifecycleOperationExecutor(bindings.HTTP, applications.AccessTenantLifecycle, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register HTTP access/tenant_lifecycle: %w", err)
+	}
+	if err := accessrpc.RegisterTenantLifecycleOperationExecutor(bindings.RPC, applications.AccessTenantLifecycle, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register gRPC access/tenant_lifecycle: %w", err)
+	}
+	if applications.AccessTenantMemberLifecycle == nil {
+		return errors.New("yunka assembly: application access/tenant_member_lifecycle is required for transport registration")
+	}
+	if err := accessrest.RegisterTenantMemberLifecycleOperationExecutor(bindings.HTTP, applications.AccessTenantMemberLifecycle, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register HTTP access/tenant_member_lifecycle: %w", err)
+	}
+	if err := accessrpc.RegisterTenantMemberLifecycleOperationExecutor(bindings.RPC, applications.AccessTenantMemberLifecycle, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register gRPC access/tenant_member_lifecycle: %w", err)
+	}
+	if applications.AccessTenantRolePermission == nil {
+		return errors.New("yunka assembly: application access/tenant_role_permission is required for transport registration")
+	}
+	if err := accessrest.RegisterTenantRolePermissionOperationExecutor(bindings.HTTP, applications.AccessTenantRolePermission, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register HTTP access/tenant_role_permission: %w", err)
+	}
+	if err := accessrpc.RegisterTenantRolePermissionOperationExecutor(bindings.RPC, applications.AccessTenantRolePermission, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register gRPC access/tenant_role_permission: %w", err)
+	}
 	if applications.DeviceopsDeviceManagement == nil {
 		return errors.New("yunka assembly: application deviceops/device_management is required for transport registration")
 	}
@@ -158,7 +234,7 @@ type BootstrapOptions struct {
 
 func RuntimeInventory() core.RuntimeInventory {
 	return core.RuntimeInventory{
-		Routes:              []string{"/v1/devices", "/v1/devices/{id}", "/v1/devices/{id}/transfer"},
+		Routes:              []string{"/v1/devices", "/v1/devices/{id}", "/v1/devices/{id}/transfer", "/v1/tenant/members", "/v1/tenant/members/{user_id}", "/v1/tenant/members/{user_id}/activate", "/v1/tenant/members/{user_id}/remove", "/v1/tenant/members/{user_id}/suspend", "/v1/tenant/roles", "/v1/tenant/roles/{role_id}", "/v1/tenant/roles/{role_id}/disable", "/v1/tenant/roles/{role_id}/enable", "/v1/tenant/roles/{role_id}/members", "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", "/v1/tenant/roles/{role_id}/permissions", "/v1/tenants", "/v1/tenants/{id}", "/v1/tenants/{id}/activate", "/v1/tenants/{id}/close", "/v1/tenants/{id}/suspend"},
 		RPCClientConfigured: false,
 		RPCServerCount:      1,
 	}

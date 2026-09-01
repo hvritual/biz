@@ -1,6 +1,439 @@
 {
   "components": {
     "schemas": {
+      "access_v1_ActivateTenantMemberRequest": {
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ActivateTenantMemberRequest"
+      },
+      "access_v1_ActivateTenantRequest": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ActivateTenantRequest"
+      },
+      "access_v1_AssignTenantRoleMemberRequest": {
+        "properties": {
+          "roleId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.AssignTenantRoleMemberRequest"
+      },
+      "access_v1_CloseTenantRequest": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.CloseTenantRequest"
+      },
+      "access_v1_CreateTenantRequest": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "ownerEmail": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.CreateTenantRequest"
+      },
+      "access_v1_CreateTenantRoleRequest": {
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.CreateTenantRoleRequest"
+      },
+      "access_v1_DataScope": {
+        "enum": [
+          "DATA_SCOPE_UNSPECIFIED",
+          "DATA_SCOPE_NONE",
+          "DATA_SCOPE_SELF",
+          "DATA_SCOPE_SITES",
+          "DATA_SCOPE_ALL"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "access.v1.DataScope"
+      },
+      "access_v1_DisableTenantRoleRequest": {
+        "properties": {
+          "roleId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.DisableTenantRoleRequest"
+      },
+      "access_v1_EnableTenantRoleRequest": {
+        "properties": {
+          "roleId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.EnableTenantRoleRequest"
+      },
+      "access_v1_GetTenantMemberRequest": {
+        "properties": {
+          "userId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.GetTenantMemberRequest"
+      },
+      "access_v1_GetTenantRequest": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.GetTenantRequest"
+      },
+      "access_v1_GetTenantRoleRequest": {
+        "properties": {
+          "roleId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.GetTenantRoleRequest"
+      },
+      "access_v1_InviteTenantMemberRequest": {
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.InviteTenantMemberRequest"
+      },
+      "access_v1_ListTenantMembersRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListTenantMembersRequest"
+      },
+      "access_v1_ListTenantMembersResponse": {
+        "properties": {
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/access_v1_TenantMemberDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListTenantMembersResponse"
+      },
+      "access_v1_ListTenantRolesRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListTenantRolesRequest"
+      },
+      "access_v1_ListTenantRolesResponse": {
+        "properties": {
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/access_v1_TenantRoleDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListTenantRolesResponse"
+      },
+      "access_v1_ListTenantsRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListTenantsRequest"
+      },
+      "access_v1_ListTenantsResponse": {
+        "properties": {
+          "tenants": {
+            "items": {
+              "$ref": "#/components/schemas/access_v1_TenantDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListTenantsResponse"
+      },
+      "access_v1_PermissionGrantDTO": {
+        "properties": {
+          "permission": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/access_v1_DataScope"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.PermissionGrantDTO"
+      },
+      "access_v1_PermissionGrantInput": {
+        "properties": {
+          "permission": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/access_v1_DataScope"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.PermissionGrantInput"
+      },
+      "access_v1_RemoveTenantMemberRequest": {
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.RemoveTenantMemberRequest"
+      },
+      "access_v1_RevokeTenantRoleMemberRequest": {
+        "properties": {
+          "roleId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.RevokeTenantRoleMemberRequest"
+      },
+      "access_v1_SetTenantRolePermissionsRequest": {
+        "properties": {
+          "permissions": {
+            "items": {
+              "$ref": "#/components/schemas/access_v1_PermissionGrantInput"
+            },
+            "type": "array"
+          },
+          "roleId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.SetTenantRolePermissionsRequest"
+      },
+      "access_v1_SuspendTenantMemberRequest": {
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.SuspendTenantMemberRequest"
+      },
+      "access_v1_SuspendTenantRequest": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.SuspendTenantRequest"
+      },
+      "access_v1_TenantDTO": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/access_v1_TenantStatus"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.TenantDTO"
+      },
+      "access_v1_TenantMemberDTO": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/access_v1_TenantMemberStatus"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.TenantMemberDTO"
+      },
+      "access_v1_TenantMemberStatus": {
+        "enum": [
+          "TENANT_MEMBER_STATUS_UNSPECIFIED",
+          "TENANT_MEMBER_STATUS_INVITED",
+          "TENANT_MEMBER_STATUS_ACTIVE",
+          "TENANT_MEMBER_STATUS_SUSPENDED",
+          "TENANT_MEMBER_STATUS_REMOVED"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "access.v1.TenantMemberStatus"
+      },
+      "access_v1_TenantRoleDTO": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissions": {
+            "items": {
+              "$ref": "#/components/schemas/access_v1_PermissionGrantDTO"
+            },
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/access_v1_TenantRoleStatus"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.TenantRoleDTO"
+      },
+      "access_v1_TenantRoleStatus": {
+        "enum": [
+          "TENANT_ROLE_STATUS_UNSPECIFIED",
+          "TENANT_ROLE_STATUS_ACTIVE",
+          "TENANT_ROLE_STATUS_DISABLED"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "access.v1.TenantRoleStatus"
+      },
+      "access_v1_TenantStatus": {
+        "enum": [
+          "TENANT_STATUS_UNSPECIFIED",
+          "TENANT_STATUS_PENDING",
+          "TENANT_STATUS_ACTIVE",
+          "TENANT_STATUS_SUSPENDED",
+          "TENANT_STATUS_CLOSED"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "access.v1.TenantStatus"
+      },
+      "access_v1_UpdateTenantRequest": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.UpdateTenantRequest"
+      },
+      "access_v1_UpdateTenantRoleRequest": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.UpdateTenantRoleRequest"
+      },
       "deviceops_v1_CreateDeviceRequest": {
         "properties": {
           "name": {
@@ -330,6 +763,786 @@
           "deviceops.v1.DeviceTransferApplication"
         ],
         "x-yunka-rpc": "/deviceops.v1.DeviceTransferApplication/TransferDevice"
+      }
+    },
+    "/v1/tenant/members": {
+      "get": {
+        "operationId": "access.v1.TenantMemberLifecycleApplication.ListTenantMembers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_ListTenantMembersResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/ListTenantMembers"
+      },
+      "post": {
+        "operationId": "access.v1.TenantMemberLifecycleApplication.InviteTenantMember",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_InviteTenantMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantMemberDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/InviteTenantMember"
+      }
+    },
+    "/v1/tenant/members/{user_id}": {
+      "get": {
+        "operationId": "access.v1.TenantMemberLifecycleApplication.GetTenantMember",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantMemberDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/GetTenantMember"
+      }
+    },
+    "/v1/tenant/members/{user_id}/activate": {
+      "post": {
+        "operationId": "access.v1.TenantMemberLifecycleApplication.ActivateTenantMember",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_ActivateTenantMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantMemberDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/ActivateTenantMember"
+      }
+    },
+    "/v1/tenant/members/{user_id}/remove": {
+      "post": {
+        "operationId": "access.v1.TenantMemberLifecycleApplication.RemoveTenantMember",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_RemoveTenantMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantMemberDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/RemoveTenantMember"
+      }
+    },
+    "/v1/tenant/members/{user_id}/suspend": {
+      "post": {
+        "operationId": "access.v1.TenantMemberLifecycleApplication.SuspendTenantMember",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_SuspendTenantMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantMemberDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/SuspendTenantMember"
+      }
+    },
+    "/v1/tenant/roles": {
+      "get": {
+        "operationId": "access.v1.TenantRolePermissionApplication.ListTenantRoles",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_ListTenantRolesResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantRolePermissionApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantRolePermissionApplication/ListTenantRoles"
+      },
+      "post": {
+        "operationId": "access.v1.TenantRolePermissionApplication.CreateTenantRole",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_CreateTenantRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantRoleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantRolePermissionApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantRolePermissionApplication/CreateTenantRole"
+      }
+    },
+    "/v1/tenant/roles/{role_id}": {
+      "get": {
+        "operationId": "access.v1.TenantRolePermissionApplication.GetTenantRole",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "roleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantRoleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantRolePermissionApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantRolePermissionApplication/GetTenantRole"
+      },
+      "patch": {
+        "operationId": "access.v1.TenantRolePermissionApplication.UpdateTenantRole",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "roleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_UpdateTenantRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantRoleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantRolePermissionApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantRolePermissionApplication/UpdateTenantRole"
+      }
+    },
+    "/v1/tenant/roles/{role_id}/disable": {
+      "post": {
+        "operationId": "access.v1.TenantRolePermissionApplication.DisableTenantRole",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "roleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_DisableTenantRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantRoleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantRolePermissionApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantRolePermissionApplication/DisableTenantRole"
+      }
+    },
+    "/v1/tenant/roles/{role_id}/enable": {
+      "post": {
+        "operationId": "access.v1.TenantRolePermissionApplication.EnableTenantRole",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "roleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_EnableTenantRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantRoleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantRolePermissionApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantRolePermissionApplication/EnableTenantRole"
+      }
+    },
+    "/v1/tenant/roles/{role_id}/members": {
+      "post": {
+        "operationId": "access.v1.TenantRolePermissionApplication.AssignTenantRoleMember",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "roleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_AssignTenantRoleMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantRoleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantRolePermissionApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantRolePermissionApplication/AssignTenantRoleMember"
+      }
+    },
+    "/v1/tenant/roles/{role_id}/members/{user_id}/revoke": {
+      "post": {
+        "operationId": "access.v1.TenantRolePermissionApplication.RevokeTenantRoleMember",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "roleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_RevokeTenantRoleMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantRoleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantRolePermissionApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantRolePermissionApplication/RevokeTenantRoleMember"
+      }
+    },
+    "/v1/tenant/roles/{role_id}/permissions": {
+      "put": {
+        "operationId": "access.v1.TenantRolePermissionApplication.SetTenantRolePermissions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "roleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_SetTenantRolePermissionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantRoleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantRolePermissionApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantRolePermissionApplication/SetTenantRolePermissions"
+      }
+    },
+    "/v1/tenants": {
+      "get": {
+        "operationId": "access.v1.TenantLifecycleApplication.ListTenants",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_ListTenantsResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantLifecycleApplication/ListTenants"
+      },
+      "post": {
+        "operationId": "access.v1.TenantLifecycleApplication.CreateTenant",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_CreateTenantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantLifecycleApplication/CreateTenant"
+      }
+    },
+    "/v1/tenants/{id}": {
+      "get": {
+        "operationId": "access.v1.TenantLifecycleApplication.GetTenant",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantLifecycleApplication/GetTenant"
+      },
+      "patch": {
+        "operationId": "access.v1.TenantLifecycleApplication.UpdateTenant",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_UpdateTenantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantLifecycleApplication/UpdateTenant"
+      }
+    },
+    "/v1/tenants/{id}/activate": {
+      "post": {
+        "operationId": "access.v1.TenantLifecycleApplication.ActivateTenant",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_ActivateTenantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantLifecycleApplication/ActivateTenant"
+      }
+    },
+    "/v1/tenants/{id}/close": {
+      "post": {
+        "operationId": "access.v1.TenantLifecycleApplication.CloseTenant",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_CloseTenantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantLifecycleApplication/CloseTenant"
+      }
+    },
+    "/v1/tenants/{id}/suspend": {
+      "post": {
+        "operationId": "access.v1.TenantLifecycleApplication.SuspendTenant",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_SuspendTenantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantLifecycleApplication/SuspendTenant"
       }
     }
   },
