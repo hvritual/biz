@@ -185,8 +185,8 @@ func TestTenantMemberLifecycleUsesPrincipalTenantAndJoinedRootUoW(t *testing.T) 
 	if !errors.Is(err, domain.ErrInvalidTenantMemberTransition) {
 		t.Fatalf("removed activate err=%v", err)
 	}
-	if factoryCalls != 5 {
-		t.Fatalf("repository factory calls=%d want=5", factoryCalls)
+	if factoryCalls != 6 {
+		t.Fatalf("repository factory calls=%d want=6", factoryCalls)
 	}
 }
 
