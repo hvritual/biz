@@ -65,6 +65,7 @@ message BootstrapTenantOwnerMemberRequest {
 service TenantMemberLifecycleApplication {
   option (yunka.dsl.v1.application) = {
     name: "tenant_member_lifecycle"
+    requires: "access/tenant_role_permission"
     operations: {
       id: "tenant.member.bootstrap_owner"
       use_case: "bootstrap_tenant_owner_member"
@@ -140,6 +141,8 @@ service TenantMemberLifecycleApplication {
       permission_mode: PERMISSION_ALL
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
+      requires_operations: "tenant.role.assert_member_deactivation_allowed"
+      composition: COMPOSITION_LOCAL
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };
   }
@@ -153,6 +156,8 @@ service TenantMemberLifecycleApplication {
       permission_mode: PERMISSION_ALL
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
+      requires_operations: "tenant.role.assert_member_deactivation_allowed"
+      composition: COMPOSITION_LOCAL
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };
   }
