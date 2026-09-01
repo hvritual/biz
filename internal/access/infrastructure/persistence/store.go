@@ -22,7 +22,9 @@ type tenantRecord struct {
 	ID        string    `gorm:"column:id;primaryKey;size:64"`
 	Name      string    `gorm:"column:name;size:200;not null"`
 	Status    string    `gorm:"column:status;size:32;not null;index"`
+	Version   uint64    `gorm:"column:version;not null;default:1"`
 	CreatedAt time.Time `gorm:"column:created_at;not null"`
+	UpdatedAt time.Time `gorm:"column:updated_at;not null"`
 }
 
 func (tenantRecord) TableName() string { return "biz_tenants" }
@@ -62,8 +64,6 @@ type memberRoleRecord struct {
 
 func (memberRoleRecord) TableName() string { return "biz_member_roles" }
 
-// permissionGrantRecord is the authoritative role permission + scope fact.
-// Scope cannot exist independently from the permission grant.
 type permissionGrantRecord struct {
 	TenantID   string                 `gorm:"column:tenant_id;primaryKey;size:64"`
 	RoleID     string                 `gorm:"column:role_id;primaryKey;size:160"`
@@ -127,6 +127,13 @@ func (store *Store) Authenticate(ctx context.Context, rawToken string) (identity
 	if token.ExpiresAt != nil && !token.ExpiresAt.After(time.Now()) {
 		return identity.Principal{}, ErrUnauthorized
 	}
+	var tenant tenantRecord
+	if err := store.database.WithContext(ctx).Where("id = ? AND status = ?", token.TenantID, accessdomain.TenantStatusActive).First(&tenant).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return identity.Principal{}, ErrUnauthorized
+		}
+		return identity.Principal{}, err
+	}
 	var membership membershipRecord
 	if err := store.database.WithContext(ctx).Where("tenant_id = ? AND user_id = ? AND status = ?", token.TenantID, token.UserID, "active").First(&membership).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -149,9 +156,6 @@ func (store *Store) Authenticate(ctx context.Context, rawToken string) (identity
 	}, nil
 }
 
-// ResolveGrants is the C8.5 unified authorization decision input. The JOIN binds
-// permission and scope to the exact same active role grant and ignores legacy
-// role_data_scopes rows entirely.
 func (store *Store) ResolveGrants(ctx context.Context, tenantID string, roles []string, permissions []authz.PermissionKey) ([]authz.Grant, error) {
 	if strings.TrimSpace(tenantID) == "" || len(roles) == 0 || len(permissions) == 0 {
 		return nil, nil
@@ -208,13 +212,14 @@ func (store *Store) Bootstrap(ctx context.Context, config Bootstrap, permissions
 		return nil
 	}
 	roleID := config.TenantID + ":owner"
+	now := time.Now().UTC()
 	values := []any{
-		&tenantRecord{ID: config.TenantID, Name: config.TenantName, Status: "active"},
-		&userRecord{ID: config.UserID, Email: config.Email, Status: "active"},
-		&membershipRecord{TenantID: config.TenantID, UserID: config.UserID, Status: "active"},
+		&tenantRecord{ID: config.TenantID, Name: config.TenantName, Status: accessdomain.TenantStatusActive, Version: 1, CreatedAt: now, UpdatedAt: now},
+		&userRecord{ID: config.UserID, Email: config.Email, Status: "active", CreatedAt: now},
+		&membershipRecord{TenantID: config.TenantID, UserID: config.UserID, Status: "active", CreatedAt: now},
 		&roleRecord{ID: roleID, TenantID: config.TenantID, Name: "owner", Status: "active"},
 		&memberRoleRecord{TenantID: config.TenantID, UserID: config.UserID, RoleID: roleID},
-		&apiTokenRecord{TokenHash: TokenHash(config.Token), TenantID: config.TenantID, UserID: config.UserID},
+		&apiTokenRecord{TokenHash: TokenHash(config.Token), TenantID: config.TenantID, UserID: config.UserID, CreatedAt: now},
 	}
 	db := store.database.WithContext(ctx)
 	for _, value := range values {
