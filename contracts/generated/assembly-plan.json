@@ -1076,6 +1076,20 @@
   ],
   "modules": [
     {
+      "name": "access",
+      "version": "v0.1.0",
+      "requirements": {
+        "databases": [
+          "primary"
+        ]
+      },
+      "evidence": {
+        "ownership": "reused",
+        "source": "generated-module-source",
+        "ref": "access/zz_yunka_module_gen.go"
+      }
+    },
+    {
       "name": "deviceops",
       "version": "v0.1.0",
       "requirements": {
@@ -1093,6 +1107,16 @@
     }
   ],
   "requirements": [
+    {
+      "module": "access",
+      "kind": "database",
+      "name": "primary",
+      "evidence": {
+        "ownership": "reused",
+        "source": "generated-module-source",
+        "ref": "access/zz_yunka_module_gen.go/requirements/databases/primary"
+      }
+    },
     {
       "module": "deviceops",
       "kind": "config",
@@ -1135,6 +1159,7 @@
         "deviceops/site_management"
       ],
       "modules": [
+        "access",
         "deviceops"
       ],
       "externalOperations": [

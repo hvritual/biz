@@ -4,12 +4,16 @@ package assembly
 
 import (
 	fmt "fmt"
+	accessmodule "github.com/hvritual/biz/modules/access"
 	deviceopsmodule "github.com/hvritual/biz/modules/deviceops"
 	modulecatalog "yunka.io/framework/core/modulecatalog"
 )
 
 func NewCatalog() (*modulecatalog.Catalog, error) {
 	catalog := modulecatalog.New()
+	if err := catalog.Register(accessmodule.GeneratedDescriptor()); err != nil {
+		return nil, fmt.Errorf("yunka assembly: register module access: %w", err)
+	}
 	if err := catalog.Register(deviceopsmodule.GeneratedDescriptor()); err != nil {
 		return nil, fmt.Errorf("yunka assembly: register module deviceops: %w", err)
 	}

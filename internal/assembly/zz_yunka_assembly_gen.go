@@ -21,7 +21,7 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "9a7b07251b09e671647ba2aa3260eadb60be12b7fbe6d45ce69da4f35d049aba"
+const AssemblyPlanDigest = "1fed7babd8b37c545296bb946f96550660c89db30a12885e028f6a17f8028f14"
 
 type AccessTenantLifecycleDependencies struct {
 	AccessTenantMemberLifecycle accessapplication.AccessTenantMemberLifecycleChildCapability
@@ -144,7 +144,7 @@ func KernelOptions(dependencies KernelDependencies) kernel.Options {
 
 func ExpectedModuleRequirements() modulecatalog.RequirementSet {
 	return modulecatalog.RequirementSet{
-		Modules:   []string{"deviceops"},
+		Modules:   []string{"access", "deviceops"},
 		Configs:   []modulecatalog.ConfigRequirement{{Module: "deviceops", Key: "modules.deviceops"}},
 		Logger:    true,
 		Databases: []modulecatalog.DatabaseRequirement{{Name: "primary"}},
