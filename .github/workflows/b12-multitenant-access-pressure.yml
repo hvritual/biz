@@ -10,6 +10,7 @@ on:
       - Makefile
       - contracts/**
       - internal/**
+      - integration/**
       - modules/**
       - go.mod
       - go.sum
@@ -22,6 +23,7 @@ on:
       - Makefile
       - contracts/**
       - internal/**
+      - integration/**
       - modules/**
       - go.mod
       - go.sum
@@ -207,3 +209,68 @@ jobs:
           path: ${{ runner.temp }}/b12-export
           if-no-files-found: warn
           retention-days: 2
+
+  b12-2-tenant-lifecycle-mysql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      YUNKA_SHA: f154c521e5bf6c637022795075c4ebf5d48a00d1
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_b12?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_b12
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact Yunka baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.YUNKA_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Load locked Go
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Verify exact sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+
+      - name: Run B12.2 MySQL lifecycle pressure
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestB122'
+          test -z "$(git -C biz status --porcelain)"
