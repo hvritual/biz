@@ -1,0 +1,88 @@
+name: b12-8-framework-pressure-disposition
+
+on:
+  push:
+    branches:
+      - agent/b12-multitenant-access-pressure
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  disposition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      YUNKA_SHA: f154c521e5bf6c637022795075c4ebf5d48a00d1
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact qualified Yunka baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.YUNKA_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact sources and pressure disposition
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+
+          ledger=biz/docs/pressure/B12-framework-pressure.md
+          test -f "$ledger"
+          grep -Fq 'B12_FRAMEWORK_PRESSURE_DISPOSITION=PASS' "$ledger"
+          grep -Fq 'OPEN_B12_YUNKA_GAPS=0' "$ledger"
+          grep -Fq "QUALIFIED_YUNKA_BASELINE=$YUNKA_SHA" "$ledger"
+          grep -Fq 'B12-FP-001' "$ledger"
+          grep -Fq 'YUNKA_AUTHZ_GAP' "$ledger"
+          grep -Fq 'CLOSED by Yunka PR #108' "$ledger"
+
+      - name: Verify current B12 qualification surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f biz/.github/workflows/b12-multitenant-access-pressure.yml
+          test -f biz/.github/workflows/b12-3-tenant-member-mysql.yml
+          test -f biz/.github/workflows/b12-4-tenant-role-mysql.yml
+          test -f biz/.github/workflows/b12-5-tenant-bootstrap-mysql.yml
+          test -f biz/.github/workflows/b12-6-concurrency-mysql.yml
+          test -f biz/.github/workflows/b12-7-runtime-qualification.yml
+
+          test ! -e biz/.github/workflows/c10-4-consumer-upgrade.yml
+          test ! -e biz/.github/workflows/c11-7-b-consumer-gate.yml
+
+          grep -Fq 'application:access/tenant_lifecycle' biz/.yunka/dev.json
+          grep -Fq 'application:access/tenant_member_lifecycle' biz/.yunka/dev.json
+          grep -Fq 'application:access/tenant_role_permission' biz/.yunka/dev.json
+          grep -Fq 'application:deviceops/device_management' biz/.yunka/dev.json
+          grep -Fq 'application:deviceops/device_transfer' biz/.yunka/dev.json
+          grep -Fq 'application:deviceops/site_management' biz/.yunka/dev.json
+
+      - name: Emit B12.8 qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' \
+            "B12.8_FRAMEWORK_PRESSURE_DISPOSITION=PASS" \
+            "B12.8_OPEN_YUNKA_GAPS=0" \
+            "B12.8_YUNKA_BASELINE=$YUNKA_SHA" \
+            "B12.8_LEGACY_QUALIFICATION_DRIFT=RETIRED"
+
+      - name: Require clean Biz worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C biz diff --exit-code
+          test -z "$(git -C biz status --porcelain)"
