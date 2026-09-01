@@ -83,6 +83,15 @@
       }
     },
     {
+      "from": "access/tenant_member_lifecycle",
+      "to": "access/tenant_role_permission",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_member_lifecycle/requires/access/tenant_role_permission"
+      }
+    },
+    {
       "from": "deviceops/device_transfer",
       "to": "deviceops/device_management",
       "evidence": {
@@ -118,6 +127,15 @@
         "ownership": "derived",
         "source": "application-dependency-closure",
         "ref": "access/tenant_lifecycle-\u003eaccess/tenant_role_permission"
+      }
+    },
+    {
+      "from": "access/tenant_member_lifecycle",
+      "to": "access/tenant_role_permission",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_member_lifecycle-\u003eaccess/tenant_role_permission"
       }
     },
     {
@@ -686,6 +704,15 @@
       }
     },
     {
+      "id": "tenant.role.assert_member_deactivation_allowed",
+      "application": "access/tenant_role_permission",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.role.assert_member_deactivation_allowed"
+      }
+    },
+    {
       "id": "tenant.role.assign_member",
       "application": "access/tenant_role_permission",
       "bindings": [
@@ -1072,6 +1099,24 @@
         "source": "operation-plans.json",
         "ref": "operations/tenant.create/requiresOperations/tenant.role.bootstrap_owner"
       }
+    },
+    {
+      "from": "tenant.member.remove",
+      "to": "tenant.role.assert_member_deactivation_allowed",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.remove/requiresOperations/tenant.role.assert_member_deactivation_allowed"
+      }
+    },
+    {
+      "from": "tenant.member.suspend",
+      "to": "tenant.role.assert_member_deactivation_allowed",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.suspend/requiresOperations/tenant.role.assert_member_deactivation_allowed"
+      }
     }
   ],
   "modules": [
@@ -1195,6 +1240,7 @@
       "internalOperations": [
         "site.validate_transfer_target",
         "tenant.member.bootstrap_owner",
+        "tenant.role.assert_member_deactivation_allowed",
         "tenant.role.bootstrap_owner"
       ],
       "evidence": {

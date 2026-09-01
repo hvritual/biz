@@ -21,14 +21,15 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "1fed7babd8b37c545296bb946f96550660c89db30a12885e028f6a17f8028f14"
+const AssemblyPlanDigest = "efaabb66684cc5dd4118fce53b52608ffa6b56bda837e7fdaea096d3e490a5d3"
 
 type AccessTenantLifecycleDependencies struct {
-	AccessTenantMemberLifecycle accessapplication.AccessTenantMemberLifecycleChildCapability
-	AccessTenantRolePermission  accessapplication.AccessTenantRolePermissionChildCapability
+	AccessTenantMemberLifecycle accessapplication.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
+	AccessTenantRolePermission  accessapplication.TenantLifecycleToAccessTenantRolePermissionChildCapability
 }
 
 type AccessTenantMemberLifecycleDependencies struct {
+	AccessTenantRolePermission accessapplication.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability
 }
 
 type AccessTenantRolePermissionDependencies struct {
@@ -38,8 +39,8 @@ type DeviceopsDeviceManagementDependencies struct {
 }
 
 type DeviceopsDeviceTransferDependencies struct {
-	DeviceopsDeviceManagement deviceopsapplication.DeviceopsDeviceManagementChildCapability
-	DeviceopsSiteManagement   deviceopsapplication.DeviceopsSiteManagementChildCapability
+	DeviceopsDeviceManagement deviceopsapplication.DeviceTransferToDeviceopsDeviceManagementChildCapability
+	DeviceopsSiteManagement   deviceopsapplication.DeviceTransferToDeviceopsSiteManagementChildCapability
 }
 
 type DeviceopsSiteManagementDependencies struct {
@@ -72,13 +73,6 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	}
 	var applications Applications
 	var err error
-	applications.AccessTenantMemberLifecycle, err = factories.BuildAccessTenantMemberLifecycle(AccessTenantMemberLifecycleDependencies{})
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_member_lifecycle: %w", err)
-	}
-	if applications.AccessTenantMemberLifecycle == nil {
-		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_member_lifecycle")
-	}
 	applications.AccessTenantRolePermission, err = factories.BuildAccessTenantRolePermission(AccessTenantRolePermissionDependencies{})
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_role_permission: %w", err)
@@ -86,11 +80,22 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	if applications.AccessTenantRolePermission == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_role_permission")
 	}
-	accessTenantLifecycleAccessTenantMemberLifecycleCapability, err := accessapplication.NewAccessTenantMemberLifecycleChildCapability(applications.AccessTenantMemberLifecycle, executor)
+	accessTenantMemberLifecycleAccessTenantRolePermissionCapability, err := accessapplication.NewTenantMemberLifecycleToAccessTenantRolePermissionChildCapability(applications.AccessTenantRolePermission, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_member_lifecycle dependency access/tenant_role_permission: %w", err)
+	}
+	applications.AccessTenantMemberLifecycle, err = factories.BuildAccessTenantMemberLifecycle(AccessTenantMemberLifecycleDependencies{AccessTenantRolePermission: accessTenantMemberLifecycleAccessTenantRolePermissionCapability})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_member_lifecycle: %w", err)
+	}
+	if applications.AccessTenantMemberLifecycle == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_member_lifecycle")
+	}
+	accessTenantLifecycleAccessTenantMemberLifecycleCapability, err := accessapplication.NewTenantLifecycleToAccessTenantMemberLifecycleChildCapability(applications.AccessTenantMemberLifecycle, executor)
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_lifecycle dependency access/tenant_member_lifecycle: %w", err)
 	}
-	accessTenantLifecycleAccessTenantRolePermissionCapability, err := accessapplication.NewAccessTenantRolePermissionChildCapability(applications.AccessTenantRolePermission, executor)
+	accessTenantLifecycleAccessTenantRolePermissionCapability, err := accessapplication.NewTenantLifecycleToAccessTenantRolePermissionChildCapability(applications.AccessTenantRolePermission, executor)
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_lifecycle dependency access/tenant_role_permission: %w", err)
 	}
@@ -115,11 +120,11 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	if applications.DeviceopsSiteManagement == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for deviceops/site_management")
 	}
-	deviceopsDeviceTransferDeviceopsDeviceManagementCapability, err := deviceopsapplication.NewDeviceopsDeviceManagementChildCapability(applications.DeviceopsDeviceManagement, executor)
+	deviceopsDeviceTransferDeviceopsDeviceManagementCapability, err := deviceopsapplication.NewDeviceTransferToDeviceopsDeviceManagementChildCapability(applications.DeviceopsDeviceManagement, executor)
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build deviceops/device_transfer dependency deviceops/device_management: %w", err)
 	}
-	deviceopsDeviceTransferDeviceopsSiteManagementCapability, err := deviceopsapplication.NewDeviceopsSiteManagementChildCapability(applications.DeviceopsSiteManagement, executor)
+	deviceopsDeviceTransferDeviceopsSiteManagementCapability, err := deviceopsapplication.NewDeviceTransferToDeviceopsSiteManagementChildCapability(applications.DeviceopsSiteManagement, executor)
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build deviceops/device_transfer dependency deviceops/site_management: %w", err)
 	}

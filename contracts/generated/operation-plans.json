@@ -444,6 +444,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "access/tenant_role_permission"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/ActivateTenantMember",
         "http": [
@@ -476,6 +479,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "access/tenant_role_permission"
+      ],
       "bindings": {}
     },
     {
@@ -500,6 +506,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "access/tenant_role_permission"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/GetTenantMember",
         "http": [
@@ -532,6 +541,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "access/tenant_role_permission"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/InviteTenantMember",
         "http": [
@@ -565,6 +577,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "access/tenant_role_permission"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/ListTenantMembers",
         "http": [
@@ -596,7 +611,18 @@
         "transaction": "local",
         "idempotency": "required"
       },
-      "composition": {},
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "tenant.role.assert_member_deactivation_allowed"
+        ],
+        "permissionClosure": [
+          "tenant.member.manage"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_role_permission"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/RemoveTenantMember",
         "http": [
@@ -629,7 +655,18 @@
         "transaction": "local",
         "idempotency": "required"
       },
-      "composition": {},
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "tenant.role.assert_member_deactivation_allowed"
+        ],
+        "permissionClosure": [
+          "tenant.member.manage"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_role_permission"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/SuspendTenantMember",
         "http": [
@@ -640,6 +677,30 @@
           }
         ]
       }
+    },
+    {
+      "operationId": "tenant.role.assert_member_deactivation_allowed",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "assert_tenant_member_deactivation_allowed",
+      "requestType": "access.v1.AssertTenantMemberDeactivationAllowedRequest",
+      "responseType": "access.v1.AssertTenantMemberDeactivationAllowedResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.member.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {}
     },
     {
       "operationId": "tenant.role.assign_member",

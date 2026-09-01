@@ -565,7 +565,7 @@ const file_access_v1_tenant_member_proto_rawDesc = "" +
 	"\x1cTENANT_MEMBER_STATUS_INVITED\x10\x01\x12\x1f\n" +
 	"\x1bTENANT_MEMBER_STATUS_ACTIVE\x10\x02\x12\"\n" +
 	"\x1eTENANT_MEMBER_STATUS_SUSPENDED\x10\x03\x12 \n" +
-	"\x1cTENANT_MEMBER_STATUS_REMOVED\x10\x042\xfc\v\n" +
+	"\x1cTENANT_MEMBER_STATUS_REMOVED\x10\x042\x81\r\n" +
 	" TenantMemberLifecycleApplication\x12\xc6\x01\n" +
 	"\x12InviteTenantMember\x12$.access.v1.InviteTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"n\xe2\xf3\x18M\n" +
 	"\x14tenant.member.invite\x12\x14invite_tenant_member\x1a\x14tenant.member.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/tenant/members\x12\xbf\x01\n" +
@@ -574,12 +574,12 @@ const file_access_v1_tenant_member_proto_rawDesc = "" +
 	"\x11ListTenantMembers\x12#.access.v1.ListTenantMembersRequest\x1a$.access.v1.ListTenantMembersResponse\"f\xe2\xf3\x18H\n" +
 	"\x12tenant.member.list\x12\x13list_tenant_members\x1a\x12tenant.member.read(\x012\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/tenant/members\x12\xe2\x01\n" +
 	"\x14ActivateTenantMember\x12&.access.v1.ActivateTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"\x85\x01\xe2\xf3\x18Q\n" +
-	"\x16tenant.member.activate\x12\x16activate_tenant_member\x1a\x14tenant.member.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/tenant/members/{user_id}/activate\x12\xdd\x01\n" +
-	"\x13SuspendTenantMember\x12%.access.v1.SuspendTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"\x82\x01\xe2\xf3\x18O\n" +
-	"\x15tenant.member.suspend\x12\x15suspend_tenant_member\x1a\x14tenant.member.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02):\x01*\"$/v1/tenant/members/{user_id}/suspend\x12\xd7\x01\n" +
-	"\x12RemoveTenantMember\x12$.access.v1.RemoveTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"\x7f\xe2\xf3\x18M\n" +
-	"\x14tenant.member.remove\x12\x14remove_tenant_member\x1a\x14tenant.member.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02(:\x01*\"#/v1/tenant/members/{user_id}/remove\x1a\xe4\x01\xda\xf3\x18\xdf\x01\n" +
-	"\x17tenant_member_lifecycle\x1a\xc3\x01\n" +
+	"\x16tenant.member.activate\x12\x16activate_tenant_member\x1a\x14tenant.member.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/tenant/members/{user_id}/activate\x12\x90\x02\n" +
+	"\x13SuspendTenantMember\x12%.access.v1.SuspendTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"\xb5\x01\xe2\xf3\x18\x81\x01\n" +
+	"\x15tenant.member.suspend\x12\x15suspend_tenant_member\x1a\x14tenant.member.manage(\x012\x01\x02B.tenant.role.assert_member_deactivation_allowedH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02):\x01*\"$/v1/tenant/members/{user_id}/suspend\x12\x8a\x02\n" +
+	"\x12RemoveTenantMember\x12$.access.v1.RemoveTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"\xb1\x01\xe2\xf3\x18\x7f\n" +
+	"\x14tenant.member.remove\x12\x14remove_tenant_member\x1a\x14tenant.member.manage(\x012\x01\x02B.tenant.role.assert_member_deactivation_allowedH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02(:\x01*\"#/v1/tenant/members/{user_id}/remove\x1a\x83\x02\xda\xf3\x18\xfe\x01\n" +
+	"\x17tenant_member_lifecycle\x12\x1daccess/tenant_role_permission\x1a\xc3\x01\n" +
 	"\x1dtenant.member.bootstrap_owner\x12\x1dbootstrap_tenant_owner_member\x1a\x16platform.tenant.create2\x01\x02R\x04\b\x03\x10\x01Z+access.v1.BootstrapTenantOwnerMemberRequestb\x19access.v1.TenantMemberDTOj\x1aBootstrapTenantOwnerMemberBJ\xca\xf3\x18\f\n" +
 	"\x06access\x12\x02v1Z8github.com/hvritual/biz/contracts/gen/access/v1;accessv1b\x06proto3"
 

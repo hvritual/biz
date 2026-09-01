@@ -855,6 +855,86 @@ func (x *BootstrapTenantOwnerRoleRequest) GetUserId() string {
 	return ""
 }
 
+type AssertTenantMemberDeactivationAllowedRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AssertTenantMemberDeactivationAllowedRequest) Reset() {
+	*x = AssertTenantMemberDeactivationAllowedRequest{}
+	mi := &file_access_v1_tenant_role_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AssertTenantMemberDeactivationAllowedRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AssertTenantMemberDeactivationAllowedRequest) ProtoMessage() {}
+
+func (x *AssertTenantMemberDeactivationAllowedRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_role_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AssertTenantMemberDeactivationAllowedRequest.ProtoReflect.Descriptor instead.
+func (*AssertTenantMemberDeactivationAllowedRequest) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_role_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *AssertTenantMemberDeactivationAllowedRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type AssertTenantMemberDeactivationAllowedResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AssertTenantMemberDeactivationAllowedResponse) Reset() {
+	*x = AssertTenantMemberDeactivationAllowedResponse{}
+	mi := &file_access_v1_tenant_role_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AssertTenantMemberDeactivationAllowedResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AssertTenantMemberDeactivationAllowedResponse) ProtoMessage() {}
+
+func (x *AssertTenantMemberDeactivationAllowedResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_role_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AssertTenantMemberDeactivationAllowedResponse.ProtoReflect.Descriptor instead.
+func (*AssertTenantMemberDeactivationAllowedResponse) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_role_proto_rawDescGZIP(), []int{15}
+}
+
 var File_access_v1_tenant_role_proto protoreflect.FileDescriptor
 
 const file_access_v1_tenant_role_proto_rawDesc = "" +
@@ -905,7 +985,10 @@ const file_access_v1_tenant_role_proto_rawDesc = "" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\"W\n" +
 	"\x1fBootstrapTenantOwnerRoleRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId*v\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"G\n" +
+	",AssertTenantMemberDeactivationAllowedRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"/\n" +
+	"-AssertTenantMemberDeactivationAllowedResponse*v\n" +
 	"\x10TenantRoleStatus\x12\"\n" +
 	"\x1eTENANT_ROLE_STATUS_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19TENANT_ROLE_STATUS_ACTIVE\x10\x01\x12\x1f\n" +
@@ -915,7 +998,7 @@ const file_access_v1_tenant_role_proto_rawDesc = "" +
 	"\x0fDATA_SCOPE_NONE\x10\x01\x12\x13\n" +
 	"\x0fDATA_SCOPE_SELF\x10\x02\x12\x14\n" +
 	"\x10DATA_SCOPE_SITES\x10\x03\x12\x12\n" +
-	"\x0eDATA_SCOPE_ALL\x10\x042\xde\x10\n" +
+	"\x0eDATA_SCOPE_ALL\x10\x042\xf5\x12\n" +
 	"\x1fTenantRolePermissionApplication\x12\xb8\x01\n" +
 	"\x10CreateTenantRole\x12\".access.v1.CreateTenantRoleRequest\x1a\x18.access.v1.TenantRoleDTO\"f\xe2\xf3\x18G\n" +
 	"\x12tenant.role.create\x12\x12create_tenant_role\x1a\x12tenant.role.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/v1/tenant/roles\x12\xb1\x01\n" +
@@ -934,9 +1017,10 @@ const file_access_v1_tenant_role_proto_rawDesc = "" +
 	"\x16AssignTenantRoleMember\x12(.access.v1.AssignTenantRoleMemberRequest\x1a\x18.access.v1.TenantRoleDTO\"\x86\x01\xe2\xf3\x18U\n" +
 	"\x19tenant.role.assign_member\x12\x19assign_tenant_role_member\x1a\x12tenant.role.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02':\x01*\"\"/v1/tenant/roles/{role_id}/members\x12\xf6\x01\n" +
 	"\x16RevokeTenantRoleMember\x12(.access.v1.RevokeTenantRoleMemberRequest\x1a\x18.access.v1.TenantRoleDTO\"\x97\x01\xe2\xf3\x18U\n" +
-	"\x19tenant.role.revoke_member\x12\x19revoke_tenant_role_member\x1a\x12tenant.role.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x028:\x01*\"3/v1/tenant/roles/{role_id}/members/{user_id}/revoke\x1a\xd9\x01\xda\xf3\x18\xd4\x01\n" +
+	"\x19tenant.role.revoke_member\x12\x19revoke_tenant_role_member\x1a\x12tenant.role.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x028:\x01*\"3/v1/tenant/roles/{role_id}/members/{user_id}/revoke\x1a\xf0\x03\xda\xf3\x18\xeb\x03\n" +
 	"\x16tenant_role_permission\x1a\xb9\x01\n" +
-	"\x1btenant.role.bootstrap_owner\x12\x1bbootstrap_tenant_owner_role\x1a\x16platform.tenant.create2\x01\x02R\x04\b\x03\x10\x01Z)access.v1.BootstrapTenantOwnerRoleRequestb\x17access.v1.TenantRoleDTOj\x18BootstrapTenantOwnerRoleBJ\xca\xf3\x18\f\n" +
+	"\x1btenant.role.bootstrap_owner\x12\x1bbootstrap_tenant_owner_role\x1a\x16platform.tenant.create2\x01\x02R\x04\b\x03\x10\x01Z)access.v1.BootstrapTenantOwnerRoleRequestb\x17access.v1.TenantRoleDTOj\x18BootstrapTenantOwnerRole\x1a\x94\x02\n" +
+	".tenant.role.assert_member_deactivation_allowed\x12)assert_tenant_member_deactivation_allowed\x1a\x14tenant.member.manage(\x012\x01\x02R\x04\b\x03\x10\x01Z6access.v1.AssertTenantMemberDeactivationAllowedRequestb7access.v1.AssertTenantMemberDeactivationAllowedResponsej%AssertTenantMemberDeactivationAllowedBJ\xca\xf3\x18\f\n" +
 	"\x06access\x12\x02v1Z8github.com/hvritual/biz/contracts/gen/access/v1;accessv1b\x06proto3"
 
 var (
@@ -952,24 +1036,26 @@ func file_access_v1_tenant_role_proto_rawDescGZIP() []byte {
 }
 
 var file_access_v1_tenant_role_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_access_v1_tenant_role_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_access_v1_tenant_role_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_access_v1_tenant_role_proto_goTypes = []any{
-	(TenantRoleStatus)(0),                   // 0: access.v1.TenantRoleStatus
-	(DataScope)(0),                          // 1: access.v1.DataScope
-	(*PermissionGrantInput)(nil),            // 2: access.v1.PermissionGrantInput
-	(*PermissionGrantDTO)(nil),              // 3: access.v1.PermissionGrantDTO
-	(*TenantRoleDTO)(nil),                   // 4: access.v1.TenantRoleDTO
-	(*CreateTenantRoleRequest)(nil),         // 5: access.v1.CreateTenantRoleRequest
-	(*GetTenantRoleRequest)(nil),            // 6: access.v1.GetTenantRoleRequest
-	(*ListTenantRolesRequest)(nil),          // 7: access.v1.ListTenantRolesRequest
-	(*ListTenantRolesResponse)(nil),         // 8: access.v1.ListTenantRolesResponse
-	(*UpdateTenantRoleRequest)(nil),         // 9: access.v1.UpdateTenantRoleRequest
-	(*DisableTenantRoleRequest)(nil),        // 10: access.v1.DisableTenantRoleRequest
-	(*EnableTenantRoleRequest)(nil),         // 11: access.v1.EnableTenantRoleRequest
-	(*SetTenantRolePermissionsRequest)(nil), // 12: access.v1.SetTenantRolePermissionsRequest
-	(*AssignTenantRoleMemberRequest)(nil),   // 13: access.v1.AssignTenantRoleMemberRequest
-	(*RevokeTenantRoleMemberRequest)(nil),   // 14: access.v1.RevokeTenantRoleMemberRequest
-	(*BootstrapTenantOwnerRoleRequest)(nil), // 15: access.v1.BootstrapTenantOwnerRoleRequest
+	(TenantRoleStatus)(0),                                 // 0: access.v1.TenantRoleStatus
+	(DataScope)(0),                                        // 1: access.v1.DataScope
+	(*PermissionGrantInput)(nil),                          // 2: access.v1.PermissionGrantInput
+	(*PermissionGrantDTO)(nil),                            // 3: access.v1.PermissionGrantDTO
+	(*TenantRoleDTO)(nil),                                 // 4: access.v1.TenantRoleDTO
+	(*CreateTenantRoleRequest)(nil),                       // 5: access.v1.CreateTenantRoleRequest
+	(*GetTenantRoleRequest)(nil),                          // 6: access.v1.GetTenantRoleRequest
+	(*ListTenantRolesRequest)(nil),                        // 7: access.v1.ListTenantRolesRequest
+	(*ListTenantRolesResponse)(nil),                       // 8: access.v1.ListTenantRolesResponse
+	(*UpdateTenantRoleRequest)(nil),                       // 9: access.v1.UpdateTenantRoleRequest
+	(*DisableTenantRoleRequest)(nil),                      // 10: access.v1.DisableTenantRoleRequest
+	(*EnableTenantRoleRequest)(nil),                       // 11: access.v1.EnableTenantRoleRequest
+	(*SetTenantRolePermissionsRequest)(nil),               // 12: access.v1.SetTenantRolePermissionsRequest
+	(*AssignTenantRoleMemberRequest)(nil),                 // 13: access.v1.AssignTenantRoleMemberRequest
+	(*RevokeTenantRoleMemberRequest)(nil),                 // 14: access.v1.RevokeTenantRoleMemberRequest
+	(*BootstrapTenantOwnerRoleRequest)(nil),               // 15: access.v1.BootstrapTenantOwnerRoleRequest
+	(*AssertTenantMemberDeactivationAllowedRequest)(nil),  // 16: access.v1.AssertTenantMemberDeactivationAllowedRequest
+	(*AssertTenantMemberDeactivationAllowedResponse)(nil), // 17: access.v1.AssertTenantMemberDeactivationAllowedResponse
 }
 var file_access_v1_tenant_role_proto_depIdxs = []int32{
 	1,  // 0: access.v1.PermissionGrantInput.scope:type_name -> access.v1.DataScope
@@ -1014,7 +1100,7 @@ func file_access_v1_tenant_role_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_access_v1_tenant_role_proto_rawDesc), len(file_access_v1_tenant_role_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   14,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

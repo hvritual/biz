@@ -9,6 +9,7 @@ import (
 
 // TenantRolePermissionApplication is generated from PB and contains no business implementation.
 type TenantRolePermissionApplication interface {
+	AssertTenantMemberDeactivationAllowed(context.Context, *accessv1.AssertTenantMemberDeactivationAllowedRequest) (*accessv1.AssertTenantMemberDeactivationAllowedResponse, error)
 	AssignTenantRoleMember(context.Context, *accessv1.AssignTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error)
 	BootstrapTenantOwnerRole(context.Context, *accessv1.BootstrapTenantOwnerRoleRequest) (*accessv1.TenantRoleDTO, error)
 	CreateTenantRole(context.Context, *accessv1.CreateTenantRoleRequest) (*accessv1.TenantRoleDTO, error)

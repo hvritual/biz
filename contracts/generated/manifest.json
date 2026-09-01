@@ -90,6 +90,30 @@
       }
     },
     {
+      "name": "AssertTenantMemberDeactivationAllowedRequest",
+      "fullName": "access.v1.AssertTenantMemberDeactivationAllowedRequest",
+      "fields": [
+        {
+          "name": "user_id",
+          "jsonName": "userId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "AssertTenantMemberDeactivationAllowedResponse",
+      "fullName": "access.v1.AssertTenantMemberDeactivationAllowedResponse",
+      "fields": null,
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "AssignTenantRoleMemberRequest",
       "fullName": "access.v1.AssignTenantRoleMemberRequest",
       "fields": [
@@ -1422,6 +1446,9 @@
       "domain": "access",
       "application": {
         "name": "tenant_member_lifecycle",
+        "requires": [
+          "access/tenant_role_permission"
+        ],
         "operations": [
           {
             "id": "tenant.member.bootstrap_owner",
@@ -1625,6 +1652,10 @@
             "authentication": [
               "api-key"
             ],
+            "requiresOperations": [
+              "tenant.role.assert_member_deactivation_allowed"
+            ],
+            "composition": "local",
             "execution": {
               "transaction": "local",
               "idempotency": "required"
@@ -1665,6 +1696,10 @@
             "authentication": [
               "api-key"
             ],
+            "requiresOperations": [
+              "tenant.role.assert_member_deactivation_allowed"
+            ],
+            "composition": "local",
             "execution": {
               "transaction": "local",
               "idempotency": "required"
@@ -1691,6 +1726,25 @@
       "application": {
         "name": "tenant_role_permission",
         "operations": [
+          {
+            "id": "tenant.role.assert_member_deactivation_allowed",
+            "useCase": "assert_tenant_member_deactivation_allowed",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "access.v1.AssertTenantMemberDeactivationAllowedRequest",
+            "responseType": "access.v1.AssertTenantMemberDeactivationAllowedResponse",
+            "applicationMethod": "AssertTenantMemberDeactivationAllowed"
+          },
           {
             "id": "tenant.role.bootstrap_owner",
             "useCase": "bootstrap_tenant_owner_role",

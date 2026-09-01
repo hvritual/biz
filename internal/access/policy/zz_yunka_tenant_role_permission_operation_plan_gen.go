@@ -4,6 +4,10 @@ package policy
 
 import "yunka.io/pkg/operationplan"
 
+func OperationPlanTenantRolePermissionAssertTenantMemberDeactivationAllowed() operationplan.Plan {
+	return operationplan.Plan{OperationID: "tenant.role.assert_member_deactivation_allowed", Domain: "access", Application: "tenant_role_permission", UseCase: "assert_tenant_member_deactivation_allowed", RequestType: "access.v1.AssertTenantMemberDeactivationAllowedRequest", ResponseType: "access.v1.AssertTenantMemberDeactivationAllowedResponse", Execution: operationplan.Execution{Transaction: "local", Idempotency: "none"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key"}, Permissions: []string{"tenant.member.manage"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "", HTTP: []operationplan.HTTPBinding{}}}
+}
+
 func OperationPlanTenantRolePermissionAssignTenantRoleMember() operationplan.Plan {
 	return operationplan.Plan{OperationID: "tenant.role.assign_member", Domain: "access", Application: "tenant_role_permission", UseCase: "assign_tenant_role_member", RequestType: "access.v1.AssignTenantRoleMemberRequest", ResponseType: "access.v1.TenantRoleDTO", Execution: operationplan.Execution{Transaction: "local", Idempotency: "required"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key"}, Permissions: []string{"tenant.role.manage"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "/access.v1.TenantRolePermissionApplication/AssignTenantRoleMember", HTTP: []operationplan.HTTPBinding{{Method: "POST", Path: "/v1/tenant/roles/{role_id}/members", Body: "*", ResponseBody: ""}}}}
 }
