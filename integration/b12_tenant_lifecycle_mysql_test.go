@@ -19,10 +19,17 @@ import (
 	"yunka.io/gateway/authz"
 )
 
-type b12TenantCapabilities struct{}
+type b12TenantCapabilities struct {
+	members accessapp.AccessTenantMemberLifecycleChildCapability
+	roles   accessapp.AccessTenantRolePermissionChildCapability
+}
 
-func (b12TenantCapabilities) AccessTenantMemberLifecycle() accessapp.AccessTenantMemberLifecycleChildCapability { return nil }
-func (b12TenantCapabilities) AccessTenantRolePermission() accessapp.AccessTenantRolePermissionChildCapability { return nil }
+func (capabilities b12TenantCapabilities) AccessTenantMemberLifecycle() accessapp.AccessTenantMemberLifecycleChildCapability {
+	return capabilities.members
+}
+func (capabilities b12TenantCapabilities) AccessTenantRolePermission() accessapp.AccessTenantRolePermissionChildCapability {
+	return capabilities.roles
+}
 
 func newTenantLifecycleHarness(t *testing.T, db *gorm.DB) (*accessapp.TenantLifecycleService, *accesspersistence.Store, *requestscope.GORMExecutionFactory) {
 	t.Helper()
@@ -33,11 +40,27 @@ func newTenantLifecycleHarness(t *testing.T, db *gorm.DB) (*accessapp.TenantLife
 	if err := store.AutoMigrate(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	repositories, err := accesspersistence.NewTenantRepositoryFactory(db)
+	tenantRepositories, err := accesspersistence.NewTenantRepositoryFactory(db)
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := accessapp.NewTenantLifecycleService(repositories, b12TenantCapabilities{})
+	memberRepositories, err := accesspersistence.NewTenantMemberRepositoryFactory(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	roleRepositories, err := accesspersistence.NewTenantRoleRepositoryFactory(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	memberService, err := accessapp.NewTenantMemberLifecycleService(memberRepositories)
+	if err != nil {
+		t.Fatal(err)
+	}
+	roleService, err := accessapp.NewTenantRolePermissionService(roleRepositories)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service, err := accessapp.NewTenantLifecycleService(tenantRepositories, b12TenantCapabilities{members: memberService, roles: roleService})
 	if err != nil {
 		t.Fatal(err)
 	}
