@@ -21,11 +21,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Checkout exact qualified Yunka
+      - name: Checkout exact Yunka A+ candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: hvritual/yunka.io
-          ref: f154c521e5bf6c637022795075c4ebf5d48a00d1
+          ref: 044b39b1a893327ef303c5ba5eddcd291bccb3c6
           path: yunka.io
           fetch-depth: 0
           persist-credentials: false
@@ -66,47 +66,69 @@ jobs:
         shell: bash
         run: make -C yunka.io rpc-tools
 
-      - name: Diagnose generated owner invariant closure
+      - name: Reverse qualify edge-owned generated capabilities
         shell: bash
         run: |
           set -euo pipefail
-          make -C biz generate \
-            YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" \
-            PROTOC="$(command -v protoc)" \
-            PROTOC_GEN_GO="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go" \
-            PROTOC_GEN_GO_GRPC="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go-grpc"
+          generate() {
+            make -C biz generate \
+              YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" \
+              PROTOC="$(command -v protoc)" \
+              PROTOC_GEN_GO="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go" \
+              PROTOC_GEN_GO_GRPC="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go-grpc"
+          }
 
+          generate
           cd biz
-          echo '=== operation plan ==='
-          grep -n -C 3 'tenant.role.assert_member_deactivation_allowed' contracts/generated/operation-plans.json || true
 
-          echo '=== generated assertion method ==='
-          grep -R -n 'AssertTenantMemberDeactivationAllowed' internal/access/application || true
+          lifecycle='internal/access/application/zz_yunka_tenant_lifecycle_capability_ports_gen.go'
+          member='internal/access/application/zz_yunka_tenant_member_lifecycle_capability_ports_gen.go'
+          assembly='internal/assembly/zz_yunka_assembly_gen.go'
 
-          echo '=== capability definitions ==='
-          grep -R -n '^type AccessTenantRolePermissionChildCapability interface' internal/access/application || true
-          definition_count="$(grep -R -l '^type AccessTenantRolePermissionChildCapability interface' internal/access/application | wc -l | tr -d ' ')"
-          echo "capability_definition_file_count=${definition_count}"
+          test -f "$lifecycle"
+          test -f "$member"
+          test -f "$assembly"
 
-          echo '=== capability files ==='
-          find internal/access/application -maxdepth 1 -type f -name '*capability*' -print | sort
-          for file in $(find internal/access/application -maxdepth 1 -type f -name '*capability*' -print | sort); do
-            echo "--- ${file} ---"
-            sed -n '1,240p' "$file"
-          done
+          echo '=== tenant lifecycle -> role permission edge ==='
+          grep -n -E 'TenantLifecycleToAccessTenantRolePermission|BootstrapTenantOwnerRole|AssertTenantMemberDeactivationAllowed|CreateTenantRole' "$lifecycle" || true
+          grep -Fq 'type TenantLifecycleToAccessTenantRolePermissionChildCapability interface' "$lifecycle"
+          grep -Fq 'BootstrapTenantOwnerRole(context.Context' "$lifecycle"
+          ! grep -Fq 'AssertTenantMemberDeactivationAllowed(context.Context' "$lifecycle"
+          ! grep -Fq 'CreateTenantRole(context.Context' "$lifecycle"
+          grep -Fq 'AccessTenantRolePermission() TenantLifecycleToAccessTenantRolePermissionChildCapability' "$lifecycle"
 
-          echo '=== assembly dependencies ==='
-          grep -n -C 8 'AccessTenantRolePermission' internal/assembly/zz_yunka_assembly_gen.go || true
+          echo '=== tenant member lifecycle -> role permission edge ==='
+          grep -n -E 'TenantMemberLifecycleToAccessTenantRolePermission|BootstrapTenantOwnerRole|AssertTenantMemberDeactivationAllowed|CreateTenantRole' "$member" || true
+          grep -Fq 'type TenantMemberLifecycleToAccessTenantRolePermissionChildCapability interface' "$member"
+          grep -Fq 'AssertTenantMemberDeactivationAllowed(context.Context' "$member"
+          ! grep -Fq 'BootstrapTenantOwnerRole(context.Context' "$member"
+          ! grep -Fq 'CreateTenantRole(context.Context' "$member"
+          grep -Fq 'AccessTenantRolePermission() TenantMemberLifecycleToAccessTenantRolePermissionChildCapability' "$member"
 
-          grep -Fq 'tenant.role.assert_member_deactivation_allowed' contracts/generated/operation-plans.json
-          grep -Rq 'AssertTenantMemberDeactivationAllowed' internal/access/application
-
-          if test "$definition_count" -gt 1; then
-            echo 'YUNKA_DUPLICATE_CHILD_CAPABILITY_DEFINITION=FAIL'
+          echo '=== old target-owned capability must be absent ==='
+          if grep -R -q '^type AccessTenantRolePermissionChildCapability interface' internal/access/application; then
+            echo 'YUNKA_TARGET_OWNED_ROLE_CAPABILITY_LEAK=FAIL'
             exit 42
           fi
-          if test "$definition_count" -eq 0; then
-            echo 'YUNKA_CHILD_CAPABILITY_DEFINITION_MISSING=FAIL'
-            exit 43
-          fi
-          echo 'YUNKA_CHILD_CAPABILITY_DEFINITION_DEDUP=PASS'
+
+          echo '=== assembly edge constructors ==='
+          grep -n -E 'NewTenant(Lifecycle|MemberLifecycle)ToAccessTenantRolePermissionChildCapability' "$assembly" || true
+          grep -Fq 'NewTenantLifecycleToAccessTenantRolePermissionChildCapability' "$assembly"
+          grep -Fq 'NewTenantMemberLifecycleToAccessTenantRolePermissionChildCapability' "$assembly"
+
+          echo '=== second-generation determinism ==='
+          find contracts/generated contracts/gen internal modules -type f \( -name 'zz_yunka_*' -o -path 'contracts/generated/*' \) -print0 | sort -z | xargs -0 sha256sum > /tmp/a-plus-first.sha
+          cd ..
+          generate
+          cd biz
+          find contracts/generated contracts/gen internal modules -type f \( -name 'zz_yunka_*' -o -path 'contracts/generated/*' \) -print0 | sort -z | xargs -0 sha256sum > /tmp/a-plus-second.sha
+          diff -u /tmp/a-plus-first.sha /tmp/a-plus-second.sha
+
+          echo 'YUNKA_EDGE_OWNED_CAPABILITY_CODEGEN=PASS'
+
+      - name: Compile unchanged Biz consumer glue
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          go test ./...
