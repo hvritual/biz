@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      YUNKA_SHA: 24089df35f945abb42ddb00731283f4d878d8424
+      YUNKA_SHA: fff8d800f670e792b8e9e0b1832ab4cb0ab70906
     steps:
       - name: Checkout exact Biz candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
