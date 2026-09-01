@@ -21,7 +21,17 @@ const (
 	TenantStatusClosed    = "closed"
 )
 
-var ErrInvalidTenantTransition = errors.New("access: invalid tenant state transition")
+const (
+	TenantMemberStatusInvited   = "invited"
+	TenantMemberStatusActive    = "active"
+	TenantMemberStatusSuspended = "suspended"
+	TenantMemberStatusRemoved   = "removed"
+)
+
+var (
+	ErrInvalidTenantTransition       = errors.New("access: invalid tenant state transition")
+	ErrInvalidTenantMemberTransition = errors.New("access: invalid tenant member state transition")
+)
 
 type Tenant struct {
 	ID        string
@@ -82,8 +92,62 @@ type User struct {
 type Membership struct {
 	TenantID  string
 	UserID    string
+	Email     string
 	Status    string
+	Version   uint64
 	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func NewInvitedMembership(tenantID, userID, email string, now time.Time) Membership {
+	return Membership{
+		TenantID: tenantID,
+		UserID: userID,
+		Email: email,
+		Status: TenantMemberStatusInvited,
+		Version: 1,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+}
+
+func NewActiveMembership(tenantID, userID, email string, now time.Time) Membership {
+	return Membership{
+		TenantID: tenantID,
+		UserID: userID,
+		Email: email,
+		Status: TenantMemberStatusActive,
+		Version: 1,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+}
+
+func (membership *Membership) Activate(now time.Time) error {
+	if membership == nil || (membership.Status != TenantMemberStatusInvited && membership.Status != TenantMemberStatusSuspended) {
+		return ErrInvalidTenantMemberTransition
+	}
+	membership.Status = TenantMemberStatusActive
+	membership.UpdatedAt = now
+	return nil
+}
+
+func (membership *Membership) Suspend(now time.Time) error {
+	if membership == nil || membership.Status != TenantMemberStatusActive {
+		return ErrInvalidTenantMemberTransition
+	}
+	membership.Status = TenantMemberStatusSuspended
+	membership.UpdatedAt = now
+	return nil
+}
+
+func (membership *Membership) Remove(now time.Time) error {
+	if membership == nil || membership.Status == TenantMemberStatusRemoved {
+		return ErrInvalidTenantMemberTransition
+	}
+	membership.Status = TenantMemberStatusRemoved
+	membership.UpdatedAt = now
+	return nil
 }
 
 type Role struct {
