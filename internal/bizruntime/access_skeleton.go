@@ -11,16 +11,7 @@ import (
 
 var errAccessPressureNotImplemented = errors.New("biz access pressure: business lifecycle not implemented")
 
-type tenantMemberLifecycleSkeleton struct{}
 type tenantRolePermissionSkeleton struct{}
-
-func (*tenantMemberLifecycleSkeleton) ActivateTenantMember(context.Context, *accessv1.ActivateTenantMemberRequest) (*accessv1.TenantMemberDTO, error) { return nil, errAccessPressureNotImplemented }
-func (*tenantMemberLifecycleSkeleton) BootstrapTenantOwnerMember(context.Context, *accessv1.BootstrapTenantOwnerMemberRequest) (*accessv1.TenantMemberDTO, error) { return nil, errAccessPressureNotImplemented }
-func (*tenantMemberLifecycleSkeleton) GetTenantMember(context.Context, *accessv1.GetTenantMemberRequest) (*accessv1.TenantMemberDTO, error) { return nil, errAccessPressureNotImplemented }
-func (*tenantMemberLifecycleSkeleton) InviteTenantMember(context.Context, *accessv1.InviteTenantMemberRequest) (*accessv1.TenantMemberDTO, error) { return nil, errAccessPressureNotImplemented }
-func (*tenantMemberLifecycleSkeleton) ListTenantMembers(context.Context, *accessv1.ListTenantMembersRequest) (*accessv1.ListTenantMembersResponse, error) { return nil, errAccessPressureNotImplemented }
-func (*tenantMemberLifecycleSkeleton) RemoveTenantMember(context.Context, *accessv1.RemoveTenantMemberRequest) (*accessv1.TenantMemberDTO, error) { return nil, errAccessPressureNotImplemented }
-func (*tenantMemberLifecycleSkeleton) SuspendTenantMember(context.Context, *accessv1.SuspendTenantMemberRequest) (*accessv1.TenantMemberDTO, error) { return nil, errAccessPressureNotImplemented }
 
 func (*tenantRolePermissionSkeleton) AssignTenantRoleMember(context.Context, *accessv1.AssignTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error) { return nil, errAccessPressureNotImplemented }
 func (*tenantRolePermissionSkeleton) BootstrapTenantOwnerRole(context.Context, *accessv1.BootstrapTenantOwnerRoleRequest) (*accessv1.TenantRoleDTO, error) { return nil, errAccessPressureNotImplemented }
@@ -34,7 +25,7 @@ func (*tenantRolePermissionSkeleton) SetTenantRolePermissions(context.Context, *
 func (*tenantRolePermissionSkeleton) UpdateTenantRole(context.Context, *accessv1.UpdateTenantRoleRequest) (*accessv1.TenantRoleDTO, error) { return nil, errAccessPressureNotImplemented }
 
 func (factory applicationFactories) BuildAccessTenantMemberLifecycle(generatedassembly.AccessTenantMemberLifecycleDependencies) (accessapp.TenantMemberLifecycleApplication, error) {
-	return &tenantMemberLifecycleSkeleton{}, nil
+	return accessapp.NewTenantMemberLifecycleService(factory.memberRepositories)
 }
 
 func (factory applicationFactories) BuildAccessTenantRolePermission(generatedassembly.AccessTenantRolePermissionDependencies) (accessapp.TenantRolePermissionApplication, error) {
@@ -53,7 +44,7 @@ func (factory applicationFactories) BuildAccessTenantLifecycle(dependencies gene
 
 type tenantLifecycleCapabilities struct {
 	members accessapp.AccessTenantMemberLifecycleChildCapability
-	roles accessapp.AccessTenantRolePermissionChildCapability
+	roles   accessapp.AccessTenantRolePermissionChildCapability
 }
 
 func (capabilities tenantLifecycleCapabilities) AccessTenantMemberLifecycle() accessapp.AccessTenantMemberLifecycleChildCapability {
