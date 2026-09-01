@@ -8,19 +8,24 @@ import (
 	"yunka.io/gateway/authz"
 )
 
-// platformGrantChecker is the smallest Biz-side pressure adapter for a
-// platform authority store. A platform grant is intentionally not owned by a
-// synthetic tenant, so an empty tenant ID is valid input for this checker.
-type platformGrantChecker struct {
-	calls    int
-	tenantID string
+// platformGrantResolver is the smallest Biz-side pressure adapter for a
+// non-tenant authority store. It receives the trusted Principal and the
+// explicit TenantBound fact instead of treating an empty tenant ID as a magic
+// platform/global authority value.
+type platformGrantResolver struct {
+	calls       int
+	tenantBound bool
+	tenantID    string
+	operation   authz.OperationID
 }
 
-func (checker *platformGrantChecker) ResolveGrants(_ context.Context, tenantID string, _ []string, permissions []authz.PermissionKey) ([]authz.Grant, error) {
-	checker.calls++
-	checker.tenantID = tenantID
-	result := make([]authz.Grant, 0, len(permissions))
-	for _, permission := range permissions {
+func (resolver *platformGrantResolver) ResolveGrants(_ context.Context, request authz.GrantRequest) ([]authz.Grant, error) {
+	resolver.calls++
+	resolver.tenantBound = request.TenantBound
+	resolver.tenantID = request.Principal.TenantID
+	resolver.operation = request.Operation
+	result := make([]authz.Grant, 0, len(request.Permissions))
+	for _, permission := range request.Permissions {
 		if permission == authz.PermissionKey("platform.tenant.create") {
 			result = append(result, authz.Grant{
 				Permission: permission,
@@ -41,14 +46,14 @@ func TestPressurePlatformTenantCreateAllowsTenantlessPlatformPrincipal(t *testin
 		t.Fatalf("tenant.create generated policy is missing")
 	}
 	if operationPolicy.TenantRequired {
-		t.Fatalf("tenant.create must remain platform scoped: generated policy unexpectedly requires tenant")
+		t.Fatalf("tenant.create must remain non-tenant-bound: generated policy unexpectedly requires tenant")
 	}
 	if len(operationPolicy.Permissions) != 1 || operationPolicy.Permissions[0] != authz.PermissionKey("platform.tenant.create") {
 		t.Fatalf("tenant.create permission mismatch: %v", operationPolicy.Permissions)
 	}
 
-	checker := &platformGrantChecker{}
-	authorizer, err := authz.NewGrantAuthorizer(checker)
+	grants := &platformGrantResolver{}
+	authorizer, err := authz.NewGrantAuthorizerWithResolver(grants)
 	if err != nil {
 		t.Fatalf("new grant authorizer: %v", err)
 	}
@@ -62,17 +67,23 @@ func TestPressurePlatformTenantCreateAllowsTenantlessPlatformPrincipal(t *testin
 		Roles:         []string{"platform-admin"},
 		AuthMethod:    identity.AuthMethodAPIKey,
 		Authenticated: true,
-		// TenantID is deliberately empty. Platform authority must not be
+		// TenantID is deliberately empty. Non-tenant authority must not be
 		// represented by a fake/synthetic tenant.
 	}
 
 	if _, err := runtime.Prepare(identity.WithPrincipal(ctx, principal), method, struct{}{}); err != nil {
-		t.Fatalf("tenant.create should authorize a tenantless platform principal with platform.tenant.create grant: %v", err)
+		t.Fatalf("tenant.create should authorize a tenantless principal with platform.tenant.create grant: %v", err)
 	}
-	if checker.calls != 1 {
-		t.Fatalf("platform grant checker calls = %d, want 1", checker.calls)
+	if grants.calls != 1 {
+		t.Fatalf("principal-aware grant resolver calls = %d, want 1", grants.calls)
 	}
-	if checker.tenantID != "" {
-		t.Fatalf("platform grant resolution received synthetic tenant %q", checker.tenantID)
+	if grants.tenantBound {
+		t.Fatal("tenant.create unexpectedly resolved through tenant-bound authority")
+	}
+	if grants.tenantID != "" {
+		t.Fatalf("non-tenant grant resolution received synthetic tenant %q", grants.tenantID)
+	}
+	if grants.operation != authz.OperationID("tenant.create") {
+		t.Fatalf("grant resolution operation = %q, want tenant.create", grants.operation)
 	}
 }
