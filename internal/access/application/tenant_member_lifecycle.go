@@ -22,13 +22,17 @@ var (
 
 type TenantMemberLifecycleService struct {
 	repositories requestscope.RepositoryFactory[ports.TenantMemberRepositories]
+	capabilities TenantMemberLifecycleCapabilities
 }
 
-func NewTenantMemberLifecycleService(repositories requestscope.RepositoryFactory[ports.TenantMemberRepositories]) (*TenantMemberLifecycleService, error) {
+func NewTenantMemberLifecycleService(repositories requestscope.RepositoryFactory[ports.TenantMemberRepositories], capabilities TenantMemberLifecycleCapabilities) (*TenantMemberLifecycleService, error) {
 	if repositories == nil {
 		return nil, errors.New("access: tenant member repository factory is required")
 	}
-	return &TenantMemberLifecycleService{repositories: repositories}, nil
+	if capabilities == nil || capabilities.AccessTenantRolePermission() == nil {
+		return nil, errors.New("access: tenant member role capability is required")
+	}
+	return &TenantMemberLifecycleService{repositories: repositories, capabilities: capabilities}, nil
 }
 
 func (service *TenantMemberLifecycleService) InviteTenantMember(ctx context.Context, request *accessv1.InviteTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
@@ -107,7 +111,7 @@ func (service *TenantMemberLifecycleService) ActivateTenantMember(ctx context.Co
 	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalidTenantMemberRequest
 	}
-	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), func(member *domain.Membership) error {
+	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), nil, func(member *domain.Membership) error {
 		return member.Activate(time.Now().UTC())
 	})
 }
@@ -116,7 +120,11 @@ func (service *TenantMemberLifecycleService) SuspendTenantMember(ctx context.Con
 	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalidTenantMemberRequest
 	}
-	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), func(member *domain.Membership) error {
+	userID := strings.TrimSpace(request.GetUserId())
+	return service.mutate(ctx, userID, request.GetVersion(), func(callCtx context.Context) error {
+		_, err := service.capabilities.AccessTenantRolePermission().AssertTenantMemberDeactivationAllowed(callCtx, &accessv1.AssertTenantMemberDeactivationAllowedRequest{UserId: userID})
+		return err
+	}, func(member *domain.Membership) error {
 		return member.Suspend(time.Now().UTC())
 	})
 }
@@ -125,12 +133,16 @@ func (service *TenantMemberLifecycleService) RemoveTenantMember(ctx context.Cont
 	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalidTenantMemberRequest
 	}
-	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), func(member *domain.Membership) error {
+	userID := strings.TrimSpace(request.GetUserId())
+	return service.mutate(ctx, userID, request.GetVersion(), func(callCtx context.Context) error {
+		_, err := service.capabilities.AccessTenantRolePermission().AssertTenantMemberDeactivationAllowed(callCtx, &accessv1.AssertTenantMemberDeactivationAllowedRequest{UserId: userID})
+		return err
+	}, func(member *domain.Membership) error {
 		return member.Remove(time.Now().UTC())
 	})
 }
 
-func (service *TenantMemberLifecycleService) mutate(ctx context.Context, userID string, expectedVersion uint64, apply func(*domain.Membership) error) (*accessv1.TenantMemberDTO, error) {
+func (service *TenantMemberLifecycleService) mutate(ctx context.Context, userID string, expectedVersion uint64, beforeApply func(context.Context) error, apply func(*domain.Membership) error) (*accessv1.TenantMemberDTO, error) {
 	tenantID, err := trustedTenantID(ctx)
 	if err != nil {
 		return nil, err
@@ -142,6 +154,11 @@ func (service *TenantMemberLifecycleService) mutate(ctx context.Context, userID 
 		}
 		if current.Version != expectedVersion {
 			return domain.Membership{}, ports.ErrTenantMemberConflict
+		}
+		if beforeApply != nil {
+			if err := beforeApply(scope.Context()); err != nil {
+				return domain.Membership{}, err
+			}
 		}
 		if err := apply(&current); err != nil {
 			return domain.Membership{}, err
