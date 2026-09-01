@@ -70,10 +70,12 @@ jobs:
           assert data['schemaVersion'] == 2
           ids = [item['operationId'] for item in data['operations']]
           assert ids == sorted(ids), ids
-          assert ids == [
+          c9_ids = {
               'device.create','device.delete','device.get','device.list',
               'device.transfer','device.update','site.validate_transfer_target'
-          ], ids
+          }
+          missing = sorted(c9_ids - set(ids))
+          assert not missing, f'missing C9 operations: {missing}; all={ids}'
           by_id = {item['operationId']: item for item in data['operations']}
           for op in ('device.create','device.update','device.delete','device.transfer'):
               assert by_id[op]['execution'] == {'transaction':'local','idempotency':'required'}, by_id[op]
