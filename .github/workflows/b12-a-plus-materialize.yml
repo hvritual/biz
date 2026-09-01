@@ -1,0 +1,101 @@
+name: b12-a-plus-materialize
+
+on:
+  push:
+    branches:
+      - agent/b12-multitenant-access-pressure
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact Biz head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Checkout exact qualified Yunka
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 044b39b1a893327ef303c5ba5eddcd291bccb3c6
+          path: .yunka-materialize/framework
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Load locked toolchain
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source .yunka-materialize/framework/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "protoc_release=${PROTOC_RELEASE}" >> "$GITHUB_OUTPUT"
+          echo "protoc_sha256=${PROTOC_LINUX_X86_64_SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Install protoc
+        shell: bash
+        env:
+          PROTOC_RELEASE: ${{ steps.lock.outputs.protoc_release }}
+          PROTOC_SHA256: ${{ steps.lock.outputs.protoc_sha256 }}
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/protoc.zip"
+          root="$RUNNER_TEMP/protoc"
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_RELEASE}/protoc-${PROTOC_RELEASE}-linux-x86_64.zip" -o "$archive"
+          echo "${PROTOC_SHA256}  ${archive}" | sha256sum -c -
+          mkdir -p "$root"
+          unzip -q "$archive" -d "$root"
+          echo "$root/bin" >> "$GITHUB_PATH"
+
+      - name: Build protobuf plugins
+        shell: bash
+        run: make -C .yunka-materialize/framework rpc-tools
+
+      - name: Generate exact A+ closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          make generate \
+            YUNKA_ROOT="$GITHUB_WORKSPACE/.yunka-materialize/framework" \
+            PROTOC="$(command -v protoc)" \
+            PROTOC_GEN_GO="$GITHUB_WORKSPACE/.yunka-materialize/framework/.yunka/bin/protoc-gen-go" \
+            PROTOC_GEN_GO_GRPC="$GITHUB_WORKSPACE/.yunka-materialize/framework/.yunka/bin/protoc-gen-go-grpc"
+
+          echo '=== generated diff ==='
+          git status --short
+
+          unexpected="$(git diff --name-only | grep -Ev '^(contracts/generated/|contracts/gen/|internal/.*/zz_yunka_[^/]+\.go$|modules/.*/zz_yunka_[^/]+\.go$)' || true)"
+          if test -n "$unexpected"; then
+            echo 'Unexpected handwritten/non-generated diff:'
+            echo "$unexpected"
+            exit 42
+          fi
+
+      - name: Commit generated closure and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/b12-a-plus-materialize.yml
+          rm -rf .yunka-materialize
+          git add -A contracts/generated contracts/gen internal modules .github/workflows/b12-a-plus-materialize.yml
+          git diff --cached --check
+          echo '=== staged materialization ==='
+          git status --short
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore(generated): materialize A+ edge-owned capability closure'
+          git push origin HEAD:agent/b12-multitenant-access-pressure
