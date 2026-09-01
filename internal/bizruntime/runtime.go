@@ -11,6 +11,7 @@ import (
 	"time"
 
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
+	accessports "github.com/hvritual/biz/internal/access/ports"
 	generatedassembly "github.com/hvritual/biz/internal/assembly"
 	deviceapp "github.com/hvritual/biz/internal/deviceops/application"
 	"github.com/hvritual/biz/internal/deviceops/domain"
@@ -57,10 +58,6 @@ func (started *Started) GRPCAddress() string {
 	return started.grpcAddress
 }
 
-// Bootstrap supplies Biz-owned configuration, authentication and business
-// constructors to the generated C10 assembly. The generated Bootstrap owns
-// Application dependency wiring and canonical REST/gRPC registration, while
-// core.App remains the only lifecycle owner.
 func Bootstrap(ctx context.Context, provider *platform.Provider, config deviceops.Config) (*Started, error) {
 	if provider == nil {
 		return nil, errors.New("biz runtime: platform provider is required")
@@ -119,9 +116,6 @@ func Bootstrap(ctx context.Context, provider *platform.Provider, config deviceop
 		RuntimeComponents: []core.RuntimeComponent{httpComponent, grpcComponent},
 	})
 	if err != nil {
-		// Bootstrap normally transfers these resources to core.App before any
-		// failure point. These calls are idempotent fallbacks for failures that
-		// happen before App ownership is established.
 		_ = httpServer.Close()
 		grpcServer.Stop()
 		_ = httpListener.Close()
@@ -140,8 +134,9 @@ func Bootstrap(ctx context.Context, provider *platform.Provider, config deviceop
 }
 
 type applicationFactories struct {
-	device *deviceapp.Service
-	site   *deviceapp.SiteManagementService
+	device             *deviceapp.Service
+	site               *deviceapp.SiteManagementService
+	tenantRepositories requestscope.RepositoryFactory[accessports.TenantRepositories]
 }
 
 var _ generatedassembly.ApplicationFactories = applicationFactories{}
@@ -257,21 +252,25 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, config device
 		Transactions: transactions,
 		Idempotency:  idempotency,
 	})
-	repositories, err := devicepersistence.NewScopedRepositoryFactory(database)
+	deviceRepositories, err := devicepersistence.NewScopedRepositoryFactory(database)
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
-	deviceService, err := deviceapp.NewService(repositories)
+	tenantRepositories, err := accesspersistence.NewTenantRepositoryFactory(database)
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
-	siteService, err := deviceapp.NewSiteManagementService(repositories)
+	deviceService, err := deviceapp.NewService(deviceRepositories)
+	if err != nil {
+		return generatedassembly.RuntimeBindings{}, err
+	}
+	siteService, err := deviceapp.NewSiteManagementService(deviceRepositories)
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
 	authenticator.set(accessStore)
 	return generatedassembly.RuntimeBindings{
-		Factories: applicationFactories{device: deviceService, site: siteService},
+		Factories: applicationFactories{device: deviceService, site: siteService, tenantRepositories: tenantRepositories},
 		Executor:  executor,
 	}, nil
 }
