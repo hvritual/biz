@@ -29,6 +29,13 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Align Biz local replace path
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$GITHUB_WORKSPACE/../yunka.io"
+          ln -s "$GITHUB_WORKSPACE/.yunka-materialize/framework" "$GITHUB_WORKSPACE/../yunka.io"
+
       - name: Load locked toolchain
         id: lock
         shell: bash
@@ -90,6 +97,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -f .github/workflows/b12-a-plus-materialize.yml
+          rm -f "$GITHUB_WORKSPACE/../yunka.io"
           rm -rf .yunka-materialize
           git add -A contracts/generated contracts/gen internal modules .github/workflows/b12-a-plus-materialize.yml
           git diff --cached --check
