@@ -96,6 +96,12 @@ message BootstrapTenantOwnerRoleRequest {
   string user_id = 2;
 }
 
+message AssertTenantMemberDeactivationAllowedRequest {
+  string user_id = 1;
+}
+
+message AssertTenantMemberDeactivationAllowedResponse {}
+
 service TenantRolePermissionApplication {
   option (yunka.dsl.v1.application) = {
     name: "tenant_role_permission"
@@ -110,6 +116,18 @@ service TenantRolePermissionApplication {
       request_type: "access.v1.BootstrapTenantOwnerRoleRequest"
       response_type: "access.v1.TenantRoleDTO"
       application_method: "BootstrapTenantOwnerRole"
+    }
+    operations: {
+      id: "tenant.role.assert_member_deactivation_allowed"
+      use_case: "assert_tenant_member_deactivation_allowed"
+      permissions: "tenant.member.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_NONE }
+      request_type: "access.v1.AssertTenantMemberDeactivationAllowedRequest"
+      response_type: "access.v1.AssertTenantMemberDeactivationAllowedResponse"
+      application_method: "AssertTenantMemberDeactivationAllowed"
     }
   };
 
