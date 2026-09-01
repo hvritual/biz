@@ -107,6 +107,7 @@ type applicationFactories struct {
 	device             *deviceapp.Service
 	site               *deviceapp.SiteManagementService
 	tenantRepositories requestscope.RepositoryFactory[accessports.TenantRepositories]
+	memberRepositories requestscope.RepositoryFactory[accessports.TenantMemberRepositories]
 }
 
 var _ generatedassembly.ApplicationFactories = applicationFactories{}
@@ -197,13 +198,20 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	tenantRepositories, err := accesspersistence.NewTenantRepositoryFactory(accessDatabase)
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
+	memberRepositories, err := accesspersistence.NewTenantMemberRepositoryFactory(accessDatabase)
+	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	deviceService, err := deviceapp.NewService(deviceRepositories)
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	siteService, err := deviceapp.NewSiteManagementService(deviceRepositories)
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	authenticator.set(accessStore)
 	return generatedassembly.RuntimeBindings{
-		Factories: applicationFactories{device: deviceService, site: siteService, tenantRepositories: tenantRepositories},
+		Factories: applicationFactories{
+			device: deviceService,
+			site: siteService,
+			tenantRepositories: tenantRepositories,
+			memberRepositories: memberRepositories,
+		},
 		Executor: executor,
 	}, nil
 }
