@@ -55,6 +55,8 @@ message RevokeTenantDelegationRequest {
 service TenantDelegationApplication {
   option (yunka.dsl.v1.application) = {
     name: "tenant_delegation_management"
+    requires: "access/tenant_lifecycle"
+    requires: "deviceops/device_management"
   };
 
   rpc GrantTenantDeviceDelegation(GrantTenantDeviceDelegationRequest) returns (TenantDelegationDTO) {
@@ -66,6 +68,9 @@ service TenantDelegationApplication {
       permission_mode: PERMISSION_ALL
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
+      requires_operations: "tenant.assert_active"
+      requires_operations: "device.assert_owned_by_actor_tenant"
+      composition: COMPOSITION_LOCAL
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };
   }

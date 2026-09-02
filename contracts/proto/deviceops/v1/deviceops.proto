@@ -60,8 +60,28 @@ message TransferDeviceRequest {
   uint64 version = 3;
 }
 
+message AssertDeviceOwnedByActorTenantRequest {
+  string device_id = 1;
+}
+
+message AssertDeviceOwnedByActorTenantResponse {}
+
 service DeviceApplication {
-  option (yunka.dsl.v1.application) = { name: "device_management" };
+  option (yunka.dsl.v1.application) = {
+    name: "device_management"
+    operations: {
+      id: "device.assert_owned_by_actor_tenant"
+      use_case: "assert_device_owned_by_actor_tenant"
+      permissions: "tenant.delegation.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+      request_type: "deviceops.v1.AssertDeviceOwnedByActorTenantRequest"
+      response_type: "deviceops.v1.AssertDeviceOwnedByActorTenantResponse"
+      application_method: "AssertDeviceOwnedByActorTenant"
+    }
+  };
 
   rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse) {
     option (google.api.http) = { get: "/v1/devices" };

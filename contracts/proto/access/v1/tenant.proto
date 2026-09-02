@@ -64,11 +64,29 @@ message CloseTenantRequest {
   uint64 version = 2;
 }
 
+message AssertTenantActiveRequest {
+  string tenant_id = 1;
+}
+
+message AssertTenantActiveResponse {}
+
 service TenantLifecycleApplication {
   option (yunka.dsl.v1.application) = {
     name: "tenant_lifecycle"
     requires: "access/tenant_member_lifecycle"
     requires: "access/tenant_role_permission"
+    operations: {
+      id: "tenant.assert_active"
+      use_case: "assert_tenant_active"
+      permissions: "tenant.delegation.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+      request_type: "access.v1.AssertTenantActiveRequest"
+      response_type: "access.v1.AssertTenantActiveResponse"
+      application_method: "AssertTenantActive"
+    }
   };
 
   rpc CreateTenant(CreateTenantRequest) returns (TenantDTO) {
