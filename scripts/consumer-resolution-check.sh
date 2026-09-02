@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 EXPECTED_GOWORK="$ROOT/go.work"
+LOCK_FILE="$ROOT/.yunka/source.env"
 
 fail() {
   echo "dependency resolution check: $*" >&2
@@ -12,29 +13,36 @@ fail() {
 actual_gowork="$(cd "$ROOT" && go env GOWORK)"
 [[ "$actual_gowork" == "$EXPECTED_GOWORK" ]] || fail "Biz is not owning workspace resolution: got $actual_gowork, expected $EXPECTED_GOWORK"
 
+[[ -f "$LOCK_FILE" ]] || fail "missing lock file: $LOCK_FILE"
+# shellcheck disable=SC1090
+source "$LOCK_FILE"
+
 work_json="$(cd "$ROOT" && go work edit -json)"
-use_count="$(printf '%s\n' "$work_json" | grep -c '"DiskPath"')"
+
+use_count="$(printf '%s\n' "$work_json" | python3 -c 'import json,sys; print(len(json.load(sys.stdin).get("Use") or []))')"
 [[ "$use_count" -eq 1 ]] || fail "go.work must contain exactly one use entry, found $use_count"
-printf '%s\n' "$work_json" | grep -Eq '"DiskPath"[[:space:]]*:[[:space:]]*"\."' || fail "go.work must use only the Biz module (.)"
 
-workspace_graph="$(mktemp)"
-isolated_graph="$(mktemp)"
-diff_file="$(mktemp)"
-trap 'rm -f "$workspace_graph" "$isolated_graph" "$diff_file"' EXIT
+biz_use="$(printf '%s\n' "$work_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print((d.get("Use") or [{}])[0].get("DiskPath", ""))')"
+[[ "$biz_use" == "." ]] || fail "go.work must use only the Biz module (.), got $biz_use"
 
-(
-  cd "$ROOT"
-  go list -m all | LC_ALL=C sort
-) > "$workspace_graph"
+workspace_version() {
+  local module="$1"
+  (cd "$ROOT" && go list -m -f '{{.Version}}' "$module")
+}
 
-(
-  cd "$ROOT"
-  GOWORK=off go list -m all | LC_ALL=C sort
-) > "$isolated_graph"
+check_version() {
+  local module="$1"
+  local expected="$2"
+  local actual
+  actual="$(workspace_version "$module")" || fail "cannot resolve $module in Biz workspace"
+  [[ "$actual" == "$expected" ]] || fail "$module workspace version is $actual, expected $expected"
+}
 
-if ! diff -u "$isolated_graph" "$workspace_graph" > "$diff_file"; then
-  cat "$diff_file" >&2
-  fail "Biz workspace graph differs from its GOWORK=off consumer graph"
-fi
+check_version yunka.io/framework "$YUNKA_PSEUDO_VERSION"
+check_version yunka.io/gateway "$YUNKA_PSEUDO_VERSION"
+check_version yunka.io/pkg "$YUNKA_PSEUDO_VERSION"
+check_version github.com/go-kit/kit v0.10.0
 
-echo "dependency resolution check: Biz-local workspace equals GOWORK=off graph"
+(cd "$ROOT" && go list -m all >/dev/null)
+
+echo "dependency resolution check: Biz owns a single-module development workspace with locked Yunka versions"
