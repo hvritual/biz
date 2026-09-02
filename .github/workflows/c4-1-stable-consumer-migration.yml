@@ -49,7 +49,10 @@ jobs:
               -e 'yunka.io/framework' \
               -e 'yunka.io/gateway' \
               -e 'yunka.io/pkg' \
-              -- . ':!docs/**' || true
+              -- . \
+              ':!docs/**' \
+              ':!go.work' \
+              ':!.github/workflows/c4-1-stable-consumer-migration.yml' || true
           )
           if (( ${#module_files[@]} > 0 )); then
             sed -i \
@@ -58,6 +61,20 @@ jobs:
               -e 's#yunka\.io/pkg#github.com/hvritual/yunka.io/pkg#g' \
               "${module_files[@]}"
           fi
+
+          cat > go.work <<'EOF'
+          go 1.25.0
+
+          toolchain go1.25.13
+
+          use .
+
+          replace (
+            github.com/hvritual/yunka.io/framework => ../yunka.io/framework
+            github.com/hvritual/yunka.io/gateway => ../yunka.io/gateway
+            github.com/hvritual/yunka.io/pkg => ../yunka.io/pkg
+          )
+          EOF
 
           sed -i \
             -e 's/YUNKA_PSEUDO_VERSION/YUNKA_VERSION/g' \
@@ -76,7 +93,6 @@ jobs:
             -e '/check_workspace_replace github.com\/go-kit\/kit compat\/go-kit-kit-log/d' \
             scripts/verify-yunka-source.sh
 
-          go work edit -dropreplace=github.com/go-kit/kit@v0.10.0
           GOWORK=off go mod edit -require=github.com/hvritual/yunka.io/pkg@v0.1.0
           GOWORK=off go mod edit -require=github.com/hvritual/yunka.io/framework@v0.1.0
           GOWORK=off go mod edit -require=github.com/hvritual/yunka.io/gateway@v0.1.0
@@ -88,11 +104,13 @@ jobs:
             -e 'yunka.io/framework' \
             -e 'yunka.io/gateway' \
             -e 'yunka.io/pkg' \
-            -- . ':!docs/**'; then
+            -- . \
+            ':!docs/**' \
+            ':!.github/workflows/c4-1-stable-consumer-migration.yml'; then
             echo 'legacy Yunka module namespace remains outside historical docs' >&2
             exit 1
           fi
-          if grep -R -n 'YUNKA_PSEUDO_VERSION' .yunka scripts .github/workflows; then
+          if grep -R -n 'YUNKA_PSEUDO_VERSION' .yunka scripts .github/workflows --exclude=c4-1-stable-consumer-migration.yml; then
             echo 'legacy pseudo-version contract remains' >&2
             exit 1
           fi
