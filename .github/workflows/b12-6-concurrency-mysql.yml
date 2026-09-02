@@ -12,6 +12,7 @@ on:
       - internal/assembly/**
       - internal/bizruntime/**
       - integration/b12_concurrency_mysql_test.go
+      - integration/b12_owner_crosspath_concurrency_mysql_test.go
       - modules/access/**
       - go.mod
       - go.sum
@@ -26,6 +27,7 @@ on:
       - internal/assembly/**
       - internal/bizruntime/**
       - integration/b12_concurrency_mysql_test.go
+      - integration/b12_owner_crosspath_concurrency_mysql_test.go
       - modules/access/**
       - go.mod
       - go.sum
