@@ -3,8 +3,8 @@ package ports
 import (
 	"context"
 
-	"yunka.io/framework/core/identity"
-	"yunka.io/gateway/authz"
+	"github.com/hvritual/yunka.io/framework/core/identity"
+	"github.com/hvritual/yunka.io/gateway/authz"
 )
 
 type Authenticator interface {

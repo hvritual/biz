@@ -3,7 +3,7 @@ package policy
 import (
 	"testing"
 
-	"yunka.io/pkg/operationplan"
+	"github.com/hvritual/yunka.io/pkg/operationplan"
 )
 
 func TestPressurePlansPreserveCompositionBoundaries(t *testing.T) {

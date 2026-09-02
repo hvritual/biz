@@ -6,14 +6,14 @@ toolchain go1.25.13
 
 require (
 	github.com/go-sql-driver/mysql v1.7.0
+	github.com/hvritual/yunka.io/framework v0.1.0
+	github.com/hvritual/yunka.io/gateway v0.1.0
+	github.com/hvritual/yunka.io/pkg v0.1.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260810153831-ec0a7760b754
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
 	gorm.io/driver/mysql v1.5.2
 	gorm.io/gorm v1.25.5
-	yunka.io/framework v0.0.0-20260902030847-6ba99c1440dc
-	yunka.io/gateway v0.0.0-20260902030847-6ba99c1440dc
-	yunka.io/pkg v0.0.0-20260902030847-6ba99c1440dc
 )
 
 require (
@@ -22,7 +22,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/go-kit/kit v0.10.0 // indirect
+	github.com/go-kit/kit v0.13.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect

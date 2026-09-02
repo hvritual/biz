@@ -2,7 +2,7 @@
 
 package policy
 
-import "yunka.io/gateway/authz"
+import "github.com/hvritual/yunka.io/gateway/authz"
 
 const OperationTenantRolePermissionAssignTenantRoleMember authz.OperationID = "tenant.role.assign_member"
 const OperationTenantRolePermissionCreateTenantRole authz.OperationID = "tenant.role.create"

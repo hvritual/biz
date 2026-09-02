@@ -2,7 +2,7 @@
 
 package policy
 
-import "yunka.io/gateway/authz"
+import "github.com/hvritual/yunka.io/gateway/authz"
 
 func Permissions() []authz.PermissionKey {
 	return []authz.PermissionKey{"device.create", "device.delete", "device.read", "device.update", "site.read"}

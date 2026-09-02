@@ -6,7 +6,7 @@ import (
 	fmt "fmt"
 	accessmodule "github.com/hvritual/biz/modules/access"
 	deviceopsmodule "github.com/hvritual/biz/modules/deviceops"
-	modulecatalog "yunka.io/framework/core/modulecatalog"
+	modulecatalog "github.com/hvritual/yunka.io/framework/core/modulecatalog"
 )
 
 func NewCatalog() (*modulecatalog.Catalog, error) {

@@ -16,11 +16,11 @@ import (
 	devicepolicy "github.com/hvritual/biz/internal/deviceops/policy"
 	devicesecurity "github.com/hvritual/biz/internal/deviceops/security"
 	"gorm.io/gorm"
-	"yunka.io/framework/execution"
-	"yunka.io/framework/execution/idempotencygorm"
-	"yunka.io/framework/operation"
-	"yunka.io/framework/requestscope"
-	"yunka.io/gateway/authz"
+	"github.com/hvritual/yunka.io/framework/execution"
+	"github.com/hvritual/yunka.io/framework/execution/idempotencygorm"
+	"github.com/hvritual/yunka.io/framework/operation"
+	"github.com/hvritual/yunka.io/framework/requestscope"
+	"github.com/hvritual/yunka.io/gateway/authz"
 )
 
 type c98Observer struct {

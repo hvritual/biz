@@ -7,7 +7,7 @@ import (
 	"github.com/hvritual/biz/internal/access/domain"
 	"github.com/hvritual/biz/internal/access/ports"
 	"gorm.io/gorm"
-	"yunka.io/framework/requestscope"
+	"github.com/hvritual/yunka.io/framework/requestscope"
 )
 
 type TenantRepository struct {

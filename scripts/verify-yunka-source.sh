@@ -14,7 +14,7 @@ fail() {
 source "$LOCK_FILE"
 
 : "${YUNKA_COMMIT:?missing YUNKA_COMMIT in $LOCK_FILE}"
-: "${YUNKA_PSEUDO_VERSION:?missing YUNKA_PSEUDO_VERSION in $LOCK_FILE}"
+: "${YUNKA_VERSION:?missing YUNKA_VERSION in $LOCK_FILE}"
 
 YUNKA_ROOT="${YUNKA_ROOT:-$(cd "$ROOT/.." && pwd -P)/yunka.io}"
 [[ -d "$YUNKA_ROOT/.git" ]] || fail "YUNKA_ROOT is not a git checkout: $YUNKA_ROOT"
@@ -104,19 +104,16 @@ check_workspace_replace() {
   [[ "$resolved" == "$expected" ]] || fail "$module workspace source is $resolved, expected $expected"
 }
 
-check_module_path framework yunka.io/framework
-check_module_path gateway yunka.io/gateway
-check_module_path pkg yunka.io/pkg
-check_module_path compat/go-kit-kit-log github.com/go-kit/kit
+check_module_path framework github.com/hvritual/yunka.io/framework
+check_module_path gateway github.com/hvritual/yunka.io/gateway
+check_module_path pkg github.com/hvritual/yunka.io/pkg
 
-check_release_contract yunka.io/framework "$YUNKA_PSEUDO_VERSION"
-check_release_contract yunka.io/gateway "$YUNKA_PSEUDO_VERSION"
-check_release_contract yunka.io/pkg "$YUNKA_PSEUDO_VERSION"
-check_release_contract github.com/go-kit/kit v0.10.0
+check_release_contract github.com/hvritual/yunka.io/framework "$YUNKA_VERSION"
+check_release_contract github.com/hvritual/yunka.io/gateway "$YUNKA_VERSION"
+check_release_contract github.com/hvritual/yunka.io/pkg "$YUNKA_VERSION"
 
-check_workspace_replace yunka.io/framework framework
-check_workspace_replace yunka.io/gateway gateway
-check_workspace_replace yunka.io/pkg pkg
-check_workspace_replace github.com/go-kit/kit compat/go-kit-kit-log
+check_workspace_replace github.com/hvritual/yunka.io/framework framework
+check_workspace_replace github.com/hvritual/yunka.io/gateway gateway
+check_workspace_replace github.com/hvritual/yunka.io/pkg pkg
 
 echo "yunka source check: local workspace source locked at $YUNKA_COMMIT; go.mod remains release-only"

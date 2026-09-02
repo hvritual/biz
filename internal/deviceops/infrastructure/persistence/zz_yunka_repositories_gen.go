@@ -10,8 +10,8 @@ import (
 	domain "github.com/hvritual/biz/internal/deviceops/domain"
 	ports "github.com/hvritual/biz/internal/deviceops/ports"
 	"gorm.io/gorm"
-	identity "yunka.io/framework/core/identity"
-	"yunka.io/framework/requestscope"
+	identity "github.com/hvritual/yunka.io/framework/core/identity"
+	"github.com/hvritual/yunka.io/framework/requestscope"
 )
 
 // AutoMigrate is an explicit persistence helper. Application bootstrap decides when migrations run.

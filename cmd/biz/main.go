@@ -12,9 +12,9 @@ import (
 
 	"github.com/hvritual/biz/internal/bizruntime"
 	"github.com/hvritual/biz/modules/deviceops"
-	"yunka.io/framework/core/eventBus"
-	"yunka.io/framework/platform"
-	"yunka.io/pkg/logExt"
+	"github.com/hvritual/yunka.io/framework/core/eventBus"
+	"github.com/hvritual/yunka.io/framework/platform"
+	"github.com/hvritual/yunka.io/pkg/logExt"
 )
 
 func main() {

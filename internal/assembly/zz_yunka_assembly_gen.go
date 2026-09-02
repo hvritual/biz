@@ -14,11 +14,11 @@ import (
 	deviceopsrpc "github.com/hvritual/biz/internal/deviceops/transport/rpc"
 	grpc "google.golang.org/grpc"
 	http "net/http"
-	"yunka.io/framework/core"
-	modulecatalog "yunka.io/framework/core/modulecatalog"
-	kernel "yunka.io/framework/kernel"
-	operation "yunka.io/framework/operation"
-	platform "yunka.io/framework/platform"
+	"github.com/hvritual/yunka.io/framework/core"
+	modulecatalog "github.com/hvritual/yunka.io/framework/core/modulecatalog"
+	kernel "github.com/hvritual/yunka.io/framework/kernel"
+	operation "github.com/hvritual/yunka.io/framework/operation"
+	platform "github.com/hvritual/yunka.io/framework/platform"
 )
 
 const AssemblyPlanDigest = "efaabb66684cc5dd4118fce53b52608ffa6b56bda837e7fdaea096d3e490a5d3"

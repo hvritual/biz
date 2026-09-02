@@ -2,7 +2,7 @@ package deviceops
 
 import (
 	"gorm.io/gorm"
-	"yunka.io/pkg/logExt"
+	"github.com/hvritual/yunka.io/pkg/logExt"
 )
 
 // Dependencies is the complete compiler-checked capability view for this module.

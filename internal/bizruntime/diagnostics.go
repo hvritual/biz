@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"sync"
 
-	"yunka.io/framework/core"
-	frameworkdiagnostics "yunka.io/framework/diagnostics"
+	"github.com/hvritual/yunka.io/framework/core"
+	frameworkdiagnostics "github.com/hvritual/yunka.io/framework/diagnostics"
 )
 
 const diagnosticsPath = "/__yunka/diagnostics"

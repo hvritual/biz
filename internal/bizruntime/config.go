@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/hvritual/biz/modules/deviceops"
-	"yunka.io/gateway/authz"
+	"github.com/hvritual/yunka.io/gateway/authz"
 )
 
 // PlatformBootstrap is Biz-owned process bootstrap data for a tenantless

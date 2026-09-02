@@ -1,6 +1,6 @@
 package policy
 
-import "yunka.io/pkg/operationplan"
+import "github.com/hvritual/yunka.io/pkg/operationplan"
 
 const (
 	OperationLocalTransfer   = "device.transfer.local"

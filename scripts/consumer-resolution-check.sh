@@ -38,10 +38,9 @@ check_version() {
   [[ "$actual" == "$expected" ]] || fail "$module workspace version is $actual, expected $expected"
 }
 
-check_version yunka.io/framework "$YUNKA_PSEUDO_VERSION"
-check_version yunka.io/gateway "$YUNKA_PSEUDO_VERSION"
-check_version yunka.io/pkg "$YUNKA_PSEUDO_VERSION"
-check_version github.com/go-kit/kit v0.10.0
+check_version github.com/hvritual/yunka.io/framework "$YUNKA_VERSION"
+check_version github.com/hvritual/yunka.io/gateway "$YUNKA_VERSION"
+check_version github.com/hvritual/yunka.io/pkg "$YUNKA_VERSION"
 
 (cd "$ROOT" && go list -m all >/dev/null)
 

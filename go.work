@@ -5,8 +5,7 @@ toolchain go1.25.13
 use .
 
 replace (
-	yunka.io/framework => ../yunka.io/framework
-	yunka.io/gateway => ../yunka.io/gateway
-	yunka.io/pkg => ../yunka.io/pkg
-	github.com/go-kit/kit v0.10.0 => ../yunka.io/compat/go-kit-kit-log
+	github.com/hvritual/yunka.io/framework => ../yunka.io/framework
+	github.com/hvritual/yunka.io/gateway => ../yunka.io/gateway
+	github.com/hvritual/yunka.io/pkg => ../yunka.io/pkg
 )
