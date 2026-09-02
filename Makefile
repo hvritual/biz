@@ -21,7 +21,7 @@ yunka-source-check:
 	@YUNKA_ROOT="$(YUNKA_ROOT)" ./scripts/verify-yunka-source.sh
 
 release-resolution-check:
-	@./scripts/release-resolution-check.sh
+	@bash ./scripts/release-resolution-check.sh
 
 test:
 	@go test ./...
