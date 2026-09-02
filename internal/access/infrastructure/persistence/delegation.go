@@ -73,7 +73,7 @@ func (repository *TenantDelegationRepository) CreateOrGetActive(ctx context.Cont
 	if err != nil {
 		return domain.TenantDelegation{}, err
 	}
-	activeKey := delegationActiveKey(ownerTenantID, delegation.GranteeTenantID, delegation.ResourceKind, delegation.ResourceID, permissions)
+	activeKey := delegationActiveKey(ownerTenantID, delegation.GranteeTenantID, delegation.ResourceKind, delegation.ResourceID)
 	row := tenantDelegationRecord{
 		ID: delegation.ID, OwnerTenantID: ownerTenantID, GranteeTenantID: delegation.GranteeTenantID,
 		ResourceKind: delegation.ResourceKind, ResourceID: delegation.ResourceID,
@@ -92,6 +92,14 @@ func (repository *TenantDelegationRepository) CreateOrGetActive(ctx context.Cont
 			First(&row).Error; lookupErr != nil {
 			return domain.TenantDelegation{}, lookupErr
 		}
+		existing, convertErr := delegationRecordDomain(row)
+		if convertErr != nil {
+			return domain.TenantDelegation{}, convertErr
+		}
+		if !sameDelegationAuthority(existing, *delegation) {
+			return domain.TenantDelegation{}, ports.ErrTenantDelegationConflict
+		}
+		return existing, nil
 	}
 	return delegationRecordDomain(row)
 }
@@ -149,8 +157,7 @@ func (repository *TenantDelegationRepository) Update(ctx context.Context, delega
 	}
 	var activeKey any
 	if delegation.Status == domain.TenantDelegationStatusActive {
-		key := delegationActiveKey(ownerTenantID, delegation.GranteeTenantID, delegation.ResourceKind, delegation.ResourceID, delegation.Permissions)
-		activeKey = key
+		activeKey = delegationActiveKey(ownerTenantID, delegation.GranteeTenantID, delegation.ResourceKind, delegation.ResourceID)
 	} else {
 		activeKey = nil
 	}
@@ -202,12 +209,28 @@ func trustedDelegationOwner(ctx context.Context) (string, error) {
 	return strings.TrimSpace(principal.TenantID), nil
 }
 
-func delegationActiveKey(ownerTenantID, granteeTenantID, resourceKind, resourceID string, permissions []string) string {
-	values := append([]string(nil), permissions...)
-	sort.Strings(values)
-	material := strings.Join([]string{ownerTenantID, granteeTenantID, resourceKind, resourceID, strings.Join(values, ",")}, "\x00")
+func delegationActiveKey(ownerTenantID, granteeTenantID, resourceKind, resourceID string) string {
+	material := strings.Join([]string{ownerTenantID, granteeTenantID, resourceKind, resourceID}, "\x00")
 	sum := sha256.Sum256([]byte(material))
 	return hex.EncodeToString(sum[:])
+}
+
+func sameDelegationAuthority(existing, requested domain.TenantDelegation) bool {
+	if existing.OwnerTenantID != requested.OwnerTenantID || existing.GranteeTenantID != requested.GranteeTenantID || existing.ResourceKind != requested.ResourceKind || existing.ResourceID != requested.ResourceID {
+		return false
+	}
+	if len(existing.Permissions) != len(requested.Permissions) {
+		return false
+	}
+	for index := range existing.Permissions {
+		if existing.Permissions[index] != requested.Permissions[index] {
+			return false
+		}
+	}
+	if existing.ExpiresAt == nil || requested.ExpiresAt == nil {
+		return existing.ExpiresAt == nil && requested.ExpiresAt == nil
+	}
+	return existing.ExpiresAt.Equal(*requested.ExpiresAt)
 }
 
 func delegationRecordDomain(row tenantDelegationRecord) (domain.TenantDelegation, error) {
