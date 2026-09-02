@@ -95,17 +95,21 @@ jobs:
         run: |
           set -euo pipefail
           edge=biz/internal/access/application/zz_yunka_tenant_delegation_management_capability_ports_gen.go
+          assembly=biz/internal/assembly/zz_yunka_assembly_gen.go
           test -f "$edge"
           grep -Fq 'type TenantDelegationManagementToAccessTenantLifecycleChildCapability interface' "$edge"
-          grep -Fq 'AssertTenantActive' "$edge"
+          grep -Fq 'AssertTenantActive(context.Context, *accessv1.AssertTenantActiveRequest)' "$edge"
           grep -Fq 'type TenantDelegationManagementToDeviceopsDeviceManagementChildCapability interface' "$edge"
-          grep -Fq 'AssertDeviceOwnedByActorTenant' "$edge"
+          grep -Fq 'AssertDeviceOwnedByActorTenant(context.Context, *deviceopsv1.AssertDeviceOwnedByActorTenantRequest)' "$edge"
+          grep -Fq 'operation.ExecuteChildTyped' "$edge"
           ! grep -Fq 'GetTenant(' "$edge"
           ! grep -Fq 'GetDevice(' "$edge"
           ! grep -Fq 'UpdateDevice(' "$edge"
 
-          grep -Fq 'AccessTenantLifecycle accessapplication.TenantDelegationManagementToAccessTenantLifecycleChildCapability' biz/internal/assembly/zz_yunka_assembly_gen.go
-          grep -Fq 'DeviceopsDeviceManagement accessapplication.TenantDelegationManagementToDeviceopsDeviceManagementChildCapability' biz/internal/assembly/zz_yunka_assembly_gen.go
+          grep -Eq 'AccessTenantLifecycle[[:space:]]+accessapplication\.TenantDelegationManagementToAccessTenantLifecycleChildCapability' "$assembly"
+          grep -Eq 'DeviceopsDeviceManagement[[:space:]]+accessapplication\.TenantDelegationManagementToDeviceopsDeviceManagementChildCapability' "$assembly"
+          grep -Fq 'NewTenantDelegationManagementToAccessTenantLifecycleChildCapability' "$assembly"
+          grep -Fq 'NewTenantDelegationManagementToDeviceopsDeviceManagementChildCapability' "$assembly"
           grep -Fq 'tenant.assert_active' biz/contracts/generated/operation-plans.json
           grep -Fq 'device.assert_owned_by_actor_tenant' biz/contracts/generated/operation-plans.json
 
@@ -153,6 +157,10 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/b13-2-export"
           cp "$RUNNER_TEMP/b13-2/"* "$RUNNER_TEMP/b13-2-export/" 2>/dev/null || true
+          edge=biz/internal/access/application/zz_yunka_tenant_delegation_management_capability_ports_gen.go
+          if test -f "$edge"; then
+            cp "$edge" "$RUNNER_TEMP/b13-2-export/generated-capability-surface.go"
+          fi
           git -C biz diff --no-ext-diff > "$RUNNER_TEMP/b13-2-export/generated.diff"
           git -C biz status --porcelain > "$RUNNER_TEMP/b13-2-export/status.txt"
 
