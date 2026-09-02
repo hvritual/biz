@@ -12,6 +12,7 @@ on:
       - go.work.sum
       - Makefile
       - scripts/consumer-resolution-check.sh
+      - scripts/release-resolution-check.sh
       - scripts/verify-yunka-source.sh
   pull_request:
     branches: [main]
@@ -24,6 +25,7 @@ on:
       - go.work.sum
       - Makefile
       - scripts/consumer-resolution-check.sh
+      - scripts/release-resolution-check.sh
       - scripts/verify-yunka-source.sh
   workflow_dispatch:
 
@@ -95,20 +97,22 @@ jobs:
           test "$actual" = "$expected"
           make -C biz workspace-check
 
-      - name: Certify locked Yunka consumer graph
+      - name: Certify local and release Yunka consumer graphs
         shell: bash
         run: |
           set -euo pipefail
-          make -C biz consumer-certify YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io"
+          if ! make -C biz consumer-certify YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io"; then
+            echo "--- Biz dependency certification failed ---"
+            git -C biz status --short || true
+            git -C biz diff -- go.mod go.sum go.work go.work.sum || true
+            exit 1
+          fi
           biz_status="$(git -C biz status --porcelain)"
           yunka_status="$(git -C yunka.io status --porcelain)"
           if [[ -n "$biz_status" ]]; then
             echo "Biz worktree changed during certification:"
             printf '%s\n' "$biz_status"
-            if [[ -f biz/go.work.sum ]]; then
-              echo "--- biz/go.work.sum ---"
-              cat biz/go.work.sum
-            fi
+            git -C biz diff -- go.mod go.sum go.work go.work.sum || true
           fi
           if [[ -n "$yunka_status" ]]; then
             echo "Yunka worktree changed during certification:"
