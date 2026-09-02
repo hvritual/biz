@@ -98,5 +98,19 @@ jobs:
         run: |
           set -euo pipefail
           make -C biz consumer-certify YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io"
-          test -z "$(git -C biz status --porcelain)"
-          test -z "$(git -C yunka.io status --porcelain)"
+          biz_status="$(git -C biz status --porcelain)"
+          yunka_status="$(git -C yunka.io status --porcelain)"
+          if [[ -n "$biz_status" ]]; then
+            echo "Biz worktree changed during certification:"
+            printf '%s\n' "$biz_status"
+            if [[ -f biz/go.work.sum ]]; then
+              echo "--- biz/go.work.sum ---"
+              cat biz/go.work.sum
+            fi
+          fi
+          if [[ -n "$yunka_status" ]]; then
+            echo "Yunka worktree changed during certification:"
+            printf '%s\n' "$yunka_status"
+          fi
+          test -z "$biz_status"
+          test -z "$yunka_status"
