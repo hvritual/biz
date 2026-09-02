@@ -70,48 +70,49 @@ jobs:
           text = text.replace('The one generic framework defect discovered by B12 was reproduced before any framework change:', 'The first generic framework defect discovered by B12 was reproduced before any framework change:', 1)
 
           insert_anchor = '\n## Biz-specific discoveries retained in Biz\n'
-          fp006 = r'''
-### B12-FP-006 — Shared target child capability codegen collided across source Applications
+          fp006 = '''
+          ### B12-FP-006 — Shared target child capability codegen collided across source Applications
 
-**Classification:** `YUNKA_COMPILER_GAP`
+          **Classification:** `YUNKA_COMPILER_GAP`
 
-**Observed pressure:** after the Member last-owner rule correctly declared `tenant.member.suspend/remove -> tenant.role.assert_member_deactivation_allowed`, both `access/tenant_lifecycle` and `access/tenant_member_lifecycle` depended on `access/tenant_role_permission`. The old generator emitted the same target-owned child-capability type, implementation and constructor once per source Application, producing duplicate declarations in one Go package. A target-owned deduplication proposal was rejected because unioning required target Operations across sources would widen each source's capability surface.
+          **Observed pressure:** after the Member last-owner rule correctly declared `tenant.member.suspend/remove -> tenant.role.assert_member_deactivation_allowed`, both `access/tenant_lifecycle` and `access/tenant_member_lifecycle` depended on `access/tenant_role_permission`. The old generator emitted the same target-owned child-capability type, implementation and constructor once per source Application, producing duplicate declarations in one Go package. A target-owned deduplication proposal was rejected because unioning required target Operations across sources would widen each source's capability surface.
 
-The executable reproducer is Yunka issue #110. The A+ resolution makes capability identity source-edge owned:
+          The executable reproducer is Yunka issue #110. The A+ resolution makes capability identity source-edge owned:
 
-```text
-(source Application -> target Application -> required Operations)
-```
+          ```text
+          (source Application -> target Application -> required Operations)
+          ```
 
-Each generated edge exposes only target Operations directly named by the source Operations' `requires_operations`. For the real Biz pressure graph this means:
+          Each generated edge exposes only target Operations directly named by the source Operations' `requires_operations`. For the real Biz pressure graph this means:
 
-```text
-TenantLifecycle -> TenantRolePermission
-  exposes BootstrapTenantOwnerRole only
+          ```text
+          TenantLifecycle -> TenantRolePermission
+            exposes BootstrapTenantOwnerRole only
 
-TenantMemberLifecycle -> TenantRolePermission
-  exposes AssertTenantMemberDeactivationAllowed only
-```
+          TenantMemberLifecycle -> TenantRolePermission
+            exposes AssertTenantMemberDeactivationAllowed only
+          ```
 
-Qualification evidence:
+          Qualification evidence:
 
-```text
-RED fixture commit:          e9477a8848a9be5e458378ada68ae1ed6691e6df
-qualified candidate:         044b39b1a893327ef303c5ba5eddcd291bccb3c6
-candidate framework CI:      33569648073  SUCCESS
-candidate production/MySQL:  33569647996  SUCCESS
-Biz reverse qualification:   33571724579  SUCCESS
-Biz generated materialize:   33571942057  SUCCESS
-canonical integration PR:    #112
-canonical main merge:        6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
-```
+          ```text
+          RED fixture commit:          e9477a8848a9be5e458378ada68ae1ed6691e6df
+          qualified candidate:         044b39b1a893327ef303c5ba5eddcd291bccb3c6
+          candidate framework CI:      33569648073  SUCCESS
+          candidate production/MySQL:  33569647996  SUCCESS
+          Biz reverse qualification:   33571724579  SUCCESS
+          Biz generated materialize:   33571942057  SUCCESS
+          canonical integration PR:    #112
+          canonical main merge:        6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+          ```
 
-The resolution does not change PB DSL, Application/Operation dependency semantics, OperationPlan, AssemblyPlan, Executor, authorization, or root ExecutionScope/UoW semantics.
+          The resolution does not change PB DSL, Application/Operation dependency semantics, OperationPlan, AssemblyPlan, Executor, authorization, or root ExecutionScope/UoW semantics.
 
-**Status:** **CLOSED by Yunka PR #112 / QUALIFIED.**
+          **Status:** **CLOSED by Yunka PR #112 / QUALIFIED.**
 
----
-'''
+          ---
+          '''
+          fp006 = '\n'.join(line[10:] if line.startswith('          ') else line for line in fp006.splitlines()) + '\n'
           if insert_anchor not in text:
               raise SystemExit('ledger Biz-specific anchor not found')
           text = text.replace(insert_anchor, '\n' + fp006 + insert_anchor, 1)
