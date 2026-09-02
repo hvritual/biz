@@ -8,7 +8,9 @@
         "access/v1/tenant.proto",
         "access/v1/tenant_member.proto",
         "access/v1/tenant_role.proto",
-        "deviceops/v1/deviceops.proto"
+        "access/v1/tenant_delegation.proto",
+        "deviceops/v1/deviceops.proto",
+        "deviceops/v1/delegated_device_access.proto"
       ],
       "protoPaths": [
         "contracts/third_party"

@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package access.v1;
+
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+
+option go_package = "github.com/hvritual/biz/contracts/gen/access/v1;accessv1";
+option (yunka.dsl.v1.domain) = {
+  name: "access"
+  version: "v1"
+};
+
+enum TenantDelegationStatus {
+  TENANT_DELEGATION_STATUS_UNSPECIFIED = 0;
+  TENANT_DELEGATION_STATUS_ACTIVE = 1;
+  TENANT_DELEGATION_STATUS_REVOKED = 2;
+}
+
+message TenantDelegationDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string id = 1;
+  string owner_tenant_id = 2;
+  string grantee_tenant_id = 3;
+  string resource_kind = 4;
+  string resource_id = 5;
+  repeated string permissions = 6;
+  TenantDelegationStatus status = 7;
+  uint64 version = 8;
+  int64 expires_at_unix_ms = 9;
+}
+
+message GrantTenantDeviceDelegationRequest {
+  string grantee_tenant_id = 1;
+  string device_id = 2;
+  repeated string permissions = 3;
+  int64 expires_at_unix_ms = 4;
+}
+
+message GetTenantDelegationRequest {
+  string id = 1;
+}
+
+message ListTenantDelegationsRequest {}
+
+message ListTenantDelegationsResponse {
+  repeated TenantDelegationDTO delegations = 1;
+}
+
+message RevokeTenantDelegationRequest {
+  string id = 1;
+  uint64 version = 2;
+}
+
+service TenantDelegationApplication {
+  option (yunka.dsl.v1.application) = {
+    name: "tenant_delegation_management"
+  };
+
+  rpc GrantTenantDeviceDelegation(GrantTenantDeviceDelegationRequest) returns (TenantDelegationDTO) {
+    option (google.api.http) = { post: "/v1/tenant/delegations/devices" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.delegation.grant_device"
+      use_case: "grant_tenant_device_delegation"
+      permissions: "tenant.delegation.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc GetTenantDelegation(GetTenantDelegationRequest) returns (TenantDelegationDTO) {
+    option (google.api.http) = { get: "/v1/tenant/delegations/{id}" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.delegation.get"
+      use_case: "get_tenant_delegation"
+      permissions: "tenant.delegation.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc ListTenantDelegations(ListTenantDelegationsRequest) returns (ListTenantDelegationsResponse) {
+    option (google.api.http) = { get: "/v1/tenant/delegations" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.delegation.list"
+      use_case: "list_tenant_delegations"
+      permissions: "tenant.delegation.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc RevokeTenantDelegation(RevokeTenantDelegationRequest) returns (TenantDelegationDTO) {
+    option (google.api.http) = { post: "/v1/tenant/delegations/{id}:revoke" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.delegation.revoke"
+      use_case: "revoke_tenant_delegation"
+      permissions: "tenant.delegation.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+}
