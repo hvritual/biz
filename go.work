@@ -3,3 +3,10 @@ go 1.25.0
 toolchain go1.25.13
 
 use .
+
+replace (
+	yunka.io/framework => ../yunka.io/framework
+	yunka.io/gateway => ../yunka.io/gateway
+	yunka.io/pkg => ../yunka.io/pkg
+	github.com/go-kit/kit v0.10.0 => ../yunka.io/compat/go-kit-kit-log
+)
