@@ -32,16 +32,16 @@ jobs:
           grep -q 'deviceopsrest.RegisterDeviceTransferOperationExecutor' internal/assembly/zz_yunka_assembly_gen.go
           grep -q 'deviceopsrpc.RegisterDeviceManagementOperationExecutor' internal/assembly/zz_yunka_assembly_gen.go
           grep -q 'deviceopsrpc.RegisterDeviceTransferOperationExecutor' internal/assembly/zz_yunka_assembly_gen.go
-          grep -q 'NewDeviceopsSiteManagementChildCapability' internal/assembly/zz_yunka_assembly_gen.go
-          grep -q 'NewDeviceopsDeviceManagementChildCapability' internal/assembly/zz_yunka_assembly_gen.go
+          grep -q 'NewDeviceTransferToDeviceopsSiteManagementChildCapability' internal/assembly/zz_yunka_assembly_gen.go
+          grep -q 'NewDeviceTransferToDeviceopsDeviceManagementChildCapability' internal/assembly/zz_yunka_assembly_gen.go
           grep -q 'generatedassembly.Bootstrap' internal/bizruntime/runtime.go
           ! grep -q 'operation.NewExecutorWithOptions' modules/deviceops/module.go
           ! grep -q 'RegisterDeviceManagementOperationExecutor' modules/deviceops/module.go
           ! grep -q 'RegisterDeviceTransferOperationExecutor' modules/deviceops/module.go
-          ! grep -q 'NewDeviceopsSiteManagementChildCapability' modules/deviceops/module.go
-          ! grep -q 'NewDeviceopsDeviceManagementChildCapability' modules/deviceops/module.go
-          ! grep -q 'NewDeviceopsSiteManagementChildCapability' internal/bizruntime/runtime.go
-          ! grep -q 'NewDeviceopsDeviceManagementChildCapability' internal/bizruntime/runtime.go
+          ! grep -q 'NewDeviceTransferToDeviceopsSiteManagementChildCapability' modules/deviceops/module.go
+          ! grep -q 'NewDeviceTransferToDeviceopsDeviceManagementChildCapability' modules/deviceops/module.go
+          ! grep -q 'NewDeviceTransferToDeviceopsSiteManagementChildCapability' internal/bizruntime/runtime.go
+          ! grep -q 'NewDeviceTransferToDeviceopsDeviceManagementChildCapability' internal/bizruntime/runtime.go
           ! grep -q 'RegisterSiteManagementOperationExecutor' internal/assembly/zz_yunka_assembly_gen.go
           ! grep -q 'authz.NewOperationRuntime' internal/bizruntime/runtime.go
           ! grep -q 'SecuredUnaryServerInterceptor' internal/bizruntime/runtime.go
