@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/b12-3-tenant-member-mysql.yml
       - contracts/**
+      - docs/pressure/B12-framework-pressure.md
       - internal/access/**
       - internal/assembly/**
       - internal/bizruntime/**
@@ -21,6 +22,7 @@ on:
     paths:
       - .github/workflows/b12-3-tenant-member-mysql.yml
       - contracts/**
+      - docs/pressure/B12-framework-pressure.md
       - internal/access/**
       - internal/assembly/**
       - internal/bizruntime/**
