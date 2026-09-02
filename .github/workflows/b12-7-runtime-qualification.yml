@@ -9,6 +9,7 @@ on:
       - .yunka/dev.json
       - cmd/biz/**
       - contracts/**
+      - docs/pressure/B12-framework-pressure.md
       - internal/access/**
       - internal/assembly/**
       - internal/bizruntime/**
@@ -23,6 +24,7 @@ on:
       - .yunka/dev.json
       - cmd/biz/**
       - contracts/**
+      - docs/pressure/B12-framework-pressure.md
       - internal/access/**
       - internal/assembly/**
       - internal/bizruntime/**
