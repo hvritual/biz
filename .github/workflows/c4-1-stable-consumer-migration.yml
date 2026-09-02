@@ -94,13 +94,6 @@ jobs:
                       continue
                   lines.append(line)
               path.write_text("\n".join(lines) + "\n")
-
-          workflow = Path(".github/workflows/delivery-workspace-isolation.yml")
-          text = workflow.read_text().replace(
-              "6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb",
-              "6dab44980dea1090339aea86c47838d6da594646",
-          )
-          workflow.write_text(text)
           PY
 
           cat > go.work <<'EOF'
@@ -127,6 +120,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import json
+          import os
           import re
           import subprocess
 
@@ -141,7 +135,7 @@ jobs:
           mod = json.loads(subprocess.check_output(
               ["go", "mod", "edit", "-json"],
               text=True,
-              env={**__import__('os').environ, "GOWORK": "off"},
+              env={**os.environ, "GOWORK": "off"},
           ))
           required = {entry["Path"]: entry["Version"] for entry in mod.get("Require") or []}
           expected = {
@@ -162,7 +156,6 @@ jobs:
               ".yunka/source.env",
               "scripts/consumer-resolution-check.sh",
               "scripts/verify-yunka-source.sh",
-              ".github/workflows/delivery-workspace-isolation.yml",
           ]:
               if "YUNKA_PSEUDO_VERSION" in Path(name).read_text():
                   raise SystemExit(f"legacy pseudo-version contract remains: {name}")
@@ -178,15 +171,14 @@ jobs:
           test -z "$(git -C yunka.io status --porcelain)"
           git -C biz diff --check
 
-      - name: Commit qualified migration and retire executor
+      - name: Commit qualified migration
         shell: bash
         run: |
           set -euo pipefail
           cd biz
-          git rm .github/workflows/c4-1-stable-consumer-migration.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
+          git add -A -- ':!.github/workflows/**'
           git status --short
           git commit -m 'fix: consume Yunka v0.1.0 stable modules'
           git push origin HEAD:fix/delivery-release-certification
