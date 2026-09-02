@@ -5,6 +5,7 @@ go 1.25.0
 toolchain go1.25.13
 
 require (
+	github.com/go-sql-driver/mysql v1.7.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260810153831-ec0a7760b754
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
@@ -26,7 +27,6 @@ require (
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect

@@ -10,74 +10,54 @@ import (
 	operation "yunka.io/framework/operation"
 )
 
-type DeviceopsDeviceManagementChildCapability interface {
-	CreateDevice(context.Context, *deviceopsv1.CreateDeviceRequest) (*deviceopsv1.DeviceDTO, error)
-	DeleteDevice(context.Context, *deviceopsv1.DeleteDeviceRequest) (*deviceopsv1.DeleteDeviceResponse, error)
-	GetDevice(context.Context, *deviceopsv1.GetDeviceRequest) (*deviceopsv1.DeviceDTO, error)
-	ListDevices(context.Context, *deviceopsv1.ListDevicesRequest) (*deviceopsv1.ListDevicesResponse, error)
+type DeviceTransferToDeviceopsDeviceManagementChildCapability interface {
 	UpdateDevice(context.Context, *deviceopsv1.UpdateDeviceRequest) (*deviceopsv1.DeviceDTO, error)
 }
 
-type c9DeviceopsDeviceManagementChildCapability struct {
+type c9DeviceTransferToDeviceopsDeviceManagementChildCapability struct {
 	application DeviceManagementApplication
 	executor    operation.Executor
 }
 
-func NewDeviceopsDeviceManagementChildCapability(application DeviceManagementApplication, executor operation.Executor) (DeviceopsDeviceManagementChildCapability, error) {
+func NewDeviceTransferToDeviceopsDeviceManagementChildCapability(application DeviceManagementApplication, executor operation.Executor) (DeviceTransferToDeviceopsDeviceManagementChildCapability, error) {
 	if application == nil {
 		return nil, errors.New("contract C9 child capability: target application is required")
 	}
 	if executor == nil {
 		return nil, errors.New("contract C9 child capability: operation executor is required")
 	}
-	return &c9DeviceopsDeviceManagementChildCapability{application: application, executor: executor}, nil
+	return &c9DeviceTransferToDeviceopsDeviceManagementChildCapability{application: application, executor: executor}, nil
 }
 
-func (capability *c9DeviceopsDeviceManagementChildCapability) CreateDevice(ctx context.Context, request *deviceopsv1.CreateDeviceRequest) (*deviceopsv1.DeviceDTO, error) {
-	return operation.ExecuteChildTyped(ctx, capability.executor, deviceopspolicy.OperationPlanDeviceManagementCreateDevice(), request, capability.application.CreateDevice)
-}
-
-func (capability *c9DeviceopsDeviceManagementChildCapability) DeleteDevice(ctx context.Context, request *deviceopsv1.DeleteDeviceRequest) (*deviceopsv1.DeleteDeviceResponse, error) {
-	return operation.ExecuteChildTyped(ctx, capability.executor, deviceopspolicy.OperationPlanDeviceManagementDeleteDevice(), request, capability.application.DeleteDevice)
-}
-
-func (capability *c9DeviceopsDeviceManagementChildCapability) GetDevice(ctx context.Context, request *deviceopsv1.GetDeviceRequest) (*deviceopsv1.DeviceDTO, error) {
-	return operation.ExecuteChildTyped(ctx, capability.executor, deviceopspolicy.OperationPlanDeviceManagementGetDevice(), request, capability.application.GetDevice)
-}
-
-func (capability *c9DeviceopsDeviceManagementChildCapability) ListDevices(ctx context.Context, request *deviceopsv1.ListDevicesRequest) (*deviceopsv1.ListDevicesResponse, error) {
-	return operation.ExecuteChildTyped(ctx, capability.executor, deviceopspolicy.OperationPlanDeviceManagementListDevices(), request, capability.application.ListDevices)
-}
-
-func (capability *c9DeviceopsDeviceManagementChildCapability) UpdateDevice(ctx context.Context, request *deviceopsv1.UpdateDeviceRequest) (*deviceopsv1.DeviceDTO, error) {
+func (capability *c9DeviceTransferToDeviceopsDeviceManagementChildCapability) UpdateDevice(ctx context.Context, request *deviceopsv1.UpdateDeviceRequest) (*deviceopsv1.DeviceDTO, error) {
 	return operation.ExecuteChildTyped(ctx, capability.executor, deviceopspolicy.OperationPlanDeviceManagementUpdateDevice(), request, capability.application.UpdateDevice)
 }
 
-type DeviceopsSiteManagementChildCapability interface {
+type DeviceTransferToDeviceopsSiteManagementChildCapability interface {
 	ValidateTransferTarget(context.Context, *deviceopsv1.ValidateTransferTargetRequest) (*deviceopsv1.SiteDTO, error)
 }
 
-type c9DeviceopsSiteManagementChildCapability struct {
+type c9DeviceTransferToDeviceopsSiteManagementChildCapability struct {
 	application SiteManagementApplication
 	executor    operation.Executor
 }
 
-func NewDeviceopsSiteManagementChildCapability(application SiteManagementApplication, executor operation.Executor) (DeviceopsSiteManagementChildCapability, error) {
+func NewDeviceTransferToDeviceopsSiteManagementChildCapability(application SiteManagementApplication, executor operation.Executor) (DeviceTransferToDeviceopsSiteManagementChildCapability, error) {
 	if application == nil {
 		return nil, errors.New("contract C9 child capability: target application is required")
 	}
 	if executor == nil {
 		return nil, errors.New("contract C9 child capability: operation executor is required")
 	}
-	return &c9DeviceopsSiteManagementChildCapability{application: application, executor: executor}, nil
+	return &c9DeviceTransferToDeviceopsSiteManagementChildCapability{application: application, executor: executor}, nil
 }
 
-func (capability *c9DeviceopsSiteManagementChildCapability) ValidateTransferTarget(ctx context.Context, request *deviceopsv1.ValidateTransferTargetRequest) (*deviceopsv1.SiteDTO, error) {
+func (capability *c9DeviceTransferToDeviceopsSiteManagementChildCapability) ValidateTransferTarget(ctx context.Context, request *deviceopsv1.ValidateTransferTargetRequest) (*deviceopsv1.SiteDTO, error) {
 	return operation.ExecuteChildTyped(ctx, capability.executor, deviceopspolicy.OperationPlanSiteManagementValidateTransferTarget(), request, capability.application.ValidateTransferTarget)
 }
 
-// DeviceTransferCapabilities exposes only C9 child-Operation wrappers for declared application dependencies.
+// DeviceTransferCapabilities exposes edge-owned C9 child-Operation wrappers for declared operation dependencies.
 type DeviceTransferCapabilities interface {
-	DeviceopsDeviceManagement() DeviceopsDeviceManagementChildCapability
-	DeviceopsSiteManagement() DeviceopsSiteManagementChildCapability
+	DeviceopsDeviceManagement() DeviceTransferToDeviceopsDeviceManagementChildCapability
+	DeviceopsSiteManagement() DeviceTransferToDeviceopsSiteManagementChildCapability
 }

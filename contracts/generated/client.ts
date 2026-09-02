@@ -19,6 +19,161 @@ export interface RpcTransport {
   call<Request, Response>(operation: RpcOperation, request: Request): Promise<Response>;
 }
 
+export type Access_V1_DataScope = "DATA_SCOPE_UNSPECIFIED" | "DATA_SCOPE_NONE" | "DATA_SCOPE_SELF" | "DATA_SCOPE_SITES" | "DATA_SCOPE_ALL";
+
+export type Access_V1_TenantMemberStatus = "TENANT_MEMBER_STATUS_UNSPECIFIED" | "TENANT_MEMBER_STATUS_INVITED" | "TENANT_MEMBER_STATUS_ACTIVE" | "TENANT_MEMBER_STATUS_SUSPENDED" | "TENANT_MEMBER_STATUS_REMOVED";
+
+export type Access_V1_TenantRoleStatus = "TENANT_ROLE_STATUS_UNSPECIFIED" | "TENANT_ROLE_STATUS_ACTIVE" | "TENANT_ROLE_STATUS_DISABLED";
+
+export type Access_V1_TenantStatus = "TENANT_STATUS_UNSPECIFIED" | "TENANT_STATUS_PENDING" | "TENANT_STATUS_ACTIVE" | "TENANT_STATUS_SUSPENDED" | "TENANT_STATUS_CLOSED";
+
+export interface Access_V1_ActivateTenantMemberRequest {
+  userId?: string;
+  version?: string;
+}
+
+export interface Access_V1_ActivateTenantRequest {
+  id?: string;
+  version?: string;
+}
+
+export interface Access_V1_AssignTenantRoleMemberRequest {
+  roleId?: string;
+  userId?: string;
+}
+
+export interface Access_V1_CloseTenantRequest {
+  id?: string;
+  version?: string;
+}
+
+export interface Access_V1_CreateTenantRequest {
+  name?: string;
+  ownerUserId?: string;
+  ownerEmail?: string;
+}
+
+export interface Access_V1_CreateTenantRoleRequest {
+  name?: string;
+}
+
+export interface Access_V1_DisableTenantRoleRequest {
+  roleId?: string;
+  version?: string;
+}
+
+export interface Access_V1_EnableTenantRoleRequest {
+  roleId?: string;
+  version?: string;
+}
+
+export interface Access_V1_GetTenantMemberRequest {
+  userId?: string;
+}
+
+export interface Access_V1_GetTenantRequest {
+  id?: string;
+}
+
+export interface Access_V1_GetTenantRoleRequest {
+  roleId?: string;
+}
+
+export interface Access_V1_InviteTenantMemberRequest {
+  email?: string;
+}
+
+export interface Access_V1_ListTenantMembersRequest {
+}
+
+export interface Access_V1_ListTenantMembersResponse {
+  members?: readonly Access_V1_TenantMemberDTO[];
+}
+
+export interface Access_V1_ListTenantRolesRequest {
+}
+
+export interface Access_V1_ListTenantRolesResponse {
+  roles?: readonly Access_V1_TenantRoleDTO[];
+}
+
+export interface Access_V1_ListTenantsRequest {
+}
+
+export interface Access_V1_ListTenantsResponse {
+  tenants?: readonly Access_V1_TenantDTO[];
+}
+
+export interface Access_V1_PermissionGrantDTO {
+  permission?: string;
+  scope?: Access_V1_DataScope;
+}
+
+export interface Access_V1_PermissionGrantInput {
+  permission?: string;
+  scope?: Access_V1_DataScope;
+}
+
+export interface Access_V1_RemoveTenantMemberRequest {
+  userId?: string;
+  version?: string;
+}
+
+export interface Access_V1_RevokeTenantRoleMemberRequest {
+  roleId?: string;
+  userId?: string;
+}
+
+export interface Access_V1_SetTenantRolePermissionsRequest {
+  roleId?: string;
+  permissions?: readonly Access_V1_PermissionGrantInput[];
+  version?: string;
+}
+
+export interface Access_V1_SuspendTenantMemberRequest {
+  userId?: string;
+  version?: string;
+}
+
+export interface Access_V1_SuspendTenantRequest {
+  id?: string;
+  version?: string;
+}
+
+export interface Access_V1_TenantDTO {
+  id?: string;
+  name?: string;
+  status?: Access_V1_TenantStatus;
+  version?: string;
+}
+
+export interface Access_V1_TenantMemberDTO {
+  userId?: string;
+  email?: string;
+  status?: Access_V1_TenantMemberStatus;
+  version?: string;
+}
+
+export interface Access_V1_TenantRoleDTO {
+  id?: string;
+  name?: string;
+  status?: Access_V1_TenantRoleStatus;
+  permissions?: readonly Access_V1_PermissionGrantDTO[];
+  version?: string;
+}
+
+export interface Access_V1_UpdateTenantRequest {
+  id?: string;
+  name?: string;
+  version?: string;
+}
+
+export interface Access_V1_UpdateTenantRoleRequest {
+  roleId?: string;
+  name?: string;
+  version?: string;
+}
+
 export interface Deviceops_V1_CreateDeviceRequest {
   siteId?: string;
   name?: string;
@@ -67,6 +222,204 @@ export interface Deviceops_V1_UpdateDeviceRequest {
 }
 
 export const operations = {
+  "access.v1.TenantLifecycleApplication.ActivateTenant": {
+    fullName: "access.v1.TenantLifecycleApplication.ActivateTenant",
+    rpcPath: "/access.v1.TenantLifecycleApplication/ActivateTenant",
+    requestType: "access.v1.ActivateTenantRequest",
+    responseType: "access.v1.TenantDTO",
+    http: [
+      { method: "POST", path: "/v1/tenants/{id}/activate", body: "*" },
+    ]
+  },
+  "access.v1.TenantLifecycleApplication.CloseTenant": {
+    fullName: "access.v1.TenantLifecycleApplication.CloseTenant",
+    rpcPath: "/access.v1.TenantLifecycleApplication/CloseTenant",
+    requestType: "access.v1.CloseTenantRequest",
+    responseType: "access.v1.TenantDTO",
+    http: [
+      { method: "POST", path: "/v1/tenants/{id}/close", body: "*" },
+    ]
+  },
+  "access.v1.TenantLifecycleApplication.CreateTenant": {
+    fullName: "access.v1.TenantLifecycleApplication.CreateTenant",
+    rpcPath: "/access.v1.TenantLifecycleApplication/CreateTenant",
+    requestType: "access.v1.CreateTenantRequest",
+    responseType: "access.v1.TenantDTO",
+    http: [
+      { method: "POST", path: "/v1/tenants", body: "*" },
+    ]
+  },
+  "access.v1.TenantLifecycleApplication.GetTenant": {
+    fullName: "access.v1.TenantLifecycleApplication.GetTenant",
+    rpcPath: "/access.v1.TenantLifecycleApplication/GetTenant",
+    requestType: "access.v1.GetTenantRequest",
+    responseType: "access.v1.TenantDTO",
+    http: [
+      { method: "GET", path: "/v1/tenants/{id}" },
+    ]
+  },
+  "access.v1.TenantLifecycleApplication.ListTenants": {
+    fullName: "access.v1.TenantLifecycleApplication.ListTenants",
+    rpcPath: "/access.v1.TenantLifecycleApplication/ListTenants",
+    requestType: "access.v1.ListTenantsRequest",
+    responseType: "access.v1.ListTenantsResponse",
+    http: [
+      { method: "GET", path: "/v1/tenants" },
+    ]
+  },
+  "access.v1.TenantLifecycleApplication.SuspendTenant": {
+    fullName: "access.v1.TenantLifecycleApplication.SuspendTenant",
+    rpcPath: "/access.v1.TenantLifecycleApplication/SuspendTenant",
+    requestType: "access.v1.SuspendTenantRequest",
+    responseType: "access.v1.TenantDTO",
+    http: [
+      { method: "POST", path: "/v1/tenants/{id}/suspend", body: "*" },
+    ]
+  },
+  "access.v1.TenantLifecycleApplication.UpdateTenant": {
+    fullName: "access.v1.TenantLifecycleApplication.UpdateTenant",
+    rpcPath: "/access.v1.TenantLifecycleApplication/UpdateTenant",
+    requestType: "access.v1.UpdateTenantRequest",
+    responseType: "access.v1.TenantDTO",
+    http: [
+      { method: "PATCH", path: "/v1/tenants/{id}", body: "*" },
+    ]
+  },
+  "access.v1.TenantMemberLifecycleApplication.ActivateTenantMember": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.ActivateTenantMember",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/ActivateTenantMember",
+    requestType: "access.v1.ActivateTenantMemberRequest",
+    responseType: "access.v1.TenantMemberDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/members/{user_id}/activate", body: "*" },
+    ]
+  },
+  "access.v1.TenantMemberLifecycleApplication.GetTenantMember": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.GetTenantMember",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/GetTenantMember",
+    requestType: "access.v1.GetTenantMemberRequest",
+    responseType: "access.v1.TenantMemberDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/members/{user_id}" },
+    ]
+  },
+  "access.v1.TenantMemberLifecycleApplication.InviteTenantMember": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.InviteTenantMember",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/InviteTenantMember",
+    requestType: "access.v1.InviteTenantMemberRequest",
+    responseType: "access.v1.TenantMemberDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/members", body: "*" },
+    ]
+  },
+  "access.v1.TenantMemberLifecycleApplication.ListTenantMembers": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.ListTenantMembers",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/ListTenantMembers",
+    requestType: "access.v1.ListTenantMembersRequest",
+    responseType: "access.v1.ListTenantMembersResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/members" },
+    ]
+  },
+  "access.v1.TenantMemberLifecycleApplication.RemoveTenantMember": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.RemoveTenantMember",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/RemoveTenantMember",
+    requestType: "access.v1.RemoveTenantMemberRequest",
+    responseType: "access.v1.TenantMemberDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/members/{user_id}/remove", body: "*" },
+    ]
+  },
+  "access.v1.TenantMemberLifecycleApplication.SuspendTenantMember": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.SuspendTenantMember",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/SuspendTenantMember",
+    requestType: "access.v1.SuspendTenantMemberRequest",
+    responseType: "access.v1.TenantMemberDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/members/{user_id}/suspend", body: "*" },
+    ]
+  },
+  "access.v1.TenantRolePermissionApplication.AssignTenantRoleMember": {
+    fullName: "access.v1.TenantRolePermissionApplication.AssignTenantRoleMember",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/AssignTenantRoleMember",
+    requestType: "access.v1.AssignTenantRoleMemberRequest",
+    responseType: "access.v1.TenantRoleDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/roles/{role_id}/members", body: "*" },
+    ]
+  },
+  "access.v1.TenantRolePermissionApplication.CreateTenantRole": {
+    fullName: "access.v1.TenantRolePermissionApplication.CreateTenantRole",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/CreateTenantRole",
+    requestType: "access.v1.CreateTenantRoleRequest",
+    responseType: "access.v1.TenantRoleDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/roles", body: "*" },
+    ]
+  },
+  "access.v1.TenantRolePermissionApplication.DisableTenantRole": {
+    fullName: "access.v1.TenantRolePermissionApplication.DisableTenantRole",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/DisableTenantRole",
+    requestType: "access.v1.DisableTenantRoleRequest",
+    responseType: "access.v1.TenantRoleDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/roles/{role_id}/disable", body: "*" },
+    ]
+  },
+  "access.v1.TenantRolePermissionApplication.EnableTenantRole": {
+    fullName: "access.v1.TenantRolePermissionApplication.EnableTenantRole",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/EnableTenantRole",
+    requestType: "access.v1.EnableTenantRoleRequest",
+    responseType: "access.v1.TenantRoleDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/roles/{role_id}/enable", body: "*" },
+    ]
+  },
+  "access.v1.TenantRolePermissionApplication.GetTenantRole": {
+    fullName: "access.v1.TenantRolePermissionApplication.GetTenantRole",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/GetTenantRole",
+    requestType: "access.v1.GetTenantRoleRequest",
+    responseType: "access.v1.TenantRoleDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/roles/{role_id}" },
+    ]
+  },
+  "access.v1.TenantRolePermissionApplication.ListTenantRoles": {
+    fullName: "access.v1.TenantRolePermissionApplication.ListTenantRoles",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/ListTenantRoles",
+    requestType: "access.v1.ListTenantRolesRequest",
+    responseType: "access.v1.ListTenantRolesResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/roles" },
+    ]
+  },
+  "access.v1.TenantRolePermissionApplication.RevokeTenantRoleMember": {
+    fullName: "access.v1.TenantRolePermissionApplication.RevokeTenantRoleMember",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/RevokeTenantRoleMember",
+    requestType: "access.v1.RevokeTenantRoleMemberRequest",
+    responseType: "access.v1.TenantRoleDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", body: "*" },
+    ]
+  },
+  "access.v1.TenantRolePermissionApplication.SetTenantRolePermissions": {
+    fullName: "access.v1.TenantRolePermissionApplication.SetTenantRolePermissions",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/SetTenantRolePermissions",
+    requestType: "access.v1.SetTenantRolePermissionsRequest",
+    responseType: "access.v1.TenantRoleDTO",
+    http: [
+      { method: "PUT", path: "/v1/tenant/roles/{role_id}/permissions", body: "*" },
+    ]
+  },
+  "access.v1.TenantRolePermissionApplication.UpdateTenantRole": {
+    fullName: "access.v1.TenantRolePermissionApplication.UpdateTenantRole",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/UpdateTenantRole",
+    requestType: "access.v1.UpdateTenantRoleRequest",
+    responseType: "access.v1.TenantRoleDTO",
+    http: [
+      { method: "PATCH", path: "/v1/tenant/roles/{role_id}", body: "*" },
+    ]
+  },
   "deviceops.v1.DeviceApplication.CreateDevice": {
     fullName: "deviceops.v1.DeviceApplication.CreateDevice",
     rpcPath: "/deviceops.v1.DeviceApplication/CreateDevice",
@@ -122,6 +475,109 @@ export const operations = {
     ]
   },
 } as const satisfies Record<string, RpcOperation>;
+
+export class Access_V1_TenantLifecycleApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  activateTenant(request: Access_V1_ActivateTenantRequest): Promise<Access_V1_TenantDTO> {
+    return this.transport.call<Access_V1_ActivateTenantRequest, Access_V1_TenantDTO>(operations["access.v1.TenantLifecycleApplication.ActivateTenant"], request);
+  }
+
+  closeTenant(request: Access_V1_CloseTenantRequest): Promise<Access_V1_TenantDTO> {
+    return this.transport.call<Access_V1_CloseTenantRequest, Access_V1_TenantDTO>(operations["access.v1.TenantLifecycleApplication.CloseTenant"], request);
+  }
+
+  createTenant(request: Access_V1_CreateTenantRequest): Promise<Access_V1_TenantDTO> {
+    return this.transport.call<Access_V1_CreateTenantRequest, Access_V1_TenantDTO>(operations["access.v1.TenantLifecycleApplication.CreateTenant"], request);
+  }
+
+  getTenant(request: Access_V1_GetTenantRequest): Promise<Access_V1_TenantDTO> {
+    return this.transport.call<Access_V1_GetTenantRequest, Access_V1_TenantDTO>(operations["access.v1.TenantLifecycleApplication.GetTenant"], request);
+  }
+
+  listTenants(request: Access_V1_ListTenantsRequest): Promise<Access_V1_ListTenantsResponse> {
+    return this.transport.call<Access_V1_ListTenantsRequest, Access_V1_ListTenantsResponse>(operations["access.v1.TenantLifecycleApplication.ListTenants"], request);
+  }
+
+  suspendTenant(request: Access_V1_SuspendTenantRequest): Promise<Access_V1_TenantDTO> {
+    return this.transport.call<Access_V1_SuspendTenantRequest, Access_V1_TenantDTO>(operations["access.v1.TenantLifecycleApplication.SuspendTenant"], request);
+  }
+
+  updateTenant(request: Access_V1_UpdateTenantRequest): Promise<Access_V1_TenantDTO> {
+    return this.transport.call<Access_V1_UpdateTenantRequest, Access_V1_TenantDTO>(operations["access.v1.TenantLifecycleApplication.UpdateTenant"], request);
+  }
+
+}
+
+export class Access_V1_TenantMemberLifecycleApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  activateTenantMember(request: Access_V1_ActivateTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
+    return this.transport.call<Access_V1_ActivateTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.ActivateTenantMember"], request);
+  }
+
+  getTenantMember(request: Access_V1_GetTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
+    return this.transport.call<Access_V1_GetTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.GetTenantMember"], request);
+  }
+
+  inviteTenantMember(request: Access_V1_InviteTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
+    return this.transport.call<Access_V1_InviteTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.InviteTenantMember"], request);
+  }
+
+  listTenantMembers(request: Access_V1_ListTenantMembersRequest): Promise<Access_V1_ListTenantMembersResponse> {
+    return this.transport.call<Access_V1_ListTenantMembersRequest, Access_V1_ListTenantMembersResponse>(operations["access.v1.TenantMemberLifecycleApplication.ListTenantMembers"], request);
+  }
+
+  removeTenantMember(request: Access_V1_RemoveTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
+    return this.transport.call<Access_V1_RemoveTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.RemoveTenantMember"], request);
+  }
+
+  suspendTenantMember(request: Access_V1_SuspendTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
+    return this.transport.call<Access_V1_SuspendTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.SuspendTenantMember"], request);
+  }
+
+}
+
+export class Access_V1_TenantRolePermissionApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  assignTenantRoleMember(request: Access_V1_AssignTenantRoleMemberRequest): Promise<Access_V1_TenantRoleDTO> {
+    return this.transport.call<Access_V1_AssignTenantRoleMemberRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.AssignTenantRoleMember"], request);
+  }
+
+  createTenantRole(request: Access_V1_CreateTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
+    return this.transport.call<Access_V1_CreateTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.CreateTenantRole"], request);
+  }
+
+  disableTenantRole(request: Access_V1_DisableTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
+    return this.transport.call<Access_V1_DisableTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.DisableTenantRole"], request);
+  }
+
+  enableTenantRole(request: Access_V1_EnableTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
+    return this.transport.call<Access_V1_EnableTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.EnableTenantRole"], request);
+  }
+
+  getTenantRole(request: Access_V1_GetTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
+    return this.transport.call<Access_V1_GetTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.GetTenantRole"], request);
+  }
+
+  listTenantRoles(request: Access_V1_ListTenantRolesRequest): Promise<Access_V1_ListTenantRolesResponse> {
+    return this.transport.call<Access_V1_ListTenantRolesRequest, Access_V1_ListTenantRolesResponse>(operations["access.v1.TenantRolePermissionApplication.ListTenantRoles"], request);
+  }
+
+  revokeTenantRoleMember(request: Access_V1_RevokeTenantRoleMemberRequest): Promise<Access_V1_TenantRoleDTO> {
+    return this.transport.call<Access_V1_RevokeTenantRoleMemberRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.RevokeTenantRoleMember"], request);
+  }
+
+  setTenantRolePermissions(request: Access_V1_SetTenantRolePermissionsRequest): Promise<Access_V1_TenantRoleDTO> {
+    return this.transport.call<Access_V1_SetTenantRolePermissionsRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.SetTenantRolePermissions"], request);
+  }
+
+  updateTenantRole(request: Access_V1_UpdateTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
+    return this.transport.call<Access_V1_UpdateTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.UpdateTenantRole"], request);
+  }
+
+}
 
 export class Deviceops_V1_DeviceApplicationClient {
   constructor(private readonly transport: RpcTransport) {}

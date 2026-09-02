@@ -36,11 +36,11 @@ func (service *SiteManagementService) ValidateTransferTarget(ctx context.Context
 }
 
 type CrossApplicationTransferService struct {
-	sites   DeviceopsSiteManagementChildCapability
-	devices DeviceopsDeviceManagementChildCapability
+	sites   DeviceTransferToDeviceopsSiteManagementChildCapability
+	devices DeviceTransferToDeviceopsDeviceManagementChildCapability
 }
 
-func NewCrossApplicationTransferService(sites DeviceopsSiteManagementChildCapability, devices DeviceopsDeviceManagementChildCapability) (*CrossApplicationTransferService, error) {
+func NewCrossApplicationTransferService(sites DeviceTransferToDeviceopsSiteManagementChildCapability, devices DeviceTransferToDeviceopsDeviceManagementChildCapability) (*CrossApplicationTransferService, error) {
 	if sites == nil || devices == nil {
 		return nil, errors.New("deviceops transfer: child capabilities are required")
 	}

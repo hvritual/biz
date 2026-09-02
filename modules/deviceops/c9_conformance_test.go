@@ -26,8 +26,8 @@ func TestC104GeneratedAssemblyOwnsStructuralRuntimeWiring(t *testing.T) {
 		"operation.NewExecutorWithOptions",
 		"RegisterDeviceManagementOperationExecutor",
 		"RegisterDeviceTransferOperationExecutor",
-		"NewDeviceopsSiteManagementChildCapability",
-		"NewDeviceopsDeviceManagementChildCapability",
+		"NewDeviceTransferToDeviceopsSiteManagementChildCapability",
+		"NewDeviceTransferToDeviceopsDeviceManagementChildCapability",
 		"net.Listen(",
 		"grpc.NewServer(",
 		"http.Server",
@@ -38,8 +38,8 @@ func TestC104GeneratedAssemblyOwnsStructuralRuntimeWiring(t *testing.T) {
 	}
 
 	for _, required := range []string{
-		"deviceopsapplication.NewDeviceopsDeviceManagementChildCapability",
-		"deviceopsapplication.NewDeviceopsSiteManagementChildCapability",
+		"deviceopsapplication.NewDeviceTransferToDeviceopsDeviceManagementChildCapability",
+		"deviceopsapplication.NewDeviceTransferToDeviceopsSiteManagementChildCapability",
 		"deviceopsrest.RegisterDeviceManagementOperationExecutor",
 		"deviceopsrest.RegisterDeviceTransferOperationExecutor",
 		"deviceopsrpc.RegisterDeviceManagementOperationExecutor",
@@ -76,8 +76,8 @@ func TestC104GeneratedAssemblyOwnsStructuralRuntimeWiring(t *testing.T) {
 		}
 	}
 	for _, forbidden := range []string{
-		"NewDeviceopsSiteManagementChildCapability",
-		"NewDeviceopsDeviceManagementChildCapability",
+		"NewDeviceTransferToDeviceopsSiteManagementChildCapability",
+		"NewDeviceTransferToDeviceopsDeviceManagementChildCapability",
 		"RegisterDeviceManagementOperationExecutor",
 		"RegisterDeviceTransferOperationExecutor",
 		"modulecatalog.Default()",

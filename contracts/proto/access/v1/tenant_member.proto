@@ -1,0 +1,164 @@
+syntax = "proto3";
+
+package access.v1;
+
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+
+option go_package = "github.com/hvritual/biz/contracts/gen/access/v1;accessv1";
+option (yunka.dsl.v1.domain) = {
+  name: "access"
+  version: "v1"
+};
+
+enum TenantMemberStatus {
+  TENANT_MEMBER_STATUS_UNSPECIFIED = 0;
+  TENANT_MEMBER_STATUS_INVITED = 1;
+  TENANT_MEMBER_STATUS_ACTIVE = 2;
+  TENANT_MEMBER_STATUS_SUSPENDED = 3;
+  TENANT_MEMBER_STATUS_REMOVED = 4;
+}
+
+message TenantMemberDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string user_id = 1;
+  string email = 2;
+  TenantMemberStatus status = 3;
+  uint64 version = 4;
+}
+
+message InviteTenantMemberRequest {
+  string email = 1;
+}
+
+message GetTenantMemberRequest {
+  string user_id = 1;
+}
+
+message ListTenantMembersRequest {}
+
+message ListTenantMembersResponse {
+  repeated TenantMemberDTO members = 1;
+}
+
+message ActivateTenantMemberRequest {
+  string user_id = 1;
+  uint64 version = 2;
+}
+
+message SuspendTenantMemberRequest {
+  string user_id = 1;
+  uint64 version = 2;
+}
+
+message RemoveTenantMemberRequest {
+  string user_id = 1;
+  uint64 version = 2;
+}
+
+message BootstrapTenantOwnerMemberRequest {
+  string tenant_id = 1;
+  string user_id = 2;
+  string email = 3;
+}
+
+service TenantMemberLifecycleApplication {
+  option (yunka.dsl.v1.application) = {
+    name: "tenant_member_lifecycle"
+    requires: "access/tenant_role_permission"
+    operations: {
+      id: "tenant.member.bootstrap_owner"
+      use_case: "bootstrap_tenant_owner_member"
+      permissions: "platform.tenant.create"
+      permission_mode: PERMISSION_ALL
+      tenant_required: false
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_NONE }
+      request_type: "access.v1.BootstrapTenantOwnerMemberRequest"
+      response_type: "access.v1.TenantMemberDTO"
+      application_method: "BootstrapTenantOwnerMember"
+    }
+  };
+
+  rpc InviteTenantMember(InviteTenantMemberRequest) returns (TenantMemberDTO) {
+    option (google.api.http) = { post: "/v1/tenant/members" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.invite"
+      use_case: "invite_tenant_member"
+      permissions: "tenant.member.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc GetTenantMember(GetTenantMemberRequest) returns (TenantMemberDTO) {
+    option (google.api.http) = { get: "/v1/tenant/members/{user_id}" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.get"
+      use_case: "get_tenant_member"
+      permissions: "tenant.member.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc ListTenantMembers(ListTenantMembersRequest) returns (ListTenantMembersResponse) {
+    option (google.api.http) = { get: "/v1/tenant/members" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.list"
+      use_case: "list_tenant_members"
+      permissions: "tenant.member.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc ActivateTenantMember(ActivateTenantMemberRequest) returns (TenantMemberDTO) {
+    option (google.api.http) = { post: "/v1/tenant/members/{user_id}/activate" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.activate"
+      use_case: "activate_tenant_member"
+      permissions: "tenant.member.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc SuspendTenantMember(SuspendTenantMemberRequest) returns (TenantMemberDTO) {
+    option (google.api.http) = { post: "/v1/tenant/members/{user_id}/suspend" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.suspend"
+      use_case: "suspend_tenant_member"
+      permissions: "tenant.member.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      requires_operations: "tenant.role.assert_member_deactivation_allowed"
+      composition: COMPOSITION_LOCAL
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc RemoveTenantMember(RemoveTenantMemberRequest) returns (TenantMemberDTO) {
+    option (google.api.http) = { post: "/v1/tenant/members/{user_id}/remove" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.remove"
+      use_case: "remove_tenant_member"
+      permissions: "tenant.member.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      requires_operations: "tenant.role.assert_member_deactivation_allowed"
+      composition: COMPOSITION_LOCAL
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+}

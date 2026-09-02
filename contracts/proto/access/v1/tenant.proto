@@ -1,0 +1,167 @@
+syntax = "proto3";
+
+package access.v1;
+
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+
+option go_package = "github.com/hvritual/biz/contracts/gen/access/v1;accessv1";
+option (yunka.dsl.v1.domain) = {
+  name: "access"
+  version: "v1"
+};
+
+enum TenantStatus {
+  TENANT_STATUS_UNSPECIFIED = 0;
+  TENANT_STATUS_PENDING = 1;
+  TENANT_STATUS_ACTIVE = 2;
+  TENANT_STATUS_SUSPENDED = 3;
+  TENANT_STATUS_CLOSED = 4;
+}
+
+message TenantDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string id = 1;
+  string name = 2;
+  TenantStatus status = 3;
+  uint64 version = 4;
+}
+
+message CreateTenantRequest {
+  string name = 1;
+  string owner_user_id = 2;
+  string owner_email = 3;
+}
+
+message GetTenantRequest {
+  string id = 1;
+}
+
+message ListTenantsRequest {}
+
+message ListTenantsResponse {
+  repeated TenantDTO tenants = 1;
+}
+
+message UpdateTenantRequest {
+  string id = 1;
+  string name = 2;
+  uint64 version = 3;
+}
+
+message ActivateTenantRequest {
+  string id = 1;
+  uint64 version = 2;
+}
+
+message SuspendTenantRequest {
+  string id = 1;
+  uint64 version = 2;
+}
+
+message CloseTenantRequest {
+  string id = 1;
+  uint64 version = 2;
+}
+
+service TenantLifecycleApplication {
+  option (yunka.dsl.v1.application) = {
+    name: "tenant_lifecycle"
+    requires: "access/tenant_member_lifecycle"
+    requires: "access/tenant_role_permission"
+  };
+
+  rpc CreateTenant(CreateTenantRequest) returns (TenantDTO) {
+    option (google.api.http) = { post: "/v1/tenants" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.create"
+      use_case: "create_tenant"
+      permissions: "platform.tenant.create"
+      permission_mode: PERMISSION_ALL
+      tenant_required: false
+      authentication: AUTHENTICATION_API_KEY
+      requires_operations: "tenant.member.bootstrap_owner"
+      requires_operations: "tenant.role.bootstrap_owner"
+      composition: COMPOSITION_LOCAL
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc GetTenant(GetTenantRequest) returns (TenantDTO) {
+    option (google.api.http) = { get: "/v1/tenants/{id}" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.get"
+      use_case: "get_tenant"
+      permissions: "platform.tenant.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: false
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc ListTenants(ListTenantsRequest) returns (ListTenantsResponse) {
+    option (google.api.http) = { get: "/v1/tenants" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.list"
+      use_case: "list_tenants"
+      permissions: "platform.tenant.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: false
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc UpdateTenant(UpdateTenantRequest) returns (TenantDTO) {
+    option (google.api.http) = { patch: "/v1/tenants/{id}" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.update"
+      use_case: "update_tenant"
+      permissions: "platform.tenant.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: false
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc ActivateTenant(ActivateTenantRequest) returns (TenantDTO) {
+    option (google.api.http) = { post: "/v1/tenants/{id}/activate" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.activate"
+      use_case: "activate_tenant"
+      permissions: "platform.tenant.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: false
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc SuspendTenant(SuspendTenantRequest) returns (TenantDTO) {
+    option (google.api.http) = { post: "/v1/tenants/{id}/suspend" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.suspend"
+      use_case: "suspend_tenant"
+      permissions: "platform.tenant.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: false
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc CloseTenant(CloseTenantRequest) returns (TenantDTO) {
+    option (google.api.http) = { post: "/v1/tenants/{id}/close" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.close"
+      use_case: "close_tenant"
+      permissions: "platform.tenant.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: false
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+}

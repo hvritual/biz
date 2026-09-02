@@ -22,7 +22,9 @@ type tenantRecord struct {
 	ID        string    `gorm:"column:id;primaryKey;size:64"`
 	Name      string    `gorm:"column:name;size:200;not null"`
 	Status    string    `gorm:"column:status;size:32;not null;index"`
+	Version   uint64    `gorm:"column:version;not null;default:1"`
 	CreatedAt time.Time `gorm:"column:created_at;not null"`
+	UpdatedAt time.Time `gorm:"column:updated_at;not null"`
 }
 
 func (tenantRecord) TableName() string { return "biz_tenants" }
@@ -40,7 +42,9 @@ type membershipRecord struct {
 	TenantID  string    `gorm:"column:tenant_id;primaryKey;size:64"`
 	UserID    string    `gorm:"column:user_id;primaryKey;size:64"`
 	Status    string    `gorm:"column:status;size:32;not null;index"`
+	Version   uint64    `gorm:"column:version;not null;default:1"`
 	CreatedAt time.Time `gorm:"column:created_at;not null"`
+	UpdatedAt time.Time `gorm:"column:updated_at;not null"`
 }
 
 func (membershipRecord) TableName() string { return "biz_memberships" }
@@ -50,6 +54,7 @@ type roleRecord struct {
 	TenantID string `gorm:"column:tenant_id;size:64;not null;index:idx_role_tenant;uniqueIndex:uniq_role_name,priority:1"`
 	Name     string `gorm:"column:name;size:100;not null;uniqueIndex:uniq_role_name,priority:2"`
 	Status   string `gorm:"column:status;size:32;not null"`
+	Version  uint64 `gorm:"column:version;not null;default:1"`
 }
 
 func (roleRecord) TableName() string { return "biz_roles" }
@@ -62,8 +67,6 @@ type memberRoleRecord struct {
 
 func (memberRoleRecord) TableName() string { return "biz_member_roles" }
 
-// permissionGrantRecord is the authoritative role permission + scope fact.
-// Scope cannot exist independently from the permission grant.
 type permissionGrantRecord struct {
 	TenantID   string                 `gorm:"column:tenant_id;primaryKey;size:64"`
 	RoleID     string                 `gorm:"column:role_id;primaryKey;size:160"`
@@ -127,8 +130,15 @@ func (store *Store) Authenticate(ctx context.Context, rawToken string) (identity
 	if token.ExpiresAt != nil && !token.ExpiresAt.After(time.Now()) {
 		return identity.Principal{}, ErrUnauthorized
 	}
+	var tenant tenantRecord
+	if err := store.database.WithContext(ctx).Where("id = ? AND status = ?", token.TenantID, accessdomain.TenantStatusActive).First(&tenant).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return identity.Principal{}, ErrUnauthorized
+		}
+		return identity.Principal{}, err
+	}
 	var membership membershipRecord
-	if err := store.database.WithContext(ctx).Where("tenant_id = ? AND user_id = ? AND status = ?", token.TenantID, token.UserID, "active").First(&membership).Error; err != nil {
+	if err := store.database.WithContext(ctx).Where("tenant_id = ? AND user_id = ? AND status = ?", token.TenantID, token.UserID, accessdomain.TenantMemberStatusActive).First(&membership).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return identity.Principal{}, ErrUnauthorized
 		}
@@ -137,7 +147,7 @@ func (store *Store) Authenticate(ctx context.Context, rawToken string) (identity
 	var roles []string
 	if err := store.database.WithContext(ctx).Table("biz_member_roles mr").
 		Select("r.name").
-		Joins("JOIN biz_roles r ON r.id = mr.role_id AND r.tenant_id = mr.tenant_id AND r.status = ?", "active").
+		Joins("JOIN biz_roles r ON r.id = mr.role_id AND r.tenant_id = mr.tenant_id AND r.status = ?", accessdomain.TenantRoleStatusActive).
 		Where("mr.tenant_id = ? AND mr.user_id = ?", token.TenantID, token.UserID).
 		Scan(&roles).Error; err != nil {
 		return identity.Principal{}, err
@@ -149,9 +159,6 @@ func (store *Store) Authenticate(ctx context.Context, rawToken string) (identity
 	}, nil
 }
 
-// ResolveGrants is the C8.5 unified authorization decision input. The JOIN binds
-// permission and scope to the exact same active role grant and ignores legacy
-// role_data_scopes rows entirely.
 func (store *Store) ResolveGrants(ctx context.Context, tenantID string, roles []string, permissions []authz.PermissionKey) ([]authz.Grant, error) {
 	if strings.TrimSpace(tenantID) == "" || len(roles) == 0 || len(permissions) == 0 {
 		return nil, nil
@@ -174,7 +181,7 @@ func (store *Store) ResolveGrants(ctx context.Context, tenantID string, roles []
 	if err := store.database.WithContext(ctx).Table("biz_roles r").
 		Select("r.id AS role_id, pg.permission, pg.scope").
 		Joins("JOIN biz_permission_grants pg ON pg.role_id = r.id AND pg.tenant_id = r.tenant_id").
-		Where("r.tenant_id = ? AND r.status = ? AND r.name IN ? AND pg.permission IN ?", tenantID, "active", roles, keys).
+		Where("r.tenant_id = ? AND r.status = ? AND r.name IN ? AND pg.permission IN ?", tenantID, accessdomain.TenantRoleStatusActive, roles, keys).
 		Scan(&rows).Error; err != nil {
 		return nil, err
 	}
@@ -208,13 +215,14 @@ func (store *Store) Bootstrap(ctx context.Context, config Bootstrap, permissions
 		return nil
 	}
 	roleID := config.TenantID + ":owner"
+	now := time.Now().UTC()
 	values := []any{
-		&tenantRecord{ID: config.TenantID, Name: config.TenantName, Status: "active"},
-		&userRecord{ID: config.UserID, Email: config.Email, Status: "active"},
-		&membershipRecord{TenantID: config.TenantID, UserID: config.UserID, Status: "active"},
-		&roleRecord{ID: roleID, TenantID: config.TenantID, Name: "owner", Status: "active"},
+		&tenantRecord{ID: config.TenantID, Name: config.TenantName, Status: accessdomain.TenantStatusActive, Version: 1, CreatedAt: now, UpdatedAt: now},
+		&userRecord{ID: config.UserID, Email: config.Email, Status: "active", CreatedAt: now},
+		&membershipRecord{TenantID: config.TenantID, UserID: config.UserID, Status: accessdomain.TenantMemberStatusActive, Version: 1, CreatedAt: now, UpdatedAt: now},
+		&roleRecord{ID: roleID, TenantID: config.TenantID, Name: accessdomain.TenantOwnerRoleName, Status: accessdomain.TenantRoleStatusActive, Version: 1},
 		&memberRoleRecord{TenantID: config.TenantID, UserID: config.UserID, RoleID: roleID},
-		&apiTokenRecord{TokenHash: TokenHash(config.Token), TenantID: config.TenantID, UserID: config.UserID},
+		&apiTokenRecord{TokenHash: TokenHash(config.Token), TenantID: config.TenantID, UserID: config.UserID, CreatedAt: now},
 	}
 	db := store.database.WithContext(ctx)
 	for _, value := range values {

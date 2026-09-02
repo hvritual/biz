@@ -3,6 +3,36 @@
   "identity": "root",
   "applications": [
     {
+      "id": "access/tenant_lifecycle",
+      "domain": "access",
+      "name": "tenant_lifecycle",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_lifecycle"
+      }
+    },
+    {
+      "id": "access/tenant_member_lifecycle",
+      "domain": "access",
+      "name": "tenant_member_lifecycle",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_member_lifecycle"
+      }
+    },
+    {
+      "id": "access/tenant_role_permission",
+      "domain": "access",
+      "name": "tenant_role_permission",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_role_permission"
+      }
+    },
+    {
       "id": "deviceops/device_management",
       "domain": "deviceops",
       "name": "device_management",
@@ -35,6 +65,33 @@
   ],
   "applicationDependencies": [
     {
+      "from": "access/tenant_lifecycle",
+      "to": "access/tenant_member_lifecycle",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_lifecycle/requires/access/tenant_member_lifecycle"
+      }
+    },
+    {
+      "from": "access/tenant_lifecycle",
+      "to": "access/tenant_role_permission",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_lifecycle/requires/access/tenant_role_permission"
+      }
+    },
+    {
+      "from": "access/tenant_member_lifecycle",
+      "to": "access/tenant_role_permission",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_member_lifecycle/requires/access/tenant_role_permission"
+      }
+    },
+    {
       "from": "deviceops/device_transfer",
       "to": "deviceops/device_management",
       "evidence": {
@@ -54,6 +111,33 @@
     }
   ],
   "applicationDependencyClosure": [
+    {
+      "from": "access/tenant_lifecycle",
+      "to": "access/tenant_member_lifecycle",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_lifecycle-\u003eaccess/tenant_member_lifecycle"
+      }
+    },
+    {
+      "from": "access/tenant_lifecycle",
+      "to": "access/tenant_role_permission",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_lifecycle-\u003eaccess/tenant_role_permission"
+      }
+    },
+    {
+      "from": "access/tenant_member_lifecycle",
+      "to": "access/tenant_role_permission",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_member_lifecycle-\u003eaccess/tenant_role_permission"
+      }
+    },
     {
       "from": "deviceops/device_transfer",
       "to": "deviceops/device_management",
@@ -268,6 +352,715 @@
         "source": "operation-plans.json",
         "ref": "operations/site.validate_transfer_target"
       }
+    },
+    {
+      "id": "tenant.activate",
+      "application": "access/tenant_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.activate",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.activate/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.activate",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.activate/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.activate"
+      }
+    },
+    {
+      "id": "tenant.close",
+      "application": "access/tenant_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.close",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.close/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.close",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.close/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.close"
+      }
+    },
+    {
+      "id": "tenant.create",
+      "application": "access/tenant_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.create",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.create/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.create",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.create/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.create"
+      }
+    },
+    {
+      "id": "tenant.get",
+      "application": "access/tenant_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.get"
+      }
+    },
+    {
+      "id": "tenant.list",
+      "application": "access/tenant_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.list"
+      }
+    },
+    {
+      "id": "tenant.member.activate",
+      "application": "access/tenant_member_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.member.activate",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.activate/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.activate",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.activate/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.activate"
+      }
+    },
+    {
+      "id": "tenant.member.bootstrap_owner",
+      "application": "access/tenant_member_lifecycle",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.bootstrap_owner"
+      }
+    },
+    {
+      "id": "tenant.member.get",
+      "application": "access/tenant_member_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.member.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.get"
+      }
+    },
+    {
+      "id": "tenant.member.invite",
+      "application": "access/tenant_member_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.member.invite",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.invite/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.invite",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.invite/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.invite"
+      }
+    },
+    {
+      "id": "tenant.member.list",
+      "application": "access/tenant_member_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.member.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.list"
+      }
+    },
+    {
+      "id": "tenant.member.remove",
+      "application": "access/tenant_member_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.member.remove",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.remove/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.remove",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.remove/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.remove"
+      }
+    },
+    {
+      "id": "tenant.member.suspend",
+      "application": "access/tenant_member_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.member.suspend",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.suspend/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.suspend",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.suspend/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.suspend"
+      }
+    },
+    {
+      "id": "tenant.role.assert_member_deactivation_allowed",
+      "application": "access/tenant_role_permission",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.role.assert_member_deactivation_allowed"
+      }
+    },
+    {
+      "id": "tenant.role.assign_member",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.role.assign_member",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.assign_member/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.role.assign_member",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.assign_member/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.role.assign_member"
+      }
+    },
+    {
+      "id": "tenant.role.bootstrap_owner",
+      "application": "access/tenant_role_permission",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.role.bootstrap_owner"
+      }
+    },
+    {
+      "id": "tenant.role.create",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.role.create",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.create/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.role.create",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.create/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.role.create"
+      }
+    },
+    {
+      "id": "tenant.role.disable",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.role.disable",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.disable/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.role.disable",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.disable/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.role.disable"
+      }
+    },
+    {
+      "id": "tenant.role.enable",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.role.enable",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.enable/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.role.enable",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.enable/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.role.enable"
+      }
+    },
+    {
+      "id": "tenant.role.get",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.role.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.role.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.role.get"
+      }
+    },
+    {
+      "id": "tenant.role.list",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.role.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.role.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.role.list"
+      }
+    },
+    {
+      "id": "tenant.role.revoke_member",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.role.revoke_member",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.revoke_member/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.role.revoke_member",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.revoke_member/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.role.revoke_member"
+      }
+    },
+    {
+      "id": "tenant.role.set_permissions",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.role.set_permissions",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.set_permissions/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.role.set_permissions",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.set_permissions/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.role.set_permissions"
+      }
+    },
+    {
+      "id": "tenant.role.update",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.role.update",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.update/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.role.update",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.update/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.role.update"
+      }
+    },
+    {
+      "id": "tenant.suspend",
+      "application": "access/tenant_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.suspend",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.suspend/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.suspend",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.suspend/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.suspend"
+      }
+    },
+    {
+      "id": "tenant.update",
+      "application": "access/tenant_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.update",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.update/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.update",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.update/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.update"
+      }
     }
   ],
   "operationDependencies": [
@@ -288,9 +1081,59 @@
         "source": "operation-plans.json",
         "ref": "operations/device.transfer/requiresOperations/site.validate_transfer_target"
       }
+    },
+    {
+      "from": "tenant.create",
+      "to": "tenant.member.bootstrap_owner",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.create/requiresOperations/tenant.member.bootstrap_owner"
+      }
+    },
+    {
+      "from": "tenant.create",
+      "to": "tenant.role.bootstrap_owner",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.create/requiresOperations/tenant.role.bootstrap_owner"
+      }
+    },
+    {
+      "from": "tenant.member.remove",
+      "to": "tenant.role.assert_member_deactivation_allowed",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.remove/requiresOperations/tenant.role.assert_member_deactivation_allowed"
+      }
+    },
+    {
+      "from": "tenant.member.suspend",
+      "to": "tenant.role.assert_member_deactivation_allowed",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.suspend/requiresOperations/tenant.role.assert_member_deactivation_allowed"
+      }
     }
   ],
   "modules": [
+    {
+      "name": "access",
+      "version": "v0.1.0",
+      "requirements": {
+        "databases": [
+          "primary"
+        ]
+      },
+      "evidence": {
+        "ownership": "reused",
+        "source": "generated-module-source",
+        "ref": "access/zz_yunka_module_gen.go"
+      }
+    },
     {
       "name": "deviceops",
       "version": "v0.1.0",
@@ -309,6 +1152,16 @@
     }
   ],
   "requirements": [
+    {
+      "module": "access",
+      "kind": "database",
+      "name": "primary",
+      "evidence": {
+        "ownership": "reused",
+        "source": "generated-module-source",
+        "ref": "access/zz_yunka_module_gen.go/requirements/databases/primary"
+      }
+    },
     {
       "module": "deviceops",
       "kind": "config",
@@ -343,11 +1196,15 @@
     {
       "name": "root",
       "applications": [
+        "access/tenant_lifecycle",
+        "access/tenant_member_lifecycle",
+        "access/tenant_role_permission",
         "deviceops/device_management",
         "deviceops/device_transfer",
         "deviceops/site_management"
       ],
       "modules": [
+        "access",
         "deviceops"
       ],
       "externalOperations": [
@@ -356,10 +1213,35 @@
         "device.get",
         "device.list",
         "device.transfer",
-        "device.update"
+        "device.update",
+        "tenant.activate",
+        "tenant.close",
+        "tenant.create",
+        "tenant.get",
+        "tenant.list",
+        "tenant.member.activate",
+        "tenant.member.get",
+        "tenant.member.invite",
+        "tenant.member.list",
+        "tenant.member.remove",
+        "tenant.member.suspend",
+        "tenant.role.assign_member",
+        "tenant.role.create",
+        "tenant.role.disable",
+        "tenant.role.enable",
+        "tenant.role.get",
+        "tenant.role.list",
+        "tenant.role.revoke_member",
+        "tenant.role.set_permissions",
+        "tenant.role.update",
+        "tenant.suspend",
+        "tenant.update"
       ],
       "internalOperations": [
-        "site.validate_transfer_target"
+        "site.validate_transfer_target",
+        "tenant.member.bootstrap_owner",
+        "tenant.role.assert_member_deactivation_allowed",
+        "tenant.role.bootstrap_owner"
       ],
       "evidence": {
         "ownership": "derived",

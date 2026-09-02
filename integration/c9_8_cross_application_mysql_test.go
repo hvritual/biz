@@ -191,11 +191,11 @@ func TestC98RealCrossApplicationTransferSharesOneExecutionScope(t *testing.T) {
 	}
 	observer := newC98Observer()
 	executor, transactions := c98Executor(t, db, accessStore, observer)
-	siteCapability, err := deviceapp.NewDeviceopsSiteManagementChildCapability(siteService, executor)
+	siteCapability, err := deviceapp.NewDeviceTransferToDeviceopsSiteManagementChildCapability(siteService, executor)
 	if err != nil {
 		t.Fatal(err)
 	}
-	deviceCapability, err := deviceapp.NewDeviceopsDeviceManagementChildCapability(deviceService, executor)
+	deviceCapability, err := deviceapp.NewDeviceTransferToDeviceopsDeviceManagementChildCapability(deviceService, executor)
 	if err != nil {
 		t.Fatal(err)
 	}

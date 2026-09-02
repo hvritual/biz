@@ -1,0 +1,134 @@
+name: b12-review-owner-invariant-probe
+
+on:
+  push:
+    branches:
+      - agent/b12-multitenant-access-pressure
+
+permissions:
+  contents: read
+
+jobs:
+  generate-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact Yunka A+ canonical baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Load locked toolchain
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "protoc_release=${PROTOC_RELEASE}" >> "$GITHUB_OUTPUT"
+          echo "protoc_sha256=${PROTOC_LINUX_X86_64_SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Install protoc
+        shell: bash
+        env:
+          PROTOC_RELEASE: ${{ steps.lock.outputs.protoc_release }}
+          PROTOC_SHA256: ${{ steps.lock.outputs.protoc_sha256 }}
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/protoc.zip"
+          root="$RUNNER_TEMP/protoc"
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_RELEASE}/protoc-${PROTOC_RELEASE}-linux-x86_64.zip" -o "$archive"
+          echo "${PROTOC_SHA256}  ${archive}" | sha256sum -c -
+          mkdir -p "$root"
+          unzip -q "$archive" -d "$root"
+          echo "$root/bin" >> "$GITHUB_PATH"
+
+      - name: Build protobuf plugins
+        shell: bash
+        run: make -C yunka.io rpc-tools
+
+      - name: Reverse qualify edge-owned generated capabilities
+        shell: bash
+        run: |
+          set -euo pipefail
+          generate() {
+            make -C biz generate \
+              YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" \
+              PROTOC="$(command -v protoc)" \
+              PROTOC_GEN_GO="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go" \
+              PROTOC_GEN_GO_GRPC="$GITHUB_WORKSPACE/yunka.io/.yunka/bin/protoc-gen-go-grpc"
+          }
+
+          generate
+          cd biz
+
+          lifecycle='internal/access/application/zz_yunka_tenant_lifecycle_capability_ports_gen.go'
+          member='internal/access/application/zz_yunka_tenant_member_lifecycle_capability_ports_gen.go'
+          assembly='internal/assembly/zz_yunka_assembly_gen.go'
+
+          test -f "$lifecycle"
+          test -f "$member"
+          test -f "$assembly"
+
+          echo '=== tenant lifecycle -> role permission edge ==='
+          grep -n -E 'TenantLifecycleToAccessTenantRolePermission|BootstrapTenantOwnerRole|AssertTenantMemberDeactivationAllowed|CreateTenantRole' "$lifecycle" || true
+          grep -Fq 'type TenantLifecycleToAccessTenantRolePermissionChildCapability interface' "$lifecycle"
+          grep -Fq 'BootstrapTenantOwnerRole(context.Context' "$lifecycle"
+          ! grep -Fq 'AssertTenantMemberDeactivationAllowed(context.Context' "$lifecycle"
+          ! grep -Fq 'CreateTenantRole(context.Context' "$lifecycle"
+          grep -Fq 'AccessTenantRolePermission() TenantLifecycleToAccessTenantRolePermissionChildCapability' "$lifecycle"
+
+          echo '=== tenant member lifecycle -> role permission edge ==='
+          grep -n -E 'TenantMemberLifecycleToAccessTenantRolePermission|BootstrapTenantOwnerRole|AssertTenantMemberDeactivationAllowed|CreateTenantRole' "$member" || true
+          grep -Fq 'type TenantMemberLifecycleToAccessTenantRolePermissionChildCapability interface' "$member"
+          grep -Fq 'AssertTenantMemberDeactivationAllowed(context.Context' "$member"
+          ! grep -Fq 'BootstrapTenantOwnerRole(context.Context' "$member"
+          ! grep -Fq 'CreateTenantRole(context.Context' "$member"
+          grep -Fq 'AccessTenantRolePermission() TenantMemberLifecycleToAccessTenantRolePermissionChildCapability' "$member"
+
+          echo '=== old target-owned capability must be absent ==='
+          if grep -R -q '^type AccessTenantRolePermissionChildCapability interface' internal/access/application; then
+            echo 'YUNKA_TARGET_OWNED_ROLE_CAPABILITY_LEAK=FAIL'
+            exit 42
+          fi
+
+          echo '=== assembly edge constructors ==='
+          grep -n -E 'NewTenant(Lifecycle|MemberLifecycle)ToAccessTenantRolePermissionChildCapability' "$assembly" || true
+          grep -Fq 'NewTenantLifecycleToAccessTenantRolePermissionChildCapability' "$assembly"
+          grep -Fq 'NewTenantMemberLifecycleToAccessTenantRolePermissionChildCapability' "$assembly"
+
+          echo '=== second-generation determinism ==='
+          find contracts/generated contracts/gen internal modules -type f \( -name 'zz_yunka_*' -o -path 'contracts/generated/*' \) -print0 | sort -z | xargs -0 sha256sum > /tmp/a-plus-first.sha
+          cd ..
+          generate
+          cd biz
+          find contracts/generated contracts/gen internal modules -type f \( -name 'zz_yunka_*' -o -path 'contracts/generated/*' \) -print0 | sort -z | xargs -0 sha256sum > /tmp/a-plus-second.sha
+          diff -u /tmp/a-plus-first.sha /tmp/a-plus-second.sha
+
+          echo 'YUNKA_EDGE_OWNED_CAPABILITY_CODEGEN=PASS'
+
+      - name: Compile unchanged Biz consumer glue
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          go test ./...
