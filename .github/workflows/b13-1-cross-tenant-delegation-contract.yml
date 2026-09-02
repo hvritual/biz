@@ -167,7 +167,7 @@ jobs:
           while IFS= read -r line; do
             path="${line:3}"
             case "$path" in
-              contracts/gen/*|contracts/generated/*|internal/access/application/zz_yunka*|internal/deviceops/application/zz_yunka*|internal/assembly/*|modules/access/zz_yunka*|modules/deviceops/zz_yunka*) ;;
+              contracts/gen/*|contracts/generated/*|internal/access/*/zz_yunka*|internal/deviceops/*/zz_yunka*|internal/assembly/*|modules/access/zz_yunka*|modules/deviceops/zz_yunka*) ;;
               *) echo "unexpected generator write: $path" >&2; exit 42 ;;
             esac
           done < "$RUNNER_TEMP/b13/status.txt"
