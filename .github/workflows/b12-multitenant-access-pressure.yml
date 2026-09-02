@@ -9,6 +9,7 @@ on:
       - .yunka/project.json
       - Makefile
       - contracts/**
+      - docs/pressure/B12-framework-pressure.md
       - internal/**
       - integration/**
       - modules/**
@@ -22,6 +23,7 @@ on:
       - .yunka/project.json
       - Makefile
       - contracts/**
+      - docs/pressure/B12-framework-pressure.md
       - internal/**
       - integration/**
       - modules/**
