@@ -10,19 +10,19 @@ The B12 source objective is tracked by Biz issue #8 and PR #9.
 
 ## Qualified framework baseline
 
-The final B12.2-B12.8 qualification baseline is:
+The final B12 qualification baseline is:
 
 ```text
-hvritual/yunka.io@f154c521e5bf6c637022795075c4ebf5d48a00d1
+hvritual/yunka.io@6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
 ```
 
-This is the merge commit of Yunka PR #108, `B12 authz: principal-aware grant resolution`.
+This canonical main merge includes both generic framework fixes discovered by B12: PR #108 (`B12 authz: principal-aware grant resolution`) and PR #112 (`A+: edge-owned child capability codegen`).
 
 ## Executable qualification evidence
 
 ### Framework gap reproduction and closure
 
-The one generic framework defect discovered by B12 was reproduced before any framework change:
+The first generic framework defect discovered by B12 was reproduced before any framework change:
 
 ```text
 Biz pressure:  agent/b12-multitenant-access-pressure@34dc0322cd06701296bc75f8fca94edae09c2bb6
@@ -184,6 +184,48 @@ yunka dev
 
 **Framework status:** **NO DEFECT FOUND.**
 
+
+### B12-FP-006 — Shared target child capability codegen collided across source Applications
+
+**Classification:** `YUNKA_COMPILER_GAP`
+
+**Observed pressure:** after the Member last-owner rule correctly declared `tenant.member.suspend/remove -> tenant.role.assert_member_deactivation_allowed`, both `access/tenant_lifecycle` and `access/tenant_member_lifecycle` depended on `access/tenant_role_permission`. The old generator emitted the same target-owned child-capability type, implementation and constructor once per source Application, producing duplicate declarations in one Go package. A target-owned deduplication proposal was rejected because unioning required target Operations across sources would widen each source's capability surface.
+
+The executable reproducer is Yunka issue #110. The A+ resolution makes capability identity source-edge owned:
+
+```text
+(source Application -> target Application -> required Operations)
+```
+
+Each generated edge exposes only target Operations directly named by the source Operations' `requires_operations`. For the real Biz pressure graph this means:
+
+```text
+TenantLifecycle -> TenantRolePermission
+  exposes BootstrapTenantOwnerRole only
+
+TenantMemberLifecycle -> TenantRolePermission
+  exposes AssertTenantMemberDeactivationAllowed only
+```
+
+Qualification evidence:
+
+```text
+RED fixture commit:          e9477a8848a9be5e458378ada68ae1ed6691e6df
+qualified candidate:         044b39b1a893327ef303c5ba5eddcd291bccb3c6
+candidate framework CI:      33569648073  SUCCESS
+candidate production/MySQL:  33569647996  SUCCESS
+Biz reverse qualification:   33571724579  SUCCESS
+Biz generated materialize:   33571942057  SUCCESS
+canonical integration PR:    #112
+canonical main merge:        6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+```
+
+The resolution does not change PB DSL, Application/Operation dependency semantics, OperationPlan, AssemblyPlan, Executor, authorization, or root ExecutionScope/UoW semantics.
+
+**Status:** **CLOSED by Yunka PR #112 / QUALIFIED.**
+
+---
+
 ## Biz-specific discoveries retained in Biz
 
 The following B12 findings are intentionally not promoted into Yunka:
@@ -249,15 +291,16 @@ No B12 path introduces:
 | B12-FP-003 | cross-Application atomic bootstrap | runtime/UoW assessment | **NO DEFECT** |
 | B12-FP-004 | concurrent durable idempotency | runtime assessment | **NO DEFECT** |
 | B12-FP-005 | six-Application dev/runtime evidence | DX/runtime assessment | **NO DEFECT; Biz profile drift fixed** |
+| B12-FP-006 | shared target child capability collision / least-authority surface | `YUNKA_COMPILER_GAP` | **CLOSED by Yunka PR #112** |
 
 ## Final disposition
 
 ```text
 B12_FRAMEWORK_PRESSURE_DISPOSITION=PASS
 OPEN_B12_YUNKA_GAPS=0
-QUALIFIED_YUNKA_BASELINE=f154c521e5bf6c637022795075c4ebf5d48a00d1
+QUALIFIED_YUNKA_BASELINE=6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
 ```
 
-B12 discovered exactly one generic Yunka defect, reproduced it before framework modification, closed it through a qualified generic framework change, and completed the remaining multi-tenant Access/IAM pressure without additional framework expansion.
+B12 discovered two generic Yunka defects, reproduced both before framework modification, closed them through qualified generic framework changes, and kept the remaining multi-tenant Access/IAM pressure inside Biz.
 
 There is no unresolved B12 framework pressure blocking final Biz qualification and merge readiness.

@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      YUNKA_SHA: f154c521e5bf6c637022795075c4ebf5d48a00d1
+      YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
     steps:
       - name: Checkout exact Biz candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -147,7 +147,7 @@ jobs:
           for operation in \
             tenant.create tenant.get tenant.list tenant.update tenant.activate tenant.suspend tenant.close \
             tenant.member.bootstrap_owner tenant.member.invite tenant.member.get tenant.member.list tenant.member.activate tenant.member.suspend tenant.member.remove \
-            tenant.role.bootstrap_owner tenant.role.create tenant.role.get tenant.role.list tenant.role.update tenant.role.disable tenant.role.enable tenant.role.set_permissions tenant.role.assign_member tenant.role.revoke_member; do
+            tenant.role.bootstrap_owner tenant.role.create tenant.role.get tenant.role.list tenant.role.update tenant.role.disable tenant.role.enable tenant.role.set_permissions tenant.role.assign_member tenant.role.revoke_member tenant.role.assert_member_deactivation_allowed; do
             grep -Fq "\"$operation\"" biz/contracts/generated/operation-plans.json
           done
           grep -Fq 'tenant_lifecycle' biz/contracts/generated/assembly-plan.json
@@ -214,7 +214,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      YUNKA_SHA: f154c521e5bf6c637022795075c4ebf5d48a00d1
+      YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_b12?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
     services:
       mysql:

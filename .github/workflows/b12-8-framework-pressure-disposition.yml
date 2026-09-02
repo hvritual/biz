@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      YUNKA_SHA: f154c521e5bf6c637022795075c4ebf5d48a00d1
+      YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
     steps:
       - name: Checkout exact Biz candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -48,6 +48,9 @@ jobs:
           grep -Fq 'B12-FP-001' "$ledger"
           grep -Fq 'YUNKA_AUTHZ_GAP' "$ledger"
           grep -Fq 'CLOSED by Yunka PR #108' "$ledger"
+          grep -Fq 'B12-FP-006' "$ledger"
+          grep -Fq 'YUNKA_COMPILER_GAP' "$ledger"
+          grep -Fq 'CLOSED by Yunka PR #112' "$ledger"
 
       - name: Verify current B12 qualification surface
         shell: bash
