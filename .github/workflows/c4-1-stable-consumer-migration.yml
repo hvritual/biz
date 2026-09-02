@@ -1,0 +1,120 @@
+name: c4-1-stable-consumer-migration
+
+on:
+  push:
+    branches: [fix/delivery-release-certification]
+    paths:
+      - .github/workflows/c4-1-stable-consumer-migration.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: fix/delivery-release-certification
+          path: biz
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Checkout canonical Yunka source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 6dab44980dea1090339aea86c47838d6da594646
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: 1.25.13
+          cache: false
+
+      - name: Migrate Biz to stable Yunka modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+
+          mapfile -t module_files < <(
+            git grep -Il \
+              -e 'yunka.io/framework' \
+              -e 'yunka.io/gateway' \
+              -e 'yunka.io/pkg' \
+              -- . ':!docs/**' || true
+          )
+          if (( ${#module_files[@]} > 0 )); then
+            sed -i \
+              -e 's#yunka\.io/framework#github.com/hvritual/yunka.io/framework#g' \
+              -e 's#yunka\.io/gateway#github.com/hvritual/yunka.io/gateway#g' \
+              -e 's#yunka\.io/pkg#github.com/hvritual/yunka.io/pkg#g' \
+              "${module_files[@]}"
+          fi
+
+          sed -i \
+            -e 's/YUNKA_PSEUDO_VERSION/YUNKA_VERSION/g' \
+            -e 's/v0\.0\.0-20260902030847-6ba99c1440dc/v0.1.0/g' \
+            -e 's/6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb/6dab44980dea1090339aea86c47838d6da594646/g' \
+            .yunka/source.env scripts/consumer-resolution-check.sh scripts/verify-yunka-source.sh .github/workflows/delivery-workspace-isolation.yml
+          sed -i \
+            -e 's/Keep the pseudo-version synchronized with the commit timestamp\/SHA\./The release contract uses immutable v0.1.0 modules; YUNKA_COMMIT locks the canonical local source checkout./' \
+            -e '/^YUNKA_COMPAT_MODULE=/d' \
+            .yunka/source.env
+
+          sed -i '/check_version github.com\/go-kit\/kit v0\.10\.0/d' scripts/consumer-resolution-check.sh
+          sed -i \
+            -e '/check_module_path compat\/go-kit-kit-log github.com\/go-kit\/kit/d' \
+            -e '/check_release_contract github.com\/go-kit\/kit v0\.10\.0/d' \
+            -e '/check_workspace_replace github.com\/go-kit\/kit compat\/go-kit-kit-log/d' \
+            scripts/verify-yunka-source.sh
+
+          go work edit -dropreplace=github.com/go-kit/kit@v0.10.0
+          GOWORK=off go mod edit -require=github.com/hvritual/yunka.io/pkg@v0.1.0
+          GOWORK=off go mod edit -require=github.com/hvritual/yunka.io/framework@v0.1.0
+          GOWORK=off go mod edit -require=github.com/hvritual/yunka.io/gateway@v0.1.0
+          GOWORK=off go mod tidy
+          go work sync
+          go list -m all >/dev/null
+
+          if git grep -n \
+            -e 'yunka.io/framework' \
+            -e 'yunka.io/gateway' \
+            -e 'yunka.io/pkg' \
+            -- . ':!docs/**'; then
+            echo 'legacy Yunka module namespace remains outside historical docs' >&2
+            exit 1
+          fi
+          if grep -R -n 'YUNKA_PSEUDO_VERSION' .yunka scripts .github/workflows; then
+            echo 'legacy pseudo-version contract remains' >&2
+            exit 1
+          fi
+          git diff --check
+
+      - name: Certify development and release graphs
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C biz consumer-certify YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io"
+          test -z "$(git -C yunka.io status --porcelain)"
+          git -C biz diff --check
+
+      - name: Commit qualified migration and retire executor
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          git rm .github/workflows/c4-1-stable-consumer-migration.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git status --short
+          git commit -m 'fix: consume Yunka v0.1.0 stable modules'
+          git push origin HEAD:fix/delivery-release-certification
