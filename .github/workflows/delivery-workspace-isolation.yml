@@ -9,6 +9,7 @@ on:
       - go.mod
       - go.sum
       - go.work
+      - go.work.sum
       - Makefile
       - scripts/consumer-resolution-check.sh
       - scripts/verify-yunka-source.sh
@@ -20,6 +21,7 @@ on:
       - go.mod
       - go.sum
       - go.work
+      - go.work.sum
       - Makefile
       - scripts/consumer-resolution-check.sh
       - scripts/verify-yunka-source.sh
