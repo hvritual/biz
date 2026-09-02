@@ -44,23 +44,64 @@ jobs:
           set -euo pipefail
           cd biz
 
-          mapfile -t module_files < <(
-            git grep -Il \
-              -e 'yunka.io/framework' \
-              -e 'yunka.io/gateway' \
-              -e 'yunka.io/pkg' \
-              -- . \
-              ':!docs/**' \
-              ':!go.work' \
-              ':!.github/workflows/c4-1-stable-consumer-migration.yml' || true
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          replacements = {
+              "yunka.io/framework": "github.com/hvritual/yunka.io/framework",
+              "yunka.io/gateway": "github.com/hvritual/yunka.io/gateway",
+              "yunka.io/pkg": "github.com/hvritual/yunka.io/pkg",
+          }
+
+          tracked = subprocess.check_output(
+              ["git", "ls-files", "*.go", "*.proto", "go.mod"], text=True
+          ).splitlines()
+          for name in tracked:
+              path = Path(name)
+              text = path.read_text()
+              new = text
+              for old, replacement in replacements.items():
+                  new = new.replace(old, replacement)
+              if new != text:
+                  path.write_text(new)
+
+          source = Path(".yunka/source.env")
+          source.write_text(
+              '# Canonical Yunka source used by Biz consumer certification.\n'
+              '# The release contract uses immutable v0.1.0 modules; YUNKA_COMMIT locks the canonical local source checkout.\n'
+              'YUNKA_REPOSITORY="https://github.com/hvritual/yunka.io"\n'
+              'YUNKA_COMMIT="6dab44980dea1090339aea86c47838d6da594646"\n'
+              'YUNKA_VERSION="v0.1.0"\n'
+              'YUNKA_MODULES="framework gateway pkg"\n'
           )
-          if (( ${#module_files[@]} > 0 )); then
-            sed -i \
-              -e 's#yunka\.io/framework#github.com/hvritual/yunka.io/framework#g' \
-              -e 's#yunka\.io/gateway#github.com/hvritual/yunka.io/gateway#g' \
-              -e 's#yunka\.io/pkg#github.com/hvritual/yunka.io/pkg#g' \
-              "${module_files[@]}"
-          fi
+
+          for name in ["scripts/consumer-resolution-check.sh", "scripts/verify-yunka-source.sh"]:
+              path = Path(name)
+              text = path.read_text()
+              for old, replacement in replacements.items():
+                  text = text.replace(old, replacement)
+              text = text.replace("YUNKA_PSEUDO_VERSION", "YUNKA_VERSION")
+              lines = []
+              for line in text.splitlines():
+                  if "check_version github.com/go-kit/kit v0.10.0" in line:
+                      continue
+                  if "check_module_path compat/go-kit-kit-log github.com/go-kit/kit" in line:
+                      continue
+                  if "check_release_contract github.com/go-kit/kit v0.10.0" in line:
+                      continue
+                  if "check_workspace_replace github.com/go-kit/kit compat/go-kit-kit-log" in line:
+                      continue
+                  lines.append(line)
+              path.write_text("\n".join(lines) + "\n")
+
+          workflow = Path(".github/workflows/delivery-workspace-isolation.yml")
+          text = workflow.read_text().replace(
+              "6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb",
+              "6dab44980dea1090339aea86c47838d6da594646",
+          )
+          workflow.write_text(text)
+          PY
 
           cat > go.work <<'EOF'
           go 1.25.0
@@ -76,23 +117,6 @@ jobs:
           )
           EOF
 
-          sed -i \
-            -e 's/YUNKA_PSEUDO_VERSION/YUNKA_VERSION/g' \
-            -e 's/v0\.0\.0-20260902030847-6ba99c1440dc/v0.1.0/g' \
-            -e 's/6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb/6dab44980dea1090339aea86c47838d6da594646/g' \
-            .yunka/source.env scripts/consumer-resolution-check.sh scripts/verify-yunka-source.sh .github/workflows/delivery-workspace-isolation.yml
-          sed -i \
-            -e 's/Keep the pseudo-version synchronized with the commit timestamp\/SHA\./The release contract uses immutable v0.1.0 modules; YUNKA_COMMIT locks the canonical local source checkout./' \
-            -e '/^YUNKA_COMPAT_MODULE=/d' \
-            .yunka/source.env
-
-          sed -i '/check_version github.com\/go-kit\/kit v0\.10\.0/d' scripts/consumer-resolution-check.sh
-          sed -i \
-            -e '/check_module_path compat\/go-kit-kit-log github.com\/go-kit\/kit/d' \
-            -e '/check_release_contract github.com\/go-kit\/kit v0\.10\.0/d' \
-            -e '/check_workspace_replace github.com\/go-kit\/kit compat\/go-kit-kit-log/d' \
-            scripts/verify-yunka-source.sh
-
           GOWORK=off go mod edit -require=github.com/hvritual/yunka.io/pkg@v0.1.0
           GOWORK=off go mod edit -require=github.com/hvritual/yunka.io/framework@v0.1.0
           GOWORK=off go mod edit -require=github.com/hvritual/yunka.io/gateway@v0.1.0
@@ -100,20 +124,50 @@ jobs:
           go work sync
           go list -m all >/dev/null
 
-          if git grep -n \
-            -e 'yunka.io/framework' \
-            -e 'yunka.io/gateway' \
-            -e 'yunka.io/pkg' \
-            -- . \
-            ':!docs/**' \
-            ':!.github/workflows/c4-1-stable-consumer-migration.yml'; then
-            echo 'legacy Yunka module namespace remains outside historical docs' >&2
-            exit 1
-          fi
-          if grep -R -n 'YUNKA_PSEUDO_VERSION' .yunka scripts .github/workflows --exclude=c4-1-stable-consumer-migration.yml; then
-            echo 'legacy pseudo-version contract remains' >&2
-            exit 1
-          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          import re
+          import subprocess
+
+          legacy = re.compile(r'"yunka\.io/(framework|gateway|pkg)(?:/|"|$)')
+          for pattern in ("*.go", "*.proto"):
+              names = subprocess.check_output(["git", "ls-files", pattern], text=True).splitlines()
+              for name in names:
+                  text = Path(name).read_text()
+                  if legacy.search(text):
+                      raise SystemExit(f"legacy Yunka module import remains: {name}")
+
+          mod = json.loads(subprocess.check_output(
+              ["go", "mod", "edit", "-json"],
+              text=True,
+              env={**__import__('os').environ, "GOWORK": "off"},
+          ))
+          required = {entry["Path"]: entry["Version"] for entry in mod.get("Require") or []}
+          expected = {
+              "github.com/hvritual/yunka.io/pkg": "v0.1.0",
+              "github.com/hvritual/yunka.io/framework": "v0.1.0",
+              "github.com/hvritual/yunka.io/gateway": "v0.1.0",
+          }
+          for module, version in expected.items():
+              if required.get(module) != version:
+                  raise SystemExit(f"{module}={required.get(module)!r}, expected {version}")
+          for module in ("yunka.io/pkg", "yunka.io/framework", "yunka.io/gateway"):
+              if module in required:
+                  raise SystemExit(f"legacy go.mod requirement remains: {module}")
+          if mod.get("Replace"):
+              raise SystemExit("go.mod must remain replacement-free")
+
+          for name in [
+              ".yunka/source.env",
+              "scripts/consumer-resolution-check.sh",
+              "scripts/verify-yunka-source.sh",
+              ".github/workflows/delivery-workspace-isolation.yml",
+          ]:
+              if "YUNKA_PSEUDO_VERSION" in Path(name).read_text():
+                  raise SystemExit(f"legacy pseudo-version contract remains: {name}")
+          PY
+
           git diff --check
 
       - name: Certify development and release graphs
