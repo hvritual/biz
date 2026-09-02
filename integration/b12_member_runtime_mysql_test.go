@@ -20,8 +20,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
 	"gorm.io/gorm"
-	"yunka.io/framework/platform"
-	"yunka.io/pkg/logExt"
+	"github.com/hvritual/yunka.io/framework/platform"
+	"github.com/hvritual/yunka.io/pkg/logExt"
 )
 
 func startB123Runtime(t *testing.T, db *gorm.DB) *bizruntime.Started {

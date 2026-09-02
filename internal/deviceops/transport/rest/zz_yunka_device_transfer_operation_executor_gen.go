@@ -10,9 +10,9 @@ import (
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	io "io"
 	"net/http"
-	execution "yunka.io/framework/execution"
-	operation "yunka.io/framework/operation"
-	authz "yunka.io/gateway/authz"
+	execution "github.com/hvritual/yunka.io/framework/execution"
+	operation "github.com/hvritual/yunka.io/framework/operation"
+	authz "github.com/hvritual/yunka.io/gateway/authz"
 )
 
 type DeviceTransferOperationHandler struct {

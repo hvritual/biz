@@ -7,7 +7,7 @@ import (
 	errors "errors"
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	accesspolicy "github.com/hvritual/biz/internal/access/policy"
-	operation "yunka.io/framework/operation"
+	operation "github.com/hvritual/yunka.io/framework/operation"
 )
 
 type TenantMemberLifecycleToAccessTenantRolePermissionChildCapability interface {

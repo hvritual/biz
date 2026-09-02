@@ -11,7 +11,7 @@ import (
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	"github.com/hvritual/biz/internal/access/domain"
 	"github.com/hvritual/biz/internal/access/ports"
-	"yunka.io/framework/requestscope"
+	"github.com/hvritual/yunka.io/framework/requestscope"
 )
 
 var ErrInvalidTenantRequest = errors.New("access: invalid tenant request")

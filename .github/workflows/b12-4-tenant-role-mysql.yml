@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+      YUNKA_SHA: 6dab44980dea1090339aea86c47838d6da594646
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_b124?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
     services:
       mysql:

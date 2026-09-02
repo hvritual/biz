@@ -2,7 +2,7 @@
 
 package policy
 
-import "yunka.io/gateway/authz"
+import "github.com/hvritual/yunka.io/gateway/authz"
 
 const OperationDeviceTransferTransferDevice authz.OperationID = "device.transfer"
 

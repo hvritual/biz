@@ -19,9 +19,9 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
 	"gorm.io/gorm"
-	"yunka.io/framework/platform"
-	"yunka.io/gateway/authz"
-	"yunka.io/pkg/logExt"
+	"github.com/hvritual/yunka.io/framework/platform"
+	"github.com/hvritual/yunka.io/gateway/authz"
+	"github.com/hvritual/yunka.io/pkg/logExt"
 )
 
 func startB122Runtime(t *testing.T, db *gorm.DB, token string) *bizruntime.Started {

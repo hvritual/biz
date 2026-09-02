@@ -11,7 +11,7 @@ import (
 	"github.com/hvritual/biz/internal/deviceops/domain"
 	"github.com/hvritual/biz/internal/deviceops/ports"
 	devicesecurity "github.com/hvritual/biz/internal/deviceops/security"
-	"yunka.io/framework/requestscope"
+	"github.com/hvritual/yunka.io/framework/requestscope"
 )
 
 var ErrInvalid = errors.New("deviceops: invalid request")

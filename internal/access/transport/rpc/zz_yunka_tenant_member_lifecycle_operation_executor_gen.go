@@ -10,9 +10,9 @@ import (
 	policy "github.com/hvritual/biz/internal/access/policy"
 	grpc "google.golang.org/grpc"
 	grpcmetadata "google.golang.org/grpc/metadata"
-	execution "yunka.io/framework/execution"
-	operation "yunka.io/framework/operation"
-	gatewaygrpc "yunka.io/gateway/rpc/transport/grpc"
+	execution "github.com/hvritual/yunka.io/framework/execution"
+	operation "github.com/hvritual/yunka.io/framework/operation"
+	gatewaygrpc "github.com/hvritual/yunka.io/gateway/rpc/transport/grpc"
 )
 
 type TenantMemberLifecycleOperationServer struct {

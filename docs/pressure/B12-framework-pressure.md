@@ -13,7 +13,7 @@ The B12 source objective is tracked by Biz issue #8 and PR #9.
 The final B12 qualification baseline is:
 
 ```text
-hvritual/yunka.io@6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+hvritual/yunka.io@6dab44980dea1090339aea86c47838d6da594646
 ```
 
 This canonical main merge includes both generic framework fixes discovered by B12: PR #108 (`B12 authz: principal-aware grant resolution`) and PR #112 (`A+: edge-owned child capability codegen`).
@@ -298,7 +298,7 @@ No B12 path introduces:
 ```text
 B12_FRAMEWORK_PRESSURE_DISPOSITION=PASS
 OPEN_B12_YUNKA_GAPS=0
-QUALIFIED_YUNKA_BASELINE=6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+QUALIFIED_YUNKA_BASELINE=6dab44980dea1090339aea86c47838d6da594646
 ```
 
 B12 discovered two generic Yunka defects, reproduced both before framework modification, closed them through qualified generic framework changes, and kept the remaining multi-tenant Access/IAM pressure inside Biz.

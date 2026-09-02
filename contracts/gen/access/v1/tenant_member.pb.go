@@ -13,7 +13,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-	_ "yunka.io/pkg/contractdsl/v1"
+	_ "github.com/hvritual/yunka.io/pkg/contractdsl/v1"
 )
 
 const (

@@ -7,7 +7,7 @@ import (
 	errors "errors"
 	deviceopsv1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
 	deviceopspolicy "github.com/hvritual/biz/internal/deviceops/policy"
-	operation "yunka.io/framework/operation"
+	operation "github.com/hvritual/yunka.io/framework/operation"
 )
 
 type DeviceTransferToDeviceopsDeviceManagementChildCapability interface {

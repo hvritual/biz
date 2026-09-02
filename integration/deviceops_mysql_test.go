@@ -23,8 +23,8 @@ import (
 	"google.golang.org/grpc/status"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"yunka.io/framework/platform"
-	"yunka.io/pkg/logExt"
+	"github.com/hvritual/yunka.io/framework/platform"
+	"github.com/hvritual/yunka.io/pkg/logExt"
 )
 
 func openDB(t *testing.T) *gorm.DB {

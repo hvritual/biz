@@ -11,9 +11,9 @@ import (
 	io "io"
 	"net/http"
 	strconv "strconv"
-	execution "yunka.io/framework/execution"
-	operation "yunka.io/framework/operation"
-	authz "yunka.io/gateway/authz"
+	execution "github.com/hvritual/yunka.io/framework/execution"
+	operation "github.com/hvritual/yunka.io/framework/operation"
+	authz "github.com/hvritual/yunka.io/gateway/authz"
 )
 
 type DeviceManagementOperationHandler struct {

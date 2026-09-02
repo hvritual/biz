@@ -2,7 +2,7 @@
 
 package policy
 
-import "yunka.io/pkg/operationplan"
+import "github.com/hvritual/yunka.io/pkg/operationplan"
 
 func OperationPlanTenantMemberLifecycleActivateTenantMember() operationplan.Plan {
 	return operationplan.Plan{OperationID: "tenant.member.activate", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "activate_tenant_member", RequestType: "access.v1.ActivateTenantMemberRequest", ResponseType: "access.v1.TenantMemberDTO", Execution: operationplan.Execution{Transaction: "local", Idempotency: "required"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key"}, Permissions: []string{"tenant.member.manage"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{"access/tenant_role_permission"}, Bindings: operationplan.Bindings{RPC: "/access.v1.TenantMemberLifecycleApplication/ActivateTenantMember", HTTP: []operationplan.HTTPBinding{{Method: "POST", Path: "/v1/tenant/members/{user_id}/activate", Body: "*", ResponseBody: ""}}}}

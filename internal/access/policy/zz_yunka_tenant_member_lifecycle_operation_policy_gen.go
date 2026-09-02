@@ -2,7 +2,7 @@
 
 package policy
 
-import "yunka.io/gateway/authz"
+import "github.com/hvritual/yunka.io/gateway/authz"
 
 const OperationTenantMemberLifecycleActivateTenantMember authz.OperationID = "tenant.member.activate"
 const OperationTenantMemberLifecycleGetTenantMember authz.OperationID = "tenant.member.get"

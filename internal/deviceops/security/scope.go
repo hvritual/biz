@@ -9,7 +9,7 @@ import (
 	deviceopsv1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
 	accessdomain "github.com/hvritual/biz/internal/access/domain"
 	accessports "github.com/hvritual/biz/internal/access/ports"
-	"yunka.io/gateway/authz"
+	"github.com/hvritual/yunka.io/gateway/authz"
 )
 
 var ErrAuthorizedScopeMissing = errors.New("deviceops security: authorized scope missing")

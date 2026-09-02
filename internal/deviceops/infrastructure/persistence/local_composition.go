@@ -6,7 +6,7 @@ import (
 
 	"github.com/hvritual/biz/internal/deviceops/ports"
 	"gorm.io/gorm"
-	"yunka.io/framework/requestscope"
+	"github.com/hvritual/yunka.io/framework/requestscope"
 )
 
 type LocalTransferRepositories = requestscope.Pair[ports.ScopedDeviceRepository, ports.SiteRepository]

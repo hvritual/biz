@@ -14,7 +14,7 @@ fail() {
 source "$LOCK_FILE"
 
 : "${YUNKA_COMMIT:?missing YUNKA_COMMIT in $LOCK_FILE}"
-: "${YUNKA_PSEUDO_VERSION:?missing YUNKA_PSEUDO_VERSION in $LOCK_FILE}"
+: "${YUNKA_VERSION:?missing YUNKA_VERSION in $LOCK_FILE}"
 
 YUNKA_ROOT="${YUNKA_ROOT:-$(cd "$ROOT/.." && pwd -P)/yunka.io}"
 [[ -d "$YUNKA_ROOT/.git" ]] || fail "YUNKA_ROOT is not a git checkout: $YUNKA_ROOT"
@@ -34,34 +34,86 @@ check_module_path() {
   [[ "$actual" == "$expected" ]] || fail "$rel declares $actual, expected $expected"
 }
 
-check_replace() {
+mod_json="$(cd "$ROOT" && GOWORK=off go mod edit -json)"
+work_json="$(cd "$ROOT" && go work edit -json)"
+
+required_version() {
   local module="$1"
-  local rel="$2"
-  local expected_version="$3"
-  local version replace_dir resolved expected
-
-  version="$(cd "$ROOT" && GOWORK=off go list -m -f '{{.Version}}' "$module")"
-  [[ "$version" == "$expected_version" ]] || fail "$module version is $version, expected $expected_version"
-
-  replace_dir="$(cd "$ROOT" && GOWORK=off go list -m -f '{{with .Replace}}{{.Dir}}{{end}}' "$module")"
-  [[ -n "$replace_dir" ]] || fail "$module is not replaced with locked local source"
-  if [[ "$replace_dir" = /* ]]; then
-    resolved="$(cd "$replace_dir" && pwd -P)"
-  else
-    resolved="$(cd "$ROOT/$replace_dir" && pwd -P)"
-  fi
-  expected="$(cd "$YUNKA_ROOT/$rel" && pwd -P)"
-  [[ "$resolved" == "$expected" ]] || fail "$module resolves to $resolved, expected $expected"
+  printf '%s\n' "$mod_json" | MODULE="$module" python3 -c '
+import json, os, sys
+m = os.environ["MODULE"]
+data = json.load(sys.stdin)
+for req in data.get("Require") or []:
+    if req.get("Path") == m:
+        print(req.get("Version", ""))
+        raise SystemExit(0)
+raise SystemExit(1)
+'
 }
 
-check_module_path framework yunka.io/framework
-check_module_path gateway yunka.io/gateway
-check_module_path pkg yunka.io/pkg
-check_module_path compat/go-kit-kit-log github.com/go-kit/kit
+mod_has_replace() {
+  local module="$1"
+  printf '%s\n' "$mod_json" | MODULE="$module" python3 -c '
+import json, os, sys
+m = os.environ["MODULE"]
+data = json.load(sys.stdin)
+for rep in data.get("Replace") or []:
+    if (rep.get("Old") or {}).get("Path") == m:
+        raise SystemExit(0)
+raise SystemExit(1)
+'
+}
 
-check_replace yunka.io/framework framework "$YUNKA_PSEUDO_VERSION"
-check_replace yunka.io/gateway gateway "$YUNKA_PSEUDO_VERSION"
-check_replace yunka.io/pkg pkg "$YUNKA_PSEUDO_VERSION"
-check_replace github.com/go-kit/kit compat/go-kit-kit-log v0.10.0
+work_replace_path() {
+  local module="$1"
+  printf '%s\n' "$work_json" | MODULE="$module" python3 -c '
+import json, os, sys
+m = os.environ["MODULE"]
+data = json.load(sys.stdin)
+for rep in data.get("Replace") or []:
+    if (rep.get("Old") or {}).get("Path") == m:
+        print((rep.get("New") or {}).get("Path", ""))
+        raise SystemExit(0)
+raise SystemExit(1)
+'
+}
 
-echo "yunka source check: locked at $YUNKA_COMMIT"
+check_release_contract() {
+  local module="$1"
+  local expected_version="$2"
+  local actual_version
+  actual_version="$(required_version "$module")" || fail "$module is not required by go.mod"
+  [[ "$actual_version" == "$expected_version" ]] || fail "$module version is $actual_version, expected $expected_version"
+  if mod_has_replace "$module"; then
+    fail "$module must not be replaced in go.mod; local source belongs in go.work"
+  fi
+}
+
+check_workspace_replace() {
+  local module="$1"
+  local rel="$2"
+  local replace_path resolved expected
+  replace_path="$(work_replace_path "$module")" || fail "$module is not replaced by go.work"
+  [[ -n "$replace_path" ]] || fail "$module go.work replacement has no path"
+  if [[ "$replace_path" = /* ]]; then
+    resolved="$(cd "$replace_path" && pwd -P)"
+  else
+    resolved="$(cd "$ROOT/$replace_path" && pwd -P)"
+  fi
+  expected="$(cd "$YUNKA_ROOT/$rel" && pwd -P)"
+  [[ "$resolved" == "$expected" ]] || fail "$module workspace source is $resolved, expected $expected"
+}
+
+check_module_path framework github.com/hvritual/yunka.io/framework
+check_module_path gateway github.com/hvritual/yunka.io/gateway
+check_module_path pkg github.com/hvritual/yunka.io/pkg
+
+check_release_contract github.com/hvritual/yunka.io/framework "$YUNKA_VERSION"
+check_release_contract github.com/hvritual/yunka.io/gateway "$YUNKA_VERSION"
+check_release_contract github.com/hvritual/yunka.io/pkg "$YUNKA_VERSION"
+
+check_workspace_replace github.com/hvritual/yunka.io/framework framework
+check_workspace_replace github.com/hvritual/yunka.io/gateway gateway
+check_workspace_replace github.com/hvritual/yunka.io/pkg pkg
+
+echo "yunka source check: local workspace source locked at $YUNKA_COMMIT; go.mod remains release-only"

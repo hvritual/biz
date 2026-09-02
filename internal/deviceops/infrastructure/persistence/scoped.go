@@ -8,7 +8,7 @@ import (
 	"github.com/hvritual/biz/internal/deviceops/ports"
 	devicesecurity "github.com/hvritual/biz/internal/deviceops/security"
 	"gorm.io/gorm"
-	"yunka.io/framework/requestscope"
+	"github.com/hvritual/yunka.io/framework/requestscope"
 )
 
 func applyDeviceDataScope(query *gorm.DB, scope devicesecurity.Scope) *gorm.DB {

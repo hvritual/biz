@@ -8,7 +8,7 @@ import (
 	deviceopsv1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
 	"github.com/hvritual/biz/internal/deviceops/domain"
 	"github.com/hvritual/biz/internal/deviceops/ports"
-	"yunka.io/framework/requestscope"
+	"github.com/hvritual/yunka.io/framework/requestscope"
 )
 
 type SiteManagementService struct {

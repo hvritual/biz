@@ -14,9 +14,9 @@ import (
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	"github.com/hvritual/biz/internal/access/ports"
 	"gorm.io/gorm"
-	"yunka.io/framework/execution"
-	"yunka.io/framework/requestscope"
-	"yunka.io/gateway/authz"
+	"github.com/hvritual/yunka.io/framework/execution"
+	"github.com/hvritual/yunka.io/framework/requestscope"
+	"github.com/hvritual/yunka.io/gateway/authz"
 )
 
 type b12TenantCapabilities struct {

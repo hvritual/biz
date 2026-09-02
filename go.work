@@ -3,3 +3,9 @@ go 1.25.0
 toolchain go1.25.13
 
 use .
+
+replace (
+	github.com/hvritual/yunka.io/framework => ../yunka.io/framework
+	github.com/hvritual/yunka.io/gateway => ../yunka.io/gateway
+	github.com/hvritual/yunka.io/pkg => ../yunka.io/pkg
+)

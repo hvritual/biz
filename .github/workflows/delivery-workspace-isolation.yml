@@ -12,6 +12,7 @@ on:
       - go.work.sum
       - Makefile
       - scripts/consumer-resolution-check.sh
+      - scripts/release-resolution-check.sh
       - scripts/verify-yunka-source.sh
   pull_request:
     branches: [main]
@@ -24,6 +25,7 @@ on:
       - go.work.sum
       - Makefile
       - scripts/consumer-resolution-check.sh
+      - scripts/release-resolution-check.sh
       - scripts/verify-yunka-source.sh
   workflow_dispatch:
 
@@ -35,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+      YUNKA_SHA: 6dab44980dea1090339aea86c47838d6da594646
     steps:
       - name: Checkout exact Biz candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -93,22 +95,35 @@ jobs:
           expected="$GITHUB_WORKSPACE/biz/go.work"
           actual="$(go -C biz env GOWORK)"
           test "$actual" = "$expected"
-          make -C biz workspace-check
+          if ! make -C biz workspace-check; then
+            modcache="$(go env GOMODCACHE)"
+            echo "--- dependency metadata mentioning invalid OTel module path ---"
+            grep -R -n --include='*.mod' \
+              'go.opentelemetry.io/otel/exporters/otlp/otlpmetrichttp' \
+              "$modcache/cache/download" 2>/dev/null || true
+            echo "--- nearby OTel metric exporter metadata ---"
+            grep -R -n --include='*.mod' \
+              'go.opentelemetry.io/otel/exporters/otlp/otlpmetric' \
+              "$modcache/cache/download" 2>/dev/null | head -200 || true
+            exit 1
+          fi
 
-      - name: Certify locked Yunka consumer graph
+      - name: Certify local and release Yunka consumer graphs
         shell: bash
         run: |
           set -euo pipefail
-          make -C biz consumer-certify YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io"
+          if ! make -C biz consumer-certify YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io"; then
+            echo "--- Biz dependency certification failed ---"
+            git -C biz status --short || true
+            git -C biz diff -- go.mod go.sum go.work go.work.sum || true
+            exit 1
+          fi
           biz_status="$(git -C biz status --porcelain)"
           yunka_status="$(git -C yunka.io status --porcelain)"
           if [[ -n "$biz_status" ]]; then
             echo "Biz worktree changed during certification:"
             printf '%s\n' "$biz_status"
-            if [[ -f biz/go.work.sum ]]; then
-              echo "--- biz/go.work.sum ---"
-              cat biz/go.work.sum
-            fi
+            git -C biz diff -- go.mod go.sum go.work go.work.sum || true
           fi
           if [[ -n "$yunka_status" ]]; then
             echo "Yunka worktree changed during certification:"

@@ -2,7 +2,7 @@
 
 package policy
 
-import "yunka.io/pkg/operationplan"
+import "github.com/hvritual/yunka.io/pkg/operationplan"
 
 func OperationPlanDeviceManagementCreateDevice() operationplan.Plan {
 	return operationplan.Plan{OperationID: "device.create", Domain: "deviceops", Application: "device_management", UseCase: "create_device", RequestType: "deviceops.v1.CreateDeviceRequest", ResponseType: "deviceops.v1.DeviceDTO", Execution: operationplan.Execution{Transaction: "local", Idempotency: "required"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key"}, Permissions: []string{"device.create"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "/deviceops.v1.DeviceApplication/CreateDevice", HTTP: []operationplan.HTTPBinding{{Method: "POST", Path: "/v1/devices", Body: "*", ResponseBody: ""}}}}

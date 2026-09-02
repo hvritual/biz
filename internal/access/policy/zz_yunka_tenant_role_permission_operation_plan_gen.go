@@ -2,7 +2,7 @@
 
 package policy
 
-import "yunka.io/pkg/operationplan"
+import "github.com/hvritual/yunka.io/pkg/operationplan"
 
 func OperationPlanTenantRolePermissionAssertTenantMemberDeactivationAllowed() operationplan.Plan {
 	return operationplan.Plan{OperationID: "tenant.role.assert_member_deactivation_allowed", Domain: "access", Application: "tenant_role_permission", UseCase: "assert_tenant_member_deactivation_allowed", RequestType: "access.v1.AssertTenantMemberDeactivationAllowedRequest", ResponseType: "access.v1.AssertTenantMemberDeactivationAllowedResponse", Execution: operationplan.Execution{Transaction: "local", Idempotency: "none"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key"}, Permissions: []string{"tenant.member.manage"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "", HTTP: []operationplan.HTTPBinding{}}}
