@@ -2,6 +2,30 @@
   "schemaVersion": 2,
   "operations": [
     {
+      "operationId": "device.assert_owned_by_actor_tenant",
+      "domain": "deviceops",
+      "application": "device_management",
+      "useCase": "assert_device_owned_by_actor_tenant",
+      "requestType": "deviceops.v1.AssertDeviceOwnedByActorTenantRequest",
+      "responseType": "deviceops.v1.AssertDeviceOwnedByActorTenantResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.delegation.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {}
+    },
+    {
       "operationId": "device.create",
       "domain": "deviceops",
       "application": "device_management",
@@ -337,6 +361,34 @@
       }
     },
     {
+      "operationId": "tenant.assert_active",
+      "domain": "access",
+      "application": "tenant_lifecycle",
+      "useCase": "assert_tenant_active",
+      "requestType": "access.v1.AssertTenantActiveRequest",
+      "responseType": "access.v1.AssertTenantActiveResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.delegation.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_member_lifecycle",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {}
+    },
+    {
       "operationId": "tenant.close",
       "domain": "access",
       "application": "tenant_lifecycle",
@@ -439,6 +491,10 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "deviceops/device_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantDelegationApplication/GetTenantDelegation",
         "http": [
@@ -470,7 +526,20 @@
         "transaction": "local",
         "idempotency": "required"
       },
-      "composition": {},
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "device.assert_owned_by_actor_tenant",
+          "tenant.assert_active"
+        ],
+        "permissionClosure": [
+          "tenant.delegation.manage"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "deviceops/device_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantDelegationApplication/GrantTenantDeviceDelegation",
         "http": [
@@ -504,6 +573,10 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "deviceops/device_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantDelegationApplication/ListTenantDelegations",
         "http": [
@@ -536,6 +609,10 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "deviceops/device_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantDelegationApplication/RevokeTenantDelegation",
         "http": [

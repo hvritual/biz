@@ -4,6 +4,10 @@ package policy
 
 import "yunka.io/pkg/operationplan"
 
+func OperationPlanDeviceManagementAssertDeviceOwnedByActorTenant() operationplan.Plan {
+	return operationplan.Plan{OperationID: "device.assert_owned_by_actor_tenant", Domain: "deviceops", Application: "device_management", UseCase: "assert_device_owned_by_actor_tenant", RequestType: "deviceops.v1.AssertDeviceOwnedByActorTenantRequest", ResponseType: "deviceops.v1.AssertDeviceOwnedByActorTenantResponse", Execution: operationplan.Execution{Transaction: "read_only", Idempotency: "none"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key"}, Permissions: []string{"tenant.delegation.manage"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "", HTTP: []operationplan.HTTPBinding{}}}
+}
+
 func OperationPlanDeviceManagementCreateDevice() operationplan.Plan {
 	return operationplan.Plan{OperationID: "device.create", Domain: "deviceops", Application: "device_management", UseCase: "create_device", RequestType: "deviceops.v1.CreateDeviceRequest", ResponseType: "deviceops.v1.DeviceDTO", Execution: operationplan.Execution{Transaction: "local", Idempotency: "required"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key"}, Permissions: []string{"device.create"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "/deviceops.v1.DeviceApplication/CreateDevice", HTTP: []operationplan.HTTPBinding{{Method: "POST", Path: "/v1/devices", Body: "*", ResponseBody: ""}}}}
 }

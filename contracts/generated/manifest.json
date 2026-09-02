@@ -110,6 +110,30 @@
       }
     },
     {
+      "name": "AssertTenantActiveRequest",
+      "fullName": "access.v1.AssertTenantActiveRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "AssertTenantActiveResponse",
+      "fullName": "access.v1.AssertTenantActiveResponse",
+      "fields": null,
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "AssertTenantMemberDeactivationAllowedRequest",
       "fullName": "access.v1.AssertTenantMemberDeactivationAllowedRequest",
       "fields": [
@@ -987,6 +1011,30 @@
       }
     },
     {
+      "name": "AssertDeviceOwnedByActorTenantRequest",
+      "fullName": "deviceops.v1.AssertDeviceOwnedByActorTenantRequest",
+      "fields": [
+        {
+          "name": "device_id",
+          "jsonName": "deviceId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "AssertDeviceOwnedByActorTenantResponse",
+      "fullName": "deviceops.v1.AssertDeviceOwnedByActorTenantResponse",
+      "fields": null,
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "CreateDeviceRequest",
       "fullName": "deviceops.v1.CreateDeviceRequest",
       "fields": [
@@ -1421,7 +1469,11 @@
       "fullName": "access.v1.TenantDelegationApplication",
       "domain": "access",
       "application": {
-        "name": "tenant_delegation_management"
+        "name": "tenant_delegation_management",
+        "requires": [
+          "access/tenant_lifecycle",
+          "deviceops/device_management"
+        ]
       },
       "methods": [
         {
@@ -1486,6 +1538,11 @@
             "authentication": [
               "api-key"
             ],
+            "requiresOperations": [
+              "device.assert_owned_by_actor_tenant",
+              "tenant.assert_active"
+            ],
+            "composition": "local",
             "execution": {
               "transaction": "local",
               "idempotency": "required"
@@ -1593,6 +1650,27 @@
         "requires": [
           "access/tenant_member_lifecycle",
           "access/tenant_role_permission"
+        ],
+        "operations": [
+          {
+            "id": "tenant.assert_active",
+            "useCase": "assert_tenant_active",
+            "permissions": [
+              "tenant.delegation.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "access.v1.AssertTenantActiveRequest",
+            "responseType": "access.v1.AssertTenantActiveResponse",
+            "applicationMethod": "AssertTenantActive"
+          }
         ]
       },
       "methods": [
@@ -2647,7 +2725,28 @@
       "fullName": "deviceops.v1.DeviceApplication",
       "domain": "deviceops",
       "application": {
-        "name": "device_management"
+        "name": "device_management",
+        "operations": [
+          {
+            "id": "device.assert_owned_by_actor_tenant",
+            "useCase": "assert_device_owned_by_actor_tenant",
+            "permissions": [
+              "tenant.delegation.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "deviceops.v1.AssertDeviceOwnedByActorTenantRequest",
+            "responseType": "deviceops.v1.AssertDeviceOwnedByActorTenantResponse",
+            "applicationMethod": "AssertDeviceOwnedByActorTenant"
+          }
+        ]
       },
       "methods": [
         {

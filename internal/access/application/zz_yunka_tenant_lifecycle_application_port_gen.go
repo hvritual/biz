@@ -10,6 +10,7 @@ import (
 // TenantLifecycleApplication is generated from PB and contains no business implementation.
 type TenantLifecycleApplication interface {
 	ActivateTenant(context.Context, *accessv1.ActivateTenantRequest) (*accessv1.TenantDTO, error)
+	AssertTenantActive(context.Context, *accessv1.AssertTenantActiveRequest) (*accessv1.AssertTenantActiveResponse, error)
 	CloseTenant(context.Context, *accessv1.CloseTenantRequest) (*accessv1.TenantDTO, error)
 	CreateTenant(context.Context, *accessv1.CreateTenantRequest) (*accessv1.TenantDTO, error)
 	GetTenant(context.Context, *accessv1.GetTenantRequest) (*accessv1.TenantDTO, error)

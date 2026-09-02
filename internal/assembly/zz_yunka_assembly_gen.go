@@ -21,9 +21,11 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "082f67237bb3d27039e8eb8c36ed23b1d6b7b4ab252740349de4764c127e9567"
+const AssemblyPlanDigest = "6a1344ff9ab3981c36b0badfe42837aa251cfcbbf32eabb29898ba030c3a5013"
 
 type AccessTenantDelegationManagementDependencies struct {
+	AccessTenantLifecycle     accessapplication.TenantDelegationManagementToAccessTenantLifecycleChildCapability
+	DeviceopsDeviceManagement accessapplication.TenantDelegationManagementToDeviceopsDeviceManagementChildCapability
 }
 
 type AccessTenantLifecycleDependencies struct {
@@ -83,13 +85,6 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	}
 	var applications Applications
 	var err error
-	applications.AccessTenantDelegationManagement, err = factories.BuildAccessTenantDelegationManagement(AccessTenantDelegationManagementDependencies{})
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_delegation_management: %w", err)
-	}
-	if applications.AccessTenantDelegationManagement == nil {
-		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_delegation_management")
-	}
 	applications.AccessTenantRolePermission, err = factories.BuildAccessTenantRolePermission(AccessTenantRolePermissionDependencies{})
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_role_permission: %w", err)
@@ -136,6 +131,21 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	}
 	if applications.DeviceopsDeviceManagement == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for deviceops/device_management")
+	}
+	accessTenantDelegationManagementAccessTenantLifecycleCapability, err := accessapplication.NewTenantDelegationManagementToAccessTenantLifecycleChildCapability(applications.AccessTenantLifecycle, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_delegation_management dependency access/tenant_lifecycle: %w", err)
+	}
+	accessTenantDelegationManagementDeviceopsDeviceManagementCapability, err := accessapplication.NewTenantDelegationManagementToDeviceopsDeviceManagementChildCapability(applications.DeviceopsDeviceManagement, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_delegation_management dependency deviceops/device_management: %w", err)
+	}
+	applications.AccessTenantDelegationManagement, err = factories.BuildAccessTenantDelegationManagement(AccessTenantDelegationManagementDependencies{AccessTenantLifecycle: accessTenantDelegationManagementAccessTenantLifecycleCapability, DeviceopsDeviceManagement: accessTenantDelegationManagementDeviceopsDeviceManagementCapability})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_delegation_management: %w", err)
+	}
+	if applications.AccessTenantDelegationManagement == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_delegation_management")
 	}
 	applications.DeviceopsSiteManagement, err = factories.BuildDeviceopsSiteManagement(DeviceopsSiteManagementDependencies{})
 	if err != nil {

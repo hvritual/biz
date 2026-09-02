@@ -456,17 +456,17 @@ const file_access_v1_tenant_delegation_proto_rawDesc = "" +
 	"\x16TenantDelegationStatus\x12(\n" +
 	"$TENANT_DELEGATION_STATUS_UNSPECIFIED\x10\x00\x12#\n" +
 	"\x1fTENANT_DELEGATION_STATUS_ACTIVE\x10\x01\x12$\n" +
-	" TENANT_DELEGATION_STATUS_REVOKED\x10\x022\xf5\a\n" +
-	"\x1bTenantDelegationApplication\x12\x81\x02\n" +
-	"\x1bGrantTenantDeviceDelegation\x12-.access.v1.GrantTenantDeviceDelegationRequest\x1a\x1e.access.v1.TenantDelegationDTO\"\x92\x01\xe2\xf3\x18e\n" +
-	"\x1etenant.delegation.grant_device\x12\x1egrant_tenant_device_delegation\x1a\x18tenant.delegation.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/v1/tenant/delegations/devices\x12\xd6\x01\n" +
+	" TENANT_DELEGATION_STATUS_REVOKED\x10\x022\xe9\b\n" +
+	"\x1bTenantDelegationApplication\x12\xbf\x02\n" +
+	"\x1bGrantTenantDeviceDelegation\x12-.access.v1.GrantTenantDeviceDelegationRequest\x1a\x1e.access.v1.TenantDelegationDTO\"\xd0\x01\xe2\xf3\x18\xa2\x01\n" +
+	"\x1etenant.delegation.grant_device\x12\x1egrant_tenant_device_delegation\x1a\x18tenant.delegation.manage(\x012\x01\x02B\x14tenant.assert_activeB#device.assert_owned_by_actor_tenantH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/v1/tenant/delegations/devices\x12\xd6\x01\n" +
 	"\x13GetTenantDelegation\x12%.access.v1.GetTenantDelegationRequest\x1a\x1e.access.v1.TenantDelegationDTO\"x\xe2\xf3\x18Q\n" +
 	"\x15tenant.delegation.get\x12\x15get_tenant_delegation\x1a\x16tenant.delegation.read(\x012\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x1d\x12\x1b/v1/tenant/delegations/{id}\x12\xe2\x01\n" +
 	"\x15ListTenantDelegations\x12'.access.v1.ListTenantDelegationsRequest\x1a(.access.v1.ListTenantDelegationsResponse\"v\xe2\xf3\x18T\n" +
 	"\x16tenant.delegation.list\x12\x17list_tenant_delegations\x1a\x16tenant.delegation.read(\x012\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x18\x12\x16/v1/tenant/delegations\x12\xef\x01\n" +
 	"\x16RevokeTenantDelegation\x12(.access.v1.RevokeTenantDelegationRequest\x1a\x1e.access.v1.TenantDelegationDTO\"\x8a\x01\xe2\xf3\x18Y\n" +
-	"\x18tenant.delegation.revoke\x12\x18revoke_tenant_delegation\x1a\x18tenant.delegation.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02':\x01*\"\"/v1/tenant/delegations/{id}:revoke\x1a\"\xda\xf3\x18\x1e\n" +
-	"\x1ctenant_delegation_managementBJ\xca\xf3\x18\f\n" +
+	"\x18tenant.delegation.revoke\x12\x18revoke_tenant_delegation\x1a\x18tenant.delegation.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02':\x01*\"\"/v1/tenant/delegations/{id}:revoke\x1aX\xda\xf3\x18T\n" +
+	"\x1ctenant_delegation_management\x12\x17access/tenant_lifecycle\x12\x1bdeviceops/device_managementBJ\xca\xf3\x18\f\n" +
 	"\x06access\x12\x02v1Z8github.com/hvritual/biz/contracts/gen/access/v1;accessv1b\x06proto3"
 
 var (

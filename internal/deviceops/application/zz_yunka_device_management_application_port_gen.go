@@ -9,6 +9,7 @@ import (
 
 // DeviceApplication is generated from PB and contains no business implementation.
 type DeviceManagementApplication interface {
+	AssertDeviceOwnedByActorTenant(context.Context, *deviceopsv1.AssertDeviceOwnedByActorTenantRequest) (*deviceopsv1.AssertDeviceOwnedByActorTenantResponse, error)
 	CreateDevice(context.Context, *deviceopsv1.CreateDeviceRequest) (*deviceopsv1.DeviceDTO, error)
 	DeleteDevice(context.Context, *deviceopsv1.DeleteDeviceRequest) (*deviceopsv1.DeleteDeviceResponse, error)
 	GetDevice(context.Context, *deviceopsv1.GetDeviceRequest) (*deviceopsv1.DeviceDTO, error)

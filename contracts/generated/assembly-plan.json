@@ -85,6 +85,24 @@
   ],
   "applicationDependencies": [
     {
+      "from": "access/tenant_delegation_management",
+      "to": "access/tenant_lifecycle",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_delegation_management/requires/access/tenant_lifecycle"
+      }
+    },
+    {
+      "from": "access/tenant_delegation_management",
+      "to": "deviceops/device_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_delegation_management/requires/deviceops/device_management"
+      }
+    },
+    {
       "from": "access/tenant_lifecycle",
       "to": "access/tenant_member_lifecycle",
       "evidence": {
@@ -132,6 +150,42 @@
   ],
   "applicationDependencyClosure": [
     {
+      "from": "access/tenant_delegation_management",
+      "to": "access/tenant_lifecycle",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_delegation_management-\u003eaccess/tenant_lifecycle"
+      }
+    },
+    {
+      "from": "access/tenant_delegation_management",
+      "to": "access/tenant_member_lifecycle",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_delegation_management-\u003eaccess/tenant_member_lifecycle"
+      }
+    },
+    {
+      "from": "access/tenant_delegation_management",
+      "to": "access/tenant_role_permission",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_delegation_management-\u003eaccess/tenant_role_permission"
+      }
+    },
+    {
+      "from": "access/tenant_delegation_management",
+      "to": "deviceops/device_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_delegation_management-\u003edeviceops/device_management"
+      }
+    },
+    {
       "from": "access/tenant_lifecycle",
       "to": "access/tenant_member_lifecycle",
       "evidence": {
@@ -178,6 +232,15 @@
     }
   ],
   "operations": [
+    {
+      "id": "device.assert_owned_by_actor_tenant",
+      "application": "deviceops/device_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/device.assert_owned_by_actor_tenant"
+      }
+    },
     {
       "id": "device.create",
       "application": "deviceops/device_management",
@@ -464,6 +527,15 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/tenant.activate"
+      }
+    },
+    {
+      "id": "tenant.assert_active",
+      "application": "access/tenant_lifecycle",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.assert_active"
       }
     },
     {
@@ -1307,6 +1379,24 @@
       }
     },
     {
+      "from": "tenant.delegation.grant_device",
+      "to": "device.assert_owned_by_actor_tenant",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.delegation.grant_device/requiresOperations/device.assert_owned_by_actor_tenant"
+      }
+    },
+    {
+      "from": "tenant.delegation.grant_device",
+      "to": "tenant.assert_active",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.delegation.grant_device/requiresOperations/tenant.assert_active"
+      }
+    },
+    {
       "from": "tenant.member.remove",
       "to": "tenant.role.assert_member_deactivation_allowed",
       "evidence": {
@@ -1452,7 +1542,9 @@
         "tenant.update"
       ],
       "internalOperations": [
+        "device.assert_owned_by_actor_tenant",
         "site.validate_transfer_target",
+        "tenant.assert_active",
         "tenant.member.bootstrap_owner",
         "tenant.role.assert_member_deactivation_allowed",
         "tenant.role.bootstrap_owner"

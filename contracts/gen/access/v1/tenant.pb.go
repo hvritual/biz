@@ -546,6 +546,86 @@ func (x *CloseTenantRequest) GetVersion() uint64 {
 	return 0
 }
 
+type AssertTenantActiveRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AssertTenantActiveRequest) Reset() {
+	*x = AssertTenantActiveRequest{}
+	mi := &file_access_v1_tenant_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AssertTenantActiveRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AssertTenantActiveRequest) ProtoMessage() {}
+
+func (x *AssertTenantActiveRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AssertTenantActiveRequest.ProtoReflect.Descriptor instead.
+func (*AssertTenantActiveRequest) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *AssertTenantActiveRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+type AssertTenantActiveResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AssertTenantActiveResponse) Reset() {
+	*x = AssertTenantActiveResponse{}
+	mi := &file_access_v1_tenant_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AssertTenantActiveResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AssertTenantActiveResponse) ProtoMessage() {}
+
+func (x *AssertTenantActiveResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AssertTenantActiveResponse.ProtoReflect.Descriptor instead.
+func (*AssertTenantActiveResponse) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_proto_rawDescGZIP(), []int{10}
+}
+
 var File_access_v1_tenant_proto protoreflect.FileDescriptor
 
 const file_access_v1_tenant_proto_rawDesc = "" +
@@ -578,14 +658,16 @@ const file_access_v1_tenant_proto_rawDesc = "" +
 	"\aversion\x18\x02 \x01(\x04R\aversion\">\n" +
 	"\x12CloseTenantRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\x04R\aversion*\x99\x01\n" +
+	"\aversion\x18\x02 \x01(\x04R\aversion\"8\n" +
+	"\x19AssertTenantActiveRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\"\x1c\n" +
+	"\x1aAssertTenantActiveResponse*\x99\x01\n" +
 	"\fTenantStatus\x12\x1d\n" +
 	"\x19TENANT_STATUS_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15TENANT_STATUS_PENDING\x10\x01\x12\x18\n" +
 	"\x14TENANT_STATUS_ACTIVE\x10\x02\x12\x1b\n" +
 	"\x17TENANT_STATUS_SUSPENDED\x10\x03\x12\x18\n" +
-	"\x14TENANT_STATUS_CLOSED\x10\x042\xc7\n" +
-	"\n" +
+	"\x14TENANT_STATUS_CLOSED\x10\x042\xfc\v\n" +
 	"\x1aTenantLifecycleApplication\x12\xde\x01\n" +
 	"\fCreateTenant\x12\x1e.access.v1.CreateTenantRequest\x1a\x14.access.v1.TenantDTO\"\x97\x01\xe2\xf3\x18}\n" +
 	"\rtenant.create\x12\rcreate_tenant\x1a\x16platform.tenant.create2\x01\x02B\x1dtenant.member.bootstrap_ownerB\x1btenant.role.bootstrap_ownerH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/v1/tenants\x12\x93\x01\n" +
@@ -602,8 +684,9 @@ const file_access_v1_tenant_proto_rawDesc = "" +
 	"\rSuspendTenant\x12\x1f.access.v1.SuspendTenantRequest\x1a\x14.access.v1.TenantDTO\"h\xe2\xf3\x18A\n" +
 	"\x0etenant.suspend\x12\x0esuspend_tenant\x1a\x16platform.tenant.manage2\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/v1/tenants/{id}/suspend\x12\xa6\x01\n" +
 	"\vCloseTenant\x12\x1d.access.v1.CloseTenantRequest\x1a\x14.access.v1.TenantDTO\"b\xe2\xf3\x18=\n" +
-	"\ftenant.close\x12\fclose_tenant\x1a\x16platform.tenant.manage2\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/v1/tenants/{id}/close\x1aU\xda\xf3\x18Q\n" +
-	"\x10tenant_lifecycle\x12\x1eaccess/tenant_member_lifecycle\x12\x1daccess/tenant_role_permissionBJ\xca\xf3\x18\f\n" +
+	"\ftenant.close\x12\fclose_tenant\x1a\x16platform.tenant.manage2\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/v1/tenants/{id}/close\x1a\x89\x02\xda\xf3\x18\x84\x02\n" +
+	"\x10tenant_lifecycle\x12\x1eaccess/tenant_member_lifecycle\x12\x1daccess/tenant_role_permission\x1a\xb0\x01\n" +
+	"\x14tenant.assert_active\x12\x14assert_tenant_active\x1a\x18tenant.delegation.manage(\x012\x01\x02R\x04\b\x02\x10\x01Z#access.v1.AssertTenantActiveRequestb$access.v1.AssertTenantActiveResponsej\x12AssertTenantActiveBJ\xca\xf3\x18\f\n" +
 	"\x06access\x12\x02v1Z8github.com/hvritual/biz/contracts/gen/access/v1;accessv1b\x06proto3"
 
 var (
@@ -619,18 +702,20 @@ func file_access_v1_tenant_proto_rawDescGZIP() []byte {
 }
 
 var file_access_v1_tenant_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_access_v1_tenant_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_access_v1_tenant_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_access_v1_tenant_proto_goTypes = []any{
-	(TenantStatus)(0),             // 0: access.v1.TenantStatus
-	(*TenantDTO)(nil),             // 1: access.v1.TenantDTO
-	(*CreateTenantRequest)(nil),   // 2: access.v1.CreateTenantRequest
-	(*GetTenantRequest)(nil),      // 3: access.v1.GetTenantRequest
-	(*ListTenantsRequest)(nil),    // 4: access.v1.ListTenantsRequest
-	(*ListTenantsResponse)(nil),   // 5: access.v1.ListTenantsResponse
-	(*UpdateTenantRequest)(nil),   // 6: access.v1.UpdateTenantRequest
-	(*ActivateTenantRequest)(nil), // 7: access.v1.ActivateTenantRequest
-	(*SuspendTenantRequest)(nil),  // 8: access.v1.SuspendTenantRequest
-	(*CloseTenantRequest)(nil),    // 9: access.v1.CloseTenantRequest
+	(TenantStatus)(0),                  // 0: access.v1.TenantStatus
+	(*TenantDTO)(nil),                  // 1: access.v1.TenantDTO
+	(*CreateTenantRequest)(nil),        // 2: access.v1.CreateTenantRequest
+	(*GetTenantRequest)(nil),           // 3: access.v1.GetTenantRequest
+	(*ListTenantsRequest)(nil),         // 4: access.v1.ListTenantsRequest
+	(*ListTenantsResponse)(nil),        // 5: access.v1.ListTenantsResponse
+	(*UpdateTenantRequest)(nil),        // 6: access.v1.UpdateTenantRequest
+	(*ActivateTenantRequest)(nil),      // 7: access.v1.ActivateTenantRequest
+	(*SuspendTenantRequest)(nil),       // 8: access.v1.SuspendTenantRequest
+	(*CloseTenantRequest)(nil),         // 9: access.v1.CloseTenantRequest
+	(*AssertTenantActiveRequest)(nil),  // 10: access.v1.AssertTenantActiveRequest
+	(*AssertTenantActiveResponse)(nil), // 11: access.v1.AssertTenantActiveResponse
 }
 var file_access_v1_tenant_proto_depIdxs = []int32{
 	0, // 0: access.v1.TenantDTO.status:type_name -> access.v1.TenantStatus
@@ -667,7 +752,7 @@ func file_access_v1_tenant_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_access_v1_tenant_proto_rawDesc), len(file_access_v1_tenant_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
