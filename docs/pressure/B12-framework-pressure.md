@@ -239,7 +239,7 @@ The following B12 findings are intentionally not promoted into Yunka:
 | stale three-node `.yunka/dev.json` graph declaration | `BIZ_MODEL_GAP` | dev profile updated to six Applications |
 | old C10/C11 historical gates assert old structural hashes / three-node runtime | qualification drift | retain as historical branch gates, do not use as generic future-PR gates |
 
-These findings do not require changes to Yunka's compiler, runtime, persistence model or authorization model beyond B12-FP-001.
+These findings do not require changes to Yunka's compiler, runtime, persistence model or authorization model beyond B12-FP-001 and B12-FP-006.
 
 ## Legacy qualification disposition
 
