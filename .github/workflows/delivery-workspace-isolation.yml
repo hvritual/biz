@@ -1,0 +1,118 @@
+name: delivery-workspace-isolation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/delivery-workspace-isolation.yml
+      - .yunka/source.env
+      - go.mod
+      - go.sum
+      - go.work
+      - go.work.sum
+      - Makefile
+      - scripts/consumer-resolution-check.sh
+      - scripts/verify-yunka-source.sh
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/delivery-workspace-isolation.yml
+      - .yunka/source.env
+      - go.mod
+      - go.sum
+      - go.work
+      - go.work.sum
+      - Makefile
+      - scripts/consumer-resolution-check.sh
+      - scripts/verify-yunka-source.sh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  consumer-certification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact Yunka baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.YUNKA_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Assert workflow and source lock agree
+        shell: bash
+        run: |
+          set -euo pipefail
+          source biz/.yunka/source.env
+          test "$YUNKA_SHA" = "$YUNKA_COMMIT"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_COMMIT"
+
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: 1.25.13
+          cache: false
+
+      - name: Inject conflicting parent workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > go.work <<'EOF'
+          go 1.25.0
+
+          toolchain go1.25.13
+
+          use (
+            ./biz
+            ./yunka.io/framework
+            ./yunka.io/gateway
+            ./yunka.io/pkg
+          )
+          EOF
+          test -f go.work
+
+      - name: Prove Biz owns dependency resolution
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="$GITHUB_WORKSPACE/biz/go.work"
+          actual="$(go -C biz env GOWORK)"
+          test "$actual" = "$expected"
+          make -C biz workspace-check
+
+      - name: Certify locked Yunka consumer graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C biz consumer-certify YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io"
+          biz_status="$(git -C biz status --porcelain)"
+          yunka_status="$(git -C yunka.io status --porcelain)"
+          if [[ -n "$biz_status" ]]; then
+            echo "Biz worktree changed during certification:"
+            printf '%s\n' "$biz_status"
+            if [[ -f biz/go.work.sum ]]; then
+              echo "--- biz/go.work.sum ---"
+              cat biz/go.work.sum
+            fi
+          fi
+          if [[ -n "$yunka_status" ]]; then
+            echo "Yunka worktree changed during certification:"
+            printf '%s\n' "$yunka_status"
+          fi
+          test -z "$biz_status"
+          test -z "$yunka_status"
