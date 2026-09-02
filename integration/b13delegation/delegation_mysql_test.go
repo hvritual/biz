@@ -1,11 +1,12 @@
 //go:build integration
 
-package integration
+package b13delegation
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -14,36 +15,66 @@ import (
 	accessdomain "github.com/hvritual/biz/internal/access/domain"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	accessports "github.com/hvritual/biz/internal/access/ports"
-	deviceopsv1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
 	deviceapp "github.com/hvritual/biz/internal/deviceops/application"
 	devicepersistence "github.com/hvritual/biz/internal/deviceops/infrastructure/persistence"
 	deviceports "github.com/hvritual/biz/internal/deviceops/ports"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 	"yunka.io/framework/core/identity"
 	"yunka.io/framework/execution"
 	"yunka.io/framework/operation"
 	"yunka.io/framework/requestscope"
 )
 
-type b13DelegationCapabilities struct {
+type delegationCapabilities struct {
 	tenants accessapp.TenantDelegationManagementToAccessTenantLifecycleChildCapability
 	devices accessapp.TenantDelegationManagementToDeviceopsDeviceManagementChildCapability
 }
 
-func (capabilities b13DelegationCapabilities) AccessTenantLifecycle() accessapp.TenantDelegationManagementToAccessTenantLifecycleChildCapability {
+func (capabilities delegationCapabilities) AccessTenantLifecycle() accessapp.TenantDelegationManagementToAccessTenantLifecycleChildCapability {
 	return capabilities.tenants
 }
 
-func (capabilities b13DelegationCapabilities) DeviceopsDeviceManagement() accessapp.TenantDelegationManagementToDeviceopsDeviceManagementChildCapability {
+func (capabilities delegationCapabilities) DeviceopsDeviceManagement() accessapp.TenantDelegationManagementToDeviceopsDeviceManagementChildCapability {
 	return capabilities.devices
+}
+
+type tenantLifecycleCapabilities struct{}
+
+func (tenantLifecycleCapabilities) AccessTenantMemberLifecycle() accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability {
+	return nil
+}
+
+func (tenantLifecycleCapabilities) AccessTenantRolePermission() accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability {
+	return nil
 }
 
 func TestB132TenantDelegationPersistenceLifecycle(t *testing.T) {
 	db := openDB(t)
-	tenantService, store, transactions := newTenantLifecycleHarness(t, db)
+	store, err := accesspersistence.New(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.AutoMigrate(context.Background()); err != nil {
+		t.Fatal(err)
+	}
 	if err := accesspersistence.AutoMigrateTenantDelegation(context.Background(), db); err != nil {
 		t.Fatal(err)
 	}
 	if err := devicepersistence.AutoMigrate(context.Background(), db); err != nil {
+		t.Fatal(err)
+	}
+
+	tenantRepositories, err := accesspersistence.NewTenantRepositoryFactory(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tenantService, err := accessapp.NewTenantLifecycleService(tenantRepositories, tenantLifecycleCapabilities{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	transactions, err := requestscope.NewGORMExecutionFactory(db)
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -94,16 +125,14 @@ func TestB132TenantDelegationPersistenceLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := accessapp.NewTenantDelegationManagementService(delegationRepositories, b13DelegationCapabilities{tenants: tenantChild, devices: deviceChild})
+	service, err := accessapp.NewTenantDelegationManagementService(delegationRepositories, delegationCapabilities{tenants: tenantChild, devices: deviceChild})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	grantRequires := []string{"tenant.assert_active", "device.assert_owned_by_actor_tenant"}
 
-	// Generated child Operations join this root scope. Rollback must remove the
-	// parent delegation write, proving one MySQL UoW across both Domains.
-	ctx, root := b13DelegationRoot(t, transactions, ownerTenantID, "tenant.delegation.grant_device", execution.TransactionLocal, grantRequires)
+	ctx, root := delegationRoot(t, transactions, ownerTenantID, "tenant.delegation.grant_device", execution.TransactionLocal, grantRequires)
 	rolledBack, err := service.GrantTenantDeviceDelegation(ctx, &accessv1.GrantTenantDeviceDelegationRequest{
 		GranteeTenantId: granteeTenantID, DeviceId: devices[1].ID, Permissions: []string{"device.read"},
 	})
@@ -121,10 +150,9 @@ func TestB132TenantDelegationPersistenceLifecycle(t *testing.T) {
 		t.Fatalf("rolled-back delegation persisted count=%d", rollbackCount)
 	}
 
-	ctx, root = b13DelegationRoot(t, transactions, ownerTenantID, "tenant.delegation.grant_device", execution.TransactionLocal, grantRequires)
+	ctx, root = delegationRoot(t, transactions, ownerTenantID, "tenant.delegation.grant_device", execution.TransactionLocal, grantRequires)
 	created, err := service.GrantTenantDeviceDelegation(ctx, &accessv1.GrantTenantDeviceDelegationRequest{
-		GranteeTenantId: granteeTenantID,
-		DeviceId: devices[0].ID,
+		GranteeTenantId: granteeTenantID, DeviceId: devices[0].ID,
 		Permissions: []string{"device.update", "device.read", "device.read"},
 	})
 	if err != nil {
@@ -140,7 +168,7 @@ func TestB132TenantDelegationPersistenceLifecycle(t *testing.T) {
 		t.Fatalf("permissions=%s", got)
 	}
 
-	ctx, root = b13DelegationRoot(t, transactions, ownerTenantID, "tenant.delegation.grant_device", execution.TransactionLocal, grantRequires)
+	ctx, root = delegationRoot(t, transactions, ownerTenantID, "tenant.delegation.grant_device", execution.TransactionLocal, grantRequires)
 	duplicate, err := service.GrantTenantDeviceDelegation(ctx, &accessv1.GrantTenantDeviceDelegationRequest{
 		GranteeTenantId: granteeTenantID, DeviceId: devices[0].ID, Permissions: []string{"device.read", "device.update"},
 	})
@@ -161,7 +189,7 @@ func TestB132TenantDelegationPersistenceLifecycle(t *testing.T) {
 		t.Fatalf("active duplicate count=%d", activeCount)
 	}
 
-	ctx, root = b13DelegationRoot(t, transactions, otherTenantID, "tenant.delegation.get", execution.TransactionReadOnly, nil)
+	ctx, root = delegationRoot(t, transactions, otherTenantID, "tenant.delegation.get", execution.TransactionReadOnly, nil)
 	_, err = service.GetTenantDelegation(ctx, &accessv1.GetTenantDelegationRequest{Id: created.GetId()})
 	if !errors.Is(err, accessports.ErrTenantDelegationNotFound) {
 		t.Fatalf("cross-owner get err=%v", err)
@@ -170,7 +198,7 @@ func TestB132TenantDelegationPersistenceLifecycle(t *testing.T) {
 		t.Fatal(rollbackErr)
 	}
 
-	ctx, root = b13DelegationRoot(t, transactions, ownerTenantID, "tenant.delegation.revoke", execution.TransactionLocal, nil)
+	ctx, root = delegationRoot(t, transactions, ownerTenantID, "tenant.delegation.revoke", execution.TransactionLocal, nil)
 	_, err = service.RevokeTenantDelegation(ctx, &accessv1.RevokeTenantDelegationRequest{Id: created.GetId(), Version: 99})
 	if !errors.Is(err, accessports.ErrTenantDelegationConflict) {
 		t.Fatalf("stale revoke err=%v", err)
@@ -179,7 +207,7 @@ func TestB132TenantDelegationPersistenceLifecycle(t *testing.T) {
 		t.Fatal(rollbackErr)
 	}
 
-	ctx, root = b13DelegationRoot(t, transactions, ownerTenantID, "tenant.delegation.revoke", execution.TransactionLocal, nil)
+	ctx, root = delegationRoot(t, transactions, ownerTenantID, "tenant.delegation.revoke", execution.TransactionLocal, nil)
 	revoked, err := service.RevokeTenantDelegation(ctx, &accessv1.RevokeTenantDelegationRequest{Id: created.GetId(), Version: 1})
 	if err != nil {
 		t.Fatal(err)
@@ -191,7 +219,7 @@ func TestB132TenantDelegationPersistenceLifecycle(t *testing.T) {
 		t.Fatalf("revoked=%+v", revoked)
 	}
 
-	ctx, root = b13DelegationRoot(t, transactions, ownerTenantID, "tenant.delegation.revoke", execution.TransactionLocal, nil)
+	ctx, root = delegationRoot(t, transactions, ownerTenantID, "tenant.delegation.revoke", execution.TransactionLocal, nil)
 	_, err = service.RevokeTenantDelegation(ctx, &accessv1.RevokeTenantDelegationRequest{Id: created.GetId(), Version: 2})
 	if !errors.Is(err, accessdomain.ErrInvalidTenantDelegationTransition) {
 		t.Fatalf("terminal revoke err=%v", err)
@@ -200,7 +228,7 @@ func TestB132TenantDelegationPersistenceLifecycle(t *testing.T) {
 		t.Fatal(rollbackErr)
 	}
 
-	ctx, root = b13DelegationRoot(t, transactions, ownerTenantID, "tenant.delegation.grant_device", execution.TransactionLocal, grantRequires)
+	ctx, root = delegationRoot(t, transactions, ownerTenantID, "tenant.delegation.grant_device", execution.TransactionLocal, grantRequires)
 	regranted, err := service.GrantTenantDeviceDelegation(ctx, &accessv1.GrantTenantDeviceDelegationRequest{
 		GranteeTenantId: granteeTenantID, DeviceId: devices[0].ID, Permissions: []string{"device.read", "device.update"},
 	})
@@ -214,7 +242,7 @@ func TestB132TenantDelegationPersistenceLifecycle(t *testing.T) {
 		t.Fatalf("regranted=%+v revoked=%+v", regranted, revoked)
 	}
 
-	ctx, root = b13DelegationRoot(t, transactions, ownerTenantID, "tenant.delegation.grant_device", execution.TransactionLocal, grantRequires)
+	ctx, root = delegationRoot(t, transactions, ownerTenantID, "tenant.delegation.grant_device", execution.TransactionLocal, grantRequires)
 	_, err = service.GrantTenantDeviceDelegation(ctx, &accessv1.GrantTenantDeviceDelegationRequest{
 		GranteeTenantId: granteeTenantID, DeviceId: devices[3].ID, Permissions: []string{"device.read"},
 	})
@@ -228,7 +256,7 @@ func TestB132TenantDelegationPersistenceLifecycle(t *testing.T) {
 	if err := db.Table("biz_tenants").Where("id = ?", granteeTenantID).Update("status", accessdomain.TenantStatusSuspended).Error; err != nil {
 		t.Fatal(err)
 	}
-	ctx, root = b13DelegationRoot(t, transactions, ownerTenantID, "tenant.delegation.grant_device", execution.TransactionLocal, grantRequires)
+	ctx, root = delegationRoot(t, transactions, ownerTenantID, "tenant.delegation.grant_device", execution.TransactionLocal, grantRequires)
 	_, err = service.GrantTenantDeviceDelegation(ctx, &accessv1.GrantTenantDeviceDelegationRequest{
 		GranteeTenantId: granteeTenantID, DeviceId: devices[2].ID, Permissions: []string{"device.read"},
 	})
@@ -240,7 +268,20 @@ func TestB132TenantDelegationPersistenceLifecycle(t *testing.T) {
 	}
 }
 
-func b13DelegationRoot(t *testing.T, transactions *requestscope.GORMExecutionFactory, tenantID, operationID string, mode execution.TransactionMode, requires []string) (context.Context, *execution.Root) {
+func openDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	dsn := os.Getenv("YUNKA_TEST_MYSQL_DSN")
+	if dsn == "" {
+		t.Fatal("YUNKA_TEST_MYSQL_DSN is required")
+	}
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return db
+}
+
+func delegationRoot(t *testing.T, transactions *requestscope.GORMExecutionFactory, tenantID, operationID string, mode execution.TransactionMode, requires []string) (context.Context, *execution.Root) {
 	t.Helper()
 	base := identity.WithPrincipal(context.Background(), identity.Principal{
 		Subject: "user:" + tenantID + "-owner", TenantID: tenantID, UserID: tenantID + "-owner",
@@ -252,5 +293,3 @@ func b13DelegationRoot(t *testing.T, transactions *requestscope.GORMExecutionFac
 	}
 	return ctx, root
 }
-
-var _ = deviceopsv1.AssertDeviceOwnedByActorTenantRequest{}

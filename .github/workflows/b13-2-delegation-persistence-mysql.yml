@@ -10,7 +10,7 @@ on:
       - docs/pressure/B13-framework-pressure.md
       - internal/access/**
       - internal/deviceops/**
-      - integration/b13_delegation_mysql_test.go
+      - integration/b13delegation/**
       - go.mod
       - go.sum
   pull_request:
@@ -22,7 +22,7 @@ on:
       - docs/pressure/B13-framework-pressure.md
       - internal/access/**
       - internal/deviceops/**
-      - integration/b13_delegation_mysql_test.go
+      - integration/b13delegation/**
       - go.mod
       - go.sum
   workflow_dispatch:
@@ -93,5 +93,5 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          go -C biz test -count=1 -tags=integration ./integration -run '^TestB132TenantDelegationPersistenceLifecycle$'
+          go -C biz test -count=1 -tags=integration ./integration/b13delegation -run '^TestB132TenantDelegationPersistenceLifecycle$'
           test -z "$(git -C biz status --porcelain)"
