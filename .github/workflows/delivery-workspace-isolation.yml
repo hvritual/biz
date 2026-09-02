@@ -95,7 +95,18 @@ jobs:
           expected="$GITHUB_WORKSPACE/biz/go.work"
           actual="$(go -C biz env GOWORK)"
           test "$actual" = "$expected"
-          make -C biz workspace-check
+          if ! make -C biz workspace-check; then
+            modcache="$(go env GOMODCACHE)"
+            echo "--- dependency metadata mentioning invalid OTel module path ---"
+            grep -R -n --include='*.mod' \
+              'go.opentelemetry.io/otel/exporters/otlp/otlpmetrichttp' \
+              "$modcache/cache/download" 2>/dev/null || true
+            echo "--- nearby OTel metric exporter metadata ---"
+            grep -R -n --include='*.mod' \
+              'go.opentelemetry.io/otel/exporters/otlp/otlpmetric' \
+              "$modcache/cache/download" 2>/dev/null | head -200 || true
+            exit 1
+          fi
 
       - name: Certify local and release Yunka consumer graphs
         shell: bash
