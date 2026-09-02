@@ -11,6 +11,7 @@ on:
       - internal/assembly/**
       - internal/bizruntime/**
       - integration/b12_member_runtime_mysql_test.go
+      - integration/b12_member_owner_invariant_mysql_test.go
       - modules/access/**
       - go.mod
       - go.sum
@@ -24,6 +25,7 @@ on:
       - internal/assembly/**
       - internal/bizruntime/**
       - integration/b12_member_runtime_mysql_test.go
+      - integration/b12_member_owner_invariant_mysql_test.go
       - modules/access/**
       - go.mod
       - go.sum

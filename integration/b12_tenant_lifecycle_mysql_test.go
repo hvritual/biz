@@ -20,14 +20,22 @@ import (
 )
 
 type b12TenantCapabilities struct {
-	members accessapp.AccessTenantMemberLifecycleChildCapability
-	roles   accessapp.AccessTenantRolePermissionChildCapability
+	members accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
+	roles   accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability
 }
 
-func (capabilities b12TenantCapabilities) AccessTenantMemberLifecycle() accessapp.AccessTenantMemberLifecycleChildCapability {
+func (capabilities b12TenantCapabilities) AccessTenantMemberLifecycle() accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability {
 	return capabilities.members
 }
-func (capabilities b12TenantCapabilities) AccessTenantRolePermission() accessapp.AccessTenantRolePermissionChildCapability {
+func (capabilities b12TenantCapabilities) AccessTenantRolePermission() accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability {
+	return capabilities.roles
+}
+
+type b12MemberCapabilities struct {
+	roles accessapp.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability
+}
+
+func (capabilities b12MemberCapabilities) AccessTenantRolePermission() accessapp.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability {
 	return capabilities.roles
 }
 
@@ -52,11 +60,11 @@ func newTenantLifecycleHarness(t *testing.T, db *gorm.DB) (*accessapp.TenantLife
 	if err != nil {
 		t.Fatal(err)
 	}
-	memberService, err := accessapp.NewTenantMemberLifecycleService(memberRepositories)
+	roleService, err := accessapp.NewTenantRolePermissionService(roleRepositories)
 	if err != nil {
 		t.Fatal(err)
 	}
-	roleService, err := accessapp.NewTenantRolePermissionService(roleRepositories)
+	memberService, err := accessapp.NewTenantMemberLifecycleService(memberRepositories, b12MemberCapabilities{roles: roleService})
 	if err != nil {
 		t.Fatal(err)
 	}
