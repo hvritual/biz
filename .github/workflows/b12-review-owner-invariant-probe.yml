@@ -21,11 +21,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Checkout exact Yunka A+ candidate
+      - name: Checkout exact Yunka A+ canonical baseline
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: hvritual/yunka.io
-          ref: 044b39b1a893327ef303c5ba5eddcd291bccb3c6
+          ref: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
           path: yunka.io
           fetch-depth: 0
           persist-credentials: false
