@@ -2,7 +2,7 @@ YUNKA_ROOT ?= $(abspath ../yunka.io)
 YUNKA_APP := $(YUNKA_ROOT)/app
 PROTOC ?= protoc
 
-.PHONY: init generate check test verify pressure run
+.PHONY: init generate check test verify pressure run workspace-check yunka-source-check consumer-certify
 
 init:
 	@cd $(YUNKA_APP) && go run ./cmd init --root $(CURDIR) --db-prefix biz
@@ -14,12 +14,26 @@ generate:
 check:
 	@cd $(YUNKA_APP) && go run ./cmd check --root $(CURDIR) --protoc $(PROTOC)
 
+workspace-check:
+	@./scripts/consumer-resolution-check.sh
+
+yunka-source-check:
+	@YUNKA_ROOT="$(YUNKA_ROOT)" ./scripts/verify-yunka-source.sh
+
 test:
 	@go test ./...
 
-verify: check test
+verify: workspace-check check test
 	@go vet ./...
 	@go build ./...
+
+consumer-certify: yunka-source-check workspace-check
+	@go test ./...
+	@go vet ./...
+	@go build ./...
+	@GOWORK=off go test ./...
+	@GOWORK=off go vet ./...
+	@GOWORK=off go build ./...
 
 pressure: verify
 	@: "$${YUNKA_TEST_MYSQL_DSN:?YUNKA_TEST_MYSQL_DSN is required for biz pressure tests}"
