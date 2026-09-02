@@ -3,6 +3,16 @@
   "identity": "root",
   "applications": [
     {
+      "id": "access/tenant_delegation_management",
+      "domain": "access",
+      "name": "tenant_delegation_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_delegation_management"
+      }
+    },
+    {
       "id": "access/tenant_lifecycle",
       "domain": "access",
       "name": "tenant_lifecycle",
@@ -30,6 +40,16 @@
         "ownership": "reused",
         "source": "manifest.json",
         "ref": "applications/access/tenant_role_permission"
+      }
+    },
+    {
+      "id": "deviceops/delegated_device_access",
+      "domain": "deviceops",
+      "name": "delegated_device_access",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/deviceops/delegated_device_access"
       }
     },
     {
@@ -187,6 +207,68 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/device.create"
+      }
+    },
+    {
+      "id": "device.delegated_get",
+      "application": "deviceops/delegated_device_access",
+      "bindings": [
+        {
+          "operationId": "device.delegated_get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.delegated_get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "device.delegated_get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.delegated_get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/device.delegated_get"
+      }
+    },
+    {
+      "id": "device.delegated_update",
+      "application": "deviceops/delegated_device_access",
+      "bindings": [
+        {
+          "operationId": "device.delegated_update",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.delegated_update/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "device.delegated_update",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/device.delegated_update/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/device.delegated_update"
       }
     },
     {
@@ -444,6 +526,130 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/tenant.create"
+      }
+    },
+    {
+      "id": "tenant.delegation.get",
+      "application": "access/tenant_delegation_management",
+      "bindings": [
+        {
+          "operationId": "tenant.delegation.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.delegation.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.delegation.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.delegation.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.delegation.get"
+      }
+    },
+    {
+      "id": "tenant.delegation.grant_device",
+      "application": "access/tenant_delegation_management",
+      "bindings": [
+        {
+          "operationId": "tenant.delegation.grant_device",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.delegation.grant_device/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.delegation.grant_device",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.delegation.grant_device/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.delegation.grant_device"
+      }
+    },
+    {
+      "id": "tenant.delegation.list",
+      "application": "access/tenant_delegation_management",
+      "bindings": [
+        {
+          "operationId": "tenant.delegation.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.delegation.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.delegation.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.delegation.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.delegation.list"
+      }
+    },
+    {
+      "id": "tenant.delegation.revoke",
+      "application": "access/tenant_delegation_management",
+      "bindings": [
+        {
+          "operationId": "tenant.delegation.revoke",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.delegation.revoke/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.delegation.revoke",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.delegation.revoke/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.delegation.revoke"
       }
     },
     {
@@ -1196,9 +1402,11 @@
     {
       "name": "root",
       "applications": [
+        "access/tenant_delegation_management",
         "access/tenant_lifecycle",
         "access/tenant_member_lifecycle",
         "access/tenant_role_permission",
+        "deviceops/delegated_device_access",
         "deviceops/device_management",
         "deviceops/device_transfer",
         "deviceops/site_management"
@@ -1209,6 +1417,8 @@
       ],
       "externalOperations": [
         "device.create",
+        "device.delegated_get",
+        "device.delegated_update",
         "device.delete",
         "device.get",
         "device.list",
@@ -1217,6 +1427,10 @@
         "tenant.activate",
         "tenant.close",
         "tenant.create",
+        "tenant.delegation.get",
+        "tenant.delegation.grant_device",
+        "tenant.delegation.list",
+        "tenant.delegation.revoke",
         "tenant.get",
         "tenant.list",
         "tenant.member.activate",

@@ -12,6 +12,16 @@
       }
     },
     {
+      "name": "contracts/proto/access/v1/tenant_delegation.proto",
+      "package": "access.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/access/v1;accessv1",
+      "domain": {
+        "name": "access",
+        "version": "v1"
+      }
+    },
+    {
       "name": "contracts/proto/access/v1/tenant_member.proto",
       "package": "access.v1",
       "syntax": "proto3",
@@ -28,6 +38,16 @@
       "goPackage": "github.com/hvritual/biz/contracts/gen/access/v1;accessv1",
       "domain": {
         "name": "access",
+        "version": "v1"
+      }
+    },
+    {
+      "name": "contracts/proto/deviceops/v1/delegated_device_access.proto",
+      "package": "deviceops.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/deviceops/v1;deviceopsv1",
+      "domain": {
+        "name": "deviceops",
         "version": "v1"
       }
     },
@@ -305,6 +325,22 @@
       }
     },
     {
+      "name": "GetTenantDelegationRequest",
+      "fullName": "access.v1.GetTenantDelegationRequest",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "GetTenantMemberRequest",
       "fullName": "access.v1.GetTenantMemberRequest",
       "fields": [
@@ -353,6 +389,44 @@
       }
     },
     {
+      "name": "GrantTenantDeviceDelegationRequest",
+      "fullName": "access.v1.GrantTenantDeviceDelegationRequest",
+      "fields": [
+        {
+          "name": "grantee_tenant_id",
+          "jsonName": "granteeTenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "device_id",
+          "jsonName": "deviceId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "permissions",
+          "jsonName": "permissions",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "expires_at_unix_ms",
+          "jsonName": "expiresAtUnixMs",
+          "number": 4,
+          "kind": "scalar",
+          "type": "int64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "InviteTenantMemberRequest",
       "fullName": "access.v1.InviteTenantMemberRequest",
       "fields": [
@@ -366,6 +440,31 @@
       ],
       "dto": {
         "kind": "input"
+      }
+    },
+    {
+      "name": "ListTenantDelegationsRequest",
+      "fullName": "access.v1.ListTenantDelegationsRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListTenantDelegationsResponse",
+      "fullName": "access.v1.ListTenantDelegationsResponse",
+      "fields": [
+        {
+          "name": "delegations",
+          "jsonName": "delegations",
+          "number": 1,
+          "kind": "message",
+          "type": "access.v1.TenantDelegationDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
       }
     },
     {
@@ -513,6 +612,29 @@
       }
     },
     {
+      "name": "RevokeTenantDelegationRequest",
+      "fullName": "access.v1.RevokeTenantDelegationRequest",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "RevokeTenantRoleMemberRequest",
       "fullName": "access.v1.RevokeTenantRoleMemberRequest",
       "fields": [
@@ -643,6 +765,79 @@
           "number": 4,
           "kind": "scalar",
           "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "TenantDelegationDTO",
+      "fullName": "access.v1.TenantDelegationDTO",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "owner_tenant_id",
+          "jsonName": "ownerTenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "grantee_tenant_id",
+          "jsonName": "granteeTenantId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "resource_kind",
+          "jsonName": "resourceKind",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "resource_id",
+          "jsonName": "resourceId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "permissions",
+          "jsonName": "permissions",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "status",
+          "jsonName": "status",
+          "number": 7,
+          "kind": "enum",
+          "type": "access.v1.TenantDelegationStatus"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 8,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "expires_at_unix_ms",
+          "jsonName": "expiresAtUnixMs",
+          "number": 9,
+          "kind": "scalar",
+          "type": "int64"
         }
       ],
       "dto": {
@@ -904,6 +1099,22 @@
       }
     },
     {
+      "name": "GetDelegatedDeviceRequest",
+      "fullName": "deviceops.v1.GetDelegatedDeviceRequest",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "GetDeviceRequest",
       "fullName": "deviceops.v1.GetDeviceRequest",
       "fields": [
@@ -1005,6 +1216,36 @@
       }
     },
     {
+      "name": "UpdateDelegatedDeviceRequest",
+      "fullName": "deviceops.v1.UpdateDelegatedDeviceRequest",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "UpdateDeviceRequest",
       "fullName": "deviceops.v1.UpdateDeviceRequest",
       "fields": [
@@ -1086,6 +1327,24 @@
       ]
     },
     {
+      "name": "TenantDelegationStatus",
+      "fullName": "access.v1.TenantDelegationStatus",
+      "values": [
+        {
+          "name": "TENANT_DELEGATION_STATUS_UNSPECIFIED",
+          "number": 0
+        },
+        {
+          "name": "TENANT_DELEGATION_STATUS_ACTIVE",
+          "number": 1
+        },
+        {
+          "name": "TENANT_DELEGATION_STATUS_REVOKED",
+          "number": 2
+        }
+      ]
+    },
+    {
       "name": "TenantMemberStatus",
       "fullName": "access.v1.TenantMemberStatus",
       "values": [
@@ -1157,6 +1416,174 @@
     }
   ],
   "services": [
+    {
+      "name": "TenantDelegationApplication",
+      "fullName": "access.v1.TenantDelegationApplication",
+      "domain": "access",
+      "application": {
+        "name": "tenant_delegation_management"
+      },
+      "methods": [
+        {
+          "name": "GetTenantDelegation",
+          "fullName": "access.v1.TenantDelegationApplication.GetTenantDelegation",
+          "request": "access.v1.GetTenantDelegationRequest",
+          "response": "access.v1.TenantDelegationDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/delegations/{id}"
+            }
+          ],
+          "operation": {
+            "id": "tenant.delegation.get",
+            "useCase": "get_tenant_delegation",
+            "permissions": [
+              "tenant.delegation.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.delegation.get",
+            "permissions": [
+              "tenant.delegation.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "GrantTenantDeviceDelegation",
+          "fullName": "access.v1.TenantDelegationApplication.GrantTenantDeviceDelegation",
+          "request": "access.v1.GrantTenantDeviceDelegationRequest",
+          "response": "access.v1.TenantDelegationDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/delegations/devices",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.delegation.grant_device",
+            "useCase": "grant_tenant_device_delegation",
+            "permissions": [
+              "tenant.delegation.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.delegation.grant_device",
+            "permissions": [
+              "tenant.delegation.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "ListTenantDelegations",
+          "fullName": "access.v1.TenantDelegationApplication.ListTenantDelegations",
+          "request": "access.v1.ListTenantDelegationsRequest",
+          "response": "access.v1.ListTenantDelegationsResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/delegations"
+            }
+          ],
+          "operation": {
+            "id": "tenant.delegation.list",
+            "useCase": "list_tenant_delegations",
+            "permissions": [
+              "tenant.delegation.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.delegation.list",
+            "permissions": [
+              "tenant.delegation.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "RevokeTenantDelegation",
+          "fullName": "access.v1.TenantDelegationApplication.RevokeTenantDelegation",
+          "request": "access.v1.RevokeTenantDelegationRequest",
+          "response": "access.v1.TenantDelegationDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/delegations/{id}:revoke",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.delegation.revoke",
+            "useCase": "revoke_tenant_delegation",
+            "permissions": [
+              "tenant.delegation.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.delegation.revoke",
+            "permissions": [
+              "tenant.delegation.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          }
+        }
+      ]
+    },
     {
       "name": "TenantLifecycleApplication",
       "fullName": "access.v1.TenantLifecycleApplication",
@@ -2116,6 +2543,95 @@
             "operationId": "tenant.role.update",
             "permissions": [
               "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DelegatedDeviceAccessApplication",
+      "fullName": "deviceops.v1.DelegatedDeviceAccessApplication",
+      "domain": "deviceops",
+      "application": {
+        "name": "delegated_device_access"
+      },
+      "methods": [
+        {
+          "name": "GetDelegatedDevice",
+          "fullName": "deviceops.v1.DelegatedDeviceAccessApplication.GetDelegatedDevice",
+          "request": "deviceops.v1.GetDelegatedDeviceRequest",
+          "response": "deviceops.v1.DeviceDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/delegated/devices/{id}"
+            }
+          ],
+          "operation": {
+            "id": "device.delegated_get",
+            "useCase": "get_delegated_device",
+            "permissions": [
+              "device.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "device.delegated_get",
+            "permissions": [
+              "device.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "UpdateDelegatedDevice",
+          "fullName": "deviceops.v1.DelegatedDeviceAccessApplication.UpdateDelegatedDevice",
+          "request": "deviceops.v1.UpdateDelegatedDeviceRequest",
+          "response": "deviceops.v1.DeviceDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/delegated/devices/{id}",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "device.delegated_update",
+            "useCase": "update_delegated_device",
+            "permissions": [
+              "device.update"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "device.delegated_update",
+            "permissions": [
+              "device.update"
             ],
             "permissionMode": "all",
             "tenantRequired": true,

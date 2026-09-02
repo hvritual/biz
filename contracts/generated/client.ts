@@ -21,6 +21,8 @@ export interface RpcTransport {
 
 export type Access_V1_DataScope = "DATA_SCOPE_UNSPECIFIED" | "DATA_SCOPE_NONE" | "DATA_SCOPE_SELF" | "DATA_SCOPE_SITES" | "DATA_SCOPE_ALL";
 
+export type Access_V1_TenantDelegationStatus = "TENANT_DELEGATION_STATUS_UNSPECIFIED" | "TENANT_DELEGATION_STATUS_ACTIVE" | "TENANT_DELEGATION_STATUS_REVOKED";
+
 export type Access_V1_TenantMemberStatus = "TENANT_MEMBER_STATUS_UNSPECIFIED" | "TENANT_MEMBER_STATUS_INVITED" | "TENANT_MEMBER_STATUS_ACTIVE" | "TENANT_MEMBER_STATUS_SUSPENDED" | "TENANT_MEMBER_STATUS_REMOVED";
 
 export type Access_V1_TenantRoleStatus = "TENANT_ROLE_STATUS_UNSPECIFIED" | "TENANT_ROLE_STATUS_ACTIVE" | "TENANT_ROLE_STATUS_DISABLED";
@@ -67,6 +69,10 @@ export interface Access_V1_EnableTenantRoleRequest {
   version?: string;
 }
 
+export interface Access_V1_GetTenantDelegationRequest {
+  id?: string;
+}
+
 export interface Access_V1_GetTenantMemberRequest {
   userId?: string;
 }
@@ -79,8 +85,22 @@ export interface Access_V1_GetTenantRoleRequest {
   roleId?: string;
 }
 
+export interface Access_V1_GrantTenantDeviceDelegationRequest {
+  granteeTenantId?: string;
+  deviceId?: string;
+  permissions?: readonly string[];
+  expiresAtUnixMs?: string;
+}
+
 export interface Access_V1_InviteTenantMemberRequest {
   email?: string;
+}
+
+export interface Access_V1_ListTenantDelegationsRequest {
+}
+
+export interface Access_V1_ListTenantDelegationsResponse {
+  delegations?: readonly Access_V1_TenantDelegationDTO[];
 }
 
 export interface Access_V1_ListTenantMembersRequest {
@@ -119,6 +139,11 @@ export interface Access_V1_RemoveTenantMemberRequest {
   version?: string;
 }
 
+export interface Access_V1_RevokeTenantDelegationRequest {
+  id?: string;
+  version?: string;
+}
+
 export interface Access_V1_RevokeTenantRoleMemberRequest {
   roleId?: string;
   userId?: string;
@@ -145,6 +170,18 @@ export interface Access_V1_TenantDTO {
   name?: string;
   status?: Access_V1_TenantStatus;
   version?: string;
+}
+
+export interface Access_V1_TenantDelegationDTO {
+  id?: string;
+  ownerTenantId?: string;
+  granteeTenantId?: string;
+  resourceKind?: string;
+  resourceId?: string;
+  permissions?: readonly string[];
+  status?: Access_V1_TenantDelegationStatus;
+  version?: string;
+  expiresAtUnixMs?: string;
 }
 
 export interface Access_V1_TenantMemberDTO {
@@ -197,6 +234,10 @@ export interface Deviceops_V1_DeviceDTO {
   version?: string;
 }
 
+export interface Deviceops_V1_GetDelegatedDeviceRequest {
+  id?: string;
+}
+
 export interface Deviceops_V1_GetDeviceRequest {
   id?: string;
 }
@@ -214,6 +255,12 @@ export interface Deviceops_V1_TransferDeviceRequest {
   version?: string;
 }
 
+export interface Deviceops_V1_UpdateDelegatedDeviceRequest {
+  id?: string;
+  name?: string;
+  version?: string;
+}
+
 export interface Deviceops_V1_UpdateDeviceRequest {
   id?: string;
   siteId?: string;
@@ -222,6 +269,42 @@ export interface Deviceops_V1_UpdateDeviceRequest {
 }
 
 export const operations = {
+  "access.v1.TenantDelegationApplication.GetTenantDelegation": {
+    fullName: "access.v1.TenantDelegationApplication.GetTenantDelegation",
+    rpcPath: "/access.v1.TenantDelegationApplication/GetTenantDelegation",
+    requestType: "access.v1.GetTenantDelegationRequest",
+    responseType: "access.v1.TenantDelegationDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/delegations/{id}" },
+    ]
+  },
+  "access.v1.TenantDelegationApplication.GrantTenantDeviceDelegation": {
+    fullName: "access.v1.TenantDelegationApplication.GrantTenantDeviceDelegation",
+    rpcPath: "/access.v1.TenantDelegationApplication/GrantTenantDeviceDelegation",
+    requestType: "access.v1.GrantTenantDeviceDelegationRequest",
+    responseType: "access.v1.TenantDelegationDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/delegations/devices", body: "*" },
+    ]
+  },
+  "access.v1.TenantDelegationApplication.ListTenantDelegations": {
+    fullName: "access.v1.TenantDelegationApplication.ListTenantDelegations",
+    rpcPath: "/access.v1.TenantDelegationApplication/ListTenantDelegations",
+    requestType: "access.v1.ListTenantDelegationsRequest",
+    responseType: "access.v1.ListTenantDelegationsResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/delegations" },
+    ]
+  },
+  "access.v1.TenantDelegationApplication.RevokeTenantDelegation": {
+    fullName: "access.v1.TenantDelegationApplication.RevokeTenantDelegation",
+    rpcPath: "/access.v1.TenantDelegationApplication/RevokeTenantDelegation",
+    requestType: "access.v1.RevokeTenantDelegationRequest",
+    responseType: "access.v1.TenantDelegationDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/delegations/{id}:revoke", body: "*" },
+    ]
+  },
   "access.v1.TenantLifecycleApplication.ActivateTenant": {
     fullName: "access.v1.TenantLifecycleApplication.ActivateTenant",
     rpcPath: "/access.v1.TenantLifecycleApplication/ActivateTenant",
@@ -420,6 +503,24 @@ export const operations = {
       { method: "PATCH", path: "/v1/tenant/roles/{role_id}", body: "*" },
     ]
   },
+  "deviceops.v1.DelegatedDeviceAccessApplication.GetDelegatedDevice": {
+    fullName: "deviceops.v1.DelegatedDeviceAccessApplication.GetDelegatedDevice",
+    rpcPath: "/deviceops.v1.DelegatedDeviceAccessApplication/GetDelegatedDevice",
+    requestType: "deviceops.v1.GetDelegatedDeviceRequest",
+    responseType: "deviceops.v1.DeviceDTO",
+    http: [
+      { method: "GET", path: "/v1/delegated/devices/{id}" },
+    ]
+  },
+  "deviceops.v1.DelegatedDeviceAccessApplication.UpdateDelegatedDevice": {
+    fullName: "deviceops.v1.DelegatedDeviceAccessApplication.UpdateDelegatedDevice",
+    rpcPath: "/deviceops.v1.DelegatedDeviceAccessApplication/UpdateDelegatedDevice",
+    requestType: "deviceops.v1.UpdateDelegatedDeviceRequest",
+    responseType: "deviceops.v1.DeviceDTO",
+    http: [
+      { method: "PATCH", path: "/v1/delegated/devices/{id}", body: "*" },
+    ]
+  },
   "deviceops.v1.DeviceApplication.CreateDevice": {
     fullName: "deviceops.v1.DeviceApplication.CreateDevice",
     rpcPath: "/deviceops.v1.DeviceApplication/CreateDevice",
@@ -475,6 +576,27 @@ export const operations = {
     ]
   },
 } as const satisfies Record<string, RpcOperation>;
+
+export class Access_V1_TenantDelegationApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  getTenantDelegation(request: Access_V1_GetTenantDelegationRequest): Promise<Access_V1_TenantDelegationDTO> {
+    return this.transport.call<Access_V1_GetTenantDelegationRequest, Access_V1_TenantDelegationDTO>(operations["access.v1.TenantDelegationApplication.GetTenantDelegation"], request);
+  }
+
+  grantTenantDeviceDelegation(request: Access_V1_GrantTenantDeviceDelegationRequest): Promise<Access_V1_TenantDelegationDTO> {
+    return this.transport.call<Access_V1_GrantTenantDeviceDelegationRequest, Access_V1_TenantDelegationDTO>(operations["access.v1.TenantDelegationApplication.GrantTenantDeviceDelegation"], request);
+  }
+
+  listTenantDelegations(request: Access_V1_ListTenantDelegationsRequest): Promise<Access_V1_ListTenantDelegationsResponse> {
+    return this.transport.call<Access_V1_ListTenantDelegationsRequest, Access_V1_ListTenantDelegationsResponse>(operations["access.v1.TenantDelegationApplication.ListTenantDelegations"], request);
+  }
+
+  revokeTenantDelegation(request: Access_V1_RevokeTenantDelegationRequest): Promise<Access_V1_TenantDelegationDTO> {
+    return this.transport.call<Access_V1_RevokeTenantDelegationRequest, Access_V1_TenantDelegationDTO>(operations["access.v1.TenantDelegationApplication.RevokeTenantDelegation"], request);
+  }
+
+}
 
 export class Access_V1_TenantLifecycleApplicationClient {
   constructor(private readonly transport: RpcTransport) {}
@@ -575,6 +697,19 @@ export class Access_V1_TenantRolePermissionApplicationClient {
 
   updateTenantRole(request: Access_V1_UpdateTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
     return this.transport.call<Access_V1_UpdateTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.UpdateTenantRole"], request);
+  }
+
+}
+
+export class Deviceops_V1_DelegatedDeviceAccessApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  getDelegatedDevice(request: Deviceops_V1_GetDelegatedDeviceRequest): Promise<Deviceops_V1_DeviceDTO> {
+    return this.transport.call<Deviceops_V1_GetDelegatedDeviceRequest, Deviceops_V1_DeviceDTO>(operations["deviceops.v1.DelegatedDeviceAccessApplication.GetDelegatedDevice"], request);
+  }
+
+  updateDelegatedDevice(request: Deviceops_V1_UpdateDelegatedDeviceRequest): Promise<Deviceops_V1_DeviceDTO> {
+    return this.transport.call<Deviceops_V1_UpdateDelegatedDeviceRequest, Deviceops_V1_DeviceDTO>(operations["deviceops.v1.DelegatedDeviceAccessApplication.UpdateDelegatedDevice"], request);
   }
 
 }
