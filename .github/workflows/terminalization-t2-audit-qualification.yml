@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      YUNKA_SHA: 991737b7cd9f0c5b54a1cfaf77f904448cf072d3
+      YUNKA_SHA: 3348c7aaf613e6443b295d746f8bc659477f9c22
       BIZ_PRESSURE_SHA: 506e9c117822855db318f8b4b6689d318a62ded1
       BIZ_BASE_SHA: 7d5afbe9cb4b849be462d9a7aed65877ed227700
     steps:
