@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-sql-driver/mysql"
 	"github.com/hvritual/biz/internal/access/domain"
 	"github.com/hvritual/biz/internal/access/ports"
 	"gorm.io/gorm"
@@ -83,32 +82,40 @@ func (repository *TenantDelegationRepository) CreateOrGetActive(ctx context.Cont
 	return createOrResolveActiveDelegation(repository.database.WithContext(ctx), row, activeKey, *delegation)
 }
 
-// createOrResolveActiveDelegation keeps the database unique key as the final
-// serialization boundary for one effective authority tuple. Expiry is temporal
-// validity, not a revoke transition, so an expired historical row keeps its
-// status but relinquishes active_key before a fresh grant is inserted.
+// createOrResolveActiveDelegation uses the unique active_key as the serialization
+// boundary. A MySQL no-op upsert acquires the conflicting row directly instead
+// of first taking a duplicate-insert shared lock and then upgrading it with a
+// SELECT FOR UPDATE, which deadlocks under concurrent identical grants.
+//
+// Expiry remains temporal validity, not a revoke transition: an expired
+// historical row keeps status=active but relinquishes active_key before a fresh
+// authority is inserted.
 func createOrResolveActiveDelegation(db *gorm.DB, row tenantDelegationRecord, activeKey string, requested domain.TenantDelegation) (domain.TenantDelegation, error) {
 	const maxAttempts = 4
 	for attempt := 0; attempt < maxAttempts; attempt++ {
 		candidate := row
-		if err := db.Create(&candidate).Error; err == nil {
-			return delegationRecordDomain(candidate)
-		} else if !isActiveDelegationDuplicate(err) {
-			return domain.TenantDelegation{}, err
+		if result := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&candidate); result.Error != nil {
+			return domain.TenantDelegation{}, result.Error
 		}
 
+		// Current locking read after the upsert observes whichever row owns the
+		// unique authority key. The upsert already serialized contenders on that
+		// key, so this does not perform the unsafe shared->exclusive lock upgrade
+		// from the previous algorithm.
 		var occupied tenantDelegationRecord
 		lookupErr := db.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("owner_tenant_id = ? AND active_key = ? AND status = ?", requested.OwnerTenantID, activeKey, domain.TenantDelegationStatusActive).
 			First(&occupied).Error
 		if errors.Is(lookupErr, gorm.ErrRecordNotFound) {
-			// A concurrent transaction may have released the old key between the
-			// duplicate check and this locking read. Retry the canonical insert.
+			// A primary-key collision unrelated to active_key, or a concurrent
+			// expiry release, cannot be accepted as authority. Retry and converge
+			// through the unique active_key boundary.
 			continue
 		}
 		if lookupErr != nil {
 			return domain.TenantDelegation{}, lookupErr
 		}
+
 		existing, convertErr := delegationRecordDomain(occupied)
 		if convertErr != nil {
 			return domain.TenantDelegation{}, convertErr
@@ -121,9 +128,6 @@ func createOrResolveActiveDelegation(db *gorm.DB, row tenantDelegationRecord, ac
 			if released.Error != nil {
 				return domain.TenantDelegation{}, released.Error
 			}
-			// Whether this transaction released the key or another contender won
-			// first, retry against the unique constraint. The next iteration will
-			// either create the fresh authority or converge on the winning row.
 			continue
 		}
 		if !sameDelegationAuthority(existing, requested) {
@@ -132,11 +136,6 @@ func createOrResolveActiveDelegation(db *gorm.DB, row tenantDelegationRecord, ac
 		return existing, nil
 	}
 	return domain.TenantDelegation{}, ports.ErrTenantDelegationConflict
-}
-
-func isActiveDelegationDuplicate(err error) bool {
-	var mysqlErr *mysql.MySQLError
-	return errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 && strings.Contains(mysqlErr.Message, "uniq_delegation_active")
 }
 
 func (repository *TenantDelegationRepository) Get(ctx context.Context, id string) (domain.TenantDelegation, error) {
