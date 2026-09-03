@@ -107,11 +107,41 @@ B13 pressure found consumer-side defects before final qualification, including:
 - a duplicate-insert then `SELECT ... FOR UPDATE` lock-upgrade pattern that produced MySQL 1213 under concurrent grants;
 - runtime composition initially omitting the two new B13 Applications even though generated assembly required them.
 
-These were classified and repaired in Biz without widening Yunka authorization, tenant scoping, or transaction semantics.
+After the first complete B13 certification, current Biz `main@7d5afbe9cb4b849be462d9a7aed65877ed227700` was integrated into the pressure branch through integration PR #14. Requalification of the resulting candidate `eaad93d69b4e72e40bc4f2059400d85ab7f2cbc8` exposed one further concurrency defect that previous green runs had not deterministically ruled out:
+
+```text
+run                         33763254396
+stage                       B13.6 expired-authority concurrent regrant
+failure                     MySQL 1213 / SQLSTATE 40001 deadlock
+failing SQL                 INSERT ... ON DUPLICATE KEY UPDATE id=id
+classification              BIZ_MODEL_GAP / concurrency serialization
+failure artifact            9896424736
+failure artifact digest     sha256:bf0a28bdb90060e14b74002936b6dc18fce344953e24c51a32848bfda5a7bd28
+```
+
+The no-op upsert had removed the earlier duplicate-insert/shared-lock upgrade, but the historical delegation row's mutable unique `active_key` was still both the effective-authority identity and the serialization target. Under simultaneous expiry release plus fresh regrant, contenders could still form a lock cycle while that unique key moved from the expired row to the new row.
+
+The final persistence repair separates those responsibilities:
+
+```text
+biz_tenant_delegation_authority_slots
+  active_key PRIMARY KEY
+  -> stable serialization identity only
+
+biz_tenant_delegations
+  -> authoritative delegation history/lifecycle
+  -> active_key remains the effective-current uniqueness constraint
+```
+
+Every grant/revoke authority mutation first acquires the immutable authority slot inside the existing root transaction, then reads/releases/inserts delegation history. The slot is never renamed or deleted by revoke/expiry/regrant, so competing transactions follow one stable lock order. No repository-level deadlock retry, second transaction boundary, or Yunka runtime change was added.
+
+The pressure was strengthened with `TestB136StableAuthoritySlotRepeatedExpiredRegrant`: six consecutive expiry/regrant rounds, each with eight simultaneous fresh grants, must converge on exactly one fresh authority, release the expired historical key, preserve one stable authority slot, and return no deadlock.
+
+These consumer defects were classified and repaired in Biz without widening Yunka authorization, tenant scoping, or transaction semantics.
 
 ### Framework defect found and closed
 
-B13.7 then exposed one real framework/compiler defect:
+B13.7 exposed one real framework/compiler defect:
 
 ```text
 YUNKA-GAP-B13-01
@@ -155,22 +185,25 @@ Yunka compatibility SHA      7b1fb933fd97d4e4bee052e374045c858631feeb
 
 That run regenerated the real B13 consumer, restricted the delta to generated REST executor artifacts, rebuilt the 8-Application graph, started the real runtime, verified diagnostics/closure, proved `:revoke` reaches the generated route, proved `:unknown` returns 404, and left handwritten Biz source unchanged.
 
-B13.8 then reran the complete pressure contract in one exact environment:
+An earlier aggregate qualification passed on pre-current-main candidate `b0f70797526b1a792ccc3b1d4e7078c59cfe4e47` in run `33762165718`. It remains historical evidence but is not the final certification because current Biz main was integrated afterward and the subsequent requalification exposed the residual B13.6 deadlock above.
+
+Final behavior certification after current-main integration and stable authority-slot repair:
 
 ```text
-behavior-certified Biz SHA   b0f70797526b1a792ccc3b1d4e7078c59cfe4e47
-B13.8 aggregate run          33762165718  PASS
+behavior-certified Biz SHA   6fa2d941515133945ac0bf09cbb69eb493b62b6c
+B13.8 aggregate run          33763814432  PASS
 MySQL                        8.4
 Yunka compatibility SHA      7b1fb933fd97d4e4bee052e374045c858631feeb
 canonical Yunka main fix     1901162383832e2d5c49809d579c72919ba8cfbd
 artifact                     b13-8-final-disposition-evidence
-artifact digest              sha256:eb8f34d98cb3c3262face8623cbec689bd01a5fba4f511abaf8d635b8c22b176
+artifact ID                  9896661598
+artifact digest              sha256:65b8c51c3abeb0e865a8f39433980f6d8c7d68bbf0cd75f7e48532ad75dab5b9
 ```
 
 The aggregate gate executed, on the same Biz/Yunka pair:
 
 - B13.1 `generate --full`, canonical `check`, generated-effect restriction, and operation/HTTP binding assertions;
-- all B13 delegation integration tests for B13.2-B13.6 against the same MySQL instance;
+- all B13 delegation integration tests for B13.2-B13.6 against the same MySQL instance, including the repeated 6x8 expired-authority regrant pressure;
 - Biz build and exact 8-Application canonical graph;
 - runtime readiness, diagnostics, route inventory, custom-verb dispatch, runtime graph closure, and graceful shutdown;
 - final proof that no handwritten Biz source was mutated by regeneration.
@@ -197,8 +230,9 @@ OPEN_B13_YUNKA_GAPS=0
 ORIGINAL_YUNKA_BASELINE=6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
 QUALIFIED_YUNKA_COMPATIBILITY_BASELINE=7b1fb933fd97d4e4bee052e374045c858631feeb
 CANONICAL_YUNKA_FIX_MAIN=1901162383832e2d5c49809d579c72919ba8cfbd
-BEHAVIOR_CERTIFIED_BIZ_SHA=b0f70797526b1a792ccc3b1d4e7078c59cfe4e47
-B13_FINAL_CERTIFICATION_RUN=33762165718
+CURRENT_BIZ_MAIN_INTEGRATED=7d5afbe9cb4b849be462d9a7aed65877ed227700
+BEHAVIOR_CERTIFIED_BIZ_SHA=6fa2d941515133945ac0bf09cbb69eb493b62b6c
+B13_FINAL_CERTIFICATION_RUN=33763814432
 ```
 
-The original Yunka baseline is retained as historical pressure provenance, not as the final qualified transport baseline.
+The original Yunka baseline is retained as historical pressure provenance, not as the final qualified transport baseline. The current disposition is tied to the post-main-integration behavior candidate and the stable-authority-slot concurrency closure, not to the earlier pre-integration green run.
