@@ -35,6 +35,21 @@ type tenantDelegationRecord struct {
 
 func (tenantDelegationRecord) TableName() string { return "biz_tenant_delegations" }
 
+// tenantDelegationAuthoritySlotRecord is a stable database serialization
+// identity for one owner->grantee resource authority tuple. It deliberately
+// carries no business lifecycle state: delegation history remains authoritative
+// in biz_tenant_delegations. Keeping this row stable across revoke/expiry/regrant
+// lets every authority mutation acquire locks in one order before touching the
+// historical delegation rows.
+type tenantDelegationAuthoritySlotRecord struct {
+	ActiveKey string    `gorm:"column:active_key;primaryKey;size:64"`
+	CreatedAt time.Time `gorm:"column:created_at;not null"`
+}
+
+func (tenantDelegationAuthoritySlotRecord) TableName() string {
+	return "biz_tenant_delegation_authority_slots"
+}
+
 type TenantDelegationRepository struct {
 	database *gorm.DB
 }
@@ -53,7 +68,10 @@ func AutoMigrateTenantDelegation(ctx context.Context, database *gorm.DB) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	return database.WithContext(ctx).AutoMigrate(&tenantDelegationRecord{})
+	return database.WithContext(ctx).AutoMigrate(
+		&tenantDelegationAuthoritySlotRecord{},
+		&tenantDelegationRecord{},
+	)
 }
 
 func (repository *TenantDelegationRepository) CreateOrGetActive(ctx context.Context, delegation *domain.TenantDelegation) (domain.TenantDelegation, error) {
@@ -82,68 +100,84 @@ func (repository *TenantDelegationRepository) CreateOrGetActive(ctx context.Cont
 	return createOrResolveActiveDelegation(repository.database.WithContext(ctx), row, activeKey, *delegation)
 }
 
-// createOrResolveActiveDelegation uses the unique active_key as the serialization
-// boundary. A MySQL no-op upsert acquires the conflicting row directly instead
-// of first taking a duplicate-insert shared lock and then upgrading it with a
-// SELECT FOR UPDATE, which deadlocks under concurrent identical grants.
-//
-// RowsAffected preserves the non-contended path: a newly inserted delegation is
-// returned immediately. Only an actual duplicate/no-op enters authority
-// reconciliation and locking. The B13 MySQL DSN intentionally does not enable
-// clientFoundRows, so a no-op duplicate reports zero affected rows.
-//
-// Expiry remains temporal validity, not a revoke transition: an expired
-// historical row keeps status=active but relinquishes active_key before a fresh
-// authority is inserted.
+// createOrResolveActiveDelegation serializes every mutation for an authority
+// tuple through a stable slot before reading or modifying delegation history.
+// The slot key never moves when a delegation expires or is revoked, avoiding the
+// old cycle where contenders locked the historical unique active_key, one
+// transaction cleared it, and then tried to insert a fresh row while other
+// contenders were still waiting on that same moving unique key.
 func createOrResolveActiveDelegation(db *gorm.DB, row tenantDelegationRecord, activeKey string, requested domain.TenantDelegation) (domain.TenantDelegation, error) {
-	const maxAttempts = 4
-	for attempt := 0; attempt < maxAttempts; attempt++ {
-		candidate := row
-		result := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&candidate)
-		if result.Error != nil {
-			return domain.TenantDelegation{}, result.Error
-		}
-		if result.RowsAffected == 1 {
-			return delegationRecordDomain(candidate)
-		}
+	if err := acquireDelegationAuthoritySlot(db, activeKey); err != nil {
+		return domain.TenantDelegation{}, err
+	}
 
-		// Only a duplicate/no-op reaches this current locking read. The upsert
-		// serialized contenders on active_key without the old shared->exclusive
-		// lock upgrade sequence.
-		var occupied tenantDelegationRecord
-		lookupErr := db.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("owner_tenant_id = ? AND active_key = ? AND status = ?", requested.OwnerTenantID, activeKey, domain.TenantDelegationStatusActive).
-			First(&occupied).Error
-		if errors.Is(lookupErr, gorm.ErrRecordNotFound) {
-			// A primary-key collision unrelated to active_key, or a concurrent
-			// expiry release, cannot be accepted as authority. Retry and converge
-			// through the unique active_key boundary.
-			continue
-		}
-		if lookupErr != nil {
-			return domain.TenantDelegation{}, lookupErr
-		}
-
+	var occupied tenantDelegationRecord
+	lookupErr := db.Where(
+		"owner_tenant_id = ? AND active_key = ? AND status = ?",
+		requested.OwnerTenantID,
+		activeKey,
+		domain.TenantDelegationStatusActive,
+	).First(&occupied).Error
+	if lookupErr != nil && !errors.Is(lookupErr, gorm.ErrRecordNotFound) {
+		return domain.TenantDelegation{}, lookupErr
+	}
+	if lookupErr == nil {
 		existing, convertErr := delegationRecordDomain(occupied)
 		if convertErr != nil {
 			return domain.TenantDelegation{}, convertErr
 		}
 		now := time.Now().UTC()
-		if existing.Expired(now) {
-			released := db.Model(&tenantDelegationRecord{}).
-				Where("id = ? AND owner_tenant_id = ? AND status = ? AND active_key = ? AND expires_at IS NOT NULL AND expires_at <= ?", occupied.ID, requested.OwnerTenantID, domain.TenantDelegationStatusActive, activeKey, now).
-				UpdateColumn("active_key", nil)
-			if released.Error != nil {
-				return domain.TenantDelegation{}, released.Error
+		if !existing.Expired(now) {
+			if !sameDelegationAuthority(existing, requested) {
+				return domain.TenantDelegation{}, ports.ErrTenantDelegationConflict
 			}
-			continue
+			return existing, nil
 		}
-		if !sameDelegationAuthority(existing, requested) {
+
+		released := db.Model(&tenantDelegationRecord{}).
+			Where(
+				"id = ? AND owner_tenant_id = ? AND status = ? AND active_key = ? AND expires_at IS NOT NULL AND expires_at <= ?",
+				occupied.ID,
+				requested.OwnerTenantID,
+				domain.TenantDelegationStatusActive,
+				activeKey,
+				now,
+			).
+			UpdateColumn("active_key", nil)
+		if released.Error != nil {
+			return domain.TenantDelegation{}, released.Error
+		}
+		if released.RowsAffected != 1 {
 			return domain.TenantDelegation{}, ports.ErrTenantDelegationConflict
 		}
-		return existing, nil
 	}
-	return domain.TenantDelegation{}, ports.ErrTenantDelegationConflict
+
+	candidate := row
+	if err := db.Create(&candidate).Error; err != nil {
+		return domain.TenantDelegation{}, err
+	}
+	return delegationRecordDomain(candidate)
+}
+
+// acquireDelegationAuthoritySlot obtains the transaction-scoped exclusive lock
+// for an authority tuple. The no-op upsert creates the stable slot on first use
+// and locks the existing slot on subsequent uses. Because the slot key itself is
+// never updated or deleted by delegation lifecycle transitions, contenders have
+// one immutable serialization point and do not need a lock upgrade or retry.
+func acquireDelegationAuthoritySlot(db *gorm.DB, activeKey string) error {
+	if db == nil || strings.TrimSpace(activeKey) == "" {
+		return errors.New("access persistence: delegation authority slot requires database and key")
+	}
+	row := tenantDelegationAuthoritySlotRecord{
+		ActiveKey: activeKey,
+		CreatedAt: time.Now().UTC(),
+	}
+	return db.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "active_key"}},
+		DoUpdates: clause.Assignments(map[string]any{
+			"active_key": gorm.Expr("active_key"),
+		}),
+	}).Create(&row).Error
 }
 
 func (repository *TenantDelegationRepository) Get(ctx context.Context, id string) (domain.TenantDelegation, error) {
@@ -197,9 +231,14 @@ func (repository *TenantDelegationRepository) Update(ctx context.Context, delega
 	if err != nil {
 		return err
 	}
+	authorityKey := delegationActiveKey(ownerTenantID, delegation.GranteeTenantID, delegation.ResourceKind, delegation.ResourceID)
+	if err := acquireDelegationAuthoritySlot(repository.database.WithContext(ctx), authorityKey); err != nil {
+		return err
+	}
+
 	var activeKey any
 	if delegation.Status == domain.TenantDelegationStatusActive {
-		activeKey = delegationActiveKey(ownerTenantID, delegation.GranteeTenantID, delegation.ResourceKind, delegation.ResourceID)
+		activeKey = authorityKey
 	} else {
 		activeKey = nil
 	}
