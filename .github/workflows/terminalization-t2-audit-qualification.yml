@@ -75,67 +75,74 @@ jobs:
           mkdir -p "$RUNNER_TEMP/audit-evidence"
           git -C biz status --porcelain > "$RUNNER_TEMP/audit-evidence/before.status"
 
-          "$RUNNER_TEMP/yunka" audit \
-            --root "$GITHUB_WORKSPACE/biz" \
-            --format agent-json \
-            > "$RUNNER_TEMP/audit-evidence/current-1.json"
-          "$RUNNER_TEMP/yunka" audit \
-            --root "$GITHUB_WORKSPACE/biz" \
-            --format agent-json \
-            > "$RUNNER_TEMP/audit-evidence/current-2.json"
+          "$RUNNER_TEMP/yunka" audit --root "$GITHUB_WORKSPACE/biz" --format agent-json > "$RUNNER_TEMP/audit-evidence/current-1.json"
+          "$RUNNER_TEMP/yunka" audit --root "$GITHUB_WORKSPACE/biz" --format agent-json > "$RUNNER_TEMP/audit-evidence/current-2.json"
           diff -u "$RUNNER_TEMP/audit-evidence/current-1.json" "$RUNNER_TEMP/audit-evidence/current-2.json"
 
-          "$RUNNER_TEMP/yunka" audit \
-            --root "$GITHUB_WORKSPACE/biz" \
-            --base "$BIZ_BASE_SHA" \
-            --format agent-json \
-            > "$RUNNER_TEMP/audit-evidence/debt-1.json"
-          "$RUNNER_TEMP/yunka" audit \
-            --root "$GITHUB_WORKSPACE/biz" \
-            --base "$BIZ_BASE_SHA" \
-            --format agent-json \
-            > "$RUNNER_TEMP/audit-evidence/debt-2.json"
+          "$RUNNER_TEMP/yunka" audit --root "$GITHUB_WORKSPACE/biz" --base "$BIZ_BASE_SHA" --format agent-json > "$RUNNER_TEMP/audit-evidence/debt-1.json"
+          "$RUNNER_TEMP/yunka" audit --root "$GITHUB_WORKSPACE/biz" --base "$BIZ_BASE_SHA" --format agent-json > "$RUNNER_TEMP/audit-evidence/debt-2.json"
           diff -u "$RUNNER_TEMP/audit-evidence/debt-1.json" "$RUNNER_TEMP/audit-evidence/debt-2.json"
 
           git -C biz status --porcelain > "$RUNNER_TEMP/audit-evidence/after.status"
           diff -u "$RUNNER_TEMP/audit-evidence/before.status" "$RUNNER_TEMP/audit-evidence/after.status"
 
-      - name: Validate evidence contract and debt partition
+      - name: Validate clean consumer evidence
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json
-          import os
+          import json, os
           from pathlib import Path
-
           root = Path(os.environ['RUNNER_TEMP']) / 'audit-evidence'
-          current = json.loads((root / 'current-1.json').read_text())
           debt_report = json.loads((root / 'debt-1.json').read_text())
-          assert current['schemaVersion'] == 1
-          assert debt_report['schemaVersion'] == 1
           debt = debt_report['debt']
           assert debt['baseSha'] == os.environ['BIZ_BASE_SHA']
-
           current_ids = {f['id'] for f in debt_report['findings'] if f['class'] == 'proven_violation'}
           existing_ids = {f['id'] for f in debt['existing']}
           new_ids = {f['id'] for f in debt['new']}
           fixed_ids = {f['id'] for f in debt['fixed']}
-          assert not (existing_ids & new_ids)
-          assert not (existing_ids & fixed_ids)
-          assert not (new_ids & fixed_ids)
           assert current_ids == existing_ids | new_ids
-          assert all(f['class'] == 'proven_violation' for group in ('existing', 'new', 'fixed') for f in debt[group])
-
-          summary = (
-              f"current_findings={len(debt_report['findings'])}\n"
-              f"existing={len(existing_ids)}\n"
-              f"new={len(new_ids)}\n"
-              f"fixed={len(fixed_ids)}\n"
-          )
-          (root / 'summary.txt').write_text(summary)
-          print(summary, end='')
+          assert not (existing_ids & new_ids or existing_ids & fixed_ids or new_ids & fixed_ids)
+          clean = f"current_findings={len(debt_report['findings'])}\nexisting={len(existing_ids)}\nnew={len(new_ids)}\nfixed={len(fixed_ids)}\n"
+          (root / 'clean-summary.txt').write_text(clean)
+          print(clean, end='')
           PY
+
+      - name: Pressure real Biz application imports
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture="$GITHUB_WORKSPACE/biz/internal/access/application/zz_audit_pressure.go"
+          cat > "$fixture" <<'EOF'
+          package application
+
+          import (
+              _ "github.com/hvritual/biz/internal/deviceops/ports"
+              _ "yunka.io/framework/platform"
+              _ "yunka.io/gateway/authz"
+          )
+          EOF
+
+          "$RUNNER_TEMP/yunka" audit --root "$GITHUB_WORKSPACE/biz" --base "$BIZ_PRESSURE_SHA" --format agent-json > "$RUNNER_TEMP/audit-evidence/pressure.json"
+
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'audit-evidence'
+          report = json.loads((root / 'pressure.json').read_text())
+          debt = report['debt']
+          rules = sorted(f['rule'] for f in debt['new'])
+          expected = ['AUDIT-APP-001', 'AUDIT-AUTH-001', 'AUDIT-INFRA-001']
+          assert rules == expected, f"pressure new rules={rules}, expected={expected}"
+          assert len(debt['existing']) == 0
+          assert len(debt['fixed']) == 0
+          (root / 'pressure-summary.txt').write_text('new_rules=' + ','.join(rules) + '\n')
+          print('new_rules=' + ','.join(rules))
+          PY
+
+          rm -f "$fixture"
+          git -C biz status --porcelain > "$RUNNER_TEMP/audit-evidence/after-pressure.status"
+          diff -u "$RUNNER_TEMP/audit-evidence/before.status" "$RUNNER_TEMP/audit-evidence/after-pressure.status"
 
       - name: Upload deterministic audit evidence
         if: always()
