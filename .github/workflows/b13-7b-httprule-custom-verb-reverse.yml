@@ -91,6 +91,19 @@ jobs:
           unzip -q "$archive" -d "$install_root"
           echo "$install_root/bin" >> "$GITHUB_PATH"
 
+      - name: Install locked protobuf Go generators
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          install_root="$RUNNER_TEMP/protobuf-go-bin"
+          mkdir -p "$install_root"
+          GOBIN="$install_root" go install "google.golang.org/protobuf/cmd/protoc-gen-go@${PROTOC_GEN_GO_VERSION}"
+          GOBIN="$install_root" go install "google.golang.org/grpc/cmd/protoc-gen-go-grpc@${PROTOC_GEN_GO_GRPC_VERSION}"
+          test -x "$install_root/protoc-gen-go"
+          test -x "$install_root/protoc-gen-go-grpc"
+          echo "$install_root" >> "$GITHUB_PATH"
+
       - name: Verify exact sources
         shell: bash
         run: |
