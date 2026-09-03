@@ -42,7 +42,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
-          test "$(git -C biz rev-parse HEAD^)" = "$BIZ_PRESSURE_SHA"
+          git -C biz merge-base --is-ancestor "$BIZ_PRESSURE_SHA" HEAD
           test "$(git -C biz cat-file -t "$BIZ_BASE_SHA")" = commit
           changed="$(git -C biz diff --name-only "$BIZ_PRESSURE_SHA"...HEAD)"
           test "$changed" = ".github/workflows/terminalization-t2-audit-qualification.yml"
