@@ -17,9 +17,11 @@
         "./cmd/biz"
       ],
       "graphNodes": [
+        "application:access/tenant_delegation_management",
         "application:access/tenant_lifecycle",
         "application:access/tenant_member_lifecycle",
         "application:access/tenant_role_permission",
+        "application:deviceops/delegated_device_access",
         "application:deviceops/device_management",
         "application:deviceops/device_transfer",
         "application:deviceops/site_management"
