@@ -1,0 +1,147 @@
+name: terminalization-t2-audit-qualification
+
+on:
+  push:
+    branches:
+      - qualification/terminalization-t2-audit-b13
+    paths:
+      - .github/workflows/terminalization-t2-audit-qualification.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-b13:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      YUNKA_SHA: 991737b7cd9f0c5b54a1cfaf77f904448cf072d3
+      BIZ_PRESSURE_SHA: 506e9c117822855db318f8b4b6689d318a62ded1
+      BIZ_BASE_SHA: 7d5afbe9cb4b849be462d9a7aed65877ed227700
+    steps:
+      - name: Checkout qualification branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact Yunka T2 candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.YUNKA_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Assert exact qualification inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          test "$(git -C biz rev-parse HEAD^)" = "$BIZ_PRESSURE_SHA"
+          test "$(git -C biz cat-file -t "$BIZ_BASE_SHA")" = commit
+          changed="$(git -C biz diff --name-only "$BIZ_PRESSURE_SHA"...HEAD)"
+          test "$changed" = ".github/workflows/terminalization-t2-audit-qualification.yml"
+
+      - name: Load locked Yunka Go toolchain
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Build exact candidate CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C yunka.io/app build -o "$RUNNER_TEMP/yunka" ./cmd
+          "$RUNNER_TEMP/yunka" --version
+
+      - name: Run deterministic current and debt audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/audit-evidence"
+          git -C biz status --porcelain > "$RUNNER_TEMP/audit-evidence/before.status"
+
+          "$RUNNER_TEMP/yunka" audit \
+            --root "$GITHUB_WORKSPACE/biz" \
+            --format agent-json \
+            > "$RUNNER_TEMP/audit-evidence/current-1.json"
+          "$RUNNER_TEMP/yunka" audit \
+            --root "$GITHUB_WORKSPACE/biz" \
+            --format agent-json \
+            > "$RUNNER_TEMP/audit-evidence/current-2.json"
+          diff -u "$RUNNER_TEMP/audit-evidence/current-1.json" "$RUNNER_TEMP/audit-evidence/current-2.json"
+
+          "$RUNNER_TEMP/yunka" audit \
+            --root "$GITHUB_WORKSPACE/biz" \
+            --base "$BIZ_BASE_SHA" \
+            --format agent-json \
+            > "$RUNNER_TEMP/audit-evidence/debt-1.json"
+          "$RUNNER_TEMP/yunka" audit \
+            --root "$GITHUB_WORKSPACE/biz" \
+            --base "$BIZ_BASE_SHA" \
+            --format agent-json \
+            > "$RUNNER_TEMP/audit-evidence/debt-2.json"
+          diff -u "$RUNNER_TEMP/audit-evidence/debt-1.json" "$RUNNER_TEMP/audit-evidence/debt-2.json"
+
+          git -C biz status --porcelain > "$RUNNER_TEMP/audit-evidence/after.status"
+          diff -u "$RUNNER_TEMP/audit-evidence/before.status" "$RUNNER_TEMP/audit-evidence/after.status"
+
+      - name: Validate evidence contract and debt partition
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ['RUNNER_TEMP']) / 'audit-evidence'
+          current = json.loads((root / 'current-1.json').read_text())
+          debt_report = json.loads((root / 'debt-1.json').read_text())
+          assert current['schemaVersion'] == 1
+          assert debt_report['schemaVersion'] == 1
+          debt = debt_report['debt']
+          assert debt['baseSha'] == os.environ['BIZ_BASE_SHA']
+
+          current_ids = {f['id'] for f in debt_report['findings'] if f['class'] == 'proven_violation'}
+          existing_ids = {f['id'] for f in debt['existing']}
+          new_ids = {f['id'] for f in debt['new']}
+          fixed_ids = {f['id'] for f in debt['fixed']}
+          assert not (existing_ids & new_ids)
+          assert not (existing_ids & fixed_ids)
+          assert not (new_ids & fixed_ids)
+          assert current_ids == existing_ids | new_ids
+          assert all(f['class'] == 'proven_violation' for group in ('existing', 'new', 'fixed') for f in debt[group])
+
+          summary = (
+              f"current_findings={len(debt_report['findings'])}\n"
+              f"existing={len(existing_ids)}\n"
+              f"new={len(new_ids)}\n"
+              f"fixed={len(fixed_ids)}\n"
+          )
+          (root / 'summary.txt').write_text(summary)
+          print(summary, end='')
+          PY
+
+      - name: Upload deterministic audit evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: terminalization-t2-b13-audit
+          path: ${{ runner.temp }}/audit-evidence
+          if-no-files-found: warn
+          retention-days: 3
