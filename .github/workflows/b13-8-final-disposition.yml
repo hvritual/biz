@@ -5,8 +5,36 @@ on:
     branches:
       - agent/b13-cross-tenant-delegation-pressure
     paths:
-      - .github/workflows/b13-8-final-disposition.yml
+      - .github/workflows/b13-*.yml
+      - .yunka/dev.json
+      - cmd/biz/**
+      - contracts/**
       - docs/pressure/B13-framework-pressure.md
+      - internal/access/**
+      - internal/assembly/**
+      - internal/bizruntime/**
+      - internal/deviceops/**
+      - integration/b13delegation/**
+      - modules/**
+      - go.mod
+      - go.sum
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/b13-*.yml
+      - .yunka/dev.json
+      - cmd/biz/**
+      - contracts/**
+      - docs/pressure/B13-framework-pressure.md
+      - internal/access/**
+      - internal/assembly/**
+      - internal/bizruntime/**
+      - internal/deviceops/**
+      - integration/b13delegation/**
+      - modules/**
+      - go.mod
+      - go.sum
   workflow_dispatch:
 
 permissions:
