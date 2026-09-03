@@ -19,6 +19,7 @@ import (
 	devicepolicy "github.com/hvritual/biz/internal/deviceops/policy"
 	deviceports "github.com/hvritual/biz/internal/deviceops/ports"
 	devicesecurity "github.com/hvritual/biz/internal/deviceops/security"
+	"gorm.io/gorm"
 	"yunka.io/framework/core/identity"
 	"yunka.io/framework/execution"
 	"yunka.io/framework/requestscope"
@@ -356,9 +357,7 @@ func b136Root(transactions *requestscope.GORMExecutionFactory, tenantID, operati
 	return execution.BeginRoot(base, operationID, mode, nil, transactions)
 }
 
-func assertSingleEffectiveAuthority(t *testing.T, db interface {
-	Table(string, ...interface{}) *gorm.DB
-}, ownerTenantID, granteeTenantID, resourceID string) {
+func assertSingleEffectiveAuthority(t *testing.T, db *gorm.DB, ownerTenantID, granteeTenantID, resourceID string) {
 	t.Helper()
 	var count int64
 	if err := db.Table("biz_tenant_delegations").
