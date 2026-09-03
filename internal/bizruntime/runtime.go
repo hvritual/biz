@@ -17,6 +17,7 @@ import (
 	"github.com/hvritual/biz/internal/deviceops/domain"
 	devicepersistence "github.com/hvritual/biz/internal/deviceops/infrastructure/persistence"
 	devicepolicy "github.com/hvritual/biz/internal/deviceops/policy"
+	deviceports "github.com/hvritual/biz/internal/deviceops/ports"
 	devicesecurity "github.com/hvritual/biz/internal/deviceops/security"
 	accessmodule "github.com/hvritual/biz/modules/access"
 	"github.com/hvritual/biz/modules/deviceops"
@@ -104,14 +105,20 @@ func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, opti
 }
 
 type applicationFactories struct {
-	device             *deviceapp.Service
-	site               *deviceapp.SiteManagementService
-	tenantRepositories requestscope.RepositoryFactory[accessports.TenantRepositories]
-	memberRepositories requestscope.RepositoryFactory[accessports.TenantMemberRepositories]
-	roleRepositories   requestscope.RepositoryFactory[accessports.TenantRoleRepositories]
+	device                      *deviceapp.Service
+	site                        *deviceapp.SiteManagementService
+	delegatedDeviceRepositories requestscope.RepositoryFactory[deviceports.DelegatedRepositories]
+	tenantRepositories          requestscope.RepositoryFactory[accessports.TenantRepositories]
+	memberRepositories          requestscope.RepositoryFactory[accessports.TenantMemberRepositories]
+	roleRepositories            requestscope.RepositoryFactory[accessports.TenantRoleRepositories]
+	delegationRepositories      requestscope.RepositoryFactory[accessports.TenantDelegationRepositories]
 }
 
 var _ generatedassembly.ApplicationFactories = applicationFactories{}
+
+func (factory applicationFactories) BuildDeviceopsDelegatedDeviceAccess(generatedassembly.DeviceopsDelegatedDeviceAccessDependencies) (deviceapp.DelegatedDeviceAccessApplication, error) {
+	return deviceapp.NewDelegatedService(factory.delegatedDeviceRepositories)
+}
 
 func (factory applicationFactories) BuildDeviceopsDeviceManagement(generatedassembly.DeviceopsDeviceManagementDependencies) (deviceapp.DeviceManagementApplication, error) {
 	if factory.device == nil { return nil, errors.New("biz runtime: device management application is required") }
@@ -144,6 +151,7 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	if config.AutoMigrate {
 		if err := accessStore.AutoMigrate(ctx); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: access migrate: %w", err) }
 		if err := accessStore.EnsurePlatformSchema(ctx); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: platform IAM migrate: %w", err) }
+		if err := accesspersistence.AutoMigrateTenantDelegation(ctx, accessDatabase); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: tenant delegation migrate: %w", err) }
 		if err := devicepersistence.AutoMigrate(ctx, deviceDatabase); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: domain migrate: %w", err) }
 		if err := devicepersistence.EnsureIndexes(deviceDatabase); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: indexes: %w", err) }
 	}
@@ -178,9 +186,16 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	guard, err := devicesecurity.NewGuard(accessStore)
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
+	deviceOwnerResolver, err := devicepersistence.NewDeviceOwnerResolver(deviceDatabase)
+	if err != nil { return generatedassembly.RuntimeBindings{}, err }
+	delegationGrantResolver, err := accesspersistence.NewDelegatedDeviceGrantResolver(accessDatabase)
+	if err != nil { return generatedassembly.RuntimeBindings{}, err }
+	delegatedGuard, err := devicesecurity.NewDelegatedDeviceGuard(deviceOwnerResolver, delegationGrantResolver)
+	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	guards := authz.NewStaticGuardResolver(map[authz.OperationID]authz.OperationGuard{
 		"device.list": guard, "device.get": guard, "device.create": guard, "device.update": guard,
 		"device.delete": guard, "site.validate_transfer_target": guard, "device.transfer": guard,
+		"device.delegated_get": delegatedGuard, "device.delegated_update": delegatedGuard,
 	})
 	security, err := authz.NewExecutionSecurity(grantAuthorizer, guards)
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
@@ -197,11 +212,15 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 
 	deviceRepositories, err := devicepersistence.NewScopedRepositoryFactory(deviceDatabase)
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
+	delegatedDeviceRepositories, err := devicepersistence.NewDelegatedRepositoryFactory(deviceDatabase)
+	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	tenantRepositories, err := accesspersistence.NewTenantRepositoryFactory(accessDatabase)
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	memberRepositories, err := accesspersistence.NewTenantMemberRepositoryFactory(accessDatabase)
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	roleRepositories, err := accesspersistence.NewTenantRoleRepositoryFactory(accessDatabase)
+	if err != nil { return generatedassembly.RuntimeBindings{}, err }
+	delegationRepositories, err := accesspersistence.NewTenantDelegationRepositoryFactory(accessDatabase)
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	deviceService, err := deviceapp.NewService(deviceRepositories)
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
@@ -212,9 +231,11 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 		Factories: applicationFactories{
 			device: deviceService,
 			site: siteService,
+			delegatedDeviceRepositories: delegatedDeviceRepositories,
 			tenantRepositories: tenantRepositories,
 			memberRepositories: memberRepositories,
 			roleRepositories: roleRepositories,
+			delegationRepositories: delegationRepositories,
 		},
 		Executor: executor,
 	}, nil
