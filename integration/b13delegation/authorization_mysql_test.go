@@ -22,6 +22,11 @@ import (
 	"yunka.io/gateway/authz"
 )
 
+const (
+	delegatedGetPolicyKey    = "/deviceops.v1.DelegatedDeviceAccessApplication/GetDelegatedDevice"
+	delegatedUpdatePolicyKey = "/deviceops.v1.DelegatedDeviceAccessApplication/UpdateDelegatedDevice"
+)
+
 type countingOperationGuard struct {
 	delegate authz.OperationGuard
 	calls    int
@@ -120,7 +125,7 @@ func TestB133TwoKeyDelegatedAuthorizationBoundary(t *testing.T) {
 
 	// Local IAM permission alone is insufficient: authorization passes into the
 	// guard, but the absent A->B delegation denies the resource.
-	_, err = securityRuntime.Prepare(identity.WithPrincipal(context.Background(), granteePrincipal), "device.delegated_get", &deviceopsv1.GetDelegatedDeviceRequest{Id: device.ID})
+	_, err = securityRuntime.Prepare(identity.WithPrincipal(context.Background(), granteePrincipal), delegatedGetPolicyKey, &deviceopsv1.GetDelegatedDeviceRequest{Id: device.ID})
 	if !errors.Is(err, devicesecurity.ErrDelegatedAccessDenied) {
 		t.Fatalf("local-only delegated get err=%v", err)
 	}
@@ -155,7 +160,7 @@ func TestB133TwoKeyDelegatedAuthorizationBoundary(t *testing.T) {
 	}
 
 	createDelegation(granteeTenantID, "delegation-b-"+stamp)
-	secured, err := securityRuntime.Prepare(identity.WithPrincipal(context.Background(), granteePrincipal), "device.delegated_get", &deviceopsv1.GetDelegatedDeviceRequest{Id: device.ID})
+	secured, err := securityRuntime.Prepare(identity.WithPrincipal(context.Background(), granteePrincipal), delegatedGetPolicyKey, &deviceopsv1.GetDelegatedDeviceRequest{Id: device.ID})
 	if err != nil {
 		t.Fatalf("two-key delegated get: %v", err)
 	}
@@ -172,7 +177,7 @@ func TestB133TwoKeyDelegatedAuthorizationBoundary(t *testing.T) {
 	}
 
 	// Local update exists, but the delegation grants read only.
-	_, err = securityRuntime.Prepare(identity.WithPrincipal(context.Background(), granteePrincipal), "device.delegated_update", &deviceopsv1.UpdateDelegatedDeviceRequest{Id: device.ID, Name: "forbidden", Version: 1})
+	_, err = securityRuntime.Prepare(identity.WithPrincipal(context.Background(), granteePrincipal), delegatedUpdatePolicyKey, &deviceopsv1.UpdateDelegatedDeviceRequest{Id: device.ID, Name: "forbidden", Version: 1})
 	if !errors.Is(err, devicesecurity.ErrDelegatedAccessDenied) {
 		t.Fatalf("permission-scope delegated update err=%v", err)
 	}
@@ -185,7 +190,7 @@ func TestB133TwoKeyDelegatedAuthorizationBoundary(t *testing.T) {
 	// is also "owner".
 	createDelegation(noLocalTenantID, "delegation-c-"+stamp)
 	before := counter.calls
-	_, err = securityRuntime.Prepare(identity.WithPrincipal(context.Background(), noLocalPrincipal), "device.delegated_get", &deviceopsv1.GetDelegatedDeviceRequest{Id: device.ID})
+	_, err = securityRuntime.Prepare(identity.WithPrincipal(context.Background(), noLocalPrincipal), delegatedGetPolicyKey, &deviceopsv1.GetDelegatedDeviceRequest{Id: device.ID})
 	if !authz.IsDenied(err) {
 		t.Fatalf("delegation-only request err=%v", err)
 	}
