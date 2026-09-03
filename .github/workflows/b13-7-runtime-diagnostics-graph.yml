@@ -1,0 +1,215 @@
+name: b13-7-runtime-diagnostics-graph
+
+on:
+  push:
+    branches:
+      - agent/b13-cross-tenant-delegation-pressure
+    paths:
+      - .github/workflows/b13-7-runtime-diagnostics-graph.yml
+      - .yunka/dev.json
+      - cmd/biz/**
+      - contracts/**
+      - docs/pressure/B13-framework-pressure.md
+      - internal/access/**
+      - internal/assembly/**
+      - internal/bizruntime/**
+      - internal/deviceops/**
+      - modules/**
+      - go.mod
+      - go.sum
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/b13-7-runtime-diagnostics-graph.yml
+      - .yunka/dev.json
+      - cmd/biz/**
+      - contracts/**
+      - docs/pressure/B13-framework-pressure.md
+      - internal/access/**
+      - internal/assembly/**
+      - internal/bizruntime/**
+      - internal/deviceops/**
+      - modules/**
+      - go.mod
+      - go.sum
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  b13-7-runtime-diagnostics-graph:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+      YUNKA_BIZ_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_b137?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+      YUNKA_BIZ_AUTO_MIGRATE: "true"
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_b137
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact Yunka baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.YUNKA_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Load locked Go
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Verify exact sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+
+      - name: Build Biz and exact Yunka CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz build ./...
+          (cd yunka.io/app && go build -buildvcs=true -o "$RUNNER_TEMP/yunka" ./cmd)
+          test -x "$RUNNER_TEMP/yunka"
+
+      - name: Build and inspect canonical application graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          "$RUNNER_TEMP/yunka" graph build --out "$RUNNER_TEMP/b13-7-application-graph.json"
+          "$RUNNER_TEMP/yunka" graph inspect --graph "$RUNNER_TEMP/b13-7-application-graph.json" --format json > "$RUNNER_TEMP/b13-7-graph-inspect.json"
+          jq -e '
+            ([.nodes[] | select(.kind == "application") | .id] | sort) == ([
+              "application:access/tenant_delegation_management",
+              "application:access/tenant_lifecycle",
+              "application:access/tenant_member_lifecycle",
+              "application:access/tenant_role_permission",
+              "application:deviceops/delegated_device_access",
+              "application:deviceops/device_management",
+              "application:deviceops/device_transfer",
+              "application:deviceops/site_management"
+            ] | sort)
+          ' "$RUNNER_TEMP/b13-7-application-graph.json" >/dev/null
+
+      - name: Prove B13 runtime diagnostics and closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          rm -f .yunka/dev-runtime.json .yunka/runtime-graph.json
+          "$RUNNER_TEMP/yunka" dev >"$RUNNER_TEMP/b13-7-dev.stdout" 2>"$RUNNER_TEMP/b13-7-dev.stderr" &
+          dev_pid=$!
+          cleanup() {
+            if kill -0 "$dev_pid" 2>/dev/null; then
+              kill -TERM "$dev_pid" 2>/dev/null || true
+              wait "$dev_pid" || true
+            fi
+          }
+          trap cleanup EXIT
+
+          ready=0
+          for _ in $(seq 1 240); do
+            if ! kill -0 "$dev_pid" 2>/dev/null; then
+              wait "$dev_pid" || true
+              cat "$RUNNER_TEMP/b13-7-dev.stdout" || true
+              cat "$RUNNER_TEMP/b13-7-dev.stderr" || true
+              exit 1
+            fi
+            if test -f .yunka/dev-runtime.json && jq -e '.state == "running" and (.processes | length) == 1 and .processes[0].ready == true' .yunka/dev-runtime.json >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 0.25
+          done
+          test "$ready" = 1
+
+          curl --fail --silent --show-error http://127.0.0.1:8080/__yunka/diagnostics > "$RUNNER_TEMP/b13-7-diagnostics.json"
+          jq -e '
+            .core.state == "ready" and
+            .core.health.ready == true and
+            ((.core.modules | map(.name) | sort) == (["access", "deviceops"] | sort)) and
+            (.core.routes | index("/v1/tenant/delegations/devices")) != null and
+            (.core.routes | index("/v1/delegated/devices/{id}")) != null
+          ' "$RUNNER_TEMP/b13-7-diagnostics.json" >/dev/null
+
+          "$RUNNER_TEMP/yunka" dev status --closure --format json > "$RUNNER_TEMP/b13-7-status.json"
+          jq -e '
+            .state == "running" and
+            (.processes | length) == 1 and
+            .processes[0].name == "biz" and
+            .processes[0].ready == true and
+            ((.processes[0].graphNodes | sort) == ([
+              "application:access/tenant_delegation_management",
+              "application:access/tenant_lifecycle",
+              "application:access/tenant_member_lifecycle",
+              "application:access/tenant_role_permission",
+              "application:deviceops/delegated_device_access",
+              "application:deviceops/device_management",
+              "application:deviceops/device_transfer",
+              "application:deviceops/site_management"
+            ] | sort))
+          ' "$RUNNER_TEMP/b13-7-status.json" >/dev/null
+
+          jq -e '[.edges[] | select(.kind == "runs" and .from == "process:biz")] | length == 8' .yunka/runtime-graph.json >/dev/null
+
+          kill -TERM "$dev_pid"
+          wait "$dev_pid"
+          trap - EXIT
+          jq -e '.state == "stopped" and .processes[0].state == "stopped"' .yunka/dev-runtime.json >/dev/null
+
+      - name: Export B13.7 evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: b13-7-runtime-diagnostics-graph-evidence
+          path: |
+            ${{ runner.temp }}/b13-7-application-graph.json
+            ${{ runner.temp }}/b13-7-graph-inspect.json
+            ${{ runner.temp }}/b13-7-diagnostics.json
+            ${{ runner.temp }}/b13-7-status.json
+            ${{ runner.temp }}/b13-7-dev.stdout
+            ${{ runner.temp }}/b13-7-dev.stderr
+          if-no-files-found: warn
+          retention-days: 2
+
+      - name: Require clean Biz worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C biz diff --exit-code
+          test -z "$(git -C biz status --porcelain)"
