@@ -1,0 +1,105 @@
+name: b13-4-trusted-resource-tenant-persistence-mysql
+
+on:
+  push:
+    branches:
+      - agent/b13-cross-tenant-delegation-pressure
+    paths:
+      - .github/workflows/b13-4-trusted-resource-tenant-persistence-mysql.yml
+      - contracts/**
+      - docs/pressure/B13-framework-pressure.md
+      - internal/access/infrastructure/persistence/delegation_security.go
+      - internal/deviceops/application/delegated.go
+      - internal/deviceops/infrastructure/persistence/delegated.go
+      - internal/deviceops/infrastructure/persistence/delegated_security.go
+      - internal/deviceops/ports/delegated.go
+      - internal/deviceops/security/delegated.go
+      - integration/b13delegation/resource_tenant_persistence_mysql_test.go
+      - go.mod
+      - go.sum
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/b13-4-trusted-resource-tenant-persistence-mysql.yml
+      - contracts/**
+      - docs/pressure/B13-framework-pressure.md
+      - internal/access/infrastructure/persistence/delegation_security.go
+      - internal/deviceops/application/delegated.go
+      - internal/deviceops/infrastructure/persistence/delegated.go
+      - internal/deviceops/infrastructure/persistence/delegated_security.go
+      - internal/deviceops/ports/delegated.go
+      - internal/deviceops/security/delegated.go
+      - integration/b13delegation/resource_tenant_persistence_mysql_test.go
+      - go.mod
+      - go.sum
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  b13-4-trusted-resource-tenant-persistence-mysql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_b134?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_b134
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact Yunka baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.YUNKA_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Load locked Go
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Verify exact sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+
+      - name: Run B13.4 trusted resource-tenant persistence pressure
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 -tags=integration ./integration/b13delegation -run '^TestB134TrustedResourceTenantPersistence$'
+          test -z "$(git -C biz status --porcelain)"
