@@ -87,6 +87,11 @@ func (repository *TenantDelegationRepository) CreateOrGetActive(ctx context.Cont
 // of first taking a duplicate-insert shared lock and then upgrading it with a
 // SELECT FOR UPDATE, which deadlocks under concurrent identical grants.
 //
+// RowsAffected preserves the non-contended path: a newly inserted delegation is
+// returned immediately. Only an actual duplicate/no-op enters authority
+// reconciliation and locking. The B13 MySQL DSN intentionally does not enable
+// clientFoundRows, so a no-op duplicate reports zero affected rows.
+//
 // Expiry remains temporal validity, not a revoke transition: an expired
 // historical row keeps status=active but relinquishes active_key before a fresh
 // authority is inserted.
@@ -94,14 +99,17 @@ func createOrResolveActiveDelegation(db *gorm.DB, row tenantDelegationRecord, ac
 	const maxAttempts = 4
 	for attempt := 0; attempt < maxAttempts; attempt++ {
 		candidate := row
-		if result := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&candidate); result.Error != nil {
+		result := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&candidate)
+		if result.Error != nil {
 			return domain.TenantDelegation{}, result.Error
 		}
+		if result.RowsAffected == 1 {
+			return delegationRecordDomain(candidate)
+		}
 
-		// Current locking read after the upsert observes whichever row owns the
-		// unique authority key. The upsert already serialized contenders on that
-		// key, so this does not perform the unsafe shared->exclusive lock upgrade
-		// from the previous algorithm.
+		// Only a duplicate/no-op reaches this current locking read. The upsert
+		// serialized contenders on active_key without the old shared->exclusive
+		// lock upgrade sequence.
 		var occupied tenantDelegationRecord
 		lookupErr := db.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("owner_tenant_id = ? AND active_key = ? AND status = ?", requested.OwnerTenantID, activeKey, domain.TenantDelegationStatusActive).
