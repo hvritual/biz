@@ -80,28 +80,63 @@ func (repository *TenantDelegationRepository) CreateOrGetActive(ctx context.Cont
 		PermissionsJSON: string(permissionsJSON), Status: delegation.Status, Version: delegation.Version,
 		ExpiresAt: delegation.ExpiresAt, ActiveKey: &activeKey, CreatedAt: delegation.CreatedAt, UpdatedAt: delegation.UpdatedAt,
 	}
-	db := repository.database.WithContext(ctx)
-	if err := db.Create(&row).Error; err != nil {
-		var mysqlErr *mysql.MySQLError
-		if !errors.As(err, &mysqlErr) || mysqlErr.Number != 1062 {
+	return createOrResolveActiveDelegation(repository.database.WithContext(ctx), row, activeKey, *delegation)
+}
+
+// createOrResolveActiveDelegation keeps the database unique key as the final
+// serialization boundary for one effective authority tuple. Expiry is temporal
+// validity, not a revoke transition, so an expired historical row keeps its
+// status but relinquishes active_key before a fresh grant is inserted.
+func createOrResolveActiveDelegation(db *gorm.DB, row tenantDelegationRecord, activeKey string, requested domain.TenantDelegation) (domain.TenantDelegation, error) {
+	const maxAttempts = 4
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		candidate := row
+		if err := db.Create(&candidate).Error; err == nil {
+			return delegationRecordDomain(candidate)
+		} else if !isActiveDelegationDuplicate(err) {
 			return domain.TenantDelegation{}, err
 		}
-		row = tenantDelegationRecord{}
-		if lookupErr := db.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("owner_tenant_id = ? AND active_key = ? AND status = ?", ownerTenantID, activeKey, domain.TenantDelegationStatusActive).
-			First(&row).Error; lookupErr != nil {
+
+		var occupied tenantDelegationRecord
+		lookupErr := db.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("owner_tenant_id = ? AND active_key = ? AND status = ?", requested.OwnerTenantID, activeKey, domain.TenantDelegationStatusActive).
+			First(&occupied).Error
+		if errors.Is(lookupErr, gorm.ErrRecordNotFound) {
+			// A concurrent transaction may have released the old key between the
+			// duplicate check and this locking read. Retry the canonical insert.
+			continue
+		}
+		if lookupErr != nil {
 			return domain.TenantDelegation{}, lookupErr
 		}
-		existing, convertErr := delegationRecordDomain(row)
+		existing, convertErr := delegationRecordDomain(occupied)
 		if convertErr != nil {
 			return domain.TenantDelegation{}, convertErr
 		}
-		if !sameDelegationAuthority(existing, *delegation) {
+		now := time.Now().UTC()
+		if existing.Expired(now) {
+			released := db.Model(&tenantDelegationRecord{}).
+				Where("id = ? AND owner_tenant_id = ? AND status = ? AND active_key = ? AND expires_at IS NOT NULL AND expires_at <= ?", occupied.ID, requested.OwnerTenantID, domain.TenantDelegationStatusActive, activeKey, now).
+				UpdateColumn("active_key", nil)
+			if released.Error != nil {
+				return domain.TenantDelegation{}, released.Error
+			}
+			// Whether this transaction released the key or another contender won
+			// first, retry against the unique constraint. The next iteration will
+			// either create the fresh authority or converge on the winning row.
+			continue
+		}
+		if !sameDelegationAuthority(existing, requested) {
 			return domain.TenantDelegation{}, ports.ErrTenantDelegationConflict
 		}
 		return existing, nil
 	}
-	return delegationRecordDomain(row)
+	return domain.TenantDelegation{}, ports.ErrTenantDelegationConflict
+}
+
+func isActiveDelegationDuplicate(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	return errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 && strings.Contains(mysqlErr.Message, "uniq_delegation_active")
 }
 
 func (repository *TenantDelegationRepository) Get(ctx context.Context, id string) (domain.TenantDelegation, error) {
