@@ -39,9 +39,10 @@ func (resolver *DelegatedDeviceGrantResolver) ResolveActiveDeviceDelegation(
 	if ownerTenantID == "" || granteeTenantID == "" || deviceID == "" || permission == "" {
 		return "", 0, false, nil
 	}
+	now = now.UTC()
 	var row tenantDelegationRecord
 	if err := resolver.database.WithContext(ctx).
-		Where("owner_tenant_id = ? AND grantee_tenant_id = ? AND resource_kind = ? AND resource_id = ? AND status = ?", ownerTenantID, granteeTenantID, domain.TenantDelegationResourceDevice, deviceID, domain.TenantDelegationStatusActive).
+		Where("owner_tenant_id = ? AND grantee_tenant_id = ? AND resource_kind = ? AND resource_id = ? AND status = ? AND (expires_at IS NULL OR expires_at > ?)", ownerTenantID, granteeTenantID, domain.TenantDelegationResourceDevice, deviceID, domain.TenantDelegationStatusActive, now).
 		First(&row).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return "", 0, false, nil
@@ -52,6 +53,8 @@ func (resolver *DelegatedDeviceGrantResolver) ResolveActiveDeviceDelegation(
 	if err != nil {
 		return "", 0, false, err
 	}
+	// Keep a domain-level expiry check as a fail-closed defense even though the
+	// database predicate already excludes temporally invalid historical rows.
 	if delegation.Expired(now) || !containsDelegationPermission(delegation.Permissions, permission) {
 		return "", 0, false, nil
 	}
