@@ -1,0 +1,293 @@
+name: terminalization-t3-advisor-qualification
+
+on:
+  push:
+    branches:
+      - qualification/terminalization-t3-advisor-b13
+    paths:
+      - .github/workflows/terminalization-t3-advisor-qualification.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  advisor-b13:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      YUNKA_SHA: 5738ac71ef5e838fae9231e908ae1a87ee7e2b31
+      BIZ_PRESSURE_SHA: 506e9c117822855db318f8b4b6689d318a62ded1
+      BIZ_BASE_SHA: 7d5afbe9cb4b849be462d9a7aed65877ed227700
+    steps:
+      - name: Checkout qualification branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact Yunka T3 candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.YUNKA_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Assert exact qualification inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          git -C biz merge-base --is-ancestor "$BIZ_PRESSURE_SHA" HEAD
+          test "$(git -C biz cat-file -t "$BIZ_BASE_SHA")" = commit
+          changed="$(git -C biz diff --name-only "$BIZ_PRESSURE_SHA"...HEAD)"
+          test "$changed" = ".github/workflows/terminalization-t3-advisor-qualification.yml"
+
+      - name: Load locked Yunka Go toolchain
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Build exact candidate CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C yunka.io/app build -o "$RUNNER_TEMP/yunka" ./cmd
+          "$RUNNER_TEMP/yunka" --version
+
+      - name: Qualify context protocol v3
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/advisor-evidence"
+          "$RUNNER_TEMP/yunka" context --root "$GITHUB_WORKSPACE/biz" --json > "$RUNNER_TEMP/advisor-evidence/context-1.json"
+          "$RUNNER_TEMP/yunka" context --root "$GITHUB_WORKSPACE/biz" --json > "$RUNNER_TEMP/advisor-evidence/context-2.json"
+          diff -u "$RUNNER_TEMP/advisor-evidence/context-1.json" "$RUNNER_TEMP/advisor-evidence/context-2.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'advisor-evidence'
+          context = json.loads((root / 'context-1.json').read_text())
+          assert context['schemaVersion'] == 3, context['schemaVersion']
+          protocol = context['agentProtocol']
+          assert protocol['advisorRequest'] == 'yunka advisor request --format agent-json'
+          assert protocol['advisorValidate'] == 'yunka advisor validate --request <request.json> --response <response.json> --format agent-json'
+          PY
+
+      - name: Qualify clean advisory request and empty response
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/advisor-evidence"
+          git -C biz status --porcelain > "$root/before.status"
+
+          "$RUNNER_TEMP/yunka" advisor request --root "$GITHUB_WORKSPACE/biz" --base "$BIZ_BASE_SHA" --format agent-json > "$root/clean-request-1.json"
+          "$RUNNER_TEMP/yunka" advisor request --root "$GITHUB_WORKSPACE/biz" --base "$BIZ_BASE_SHA" --format agent-json > "$root/clean-request-2.json"
+          diff -u "$root/clean-request-1.json" "$root/clean-request-2.json"
+
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'advisor-evidence'
+          request = json.loads((root / 'clean-request-1.json').read_text())
+          assert request['schemaVersion'] == 1
+          assert request['authority'] == 'advisory_only'
+          assert request['policy']['mutationAuthorized'] is False
+          assert request['policy']['authorityExpansionRequiresHuman'] is True
+          assert request['audit']['findings'] == []
+          response = {
+              'schemaVersion': 1,
+              'requestDigest': request['requestDigest'],
+              'recommendations': [],
+          }
+          (root / 'clean-response.json').write_text(json.dumps(response, indent=2) + '\n')
+          PY
+
+          "$RUNNER_TEMP/yunka" advisor validate --request "$root/clean-request-1.json" --response "$root/clean-response.json" --format agent-json > "$root/clean-attestation.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'advisor-evidence'
+          attestation = json.loads((root / 'clean-attestation.json').read_text())
+          assert attestation['authority'] == 'advisory_only'
+          assert attestation['result'] == 'valid'
+          assert attestation['bindings'] == []
+          PY
+
+          git -C biz status --porcelain > "$root/after-clean.status"
+          diff -u "$root/before.status" "$root/after-clean.status"
+
+      - name: Pressure real Biz findings and validate bound recommendation
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/advisor-evidence"
+          fixture="$GITHUB_WORKSPACE/biz/internal/access/application/zz_advisor_pressure.go"
+          cat > "$fixture" <<'EOF'
+          package application
+
+          import (
+              _ "github.com/hvritual/biz/internal/deviceops/ports"
+              _ "yunka.io/framework/platform"
+              _ "yunka.io/gateway/authz"
+          )
+          EOF
+
+          "$RUNNER_TEMP/yunka" advisor request --root "$GITHUB_WORKSPACE/biz" --base "$BIZ_PRESSURE_SHA" --format agent-json > "$root/pressure-request.json"
+
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'advisor-evidence'
+          request = json.loads((root / 'pressure-request.json').read_text())
+          findings = request['audit']['findings']
+          rules = sorted(f['rule'] for f in findings)
+          expected = ['AUDIT-APP-001', 'AUDIT-AUTH-001', 'AUDIT-INFRA-001']
+          assert rules == expected, (rules, expected)
+          assert request['audit']['debt']['new'] and len(request['audit']['debt']['new']) == 3
+          finding_ids = sorted(f['id'] for f in findings)
+          response = {
+              'schemaVersion': 1,
+              'requestDigest': request['requestDigest'],
+              'recommendations': [{
+                  'id': 'R-B13-001',
+                  'kind': 'remediation_recommendation',
+                  'title': 'Restore canonical Application boundaries',
+                  'rationale': 'The pressure fixture directly imports cross-domain repository, Platform Provider, and root authorization implementation surfaces.',
+                  'findingIds': finding_ids,
+              }],
+          }
+          (root / 'pressure-valid-response.json').write_text(json.dumps(response, indent=2) + '\n')
+          (root / 'pressure-summary.txt').write_text('rules=' + ','.join(rules) + '\n')
+          PY
+
+          "$RUNNER_TEMP/yunka" advisor validate --request "$root/pressure-request.json" --response "$root/pressure-valid-response.json" --format agent-json > "$root/pressure-attestation.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'advisor-evidence'
+          request = json.loads((root / 'pressure-request.json').read_text())
+          attestation = json.loads((root / 'pressure-attestation.json').read_text())
+          assert attestation['authority'] == 'advisory_only'
+          assert attestation['result'] == 'valid'
+          assert len(attestation['bindings']) == 1
+          assert attestation['bindings'][0]['findingIds'] == sorted(f['id'] for f in request['audit']['findings'])
+          PY
+
+      - name: Reject adversarial advisor responses
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/advisor-evidence"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'advisor-evidence'
+          pressure = json.loads((root / 'pressure-request.json').read_text())
+          clean = json.loads((root / 'clean-request-1.json').read_text())
+          real_id = pressure['audit']['findings'][0]['id']
+
+          cases = {
+              'unknown-finding': {
+                  'schemaVersion': 1,
+                  'requestDigest': pressure['requestDigest'],
+                  'recommendations': [{
+                      'id': 'R-UNKNOWN', 'kind': 'remediation_recommendation',
+                      'title': 'Unknown evidence', 'rationale': 'Must fail.',
+                      'findingIds': ['AUDIT-DOES-NOT-EXIST'],
+                  }],
+              },
+              'safe-to-merge': {
+                  'schemaVersion': 1,
+                  'requestDigest': pressure['requestDigest'],
+                  'authority': 'safe_to_merge',
+                  'recommendations': [],
+              },
+              'digest-drift': {
+                  'schemaVersion': 1,
+                  'requestDigest': '0' * 64,
+                  'recommendations': [],
+              },
+              'apply-patch': {
+                  'schemaVersion': 1,
+                  'requestDigest': pressure['requestDigest'],
+                  'recommendations': [{
+                      'id': 'R-PATCH', 'kind': 'apply_patch',
+                      'title': 'Patch code', 'rationale': 'Mutation authority is forbidden.',
+                      'findingIds': [real_id],
+                  }],
+              },
+              'zero-evidence-advice': {
+                  'schemaVersion': 1,
+                  'requestDigest': clean['requestDigest'],
+                  'recommendations': [{
+                      'id': 'R-NONE', 'kind': 'design_question',
+                      'title': 'Invent a problem', 'rationale': 'No deterministic findings exist.',
+                      'findingIds': ['INVENTED'],
+                  }],
+              },
+          }
+          for name, payload in cases.items():
+              (root / f'{name}.json').write_text(json.dumps(payload, indent=2) + '\n')
+          PY
+
+          if "$RUNNER_TEMP/yunka" advisor validate --request "$root/pressure-request.json" --response "$root/unknown-finding.json" --format agent-json > "$root/unknown-finding.out" 2>&1; then
+            echo "unknown finding unexpectedly validated" >&2
+            exit 1
+          fi
+          grep -q "unknown current finding" "$root/unknown-finding.out"
+
+          if "$RUNNER_TEMP/yunka" advisor validate --request "$root/pressure-request.json" --response "$root/safe-to-merge.json" --format agent-json > "$root/safe-to-merge.out" 2>&1; then
+            echo "safe_to_merge injection unexpectedly validated" >&2
+            exit 1
+          fi
+          grep -q 'unknown field "authority"' "$root/safe-to-merge.out"
+
+          if "$RUNNER_TEMP/yunka" advisor validate --request "$root/pressure-request.json" --response "$root/digest-drift.json" --format agent-json > "$root/digest-drift.out" 2>&1; then
+            echo "request digest drift unexpectedly validated" >&2
+            exit 1
+          fi
+          grep -q "does not match request" "$root/digest-drift.out"
+
+          if "$RUNNER_TEMP/yunka" advisor validate --request "$root/pressure-request.json" --response "$root/apply-patch.json" --format agent-json > "$root/apply-patch.out" 2>&1; then
+            echo "apply_patch recommendation unexpectedly validated" >&2
+            exit 1
+          fi
+          grep -q "kind \"apply_patch\" is unsupported" "$root/apply-patch.out"
+
+          if "$RUNNER_TEMP/yunka" advisor validate --request "$root/clean-request-1.json" --response "$root/zero-evidence-advice.json" --format agent-json > "$root/zero-evidence-advice.out" 2>&1; then
+            echo "zero-evidence advice unexpectedly validated" >&2
+            exit 1
+          fi
+          grep -q "recommendations require deterministic Audit findings" "$root/zero-evidence-advice.out"
+
+      - name: Reconcile pressure fixture and worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/advisor-evidence"
+          rm -f "$GITHUB_WORKSPACE/biz/internal/access/application/zz_advisor_pressure.go"
+          git -C biz status --porcelain > "$root/after-pressure.status"
+          diff -u "$root/before.status" "$root/after-pressure.status"
+
+      - name: Upload deterministic advisor evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: terminalization-t3-b13-advisor
+          path: ${{ runner.temp }}/advisor-evidence
+          if-no-files-found: warn
+          retention-days: 3
