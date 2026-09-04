@@ -51,8 +51,8 @@ jobs:
         id: lock
         shell: bash
         run: |
-          set -euo or pipefail
-          source yunka.io/tools/tool-remediation.env
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
           echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Setup locked Go
@@ -66,7 +66,7 @@ jobs:
         run: |
           set -euo pipefail
           go -C yunka.io/app build -o "$RUNNER_TEMP/yunka" ./cmd
-          "$RUNNING_TEMP/yunka" change set remediation --help > "$RUNNER_TEMP/remediation-help.txt"
+          "$RUNNER_TEMP/yunka" change set remediation --help > "$RUNNER_TEMP/remediation-help.txt"
           grep -q "bind" "$RUNNER_TEMP/remediation-help.txt"
           grep -q "check" "$RUNNER_TEMP/remediation-help.txt"
 
