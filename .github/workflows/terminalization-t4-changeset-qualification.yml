@@ -102,8 +102,7 @@ jobs:
           set -euo pipefail
           evidence="$RUNNER_TEMP/t4-evidence"
           root="$GITHUB_WORKSPACE/biz"
-          plan="$root/.yunka/t4-create-plan.json"
-          mkdir -p "$root/.yunka"
+          plan="$RUNNER_TEMP/t4-create-plan.json"
 
           "$RUNNER_TEMP/yunka" add operation access/tenant_lifecycle tenant.t4_qualification_probe \
             --root "$root" \
@@ -123,8 +122,7 @@ jobs:
           python3 - <<'PY'
           import json, os
           from pathlib import Path
-          root = Path(os.environ['GITHUB_WORKSPACE']) / 'biz'
-          plan = json.loads((root / '.yunka/t4-create-plan.json').read_text())
+          plan = json.loads((Path(os.environ['RUNNER_TEMP']) / 't4-create-plan.json').read_text())
           assert plan['kind'] == 'operation-plan'
           assert plan['identity']['operationId'] == 'tenant.t4_qualification_probe'
           semantics = plan['explicitSemantics']
@@ -139,7 +137,7 @@ jobs:
           "$RUNNER_TEMP/yunka" change set begin \
             --root "$root" \
             --base HEAD \
-            --create-plan .yunka/t4-create-plan.json \
+            --create-plan "$plan" \
             --format agent-json > "$evidence/matching-set-begin.json"
 
           git -C biz status --porcelain > "$evidence/after-plan-begin.status"
@@ -194,8 +192,7 @@ jobs:
           set -euo pipefail
           evidence="$RUNNER_TEMP/t4-evidence"
           root="$GITHUB_WORKSPACE/biz"
-          plan="$root/.yunka/t4-drift-plan.json"
-          mkdir -p "$root/.yunka"
+          plan="$RUNNER_TEMP/t4-drift-plan.json"
 
           "$RUNNER_TEMP/yunka" add operation access/tenant_lifecycle tenant.t4_qualification_probe \
             --root "$root" \
@@ -215,7 +212,7 @@ jobs:
           "$RUNNER_TEMP/yunka" change set begin \
             --root "$root" \
             --base HEAD \
-            --create-plan .yunka/t4-drift-plan.json \
+            --create-plan "$plan" \
             --format agent-json > "$evidence/drift-set-begin.json"
 
           "$RUNNER_TEMP/yunka" add operation access/tenant_lifecycle tenant.t4_qualification_probe \
