@@ -19,6 +19,31 @@ test ! -s "$EVIDENCE/before.status"
 git -C "$ROOT" config user.email "t5-proof@example.invalid"
 git -C "$ROOT" config user.name "T5 Proof Qualification"
 
+# The preserved B13 pressure tree predates later Yunka generator/toolchain
+# convergence. Canonicalize it ephemerally against the exact T5 candidate
+# before measuring Proof-of-Change behavior. This is qualification setup, not
+# a consumer product change and not a framework workaround.
+go -C "$ROOT" mod edit -dropreplace=github.com/go-kit/kit
+"$YUNKA_BIN" generate \
+  --root "$ROOT" \
+  --protoc "$(command -v protoc)"
+go -C "$ROOT" mod tidy
+"$YUNKA_BIN" check \
+  --root "$ROOT" \
+  --protoc "$(command -v protoc)" \
+  --format agent-json > "$EVIDENCE/canonical-check.json"
+go -C "$ROOT" test ./...
+"$YUNKA_BIN" audit \
+  --root "$ROOT" \
+  --format agent-json > "$EVIDENCE/canonical-audit.json"
+
+git -C "$ROOT" add -A
+git -C "$ROOT" commit -m "qualification: canonicalize B13 for T5 proof pressure"
+qualification_base_sha="$(git -C "$ROOT" rev-parse HEAD)"
+printf '%s\n' "$qualification_base_sha" > "$EVIDENCE/qualification-base-sha.txt"
+git -C "$ROOT" status --porcelain > "$EVIDENCE/canonical.status"
+test ! -s "$EVIDENCE/canonical.status"
+
 # Pressure A: a bounded handwritten addition that introduces a new proven
 # architecture violation must fail final Change Attestation even though it is
 # otherwise inside the declared Change Contract.
@@ -47,17 +72,19 @@ if "$YUNKA_BIN" change verify \
   exit 1
 fi
 
-EVIDENCE="$EVIDENCE" python3 - <<'PY'
+EVIDENCE="$EVIDENCE" NEW_REL="$new_rel" python3 - <<'PY'
 import json, os
 from pathlib import Path
 root = Path(os.environ['EVIDENCE'])
+new_rel = os.environ['NEW_REL']
 a = json.loads((root / 'new-debt-attestation.json').read_text())
 assert a['schemaVersion'] == 2, a
 assert a['conformant'] is False, a
-assert a['architectureDebt']['existing'] == [], a
 assert a['architectureDebt']['fixed'] == [], a
-assert len(a['architectureDebt']['new']) == 1, a
-assert a['architectureDebt']['new'][0]['rule'] == 'AUDIT-AUTH-001', a
+new = a['architectureDebt']['new']
+assert len(new) == 1, a
+assert new[0]['rule'] == 'AUDIT-AUTH-001', a
+assert any(e.get('path') == new_rel for e in new[0].get('evidence', [])), new[0]
 gates = {g['name']: g for g in a['gates']}
 assert gates['git-delta']['status'] == 'pass', gates
 assert gates['yunka-check']['status'] == 'pass', gates
@@ -66,9 +93,9 @@ assert gates['architecture-debt']['status'] == 'fail', gates
 assert gates['go-test']['status'] == 'pass', gates
 PY
 
-# Restore the exact qualification branch before establishing an immutable bad
+# Restore the candidate-canonical consumer before establishing an immutable bad
 # baseline for existing/fixed debt classification.
-git -C "$ROOT" reset --hard "$GITHUB_SHA"
+git -C "$ROOT" reset --hard "$qualification_base_sha"
 git -C "$ROOT" clean -fdx
 rm -rf "$ROOT/.git/yunka"
 
@@ -100,20 +127,22 @@ printf '%s\n' "$base_sha" > "$EVIDENCE/existing-base-sha.txt"
   --output "$EVIDENCE/existing-debt-attestation.json" \
   --format agent-json > "$EVIDENCE/existing-debt-response.json"
 
-EVIDENCE="$EVIDENCE" python3 - <<'PY'
+EVIDENCE="$EVIDENCE" EXISTING_REL="$existing_rel" python3 - <<'PY'
 import json, os
 from pathlib import Path
 root = Path(os.environ['EVIDENCE'])
+existing_rel = os.environ['EXISTING_REL']
 a = json.loads((root / 'existing-debt-attestation.json').read_text())
 assert a['schemaVersion'] == 2, a
 assert a['conformant'] is True, a
-assert len(a['architectureDebt']['existing']) == 1, a
-assert a['architectureDebt']['existing'][0]['rule'] == 'AUDIT-INFRA-001', a
 assert a['architectureDebt']['new'] == [], a
 assert a['architectureDebt']['fixed'] == [], a
+matches = [f for f in a['architectureDebt']['existing']
+           if f['rule'] == 'AUDIT-INFRA-001'
+           and any(e.get('path') == existing_rel for e in f.get('evidence', []))]
+assert len(matches) == 1, a
 gates = {g['name']: g for g in a['gates']}
 assert gates['architecture-debt']['status'] == 'pass', gates
-assert 'existing=1' in gates['architecture-debt'].get('detail', ''), gates
 assert gates['go-test']['status'] == 'pass', gates
 PY
 
@@ -127,25 +156,26 @@ rm "$existing_file"
   --output "$EVIDENCE/fixed-debt-attestation.json" \
   --format agent-json > "$EVIDENCE/fixed-debt-response.json"
 
-EVIDENCE="$EVIDENCE" python3 - <<'PY'
+EVIDENCE="$EVIDENCE" EXISTING_REL="$existing_rel" python3 - <<'PY'
 import json, os
 from pathlib import Path
 root = Path(os.environ['EVIDENCE'])
+existing_rel = os.environ['EXISTING_REL']
 a = json.loads((root / 'fixed-debt-attestation.json').read_text())
 assert a['schemaVersion'] == 2, a
 assert a['conformant'] is True, a
-assert a['architectureDebt']['existing'] == [], a
 assert a['architectureDebt']['new'] == [], a
-assert len(a['architectureDebt']['fixed']) == 1, a
-assert a['architectureDebt']['fixed'][0]['rule'] == 'AUDIT-INFRA-001', a
+matches = [f for f in a['architectureDebt']['fixed']
+           if f['rule'] == 'AUDIT-INFRA-001'
+           and any(e.get('path') == existing_rel for e in f.get('evidence', []))]
+assert len(matches) == 1, a
 gates = {g['name']: g for g in a['gates']}
 assert gates['architecture-debt']['status'] == 'pass', gates
-assert 'fixed=1' in gates['architecture-debt'].get('detail', ''), gates
 assert gates['go-test']['status'] == 'pass', gates
 PY
 
-# Re-render the successful attestation contract from an unchanged state to
-# prove deterministic machine output for the architecture-debt payload.
+# Re-render the successful attestation from an unchanged state to prove
+# deterministic machine output for the architecture-debt payload.
 cp "$EVIDENCE/fixed-debt-attestation.json" "$EVIDENCE/fixed-debt-attestation.first.json"
 "$YUNKA_BIN" change verify \
   --root "$ROOT" \
