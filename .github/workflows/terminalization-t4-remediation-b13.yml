@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      YUNKA_SHA: d527d2bbfb1c9bcd89598c680b81679def68f488
+      YUNKA_SHA: 2ade49e1fc6ef9a49f1f7ced6dc9979919d3100a
       BIZ_PRESSURE_SHA: 506e9c117822855db318f8b4b6689d318a62ded1
     steps:
       - name: Checkout qualification branch
