@@ -23,22 +23,29 @@ git -C "$ROOT" config user.name "T5 Proof Qualification"
 # convergence. Canonicalize it ephemerally against the exact T5 candidate
 # before measuring Proof-of-Change behavior. This is qualification setup, not
 # a consumer product change and not a framework workaround.
-go -C "$ROOT" mod edit -dropreplace=github.com/go-kit/kit
+go -C "$ROOT" mod edit -dropreplace=github.com/go-kit/kit@v0.10.0 \
+  > "$EVIDENCE/canonical-mod-edit.log" 2>&1
 "$YUNKA_BIN" generate \
   --root "$ROOT" \
-  --protoc "$(command -v protoc)"
-go -C "$ROOT" mod tidy
+  --protoc "$(command -v protoc)" \
+  > "$EVIDENCE/canonical-generate.log" 2>&1
+go -C "$ROOT" mod tidy \
+  > "$EVIDENCE/canonical-tidy.log" 2>&1
 "$YUNKA_BIN" check \
   --root "$ROOT" \
   --protoc "$(command -v protoc)" \
-  --format agent-json > "$EVIDENCE/canonical-check.json"
-go -C "$ROOT" test ./...
+  --format agent-json > "$EVIDENCE/canonical-check.json" \
+  2> "$EVIDENCE/canonical-check.stderr"
+go -C "$ROOT" test ./... \
+  > "$EVIDENCE/canonical-go-test.log" 2>&1
 "$YUNKA_BIN" audit \
   --root "$ROOT" \
-  --format agent-json > "$EVIDENCE/canonical-audit.json"
+  --format agent-json > "$EVIDENCE/canonical-audit.json" \
+  2> "$EVIDENCE/canonical-audit.stderr"
 
 git -C "$ROOT" add -A
-git -C "$ROOT" commit -m "qualification: canonicalize B13 for T5 proof pressure"
+git -C "$ROOT" commit -m "qualification: canonicalize B13 for T5 proof pressure" \
+  > "$EVIDENCE/canonical-commit.log" 2>&1
 qualification_base_sha="$(git -C "$ROOT" rev-parse HEAD)"
 printf '%s\n' "$qualification_base_sha" > "$EVIDENCE/qualification-base-sha.txt"
 git -C "$ROOT" status --porcelain > "$EVIDENCE/canonical.status"
