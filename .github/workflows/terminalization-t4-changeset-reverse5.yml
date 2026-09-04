@@ -1,0 +1,123 @@
+name: terminalization-t4-changeset-reverse5
+
+on:
+  push:
+    branches:
+      - qualification/terminalization-t4-changeset-b13-reverse5
+    paths:
+      - .github/workflows/terminalization-t4-changeset-reverse5.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  changeset-b13-reverse5:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      YUNKA_SHA: 07a1210d06020a01380b5d51f5812408e6e553c2
+      BIZ_PRESSURE_SHA: 506e9c117822855db318f8b4b6689d318a62ded1
+      FIXTURE_SHA: 9ba49fe99b1af7d3a638bac47cb149fb7f71f523
+      FIXTURE_PATH: .github/workflows/terminalization-t4-changeset-reverse4.yml
+      FIXTURE_BLOB: 00ac7117e4c995f0dba3d203bc4ee1067bddf67a
+    steps:
+      - name: Checkout qualification branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact Yunka T4 candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.YUNKA_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Assert exact qualification inputs and fixture identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          git -C biz merge-base --is-ancestor "$BIZ_PRESSURE_SHA" HEAD
+          changed="$(git -C biz diff --name-only "$BIZ_PRESSURE_SHA"...HEAD)"
+          test "$changed" = ".github/workflows/terminalization-t4-changeset-reverse5.yml"
+          test "$(git -C biz rev-parse "$FIXTURE_SHA:$FIXTURE_PATH")" = "$FIXTURE_BLOB"
+
+      - name: Load locked Yunka toolchain
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "protoc_release=${PROTOC_RELEASE}" >> "$GITHUB_OUTPUT"
+          echo "protoc_sha256=${PROTOC_LINUX_X86_64_SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Install locked protoc
+        shell: bash
+        env:
+          PROTOC_RELEASE: ${{ steps.lock.outputs.protoc_release }}
+          PROTOC_SHA256: ${{ steps.lock.outputs.protoc_sha256 }}
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/protoc.zip"
+          root="$RUNNER_TEMP/protoc"
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_RELEASE}/protoc-${PROTOC_RELEASE}-linux-x86_64.zip" \
+            -o "$archive"
+          echo "${PROTOC_SHA256}  ${archive}" | sha256sum -c -
+          mkdir -p "$root"
+          unzip -q "$archive" -d "$root"
+          echo "$root/bin" >> "$GITHUB_PATH"
+
+      - name: Extract byte-reused reverse4 pressure body
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C biz show "$FIXTURE_SHA:$FIXTURE_PATH" > "$RUNNER_TEMP/reverse4.yml"
+          python3 - <<'PY'
+          import os
+          import textwrap
+          from pathlib import Path
+
+          source = Path(os.environ['RUNNER_TEMP']) / 'reverse4.yml'
+          target = Path(os.environ['RUNNER_TEMP']) / 'reverse4-pressure.sh'
+          lines = source.read_text().splitlines(keepends=True)
+          step = '      - name: Reverse qualify clean, matching, and adversarial ChangeSet\n'
+          start = lines.index(step)
+          run = next(i for i in range(start + 1, len(lines)) if lines[i] == '        run: |\n')
+          end = next(i for i in range(run + 1, len(lines)) if lines[i].startswith('      - name: '))
+          script = textwrap.dedent(''.join(lines[run + 1:end]))
+          assert script.startswith('set -euo pipefail\n')
+          assert 'matching-check.json' in script
+          assert 'drift-check.json' in script
+          target.write_text(script)
+          PY
+          chmod 700 "$RUNNER_TEMP/reverse4-pressure.sh"
+
+      - name: Execute unchanged reverse4 pressure body
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/reverse4-pressure.sh"
+
+      - name: Upload deterministic T4 evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: terminalization-t4-b13-changeset-reverse5
+          path: ${{ runner.temp }}/t4-evidence
+          if-no-files-found: warn
+          retention-days: 3
