@@ -19,12 +19,26 @@ test ! -s "$EVIDENCE/before.status"
 git -C "$ROOT" config user.email "t5-proof@example.invalid"
 git -C "$ROOT" config user.name "T5 Proof Qualification"
 
-# The preserved B13 pressure tree predates later Yunka generator/toolchain
-# convergence. Canonicalize it ephemerally against the exact T5 candidate
-# before measuring Proof-of-Change behavior. This is qualification setup, not
-# a consumer product change and not a framework workaround.
-go -C "$ROOT" mod edit -dropreplace=github.com/go-kit/kit@v0.10.0 \
-  > "$EVIDENCE/canonical-mod-edit.log" 2>&1
+# The preserved B13 pressure tree predates later Yunka module-identity and
+# generator convergence. Canonicalize it ephemerally against the exact T5
+# candidate before measuring Proof-of-Change behavior. The replacements keep
+# every Yunka package bound to the exact checked-out candidate; this is
+# qualification setup, not a product change or a framework workaround.
+{
+  go -C "$ROOT" mod edit -dropreplace=github.com/go-kit/kit@v0.10.0
+  go -C "$ROOT" mod edit -droprequire=yunka.io/framework
+  go -C "$ROOT" mod edit -droprequire=yunka.io/gateway
+  go -C "$ROOT" mod edit -droprequire=yunka.io/pkg
+  go -C "$ROOT" mod edit -dropreplace=yunka.io/framework
+  go -C "$ROOT" mod edit -dropreplace=yunka.io/gateway
+  go -C "$ROOT" mod edit -dropreplace=yunka.io/pkg
+  go -C "$ROOT" mod edit -require=github.com/hvritual/yunka.io/framework@v0.1.0
+  go -C "$ROOT" mod edit -require=github.com/hvritual/yunka.io/gateway@v0.1.0
+  go -C "$ROOT" mod edit -require=github.com/hvritual/yunka.io/pkg@v0.1.0
+  go -C "$ROOT" mod edit -replace=github.com/hvritual/yunka.io/framework=../yunka.io/framework
+  go -C "$ROOT" mod edit -replace=github.com/hvritual/yunka.io/gateway=../yunka.io/gateway
+  go -C "$ROOT" mod edit -replace=github.com/hvritual/yunka.io/pkg=../yunka.io/pkg
+} > "$EVIDENCE/canonical-mod-edit.log" 2>&1
 "$YUNKA_BIN" generate \
   --root "$ROOT" \
   --protoc "$(command -v protoc)" \
@@ -66,7 +80,7 @@ test ! -s "$EVIDENCE/canonical.status"
 cat > "$new_file" <<'GO'
 package application
 
-import _ "yunka.io/gateway/authz"
+import _ "github.com/hvritual/yunka.io/gateway/authz"
 GO
 
 if "$YUNKA_BIN" change verify \
@@ -109,7 +123,7 @@ rm -rf "$ROOT/.git/yunka"
 cat > "$existing_file" <<'GO'
 package application
 
-import _ "yunka.io/framework/platform"
+import _ "github.com/hvritual/yunka.io/framework/platform"
 GO
 git -C "$ROOT" add "$existing_rel"
 git -C "$ROOT" commit -m "qualification: establish T5 existing-debt baseline"
