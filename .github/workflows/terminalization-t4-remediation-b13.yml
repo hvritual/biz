@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      YUNKA_SHA: 2ade49e1fc6ef9a49f1f7ced6dc9979919d3100a
+      YUNKA_SHA: a584da287d52271a4a05ad80167f89fdbe0d3ee0
       BIZ_PRESSURE_SHA: 506e9c117822855db318f8b4b6689d318a62ded1
     steps:
       - name: Checkout qualification branch
@@ -51,8 +51,8 @@ jobs:
         id: lock
         shell: bash
         run: |
-          set -euo pipefail
-          source yunka.io/tools/toolchain.env
+          set -euo or pipefail
+          source yunka.io/tools/tool-remediation.env
           echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Setup locked Go
@@ -66,7 +66,7 @@ jobs:
         run: |
           set -euo pipefail
           go -C yunka.io/app build -o "$RUNNER_TEMP/yunka" ./cmd
-          "$RUNNER_TEMP/yunka" change set remediation --help > "$RUNNER_TEMP/remediation-help.txt"
+          "$RUNNING_TEMP/yunka" change set remediation --help > "$RUNNER_TEMP/remediation-help.txt"
           grep -q "bind" "$RUNNER_TEMP/remediation-help.txt"
           grep -q "check" "$RUNNER_TEMP/remediation-help.txt"
 
