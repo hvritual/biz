@@ -1,0 +1,214 @@
+name: terminalization-t4-remediation-b13
+
+on:
+  push:
+    branches:
+      - qualification/terminalization-t4-remediation-b13
+    paths:
+      - .github/workflows/terminalization-t4-remediation-b13.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remediation-b13:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      YUNKA_SHA: d527d2bbfb1c9bcd89598c680b81679def68f488
+      BIZ_PRESSURE_SHA: 506e9c117822855db318f8b4b6689d318a62ded1
+    steps:
+      - name: Checkout qualification branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact Yunka T4.3 candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.YUNKA_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Assert exact qualification inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          git -C biz merge-base --is-ancestor "$BIZ_PRESSURE_SHA" HEAD
+          changed="$(git -C biz diff --name-only "$BIZ_PRESSURE_SHA"...HEAD)"
+          test "$changed" = ".github/workflows/terminalization-t4-removal-b13.yml" || \
+            test "$changed" = ".github/workflows/terminalization-t4-remediation-b13.yml"
+
+      - name: Load locked Yunka Go toolchain
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Build exact candidate CLI
+        shell: bash
+        run: |
+          set -euoplug pipefail
+          go -C yunka.io/app build -o "$RUNNER_TEMP/yunka" ./cmd
+          "$RUNNER_TEMP/yunka" change set remediation --help > "$RUNNER_TEMP/remediation-help.txt"
+          grep -q "bind" "$RUNNER_TEMP/remediation-help.txt"
+          grep -q "check" "$RUNNER_TEMP/remediation-help.txt"
+
+      - name: Real consumer remediation pressure
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE/biz"
+          evidence="$RUNNER_TEMP/t4-remediation-evidence"
+          bad_rel="internal/deviceops/application/t4_remediation_pressure.go"
+          bad="$root/$bad_rel"
+          contract="$RUNNER_TEMP/t4-remediation-contract.json"
+          mkdir -p "$evidence"
+
+          git -C biz status --porcelain > "$evidence/before.status"
+          test ! -s "$evidence/before.status"
+          git -C biz config user.email "t4-remediation@example.invalid"
+          git -C biz config user.name "T4 Remediation Qualification"
+
+          cat > "$bad" <<'GO'
+          package application
+
+          import _ "yunka.io/framework/platform"
+          GO
+          git -C biz add "$bad_rel"
+          git -C biz commit -m "qualification: establish T4.3 audit pressure baseline"
+          base_sha="$(git -C biz rev-parse HEAD)"
+          echo "$base_sha" > "$evidence/base-sha.txt"
+
+          "$RUNNER_TEMP/yunka" audit --root "$root" --format agent-json > "$evidence/baseline-audit.json"
+          finding_id="$(EVIDENCE="$evidence" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          report = json.loads((Path(os.environ['EVIDENCE']) / 'baseline-audit.json').read_text())
+          matches = [f['id'] for f in report['findings'] if f['rule'] == 'AUDIT-INFRA-001']
+          assert len(matches) == 1, matches
+          print(matches[0])
+          PY
+          )"
+          printf '%s\n' "$finding_id" > "$evidence/finding-id.txt"
+
+          "$RUNNER_TEMP/yunka" change begin \
+            --root "$root" \
+            --operation device.get \
+            --intent implementation \
+            --base HEAD \
+            --path "$bad_rel" \
+            --output "$contract" \
+            --format agent-json > "$evidence/change-contract.json"
+
+          "$RUNRUNNER_TEMP/yunka" change set begin \
+            --root "$root" \
+            --base HEAD \
+            --contract "$contract" \
+            --format agent-json > "$evidence/change-set-begin.json"
+
+          "$RUNNER_TEMP/yunka" change set remediation bind \
+            --root "$root" \
+            --finding "$finding_id" \
+            --format agent-json > "$evidence/remediation-binding.json"
+
+          git -C biz status --porcelain > "$evidence/after-bind.status"
+          test ! -s "$evidence/after-bind.status"
+
+          if "$RUNNER_TEMP/yunka" change set remediation check \
+            --root "$root" \
+            --format agent-json > "$evidence/remaining.json"; then
+            echo "unchanged remediation target unexpectedly conformed" >&2
+            exit 1
+          fi
+          EVIDENCE="$evidence" FINDING_ID="$finding_id" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          r = json.loads((Path(os.environ['EVIDENCE']) / 'remaining.json').read_text())
+          fid = os.environ['FINDING_ID']
+          assert r['changeSet']['conformant'] is True, r
+          assert r['conformant'] is False, r
+          assert r['audit']['fixed'] == [], r
+          assert r['audit']['remaining'] == [fid], r
+          assert r['audit']['newDebt'] == [], r
+          PY
+
+          cat > "$bad" <<'GO'
+          package application
+
+          import _ "yunka.io/gateway/authz"
+          GO
+          if "$RUNNER_TEMP/yunka" change set remediation check \
+            --root "$root" \
+            --format agent-json > "$evidence/new-debt.json"; then
+            echo "replacement with new debt unexpectedly conformed" >&2
+            exit 1
+          fi
+          EVIDENCE="$evidence" FINDING_ID="$finding_id" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          r = json.loads((Path(os.environ['EVIDENCE']) / 'new-debt.json').read_text())
+          fid = os.environ['FINDING_ID']
+          assert r['changeSet']['conformant'] is True, r
+          assert r['conformant'] is False, r
+          assert r['audit']['fixed'] == [fid], r
+          assert r['audit']['remaining'] == [], r
+          assert len(r['audit']['newDebt']) == 1, r
+          PY
+
+          git -C biz reset --hard "$base_sha"
+          rm "$bad"
+          "$RUNNER_TEMP/yunka" change set remediation check \
+            --root "$root" \
+            --format agent-json > "$evidence/fixed.json"
+          EVIDENCE="$evidence" FINDING_ID="$finding_id" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          r = json.loads((Path(os.environ['EVIDENCE']) / 'fixed.json').read_text())
+          fid = os.environ['FINDING_ID']
+          assert r['changeSet']['conformant'] is True, r
+          assert r['audit']['conformant'] is True, r
+          assert r['conformant'] is True, r
+          assert r['audit']['fixed'] == [fid], r
+          assert r['audit']['remaining'] == [], r
+          assert r['audit']['newDebt'] == [], r
+          PY
+
+          git -C biz reset --hard "$GITHUB_SHA"
+          git -C biz clean -fdx
+          rm -rf biz/.git/yunka
+          git -C biz status --porcelain > "$evidence/final.status"
+          diff -u "$evidence/before.status" "$evidence/final.status"
+
+      - name: Restore consumer worktree
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C biz reset --hard "$GITHUB_SHA"
+          git -C biz clean -fdx
+          rm -rf biz/.git/yunka
+
+      - name: Upload deterministic T4.3 evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: terminalization-t4-remediation-b13
+          path: ${{ runner.temp }}/t4-remediation-evidence
+          if-no-files-found: warn
+          retention-days: 3
