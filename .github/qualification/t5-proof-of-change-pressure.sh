@@ -120,9 +120,10 @@ printf '%s\n' "$qualification_base_sha" > "$EVIDENCE/qualification-base-sha.txt"
 git -C "$ROOT" status --porcelain > "$EVIDENCE/canonical.status"
 test ! -s "$EVIDENCE/canonical.status"
 
-# Pressure A: a bounded handwritten addition that introduces a new proven
-# architecture violation must fail final Change Attestation even though it is
-# otherwise inside the declared Change Contract and the whole project compiles.
+# Pressure A: introduce a proven Application -> framework/platform bypass. The
+# Biz security-boundary test does not independently reject this import, so the
+# project still passes go test and the architecture-debt gate is isolated as
+# the reason the final Change Attestation becomes non-conformant.
 "$YUNKA_BIN" change begin \
   --root "$ROOT" \
   --operation device.get \
@@ -135,7 +136,7 @@ test ! -s "$EVIDENCE/canonical.status"
 cat > "$new_file" <<'GO'
 package application
 
-import _ "github.com/hvritual/yunka.io/gateway/authz"
+import _ "github.com/hvritual/yunka.io/framework/platform"
 GO
 
 if "$YUNKA_BIN" change verify \
@@ -159,7 +160,7 @@ assert a['conformant'] is False, a
 assert a['architectureDebt']['fixed'] == [], a
 new = a['architectureDebt']['new']
 assert len(new) == 1, a
-assert new[0]['rule'] == 'AUDIT-AUTH-001', a
+assert new[0]['rule'] == 'AUDIT-INFRA-001', a
 assert any(e.get('path') == new_rel for e in new[0].get('evidence', [])), new[0]
 gates = {g['name']: g for g in a['gates']}
 assert gates['git-delta']['status'] == 'pass', gates
