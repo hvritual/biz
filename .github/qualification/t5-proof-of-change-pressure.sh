@@ -2,6 +2,7 @@
 set -euo pipefail
 
 : "${YUNKA_BIN:?YUNKA_BIN is required}"
+: "${YUNKA_ROOT:?YUNKA_ROOT is required}"
 : "${ROOT:?ROOT is required}"
 : "${EVIDENCE:?EVIDENCE is required}"
 : "${GITHUB_SHA:?GITHUB_SHA is required}"
@@ -12,6 +13,7 @@ new_file="$ROOT/$new_rel"
 existing_file="$ROOT/$existing_rel"
 new_contract="$RUNNER_TEMP/t5-new-debt-contract.json"
 existing_contract="$RUNNER_TEMP/t5-existing-debt-contract.json"
+legacy_root="$RUNNER_TEMP/yunka-legacy"
 mkdir -p "$EVIDENCE"
 
 git -C "$ROOT" status --porcelain > "$EVIDENCE/before.status"
@@ -19,30 +21,71 @@ test ! -s "$EVIDENCE/before.status"
 git -C "$ROOT" config user.email "t5-proof@example.invalid"
 git -C "$ROOT" config user.name "T5 Proof Qualification"
 
-# The preserved B13 pressure tree predates later Yunka module-identity and
-# generator convergence. Canonicalize it ephemerally against the exact T5
-# candidate before measuring Proof-of-Change behavior. The replacements keep
-# every Yunka package bound to the exact checked-out candidate; this is
-# qualification setup, not a product change or a framework workaround.
+# The preserved B13 pressure tree uses the historical yunka.io module identity,
+# while the current exact candidate modules declare github.com/hvritual/yunka.io.
+# Do not rewrite Biz or generated source to hide that fact. Instead create
+# qualification-only legacy aliases by copying the exact candidate module source
+# and changing only module/import identity strings inside the copies. The
+# original candidate checkout remains untouched and is also available under its
+# canonical GitHub module identity. If this dual-identity compatibility setup
+# cannot compile the candidate-generated consumer, that is evidence of a real
+# module-identity/compiler compatibility gap rather than a T5 harness problem.
+rm -rf "$legacy_root"
+mkdir -p "$legacy_root"
+for module in framework gateway pkg; do
+  cp -a "$YUNKA_ROOT/$module" "$legacy_root/$module"
+done
+LEGACY_ROOT="$legacy_root" python3 - <<'PY' > "$EVIDENCE/legacy-alias.log" 2>&1
+import os
+from pathlib import Path
+root = Path(os.environ['LEGACY_ROOT'])
+replacements = {
+    'github.com/hvritual/yunka.io/framework': 'yunka.io/framework',
+    'github.com/hvritual/yunka.io/gateway': 'yunka.io/gateway',
+    'github.com/hvritual/yunka.io/pkg': 'yunka.io/pkg',
+}
+changed = []
+for path in sorted(root.rglob('*')):
+    if not path.is_file() or '.git' in path.parts:
+        continue
+    try:
+        data = path.read_text()
+    except UnicodeDecodeError:
+        continue
+    updated = data
+    for old, new in replacements.items():
+        updated = updated.replace(old, new)
+    if updated != data:
+        path.write_text(updated)
+        changed.append(str(path.relative_to(root)))
+print('\n'.join(changed))
+PY
+
+# Bind historical imports to mechanically derived legacy aliases and any
+# candidate-generated GitHub imports to the untouched exact candidate modules.
+# The stale historical go-kit compatibility replace no longer exists on the
+# current candidate and is removed only in the ephemeral qualification baseline.
 {
   go -C "$ROOT" mod edit -dropreplace=github.com/go-kit/kit@v0.10.0
-  go -C "$ROOT" mod edit -droprequire=yunka.io/framework
-  go -C "$ROOT" mod edit -droprequire=yunka.io/gateway
-  go -C "$ROOT" mod edit -droprequire=yunka.io/pkg
-  go -C "$ROOT" mod edit -dropreplace=yunka.io/framework
-  go -C "$ROOT" mod edit -dropreplace=yunka.io/gateway
-  go -C "$ROOT" mod edit -dropreplace=yunka.io/pkg
+  go -C "$ROOT" mod edit -replace=yunka.io/framework="$legacy_root/framework"
+  go -C "$ROOT" mod edit -replace=yunka.io/gateway="$legacy_root/gateway"
+  go -C "$ROOT" mod edit -replace=yunka.io/pkg="$legacy_root/pkg"
   go -C "$ROOT" mod edit -require=github.com/hvritual/yunka.io/framework@v0.1.0
   go -C "$ROOT" mod edit -require=github.com/hvritual/yunka.io/gateway@v0.1.0
   go -C "$ROOT" mod edit -require=github.com/hvritual/yunka.io/pkg@v0.1.0
-  go -C "$ROOT" mod edit -replace=github.com/hvritual/yunka.io/framework=../yunka.io/framework
-  go -C "$ROOT" mod edit -replace=github.com/hvritual/yunka.io/gateway=../yunka.io/gateway
-  go -C "$ROOT" mod edit -replace=github.com/hvritual/yunka.io/pkg=../yunka.io/pkg
+  go -C "$ROOT" mod edit -replace=github.com/hvritual/yunka.io/framework="$YUNKA_ROOT/framework"
+  go -C "$ROOT" mod edit -replace=github.com/hvritual/yunka.io/gateway="$YUNKA_ROOT/gateway"
+  go -C "$ROOT" mod edit -replace=github.com/hvritual/yunka.io/pkg="$YUNKA_ROOT/pkg"
 } > "$EVIDENCE/canonical-mod-edit.log" 2>&1
+
 "$YUNKA_BIN" generate \
   --root "$ROOT" \
   --protoc "$(command -v protoc)" \
   > "$EVIDENCE/canonical-generate.log" 2>&1
+
+grep -RhoE '"(yunka\.io|github\.com/hvritual/yunka\.io)/(framework|gateway|pkg)[^"]*"' \
+  "$ROOT" --include='*.go' | sort -u > "$EVIDENCE/yunka-import-identities.txt" || true
+
 go -C "$ROOT" mod tidy \
   > "$EVIDENCE/canonical-tidy.log" 2>&1
 "$YUNKA_BIN" check \
@@ -80,7 +123,7 @@ test ! -s "$EVIDENCE/canonical.status"
 cat > "$new_file" <<'GO'
 package application
 
-import _ "github.com/hvritual/yunka.io/gateway/authz"
+import _ "yunka.io/gateway/authz"
 GO
 
 if "$YUNKA_BIN" change verify \
@@ -123,7 +166,7 @@ rm -rf "$ROOT/.git/yunka"
 cat > "$existing_file" <<'GO'
 package application
 
-import _ "github.com/hvritual/yunka.io/framework/platform"
+import _ "yunka.io/framework/platform"
 GO
 git -C "$ROOT" add "$existing_rel"
 git -C "$ROOT" commit -m "qualification: establish T5 existing-debt baseline"
