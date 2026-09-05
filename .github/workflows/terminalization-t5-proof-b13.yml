@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      YUNKA_SHA: 4c41e4ec518aebd5809b3675af95a67531c7980e
+      YUNKA_SHA: a102de3c53f1078c8c6cce70e334c91fbbb94bb2
       BIZ_PRESSURE_SHA: 506e9c117822855db318f8b4b6689d318a62ded1
     steps:
       - name: Checkout qualification branch
@@ -94,6 +94,8 @@ jobs:
           go -C yunka.io/app build -o "$RUNNER_TEMP/yunka" ./cmd
           "$RUNNER_TEMP/yunka" change verify --help > "$RUNNER_TEMP/change-verify-help.txt"
           grep -q "attestation" "$RUNNER_TEMP/change-verify-help.txt"
+          "$RUNNER_TEMP/yunka" dependency module-identity --help > "$RUNNER_TEMP/module-identity-help.txt"
+          grep -q "migrate" "$RUNNER_TEMP/module-identity-help.txt"
 
       - name: Execute real consumer Proof-of-Change pressure
         shell: bash
