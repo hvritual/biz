@@ -46,14 +46,19 @@ EVIDENCE="$EVIDENCE" python3 - <<'PY'
 import json, os
 from pathlib import Path
 envelope = json.loads((Path(os.environ['EVIDENCE']) / 'before-check.json').read_text())
+assert envelope['schemaVersion'] == 1, envelope
+assert envelope['command'] == 'yunka check', envelope
 assert envelope['ok'] is False, envelope
 assert len(envelope.get('diagnostics', [])) == 1, envelope
 item = envelope['diagnostics'][0]
 assert item['code'] == 'YUNKA-DX-MODULE-002', item
 assert item['stage'] == 'module-identity', item
-values = {a['value'] for a in item.get('actions', [])}
+assert item['cause']['summary'], item
+assert item['target']['path'], item
+values = {a['value'] for a in item.get('remediation', [])}
 assert 'yunka dependency module-identity inspect' in values, item
 assert 'yunka dependency module-identity migrate' in values, item
+assert item['retry']['value'] == 'yunka check', item
 PY
 
 git -C "$ROOT" status --porcelain > "$EVIDENCE/after-failed-check.status"
