@@ -99,6 +99,7 @@ jobs:
         shell: bash
         env:
           YUNKA_BIN: ${{ runner.temp }}/yunka
+          YUNKA_ROOT: ${{ github.workspace }}/yunka.io
           ROOT: ${{ github.workspace }}/biz
           EVIDENCE: ${{ runner.temp }}/t5-proof-evidence
         run: |
