@@ -41,7 +41,7 @@ export type ConnectionSettings = {
 };
 
 const SETTINGS_KEY = "biz-console.connection.v1";
-const DEFAULT_BASE = import.meta.env.VITE_BIZ_API_BASE || "http://127.0.0.1:8080";
+const DEFAULT_BASE = import.meta.env.VITE_BIZ_API_BASE || "";
 
 export function loadConnectionSettings(): ConnectionSettings {
   const fallback: ConnectionSettings = {
@@ -280,10 +280,9 @@ export const tenantApi = {
     });
   },
   deleteDevice(device: Device) {
-    return request<void>(`/v1/devices/${encodeURIComponent(device.id)}`, {
+    return request<void>(`/v1/devices/${encodeURIComponent(device.id)}?version=${encodeURIComponent(String(device.version))}`, {
       token: tenantToken(),
       method: "DELETE",
-      body: { id: device.id, version: device.version },
       idempotent: true,
     });
   },
