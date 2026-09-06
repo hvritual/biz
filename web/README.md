@@ -42,10 +42,13 @@ The current Biz contracts do not yet expose these product capabilities, so the s
 - Department-based DataScope
 - Generic Activity feed
 - Public Site CRUD/list API
+- Current authenticated principal / tenant context introspection
 
 `SiteApplication` currently exposes transfer-target validation as an internal operation only. For that reason Device Transfer accepts a real `target_site_id` rather than displaying an invented Site selector.
 
 `TenantRoleDTO` currently does not return role-member associations. The role screen therefore supports assign/revoke by `user_id` but does not display a fake role-member list.
+
+The runtime token is tenant-bound, but there is currently no public endpoint that returns the authenticated subject together with the resolved tenant identity/name. The UI therefore does not infer or display a tenant name from arbitrary browser input, and it does not pretend that one token can switch tenants. A future session/context contract should expose this fact explicitly before tenant-switching UX is implemented.
 
 ## Authentication model
 
@@ -53,6 +56,8 @@ The current Biz runtime uses two different authority boundaries:
 
 - Platform Console: tenantless platform principal token.
 - Tenant Workspace: tenant-bound token. The token establishes trusted tenant context; the browser does not send an arbitrary `tenant_id` as an authority fact.
+
+The standard `cmd/biz` bootstrap provisions a developer/demo tenant-scoped token, not a tenantless platform principal. Platform Console credentials must therefore be provisioned by the deployment/test environment that owns that authority boundary.
 
 For development, the UI can read tokens from `.env` or from the Connection Settings dialog. Dialog values are stored only in `sessionStorage`. This is not the target production credential architecture; production should use a controlled session/BFF boundary.
 
