@@ -1,4 +1,4 @@
-package application
+package usecase
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
+	accessapp "github.com/hvritual/biz/internal/access/application"
 	"github.com/hvritual/biz/internal/access/domain"
 	"github.com/hvritual/biz/internal/access/ports"
 	"yunka.io/framework/execution"
@@ -14,18 +15,18 @@ import (
 )
 
 type tenantTestCapabilities struct {
-	members TenantLifecycleToAccessTenantMemberLifecycleChildCapability
-	roles   TenantLifecycleToAccessTenantRolePermissionChildCapability
+	members accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
+	roles   accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability
 }
 
-func (capabilities tenantTestCapabilities) AccessTenantMemberLifecycle() TenantLifecycleToAccessTenantMemberLifecycleChildCapability {
+func (capabilities tenantTestCapabilities) AccessTenantMemberLifecycle() accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability {
 	if capabilities.members != nil {
 		return capabilities.members
 	}
 	return tenantTestMemberChild{}
 }
 
-func (capabilities tenantTestCapabilities) AccessTenantRolePermission() TenantLifecycleToAccessTenantRolePermissionChildCapability {
+func (capabilities tenantTestCapabilities) AccessTenantRolePermission() accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability {
 	if capabilities.roles != nil {
 		return capabilities.roles
 	}
@@ -90,17 +91,19 @@ func (tenantTestRoleChild) UpdateTenantRole(context.Context, *accessv1.UpdateTen
 }
 
 type tenantTestUnit struct{}
+
 func (*tenantTestUnit) Commit(context.Context) error   { return nil }
 func (*tenantTestUnit) Rollback(context.Context) error { return nil }
 func (*tenantTestUnit) Close() error                   { return nil }
 
 type tenantTestTransactionFactory struct{ unit execution.UnitOfWork }
+
 func (factory tenantTestTransactionFactory) Begin(context.Context, execution.TransactionMode) (execution.UnitOfWork, error) {
 	return factory.unit, nil
 }
 
 type memoryTenantRepository struct {
-	mu sync.Mutex
+	mu     sync.Mutex
 	values map[string]domain.Tenant
 }
 
@@ -159,7 +162,7 @@ func TestTenantLifecycleRequiresRootExecutionScope(t *testing.T) {
 		factoryCalls++
 		return ports.TenantRepositories{Tenant: newMemoryTenantRepository()}, nil
 	})
-	service, err := NewTenantLifecycleService(factory, tenantTestCapabilities{})
+	service, err := New(factory, tenantTestCapabilities{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +186,7 @@ func TestTenantLifecycleStateChangesUseJoinedRootUnitOfWork(t *testing.T) {
 		}
 		return ports.TenantRepositories{Tenant: repository}, nil
 	})
-	service, err := NewTenantLifecycleService(factory, tenantTestCapabilities{})
+	service, err := New(factory, tenantTestCapabilities{})
 	if err != nil {
 		t.Fatal(err)
 	}

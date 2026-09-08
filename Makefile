@@ -41,3 +41,8 @@ pressure: verify
 
 run:
 	@go run ./cmd/biz
+
+# Linux-only exact compiler boundary probes; run after normal dependency setup.
+.PHONY: tenant-boundary-check
+tenant-boundary-check:
+	@./scripts/check-tenant-boundary.sh

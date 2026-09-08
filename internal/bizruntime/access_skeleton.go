@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	accessapp "github.com/hvritual/biz/internal/access/application"
+	"github.com/hvritual/biz/internal/access/application/tenantlifecycle"
 	generatedassembly "github.com/hvritual/biz/internal/assembly"
 )
 
@@ -24,9 +25,9 @@ func (factory applicationFactories) BuildAccessTenantLifecycle(dependencies gene
 	if dependencies.AccessTenantMemberLifecycle == nil || dependencies.AccessTenantRolePermission == nil {
 		return nil, errors.New("biz access pressure: tenant lifecycle dependencies are required")
 	}
-	return accessapp.NewTenantLifecycleService(factory.tenantRepositories, tenantLifecycleCapabilities{
+	return tenantlifecycle.Build(factory.tenantRepositories, tenantLifecycleCapabilities{
 		members: dependencies.AccessTenantMemberLifecycle,
-		roles: dependencies.AccessTenantRolePermission,
+		roles:   dependencies.AccessTenantRolePermission,
 	})
 }
 

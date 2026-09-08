@@ -93,6 +93,14 @@ Important rules:
 - Cross-Application business composition goes through declared generated child Operations rather than direct repository access.
 - Generated artifacts are derived structure; do not hand-edit `zz_yunka_*` files.
 
+## TenantLifecycle implementation boundary
+
+TenantLifecycle is constructed through `application/tenantlifecycle.Build`; its
+handwritten implementation is hidden in the owner’s nested `internal/usecase`
+package, outside the generated child-wrapper package. Public contracts and the
+pinned runtime are unchanged. See [AG-02](docs/architecture/AG-02-tenant-encapsulation.md)
+for the exact scope, qualification commands and limitations.
+
 ## Developer workflow
 
 The canonical development path is:

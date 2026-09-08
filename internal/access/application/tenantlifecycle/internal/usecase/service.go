@@ -1,4 +1,4 @@
-package application
+package usecase
 
 import (
 	"context"
@@ -9,31 +9,31 @@ import (
 	"time"
 
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
+	accessapp "github.com/hvritual/biz/internal/access/application"
 	"github.com/hvritual/biz/internal/access/domain"
 	"github.com/hvritual/biz/internal/access/ports"
 	"yunka.io/framework/requestscope"
 )
 
-var ErrInvalidTenantRequest = errors.New("access: invalid tenant request")
-
-type TenantLifecycleService struct {
+type service struct {
 	repositories requestscope.RepositoryFactory[ports.TenantRepositories]
-	capabilities TenantLifecycleCapabilities
+	capabilities accessapp.TenantLifecycleCapabilities
 }
 
-func NewTenantLifecycleService(repositories requestscope.RepositoryFactory[ports.TenantRepositories], capabilities TenantLifecycleCapabilities) (*TenantLifecycleService, error) {
+// New constructs only the declared Application; the concrete type stays private.
+func New(repositories requestscope.RepositoryFactory[ports.TenantRepositories], capabilities accessapp.TenantLifecycleCapabilities) (accessapp.TenantLifecycleApplication, error) {
 	if repositories == nil {
 		return nil, errors.New("access: tenant repository factory is required")
 	}
 	if capabilities == nil {
 		return nil, errors.New("access: tenant lifecycle capabilities are required")
 	}
-	return &TenantLifecycleService{repositories: repositories, capabilities: capabilities}, nil
+	return &service{repositories: repositories, capabilities: capabilities}, nil
 }
 
-func (service *TenantLifecycleService) CreateTenant(ctx context.Context, request *accessv1.CreateTenantRequest) (*accessv1.TenantDTO, error) {
+func (service *service) CreateTenant(ctx context.Context, request *accessv1.CreateTenantRequest) (*accessv1.TenantDTO, error) {
 	if request == nil || strings.TrimSpace(request.GetName()) == "" || strings.TrimSpace(request.GetOwnerUserId()) == "" || strings.TrimSpace(request.GetOwnerEmail()) == "" {
-		return nil, ErrInvalidTenantRequest
+		return nil, accessapp.ErrInvalidTenantRequest
 	}
 	members := service.capabilities.AccessTenantMemberLifecycle()
 	roles := service.capabilities.AccessTenantRolePermission()
@@ -65,9 +65,9 @@ func (service *TenantLifecycleService) CreateTenant(ctx context.Context, request
 	return tenantDTO(tenant), nil
 }
 
-func (service *TenantLifecycleService) GetTenant(ctx context.Context, request *accessv1.GetTenantRequest) (*accessv1.TenantDTO, error) {
+func (service *service) GetTenant(ctx context.Context, request *accessv1.GetTenantRequest) (*accessv1.TenantDTO, error) {
 	if request == nil || strings.TrimSpace(request.GetId()) == "" {
-		return nil, ErrInvalidTenantRequest
+		return nil, accessapp.ErrInvalidTenantRequest
 	}
 	tenant, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRepositories]) (domain.Tenant, error) {
 		return scope.Repositories().Tenant.Get(scope.Context(), strings.TrimSpace(request.GetId()))
@@ -78,7 +78,7 @@ func (service *TenantLifecycleService) GetTenant(ctx context.Context, request *a
 	return tenantDTO(tenant), nil
 }
 
-func (service *TenantLifecycleService) ListTenants(ctx context.Context, _ *accessv1.ListTenantsRequest) (*accessv1.ListTenantsResponse, error) {
+func (service *service) ListTenants(ctx context.Context, _ *accessv1.ListTenantsRequest) (*accessv1.ListTenantsResponse, error) {
 	tenants, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRepositories]) ([]domain.Tenant, error) {
 		return scope.Repositories().Tenant.List(scope.Context())
 	})
@@ -92,43 +92,43 @@ func (service *TenantLifecycleService) ListTenants(ctx context.Context, _ *acces
 	return response, nil
 }
 
-func (service *TenantLifecycleService) UpdateTenant(ctx context.Context, request *accessv1.UpdateTenantRequest) (*accessv1.TenantDTO, error) {
+func (service *service) UpdateTenant(ctx context.Context, request *accessv1.UpdateTenantRequest) (*accessv1.TenantDTO, error) {
 	if request == nil || strings.TrimSpace(request.GetId()) == "" || strings.TrimSpace(request.GetName()) == "" || request.GetVersion() == 0 {
-		return nil, ErrInvalidTenantRequest
+		return nil, accessapp.ErrInvalidTenantRequest
 	}
 	return service.mutate(ctx, strings.TrimSpace(request.GetId()), request.GetVersion(), func(tenant *domain.Tenant) error {
 		return tenant.Rename(strings.TrimSpace(request.GetName()), time.Now().UTC())
 	})
 }
 
-func (service *TenantLifecycleService) ActivateTenant(ctx context.Context, request *accessv1.ActivateTenantRequest) (*accessv1.TenantDTO, error) {
+func (service *service) ActivateTenant(ctx context.Context, request *accessv1.ActivateTenantRequest) (*accessv1.TenantDTO, error) {
 	if request == nil || strings.TrimSpace(request.GetId()) == "" || request.GetVersion() == 0 {
-		return nil, ErrInvalidTenantRequest
+		return nil, accessapp.ErrInvalidTenantRequest
 	}
 	return service.mutate(ctx, strings.TrimSpace(request.GetId()), request.GetVersion(), func(tenant *domain.Tenant) error {
 		return tenant.Activate(time.Now().UTC())
 	})
 }
 
-func (service *TenantLifecycleService) SuspendTenant(ctx context.Context, request *accessv1.SuspendTenantRequest) (*accessv1.TenantDTO, error) {
+func (service *service) SuspendTenant(ctx context.Context, request *accessv1.SuspendTenantRequest) (*accessv1.TenantDTO, error) {
 	if request == nil || strings.TrimSpace(request.GetId()) == "" || request.GetVersion() == 0 {
-		return nil, ErrInvalidTenantRequest
+		return nil, accessapp.ErrInvalidTenantRequest
 	}
 	return service.mutate(ctx, strings.TrimSpace(request.GetId()), request.GetVersion(), func(tenant *domain.Tenant) error {
 		return tenant.Suspend(time.Now().UTC())
 	})
 }
 
-func (service *TenantLifecycleService) CloseTenant(ctx context.Context, request *accessv1.CloseTenantRequest) (*accessv1.TenantDTO, error) {
+func (service *service) CloseTenant(ctx context.Context, request *accessv1.CloseTenantRequest) (*accessv1.TenantDTO, error) {
 	if request == nil || strings.TrimSpace(request.GetId()) == "" || request.GetVersion() == 0 {
-		return nil, ErrInvalidTenantRequest
+		return nil, accessapp.ErrInvalidTenantRequest
 	}
 	return service.mutate(ctx, strings.TrimSpace(request.GetId()), request.GetVersion(), func(tenant *domain.Tenant) error {
 		return tenant.Close(time.Now().UTC())
 	})
 }
 
-func (service *TenantLifecycleService) mutate(ctx context.Context, id string, expectedVersion uint64, apply func(*domain.Tenant) error) (*accessv1.TenantDTO, error) {
+func (service *service) mutate(ctx context.Context, id string, expectedVersion uint64, apply func(*domain.Tenant) error) (*accessv1.TenantDTO, error) {
 	tenant, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRepositories]) (domain.Tenant, error) {
 		current, err := scope.Repositories().Tenant.Get(scope.Context(), id)
 		if err != nil {

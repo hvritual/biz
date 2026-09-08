@@ -11,6 +11,7 @@ import (
 
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	accessapp "github.com/hvritual/biz/internal/access/application"
+	"github.com/hvritual/biz/internal/access/application/tenantlifecycle"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	"github.com/hvritual/biz/internal/access/ports"
 	"gorm.io/gorm"
@@ -39,7 +40,7 @@ func (capabilities b12MemberCapabilities) AccessTenantRolePermission() accessapp
 	return capabilities.roles
 }
 
-func newTenantLifecycleHarness(t *testing.T, db *gorm.DB) (*accessapp.TenantLifecycleService, *accesspersistence.Store, *requestscope.GORMExecutionFactory) {
+func newTenantLifecycleHarness(t *testing.T, db *gorm.DB) (accessapp.TenantLifecycleApplication, *accesspersistence.Store, *requestscope.GORMExecutionFactory) {
 	t.Helper()
 	store, err := accesspersistence.New(db)
 	if err != nil {
@@ -68,7 +69,7 @@ func newTenantLifecycleHarness(t *testing.T, db *gorm.DB) (*accessapp.TenantLife
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := accessapp.NewTenantLifecycleService(tenantRepositories, b12TenantCapabilities{members: memberService, roles: roleService})
+	service, err := tenantlifecycle.Build(tenantRepositories, b12TenantCapabilities{members: memberService, roles: roleService})
 	if err != nil {
 		t.Fatal(err)
 	}
