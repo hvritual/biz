@@ -87,6 +87,7 @@ jobs:
           make -C biz check 2>&1 | tee "$E/baseline-check.log"
           go -C biz test -count=1 ./internal/access/application ./internal/bizruntime 2>&1 | tee "$E/baseline-unit.log"
           test -z "$(git -C biz status --porcelain)"
+          git -C yunka.io status --porcelain > "$E/runtime-baseline-status.txt"
       - name: Materialize inspected implementation and commit with local Git
         working-directory: biz
         shell: bash
@@ -97,7 +98,7 @@ jobs:
           git config user.name hvritual
           git config user.email 11900351+hvritual@users.noreply.github.com
           git switch -c feat/ag02-tenant-encapsulation
-          git commit -m 'refactor(access): encapsulate TenantLifecycle behind an owning factory'
+          git commit -m 'refactor(access): encapsulate TenantLifecycle and repair stale owner-invariant reads'
           git rev-parse HEAD > "$E/candidate.sha"
           git rev-parse HEAD^{tree} > "$E/candidate.tree"
           git diff --stat 7d5afbe9cb4b849be462d9a7aed65877ed227700 HEAD | tee "$E/diff-stat.txt"
@@ -117,7 +118,7 @@ jobs:
           make verify 2>&1 | tee "$E/verify.log"
           go test -json -count=1 ./internal/access/application/... ./internal/bizruntime/... > "$E/unit.jsonl"
           go test -race -count=1 ./internal/access/application/... ./internal/bizruntime/... 2>&1 | tee "$E/race.log"
-      - name: Real MySQL behavior and unified runtime regression
+      - name: Real MySQL behavior and repeated owner-invariant regression
         working-directory: biz
         shell: bash
         env:
@@ -126,6 +127,7 @@ jobs:
         run: |
           set -euo pipefail
           go test -json -timeout=10m -count=1 -tags=integration ./integration > "$RUNNER_TEMP/ag02-evidence/integration.jsonl"
+          go test -json -timeout=5m -count=10 -tags=integration ./integration -run '^Test(AG02OwnerInvariantReadsCurrentStateAfterSnapshot|B126RoleRevokeAndMemberSuspendCannotRemoveAllEffectiveOwners)$' > "$RUNNER_TEMP/ag02-evidence/owner-repeat.jsonl"
       - name: Current control-plane placement probe and final zero drift
         shell: bash
         env:
@@ -133,35 +135,55 @@ jobs:
         run: |
           set -euo pipefail
           E="$RUNNER_TEMP/ag02-evidence"
-          (cd yunka-current/app && go build -o "$RUNNER_TEMP/yunka-current" ./cmd)
+          # Keep the same canonical module graph; only derived workspace checksum
+          # metadata lives in a private build directory, never in product source.
+          python3 - <<'PY'
+          import os,json,pathlib,subprocess,shutil
+          root=pathlib.Path('yunka-current').resolve()
+          model=json.loads(subprocess.check_output(['go','work','edit','-json'],cwd=root,text=True))
+          assert not model.get('Replace'), 'unmodeled workspace replacements'
+          temp=pathlib.Path(os.environ['RUNNER_TEMP'])/'ag02-current-build';temp.mkdir()
+          paths=[str((root/x['DiskPath']).resolve()) for x in model['Use']]
+          assert {pathlib.Path(p).name for p in paths}=={'app','framework','gateway','infras','pkg'}
+          text='go '+model['Go']+'\n\ntoolchain '+model['Toolchain']+'\n\nuse (\n'+''.join('\t'+json.dumps(p)+'\n' for p in paths)+')\n'
+          (temp/'go.work').write_text(text)
+          shutil.copyfile(root/'go.work.sum',temp/'go.work.sum')
+          (pathlib.Path(os.environ['RUNNER_TEMP'])/'ag02-evidence/current-cli-workspace.json').write_text(json.dumps(model,indent=2)+'\n')
+          PY
+          (cd yunka-current/app && GOWORK="$RUNNER_TEMP/ag02-current-build/go.work" go build -mod=readonly -o "$RUNNER_TEMP/yunka-current" ./cmd)
+          cp "$RUNNER_TEMP/ag02-current-build/go.work.sum" "$E/current-cli-build-work.sum"
+          go version -m "$RUNNER_TEMP/yunka-current" > "$E/current-cli-build-info.txt"
           "$RUNNER_TEMP/yunka-current" ownership check --root "$GITHUB_WORKSPACE/biz" --path internal/access/application/tenantlifecycle/build.go --path internal/access/application/tenantlifecycle/internal/usecase/tenant_lifecycle.go --format json > "$E/ownership.json"
           "$RUNNER_TEMP/yunka-current" change plan --root "$GITHUB_WORKSPACE/biz" --operation tenant.create --intent implementation --format json > "$E/placement-plan.json"
           make -C biz generate 2>&1 | tee "$E/regenerate.log"
-          git -C biz diff --exit-code
-          test -z "$(git -C biz status --porcelain)"
-          test -z "$(git -C yunka.io status --porcelain)"
-          test -z "$(git -C yunka-current status --porcelain)"
+          for repo in biz yunka.io yunka-current; do
+            git -C "$repo" status --porcelain | tee "$E/$repo-final-status.txt"
+            git -C "$repo" diff -- go.work.sum > "$E/$repo-work-sum.diff"
+            test -z "$(git -C "$repo" status --porcelain)" || { echo "DRIFT_REPOSITORY=$repo"; exit 1; }
+          done
           test -z "$(git -C biz diff --name-only 7d5afbe9cb4b849be462d9a7aed65877ed227700 HEAD -- contracts modules internal/assembly go.mod go.sum go.work go.work.sum .yunka)"
           python3 - <<'PY'
-          import os,json,pathlib,subprocess
+          import os,json,pathlib,subprocess,collections
           e=pathlib.Path(os.environ['RUNNER_TEMP'])/'ag02-evidence'
-          required={'TestAG02FactoryKeepsCanonicalSurface','TestAG02GeneratedChildrenAreAttenuated','TestTenantLifecycleRequiresRootExecutionScope','TestTenantLifecycleStateChangesUseJoinedRootUnitOfWork','TestAG02RuntimeAssemblesHiddenTenantImplementation','TestB125TenantCreateBootstrapsOwnerInOneRootUoW','TestB125ChildFailureRollsBackTenantAndMemberAndAllowsIdempotentRetry','TestB122TenantLifecycleRESTAndGRPCUseUnifiedExecutor'}
+          required={'TestAG02FactoryKeepsCanonicalSurface','TestAG02GeneratedChildrenAreAttenuated','TestTenantLifecycleRequiresRootExecutionScope','TestTenantLifecycleStateChangesUseJoinedRootUnitOfWork','TestAG02RuntimeAssemblesHiddenTenantImplementation','TestB125TenantCreateBootstrapsOwnerInOneRootUoW','TestB125ChildFailureRollsBackTenantAndMemberAndAllowsIdempotentRetry','TestB122TenantLifecycleRESTAndGRPCUseUnifiedExecutor','TestAG02OwnerInvariantReadsCurrentStateAfterSnapshot','TestAG02OwnerInvariantReadsCurrentStateAfterSnapshot/revoke','TestAG02OwnerInvariantReadsCurrentStateAfterSnapshot/suspend','TestB126RoleRevokeAndMemberSuspendCannotRemoveAllEffectiveOwners'}
           passed=set(); counts={}
-          for filename in ['unit.jsonl','integration.jsonl']:
+          for filename in ['unit.jsonl','integration.jsonl','owner-repeat.jsonl']:
               events=[json.loads(s) for s in (e/filename).read_text().splitlines()]
               assert not any(x.get('Action') in ['fail','skip'] for x in events), filename
               tests=[x['Test'] for x in events if x.get('Action')=='pass' and 'Test' in x]
               passed.update(tests); counts[filename]={'passEvents':len(tests),'skip':0,'fail':0}
+              if filename=='owner-repeat.jsonl':
+                  tally=collections.Counter(tests)
+                  assert len(tally)==4 and all(n==10 for n in tally.values()), tally
           assert required <= passed, sorted(required-passed)
-          log=(e/'verify.log').read_text()
           for name in ['canonical_port','owner_factory','hidden_implementation','aliased_hidden_implementation']:
-              assert 'AG02_IMPORT_PASS '+name in log
+              assert 'AG02_IMPORT_PASS '+name in (e/'verify.log').read_text()
           plan=json.loads((e/'placement-plan.json').read_text())
           assert any(x.get('kind')=='implementation' and x.get('scope')=='internal/access/application' for x in plan['unresolvedTargets'])
           ownership=json.loads((e/'ownership.json').read_text())
           assert len(ownership['decisions'])==2
           assert all(x['mutation']=='editable' for x in ownership['decisions'])
-          report={'schemaVersion':1,'task':'AG-02','scope':'TenantLifecycle encapsulation pilot','base':'7d5afbe9cb4b849be462d9a7aed65877ed227700','candidate':(e/'candidate.sha').read_text().strip(),'tree':(e/'candidate.tree').read_text().strip(),'runtimeFramework':'6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb','controlPlaneFramework':'4dd2a264c73a2ce6b85ad7ae6238046762e7e0f7','go':subprocess.check_output(['go','version'],text=True).strip(),'tests':counts,'requiredTests':sorted(required),'importCases':4,'generatedDrift':False,'mainIntegrated':False,'independentReview':'pending'}
+          report={'schemaVersion':1,'task':'AG-02','scope':'TenantLifecycle encapsulation and Biz18 owner-snapshot repair','base':'7d5afbe9cb4b849be462d9a7aed65877ed227700','candidate':(e/'candidate.sha').read_text().strip(),'tree':(e/'candidate.tree').read_text().strip(),'runtimeFramework':'6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb','controlPlaneFramework':'4dd2a264c73a2ce6b85ad7ae6238046762e7e0f7','go':subprocess.check_output(['go','version'],text=True).strip(),'tests':counts,'requiredTests':sorted(required),'importCases':4,'generatedDrift':False,'mainIntegrated':False,'independentReview':'pending'}
           (e/'QUALIFICATION.json').write_text(json.dumps(report,indent=2)+'\n')
           print(json.dumps(report,indent=2))
           PY
@@ -186,7 +208,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cd "$RUNNER_TEMP/ag02-evidence"
+          E="$RUNNER_TEMP/ag02-evidence"
+          for repo in biz yunka.io yunka-current; do
+            git -C "$GITHUB_WORKSPACE/$repo" status --porcelain > "$E/$repo-exit-status.txt"
+            git -C "$GITHUB_WORKSPACE/$repo" diff -- go.work.sum > "$E/$repo-exit-work-sum.diff"
+          done
+          cd "$E"
           find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
