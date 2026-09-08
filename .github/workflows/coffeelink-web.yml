@@ -1,0 +1,39 @@
+name: CoffeeLink Vue console
+on:
+  push:
+    branches: [main, feat/coffeelink-vue-console]
+    paths: ['web/**', '.github/workflows/coffeelink-web.yml']
+  pull_request:
+    paths: ['web/**', '.github/workflows/coffeelink-web.yml']
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend dependencies
+        working-directory: web
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      - name: Check frontend when source exists
+        working-directory: web
+        run: |
+          if [ -f src/main.ts ]; then npm run check; fi
+      - name: Package build environment for isolated visual review
+        run: tar -czf /tmp/coffeelink-web-build-environment.tgz -C web node_modules package.json package-lock.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coffeelink-web-build-environment
+          path: /tmp/coffeelink-web-build-environment.tgz
+          retention-days: 2
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('web/dist/index.html') != ''
+        with:
+          name: coffeelink-web-dist
+          path: web/dist
+          retention-days: 7
