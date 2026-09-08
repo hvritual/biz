@@ -71,7 +71,7 @@ jobs:
           make -C biz consumer-certify 2>&1 | tee "$E/certify.log"
           make -C biz generate check verify 2>&1 | tee "$E/verify.log"
           BIZ_AG02_EVIDENCE="$E/import-probes" make -C biz tenant-boundary-check 2>&1 | tee "$E/import.log"
-          (cd biz && GOWORK=off go test -json -count=1 ./internal/access/application/... -run '^(TestAG02|TestTenantLifecycle)') > "$E/targeted.jsonl"
+          (cd biz && GOWORK=off go test -json -count=1 ./internal/architecture ./internal/access/application/... -run '^(TestAG02|TestTenantLifecycle)') > "$E/targeted.jsonl"
           (cd biz && GOWORK=off go test -race -count=1 ./internal/...) 2>&1 | tee "$E/race.log"
           (cd biz && GOWORK=off go test -json -count=1 -timeout=10m -tags=integration ./integration) > "$E/mysql.jsonl"
           (cd biz && GOWORK=off go test -json -count=20 -timeout=10m -tags=integration ./integration -run '^Test(AG02OwnerInvariantUsesCurrentReadAfterSnapshot|B126RoleRevokeAndMemberSuspendCannotRemoveAllEffectiveOwners)$') > "$E/owner-repeat.jsonl"
@@ -100,12 +100,14 @@ jobs:
           import json,os,collections
           from pathlib import Path
           e=Path(os.environ['RUNNER_TEMP'])/'ag02-main-evidence'
+          required={'TestAG02TenantFactoryIsCompositionOnly','TestAG02BuildExportsOnlyDeclaredApplication','TestAG02BuildPreservesRequiredDependencies','TestAG02GeneratedChildrenKeepActualMethodSetNarrow','TestTenantLifecycleRequiresRootExecutionScope','TestTenantLifecycleStateChangesUseJoinedRootUnitOfWork'}
           counts={}
           for name,n in [('targeted.jsonl',6),('mysql.jsonl',22),('owner-repeat.jsonl',80)]:
               ev=[json.loads(l) for l in (e/name).read_text().splitlines()]
               assert not any(x.get('Action')=='fail' or (x.get('Action')=='skip' and 'Test' in x) for x in ev),name
               tests=[x['Test'] for x in ev if x.get('Action')=='pass' and 'Test' in x]
               assert len(tests)==n,(name,tests)
+              if name=='targeted.jsonl':assert set(tests)==required
               if name=='owner-repeat.jsonl': assert len(collections.Counter(tests))==4 and all(v==20 for v in collections.Counter(tests).values())
               counts[name]={'passEvents':n,'testFailures':0,'testSkips':0,'names':sorted(set(tests))}
           head='3519e7ee6e51e33984669871e4f32a55a3597d9f'; tree='3f8926b459fb78688fe0f39e9c4acfb6d93b3b47'
