@@ -100,6 +100,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 biz/scripts/test-runtime-readiness-gate.py
           go -C biz build ./...
           (cd yunka.io/app && go build -buildvcs=true -o "$RUNNER_TEMP/yunka" ./cmd)
           test -x "$RUNNER_TEMP/yunka"
@@ -148,7 +149,7 @@ jobs:
               cat "$RUNNER_TEMP/b12-7-dev.stderr" || true
               exit 1
             fi
-            if test -f .yunka/dev-runtime.json && jq -e '.state == "running" and (.processes | length) == 1 and .processes[0].state == "ready" and .processes[0].ready == true' .yunka/dev-runtime.json >/dev/null; then
+            if test -f .yunka/dev-runtime.json && jq -e '.state == "running" and (.processes | length) == 1 and .processes[0].state == "ready" and .processes[0].ready == true' .yunka/dev-runtime.json >/dev/null && grep -Fq 'DEV READY' "$RUNNER_TEMP/b12-7-dev.stderr"; then
               ready=1
               break
             fi

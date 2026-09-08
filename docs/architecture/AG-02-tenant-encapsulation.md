@@ -85,3 +85,14 @@ from the clean Biz baseline and must be qualified independently.
 
 Rollback is a single revert of this batch, including owner wiring and moved tests.
 There is no schema migration, deployment or customer-data action to undo.
+
+## Runtime qualification gate correction
+
+The first AG-02 B12.7 workflow run `34185974204` observed a Ready state file
+before the independently polled `DEV READY` log. The immediate post-loop grep
+failed and the trap stopped the otherwise ready runtime. The polling condition
+now waits for both facts within the same original bound; the final log check and
+all Diagnostics/Graph/shutdown checks remain. A regression executes the actual
+workflow shell fragment with delayed-log, missing-log and log-without-ready-state
+evidence. The same delayed-log case fails on the old gate and passes on the fix.
+This changes only the consumer test harness, not Yunka or application behavior.
