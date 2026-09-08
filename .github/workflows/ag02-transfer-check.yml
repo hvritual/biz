@@ -1,0 +1,26 @@
+name: ag02-transfer-check
+on:
+  push:
+    branches: [control/ag02-source-20260908]
+    paths: [.github/workflows/ag02-transfer-check.yml]
+permissions:
+  contents: read
+jobs:
+  readback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read staged bytes only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ag02-transfer"
+          gh api -H 'Accept: application/vnd.github+json' repos/hvritual/biz/git/blobs/de436ed9dcd7d543750ae5a8004aef5e9c7610e7 > "$RUNNER_TEMP/ag02-transfer/blob.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ag02-transfer
+          path: ${{ runner.temp }}/ag02-transfer
+          retention-days: 7
+          if-no-files-found: error
