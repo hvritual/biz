@@ -47,6 +47,16 @@ jobs:
           patch = root / 'patches.json'
           if patch.exists():
               write_files(json.loads(patch.read_text()))
+          replacements = root / 'replacements.json'
+          if replacements.exists():
+              for name, changes in json.loads(replacements.read_text()).items():
+                  path = Path(name)
+                  assert name.startswith('web/') and '..' not in path.parts and path.suffix in ('.vue', '.ts', '.css', '.json', '.md')
+                  text = path.read_text(encoding='utf-8')
+                  for before, after in changes:
+                      assert text.count(before) == 1, f'Patch must match exactly once: {name}'
+                      text = text.replace(before, after, 1)
+                  path.write_text(text, encoding='utf-8')
           print(f'Restored {len(files)} verified frontend files')
           PY
       - name: Restore exact previously resolved dependency lock
@@ -97,6 +107,10 @@ jobs:
             web/playwright-report/
             web/test-results/
             delivery-commit.txt
+            !web/playwright-report/**/*.ttf
+            !web/playwright-report/**/*.woff
+            !web/playwright-report/**/*.woff2
+            !web/playwright-report/**/*.otf
           retention-days: 14
       - uses: actions/upload-artifact@v4
         if: success()

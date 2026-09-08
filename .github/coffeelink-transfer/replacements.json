@@ -1,0 +1,5 @@
+{
+  "web/src/views/enterprise/MembersView.vue": [["<AppIcon name=\"success\" />启用成员</button", "<AppIcon name=\"success\" />重新启用成员</button"]],
+  "web/src/components/settings/SecuritySettings.vue": [["v-model.number=\"draft.sessionMinutes\" class=\"input\"", "v-model.number=\"draft.sessionMinutes\" aria-label=\"空闲会话时长\" class=\"input\""]],
+  "web/src/components/ui/AppPagination.vue": [[".pagination-controls {\n    gap: 2px;", ".pagination-controls {\n    gap: 2px;\n    flex-wrap: wrap;\n    max-width: 100%;"]]
+}
