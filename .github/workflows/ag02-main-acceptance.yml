@@ -1,0 +1,136 @@
+name: ag02-main-acceptance
+on:
+  push:
+    branches: [control/ag02-main-acceptance-20260908]
+    paths: [.github/workflows/ag02-main-acceptance.yml]
+permissions:
+  contents: read
+jobs:
+  accept:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_ag02_main
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 3519e7ee6e51e33984669871e4f32a55a3597d9f
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache-dependency-path: |
+            biz/go.sum
+            yunka.io/pkg/go.sum
+            yunka.io/framework/go.sum
+            yunka.io/gateway/go.sum
+            yunka.io/app/go.sum
+      - name: Exact-main source, standard gates and real runtime acceptance
+        shell: bash
+        env:
+          GOTOOLCHAIN: local
+          GH_TOKEN: ${{ github.token }}
+          YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ag02_main?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+          YUNKA_BIZ_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ag02_main?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+          YUNKA_BIZ_AUTO_MIGRATE: 'true'
+        run: |
+          set -euo pipefail
+          E="$RUNNER_TEMP/ag02-main-evidence"; mkdir -p "$E"
+          gh api repos/hvritual/biz/git/ref/heads/main > "$E/main-before.json"
+          gh api repos/hvritual/biz/pulls/16 > "$E/pr-before.json"
+          test "$(jq -r .object.sha "$E/main-before.json")" = 3519e7ee6e51e33984669871e4f32a55a3597d9f
+          jq -e '.merged == true and .head.sha == "3519e7ee6e51e33984669871e4f32a55a3597d9f" and .merge_commit_sha == .head.sha' "$E/pr-before.json"
+          test "$(git -C biz rev-parse HEAD^{tree})" = 3f8926b459fb78688fe0f39e9c4acfb6d93b3b47
+          cat yunka.io/AGENTS.md yunka.io/PROJECT_MEMORY.md > "$E/bootstrap.txt"
+          git -C biz status --short --branch
+          git -C biz remote -v
+          source yunka.io/tools/toolchain.env
+          test "$(go version | awk '{print $3}')" = "go${GO_VERSION}"
+          curl --fail --silent --show-error --location --retry 3 "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_RELEASE}/protoc-${PROTOC_RELEASE}-linux-x86_64.zip" -o "$RUNNER_TEMP/protoc.zip"
+          echo "${PROTOC_LINUX_X86_64_SHA256}  $RUNNER_TEMP/protoc.zip" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/protoc-main"; unzip -q "$RUNNER_TEMP/protoc.zip" -d "$RUNNER_TEMP/protoc-main"
+          export PATH="$RUNNER_TEMP/protoc-main/bin:$GITHUB_WORKSPACE/yunka.io/.yunka/bin:$PATH"
+          make -C yunka.io rpc-tools 2>&1 | tee "$E/rpc-tools.log"
+          make -C biz consumer-certify 2>&1 | tee "$E/certify.log"
+          make -C biz generate check verify 2>&1 | tee "$E/verify.log"
+          BIZ_AG02_EVIDENCE="$E/import-probes" make -C biz tenant-boundary-check 2>&1 | tee "$E/import.log"
+          (cd biz && GOWORK=off go test -json -count=1 ./internal/access/application/... -run '^(TestAG02|TestTenantLifecycle)') > "$E/targeted.jsonl"
+          (cd biz && GOWORK=off go test -race -count=1 ./internal/...) 2>&1 | tee "$E/race.log"
+          (cd biz && GOWORK=off go test -json -count=1 -timeout=10m -tags=integration ./integration) > "$E/mysql.jsonl"
+          (cd biz && GOWORK=off go test -json -count=20 -timeout=10m -tags=integration ./integration -run '^Test(AG02OwnerInvariantUsesCurrentReadAfterSnapshot|B126RoleRevokeAndMemberSuspendCannotRemoveAllEffectiveOwners)$') > "$E/owner-repeat.jsonl"
+          python3 biz/scripts/test-runtime-readiness-gate.py 2>&1 | tee "$E/readiness-regression.log"
+          (cd yunka.io/app && go build -buildvcs=true -o "$RUNNER_TEMP/yunka" ./cmd)
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,textwrap,os,subprocess
+          path=Path('biz/.github/workflows/b12-7-runtime-qualification.yml')
+          data=path.read_bytes();assert hashlib.sha256(data).hexdigest()=='473d7866f4a97bb68c4c61ec08388c137bd1a8dbfcf5c94bd57809dc8706da98'
+          s=data.decode().split('      - name: Prove zero-argument Access + DeviceOps runtime closure\n',1)[1]
+          body=textwrap.dedent(s.split('        run: |\n',1)[1].split('      - name: Export B12.7 runtime evidence\n',1)[0])
+          p=Path(os.environ['RUNNER_TEMP'])/'ag02-main-evidence/runtime-body.sh';p.write_text(body)
+          subprocess.run(['bash','-n',str(p)],check=True)
+          subprocess.run(['bash',str(p)],check=True)
+          PY
+          cp -r "$RUNNER_TEMP/b12-7-runtime-evidence" "$E/runtime"
+          make -C biz generate check 2>&1 | tee "$E/determinism.log"
+          for repo in biz yunka.io; do
+            git -C "$repo" status --porcelain | tee "$E/$repo-status.txt"
+            test -z "$(git -C "$repo" status --porcelain)"
+          done
+          gh api repos/hvritual/biz/git/ref/heads/main > "$E/main-after.json"
+          gh api repos/hvritual/biz/git/commits/3519e7ee6e51e33984669871e4f32a55a3597d9f > "$E/main-commit.json"
+          python3 - <<'PY'
+          import json,os,collections
+          from pathlib import Path
+          e=Path(os.environ['RUNNER_TEMP'])/'ag02-main-evidence'
+          counts={}
+          for name,n in [('targeted.jsonl',6),('mysql.jsonl',22),('owner-repeat.jsonl',80)]:
+              ev=[json.loads(l) for l in (e/name).read_text().splitlines()]
+              assert not any(x.get('Action')=='fail' or (x.get('Action')=='skip' and 'Test' in x) for x in ev),name
+              tests=[x['Test'] for x in ev if x.get('Action')=='pass' and 'Test' in x]
+              assert len(tests)==n,(name,tests)
+              if name=='owner-repeat.jsonl': assert len(collections.Counter(tests))==4 and all(v==20 for v in collections.Counter(tests).values())
+              counts[name]={'passEvents':n,'testFailures':0,'testSkips':0,'names':sorted(set(tests))}
+          head='3519e7ee6e51e33984669871e4f32a55a3597d9f'; tree='3f8926b459fb78688fe0f39e9c4acfb6d93b3b47'
+          assert json.loads((e/'main-after.json').read_text())['object']['sha']==head
+          assert json.loads((e/'main-commit.json').read_text())['tree']['sha']==tree
+          for name in ['control','hidden-import','aliased-hidden-import']: assert 'AG02 '+name+': PASS' in (e/'import.log').read_text()
+          receipt={'schemaVersion':1,'task':'AG-02/AG-02R','head':head,'tree':tree,'mainIntegrated':True,'qualification':'PASS','runtimeFramework':'6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb','tests':counts,'importProbes':3,'generatedDrift':False,'independentReview':'bot exact-head review 5579459226; no major issues; not human APPROVE','signature':None,'run':os.environ['GITHUB_RUN_ID']}
+          (e/'MAIN-RECEIPT.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          print(json.dumps(receipt,indent=2))
+          PY
+          git -C biz format-patch --stdout 7d5afbe9cb4b849be462d9a7aed65877ed227700..HEAD > "$E/AG02.patch"
+          git -C biz bundle create "$E/AG02.bundle" HEAD ^7d5afbe9cb4b849be462d9a7aed65877ed227700
+          git -C biz bundle verify "$E/AG02.bundle" 2>&1 | tee "$E/bundle-verify.txt"
+          cp biz/docs/architecture/AG-02-tenant-encapsulation.md "$E/AG-02-tenant-encapsulation.md"
+      - name: Evidence manifest
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ag02-main-evidence"
+          find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ag02-main-acceptance
+          path: ${{ runner.temp }}/ag02-main-evidence
+          include-hidden-files: true
+          if-no-files-found: error
