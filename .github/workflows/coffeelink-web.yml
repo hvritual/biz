@@ -1,91 +1,34 @@
-name: CoffeeLink source delivery and visual verification
+name: CoffeeLink Vue console
 on:
   push:
-    branches: [feat/coffeelink-vue-console]
-    paths: ['.github/workflows/coffeelink-web.yml', '.github/coffeelink-source/**']
+    branches: [main, feat/coffeelink-vue-console]
+    paths: ['web/**', '.github/workflows/coffeelink-web.yml']
+  pull_request:
+    paths: ['web/**', '.github/workflows/coffeelink-web.yml']
 permissions:
-  contents: write
-  actions: read
+  contents: read
 jobs:
-  deliver:
-    if: github.ref == 'refs/heads/feat/coffeelink-vue-console'
+  web:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: feat/coffeelink-vue-console
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - uses: actions/download-artifact@v4
-        with:
-          name: coffeelink-web-build-environment
-          run-id: 34242115147
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: /tmp/coffeelink-bootstrap
-      - name: Verify and materialize reviewed source
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          import base64, hashlib, io, lzma, pathlib, tarfile
-          hashes = [
-              'e58d8a1618796d71b3b5ca983897ce29523442e8136bd9b9dd6c64568942921a',
-              '2d13b54777da4fe1cff8544a6149f01d0a004422caddbf2dcde56ba67ad5d21f',
-              '65586e36f3c899ae1d8dec8008f0006ce3f9399d27ebc5ceb87c28b99bf8d555',
-              '7836fe6fe3190adaae50c854cc02e534e3dd39f37380421e4b58303177a12ac5',
-              '4f8aa370e30eef299785066933a169bb8ebe49d1a42a6099f5a03df9ee57be03',
-          ]
-          parts = []
-          for index, expected in enumerate(hashes):
-              path = pathlib.Path(f'.github/coffeelink-source/{index:03}.b64')
-              data = path.read_bytes().strip()
-              actual = hashlib.sha256(data).hexdigest()
-              print(path, len(data), actual)
-              assert actual == expected, f'Incorrect source transfer: {path}'
-              parts.append(data)
-          joined = b''.join(parts)
-          assert len(joined) == 78828
-          payload = base64.b64decode(joined, validate=True)
-          assert hashlib.sha256(payload).hexdigest() == 'c9b57cee18c83cc31efdc79a0e20bb420e6d2c0ebdbd723e1fa1fce2f9363cda'
-          with tarfile.open(fileobj=io.BytesIO(lzma.decompress(payload)), mode='r:') as archive:
-              for member in archive.getmembers():
-                  path = pathlib.PurePosixPath(member.name)
-                  assert member.isfile() and not path.is_absolute() and '..' not in path.parts
-                  assert str(path).startswith('web/') or str(path) == '.github/workflows/coffeelink-web.yml'
-                  data = archive.extractfile(member).read()
-                  if str(path) == '.github/workflows/coffeelink-web.yml':
-                      pathlib.Path('/tmp/coffeelink-final-ci.yml').write_bytes(data)
-                      continue
-                  destination = pathlib.Path(str(path))
-                  destination.parent.mkdir(parents=True, exist_ok=True)
-                  destination.write_bytes(data)
-          PY
-          tar -xzf /tmp/coffeelink-bootstrap/coffeelink-web-build-environment.tgz -C web package-lock.json
-          echo '461e6242d916ddc9058be6ad7511b12b9f72eab4d915cef063f7cf40adb38869  web/package-lock.json' | sha256sum --check
-      - name: Commit ordinary source files to feature branch only
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm -r .github/coffeelink-source
-          git add web
-          git commit -m 'feat(web): implement componentized CoffeeLink Vue enterprise console'
-          git push origin HEAD:refs/heads/feat/coffeelink-vue-console
-          git rev-parse HEAD
-      - name: Install locked dependencies
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
         working-directory: web
-        run: npm ci
-      - name: Type, lint, architecture, unit, and production build gates
+      - run: npm run check
         working-directory: web
-        run: npm run check
-      - name: Install browser and Chinese rendering fonts
+      - name: Install browser and Chinese text support
         working-directory: web
         run: |
           npx playwright install --with-deps chromium
           sudo apt-get install -y fonts-noto-cjk
-      - name: Real HTTP browser verification and screenshots
+      - run: npm run test:e2e
         working-directory: web
-        run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         if: always()
         with:
