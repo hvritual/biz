@@ -197,18 +197,15 @@ func (repository *TenantRoleRepository) RevokeMember(ctx context.Context, tenant
 		return domain.Role{}, err
 	}
 	var assignment memberRoleRecord
-	if err := db.Where("tenant_id = ? AND role_id = ? AND user_id = ?", tenantID, roleID, userID).First(&assignment).Error; err != nil {
+	if err := db.Clauses(clause.Locking{Strength: "UPDATE"}).Where("tenant_id = ? AND role_id = ? AND user_id = ?", tenantID, roleID, userID).First(&assignment).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return repository.Get(ctx, tenantID, roleID)
 		}
 		return domain.Role{}, err
 	}
 	if role.Name == domain.TenantOwnerRoleName {
-		var activeOwners int64
-		if err := db.Table("biz_member_roles mr").
-			Joins("JOIN biz_memberships m ON m.tenant_id = mr.tenant_id AND m.user_id = mr.user_id AND m.status = ?", domain.TenantMemberStatusActive).
-			Where("mr.tenant_id = ? AND mr.role_id = ?", tenantID, roleID).
-			Count(&activeOwners).Error; err != nil {
+		activeOwners, err := repository.currentActiveOwners(ctx, tenantID, roleID)
+		if err != nil {
 			return domain.Role{}, err
 		}
 		if activeOwners <= 1 {
@@ -240,23 +237,35 @@ func (repository *TenantRoleRepository) AssertMemberCanDeactivate(ctx context.Co
 		return err
 	}
 	var assignment memberRoleRecord
-	if err := db.Where("tenant_id = ? AND role_id = ? AND user_id = ?", tenantID, owner.ID, userID).First(&assignment).Error; err != nil {
+	if err := db.Clauses(clause.Locking{Strength: "UPDATE"}).Where("tenant_id = ? AND role_id = ? AND user_id = ?", tenantID, owner.ID, userID).First(&assignment).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil
 		}
 		return err
 	}
-	var activeOwners int64
-	if err := db.Table("biz_member_roles mr").
-		Joins("JOIN biz_memberships m ON m.tenant_id = mr.tenant_id AND m.user_id = mr.user_id AND m.status = ?", domain.TenantMemberStatusActive).
-		Where("mr.tenant_id = ? AND mr.role_id = ?", tenantID, owner.ID).
-		Count(&activeOwners).Error; err != nil {
+	activeOwners, err := repository.currentActiveOwners(ctx, tenantID, owner.ID)
+	if err != nil {
 		return err
 	}
 	if activeOwners <= 1 {
 		return ports.ErrLastTenantOwner
 	}
 	return nil
+}
+
+// Both callers hold the owner-role row lock in the same root transaction.
+// A preceding member read can already have established a REPEATABLE READ
+// snapshot; locking the role does not refresh subsequent plain SELECTs. Select
+// the actual joined owner rows FOR UPDATE so decisions see committed predecessor
+// mutations, not the transaction's older membership/assignment snapshot.
+func (repository *TenantRoleRepository) currentActiveOwners(ctx context.Context, tenantID, roleID string) (int, error) {
+	var owners []struct{ UserID string }
+	err := repository.database.WithContext(ctx).Table("biz_member_roles mr").
+		Select("mr.user_id").
+		Joins("JOIN biz_memberships m ON m.tenant_id = mr.tenant_id AND m.user_id = mr.user_id AND m.status = ?", domain.TenantMemberStatusActive).
+		Where("mr.tenant_id = ? AND mr.role_id = ?", tenantID, roleID).
+		Order("mr.user_id").Clauses(clause.Locking{Strength: "UPDATE"}).Find(&owners).Error
+	return len(owners), err
 }
 
 func (repository *TenantRoleRepository) roleFromRecord(ctx context.Context, row roleRecord) (domain.Role, error) {

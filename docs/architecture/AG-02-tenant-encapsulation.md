@@ -96,3 +96,20 @@ all Diagnostics/Graph/shutdown checks remain. A regression executes the actual
 workflow shell fragment with delayed-log, missing-log and log-without-ready-state
 evidence. The same delayed-log case fails on the old gate and passes on the fix.
 This changes only the consumer test harness, not Yunka or application behavior.
+
+## AG-02R — independent existing owner-invariant correction (Biz #17)
+
+Final qualification run `34186461994` failed the unchanged cross-path owner
+concurrency test: role revoke and member suspend both succeeded. This is an
+existing consumer persistence defect, not a TenantLifecycle encapsulation or
+Yunka UoW defect. The owner-role lock serialized writes, but plain assignment and
+owner-count reads could still reuse an earlier REPEATABLE READ snapshot.
+
+The corrective commit retains the shared owner lock and uses current locking
+reads for assignments and actual joined active-owner rows. No root transaction,
+isolation setting, schema, permission policy or framework source is changed.
+A deterministic two-transaction MySQL test establishes the loser's snapshot
+before the winner commits, in both revoke-first and suspend-first orderings.
+It requires ErrLastTenantOwner and exactly one remaining effective owner. The
+existing simultaneous RPC test remains unchanged and is repeated during
+qualification. Initial passing runs do not erase the reproduced failure.
