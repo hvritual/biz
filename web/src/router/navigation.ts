@@ -1,0 +1,44 @@
+export interface NavigationItem {
+  id: string
+  label: string
+  icon: string
+  path?: string
+}
+export const primaryNavigation: NavigationItem[] = [
+  { id: 'dashboard', label: '工作台', icon: 'home', path: '/dashboard' },
+  { id: 'devices', label: '设备管理', icon: 'device' },
+  { id: 'sites', label: '点位管理', icon: 'site' },
+  { id: 'customers', label: '客户管理', icon: 'customer' },
+  { id: 'orders', label: '订单管理', icon: 'order' },
+  { id: 'drinks', label: '饮品管理', icon: 'coffee' },
+  { id: 'remote', label: '远程运维', icon: 'operations' },
+  { id: 'tickets', label: '故障工单', icon: 'ticket' },
+  { id: 'analytics', label: '数据分析', icon: 'chart' },
+  { id: 'success', label: '客户运营', icon: 'users' },
+  { id: 'rental', label: '租赁管理', icon: 'file' },
+  { id: 'enterprise', label: '企业中心', icon: 'company' },
+  { id: 'system', label: '系统设置', icon: 'settings' },
+]
+export const enterpriseNavigation: NavigationItem[] = [
+  { id: 'members', label: '成员管理', icon: 'users', path: '/enterprise/members' },
+  { id: 'roles', label: '角色权限', icon: 'shield', path: '/enterprise/roles' },
+  { id: 'organization', label: '组织架构', icon: 'organization', path: '/enterprise/organization' },
+  { id: 'plan', label: '套餐信息', icon: 'crown', path: '/enterprise/plan' },
+  { id: 'company', label: '企业信息', icon: 'company', path: '/enterprise/company' },
+  { id: 'logs', label: '操作日志', icon: 'file', path: '/enterprise/logs' },
+]
+export const systemNavigation: NavigationItem[] = [
+  { id: 'general', label: '基础设置', icon: 'settings', path: '/system/general' },
+  { id: 'notifications', label: '通知设置', icon: 'bell', path: '/system/notifications' },
+  { id: 'security', label: '安全设置', icon: 'shield', path: '/system/security' },
+  { id: 'integrations', label: '接口管理', icon: 'link', path: '/system/integrations' },
+  { id: 'dictionary', label: '数据字典', icon: 'database', path: '/system/dictionary' },
+]
+export const quickActions = [
+  { label: '新增成员', icon: 'plus', path: '/enterprise/members?action=create' },
+  { label: '邀请成员', icon: 'invite', path: '/enterprise/members?action=invite' },
+  { label: '新建角色', icon: 'shield', path: '/enterprise/roles?action=create' },
+  { label: '申请调整套餐', icon: 'crown', path: '/enterprise/plan?action=upgrade' },
+  { label: '编辑企业信息', icon: 'edit', path: '/enterprise/company' },
+  { label: '查看操作日志', icon: 'file', path: '/enterprise/logs' },
+]
