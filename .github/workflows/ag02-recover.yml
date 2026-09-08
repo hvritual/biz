@@ -1,0 +1,37 @@
+name: ag02-recover
+on:
+  push:
+    branches: [control/ag02-source-20260908]
+    paths: [.github/workflows/ag02-recover.yml]
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Recover exact prior blob
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ag02-recovery"
+          gh api -H 'Accept: application/vnd.github+json' repos/hvritual/biz/git/blobs/575cf9925c4a826abf8934df3c8b643000798f35 > "$RUNNER_TEMP/ag02-recovery/blob.json"
+          python3 - <<'PY'
+          import os,json,base64,pathlib,hashlib
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])/'ag02-recovery'
+          b=json.loads((root/'blob.json').read_text())
+          data=base64.b64decode(b['content'])
+          actual=hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+          assert actual=='575cf9925c4a826abf8934df3c8b643000798f35'
+          (root/'prior-staging.bin').write_bytes(data)
+          (root/'IDENTITY.txt').write_text(f'blob={actual}\nbytes={len(data)}\nsha256={hashlib.sha256(data).hexdigest()}\n')
+          print((root/'IDENTITY.txt').read_text())
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ag02-recovery
+          path: ${{ runner.temp }}/ag02-recovery
+          retention-days: 7
+          if-no-files-found: error
