@@ -1,0 +1,106 @@
+name: CoffeeLink isolated source and browser verification
+on:
+  push:
+    branches: [build/coffeelink-visual-verify]
+    paths: ['.github/coffeelink-transfer/**', '.github/workflows/coffeelink-transfer.yml']
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: coffeelink-transfer
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore hash-verified frontend source
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, json, lzma
+          from pathlib import Path
+          root = Path('.github/coffeelink-transfer')
+          encoded = ''.join((root / f'part-{i}.b64').read_text() for i in range(5))
+          packed = base64.b64decode(encoded, validate=True)
+          assert hashlib.sha256(packed).hexdigest() == '6fa5c3f6b57d58a0a72a9b0ca0786b309fdce90909cfb4f03301cc2e5e5f3164', 'Source transport hash mismatch'
+          files = json.loads(lzma.decompress(packed))
+          assert isinstance(files, dict) and len(files) <= 200
+          def write_files(data):
+              for name, value in data.items():
+                  path = Path(name)
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert name.startswith('web/') or name == '.github/workflows/coffeelink-web.yml'
+                  assert path.suffix.lower() not in ('.ttf', '.otf', '.woff', '.woff2')
+                  path.parent.mkdir(parents=True, exist_ok=True)
+                  if path.suffix in ('.png', '.webp'):
+                      path.write_bytes(base64.b64decode(value, validate=True))
+                  else:
+                      path.write_text(value, encoding='utf-8')
+          write_files(files)
+          patch = root / 'patches.json'
+          if patch.exists():
+              write_files(json.loads(patch.read_text()))
+          print(f'Restored {len(files)} verified frontend files')
+          PY
+      - name: Restore exact previously resolved dependency lock
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 34242115147 -n coffeelink-web-build-environment -D /tmp/coffee-env
+          tar -xzf /tmp/coffee-env/coffeelink-web-build-environment.tgz -C web package-lock.json
+          echo '461e6242d916ddc9058be6ad7511b12b9f72eab4d915cef063f7cf40adb38869  web/package-lock.json' | sha256sum -c -
+      - name: Install frontend dependencies
+        working-directory: web
+        run: npm ci
+      - name: Type, lint, architecture, unit and production build
+        working-directory: web
+        run: npm run check
+      - name: Install actual Chromium and CJK runtime fonts
+        working-directory: web
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Actual HTTP browser interaction and screenshot verification
+        working-directory: web
+        run: npm run test:e2e
+      - name: Publish clean source commit without temporary transport files
+        env:
+          DELIVERY_PARENT: 02155e7a858da42c07e92617bf9dea83fb0b477e
+        run: |
+          set -euo pipefail
+          actual=$(git ls-remote origin refs/heads/feat/coffeelink-vue-replica | cut -f1)
+          test "$actual" = "$DELIVERY_PARENT" || { echo 'Delivery branch advanced; refusing overwrite'; exit 1; }
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git read-tree "$DELIVERY_PARENT"
+          git add web
+          tree=$(git write-tree)
+          commit=$(git commit-tree "$tree" -p "$DELIVERY_PARENT" -m 'feat(web): implement CoffeeLink Vue enterprise console with verified floating navigation')
+          git diff --stat "$DELIVERY_PARENT" "$commit"
+          git push origin "$commit":refs/heads/feat/coffeelink-vue-replica
+          echo "$commit" > delivery-commit.txt
+          echo "Clean frontend delivery: $commit" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coffeelink-replica-verification
+          path: |
+            web/screenshots/
+            web/playwright-report/
+            web/test-results/
+            delivery-commit.txt
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: coffeelink-replica-dist
+          path: web/dist/
+          retention-days: 7
