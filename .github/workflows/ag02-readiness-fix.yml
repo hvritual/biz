@@ -1,0 +1,156 @@
+name: ag02-readiness-fix
+on:
+  push:
+    branches: [control/ag02-qualify-20260908]
+    paths: [.github/workflows/ag02-readiness-fix.yml]
+permissions:
+  contents: write
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOTOOLCHAIN: local
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ag02?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+      YUNKA_BIZ_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ag02?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+      YUNKA_BIZ_AUTO_MIGRATE: 'true'
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_ag02
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 0924157e3ed72cae3cf364955bd041c895087adf
+          path: biz
+          fetch-depth: 0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache-dependency-path: biz/go.sum
+      - name: Restore exact local commit and reproduce the old polling failure
+        working-directory: biz
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ag02-final"
+          gh api repos/hvritual/biz/git/blobs/c67e74542089b99acfe15a4819b36081fefcbe1e > "$RUNNER_TEMP/gate-blob.json"
+          python3 - <<'PY'
+          import os,pathlib,json,base64,hashlib
+          r=pathlib.Path(os.environ['RUNNER_TEMP'])
+          d=base64.b64decode(json.loads((r/'gate-blob.json').read_text())['content'])
+          d=d.rstrip(b'\n')+b'\n'
+          assert hashlib.sha256(d).hexdigest()=='4409068e8a648d1bddeacbd09db45402980c8d6e88dd0555fc1d29a7e9d61fda'
+          (r/'ag02-final/gate.patch').write_bytes(d)
+          PY
+          git config user.name hvritual
+          git config user.email 460657446@qq.com
+          git switch -c feat/ag02-tenant-encapsulation
+          git am --committer-date-is-author-date "$RUNNER_TEMP/ag02-final/gate.patch"
+          test "$(git rev-parse HEAD)" = b0f250e7570e6adae7b108a1ac27f92bd5e6ea78
+          test "$(git rev-parse HEAD^{tree})" = 99201f2e54069b8d478d04f02830bde99539f871
+          git diff --check HEAD^
+          python3 - <<'PY'
+          from pathlib import Path
+          import tempfile,subprocess,os
+          root=Path.cwd()
+          with tempfile.TemporaryDirectory() as t:
+              p=Path(t);(p/'scripts').mkdir();(p/'.github/workflows').mkdir(parents=True)
+              (p/'scripts/test-runtime-readiness-gate.py').write_bytes((root/'scripts/test-runtime-readiness-gate.py').read_bytes())
+              (p/'.github/workflows/b12-7-runtime-qualification.yml').write_bytes(subprocess.check_output(['git','show','HEAD^:.github/workflows/b12-7-runtime-qualification.yml']))
+              x=subprocess.run(['python3',str(p/'scripts/test-runtime-readiness-gate.py')],capture_output=True,text=True)
+              assert x.returncode==1 and 'delayed_log_after_ready_state: exit=1, expected=0' in x.stderr
+              (Path(os.environ['RUNNER_TEMP'])/'ag02-final/readiness-red.log').write_text(x.stdout+x.stderr)
+          PY
+          python3 scripts/test-runtime-readiness-gate.py | tee "$RUNNER_TEMP/ag02-final/readiness-green.log"
+      - name: Locked tools, consumer certification and full behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          test "$(go version | awk '{print $3}')" = "go${GO_VERSION}"
+          curl --fail --silent --show-error --location --retry 3 "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_RELEASE}/protoc-${PROTOC_RELEASE}-linux-x86_64.zip" -o "$RUNNER_TEMP/protoc.zip"
+          echo "${PROTOC_LINUX_X86_64_SHA256}  $RUNNER_TEMP/protoc.zip" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/ag02-protoc"
+          unzip -q "$RUNNER_TEMP/protoc.zip" -d "$RUNNER_TEMP/ag02-protoc"
+          export PATH="$RUNNER_TEMP/ag02-protoc/bin:$GITHUB_WORKSPACE/yunka.io/.yunka/bin:$PATH"
+          make -C yunka.io rpc-tools
+          make -C yunka.io toolchain-check
+          cd biz
+          make consumer-certify 2>&1 | tee "$RUNNER_TEMP/ag02-final/certify.log"
+          make check && make generate && git diff --exit-code && make check
+          go test -json -count=1 ./internal/access/application/tenantlifecycle/... ./internal/architecture > "$RUNNER_TEMP/ag02-final/targeted.jsonl"
+          BIZ_AG02_EVIDENCE="$RUNNER_TEMP/ag02-final/import-probes" make tenant-boundary-check
+          GOWORK=off go test -count=1 ./... && GOWORK=off go test -race -count=1 ./internal/...
+          GOWORK=off go vet ./... && GOWORK=off go build ./...
+          GOWORK=off go test -json -count=1 -timeout=10m -tags=integration ./integration > "$RUNNER_TEMP/ag02-final/mysql.jsonl"
+          python3 - <<'PY'
+          import pathlib,os,json
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])/'ag02-final'
+          for f,n in [('targeted.jsonl',6),('mysql.jsonl',19)]:
+              rows=[json.loads(x) for x in (root/f).read_text().splitlines()]
+              assert not any(x.get('Action') in ('fail','skip') for x in rows)
+              passed=[x for x in rows if x.get('Action')=='pass' and x.get('Test')]
+              assert len(passed)==n,(f,len(passed))
+          PY
+      - name: Execute the actual B12.7 build and full runtime verification bodies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,subprocess,os
+          p=pathlib.Path('biz/.github/workflows/b12-7-runtime-qualification.yml')
+          lines=p.read_text().splitlines()
+          for name in ['Build Biz and exact Yunka CLI','Prove zero-argument Access + DeviceOps runtime closure']:
+              pos=[i for i,x in enumerate(lines) if x.strip()=='- name: '+name]
+              assert len(pos)==1
+              i=next(i for i in range(pos[0]+1,len(lines)) if lines[i].strip()=='run: |')+1
+              body=[]
+              while i<len(lines) and (not lines[i].strip() or lines[i].startswith('          ')):
+                  body.append(lines[i][10:] if lines[i].strip() else '');i+=1
+              script=pathlib.Path(os.environ['RUNNER_TEMP'])/('ag02-'+str(pos[0])+'.sh')
+              script.write_text('\n'.join(body)+'\n')
+              subprocess.run(['bash','--noprofile','-e','-o','pipefail',str(script)],check=True)
+          PY
+          cp -a "$RUNNER_TEMP/b12-7-runtime-evidence" "$RUNNER_TEMP/ag02-final/runtime"
+      - name: Publish exact qualified task head, not main
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = 7d5afbe9cb4b849be462d9a7aed65877ed227700
+          test "$(git ls-remote origin refs/heads/feat/ag02-tenant-encapsulation | cut -f1)" = 0924157e3ed72cae3cf364955bd041c895087adf
+          git push origin HEAD:refs/heads/feat/ag02-tenant-encapsulation
+          test "$(git ls-remote origin refs/heads/feat/ag02-tenant-encapsulation | cut -f1)" = "$(git rev-parse HEAD)"
+          git rev-parse HEAD HEAD^{tree} > "$RUNNER_TEMP/ag02-final/identity.txt"
+          git format-patch --stdout --no-signature 7d5afbe9cb4b849be462d9a7aed65877ed227700..HEAD > "$RUNNER_TEMP/ag02-final/product.patch"
+          git bundle create "$RUNNER_TEMP/ag02-final/product.bundle" HEAD ^7d5afbe9cb4b849be462d9a7aed65877ed227700
+          git bundle verify "$RUNNER_TEMP/ag02-final/product.bundle"
+          printf 'AG02_FINAL=QUALIFIED\nMAIN_UNCHANGED=true\n' > "$RUNNER_TEMP/ag02-final/RECEIPT.txt"
+          cd "$RUNNER_TEMP/ag02-final"
+          find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ag02-final-qualification
+          path: |
+            ${{ runner.temp }}/ag02-final
+            ${{ runner.temp }}/b12-7-runtime-evidence
+          include-hidden-files: true
+          if-no-files-found: error
