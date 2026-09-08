@@ -1,0 +1,63 @@
+name: Member drawer geometry review
+on:
+  push:
+    branches: [build/member-layout-source-20260909]
+    paths: [.github/workflows/member-layout-capture.yml]
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: b764fb8714145fdde079b8a0d850db6ce7f3516a
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - working-directory: web
+        run: |
+          npm ci
+          npm run build
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Compare viewport and full-page geometry
+        working-directory: web
+        run: |
+          npm run preview > /tmp/member-preview.log 2>&1 &
+          node --input-type=module <<'JS'
+          import {chromium} from '@playwright/test';
+          import {mkdirSync,writeFileSync} from 'node:fs';
+          await new Promise(r=>setTimeout(r,2000));
+          mkdirSync('/tmp/member-geometry',{recursive:true});
+          const browser=await chromium.launch();
+          const page=await browser.newPage({viewport:{width:1536,height:1024},locale:'zh-CN'});
+          await page.goto('http://127.0.0.1:4173/#/enterprise/members');
+          await page.locator('.member-table').waitFor();
+          await page.evaluate(()=>document.fonts.ready);
+          const frames=[];
+          async function record(label){frames.push({label,...await page.evaluate(()=>{
+            const measure=s=>{const el=document.querySelector(s);if(!el)return null;const r=el.getBoundingClientRect(),c=getComputedStyle(el);return {class:el.className,x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,marginRight:c.marginRight,display:c.display,minWidth:c.minWidth,widthCss:c.width,transition:c.transition}};
+            return {vw:innerWidth,vh:innerHeight,scroll:document.documentElement.scrollWidth,view:measure('.members-view'),main:measure('.member-main'),heading:measure('.page-heading'),art:measure('.coffee-hero img'),table:measure('.member-table'),panel:measure('.member-detail-panel')};
+          })})}
+          await record('closed');
+          await page.getByRole('button',{name:'查看 李四',exact:true}).click();
+          await page.waitForTimeout(600);
+          await record('open-before-viewport');
+          await page.screenshot({path:'/tmp/member-geometry/open-viewport.png'});
+          await record('open-before-full');
+          await page.screenshot({path:'/tmp/member-geometry/open-full.png',fullPage:true});
+          await record('open-after-full');
+          await page.waitForTimeout(600);
+          await page.screenshot({path:'/tmp/member-geometry/open-after.png'});
+          await record('open-after-settle');
+          writeFileSync('/tmp/member-geometry/geometry.json',JSON.stringify(frames,null,2));
+          await browser.close();
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: member-drawer-geometry
+          path: /tmp/member-geometry/
+          retention-days: 2
