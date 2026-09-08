@@ -1,0 +1,28 @@
+name: Member layout source export
+on:
+  push:
+    branches: [build/member-layout-source-20260909]
+    paths: [.github/workflows/member-layout-source.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 0196761678b31fa459a8a7be32938c21018f55eb
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Package exact baseline git objects
+        run: |
+          git bundle create /tmp/biz-member-baseline.bundle HEAD
+          sha256sum /tmp/biz-member-baseline.bundle > /tmp/biz-member-baseline.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: biz-member-baseline
+          path: |
+            /tmp/biz-member-baseline.bundle
+            /tmp/biz-member-baseline.sha256
+          retention-days: 2
