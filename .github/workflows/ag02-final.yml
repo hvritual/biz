@@ -1,0 +1,107 @@
+name: ag02-final
+on:
+  push:
+    branches: [control/ag02-qualify-final-20260908]
+    paths: [.github/workflows/ag02-final.yml]
+permissions:
+  contents: write
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_ag02
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 7d5afbe9cb4b849be462d9a7aed65877ed227700
+          path: biz
+          fetch-depth: 0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 4dd2a264c73a2ce6b85ad7ae6238046762e7e0f7
+          path: yunka-current
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache-dependency-path: |
+            biz/go.sum
+            yunka.io/pkg/go.sum
+            yunka.io/framework/go.sum
+            yunka.io/gateway/go.sum
+            yunka.io/app/go.sum
+            yunka-current/app/go.sum
+      - name: Reuse complete qualification with strict test-event classification
+        shell: bash
+        env:
+          GOTOOLCHAIN: local
+          YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ag02?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,textwrap,os,subprocess
+          text=pathlib.Path('control/.github/workflows/ag02-delivery.yml').read_text()
+          marker='      - name: Bootstrap, qualify exact sources and publish only a verified task branch\n'
+          assert text.count(marker)==1
+          block=text.split(marker,1)[1].split('      - name: Evidence manifest\n',1)[0]
+          code=textwrap.dedent(block.split('        run: |\n',1)[1])
+          old="    assert not any(x.get('Action') in ['fail','skip'] for x in events), filename"
+          new="""    assert not any(x.get('Action')=='fail' or (x.get('Action')=='skip' and 'Test' in x) for x in events), filename
+              no_tests={x['Package'] for x in events if x.get('Action')=='skip' and 'Test' not in x}
+              expected_no_tests={'github.com/hvritual/biz/internal/access/application/tenantlifecycle/internal/usecase','github.com/hvritual/biz/internal/bizruntime'} if filename=='unit.jsonl' else set()
+              assert no_tests==expected_no_tests, (filename,no_tests)
+              for package in no_tests:
+                  assert any(x.get('Package')==package and '[no test files]' in x.get('Output','') for x in events), package"""
+          assert code.count(old)==1
+          code=code.replace(old,new,1)
+          old_count="counts[filename]={'passEvents':len(tests),'skip':0,'fail':0}"
+          assert code.count(old_count)==1
+          code=code.replace(old_count,"counts[filename]={'passEvents':len(tests),'testSkips':0,'fail':0,'packagesWithoutTestFiles':sorted(no_tests)}",1)
+          path=pathlib.Path(os.environ['RUNNER_TEMP'])/'ag02-qualify.sh';path.write_text(code)
+          subprocess.run(['bash','-n',str(path)],check=True)
+          subprocess.run(['bash',str(path)],check=True)
+          PY
+      - name: Evidence manifest
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          E="$RUNNER_TEMP/ag02-evidence"
+          mkdir -p "$E"
+          cp "$RUNNER_TEMP/ag02-qualify.sh" "$E/executed-qualification.sh"
+          for repo in biz yunka.io yunka-current; do
+            git -C "$GITHUB_WORKSPACE/$repo" status --porcelain > "$E/$repo-exit-status.txt"
+            git -C "$GITHUB_WORKSPACE/$repo" diff -- go.work.sum > "$E/$repo-exit-work-sum.diff"
+          done
+          cd "$E"
+          find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ag02-qualification
+          path: ${{ runner.temp }}/ag02-evidence
+          if-no-files-found: error
+          include-hidden-files: true
