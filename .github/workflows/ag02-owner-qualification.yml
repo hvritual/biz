@@ -1,0 +1,112 @@
+name: ag02-owner-qualification
+on:
+  push:
+    branches: [control/ag02-owner-qualification-20260908]
+permissions:
+  contents: write
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOTOOLCHAIN: local
+      GH_TOKEN: ${{ github.token }}
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ag02?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+      YUNKA_BIZ_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ag02?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+      YUNKA_BIZ_AUTO_MIGRATE: 'true'
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_ag02
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 05ae64e770379542733b08fe21140f0abed7921d
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 0924157e3ed72cae3cf364955bd041c895087adf
+          path: biz
+          fetch-depth: 0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache-dependency-path: biz/go.sum
+      - name: Reuse exact prior qualification bodies, add current-read correction and RED test
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,subprocess,os,base64,json,hashlib
+          root=pathlib.Path.cwd();temp=pathlib.Path(os.environ['RUNNER_TEMP']);evidence=temp/'ag02-final'
+          lines=(root/'control/.github/workflows/ag02-readiness-fix.yml').read_text().splitlines()
+          def body(name):
+              pos=[i for i,x in enumerate(lines) if x.strip()=='- name: '+name]; assert len(pos)==1
+              i=next(i for i in range(pos[0]+1,len(lines)) if lines[i].strip()=='run: |')+1
+              out=[]
+              while i<len(lines) and (not lines[i].strip() or lines[i].startswith('          ')):
+                  out.append(lines[i][10:] if lines[i].strip() else '');i+=1
+              return '\n'.join(out)+'\n'
+          def execute(name,cwd):
+              script=temp/(name.replace(' ','-')[:60]+'.sh');script.write_text(body(name));subprocess.run(['bash',str(script)],cwd=cwd,check=True)
+          execute('Restore exact local commit and reproduce the old polling failure',root/'biz')
+          obj=json.loads(subprocess.check_output(['gh','api','repos/hvritual/biz/git/blobs/b2d8074a2abdb4853ec1ab18c1bc602d9d1084d7']))
+          patch=base64.b64decode(obj['content']).rstrip(b'\n')+b'\n'
+          assert hashlib.sha256(patch).hexdigest()=='7f0b3980e0ac6a7157d8216a5e7216edc10f50bd115d09bd9baa3c0593e1e24a'
+          (evidence/'owner-fix.patch').write_bytes(patch)
+          subprocess.run(['git','am','--committer-date-is-author-date',str(evidence/'owner-fix.patch')],cwd=root/'biz',check=True)
+          for expr,value in [('HEAD','df6cccf32fc2557f6a22a26b4a966a58b775ff27'),('HEAD^{tree}','a320d20874d4054ce8a0de18482aa984274548bf')]:
+              assert subprocess.check_output(['git','rev-parse',expr],cwd=root/'biz',text=True).strip()==value
+          # Same real MySQL regression on old Role repository, using only an
+          # untracked external Go overlay. No product checkout is mutated.
+          old=subprocess.check_output(['git','show','0924157e3ed72cae3cf364955bd041c895087adf:internal/access/infrastructure/persistence/role.go'],cwd=root/'biz')
+          oldpath=temp/'old-role.go';oldpath.write_bytes(old)
+          overlay=temp/'owner-red-overlay.json';overlay.write_text(json.dumps({'Replace':{str(root/'biz/internal/access/infrastructure/persistence/role.go'):str(oldpath)}}))
+          with (evidence/'owner-snapshot-red.jsonl').open('w') as f:
+              x=subprocess.run(['go','test','-json','-count=1','-tags=integration','-overlay='+str(overlay),'./integration','-run','^TestAG02OwnerInvariantUsesCurrentReadAfterSnapshot$'],cwd=root/'biz',stdout=f,stderr=subprocess.STDOUT)
+          rows=[json.loads(x) for x in (evidence/'owner-snapshot-red.jsonl').read_text().splitlines() if x.startswith('{')]
+          assert x.returncode==1
+          for order in ['revoke','suspend']:
+              test='TestAG02OwnerInvariantUsesCurrentReadAfterSnapshot/'+order
+              assert any(r.get('Action')=='fail' and r.get('Test')==test for r in rows)
+              assert any(r.get('Test')==test and 'stale owner snapshot accepted after '+order+': err=<nil>' in r.get('Output','') for r in rows)
+          assert not any(r.get('Action')=='skip' for r in rows)
+          # Keep every old gate; updated count includes the new test and its two
+          # subcases. Exact expected case names are also checked below.
+          text=body('Locked tools, consumer certification and full behavior')
+          assert text.count("('mysql.jsonl',19)")==1
+          text=text.replace("('mysql.jsonl',19)","('mysql.jsonl',22)")
+          script=temp/'ag02-complete-gates.sh';script.write_text(text)
+          subprocess.run(['bash',str(script)],cwd=root,check=True)
+          with (evidence/'owner-concurrency-repeat.jsonl').open('w') as f:
+              subprocess.run(['go','test','-json','-count=20','-timeout=5m','-tags=integration','./integration','-run','^Test(B126RoleRevokeAndMemberSuspendCannotRemoveAllEffectiveOwners|AG02OwnerInvariantUsesCurrentReadAfterSnapshot)$'],cwd=root/'biz',stdout=f,stderr=subprocess.STDOUT,check=True)
+          rows=[json.loads(x) for x in (evidence/'owner-concurrency-repeat.jsonl').read_text().splitlines()]
+          assert not any(x.get('Action') in ('fail','skip') for x in rows)
+          for name in ['TestB126RoleRevokeAndMemberSuspendCannotRemoveAllEffectiveOwners','TestAG02OwnerInvariantUsesCurrentReadAfterSnapshot','TestAG02OwnerInvariantUsesCurrentReadAfterSnapshot/revoke','TestAG02OwnerInvariantUsesCurrentReadAfterSnapshot/suspend']:
+              assert sum(x.get('Action')=='pass' and x.get('Test')==name for x in rows)==20
+          execute('Execute the actual B12.7 build and full runtime verification bodies',root)
+          execute('Publish exact qualified task head, not main',root/'biz')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ag02-owner-final-qualification
+          path: |
+            ${{ runner.temp }}/ag02-final
+            ${{ runner.temp }}/b12-7-runtime-evidence
+          include-hidden-files: true
+          if-no-files-found: error
