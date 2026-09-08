@@ -1,0 +1,122 @@
+name: ag02-review-coverage
+on:
+  push:
+    branches: [control/ag02-review-coverage-20260908]
+permissions:
+  contents: write
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOTOOLCHAIN: local
+      GH_TOKEN: ${{ github.token }}
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ag02?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+      YUNKA_BIZ_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ag02?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+      YUNKA_BIZ_AUTO_MIGRATE: 'true'
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_ag02
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 05ae64e770379542733b08fe21140f0abed7921d
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: df6cccf32fc2557f6a22a26b4a966a58b775ff27
+          path: biz
+          fetch-depth: 0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache-dependency-path: biz/go.sum
+      - name: Restore local Git commit, verify coverage and replay complete qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,subprocess,os,base64,json,hashlib,re
+          root=pathlib.Path.cwd();temp=pathlib.Path(os.environ['RUNNER_TEMP']);e=temp/'ag02-final';e.mkdir()
+          obj=json.loads(subprocess.check_output(['gh','api','repos/hvritual/biz/git/blobs/e94846a3d10c4f28897eaca89f1998aacf5fcc94']))
+          patch=base64.b64decode(obj['content']).rstrip(b'\n')+b'\n'
+          assert hashlib.sha256(patch).hexdigest()=='e81c58fc4072801e7493cde83fbdb455ea843283adf857b850c4dcf2bd7243db'
+          (e/'coverage.patch').write_bytes(patch)
+          for args in [['config','user.name','hvritual'],['config','user.email','460657446@qq.com'],['switch','-c','feat/ag02-tenant-encapsulation'],['am','--committer-date-is-author-date',str(e/'coverage.patch')]]:
+              subprocess.run(['git']+args,cwd=root/'biz',check=True)
+          for expr,v in [('HEAD','3519e7ee6e51e33984669871e4f32a55a3597d9f'),('HEAD^{tree}','3f8926b459fb78688fe0f39e9c4acfb6d93b3b47')]:
+              assert subprocess.check_output(['git','rev-parse',expr],cwd=root/'biz',text=True).strip()==v
+          for f,path in [('b12-6-concurrency-mysql.yml','integration/ag02_owner_snapshot_mysql_test.go'),('b12-7-runtime-qualification.yml','scripts/test-runtime-readiness-gate.py')]:
+              text=(root/'biz/.github/workflows'/f).read_text()
+              assert text.count('      - '+path+'\n')==2
+          text=(root/'biz/.github/workflows/b12-6-concurrency-mysql.yml').read_text()
+          pattern=re.search(r"./integration -run '([^']+)'",text)[1]
+          for name in ['TestB126RoleRevokeAndMemberSuspendCannotRemoveAllEffectiveOwners','TestAG02OwnerInvariantUsesCurrentReadAfterSnapshot']:
+              assert re.search(pattern,name)
+          (e/'coverage-check.txt').write_text('Both event path filters include each new regression; selector retains B126 and includes exact snapshot regression.\n')
+          lines=(root/'control/.github/workflows/ag02-readiness-fix.yml').read_text().splitlines()
+          def body(name):
+              pos=[i for i,x in enumerate(lines) if x.strip()=='- name: '+name];assert len(pos)==1
+              i=next(i for i in range(pos[0]+1,len(lines)) if lines[i].strip()=='run: |')+1;out=[]
+              while i<len(lines) and (not lines[i].strip() or lines[i].startswith('          ')):
+                  out.append(lines[i][10:] if lines[i].strip() else '');i+=1
+              return '\n'.join(out)+'\n'
+          text=body('Locked tools, consumer certification and full behavior')
+          assert text.count("('mysql.jsonl',19)")==1
+          text=text.replace("('mysql.jsonl',19)","('mysql.jsonl',22)")
+          script=temp/'complete-gates.sh';script.write_text(text)
+          subprocess.run(['bash',str(script)],cwd=root,check=True)
+          with (e/'owner-repeat.jsonl').open('w') as f:
+              subprocess.run(['go','test','-json','-count=20','-timeout=5m','-tags=integration','./integration','-run','^Test(B126RoleRevokeAndMemberSuspendCannotRemoveAllEffectiveOwners|AG02OwnerInvariantUsesCurrentReadAfterSnapshot)$'],cwd=root/'biz',stdout=f,stderr=subprocess.STDOUT,check=True)
+          rows=[json.loads(x) for x in (e/'owner-repeat.jsonl').read_text().splitlines()]
+          assert not any(x.get('Action') in ('fail','skip') for x in rows)
+          for name in ['TestB126RoleRevokeAndMemberSuspendCannotRemoveAllEffectiveOwners','TestAG02OwnerInvariantUsesCurrentReadAfterSnapshot','TestAG02OwnerInvariantUsesCurrentReadAfterSnapshot/revoke','TestAG02OwnerInvariantUsesCurrentReadAfterSnapshot/suspend']:
+              assert sum(x.get('Action')=='pass' and x.get('Test')==name for x in rows)==20
+          script=temp/'runtime-gates.sh';script.write_text(body('Execute the actual B12.7 build and full runtime verification bodies'))
+          subprocess.run(['bash',str(script)],cwd=root,check=True)
+          subprocess.run(['git','diff','--check','HEAD^'],cwd=root/'biz',check=True)
+          assert not subprocess.check_output(['git','status','--porcelain'],cwd=root/'biz')
+          with (e/'product.patch').open('wb') as f:
+              subprocess.run(['git','format-patch','--stdout','--no-signature','7d5afbe9cb4b849be462d9a7aed65877ed227700..HEAD'],cwd=root/'biz',stdout=f,check=True)
+          subprocess.run(['git','bundle','create',str(e/'product.bundle'),'HEAD','^7d5afbe9cb4b849be462d9a7aed65877ed227700'],cwd=root/'biz',check=True)
+          subprocess.run(['git','bundle','verify',str(e/'product.bundle')],cwd=root/'biz',check=True)
+          for ref,want in [('refs/heads/main','7d5afbe9cb4b849be462d9a7aed65877ed227700'),('refs/heads/feat/ag02-tenant-encapsulation','df6cccf32fc2557f6a22a26b4a966a58b775ff27')]:
+              assert subprocess.check_output(['git','ls-remote','origin',ref],cwd=root/'biz',text=True).split()[0]==want
+          # Runner token may not publish workflow edits. Preserve this outcome;
+          # authorized Connector can later publish the SAME local Git object.
+          pushed=subprocess.run(['git','push','origin','HEAD:refs/heads/feat/ag02-tenant-encapsulation'],cwd=root/'biz',capture_output=True,text=True)
+          (e/'publication.log').write_text(pushed.stdout+pushed.stderr)
+          if pushed.returncode:
+              assert 'without' in pushed.stderr and 'permission' in pushed.stderr and 'workflow' in pushed.stderr
+              publication='blocked_runner_workflow_permission'
+          else:
+              publication='published_task_branch'
+          remote=json.loads(subprocess.check_output(['gh','api','repos/hvritual/biz/git/commits/3519e7ee6e51e33984669871e4f32a55a3597d9f']))
+          assert remote['tree']['sha']=='3f8926b459fb78688fe0f39e9c4acfb6d93b3b47'
+          (e/'remote-object.json').write_text(json.dumps(remote,indent=2)+'\n')
+          (e/'RECEIPT.json').write_text(json.dumps({'qualified':True,'head':remote['sha'],'tree':remote['tree']['sha'],'publication':publication,'mainIntegrated':False,'signature':None},indent=2)+'\n')
+          members=sorted(x for x in e.rglob('*') if x.is_file() and x.name!='SHA256SUMS')
+          (e/'SHA256SUMS').write_text(''.join(hashlib.sha256(x.read_bytes()).hexdigest()+'  '+x.relative_to(e).as_posix()+'\n' for x in members))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ag02-reviewed-qualification
+          path: ${{ runner.temp }}/ag02-final
+          include-hidden-files: true
+          if-no-files-found: error
