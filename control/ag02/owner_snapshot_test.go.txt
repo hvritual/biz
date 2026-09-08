@@ -1,0 +1,75 @@
+//go:build integration
+
+package integration
+
+import (
+ "context"
+ "database/sql"
+ "errors"
+ "fmt"
+ "testing"
+ "time"
+
+ "github.com/hvritual/biz/internal/access/domain"
+ accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
+ "github.com/hvritual/biz/internal/access/ports"
+)
+
+// Deterministic two-transaction schedules exercise the same stale snapshot as
+// the existing concurrent REST/gRPC regression, without depending on timing.
+func TestAG02OwnerInvariantReadsCurrentStateAfterSnapshot(t *testing.T) {
+ for _, first := range []string{"revoke", "suspend"} {
+  t.Run(first, func(t *testing.T) {
+   db := openDB(t)
+   store, err := accesspersistence.New(db)
+   if err != nil { t.Fatal(err) }
+   if err := store.AutoMigrate(context.Background()); err != nil { t.Fatal(err) }
+   tenant := fmt.Sprintf("ag02-snapshot-%s-%d", first, time.Now().UnixNano())
+   a, b := tenant+"-a", tenant+"-b"
+   seedB123TenantAdmin(t, db, tenant, a, a+"@example.invalid", tenant+"-token-a")
+   seedB124PlainMember(t, db, tenant, b, b+"@example.invalid", tenant+"-token-b")
+   role := tenant+":owner"
+   if err := db.Exec("INSERT INTO biz_roles (id,tenant_id,name,status,version) VALUES (?,?,?,?,?)", role,tenant,domain.TenantOwnerRoleName,domain.TenantRoleStatusActive,1).Error; err != nil { t.Fatal(err) }
+   for _, user := range []string{a,b} {
+    if err := db.Exec("INSERT INTO biz_member_roles (tenant_id,user_id,role_id) VALUES (?,?,?)",tenant,user,role).Error; err != nil { t.Fatal(err) }
+   }
+   ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+   defer cancel()
+   stale := db.WithContext(ctx).Begin(&sql.TxOptions{Isolation:sql.LevelRepeatableRead})
+   if stale.Error != nil { t.Fatal(stale.Error) }
+   defer stale.Rollback()
+   var before int64
+   if err := stale.Table("biz_memberships").Where("tenant_id = ? AND status = ?",tenant,domain.TenantMemberStatusActive).Count(&before).Error; err != nil { t.Fatal(err) }
+   if before != 2 { t.Fatalf("fixture active members=%d want2",before) }
+   firstTx := db.WithContext(ctx).Begin(&sql.TxOptions{Isolation:sql.LevelRepeatableRead})
+   if firstTx.Error != nil { t.Fatal(firstTx.Error) }
+   defer firstTx.Rollback()
+   firstRepo, err := accesspersistence.NewTenantRoleRepository(firstTx)
+   if err != nil { t.Fatal(err) }
+   if first == "revoke" {
+    if _, err := firstRepo.RevokeMember(ctx,tenant,role,a); err != nil { t.Fatal(err) }
+   } else {
+    if err := firstRepo.AssertMemberCanDeactivate(ctx,tenant,b); err != nil { t.Fatal(err) }
+    result := firstTx.Table("biz_memberships").Where("tenant_id = ? AND user_id = ? AND version = ?",tenant,b,1).Updates(map[string]any{"status":domain.TenantMemberStatusSuspended,"version":2})
+    if result.Error != nil || result.RowsAffected != 1 { t.Fatalf("first deactivation failed: %v rows=%d",result.Error,result.RowsAffected) }
+   }
+   if err := firstTx.Commit().Error; err != nil { t.Fatal(err) }
+   // A normal read still sees both original active owners in the old snapshot.
+   var snapshot int64
+   if err := stale.Table("biz_member_roles mr").Joins("JOIN biz_memberships m ON m.tenant_id = mr.tenant_id AND m.user_id = mr.user_id AND m.status = ?",domain.TenantMemberStatusActive).Where("mr.tenant_id = ? AND mr.role_id = ?",tenant,role).Count(&snapshot).Error; err != nil { t.Fatal(err) }
+   if snapshot != 2 { t.Fatalf("snapshot was not established: got%d want2",snapshot) }
+   staleRepo, err := accesspersistence.NewTenantRoleRepository(stale)
+   if err != nil { t.Fatal(err) }
+   if first == "revoke" {
+    err = staleRepo.AssertMemberCanDeactivate(ctx,tenant,b)
+   } else {
+    _, err = staleRepo.RevokeMember(ctx,tenant,role,a)
+   }
+   if !errors.Is(err,ports.ErrLastTenantOwner) { t.Fatalf("AG02_STALE_OWNER_SNAPSHOT: first=%s got=%v want ErrLastTenantOwner",first,err) }
+   if err := stale.Rollback().Error; err != nil { t.Fatal(err) }
+   var remaining int64
+   if err := db.Table("biz_member_roles mr").Joins("JOIN biz_memberships m ON m.tenant_id = mr.tenant_id AND m.user_id = mr.user_id AND m.status = ?",domain.TenantMemberStatusActive).Where("mr.tenant_id = ? AND mr.role_id = ?",tenant,role).Count(&remaining).Error; err != nil { t.Fatal(err) }
+   if remaining != 1 { t.Fatalf("committed effective owner count=%d want1",remaining) }
+  })
+ }
+}
