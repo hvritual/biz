@@ -1,0 +1,197 @@
+name: ag02-qualification
+on:
+  push:
+    branches: [control/ag02-qualify-20260908]
+permissions:
+  contents: write
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOTOOLCHAIN: local
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ag02?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_ag02
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 7d5afbe9cb4b849be462d9a7aed65877ed227700
+          path: biz
+          fetch-depth: 0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 4dd2a264c73a2ce6b85ad7ae6238046762e7e0f7
+          path: yunka-current
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache-dependency-path: |
+            biz/go.sum
+            yunka.io/app/go.sum
+            yunka-current/app/go.sum
+      - name: Restore exact local Git commit, never trust transport text alone
+        working-directory: biz
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/ag02-evidence"
+          mkdir -p "$evidence"
+          cat ../yunka-current/AGENTS.md ../yunka-current/PROJECT_MEMORY.md ../yunka-current/docs/STATUS.md > "$evidence/bootstrap.txt"
+          git status --short --branch > "$evidence/initial-status.txt"
+          test "$(git rev-parse HEAD)" = 7d5afbe9cb4b849be462d9a7aed65877ed227700
+          test -z "$(git status --porcelain)"
+          gh api -H 'Accept: application/vnd.github+json' repos/hvritual/biz/git/blobs/de436ed9dcd7d543750ae5a8004aef5e9c7610e7 > "$RUNNER_TEMP/ag02-transport.json"
+          python3 - <<'PY'
+          import pathlib,os,json,base64,gzip,hashlib
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])
+          obj=json.loads((root/'ag02-transport.json').read_text())
+          encoded=''.join(obj['content'].split())
+          # Exact readback established these transport-copy insertions. They are
+          # corrected before, not after, checking the immutable original digest.
+          repairs=[[5247,5249,'d9',''],[7077,7079,'ea',''],[7689,7691,'8U',''],[8731,8732,'j',''],[9785,9786,'J',''],[9962,9964,'7b',''],[11122,11124,'==','']]
+          for i,j,old,new in reversed(repairs):
+              assert encoded[i:j]==old, 'transport repair precondition mismatch'
+              encoded=encoded[:i]+new+encoded[j:]
+          data=base64.b64decode(encoded,validate=True)
+          assert hashlib.sha256(data).hexdigest()=='a9d8368602029bb4cc2485c352d10bd17cd1f7b4c29b96fc372eba2a18985973'
+          patch=gzip.decompress(data)
+          assert hashlib.sha256(patch).hexdigest()=='9951e36a546a3f67396a8770dfd9aa0989d480dc17fb6049da287f023cd28138'
+          (root/'ag02-evidence/implementation.patch').write_bytes(patch)
+          PY
+          git config user.name hvritual
+          git config user.email 460657446@qq.com
+          git switch -c feat/ag02-tenant-encapsulation
+          git am --committer-date-is-author-date "$evidence/implementation.patch"
+          test "$(git rev-parse HEAD)" = 0924157e3ed72cae3cf364955bd041c895087adf
+          test "$(git rev-parse HEAD^{tree})" = 1f36fc1b30b3ac27bc05f3d1a355f766024c34e0
+          git show -s --format=fuller > "$evidence/candidate.txt"
+          git rev-parse HEAD HEAD^{tree} > "$evidence/identity.txt"
+          git diff --check HEAD^
+          git diff --name-status HEAD^ > "$evidence/changed-files.txt"
+          git diff --exit-code HEAD^ -- contracts go.mod go.sum go.work go.work.sum .yunka modules
+      - name: Install and verify locked protobuf tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          test "$(go version | awk '{print $3}')" = "go${GO_VERSION}"
+          curl --fail --silent --show-error --location --retry 3 "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_RELEASE}/protoc-${PROTOC_RELEASE}-linux-x86_64.zip" -o "$RUNNER_TEMP/protoc.zip"
+          echo "${PROTOC_LINUX_X86_64_SHA256}  $RUNNER_TEMP/protoc.zip" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/ag02-protoc"
+          unzip -q "$RUNNER_TEMP/protoc.zip" -d "$RUNNER_TEMP/ag02-protoc"
+          echo "$RUNNER_TEMP/ag02-protoc/bin" >> "$GITHUB_PATH"
+          make -C yunka.io rpc-tools
+          echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
+      - name: Consumer generation and dependency certification
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/ag02-evidence"
+          make -C ../yunka.io toolchain-check | tee "$evidence/toolchain.txt"
+          make consumer-certify 2>&1 | tee "$evidence/consumer-certify.log"
+          make check 2>&1 | tee "$evidence/check-before.log"
+          make generate 2>&1 | tee "$evidence/generate.log"
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+          make check 2>&1 | tee "$evidence/check-after.log"
+      - name: Exact method sets, isolated imports and full Go regression
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/ag02-evidence"
+          go test -json -count=1 ./internal/access/application/tenantlifecycle/... ./internal/architecture | tee "$evidence/targeted.jsonl"
+          python3 - <<'PY'
+          import os,pathlib,json
+          rows=[json.loads(x) for x in (pathlib.Path(os.environ['RUNNER_TEMP'])/'ag02-evidence/targeted.jsonl').read_text().splitlines()]
+          assert not any(x.get('Action') in ('fail','skip') for x in rows)
+          passed={x.get('Test') for x in rows if x.get('Action')=='pass'}
+          expected={'TestAG02BuildExportsOnlyDeclaredApplication','TestAG02BuildPreservesRequiredDependencies','TestAG02GeneratedChildrenKeepActualMethodSetNarrow','TestAG02TenantFactoryIsCompositionOnly','TestTenantLifecycleRequiresRootExecutionScope','TestTenantLifecycleStateChangesUseJoinedRootUnitOfWork'}
+          assert expected<=passed, expected-passed
+          PY
+          BIZ_AG02_EVIDENCE="$evidence/import-probes" make tenant-boundary-check 2>&1 | tee "$evidence/boundary.log"
+          GOWORK=off go test -count=1 ./... 2>&1 | tee "$evidence/all-tests.log"
+          GOWORK=off go test -race -count=1 ./internal/... 2>&1 | tee "$evidence/race.log"
+          GOWORK=off go vet ./...
+          GOWORK=off go build ./...
+      - name: Real MySQL runtime, tenancy, CAS, owner and child-UoW regression
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          GOWORK=off go test -json -count=1 -timeout=10m -tags=integration ./integration | tee "$RUNNER_TEMP/ag02-evidence/mysql.jsonl"
+          python3 - <<'PY'
+          import os,pathlib,json
+          rows=[json.loads(x) for x in (pathlib.Path(os.environ['RUNNER_TEMP'])/'ag02-evidence/mysql.jsonl').read_text().splitlines()]
+          assert not any(x.get('Action') in ('fail','skip') for x in rows)
+          passed={x.get('Test') for x in rows if x.get('Action')=='pass'}
+          expected={'TestB122TenantLifecycleUsesRootMySQLUnitOfWork','TestB122TenantLifecycleRESTAndGRPCUseUnifiedExecutor','TestB125TenantCreateBootstrapsOwnerInOneRootUoW','TestB125ChildFailureRollsBackTenantAndMemberAndAllowsIdempotentRetry'}
+          assert expected<=passed, expected-passed
+          print('AG02 MySQL test passes:',len([x for x in passed if x]))
+          PY
+      - name: Current framework CLI ownership and planning readback
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/ag02-evidence"
+          (cd ../yunka-current/app && go build -o "$RUNNER_TEMP/yunka-main" ./cmd)
+          "$RUNNER_TEMP/yunka-main" ownership check --root "$PWD" --path internal/access/application/tenantlifecycle/build.go --path internal/access/application/tenantlifecycle/internal/usecase/service.go --format json > "$evidence/ownership.json"
+          "$RUNNER_TEMP/yunka-main" change plan --root "$PWD" --operation tenant.create --format json > "$evidence/change-plan.json"
+          python3 - <<'PY'
+          import os,pathlib,json
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])/'ag02-evidence'
+          d=json.loads((root/'ownership.json').read_text())
+          assert len(d['decisions'])==2
+          assert all(x['mutation']=='editable' for x in d['decisions'])
+          p=json.loads((root/'change-plan.json').read_text())
+          assert any(x.get('kind')=='implementation' and x.get('scope')=='internal/access/application' for x in p['unresolvedTargets'])
+          PY
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+      - name: Publish only the qualified candidate to the task branch
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/ag02-evidence"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = 7d5afbe9cb4b849be462d9a7aed65877ed227700
+          test "$(git ls-remote https://github.com/hvritual/yunka.io.git refs/heads/main | cut -f1)" = 4dd2a264c73a2ce6b85ad7ae6238046762e7e0f7
+          old="$(git ls-remote origin refs/heads/feat/ag02-tenant-encapsulation | cut -f1)"
+          test -z "$old" || test "$old" = "$(git rev-parse HEAD)"
+          git push origin HEAD:refs/heads/feat/ag02-tenant-encapsulation
+          test "$(git ls-remote origin refs/heads/feat/ag02-tenant-encapsulation | cut -f1)" = "$(git rev-parse HEAD)"
+          git bundle create "$evidence/candidate.bundle" HEAD ^7d5afbe9cb4b849be462d9a7aed65877ed227700
+          git bundle verify "$evidence/candidate.bundle"
+          printf 'AG02=QUALIFIED\nHEAD=%s\nTREE=%s\nMAIN_UNCHANGED=true\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})" > "$evidence/RECEIPT.txt"
+          cd "$evidence"
+          find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ag02-qualification-evidence
+          path: ${{ runner.temp }}/ag02-evidence
+          include-hidden-files: true
+          if-no-files-found: error
