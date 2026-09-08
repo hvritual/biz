@@ -49,6 +49,8 @@
   --rail-width: 208px;
   --rail-collapsed-width: 80px;
   --module-width: 480px;
+  --member-detail-width: 348px;
+  --z-member-detail: 30;
   --content-padding: 24px;
   --control-height: 36px;
   --table-row-height: 64px;

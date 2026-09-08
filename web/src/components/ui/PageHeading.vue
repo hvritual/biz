@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import coffee from '@/assets/coffee-banner.webp'
-defineProps<{ title: string; description?: string; breadcrumb?: string; banner?: boolean }>()
+defineProps<{
+  title: string
+  description?: string
+  breadcrumb?: string
+  banner?: boolean
+  compact?: boolean
+}>()
 </script>
 <template>
-  <header class="page-heading">
+  <header class="page-heading" :class="{ compact }">
     <div class="heading-main">
-      <div class="breadcrumbs">
+      <div v-if="!compact" class="breadcrumbs">
         <span>{{ breadcrumb || '企业中心' }}</span
         ><span>/</span><strong>{{ title }}</strong>
       </div>
@@ -130,6 +136,62 @@ defineProps<{ title: string; description?: string; breadcrumb?: string; banner?:
   }
   .coffee-hero h2 {
     font-size: 16px;
+  }
+}
+.page-heading.compact {
+  min-height: 80px;
+  align-items: center;
+  gap: 18px;
+}
+.compact .heading-main {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 0;
+}
+.compact .heading-main > p {
+  line-height: 1.65;
+}
+.compact .coffee-hero {
+  width: 43%;
+  height: 80px;
+  flex-shrink: 0;
+  padding: 15px 20px;
+}
+.compact .coffee-hero img {
+  height: 80px;
+  width: 205px;
+  opacity: 1;
+}
+.compact .coffee-hero h2 {
+  font-size: 16px;
+}
+.compact .coffee-hero > div {
+  max-width: calc(100% - 70px);
+}
+@container member-main (max-width: 1000px) {
+  .compact .coffee-hero {
+    width: 36%;
+    padding: 12px 14px;
+  }
+  .compact .coffee-hero h2 {
+    font-size: 12px;
+  }
+  .compact .coffee-hero p {
+    font-size: 10px;
+  }
+  .compact .coffee-hero img {
+    width: 135px;
+  }
+  .compact .coffee-hero > div {
+    max-width: calc(100% - 45px);
+  }
+  .compact .heading-main > p {
+    font-size: 12px;
+  }
+}
+@media (max-width: 850px) {
+  .page-heading.compact {
+    min-height: 76px;
   }
 }
 </style>

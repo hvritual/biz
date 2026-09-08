@@ -29,4 +29,8 @@ withDefaults(defineProps<{ name: string; size?: number; tone?: string }>(), { si
   background: var(--color-violet-soft);
   color: var(--color-violet);
 }
+.avatar-mark.slate {
+  background: var(--color-text-muted);
+  color: var(--color-on-primary);
+}
 </style>

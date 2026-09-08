@@ -39,3 +39,23 @@ export function applyStatusAction(action: 'activate' | 'suspend' | 'remove', mem
     version: member.version + 1,
   }
 }
+
+/** Validate the whole selection against a working copy before publishing any mutation. */
+export function prepareMemberStatusBatch(
+  members: Member[],
+  roles: Role[],
+  targets: { id: string; version: number }[],
+  action: 'activate' | 'suspend',
+): Member[] {
+  if (!targets.length) throw new Error('请先选择成员。')
+  if (new Set(targets.map((t) => t.id)).size !== targets.length) throw new Error('不能重复选择同一成员。')
+  let updated = members.map((m) => ({ ...m }))
+  for (const target of targets) {
+    const current = updated.find((m) => m.id === target.id)
+    if (!current || current.version !== target.version) throw new Error('成员状态已变化，请重新选择后重试。')
+    const error = memberActionError(action, current, updated, roles)
+    if (error) throw new Error(`${current.name}：${error}`)
+    updated = updated.map((m) => (m.id === target.id ? applyStatusAction(action, m) : m))
+  }
+  return updated
+}
