@@ -13,6 +13,7 @@ on:
       - internal/bizruntime/**
       - integration/b12_concurrency_mysql_test.go
       - integration/b12_owner_crosspath_concurrency_mysql_test.go
+      - integration/ag02_owner_snapshot_mysql_test.go
       - modules/access/**
       - go.mod
       - go.sum
@@ -28,6 +29,7 @@ on:
       - internal/bizruntime/**
       - integration/b12_concurrency_mysql_test.go
       - integration/b12_owner_crosspath_concurrency_mysql_test.go
+      - integration/ag02_owner_snapshot_mysql_test.go
       - modules/access/**
       - go.mod
       - go.sum
@@ -99,5 +101,5 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          go -C biz test -count=1 -tags=integration ./integration -run '^TestB126'
+          go -C biz test -count=1 -tags=integration ./integration -run '^Test(B126|AG02OwnerInvariantUsesCurrentReadAfterSnapshot)'
           test -z "$(git -C biz status --porcelain)"

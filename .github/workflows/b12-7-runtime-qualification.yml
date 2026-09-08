@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/b12-7-runtime-qualification.yml
       - .yunka/dev.json
+      - scripts/test-runtime-readiness-gate.py
       - cmd/biz/**
       - contracts/**
       - docs/pressure/B12-framework-pressure.md
@@ -22,6 +23,7 @@ on:
     paths:
       - .github/workflows/b12-7-runtime-qualification.yml
       - .yunka/dev.json
+      - scripts/test-runtime-readiness-gate.py
       - cmd/biz/**
       - contracts/**
       - docs/pressure/B12-framework-pressure.md

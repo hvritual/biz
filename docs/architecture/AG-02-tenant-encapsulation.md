@@ -113,3 +113,12 @@ before the winner commits, in both revoke-first and suspend-first orderings.
 It requires ErrLastTenantOwner and exactly one remaining effective owner. The
 existing simultaneous RPC test remains unchanged and is repeated during
 qualification. Initial passing runs do not erase the reproduced failure.
+
+## Permanent workflow coverage
+
+Independent review of the owner correction found two workflow omissions. The
+B12.6 selector now includes the deterministic snapshot regression, and changes
+to that regression are included in both event path filters. B12.7 likewise
+includes the readiness-gate script in both filters. These changes make the
+qualified protections run on future relevant PRs; they do not narrow existing
+test selectors, extend permissions, or replace exact-head qualification.
