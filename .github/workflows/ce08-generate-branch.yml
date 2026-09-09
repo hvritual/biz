@@ -3,15 +3,13 @@ on:
   push:
     branches: [feat/ce-08-default-subscription-bootstrap]
     paths: ['contracts/proto/**','contracts/sources.json','.github/workflows/ce08-generate-branch.yml']
-permissions:
-  contents: write
+permissions: {contents: write}
 jobs:
   generate:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+    env: {YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with: {fetch-depth: 0, persist-credentials: true}
@@ -34,13 +32,27 @@ jobs:
           echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
           make -C yunka.io rpc-tools
           echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
-      - name: generate and commit closure
+      - name: patch tenant bootstrap and generate closure
         run: |
           set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('internal/access/application/tenantlifecycle/internal/usecase/service.go')
+          s=p.read_text()
+          if 'commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"' not in s:
+            s=s.replace('accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"','accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"\n\tcommercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"')
+            s=s.replace('strings.TrimSpace(request.GetOwnerEmail()) == "" {','strings.TrimSpace(request.GetOwnerEmail()) == "" || strings.TrimSpace(request.GetRequestId()) == "" || strings.TrimSpace(request.GetSalesScope()) == "" {',1)
+            s=s.replace('roles := service.capabilities.AccessTenantRolePermission()\n\tif members == nil || roles == nil {','roles := service.capabilities.AccessTenantRolePermission()\n\tsubscriptions := service.capabilities.CommercialSubscriptionManagement()\n\tif members == nil || roles == nil || subscriptions == nil {',1)
+            marker='\treturn tenantDTO(tenant), nil\n}\n\nfunc (service *service) GetTenant'
+            insert='\tif _, err := subscriptions.BootstrapBaseSubscription(ctx, &commercialv1.BootstrapTenantSubscriptionRequest{RequestId: strings.TrimSpace(request.GetRequestId()), TenantId: tenant.ID, SalesScope: strings.TrimSpace(request.GetSalesScope())}); err != nil {\n\t\treturn nil, err\n\t}\n\treturn tenantDTO(tenant), nil\n}\n\nfunc (service *service) GetTenant'
+            s=s.replace(marker,insert,1)
+            p.write_text(s)
+          PY
           make generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
+          gofmt -w internal/access/application/tenantlifecycle/internal/usecase/service.go internal/commercial/application/subscriptionmanagement internal/commercial/domain/subscription internal/commercial/infrastructure/persistence/subscription.go internal/commercial/infrastructure/persistence/subscription_migration.go internal/commercial/ports/subscription.go
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add contracts internal
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m 'chore(ce-08): generate subscription contract closure'
+          git commit -m 'chore(ce-08): generate subscription closure and tenant join'
           git push origin HEAD:${GITHUB_REF_NAME}
