@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -25,18 +24,23 @@ type service struct {
 	repositories requestscope.RepositoryFactory[ports.EntitlementRepositories]
 	capabilities commercialapp.EntitlementManagementCapabilities
 	providers    []ports.EntitlementSourceProvider
+	snapshots    ports.EntitlementSnapshotReader
+	permissions  ports.PermissionVersionReader
 }
 
-func New(repositories requestscope.RepositoryFactory[ports.EntitlementRepositories], capabilities commercialapp.EntitlementManagementCapabilities, providers []ports.EntitlementSourceProvider) (commercialapp.EntitlementManagementApplication, error) {
-	if repositories == nil || capabilities == nil || capabilities.CommercialModuleCatalog() == nil || capabilities.AccessTenantLifecycle() == nil {
+func New(repositories requestscope.RepositoryFactory[ports.EntitlementRepositories], capabilities commercialapp.EntitlementManagementCapabilities, providers []ports.EntitlementSourceProvider, snapshots ports.EntitlementSnapshotReader, permissions ports.PermissionVersionReader) (commercialapp.EntitlementManagementApplication, error) {
+	if snapshots == nil || permissions == nil || repositories == nil || capabilities == nil || capabilities.CommercialModuleCatalog() == nil || capabilities.AccessTenantLifecycle() == nil {
 		return nil, errors.New("commercial: entitlement repositories and typed child capabilities required")
+	}
+	if len(providers) != 0 {
+		return nil, errors.New("commercial: source providers must join the versioned snapshot protocol before activation")
 	}
 	for _, p := range providers {
 		if p == nil || (p.Kind() != entitlement.PlanSource && p.Kind() != entitlement.AddonSource) {
 			return nil, errors.New("commercial: invalid entitlement provider")
 		}
 	}
-	return &service{repositories: repositories, capabilities: capabilities, providers: append([]ports.EntitlementSourceProvider(nil), providers...)}, nil
+	return &service{repositories: repositories, capabilities: capabilities, providers: append([]ports.EntitlementSourceProvider(nil), providers...), snapshots: snapshots, permissions: permissions}, nil
 }
 
 var tokenPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]*$`)
@@ -300,31 +304,21 @@ func (s *service) resolve(ctx context.Context, tenant string, requested []string
 			return nil, err
 		}
 	}
-	catalog, err := s.catalog(ctx)
+	// Preserve the declared typed catalog dependency before the current read.
+	if _, err := s.catalog(ctx); err != nil {
+		return nil, err
+	}
+	result, err := s.snapshots.ReadSnapshot(ctx, tenant, requested)
 	if err != nil {
 		return nil, err
 	}
-	state, err := s.read(ctx, tenant)
-	if err != nil {
-		return nil, err
-	}
-	at := now()
-	sources := append([]entitlement.Source(nil), state.Sources...)
-	for _, provider := range s.providers {
-		extra, err := provider.Load(ctx, tenant, at)
+	if redact {
+		result.PermissionVersion, err = s.permissions.PermissionVersion(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("ENTITLEMENT_SOURCE_UNAVAILABLE: %w", err)
+			return nil, err
 		}
-		for _, source := range extra {
-			if source.SourceKind != provider.Kind() || source.TenantID != tenant {
-				return nil, entitlement.ErrScope
-			}
-			sources = append(sources, source)
-		}
-	}
-	result, err := entitlement.Resolve(tenant, state.Version, at, catalog, sources, requested)
-	if err != nil {
-		return nil, err
+		p, _ := identity.FromContext(ctx)
+		result.PermissionSubject = p.Subject
 	}
 	return resultDTO(result, redact), nil
 }

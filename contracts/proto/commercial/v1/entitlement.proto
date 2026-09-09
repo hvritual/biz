@@ -49,6 +49,10 @@ message EntitlementView {
  string tenant_id = 1; uint64 source_version = 2; uint64 resolver_version = 3;
  string evaluated_at = 4; string valid_until = 5; string next_transition_at = 6;
  repeated EntitlementCatalogVersion catalog_versions = 7; repeated EntitlementDecisionDTO decisions = 8;
+ // Immutable derived version, not the source mutation counter.
+ uint64 entitlement_version = 9; uint64 catalog_revision = 10;
+ // Principal-specific Access fingerprint. Empty for platform tenant explanations.
+ string permission_version = 11; string permission_subject = 12;
 }
 service EntitlementManagementApplication {
  option (yunka.dsl.v1.application) = { name: "entitlement_management" requires: "commercial/module_catalog" requires: "access/tenant_lifecycle" };
@@ -66,10 +70,10 @@ service EntitlementManagementApplication {
  }
  rpc ExplainEntitlements(ExplainEntitlementsRequest) returns (EntitlementView) {
   option (google.api.http) = { post: "/v1/platform/tenants/{tenant_id}/entitlements" body: "*" };
-  option (yunka.dsl.v1.operation) = { id: "commercial.entitlement.explain" use_case: "explain_entitlements" permissions: "platform.entitlement.read" permissions: "platform.tenant.read" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "tenant.get" requires_operations: "commercial.module.entitlement_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
+  option (yunka.dsl.v1.operation) = { id: "commercial.entitlement.explain" use_case: "explain_entitlements" permissions: "platform.entitlement.read" permissions: "platform.tenant.read" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "tenant.get" requires_operations: "commercial.module.entitlement_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_NONE } };
  }
  rpc GetMyEntitlements(GetMyEntitlementsRequest) returns (EntitlementView) {
   option (google.api.http) = { post: "/v1/tenant/entitlements" body: "*" };
-  option (yunka.dsl.v1.operation) = { id: "commercial.entitlement.get_my" use_case: "get_my_entitlements" permissions: "tenant.entitlement.read" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.entitlement_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
+  option (yunka.dsl.v1.operation) = { id: "commercial.entitlement.get_my" use_case: "get_my_entitlements" permissions: "tenant.entitlement.read" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.entitlement_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_NONE } };
  }
 }

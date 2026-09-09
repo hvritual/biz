@@ -18,6 +18,7 @@ import (
 	"github.com/hvritual/biz/internal/commercial/enforcement"
 	commercialpersistence "github.com/hvritual/biz/internal/commercial/infrastructure/persistence"
 	"github.com/hvritual/biz/internal/commercial/modulecatalog"
+	commercialports "github.com/hvritual/biz/internal/commercial/ports"
 	deviceapp "github.com/hvritual/biz/internal/deviceops/application"
 	"github.com/hvritual/biz/internal/deviceops/domain"
 	devicepersistence "github.com/hvritual/biz/internal/deviceops/infrastructure/persistence"
@@ -136,6 +137,8 @@ func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, opti
 }
 
 type applicationFactories struct {
+	snapshots          commercialports.EntitlementSnapshotReader
+	permissionVersions commercialports.PermissionVersionReader
 	deviceRepositories requestscope.RepositoryFactory[deviceports.ScopedRepositories]
 	site               *deviceapp.SiteManagementService
 	moduleCatalog      commercialapp.ModuleCatalogApplication
@@ -277,11 +280,15 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
-	sourceReader, err := commercialpersistence.NewEntitlementStateReader(accessDatabase)
+	var snapshotCache commercialports.SnapshotCache
+	if !options.DisableEntitlementCache {
+		snapshotCache = commercialpersistence.NewMemorySnapshotCache(512)
+	}
+	snapshots, err := commercialpersistence.NewSnapshotStore(accessDatabase, catalogReader, snapshotCache)
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
-	decisionReader, err := entitlementmanagement.BuildDecisionReader(sourceReader, catalogReader)
+	decisionReader, err := entitlementmanagement.BuildDecisionReader(snapshots)
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
@@ -343,6 +350,7 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	authenticator.set(accessStore)
 	return generatedassembly.RuntimeBindings{
 		Factories: applicationFactories{
+			snapshots: snapshots, permissionVersions: accessStore,
 			deviceRepositories: deviceRepositories,
 			site:               siteService,
 			moduleCatalog:      commercialApplication,

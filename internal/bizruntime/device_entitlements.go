@@ -26,31 +26,36 @@ func (w checkedDevice) ListDevices(ctx context.Context, r *devicev1.ListDevicesR
 	if err := enforcement.RequireExecuted(ctx, "device.list"); err != nil {
 		return nil, err
 	}
-	return w.inner.ListDevices(ctx, r)
+	value, err := w.inner.ListDevices(ctx, r)
+	return value, enforcement.ExecutionError(ctx, "device.list", err)
 }
 func (w checkedDevice) GetDevice(ctx context.Context, r *devicev1.GetDeviceRequest) (*devicev1.DeviceDTO, error) {
 	if err := enforcement.RequireExecuted(ctx, "device.get"); err != nil {
 		return nil, err
 	}
-	return w.inner.GetDevice(ctx, r)
+	value, err := w.inner.GetDevice(ctx, r)
+	return value, enforcement.ExecutionError(ctx, "device.get", err)
 }
 func (w checkedDevice) CreateDevice(ctx context.Context, r *devicev1.CreateDeviceRequest) (*devicev1.DeviceDTO, error) {
 	if err := enforcement.RequireExecuted(ctx, "device.create"); err != nil {
 		return nil, err
 	}
-	return w.inner.CreateDevice(ctx, r)
+	value, err := w.inner.CreateDevice(ctx, r)
+	return value, enforcement.ExecutionError(ctx, "device.create", err)
 }
 func (w checkedDevice) UpdateDevice(ctx context.Context, r *devicev1.UpdateDeviceRequest) (*devicev1.DeviceDTO, error) {
 	if err := enforcement.RequireExecuted(ctx, "device.update"); err != nil {
 		return nil, err
 	}
-	return w.inner.UpdateDevice(ctx, r)
+	value, err := w.inner.UpdateDevice(ctx, r)
+	return value, enforcement.ExecutionError(ctx, "device.update", err)
 }
 func (w checkedDevice) DeleteDevice(ctx context.Context, r *devicev1.DeleteDeviceRequest) (*devicev1.DeleteDeviceResponse, error) {
 	if err := enforcement.RequireExecuted(ctx, "device.delete"); err != nil {
 		return nil, err
 	}
-	return w.inner.DeleteDevice(ctx, r)
+	value, err := w.inner.DeleteDevice(ctx, r)
+	return value, enforcement.ExecutionError(ctx, "device.delete", err)
 }
 
 type checkedSite struct {
@@ -61,7 +66,8 @@ func (w checkedSite) ValidateTransferTarget(ctx context.Context, r *devicev1.Val
 	if err := enforcement.RequireExecuted(ctx, "site.validate_transfer_target"); err != nil {
 		return nil, err
 	}
-	return w.inner.ValidateTransferTarget(ctx, r)
+	value, err := w.inner.ValidateTransferTarget(ctx, r)
+	return value, enforcement.ExecutionError(ctx, "site.validate_transfer_target", err)
 }
 
 type checkedTransfer struct {
@@ -72,7 +78,8 @@ func (w checkedTransfer) TransferDevice(ctx context.Context, r *devicev1.Transfe
 	if err := enforcement.RequireExecuted(ctx, "device.transfer"); err != nil {
 		return nil, err
 	}
-	return w.inner.TransferDevice(ctx, r)
+	value, err := w.inner.TransferDevice(ctx, r)
+	return value, enforcement.ExecutionError(ctx, "device.transfer", err)
 }
 
 var _ deviceapp.DeviceManagementApplication = checkedDevice{}

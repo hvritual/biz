@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
+	"github.com/hvritual/biz/internal/commercial/infrastructure/consistency"
 	"github.com/hvritual/biz/internal/commercial/ports"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -82,6 +83,27 @@ func (r *entitlementRepository) Read(ctx context.Context, tenant string) (ports.
 }
 func (r *entitlementRepository) Lock(ctx context.Context, tenant string) (ports.EntitlementState, error) {
 	db := r.tx.WithContext(ctx)
+	if _, err := consistency.LockCatalog(db, false); err != nil {
+		return ports.EntitlementState{}, err
+	}
+	// A missing authority row is initializable only if no source or history survived.
+	var current entitlementStateRow
+	err := db.Clauses(clause.Locking{Strength: "UPDATE"}).Where("tenant_id=?", tenant).First(&current).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		var sources []overrideRow
+		var history []snapshotRow
+		if err := db.Clauses(clause.Locking{Strength: "SHARE"}).Where("tenant_id=?", tenant).Limit(1).Find(&sources).Error; err != nil {
+			return ports.EntitlementState{}, err
+		}
+		if err := db.Clauses(clause.Locking{Strength: "SHARE"}).Where("tenant_id=?", tenant).Limit(1).Find(&history).Error; err != nil {
+			return ports.EntitlementState{}, err
+		}
+		if len(sources) > 0 || len(history) > 0 {
+			return ports.EntitlementState{}, consistency.ErrStateLost
+		}
+	} else if err != nil {
+		return ports.EntitlementState{}, err
+	}
 	if err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&entitlementStateRow{TenantID: tenant}).Error; err != nil {
 		return ports.EntitlementState{}, err
 	}
@@ -174,7 +196,7 @@ func (r *entitlementRepository) Advance(ctx context.Context, tenant string, expe
 	if res.RowsAffected != 1 {
 		return entitlement.ErrConflict
 	}
-	return nil
+	return r.tx.WithContext(ctx).Model(&snapshotHead{}).Where("tenant_id=?", tenant).Update("invalidated", true).Error
 }
 func (r *entitlementRepository) Audit(ctx context.Context, a ports.EntitlementAudit) error {
 	before, err := json.Marshal(a.Before)

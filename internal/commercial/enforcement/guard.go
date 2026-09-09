@@ -10,6 +10,8 @@ import (
 	commercialassets "github.com/hvritual/biz/contracts/commercial"
 	"github.com/hvritual/biz/internal/commercial/capabilitymap"
 	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
+	"github.com/hvritual/biz/internal/commercial/domain/snapshot"
+	"github.com/hvritual/biz/internal/commercial/infrastructure/consistency"
 	"github.com/hvritual/biz/internal/commercial/ports"
 	"log/slog"
 	"sort"
@@ -181,7 +183,16 @@ func (g *Guard) check(ctx context.Context, o capabilitymap.CompiledOperation, st
 	sort.Strings(required)
 	result, err := g.reader.Decide(ctx, required)
 	if err != nil {
-		return g.fail(ctx, o.OperationID, stage, "ENTITLEMENT_SOURCE_UNAVAILABLE", 0, true)
+		reason := "ENTITLEMENT_SOURCE_UNAVAILABLE"
+		switch {
+		case errors.Is(err, consistency.ErrRetryRequired) || consistency.Transient(err):
+			reason = "ENTITLEMENT_RETRY_REQUIRED"
+		case errors.Is(err, snapshot.ErrStale):
+			reason = "ENTITLEMENT_SNAPSHOT_STALE"
+		case errors.Is(err, consistency.ErrStateLost):
+			reason = "ENTITLEMENT_AUTHORITY_STATE_LOST"
+		}
+		return g.fail(ctx, o.OperationID, stage, reason, 0, true)
 	}
 	p, _ := identity.FromContext(ctx)
 	if result.TenantID != p.TenantID {
@@ -231,4 +242,20 @@ type Failure struct {
 func (f *Failure) Error() string { return fmt.Sprintf("%s: %s", f.Code, f.Operation) }
 func (f *Failure) Unwrap() error {
 	return authz.Denied(authz.Decision{Operation: authz.OperationID(f.Operation), Reason: authz.Reason(f.Code)})
+}
+
+// ExecutionError marks a transient SQL failure before transport projection.
+// Never retry a SQL statement inside a potentially rolled-back root.
+func ExecutionError(ctx context.Context, id string, err error) error {
+	if err == nil {
+		return nil
+	}
+	if !consistency.Transient(err) && !errors.Is(err, consistency.ErrRetryRequired) {
+		return err
+	}
+	f, ok := ctx.Value(frameKey{}).(frame)
+	if !ok || f.guard == nil {
+		return err
+	}
+	return f.guard.fail(ctx, id, "transaction", "ENTITLEMENT_RETRY_REQUIRED", 0, true)
 }

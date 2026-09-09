@@ -20,7 +20,7 @@
         "permissionMode": "all"
       },
       "execution": {
-        "transaction": "read_only",
+        "transaction": "local",
         "idempotency": "none"
       },
       "composition": {
@@ -68,7 +68,7 @@
         "permissionMode": "all"
       },
       "execution": {
-        "transaction": "read_only",
+        "transaction": "local",
         "idempotency": "none"
       },
       "composition": {

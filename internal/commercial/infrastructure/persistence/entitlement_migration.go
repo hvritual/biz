@@ -15,9 +15,18 @@ func MigrateEntitlements(ctx context.Context, db *gorm.DB) error {
 	if db == nil {
 		return errors.New("commercial migration: database required")
 	}
-	data, err := entitlementMigrations.ReadFile("migrations/0001_entitlement_sources.sql")
+	entries, err := entitlementMigrations.ReadDir("migrations")
 	if err != nil {
 		return err
 	}
-	return db.WithContext(ctx).Exec(string(data)).Error
+	for _, entry := range entries {
+		data, err := entitlementMigrations.ReadFile("migrations/" + entry.Name())
+		if err != nil {
+			return err
+		}
+		if err = db.WithContext(ctx).Exec(string(data)).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }

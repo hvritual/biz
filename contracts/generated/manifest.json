@@ -1391,6 +1391,34 @@
           "kind": "message",
           "type": "commercial.v1.EntitlementDecisionDTO",
           "repeated": true
+        },
+        {
+          "name": "entitlement_version",
+          "jsonName": "entitlementVersion",
+          "number": 9,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "catalog_revision",
+          "jsonName": "catalogRevision",
+          "number": 10,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "permission_version",
+          "jsonName": "permissionVersion",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "permission_subject",
+          "jsonName": "permissionSubject",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
@@ -3325,7 +3353,7 @@
             ],
             "composition": "local",
             "execution": {
-              "transaction": "read_only",
+              "transaction": "local",
               "idempotency": "none"
             }
           },
@@ -3371,7 +3399,7 @@
             ],
             "composition": "local",
             "execution": {
-              "transaction": "read_only",
+              "transaction": "local",
               "idempotency": "none"
             }
           },

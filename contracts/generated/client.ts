@@ -282,6 +282,10 @@ export interface Commercial_V1_EntitlementView {
   nextTransitionAt?: string;
   catalogVersions?: readonly Commercial_V1_EntitlementCatalogVersion[];
   decisions?: readonly Commercial_V1_EntitlementDecisionDTO[];
+  entitlementVersion?: string;
+  catalogRevision?: string;
+  permissionVersion?: string;
+  permissionSubject?: string;
 }
 
 export interface Commercial_V1_ExplainEntitlementsRequest {
