@@ -2,7 +2,6 @@ name: CE-07 locked source preparation
 on:
   push:
     branches: [feat/ce-07-plan-versions]
-    paths: ['scripts/ce07_prepare.py','.github/workflows/ce07-prepare.yml']
 permissions:
   contents: write
 jobs:
@@ -43,6 +42,8 @@ jobs:
         working-directory: biz
         run: |
           set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ce07-prepare"
+          exec > >(tee "$RUNNER_TEMP/ce07-prepare/commands.log") 2>&1
           python3 scripts/ce07_prepare.py
           gofmt -w internal/commercial/domain/plan internal/commercial/ports/plan.go internal/commercial/application/planmanagement internal/commercial/application/module_catalog_plans.go internal/commercial/modulecatalog/plan_catalog.go internal/commercial/infrastructure/persistence/plan.go internal/commercial/infrastructure/persistence/plan_migration.go internal/bizruntime/plans.go internal/bizruntime/runtime.go integration/ce07_plan_mysql_test.go internal/architecture/ce07_plan_boundary_test.go
           make generate
@@ -61,3 +62,14 @@ jobs:
           git commit -m 'feat(ce-07): integrate typed plan authoring and locked generated contracts'
           git push origin HEAD:refs/heads/feat/ce-07-plan-versions
           git rev-parse HEAD
+      - name: Preserve actual preparation diagnostics
+        if: always()
+        working-directory: biz
+        run: |
+          mkdir -p "$RUNNER_TEMP/ce07-prepare"
+          git rev-parse HEAD > "$RUNNER_TEMP/ce07-prepare/commit.txt"
+          git diff --stat > "$RUNNER_TEMP/ce07-prepare/changes.txt"
+          tar --exclude=.git -cf "$RUNNER_TEMP/ce07-prepare/worktree.tar" .
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce07-preparation-${{ github.sha }}', path: '${{ runner.temp }}/ce07-prepare', retention-days: 30, if-no-files-found: error}

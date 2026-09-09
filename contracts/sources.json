@@ -10,6 +10,7 @@
         "access/v1/tenant_role.proto",
         "commercial/v1/entitlement.proto",
         "commercial/v1/module.proto",
+        "commercial/v1/plan.proto",
         "deviceops/v1/deviceops.proto"
       ],
       "protoPaths": [
