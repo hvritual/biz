@@ -32,6 +32,16 @@
       }
     },
     {
+      "name": "contracts/proto/commercial/v1/module.proto",
+      "package": "commercial.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1",
+      "domain": {
+        "name": "commercial",
+        "version": "v1"
+      }
+    },
+    {
       "name": "contracts/proto/deviceops/v1/deviceops.proto",
       "package": "deviceops.v1",
       "syntax": "proto3",
@@ -792,6 +802,397 @@
       }
     },
     {
+      "name": "CreateModuleRequest",
+      "fullName": "commercial.v1.CreateModuleRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "jsonName": "category",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "DeleteModuleRequest",
+      "fullName": "commercial.v1.DeleteModuleRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "DeleteModuleResponse",
+      "fullName": "commercial.v1.DeleteModuleResponse",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "deleted",
+          "jsonName": "deleted",
+          "number": 2,
+          "kind": "scalar",
+          "type": "bool"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "GetModuleRequest",
+      "fullName": "commercial.v1.GetModuleRequest",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListModulesRequest",
+      "fullName": "commercial.v1.ListModulesRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListModulesResponse",
+      "fullName": "commercial.v1.ListModulesResponse",
+      "fields": [
+        {
+          "name": "modules",
+          "jsonName": "modules",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.ModuleDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ModuleDTO",
+      "fullName": "commercial.v1.ModuleDTO",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "jsonName": "category",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "technical_status",
+          "jsonName": "technicalStatus",
+          "number": 5,
+          "kind": "enum",
+          "type": "commercial.v1.ModuleTechnicalStatus"
+        },
+        {
+          "name": "sales_status",
+          "jsonName": "salesStatus",
+          "number": 6,
+          "kind": "enum",
+          "type": "commercial.v1.ModuleSalesStatus"
+        },
+        {
+          "name": "capability_codes",
+          "jsonName": "capabilityCodes",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "quota_schema_keys",
+          "jsonName": "quotaSchemaKeys",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "field_policy_schema_keys",
+          "jsonName": "fieldPolicySchemaKeys",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "dependencies",
+          "jsonName": "dependencies",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 11,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "SetModuleSalesStatusRequest",
+      "fullName": "commercial.v1.SetModuleSalesStatusRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sales_status",
+          "jsonName": "salesStatus",
+          "number": 3,
+          "kind": "enum",
+          "type": "commercial.v1.ModuleSalesStatus"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "SetModuleTechnicalStatusRequest",
+      "fullName": "commercial.v1.SetModuleTechnicalStatusRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "technical_status",
+          "jsonName": "technicalStatus",
+          "number": 3,
+          "kind": "enum",
+          "type": "commercial.v1.ModuleTechnicalStatus"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "UpdateModuleRequest",
+      "fullName": "commercial.v1.UpdateModuleRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "jsonName": "category",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "CreateDeviceRequest",
       "fullName": "deviceops.v1.CreateDeviceRequest",
       "fields": [
@@ -1152,6 +1553,46 @@
         {
           "name": "TENANT_STATUS_CLOSED",
           "number": 4
+        }
+      ]
+    },
+    {
+      "name": "ModuleSalesStatus",
+      "fullName": "commercial.v1.ModuleSalesStatus",
+      "values": [
+        {
+          "name": "MODULE_SALES_STATUS_UNSPECIFIED",
+          "number": 0
+        },
+        {
+          "name": "MODULE_SALES_STATUS_SELLABLE",
+          "number": 1
+        },
+        {
+          "name": "MODULE_SALES_STATUS_RETIRED",
+          "number": 2
+        }
+      ]
+    },
+    {
+      "name": "ModuleTechnicalStatus",
+      "fullName": "commercial.v1.ModuleTechnicalStatus",
+      "values": [
+        {
+          "name": "MODULE_TECHNICAL_STATUS_UNSPECIFIED",
+          "number": 0
+        },
+        {
+          "name": "MODULE_TECHNICAL_STATUS_NOT_READY",
+          "number": 1
+        },
+        {
+          "name": "MODULE_TECHNICAL_STATUS_READY",
+          "number": 2
+        },
+        {
+          "name": "MODULE_TECHNICAL_STATUS_DISABLED",
+          "number": 3
         }
       ]
     }
@@ -2119,6 +2560,279 @@
             ],
             "permissionMode": "all",
             "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "ModuleCatalogApplication",
+      "fullName": "commercial.v1.ModuleCatalogApplication",
+      "domain": "commercial",
+      "application": {
+        "name": "module_catalog"
+      },
+      "methods": [
+        {
+          "name": "CreateModule",
+          "fullName": "commercial.v1.ModuleCatalogApplication.CreateModule",
+          "request": "commercial.v1.CreateModuleRequest",
+          "response": "commercial.v1.ModuleDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/modules",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.create",
+            "useCase": "create_module",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.create",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "DeleteModule",
+          "fullName": "commercial.v1.ModuleCatalogApplication.DeleteModule",
+          "request": "commercial.v1.DeleteModuleRequest",
+          "response": "commercial.v1.DeleteModuleResponse",
+          "http": [
+            {
+              "method": "DELETE",
+              "path": "/v1/platform/modules/{module_code}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.delete",
+            "useCase": "delete_module",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.delete",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "GetModule",
+          "fullName": "commercial.v1.ModuleCatalogApplication.GetModule",
+          "request": "commercial.v1.GetModuleRequest",
+          "response": "commercial.v1.ModuleDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/modules/{module_code}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.get",
+            "useCase": "get_module",
+            "permissions": [
+              "platform.module.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.get",
+            "permissions": [
+              "platform.module.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "ListModules",
+          "fullName": "commercial.v1.ModuleCatalogApplication.ListModules",
+          "request": "commercial.v1.ListModulesRequest",
+          "response": "commercial.v1.ListModulesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/modules"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.list",
+            "useCase": "list_modules",
+            "permissions": [
+              "platform.module.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.list",
+            "permissions": [
+              "platform.module.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "SetModuleSalesStatus",
+          "fullName": "commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus",
+          "request": "commercial.v1.SetModuleSalesStatusRequest",
+          "response": "commercial.v1.ModuleDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/modules/{module_code}/sales-status",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.set_sales_status",
+            "useCase": "set_module_sales_status",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.set_sales_status",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "SetModuleTechnicalStatus",
+          "fullName": "commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus",
+          "request": "commercial.v1.SetModuleTechnicalStatusRequest",
+          "response": "commercial.v1.ModuleDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/modules/{module_code}/technical-status",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.set_technical_status",
+            "useCase": "set_module_technical_status",
+            "permissions": [
+              "platform.module.technical.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.set_technical_status",
+            "permissions": [
+              "platform.module.technical.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "UpdateModule",
+          "fullName": "commercial.v1.ModuleCatalogApplication.UpdateModule",
+          "request": "commercial.v1.UpdateModuleRequest",
+          "response": "commercial.v1.ModuleDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/platform/modules/{module_code}",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.update",
+            "useCase": "update_module",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.update",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
             "authentication": [
               "api-key"
             ]

@@ -1,0 +1,29 @@
+package application
+
+import (
+	"context"
+	"errors"
+
+	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
+	"github.com/hvritual/biz/internal/commercial/modulecatalog"
+	"yunka.io/framework/core/identity"
+)
+
+type ModuleCatalogService struct { catalog *modulecatalog.Service }
+func NewModuleCatalogService(catalog *modulecatalog.Service) (*ModuleCatalogService,error) { if catalog==nil{return nil,errors.New("commercial application: module catalog required")}; return &ModuleCatalogService{catalog:catalog},nil }
+
+func requirePlatform(ctx context.Context) error { p,ok:=identity.FromContext(ctx); if !ok || !p.Authenticated || p.Subject=="" || p.TenantID!="" { return modulecatalog.ErrPlatformPrincipalRequired }; return nil }
+
+func (s *ModuleCatalogService) CreateModule(ctx context.Context, req *commercialv1.CreateModuleRequest)(*commercialv1.ModuleDTO,error){ if req==nil{return nil,modulecatalog.ErrInvalidRequest}; m,err:=s.catalog.Create(ctx,modulecatalog.CreateCommand{RequestID:req.RequestId,Code:req.ModuleCode,Name:req.Name,Category:req.Category,SalesScope:req.SalesScope,Reason:req.Reason}); if err!=nil{return nil,err}; return toDTO(m),nil }
+func (s *ModuleCatalogService) GetModule(ctx context.Context, req *commercialv1.GetModuleRequest)(*commercialv1.ModuleDTO,error){ if req==nil{return nil,modulecatalog.ErrInvalidRequest};if err:=requirePlatform(ctx);err!=nil{return nil,err};m,err:=s.catalog.Get(ctx,req.ModuleCode);if err!=nil{return nil,err};return toDTO(m),nil }
+func (s *ModuleCatalogService) ListModules(ctx context.Context, _ *commercialv1.ListModulesRequest)(*commercialv1.ListModulesResponse,error){if err:=requirePlatform(ctx);err!=nil{return nil,err};items,err:=s.catalog.List(ctx);if err!=nil{return nil,err};out:=&commercialv1.ListModulesResponse{Modules:make([]*commercialv1.ModuleDTO,0,len(items))};for _,m:=range items{out.Modules=append(out.Modules,toDTO(m))};return out,nil}
+func (s *ModuleCatalogService) UpdateModule(ctx context.Context, req *commercialv1.UpdateModuleRequest)(*commercialv1.ModuleDTO,error){if req==nil{return nil,modulecatalog.ErrInvalidRequest};m,err:=s.catalog.Update(ctx,modulecatalog.UpdateCommand{RequestID:req.RequestId,Code:req.ModuleCode,Name:req.Name,Category:req.Category,SalesScope:req.SalesScope,Version:req.Version,Reason:req.Reason});if err!=nil{return nil,err};return toDTO(m),nil}
+func (s *ModuleCatalogService) SetModuleSalesStatus(ctx context.Context, req *commercialv1.SetModuleSalesStatusRequest)(*commercialv1.ModuleDTO,error){if req==nil{return nil,modulecatalog.ErrInvalidRequest};status,err:=salesFromPB(req.SalesStatus);if err!=nil{return nil,err};m,err:=s.catalog.SetSalesStatus(ctx,modulecatalog.StatusCommand{RequestID:req.RequestId,Code:req.ModuleCode,Version:req.Version,Reason:req.Reason,Sales:status});if err!=nil{return nil,err};return toDTO(m),nil}
+func (s *ModuleCatalogService) SetModuleTechnicalStatus(ctx context.Context, req *commercialv1.SetModuleTechnicalStatusRequest)(*commercialv1.ModuleDTO,error){if req==nil{return nil,modulecatalog.ErrInvalidRequest};status,err:=technicalFromPB(req.TechnicalStatus);if err!=nil{return nil,err};m,err:=s.catalog.SetTechnicalStatus(ctx,modulecatalog.StatusCommand{RequestID:req.RequestId,Code:req.ModuleCode,Version:req.Version,Reason:req.Reason,Technical:status});if err!=nil{return nil,err};return toDTO(m),nil}
+func (s *ModuleCatalogService) DeleteModule(ctx context.Context, req *commercialv1.DeleteModuleRequest)(*commercialv1.DeleteModuleResponse,error){if req==nil{return nil,modulecatalog.ErrInvalidRequest};if err:=s.catalog.Delete(ctx,modulecatalog.DeleteCommand{RequestID:req.RequestId,Code:req.ModuleCode,Version:req.Version,Reason:req.Reason});err!=nil{return nil,err};return &commercialv1.DeleteModuleResponse{ModuleCode:req.ModuleCode,Deleted:true},nil}
+
+func toDTO(m modulecatalog.Module)*commercialv1.ModuleDTO{return &commercialv1.ModuleDTO{ModuleCode:m.Code,Name:m.Name,Category:m.Category,SalesScope:append([]string(nil),m.SalesScope...),TechnicalStatus:technicalToPB(m.TechnicalStatus),SalesStatus:salesToPB(m.SalesStatus),CapabilityCodes:append([]string(nil),m.CapabilityCodes...),QuotaSchemaKeys:append([]string(nil),m.QuotaSchemaKeys...),FieldPolicySchemaKeys:append([]string(nil),m.FieldPolicySchemaKeys...),Dependencies:append([]string(nil),m.Dependencies...),Version:m.Version}}
+func technicalToPB(v modulecatalog.TechnicalStatus)commercialv1.ModuleTechnicalStatus{switch v{case modulecatalog.TechnicalReady:return commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_READY;case modulecatalog.TechnicalDisabled:return commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_DISABLED;default:return commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_NOT_READY}}
+func salesToPB(v modulecatalog.SalesStatus)commercialv1.ModuleSalesStatus{if v==modulecatalog.SalesRetired{return commercialv1.ModuleSalesStatus_MODULE_SALES_STATUS_RETIRED};return commercialv1.ModuleSalesStatus_MODULE_SALES_STATUS_SELLABLE}
+func technicalFromPB(v commercialv1.ModuleTechnicalStatus)(modulecatalog.TechnicalStatus,error){switch v{case commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_NOT_READY:return modulecatalog.TechnicalNotReady,nil;case commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_READY:return modulecatalog.TechnicalReady,nil;case commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_DISABLED:return modulecatalog.TechnicalDisabled,nil;default:return "",modulecatalog.ErrInvalidRequest}}
+func salesFromPB(v commercialv1.ModuleSalesStatus)(modulecatalog.SalesStatus,error){switch v{case commercialv1.ModuleSalesStatus_MODULE_SALES_STATUS_SELLABLE:return modulecatalog.SalesSellable,nil;case commercialv1.ModuleSalesStatus_MODULE_SALES_STATUS_RETIRED:return modulecatalog.SalesRetired,nil;default:return "",modulecatalog.ErrInvalidRequest}}

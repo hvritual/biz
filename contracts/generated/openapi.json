@@ -434,6 +434,244 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.UpdateTenantRoleRequest"
       },
+      "commercial_v1_CreateModuleRequest": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "salesScope": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.CreateModuleRequest"
+      },
+      "commercial_v1_DeleteModuleRequest": {
+        "properties": {
+          "moduleCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.DeleteModuleRequest"
+      },
+      "commercial_v1_DeleteModuleResponse": {
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          },
+          "moduleCode": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.DeleteModuleResponse"
+      },
+      "commercial_v1_GetModuleRequest": {
+        "properties": {
+          "moduleCode": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.GetModuleRequest"
+      },
+      "commercial_v1_ListModulesRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListModulesRequest"
+      },
+      "commercial_v1_ListModulesResponse": {
+        "properties": {
+          "modules": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_ModuleDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListModulesResponse"
+      },
+      "commercial_v1_ModuleDTO": {
+        "properties": {
+          "capabilityCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "category": {
+            "type": "string"
+          },
+          "dependencies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "fieldPolicySchemaKeys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quotaSchemaKeys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "salesScope": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "salesStatus": {
+            "$ref": "#/components/schemas/commercial_v1_ModuleSalesStatus"
+          },
+          "technicalStatus": {
+            "$ref": "#/components/schemas/commercial_v1_ModuleTechnicalStatus"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ModuleDTO"
+      },
+      "commercial_v1_ModuleSalesStatus": {
+        "enum": [
+          "MODULE_SALES_STATUS_UNSPECIFIED",
+          "MODULE_SALES_STATUS_SELLABLE",
+          "MODULE_SALES_STATUS_RETIRED"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "commercial.v1.ModuleSalesStatus"
+      },
+      "commercial_v1_ModuleTechnicalStatus": {
+        "enum": [
+          "MODULE_TECHNICAL_STATUS_UNSPECIFIED",
+          "MODULE_TECHNICAL_STATUS_NOT_READY",
+          "MODULE_TECHNICAL_STATUS_READY",
+          "MODULE_TECHNICAL_STATUS_DISABLED"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "commercial.v1.ModuleTechnicalStatus"
+      },
+      "commercial_v1_SetModuleSalesStatusRequest": {
+        "properties": {
+          "moduleCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "salesStatus": {
+            "$ref": "#/components/schemas/commercial_v1_ModuleSalesStatus"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.SetModuleSalesStatusRequest"
+      },
+      "commercial_v1_SetModuleTechnicalStatusRequest": {
+        "properties": {
+          "moduleCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "technicalStatus": {
+            "$ref": "#/components/schemas/commercial_v1_ModuleTechnicalStatus"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.SetModuleTechnicalStatusRequest"
+      },
+      "commercial_v1_UpdateModuleRequest": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "salesScope": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.UpdateModuleRequest"
+      },
       "deviceops_v1_CreateDeviceRequest": {
         "properties": {
           "name": {
@@ -763,6 +1001,263 @@
           "deviceops.v1.DeviceTransferApplication"
         ],
         "x-yunka-rpc": "/deviceops.v1.DeviceTransferApplication/TransferDevice"
+      }
+    },
+    "/v1/platform/modules": {
+      "get": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.ListModules",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ListModulesResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/ListModules"
+      },
+      "post": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.CreateModule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_CreateModuleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ModuleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/CreateModule"
+      }
+    },
+    "/v1/platform/modules/{module_code}": {
+      "delete": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.DeleteModule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moduleCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "requestId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": false,
+            "schema": {
+              "format": "uint64",
+              "type": "string",
+              "x-yunka-protobuf-json-integer": true
+            }
+          },
+          {
+            "in": "query",
+            "name": "reason",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_DeleteModuleResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/DeleteModule"
+      },
+      "get": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.GetModule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moduleCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ModuleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/GetModule"
+      },
+      "patch": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.UpdateModule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moduleCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_UpdateModuleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ModuleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/UpdateModule"
+      }
+    },
+    "/v1/platform/modules/{module_code}/sales-status": {
+      "post": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moduleCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_SetModuleSalesStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ModuleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus"
+      }
+    },
+    "/v1/platform/modules/{module_code}/technical-status": {
+      "post": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moduleCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_SetModuleTechnicalStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ModuleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus"
       }
     },
     "/v1/tenant/members": {

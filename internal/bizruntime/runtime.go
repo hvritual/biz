@@ -13,6 +13,8 @@ import (
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	accessports "github.com/hvritual/biz/internal/access/ports"
 	generatedassembly "github.com/hvritual/biz/internal/assembly"
+	commercialapp "github.com/hvritual/biz/internal/commercial/application"
+	"github.com/hvritual/biz/internal/commercial/modulecatalog"
 	deviceapp "github.com/hvritual/biz/internal/deviceops/application"
 	"github.com/hvritual/biz/internal/deviceops/domain"
 	devicepersistence "github.com/hvritual/biz/internal/deviceops/infrastructure/persistence"
@@ -106,12 +108,18 @@ func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, opti
 type applicationFactories struct {
 	device             *deviceapp.Service
 	site               *deviceapp.SiteManagementService
+	moduleCatalog      commercialapp.ModuleCatalogApplication
 	tenantRepositories requestscope.RepositoryFactory[accessports.TenantRepositories]
 	memberRepositories requestscope.RepositoryFactory[accessports.TenantMemberRepositories]
 	roleRepositories   requestscope.RepositoryFactory[accessports.TenantRoleRepositories]
 }
 
 var _ generatedassembly.ApplicationFactories = applicationFactories{}
+
+func (factory applicationFactories) BuildCommercialModuleCatalog(generatedassembly.CommercialModuleCatalogDependencies) (commercialapp.ModuleCatalogApplication, error) {
+	if factory.moduleCatalog == nil { return nil, errors.New("biz runtime: commercial module catalog application is required") }
+	return factory.moduleCatalog, nil
+}
 
 func (factory applicationFactories) BuildDeviceopsDeviceManagement(generatedassembly.DeviceopsDeviceManagementDependencies) (deviceapp.DeviceManagementApplication, error) {
 	if factory.device == nil { return nil, errors.New("biz runtime: device management application is required") }
@@ -141,9 +149,12 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 
 	accessStore, err := accesspersistence.New(accessDatabase)
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
+	commercialStore, err := modulecatalog.NewStore(accessDatabase)
+	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	if config.AutoMigrate {
 		if err := accessStore.AutoMigrate(ctx); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: access migrate: %w", err) }
 		if err := accessStore.EnsurePlatformSchema(ctx); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: platform IAM migrate: %w", err) }
+		if err := commercialStore.Migrate(ctx); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: commercial module catalog migrate: %w", err) }
 		if err := devicepersistence.AutoMigrate(ctx, deviceDatabase); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: domain migrate: %w", err) }
 		if err := devicepersistence.EnsureIndexes(deviceDatabase); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: indexes: %w", err) }
 	}
@@ -207,11 +218,16 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	siteService, err := deviceapp.NewSiteManagementService(deviceRepositories)
 	if err != nil { return generatedassembly.RuntimeBindings{}, err }
+	commercialCatalogService, err := modulecatalog.NewService(commercialStore, modulecatalog.ProductionRegistry())
+	if err != nil { return generatedassembly.RuntimeBindings{}, err }
+	commercialApplication, err := commercialapp.NewModuleCatalogService(commercialCatalogService)
+	if err != nil { return generatedassembly.RuntimeBindings{}, err }
 	authenticator.set(accessStore)
 	return generatedassembly.RuntimeBindings{
 		Factories: applicationFactories{
 			device: deviceService,
 			site: siteService,
+			moduleCatalog: commercialApplication,
 			tenantRepositories: tenantRepositories,
 			memberRepositories: memberRepositories,
 			roleRepositories: roleRepositories,
