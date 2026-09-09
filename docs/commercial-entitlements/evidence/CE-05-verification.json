@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "task_id": "CE-05",
+  "result": "BLOCKED",
+  "repository": "hvritual/biz",
+  "branch": "feat/ce-05-enforcement",
+  "base_commit": "1ec638a090213620fcb5c9f5734f7856cea2613b",
+  "candidate_head": "066e8d12bfb0dae10a30e0f7374f7210357c7ab8",
+  "candidate_tree": "6b3c5616cddd35aad251c97ebc20dfa1bd6a07b6",
+  "tested_merge_ref": "4acc30e2cc14bc6f4bf2a7657b05def7dbd7f831",
+  "framework_commit": "6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb",
+  "integration_commit": null,
+  "main_qualification": "NOT_RUN",
+  "round_check": "NOT_DONE",
+  "pull_request": 28,
+  "blocking_issue": 29,
+  "preparation": {
+    "run_id": 34341712220,
+    "job_id": 102433782617,
+    "conclusion": "success",
+    "commands": ["make generate", "make check", "go test ./...", "go test -tags=integration ./integration -run '^$'", "go vet ./...", "go build ./..."],
+    "integration_tests_executed": 0,
+    "artifact_id": 10100039081,
+    "artifact_sha256": "223acc556715a69ad9d7aa1c8cabe520104b24ca8f8fa941f5a82e4962bc8537"
+  },
+  "qualification": {
+    "run_id": 34341919949,
+    "job_id": 102434430863,
+    "conclusion": "failure",
+    "source_resolution": "PASS",
+    "generation_repeats": 2,
+    "generation_drift": false,
+    "focused": {"passed_leaf_tests": 14, "pass_events": 15, "failed_tests": 0, "skipped_tests": 0},
+    "race": {"passed_leaf_tests": 11, "pass_events": 12, "failed_tests": 0, "skipped_tests": 0},
+    "mysql": {"passed_tests": 0, "failed_tests": 5, "skipped_tests": 0, "failure_phase": "fixture_setup", "reason": "MySQL1062 duplicate global site IDs across tenant fixtures"},
+    "subsequent_full_regression": "NOT_REACHED",
+    "artifact_id": 10100142683,
+    "artifact_sha256": "7b9055a99881f3f82601a17d99ac92effea98c39f68dbf962508bbf33dd65003",
+    "downloaded_and_inspected": true
+  },
+  "legacy_member_regression": {
+    "run_id": 34341919795,
+    "job_id": 102434430319,
+    "conclusion": "failure",
+    "failed_test": "TestB123MemberDeactivationPreservesLastActiveOwner",
+    "reason": "owner fixture lacks explicit commercial entitlement; expected allowed operation receives UNKNOWN_CAPABILITY"
+  },
+  "candidate_workflows": {"total": 14, "success": 12, "failure": 2},
+  "corrections": {"applied": false, "verified": false, "write_result": "OPENAI_TOOL_SAFETY_BLOCKED", "detailed_refusal_reason": null},
+  "claims_not_made": ["real endpoint acceptance passed", "all integration tests passed", "merged into main", "CE-05 DONE", "independent APPROVE", "production deployed", "CE-06 implemented"]
+}
