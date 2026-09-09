@@ -5,7 +5,7 @@ on:
     branches: [feat/ce-02-module-catalog]
     paths:
       - .github/workflows/ce02-bootstrap.yml
-      - contracts/proto/commercial/**
+      - contracts/**
       - internal/commercial/**
       - integration/ce02_**
       - go.mod
@@ -14,7 +14,7 @@ on:
     branches: [main]
     paths:
       - .github/workflows/ce02-bootstrap.yml
-      - contracts/proto/commercial/**
+      - contracts/**
       - internal/commercial/**
       - integration/ce02_**
       - go.mod
@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate-and-test:
@@ -41,7 +41,7 @@ jobs:
           --health-interval=5s --health-timeout=5s --health-retries=30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with: { ref: '${{ github.sha }}', path: biz, fetch-depth: 0, persist-credentials: false }
+        with: { ref: '${{ github.sha }}', path: biz, fetch-depth: 0, persist-credentials: true }
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with: { repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, fetch-depth: 0, persist-credentials: false }
       - id: lock
@@ -67,6 +67,19 @@ jobs:
           set -euo pipefail
           make -C biz generate 2>&1 | tee "$RUNNER_TEMP/generate.log"
           make -C biz check 2>&1 | tee "$RUNNER_TEMP/check.log"
+          git -C biz status --porcelain | tee "$RUNNER_TEMP/generated-status.txt"
+      - name: persist generated closure on feature branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feat/ce-02-module-catalog'
+        working-directory: biz
+        run: |
+          set -euo pipefail
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name hvritual
+            git config user.email 460657446@qq.com
+            git add -A
+            git commit -m "chore(ce-02): commit deterministic generated contract closure"
+            git push origin HEAD:feat/ce-02-module-catalog
+          fi
       - name: run CE-02 tests
         run: |
           set -euo pipefail
@@ -78,11 +91,13 @@ jobs:
       - name: package generated closure
         if: always()
         run: |
-          mkdir -p "$RUNNER_TEMP/ce02-generated/contracts/gen/commercial" "$RUNNER_TEMP/ce02-generated/internal/commercial"
+          mkdir -p "$RUNNER_TEMP/ce02-generated/contracts/gen/commercial" "$RUNNER_TEMP/ce02-generated/contracts/generated" "$RUNNER_TEMP/ce02-generated/internal/commercial"
           cp -a biz/contracts/gen/commercial/. "$RUNNER_TEMP/ce02-generated/contracts/gen/commercial/" 2>/dev/null || true
+          cp -a biz/contracts/generated/. "$RUNNER_TEMP/ce02-generated/contracts/generated/" 2>/dev/null || true
           find biz/internal/commercial -name 'zz_yunka_*' -type f -print0 | while IFS= read -r -d '' f; do mkdir -p "$RUNNER_TEMP/ce02-generated/$(dirname "${f#biz/}")"; cp "$f" "$RUNNER_TEMP/ce02-generated/${f#biz/}"; done
           cp "$RUNNER_TEMP/generate.log" "$RUNNER_TEMP/ce02-generated/" 2>/dev/null || true
           cp "$RUNNER_TEMP/check.log" "$RUNNER_TEMP/ce02-generated/" 2>/dev/null || true
+          cp "$RUNNER_TEMP/generated-status.txt" "$RUNNER_TEMP/ce02-generated/" 2>/dev/null || true
           cp "$RUNNER_TEMP/unit.log" "$RUNNER_TEMP/ce02-generated/" 2>/dev/null || true
           cp "$RUNNER_TEMP/mysql.log" "$RUNNER_TEMP/ce02-generated/" 2>/dev/null || true
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
