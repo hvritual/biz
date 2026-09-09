@@ -11,11 +11,10 @@
         "commercial/v1/entitlement.proto",
         "commercial/v1/module.proto",
         "commercial/v1/plan.proto",
+        "commercial/v1/subscription.proto",
         "deviceops/v1/deviceops.proto"
       ],
-      "protoPaths": [
-        "contracts/third_party"
-      ]
+      "protoPaths": ["contracts/third_party"]
     }
   ]
 }
