@@ -1,0 +1,81 @@
+name: CE-02 bootstrap
+
+on:
+  push:
+    branches: [feat/ce-02-module-catalog]
+    paths:
+      - .github/workflows/ce02-bootstrap.yml
+      - contracts/proto/commercial/**
+      - internal/commercial/**
+      - integration/ce02_**
+      - go.mod
+      - go.sum
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce02?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env: { MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: biz_ce02 }
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: { ref: '${{ github.sha }}', path: biz, fetch-depth: 0, persist-credentials: false }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: { repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, fetch-depth: 0, persist-credentials: false }
+      - id: lock
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "protoc_release=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "protoc_sha=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: { go-version: '${{ steps.lock.outputs.go_version }}', cache: false }
+      - name: install locked protobuf toolchain
+        env: { RELEASE: '${{ steps.lock.outputs.protoc_release }}', CHECKSUM: '${{ steps.lock.outputs.protoc_sha }}' }
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://github.com/protocolbuffers/protobuf/releases/download/v${RELEASE}/protoc-${RELEASE}-linux-x86_64.zip" -o "$RUNNER_TEMP/protoc.zip"
+          echo "$CHECKSUM  $RUNNER_TEMP/protoc.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/protoc.zip" -d "$RUNNER_TEMP/protoc"
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+          make -C yunka.io rpc-tools
+          echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
+      - name: generate CE-02 contract closure
+        run: |
+          set -euo pipefail
+          make -C biz generate 2>&1 | tee "$RUNNER_TEMP/generate.log"
+          make -C biz check 2>&1 | tee "$RUNNER_TEMP/check.log"
+      - name: run CE-02 tests
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 ./internal/commercial/... -run 'TestCE02' 2>&1 | tee "$RUNNER_TEMP/unit.log"
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestCE02' 2>&1 | tee "$RUNNER_TEMP/mysql.log"
+          go -C biz test ./...
+          go -C biz vet ./...
+          go -C biz build ./...
+      - name: package generated closure
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/ce02-generated/contracts/gen/commercial" "$RUNNER_TEMP/ce02-generated/internal/commercial"
+          cp -a biz/contracts/gen/commercial/. "$RUNNER_TEMP/ce02-generated/contracts/gen/commercial/" 2>/dev/null || true
+          find biz/internal/commercial -name 'zz_yunka_*' -type f -print0 | while IFS= read -r -d '' f; do mkdir -p "$RUNNER_TEMP/ce02-generated/$(dirname "${f#biz/}")"; cp "$f" "$RUNNER_TEMP/ce02-generated/${f#biz/}"; done
+          cp "$RUNNER_TEMP/generate.log" "$RUNNER_TEMP/ce02-generated/" 2>/dev/null || true
+          cp "$RUNNER_TEMP/check.log" "$RUNNER_TEMP/ce02-generated/" 2>/dev/null || true
+          cp "$RUNNER_TEMP/unit.log" "$RUNNER_TEMP/ce02-generated/" 2>/dev/null || true
+          cp "$RUNNER_TEMP/mysql.log" "$RUNNER_TEMP/ce02-generated/" 2>/dev/null || true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: { name: 'ce02-bootstrap-${{ github.sha }}', path: '${{ runner.temp }}/ce02-generated', retention-days: 30, if-no-files-found: warn }
