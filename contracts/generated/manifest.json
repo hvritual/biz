@@ -3775,7 +3775,10 @@
       "fullName": "deviceops.v1.DeviceApplication",
       "domain": "deviceops",
       "application": {
-        "name": "device_management"
+        "name": "device_management",
+        "requires": [
+          "deviceops/site_management"
+        ]
       },
       "methods": [
         {
@@ -3951,13 +3954,18 @@
             "id": "device.update",
             "useCase": "update_device",
             "permissions": [
-              "device.update"
+              "device.update",
+              "site.read"
             ],
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
               "api-key"
             ],
+            "requiresOperations": [
+              "site.validate_transfer_target"
+            ],
+            "composition": "local",
             "execution": {
               "transaction": "local",
               "idempotency": "required"
@@ -3966,7 +3974,8 @@
           "authorization": {
             "operationId": "device.update",
             "permissions": [
-              "device.update"
+              "device.update",
+              "site.read"
             ],
             "permissionMode": "all",
             "tenantRequired": true,

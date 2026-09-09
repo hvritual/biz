@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "2",
+  "mapping_version": "3",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -197,7 +197,14 @@
       "capability_codes": [
         "device.lifecycle"
       ],
-      "children": []
+      "children": [
+        {
+          "operation_id": "site.validate_transfer_target",
+          "mode": "conditional",
+          "condition": "requested destination differs from the visible current device site",
+          "source": "internal/deviceops/application/service.go#UpdateDevice"
+        }
+      ]
     },
     {
       "operation_id": "site.validate_transfer_target",

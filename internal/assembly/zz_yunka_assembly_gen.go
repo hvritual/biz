@@ -24,7 +24,7 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "cdaecf3c535cd4c8163a3610099b5f093c9256aa3dd96ea213133acd078869b9"
+const AssemblyPlanDigest = "b7573227ab5043b5a65b258d4cfc78b8e94a4791104c440a590c61b179c23969"
 
 type AccessTenantLifecycleDependencies struct {
 	AccessTenantMemberLifecycle accessapplication.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
@@ -47,6 +47,7 @@ type CommercialModuleCatalogDependencies struct {
 }
 
 type DeviceopsDeviceManagementDependencies struct {
+	DeviceopsSiteManagement deviceopsapplication.DeviceManagementToDeviceopsSiteManagementChildCapability
 }
 
 type DeviceopsDeviceTransferDependencies struct {
@@ -143,19 +144,23 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	if applications.CommercialEntitlementManagement == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/entitlement_management")
 	}
-	applications.DeviceopsDeviceManagement, err = factories.BuildDeviceopsDeviceManagement(DeviceopsDeviceManagementDependencies{})
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build application deviceops/device_management: %w", err)
-	}
-	if applications.DeviceopsDeviceManagement == nil {
-		return Applications{}, errors.New("yunka assembly: application factory returned nil for deviceops/device_management")
-	}
 	applications.DeviceopsSiteManagement, err = factories.BuildDeviceopsSiteManagement(DeviceopsSiteManagementDependencies{})
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build application deviceops/site_management: %w", err)
 	}
 	if applications.DeviceopsSiteManagement == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for deviceops/site_management")
+	}
+	deviceopsDeviceManagementDeviceopsSiteManagementCapability, err := deviceopsapplication.NewDeviceManagementToDeviceopsSiteManagementChildCapability(applications.DeviceopsSiteManagement, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build deviceops/device_management dependency deviceops/site_management: %w", err)
+	}
+	applications.DeviceopsDeviceManagement, err = factories.BuildDeviceopsDeviceManagement(DeviceopsDeviceManagementDependencies{DeviceopsSiteManagement: deviceopsDeviceManagementDeviceopsSiteManagementCapability})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application deviceops/device_management: %w", err)
+	}
+	if applications.DeviceopsDeviceManagement == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for deviceops/device_management")
 	}
 	deviceopsDeviceTransferDeviceopsDeviceManagementCapability, err := deviceopsapplication.NewDeviceTransferToDeviceopsDeviceManagementChildCapability(applications.DeviceopsDeviceManagement, executor)
 	if err != nil {

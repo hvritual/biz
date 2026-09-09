@@ -1,14 +1,15 @@
 {
   "schema_version": 1,
-  "mapping_version": "2",
+  "mapping_version": "3",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "3770905a1b739572f958ebf4e358d603fe2f16a6609eec3e65e117e3c0abc6c9",
-    "contracts/generated/manifest.json": "bfd9af6613435edcd7d49dbbb38e4f72f324456226bde134d79488f98973ac07",
-    "contracts/generated/operation-plans.json": "7515e2469ae927317eb73e718aaf7a496d2470228efe777c0bf34feaa3c67c5d",
+    "contracts/commercial/operation-capabilities.v1.json": "05ff8923f669a05bd8d2980e29434ad9fdbaf1a864785ff65a51daa71d2eb434",
+    "contracts/generated/manifest.json": "704993065ffb0ec64b01cc6c3c52ad0348446ec2047ffdbb6161f3a6e64515f7",
+    "contracts/generated/operation-plans.json": "91a8723c6ba852e8419938cdf19d4de0ed9cac9624f77cb9143415ade5d6f67e",
     "internal/access/application/tenant_member_lifecycle.go": "c629117c2538c45af9a75932a53ecd6109059bd56e6dc71b11eedb2e538c6cff",
     "internal/access/application/tenantlifecycle/internal/usecase/service.go": "9075a1c10d8e987e452227602b946ec362475e41a2dcc2045f2930eedefb2c00",
     "internal/commercial/application/entitlementmanagement/internal/usecase/service.go": "7c6c1f576d1d1db912f983c8ad4f07e424f5af571388e967d74d71ab5811d22a",
-    "internal/deviceops/application/cross_application_transfer.go": "bffaca1f1be420371bfcb770c5ccfd79f18553938ca92de0584f5e921460d9d8"
+    "internal/deviceops/application/cross_application_transfer.go": "bffaca1f1be420371bfcb770c5ccfd79f18553938ca92de0584f5e921460d9d8",
+    "internal/deviceops/application/service.go": "f7a37a30cd01fadfb5f1a1f3a6c497eaeba5dc8f706e484c445eed9193abbcaa"
   },
   "retired_capability_codes": [],
   "capabilities": [
@@ -338,7 +339,14 @@
       "capability_codes": [
         "device.lifecycle"
       ],
-      "children": [],
+      "children": [
+        {
+          "operation_id": "site.validate_transfer_target",
+          "mode": "conditional",
+          "condition": "requested destination differs from the visible current device site",
+          "source": "internal/deviceops/application/service.go#UpdateDevice"
+        }
+      ],
       "consumer_type": "tenant",
       "tenant_required": true,
       "rpc": "/deviceops.v1.DeviceApplication/UpdateDevice",

@@ -58,6 +58,7 @@ func startB123Runtime(t *testing.T, db *gorm.DB) *bizruntime.Started {
 }
 
 func seedB123TenantAdmin(t *testing.T, db *gorm.DB, tenantID, userID, email, rawToken string) {
+	defer ce05LegacyFixtureGrants(t, db, tenantID, []string{"access-management"})
 	t.Helper()
 	roleID := tenantID + ":member-admin"
 	exec := func(query string, args ...any) {

@@ -34,6 +34,8 @@ func seedB123TenantOwner(t *testing.T, db *gorm.DB, tenantID, userID, email, raw
 		exec("INSERT INTO biz_permission_grants (tenant_id,role_id,permission,scope) VALUES (?,?,?,?)", tenantID, roleID, permission, accessdomain.DataScopeAll)
 	}
 	exec("INSERT INTO biz_api_tokens (token_hash,tenant_id,user_id,disabled,created_at) VALUES (?,?,?,?,NOW(3))", accesspersistence.TokenHash(rawToken), tenantID, userID, false)
+	// Reach the owner invariant with an explicitly entitled test tenant.
+	ce05LegacyFixtureGrants(t, db, tenantID, []string{"access-management"})
 	return roleID
 }
 

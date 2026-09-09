@@ -61,7 +61,7 @@ message TransferDeviceRequest {
 }
 
 service DeviceApplication {
-  option (yunka.dsl.v1.application) = { name: "device_management" };
+  option (yunka.dsl.v1.application) = { name: "device_management" requires: "deviceops/site_management" };
 
   rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse) {
     option (google.api.http) = { get: "/v1/devices" };
@@ -108,6 +108,9 @@ service DeviceApplication {
       id: "device.update"
       use_case: "update_device"
       permissions: "device.update"
+      permissions: "site.read"
+      requires_operations: "site.validate_transfer_target"
+      composition: COMPOSITION_LOCAL
       permission_mode: PERMISSION_ALL
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY

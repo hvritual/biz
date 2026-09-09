@@ -72,7 +72,18 @@ func NewGuard(sites accessports.MemberSiteResolver) (*Guard, error) {
 
 func (guard *Guard) Prepare(ctx context.Context, authorized authz.AuthorizedOperation, input any) (context.Context, error) {
 	scope := Scope{UserID: authorized.Principal.UserID}
+	resourcePermission := map[authz.OperationID]authz.PermissionKey{
+		"device.list": "device.read", "device.get": "device.read", "device.create": "device.create",
+		"device.update": "device.update", "device.delete": "device.delete", "device.transfer": "device.update",
+		"site.validate_transfer_target": "site.read",
+	}[authorized.Policy.Operation]
+	if resourcePermission == "" {
+		return nil, denied(authorized)
+	}
 	for _, grant := range authorized.Decision.Grants {
+		if grant.Permission != resourcePermission {
+			continue
+		}
 		switch accessdomain.DataScope(strings.TrimSpace(grant.Scope)) {
 		case accessdomain.DataScopeAll:
 			scope.All = true
