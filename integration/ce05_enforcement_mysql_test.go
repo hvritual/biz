@@ -19,6 +19,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -233,17 +234,32 @@ func TestCE05MySQLTechnicalStopExpiryAndSourceFailure(t *testing.T) {
 		t.Fatal(s, out)
 	}
 	callback := "ce05:read-failure"
-	if err := e.db.Callback().Row().Before("gorm:row").Register(callback, func(tx *gorm.DB) {
-		if strings.Contains(tx.Statement.SQL.String(), "biz_commercial_entitlement_state") {
+	var injected atomic.Int64
+	fault := func(tx *gorm.DB) {
+		if tx.Statement.Table == "biz_commercial_entitlement_state" || strings.Contains(tx.Statement.SQL.String(), "biz_commercial_entitlement_state") {
+			injected.Add(1)
 			tx.AddError(errors.New("CE05 synthetic authoritative read failure"))
 		}
-	}); err != nil {
+	}
+	if err := e.db.Callback().Row().Before("gorm:row").Register(callback, fault); err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { _ = e.db.Callback().Row().Remove(callback) })
+	if err := e.db.Callback().Query().Before("gorm:query").Register(callback, fault); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = e.db.Callback().Query().Remove(callback) })
 	_, err = e.devices.ListDevices(ce04Context(e.tokenA, ""), &devicev1.ListDevicesRequest{})
-	if err := e.db.Callback().Row().Remove(callback); err != nil {
-		t.Fatal(err)
+	if injected.Load() == 0 {
+		t.Fatal("authoritative read fault probe was not exercised")
 	}
+	if removeErr := e.db.Callback().Row().Remove(callback); removeErr != nil {
+		t.Fatal(removeErr)
+	}
+	if removeErr := e.db.Callback().Query().Remove(callback); removeErr != nil {
+		t.Fatal(removeErr)
+	}
+
 	ce05RPCDenied(t, err, codes.Unavailable, "ENTITLEMENT_SOURCE_UNAVAILABLE")
 }
 func TestCE05MySQLNoImplicitAccessManagementOrExpiredGrant(t *testing.T) {
