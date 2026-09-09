@@ -1,0 +1,5 @@
+package ports
+import("context";"time";"github.com/hvritual/biz/internal/commercial/domain/subscription")
+type SubscriptionAudit struct{TenantID,RequestID,ActorID,Action,Reason string;Subscription subscription.Subscription;At time.Time}
+type SubscriptionRepository interface{LockRules(context.Context)error;GetRule(context.Context,string,bool)(subscription.Rule,error);ListRules(context.Context,bool)([]subscription.Rule,error);SaveRule(context.Context,subscription.Rule,uint64)error;RuleReceipt(context.Context,string,string,string)(*subscription.Rule,error);SaveRuleReceipt(context.Context,string,string,string,subscription.Rule)error;GetBase(context.Context,string,bool)(subscription.Subscription,error);BootstrapReceipt(context.Context,string,string,string)(*subscription.Subscription,error);SaveBase(context.Context,subscription.Subscription)error;SaveBootstrapReceipt(context.Context,string,string,string,subscription.Subscription)error;Audit(context.Context,SubscriptionAudit)error;Now(context.Context)(time.Time,error)}
+type SubscriptionRepositories struct{Subscriptions SubscriptionRepository;Entitlements EntitlementRepository}
