@@ -1,0 +1,63 @@
+name: CE-07 locked source preparation
+on:
+  push:
+    branches: [feat/ce-07-plan-versions]
+    paths: ['scripts/ce07_prepare.py','.github/workflows/ce07-prepare.yml']
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {path: biz, ref: '${{ github.sha }}', fetch-depth: 0}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, persist-credentials: false}
+      - id: lock
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/feat/ce-07-plan-versions
+          test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          source yunka.io/tools/toolchain.env
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "protoc_release=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "protoc_sha=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go_version }}', cache: false}
+      - name: Install exact protobuf tools
+        env: {RELEASE: '${{ steps.lock.outputs.protoc_release }}', CHECKSUM: '${{ steps.lock.outputs.protoc_sha }}'}
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 "https://github.com/protocolbuffers/protobuf/releases/download/v${RELEASE}/protoc-${RELEASE}-linux-x86_64.zip" -o "$RUNNER_TEMP/protoc.zip"
+          echo "$CHECKSUM  $RUNNER_TEMP/protoc.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/protoc.zip" -d "$RUNNER_TEMP/protoc"
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+          make -C yunka.io rpc-tools
+          echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
+      - name: Integrate sources, generate and compile
+        working-directory: biz
+        run: |
+          set -euo pipefail
+          python3 scripts/ce07_prepare.py
+          gofmt -w internal/commercial/domain/plan internal/commercial/ports/plan.go internal/commercial/application/planmanagement internal/commercial/application/module_catalog_plans.go internal/commercial/modulecatalog/plan_catalog.go internal/commercial/infrastructure/persistence/plan.go internal/commercial/infrastructure/persistence/plan_migration.go internal/bizruntime/plans.go internal/bizruntime/runtime.go integration/ce07_plan_mysql_test.go internal/architecture/ce07_plan_boundary_test.go
+          make generate
+          make check
+          go test ./...
+          go test -tags=integration -run '^$' ./integration
+          go vet ./...
+          go build ./...
+          python3 docs/commercial-entitlements/tools/check_plan.py
+          python3 -m unittest discover -s docs/commercial-entitlements/tools -p 'test_*.py' -v
+          git diff --check
+          rm scripts/ce07_prepare.py .github/workflows/ce07-prepare.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat(ce-07): integrate typed plan authoring and locked generated contracts'
+          git push origin HEAD:refs/heads/feat/ce-07-plan-versions
+          git rev-parse HEAD
