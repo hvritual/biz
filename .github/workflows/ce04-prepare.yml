@@ -31,6 +31,7 @@ jobs:
           set -euo pipefail
           cd biz
           python3 scripts/ce04_prepare.py
+          python3 scripts/ce04_prepare_fix.py
           find internal/commercial/domain internal/commercial/ports internal/commercial/infrastructure internal/commercial/application/entitlementmanagement -name '*.go' -exec gofmt -w {} +
           gofmt -w internal/commercial/modulecatalog/scoped_read.go internal/commercial/application/module_catalog_entitlements.go internal/bizruntime/commercial.go internal/architecture/ce04_entitlement_boundary_test.go integration/ce04*.go
           make generate
@@ -44,7 +45,7 @@ jobs:
           cd biz
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git ls-remote origin refs/heads/feat/ce-04-entitlements | cut -f1)" = "$GITHUB_SHA"
-          git rm .github/workflows/ce04-prepare.yml scripts/ce04_prepare.py
+          git rm .github/workflows/ce04-prepare.yml scripts/ce04_prepare.py scripts/ce04_prepare_fix.py
           git add -A
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
