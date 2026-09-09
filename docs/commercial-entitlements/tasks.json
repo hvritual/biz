@@ -28,7 +28,7 @@
     "DEPLOYMENT_READY": {"status": "UNRESOLVED", "owner_role": "发布及运维负责人", "evidence": null}
   },
   "tasks": [
-    {"id":"CE-01","route":"R1","title":"固定基线、领域契约与运行时探针","owner_role":"后端架构负责人","depends_on":[],"external_gates":[],"requirements":["FR-01","FR-06","FR-18"],"status":"VERIFYING","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-01","route":"R1","title":"固定基线、领域契约与运行时探针","owner_role":"后端架构负责人","depends_on":[],"external_gates":[],"requirements":["FR-01","FR-06","FR-18"],"status":"DONE","blocker":null,"evidence":"evidence/CE-01.md","integration_commit":"5df140b627aa6fe2868078e8773b5f1a3558993f","verification":"evidence/CE-01-verification.json"},
     {"id":"CE-02","route":"R1","title":"模块目录、技术状态与依赖管理","owner_role":"后端负责人","depends_on":["CE-01"],"external_gates":[],"requirements":["FR-01","FR-02","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
     {"id":"CE-03","route":"R1","title":"商业能力映射与入口覆盖门禁","owner_role":"后端及工程质量负责人","depends_on":["CE-02"],"external_gates":[],"requirements":["FR-01","FR-06","FR-13","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
     {"id":"CE-04","route":"R2","title":"专项授权与统一权益解析","owner_role":"后端负责人","depends_on":["CE-02"],"external_gates":[],"requirements":["FR-02","FR-05","FR-06","FR-14"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
