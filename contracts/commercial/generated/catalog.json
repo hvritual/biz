@@ -1,0 +1,698 @@
+{
+  "schema_version": 1,
+  "mapping_version": "1",
+  "inputs_sha256": {
+    "contracts/commercial/operation-capabilities.v1.json": "9fff554d6088d00df0764db3e5c07198f681f49d6874f8f0ce9b2baa3597dc00",
+    "contracts/generated/manifest.json": "8aef595187d6f636ff3116b69b4744bb66ce24a1400c247f5229c30d477dcf6a",
+    "contracts/generated/operation-plans.json": "2ddaaf76871f585dc1851322cf875d0cc4babb852b37b2abefd635fc4acdc349",
+    "internal/access/application/tenant_member_lifecycle.go": "c629117c2538c45af9a75932a53ecd6109059bd56e6dc71b11eedb2e538c6cff",
+    "internal/access/application/tenantlifecycle/internal/usecase/service.go": "9075a1c10d8e987e452227602b946ec362475e41a2dcc2045f2930eedefb2c00",
+    "internal/deviceops/application/cross_application_transfer.go": "bffaca1f1be420371bfcb770c5ccfd79f18553938ca92de0584f5e921460d9d8"
+  },
+  "retired_capability_codes": [],
+  "capabilities": [
+    {
+      "capability_code": "device.lifecycle",
+      "module_code": "device-operations"
+    },
+    {
+      "capability_code": "device.transfer",
+      "module_code": "device-operations"
+    },
+    {
+      "capability_code": "tenant.lifecycle",
+      "module_code": "access-management"
+    },
+    {
+      "capability_code": "tenant.member.lifecycle",
+      "module_code": "access-management"
+    },
+    {
+      "capability_code": "tenant.role.permission",
+      "module_code": "access-management"
+    }
+  ],
+  "operations": [
+    {
+      "operation_id": "commercial.module.create",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ModuleCatalogApplication/CreateModule",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.delete",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ModuleCatalogApplication/DeleteModule",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ModuleCatalogApplication/GetModule",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.list",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ModuleCatalogApplication/ListModules",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.set_sales_status",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.set_technical_status",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.update",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ModuleCatalogApplication/UpdateModule",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "device.create",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DeviceApplication/CreateDevice",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "device.delete",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DeviceApplication/DeleteDevice",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "device.get",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DeviceApplication/GetDevice",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "device.list",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DeviceApplication/ListDevices",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "device.transfer",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.transfer"
+      ],
+      "children": [
+        {
+          "operation_id": "device.update",
+          "mode": "always",
+          "source": "internal/deviceops/application/cross_application_transfer.go#TransferDevice"
+        },
+        {
+          "operation_id": "site.validate_transfer_target",
+          "mode": "always",
+          "source": "internal/deviceops/application/cross_application_transfer.go#TransferDevice"
+        }
+      ],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DeviceTransferApplication/TransferDevice",
+      "required_capability_codes": [
+        "device.transfer"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle",
+        "device.transfer"
+      ]
+    },
+    {
+      "operation_id": "device.update",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DeviceApplication/UpdateDevice",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "site.validate_transfer_target",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.transfer"
+      ],
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": true,
+      "required_capability_codes": [
+        "device.transfer"
+      ],
+      "always_required_capability_codes": [
+        "device.transfer"
+      ]
+    },
+    {
+      "operation_id": "tenant.activate",
+      "classification": "recovery",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "exemption_reason": "平台恢复租户的管理入口不得依赖待恢复租户的套餐；仍要求 platform.tenant.manage 权限，不豁免身份认证。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/access.v1.TenantLifecycleApplication/ActivateTenant",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.close",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/access.v1.TenantLifecycleApplication/CloseTenant",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.create",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。",
+      "children": [
+        {
+          "operation_id": "tenant.member.bootstrap_owner",
+          "mode": "always",
+          "source": "internal/access/application/tenantlifecycle/internal/usecase/service.go#CreateTenant"
+        },
+        {
+          "operation_id": "tenant.role.bootstrap_owner",
+          "mode": "always",
+          "source": "internal/access/application/tenantlifecycle/internal/usecase/service.go#CreateTenant"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/access.v1.TenantLifecycleApplication/CreateTenant",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.get",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/access.v1.TenantLifecycleApplication/GetTenant",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.list",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/access.v1.TenantLifecycleApplication/ListTenants",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.member.activate",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantMemberLifecycleApplication/ActivateTenantMember",
+      "required_capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.member.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.member.bootstrap_owner",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "exemption_reason": "租户创建根事务内的初始所有者引导，仅供已授权平台创建流程调用；不是公开购买入口。",
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.member.get",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantMemberLifecycleApplication/GetTenantMember",
+      "required_capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.member.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.member.invite",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantMemberLifecycleApplication/InviteTenantMember",
+      "required_capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.member.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.member.list",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantMemberLifecycleApplication/ListTenantMembers",
+      "required_capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.member.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.member.remove",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [
+        {
+          "operation_id": "tenant.role.assert_member_deactivation_allowed",
+          "mode": "always",
+          "source": "internal/access/application/tenant_member_lifecycle.go#RemoveTenantMember"
+        }
+      ],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantMemberLifecycleApplication/RemoveTenantMember",
+      "required_capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.member.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.member.suspend",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [
+        {
+          "operation_id": "tenant.role.assert_member_deactivation_allowed",
+          "mode": "always",
+          "source": "internal/access/application/tenant_member_lifecycle.go#SuspendTenantMember"
+        }
+      ],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantMemberLifecycleApplication/SuspendTenantMember",
+      "required_capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.member.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.assert_member_deactivation_allowed",
+      "classification": "foundation_exempt",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "exemption_reason": "最后所有者保护是内部安全不变量，不能因套餐使保护失效；保留可信租户上下文、原 IAM 权限和 child 边界。",
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": true,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.role.assign_member",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/AssignTenantRoleMember",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.bootstrap_owner",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "exemption_reason": "租户创建根事务内的初始所有者引导，仅供已授权平台创建流程调用；不是公开购买入口。",
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.role.create",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/CreateTenantRole",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.disable",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/DisableTenantRole",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.enable",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/EnableTenantRole",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.get",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/GetTenantRole",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.list",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/ListTenantRoles",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.revoke_member",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/RevokeTenantRoleMember",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.set_permissions",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/SetTenantRolePermissions",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.update",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/UpdateTenantRole",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.suspend",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/access.v1.TenantLifecycleApplication/SuspendTenant",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.update",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/access.v1.TenantLifecycleApplication/UpdateTenant",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 YUNKA_ROOT ?= $(abspath ../yunka.io)
 YUNKA_APP := $(YUNKA_ROOT)/app
 PROTOC ?= protoc
+COMMERCIAL_BASELINE ?=
 
 .PHONY: init generate check test verify pressure run workspace-check yunka-source-check consumer-certify
 
@@ -10,9 +11,11 @@ init:
 generate:
 	@cd $(YUNKA_APP) && go run ./cmd generate --root $(CURDIR) --protoc $(PROTOC)
 	@go mod tidy
+	@$(MAKE) commercial-generate
 
 check:
 	@cd $(YUNKA_APP) && go run ./cmd check --root $(CURDIR) --protoc $(PROTOC)
+	@$(MAKE) commercial-check
 
 workspace-check:
 	@./scripts/consumer-resolution-check.sh
@@ -46,3 +49,11 @@ run:
 .PHONY: tenant-boundary-check
 tenant-boundary-check:
 	@./scripts/check-tenant-boundary.sh
+
+# CE-03 metadata only; runtime authorization remains an independent CE-05 task.
+.PHONY: commercial-generate commercial-check
+commercial-generate:
+	@go run ./cmd/commercial-catalog --root $(CURDIR) --write --baseline "$(COMMERCIAL_BASELINE)"
+
+commercial-check:
+	@go run ./cmd/commercial-catalog --root $(CURDIR) --baseline "$(COMMERCIAL_BASELINE)"
