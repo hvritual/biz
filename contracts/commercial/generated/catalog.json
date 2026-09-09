@@ -1,13 +1,14 @@
 {
   "schema_version": 1,
-  "mapping_version": "3",
+  "mapping_version": "4",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "05ff8923f669a05bd8d2980e29434ad9fdbaf1a864785ff65a51daa71d2eb434",
-    "contracts/generated/manifest.json": "1673a927d6e28c3dc66097e83a7af0e2aa2586b9d0da022fb3e661af710de16b",
-    "contracts/generated/operation-plans.json": "2cfa787f0de403290e45310be85fa71c3c96df870332c6148485403b585d3af2",
+    "contracts/commercial/operation-capabilities.v1.json": "81a1a121483fd77a6b801711b19789af0c6b24bc6e758c16d915f260de70b0ed",
+    "contracts/generated/manifest.json": "d9aa1b462aa8f142dcb34c5fcfe31ed1b0ede116f83d3c488ed7679a62fe5f4c",
+    "contracts/generated/operation-plans.json": "9600404179243111768c634d167cdedeb817c4ad670b4e23682947179c026eda",
     "internal/access/application/tenant_member_lifecycle.go": "c629117c2538c45af9a75932a53ecd6109059bd56e6dc71b11eedb2e538c6cff",
     "internal/access/application/tenantlifecycle/internal/usecase/service.go": "9075a1c10d8e987e452227602b946ec362475e41a2dcc2045f2930eedefb2c00",
     "internal/commercial/application/entitlementmanagement/internal/usecase/service.go": "025bee67b74d1cf9be84c8620ba9a19dd47eb1a9b806b8f4dad142da9d0a74ce",
+    "internal/commercial/application/planmanagement/internal/usecase/service.go": "3534687bf60f71d844144840891ba957fab28f8452df31fa40940c6c69e221a6",
     "internal/deviceops/application/cross_application_transfer.go": "bffaca1f1be420371bfcb770c5ccfd79f18553938ca92de0584f5e921460d9d8",
     "internal/deviceops/application/service.go": "f7a37a30cd01fadfb5f1a1f3a6c497eaeba5dc8f706e484c445eed9193abbcaa"
   },
@@ -195,6 +196,17 @@
       "always_required_capability_codes": []
     },
     {
+      "operation_id": "commercial.module.plan_catalog",
+      "classification": "foundation_exempt",
+      "capability_codes": [],
+      "exemption_reason": "Transport-private platform catalog current-read in the existing root transaction, not a public grant or bypass.",
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
       "operation_id": "commercial.module.set_sales_status",
       "classification": "platform_management",
       "capability_codes": [],
@@ -227,6 +239,138 @@
       "consumer_type": "platform",
       "tenant_required": false,
       "rpc": "/commercial.v1.ModuleCatalogApplication/UpdateModule",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.clone",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/CreatePlanVersion",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.create",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/CreatePlanDraft",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.eligibility",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/CheckPlanEligibility",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/GetPlanVersion",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.list",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/ListPlanVersions",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.publish",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/PublishPlanVersion",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.retire",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/RetirePlanVersion",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.update",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/UpdatePlanDraft",
       "required_capability_codes": [],
       "always_required_capability_codes": []
     },

@@ -220,6 +220,9 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 		if err := commercialpersistence.MigrateEntitlements(ctx, accessDatabase); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: entitlement sources migrate: %w", err)
 		}
+		if err := commercialpersistence.MigratePlans(ctx, accessDatabase); err != nil {
+			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: plans migrate: %w", err)
+		}
 		if err := devicepersistence.AutoMigrate(ctx, deviceDatabase); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: domain migrate: %w", err)
 		}

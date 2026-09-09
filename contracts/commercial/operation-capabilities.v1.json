@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "3",
+  "mapping_version": "4",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -114,6 +114,13 @@
       "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。"
     },
     {
+      "operation_id": "commercial.module.plan_catalog",
+      "classification": "foundation_exempt",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "Transport-private platform catalog current-read in the existing root transaction, not a public grant or bypass."
+    },
+    {
       "operation_id": "commercial.module.set_sales_status",
       "classification": "platform_management",
       "capability_codes": [],
@@ -133,6 +140,98 @@
       "capability_codes": [],
       "children": [],
       "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。"
+    },
+    {
+      "operation_id": "commercial.plan.clone",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access."
+    },
+    {
+      "operation_id": "commercial.plan.create",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access."
+    },
+    {
+      "operation_id": "commercial.plan.eligibility",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access."
+    },
+    {
+      "operation_id": "commercial.plan.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access."
+    },
+    {
+      "operation_id": "commercial.plan.list",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access."
+    },
+    {
+      "operation_id": "commercial.plan.publish",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access."
+    },
+    {
+      "operation_id": "commercial.plan.retire",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access."
+    },
+    {
+      "operation_id": "commercial.plan.update",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access."
     },
     {
       "operation_id": "device.create",
