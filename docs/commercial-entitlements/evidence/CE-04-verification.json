@@ -1,58 +1,250 @@
 {
+  "schema_version": 1,
   "task_id": "CE-04",
-  "result": "BLOCKED",
-  "source_commit": "437b0f052e823fdf99dfa3cdda2104b25c7b7627",
-  "source_tree": "e0ade58957fb636fbebcb37323d11a229acaeb68",
+  "result": "PASS",
+  "verified_commit": "c3530e6f572ba74160fc383f3a5506ca2666b2c4",
   "task_base_commit": "9ea878d72650216a26c39eddf98374717f2a562b",
-  "observed_main_commit": "3bec893768fc93705fb3a440cbe6ab6941194326",
-  "integration_commit": null,
+  "completion_start_main": "8d9ec4e1dce98122276084d70ed336900e5c7a64",
   "framework_commit": "6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb",
-  "blocker_issue": "https://github.com/hvritual/biz/issues/26",
-  "candidate_qualification": {
-    "result": "PASS",
-    "head_commit": "58768c32e5172b4264086538ec46ee025fc181a9",
-    "verified_merge_ref": "8c26b3800da8b7c0527e5d1d96d1948ae1443566",
-    "workflow_run": 34329476773,
-    "job_id": 102394433690,
-    "artifact_id": 10095201343,
-    "artifact_sha256": "3f1b9423ed1f7fe96e87ab8c267c0315a31ed8217d7f359ceef5c43eca64b9d9",
-    "downloaded_log_hashes_verified": 21,
-    "tests_recounted_from_jsonl": true,
-    "round_check": "QUALIFIED_NOT_DONE",
-    "toolchain": "go1.25.13",
-    "database": "MySQL 8.4 workflow-owned service",
+  "source_tree": "fe68f4dbc0d9837ea682716e701e522d259d3d8a",
+  "implementation_pr": 25,
+  "gate_fix_commit": "51355872d1e6af2961826a053df6d0ad7008ff73",
+  "qualification": {
+    "workflow_run": 34334065191,
+    "job_id": 102409200996,
+    "artifact_id": 10097022984,
+    "artifact_sha256": "e159912db4d6cace12f8693844070eef1f35364f008eb92efbf3d8243250edf2",
+    "toolchain": "Go 1.25.13 / protoc 21.12",
+    "database": "workflow-owned MySQL 8.4",
+    "log_hashes_verified": 21,
+    "source_tree_verified": true,
     "suites": {
-      "focused": {"leaf_tests":47,"pass_events":53,"failed":0,"skipped":0},
-      "race": {"leaf_tests":45,"pass_events":51,"failed":0,"skipped":0},
-      "mysql": {"leaf_tests":7,"pass_events":7,"failed":0,"skipped":0},
-      "restart-before": {"leaf_tests":1,"pass_events":1,"failed":0,"skipped":0},
-      "restart-after": {"leaf_tests":1,"pass_events":1,"failed":0,"skipped":0},
-      "ce02-mysql": {"leaf_tests":2,"pass_events":2,"failed":0,"skipped":0},
-      "all": {"leaf_tests":116,"pass_events":126,"failed":0,"skipped":0,"no_test_packages":27}
+      "focused": {
+        "leaf_tests": 47,
+        "pass_events": 53,
+        "failed": 0,
+        "skipped": 0,
+        "no_test_packages": 7
+      },
+      "race": {
+        "leaf_tests": 45,
+        "pass_events": 51,
+        "failed": 0,
+        "skipped": 0,
+        "no_test_packages": 0
+      },
+      "mysql": {
+        "leaf_tests": 7,
+        "pass_events": 7,
+        "failed": 0,
+        "skipped": 0,
+        "no_test_packages": 0
+      },
+      "restart-before": {
+        "leaf_tests": 1,
+        "pass_events": 1,
+        "failed": 0,
+        "skipped": 0,
+        "no_test_packages": 0
+      },
+      "restart-after": {
+        "leaf_tests": 1,
+        "pass_events": 1,
+        "failed": 0,
+        "skipped": 0,
+        "no_test_packages": 0
+      },
+      "ce02-mysql": {
+        "leaf_tests": 2,
+        "pass_events": 2,
+        "failed": 0,
+        "skipped": 0,
+        "no_test_packages": 0
+      },
+      "all": {
+        "leaf_tests": 116,
+        "pass_events": 126,
+        "failed": 0,
+        "skipped": 0,
+        "no_test_packages": 27
+      }
     },
-    "checks": [
-      {"command":"make yunka-source-check workspace-check","exit_code":0,"tests_passed":0,"log":"resolution.log","sha256":"4fc9bb6a08c5409cfac14080b737ccf0f913eb301e9146514aa22c1df7dc3e46"},
-      {"command":"make check; make generate twice with git diff/status checks","exit_code":0,"tests_passed":0,"log":"check-after.log","sha256":"7d31c86e820086ca0bdb347c1518412dcf880353f9cf368f80ad35685feefdf9"},
-      {"command":"go test -count=1 -json ./internal/commercial/... ./internal/architecture -run '^TestCE04'","exit_code":0,"tests_passed":47,"log":"focused.jsonl","sha256":"2ee49f791489546b796a3eb42851eb481ee7fee1c5d4cfebd567f7b58250468d"},
-      {"command":"go test -race -count=1 -json ./internal/commercial/domain/entitlement -run '^TestCE04'","exit_code":0,"tests_passed":45,"log":"race.jsonl","sha256":"674e378f794e1971f58ce7d15ea14bf5e4cb0fff30a77ffda57ee261f1423838"},
-      {"command":"go test -count=1 -tags=integration -json ./integration -run '^TestCE04MySQL'","exit_code":0,"tests_passed":7,"log":"mysql.jsonl","sha256":"f75bf3ea0432a6b204ff0fb278fba0e51e545099a91dd32e2f84986e123c868c"},
-      {"command":"TestCE04PersistenceBeforeRestart; restart workflow-owned MySQL; TestCE04PersistenceAfterRestart","exit_code":0,"tests_passed":2,"log":"restart.log","sha256":"65577ab10776e7b83eb8fcdcf4340ea7b0d858c98a591dc5c69253b32ae7daad"},
-      {"command":"go test -count=1 -json ./...","exit_code":0,"tests_passed":116,"log":"all.jsonl","sha256":"c4926b022d93fb272f337b2915bf8325d1456bc967549d15faebe9b7307a3ebc"},
-      {"command":"go vet ./...; go build ./...","exit_code":0,"tests_passed":0,"logs":["vet.log","build.log"],"sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
-    ]
+    "sha256": {
+      "check-before.log": "9fc6028ade7a5859b75de6b4111f390fa20bd0fac3a7809f25b96182e103c842",
+      "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ce02-mysql.jsonl": "75081a93be689931668e655e558050ba440b74077db37aed32d61b7176659e85",
+      "plan.log": "0a88c2601a601e515a6f3d036e0fdcfe3d19305abbcee0f9b5ac55254242bc9a",
+      "generate-2.log": "4818b23fc7d2941580dd027f68821bf849cb125d7bb7bbde6acdecd9085ff6b9",
+      "restart-before.jsonl": "53b6e58072baa4e1116653f42c83dc3bc00c62aa6a1c08bec484d8a175d19732",
+      "generate-1.log": "5d9790f095201227cf9d5691aa67c0328cc388f4491dc0e26954a4d650bfd94e",
+      "resolution.log": "4fc9bb6a08c5409cfac14080b737ccf0f913eb301e9146514aa22c1df7dc3e46",
+      "check-after.log": "7d31c86e820086ca0bdb347c1518412dcf880353f9cf368f80ad35685feefdf9",
+      "race.jsonl": "04febc62623907d2bf87fe1f3e1cecd6e9cd73c2d0eefc3cf48f702c3c7e379a",
+      "runtime-gate-tests.log": "a45629cd632fd8ed5ca8455b7bf91a4b724de72f37ad4cbe98337ee4bb977a43",
+      "baseline.json": "12d80d5caabd892e495be22b4a47cd7a42061f77fd3c15878e0000049c052f7f",
+      "focused.jsonl": "f77e8a4ab169f8607f5b4699fb4972d4e39d6e58961851d5911a2ef75a22b215",
+      "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mysql.jsonl": "0a73814362d2ba9d0859ae708bf00eaf2ece6282acba83b677c3bc428250f3bc",
+      "evidence-tests.log": "bc746fec2ec628264947a73e40b73c9687b3125ce6a28b52fe0d2f8d82d5ccd7",
+      "plan-tests.log": "b6c6c1ef19bf5a9357e1899453ca68afb952300bfe66fc8fdec0c566aa11fe90",
+      "restart.log": "26e997f7efe66508c0207a86ea5dc2e973a64f558bce44f9d131be969ed1c1dc",
+      "all.jsonl": "39983cdd677ebdfd0a4f9d846884579e984b8e69230b853e41ffbb6cee03cef4",
+      "sources.txt": "e7f1391f9e3fcfa47895e4456ad8fee1c5271ce1af6f9e07cd6c542e37e3a569",
+      "restart-after.jsonl": "9bc921c594d8e80d8220ecc630fdfca3ad779225ef1012a376435316b7f1d227"
+    }
   },
-  "blocked_gate": {
-    "name":"b12-7-runtime-qualification",
-    "workflow_run":34329476909,
-    "result":"FAILURE",
-    "artifact_id":10095180133,
-    "artifact_sha256":"273a05a8428f0eafeef6811af03b05518a7b2aa3161abe16c858d5039c3aa505",
-    "observed_runtime_state":"running",
-    "actual_application_count":8,
-    "legacy_assertion_count":6,
-    "workflow_edit":"previously denied; not retried or bypassed"
+  "runtime_qualification": {
+    "workflow_run": 34334065279,
+    "job_id": 102409201329,
+    "artifact_id": 10097013323,
+    "artifact_sha256": "4db77673d221fb71d98703bfa69fc79e1ecd64e12eff8412d4b3c47c0a0299aa",
+    "applications": 8,
+    "routes": 28,
+    "gate_tests": 25,
+    "closure": "PASS",
+    "shutdown": "PASS",
+    "clean_worktree": "PASS",
+    "sha256": {
+      "closure.log": "24d0bc5efe0468c10a709ff8d5b89a8676d4d64732176ee867ad548975062e19",
+      "dev-config.json": "184997ef8ffac77e0ed2292bb0d51bbbbec78b30db9383df0a6c4ee27fe147d5",
+      "dev-runtime.json": "03aee8a8543635bb2b3d305ac4af5c5604b47f3450fe1b5d7d7114771db5d669",
+      "dev.stderr": "f6bb2fa97cc131e45a1fa4dfb2f60bdeb510ecae11a7fd76ca3cb3b6094098e1",
+      "dev.stdout": "f523a40af2c9817db34ce160b786b3ba3288d0e428f1d318a55655f1ff0b2225",
+      "diagnostics.json": "0afa306b24c095d07a9df3387fd989b95ddbc1ce8f1844b349f6a7e2e8ca542a",
+      "gate-tests.log": "5cb014a47702eeb9de97ea6b888e92bb6012d63b3bc6f67ddd137112b1093782",
+      "manifest.json": "bfd9af6613435edcd7d49dbbb38e4f72f324456226bde134d79488f98973ac07",
+      "runtime-graph.json": "a52505b037a75abdd04dc41649521a10dcc391577c1be08cd5f98eb57aad1eae",
+      "sources.txt": "e7f1391f9e3fcfa47895e4456ad8fee1c5271ce1af6f9e07cd6c542e37e3a569",
+      "status.json": "1de5c39142561bef382ee59a3870ceb16c5e3d2e03519b5a93da4cb8c12ad4d9",
+      "stop.log": "cd06cdbd370ff03b516c209bfca5b2e4861741b59959c2cd0d576bf7c8421160"
+    }
   },
-  "historical_approval_run":34327172671,
-  "approval_note":"Old bot-generated run action_required is preserved as history. The new normal documentation commit produced executed PR checks; the remaining confirmed blocker is B12.7, not a claim that all current checks still await approval.",
-  "not_completed":["B12.7 repair through normal authorized workflow and successful qualification","main merge and qualification","CE-04 DONE and final --require-main"]
+  "candidate": {
+    "head_commit": "51355872d1e6af2961826a053df6d0ad7008ff73",
+    "tested_merge_ref": "892a2314aecf4b23219d6c1fe2d0b9ba0f21fadb",
+    "workflows_passed": 12,
+    "qualification_run": 34333644188,
+    "runtime_run": 34333644367
+  },
+  "main_workflows_passed": [
+    34334065272,
+    34334065389,
+    34334065337,
+    34334065191,
+    34334065208,
+    34334065279
+  ],
+  "checks": [
+    {
+      "command": "make yunka-source-check workspace-check",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065191 / resolution.log"
+    },
+    {
+      "command": "make check (before and after generation)",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065191 / check-before.log, check-after.log"
+    },
+    {
+      "command": "make generate twice; git diff --exit-code; test -z \"$(git status --porcelain)\"",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065191 / generate-1.log, generate-2.log"
+    },
+    {
+      "command": "go test -count=1 -json ./internal/commercial/... ./internal/architecture -run '^TestCE04'",
+      "exit_code": 0,
+      "tests_passed": 47,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065191 / focused.jsonl"
+    },
+    {
+      "command": "go test -race -count=1 -json ./internal/commercial/domain/entitlement",
+      "exit_code": 0,
+      "tests_passed": 45,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065191 / race.jsonl"
+    },
+    {
+      "command": "go test -count=1 -tags=integration -json ./integration -run '^TestCE04MySQL'",
+      "exit_code": 0,
+      "tests_passed": 7,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065191 / mysql.jsonl"
+    },
+    {
+      "command": "TestCE04PersistenceBeforeRestart; docker restart workflow-owned MySQL; TestCE04PersistenceAfterRestart",
+      "exit_code": 0,
+      "tests_passed": 2,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065191 / restart-before.jsonl, restart.log, restart-after.jsonl"
+    },
+    {
+      "command": "go test -count=1 -tags=integration -json ./integration -run '^TestCE02'",
+      "exit_code": 0,
+      "tests_passed": 2,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065191 / ce02-mysql.jsonl"
+    },
+    {
+      "command": "go test -count=1 -json ./...",
+      "exit_code": 0,
+      "tests_passed": 116,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065191 / all.jsonl"
+    },
+    {
+      "command": "go vet ./...; go build ./...",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065191 / vet.log, build.log"
+    },
+    {
+      "command": "python3 -m unittest discover -s scripts -p 'test_ce04_runtime_closure.py' -v",
+      "exit_code": 0,
+      "tests_passed": 25,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065191 / runtime-gate-tests.log"
+    },
+    {
+      "command": "python3 docs/commercial-entitlements/tools/check_plan.py",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065191 / plan.log"
+    },
+    {
+      "command": "python3 -m unittest discover -s docs/commercial-entitlements/tools -p 'test_*.py' -v",
+      "exit_code": 0,
+      "tests_passed": 8,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065191 / plan-tests.log"
+    },
+    {
+      "command": "python3 -m unittest discover -s scripts -p 'test_ce03_*.py' -v",
+      "exit_code": 0,
+      "tests_passed": 6,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065191 / evidence-tests.log"
+    },
+    {
+      "command": "B12.7: locked build; yunka dev; diagnostics; dev status --closure; ce04_runtime_closure.py; SIGTERM/stopped; clean worktree",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34334065279 / sources.txt, manifest.json, dev-config.json, status.json, runtime-graph.json, diagnostics.json, closure.log, stop.log"
+    }
+  ],
+  "history": {
+    "prior_result": "BLOCKED",
+    "prior_receipt_commit": "df5ca62bfafe8e09516a3d44900efad5f452b1c0",
+    "prior_runtime_failure": 34329476909,
+    "blocker_issue": "https://github.com/hvritual/biz/issues/26",
+    "authorization": "User explicitly requested gate correction and complete requalification in this completion round. Normal GitHub write/PR/merge; no protection or token-permission changes.",
+    "business_run_task_status": "BLOCKED",
+    "business_run_round_check": "QUALIFIED_NOT_DONE"
+  },
+  "completion_semantics": "PASS verifies the integrated business commit. Final receipt commit has no self-referential SHA; its main CE-04 qualification and CE round receipts execute --require-main and publish independent run evidence.",
+  "scope_exclusions": [
+    "CE-05 business guards",
+    "CE-06 snapshots and business revocation barriers",
+    "subscriptions or payments",
+    "Vue pages",
+    "quota consumption",
+    "field output filtering",
+    "production deployment"
+  ],
+  "remaining_nonblocking_framework_issue": "https://github.com/hvritual/yunka.io/issues/177",
+  "review_note": "Two earlier automated COMMENTED findings were addressed and resolved with actual regressions; no independent APPROVE on the final head is claimed."
 }
