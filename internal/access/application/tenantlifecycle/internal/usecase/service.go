@@ -9,6 +9,7 @@ import (
 	"time"
 
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
+	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	accessapp "github.com/hvritual/biz/internal/access/application"
 	"github.com/hvritual/biz/internal/access/domain"
 	"github.com/hvritual/biz/internal/access/ports"
@@ -32,12 +33,13 @@ func New(repositories requestscope.RepositoryFactory[ports.TenantRepositories], 
 }
 
 func (service *service) CreateTenant(ctx context.Context, request *accessv1.CreateTenantRequest) (*accessv1.TenantDTO, error) {
-	if request == nil || strings.TrimSpace(request.GetName()) == "" || strings.TrimSpace(request.GetOwnerUserId()) == "" || strings.TrimSpace(request.GetOwnerEmail()) == "" {
+	if request == nil || strings.TrimSpace(request.GetName()) == "" || strings.TrimSpace(request.GetOwnerUserId()) == "" || strings.TrimSpace(request.GetOwnerEmail()) == "" || strings.TrimSpace(request.GetRequestId()) == "" || strings.TrimSpace(request.GetSalesScope()) == "" {
 		return nil, accessapp.ErrInvalidTenantRequest
 	}
 	members := service.capabilities.AccessTenantMemberLifecycle()
 	roles := service.capabilities.AccessTenantRolePermission()
-	if members == nil || roles == nil {
+	subscriptions := service.capabilities.CommercialSubscriptionManagement()
+	if members == nil || roles == nil || subscriptions == nil {
 		return nil, errors.New("access: tenant bootstrap child capabilities are required")
 	}
 	now := time.Now().UTC()
@@ -60,6 +62,9 @@ func (service *service) CreateTenant(ctx context.Context, request *accessv1.Crea
 		TenantId: tenant.ID,
 		UserId:   ownerUserID,
 	}); err != nil {
+		return nil, err
+	}
+	if _, err := subscriptions.BootstrapBaseSubscription(ctx, &commercialv1.BootstrapTenantSubscriptionRequest{RequestId: strings.TrimSpace(request.GetRequestId()), TenantId: tenant.ID, SalesScope: strings.TrimSpace(request.GetSalesScope())}); err != nil {
 		return nil, err
 	}
 	return tenantDTO(tenant), nil

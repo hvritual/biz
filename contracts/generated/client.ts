@@ -59,6 +59,8 @@ export interface Access_V1_CreateTenantRequest {
   name?: string;
   ownerUserId?: string;
   ownerEmail?: string;
+  requestId?: string;
+  salesScope?: string;
 }
 
 export interface Access_V1_CreateTenantRoleRequest {
@@ -236,6 +238,19 @@ export interface Commercial_V1_CreatePlanVersionRequest {
   reason?: string;
 }
 
+export interface Commercial_V1_DefaultSubscriptionRuleDTO {
+  ruleId?: string;
+  version?: string;
+  priority?: number;
+  salesScope?: string;
+  planCode?: string;
+  planVersion?: string;
+  enabled?: boolean;
+  reason?: string;
+  actorId?: string;
+  updatedAt?: string;
+}
+
 export interface Commercial_V1_DeleteModuleRequest {
   requestId?: string;
   moduleCode?: string;
@@ -336,6 +351,17 @@ export interface Commercial_V1_GetPlanVersionRequest {
   version?: string;
 }
 
+export interface Commercial_V1_GetTenantSubscriptionRequest {
+  tenantId?: string;
+}
+
+export interface Commercial_V1_ListDefaultSubscriptionRulesRequest {
+}
+
+export interface Commercial_V1_ListDefaultSubscriptionRulesResponse {
+  rules?: readonly Commercial_V1_DefaultSubscriptionRuleDTO[];
+}
+
 export interface Commercial_V1_ListEntitlementOverridesRequest {
   tenantId?: string;
 }
@@ -426,6 +452,18 @@ export interface Commercial_V1_PlanVersionDTO {
   reason?: string;
 }
 
+export interface Commercial_V1_PutDefaultSubscriptionRuleRequest {
+  requestId?: string;
+  ruleId?: string;
+  expectedVersion?: string;
+  priority?: number;
+  salesScope?: string;
+  planCode?: string;
+  planVersion?: string;
+  enabled?: boolean;
+  reason?: string;
+}
+
 export interface Commercial_V1_RevokeEntitlementOverrideRequest {
   requestId?: string;
   tenantId?: string;
@@ -448,6 +486,21 @@ export interface Commercial_V1_SetModuleTechnicalStatusRequest {
   technicalStatus?: Commercial_V1_ModuleTechnicalStatus;
   version?: string;
   reason?: string;
+}
+
+export interface Commercial_V1_TenantSubscriptionDTO {
+  subscriptionId?: string;
+  tenantId?: string;
+  kind?: string;
+  state?: string;
+  planCode?: string;
+  planVersion?: string;
+  ruleId?: string;
+  ruleVersion?: string;
+  salesScope?: string;
+  entitlementSourceVersion?: string;
+  createdAt?: string;
+  matchExplanation?: string;
 }
 
 export interface Commercial_V1_UpdateModuleRequest {
@@ -896,6 +949,33 @@ export const operations = {
       { method: "PATCH", path: "/v1/platform/plans/{plan_code}/versions/{version}", body: "*" },
     ]
   },
+  "commercial.v1.SubscriptionManagementApplication.GetTenantSubscription": {
+    fullName: "commercial.v1.SubscriptionManagementApplication.GetTenantSubscription",
+    rpcPath: "/commercial.v1.SubscriptionManagementApplication/GetTenantSubscription",
+    requestType: "commercial.v1.GetTenantSubscriptionRequest",
+    responseType: "commercial.v1.TenantSubscriptionDTO",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/subscription" },
+    ]
+  },
+  "commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules": {
+    fullName: "commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules",
+    rpcPath: "/commercial.v1.SubscriptionManagementApplication/ListDefaultSubscriptionRules",
+    requestType: "commercial.v1.ListDefaultSubscriptionRulesRequest",
+    responseType: "commercial.v1.ListDefaultSubscriptionRulesResponse",
+    http: [
+      { method: "GET", path: "/v1/platform/subscription-default-rules" },
+    ]
+  },
+  "commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule": {
+    fullName: "commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule",
+    rpcPath: "/commercial.v1.SubscriptionManagementApplication/PutDefaultSubscriptionRule",
+    requestType: "commercial.v1.PutDefaultSubscriptionRuleRequest",
+    responseType: "commercial.v1.DefaultSubscriptionRuleDTO",
+    http: [
+      { method: "PUT", path: "/v1/platform/subscription-default-rules/{rule_id}", body: "*" },
+    ]
+  },
   "deviceops.v1.DeviceApplication.CreateDevice": {
     fullName: "deviceops.v1.DeviceApplication.CreateDevice",
     rpcPath: "/deviceops.v1.DeviceApplication/CreateDevice",
@@ -1146,6 +1226,23 @@ export class Commercial_V1_PlanManagementApplicationClient {
 
   updatePlanDraft(request: Commercial_V1_UpdatePlanDraftRequest): Promise<Commercial_V1_PlanVersionDTO> {
     return this.transport.call<Commercial_V1_UpdatePlanDraftRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.UpdatePlanDraft"], request);
+  }
+
+}
+
+export class Commercial_V1_SubscriptionManagementApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  getTenantSubscription(request: Commercial_V1_GetTenantSubscriptionRequest): Promise<Commercial_V1_TenantSubscriptionDTO> {
+    return this.transport.call<Commercial_V1_GetTenantSubscriptionRequest, Commercial_V1_TenantSubscriptionDTO>(operations["commercial.v1.SubscriptionManagementApplication.GetTenantSubscription"], request);
+  }
+
+  listDefaultSubscriptionRules(request: Commercial_V1_ListDefaultSubscriptionRulesRequest): Promise<Commercial_V1_ListDefaultSubscriptionRulesResponse> {
+    return this.transport.call<Commercial_V1_ListDefaultSubscriptionRulesRequest, Commercial_V1_ListDefaultSubscriptionRulesResponse>(operations["commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules"], request);
+  }
+
+  putDefaultSubscriptionRule(request: Commercial_V1_PutDefaultSubscriptionRuleRequest): Promise<Commercial_V1_DefaultSubscriptionRuleDTO> {
+    return this.transport.call<Commercial_V1_PutDefaultSubscriptionRuleRequest, Commercial_V1_DefaultSubscriptionRuleDTO>(operations["commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule"], request);
   }
 
 }

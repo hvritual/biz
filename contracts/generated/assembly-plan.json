@@ -63,6 +63,16 @@
       }
     },
     {
+      "id": "commercial/subscription_management",
+      "domain": "commercial",
+      "name": "subscription_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/commercial/subscription_management"
+      }
+    },
+    {
       "id": "deviceops/device_management",
       "domain": "deviceops",
       "name": "device_management",
@@ -113,6 +123,15 @@
       }
     },
     {
+      "from": "access/tenant_lifecycle",
+      "to": "commercial/subscription_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_lifecycle/requires/commercial/subscription_management"
+      }
+    },
+    {
       "from": "access/tenant_member_lifecycle",
       "to": "access/tenant_role_permission",
       "evidence": {
@@ -146,6 +165,15 @@
         "ownership": "reused",
         "source": "manifest.json",
         "ref": "applications/commercial/plan_management/requires/commercial/module_catalog"
+      }
+    },
+    {
+      "from": "commercial/subscription_management",
+      "to": "commercial/plan_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/commercial/subscription_management/requires/commercial/plan_management"
       }
     },
     {
@@ -196,6 +224,33 @@
       }
     },
     {
+      "from": "access/tenant_lifecycle",
+      "to": "commercial/module_catalog",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_lifecycle-\u003ecommercial/module_catalog"
+      }
+    },
+    {
+      "from": "access/tenant_lifecycle",
+      "to": "commercial/plan_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_lifecycle-\u003ecommercial/plan_management"
+      }
+    },
+    {
+      "from": "access/tenant_lifecycle",
+      "to": "commercial/subscription_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_lifecycle-\u003ecommercial/subscription_management"
+      }
+    },
+    {
       "from": "access/tenant_member_lifecycle",
       "to": "access/tenant_role_permission",
       "evidence": {
@@ -241,12 +296,48 @@
       }
     },
     {
+      "from": "commercial/entitlement_management",
+      "to": "commercial/plan_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/entitlement_management-\u003ecommercial/plan_management"
+      }
+    },
+    {
+      "from": "commercial/entitlement_management",
+      "to": "commercial/subscription_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/entitlement_management-\u003ecommercial/subscription_management"
+      }
+    },
+    {
       "from": "commercial/plan_management",
       "to": "commercial/module_catalog",
       "evidence": {
         "ownership": "derived",
         "source": "application-dependency-closure",
         "ref": "commercial/plan_management-\u003ecommercial/module_catalog"
+      }
+    },
+    {
+      "from": "commercial/subscription_management",
+      "to": "commercial/module_catalog",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/subscription_management-\u003ecommercial/module_catalog"
+      }
+    },
+    {
+      "from": "commercial/subscription_management",
+      "to": "commercial/plan_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/subscription_management-\u003ecommercial/plan_management"
       }
     },
     {
@@ -914,6 +1005,108 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/commercial.plan.update"
+      }
+    },
+    {
+      "id": "commercial.subscription.bootstrap_base",
+      "application": "commercial/subscription_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.bootstrap_base"
+      }
+    },
+    {
+      "id": "commercial.subscription.get",
+      "application": "commercial/subscription_management",
+      "bindings": [
+        {
+          "operationId": "commercial.subscription.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.subscription.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.subscription.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.subscription.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.get"
+      }
+    },
+    {
+      "id": "commercial.subscription.rule.list",
+      "application": "commercial/subscription_management",
+      "bindings": [
+        {
+          "operationId": "commercial.subscription.rule.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.subscription.rule.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.subscription.rule.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.subscription.rule.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.rule.list"
+      }
+    },
+    {
+      "id": "commercial.subscription.rule.put",
+      "application": "commercial/subscription_management",
+      "bindings": [
+        {
+          "operationId": "commercial.subscription.rule.put",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.subscription.rule.put/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.subscription.rule.put",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.subscription.rule.put/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.rule.put"
       }
     },
     {
@@ -1940,6 +2133,24 @@
       }
     },
     {
+      "from": "commercial.subscription.bootstrap_base",
+      "to": "commercial.plan.eligibility",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.bootstrap_base/requiresOperations/commercial.plan.eligibility"
+      }
+    },
+    {
+      "from": "commercial.subscription.rule.put",
+      "to": "commercial.plan.eligibility",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.rule.put/requiresOperations/commercial.plan.eligibility"
+      }
+    },
+    {
       "from": "device.transfer",
       "to": "device.update",
       "evidence": {
@@ -1964,6 +2175,15 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/device.update/requiresOperations/site.validate_transfer_target"
+      }
+    },
+    {
+      "from": "tenant.create",
+      "to": "commercial.subscription.bootstrap_base",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.create/requiresOperations/commercial.subscription.bootstrap_base"
       }
     },
     {
@@ -2086,6 +2306,7 @@
         "commercial/entitlement_management",
         "commercial/module_catalog",
         "commercial/plan_management",
+        "commercial/subscription_management",
         "deviceops/device_management",
         "deviceops/device_transfer",
         "deviceops/site_management"
@@ -2115,6 +2336,9 @@
         "commercial.plan.publish",
         "commercial.plan.retire",
         "commercial.plan.update",
+        "commercial.subscription.get",
+        "commercial.subscription.rule.list",
+        "commercial.subscription.rule.put",
         "device.create",
         "device.delete",
         "device.get",
@@ -2147,6 +2371,7 @@
       "internalOperations": [
         "commercial.module.entitlement_catalog",
         "commercial.module.plan_catalog",
+        "commercial.subscription.bootstrap_base",
         "site.validate_transfer_target",
         "tenant.member.bootstrap_owner",
         "tenant.role.assert_member_deactivation_allowed",
