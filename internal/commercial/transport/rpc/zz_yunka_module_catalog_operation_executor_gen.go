@@ -15,13 +15,13 @@ import (
 	gatewaygrpc "yunka.io/gateway/rpc/transport/grpc"
 )
 
-type OperationServer struct {
+type ModuleCatalogOperationServer struct {
 	commercialv1.UnimplementedModuleCatalogApplicationServer
 	application application.ModuleCatalogApplication
 	executor    operation.Executor
 }
 
-func RegisterOperationExecutor(registrar grpc.ServiceRegistrar, application application.ModuleCatalogApplication, executor operation.Executor) error {
+func RegisterModuleCatalogOperationExecutor(registrar grpc.ServiceRegistrar, application application.ModuleCatalogApplication, executor operation.Executor) error {
 	if registrar == nil {
 		return errors.New("contract C9 RPC adapter: registrar is required")
 	}
@@ -31,95 +31,95 @@ func RegisterOperationExecutor(registrar grpc.ServiceRegistrar, application appl
 	if executor == nil {
 		return errors.New("contract C9 RPC adapter: operation executor is required")
 	}
-	commercialv1.RegisterModuleCatalogApplicationServer(registrar, &OperationServer{application: application, executor: executor})
+	commercialv1.RegisterModuleCatalogApplicationServer(registrar, &ModuleCatalogOperationServer{application: application, executor: executor})
 	return nil
 }
 
-func (server *OperationServer) CreateModule(ctx context.Context, request *commercialv1.CreateModuleRequest) (*commercialv1.ModuleDTO, error) {
+func (server *ModuleCatalogOperationServer) CreateModule(ctx context.Context, request *commercialv1.CreateModuleRequest) (*commercialv1.ModuleDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
 			ctx = execution.WithIdempotencyKey(ctx, values[0])
 		}
 	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanCreateModule(), request, server.application.CreateModule)
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogCreateModule(), request, server.application.CreateModule)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
 	return response, nil
 }
 
-func (server *OperationServer) DeleteModule(ctx context.Context, request *commercialv1.DeleteModuleRequest) (*commercialv1.DeleteModuleResponse, error) {
+func (server *ModuleCatalogOperationServer) DeleteModule(ctx context.Context, request *commercialv1.DeleteModuleRequest) (*commercialv1.DeleteModuleResponse, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
 			ctx = execution.WithIdempotencyKey(ctx, values[0])
 		}
 	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanDeleteModule(), request, server.application.DeleteModule)
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogDeleteModule(), request, server.application.DeleteModule)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
 	return response, nil
 }
 
-func (server *OperationServer) GetModule(ctx context.Context, request *commercialv1.GetModuleRequest) (*commercialv1.ModuleDTO, error) {
+func (server *ModuleCatalogOperationServer) GetModule(ctx context.Context, request *commercialv1.GetModuleRequest) (*commercialv1.ModuleDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
 			ctx = execution.WithIdempotencyKey(ctx, values[0])
 		}
 	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanGetModule(), request, server.application.GetModule)
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogGetModule(), request, server.application.GetModule)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
 	return response, nil
 }
 
-func (server *OperationServer) ListModules(ctx context.Context, request *commercialv1.ListModulesRequest) (*commercialv1.ListModulesResponse, error) {
+func (server *ModuleCatalogOperationServer) ListModules(ctx context.Context, request *commercialv1.ListModulesRequest) (*commercialv1.ListModulesResponse, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
 			ctx = execution.WithIdempotencyKey(ctx, values[0])
 		}
 	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanListModules(), request, server.application.ListModules)
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogListModules(), request, server.application.ListModules)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
 	return response, nil
 }
 
-func (server *OperationServer) SetModuleSalesStatus(ctx context.Context, request *commercialv1.SetModuleSalesStatusRequest) (*commercialv1.ModuleDTO, error) {
+func (server *ModuleCatalogOperationServer) SetModuleSalesStatus(ctx context.Context, request *commercialv1.SetModuleSalesStatusRequest) (*commercialv1.ModuleDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
 			ctx = execution.WithIdempotencyKey(ctx, values[0])
 		}
 	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanSetModuleSalesStatus(), request, server.application.SetModuleSalesStatus)
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogSetModuleSalesStatus(), request, server.application.SetModuleSalesStatus)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
 	return response, nil
 }
 
-func (server *OperationServer) SetModuleTechnicalStatus(ctx context.Context, request *commercialv1.SetModuleTechnicalStatusRequest) (*commercialv1.ModuleDTO, error) {
+func (server *ModuleCatalogOperationServer) SetModuleTechnicalStatus(ctx context.Context, request *commercialv1.SetModuleTechnicalStatusRequest) (*commercialv1.ModuleDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
 			ctx = execution.WithIdempotencyKey(ctx, values[0])
 		}
 	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanSetModuleTechnicalStatus(), request, server.application.SetModuleTechnicalStatus)
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogSetModuleTechnicalStatus(), request, server.application.SetModuleTechnicalStatus)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
 	return response, nil
 }
 
-func (server *OperationServer) UpdateModule(ctx context.Context, request *commercialv1.UpdateModuleRequest) (*commercialv1.ModuleDTO, error) {
+func (server *ModuleCatalogOperationServer) UpdateModule(ctx context.Context, request *commercialv1.UpdateModuleRequest) (*commercialv1.ModuleDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
 			ctx = execution.WithIdempotencyKey(ctx, values[0])
 		}
 	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanUpdateModule(), request, server.application.UpdateModule)
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogUpdateModule(), request, server.application.UpdateModule)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}

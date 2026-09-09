@@ -1,0 +1,58 @@
+{
+  "task_id": "CE-04",
+  "result": "BLOCKED",
+  "source_commit": "437b0f052e823fdf99dfa3cdda2104b25c7b7627",
+  "source_tree": "e0ade58957fb636fbebcb37323d11a229acaeb68",
+  "task_base_commit": "9ea878d72650216a26c39eddf98374717f2a562b",
+  "observed_main_commit": "3bec893768fc93705fb3a440cbe6ab6941194326",
+  "integration_commit": null,
+  "framework_commit": "6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb",
+  "blocker_issue": "https://github.com/hvritual/biz/issues/26",
+  "candidate_qualification": {
+    "result": "PASS",
+    "head_commit": "58768c32e5172b4264086538ec46ee025fc181a9",
+    "verified_merge_ref": "8c26b3800da8b7c0527e5d1d96d1948ae1443566",
+    "workflow_run": 34329476773,
+    "job_id": 102394433690,
+    "artifact_id": 10095201343,
+    "artifact_sha256": "3f1b9423ed1f7fe96e87ab8c267c0315a31ed8217d7f359ceef5c43eca64b9d9",
+    "downloaded_log_hashes_verified": 21,
+    "tests_recounted_from_jsonl": true,
+    "round_check": "QUALIFIED_NOT_DONE",
+    "toolchain": "go1.25.13",
+    "database": "MySQL 8.4 workflow-owned service",
+    "suites": {
+      "focused": {"leaf_tests":47,"pass_events":53,"failed":0,"skipped":0},
+      "race": {"leaf_tests":45,"pass_events":51,"failed":0,"skipped":0},
+      "mysql": {"leaf_tests":7,"pass_events":7,"failed":0,"skipped":0},
+      "restart-before": {"leaf_tests":1,"pass_events":1,"failed":0,"skipped":0},
+      "restart-after": {"leaf_tests":1,"pass_events":1,"failed":0,"skipped":0},
+      "ce02-mysql": {"leaf_tests":2,"pass_events":2,"failed":0,"skipped":0},
+      "all": {"leaf_tests":116,"pass_events":126,"failed":0,"skipped":0,"no_test_packages":27}
+    },
+    "checks": [
+      {"command":"make yunka-source-check workspace-check","exit_code":0,"tests_passed":0,"log":"resolution.log","sha256":"4fc9bb6a08c5409cfac14080b737ccf0f913eb301e9146514aa22c1df7dc3e46"},
+      {"command":"make check; make generate twice with git diff/status checks","exit_code":0,"tests_passed":0,"log":"check-after.log","sha256":"7d31c86e820086ca0bdb347c1518412dcf880353f9cf368f80ad35685feefdf9"},
+      {"command":"go test -count=1 -json ./internal/commercial/... ./internal/architecture -run '^TestCE04'","exit_code":0,"tests_passed":47,"log":"focused.jsonl","sha256":"2ee49f791489546b796a3eb42851eb481ee7fee1c5d4cfebd567f7b58250468d"},
+      {"command":"go test -race -count=1 -json ./internal/commercial/domain/entitlement -run '^TestCE04'","exit_code":0,"tests_passed":45,"log":"race.jsonl","sha256":"674e378f794e1971f58ce7d15ea14bf5e4cb0fff30a77ffda57ee261f1423838"},
+      {"command":"go test -count=1 -tags=integration -json ./integration -run '^TestCE04MySQL'","exit_code":0,"tests_passed":7,"log":"mysql.jsonl","sha256":"f75bf3ea0432a6b204ff0fb278fba0e51e545099a91dd32e2f84986e123c868c"},
+      {"command":"TestCE04PersistenceBeforeRestart; restart workflow-owned MySQL; TestCE04PersistenceAfterRestart","exit_code":0,"tests_passed":2,"log":"restart.log","sha256":"65577ab10776e7b83eb8fcdcf4340ea7b0d858c98a591dc5c69253b32ae7daad"},
+      {"command":"go test -count=1 -json ./...","exit_code":0,"tests_passed":116,"log":"all.jsonl","sha256":"c4926b022d93fb272f337b2915bf8325d1456bc967549d15faebe9b7307a3ebc"},
+      {"command":"go vet ./...; go build ./...","exit_code":0,"tests_passed":0,"logs":["vet.log","build.log"],"sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
+    ]
+  },
+  "blocked_gate": {
+    "name":"b12-7-runtime-qualification",
+    "workflow_run":34329476909,
+    "result":"FAILURE",
+    "artifact_id":10095180133,
+    "artifact_sha256":"273a05a8428f0eafeef6811af03b05518a7b2aa3161abe16c858d5039c3aa505",
+    "observed_runtime_state":"running",
+    "actual_application_count":8,
+    "legacy_assertion_count":6,
+    "workflow_edit":"previously denied; not retried or bypassed"
+  },
+  "historical_approval_run":34327172671,
+  "approval_note":"Old bot-generated run action_required is preserved as history. The new normal documentation commit produced executed PR checks; the remaining confirmed blocker is B12.7, not a claim that all current checks still await approval.",
+  "not_completed":["B12.7 repair through normal authorized workflow and successful qualification","main merge and qualification","CE-04 DONE and final --require-main"]
+}

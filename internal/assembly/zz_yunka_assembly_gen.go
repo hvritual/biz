@@ -24,7 +24,7 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "ba464cc42e324f2b1e42be934a882f329df7fe6f9e7a82e88d8884b6c9826379"
+const AssemblyPlanDigest = "cdaecf3c535cd4c8163a3610099b5f093c9256aa3dd96ea213133acd078869b9"
 
 type AccessTenantLifecycleDependencies struct {
 	AccessTenantMemberLifecycle accessapplication.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
@@ -36,6 +36,11 @@ type AccessTenantMemberLifecycleDependencies struct {
 }
 
 type AccessTenantRolePermissionDependencies struct {
+}
+
+type CommercialEntitlementManagementDependencies struct {
+	AccessTenantLifecycle   commercialapplication.EntitlementManagementToAccessTenantLifecycleChildCapability
+	CommercialModuleCatalog commercialapplication.EntitlementManagementToCommercialModuleCatalogChildCapability
 }
 
 type CommercialModuleCatalogDependencies struct {
@@ -56,6 +61,7 @@ type ApplicationFactories interface {
 	BuildAccessTenantLifecycle(AccessTenantLifecycleDependencies) (accessapplication.TenantLifecycleApplication, error)
 	BuildAccessTenantMemberLifecycle(AccessTenantMemberLifecycleDependencies) (accessapplication.TenantMemberLifecycleApplication, error)
 	BuildAccessTenantRolePermission(AccessTenantRolePermissionDependencies) (accessapplication.TenantRolePermissionApplication, error)
+	BuildCommercialEntitlementManagement(CommercialEntitlementManagementDependencies) (commercialapplication.EntitlementManagementApplication, error)
 	BuildCommercialModuleCatalog(CommercialModuleCatalogDependencies) (commercialapplication.ModuleCatalogApplication, error)
 	BuildDeviceopsDeviceManagement(DeviceopsDeviceManagementDependencies) (deviceopsapplication.DeviceManagementApplication, error)
 	BuildDeviceopsDeviceTransfer(DeviceopsDeviceTransferDependencies) (deviceopsapplication.DeviceTransferApplication, error)
@@ -63,13 +69,14 @@ type ApplicationFactories interface {
 }
 
 type Applications struct {
-	AccessTenantLifecycle       accessapplication.TenantLifecycleApplication
-	AccessTenantMemberLifecycle accessapplication.TenantMemberLifecycleApplication
-	AccessTenantRolePermission  accessapplication.TenantRolePermissionApplication
-	CommercialModuleCatalog     commercialapplication.ModuleCatalogApplication
-	DeviceopsDeviceManagement   deviceopsapplication.DeviceManagementApplication
-	DeviceopsDeviceTransfer     deviceopsapplication.DeviceTransferApplication
-	DeviceopsSiteManagement     deviceopsapplication.SiteManagementApplication
+	AccessTenantLifecycle           accessapplication.TenantLifecycleApplication
+	AccessTenantMemberLifecycle     accessapplication.TenantMemberLifecycleApplication
+	AccessTenantRolePermission      accessapplication.TenantRolePermissionApplication
+	CommercialEntitlementManagement commercialapplication.EntitlementManagementApplication
+	CommercialModuleCatalog         commercialapplication.ModuleCatalogApplication
+	DeviceopsDeviceManagement       deviceopsapplication.DeviceManagementApplication
+	DeviceopsDeviceTransfer         deviceopsapplication.DeviceTransferApplication
+	DeviceopsSiteManagement         deviceopsapplication.SiteManagementApplication
 }
 
 func BuildApplications(factories ApplicationFactories, executor operation.Executor) (Applications, error) {
@@ -120,6 +127,21 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	}
 	if applications.CommercialModuleCatalog == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/module_catalog")
+	}
+	commercialEntitlementManagementAccessTenantLifecycleCapability, err := commercialapplication.NewEntitlementManagementToAccessTenantLifecycleChildCapability(applications.AccessTenantLifecycle, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build commercial/entitlement_management dependency access/tenant_lifecycle: %w", err)
+	}
+	commercialEntitlementManagementCommercialModuleCatalogCapability, err := commercialapplication.NewEntitlementManagementToCommercialModuleCatalogChildCapability(applications.CommercialModuleCatalog, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build commercial/entitlement_management dependency commercial/module_catalog: %w", err)
+	}
+	applications.CommercialEntitlementManagement, err = factories.BuildCommercialEntitlementManagement(CommercialEntitlementManagementDependencies{AccessTenantLifecycle: commercialEntitlementManagementAccessTenantLifecycleCapability, CommercialModuleCatalog: commercialEntitlementManagementCommercialModuleCatalogCapability})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application commercial/entitlement_management: %w", err)
+	}
+	if applications.CommercialEntitlementManagement == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/entitlement_management")
 	}
 	applications.DeviceopsDeviceManagement, err = factories.BuildDeviceopsDeviceManagement(DeviceopsDeviceManagementDependencies{})
 	if err != nil {
@@ -213,13 +235,22 @@ func RegisterTransports(bindings TransportBindings, applications Applications, e
 	if err := accessrpc.RegisterTenantRolePermissionOperationExecutor(bindings.RPC, applications.AccessTenantRolePermission, executor); err != nil {
 		return fmt.Errorf("yunka assembly: register gRPC access/tenant_role_permission: %w", err)
 	}
+	if applications.CommercialEntitlementManagement == nil {
+		return errors.New("yunka assembly: application commercial/entitlement_management is required for transport registration")
+	}
+	if err := commercialrest.RegisterEntitlementManagementOperationExecutor(bindings.HTTP, applications.CommercialEntitlementManagement, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register HTTP commercial/entitlement_management: %w", err)
+	}
+	if err := commercialrpc.RegisterEntitlementManagementOperationExecutor(bindings.RPC, applications.CommercialEntitlementManagement, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register gRPC commercial/entitlement_management: %w", err)
+	}
 	if applications.CommercialModuleCatalog == nil {
 		return errors.New("yunka assembly: application commercial/module_catalog is required for transport registration")
 	}
-	if err := commercialrest.RegisterOperationExecutor(bindings.HTTP, applications.CommercialModuleCatalog, executor); err != nil {
+	if err := commercialrest.RegisterModuleCatalogOperationExecutor(bindings.HTTP, applications.CommercialModuleCatalog, executor); err != nil {
 		return fmt.Errorf("yunka assembly: register HTTP commercial/module_catalog: %w", err)
 	}
-	if err := commercialrpc.RegisterOperationExecutor(bindings.RPC, applications.CommercialModuleCatalog, executor); err != nil {
+	if err := commercialrpc.RegisterModuleCatalogOperationExecutor(bindings.RPC, applications.CommercialModuleCatalog, executor); err != nil {
 		return fmt.Errorf("yunka assembly: register gRPC commercial/module_catalog: %w", err)
 	}
 	if applications.DeviceopsDeviceManagement == nil {
@@ -263,7 +294,7 @@ type BootstrapOptions struct {
 
 func RuntimeInventory() core.RuntimeInventory {
 	return core.RuntimeInventory{
-		Routes:              []string{"/v1/devices", "/v1/devices/{id}", "/v1/devices/{id}/transfer", "/v1/platform/modules", "/v1/platform/modules/{module_code}", "/v1/platform/modules/{module_code}/sales-status", "/v1/platform/modules/{module_code}/technical-status", "/v1/tenant/members", "/v1/tenant/members/{user_id}", "/v1/tenant/members/{user_id}/activate", "/v1/tenant/members/{user_id}/remove", "/v1/tenant/members/{user_id}/suspend", "/v1/tenant/roles", "/v1/tenant/roles/{role_id}", "/v1/tenant/roles/{role_id}/disable", "/v1/tenant/roles/{role_id}/enable", "/v1/tenant/roles/{role_id}/members", "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", "/v1/tenant/roles/{role_id}/permissions", "/v1/tenants", "/v1/tenants/{id}", "/v1/tenants/{id}/activate", "/v1/tenants/{id}/close", "/v1/tenants/{id}/suspend"},
+		Routes:              []string{"/v1/devices", "/v1/devices/{id}", "/v1/devices/{id}/transfer", "/v1/platform/modules", "/v1/platform/modules/{module_code}", "/v1/platform/modules/{module_code}/sales-status", "/v1/platform/modules/{module_code}/technical-status", "/v1/platform/tenants/{tenant_id}/entitlement-overrides", "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", "/v1/platform/tenants/{tenant_id}/entitlements", "/v1/tenant/entitlements", "/v1/tenant/members", "/v1/tenant/members/{user_id}", "/v1/tenant/members/{user_id}/activate", "/v1/tenant/members/{user_id}/remove", "/v1/tenant/members/{user_id}/suspend", "/v1/tenant/roles", "/v1/tenant/roles/{role_id}", "/v1/tenant/roles/{role_id}/disable", "/v1/tenant/roles/{role_id}/enable", "/v1/tenant/roles/{role_id}/members", "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", "/v1/tenant/roles/{role_id}/permissions", "/v1/tenants", "/v1/tenants/{id}", "/v1/tenants/{id}/activate", "/v1/tenants/{id}/close", "/v1/tenants/{id}/suspend"},
 		RPCClientConfigured: false,
 		RPCServerCount:      1,
 	}

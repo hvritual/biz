@@ -1,12 +1,13 @@
 {
   "schema_version": 1,
-  "mapping_version": "1",
+  "mapping_version": "2",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "9fff554d6088d00df0764db3e5c07198f681f49d6874f8f0ce9b2baa3597dc00",
-    "contracts/generated/manifest.json": "8aef595187d6f636ff3116b69b4744bb66ce24a1400c247f5229c30d477dcf6a",
-    "contracts/generated/operation-plans.json": "2ddaaf76871f585dc1851322cf875d0cc4babb852b37b2abefd635fc4acdc349",
+    "contracts/commercial/operation-capabilities.v1.json": "3770905a1b739572f958ebf4e358d603fe2f16a6609eec3e65e117e3c0abc6c9",
+    "contracts/generated/manifest.json": "bfd9af6613435edcd7d49dbbb38e4f72f324456226bde134d79488f98973ac07",
+    "contracts/generated/operation-plans.json": "7515e2469ae927317eb73e718aaf7a496d2470228efe777c0bf34feaa3c67c5d",
     "internal/access/application/tenant_member_lifecycle.go": "c629117c2538c45af9a75932a53ecd6109059bd56e6dc71b11eedb2e538c6cff",
     "internal/access/application/tenantlifecycle/internal/usecase/service.go": "9075a1c10d8e987e452227602b946ec362475e41a2dcc2045f2930eedefb2c00",
+    "internal/commercial/application/entitlementmanagement/internal/usecase/service.go": "7c6c1f576d1d1db912f983c8ad4f07e424f5af571388e967d74d71ab5811d22a",
     "internal/deviceops/application/cross_application_transfer.go": "bffaca1f1be420371bfcb770c5ccfd79f18553938ca92de0584f5e921460d9d8"
   },
   "retired_capability_codes": [],
@@ -34,6 +35,106 @@
   ],
   "operations": [
     {
+      "operation_id": "commercial.entitlement.explain",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-04 privileged source administration or authenticated own-entitlement explanation; never grants tenant business access and never exempts IAM.",
+      "children": [
+        {
+          "operation_id": "commercial.module.entitlement_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/entitlementmanagement/internal/usecase/service.go#catalog"
+        },
+        {
+          "operation_id": "tenant.get",
+          "mode": "always",
+          "source": "internal/commercial/application/entitlementmanagement/internal/usecase/service.go#checkTenant"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.EntitlementManagementApplication/ExplainEntitlements",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.entitlement.get_my",
+      "classification": "recovery",
+      "capability_codes": [],
+      "exemption_reason": "CE-04 privileged source administration or authenticated own-entitlement explanation; never grants tenant business access and never exempts IAM.",
+      "children": [
+        {
+          "operation_id": "commercial.module.entitlement_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/entitlementmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/commercial.v1.EntitlementManagementApplication/GetMyEntitlements",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.entitlement.override.create",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-04 privileged source administration or authenticated own-entitlement explanation; never grants tenant business access and never exempts IAM.",
+      "children": [
+        {
+          "operation_id": "commercial.module.entitlement_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/entitlementmanagement/internal/usecase/service.go#catalog"
+        },
+        {
+          "operation_id": "tenant.get",
+          "mode": "always",
+          "source": "internal/commercial/application/entitlementmanagement/internal/usecase/service.go#checkTenant"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.EntitlementManagementApplication/CreateEntitlementOverride",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.entitlement.override.list",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-04 privileged source administration or authenticated own-entitlement explanation; never grants tenant business access and never exempts IAM.",
+      "children": [
+        {
+          "operation_id": "tenant.get",
+          "mode": "always",
+          "source": "internal/commercial/application/entitlementmanagement/internal/usecase/service.go#checkTenant"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.EntitlementManagementApplication/ListEntitlementOverrides",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.entitlement.override.revoke",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-04 privileged source administration or authenticated own-entitlement explanation; never grants tenant business access and never exempts IAM.",
+      "children": [
+        {
+          "operation_id": "tenant.get",
+          "mode": "always",
+          "source": "internal/commercial/application/entitlementmanagement/internal/usecase/service.go#checkTenant"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.EntitlementManagementApplication/RevokeEntitlementOverride",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
       "operation_id": "commercial.module.create",
       "classification": "platform_management",
       "capability_codes": [],
@@ -54,6 +155,17 @@
       "consumer_type": "platform",
       "tenant_required": false,
       "rpc": "/commercial.v1.ModuleCatalogApplication/DeleteModule",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.entitlement_catalog",
+      "classification": "foundation_exempt",
+      "capability_codes": [],
+      "exemption_reason": "Transport-private typed catalog query joined to an authenticated root; no tenant business action.",
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": false,
       "required_capability_codes": [],
       "always_required_capability_codes": []
     },

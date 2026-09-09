@@ -8,6 +8,7 @@
         "access/v1/tenant.proto",
         "access/v1/tenant_member.proto",
         "access/v1/tenant_role.proto",
+        "commercial/v1/entitlement.proto",
         "commercial/v1/module.proto",
         "deviceops/v1/deviceops.proto"
       ],

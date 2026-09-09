@@ -16,12 +16,12 @@ import (
 	authz "yunka.io/gateway/authz"
 )
 
-type OperationHandler struct {
+type ModuleCatalogOperationHandler struct {
 	application application.ModuleCatalogApplication
 	executor    operation.Executor
 }
 
-func RegisterOperationExecutor(mux *http.ServeMux, application application.ModuleCatalogApplication, executor operation.Executor) error {
+func RegisterModuleCatalogOperationExecutor(mux *http.ServeMux, application application.ModuleCatalogApplication, executor operation.Executor) error {
 	if mux == nil {
 		return errors.New("contract C9 REST adapter: mux is required")
 	}
@@ -31,7 +31,7 @@ func RegisterOperationExecutor(mux *http.ServeMux, application application.Modul
 	if executor == nil {
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
-	handler := &OperationHandler{application: application, executor: executor}
+	handler := &ModuleCatalogOperationHandler{application: application, executor: executor}
 	mux.HandleFunc("POST /v1/platform/modules", handler.handleOperationCreateModule)
 	mux.HandleFunc("DELETE /v1/platform/modules/{module_code}", handler.handleOperationDeleteModule)
 	mux.HandleFunc("GET /v1/platform/modules/{module_code}", handler.handleOperationGetModule)
@@ -42,7 +42,7 @@ func RegisterOperationExecutor(mux *http.ServeMux, application application.Modul
 	return nil
 }
 
-func writeOperationError(writer http.ResponseWriter, err error) {
+func writeModuleCatalogOperationError(writer http.ResponseWriter, err error) {
 	if authz.IsDenied(err) {
 		statusCode := http.StatusForbidden
 		var denied *authz.DeniedError
@@ -67,7 +67,7 @@ func writeOperationError(writer http.ResponseWriter, err error) {
 	http.Error(writer, "application request failed", http.StatusBadRequest)
 }
 
-func (handler *OperationHandler) handleOperationCreateModule(writer http.ResponseWriter, request *http.Request) {
+func (handler *ModuleCatalogOperationHandler) handleOperationCreateModule(writer http.ResponseWriter, request *http.Request) {
 	wire := &commercialv1.CreateModuleRequest{}
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -81,9 +81,9 @@ func (handler *OperationHandler) handleOperationCreateModule(writer http.Respons
 		}
 	}
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanCreateModule(), wire, handler.application.CreateModule)
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogCreateModule(), wire, handler.application.CreateModule)
 	if err != nil {
-		writeOperationError(writer, err)
+		writeModuleCatalogOperationError(writer, err)
 		return
 	}
 	payload, err := protojson.Marshal(output)
@@ -95,7 +95,7 @@ func (handler *OperationHandler) handleOperationCreateModule(writer http.Respons
 	_, _ = writer.Write(payload)
 }
 
-func (handler *OperationHandler) handleOperationDeleteModule(writer http.ResponseWriter, request *http.Request) {
+func (handler *ModuleCatalogOperationHandler) handleOperationDeleteModule(writer http.ResponseWriter, request *http.Request) {
 	wire := &commercialv1.DeleteModuleRequest{}
 	if raw := request.URL.Query().Get("request_id"); raw != "" {
 		wire.RequestId = raw
@@ -113,9 +113,9 @@ func (handler *OperationHandler) handleOperationDeleteModule(writer http.Respons
 	}
 	wire.ModuleCode = request.PathValue("module_code")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanDeleteModule(), wire, handler.application.DeleteModule)
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogDeleteModule(), wire, handler.application.DeleteModule)
 	if err != nil {
-		writeOperationError(writer, err)
+		writeModuleCatalogOperationError(writer, err)
 		return
 	}
 	payload, err := protojson.Marshal(output)
@@ -127,13 +127,13 @@ func (handler *OperationHandler) handleOperationDeleteModule(writer http.Respons
 	_, _ = writer.Write(payload)
 }
 
-func (handler *OperationHandler) handleOperationGetModule(writer http.ResponseWriter, request *http.Request) {
+func (handler *ModuleCatalogOperationHandler) handleOperationGetModule(writer http.ResponseWriter, request *http.Request) {
 	wire := &commercialv1.GetModuleRequest{}
 	wire.ModuleCode = request.PathValue("module_code")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanGetModule(), wire, handler.application.GetModule)
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogGetModule(), wire, handler.application.GetModule)
 	if err != nil {
-		writeOperationError(writer, err)
+		writeModuleCatalogOperationError(writer, err)
 		return
 	}
 	payload, err := protojson.Marshal(output)
@@ -145,12 +145,12 @@ func (handler *OperationHandler) handleOperationGetModule(writer http.ResponseWr
 	_, _ = writer.Write(payload)
 }
 
-func (handler *OperationHandler) handleOperationListModules(writer http.ResponseWriter, request *http.Request) {
+func (handler *ModuleCatalogOperationHandler) handleOperationListModules(writer http.ResponseWriter, request *http.Request) {
 	wire := &commercialv1.ListModulesRequest{}
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanListModules(), wire, handler.application.ListModules)
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogListModules(), wire, handler.application.ListModules)
 	if err != nil {
-		writeOperationError(writer, err)
+		writeModuleCatalogOperationError(writer, err)
 		return
 	}
 	payload, err := protojson.Marshal(output)
@@ -162,7 +162,7 @@ func (handler *OperationHandler) handleOperationListModules(writer http.Response
 	_, _ = writer.Write(payload)
 }
 
-func (handler *OperationHandler) handleOperationSetModuleSalesStatus(writer http.ResponseWriter, request *http.Request) {
+func (handler *ModuleCatalogOperationHandler) handleOperationSetModuleSalesStatus(writer http.ResponseWriter, request *http.Request) {
 	wire := &commercialv1.SetModuleSalesStatusRequest{}
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -177,9 +177,9 @@ func (handler *OperationHandler) handleOperationSetModuleSalesStatus(writer http
 	}
 	wire.ModuleCode = request.PathValue("module_code")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSetModuleSalesStatus(), wire, handler.application.SetModuleSalesStatus)
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogSetModuleSalesStatus(), wire, handler.application.SetModuleSalesStatus)
 	if err != nil {
-		writeOperationError(writer, err)
+		writeModuleCatalogOperationError(writer, err)
 		return
 	}
 	payload, err := protojson.Marshal(output)
@@ -191,7 +191,7 @@ func (handler *OperationHandler) handleOperationSetModuleSalesStatus(writer http
 	_, _ = writer.Write(payload)
 }
 
-func (handler *OperationHandler) handleOperationSetModuleTechnicalStatus(writer http.ResponseWriter, request *http.Request) {
+func (handler *ModuleCatalogOperationHandler) handleOperationSetModuleTechnicalStatus(writer http.ResponseWriter, request *http.Request) {
 	wire := &commercialv1.SetModuleTechnicalStatusRequest{}
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -206,9 +206,9 @@ func (handler *OperationHandler) handleOperationSetModuleTechnicalStatus(writer 
 	}
 	wire.ModuleCode = request.PathValue("module_code")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSetModuleTechnicalStatus(), wire, handler.application.SetModuleTechnicalStatus)
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogSetModuleTechnicalStatus(), wire, handler.application.SetModuleTechnicalStatus)
 	if err != nil {
-		writeOperationError(writer, err)
+		writeModuleCatalogOperationError(writer, err)
 		return
 	}
 	payload, err := protojson.Marshal(output)
@@ -220,7 +220,7 @@ func (handler *OperationHandler) handleOperationSetModuleTechnicalStatus(writer 
 	_, _ = writer.Write(payload)
 }
 
-func (handler *OperationHandler) handleOperationUpdateModule(writer http.ResponseWriter, request *http.Request) {
+func (handler *ModuleCatalogOperationHandler) handleOperationUpdateModule(writer http.ResponseWriter, request *http.Request) {
 	wire := &commercialv1.UpdateModuleRequest{}
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -235,9 +235,9 @@ func (handler *OperationHandler) handleOperationUpdateModule(writer http.Respons
 	}
 	wire.ModuleCode = request.PathValue("module_code")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanUpdateModule(), wire, handler.application.UpdateModule)
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogUpdateModule(), wire, handler.application.UpdateModule)
 	if err != nil {
-		writeOperationError(writer, err)
+		writeModuleCatalogOperationError(writer, err)
 		return
 	}
 	payload, err := protojson.Marshal(output)
