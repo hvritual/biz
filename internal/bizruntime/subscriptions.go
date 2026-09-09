@@ -1,0 +1,5 @@
+package bizruntime
+import("fmt";commercialapp "github.com/hvritual/biz/internal/commercial/application";"github.com/hvritual/biz/internal/commercial/application/subscriptionmanagement";commercialpersistence "github.com/hvritual/biz/internal/commercial/infrastructure/persistence")
+func(factory *applicationFactory)BuildCommercialSubscriptionManagement(dependencies commercialapp.SubscriptionManagementDependencies)(commercialapp.SubscriptionManagementApplication,error){if dependencies.CommercialPlanManagement==nil{return nil,fmt.Errorf("bizruntime: commercial plan management dependency is required")};return subscriptionmanagement.Build(commercialpersistence.NewSubscriptionRepositoryFactory(),subscriptionCapabilities{plan:dependencies.CommercialPlanManagement})}
+type subscriptionCapabilities struct{plan commercialapp.PlanManagementApplication}
+func(c subscriptionCapabilities)CommercialPlanManagement()commercialapp.SubscriptionManagementToCommercialPlanManagementChildCapability{return commercialapp.MustSubscriptionManagementToCommercialPlanManagementChildCapability(c.plan)}
