@@ -9,6 +9,7 @@ def replace(path, old, new):
     assert text.count(old) == 1, (path, old[:100])
     p.write_text(text.replace(old, new))
 
+replace('internal/commercial/domain/plan/model_test.go', 't.Fatal("invalid offer accepted")}})\n}', 't.Fatal("invalid offer accepted")}})}\n}')
 replace('contracts/proto/commercial/v1/module.proto', '    name: "module_catalog"\n', '''    name: "module_catalog"
     operations: {
       id: "commercial.module.plan_catalog"
