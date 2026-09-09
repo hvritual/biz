@@ -1,51 +1,245 @@
 {
   "schema_version": 1,
   "task_id": "CE-05",
-  "result": "BLOCKED",
-  "repository": "hvritual/biz",
-  "branch": "feat/ce-05-enforcement",
+  "verified_commit": "1991514be0a8c65996bdb27a2d4f9680aba32667",
+  "result": "PASS",
   "base_commit": "1ec638a090213620fcb5c9f5734f7856cea2613b",
-  "candidate_head": "066e8d12bfb0dae10a30e0f7374f7210357c7ab8",
-  "candidate_tree": "6b3c5616cddd35aad251c97ebc20dfa1bd6a07b6",
-  "tested_merge_ref": "4acc30e2cc14bc6f4bf2a7657b05def7dbd7f831",
   "framework_commit": "6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb",
-  "integration_commit": null,
-  "main_qualification": "NOT_RUN",
-  "round_check": "NOT_DONE",
-  "pull_request": 28,
-  "blocking_issue": 29,
-  "preparation": {
-    "run_id": 34341712220,
-    "job_id": 102433782617,
-    "conclusion": "success",
-    "commands": ["make generate", "make check", "go test ./...", "go test -tags=integration ./integration -run '^$'", "go vet ./...", "go build ./..."],
-    "integration_tests_executed": 0,
-    "artifact_id": 10100039081,
-    "artifact_sha256": "223acc556715a69ad9d7aa1c8cabe520104b24ca8f8fa941f5a82e4962bc8537"
+  "environment": {
+    "executor": "GitHub Actions",
+    "go": "1.25.13",
+    "database": "workflow-owned MySQL 8.4",
+    "production_deployed": false
   },
+  "implementation_pr": 28,
   "qualification": {
-    "run_id": 34341919949,
-    "job_id": 102434430863,
-    "conclusion": "failure",
-    "source_resolution": "PASS",
-    "generation_repeats": 2,
-    "generation_drift": false,
-    "focused": {"passed_leaf_tests": 14, "pass_events": 15, "failed_tests": 0, "skipped_tests": 0},
-    "race": {"passed_leaf_tests": 11, "pass_events": 12, "failed_tests": 0, "skipped_tests": 0},
-    "mysql": {"passed_tests": 0, "failed_tests": 5, "skipped_tests": 0, "failure_phase": "fixture_setup", "reason": "MySQL1062 duplicate global site IDs across tenant fixtures"},
-    "subsequent_full_regression": "NOT_REACHED",
-    "artifact_id": 10100142683,
-    "artifact_sha256": "7b9055a99881f3f82601a17d99ac92effea98c39f68dbf962508bbf33dd65003",
-    "downloaded_and_inspected": true
+    "run_id": 34345367092,
+    "job_id": 102445582819,
+    "event": "push",
+    "branch": "main",
+    "artifact_id": 10101525909,
+    "zip_sha256": "e2a4fa068db33a10f8ab41c5ee197c403e00b695a214f4b3ef65fe0ae5193b41",
+    "downloaded_and_hash_checked": true
   },
-  "legacy_member_regression": {
-    "run_id": 34341919795,
-    "job_id": 102434430319,
-    "conclusion": "failure",
-    "failed_test": "TestB123MemberDeactivationPreservesLastActiveOwner",
-    "reason": "owner fixture lacks explicit commercial entitlement; expected allowed operation receives UNKNOWN_CAPABILITY"
+  "suites": {
+    "focused": {
+      "leaf_tests": 14,
+      "pass_events": 15,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 7
+    },
+    "race": {
+      "leaf_tests": 11,
+      "pass_events": 12,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 0
+    },
+    "mysql": {
+      "leaf_tests": 5,
+      "pass_events": 5,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 0
+    },
+    "all": {
+      "leaf_tests": 130,
+      "pass_events": 141,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 28
+    }
   },
-  "candidate_workflows": {"total": 14, "success": 12, "failure": 2},
-  "corrections": {"applied": false, "verified": false, "write_result": "OPENAI_TOOL_SAFETY_BLOCKED", "detailed_refusal_reason": null},
-  "claims_not_made": ["real endpoint acceptance passed", "all integration tests passed", "merged into main", "CE-05 DONE", "independent APPROVE", "production deployed", "CE-06 implemented"]
+  "counting_note": "Focused, race and all-Go suites overlap; do not add them. tests_passed counts leaf tests; no-test packages are not skipped tests.",
+  "checks": [
+    {
+      "command": "make yunka-source-check workspace-check",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34345367092 / artifact 10101525909 / resolution.log"
+    },
+    {
+      "command": "make check",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34345367092 / artifact 10101525909 / check-before.log"
+    },
+    {
+      "command": "make generate && git diff --exit-code && test -z \"$(git status --porcelain)\"",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34345367092 / artifact 10101525909 / generate-1.log"
+    },
+    {
+      "command": "make generate && git diff --exit-code && test -z \"$(git status --porcelain)\"",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34345367092 / artifact 10101525909 / generate-2.log"
+    },
+    {
+      "command": "make check",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34345367092 / artifact 10101525909 / check-after.log"
+    },
+    {
+      "command": "go test -count=1 -json ./internal/commercial/... ./internal/architecture -run '^TestCE05'",
+      "exit_code": 0,
+      "tests_passed": 14,
+      "evidence": "GitHub Actions run 34345367092 / artifact 10101525909 / focused.jsonl"
+    },
+    {
+      "command": "go test -race -count=1 -json ./internal/commercial/enforcement",
+      "exit_code": 0,
+      "tests_passed": 11,
+      "evidence": "GitHub Actions run 34345367092 / artifact 10101525909 / race.jsonl"
+    },
+    {
+      "command": "go test -count=1 -tags=integration -json ./integration -run '^TestCE05MySQL'",
+      "exit_code": 0,
+      "tests_passed": 5,
+      "evidence": "GitHub Actions run 34345367092 / artifact 10101525909 / mysql.jsonl"
+    },
+    {
+      "command": "go test -count=1 -json ./...",
+      "exit_code": 0,
+      "tests_passed": 130,
+      "evidence": "GitHub Actions run 34345367092 / artifact 10101525909 / all.jsonl"
+    },
+    {
+      "command": "go vet ./...",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34345367092 / artifact 10101525909 / vet.log"
+    },
+    {
+      "command": "go build ./...",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34345367092 / artifact 10101525909 / build.log"
+    },
+    {
+      "command": "python3 docs/commercial-entitlements/tools/check_plan.py",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34345367092 / artifact 10101525909 / plan.log"
+    },
+    {
+      "command": "python3 -m unittest discover -s docs/commercial-entitlements/tools -p 'test_*.py' -v",
+      "exit_code": 0,
+      "tests_passed": 8,
+      "evidence": "GitHub Actions run 34345367092 / artifact 10101525909 / plan-tests.log"
+    },
+    {
+      "command": "python3 -m unittest discover -s scripts -p 'test_ce03_*.py' -v",
+      "exit_code": 0,
+      "tests_passed": 6,
+      "evidence": "GitHub Actions run 34345367092 / artifact 10101525909 / evidence-tests.log"
+    },
+    {
+      "command": "python3 -m unittest discover -s biz/scripts -p 'test_ce04_runtime_closure.py' -v",
+      "exit_code": 0,
+      "tests_passed": 25,
+      "evidence": "GitHub Actions run 34345367110 / artifact 10101507254 / gate-tests.log"
+    },
+    {
+      "command": "python3 scripts/ce04_runtime_closure.py --manifest contracts/generated/manifest.json --config .yunka/dev.json --status \"$RUNNER_TEMP/b12-7-status.json\" --graph .yunka/runtime-graph.json --diagnostics \"$RUNNER_TEMP/b12-7-diagnostics.json\"",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34345367110 / artifact 10101507254 / closure.log"
+    },
+    {
+      "command": "kill -TERM \"$dev_pid\"; wait \"$dev_pid\"; jq -e '.state == \"stopped\" and .processes[0].state == \"stopped\"' .yunka/dev-runtime.json",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34345367110 / artifact 10101507254 / stop.log"
+    }
+  ],
+  "sha256": {
+    "check-before.log": "6bbaaad02a6ccc5217afa154b7dde41ba7520470dfda392650ab7926ad13d621",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "plan.log": "2b148a9a7c927a790d8dc0a2b6270df1db86a1dcbcf1916c590a054aa1a503a8",
+    "generate-2.log": "90a87358059ed6bd52fbcd662d9682de1d489780788484e9f6fa761e50d2ad94",
+    "generate-1.log": "ebd315eb7cf58a561871910cf3767d2127ea995d83e76e1fb6a9672cea39a3ac",
+    "resolution.log": "4fc9bb6a08c5409cfac14080b737ccf0f913eb301e9146514aa22c1df7dc3e46",
+    "check-after.log": "e2c8c61c3c345be20c47afee5ad449a2cfa7c60b989dd762c8b3adb9e1bb8304",
+    "race.jsonl": "44fe5c20338ceca3224e595c007b2eee286654cd8d4cac208793d8cda6f119aa",
+    "baseline.json": "5f84c1252da5d6931396f49052cfb1932f3b4b8272fd0830d7a28d1398e61b72",
+    "focused.jsonl": "705a422e092943f6dd9ad0737ff95a421079c2a1e84660f80d212c771d7a930e",
+    "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "mysql.jsonl": "2d9a04768e64f97abcd196ba9b99de960db1b30bac5b9abed107795c7ee649d7",
+    "evidence-tests.log": "bc746fec2ec628264947a73e40b73c9687b3125ce6a28b52fe0d2f8d82d5ccd7",
+    "plan-tests.log": "10064e71f12d256c9167ae427873ce6ce40a5b86ca42a2dc28675ddda1e70e97",
+    "all.jsonl": "401e56223bb2cafe775b651f3a51362f6d90c5886b4552c0541fff6d7ff8f237",
+    "sources.txt": "d5b2055e598d6fd9a954ae8411bee29d99a6b72a7f6baedd51c0a686c6c3a0ce"
+  },
+  "runtime": {
+    "run_id": 34345367110,
+    "artifact_id": 10101507254,
+    "zip_sha256": "ab9ffa9850fa0ea7507c3a85978bdf075dbd61cb822e9969b6f3ae1447685b2d",
+    "applications": 8,
+    "routes": 28,
+    "gate_tests": 25,
+    "closure": "PASS",
+    "shutdown": "PASS"
+  },
+  "candidate": {
+    "head": "63fe41f71d67e669cc70534880f6b472f271614a",
+    "tested_merge_ref": "b87916b462881671fc9c980824178ca0e2c3f008",
+    "run_id": 34344942345,
+    "artifact_id": 10101355018,
+    "zip_sha256": "4cae5d36424917c04ce2e71752eae049d95c74c2ca008f1d80348ff1597918f2",
+    "workflow_total": 14,
+    "workflow_success": 14
+  },
+  "business_main_workflows": [
+    {
+      "name": "delivery-workspace-isolation",
+      "run_id": 34345367055,
+      "conclusion": "success"
+    },
+    {
+      "name": "CE-03 qualification",
+      "run_id": 34345367131,
+      "conclusion": "success"
+    },
+    {
+      "name": "CE-01 qualification",
+      "run_id": 34345367063,
+      "conclusion": "success"
+    },
+    {
+      "name": "CE-02 qualification",
+      "run_id": 34345367056,
+      "conclusion": "success"
+    },
+    {
+      "name": "CE-05 qualification",
+      "run_id": 34345367092,
+      "conclusion": "success"
+    },
+    {
+      "name": "CE-04 qualification",
+      "run_id": 34345367028,
+      "conclusion": "success"
+    },
+    {
+      "name": "b12-7-runtime-qualification",
+      "run_id": 34345367110,
+      "conclusion": "success"
+    },
+    {
+      "name": "CE round receipts",
+      "run_id": 34345367088,
+      "conclusion": "success"
+    }
+  ],
+  "history_note": "The business qualification ran before this DONE receipt, so its immutable summary records task_status=BLOCKED and round_check=QUALIFIED_NOT_DONE. The above PASS is actual qualification of the integrated business SHA, not a prefilled final-round result. Final receipt/main --require-main evidence is recorded by its own Actions run.",
+  "limitations": [
+    "No CE-06 snapshots or strict concurrent-revocation barrier.",
+    "No production deployment or production rollback exercise.",
+    "device.update requires site.read in the fixed framework IAM closure, including rename-only requests; production roles were not changed.",
+    "Automated review completion is not an independent APPROVE."
+  ]
 }
