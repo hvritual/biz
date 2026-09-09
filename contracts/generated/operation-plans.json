@@ -42,8 +42,9 @@
         "rpc": "/commercial.v1.EntitlementManagementApplication/ExplainEntitlements",
         "http": [
           {
-            "method": "GET",
-            "path": "/v1/platform/tenants/{tenant_id}/entitlements"
+            "method": "POST",
+            "path": "/v1/platform/tenants/{tenant_id}/entitlements",
+            "body": "*"
           }
         ]
       }
@@ -87,8 +88,9 @@
         "rpc": "/commercial.v1.EntitlementManagementApplication/GetMyEntitlements",
         "http": [
           {
-            "method": "GET",
-            "path": "/v1/tenant/entitlements"
+            "method": "POST",
+            "path": "/v1/tenant/entitlements",
+            "body": "*"
           }
         ]
       }

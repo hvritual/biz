@@ -3302,8 +3302,9 @@
           "response": "commercial.v1.EntitlementView",
           "http": [
             {
-              "method": "GET",
-              "path": "/v1/platform/tenants/{tenant_id}/entitlements"
+              "method": "POST",
+              "path": "/v1/platform/tenants/{tenant_id}/entitlements",
+              "body": "*"
             }
           ],
           "operation": {
@@ -3348,8 +3349,9 @@
           "response": "commercial.v1.EntitlementView",
           "http": [
             {
-              "method": "GET",
-              "path": "/v1/tenant/entitlements"
+              "method": "POST",
+              "path": "/v1/tenant/entitlements",
+              "body": "*"
             }
           ],
           "operation": {

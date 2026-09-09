@@ -1722,7 +1722,7 @@
       }
     },
     "/v1/platform/tenants/{tenant_id}/entitlements": {
-      "get": {
+      "post": {
         "operationId": "commercial.v1.EntitlementManagementApplication.ExplainEntitlements",
         "parameters": [
           {
@@ -1732,19 +1732,18 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "in": "query",
-            "name": "capabilityCodes",
-            "required": false,
-            "schema": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_ExplainEntitlementsRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -1764,21 +1763,18 @@
       }
     },
     "/v1/tenant/entitlements": {
-      "get": {
+      "post": {
         "operationId": "commercial.v1.EntitlementManagementApplication.GetMyEntitlements",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "capabilityCodes",
-            "required": false,
-            "schema": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_GetMyEntitlementsRequest"
+              }
             }
-          }
-        ],
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {

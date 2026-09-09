@@ -24,10 +24,11 @@ type entitlementStateRow struct {
 func (entitlementStateRow) TableName() string { return "biz_commercial_entitlement_state" }
 
 type overrideRow struct {
-	TenantID string `gorm:"column:tenant_id;primaryKey"`
-	ID       string `gorm:"column:source_id;primaryKey"`
-	Version  uint64 `gorm:"column:version"`
-	Payload  string `gorm:"column:payload"`
+	ModuleCode string `gorm:"column:module_code"`
+	TenantID   string `gorm:"column:tenant_id;primaryKey"`
+	ID         string `gorm:"column:source_id;primaryKey"`
+	Version    uint64 `gorm:"column:version"`
+	Payload    string `gorm:"column:payload"`
 }
 
 func (overrideRow) TableName() string { return "biz_commercial_entitlement_sources" }
@@ -110,7 +111,7 @@ func decodeSources(tenant string, version uint64, rows []overrideRow) (ports.Ent
 		if err := json.Unmarshal([]byte(row.Payload), &source); err != nil {
 			return ports.EntitlementState{}, err
 		}
-		if source.TenantID != tenant || source.ID != row.ID || source.Version != row.Version || source.SourceKind != entitlement.OverrideSource {
+		if source.ModuleCode != row.ModuleCode || source.TenantID != tenant || source.ID != row.ID || source.Version != row.Version || source.SourceKind != entitlement.OverrideSource {
 			return ports.EntitlementState{}, entitlement.ErrScope
 		}
 		if err := source.ValidateShape(); err != nil {
@@ -146,7 +147,7 @@ func (r *entitlementRepository) Insert(ctx context.Context, s entitlement.Source
 	if err != nil {
 		return err
 	}
-	return r.tx.WithContext(ctx).Create(&overrideRow{TenantID: s.TenantID, ID: s.ID, Version: s.Version, Payload: string(payload)}).Error
+	return r.tx.WithContext(ctx).Create(&overrideRow{TenantID: s.TenantID, ModuleCode: s.ModuleCode, ID: s.ID, Version: s.Version, Payload: string(payload)}).Error
 }
 func (r *entitlementRepository) Revoke(ctx context.Context, s entitlement.Source, expected uint64) error {
 	payload, err := json.Marshal(s)

@@ -35,7 +35,7 @@ func Resolve(tenant string, revision uint64, at time.Time, catalog Catalog, sour
 		if s.TenantID != tenant {
 			return Result{}, ErrScope
 		}
-		if err := s.ValidateShape(); err != nil {
+		if err := s.Validate(catalog); err != nil {
 			return Result{}, err
 		}
 		identity := string(s.SourceKind) + "/" + s.ID

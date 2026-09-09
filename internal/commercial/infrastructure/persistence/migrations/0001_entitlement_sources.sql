@@ -6,9 +6,11 @@ CREATE TABLE IF NOT EXISTS biz_commercial_entitlement_state (
 CREATE TABLE IF NOT EXISTS biz_commercial_entitlement_sources (
  tenant_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
  source_id VARCHAR(128) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+ module_code VARCHAR(96) NOT NULL,
  version BIGINT UNSIGNED NOT NULL,
  payload MEDIUMTEXT NOT NULL,
  PRIMARY KEY(tenant_id,source_id),
+ CONSTRAINT ce04_module_source_reference FOREIGN KEY(module_code) REFERENCES biz_commercial_modules(module_code) ON DELETE RESTRICT ON UPDATE RESTRICT,
  CONSTRAINT ce04_source_json CHECK (JSON_VALID(payload))
 ) ENGINE=InnoDB;
 CREATE TABLE IF NOT EXISTS biz_commercial_entitlement_receipts (

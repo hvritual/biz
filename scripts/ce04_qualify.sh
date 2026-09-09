@@ -40,6 +40,7 @@ go test -count=1 -tags=integration -json ./integration -run '^TestCE02' | tee "$
 go test -count=1 -json ./... | tee "$out/all.jsonl"
 go vet ./... 2>&1 | tee "$out/vet.log"
 go build ./... 2>&1 | tee "$out/build.log"
+python3 -m unittest discover -s scripts -p test_ce04_runtime_closure.py -v 2>&1 | tee "$out/runtime-gate-tests.log"
 python3 docs/commercial-entitlements/tools/check_plan.py | tee "$out/plan.log"
 python3 -m unittest discover -s docs/commercial-entitlements/tools -p 'test_*.py' -v 2>&1 | tee "$out/plan-tests.log"
 python3 -m unittest discover -s scripts -p 'test_ce03_*.py' -v 2>&1 | tee "$out/evidence-tests.log"

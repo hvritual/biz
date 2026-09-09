@@ -622,7 +622,7 @@ export const operations = {
     requestType: "commercial.v1.ExplainEntitlementsRequest",
     responseType: "commercial.v1.EntitlementView",
     http: [
-      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/entitlements" },
+      { method: "POST", path: "/v1/platform/tenants/{tenant_id}/entitlements", body: "*" },
     ]
   },
   "commercial.v1.EntitlementManagementApplication.GetMyEntitlements": {
@@ -631,7 +631,7 @@ export const operations = {
     requestType: "commercial.v1.GetMyEntitlementsRequest",
     responseType: "commercial.v1.EntitlementView",
     http: [
-      { method: "GET", path: "/v1/tenant/entitlements" },
+      { method: "POST", path: "/v1/tenant/entitlements", body: "*" },
     ]
   },
   "commercial.v1.EntitlementManagementApplication.ListEntitlementOverrides": {

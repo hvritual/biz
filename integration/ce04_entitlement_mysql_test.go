@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -67,7 +68,7 @@ func TestCE04MySQLRESTAndGRPCIsolationAndProvenance(t *testing.T) {
 	if _, err := e.client.GetMyEntitlements(ce04Context(e.token, ""), &commercialv1.GetMyEntitlementsRequest{}); err == nil {
 		t.Fatal("platform impersonated a tenant")
 	}
-	httpReq, _ := http.NewRequest(http.MethodGet, "http://"+e.runtime.HTTPAddress()+"/v1/tenant/entitlements?tenant_id="+e.tenantB, nil)
+	httpReq, _ := http.NewRequest(http.MethodPost, "http://"+e.runtime.HTTPAddress()+"/v1/tenant/entitlements?tenant_id="+e.tenantB, strings.NewReader("{}"))
 	httpReq.Header.Set("Authorization", "Bearer "+e.tokenA)
 	httpReq.Header.Set("X-Tenant-ID", e.tenantB)
 	resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(httpReq)

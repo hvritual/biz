@@ -32,8 +32,8 @@ func RegisterEntitlementManagementOperationExecutor(mux *http.ServeMux, applicat
 	}
 	handler := &EntitlementManagementOperationHandler{application: application, executor: executor}
 	mux.HandleFunc("POST /v1/platform/tenants/{tenant_id}/entitlement-overrides", handler.handleOperationCreateEntitlementOverride)
-	mux.HandleFunc("GET /v1/platform/tenants/{tenant_id}/entitlements", handler.handleOperationExplainEntitlements)
-	mux.HandleFunc("GET /v1/tenant/entitlements", handler.handleOperationGetMyEntitlements)
+	mux.HandleFunc("POST /v1/platform/tenants/{tenant_id}/entitlements", handler.handleOperationExplainEntitlements)
+	mux.HandleFunc("POST /v1/tenant/entitlements", handler.handleOperationGetMyEntitlements)
 	mux.HandleFunc("GET /v1/platform/tenants/{tenant_id}/entitlement-overrides", handler.handleOperationListEntitlementOverrides)
 	mux.HandleFunc("POST /v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", handler.handleOperationRevokeEntitlementOverride)
 	return nil
@@ -95,6 +95,17 @@ func (handler *EntitlementManagementOperationHandler) handleOperationCreateEntit
 
 func (handler *EntitlementManagementOperationHandler) handleOperationExplainEntitlements(writer http.ResponseWriter, request *http.Request) {
 	wire := &commercialv1.ExplainEntitlementsRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
 	wire.TenantId = request.PathValue("tenant_id")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanEntitlementManagementExplainEntitlements(), wire, handler.application.ExplainEntitlements)
@@ -113,6 +124,17 @@ func (handler *EntitlementManagementOperationHandler) handleOperationExplainEnti
 
 func (handler *EntitlementManagementOperationHandler) handleOperationGetMyEntitlements(writer http.ResponseWriter, request *http.Request) {
 	wire := &commercialv1.GetMyEntitlementsRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanEntitlementManagementGetMyEntitlements(), wire, handler.application.GetMyEntitlements)
 	if err != nil {
