@@ -11,6 +11,8 @@ on:
       - internal/access/application/**
       - internal/deviceops/application/**
       - cmd/commercial-catalog/**
+      - scripts/ce03_*.py
+      - scripts/test_ce03_*.py
       - docs/commercial-entitlements/**
       - Makefile
       - go.mod
@@ -109,11 +111,14 @@ jobs:
           go -C biz build ./... 2>&1 | tee "$RUNNER_TEMP/ce03/build.log"
           python3 biz/docs/commercial-entitlements/tools/check_plan.py | tee "$RUNNER_TEMP/ce03/plan.log"
           python3 -m unittest discover -s biz/docs/commercial-entitlements/tools -p 'test_*.py' -v 2>&1 | tee "$RUNNER_TEMP/ce03/plan-tests.log"
+          python3 -m unittest discover -s biz/scripts -p 'test_ce03_*.py' -v 2>&1 | tee "$RUNNER_TEMP/ce03/evidence-tests.log"
       - name: Capture actual counts and main receipt checks
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import collections, hashlib, json, os, subprocess
+          import collections, hashlib, json, os, subprocess, sys
+          sys.path.insert(0, 'biz/scripts')
+          from ce03_test_events import summarize
           from pathlib import Path
           root = Path(os.environ['RUNNER_TEMP'])/'ce03'
           task_root = Path('biz/docs/commercial-entitlements')
@@ -121,12 +126,7 @@ jobs:
           summary = {'task_id':'CE-03', 'verified_commit':os.environ['GITHUB_SHA'], 'framework_commit':os.environ['YUNKA_SHA'], 'qualification':'PASS', 'task_status':task['status'], 'suites':{}}
           for name in ('focused','mysql','all'):
               rows = [json.loads(line) for line in (root/(name+'.jsonl')).read_text().splitlines()]
-              passed = {(r['Package'], r['Test']) for r in rows if r.get('Action')=='pass' and r.get('Test')}
-              failures = [r for r in rows if r.get('Action')=='fail']
-              skips = [r for r in rows if r.get('Action')=='skip']
-              assert passed and not failures and not skips, (name, failures, skips)
-              leaves = [(pkg, test) for pkg, test in passed if not any(p==pkg and t.startswith(test+'/') for p,t in passed)]
-              summary['suites'][name] = {'leaf_tests':len(leaves), 'pass_events':len(passed), 'failed':0, 'skipped':0}
+              summary['suites'][name] = summarize(rows)
           catalog = json.loads(Path('biz/contracts/commercial/generated/catalog.json').read_text())
           summary['catalog'] = {'operations':len(catalog['operations']), 'capabilities':len(catalog['capabilities']), 'classifications':dict(collections.Counter(o['classification'] for o in catalog['operations'])), 'consumers':dict(collections.Counter(o['consumer_type'] for o in catalog['operations'])), 'child_edges':sum(len(o['children']) for o in catalog['operations'])}
           if task['status']=='DONE':
