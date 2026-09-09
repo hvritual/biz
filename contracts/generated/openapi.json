@@ -434,6 +434,50 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.UpdateTenantRoleRequest"
       },
+      "commercial_v1_CreateEntitlementOverrideRequest": {
+        "properties": {
+          "effect": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementEffect"
+          },
+          "effectiveAt": {
+            "type": "string"
+          },
+          "expectedVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "fieldAction": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "limit": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementLimit"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "target": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementTarget"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.CreateEntitlementOverrideRequest"
+      },
       "commercial_v1_CreateModuleRequest": {
         "properties": {
           "category": {
@@ -493,6 +537,243 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.DeleteModuleResponse"
       },
+      "commercial_v1_EntitlementCatalogVersion": {
+        "properties": {
+          "moduleCode": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementCatalogVersion"
+      },
+      "commercial_v1_EntitlementDecisionDTO": {
+        "properties": {
+          "allowed": {
+            "type": "boolean"
+          },
+          "fieldAction": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "limit": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementLimit"
+          },
+          "masked": {
+            "type": "boolean"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_EntitlementSourceExplanation"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementDecisionDTO"
+      },
+      "commercial_v1_EntitlementEffect": {
+        "enum": [
+          "ENTITLEMENT_EFFECT_UNSPECIFIED",
+          "ENTITLEMENT_EFFECT_GRANT",
+          "ENTITLEMENT_EFFECT_DENY",
+          "ENTITLEMENT_EFFECT_QUOTA_ADD",
+          "ENTITLEMENT_EFFECT_QUOTA_REPLACE",
+          "ENTITLEMENT_EFFECT_SAFETY_DENY",
+          "ENTITLEMENT_EFFECT_SAFETY_MASK"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementEffect"
+      },
+      "commercial_v1_EntitlementLimit": {
+        "properties": {
+          "unlimited": {
+            "type": "boolean"
+          },
+          "value": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementLimit"
+      },
+      "commercial_v1_EntitlementOverrideDTO": {
+        "properties": {
+          "actorId": {
+            "type": "string"
+          },
+          "effect": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementEffect"
+          },
+          "effectiveAt": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "fieldAction": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "limit": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementLimit"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "type": "string"
+          },
+          "target": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementTarget"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementOverrideDTO"
+      },
+      "commercial_v1_EntitlementOverrideReceipt": {
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementOverrideDTO"
+          },
+          "sourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementOverrideReceipt"
+      },
+      "commercial_v1_EntitlementSourceExplanation": {
+        "properties": {
+          "actorId": {
+            "type": "string"
+          },
+          "disposition": {
+            "type": "string"
+          },
+          "effect": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementSourceExplanation"
+      },
+      "commercial_v1_EntitlementTarget": {
+        "enum": [
+          "ENTITLEMENT_TARGET_UNSPECIFIED",
+          "ENTITLEMENT_TARGET_MODULE",
+          "ENTITLEMENT_TARGET_CAPABILITY",
+          "ENTITLEMENT_TARGET_QUOTA",
+          "ENTITLEMENT_TARGET_FIELD"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementTarget"
+      },
+      "commercial_v1_EntitlementView": {
+        "properties": {
+          "catalogVersions": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_EntitlementCatalogVersion"
+            },
+            "type": "array"
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_EntitlementDecisionDTO"
+            },
+            "type": "array"
+          },
+          "evaluatedAt": {
+            "type": "string"
+          },
+          "nextTransitionAt": {
+            "type": "string"
+          },
+          "resolverVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "sourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "validUntil": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementView"
+      },
+      "commercial_v1_ExplainEntitlementsRequest": {
+        "properties": {
+          "capabilityCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ExplainEntitlementsRequest"
+      },
       "commercial_v1_GetModuleRequest": {
         "properties": {
           "moduleCode": {
@@ -501,6 +782,44 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.GetModuleRequest"
+      },
+      "commercial_v1_GetMyEntitlementsRequest": {
+        "properties": {
+          "capabilityCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.GetMyEntitlementsRequest"
+      },
+      "commercial_v1_ListEntitlementOverridesRequest": {
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListEntitlementOverridesRequest"
+      },
+      "commercial_v1_ListEntitlementOverridesResponse": {
+        "properties": {
+          "sourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_EntitlementOverrideDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListEntitlementOverridesResponse"
       },
       "commercial_v1_ListModulesRequest": {
         "properties": {},
@@ -593,6 +912,29 @@
         ],
         "type": "string",
         "x-yunka-proto-full-name": "commercial.v1.ModuleTechnicalStatus"
+      },
+      "commercial_v1_RevokeEntitlementOverrideRequest": {
+        "properties": {
+          "expectedVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.RevokeEntitlementOverrideRequest"
       },
       "commercial_v1_SetModuleSalesStatusRequest": {
         "properties": {
@@ -1258,6 +1600,201 @@
           "commercial.v1.ModuleCatalogApplication"
         ],
         "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/entitlement-overrides": {
+      "get": {
+        "operationId": "commercial.v1.EntitlementManagementApplication.ListEntitlementOverrides",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ListEntitlementOverridesResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.EntitlementManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.EntitlementManagementApplication/ListEntitlementOverrides"
+      },
+      "post": {
+        "operationId": "commercial.v1.EntitlementManagementApplication.CreateEntitlementOverride",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_CreateEntitlementOverrideRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_EntitlementOverrideReceipt"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.EntitlementManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.EntitlementManagementApplication/CreateEntitlementOverride"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke": {
+      "post": {
+        "operationId": "commercial.v1.EntitlementManagementApplication.RevokeEntitlementOverride",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_RevokeEntitlementOverrideRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_EntitlementOverrideReceipt"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.EntitlementManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.EntitlementManagementApplication/RevokeEntitlementOverride"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/entitlements": {
+      "get": {
+        "operationId": "commercial.v1.EntitlementManagementApplication.ExplainEntitlements",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "capabilityCodes",
+            "required": false,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_EntitlementView"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.EntitlementManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.EntitlementManagementApplication/ExplainEntitlements"
+      }
+    },
+    "/v1/tenant/entitlements": {
+      "get": {
+        "operationId": "commercial.v1.EntitlementManagementApplication.GetMyEntitlements",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "capabilityCodes",
+            "required": false,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_EntitlementView"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.EntitlementManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.EntitlementManagementApplication/GetMyEntitlements"
       }
     },
     "/v1/tenant/members": {

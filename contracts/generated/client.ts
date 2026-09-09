@@ -27,6 +27,10 @@ export type Access_V1_TenantRoleStatus = "TENANT_ROLE_STATUS_UNSPECIFIED" | "TEN
 
 export type Access_V1_TenantStatus = "TENANT_STATUS_UNSPECIFIED" | "TENANT_STATUS_PENDING" | "TENANT_STATUS_ACTIVE" | "TENANT_STATUS_SUSPENDED" | "TENANT_STATUS_CLOSED";
 
+export type Commercial_V1_EntitlementEffect = "ENTITLEMENT_EFFECT_UNSPECIFIED" | "ENTITLEMENT_EFFECT_GRANT" | "ENTITLEMENT_EFFECT_DENY" | "ENTITLEMENT_EFFECT_QUOTA_ADD" | "ENTITLEMENT_EFFECT_QUOTA_REPLACE" | "ENTITLEMENT_EFFECT_SAFETY_DENY" | "ENTITLEMENT_EFFECT_SAFETY_MASK";
+
+export type Commercial_V1_EntitlementTarget = "ENTITLEMENT_TARGET_UNSPECIFIED" | "ENTITLEMENT_TARGET_MODULE" | "ENTITLEMENT_TARGET_CAPABILITY" | "ENTITLEMENT_TARGET_QUOTA" | "ENTITLEMENT_TARGET_FIELD";
+
 export type Commercial_V1_ModuleSalesStatus = "MODULE_SALES_STATUS_UNSPECIFIED" | "MODULE_SALES_STATUS_SELLABLE" | "MODULE_SALES_STATUS_RETIRED";
 
 export type Commercial_V1_ModuleTechnicalStatus = "MODULE_TECHNICAL_STATUS_UNSPECIFIED" | "MODULE_TECHNICAL_STATUS_NOT_READY" | "MODULE_TECHNICAL_STATUS_READY" | "MODULE_TECHNICAL_STATUS_DISABLED";
@@ -178,6 +182,21 @@ export interface Access_V1_UpdateTenantRoleRequest {
   version?: string;
 }
 
+export interface Commercial_V1_CreateEntitlementOverrideRequest {
+  requestId?: string;
+  tenantId?: string;
+  expectedVersion?: string;
+  moduleCode?: string;
+  target?: Commercial_V1_EntitlementTarget;
+  key?: string;
+  fieldAction?: string;
+  effect?: Commercial_V1_EntitlementEffect;
+  limit?: Commercial_V1_EntitlementLimit;
+  effectiveAt?: string;
+  expiresAt?: string;
+  reason?: string;
+}
+
 export interface Commercial_V1_CreateModuleRequest {
   requestId?: string;
   moduleCode?: string;
@@ -199,8 +218,92 @@ export interface Commercial_V1_DeleteModuleResponse {
   deleted?: boolean;
 }
 
+export interface Commercial_V1_EntitlementCatalogVersion {
+  moduleCode?: string;
+  version?: string;
+}
+
+export interface Commercial_V1_EntitlementDecisionDTO {
+  kind?: string;
+  moduleCode?: string;
+  key?: string;
+  fieldAction?: string;
+  allowed?: boolean;
+  reason?: string;
+  limit?: Commercial_V1_EntitlementLimit;
+  masked?: boolean;
+  sources?: readonly Commercial_V1_EntitlementSourceExplanation[];
+}
+
+export interface Commercial_V1_EntitlementLimit {
+  unlimited?: boolean;
+  value?: string;
+}
+
+export interface Commercial_V1_EntitlementOverrideDTO {
+  id?: string;
+  tenantId?: string;
+  moduleCode?: string;
+  target?: Commercial_V1_EntitlementTarget;
+  key?: string;
+  fieldAction?: string;
+  effect?: Commercial_V1_EntitlementEffect;
+  limit?: Commercial_V1_EntitlementLimit;
+  effectiveAt?: string;
+  expiresAt?: string;
+  revokedAt?: string;
+  reason?: string;
+  actorId?: string;
+  version?: string;
+  sourceKind?: string;
+}
+
+export interface Commercial_V1_EntitlementOverrideReceipt {
+  source?: Commercial_V1_EntitlementOverrideDTO;
+  sourceVersion?: string;
+}
+
+export interface Commercial_V1_EntitlementSourceExplanation {
+  id?: string;
+  sourceKind?: string;
+  effect?: string;
+  state?: string;
+  disposition?: string;
+  reason?: string;
+  actorId?: string;
+}
+
+export interface Commercial_V1_EntitlementView {
+  tenantId?: string;
+  sourceVersion?: string;
+  resolverVersion?: string;
+  evaluatedAt?: string;
+  validUntil?: string;
+  nextTransitionAt?: string;
+  catalogVersions?: readonly Commercial_V1_EntitlementCatalogVersion[];
+  decisions?: readonly Commercial_V1_EntitlementDecisionDTO[];
+}
+
+export interface Commercial_V1_ExplainEntitlementsRequest {
+  tenantId?: string;
+  capabilityCodes?: readonly string[];
+}
+
 export interface Commercial_V1_GetModuleRequest {
   moduleCode?: string;
+}
+
+export interface Commercial_V1_GetMyEntitlementsRequest {
+  capabilityCodes?: readonly string[];
+}
+
+export interface Commercial_V1_ListEntitlementOverridesRequest {
+  tenantId?: string;
+}
+
+export interface Commercial_V1_ListEntitlementOverridesResponse {
+  sources?: readonly Commercial_V1_EntitlementOverrideDTO[];
+  sourceVersion?: string;
 }
 
 export interface Commercial_V1_ListModulesRequest {
@@ -222,6 +325,14 @@ export interface Commercial_V1_ModuleDTO {
   fieldPolicySchemaKeys?: readonly string[];
   dependencies?: readonly string[];
   version?: string;
+}
+
+export interface Commercial_V1_RevokeEntitlementOverrideRequest {
+  requestId?: string;
+  tenantId?: string;
+  id?: string;
+  expectedVersion?: string;
+  reason?: string;
 }
 
 export interface Commercial_V1_SetModuleSalesStatusRequest {
@@ -496,6 +607,51 @@ export const operations = {
       { method: "PATCH", path: "/v1/tenant/roles/{role_id}", body: "*" },
     ]
   },
+  "commercial.v1.EntitlementManagementApplication.CreateEntitlementOverride": {
+    fullName: "commercial.v1.EntitlementManagementApplication.CreateEntitlementOverride",
+    rpcPath: "/commercial.v1.EntitlementManagementApplication/CreateEntitlementOverride",
+    requestType: "commercial.v1.CreateEntitlementOverrideRequest",
+    responseType: "commercial.v1.EntitlementOverrideReceipt",
+    http: [
+      { method: "POST", path: "/v1/platform/tenants/{tenant_id}/entitlement-overrides", body: "*" },
+    ]
+  },
+  "commercial.v1.EntitlementManagementApplication.ExplainEntitlements": {
+    fullName: "commercial.v1.EntitlementManagementApplication.ExplainEntitlements",
+    rpcPath: "/commercial.v1.EntitlementManagementApplication/ExplainEntitlements",
+    requestType: "commercial.v1.ExplainEntitlementsRequest",
+    responseType: "commercial.v1.EntitlementView",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/entitlements" },
+    ]
+  },
+  "commercial.v1.EntitlementManagementApplication.GetMyEntitlements": {
+    fullName: "commercial.v1.EntitlementManagementApplication.GetMyEntitlements",
+    rpcPath: "/commercial.v1.EntitlementManagementApplication/GetMyEntitlements",
+    requestType: "commercial.v1.GetMyEntitlementsRequest",
+    responseType: "commercial.v1.EntitlementView",
+    http: [
+      { method: "GET", path: "/v1/tenant/entitlements" },
+    ]
+  },
+  "commercial.v1.EntitlementManagementApplication.ListEntitlementOverrides": {
+    fullName: "commercial.v1.EntitlementManagementApplication.ListEntitlementOverrides",
+    rpcPath: "/commercial.v1.EntitlementManagementApplication/ListEntitlementOverrides",
+    requestType: "commercial.v1.ListEntitlementOverridesRequest",
+    responseType: "commercial.v1.ListEntitlementOverridesResponse",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/entitlement-overrides" },
+    ]
+  },
+  "commercial.v1.EntitlementManagementApplication.RevokeEntitlementOverride": {
+    fullName: "commercial.v1.EntitlementManagementApplication.RevokeEntitlementOverride",
+    rpcPath: "/commercial.v1.EntitlementManagementApplication/RevokeEntitlementOverride",
+    requestType: "commercial.v1.RevokeEntitlementOverrideRequest",
+    responseType: "commercial.v1.EntitlementOverrideReceipt",
+    http: [
+      { method: "POST", path: "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", body: "*" },
+    ]
+  },
   "commercial.v1.ModuleCatalogApplication.CreateModule": {
     fullName: "commercial.v1.ModuleCatalogApplication.CreateModule",
     rpcPath: "/commercial.v1.ModuleCatalogApplication/CreateModule",
@@ -714,6 +870,31 @@ export class Access_V1_TenantRolePermissionApplicationClient {
 
   updateTenantRole(request: Access_V1_UpdateTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
     return this.transport.call<Access_V1_UpdateTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.UpdateTenantRole"], request);
+  }
+
+}
+
+export class Commercial_V1_EntitlementManagementApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  createEntitlementOverride(request: Commercial_V1_CreateEntitlementOverrideRequest): Promise<Commercial_V1_EntitlementOverrideReceipt> {
+    return this.transport.call<Commercial_V1_CreateEntitlementOverrideRequest, Commercial_V1_EntitlementOverrideReceipt>(operations["commercial.v1.EntitlementManagementApplication.CreateEntitlementOverride"], request);
+  }
+
+  explainEntitlements(request: Commercial_V1_ExplainEntitlementsRequest): Promise<Commercial_V1_EntitlementView> {
+    return this.transport.call<Commercial_V1_ExplainEntitlementsRequest, Commercial_V1_EntitlementView>(operations["commercial.v1.EntitlementManagementApplication.ExplainEntitlements"], request);
+  }
+
+  getMyEntitlements(request: Commercial_V1_GetMyEntitlementsRequest): Promise<Commercial_V1_EntitlementView> {
+    return this.transport.call<Commercial_V1_GetMyEntitlementsRequest, Commercial_V1_EntitlementView>(operations["commercial.v1.EntitlementManagementApplication.GetMyEntitlements"], request);
+  }
+
+  listEntitlementOverrides(request: Commercial_V1_ListEntitlementOverridesRequest): Promise<Commercial_V1_ListEntitlementOverridesResponse> {
+    return this.transport.call<Commercial_V1_ListEntitlementOverridesRequest, Commercial_V1_ListEntitlementOverridesResponse>(operations["commercial.v1.EntitlementManagementApplication.ListEntitlementOverrides"], request);
+  }
+
+  revokeEntitlementOverride(request: Commercial_V1_RevokeEntitlementOverrideRequest): Promise<Commercial_V1_EntitlementOverrideReceipt> {
+    return this.transport.call<Commercial_V1_RevokeEntitlementOverrideRequest, Commercial_V1_EntitlementOverrideReceipt>(operations["commercial.v1.EntitlementManagementApplication.RevokeEntitlementOverride"], request);
   }
 
 }

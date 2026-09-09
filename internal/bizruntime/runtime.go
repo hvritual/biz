@@ -14,6 +14,7 @@ import (
 	accessports "github.com/hvritual/biz/internal/access/ports"
 	generatedassembly "github.com/hvritual/biz/internal/assembly"
 	commercialapp "github.com/hvritual/biz/internal/commercial/application"
+ commercialpersistence "github.com/hvritual/biz/internal/commercial/infrastructure/persistence"
 	"github.com/hvritual/biz/internal/commercial/modulecatalog"
 	deviceapp "github.com/hvritual/biz/internal/deviceops/application"
 	"github.com/hvritual/biz/internal/deviceops/domain"
@@ -155,6 +156,7 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 		if err := accessStore.AutoMigrate(ctx); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: access migrate: %w", err) }
 		if err := accessStore.EnsurePlatformSchema(ctx); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: platform IAM migrate: %w", err) }
 		if err := commercialStore.Migrate(ctx); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: commercial module catalog migrate: %w", err) }
+ if err := commercialpersistence.MigrateEntitlements(ctx, accessDatabase); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: entitlement sources migrate: %w", err) }
 		if err := devicepersistence.AutoMigrate(ctx, deviceDatabase); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: domain migrate: %w", err) }
 		if err := devicepersistence.EnsureIndexes(deviceDatabase); err != nil { return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: indexes: %w", err) }
 	}

@@ -33,6 +33,16 @@
       }
     },
     {
+      "id": "commercial/entitlement_management",
+      "domain": "commercial",
+      "name": "entitlement_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/commercial/entitlement_management"
+      }
+    },
+    {
       "id": "commercial/module_catalog",
       "domain": "commercial",
       "name": "module_catalog",
@@ -102,6 +112,24 @@
       }
     },
     {
+      "from": "commercial/entitlement_management",
+      "to": "access/tenant_lifecycle",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/commercial/entitlement_management/requires/access/tenant_lifecycle"
+      }
+    },
+    {
+      "from": "commercial/entitlement_management",
+      "to": "commercial/module_catalog",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/commercial/entitlement_management/requires/commercial/module_catalog"
+      }
+    },
+    {
       "from": "deviceops/device_transfer",
       "to": "deviceops/device_management",
       "evidence": {
@@ -149,6 +177,42 @@
       }
     },
     {
+      "from": "commercial/entitlement_management",
+      "to": "access/tenant_lifecycle",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/entitlement_management-\u003eaccess/tenant_lifecycle"
+      }
+    },
+    {
+      "from": "commercial/entitlement_management",
+      "to": "access/tenant_member_lifecycle",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/entitlement_management-\u003eaccess/tenant_member_lifecycle"
+      }
+    },
+    {
+      "from": "commercial/entitlement_management",
+      "to": "access/tenant_role_permission",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/entitlement_management-\u003eaccess/tenant_role_permission"
+      }
+    },
+    {
+      "from": "commercial/entitlement_management",
+      "to": "commercial/module_catalog",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/entitlement_management-\u003ecommercial/module_catalog"
+      }
+    },
+    {
       "from": "deviceops/device_transfer",
       "to": "deviceops/device_management",
       "evidence": {
@@ -168,6 +232,161 @@
     }
   ],
   "operations": [
+    {
+      "id": "commercial.entitlement.explain",
+      "application": "commercial/entitlement_management",
+      "bindings": [
+        {
+          "operationId": "commercial.entitlement.explain",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.entitlement.explain/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.entitlement.explain",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.entitlement.explain/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.entitlement.explain"
+      }
+    },
+    {
+      "id": "commercial.entitlement.get_my",
+      "application": "commercial/entitlement_management",
+      "bindings": [
+        {
+          "operationId": "commercial.entitlement.get_my",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.entitlement.get_my/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.entitlement.get_my",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.entitlement.get_my/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.entitlement.get_my"
+      }
+    },
+    {
+      "id": "commercial.entitlement.override.create",
+      "application": "commercial/entitlement_management",
+      "bindings": [
+        {
+          "operationId": "commercial.entitlement.override.create",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.entitlement.override.create/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.entitlement.override.create",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.entitlement.override.create/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.entitlement.override.create"
+      }
+    },
+    {
+      "id": "commercial.entitlement.override.list",
+      "application": "commercial/entitlement_management",
+      "bindings": [
+        {
+          "operationId": "commercial.entitlement.override.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.entitlement.override.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.entitlement.override.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.entitlement.override.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.entitlement.override.list"
+      }
+    },
+    {
+      "id": "commercial.entitlement.override.revoke",
+      "application": "commercial/entitlement_management",
+      "bindings": [
+        {
+          "operationId": "commercial.entitlement.override.revoke",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.entitlement.override.revoke/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.entitlement.override.revoke",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.entitlement.override.revoke/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.entitlement.override.revoke"
+      }
+    },
     {
       "id": "commercial.module.create",
       "application": "commercial/module_catalog",
@@ -228,6 +447,15 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/commercial.module.delete"
+      }
+    },
+    {
+      "id": "commercial.module.entitlement_catalog",
+      "application": "commercial/module_catalog",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.module.entitlement_catalog"
       }
     },
     {
@@ -1292,6 +1520,69 @@
   ],
   "operationDependencies": [
     {
+      "from": "commercial.entitlement.explain",
+      "to": "commercial.module.entitlement_catalog",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.entitlement.explain/requiresOperations/commercial.module.entitlement_catalog"
+      }
+    },
+    {
+      "from": "commercial.entitlement.explain",
+      "to": "tenant.get",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.entitlement.explain/requiresOperations/tenant.get"
+      }
+    },
+    {
+      "from": "commercial.entitlement.get_my",
+      "to": "commercial.module.entitlement_catalog",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.entitlement.get_my/requiresOperations/commercial.module.entitlement_catalog"
+      }
+    },
+    {
+      "from": "commercial.entitlement.override.create",
+      "to": "commercial.module.entitlement_catalog",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.entitlement.override.create/requiresOperations/commercial.module.entitlement_catalog"
+      }
+    },
+    {
+      "from": "commercial.entitlement.override.create",
+      "to": "tenant.get",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.entitlement.override.create/requiresOperations/tenant.get"
+      }
+    },
+    {
+      "from": "commercial.entitlement.override.list",
+      "to": "tenant.get",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.entitlement.override.list/requiresOperations/tenant.get"
+      }
+    },
+    {
+      "from": "commercial.entitlement.override.revoke",
+      "to": "tenant.get",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.entitlement.override.revoke/requiresOperations/tenant.get"
+      }
+    },
+    {
       "from": "device.transfer",
       "to": "device.update",
       "evidence": {
@@ -1426,6 +1717,7 @@
         "access/tenant_lifecycle",
         "access/tenant_member_lifecycle",
         "access/tenant_role_permission",
+        "commercial/entitlement_management",
         "commercial/module_catalog",
         "deviceops/device_management",
         "deviceops/device_transfer",
@@ -1436,6 +1728,11 @@
         "deviceops"
       ],
       "externalOperations": [
+        "commercial.entitlement.explain",
+        "commercial.entitlement.get_my",
+        "commercial.entitlement.override.create",
+        "commercial.entitlement.override.list",
+        "commercial.entitlement.override.revoke",
         "commercial.module.create",
         "commercial.module.delete",
         "commercial.module.get",
@@ -1473,6 +1770,7 @@
         "tenant.update"
       ],
       "internalOperations": [
+        "commercial.module.entitlement_catalog",
         "site.validate_transfer_target",
         "tenant.member.bootstrap_owner",
         "tenant.role.assert_member_deactivation_allowed",

@@ -4,26 +4,30 @@ package policy
 
 import "yunka.io/gateway/authz"
 
-const OperationCreateModule authz.OperationID = "commercial.module.create"
-const OperationDeleteModule authz.OperationID = "commercial.module.delete"
-const OperationGetModule authz.OperationID = "commercial.module.get"
-const OperationListModules authz.OperationID = "commercial.module.list"
-const OperationSetModuleSalesStatus authz.OperationID = "commercial.module.set_sales_status"
-const OperationSetModuleTechnicalStatus authz.OperationID = "commercial.module.set_technical_status"
-const OperationUpdateModule authz.OperationID = "commercial.module.update"
+const OperationModuleCatalogCreateModule authz.OperationID = "commercial.module.create"
+const OperationModuleCatalogDeleteModule authz.OperationID = "commercial.module.delete"
+const OperationModuleCatalogGetModule authz.OperationID = "commercial.module.get"
+const OperationModuleCatalogListModules authz.OperationID = "commercial.module.list"
+const OperationModuleCatalogSetModuleSalesStatus authz.OperationID = "commercial.module.set_sales_status"
+const OperationModuleCatalogSetModuleTechnicalStatus authz.OperationID = "commercial.module.set_technical_status"
+const OperationModuleCatalogUpdateModule authz.OperationID = "commercial.module.update"
 
-func Permissions() []authz.PermissionKey {
+func ModuleCatalogPermissions() []authz.PermissionKey {
 	return []authz.PermissionKey{"platform.module.manage", "platform.module.read", "platform.module.technical.manage"}
 }
 
-func Resolver() authz.StaticResolver {
-	return authz.NewStaticResolver(map[string]authz.Policy{
-		"/commercial.v1.ModuleCatalogApplication/CreateModule":             {Operation: OperationCreateModule, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
-		"/commercial.v1.ModuleCatalogApplication/DeleteModule":             {Operation: OperationDeleteModule, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
-		"/commercial.v1.ModuleCatalogApplication/GetModule":                {Operation: OperationGetModule, Permissions: []authz.PermissionKey{"platform.module.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
-		"/commercial.v1.ModuleCatalogApplication/ListModules":              {Operation: OperationListModules, Permissions: []authz.PermissionKey{"platform.module.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
-		"/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus":     {Operation: OperationSetModuleSalesStatus, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
-		"/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus": {Operation: OperationSetModuleTechnicalStatus, Permissions: []authz.PermissionKey{"platform.module.technical.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
-		"/commercial.v1.ModuleCatalogApplication/UpdateModule":             {Operation: OperationUpdateModule, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
-	})
+func ModuleCatalogResolver() authz.StaticResolver {
+	return authz.NewStaticResolver(moduleCatalogPolicies())
+}
+
+func moduleCatalogPolicies() map[string]authz.Policy {
+	return map[string]authz.Policy{
+		"/commercial.v1.ModuleCatalogApplication/CreateModule":             {Operation: OperationModuleCatalogCreateModule, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
+		"/commercial.v1.ModuleCatalogApplication/DeleteModule":             {Operation: OperationModuleCatalogDeleteModule, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
+		"/commercial.v1.ModuleCatalogApplication/GetModule":                {Operation: OperationModuleCatalogGetModule, Permissions: []authz.PermissionKey{"platform.module.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
+		"/commercial.v1.ModuleCatalogApplication/ListModules":              {Operation: OperationModuleCatalogListModules, Permissions: []authz.PermissionKey{"platform.module.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
+		"/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus":     {Operation: OperationModuleCatalogSetModuleSalesStatus, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
+		"/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus": {Operation: OperationModuleCatalogSetModuleTechnicalStatus, Permissions: []authz.PermissionKey{"platform.module.technical.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
+		"/commercial.v1.ModuleCatalogApplication/UpdateModule":             {Operation: OperationModuleCatalogUpdateModule, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
+	}
 }

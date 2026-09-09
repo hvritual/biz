@@ -22,7 +22,9 @@
         "application:access/tenant_role_permission",
         "application:deviceops/device_management",
         "application:deviceops/device_transfer",
-        "application:deviceops/site_management"
+        "application:deviceops/site_management",
+        "application:commercial/module_catalog",
+        "application:commercial/entitlement_management"
       ],
       "inheritEnv": [
         "PATH",

@@ -2,6 +2,235 @@
   "schemaVersion": 2,
   "operations": [
     {
+      "operationId": "commercial.entitlement.explain",
+      "domain": "commercial",
+      "application": "entitlement_management",
+      "useCase": "explain_entitlements",
+      "requestType": "commercial.v1.ExplainEntitlementsRequest",
+      "responseType": "commercial.v1.EntitlementView",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.entitlement.read",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.entitlement_catalog",
+          "tenant.get"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.tenant.read"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.EntitlementManagementApplication/ExplainEntitlements",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/tenants/{tenant_id}/entitlements"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.entitlement.get_my",
+      "domain": "commercial",
+      "application": "entitlement_management",
+      "useCase": "get_my_entitlements",
+      "requestType": "commercial.v1.GetMyEntitlementsRequest",
+      "responseType": "commercial.v1.EntitlementView",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "tenant.entitlement.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.entitlement_catalog"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.EntitlementManagementApplication/GetMyEntitlements",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/entitlements"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.entitlement.override.create",
+      "domain": "commercial",
+      "application": "entitlement_management",
+      "useCase": "create_entitlement_override",
+      "requestType": "commercial.v1.CreateEntitlementOverrideRequest",
+      "responseType": "commercial.v1.EntitlementOverrideReceipt",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.entitlement.manage",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.entitlement_catalog",
+          "tenant.get"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.tenant.read"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.EntitlementManagementApplication/CreateEntitlementOverride",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/tenants/{tenant_id}/entitlement-overrides",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.entitlement.override.list",
+      "domain": "commercial",
+      "application": "entitlement_management",
+      "useCase": "list_entitlement_overrides",
+      "requestType": "commercial.v1.ListEntitlementOverridesRequest",
+      "responseType": "commercial.v1.ListEntitlementOverridesResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.entitlement.read",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "tenant.get"
+        ],
+        "permissionClosure": [
+          "platform.tenant.read"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.EntitlementManagementApplication/ListEntitlementOverrides",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/tenants/{tenant_id}/entitlement-overrides"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.entitlement.override.revoke",
+      "domain": "commercial",
+      "application": "entitlement_management",
+      "useCase": "revoke_entitlement_override",
+      "requestType": "commercial.v1.RevokeEntitlementOverrideRequest",
+      "responseType": "commercial.v1.EntitlementOverrideReceipt",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.entitlement.manage",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "tenant.get"
+        ],
+        "permissionClosure": [
+          "platform.tenant.read"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.EntitlementManagementApplication/RevokeEntitlementOverride",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "commercial.module.create",
       "domain": "commercial",
       "application": "module_catalog",
@@ -63,6 +292,29 @@
           }
         ]
       }
+    },
+    {
+      "operationId": "commercial.module.entitlement_catalog",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "read_entitlement_catalog",
+      "requestType": "commercial.v1.ListModulesRequest",
+      "responseType": "commercial.v1.ListModulesResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {}
     },
     {
       "operationId": "commercial.module.get",

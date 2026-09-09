@@ -32,6 +32,16 @@
       }
     },
     {
+      "name": "contracts/proto/commercial/v1/entitlement.proto",
+      "package": "commercial.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1",
+      "domain": {
+        "name": "commercial",
+        "version": "v1"
+      }
+    },
+    {
       "name": "contracts/proto/commercial/v1/module.proto",
       "package": "commercial.v1",
       "syntax": "proto3",
@@ -802,6 +812,99 @@
       }
     },
     {
+      "name": "CreateEntitlementOverrideRequest",
+      "fullName": "commercial.v1.CreateEntitlementOverrideRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expected_version",
+          "jsonName": "expectedVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "target",
+          "jsonName": "target",
+          "number": 5,
+          "kind": "enum",
+          "type": "commercial.v1.EntitlementTarget"
+        },
+        {
+          "name": "key",
+          "jsonName": "key",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "field_action",
+          "jsonName": "fieldAction",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "effect",
+          "jsonName": "effect",
+          "number": 8,
+          "kind": "enum",
+          "type": "commercial.v1.EntitlementEffect"
+        },
+        {
+          "name": "limit",
+          "jsonName": "limit",
+          "number": 9,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementLimit"
+        },
+        {
+          "name": "effective_at",
+          "jsonName": "effectiveAt",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "jsonName": "expiresAt",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "CreateModuleRequest",
       "fullName": "commercial.v1.CreateModuleRequest",
       "fields": [
@@ -914,6 +1017,411 @@
       }
     },
     {
+      "name": "EntitlementCatalogVersion",
+      "fullName": "commercial.v1.EntitlementCatalogVersion",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "EntitlementDecisionDTO",
+      "fullName": "commercial.v1.EntitlementDecisionDTO",
+      "fields": [
+        {
+          "name": "kind",
+          "jsonName": "kind",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "key",
+          "jsonName": "key",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "field_action",
+          "jsonName": "fieldAction",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "allowed",
+          "jsonName": "allowed",
+          "number": 5,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "limit",
+          "jsonName": "limit",
+          "number": 7,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementLimit"
+        },
+        {
+          "name": "masked",
+          "jsonName": "masked",
+          "number": 8,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "sources",
+          "jsonName": "sources",
+          "number": 9,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementSourceExplanation",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "EntitlementLimit",
+      "fullName": "commercial.v1.EntitlementLimit",
+      "fields": [
+        {
+          "name": "unlimited",
+          "jsonName": "unlimited",
+          "number": 1,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "value",
+          "jsonName": "value",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "shared"
+      }
+    },
+    {
+      "name": "EntitlementOverrideDTO",
+      "fullName": "commercial.v1.EntitlementOverrideDTO",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "target",
+          "jsonName": "target",
+          "number": 4,
+          "kind": "enum",
+          "type": "commercial.v1.EntitlementTarget"
+        },
+        {
+          "name": "key",
+          "jsonName": "key",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "field_action",
+          "jsonName": "fieldAction",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "effect",
+          "jsonName": "effect",
+          "number": 7,
+          "kind": "enum",
+          "type": "commercial.v1.EntitlementEffect"
+        },
+        {
+          "name": "limit",
+          "jsonName": "limit",
+          "number": 8,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementLimit"
+        },
+        {
+          "name": "effective_at",
+          "jsonName": "effectiveAt",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "jsonName": "expiresAt",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "revoked_at",
+          "jsonName": "revokedAt",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_id",
+          "jsonName": "actorId",
+          "number": 13,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 14,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "source_kind",
+          "jsonName": "sourceKind",
+          "number": 15,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "EntitlementOverrideReceipt",
+      "fullName": "commercial.v1.EntitlementOverrideReceipt",
+      "fields": [
+        {
+          "name": "source",
+          "jsonName": "source",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementOverrideDTO"
+        },
+        {
+          "name": "source_version",
+          "jsonName": "sourceVersion",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "EntitlementSourceExplanation",
+      "fullName": "commercial.v1.EntitlementSourceExplanation",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "source_kind",
+          "jsonName": "sourceKind",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "effect",
+          "jsonName": "effect",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "jsonName": "state",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "disposition",
+          "jsonName": "disposition",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_id",
+          "jsonName": "actorId",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "EntitlementView",
+      "fullName": "commercial.v1.EntitlementView",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "source_version",
+          "jsonName": "sourceVersion",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "resolver_version",
+          "jsonName": "resolverVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "evaluated_at",
+          "jsonName": "evaluatedAt",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "valid_until",
+          "jsonName": "validUntil",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "next_transition_at",
+          "jsonName": "nextTransitionAt",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "catalog_versions",
+          "jsonName": "catalogVersions",
+          "number": 7,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementCatalogVersion",
+          "repeated": true
+        },
+        {
+          "name": "decisions",
+          "jsonName": "decisions",
+          "number": 8,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementDecisionDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ExplainEntitlementsRequest",
+      "fullName": "commercial.v1.ExplainEntitlementsRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "capability_codes",
+          "jsonName": "capabilityCodes",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "GetModuleRequest",
       "fullName": "commercial.v1.GetModuleRequest",
       "fields": [
@@ -927,6 +1435,63 @@
       ],
       "dto": {
         "kind": "input"
+      }
+    },
+    {
+      "name": "GetMyEntitlementsRequest",
+      "fullName": "commercial.v1.GetMyEntitlementsRequest",
+      "fields": [
+        {
+          "name": "capability_codes",
+          "jsonName": "capabilityCodes",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListEntitlementOverridesRequest",
+      "fullName": "commercial.v1.ListEntitlementOverridesRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListEntitlementOverridesResponse",
+      "fullName": "commercial.v1.ListEntitlementOverridesResponse",
+      "fields": [
+        {
+          "name": "sources",
+          "jsonName": "sources",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementOverrideDTO",
+          "repeated": true
+        },
+        {
+          "name": "source_version",
+          "jsonName": "sourceVersion",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
       }
     },
     {
@@ -1043,6 +1608,50 @@
       ],
       "dto": {
         "kind": "output"
+      }
+    },
+    {
+      "name": "RevokeEntitlementOverrideRequest",
+      "fullName": "commercial.v1.RevokeEntitlementOverrideRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expected_version",
+          "jsonName": "expectedVersion",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
       }
     },
     {
@@ -1552,6 +2161,66 @@
         },
         {
           "name": "TENANT_STATUS_CLOSED",
+          "number": 4
+        }
+      ]
+    },
+    {
+      "name": "EntitlementEffect",
+      "fullName": "commercial.v1.EntitlementEffect",
+      "values": [
+        {
+          "name": "ENTITLEMENT_EFFECT_UNSPECIFIED",
+          "number": 0
+        },
+        {
+          "name": "ENTITLEMENT_EFFECT_GRANT",
+          "number": 1
+        },
+        {
+          "name": "ENTITLEMENT_EFFECT_DENY",
+          "number": 2
+        },
+        {
+          "name": "ENTITLEMENT_EFFECT_QUOTA_ADD",
+          "number": 3
+        },
+        {
+          "name": "ENTITLEMENT_EFFECT_QUOTA_REPLACE",
+          "number": 4
+        },
+        {
+          "name": "ENTITLEMENT_EFFECT_SAFETY_DENY",
+          "number": 5
+        },
+        {
+          "name": "ENTITLEMENT_EFFECT_SAFETY_MASK",
+          "number": 6
+        }
+      ]
+    },
+    {
+      "name": "EntitlementTarget",
+      "fullName": "commercial.v1.EntitlementTarget",
+      "values": [
+        {
+          "name": "ENTITLEMENT_TARGET_UNSPECIFIED",
+          "number": 0
+        },
+        {
+          "name": "ENTITLEMENT_TARGET_MODULE",
+          "number": 1
+        },
+        {
+          "name": "ENTITLEMENT_TARGET_CAPABILITY",
+          "number": 2
+        },
+        {
+          "name": "ENTITLEMENT_TARGET_QUOTA",
+          "number": 3
+        },
+        {
+          "name": "ENTITLEMENT_TARGET_FIELD",
           "number": 4
         }
       ]
@@ -2568,11 +3237,270 @@
       ]
     },
     {
+      "name": "EntitlementManagementApplication",
+      "fullName": "commercial.v1.EntitlementManagementApplication",
+      "domain": "commercial",
+      "application": {
+        "name": "entitlement_management",
+        "requires": [
+          "access/tenant_lifecycle",
+          "commercial/module_catalog"
+        ]
+      },
+      "methods": [
+        {
+          "name": "CreateEntitlementOverride",
+          "fullName": "commercial.v1.EntitlementManagementApplication.CreateEntitlementOverride",
+          "request": "commercial.v1.CreateEntitlementOverrideRequest",
+          "response": "commercial.v1.EntitlementOverrideReceipt",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/tenants/{tenant_id}/entitlement-overrides",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.entitlement.override.create",
+            "useCase": "create_entitlement_override",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.entitlement.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.entitlement_catalog",
+              "tenant.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.entitlement.override.create",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.entitlement.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "ExplainEntitlements",
+          "fullName": "commercial.v1.EntitlementManagementApplication.ExplainEntitlements",
+          "request": "commercial.v1.ExplainEntitlementsRequest",
+          "response": "commercial.v1.EntitlementView",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/entitlements"
+            }
+          ],
+          "operation": {
+            "id": "commercial.entitlement.explain",
+            "useCase": "explain_entitlements",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.entitlement.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.entitlement_catalog",
+              "tenant.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.entitlement.explain",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.entitlement.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "GetMyEntitlements",
+          "fullName": "commercial.v1.EntitlementManagementApplication.GetMyEntitlements",
+          "request": "commercial.v1.GetMyEntitlementsRequest",
+          "response": "commercial.v1.EntitlementView",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/entitlements"
+            }
+          ],
+          "operation": {
+            "id": "commercial.entitlement.get_my",
+            "useCase": "get_my_entitlements",
+            "permissions": [
+              "commercial.catalog.read",
+              "tenant.entitlement.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.entitlement_catalog"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.entitlement.get_my",
+            "permissions": [
+              "commercial.catalog.read",
+              "tenant.entitlement.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "ListEntitlementOverrides",
+          "fullName": "commercial.v1.EntitlementManagementApplication.ListEntitlementOverrides",
+          "request": "commercial.v1.ListEntitlementOverridesRequest",
+          "response": "commercial.v1.ListEntitlementOverridesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/entitlement-overrides"
+            }
+          ],
+          "operation": {
+            "id": "commercial.entitlement.override.list",
+            "useCase": "list_entitlement_overrides",
+            "permissions": [
+              "platform.entitlement.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "tenant.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.entitlement.override.list",
+            "permissions": [
+              "platform.entitlement.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "RevokeEntitlementOverride",
+          "fullName": "commercial.v1.EntitlementManagementApplication.RevokeEntitlementOverride",
+          "request": "commercial.v1.RevokeEntitlementOverrideRequest",
+          "response": "commercial.v1.EntitlementOverrideReceipt",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.entitlement.override.revoke",
+            "useCase": "revoke_entitlement_override",
+            "permissions": [
+              "platform.entitlement.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "tenant.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.entitlement.override.revoke",
+            "permissions": [
+              "platform.entitlement.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "ModuleCatalogApplication",
       "fullName": "commercial.v1.ModuleCatalogApplication",
       "domain": "commercial",
       "application": {
-        "name": "module_catalog"
+        "name": "module_catalog",
+        "operations": [
+          {
+            "id": "commercial.module.entitlement_catalog",
+            "useCase": "read_entitlement_catalog",
+            "permissions": [
+              "commercial.catalog.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.ListModulesRequest",
+            "responseType": "commercial.v1.ListModulesResponse",
+            "applicationMethod": "ReadEntitlementCatalog"
+          }
+        ]
       },
       "methods": [
         {

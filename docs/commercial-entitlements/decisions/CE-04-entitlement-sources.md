@@ -10,7 +10,7 @@
 
 输入为现有 ModuleCatalog 代码 Registry＋持久化技术状态，以及平台为明确目标租户创建的专项来源。新增 entitlement.proto 包含 CreateEntitlementOverride、RevokeEntitlementOverride、ListEntitlementOverrides、ExplainEntitlements、GetMyEntitlements。
 
-EntitlementManagement 通过 generated typed child `tenant.get` 验证租户，通过新增 transport-private `commercial.module.entitlement_catalog` 读取目录。不能直接导入 Access 或 ModuleCatalog Repository。内部目录读取在 ModuleCatalog owner 内 JoinValue，和专项来源读取加入同一根事务。
+EntitlementManagement 的平台入口通过 generated typed child `tenant.get` 验证目标租户；租户自查询使用 Access 已验证的活跃租户／成员上下文，不调用平台租户接口。目录通过新增 transport-private `commercial.module.entitlement_catalog` 读取目录。不能直接导入 Access 或 ModuleCatalog Repository。内部目录读取在 ModuleCatalog owner 内 JoinValue，和专项来源读取加入同一根事务。
 
 手写 Application 只由 `application/entitlementmanagement.Build` 返回 generated interface，具体实现位于 nested internal/usecase。存储经 requestscope.GORMRepositories 取得根 transaction；写源码禁止自开 Transaction/Begin/Commit/Rollback。新增 4 张显式来源、版本、请求回执及审计表，不创建可编辑快照。
 
@@ -56,7 +56,7 @@ source、聚合版本、audit、business receipt 同一根 UoW 提交。数据�
 - GET /v1/platform/tenants/{tenant_id}/entitlements
 - GET /v1/tenant/entitlements
 
-租户接口不接受 tenant_id。可信 principal 决定租户；任意 query/header 不得切换目标。tenant.entitlement.read 必须通过既有 IAM 授权；本任务不自动为已有角色增加该权限。平台主体不能调用租户接口假扮一个租户。
+租户接口不接受 tenant_id。可信 principal 决定租户；任意 query/header 不得切换目标。tenant.entitlement.read 与独立 commercial.catalog.read 必须通过既有 IAM 授权；本任务不自动为已有角色增加该权限。平台主体不能调用租户接口假扮一个租户。
 
 平台解释保留来源 actor/reason；租户解释保留 source ID、类型、状态、disposition 和机器限制原因，去掉内部 actor 和自由文本原因。
 
@@ -69,3 +69,9 @@ TestCE04：纯解析 priority/time/依赖/数量/字段/未知值/确定性；�
 make check/generate 继续原框架链路，商业 mapping_version 增至2，新增入口必须显式分类。资格工作流连续生成两次无漂移、全量 Go、race、MySQL、plan/receipt checker，并在 DONE 回执合并后的 main 执行 --require-main。
 
 授权回滚使用 revoke 创建新版本，恢复重新解析，保留审计。不将旧 source_version 覆盖新值，不删除表逃避限制；源损坏时先保持失败关闭，核对审计恢复来源后重算。没有执行生产部署或生产回滚演练。
+
+## 真实生成诊断后的契约修正
+
+首轮准备 run 34323269971 被 Yunka composite permission closure 拒绝。未修改框架或降低 tenant.get 权限：平台根显式声明其 tenant.get 子操作所需 platform.tenant.read；新的内部目录读取使用狭窄 commercial.catalog.read，create/explain/get_my 根显式包含该权限。GetMy 不声明或调用 tenant.get，因为现有 Access.Authenticate 已验证自身活跃租户和成员，且请求不接受其他租户。生产成员角色不自动加权限；测试夹具只给自己的临时主体明确赋予所需权限。
+
+内部目录元数据读取仍需认证、声明式根调用图和根权限闭包，不是 public=true，也没有添加可以查询任意租户的内部接口。
