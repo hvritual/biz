@@ -1,0 +1,18 @@
+name: CE-08 commercial map generation
+on: {push: {branches: [feat/ce-08-default-subscription-bootstrap], paths: ['.github/workflows/ce08-commercial-generate.yml']}}
+permissions: {contents: write}
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {fetch-depth: 0, persist-credentials: true}
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '1.25.13', cache: false}
+      - run: |
+          set -euo pipefail
+          make commercial-generate
+          git config user.name github-actions[bot]; git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add contracts/commercial/generated
+          git commit -m 'chore(ce-08): regenerate commercial capability map'
+          git push origin HEAD:${GITHUB_REF_NAME}
