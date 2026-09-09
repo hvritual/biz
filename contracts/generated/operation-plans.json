@@ -2,6 +2,227 @@
   "schemaVersion": 2,
   "operations": [
     {
+      "operationId": "commercial.module.create",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "create_module",
+      "requestType": "commercial.v1.CreateModuleRequest",
+      "responseType": "commercial.v1.ModuleDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/CreateModule",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/modules",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.module.delete",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "delete_module",
+      "requestType": "commercial.v1.DeleteModuleRequest",
+      "responseType": "commercial.v1.DeleteModuleResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/DeleteModule",
+        "http": [
+          {
+            "method": "DELETE",
+            "path": "/v1/platform/modules/{module_code}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.module.get",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "get_module",
+      "requestType": "commercial.v1.GetModuleRequest",
+      "responseType": "commercial.v1.ModuleDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/GetModule",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/modules/{module_code}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.module.list",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "list_modules",
+      "requestType": "commercial.v1.ListModulesRequest",
+      "responseType": "commercial.v1.ListModulesResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/ListModules",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/modules"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.module.set_sales_status",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "set_module_sales_status",
+      "requestType": "commercial.v1.SetModuleSalesStatusRequest",
+      "responseType": "commercial.v1.ModuleDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/modules/{module_code}/sales-status",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.module.set_technical_status",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "set_module_technical_status",
+      "requestType": "commercial.v1.SetModuleTechnicalStatusRequest",
+      "responseType": "commercial.v1.ModuleDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.technical.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/modules/{module_code}/technical-status",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.module.update",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "update_module",
+      "requestType": "commercial.v1.UpdateModuleRequest",
+      "responseType": "commercial.v1.ModuleDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/UpdateModule",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/platform/modules/{module_code}",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "device.create",
       "domain": "deviceops",
       "application": "device_management",

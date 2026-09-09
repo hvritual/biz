@@ -33,6 +33,16 @@
       }
     },
     {
+      "id": "commercial/module_catalog",
+      "domain": "commercial",
+      "name": "module_catalog",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/commercial/module_catalog"
+      }
+    },
+    {
       "id": "deviceops/device_management",
       "domain": "deviceops",
       "name": "device_management",
@@ -158,6 +168,223 @@
     }
   ],
   "operations": [
+    {
+      "id": "commercial.module.create",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.module.create",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.create/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.module.create",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.create/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.module.create"
+      }
+    },
+    {
+      "id": "commercial.module.delete",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.module.delete",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.delete/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.module.delete",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.delete/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.module.delete"
+      }
+    },
+    {
+      "id": "commercial.module.get",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.module.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.module.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.module.get"
+      }
+    },
+    {
+      "id": "commercial.module.list",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.module.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.module.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.module.list"
+      }
+    },
+    {
+      "id": "commercial.module.set_sales_status",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.module.set_sales_status",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.set_sales_status/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.module.set_sales_status",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.set_sales_status/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.module.set_sales_status"
+      }
+    },
+    {
+      "id": "commercial.module.set_technical_status",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.module.set_technical_status",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.set_technical_status/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.module.set_technical_status",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.set_technical_status/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.module.set_technical_status"
+      }
+    },
+    {
+      "id": "commercial.module.update",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.module.update",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.update/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.module.update",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.update/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.module.update"
+      }
+    },
     {
       "id": "device.create",
       "application": "deviceops/device_management",
@@ -1199,6 +1426,7 @@
         "access/tenant_lifecycle",
         "access/tenant_member_lifecycle",
         "access/tenant_role_permission",
+        "commercial/module_catalog",
         "deviceops/device_management",
         "deviceops/device_transfer",
         "deviceops/site_management"
@@ -1208,6 +1436,13 @@
         "deviceops"
       ],
       "externalOperations": [
+        "commercial.module.create",
+        "commercial.module.delete",
+        "commercial.module.get",
+        "commercial.module.list",
+        "commercial.module.set_sales_status",
+        "commercial.module.set_technical_status",
+        "commercial.module.update",
         "device.create",
         "device.delete",
         "device.get",

@@ -27,6 +27,10 @@ export type Access_V1_TenantRoleStatus = "TENANT_ROLE_STATUS_UNSPECIFIED" | "TEN
 
 export type Access_V1_TenantStatus = "TENANT_STATUS_UNSPECIFIED" | "TENANT_STATUS_PENDING" | "TENANT_STATUS_ACTIVE" | "TENANT_STATUS_SUSPENDED" | "TENANT_STATUS_CLOSED";
 
+export type Commercial_V1_ModuleSalesStatus = "MODULE_SALES_STATUS_UNSPECIFIED" | "MODULE_SALES_STATUS_SELLABLE" | "MODULE_SALES_STATUS_RETIRED";
+
+export type Commercial_V1_ModuleTechnicalStatus = "MODULE_TECHNICAL_STATUS_UNSPECIFIED" | "MODULE_TECHNICAL_STATUS_NOT_READY" | "MODULE_TECHNICAL_STATUS_READY" | "MODULE_TECHNICAL_STATUS_DISABLED";
+
 export interface Access_V1_ActivateTenantMemberRequest {
   userId?: string;
   version?: string;
@@ -172,6 +176,78 @@ export interface Access_V1_UpdateTenantRoleRequest {
   roleId?: string;
   name?: string;
   version?: string;
+}
+
+export interface Commercial_V1_CreateModuleRequest {
+  requestId?: string;
+  moduleCode?: string;
+  name?: string;
+  category?: string;
+  salesScope?: readonly string[];
+  reason?: string;
+}
+
+export interface Commercial_V1_DeleteModuleRequest {
+  requestId?: string;
+  moduleCode?: string;
+  version?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_DeleteModuleResponse {
+  moduleCode?: string;
+  deleted?: boolean;
+}
+
+export interface Commercial_V1_GetModuleRequest {
+  moduleCode?: string;
+}
+
+export interface Commercial_V1_ListModulesRequest {
+}
+
+export interface Commercial_V1_ListModulesResponse {
+  modules?: readonly Commercial_V1_ModuleDTO[];
+}
+
+export interface Commercial_V1_ModuleDTO {
+  moduleCode?: string;
+  name?: string;
+  category?: string;
+  salesScope?: readonly string[];
+  technicalStatus?: Commercial_V1_ModuleTechnicalStatus;
+  salesStatus?: Commercial_V1_ModuleSalesStatus;
+  capabilityCodes?: readonly string[];
+  quotaSchemaKeys?: readonly string[];
+  fieldPolicySchemaKeys?: readonly string[];
+  dependencies?: readonly string[];
+  version?: string;
+}
+
+export interface Commercial_V1_SetModuleSalesStatusRequest {
+  requestId?: string;
+  moduleCode?: string;
+  salesStatus?: Commercial_V1_ModuleSalesStatus;
+  version?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_SetModuleTechnicalStatusRequest {
+  requestId?: string;
+  moduleCode?: string;
+  technicalStatus?: Commercial_V1_ModuleTechnicalStatus;
+  version?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_UpdateModuleRequest {
+  requestId?: string;
+  moduleCode?: string;
+  name?: string;
+  category?: string;
+  salesScope?: readonly string[];
+  version?: string;
+  reason?: string;
 }
 
 export interface Deviceops_V1_CreateDeviceRequest {
@@ -420,6 +496,69 @@ export const operations = {
       { method: "PATCH", path: "/v1/tenant/roles/{role_id}", body: "*" },
     ]
   },
+  "commercial.v1.ModuleCatalogApplication.CreateModule": {
+    fullName: "commercial.v1.ModuleCatalogApplication.CreateModule",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/CreateModule",
+    requestType: "commercial.v1.CreateModuleRequest",
+    responseType: "commercial.v1.ModuleDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/modules", body: "*" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.DeleteModule": {
+    fullName: "commercial.v1.ModuleCatalogApplication.DeleteModule",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/DeleteModule",
+    requestType: "commercial.v1.DeleteModuleRequest",
+    responseType: "commercial.v1.DeleteModuleResponse",
+    http: [
+      { method: "DELETE", path: "/v1/platform/modules/{module_code}" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.GetModule": {
+    fullName: "commercial.v1.ModuleCatalogApplication.GetModule",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/GetModule",
+    requestType: "commercial.v1.GetModuleRequest",
+    responseType: "commercial.v1.ModuleDTO",
+    http: [
+      { method: "GET", path: "/v1/platform/modules/{module_code}" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.ListModules": {
+    fullName: "commercial.v1.ModuleCatalogApplication.ListModules",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/ListModules",
+    requestType: "commercial.v1.ListModulesRequest",
+    responseType: "commercial.v1.ListModulesResponse",
+    http: [
+      { method: "GET", path: "/v1/platform/modules" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus": {
+    fullName: "commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus",
+    requestType: "commercial.v1.SetModuleSalesStatusRequest",
+    responseType: "commercial.v1.ModuleDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/modules/{module_code}/sales-status", body: "*" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus": {
+    fullName: "commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus",
+    requestType: "commercial.v1.SetModuleTechnicalStatusRequest",
+    responseType: "commercial.v1.ModuleDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/modules/{module_code}/technical-status", body: "*" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.UpdateModule": {
+    fullName: "commercial.v1.ModuleCatalogApplication.UpdateModule",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/UpdateModule",
+    requestType: "commercial.v1.UpdateModuleRequest",
+    responseType: "commercial.v1.ModuleDTO",
+    http: [
+      { method: "PATCH", path: "/v1/platform/modules/{module_code}", body: "*" },
+    ]
+  },
   "deviceops.v1.DeviceApplication.CreateDevice": {
     fullName: "deviceops.v1.DeviceApplication.CreateDevice",
     rpcPath: "/deviceops.v1.DeviceApplication/CreateDevice",
@@ -575,6 +714,39 @@ export class Access_V1_TenantRolePermissionApplicationClient {
 
   updateTenantRole(request: Access_V1_UpdateTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
     return this.transport.call<Access_V1_UpdateTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.UpdateTenantRole"], request);
+  }
+
+}
+
+export class Commercial_V1_ModuleCatalogApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  createModule(request: Commercial_V1_CreateModuleRequest): Promise<Commercial_V1_ModuleDTO> {
+    return this.transport.call<Commercial_V1_CreateModuleRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.CreateModule"], request);
+  }
+
+  deleteModule(request: Commercial_V1_DeleteModuleRequest): Promise<Commercial_V1_DeleteModuleResponse> {
+    return this.transport.call<Commercial_V1_DeleteModuleRequest, Commercial_V1_DeleteModuleResponse>(operations["commercial.v1.ModuleCatalogApplication.DeleteModule"], request);
+  }
+
+  getModule(request: Commercial_V1_GetModuleRequest): Promise<Commercial_V1_ModuleDTO> {
+    return this.transport.call<Commercial_V1_GetModuleRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.GetModule"], request);
+  }
+
+  listModules(request: Commercial_V1_ListModulesRequest): Promise<Commercial_V1_ListModulesResponse> {
+    return this.transport.call<Commercial_V1_ListModulesRequest, Commercial_V1_ListModulesResponse>(operations["commercial.v1.ModuleCatalogApplication.ListModules"], request);
+  }
+
+  setModuleSalesStatus(request: Commercial_V1_SetModuleSalesStatusRequest): Promise<Commercial_V1_ModuleDTO> {
+    return this.transport.call<Commercial_V1_SetModuleSalesStatusRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus"], request);
+  }
+
+  setModuleTechnicalStatus(request: Commercial_V1_SetModuleTechnicalStatusRequest): Promise<Commercial_V1_ModuleDTO> {
+    return this.transport.call<Commercial_V1_SetModuleTechnicalStatusRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus"], request);
+  }
+
+  updateModule(request: Commercial_V1_UpdateModuleRequest): Promise<Commercial_V1_ModuleDTO> {
+    return this.transport.call<Commercial_V1_UpdateModuleRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.UpdateModule"], request);
   }
 
 }
