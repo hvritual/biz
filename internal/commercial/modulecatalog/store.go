@@ -1,7 +1,6 @@
 package modulecatalog
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"time"
@@ -22,7 +21,6 @@ func (idempotencyRow) TableName() string { return "biz_commercial_module_idempot
 
 type Store struct{ db *gorm.DB }
 func NewStore(db *gorm.DB) (*Store,error) { if db==nil { return nil,errors.New("module catalog: database required") }; return &Store{db:db},nil }
-func (s *Store) Migrate(ctx context.Context) error { return s.db.WithContext(ctx).AutoMigrate(&moduleRow{},&dependencyRow{},&retiredCodeRow{},&auditRow{},&idempotencyRow{}) }
 func (s *Store) DB() *gorm.DB { return s.db }
 
 func encode(v any) string { b,_:=json.Marshal(v); return string(b) }
