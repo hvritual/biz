@@ -1,0 +1,47 @@
+{
+  "task_id": "CE-04",
+  "result": "BLOCKED",
+  "source_commit": "437b0f052e823fdf99dfa3cdda2104b25c7b7627",
+  "source_tree": "e0ade58957fb636fbebcb37323d11a229acaeb68",
+  "main_commit": "9ea878d72650216a26c39eddf98374717f2a562b",
+  "integration_commit": null,
+  "framework_commit": "6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb",
+  "blocker_issue": "https://github.com/hvritual/biz/issues/26",
+  "observed_approval_run": 34327172671,
+  "local_preflight": {
+    "toolchain": "go1.23.2",
+    "matches_locked_toolchain": false,
+    "domain_leaf_tests": 45,
+    "domain_pass_events": 51,
+    "runtime_helper_tests": 9,
+    "receipt_checker_tests": 8,
+    "plan_check": "PASS",
+    "scope": "pure domain and document/tool checks only; not final API/MySQL/main qualification",
+    "sha256": {
+      "domain.jsonl": "48ee42d5d1b826de3bae1ab64c3e1289d7f7cb5fd5cf40d6184150494f800b0b",
+      "environment.log": "45904b4b935e7b4577ebbfa4e36378b26aa6ff955f4fd3657222251ff30f8b7a",
+      "runtime-helper.log": "b3d89296382a6525e2481e617733d66b5ae6d69cbc7e1ed20e5f8ca73b5acc6f",
+      "receipt-tests.log": "1bc8abb0da69da63206e3a6dafb8bc8b88c3970db9c91523c4864d4508a77c5c",
+      "plan.log": "0a88c2601a601e515a6f3d036e0fdcfe3d19305abbcee0f9b5ac55254242bc9a"
+    }
+  },
+  "historical_qualification": {
+    "head_commit": "a72119b7bd00e32abb840f3c93ed486fc8b004dd",
+    "verified_merge_ref": "ebcc75f33c53ebbd0fb5ff9b03221bf13858293b",
+    "run_id": 34324260783,
+    "artifact_id": 10093147186,
+    "artifact_sha256": "f5e0ea54eadd98d226509eac83600f55b9158e775edd39412c4ca611e9cb5dda",
+    "log_hashes_checked": 20,
+    "focused_leaves": 43,
+    "full_go_leaves": 112,
+    "mysql_leaves": 4,
+    "database_restart_checks": 2,
+    "not_valid_for_current_source": true
+  },
+  "not_completed": [
+    "B12.7 runtime qualification after normal authorized gate repair",
+    "final source full locked-toolchain qualification",
+    "main merge and qualification",
+    "CE-04 DONE and final --require-main"
+  ]
+}
