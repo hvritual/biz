@@ -721,6 +721,11 @@
       },
       "commercial_v1_EntitlementView": {
         "properties": {
+          "catalogRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
           "catalogVersions": {
             "items": {
               "$ref": "#/components/schemas/commercial_v1_EntitlementCatalogVersion"
@@ -733,10 +738,21 @@
             },
             "type": "array"
           },
+          "entitlementVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
           "evaluatedAt": {
             "type": "string"
           },
           "nextTransitionAt": {
+            "type": "string"
+          },
+          "permissionSubject": {
+            "type": "string"
+          },
+          "permissionVersion": {
             "type": "string"
           },
           "resolverVersion": {

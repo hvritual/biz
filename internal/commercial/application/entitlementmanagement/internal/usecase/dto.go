@@ -85,7 +85,7 @@ func receiptDTO(r ports.OverrideReceipt) *commercialv1.EntitlementOverrideReceip
 	return &commercialv1.EntitlementOverrideReceipt{Source: sourceDTO(r.Source), SourceVersion: r.SourceVersion}
 }
 func resultDTO(r entitlement.Result, redact bool) *commercialv1.EntitlementView {
-	out := &commercialv1.EntitlementView{TenantId: r.TenantID, SourceVersion: r.SourceVersion, ResolverVersion: r.ResolverVersion, EvaluatedAt: instant(&r.EvaluatedAt), ValidUntil: instant(r.ValidUntil), NextTransitionAt: instant(r.NextTransitionAt), Decisions: []*commercialv1.EntitlementDecisionDTO{}}
+	out := &commercialv1.EntitlementView{TenantId: r.TenantID, EntitlementVersion: r.EntitlementVersion, CatalogRevision: r.CatalogRevision, PermissionVersion: r.PermissionVersion, PermissionSubject: r.PermissionSubject, SourceVersion: r.SourceVersion, ResolverVersion: r.ResolverVersion, EvaluatedAt: instant(&r.EvaluatedAt), ValidUntil: instant(r.ValidUntil), NextTransitionAt: instant(r.NextTransitionAt), Decisions: []*commercialv1.EntitlementDecisionDTO{}}
 	for _, v := range r.CatalogVersions {
 		out.CatalogVersions = append(out.CatalogVersions, &commercialv1.EntitlementCatalogVersion{ModuleCode: v.ModuleCode, Version: v.Version})
 	}

@@ -33,8 +33,10 @@ func (bootstrap PlatformBootstrap) Validate() error {
 }
 
 type Options struct {
-	DeviceOps         deviceops.Config
-	PlatformBootstrap PlatformBootstrap
+	// Disable only the derived cache; authority reads and write barriers remain on.
+	DisableEntitlementCache bool
+	DeviceOps               deviceops.Config
+	PlatformBootstrap       PlatformBootstrap
 }
 
 func (options Options) Validate() error {

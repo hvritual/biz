@@ -1062,8 +1062,14 @@ type EntitlementView struct {
 	NextTransitionAt string                       `protobuf:"bytes,6,opt,name=next_transition_at,json=nextTransitionAt,proto3" json:"next_transition_at,omitempty"`
 	CatalogVersions  []*EntitlementCatalogVersion `protobuf:"bytes,7,rep,name=catalog_versions,json=catalogVersions,proto3" json:"catalog_versions,omitempty"`
 	Decisions        []*EntitlementDecisionDTO    `protobuf:"bytes,8,rep,name=decisions,proto3" json:"decisions,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Immutable derived version, not the source mutation counter.
+	EntitlementVersion uint64 `protobuf:"varint,9,opt,name=entitlement_version,json=entitlementVersion,proto3" json:"entitlement_version,omitempty"`
+	CatalogRevision    uint64 `protobuf:"varint,10,opt,name=catalog_revision,json=catalogRevision,proto3" json:"catalog_revision,omitempty"`
+	// Principal-specific Access fingerprint. Empty for platform tenant explanations.
+	PermissionVersion string `protobuf:"bytes,11,opt,name=permission_version,json=permissionVersion,proto3" json:"permission_version,omitempty"`
+	PermissionSubject string `protobuf:"bytes,12,opt,name=permission_subject,json=permissionSubject,proto3" json:"permission_subject,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *EntitlementView) Reset() {
@@ -1150,6 +1156,34 @@ func (x *EntitlementView) GetDecisions() []*EntitlementDecisionDTO {
 		return x.Decisions
 	}
 	return nil
+}
+
+func (x *EntitlementView) GetEntitlementVersion() uint64 {
+	if x != nil {
+		return x.EntitlementVersion
+	}
+	return 0
+}
+
+func (x *EntitlementView) GetCatalogRevision() uint64 {
+	if x != nil {
+		return x.CatalogRevision
+	}
+	return 0
+}
+
+func (x *EntitlementView) GetPermissionVersion() string {
+	if x != nil {
+		return x.PermissionVersion
+	}
+	return ""
+}
+
+func (x *EntitlementView) GetPermissionSubject() string {
+	if x != nil {
+		return x.PermissionSubject
+	}
+	return ""
 }
 
 var File_commercial_v1_entitlement_proto protoreflect.FileDescriptor
@@ -1241,7 +1275,7 @@ const file_commercial_v1_entitlement_proto_rawDesc = "" +
 	"\x19EntitlementCatalogVersion\x12\x1f\n" +
 	"\vmodule_code\x18\x01 \x01(\tR\n" +
 	"moduleCode\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\x04R\aversion\"\x8c\x03\n" +
+	"\aversion\x18\x02 \x01(\x04R\aversion\"\xc6\x04\n" +
 	"\x0fEntitlementView\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12%\n" +
 	"\x0esource_version\x18\x02 \x01(\x04R\rsourceVersion\x12)\n" +
@@ -1251,7 +1285,12 @@ const file_commercial_v1_entitlement_proto_rawDesc = "" +
 	"validUntil\x12,\n" +
 	"\x12next_transition_at\x18\x06 \x01(\tR\x10nextTransitionAt\x12S\n" +
 	"\x10catalog_versions\x18\a \x03(\v2(.commercial.v1.EntitlementCatalogVersionR\x0fcatalogVersions\x12C\n" +
-	"\tdecisions\x18\b \x03(\v2%.commercial.v1.EntitlementDecisionDTOR\tdecisions*\xb5\x01\n" +
+	"\tdecisions\x18\b \x03(\v2%.commercial.v1.EntitlementDecisionDTOR\tdecisions\x12/\n" +
+	"\x13entitlement_version\x18\t \x01(\x04R\x12entitlementVersion\x12)\n" +
+	"\x10catalog_revision\x18\n" +
+	" \x01(\x04R\x0fcatalogRevision\x12-\n" +
+	"\x12permission_version\x18\v \x01(\tR\x11permissionVersion\x12-\n" +
+	"\x12permission_subject\x18\f \x01(\tR\x11permissionSubject*\xb5\x01\n" +
 	"\x11EntitlementTarget\x12\"\n" +
 	"\x1eENTITLEMENT_TARGET_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19ENTITLEMENT_TARGET_MODULE\x10\x01\x12!\n" +
@@ -1278,9 +1317,9 @@ const file_commercial_v1_entitlement_proto_rawDesc = "" +
 	"tenant.getH\x01R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x028\x126/v1/platform/tenants/{tenant_id}/entitlement-overrides\x12\xde\x02\n" +
 	"\x13ExplainEntitlements\x12).commercial.v1.ExplainEntitlementsRequest\x1a\x1e.commercial.v1.EntitlementView\"\xfb\x01\xe2\xf3\x18\xbe\x01\n" +
 	"\x1ecommercial.entitlement.explain\x12\x14explain_entitlements\x1a\x19platform.entitlement.read\x1a\x14platform.tenant.read\x1a\x17commercial.catalog.read2\x01\x02B\n" +
-	"tenant.getB%commercial.module.entitlement_catalogH\x01R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x022:\x01*\"-/v1/platform/tenants/{tenant_id}/entitlements\x12\xa0\x02\n" +
+	"tenant.getB%commercial.module.entitlement_catalogH\x01R\x04\b\x03\x10\x01\x82\xd3\xe4\x93\x022:\x01*\"-/v1/platform/tenants/{tenant_id}/entitlements\x12\xa0\x02\n" +
 	"\x11GetMyEntitlements\x12'.commercial.v1.GetMyEntitlementsRequest\x1a\x1e.commercial.v1.EntitlementView\"\xc1\x01\xe2\xf3\x18\x9a\x01\n" +
-	"\x1dcommercial.entitlement.get_my\x12\x13get_my_entitlements\x1a\x17tenant.entitlement.read\x1a\x17commercial.catalog.read(\x012\x01\x02B%commercial.module.entitlement_catalogH\x01R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/v1/tenant/entitlements\x1aP\xda\xf3\x18L\n" +
+	"\x1dcommercial.entitlement.get_my\x12\x13get_my_entitlements\x1a\x17tenant.entitlement.read\x1a\x17commercial.catalog.read(\x012\x01\x02B%commercial.module.entitlement_catalogH\x01R\x04\b\x03\x10\x01\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/v1/tenant/entitlements\x1aP\xda\xf3\x18L\n" +
 	"\x16entitlement_management\x12\x19commercial/module_catalog\x12\x17access/tenant_lifecycleBV\xca\xf3\x18\x10\n" +
 	"\n" +
 	"commercial\x12\x02v1Z@github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1b\x06proto3"

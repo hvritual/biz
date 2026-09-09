@@ -9,9 +9,18 @@ import (
 var migrationFS embed.FS
 
 func (s *Store) Migrate(ctx context.Context) error {
-	sql, err := migrationFS.ReadFile("migrations/0001_module_catalog.sql")
+	entries, err := migrationFS.ReadDir("migrations")
 	if err != nil {
 		return err
 	}
-	return s.db.WithContext(ctx).Exec(string(sql)).Error
+	for _, entry := range entries {
+		data, err := migrationFS.ReadFile("migrations/" + entry.Name())
+		if err != nil {
+			return err
+		}
+		if err = s.db.WithContext(ctx).Exec(string(data)).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }

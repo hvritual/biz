@@ -309,12 +309,16 @@ type CatalogVersion struct {
 	Version    uint64 `json:"version"`
 }
 type Result struct {
-	TenantID         string           `json:"tenant_id"`
-	SourceVersion    uint64           `json:"source_version"`
-	ResolverVersion  uint64           `json:"resolver_version"`
-	EvaluatedAt      time.Time        `json:"evaluated_at"`
-	ValidUntil       *time.Time       `json:"valid_until,omitempty"`
-	NextTransitionAt *time.Time       `json:"next_transition_at,omitempty"`
-	CatalogVersions  []CatalogVersion `json:"catalog_versions"`
-	Decisions        []Decision       `json:"decisions"`
+	EntitlementVersion uint64           `json:"entitlement_version"`
+	CatalogRevision    uint64           `json:"catalog_revision"`
+	PermissionVersion  string           `json:"permission_version,omitempty"`
+	PermissionSubject  string           `json:"permission_subject,omitempty"`
+	TenantID           string           `json:"tenant_id"`
+	SourceVersion      uint64           `json:"source_version"`
+	ResolverVersion    uint64           `json:"resolver_version"`
+	EvaluatedAt        time.Time        `json:"evaluated_at"`
+	ValidUntil         *time.Time       `json:"valid_until,omitempty"`
+	NextTransitionAt   *time.Time       `json:"next_transition_at,omitempty"`
+	CatalogVersions    []CatalogVersion `json:"catalog_versions"`
+	Decisions          []Decision       `json:"decisions"`
 }
