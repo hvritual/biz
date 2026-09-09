@@ -1,0 +1,57 @@
+name: CE round receipts
+
+on:
+  push:
+    branches: [main]
+    paths: ['docs/commercial-entitlements/**', '.github/workflows/ce-round-receipts.yml']
+  pull_request:
+    branches: [main]
+    paths: ['docs/commercial-entitlements/**', '.github/workflows/ce-round-receipts.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  receipts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {fetch-depth: 0, persist-credentials: false}
+      - name: Validate plan and test receipt gates
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ce-receipts"
+          python3 docs/commercial-entitlements/tools/check_plan.py 2>&1 | tee "$RUNNER_TEMP/ce-receipts/plan.log"
+          python3 -m unittest discover -s docs/commercial-entitlements/tools -p 'test_*.py' -v 2>&1 | tee "$RUNNER_TEMP/ce-receipts/tests.log"
+      - name: Check each completed task against the fetched main
+        run: |
+          set -euo pipefail
+          git fetch origin main:refs/remotes/origin/main
+          python3 - <<'PY' 2>&1 | tee "$RUNNER_TEMP/ce-receipts/round.log"
+          import json, os, subprocess
+          from pathlib import Path
+          main = os.environ['GITHUB_REF'] == 'refs/heads/main'
+          for task in json.loads(Path('docs/commercial-entitlements/tasks.json').read_text())['tasks']:
+              if task['status'] != 'DONE':
+                  continue
+              command = ['python3', 'docs/commercial-entitlements/tools/check_round.py', '--task', task['id']]
+              if main:
+                  command.append('--require-main')
+              print('COMMAND:', ' '.join(command), flush=True)
+              subprocess.run(command, check=True)
+          PY
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+          git rev-parse HEAD > "$RUNNER_TEMP/ce-receipts/verified-commit.txt"
+          git archive HEAD -o "$RUNNER_TEMP/ce-receipts/biz-source.tar"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ce-receipts-${{ github.sha }}
+          path: ${{ runner.temp }}/ce-receipts
+          retention-days: 30
+          if-no-files-found: error
