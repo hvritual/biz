@@ -1,0 +1,162 @@
+name: CE-01 qualification
+
+on:
+  push:
+    branches: [main, feat/ce-01-baseline-contract-probes]
+    paths:
+      - .github/workflows/ce01-qualification.yml
+      - internal/architecture/**
+      - docs/commercial-entitlements/**
+      - contracts/**
+      - go.mod
+      - go.sum
+      - .yunka/source.env
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce01?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+      PYTHONDONTWRITEBYTECODE: '1'
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_ce01
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.YUNKA_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Read locked toolchain
+        id: lock
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "protoc_release=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "protoc_sha=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/ce01"
+          test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          printf 'biz=%s\nyunka=%s\n' "$GITHUB_SHA" "$YUNKA_SHA" | tee "$RUNNER_TEMP/ce01/sources.txt"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+      - name: Install locked protoc and generators
+        env:
+          RELEASE: ${{ steps.lock.outputs.protoc_release }}
+          CHECKSUM: ${{ steps.lock.outputs.protoc_sha }}
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 "https://github.com/protocolbuffers/protobuf/releases/download/v${RELEASE}/protoc-${RELEASE}-linux-x86_64.zip" -o "$RUNNER_TEMP/protoc.zip"
+          echo "$CHECKSUM  $RUNNER_TEMP/protoc.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/protoc.zip" -d "$RUNNER_TEMP/protoc"
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+          make -C yunka.io rpc-tools
+          echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
+      - name: Validate plan and locked source resolution
+        run: |
+          set -euo pipefail
+          python3 biz/docs/commercial-entitlements/tools/check_plan.py | tee "$RUNNER_TEMP/ce01/plan.log"
+          python3 -m unittest discover -s biz/docs/commercial-entitlements/tools -p 'test_*.py' -v 2>&1 | tee "$RUNNER_TEMP/ce01/round-gate-tests.log"
+          make -C biz yunka-source-check workspace-check | tee "$RUNNER_TEMP/ce01/resolution.log"
+      - name: Check completed-task receipt and main ancestry
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee "$RUNNER_TEMP/ce01/round-closure.log"
+          import json, os, subprocess
+          from pathlib import Path
+          root = Path('biz/docs/commercial-entitlements')
+          plan = json.loads((root / 'tasks.json').read_text())
+          for task in plan['tasks']:
+              if task['status'] != 'DONE':
+                  continue
+              command = ['python3', str(root / 'tools/check_round.py'), '--task', task['id']]
+              if os.environ.get('GITHUB_REF') == 'refs/heads/main':
+                  command.append('--require-main')
+              subprocess.run(command, check=True)
+          if not any(t['status'] == 'DONE' for t in plan['tasks']):
+              print('ROUND_CHECK=NOT_CLAIMED no completed task in this implementation candidate')
+          PY
+      - name: Reproduce generation twice without changing committed outputs
+        run: |
+          set -euo pipefail
+          make -C biz check 2>&1 | tee "$RUNNER_TEMP/ce01/check-before.log"
+          for pass in 1 2; do
+            make -C biz generate 2>&1 | tee "$RUNNER_TEMP/ce01/generate-${pass}.log"
+            git -C biz diff --exit-code
+            test -z "$(git -C biz status --porcelain)"
+          done
+          make -C biz check 2>&1 | tee "$RUNNER_TEMP/ce01/check-after.log"
+      - name: Run CE-01 probes and full Go regression
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 -json ./internal/architecture -run '^TestCE01' | tee "$RUNNER_TEMP/ce01/probes.jsonl"
+          go -C biz test -count=1 -json ./... | tee "$RUNNER_TEMP/ce01/go-test.jsonl"
+          go -C biz vet ./...
+          go -C biz build ./...
+          GOWORK=off go -C biz test -count=1 ./internal/architecture
+      - name: Run real MySQL atomic-bootstrap regression
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 -tags=integration -json ./integration -run '^TestB125' | tee "$RUNNER_TEMP/ce01/mysql.jsonl"
+      - name: Require nonzero tests and capture immutable evidence
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'ce01'
+          result = {'biz_sha': os.environ['GITHUB_SHA'], 'yunka_sha': os.environ['YUNKA_SHA'], 'suites': {}}
+          for name in ('probes', 'go-test', 'mysql'):
+              rows = [json.loads(x) for x in (root / (name + '.jsonl')).read_text().splitlines()]
+              passed = {(x['Package'], x['Test']) for x in rows if x.get('Action') == 'pass' and x.get('Test')}
+              failed = [x for x in rows if x.get('Action') == 'fail']
+              assert passed and not failed, (name, 'zero tests or failure')
+              leaves = [item for item in passed if not any(p == item[0] and n.startswith(item[1] + '/') for p, n in passed)]
+              result['suites'][name] = {'pass_events': len(passed), 'leaf_cases': len(leaves), 'failed': len(failed)}
+          inventory = json.loads(Path('biz/contracts/generated/operation-plans.json').read_text())
+          operations = inventory['operations']
+          assert operations, 'empty operation inventory'
+          internal = [x['operationId'] for x in operations if not x.get('bindings')]
+          (root / 'operation-inventory.json').write_text(json.dumps({'schema_version': 1, 'source': 'contracts/generated/operation-plans.json', 'biz_sha': os.environ['GITHUB_SHA'], 'operations': operations}, indent=2) + '\n')
+          result['inventory'] = {'operations': len(operations), 'internal_operations': internal}
+          result['sha256'] = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in root.iterdir() if p.is_file()}
+          (root / 'summary.json').write_text(json.dumps(result, indent=2) + '\n')
+          print(json.dumps(result, indent=2))
+          PY
+          test -z "$(git -C biz status --porcelain)"
+          test -z "$(git -C yunka.io status --porcelain)"
+      - name: Upload qualification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ce01-${{ github.sha }}
+          path: ${{ runner.temp }}/ce01
+          retention-days: 30
+          if-no-files-found: error
