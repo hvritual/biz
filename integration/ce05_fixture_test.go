@@ -99,7 +99,12 @@ func ce05New(t *testing.T) *ce05Environment {
 			t.Fatal(err)
 		}
 		ctx := identity.WithPrincipal(context.Background(), p)
-		for _, id := range []string{out.siteA, out.siteB} {
+		ids := []string{out.siteA, out.siteB}
+		if v.tenant == e.tenantB {
+			// Site IDs are globally unique, even across tenant boundaries.
+			ids = []string{"b-a-" + ce04Random(t), "b-b-" + ce04Random(t)}
+		}
+		for _, id := range ids {
 			if err := sites.Create(ctx, &domain.Site{ID: id, Name: id}); err != nil {
 				t.Fatal(err)
 			}
