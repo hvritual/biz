@@ -4,12 +4,16 @@ permissions: {contents: write}
 jobs:
   generate:
     runs-on: ubuntu-latest
+    env: {YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with: {fetch-depth: 0, persist-credentials: true}
+        with: {path: biz, fetch-depth: 0, persist-credentials: true}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, persist-credentials: false}
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with: {go-version: '1.25.13', cache: false}
-      - run: |
+      - working-directory: biz
+        run: |
           set -euo pipefail
           make commercial-generate
           git config user.name github-actions[bot]; git config user.email 41898282+github-actions[bot]@users.noreply.github.com
