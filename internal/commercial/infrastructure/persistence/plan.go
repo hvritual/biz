@@ -99,19 +99,22 @@ func decodePlan(row planVersionRow) (plan.Version, error) {
 	return v, v.Integrity()
 }
 func (r *planRepository) Get(ctx context.Context, code string, number uint64, current bool) (plan.Version, error) {
-	db := r.tx.WithContext(ctx)
+	// Locking builders are statement-bound. Never reuse the head query's
+	// inferred model/table for the subsequent version lookup.
+	headDB, versionDB := r.tx.WithContext(ctx), r.tx.WithContext(ctx)
 	if current {
-		db = db.Clauses(clause.Locking{Strength: "SHARE"})
+		headDB = headDB.Clauses(clause.Locking{Strength: "SHARE"})
+		versionDB = versionDB.Clauses(clause.Locking{Strength: "SHARE"})
 	}
 	var head planRow
-	if err := db.Where("plan_code=?", code).First(&head).Error; err != nil {
+	if err := headDB.Where("plan_code=?", code).First(&head).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			err = plan.ErrNotFound
 		}
 		return plan.Version{}, err
 	}
 	var row planVersionRow
-	if err := db.Where("plan_code=? AND version=?", code, number).First(&row).Error; err != nil {
+	if err := versionDB.Where("plan_code=? AND version=?", code, number).First(&row).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			err = plan.ErrNotFound
 		}
