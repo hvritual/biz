@@ -24,7 +24,7 @@ p.write_text(s)
 p=Path('.github/workflows/b12-7-runtime-qualification.yml');s=p.read_text()
 old='      - scripts/test-runtime-readiness-gate.py\n';assert s.count(old)==2
 s=s.replace(old,old+'      - scripts/ce04_runtime_closure.py\n      - scripts/test_ce04_runtime_closure.py\n')
-old='    env:\n';assert s.count(old)==1;s=s.replace(old,old+"      PYTHONDONTWRITEBYTECODE: '1'\n")
+old='\n    env:\n';assert s.count(old)==1;s=s.replace(old,old+"      PYTHONDONTWRITEBYTECODE: '1'\n")
 old='          python3 biz/scripts/test-runtime-readiness-gate.py\n';assert s.count(old)==1
 s=s.replace(old,old+'          python3 -m unittest discover -s biz/scripts -p test_ce04_runtime_closure.py -v 2>&1 | tee "$RUNNER_TEMP/b12-7-runtime-gate-tests.log"\n')
 s=s.replace('Prove zero-argument Access + DeviceOps runtime closure','Prove zero-argument Access + DeviceOps + Commercial runtime closure')
@@ -34,12 +34,7 @@ marker='          "$RUNNER_TEMP/yunka" dev status --closure --format json > "$RU
 assert s.count(marker)==1
 start=s.index(marker)+len(marker);end=s.index('          kill -TERM "$dev_pid"',start)
 old=s[start:end];assert '.processes[0].graphNodes' in old and 'length == 6' in old and 'runtime-graph.json' in old
-replacement='''          python3 scripts/ce04_runtime_closure.py \\
-            --manifest contracts/generated/manifest.json --config .yunka/dev.json \\
-            --status "$RUNNER_TEMP/b12-7-status.json" --graph .yunka/runtime-graph.json \\
-            --diagnostics "$RUNNER_TEMP/b12-7-diagnostics.json" | tee "$RUNNER_TEMP/b12-7-closure.log"
-
-'''
+replacement='          python3 scripts/ce04_runtime_closure.py --manifest contracts/generated/manifest.json --config .yunka/dev.json --status "$RUNNER_TEMP/b12-7-status.json" --graph .yunka/runtime-graph.json --diagnostics "$RUNNER_TEMP/b12-7-diagnostics.json" | tee "$RUNNER_TEMP/b12-7-closure.log"\n\n'
 s=s[:start]+replacement+s[end:];p.write_text(s)
 replace('scripts/ce04_qualify.sh', 'python3 docs/commercial-entitlements/tools/check_plan.py | tee', 'python3 -m unittest discover -s scripts -p test_ce04_runtime_closure.py -v 2>&1 | tee "$out/runtime-gate-tests.log"\npython3 docs/commercial-entitlements/tools/check_plan.py | tee')
 print('CE04_REVIEW_CORRECTIONS=PASS')
