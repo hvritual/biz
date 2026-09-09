@@ -1,0 +1,77 @@
+name: CE-08 blocker reproduction (not qualification)
+on:
+  push:
+    branches: [docs/ce-08-framework-blocker]
+    paths: ['docs/commercial-entitlements/repro/**', '.github/workflows/ce08-blocker-repro.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ce08-blocker-repro-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  reproduce:
+    name: Reproduce (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: locked
+            framework: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+          - name: current-snapshot
+            framework: d6840be86c72ea91b51e7f32f8ed61067bcab643
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {path: control, ref: '${{ github.sha }}', persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: '${{ matrix.framework }}', path: yunka.io, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        if: matrix.name == 'locked'
+        with: {repository: hvritual/biz, ref: '96ca815be34ed2eeeaf67b048e04217f72990b18', path: candidate, persist-credentials: false}
+      - id: lock
+        env: {EXPECTED_FRAMEWORK: '${{ matrix.framework }}'}
+        run: |
+          set -euo pipefail
+          test "$(git -C yunka.io rev-parse HEAD)" = "$EXPECTED_FRAMEWORK"
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/ce08-blocker"
+          printf 'classification=DIAGNOSTIC_ONLY\ncontrol_sha=%s\nframework_sha=%s\nbusiness_sha=96ca815be34ed2eeeaf67b048e04217f72990b18\nCE08_BUSINESS_QUALIFIED=false\n' "$GITHUB_SHA" "$EXPECTED_FRAMEWORK" > "$RUNNER_TEMP/ce08-blocker/source.txt"
+          git -C yunka.io archive --format=tar HEAD pkg/contract tools/toolchain.env > "$RUNNER_TEMP/ce08-blocker/framework-generator-source.tar"
+          if test -d candidate; then git -C candidate archive --format=tar HEAD > "$RUNNER_TEMP/ce08-blocker/biz-source.tar"; fi
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Run minimal real-generator reproduction and one-way control
+        env: {CE08_REPRO_OUT: '${{ runner.temp }}/ce08-blocker/minimal'}
+        run: |
+          set -euo pipefail
+          cp control/docs/commercial-entitlements/repro/ce08_cross_domain_cycle_test.go.txt yunka.io/pkg/contract/ce08_blocker_probe_test.go
+          gofmt -w yunka.io/pkg/contract/ce08_blocker_probe_test.go
+          cp yunka.io/pkg/contract/ce08_blocker_probe_test.go "$RUNNER_TEMP/ce08-blocker/probe_test.go.txt"
+          cd yunka.io/pkg
+          go version | tee "$RUNNER_TEMP/ce08-blocker/go-version.txt"
+          go test ./contract -run '^TestCE08Repro' -count=1 -v 2>&1 | tee "$RUNNER_TEMP/ce08-blocker/minimal-tests.log"
+          git diff --exit-code -- .
+      - name: Confirm existing business compilation failure without changing its sources
+        if: matrix.name == 'locked'
+        working-directory: candidate
+        run: |
+          set -euo pipefail
+          set +e
+          go test ./... > "$RUNNER_TEMP/ce08-blocker/business-tests.log" 2>&1
+          code=$?
+          set -e
+          printf '%s\n' "$code" > "$RUNNER_TEMP/ce08-blocker/business-exit-code.txt"
+          test "$code" -ne 0
+          grep -q 'import cycle not allowed' "$RUNNER_TEMP/ce08-blocker/business-tests.log"
+          git diff --exit-code
+          echo 'EXPECTED BUSINESS FAILURE REPRODUCED; CE-08 remains BLOCKED.'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ce08-blocker-${{ matrix.name }}-${{ github.sha }}
+          path: ${{ runner.temp }}/ce08-blocker
+          retention-days: 30
+          if-no-files-found: error
