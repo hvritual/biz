@@ -195,6 +195,14 @@ func TestC98RealCrossApplicationTransferSharesOneExecutionScope(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	updateTarget, err := deviceapp.NewDeviceManagementToDeviceopsSiteManagementChildCapability(siteService, executor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deviceService, err = deviceapp.NewServiceWithCapabilities(repositories, updateTarget)
+	if err != nil {
+		t.Fatal(err)
+	}
 	deviceCapability, err := deviceapp.NewDeviceTransferToDeviceopsDeviceManagementChildCapability(deviceService, executor)
 	if err != nil {
 		t.Fatal(err)
@@ -221,8 +229,8 @@ func TestC98RealCrossApplicationTransferSharesOneExecutionScope(t *testing.T) {
 	if rootSecurity != 1 {
 		t.Fatalf("root security decisions=%d want=1", rootSecurity)
 	}
-	if children["site.validate_transfer_target"] != 1 || children["device.update"] != 1 {
-		t.Fatalf("child invocations=%v want site.validate_transfer_target=1 device.update=1", children)
+	if children["site.validate_transfer_target"] != 2 || children["device.update"] != 1 {
+		t.Fatalf("child invocations=%v want site.validate_transfer_target=2 device.update=1", children)
 	}
 	begins, commits, rollbacks := transactions.snapshot()
 	if begins != 1 || commits != 1 || rollbacks != 0 {
@@ -239,7 +247,7 @@ func TestC98RealCrossApplicationTransferSharesOneExecutionScope(t *testing.T) {
 	}
 	rootSecurity, children = observer.snapshot()
 	begins, commits, rollbacks = transactions.snapshot()
-	if rootSecurity != 2 || begins != 1 || commits != 1 || rollbacks != 0 || children["site.validate_transfer_target"] != 1 || children["device.update"] != 1 {
+	if rootSecurity != 2 || begins != 1 || commits != 1 || rollbacks != 0 || children["site.validate_transfer_target"] != 2 || children["device.update"] != 1 {
 		t.Fatalf("duplicate escaped root gate: security=%d begin=%d commit=%d rollback=%d children=%v", rootSecurity, begins, commits, rollbacks, children)
 	}
 
@@ -257,7 +265,7 @@ func TestC98RealCrossApplicationTransferSharesOneExecutionScope(t *testing.T) {
 	}
 	_, children = observer.snapshot()
 	begins, commits, rollbacks = transactions.snapshot()
-	if begins != 1 || commits != 1 || rollbacks != 0 || children["site.validate_transfer_target"] != 1 || children["device.update"] != 1 {
+	if begins != 1 || commits != 1 || rollbacks != 0 || children["site.validate_transfer_target"] != 2 || children["device.update"] != 1 {
 		t.Fatalf("denied composite crossed execution boundary: begin=%d commit=%d rollback=%d children=%v", begins, commits, rollbacks, children)
 	}
 }

@@ -498,6 +498,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/deviceops.v1.DeviceApplication/CreateDevice",
         "http": [
@@ -531,6 +534,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/deviceops.v1.DeviceApplication/DeleteDevice",
         "http": [
@@ -563,6 +569,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/deviceops.v1.DeviceApplication/GetDevice",
         "http": [
@@ -595,6 +604,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/deviceops.v1.DeviceApplication/ListDevices",
         "http": [
@@ -666,7 +678,8 @@
           "api-key"
         ],
         "permissions": [
-          "device.update"
+          "device.update",
+          "site.read"
         ],
         "permissionMode": "all"
       },
@@ -674,7 +687,18 @@
         "transaction": "local",
         "idempotency": "required"
       },
-      "composition": {},
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "site.validate_transfer_target"
+        ],
+        "permissionClosure": [
+          "site.read"
+        ]
+      },
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/deviceops.v1.DeviceApplication/UpdateDevice",
         "http": [

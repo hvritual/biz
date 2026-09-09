@@ -130,6 +130,15 @@
       }
     },
     {
+      "from": "deviceops/device_management",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/deviceops/device_management/requires/deviceops/site_management"
+      }
+    },
+    {
       "from": "deviceops/device_transfer",
       "to": "deviceops/device_management",
       "evidence": {
@@ -210,6 +219,15 @@
         "ownership": "derived",
         "source": "application-dependency-closure",
         "ref": "commercial/entitlement_management-\u003ecommercial/module_catalog"
+      }
+    },
+    {
+      "from": "deviceops/device_management",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "deviceops/device_management-\u003edeviceops/site_management"
       }
     },
     {
@@ -1598,6 +1616,15 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/device.transfer/requiresOperations/site.validate_transfer_target"
+      }
+    },
+    {
+      "from": "device.update",
+      "to": "site.validate_transfer_target",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/device.update/requiresOperations/site.validate_transfer_target"
       }
     },
     {

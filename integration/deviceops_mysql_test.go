@@ -74,6 +74,7 @@ func startModule(t *testing.T, db *gorm.DB, tenant, ownerToken, site string) *bi
 		defer done()
 		_ = started.App.Shutdown(shutdown)
 	})
+	ce05LegacyFixtureGrants(t, db, tenant, []string{"access-management", "device-operations"})
 	return started
 }
 
