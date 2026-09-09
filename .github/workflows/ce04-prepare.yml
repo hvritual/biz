@@ -1,0 +1,61 @@
+name: CE-04 one-time source generation
+on:
+  push:
+    branches: [feat/ce-04-entitlements]
+permissions:
+  contents: write
+jobs:
+  prepare:
+    if: github.repository == 'hvritual/biz' && github.ref == 'refs/heads/feat/ce-04-entitlements'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {path: biz, fetch-depth: 0}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb, path: yunka.io, persist-credentials: false}
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '1.25.13', cache: false}
+      - name: Install locked generators
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          curl -fsSL --retry 3 "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_RELEASE}/protoc-${PROTOC_RELEASE}-linux-x86_64.zip" -o "$RUNNER_TEMP/protoc.zip"
+          echo "$PROTOC_LINUX_X86_64_SHA256  $RUNNER_TEMP/protoc.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/protoc.zip" -d "$RUNNER_TEMP/protoc"
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+          make -C yunka.io rpc-tools
+          echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
+      - name: Prepare, generate and verify compilation
+        run: |
+          set -euo pipefail
+          cd biz
+          python3 scripts/ce04_prepare.py
+          find internal/commercial/domain internal/commercial/ports internal/commercial/infrastructure internal/commercial/application/entitlementmanagement -name '*.go' -exec gofmt -w {} +
+          gofmt -w internal/commercial/modulecatalog/scoped_read.go internal/commercial/application/module_catalog_entitlements.go internal/bizruntime/commercial.go internal/architecture/ce04_entitlement_boundary_test.go integration/ce04*.go
+          make generate
+          make check
+          go test ./...
+          go vet ./...
+          go build ./...
+      - name: Commit only to the authorized feature branch and remove bootstrap tooling
+        run: |
+          set -euo pipefail
+          cd biz
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git ls-remote origin refs/heads/feat/ce-04-entitlements | cut -f1)" = "$GITHUB_SHA"
+          git rm .github/workflows/ce04-prepare.yml scripts/ce04_prepare.py
+          git add -A
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'build(ce-04): reproduce locked contracts and remove one-time preparation'
+          git push origin HEAD:refs/heads/feat/ce-04-entitlements
+      - name: Capture preparation source without credentials
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/ce04-prepare"
+          tar --exclude=.git -cf "$RUNNER_TEMP/ce04-prepare/biz-source.tar" -C biz .
+          git -C biz rev-parse HEAD > "$RUNNER_TEMP/ce04-prepare/commit.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce04-preparation-${{ github.sha }}', path: '${{ runner.temp }}/ce04-prepare', retention-days: 7, if-no-files-found: error}
