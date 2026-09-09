@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "plan_id": "biz-commercial-entitlements-v1",
+  "created_at": "2026-09-09",
+  "delivery_scope": "DOCS_ONLY_NO_PRODUCT_IMPLEMENTATION",
+  "baseline": {
+    "repository": "hvritual/biz",
+    "backend_commit": "3519e7ee6e51e33984669871e4f32a55a3597d9f",
+    "framework_commit_declared": "6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb",
+    "frontend_candidate_commit": "c59324393a616ac98b1f40b93603014e26baacf4",
+    "frontend_pr": 19,
+    "frontend_merged_at_planning": false
+  },
+  "routes": {
+    "R1": {"title": "能力目录与映射", "file": "routes/R1-catalog.md"},
+    "R2": {"title": "权益与运行时控制", "file": "routes/R2-entitlements.md"},
+    "R3": {"title": "套餐与订阅", "file": "routes/R3-subscriptions.md"},
+    "R4": {"title": "可信身份与控制台", "file": "routes/R4-console.md"},
+    "R5": {"title": "自动开通与切换", "file": "routes/R5-automation.md"},
+    "R6": {"title": "额度与字段", "file": "routes/R6-quotas-fields.md"},
+    "R7": {"title": "商业扩展与设备任务", "file": "routes/R7-extensions.md"},
+    "R8": {"title": "迁移与生产资格", "file": "routes/R8-production.md"}
+  },
+  "external_gates": {
+    "PAYMENT_PROVIDER_READY": {"status": "UNRESOLVED", "owner_role": "产品负责人及支付集成负责人", "evidence": null},
+    "REAL_IOT_JOB_READY": {"status": "UNRESOLVED", "owner_role": "IoT 后端及设备负责人", "evidence": null},
+    "MIGRATION_DATA_READY": {"status": "UNRESOLVED", "owner_role": "租户运营及数据负责人", "evidence": null},
+    "DEPLOYMENT_READY": {"status": "UNRESOLVED", "owner_role": "发布及运维负责人", "evidence": null}
+  },
+  "tasks": [
+    {"id":"CE-01","route":"R1","title":"固定基线、领域契约与运行时探针","owner_role":"后端架构负责人","depends_on":[],"external_gates":[],"requirements":["FR-01","FR-06","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-02","route":"R1","title":"模块目录、技术状态与依赖管理","owner_role":"后端负责人","depends_on":["CE-01"],"external_gates":[],"requirements":["FR-01","FR-02","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-03","route":"R1","title":"商业能力映射与入口覆盖门禁","owner_role":"后端及工程质量负责人","depends_on":["CE-02"],"external_gates":[],"requirements":["FR-01","FR-06","FR-13","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-04","route":"R2","title":"专项授权与统一权益解析","owner_role":"后端负责人","depends_on":["CE-02"],"external_gates":[],"requirements":["FR-02","FR-05","FR-06","FR-14"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-05","route":"R2","title":"根入口与 child 路径的服务端权益限制","owner_role":"后端安全负责人","depends_on":["CE-03","CE-04"],"external_gates":[],"requirements":["FR-02","FR-06","FR-14"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-06","route":"R2","title":"权益快照、时间边界、撤权与并发屏障","owner_role":"后端及数据负责人","depends_on":["CE-05"],"external_gates":[],"requirements":["FR-05","FR-06","FR-14","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-07","route":"R3","title":"套餐版本、发布与适用资格","owner_role":"后端负责人及产品负责人","depends_on":["CE-02"],"external_gates":[],"requirements":["FR-02","FR-03"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-08","route":"R3","title":"默认开通规则与原子租户订阅初始化","owner_role":"后端负责人","depends_on":["CE-04","CE-07"],"external_gates":[],"requirements":["FR-04","FR-07"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-09","route":"R3","title":"预览、确认与原子套餐切换","owner_role":"后端负责人","depends_on":["CE-06","CE-08"],"external_gates":[],"requirements":["FR-03","FR-04","FR-08","FR-11","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-10","route":"R3","title":"Outbox 与持久化开通任务","owner_role":"后端运行时负责人","depends_on":["CE-09"],"external_gates":[],"requirements":["FR-10","FR-14","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-11","route":"R4","title":"Vue 前端基线选择与受控集成","owner_role":"前端负责人","depends_on":["CE-01"],"external_gates":[],"requirements":["FR-13","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-12","route":"R4","title":"平台／租户可信会话与切换契约","owner_role":"认证及后端负责人","depends_on":["CE-01"],"external_gates":[],"requirements":["FR-06","FR-13","FR-14"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-13","route":"R4","title":"平台模块、套餐与租户权益管理页面","owner_role":"前端负责人","depends_on":["CE-06","CE-07","CE-09","CE-11","CE-12"],"external_gates":[],"requirements":["FR-01","FR-02","FR-03","FR-05","FR-08","FR-13","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-14","route":"R4","title":"租户权益视图、导航与切换隔离","owner_role":"前端负责人","depends_on":["CE-06","CE-08","CE-11","CE-12"],"external_gates":[],"requirements":["FR-06","FR-13","FR-14"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-15","route":"R5","title":"租户自助选择、预览与确认套餐","owner_role":"前端及订阅后端负责人","depends_on":["CE-10","CE-14"],"external_gates":[],"requirements":["FR-08","FR-13","FR-15"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-16","route":"R5","title":"预约切换、试用及授权到期调度","owner_role":"后端运行时负责人","depends_on":["CE-10"],"external_gates":[],"requirements":["FR-05","FR-08","FR-09","FR-14"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-17","route":"R5","title":"开通恢复、对账与运营处置","owner_role":"后端及运营工具负责人","depends_on":["CE-10","CE-15","CE-16"],"external_gates":[],"requirements":["FR-10","FR-14","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-18","route":"R6","title":"原子额度核心、预占与释放","owner_role":"后端及数据负责人","depends_on":["CE-06"],"external_gates":[],"requirements":["FR-11","FR-14"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-19","route":"R6","title":"成员与设备的真实额度接入","owner_role":"Access/DeviceOps 后端负责人","depends_on":["CE-09","CE-18"],"external_gates":[],"requirements":["FR-08","FR-11","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-20","route":"R6","title":"字段动作与所有真实输出面的服务端保护","owner_role":"后端安全及前端负责人","depends_on":["CE-06","CE-07"],"external_gates":[],"requirements":["FR-03","FR-06","FR-12","FR-13"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-21","route":"R7","title":"模块与额度附加包","owner_role":"商业域后端及前端负责人","depends_on":["CE-07","CE-09","CE-18"],"external_gates":[],"requirements":["FR-04","FR-05","FR-08","FR-11"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-22","route":"R7","title":"真实支付供应商适配与自动确认","owner_role":"支付集成负责人","depends_on":["CE-10","CE-15"],"external_gates":["PAYMENT_PROVIDER_READY"],"requirements":["FR-08","FR-10","FR-15","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-23","route":"R7","title":"真实 IoT 长任务的权益执行边界","owner_role":"IoT 后端及设备负责人","depends_on":["CE-05","CE-10","CE-16"],"external_gates":["REAL_IOT_JOB_READY"],"requirements":["FR-06","FR-09","FR-14","FR-16","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-24","route":"R8","title":"存量租户与套餐版本的分批迁移","owner_role":"数据迁移及租户运营负责人","depends_on":["CE-09","CE-16","CE-19","CE-20"],"external_gates":["MIGRATION_DATA_READY"],"requirements":["FR-03","FR-08","FR-11","FR-12","FR-17"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-25","route":"R8","title":"硬化检查、反向测试与全链路压力","owner_role":"工程质量及测试负责人","depends_on":["CE-13","CE-14","CE-15","CE-17","CE-19","CE-20","CE-21"],"external_gates":[],"requirements":["FR-06","FR-10","FR-11","FR-12","FR-13","FR-14","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null},
+    {"id":"CE-26","route":"R8","title":"分批启用、可观测性与最终资格","owner_role":"发布及运维负责人","depends_on":["CE-24","CE-25"],"external_gates":["DEPLOYMENT_READY"],"requirements":["FR-10","FR-14","FR-17","FR-18"],"status":"PLANNED","blocker":null,"evidence":null,"integration_commit":null}
+  ],
+  "profiles": {
+    "MVP": {"requires_profiles":[],"tasks":["CE-01","CE-02","CE-03","CE-04","CE-05","CE-06","CE-07","CE-08","CE-09","CE-11","CE-12","CE-13","CE-14","CE-18","CE-19","CE-20"],"certification_evidence":null},
+    "FULL_RUNTIME": {"requires_profiles":[],"tasks":["CE-01","CE-02","CE-03","CE-04","CE-05","CE-06","CE-07","CE-08","CE-09","CE-10","CE-11","CE-12","CE-13","CE-14","CE-15","CE-16","CE-17","CE-18","CE-19","CE-20","CE-21","CE-25"],"certification_evidence":null},
+    "PRODUCTION_CORE": {"requires_profiles":["FULL_RUNTIME"],"tasks":["CE-24","CE-26"],"certification_evidence":null},
+    "PAID_PRODUCTION": {"requires_profiles":["PRODUCTION_CORE"],"tasks":["CE-22"],"certification_evidence":null},
+    "IOT_JOB_PRODUCTION": {"requires_profiles":["PRODUCTION_CORE"],"tasks":["CE-23"],"certification_evidence":null}
+  }
+}
