@@ -24,7 +24,8 @@
         "application:deviceops/device_transfer",
         "application:deviceops/site_management",
         "application:commercial/module_catalog",
-        "application:commercial/entitlement_management"
+        "application:commercial/entitlement_management",
+        "application:commercial/plan_management"
       ],
       "inheritEnv": [
         "PATH",

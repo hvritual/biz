@@ -14,6 +14,7 @@ type ModuleCatalogApplication interface {
 	GetModule(context.Context, *commercialv1.GetModuleRequest) (*commercialv1.ModuleDTO, error)
 	ListModules(context.Context, *commercialv1.ListModulesRequest) (*commercialv1.ListModulesResponse, error)
 	ReadEntitlementCatalog(context.Context, *commercialv1.ListModulesRequest) (*commercialv1.ListModulesResponse, error)
+	ReadPlanCatalog(context.Context, *commercialv1.ListModulesRequest) (*commercialv1.ListModulesResponse, error)
 	SetModuleSalesStatus(context.Context, *commercialv1.SetModuleSalesStatusRequest) (*commercialv1.ModuleDTO, error)
 	SetModuleTechnicalStatus(context.Context, *commercialv1.SetModuleTechnicalStatusRequest) (*commercialv1.ModuleDTO, error)
 	UpdateModule(context.Context, *commercialv1.UpdateModuleRequest) (*commercialv1.ModuleDTO, error)

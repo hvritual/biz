@@ -182,6 +182,20 @@ export interface Access_V1_UpdateTenantRoleRequest {
   version?: string;
 }
 
+export interface Commercial_V1_ChangePlanVersionStateRequest {
+  requestId?: string;
+  planCode?: string;
+  version?: string;
+  expectedRevision?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_CheckPlanEligibilityRequest {
+  planCode?: string;
+  version?: string;
+  salesScope?: string;
+}
+
 export interface Commercial_V1_CreateEntitlementOverrideRequest {
   requestId?: string;
   tenantId?: string;
@@ -203,6 +217,22 @@ export interface Commercial_V1_CreateModuleRequest {
   name?: string;
   category?: string;
   salesScope?: readonly string[];
+  reason?: string;
+}
+
+export interface Commercial_V1_CreatePlanDraftRequest {
+  requestId?: string;
+  planCode?: string;
+  name?: string;
+  terms?: Commercial_V1_PlanTerms;
+  reason?: string;
+}
+
+export interface Commercial_V1_CreatePlanVersionRequest {
+  requestId?: string;
+  planCode?: string;
+  fromVersion?: string;
+  expectedPlanRevision?: string;
   reason?: string;
 }
 
@@ -301,6 +331,11 @@ export interface Commercial_V1_GetMyEntitlementsRequest {
   capabilityCodes?: readonly string[];
 }
 
+export interface Commercial_V1_GetPlanVersionRequest {
+  planCode?: string;
+  version?: string;
+}
+
 export interface Commercial_V1_ListEntitlementOverridesRequest {
   tenantId?: string;
 }
@@ -317,6 +352,17 @@ export interface Commercial_V1_ListModulesResponse {
   modules?: readonly Commercial_V1_ModuleDTO[];
 }
 
+export interface Commercial_V1_ListPlanVersionsRequest {
+  planCode?: string;
+  afterVersion?: string;
+  pageSize?: number;
+}
+
+export interface Commercial_V1_ListPlanVersionsResponse {
+  versions?: readonly Commercial_V1_PlanVersionDTO[];
+  nextAfterVersion?: string;
+}
+
 export interface Commercial_V1_ModuleDTO {
   moduleCode?: string;
   name?: string;
@@ -329,6 +375,55 @@ export interface Commercial_V1_ModuleDTO {
   fieldPolicySchemaKeys?: readonly string[];
   dependencies?: readonly string[];
   version?: string;
+}
+
+export interface Commercial_V1_PlanEligibilityDTO {
+  eligible?: boolean;
+  reason?: string;
+  version?: Commercial_V1_PlanVersionDTO;
+}
+
+export interface Commercial_V1_PlanField {
+  key?: string;
+  action?: string;
+  mode?: string;
+}
+
+export interface Commercial_V1_PlanModule {
+  moduleCode?: string;
+  capabilityCodes?: readonly string[];
+  quotas?: readonly Commercial_V1_PlanQuota[];
+  fields?: readonly Commercial_V1_PlanField[];
+}
+
+export interface Commercial_V1_PlanQuota {
+  key?: string;
+  unlimited?: boolean;
+  value?: string;
+}
+
+export interface Commercial_V1_PlanTerms {
+  modules?: readonly Commercial_V1_PlanModule[];
+  salesScope?: readonly string[];
+  validityMode?: string;
+  validityDays?: number;
+  priceRef?: string;
+}
+
+export interface Commercial_V1_PlanVersionDTO {
+  planCode?: string;
+  version?: string;
+  revision?: string;
+  planRevision?: string;
+  state?: string;
+  name?: string;
+  terms?: Commercial_V1_PlanTerms;
+  contentSha256?: string;
+  createdAt?: string;
+  publishedAt?: string;
+  retiredAt?: string;
+  actorId?: string;
+  reason?: string;
 }
 
 export interface Commercial_V1_RevokeEntitlementOverrideRequest {
@@ -362,6 +457,16 @@ export interface Commercial_V1_UpdateModuleRequest {
   category?: string;
   salesScope?: readonly string[];
   version?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_UpdatePlanDraftRequest {
+  requestId?: string;
+  planCode?: string;
+  version?: string;
+  expectedRevision?: string;
+  name?: string;
+  terms?: Commercial_V1_PlanTerms;
   reason?: string;
 }
 
@@ -719,6 +824,78 @@ export const operations = {
       { method: "PATCH", path: "/v1/platform/modules/{module_code}", body: "*" },
     ]
   },
+  "commercial.v1.PlanManagementApplication.CheckPlanEligibility": {
+    fullName: "commercial.v1.PlanManagementApplication.CheckPlanEligibility",
+    rpcPath: "/commercial.v1.PlanManagementApplication/CheckPlanEligibility",
+    requestType: "commercial.v1.CheckPlanEligibilityRequest",
+    responseType: "commercial.v1.PlanEligibilityDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/plans/{plan_code}/versions/{version}/eligibility", body: "*" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.CreatePlanDraft": {
+    fullName: "commercial.v1.PlanManagementApplication.CreatePlanDraft",
+    rpcPath: "/commercial.v1.PlanManagementApplication/CreatePlanDraft",
+    requestType: "commercial.v1.CreatePlanDraftRequest",
+    responseType: "commercial.v1.PlanVersionDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/plans", body: "*" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.CreatePlanVersion": {
+    fullName: "commercial.v1.PlanManagementApplication.CreatePlanVersion",
+    rpcPath: "/commercial.v1.PlanManagementApplication/CreatePlanVersion",
+    requestType: "commercial.v1.CreatePlanVersionRequest",
+    responseType: "commercial.v1.PlanVersionDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/plans/{plan_code}/versions", body: "*" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.GetPlanVersion": {
+    fullName: "commercial.v1.PlanManagementApplication.GetPlanVersion",
+    rpcPath: "/commercial.v1.PlanManagementApplication/GetPlanVersion",
+    requestType: "commercial.v1.GetPlanVersionRequest",
+    responseType: "commercial.v1.PlanVersionDTO",
+    http: [
+      { method: "GET", path: "/v1/platform/plans/{plan_code}/versions/{version}" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.ListPlanVersions": {
+    fullName: "commercial.v1.PlanManagementApplication.ListPlanVersions",
+    rpcPath: "/commercial.v1.PlanManagementApplication/ListPlanVersions",
+    requestType: "commercial.v1.ListPlanVersionsRequest",
+    responseType: "commercial.v1.ListPlanVersionsResponse",
+    http: [
+      { method: "GET", path: "/v1/platform/plans/{plan_code}/versions" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.PublishPlanVersion": {
+    fullName: "commercial.v1.PlanManagementApplication.PublishPlanVersion",
+    rpcPath: "/commercial.v1.PlanManagementApplication/PublishPlanVersion",
+    requestType: "commercial.v1.ChangePlanVersionStateRequest",
+    responseType: "commercial.v1.PlanVersionDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/plans/{plan_code}/versions/{version}/publish", body: "*" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.RetirePlanVersion": {
+    fullName: "commercial.v1.PlanManagementApplication.RetirePlanVersion",
+    rpcPath: "/commercial.v1.PlanManagementApplication/RetirePlanVersion",
+    requestType: "commercial.v1.ChangePlanVersionStateRequest",
+    responseType: "commercial.v1.PlanVersionDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/plans/{plan_code}/versions/{version}/retire", body: "*" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.UpdatePlanDraft": {
+    fullName: "commercial.v1.PlanManagementApplication.UpdatePlanDraft",
+    rpcPath: "/commercial.v1.PlanManagementApplication/UpdatePlanDraft",
+    requestType: "commercial.v1.UpdatePlanDraftRequest",
+    responseType: "commercial.v1.PlanVersionDTO",
+    http: [
+      { method: "PATCH", path: "/v1/platform/plans/{plan_code}/versions/{version}", body: "*" },
+    ]
+  },
   "deviceops.v1.DeviceApplication.CreateDevice": {
     fullName: "deviceops.v1.DeviceApplication.CreateDevice",
     rpcPath: "/deviceops.v1.DeviceApplication/CreateDevice",
@@ -932,6 +1109,43 @@ export class Commercial_V1_ModuleCatalogApplicationClient {
 
   updateModule(request: Commercial_V1_UpdateModuleRequest): Promise<Commercial_V1_ModuleDTO> {
     return this.transport.call<Commercial_V1_UpdateModuleRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.UpdateModule"], request);
+  }
+
+}
+
+export class Commercial_V1_PlanManagementApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  checkPlanEligibility(request: Commercial_V1_CheckPlanEligibilityRequest): Promise<Commercial_V1_PlanEligibilityDTO> {
+    return this.transport.call<Commercial_V1_CheckPlanEligibilityRequest, Commercial_V1_PlanEligibilityDTO>(operations["commercial.v1.PlanManagementApplication.CheckPlanEligibility"], request);
+  }
+
+  createPlanDraft(request: Commercial_V1_CreatePlanDraftRequest): Promise<Commercial_V1_PlanVersionDTO> {
+    return this.transport.call<Commercial_V1_CreatePlanDraftRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.CreatePlanDraft"], request);
+  }
+
+  createPlanVersion(request: Commercial_V1_CreatePlanVersionRequest): Promise<Commercial_V1_PlanVersionDTO> {
+    return this.transport.call<Commercial_V1_CreatePlanVersionRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.CreatePlanVersion"], request);
+  }
+
+  getPlanVersion(request: Commercial_V1_GetPlanVersionRequest): Promise<Commercial_V1_PlanVersionDTO> {
+    return this.transport.call<Commercial_V1_GetPlanVersionRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.GetPlanVersion"], request);
+  }
+
+  listPlanVersions(request: Commercial_V1_ListPlanVersionsRequest): Promise<Commercial_V1_ListPlanVersionsResponse> {
+    return this.transport.call<Commercial_V1_ListPlanVersionsRequest, Commercial_V1_ListPlanVersionsResponse>(operations["commercial.v1.PlanManagementApplication.ListPlanVersions"], request);
+  }
+
+  publishPlanVersion(request: Commercial_V1_ChangePlanVersionStateRequest): Promise<Commercial_V1_PlanVersionDTO> {
+    return this.transport.call<Commercial_V1_ChangePlanVersionStateRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.PublishPlanVersion"], request);
+  }
+
+  retirePlanVersion(request: Commercial_V1_ChangePlanVersionStateRequest): Promise<Commercial_V1_PlanVersionDTO> {
+    return this.transport.call<Commercial_V1_ChangePlanVersionStateRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.RetirePlanVersion"], request);
+  }
+
+  updatePlanDraft(request: Commercial_V1_UpdatePlanDraftRequest): Promise<Commercial_V1_PlanVersionDTO> {
+    return this.transport.call<Commercial_V1_UpdatePlanDraftRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.UpdatePlanDraft"], request);
   }
 
 }

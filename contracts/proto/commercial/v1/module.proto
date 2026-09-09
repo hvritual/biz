@@ -50,6 +50,18 @@ service ModuleCatalogApplication {
   option (yunka.dsl.v1.application) = {
     name: "module_catalog"
     operations: {
+      id: "commercial.module.plan_catalog"
+      use_case: "read_plan_catalog"
+      permissions: "commercial.catalog.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: false
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+      request_type: "commercial.v1.ListModulesRequest"
+      response_type: "commercial.v1.ListModulesResponse"
+      application_method: "ReadPlanCatalog"
+    }
+    operations: {
       id: "commercial.module.entitlement_catalog"
       use_case: "read_entitlement_catalog"
       permissions: "commercial.catalog.read"

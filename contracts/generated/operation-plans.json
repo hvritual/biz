@@ -381,6 +381,29 @@
       }
     },
     {
+      "operationId": "commercial.module.plan_catalog",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "read_plan_catalog",
+      "requestType": "commercial.v1.ListModulesRequest",
+      "responseType": "commercial.v1.ListModulesResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {}
+    },
+    {
       "operationId": "commercial.module.set_sales_status",
       "domain": "commercial",
       "application": "module_catalog",
@@ -471,6 +494,338 @@
           {
             "method": "PATCH",
             "path": "/v1/platform/modules/{module_code}",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.clone",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "create_plan_version",
+      "requestType": "commercial.v1.CreatePlanVersionRequest",
+      "responseType": "commercial.v1.PlanVersionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/CreatePlanVersion",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/plans/{plan_code}/versions",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.create",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "create_plan_draft",
+      "requestType": "commercial.v1.CreatePlanDraftRequest",
+      "responseType": "commercial.v1.PlanVersionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/CreatePlanDraft",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/plans",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.eligibility",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "check_plan_eligibility",
+      "requestType": "commercial.v1.CheckPlanEligibilityRequest",
+      "responseType": "commercial.v1.PlanEligibilityDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/CheckPlanEligibility",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/plans/{plan_code}/versions/{version}/eligibility",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.get",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "get_plan_version",
+      "requestType": "commercial.v1.GetPlanVersionRequest",
+      "responseType": "commercial.v1.PlanVersionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.plan.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/GetPlanVersion",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/plans/{plan_code}/versions/{version}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.list",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "list_plan_versions",
+      "requestType": "commercial.v1.ListPlanVersionsRequest",
+      "responseType": "commercial.v1.ListPlanVersionsResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.plan.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/ListPlanVersions",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/plans/{plan_code}/versions"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.publish",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "publish_plan_version",
+      "requestType": "commercial.v1.ChangePlanVersionStateRequest",
+      "responseType": "commercial.v1.PlanVersionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.publish"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/PublishPlanVersion",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/plans/{plan_code}/versions/{version}/publish",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.retire",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "retire_plan_version",
+      "requestType": "commercial.v1.ChangePlanVersionStateRequest",
+      "responseType": "commercial.v1.PlanVersionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.publish"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/RetirePlanVersion",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/plans/{plan_code}/versions/{version}/retire",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.update",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "update_plan_draft",
+      "requestType": "commercial.v1.UpdatePlanDraftRequest",
+      "responseType": "commercial.v1.PlanVersionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/UpdatePlanDraft",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/platform/plans/{plan_code}/versions/{version}",
             "body": "*"
           }
         ]
