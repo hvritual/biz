@@ -1,3 +1,4 @@
+# Temporary CE-08 generation bridge; removed before PR qualification.
 name: CE-08 branch generation
 on:
   push:
