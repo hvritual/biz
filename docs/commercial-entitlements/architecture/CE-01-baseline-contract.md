@@ -1,105 +1,122 @@
 # CE-01 商业权益实施基线与契约冻结
 
-状态：CE-01 实施产物。基线日期：2026-09-09。
+基线日期：2026-09-09。任务状态仅以 tasks.json 和执行回执为准。
 
 ## 1. 固定来源
 
-- biz 任务 base：`cd951655364ee4692a57e883356b5accd5426c0f`。
-- Yunka 依赖：`6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb`；`go.mod` 的 framework/gateway/pkg pseudo-version 均指向 `6ba99c1440dc`，本地开发通过 sibling replace 解析 `../yunka.io`。
-- Vue 候选：PR #19 `feat/coffeelink-vue-console@c59324393a616ac98b1f40b93603014e26baacf4`；CE-01 不合并该 PR。
-- 生成事实源：`contracts/proto/**`；派生产物包括 `contracts/generated/manifest.json`、`openapi.json`、`operation-plans.json`、`assembly-plan.json`、`client.ts` 和 `contracts/gen/**`。派生产物不可手工成为商业能力事实源。
+| 来源 | 固定 SHA／范围 |
+|---|---|
+| biz 任务 base | `cd951655364ee4692a57e883356b5accd5426c0f` |
+| 原始业务代码 base | `3519e7ee6e51e33984669871e4f32a55a3597d9f` |
+| Yunka 锁定 | `6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb` |
+| Vue 候选 | PR #19，`c59324393a616ac98b1f40b93603014e26baacf4`；本任务不合并 |
 
-## 2. 已验证运行时事实
+真实源码定位：
 
-### 2.1 根执行时序
+- [Yunka 根及 child Executor](https://github.com/hvritual/yunka.io/blob/6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb/framework/operation/executor.go)：Execute 中 security.Prepare 在 BeginRoot 前；ExecuteChild 通过 JoinChild 执行业务。
+- [Guard chain 扩展点](https://github.com/hvritual/yunka.io/blob/6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb/gateway/authz/guard_chain.go)：NewOperationGuardChain、NewStaticGuardChainResolver。
+- [biz runtime 装配](https://github.com/hvritual/biz/blob/cd951655364ee4692a57e883356b5accd5426c0f/internal/bizruntime/runtime.go)：一个 Executor；GrantAuthorizer、Guard、GORM 根事务和幂等协调器。
+- [owner 封装检查](https://github.com/hvritual/biz/blob/cd951655364ee4692a57e883356b5accd5426c0f/internal/architecture/tenant_boundary_test.go)。
+- [完整 OperationPlan 来源](https://github.com/hvritual/biz/blob/cd951655364ee4692a57e883356b5accd5426c0f/contracts/generated/operation-plans.json)。
+- [source-check](https://github.com/hvritual/biz/blob/cd951655364ee4692a57e883356b5accd5426c0f/scripts/verify-yunka-source.sh)：不仅检查版本字符串，还检查 sibling HEAD、工作区及实际 module replacement。
 
-锁定 Yunka `framework/operation/executor.go` 的根路径：
+`go.mod` 的 framework/gateway/pkg pseudo-version 均指向 `6ba99c1440dc`，实际开发路径为 `../yunka.io`。生成源是 `contracts/proto/**`；manifest、OpenAPI、OperationPlan、AssemblyPlan、client.ts、PB Go 及 zz_yunka 文件均为派生结果，不作为第二份手工商业策略源。
 
-`normalize plan -> metadata -> security.Prepare -> idempotency.Begin -> execution.BeginRoot -> Application -> atomic idempotency staging -> root.Commit -> idempotency finalize`。
+## 2. 已核验运行时事实与取舍
 
-因此商业权益 Guard 可以在根事务建立前拒绝明显无权请求，但需要和业务写入原子的额度预占、严格版本复核不能只放在 Guard 中，必须在 Application/typed child 路径加入既有根 ExecutionScope/UoW。
+### 根请求
 
-### 2.2 child 执行
+`metadata → security.Prepare → idempotency.Begin → execution.BeginRoot → Application → atomic idempotency staging → root.Commit → idempotency finalize`。
 
-`ExecuteChild` 要求已有 execution scope，调用 `execution.JoinChild` 后直接进入 child Application；它不会再次运行根 `security.Prepare`、根 idempotency begin 或创建第二个根事务。
+Guard 可在事务建立前拒绝明显无权请求，但不能单独承担需与业务写入原子的额度预占或严格撤权屏障。这些不变量要在 Application／typed child 路径加入既有根 UoW。
 
-因此 CE-05 不能假定“给根 Guard 加权益检查”会自动覆盖所有 child 能力。组合根 Operation 必须声明商业能力闭包；条件 child 和额度不变量需要在所属业务用例中通过 typed child/commercial capability 明确约束。
+### child 请求
 
-### 2.3 Guard 扩展点
+ExecuteChild 要求已有 scope，调用 JoinChild 后进入 child Application；不重复根 security、幂等 begin 或根事务。真实探针还验证未声明 child、无根 child 和嵌套 root 被拒绝。条件分支需要在实际执行时检查能力，不能机械把所有潜在 child 能力都当作必需购买的集合。
 
-锁定 Yunka `gateway/authz/guard_chain.go`：`NewOperationGuardChain` 和 `NewStaticGuardChainResolver` 可以按确定顺序组合多个 `OperationGuard`；授权仍由 OperationRuntime 先执行一次。biz 当前 DeviceOps 使用静态 GuardResolver，CE-05 可在不新增第二套 Executor 的前提下组合 entitlement guard 与现有 scope guard。
+### Guard 与 owner
 
-### 2.4 Application owner 边界
+现有 GuardChain 按顺序传播 context，遇拒绝或 nil context 停止。后续商业 Guard 与现有数据范围 Guard 组合，IAM 授权仍执行一次。
 
-`TenantLifecycle` 手写实现由 `internal/access/application/tenantlifecycle.Build` 暴露构建入口，内部 usecase 位于其 nested `internal/usecase`；`internal/architecture/tenant_boundary_test.go` 约束 composition-only factory 只能由 `internal/bizruntime` 生产代码导入。commercial Application 沿用这一 owner 封装方向，不扩大共享 `internal` 大包。
+TenantLifecycle 通过 `internal/access/application/tenantlifecycle.Build` 暴露构造入口，手写实现处于该 owner 的 nested internal/usecase；生产 factory 导入限定于 bizruntime。commercial 沿用 owner 封装，不把所有用例堆进共享 service。
 
-## 3. CommercialContract v1
+### 实验边界
 
-本节冻结 CE-02～CE-20 共用的稳定语义；后续如需修改必须在任务回执中记录兼容影响。
+CE01 runtime 测试执行真实 Yunka Executor、ExecutionSecurity、GuardChain 和生成的 device.transfer／site child Plan。记录型 UoW 和内存幂等存储仅用于观察执行时序，不证明数据库持久性；另运行真实 MySQL 8.4 的 B12.5 根事务、child 失败回滚及幂等重试测试。以上不代表商业模块已经实现。
 
-### 3.1 稳定 ID
+## 3. CommercialContract v1：共同命名与表示
 
-- `module_code`：`<domain>.<module>`，例如 `deviceops.device_management`；发布后不可改名复用。
-- `capability_id`：`<domain>.<resource>.<capability>`，例如 `deviceops.device.create`。它是商业能力，不等同于 Operation ID。
-- `operation_id`：完全复用 PB/OperationPlan 中的现有稳定 ID，例如 `device.create`；商业后台不得创造 Operation ID。
-- `quota_key`：`<domain>.<resource>.count` 或明确的周期计量名，例如 `access.member.count`、`deviceops.device.count`。
-- `field_policy_key`：`<domain>.<resource>.<field>.<action>`；action 第一版限定 `read|write|export`。
-- `plan_code`、`addon_code`：商业稳定编码；可产生新版本但旧编码/版本不可原地改义。
+### 名称与路径
 
-所有 ID 使用小写 ASCII、数字、点和下划线；显示名称不是权限或能力判断条件。
+| 拟新增契约源 | 拟新增 Application 标识 |
+|---|---|
+| contracts/proto/commercial/v1/module.proto | commercial/module_catalog |
+| contracts/proto/commercial/v1/plan.proto | commercial/plan_management |
+| contracts/proto/commercial/v1/subscription.proto | commercial/subscription_lifecycle |
+| contracts/proto/commercial/v1/entitlement.proto | commercial/entitlement_management |
+| contracts/proto/commercial/v1/quota.proto | commercial/quota_management |
 
-### 3.2 时间
+PB package 统一 `commercial.v1`，Go package 统一 `github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1`。这些是待 CE-02 等任务交付的业务接口，不是声称 Yunka 已有同名 API。CE-01 复现现有多 PB 生成与装配链；新增契约仍须经过相同生成器验证，不手改生成文件。
 
-- 持久化/API 时间统一为 UTC RFC3339 时间点；数据库使用可无损表达 UTC 微秒的时间列。
-- 区间语义统一为半开区间 `[effective_at, expires_at)`；`expires_at = null` 表示无计划到期。
-- 预约变更必须携带目标生效时间；不能用缓存 TTL 延长已过期权益。
+### 稳定键与实例 ID
 
-### 3.3 额度
+- `module_code`：稳定产品编码，可使用 `<namespace>.<module>`；namespace 不强制等同技术 domain。例如 `deviceops.device_management` 只是一个命名实例，不强制商业模块与技术 Application 一一对应。
+- **`capability_code`**：唯一规范字段，使用 `<namespace>.<resource>.<capability>`；示例 `deviceops.device.create`。
+- 修订说明：初稿使用 `capability_id`，本次与上游 CatalogContract 的 `capability_code` 收敛。尚无对外 API，不保留双字段别名；以后不得维护两套名称。
+- `operation_id`：完全复用 PB 中的 Operation ID，如 `device.create`。平台不能创建任意 Operation。
+- `quota_key`：如 `access.member.count`、`deviceops.device.count`；计量口径由代码声明。
+- `field_policy_key`：`<namespace>.<resource>.<field>.<action>`，action 为 read、write、export。
+- `plan_code`、`addon_code` 是稳定商业键，实例 ID 如 subscription_id、change_id、event_id 则是不透明服务端标识，不能用中文名或自增序号推断授权。
 
-- `limit` 使用显式联合语义：`finite(value >= 0)` 或 `unlimited`；数值 0 只表示零额度，绝不表示无限。
-- 存量额度约束：`used + reserved + requested <= effective_limit`。
-- 额度计数与业务写入需要同一根事务时，由 Application/typed child 在 UoW 内完成；展示缓存不能作为硬额度判定事实源。
+产品键为小写 ASCII 分段，匹配 `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$`，最多 128 字节；现有 Operation ID 不因新正则改名。已发布编码不可复用改义。实例 ID 由后端生成并验证；前端仅透传不解析。版本为无符号整数、从 1 起递增，传输使用十进制字符串防止 JavaScript 精度丢失；条件更新和并发确认都要携带预期版本。
 
-### 3.4 错误契约
+### 时间
 
-商业域业务拒绝使用稳定 reason code，至少预留：
+业务时间采用 UTC 时间点，API 为 RFC3339（Z）；持久化使用 UTC 微秒精度，输入超出支持精度须规范化或明确拒绝，不允许各端独立舍入。区间统一 `[effective_at, expires_at)`；缺省 expires_at 表示无计划到期。未来 PB 时间字段与 JSON 映射由契约生成测试核实。
 
-- `MODULE_NOT_ENTITLED`
-- `CAPABILITY_DISABLED`
-- `SUBSCRIPTION_RESTRICTED`
-- `QUOTA_EXCEEDED`
-- `DEPENDENCY_UNAVAILABLE`
-- `ENTITLEMENT_VERSION_CONFLICT`
-- `PLAN_VERSION_CONFLICT`
-- `INVALID_EFFECTIVE_WINDOW`
+当前时间由服务端受控 Clock 取得；客户端不得通过传入 now 延长授权。next_transition_at 是下次状态变化边界，不是任意缓存 TTL。无 expiry 不代表不受全局封禁影响。
 
-错误响应必须保留机器 code 与可读 message；前端不得依赖中文 message 判定流程。认证失败、IAM permission denied、tenant binding failure 继续属于既有安全错误，不重新包装成“未购买套餐”。
+### 额度
 
-## 4. 既有真实 Operation 分类基线
+使用明确联合表示 `finite(value >= 0)` 或 `unlimited`，0 只表示零额度。计数为非负整数，运算检查溢出；对前端输出十进制字符串。`used + reserved + requested <= effective_limit`，占用与业务写入同一根 UoW；失败回滚、重复请求及释放幂等由后续用例验证。
 
-以下来自当前 `contracts/generated/operation-plans.json`，用于 CE-02/03 建目录，不代表所有 Operation 已具备商业收费含义。
+### 稳定错误
 
-### DeviceOps
+| 原因 | 拟定 HTTP／gRPC 分类 |
+|---|---|
+| MODULE_NOT_ENTITLED、CAPABILITY_DISABLED、SUBSCRIPTION_RESTRICTED | 403／PermissionDenied |
+| QUOTA_EXCEEDED | 409／ResourceExhausted（存量业务额度，不冒充请求速率限流） |
+| DEPENDENCY_UNAVAILABLE | 技术依赖不可用 503／Unavailable；配置无效由请求校验返回 400／InvalidArgument |
+| ENTITLEMENT_VERSION_CONFLICT、PLAN_VERSION_CONFLICT | 409／Aborted |
+| INVALID_EFFECTIVE_WINDOW | 400／InvalidArgument |
 
-- `device.create`、`device.delete`、`device.get`、`device.list`、`device.update`：tenant-required，公开 HTTP/RPC。
-- `device.transfer`：tenant-required，组合根 Operation，requires `device.update` 与 `site.validate_transfer_target`。
-- `site.validate_transfer_target`：tenant-required，内部 child Operation，无 HTTP/RPC binding。
+这些是业务映射约定，正式契约任务必须通过现有 transport 错误机制验证，不能直接假设框架已有这些 code。保留机器 code、message 和可安全展示的 details；身份／IAM／数据存在性保护仍使用原有规则，不全部包装成“未购买”。
 
-### Access
+## 4. 已部署 Operation 完整基线
 
-已确认生成计划包含平台级 TenantLifecycle（例如 `tenant.create/get/list/activate/close`）以及 tenant-scoped Member/Role Operations。`tenant.create` 是组合根，requires `tenant.member.bootstrap_owner` 与 `tenant.role.bootstrap_owner`；bootstrap child 没有外部 binding。
+源为上述固定提交的 OperationPlan，共 32 项，28 个外部 HTTP/RPC Operation、4 个仅内部 Operation；下表只是事实登记，是否商业化由 CE-03 另行分类，不生成收费策略。
 
-商业分类原则：平台租户生命周期、恢复入口和基础安全能力不能因为“存在 Operation”就自动成为租户套餐功能；CE-03 必须显式分类或豁免。
+| Application | 既有 Operation ID |
+|---|---|
+| deviceops/device_management | device.create、device.delete、device.get、device.list、device.update |
+| deviceops/device_transfer | device.transfer |
+| deviceops/site_management | site.validate_transfer_target（内部） |
+| access/tenant_lifecycle | tenant.activate、tenant.close、tenant.create、tenant.get、tenant.list、tenant.suspend、tenant.update |
+| access/tenant_member_lifecycle | tenant.member.activate、tenant.member.bootstrap_owner（内部）、tenant.member.get、tenant.member.invite、tenant.member.list、tenant.member.remove、tenant.member.suspend |
+| access/tenant_role_permission | tenant.role.assert_member_deactivation_allowed（内部）、tenant.role.assign_member、tenant.role.bootstrap_owner（内部）、tenant.role.create、tenant.role.disable、tenant.role.enable、tenant.role.get、tenant.role.list、tenant.role.revoke_member、tenant.role.set_permissions、tenant.role.update |
 
-## 5. 当前缺失的真实业务输出面
+组合根 device.transfer 依赖 device.update 与 site.validate_transfer_target；tenant.create 依赖两个 bootstrap_owner child。平台 TenantLifecycle 与初始化 owner child 不要求租户身份，租户业务与成员／角色管理依赖可信租户上下文；不存在“无 tenant_required 就公开开放”的规则，仍要求权限与认证。
 
-截至本基线，后端真实契约集中在 Access/IAM 与 DeviceOps。Vue 候选中展示的套餐、组织架构、企业配置、OTA、工单、经营分析等不能据 UI 文案推断为已实现后端 Operation。commercial 计划只允许绑定已经部署并能从生成 OperationPlan 追溯的能力；缺失能力需由独立业务任务实现后再进入目录。
+每次资格验证生成完整 operation-inventory.json（含绑定、请求输出类型和 child 依赖）放入证据包，避免只列 UI 名称。后续合法新增 Operation 不应被“总数永远等于 32”的检查阻断；固定数量是本次快照，不是全局产品上限。
 
-## 6. CE-01 后续约束
+## 5. 缺失输出面与明确不做
 
-1. 不新增第二套鉴权、Executor 或事务管理器。
-2. 不手改 `zz_yunka_*` 或 `contracts/generated/*` 来适配商业规则。
-3. 商业模块与 Yunka module/Application 不做 1:1 强绑定；映射由 CE-03 单一声明事实源维护。
-4. 平台身份与租户身份保持分离，不用 synthetic tenant 模拟平台管理员。
-5. 前端菜单隐藏不构成授权；后端 Operation/业务不变量是最终边界。
-6. 若后续发现上述公共扩展点无法表达真实需求，先给固定 SHA 的最小重现，再决定是否进入 Yunka 框架修复流程。
+目前没有商业套餐、订阅、额度、真实浏览器会话、组织架构、客户、OTA、工单、经营报表与导出的完整后端商业接口。Vue 中的相关演示或占位不是技术就绪证明。SiteManagement 当前内部校验也不等于完整公开点位 CRUD。
+
+CE-01 不添加生产商业 API，不修改授权、数据库 schema、runtime 装配或框架版本；不合并 Vue 候选，不连接支付，不生成业务开通假成功。
+
+## 6. 后续实施约束
+
+不新增第二套 IAM／Executor／根事务；不跨 Application 直接调用 Repository；不手改派生产物；商业模块不按租户卸载技术模块；平台身份不由 synthetic tenant 替代；前端呈现不成为安全边界。
+
+扩展点只有被真实最小重现证明不足时才记为框架缺口，固定 SHA、测试与影响范围后按 [执行约定](../04-execution-contract.md) 处理。当前 CE-01 探针未发现为本轮任务升级框架的必要性。

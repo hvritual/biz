@@ -23,6 +23,7 @@ jobs:
     env:
       YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce01?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+      PYTHONDONTWRITEBYTECODE: '1'
     services:
       mysql:
         image: mysql:8.4
@@ -82,7 +83,26 @@ jobs:
         run: |
           set -euo pipefail
           python3 biz/docs/commercial-entitlements/tools/check_plan.py | tee "$RUNNER_TEMP/ce01/plan.log"
+          python3 -m unittest discover -s biz/docs/commercial-entitlements/tools -p 'test_*.py' -v 2>&1 | tee "$RUNNER_TEMP/ce01/round-gate-tests.log"
           make -C biz yunka-source-check workspace-check | tee "$RUNNER_TEMP/ce01/resolution.log"
+      - name: Check completed-task receipt and main ancestry
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee "$RUNNER_TEMP/ce01/round-closure.log"
+          import json, os, subprocess
+          from pathlib import Path
+          root = Path('biz/docs/commercial-entitlements')
+          plan = json.loads((root / 'tasks.json').read_text())
+          for task in plan['tasks']:
+              if task['status'] != 'DONE':
+                  continue
+              command = ['python3', str(root / 'tools/check_round.py'), '--task', task['id']]
+              if os.environ.get('GITHUB_REF') == 'refs/heads/main':
+                  command.append('--require-main')
+              subprocess.run(command, check=True)
+          if not any(t['status'] == 'DONE' for t in plan['tasks']):
+              print('ROUND_CHECK=NOT_CLAIMED no completed task in this implementation candidate')
+          PY
       - name: Reproduce generation twice without changing committed outputs
         run: |
           set -euo pipefail
@@ -115,10 +135,17 @@ jobs:
           result = {'biz_sha': os.environ['GITHUB_SHA'], 'yunka_sha': os.environ['YUNKA_SHA'], 'suites': {}}
           for name in ('probes', 'go-test', 'mysql'):
               rows = [json.loads(x) for x in (root / (name + '.jsonl')).read_text().splitlines()]
-              passed = [x for x in rows if x.get('Action') == 'pass' and x.get('Test')]
+              passed = {(x['Package'], x['Test']) for x in rows if x.get('Action') == 'pass' and x.get('Test')}
               failed = [x for x in rows if x.get('Action') == 'fail']
               assert passed and not failed, (name, 'zero tests or failure')
-              result['suites'][name] = {'pass_events': len(passed), 'failed': len(failed)}
+              leaves = [item for item in passed if not any(p == item[0] and n.startswith(item[1] + '/') for p, n in passed)]
+              result['suites'][name] = {'pass_events': len(passed), 'leaf_cases': len(leaves), 'failed': len(failed)}
+          inventory = json.loads(Path('biz/contracts/generated/operation-plans.json').read_text())
+          operations = inventory['operations']
+          assert operations, 'empty operation inventory'
+          internal = [x['operationId'] for x in operations if not x.get('bindings')]
+          (root / 'operation-inventory.json').write_text(json.dumps({'schema_version': 1, 'source': 'contracts/generated/operation-plans.json', 'biz_sha': os.environ['GITHUB_SHA'], 'operations': operations}, indent=2) + '\n')
+          result['inventory'] = {'operations': len(operations), 'internal_operations': internal}
           result['sha256'] = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in root.iterdir() if p.is_file()}
           (root / 'summary.json').write_text(json.dumps(result, indent=2) + '\n')
           print(json.dumps(result, indent=2))
@@ -127,7 +154,7 @@ jobs:
           test -z "$(git -C yunka.io status --porcelain)"
       - name: Upload qualification evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ce01-${{ github.sha }}
           path: ${{ runner.temp }}/ce01
