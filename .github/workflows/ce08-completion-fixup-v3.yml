@@ -1,0 +1,63 @@
+name: CE-08 completion fixup v3
+on:
+  push:
+    branches: [control/ce08-completion-20260910]
+    paths: ['.github/workflows/ce08-completion-fixup-v3.yml']
+permissions:
+  contents: write
+jobs:
+  fixup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: fix/ce-08-complete, path: biz, fetch-depth: 0, persist-credentials: true}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: 33b98ceba57494abda2299e4f0290a5651dab4bc, path: yunka.io, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: control/ce08-completion-20260910, path: control, persist-credentials: false}
+      - id: lock
+        shell: bash
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"; echo "p=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"; echo "s=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Install locked generators
+        env: {R: '${{ steps.lock.outputs.p }}', S: '${{ steps.lock.outputs.s }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 "https://github.com/protocolbuffers/protobuf/releases/download/v${R}/protoc-${R}-linux-x86_64.zip" -o "$RUNNER_TEMP/p.zip"
+          echo "$S  $RUNNER_TEMP/p.zip"|sha256sum -c -; unzip -q "$RUNNER_TEMP/p.zip" -d "$RUNNER_TEMP/p"; make -C yunka.io rpc-tools
+      - name: Apply product-only fixup, regenerate and push
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('control/.github/workflows/ce08-completion-fixup.yml').read_text()
+          start=s.index("          python3 - <<'PY'\n") + len("          python3 - <<'PY'\n")
+          end=s.index("\n          PY\n", start)
+          lines=s[start:end].splitlines()
+          body='\n'.join(line[10:] if line.startswith('          ') else line for line in lines)+'\n'
+          block="""for p in Path('.github/workflows').glob('*.yml'):\n    s=p.read_text()\n    if '6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb' in s:\n        p.write_text(s.replace('6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb', compat))\n\n"""
+          if block not in body: raise SystemExit('workflow rewrite block not found')
+          Path('/tmp/ce08_fixup.py').write_text(body.replace(block,''))
+          PY
+          cd biz
+          python3 /tmp/ce08_fixup.py
+          gofmt -w internal/bizruntime/access_skeleton.go internal/bizruntime/subscriptions.go internal/access/application/tenantlifecycle/internal/usecase/service_test.go internal/access/policy/platform_authorization_pressure_test.go internal/commercial/domain/subscription/ce08_test.go
+          make generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$RUNNER_TEMP/p/bin/protoc"
+          git diff --check
+          git config user.name github-actions[bot]; git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A; git commit -m 'fix(ce-08): complete bootstrap wiring and adopt compatible C9 fix'; git push origin HEAD:fix/ce-08-complete
+      - name: Focused compile and tests
+        shell: bash
+        run: |
+          set -euo pipefail; cd biz
+          make yunka-source-check YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io"
+          make check YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$RUNNER_TEMP/p/bin/protoc"
+          test -z "$(git status --porcelain)"
+          go test ./internal/access/application/tenantlifecycle/... ./internal/access/policy ./internal/commercial/application/subscriptionmanagement/... ./internal/commercial/domain/subscription
+          go test ./... -run '^$'
