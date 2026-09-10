@@ -1,0 +1,52 @@
+name: CE-08 acceptance harness compile fix
+on:
+  push:
+    branches: [control/ce08-completion-20260910]
+    paths: ['.github/workflows/ce08-test-harness-fix.yml']
+permissions: {contents: write}
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: fix/ce-08-complete, path: biz, fetch-depth: 0, persist-credentials: true}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: 33b98ceba57494abda2299e4f0290a5651dab4bc, path: yunka.io, persist-credentials: false}
+      - id: lock
+        shell: bash
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Fix harness and verify integration package compiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path('integration/b12_tenant_runtime_mysql_test.go')
+          s=p.read_text()
+          old='\tdialCtx, cancel = context.WithTimeout(context.Background(), 5*time.Second)\n'
+          new='\tdialCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)\n'
+          if old not in s: raise SystemExit('B12 dial context anchor missing')
+          p.write_text(s.replace(old,new,1))
+
+          p=Path('integration/ce08_subscription_mysql_test.go')
+          s=p.read_text()
+          old='''func TestCE08MySQLConcreteBootstrapScopeRejectsWildcardInput(t *testing.T) {\n\te := ce08New(t)\n\t_, err := e.subscriptions.BootstrapBaseSubscription(e.ctx(), &commercialv1.BootstrapTenantSubscriptionRequest{RequestId: "ce08-invalid-scope-" + ce04Random(t), TenantId: "tenant-invalid-" + ce04Random(t), SalesScope: "*"})\n\tif err == nil {\n\t\tt.Fatal("wildcard tenant sales scope unexpectedly accepted")\n\t}\n\tif !strings.Contains(err.Error(), "SUBSCRIPTION_INVALID_REQUEST") {\n\t\tt.Fatalf("unexpected invalid-scope error: %v", err)\n\t}\n}\n'''
+          new='''func TestCE08MySQLConcreteBootstrapScopeRejectsWildcardInput(t *testing.T) {\n\te := ce08New(t)\n\tbefore := ce08Snapshot(t, e.db)\n\tstamp := ce04Random(t)\n\tresult := e.createTenant("ce08-invalid-scope-"+stamp, "CE08 wildcard scope "+stamp, "ce08-wildcard-owner-"+stamp, "*")\n\tif result.err != nil {\n\t\tt.Fatal(result.err)\n\t}\n\tif result.status == http.StatusOK {\n\t\tt.Fatalf("wildcard tenant sales scope unexpectedly accepted body=%s", result.body)\n\t}\n\tif after := ce08Snapshot(t, e.db); after != before {\n\t\tt.Fatalf("invalid wildcard scope leaked root state before=%+v after=%+v", before, after)\n\t}\n}\n'''
+          if old not in s: raise SystemExit('CE08 wildcard test anchor missing')
+          p.write_text(s.replace(old,new,1))
+          PY
+          gofmt -w integration/b12_tenant_runtime_mysql_test.go integration/ce08_subscription_mysql_test.go
+          go test -tags=integration ./integration -run '^$'
+          git diff --check
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add integration/b12_tenant_runtime_mysql_test.go integration/ce08_subscription_mysql_test.go
+          git commit -m 'test(ce-08): fix acceptance harness boundary'
+          git push origin HEAD:fix/ce-08-complete
