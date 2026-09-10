@@ -1,0 +1,66 @@
+syntax = "proto3";
+package commercial.v1;
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+option go_package = "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1";
+option (yunka.dsl.v1.domain) = { name: "commercial" version: "v1" };
+
+message ProvisioningRequirementDTO {string code=1;string adapter=2;string version=3;uint32 max_attempts=4;}
+message ProvisioningStepDTO {ProvisioningRequirementDTO requirement=1;string state=2;string effect=3;uint32 attempts=4;uint32 cycle_attempts=5;uint32 reconciliations=6;string evidence=7;string failure_code=8;}
+message ProvisioningCompletionDTO {string change_id=1;uint64 subscription_revision=2;uint64 source_version=3;uint64 entitlement_version=4;string applied_at=5;}
+message ProvisioningTaskDTO {
+ string task_id=1;string tenant_id=2;string change_id=3;string actor_id=4;string state=5;uint64 revision=6;
+ string target_plan_code=7;uint64 target_plan_version=8;repeated ProvisioningStepDTO steps=9;
+ uint32 step_index=10;string stage=11;string next_attempt_at=12;string failure_code=13;bool retry_allowed=14;
+ bool cancellation_allowed=15;string created_at=16;string updated_at=17;string deadline=18;
+ ProvisioningCompletionDTO completion=19;uint32 retry_cycles=20;
+}
+message ReadProvisioningTaskRequest {string tenant_id=1;string task_id=2;}
+message ListProvisioningTasksRequest {string tenant_id=1;string after_task_id=2;uint32 limit=3;}
+message ListProvisioningTasksResponse {repeated ProvisioningTaskDTO tasks=1;string next_after_task_id=2;}
+message MutateProvisioningTaskRequest {string tenant_id=1;string task_id=2;uint64 expected_revision=3;string request_id=4;string reason=5;}
+message ProvisioningDeliveryDTO {string event_id=1;string tenant_id=2;string aggregate_id=3;uint64 aggregate_version=4;string change_id=5;string task_id=6;string fact_status=7;uint64 entitlement_version=8;string delivery_state=9;uint32 attempts=10;string failure_code=11;string next_attempt_at=12;}
+message ListProvisioningDeliveriesRequest {string tenant_id=1;string after_event_id=2;uint32 limit=3;}
+message ListProvisioningDeliveriesResponse {repeated ProvisioningDeliveryDTO deliveries=1;string next_after_event_id=2;}
+
+// Internal process commands are deliberately not RPCs or HTTP endpoints.
+message ClaimProvisioningWorkRequest {string worker_id=1;uint32 lease_seconds=2;}
+message ProvisioningWorkDTO {bool found=1;ProvisioningTaskDTO task=2;string worker_id=3;uint64 lease_token=4;string idempotency_key=5;}
+message RecordProvisioningWorkRequest {string tenant_id=1;string task_id=2;string worker_id=3;uint64 lease_token=4;string outcome=5;string evidence=6;string failure_code=7;}
+message FinalizeProvisioningWorkRequest {string tenant_id=1;string task_id=2;string worker_id=3;uint64 lease_token=4;}
+message PreparedSubscriptionChangeRequest {string tenant_id=1;string task_id=2;string worker_id=3;uint64 lease_token=4;uint64 task_revision=5;}
+message ClaimProvisioningDeliveryRequest {string worker_id=1;uint32 lease_seconds=2;}
+message ProvisioningDeliveryWorkDTO {bool found=1;ProvisioningDeliveryDTO delivery=2;string worker_id=3;uint64 lease_token=4;}
+message CompleteProvisioningDeliveryRequest {string event_id=1;string worker_id=2;uint64 lease_token=3;string failure_code=4;}
+message ProvisioningDeliveryResultDTO {string event_id=1;string outcome=2;uint64 aggregate_version=3;uint64 entitlement_version=4;}
+service ProvisioningApplication {
+ option (yunka.dsl.v1.application) = {
+  name:"provisioning" requires:"commercial/subscription_changes"
+  operations:{id:"commercial.provisioning.work.claim" use_case:"claim_provisioning_work" permissions:"platform.provisioning.execute" tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_NONE} request_type:"commercial.v1.ClaimProvisioningWorkRequest" response_type:"commercial.v1.ProvisioningWorkDTO" application_method:"ClaimProvisioningWork"}
+  operations:{id:"commercial.provisioning.work.record" use_case:"record_provisioning_work" permissions:"platform.provisioning.execute" tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_NONE} request_type:"commercial.v1.RecordProvisioningWorkRequest" response_type:"commercial.v1.ProvisioningTaskDTO" application_method:"RecordProvisioningWork"}
+  operations:{id:"commercial.provisioning.work.finalize" use_case:"finalize_provisioning_work" permissions:"platform.provisioning.execute" permissions:"platform.plan.read" permissions:"commercial.catalog.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY requires_operations:"commercial.subscription.change.prepared" composition:COMPOSITION_LOCAL execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_NONE} request_type:"commercial.v1.FinalizeProvisioningWorkRequest" response_type:"commercial.v1.ProvisioningTaskDTO" application_method:"FinalizeProvisioningWork"}
+  operations:{id:"commercial.provisioning.delivery.claim" use_case:"claim_provisioning_delivery" permissions:"platform.provisioning.execute" tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_NONE} request_type:"commercial.v1.ClaimProvisioningDeliveryRequest" response_type:"commercial.v1.ProvisioningDeliveryWorkDTO" application_method:"ClaimProvisioningDelivery"}
+  operations:{id:"commercial.provisioning.delivery.complete" use_case:"complete_provisioning_delivery" permissions:"platform.provisioning.execute" tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_NONE} request_type:"commercial.v1.CompleteProvisioningDeliveryRequest" response_type:"commercial.v1.ProvisioningDeliveryResultDTO" application_method:"CompleteProvisioningDelivery"}
+  operations:{id:"commercial.provisioning.delivery.fail" use_case:"fail_provisioning_delivery" permissions:"platform.provisioning.execute" tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_NONE} request_type:"commercial.v1.CompleteProvisioningDeliveryRequest" response_type:"commercial.v1.ProvisioningDeliveryResultDTO" application_method:"FailProvisioningDelivery"}
+ };
+ rpc GetProvisioningTask(ReadProvisioningTaskRequest) returns(ProvisioningTaskDTO){
+  option(google.api.http)={get:"/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}"};
+  option(yunka.dsl.v1.operation)={id:"commercial.provisioning.task.get" use_case:"get_provisioning_task" permissions:"platform.provisioning.read" permissions:"platform.tenant.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_READ_ONLY idempotency:IDEMPOTENCY_NONE}};
+ }
+ rpc ListProvisioningTasks(ListProvisioningTasksRequest) returns(ListProvisioningTasksResponse){
+  option(google.api.http)={get:"/v1/platform/tenants/{tenant_id}/provisioning/tasks"};
+  option(yunka.dsl.v1.operation)={id:"commercial.provisioning.task.list" use_case:"list_provisioning_tasks" permissions:"platform.provisioning.read" permissions:"platform.tenant.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_READ_ONLY idempotency:IDEMPOTENCY_NONE}};
+ }
+ rpc RetryProvisioningTask(MutateProvisioningTaskRequest) returns(ProvisioningTaskDTO){
+  option(google.api.http)={post:"/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry" body:"*"};
+  option(yunka.dsl.v1.operation)={id:"commercial.provisioning.task.retry" use_case:"retry_provisioning_task" permissions:"platform.provisioning.manage" permissions:"platform.tenant.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_REQUIRED}};
+ }
+ rpc CancelProvisioningTask(MutateProvisioningTaskRequest) returns(ProvisioningTaskDTO){
+  option(google.api.http)={post:"/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel" body:"*"};
+  option(yunka.dsl.v1.operation)={id:"commercial.provisioning.task.cancel" use_case:"cancel_provisioning_task" permissions:"platform.provisioning.cancel" permissions:"platform.tenant.read" permissions:"platform.plan.read" permissions:"commercial.catalog.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY requires_operations:"commercial.subscription.change.preparation.cancel" composition:COMPOSITION_LOCAL execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_REQUIRED}};
+ }
+ rpc ListProvisioningDeliveries(ListProvisioningDeliveriesRequest) returns(ListProvisioningDeliveriesResponse){
+  option(google.api.http)={get:"/v1/platform/tenants/{tenant_id}/provisioning/deliveries"};
+  option(yunka.dsl.v1.operation)={id:"commercial.provisioning.delivery.list" use_case:"list_provisioning_deliveries" permissions:"platform.provisioning.read" permissions:"platform.tenant.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_READ_ONLY idempotency:IDEMPOTENCY_NONE}};
+ }
+}
