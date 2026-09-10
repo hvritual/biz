@@ -41,7 +41,7 @@ func b125Snapshot(t *testing.T, db *gorm.DB) b125Counts {
 
 func b125CreateTenant(t *testing.T, base, token, key, name, ownerUserID, ownerEmail string) (int, []byte) {
 	t.Helper()
-	payload, err := protojson.Marshal(&accessv1.CreateTenantRequest{Name: name, OwnerUserId: ownerUserID, OwnerEmail: ownerEmail})
+	payload, err := protojson.Marshal(&accessv1.CreateTenantRequest{Name: name, OwnerUserId: ownerUserID, OwnerEmail: ownerEmail, RequestId: key, SalesScope: "default"})
 	if err != nil {
 		t.Fatal(err)
 	}

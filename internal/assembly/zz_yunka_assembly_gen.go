@@ -24,11 +24,12 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "cd3703f359ec96fa563cd2b6ae9c450480a543dd8427afeacb97da82c38411d5"
+const AssemblyPlanDigest = "309cbd9401a2b7d8f2e95a745a604870939e4807dd62fe569fbd00c1e9faad78"
 
 type AccessTenantLifecycleDependencies struct {
-	AccessTenantMemberLifecycle accessapplication.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
-	AccessTenantRolePermission  accessapplication.TenantLifecycleToAccessTenantRolePermissionChildCapability
+	AccessTenantMemberLifecycle      accessapplication.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
+	AccessTenantRolePermission       accessapplication.TenantLifecycleToAccessTenantRolePermissionChildCapability
+	CommercialSubscriptionManagement accessapplication.TenantLifecycleToCommercialSubscriptionManagementChildCapability
 }
 
 type AccessTenantMemberLifecycleDependencies struct {
@@ -50,6 +51,10 @@ type CommercialPlanManagementDependencies struct {
 	CommercialModuleCatalog commercialapplication.PlanManagementToCommercialModuleCatalogChildCapability
 }
 
+type CommercialSubscriptionManagementDependencies struct {
+	CommercialPlanManagement commercialapplication.SubscriptionManagementToCommercialPlanManagementChildCapability
+}
+
 type DeviceopsDeviceManagementDependencies struct {
 	DeviceopsSiteManagement deviceopsapplication.DeviceManagementToDeviceopsSiteManagementChildCapability
 }
@@ -69,21 +74,23 @@ type ApplicationFactories interface {
 	BuildCommercialEntitlementManagement(CommercialEntitlementManagementDependencies) (commercialapplication.EntitlementManagementApplication, error)
 	BuildCommercialModuleCatalog(CommercialModuleCatalogDependencies) (commercialapplication.ModuleCatalogApplication, error)
 	BuildCommercialPlanManagement(CommercialPlanManagementDependencies) (commercialapplication.PlanManagementApplication, error)
+	BuildCommercialSubscriptionManagement(CommercialSubscriptionManagementDependencies) (commercialapplication.SubscriptionManagementApplication, error)
 	BuildDeviceopsDeviceManagement(DeviceopsDeviceManagementDependencies) (deviceopsapplication.DeviceManagementApplication, error)
 	BuildDeviceopsDeviceTransfer(DeviceopsDeviceTransferDependencies) (deviceopsapplication.DeviceTransferApplication, error)
 	BuildDeviceopsSiteManagement(DeviceopsSiteManagementDependencies) (deviceopsapplication.SiteManagementApplication, error)
 }
 
 type Applications struct {
-	AccessTenantLifecycle           accessapplication.TenantLifecycleApplication
-	AccessTenantMemberLifecycle     accessapplication.TenantMemberLifecycleApplication
-	AccessTenantRolePermission      accessapplication.TenantRolePermissionApplication
-	CommercialEntitlementManagement commercialapplication.EntitlementManagementApplication
-	CommercialModuleCatalog         commercialapplication.ModuleCatalogApplication
-	CommercialPlanManagement        commercialapplication.PlanManagementApplication
-	DeviceopsDeviceManagement       deviceopsapplication.DeviceManagementApplication
-	DeviceopsDeviceTransfer         deviceopsapplication.DeviceTransferApplication
-	DeviceopsSiteManagement         deviceopsapplication.SiteManagementApplication
+	AccessTenantLifecycle            accessapplication.TenantLifecycleApplication
+	AccessTenantMemberLifecycle      accessapplication.TenantMemberLifecycleApplication
+	AccessTenantRolePermission       accessapplication.TenantRolePermissionApplication
+	CommercialEntitlementManagement  commercialapplication.EntitlementManagementApplication
+	CommercialModuleCatalog          commercialapplication.ModuleCatalogApplication
+	CommercialPlanManagement         commercialapplication.PlanManagementApplication
+	CommercialSubscriptionManagement commercialapplication.SubscriptionManagementApplication
+	DeviceopsDeviceManagement        deviceopsapplication.DeviceManagementApplication
+	DeviceopsDeviceTransfer          deviceopsapplication.DeviceTransferApplication
+	DeviceopsSiteManagement          deviceopsapplication.SiteManagementApplication
 }
 
 func BuildApplications(factories ApplicationFactories, executor operation.Executor) (Applications, error) {
@@ -113,6 +120,35 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	if applications.AccessTenantMemberLifecycle == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_member_lifecycle")
 	}
+	applications.CommercialModuleCatalog, err = factories.BuildCommercialModuleCatalog(CommercialModuleCatalogDependencies{})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application commercial/module_catalog: %w", err)
+	}
+	if applications.CommercialModuleCatalog == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/module_catalog")
+	}
+	commercialPlanManagementCommercialModuleCatalogCapability, err := commercialapplication.NewPlanManagementToCommercialModuleCatalogChildCapability(applications.CommercialModuleCatalog, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build commercial/plan_management dependency commercial/module_catalog: %w", err)
+	}
+	applications.CommercialPlanManagement, err = factories.BuildCommercialPlanManagement(CommercialPlanManagementDependencies{CommercialModuleCatalog: commercialPlanManagementCommercialModuleCatalogCapability})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application commercial/plan_management: %w", err)
+	}
+	if applications.CommercialPlanManagement == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/plan_management")
+	}
+	commercialSubscriptionManagementCommercialPlanManagementCapability, err := commercialapplication.NewSubscriptionManagementToCommercialPlanManagementChildCapability(applications.CommercialPlanManagement, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build commercial/subscription_management dependency commercial/plan_management: %w", err)
+	}
+	applications.CommercialSubscriptionManagement, err = factories.BuildCommercialSubscriptionManagement(CommercialSubscriptionManagementDependencies{CommercialPlanManagement: commercialSubscriptionManagementCommercialPlanManagementCapability})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application commercial/subscription_management: %w", err)
+	}
+	if applications.CommercialSubscriptionManagement == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/subscription_management")
+	}
 	accessTenantLifecycleAccessTenantMemberLifecycleCapability, err := accessapplication.NewTenantLifecycleToAccessTenantMemberLifecycleChildCapability(applications.AccessTenantMemberLifecycle, executor)
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_lifecycle dependency access/tenant_member_lifecycle: %w", err)
@@ -121,19 +157,16 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_lifecycle dependency access/tenant_role_permission: %w", err)
 	}
-	applications.AccessTenantLifecycle, err = factories.BuildAccessTenantLifecycle(AccessTenantLifecycleDependencies{AccessTenantMemberLifecycle: accessTenantLifecycleAccessTenantMemberLifecycleCapability, AccessTenantRolePermission: accessTenantLifecycleAccessTenantRolePermissionCapability})
+	accessTenantLifecycleCommercialSubscriptionManagementCapability, err := accessapplication.NewTenantLifecycleToCommercialSubscriptionManagementChildCapability(applications.CommercialSubscriptionManagement, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_lifecycle dependency commercial/subscription_management: %w", err)
+	}
+	applications.AccessTenantLifecycle, err = factories.BuildAccessTenantLifecycle(AccessTenantLifecycleDependencies{AccessTenantMemberLifecycle: accessTenantLifecycleAccessTenantMemberLifecycleCapability, AccessTenantRolePermission: accessTenantLifecycleAccessTenantRolePermissionCapability, CommercialSubscriptionManagement: accessTenantLifecycleCommercialSubscriptionManagementCapability})
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_lifecycle: %w", err)
 	}
 	if applications.AccessTenantLifecycle == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_lifecycle")
-	}
-	applications.CommercialModuleCatalog, err = factories.BuildCommercialModuleCatalog(CommercialModuleCatalogDependencies{})
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build application commercial/module_catalog: %w", err)
-	}
-	if applications.CommercialModuleCatalog == nil {
-		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/module_catalog")
 	}
 	commercialEntitlementManagementAccessTenantLifecycleCapability, err := commercialapplication.NewEntitlementManagementToAccessTenantLifecycleChildCapability(applications.AccessTenantLifecycle, executor)
 	if err != nil {
@@ -149,17 +182,6 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	}
 	if applications.CommercialEntitlementManagement == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/entitlement_management")
-	}
-	commercialPlanManagementCommercialModuleCatalogCapability, err := commercialapplication.NewPlanManagementToCommercialModuleCatalogChildCapability(applications.CommercialModuleCatalog, executor)
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build commercial/plan_management dependency commercial/module_catalog: %w", err)
-	}
-	applications.CommercialPlanManagement, err = factories.BuildCommercialPlanManagement(CommercialPlanManagementDependencies{CommercialModuleCatalog: commercialPlanManagementCommercialModuleCatalogCapability})
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build application commercial/plan_management: %w", err)
-	}
-	if applications.CommercialPlanManagement == nil {
-		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/plan_management")
 	}
 	applications.DeviceopsSiteManagement, err = factories.BuildDeviceopsSiteManagement(DeviceopsSiteManagementDependencies{})
 	if err != nil {
@@ -284,6 +306,15 @@ func RegisterTransports(bindings TransportBindings, applications Applications, e
 	if err := commercialrpc.RegisterPlanManagementOperationExecutor(bindings.RPC, applications.CommercialPlanManagement, executor); err != nil {
 		return fmt.Errorf("yunka assembly: register gRPC commercial/plan_management: %w", err)
 	}
+	if applications.CommercialSubscriptionManagement == nil {
+		return errors.New("yunka assembly: application commercial/subscription_management is required for transport registration")
+	}
+	if err := commercialrest.RegisterSubscriptionManagementOperationExecutor(bindings.HTTP, applications.CommercialSubscriptionManagement, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register HTTP commercial/subscription_management: %w", err)
+	}
+	if err := commercialrpc.RegisterSubscriptionManagementOperationExecutor(bindings.RPC, applications.CommercialSubscriptionManagement, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register gRPC commercial/subscription_management: %w", err)
+	}
 	if applications.DeviceopsDeviceManagement == nil {
 		return errors.New("yunka assembly: application deviceops/device_management is required for transport registration")
 	}
@@ -325,7 +356,7 @@ type BootstrapOptions struct {
 
 func RuntimeInventory() core.RuntimeInventory {
 	return core.RuntimeInventory{
-		Routes:              []string{"/v1/devices", "/v1/devices/{id}", "/v1/devices/{id}/transfer", "/v1/platform/modules", "/v1/platform/modules/{module_code}", "/v1/platform/modules/{module_code}/sales-status", "/v1/platform/modules/{module_code}/technical-status", "/v1/platform/plans", "/v1/platform/plans/{plan_code}/versions", "/v1/platform/plans/{plan_code}/versions/{version}", "/v1/platform/plans/{plan_code}/versions/{version}/eligibility", "/v1/platform/plans/{plan_code}/versions/{version}/publish", "/v1/platform/plans/{plan_code}/versions/{version}/retire", "/v1/platform/tenants/{tenant_id}/entitlement-overrides", "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", "/v1/platform/tenants/{tenant_id}/entitlements", "/v1/tenant/entitlements", "/v1/tenant/members", "/v1/tenant/members/{user_id}", "/v1/tenant/members/{user_id}/activate", "/v1/tenant/members/{user_id}/remove", "/v1/tenant/members/{user_id}/suspend", "/v1/tenant/roles", "/v1/tenant/roles/{role_id}", "/v1/tenant/roles/{role_id}/disable", "/v1/tenant/roles/{role_id}/enable", "/v1/tenant/roles/{role_id}/members", "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", "/v1/tenant/roles/{role_id}/permissions", "/v1/tenants", "/v1/tenants/{id}", "/v1/tenants/{id}/activate", "/v1/tenants/{id}/close", "/v1/tenants/{id}/suspend"},
+		Routes:              []string{"/v1/devices", "/v1/devices/{id}", "/v1/devices/{id}/transfer", "/v1/platform/modules", "/v1/platform/modules/{module_code}", "/v1/platform/modules/{module_code}/sales-status", "/v1/platform/modules/{module_code}/technical-status", "/v1/platform/plans", "/v1/platform/plans/{plan_code}/versions", "/v1/platform/plans/{plan_code}/versions/{version}", "/v1/platform/plans/{plan_code}/versions/{version}/eligibility", "/v1/platform/plans/{plan_code}/versions/{version}/publish", "/v1/platform/plans/{plan_code}/versions/{version}/retire", "/v1/platform/subscription-default-rules", "/v1/platform/subscription-default-rules/{rule_id}", "/v1/platform/tenants/{tenant_id}/entitlement-overrides", "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", "/v1/platform/tenants/{tenant_id}/entitlements", "/v1/platform/tenants/{tenant_id}/subscription", "/v1/tenant/entitlements", "/v1/tenant/members", "/v1/tenant/members/{user_id}", "/v1/tenant/members/{user_id}/activate", "/v1/tenant/members/{user_id}/remove", "/v1/tenant/members/{user_id}/suspend", "/v1/tenant/roles", "/v1/tenant/roles/{role_id}", "/v1/tenant/roles/{role_id}/disable", "/v1/tenant/roles/{role_id}/enable", "/v1/tenant/roles/{role_id}/members", "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", "/v1/tenant/roles/{role_id}/permissions", "/v1/tenants", "/v1/tenants/{id}", "/v1/tenants/{id}/activate", "/v1/tenants/{id}/close", "/v1/tenants/{id}/suspend"},
 		RPCClientConfigured: false,
 		RPCServerCount:      1,
 	}

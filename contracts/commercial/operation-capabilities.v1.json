@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "4",
+  "mapping_version": "5",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -351,6 +351,11 @@
           "operation_id": "tenant.role.bootstrap_owner",
           "mode": "always",
           "source": "internal/access/application/tenantlifecycle/internal/usecase/service.go#CreateTenant"
+        },
+        {
+          "operation_id": "commercial.subscription.bootstrap_base",
+          "mode": "always",
+          "source": "internal/access/application/tenantlifecycle/internal/usecase/service.go#CreateTenant"
         }
       ],
       "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。"
@@ -571,6 +576,46 @@
       ],
       "children": [],
       "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。"
+    },
+    {
+      "operation_id": "commercial.subscription.bootstrap_base",
+      "classification": "foundation_exempt",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "always",
+          "source": "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go#BootstrapBaseSubscription"
+        }
+      ],
+      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM."
+    },
+    {
+      "operation_id": "commercial.subscription.rule.put",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "always",
+          "source": "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go#PutDefaultSubscriptionRule"
+        }
+      ],
+      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM."
+    },
+    {
+      "operation_id": "commercial.subscription.rule.list",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM."
+    },
+    {
+      "operation_id": "commercial.subscription.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM."
     }
   ]
 }

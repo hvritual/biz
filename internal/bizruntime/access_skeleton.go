@@ -30,12 +30,13 @@ func (factory applicationFactories) BuildAccessTenantRolePermission(generatedass
 }
 
 func (factory applicationFactories) BuildAccessTenantLifecycle(dependencies generatedassembly.AccessTenantLifecycleDependencies) (accessapp.TenantLifecycleApplication, error) {
-	if dependencies.AccessTenantMemberLifecycle == nil || dependencies.AccessTenantRolePermission == nil {
+	if dependencies.AccessTenantMemberLifecycle == nil || dependencies.AccessTenantRolePermission == nil || dependencies.CommercialSubscriptionManagement == nil {
 		return nil, errors.New("biz access pressure: tenant lifecycle dependencies are required")
 	}
 	return tenantlifecycle.Build(factory.tenantRepositories, tenantLifecycleCapabilities{
-		members: dependencies.AccessTenantMemberLifecycle,
-		roles:   dependencies.AccessTenantRolePermission,
+		members:       dependencies.AccessTenantMemberLifecycle,
+		roles:         dependencies.AccessTenantRolePermission,
+		subscriptions: dependencies.CommercialSubscriptionManagement,
 	})
 }
 
@@ -48,8 +49,9 @@ func (capabilities tenantMemberLifecycleCapabilities) AccessTenantRolePermission
 }
 
 type tenantLifecycleCapabilities struct {
-	members accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
-	roles   accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability
+	members       accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
+	roles         accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability
+	subscriptions accessapp.TenantLifecycleToCommercialSubscriptionManagementChildCapability
 }
 
 func (capabilities tenantLifecycleCapabilities) AccessTenantMemberLifecycle() accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability {
@@ -58,4 +60,8 @@ func (capabilities tenantLifecycleCapabilities) AccessTenantMemberLifecycle() ac
 
 func (capabilities tenantLifecycleCapabilities) AccessTenantRolePermission() accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability {
 	return capabilities.roles
+}
+
+func (capabilities tenantLifecycleCapabilities) CommercialSubscriptionManagement() accessapp.TenantLifecycleToCommercialSubscriptionManagementChildCapability {
+	return capabilities.subscriptions
 }

@@ -832,6 +832,158 @@
       }
     },
     {
+      "operationId": "commercial.subscription.bootstrap_base",
+      "domain": "commercial",
+      "application": "subscription_management",
+      "useCase": "bootstrap_base_subscription",
+      "requestType": "commercial.v1.BootstrapTenantSubscriptionRequest",
+      "responseType": "commercial.v1.BootstrapTenantSubscriptionResult",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.tenant.create"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.plan.eligibility"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/plan_management"
+      ],
+      "bindings": {}
+    },
+    {
+      "operationId": "commercial.subscription.get",
+      "domain": "commercial",
+      "application": "subscription_management",
+      "useCase": "get_tenant_subscription",
+      "requestType": "commercial.v1.GetTenantSubscriptionRequest",
+      "responseType": "commercial.v1.TenantSubscriptionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.subscription.read",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionManagementApplication/GetTenantSubscription",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/tenants/{tenant_id}/subscription"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.subscription.rule.list",
+      "domain": "commercial",
+      "application": "subscription_management",
+      "useCase": "list_default_subscription_rules",
+      "requestType": "commercial.v1.ListDefaultSubscriptionRulesRequest",
+      "responseType": "commercial.v1.ListDefaultSubscriptionRulesResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.subscription.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionManagementApplication/ListDefaultSubscriptionRules",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/subscription-default-rules"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.subscription.rule.put",
+      "domain": "commercial",
+      "application": "subscription_management",
+      "useCase": "put_default_subscription_rule",
+      "requestType": "commercial.v1.PutDefaultSubscriptionRuleRequest",
+      "responseType": "commercial.v1.DefaultSubscriptionRuleDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.subscription.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.plan.eligibility"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionManagementApplication/PutDefaultSubscriptionRule",
+        "http": [
+          {
+            "method": "PUT",
+            "path": "/v1/platform/subscription-default-rules/{rule_id}",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "device.create",
       "domain": "deviceops",
       "application": "device_management",
@@ -1112,7 +1264,8 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_member_lifecycle",
-        "access/tenant_role_permission"
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantLifecycleApplication/ActivateTenant",
@@ -1148,7 +1301,8 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_member_lifecycle",
-        "access/tenant_role_permission"
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantLifecycleApplication/CloseTenant",
@@ -1173,6 +1327,8 @@
           "api-key"
         ],
         "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
           "platform.tenant.create"
         ],
         "permissionMode": "all"
@@ -1184,16 +1340,20 @@
       "composition": {
         "boundary": "local",
         "requiresOperations": [
+          "commercial.subscription.bootstrap_base",
           "tenant.member.bootstrap_owner",
           "tenant.role.bootstrap_owner"
         ],
         "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read",
           "platform.tenant.create"
         ]
       },
       "applicationRequires": [
         "access/tenant_member_lifecycle",
-        "access/tenant_role_permission"
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantLifecycleApplication/CreateTenant",
@@ -1229,7 +1389,8 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_member_lifecycle",
-        "access/tenant_role_permission"
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantLifecycleApplication/GetTenant",
@@ -1264,7 +1425,8 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_member_lifecycle",
-        "access/tenant_role_permission"
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantLifecycleApplication/ListTenants",
@@ -1897,7 +2059,8 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_member_lifecycle",
-        "access/tenant_role_permission"
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantLifecycleApplication/SuspendTenant",
@@ -1933,7 +2096,8 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_member_lifecycle",
-        "access/tenant_role_permission"
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantLifecycleApplication/UpdateTenant",

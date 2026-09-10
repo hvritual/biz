@@ -298,9 +298,13 @@ No B12 path introduces:
 ```text
 B12_FRAMEWORK_PRESSURE_DISPOSITION=PASS
 OPEN_B12_YUNKA_GAPS=0
-QUALIFIED_YUNKA_BASELINE=6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+QUALIFIED_YUNKA_BASELINE=33b98ceba57494abda2299e4f0290a5651dab4bc
 ```
 
 B12 discovered two generic Yunka defects, reproduced both before framework modification, closed them through qualified generic framework changes, and kept the remaining multi-tenant Access/IAM pressure inside Biz.
 
 There is no unresolved B12 framework pressure blocking final Biz qualification and merge readiness.
+
+## CE-08 compatibility qualification (2026-09-10)
+
+Previous B12 qualification baseline: `6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb`; prior logs/PR evidence retain that source. The active baseline now adds only the already merged #181 C9 codegen correction. This compatibility source passed the full B122/B123/B124/B125/B126 and AG02 current-read regression in run 34466674039 at Biz 52d9b75d8797da0bc1a3a33401996bfbbe92666c. Actual leaf tests: 16; failures/skips: 0. CE-08 final main qualification remains a separate exit gate.

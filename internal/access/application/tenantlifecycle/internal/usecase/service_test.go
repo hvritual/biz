@@ -7,16 +7,19 @@ import (
 	"testing"
 
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
+	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	accessapp "github.com/hvritual/biz/internal/access/application"
 	"github.com/hvritual/biz/internal/access/domain"
 	"github.com/hvritual/biz/internal/access/ports"
+	"yunka.io/framework/core/identity"
 	"yunka.io/framework/execution"
 	"yunka.io/framework/requestscope"
 )
 
 type tenantTestCapabilities struct {
-	members accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
-	roles   accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability
+	members       accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
+	roles         accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability
+	subscriptions accessapp.TenantLifecycleToCommercialSubscriptionManagementChildCapability
 }
 
 func (capabilities tenantTestCapabilities) AccessTenantMemberLifecycle() accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability {
@@ -31,6 +34,19 @@ func (capabilities tenantTestCapabilities) AccessTenantRolePermission() accessap
 		return capabilities.roles
 	}
 	return tenantTestRoleChild{}
+}
+
+func (capabilities tenantTestCapabilities) CommercialSubscriptionManagement() accessapp.TenantLifecycleToCommercialSubscriptionManagementChildCapability {
+	if capabilities.subscriptions != nil {
+		return capabilities.subscriptions
+	}
+	return tenantTestSubscriptionChild{}
+}
+
+type tenantTestSubscriptionChild struct{}
+
+func (tenantTestSubscriptionChild) BootstrapBaseSubscription(context.Context, *commercialv1.BootstrapTenantSubscriptionRequest) (*commercialv1.BootstrapTenantSubscriptionResult, error) {
+	return &commercialv1.BootstrapTenantSubscriptionResult{}, nil
 }
 
 type tenantTestMemberChild struct{}
@@ -166,7 +182,7 @@ func TestTenantLifecycleRequiresRootExecutionScope(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = service.CreateTenant(context.Background(), &accessv1.CreateTenantRequest{Name: "Tenant A", OwnerUserId: "owner-a", OwnerEmail: "owner@example.com"})
+	_, err = service.CreateTenant(context.Background(), &accessv1.CreateTenantRequest{Name: "Tenant A", OwnerUserId: "owner-a", OwnerEmail: "owner@example.com", RequestId: "req-tenant-a", SalesScope: "default"})
 	if !errors.Is(err, requestscope.ErrExecutionScopeUnavailable) {
 		t.Fatalf("err=%v", err)
 	}
@@ -195,10 +211,11 @@ func TestTenantLifecycleStateChangesUseJoinedRootUnitOfWork(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		return ctx
+		ctx = identity.WithPrincipal(ctx, identity.Principal{Subject: "unit-platform", Authenticated: true})
+		return execution.WithIdempotencyKey(ctx, "unit-key")
 	}
 
-	created, err := service.CreateTenant(rootContext("tenant.create"), &accessv1.CreateTenantRequest{Name: "Tenant A", OwnerUserId: "owner-a", OwnerEmail: "owner@example.com"})
+	created, err := service.CreateTenant(rootContext("tenant.create"), &accessv1.CreateTenantRequest{Name: "Tenant A", OwnerUserId: "owner-a", OwnerEmail: "owner@example.com", RequestId: "req-tenant-a", SalesScope: "default"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -237,4 +254,11 @@ func TestTenantLifecycleStateChangesUseJoinedRootUnitOfWork(t *testing.T) {
 	if !errors.Is(err, domain.ErrInvalidTenantTransition) {
 		t.Fatalf("closed activate err=%v", err)
 	}
+}
+
+func (r *memoryTenantRepository) ClaimCreation(context.Context, []string, string) (*domain.Tenant, error) {
+	return nil, nil
+}
+func (r *memoryTenantRepository) CompleteCreation(context.Context, []string, string, domain.Tenant) error {
+	return nil
 }

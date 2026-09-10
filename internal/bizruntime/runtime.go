@@ -320,7 +320,7 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
-	executor := operation.NewExecutorWithOptions(security, operation.ExecutorOptions{Transactions: transactions, Idempotency: idempotency})
+	executor := operation.NewExecutorWithOptions(security, operation.ExecutorOptions{Transactions: transactions, Idempotency: tenantCreationReplay{idempotency}})
 
 	deviceRepositories, err := devicepersistence.NewScopedRepositoryFactory(deviceDatabase)
 	if err != nil {

@@ -62,6 +62,16 @@
       }
     },
     {
+      "name": "contracts/proto/commercial/v1/subscription.proto",
+      "package": "commercial.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1",
+      "domain": {
+        "name": "commercial",
+        "version": "v1"
+      }
+    },
+    {
       "name": "contracts/proto/deviceops/v1/deviceops.proto",
       "package": "deviceops.v1",
       "syntax": "proto3",
@@ -264,6 +274,20 @@
           "name": "owner_email",
           "jsonName": "ownerEmail",
           "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 5,
           "kind": "scalar",
           "type": "string"
         }
@@ -822,6 +846,52 @@
       }
     },
     {
+      "name": "BootstrapTenantSubscriptionRequest",
+      "fullName": "commercial.v1.BootstrapTenantSubscriptionRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "BootstrapTenantSubscriptionResult",
+      "fullName": "commercial.v1.BootstrapTenantSubscriptionResult",
+      "fields": [
+        {
+          "name": "subscription",
+          "jsonName": "subscription",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.TenantSubscriptionDTO"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "ChangePlanVersionStateRequest",
       "fullName": "commercial.v1.ChangePlanVersionStateRequest",
       "fields": [
@@ -1126,6 +1196,85 @@
       ],
       "dto": {
         "kind": "input"
+      }
+    },
+    {
+      "name": "DefaultSubscriptionRuleDTO",
+      "fullName": "commercial.v1.DefaultSubscriptionRuleDTO",
+      "fields": [
+        {
+          "name": "rule_id",
+          "jsonName": "ruleId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "priority",
+          "jsonName": "priority",
+          "number": 3,
+          "kind": "scalar",
+          "type": "int32"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_version",
+          "jsonName": "planVersion",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "enabled",
+          "jsonName": "enabled",
+          "number": 7,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_id",
+          "jsonName": "actorId",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "updated_at",
+          "jsonName": "updatedAt",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
       }
     },
     {
@@ -1678,6 +1827,47 @@
       }
     },
     {
+      "name": "GetTenantSubscriptionRequest",
+      "fullName": "commercial.v1.GetTenantSubscriptionRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListDefaultSubscriptionRulesRequest",
+      "fullName": "commercial.v1.ListDefaultSubscriptionRulesRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListDefaultSubscriptionRulesResponse",
+      "fullName": "commercial.v1.ListDefaultSubscriptionRulesResponse",
+      "fields": [
+        {
+          "name": "rules",
+          "jsonName": "rules",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.DefaultSubscriptionRuleDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "ListEntitlementOverridesRequest",
       "fullName": "commercial.v1.ListEntitlementOverridesRequest",
       "fields": [
@@ -2164,6 +2354,78 @@
       }
     },
     {
+      "name": "PutDefaultSubscriptionRuleRequest",
+      "fullName": "commercial.v1.PutDefaultSubscriptionRuleRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "rule_id",
+          "jsonName": "ruleId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expected_version",
+          "jsonName": "expectedVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "priority",
+          "jsonName": "priority",
+          "number": 4,
+          "kind": "scalar",
+          "type": "int32"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_version",
+          "jsonName": "planVersion",
+          "number": 7,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "enabled",
+          "jsonName": "enabled",
+          "number": 8,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "RevokeEntitlementOverrideRequest",
       "fullName": "commercial.v1.RevokeEntitlementOverrideRequest",
       "fields": [
@@ -2293,6 +2555,99 @@
       ],
       "dto": {
         "kind": "input"
+      }
+    },
+    {
+      "name": "TenantSubscriptionDTO",
+      "fullName": "commercial.v1.TenantSubscriptionDTO",
+      "fields": [
+        {
+          "name": "subscription_id",
+          "jsonName": "subscriptionId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "kind",
+          "jsonName": "kind",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "jsonName": "state",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_version",
+          "jsonName": "planVersion",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "rule_id",
+          "jsonName": "ruleId",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "rule_version",
+          "jsonName": "ruleVersion",
+          "number": 8,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "entitlement_source_version",
+          "jsonName": "entitlementSourceVersion",
+          "number": 10,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "created_at",
+          "jsonName": "createdAt",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "match_explanation",
+          "jsonName": "matchExplanation",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
       }
     },
     {
@@ -2886,7 +3241,8 @@
         "name": "tenant_lifecycle",
         "requires": [
           "access/tenant_member_lifecycle",
-          "access/tenant_role_permission"
+          "access/tenant_role_permission",
+          "commercial/subscription_management"
         ]
       },
       "methods": [
@@ -2982,6 +3338,8 @@
             "id": "tenant.create",
             "useCase": "create_tenant",
             "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
               "platform.tenant.create"
             ],
             "permissionMode": "all",
@@ -2989,6 +3347,7 @@
               "api-key"
             ],
             "requiresOperations": [
+              "commercial.subscription.bootstrap_base",
               "tenant.member.bootstrap_owner",
               "tenant.role.bootstrap_owner"
             ],
@@ -3001,6 +3360,8 @@
           "authorization": {
             "operationId": "tenant.create",
             "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
               "platform.tenant.create"
             ],
             "permissionMode": "all",
@@ -4741,6 +5102,167 @@
             "permissions": [
               "commercial.catalog.read",
               "platform.plan.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "SubscriptionManagementApplication",
+      "fullName": "commercial.v1.SubscriptionManagementApplication",
+      "domain": "commercial",
+      "application": {
+        "name": "subscription_management",
+        "requires": [
+          "commercial/plan_management"
+        ],
+        "operations": [
+          {
+            "id": "commercial.subscription.bootstrap_base",
+            "useCase": "bootstrap_base_subscription",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.tenant.create"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.plan.eligibility"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.BootstrapTenantSubscriptionRequest",
+            "responseType": "commercial.v1.BootstrapTenantSubscriptionResult",
+            "applicationMethod": "BootstrapBaseSubscription"
+          }
+        ]
+      },
+      "methods": [
+        {
+          "name": "GetTenantSubscription",
+          "fullName": "commercial.v1.SubscriptionManagementApplication.GetTenantSubscription",
+          "request": "commercial.v1.GetTenantSubscriptionRequest",
+          "response": "commercial.v1.TenantSubscriptionDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/subscription"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.get",
+            "useCase": "get_tenant_subscription",
+            "permissions": [
+              "platform.subscription.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.get",
+            "permissions": [
+              "platform.subscription.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "ListDefaultSubscriptionRules",
+          "fullName": "commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules",
+          "request": "commercial.v1.ListDefaultSubscriptionRulesRequest",
+          "response": "commercial.v1.ListDefaultSubscriptionRulesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/subscription-default-rules"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.rule.list",
+            "useCase": "list_default_subscription_rules",
+            "permissions": [
+              "platform.subscription.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.rule.list",
+            "permissions": [
+              "platform.subscription.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "PutDefaultSubscriptionRule",
+          "fullName": "commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule",
+          "request": "commercial.v1.PutDefaultSubscriptionRuleRequest",
+          "response": "commercial.v1.DefaultSubscriptionRuleDTO",
+          "http": [
+            {
+              "method": "PUT",
+              "path": "/v1/platform/subscription-default-rules/{rule_id}",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.rule.put",
+            "useCase": "put_default_subscription_rule",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.plan.eligibility"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.rule.put",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.subscription.manage"
             ],
             "permissionMode": "all",
             "authentication": [

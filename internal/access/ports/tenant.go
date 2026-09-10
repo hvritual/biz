@@ -17,6 +17,8 @@ type TenantRepository interface {
 	Get(context.Context, string) (domain.Tenant, error)
 	List(context.Context) ([]domain.Tenant, error)
 	Update(context.Context, *domain.Tenant, uint64) error
+	ClaimCreation(context.Context, []string, string) (*domain.Tenant, error)
+	CompleteCreation(context.Context, []string, string, domain.Tenant) error
 }
 
 type TenantRepositories struct {
