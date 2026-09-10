@@ -1,0 +1,61 @@
+name: CE-09 baseline plan-source probe
+on:
+  push:
+    branches: [control/ce09-delivery-20260910]
+    paths: ['.github/workflows/ce09-baseline-probe.yml']
+permissions: {contents: read}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      YUNKA_TEST_MYSQL_DSN: 'root:root@tcp(127.0.0.1:3306)/ce09_probe?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true'
+    services:
+      mysql:
+        image: mysql:8.4
+        env: {MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: ce09_probe}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent" --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: fed9051bae618ab28df200038682f808c82e854b, path: biz, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: 33b98ceba57494abda2299e4f0290a5651dab4bc, path: yunka.io, persist-credentials: false}
+      - id: lock
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/probe"
+          git -C biz rev-parse HEAD > "$RUNNER_TEMP/probe/baseline.txt"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Reproduce only; not business qualification
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > integration/ce09_baseline_probe_test.go <<'GO'
+          //go:build integration
+          package integration
+          import (
+            "context"
+            "errors"
+            "testing"
+            "github.com/hvritual/biz/internal/commercial/domain/entitlement"
+            p "github.com/hvritual/biz/internal/commercial/infrastructure/persistence"
+          )
+          func TestCE09BaselinePlanSourceReadGap(t *testing.T) {
+            e:=ce08New(t); id:=ce04Random(t)
+            tenant:=ce08Tenant(t,e.createTenant(id,id,"owner-"+id,"default"))
+            reader,err:=p.NewEntitlementStateReader(e.db); if err!=nil {t.Fatal(err)}
+            _,err=reader.ReadCurrent(context.Background(),tenant.Id)
+            if !errors.Is(err,entitlement.ErrScope) {t.Fatalf("baseline gap not reproduced: %v",err)}
+            t.Log("CE09_BASELINE_GAP_REPRODUCED: valid stored PLAN sources rejected by override-only decoder; not business PASS")
+          }
+          GO
+          go test -count=1 -tags=integration -json ./integration -run '^TestCE09BaselinePlanSourceReadGap$' | tee "$RUNNER_TEMP/probe/probe.jsonl"
+          cp integration/ce09_baseline_probe_test.go "$RUNNER_TEMP/probe/"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce09-baseline-probe-${{ github.sha }}', path: '${{ runner.temp }}/probe', if-no-files-found: error}
