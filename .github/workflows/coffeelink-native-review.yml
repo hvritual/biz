@@ -1,0 +1,91 @@
+name: CoffeeLink native customer interface verification
+on:
+  push:
+    branches: [build/coffeelink-customer-review]
+    paths: ['.github/workflows/coffeelink-native-review.yml']
+permissions:
+  contents: read
+jobs:
+  native-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 130a4fdc608419ba5105f28c4f88b126c69d8629
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Verify committed source and preserved original components
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64,hashlib,json,lzma,subprocess
+          from pathlib import Path
+          root=Path('.github/coffeelink-transfer')
+          packed=base64.b64decode(''.join((root/f'part-{i}.b64').read_text() for i in range(5)),validate=True)
+          assert hashlib.sha256(packed).hexdigest()=='6fa5c3f6b57d58a0a72a9b0ca0786b309fdce90909cfb4f03301cc2e5e5f3164'
+          baseline=json.loads(lzma.decompress(packed))
+          if (root/'patches.json').exists(): baseline.update(json.loads((root/'patches.json').read_text()))
+          if (root/'replacements.json').exists():
+              for name,edits in json.loads((root/'replacements.json').read_text()).items():
+                  for before,after in edits:
+                      assert baseline[name].count(before)==1
+                      baseline[name]=baseline[name].replace(before,after,1)
+          preserved={name:hashlib.sha256(text.encode()).hexdigest() for name,text in baseline.items() if ('/layout/' in name and not name.endswith('ModulePanel.vue')) or name.startswith('web/src/components/ui/') or name.endswith('/base.css') or name.endswith('/tokens.css')}
+          current={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(Path('web').rglob('*')) if p.is_file()}
+          for name,digest in preserved.items(): assert current[name]==digest,name
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert sha=='130a4fdc608419ba5105f28c4f88b126c69d8629'
+          Path('/tmp/customer-source-manifest.json').write_text(json.dumps({'base':'911ab19122ec009de8028fdc4b293b1358127be1','commit':sha,'current':current,'preserved':preserved},ensure_ascii=False,indent=2))
+          print('Pinned native SHA:',sha,'unchanged shared components:',len(preserved),'source files:',len(current))
+          PY
+          tar --exclude=node_modules --exclude=dist --exclude=screenshots --exclude=test-results --exclude=playwright-report -czf /tmp/customer-native-source.tgz web
+      - name: Install exact committed dependencies
+        working-directory: web
+        run: npm ci
+      - name: Type, lint, component boundaries, unit tests and production build
+        working-directory: web
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run check 2>&1 | tee /tmp/customer-check.log
+      - name: Install cloud Chromium and CJK runtime fonts
+        working-directory: web
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Full browser regression and independent screenshots
+        working-directory: web
+        shell: bash
+        env:
+          CI: 'true'
+        run: |
+          set -o pipefail
+          npm run test:e2e 2>&1 | tee /tmp/customer-e2e.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coffeelink-native-customer-review
+          path: |
+            web/screenshots/
+            web/playwright-report/
+            web/test-results/
+            /tmp/customer-check.log
+            /tmp/customer-e2e.log
+            /tmp/customer-source-manifest.json
+            !web/playwright-report/**/*.ttf
+            !web/playwright-report/**/*.otf
+            !web/playwright-report/**/*.woff
+            !web/playwright-report/**/*.woff2
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coffeelink-native-customer-source
+          path: /tmp/customer-native-source.tgz
+          retention-days: 14
