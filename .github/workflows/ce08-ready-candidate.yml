@@ -1,0 +1,128 @@
+name: CE-08 ready candidate
+on:
+  push:
+    branches: [control/ce08-completion-20260910]
+    paths: ['.github/workflows/ce08-ready-candidate.yml']
+permissions: {contents: write}
+concurrency: {group: ce08-product-writer, cancel-in-progress: false}
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      mysql:
+        image: mysql:8.4
+        env: {MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: biz_ce08_ready}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent" --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      BASE_SHA: 4573e7fcafa7610f6bba308d3c511218cb1dfb5c
+      PYTHONDONTWRITEBYTECODE: '1'
+      YUNKA_TEST_MYSQL_DSN: 'root:root@tcp(127.0.0.1:3306)/biz_ce08_ready?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: fix/ce-08-complete, path: biz, fetch-depth: 0, persist-credentials: true}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: control/ce08-completion-20260910, path: control, persist-credentials: true}
+      - id: lock
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "p=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "s=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/ce08" "$RUNNER_TEMP/pins"
+          git -C biz rev-parse HEAD > "$RUNNER_TEMP/ce08/start-commit.txt"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Locked generators
+        env: {R: '${{ steps.lock.outputs.p }}', S: '${{ steps.lock.outputs.s }}'}
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 "https://github.com/protocolbuffers/protobuf/releases/download/v${R}/protoc-${R}-linux-x86_64.zip" -o "$RUNNER_TEMP/p.zip"
+          echo "$S  $RUNNER_TEMP/p.zip"|sha256sum -c -
+          unzip -q "$RUNNER_TEMP/p.zip" -d "$RUNNER_TEMP/protoc"
+          make -C yunka.io rpc-tools
+          echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+      - name: Integrate main and finalize candidate
+        working-directory: biz
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = f3e63cb9cf3c0a36d52d00b2effab8e0b2e52a69
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          cp docs/commercial-entitlements/tasks.json /tmp/ce08-ours.json
+          if ! git merge --no-commit --no-ff origin/main; then
+            test "$(git diff --name-only --diff-filter=U)" = docs/commercial-entitlements/tasks.json
+            python3 - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          ours=Path('/tmp/ce08-ours.json').read_text();theirs=subprocess.check_output(['git','show','origin/main:docs/commercial-entitlements/tasks.json'],text=True)
+          a=json.loads(ours);b=json.loads(theirs)
+          assert [t for t in a['tasks'] if t['id']!='CE-08']==[t for t in b['tasks'] if t['id']!='CE-08']
+          one=next(l for l in ours.splitlines() if '"id":"CE-08"' in l);two=next(l for l in theirs.splitlines() if '"id":"CE-08"' in l)
+          assert '"status":"VERIFYING"' in one
+          Path('docs/commercial-entitlements/tasks.json').write_text(theirs.replace(two,one))
+          PY
+            git add docs/commercial-entitlements/tasks.json
+          fi
+          python3 - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          for name in subprocess.check_output(['git','diff','--name-only','HEAD','--','.github/workflows'],text=True).splitlines():
+            assert Path(name).read_bytes()==subprocess.check_output(['git','show','origin/main:'+name]),name
+          p=Path('integration/ce08_authority_mysql_test.go');s=p.read_text();old='status.Convert(err).Message() != reason';assert s.count(old)==1
+          s=s.replace(old,'status.Convert(err).Message() != status.Error(want, reason).Error()');p.write_text(s)
+          p=Path('.yunka/dev.json');d=json.loads(p.read_text());nodes=d['processes'][0]['graphNodes'];assert 'application:commercial/subscription_management' not in nodes
+          nodes.append('application:commercial/subscription_management');p.write_text(json.dumps(d,indent=2)+'\n')
+          p=Path('docs/commercial-entitlements/decisions/CE-08-default-subscription-bootstrap.md');s=p.read_text()
+          s=s.replace('default-rule lock → plan eligibility child → base subscription → entitlement state/source','Access 创建回执摘要键（若有）→ catalog shared epoch → default-rule lock → plan eligibility child → entitlement state/source')
+          s=s.replace('前端页面、框架升级或生产部署','前端页面、整体框架升级或生产部署')
+          s+='\n## 本轮硬化与兼容来源\n\nYunka 固定 33b98ceba57494abda2299e4f0290a5651dab4bc，仅在原基线上回放已合入框架 main 的 #181 修复，不包含 module-identity 大迁移。\n\nAccess 创建回执在原根事务中同时绑定平台主体 + request_id 与主体 + transport key，规范化载荷摘要冲突即拒绝；跨实例重放返回原租户结果。仅 tenant.create 的已完成协调请求允许重新进入受控业务回执读取；必填 key、执行中互斥、认证权限及原原子 finalization 均保留，其他操作语义不变。每次默认规则修改的不可变 rule receipt 保存精确版本、操作者与原因；旧规则可停用，规则重放不重新改写历史。\n\nfixed_days 以数据库 UTC 时间为所有权益来源设置到期，unlimited 无到期。权威读取错误或损坏必须失败，不可伪装资格不符而 fallback；只有明确不适用可继续合法规则。ACTIVE 订阅标签不等于永久授权，字段模板与额度条款不冒充 CE-20 输出过滤及 CE-18/19 额度消费。\n\n全局 rule aggregate 仍是短事务串行化点，本轮未证明生产吞吐 SLA。显式迁移先于二进制启用；AutoMigrate 只用于开发与资格。未生产部署或生产回滚演练。REST 既有通用 400 和 gRPC 精确状态分别验收；锁定 Executor 包装 application status 时，验收保留实际 wire message 与代码，不修改公开 transport。\n'
+          p.write_text(s)
+          p=Path('docs/commercial-entitlements/evidence/CE-08.md');p.write_text('> 历史证据说明：框架 #181 已修复关闭，续接实现现为 VERIFYING。以下保留原 blocker 事实；最终业务 main 资格通过后将提交正式完成回执。\n\n'+p.read_text())
+          PY
+          gofmt -w integration/ce08_authority_mysql_test.go
+          git diff --check
+          git add integration/ce08_authority_mysql_test.go .yunka/dev.json docs/commercial-entitlements
+          git commit -m 'fix(ce-08): finalize exact transport acceptance and runtime graph'
+          git rev-parse HEAD > "$RUNNER_TEMP/ce08/candidate-commit.txt"
+          git archive HEAD -o "$RUNNER_TEMP/ce08/biz-source.tar"
+          git push origin HEAD:fix/ce-08-complete
+      - name: Stage exact workflow pin blobs for connector review
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib,subprocess,os
+          from pathlib import Path
+          dest=Path('control/.ce08-pin-staging');dest.mkdir(exist_ok=True)
+          old='6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb';new=os.environ['YUNKA_SHA'];items=[]
+          for p in sorted(Path('biz/.github/workflows').glob('*.yml')):
+            if p.name in ['b12-review-owner-invariant-probe.yml','ce08-blocker-repro.yml']: continue
+            data=p.read_bytes()
+            if old.encode() not in data:continue
+            updated=data.replace(old.encode(),new.encode());(dest/(p.name+'.txt')).write_bytes(updated)
+            sha=lambda b:hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()
+            items.append({'path':str(p.relative_to('biz')),'old_blob':sha(data),'sha':sha(updated),'mode':'100644','type':'blob'})
+          assert len(items)==15,len(items)
+          result={'product_commit':subprocess.check_output(['git','-C','biz','rev-parse','HEAD'],text=True).strip(),'product_tree':subprocess.check_output(['git','-C','biz','rev-parse','HEAD^{tree}'],text=True).strip(),'changes':items}
+          (dest/'manifest.json').write_text(json.dumps(result,indent=2)+'\n');Path(os.environ['RUNNER_TEMP']+'/pins/manifest.json').write_text(json.dumps(result,indent=2)+'\n')
+          PY
+          git -C control config user.name github-actions[bot]
+          git -C control config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git -C control add .ce08-pin-staging
+          git -C control commit -m 'control(ce-08): stage reviewed workflow source pin changes'
+          git -C control push origin HEAD:control/ce08-completion-20260910
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: 'ce08-reviewed-pins-${{ github.sha }}', path: '${{ runner.temp }}/pins', if-no-files-found: error}
+      - name: Execute complete qualification
+        env: {MYSQL_CONTAINER_ID: '${{ job.services.mysql.id }}'}
+        run: bash biz/scripts/ce08_qualify.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce08-ready-${{ github.sha }}', path: '${{ runner.temp }}/ce08', if-no-files-found: error}
