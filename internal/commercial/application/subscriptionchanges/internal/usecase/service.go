@@ -83,7 +83,7 @@ func input(r *v1.PreviewSubscriptionChangeRequest) (change.Input, error) {
 		if err != nil {
 			return i, change.ErrInvalid
 		}
-		u := v.UTC()
+		u := change.CanonicalTime(v)
 		i.EffectiveAt = &u
 	}
 	return i, i.Validate()

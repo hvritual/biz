@@ -183,3 +183,22 @@ func TestCE09RequestAndPreviewIdentityDoNotTrustClientState(t *testing.T) {
 		t.Fatal("valid request rejected")
 	}
 }
+
+func TestCE09CanonicalDatabaseTimeNeverActivatesEarly(t *testing.T) {
+	raw := time.Date(2026, 9, 10, 12, 30, 59, 999999999, time.FixedZone("offset", 7200))
+	canonical := CanonicalTime(raw)
+	if canonical.Before(raw) || canonical.Nanosecond()%1000 != 0 || !canonical.Equal(raw.Add(time.Nanosecond)) || canonical.Location() != time.UTC {
+		t.Fatal("precision rounding moved activation earlier", raw, canonical)
+	}
+	if !CanonicalTime(canonical).Equal(canonical) {
+		t.Fatal("canonical precision is not stable")
+	}
+	i := Input{TenantID: "t", RequestID: "r", Action: Switch, TargetPlanCode: "plan", TargetPlanVersion: 1, EffectiveAt: &raw, Reason: "test"}
+	if !errors.Is(i.Validate(), ErrInvalid) {
+		t.Fatal("domain accepted noncanonical source time")
+	}
+	i.EffectiveAt = &canonical
+	if err := i.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}

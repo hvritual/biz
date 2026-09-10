@@ -60,7 +60,20 @@ type Input struct {
 	Reason            string     `json:"reason"`
 }
 
+// CanonicalTime rounds upward to a database microsecond. A requested
+// future activation can never be moved earlier by precision reduction.
+func CanonicalTime(t time.Time) time.Time {
+	t = t.UTC()
+	if remainder := t.Nanosecond() % 1000; remainder != 0 {
+		t = t.Add(time.Duration(1000 - remainder))
+	}
+	return t
+}
 func (i Input) Validate() error {
+	if i.EffectiveAt != nil && (i.EffectiveAt.IsZero() || i.EffectiveAt.Year() < 1970 || i.EffectiveAt.Year() > 9999 || i.EffectiveAt.Nanosecond()%1000 != 0) {
+		return ErrInvalid
+	}
+
 	if !Tenant(i.TenantID) || !Key(i.RequestID) || !Reason(i.Reason) {
 		return ErrInvalid
 	}

@@ -91,7 +91,7 @@ func TestCE09MySQLSourceChangeInvalidatesPreviewAndPreservesOverride(t *testing.
 	target := e.plan(ce09Terms(20, 30))
 	p := e.preview(target)
 	k := ce04Random(t)
-	override, err := e.entitlements.CreateEntitlementOverride(ce04Context(e.token, k), &v1.CreateEntitlementOverrideRequest{RequestId: k, TenantId: e.tenant, ExpectedVersion: p.SourceVersion, ModuleCode: "device-operations", Target: v1.EntitlementTarget_ENTITLEMENT_TARGET_FIELD, Key: "device.identity", FieldAction: "read", Effect: v1.EntitlementEffect_ENTITLEMENT_EFFECT_SAFETY_MASK, EffectiveAt: time.Now().UTC().Add(-time.Second).Format(time.RFC3339Nano), Reason: "independent safety floor"})
+	override, err := e.entitlements.CreateEntitlementOverride(ce04Context(e.token, k), &v1.CreateEntitlementOverrideRequest{RequestId: k, TenantId: e.tenant, ExpectedVersion: p.SourceVersion, ModuleCode: "device-operations", Target: v1.EntitlementTarget_ENTITLEMENT_TARGET_FIELD, Key: "device.identity", FieldAction: "read", Effect: v1.EntitlementEffect_ENTITLEMENT_EFFECT_SAFETY_MASK, EffectiveAt: time.Now().UTC().Add(-time.Second).Truncate(time.Microsecond).Format(time.RFC3339Nano), Reason: "independent safety floor"})
 	if err != nil {
 		t.Fatal(err)
 	}
