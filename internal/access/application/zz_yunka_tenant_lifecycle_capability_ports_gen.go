@@ -8,7 +8,6 @@ import (
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	accesspolicy "github.com/hvritual/biz/internal/access/policy"
-	commercialapplication "github.com/hvritual/biz/internal/commercial/application"
 	commercialpolicy "github.com/hvritual/biz/internal/commercial/policy"
 	operation "yunka.io/framework/operation"
 )
@@ -63,12 +62,17 @@ type TenantLifecycleToCommercialSubscriptionManagementChildCapability interface 
 	BootstrapBaseSubscription(context.Context, *commercialv1.BootstrapTenantSubscriptionRequest) (*commercialv1.BootstrapTenantSubscriptionResult, error)
 }
 
+// TenantLifecycleToCommercialSubscriptionManagementTargetApplication is the consumer-edge-owned view of the target Application.
+type TenantLifecycleToCommercialSubscriptionManagementTargetApplication interface {
+	BootstrapBaseSubscription(context.Context, *commercialv1.BootstrapTenantSubscriptionRequest) (*commercialv1.BootstrapTenantSubscriptionResult, error)
+}
+
 type c9TenantLifecycleToCommercialSubscriptionManagementChildCapability struct {
-	application commercialapplication.SubscriptionManagementApplication
+	application TenantLifecycleToCommercialSubscriptionManagementTargetApplication
 	executor    operation.Executor
 }
 
-func NewTenantLifecycleToCommercialSubscriptionManagementChildCapability(application commercialapplication.SubscriptionManagementApplication, executor operation.Executor) (TenantLifecycleToCommercialSubscriptionManagementChildCapability, error) {
+func NewTenantLifecycleToCommercialSubscriptionManagementChildCapability(application TenantLifecycleToCommercialSubscriptionManagementTargetApplication, executor operation.Executor) (TenantLifecycleToCommercialSubscriptionManagementChildCapability, error) {
 	if application == nil {
 		return nil, errors.New("contract C9 child capability: target application is required")
 	}

@@ -7,7 +7,6 @@ import (
 	errors "errors"
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
-	accessapplication "github.com/hvritual/biz/internal/access/application"
 	accesspolicy "github.com/hvritual/biz/internal/access/policy"
 	commercialpolicy "github.com/hvritual/biz/internal/commercial/policy"
 	operation "yunka.io/framework/operation"
@@ -17,12 +16,17 @@ type EntitlementManagementToAccessTenantLifecycleChildCapability interface {
 	GetTenant(context.Context, *accessv1.GetTenantRequest) (*accessv1.TenantDTO, error)
 }
 
+// EntitlementManagementToAccessTenantLifecycleTargetApplication is the consumer-edge-owned view of the target Application.
+type EntitlementManagementToAccessTenantLifecycleTargetApplication interface {
+	GetTenant(context.Context, *accessv1.GetTenantRequest) (*accessv1.TenantDTO, error)
+}
+
 type c9EntitlementManagementToAccessTenantLifecycleChildCapability struct {
-	application accessapplication.TenantLifecycleApplication
+	application EntitlementManagementToAccessTenantLifecycleTargetApplication
 	executor    operation.Executor
 }
 
-func NewEntitlementManagementToAccessTenantLifecycleChildCapability(application accessapplication.TenantLifecycleApplication, executor operation.Executor) (EntitlementManagementToAccessTenantLifecycleChildCapability, error) {
+func NewEntitlementManagementToAccessTenantLifecycleChildCapability(application EntitlementManagementToAccessTenantLifecycleTargetApplication, executor operation.Executor) (EntitlementManagementToAccessTenantLifecycleChildCapability, error) {
 	if application == nil {
 		return nil, errors.New("contract C9 child capability: target application is required")
 	}

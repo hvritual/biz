@@ -1,5 +1,24 @@
 package bizruntime
-import("fmt";"github.com/hvritual/biz/internal/assembly";commercialapp "github.com/hvritual/biz/internal/commercial/application";"github.com/hvritual/biz/internal/commercial/application/subscriptionmanagement";commercialpersistence "github.com/hvritual/biz/internal/commercial/infrastructure/persistence")
-func(factory *applicationFactories)BuildCommercialSubscriptionManagement(dependencies assembly.CommercialSubscriptionManagementDependencies)(commercialapp.SubscriptionManagementApplication,error){if dependencies.CommercialPlanManagement==nil{return nil,fmt.Errorf("bizruntime: commercial plan management dependency is required")};return subscriptionmanagement.Build(commercialpersistence.NewSubscriptionRepositoryFactory(),subscriptionCapabilities{plan:dependencies.CommercialPlanManagement})}
-type subscriptionCapabilities struct{plan commercialapp.SubscriptionManagementToCommercialPlanManagementChildCapability}
-func(c subscriptionCapabilities)CommercialPlanManagement()commercialapp.SubscriptionManagementToCommercialPlanManagementChildCapability{return c.plan}
+
+import (
+	"fmt"
+	"github.com/hvritual/biz/internal/assembly"
+	commercialapp "github.com/hvritual/biz/internal/commercial/application"
+	"github.com/hvritual/biz/internal/commercial/application/subscriptionmanagement"
+	commercialpersistence "github.com/hvritual/biz/internal/commercial/infrastructure/persistence"
+)
+
+func (factory applicationFactories) BuildCommercialSubscriptionManagement(dependencies assembly.CommercialSubscriptionManagementDependencies) (commercialapp.SubscriptionManagementApplication, error) {
+	if dependencies.CommercialPlanManagement == nil {
+		return nil, fmt.Errorf("bizruntime: commercial plan management dependency is required")
+	}
+	return subscriptionmanagement.Build(commercialpersistence.NewSubscriptionRepositoryFactory(), subscriptionCapabilities{plan: dependencies.CommercialPlanManagement})
+}
+
+type subscriptionCapabilities struct {
+	plan commercialapp.SubscriptionManagementToCommercialPlanManagementChildCapability
+}
+
+func (c subscriptionCapabilities) CommercialPlanManagement() commercialapp.SubscriptionManagementToCommercialPlanManagementChildCapability {
+	return c.plan
+}
