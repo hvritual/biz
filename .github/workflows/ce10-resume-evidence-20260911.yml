@@ -1,0 +1,68 @@
+name: CE-10 resume evidence
+on:
+  push:
+    branches: [control/ce10-delivery-20260910]
+    paths: ['.github/workflows/ce10-resume-evidence-20260911.yml']
+permissions: {contents: write}
+concurrency: {group: ce10-resume-evidence, cancel-in-progress: false}
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TARGET_SHA: 71783381b60e16221aa84029d83b7614cb7a4c2f
+      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ env.TARGET_SHA }}', path: biz, fetch-depth: 0, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: control/ce10-delivery-20260910, path: control, persist-credentials: true}
+      - id: lock
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/ce10-resume"
+          git -C biz archive HEAD -o "$RUNNER_TEMP/ce10-resume/biz-source.tar"
+          git -C control archive HEAD -o "$RUNNER_TEMP/ce10-resume/control-source.tar"
+          git -C biz rev-parse HEAD > "$RUNNER_TEMP/ce10-resume/source.txt"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Execute existing candidate tests and integration compilation
+        working-directory: biz
+        shell: bash
+        run: |
+          set +e
+          go test -timeout=5m -count=1 -json ./... > "$RUNNER_TEMP/ce10-resume/all.jsonl" 2>&1
+          a=$?
+          go test -timeout=5m -count=1 -tags=integration ./integration -run '^$' > "$RUNNER_TEMP/ce10-resume/integration-compile.log" 2>&1
+          b=$?
+          printf '{"unit_exit_code":%s,"integration_compile_exit_code":%s}\n' "$a" "$b" > "$RUNNER_TEMP/ce10-resume/results.json"
+          test "$a" = 0 && test "$b" = 0
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        id: evidence
+        if: always()
+        with: {name: 'ce10-resume-${{ env.TARGET_SHA }}', path: '${{ runner.temp }}/ce10-resume', retention-days: 30, if-no-files-found: error}
+      - name: Publish bounded readback manifest only
+        if: always() && steps.evidence.outcome == 'success'
+        working-directory: control
+        env:
+          ARTIFACT_ID: '${{ steps.evidence.outputs.artifact-id }}'
+          ARTIFACT_DIGEST: '${{ steps.evidence.outputs.artifact-digest }}'
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])/'ce10-resume'
+          result=json.loads((root/'results.json').read_text()) if (root/'results.json').exists() else {'compilation':'NOT_RUN'}
+          result.update(candidate=os.environ['TARGET_SHA'],run_id=os.environ['GITHUB_RUN_ID'],artifact_id=os.environ['ARTIFACT_ID'],artifact_digest=os.environ['ARTIFACT_DIGEST'])
+          destination=pathlib.Path('.ce10/resume-20260911.json');destination.parent.mkdir(exist_ok=True)
+          destination.write_text(json.dumps(result,indent=2)+'\n')
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .ce10/resume-20260911.json
+          git commit -m 'control(ce-10): record existing-candidate compile results and artifact identity'
+          git push origin HEAD:control/ce10-delivery-20260910
