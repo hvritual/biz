@@ -1,0 +1,49 @@
+name: CE-08 subscription hardening
+on:
+  push:
+    branches: [control/ce08-completion-20260910]
+    paths: ['.github/workflows/ce08-subscription-hardening.yml']
+permissions:
+  contents: write
+jobs:
+  harden:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: fix/ce-08-complete, path: biz, fetch-depth: 0, persist-credentials: true}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: 33b98ceba57494abda2299e4f0290a5651dab4bc, path: yunka.io, persist-credentials: false}
+      - id: lock
+        shell: bash
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Apply exact service hardening
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('internal/commercial/application/subscriptionmanagement/internal/usecase/service.go')
+          s=p.read_text()
+          old='''\telig, e := s.capabilities.CommercialPlanManagement().CheckPlanEligibility(ctx, &v1.CheckPlanEligibilityRequest{PlanCode: r.PlanCode, Version: r.PlanVersion, SalesScope: r.SalesScope})\n\tif e != nil || elig == nil || !elig.Eligible {\n\t\treturn nil, exposed(subscription.ErrNoEligibleDefault)\n\t}\n'''
+          new='''\teligibilityScope := r.SalesScope\n\tif eligibilityScope == "*" {\n\t\t// Wildcard rules are allowed only when the referenced immutable plan is\n\t\t// itself globally applicable. Eligibility still receives a concrete scope.\n\t\teligibilityScope = "default"\n\t}\n\telig, e := s.capabilities.CommercialPlanManagement().CheckPlanEligibility(ctx, &v1.CheckPlanEligibilityRequest{PlanCode: r.PlanCode, Version: r.PlanVersion, SalesScope: eligibilityScope})\n\tif e != nil || elig == nil || !elig.Eligible || elig.Version == nil {\n\t\treturn nil, exposed(subscription.ErrNoEligibleDefault)\n\t}\n\tif r.SalesScope == "*" {\n\t\tterms := elig.Version.GetTerms()\n\t\tif terms == nil || len(terms.GetSalesScope()) != 1 || terms.GetSalesScope()[0] != "*" {\n\t\t\treturn nil, exposed(subscription.ErrNoEligibleDefault)\n\t\t}\n\t}\n'''
+          if old not in s: raise SystemExit('rule eligibility anchor missing')
+          s=s.replace(old,new,1)
+          old='''\tif r == nil || r.RequestId == "" || r.TenantId == "" || (r.SalesScope != "*" && !subscription.ValidCode(r.SalesScope)) {\n'''
+          new='''\tif r == nil || r.RequestId == "" || r.TenantId == "" || !subscription.ValidCode(r.SalesScope) {\n'''
+          if old not in s: raise SystemExit('bootstrap scope validation anchor missing')
+          p.write_text(s.replace(old,new,1))
+          PY
+          gofmt -w internal/commercial/application/subscriptionmanagement/internal/usecase/service.go
+          go test ./internal/commercial/application/subscriptionmanagement/... ./internal/commercial/domain/subscription
+          git diff --check
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add internal/commercial/application/subscriptionmanagement/internal/usecase/service.go
+          git commit -m 'fix(ce-08): validate global fallback plans against concrete scope'
+          git push origin HEAD:fix/ce-08-complete
