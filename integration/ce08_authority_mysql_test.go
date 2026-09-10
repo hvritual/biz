@@ -105,9 +105,10 @@ func TestCE08MySQLNoConfiguredDefaultFailsClosed(t *testing.T) {
 	if r.err != nil || r.status == http.StatusOK {
 		t.Fatalf("no default: %+v", r)
 	}
-	if !strings.Contains(string(r.body), "NO_ELIGIBLE_DEFAULT") {
+	if r.status != http.StatusBadRequest || strings.TrimSpace(string(r.body)) != "application request failed" {
 		t.Fatalf("wrong failure: %s", r.body)
 	}
+	ce08RPCError(t, e, id, "o-"+id, id, "default", codes.FailedPrecondition, "SUBSCRIPTION_NO_ELIGIBLE_DEFAULT")
 	ce08Unchanged(t, e, before, receipts, grants)
 }
 func TestCE08MySQLCorruptAuthorityCannotSilentlyFallBack(t *testing.T) {
@@ -227,16 +228,17 @@ func TestCE08MySQLBusinessKeyConvergesAcrossRuntimeInstances(t *testing.T) {
 	}
 	message.Name = "changed payload"
 	r := b126PostProto(other.base, "/v1/tenants", other.token, "fresh-key-"+id, message)
-	if r.err != nil || r.status != http.StatusConflict {
+	if r.err != nil || r.status != http.StatusBadRequest {
 		t.Fatalf("business payload conflict=%d %v %s", r.status, r.err, r.body)
 	}
+	ce08RPCError(t, other, "changed payload", owner, id, "default", codes.Aborted, "TENANT_CREATION_REQUEST_CONFLICT")
 }
 func TestCE08MySQLTransportKeyCannotBindAnotherRequest(t *testing.T) {
 	e := ce08New(t)
 	id := ce04Random(t)
 	created := ce08Tenant(t, e.createTenant(id, id, "o-"+id, "default"))
 	r := b126PostProto(e.base, "/v1/tenants", e.token, id, &accessv1.CreateTenantRequest{Name: id, OwnerUserId: "o-" + id, OwnerEmail: "o-" + id + "@example.invalid", RequestId: "different-" + id, SalesScope: "default"})
-	if r.err != nil || r.status != http.StatusConflict {
+	if r.err != nil || r.status != http.StatusBadRequest {
 		t.Fatalf("transport key rebound=%d %v %s", r.status, r.err, r.body)
 	}
 	if e.getSubscription(created.Id).EntitlementSourceVersion != 1 {
@@ -361,4 +363,21 @@ func TestCE08PersistenceAfterRestart(t *testing.T) {
 	if err := e.db.Table("biz_tenants").Where("name=?", saved.Request.Name).Count(&n).Error; err != nil || n != 1 {
 		t.Fatalf("restart duplicate=%d %v", n, err)
 	}
+}
+
+func ce08RPCError(t *testing.T, e *ce08Environment, name, owner, requestID, scope string, want codes.Code, reason string) {
+	t.Helper()
+	before := ce08Snapshot(t, e.db)
+	receipts := ce08Count(t, e, "biz_tenant_creation_receipts")
+	grants := ce08Count(t, e, "biz_permission_grants")
+	conn, err := grpc.DialContext(context.Background(), e.grpcAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	_, err = accessv1.NewTenantLifecycleApplicationClient(conn).CreateTenant(e.ctx(), &accessv1.CreateTenantRequest{Name: name, OwnerUserId: owner, OwnerEmail: owner + "@example.invalid", RequestId: requestID, SalesScope: scope})
+	if status.Code(err) != want || status.Convert(err).Message() != reason {
+		t.Fatalf("RPC error=%v want=%s/%s", err, want, reason)
+	}
+	ce08Unchanged(t, e, before, receipts, grants)
 }

@@ -29,6 +29,7 @@ type ce08Environment struct {
 	db            *gorm.DB
 	token         string
 	base          string
+	grpcAddress   string
 	plans         commercialv1.PlanManagementApplicationClient
 	subscriptions commercialv1.SubscriptionManagementApplicationClient
 }
@@ -52,6 +53,7 @@ func ce08OnDB(t *testing.T, db *gorm.DB) *ce08Environment {
 		db:            db,
 		token:         token,
 		base:          "http://" + started.HTTPAddress(),
+		grpcAddress:   started.GRPCAddress(),
 		plans:         commercialv1.NewPlanManagementApplicationClient(conn),
 		subscriptions: commercialv1.NewSubscriptionManagementApplicationClient(conn),
 	}
