@@ -1,67 +1,124 @@
-name: CoffeeLink customer UI review workspace
+name: CoffeeLink customer UI browser review
 on:
   push:
     branches: [build/coffeelink-customer-review]
-    paths: ['.github/workflows/coffeelink-customer-review.yml']
+    paths: ['.github/workflows/coffeelink-customer-review.yml', '.github/customer-review-transfer/replacements.json', '.github/customer-review-transfer/additions.json']
 permissions:
   contents: read
+  actions: read
+concurrency:
+  group: coffeelink-customer-review
+  cancel-in-progress: true
 jobs:
-  source:
+  review:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 911ab19122ec009de8028fdc4b293b1358127be1
           fetch-depth: 0
           persist-credentials: false
-      - name: Restore only the fixed baseline frontend
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore and verify pinned source, then customer implementation
         shell: bash
         run: |
           python3 - <<'PY'
           import base64, hashlib, json, lzma
           from pathlib import Path
-          root = Path('.github/coffeelink-transfer')
-          packed = base64.b64decode(''.join((root / f'part-{i}.b64').read_text() for i in range(5)), validate=True)
-          assert hashlib.sha256(packed).hexdigest() == '6fa5c3f6b57d58a0a72a9b0ca0786b309fdce90909cfb4f03301cc2e5e5f3164'
-          files = json.loads(lzma.decompress(packed))
-          def write_files(data):
+          def unpack(root, count, expected):
+              packed = base64.b64decode(''.join((root / f'part-{i}.b64').read_text() for i in range(count)), validate=True)
+              assert hashlib.sha256(packed).hexdigest() == expected, str(root)
+              files = json.loads(lzma.decompress(packed))
+              assert isinstance(files, dict) and len(files) <= 250
+              return files
+          def write_files(data, baseline=False):
               for name, value in data.items():
-                  path = Path(name)
-                  assert not path.is_absolute() and '..' not in path.parts
-                  assert name.startswith('web/') or name == '.github/workflows/coffeelink-web.yml'
-                  assert path.suffix.lower() not in ('.ttf', '.otf', '.woff', '.woff2')
-                  path.parent.mkdir(parents=True, exist_ok=True)
-                  if path.suffix in ('.png', '.webp'):
-                      path.write_bytes(base64.b64decode(value, validate=True))
-                  else:
-                      path.write_text(value, encoding='utf-8')
+                  p = Path(name)
+                  assert not p.is_absolute() and '..' not in p.parts
+                  assert name.startswith('web/') or (baseline and name == '.github/workflows/coffeelink-web.yml')
+                  assert p.suffix.lower() not in ('.ttf','.otf','.woff','.woff2')
+                  assert 'node_modules' not in p.parts and 'dist' not in p.parts
+                  p.parent.mkdir(parents=True, exist_ok=True)
+                  if baseline and p.suffix in ('.png','.webp'): p.write_bytes(base64.b64decode(value,validate=True))
+                  else: p.write_text(value,encoding='utf-8')
+          def edits(path):
+              if not path.exists(): return
+              for name, changes in json.loads(path.read_text()).items():
+                  p = Path(name)
+                  assert name.startswith('web/') and '..' not in p.parts
+                  text = p.read_text(encoding='utf-8')
+                  for before, after in changes:
+                      assert text.count(before) == 1, f'Patch must match once: {name}'
+                      text = text.replace(before,after,1)
+                  p.write_text(text,encoding='utf-8')
+          root=Path('.github/coffeelink-transfer')
+          write_files(unpack(root,5,'6fa5c3f6b57d58a0a72a9b0ca0786b309fdce90909cfb4f03301cc2e5e5f3164'),True)
+          if (root/'patches.json').exists(): write_files(json.loads((root/'patches.json').read_text()),True)
+          edits(root/'replacements.json')
+          original={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(Path('web').rglob('*')) if p.is_file()}
+          root=Path('.github/customer-review-transfer')
+          files=unpack(root,7,'f3cb00f64354f89d964909f2c6b6d285f9221cd88840a9f916d6eadd10c74cc7')
           write_files(files)
-          patch = root / 'patches.json'
-          if patch.exists(): write_files(json.loads(patch.read_text()))
-          changes = root / 'replacements.json'
-          if changes.exists():
-              for name, edits in json.loads(changes.read_text()).items():
-                  path = Path(name)
-                  assert name.startswith('web/') and '..' not in path.parts
-                  text = path.read_text(encoding='utf-8')
-                  for before, after in edits:
-                      assert text.count(before) == 1, name
-                      text = text.replace(before, after, 1)
-                  path.write_text(text, encoding='utf-8')
-          manifest = {str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(Path('web').rglob('*')) if p.is_file()}
-          Path('/tmp/restored-web-sha256.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False))
-          print('Restored files:', len(manifest))
+          if (root/'additions.json').exists(): write_files(json.loads((root/'additions.json').read_text()))
+          edits(root/'replacements.json')
+          current={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(Path('web').rglob('*')) if p.is_file()}
+          preserved=[name for name in original if ('/layout/' in name and not name.endswith('ModulePanel.vue')) or name.startswith('web/src/components/ui/') or name.endswith('/base.css') or name.endswith('/tokens.css')]
+          for name in preserved: assert original[name]==current[name], f'Shared component modified: {name}'
+          Path('/tmp/customer-source-manifest.json').write_text(json.dumps({'base':'911ab19122ec009de8028fdc4b293b1358127be1','original':original,'current':current,'preserved':preserved},ensure_ascii=False,indent=2))
+          print('Customer source files:',len(files),'unchanged shared files:',len(preserved))
           PY
-      - name: Archive pinned source and local git history
+      - name: Restore exact original dependency lock
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git bundle create /tmp/biz-baseline.bundle HEAD
-          tar --exclude=.git --exclude=node_modules -czf /tmp/biz-restored-source.tgz .
+          gh run download 34242115147 -n coffeelink-web-build-environment -D /tmp/coffee-env
+          tar -xzf /tmp/coffee-env/coffeelink-web-build-environment.tgz -C web package-lock.json
+          echo '461e6242d916ddc9058be6ad7511b12b9f72eab4d915cef063f7cf40adb38869  web/package-lock.json' | sha256sum -c -
+          tar --exclude=node_modules --exclude=dist --exclude=screenshots --exclude=test-results --exclude=playwright-report -czf /tmp/customer-review-source.tgz web
+      - name: Install exact dependencies
+        working-directory: web
+        run: npm ci
+      - name: Type, lint, component boundaries, unit tests and production build
+        working-directory: web
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run check 2>&1 | tee /tmp/customer-check.log
+      - name: Install cloud Chromium and CJK runtime fonts
+        working-directory: web
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Browser regression, 38 design states and responsive screenshots
+        working-directory: web
+        shell: bash
+        env:
+          CI: 'true'
+        run: |
+          set -o pipefail
+          npm run test:e2e 2>&1 | tee /tmp/customer-e2e.log
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: coffeelink-pinned-review-source
+          name: coffeelink-customer-browser-review
           path: |
-            /tmp/biz-baseline.bundle
-            /tmp/biz-restored-source.tgz
-            /tmp/restored-web-sha256.json
-          retention-days: 3
+            web/screenshots/
+            web/playwright-report/
+            web/test-results/
+            /tmp/customer-check.log
+            /tmp/customer-e2e.log
+            /tmp/customer-source-manifest.json
+            !web/playwright-report/**/*.ttf
+            !web/playwright-report/**/*.otf
+            !web/playwright-report/**/*.woff
+            !web/playwright-report/**/*.woff2
+          retention-days: 10
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coffeelink-customer-source-review
+          path: /tmp/customer-review-source.tgz
+          retention-days: 7
