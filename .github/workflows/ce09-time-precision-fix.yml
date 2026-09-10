@@ -1,0 +1,101 @@
+name: CE-09 time precision fix
+on:
+  push:
+    branches: [control/ce09-delivery-20260910]
+    paths: ['.github/workflows/ce09-time-precision-fix.yml']
+permissions: {contents: write}
+concurrency: {group: ce09-product-writer, cancel-in-progress: false}
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      BASE_SHA: fed9051bae618ab28df200038682f808c82e854b
+      PYTHONDONTWRITEBYTECODE: '1'
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/ce09_precision?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env: {MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: ce09_precision}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent" --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: feat/ce-09-subscription-changes, path: biz, fetch-depth: 0, persist-credentials: true}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, persist-credentials: false}
+      - id: lock
+        shell: bash
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "p=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "s=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/ce09"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Locked generators
+        env: {R: '${{ steps.lock.outputs.p }}', S: '${{ steps.lock.outputs.s }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 20 "https://github.com/protocolbuffers/protobuf/releases/download/v${R}/protoc-${R}-linux-x86_64.zip" -o "$RUNNER_TEMP/p.zip"
+          echo "$S  $RUNNER_TEMP/p.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/p.zip" -d "$RUNNER_TEMP/protoc"
+          make -C yunka.io rpc-tools
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+          echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
+      - name: Repair precision while retaining all failing scenarios
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 41172a4499fda050f0af79b40cefc943d167909e
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('internal/commercial/domain/subscriptionchange/model.go');s=p.read_text();anchor='func (i Input) Validate() error {';assert s.count(anchor)==1
+          s=s.replace(anchor,'''// CanonicalTime rounds upward to a database microsecond. A requested
+          // future activation can never be moved earlier by precision reduction.
+          func CanonicalTime(t time.Time) time.Time {
+            t=t.UTC()
+            if remainder:=t.Nanosecond()%1000;remainder!=0 {t=t.Add(time.Duration(1000-remainder))}
+            return t
+          }
+          func (i Input) Validate() error {
+            if i.EffectiveAt!=nil && (i.EffectiveAt.IsZero() || i.EffectiveAt.Year()<1970 || i.EffectiveAt.Year()>9999 || i.EffectiveAt.Nanosecond()%1000!=0) {return ErrInvalid}
+          '''.replace('\n          ','\n'))
+          p.write_text(s)
+          p=Path('internal/commercial/application/subscriptionchanges/internal/usecase/service.go');s=p.read_text();assert s.count('u := v.UTC()')==1;p.write_text(s.replace('u := v.UTC()','u := change.CanonicalTime(v)'))
+          p=Path('integration/ce09_safety_mysql_test.go');s=p.read_text();old='time.Now().UTC().Add(-time.Second).Format(time.RFC3339Nano)';assert s.count(old)==1;p.write_text(s.replace(old,'time.Now().UTC().Add(-time.Second).Truncate(time.Microsecond).Format(time.RFC3339Nano)'))
+          p=Path('internal/commercial/domain/subscriptionchange/ce09_test.go');s=p.read_text();s+='''
+          func TestCE09CanonicalDatabaseTimeNeverActivatesEarly(t *testing.T) {
+            raw:=time.Date(2026,9,10,12,30,59,999999999,time.FixedZone("offset",7200))
+            canonical:=CanonicalTime(raw)
+            if canonical.Before(raw) || canonical.Nanosecond()%1000!=0 || !canonical.Equal(raw.Add(time.Nanosecond)) || canonical.Location()!=time.UTC {t.Fatal("precision rounding moved activation earlier",raw,canonical)}
+            if !CanonicalTime(canonical).Equal(canonical) {t.Fatal("canonical precision is not stable")}
+            i:=Input{TenantID:"t",RequestID:"r",Action:Switch,TargetPlanCode:"plan",TargetPlanVersion:1,EffectiveAt:&raw,Reason:"test"}
+            if !errors.Is(i.Validate(),ErrInvalid){t.Fatal("domain accepted noncanonical source time")}
+            i.EffectiveAt=&canonical;if err:=i.Validate();err!=nil{t.Fatal(err)}
+          }
+          '''.replace('\n          ','\n');p.write_text(s)
+          PY
+          gofmt -w internal/commercial/domain/subscriptionchange/model.go internal/commercial/domain/subscriptionchange/ce09_test.go internal/commercial/application/subscriptionchanges/internal/usecase/service.go integration/ce09_safety_mysql_test.go
+          make generate 2>&1 | tee "$RUNNER_TEMP/ce09/repair-generation.log"
+          make commercial-generate 2>&1 | tee "$RUNNER_TEMP/ce09/repair-mapping.log"
+          git diff --check
+          test -z "$(git diff --name-only -- .github/workflows server)"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'fix(ce-09): honor database time precision for requested schedules'
+          git push origin HEAD:feat/ce-09-subscription-changes
+          git rev-parse HEAD > "$RUNNER_TEMP/ce09/candidate.txt"
+          git archive HEAD -o "$RUNNER_TEMP/ce09/biz-source.tar"
+      - name: Reexecute every qualification stage
+        env: {MYSQL_CONTAINER_ID: '${{ job.services.mysql.id }}'}
+        run: bash biz/scripts/ce09_qualify.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce09-precision-${{ github.sha }}', path: '${{ runner.temp }}/ce09', if-no-files-found: error}
