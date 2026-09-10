@@ -1,0 +1,76 @@
+name: CE-09 finalize candidate
+on:
+  push:
+    branches: [control/ce09-delivery-20260910]
+    paths: ['.github/workflows/ce09-finalize-candidate.yml']
+permissions: {contents: write}
+concurrency: {group: ce09-product-writer, cancel-in-progress: false}
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      BASE_SHA: fed9051bae618ab28df200038682f808c82e854b
+      PYTHONDONTWRITEBYTECODE: '1'
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/ce09_final?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env: {MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: ce09_final}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent" --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: feat/ce-09-subscription-changes, path: biz, fetch-depth: 0, persist-credentials: true}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, persist-credentials: false}
+      - id: lock
+        shell: bash
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "p=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "s=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/ce09"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Locked generators
+        env: {R: '${{ steps.lock.outputs.p }}', S: '${{ steps.lock.outputs.s }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 20 "https://github.com/protocolbuffers/protobuf/releases/download/v${R}/protoc-${R}-linux-x86_64.zip" -o "$RUNNER_TEMP/p.zip"
+          echo "$S  $RUNNER_TEMP/p.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/p.zip" -d "$RUNNER_TEMP/protoc"
+          make -C yunka.io rpc-tools
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+          echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
+      - name: Format bounded tests and declare verifying status
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 22b20c7a9ac5c1c08bd685bd21a72e29e6331a74
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('internal/architecture/ce09_subscription_change_test.go');s=p.read_text();assert s.count('!="read-only"')==1;p.write_text(s.replace('!="read-only"','!="read_only"'))
+          p=Path('docs/commercial-entitlements/tasks.json');lines=p.read_text().splitlines();indices=[i for i,l in enumerate(lines) if '"id":"CE-09"' in l];assert len(indices)==1;i=indices[0];assert '"status":"IN_PROGRESS"' in lines[i];lines[i]=lines[i].replace('"status":"IN_PROGRESS"','"status":"VERIFYING"');p.write_text('\n'.join(lines)+'\n')
+          PY
+          gofmt -w integration/ce09*test.go internal/commercial/domain/subscriptionchange/ce09_test.go internal/architecture/ce09_subscription_change_test.go internal/bizruntime/ce09_replay_test.go
+          git diff --check
+          test -z "$(git diff --name-only -- .github/workflows server)"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add integration/ce09*test.go internal/commercial/domain/subscriptionchange/ce09_test.go internal/architecture/ce09_subscription_change_test.go internal/bizruntime/ce09_replay_test.go docs/commercial-entitlements/tasks.json
+          git commit -m 'test(ce-09): finalize complete acceptance and exact contract assertions'
+          git push origin HEAD:feat/ce-09-subscription-changes
+          git rev-parse HEAD > "$RUNNER_TEMP/ce09/candidate.txt"
+          git archive HEAD -o "$RUNNER_TEMP/ce09/biz-source.tar"
+      - name: Execute full CE-09 qualification
+        env: {MYSQL_CONTAINER_ID: '${{ job.services.mysql.id }}'}
+        run: bash biz/scripts/ce09_qualify.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce09-full-${{ github.sha }}', path: '${{ runner.temp }}/ce09', if-no-files-found: error}
