@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS biz_commercial_provisioning_tasks (
  task_id VARCHAR(64) NOT NULL PRIMARY KEY,
  tenant_id VARCHAR(64) NOT NULL,
- change_id VARCHAR(64) NOT NULL,
+ change_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
  revision BIGINT UNSIGNED NOT NULL,
  state VARCHAR(32) NOT NULL,
  next_attempt_at DATETIME(6) NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS biz_commercial_outbox (
  tenant_id VARCHAR(64) NOT NULL,
  aggregate_id VARCHAR(64) NOT NULL,
  aggregate_version BIGINT UNSIGNED NOT NULL,
- change_id VARCHAR(64) NOT NULL,
+ change_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
  payload_sha256 CHAR(64) NOT NULL,
  payload LONGTEXT NOT NULL,
  state VARCHAR(24) NOT NULL,
