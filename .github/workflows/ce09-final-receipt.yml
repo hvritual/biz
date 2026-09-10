@@ -1,0 +1,28 @@
+name: CE-09 final receipt candidate
+on:
+  push:
+    branches: [control/ce09-delivery-20260910]
+    paths: ['.github/workflows/ce09-final-receipt.yml']
+permissions: {contents: write, actions: read, checks: read}
+jobs:
+  receipt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TARGET_SHA: 0f275c6bfe314ca2a3016a3f02a8cf5cdf284204
+      RECEIPT_BRANCH: docs/ce-09-final-receipt-20260910
+      READBACK_RUN: '34476557299'
+      READBACK_ARTIFACT: '10151878639'
+      READBACK_DIGEST: ee4ee721a05f71b4c99006277dca956b97e56b1466ae3ebd7a79fc5ea853cdc6
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ env.RECEIPT_BRANCH }}', path: biz, fetch-depth: 0, persist-credentials: true}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ github.sha }}', path: control, persist-credentials: false}
+      - name: Reverify main artifacts and construct only truthful final receipt files
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: python3 control/.ce09/final_receipt.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce09-receipt-${{ github.sha }}', path: '${{ runner.temp }}/ce09-receipt', retention-days: 30, if-no-files-found: error}
