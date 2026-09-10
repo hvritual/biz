@@ -1,7 +1,10 @@
 node_modules/
 dist/
-coverage/
-playwright-report/
-test-results/
 *.local
 *.tsbuildinfo
+playwright-report/
+test-results/
+coverage/
+
+screenshots/
+.visual-build.mjs
