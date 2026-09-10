@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "task_id": "CE-08",
+  "classification": "DIAGNOSTIC_ONLY",
+  "result": "REPRODUCED",
+  "business_result": "BLOCKED",
+  "business_qualified": false,
+  "integration_commit": null,
+  "framework_issue": "https://github.com/hvritual/yunka.io/issues/181",
+  "business_pr": "https://github.com/hvritual/biz/pull/38",
+  "business_commit": "96ca815be34ed2eeeaf67b048e04217f72990b18",
+  "control_commit": "a1294eaf1962a73c1c9afbf95a4623d5d3e350e6",
+  "run_id": 34409936724,
+  "run_url": "https://github.com/hvritual/biz/actions/runs/34409936724",
+  "run_started_at_utc": "2026-09-09T22:00:14Z",
+  "run_completed_at_utc": "2026-09-09T22:01:23Z",
+  "go_version": "go1.25.13 linux/amd64",
+  "unique_diagnostic_tests": 2,
+  "diagnostic_test_executions": 4,
+  "cases": [
+    {"name":"TestCE08ReproCrossDomainDAGProducesPackageCycle","application_dag":true,"operation_compile":"PASS","deterministic_generation":true,"generated_package_cycle":true,"go_loader_cycle":true},
+    {"name":"TestCE08ReproOneWayDependencyControl","application_dag":true,"operation_compile":"PASS","deterministic_generation":true,"generated_package_cycle":false,"go_loader_cycle":false}
+  ],
+  "executions": [
+    {
+      "name": "locked",
+      "framework_commit": "6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb",
+      "job_id": 102661771550,
+      "command": "cd yunka.io/pkg && go test ./contract -run '^TestCE08Repro' -count=1 -v",
+      "exit_code": 0,
+      "diagnostic_tests_passed": 2,
+      "go_package_elapsed_seconds": 0.079,
+      "artifact_id": 10126853458,
+      "artifact_zip_sha256": "6b8d9d32916f074bb73b5cf9588b22ec14fbf381f019c806e6b0d20296e29105",
+      "log": "minimal-tests.log",
+      "log_sha256": "0e04682763db6103416b0b8ca46e83ce422faaf98e655282f41eba1d59701344"
+    },
+    {
+      "name": "current-snapshot",
+      "framework_commit": "d6840be86c72ea91b51e7f32f8ed61067bcab643",
+      "job_id": 102661771913,
+      "command": "cd yunka.io/pkg && go test ./contract -run '^TestCE08Repro' -count=1 -v",
+      "exit_code": 0,
+      "diagnostic_tests_passed": 2,
+      "go_package_elapsed_seconds": 0.109,
+      "artifact_id": 10126834978,
+      "artifact_zip_sha256": "4e05149e137b1dc664d461c96a892021dd4ed2bd81bac73887998f7c53599160",
+      "log": "minimal-tests.log",
+      "log_sha256": "cfb06bf5c74ed8f7c42904cc4e7795ef35967ac31847e35c24f17c101c7705d1"
+    }
+  ],
+  "business_recheck": {
+    "command": "cd candidate && go test ./...",
+    "source_unchanged": true,
+    "exit_code": 1,
+    "result": "FAIL",
+    "package_cycle_error": "import cycle not allowed",
+    "additional_failure": "TestPressurePlatformTenantCreateAllowsTenantlessPlatformPrincipal: tenant.create permission mismatch",
+    "artifact_id": 10126853458,
+    "log": "business-tests.log",
+    "log_sha256": "e341017e97d0acca0e789acebbf9e9dc48f70d12eb764627e022e1144d77acc3"
+  },
+  "original_qualification": {
+    "run_id": 34398529621,
+    "job_id": 102624310242,
+    "result": "FAIL",
+    "check_and_generation": "PASS",
+    "go_test_exit_code": 1,
+    "subsequent_race_vet_build": "NOT_RUN"
+  },
+  "limitations": [
+    "Diagnostic success means the defect was reproduced, not that business code passed.",
+    "Isolated go list -e loader fixtures omit external runtime dependencies and are not full compile or MySQL acceptance tests.",
+    "No production framework source changes, no consumer framework upgrade, no CE-08 business integration or deployment.",
+    "Current-snapshot is a fixed commit observation, not a claim about future main heads.",
+    "Artifact retention is 30 days; preserve the fixture, fixed source commits and downloaded evidence independently.",
+    "This document is intentionally not CE-08-verification.json and must not be used as a DONE receipt."
+  ]
+}

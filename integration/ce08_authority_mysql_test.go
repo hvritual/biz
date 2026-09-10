@@ -376,7 +376,7 @@ func ce08RPCError(t *testing.T, e *ce08Environment, name, owner, requestID, scop
 	}
 	defer conn.Close()
 	_, err = accessv1.NewTenantLifecycleApplicationClient(conn).CreateTenant(e.ctx(), &accessv1.CreateTenantRequest{Name: name, OwnerUserId: owner, OwnerEmail: owner + "@example.invalid", RequestId: requestID, SalesScope: scope})
-	if status.Code(err) != want || status.Convert(err).Message() != reason {
+	if status.Code(err) != want || status.Convert(err).Message() != status.Error(want, reason).Error() {
 		t.Fatalf("RPC error=%v want=%s/%s", err, want, reason)
 	}
 	ce08Unchanged(t, e, before, receipts, grants)
