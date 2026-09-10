@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { action, fill, snap, commit, ready, accept, toPending, state } from './customer.helpers'
+import { action, fill, snap, commit, ready, accept, state } from './customer.helpers'
 
 test.use({ viewport: { width: 1536, height: 1024 }, deviceScaleFactor: 2 })
 
@@ -16,7 +16,12 @@ for (const scenario of [
       await accept(page, 'CS-103', ['RUN-103', 'CONF-103'])
     }
     await ready(page, `/customers/work/${scenario.id}`)
-    await toPending(page, scenario.id)
+    const work = (await state(page)).work.find((w: { id: string }) => w.id === scenario.id)
+    if (work.status !== '待验收') {
+      const transition = await action(page, `/customers/work/${scenario.id}`, 'transition')
+      await fill(transition, { status: '待验收', nextAction: '核对已提交的业务证据并验收' })
+      await commit(transition)
+    }
     const d = await action(page, `/customers/work/${scenario.id}`, 'accept')
     for (const id of scenario.evidence) await d.getByRole('checkbox', { name: new RegExp(id) }).check()
     await fill(d, {
@@ -33,7 +38,7 @@ for (const scenario of [
 test('native create work drawer includes customer, responsibility, deadline and acceptance criteria', async ({
   page,
 }) => {
-  const d = await action(page, '/customers/work', 'create-work', 'CUS-0186')
+  const d = await action(page, '/customers/work', 'create-work')
   await fill(d, {
     kind: 'visit',
     customerId: 'CUS-0186',
