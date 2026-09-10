@@ -54,7 +54,7 @@ func Ordered(rules []Rule) []Rule {
 		if out[i].Priority != out[j].Priority {
 			return out[i].Priority > out[j].Priority
 		}
-		if out[i].SalesScope != out[j].SalesScope {
+		if (out[i].SalesScope == "*") != (out[j].SalesScope == "*") {
 			return out[i].SalesScope != "*"
 		}
 		return out[i].RuleID < out[j].RuleID

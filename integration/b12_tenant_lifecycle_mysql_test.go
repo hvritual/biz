@@ -16,6 +16,7 @@ import (
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	"github.com/hvritual/biz/internal/access/ports"
 	"gorm.io/gorm"
+	"yunka.io/framework/core/identity"
 	"yunka.io/framework/execution"
 	"yunka.io/framework/requestscope"
 	"yunka.io/gateway/authz"
@@ -97,7 +98,8 @@ func tenantRoot(t *testing.T, transactions *requestscope.GORMExecutionFactory, o
 	if err != nil {
 		t.Fatal(err)
 	}
-	return ctx, root
+	ctx = identity.WithPrincipal(ctx, identity.Principal{Subject: "b12-root-platform", Authenticated: true})
+	return execution.WithIdempotencyKey(ctx, "b12-root-"+ce04Random(t)), root
 }
 
 func TestB122TenantLifecycleUsesRootMySQLUnitOfWork(t *testing.T) {
@@ -106,7 +108,7 @@ func TestB122TenantLifecycleUsesRootMySQLUnitOfWork(t *testing.T) {
 	name := "B12-rollback-" + fmt.Sprint(time.Now().UnixNano())
 
 	ctx, root := tenantRoot(t, transactions, "tenant.create", execution.TransactionLocal)
-	created, err := service.CreateTenant(ctx, &accessv1.CreateTenantRequest{Name: name, OwnerUserId: "owner-rollback", OwnerEmail: "owner-rollback@example.invalid", RequestId: "b12-root-rollback", SalesScope: "default"})
+	created, err := service.CreateTenant(ctx, &accessv1.CreateTenantRequest{Name: name, OwnerUserId: "owner-rollback", OwnerEmail: "owner-rollback@example.invalid", RequestId: "b12-root-rollback-" + name, SalesScope: "default"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +124,7 @@ func TestB122TenantLifecycleUsesRootMySQLUnitOfWork(t *testing.T) {
 	}
 
 	ctx, root = tenantRoot(t, transactions, "tenant.create", execution.TransactionLocal)
-	created, err = service.CreateTenant(ctx, &accessv1.CreateTenantRequest{Name: name + "-commit", OwnerUserId: "owner-commit", OwnerEmail: "owner-commit@example.invalid", RequestId: "b12-root-commit", SalesScope: "default"})
+	created, err = service.CreateTenant(ctx, &accessv1.CreateTenantRequest{Name: name + "-commit", OwnerUserId: "owner-commit", OwnerEmail: "owner-commit@example.invalid", RequestId: "b12-root-commit-" + name, SalesScope: "default"})
 	if err != nil {
 		t.Fatal(err)
 	}

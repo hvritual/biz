@@ -76,6 +76,9 @@ func (r *subscriptionRepository) Now(ctx context.Context) (time.Time, error) {
 	return consistency.Now(r.tx.WithContext(ctx))
 }
 func (r *subscriptionRepository) LockRules(ctx context.Context) error {
+	if _, e := consistency.LockCatalog(r.tx.WithContext(ctx), false); e != nil {
+		return e
+	}
 	db := r.tx.WithContext(ctx)
 	if e := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&subscriptionRuleLockRow{1}).Error; e != nil {
 		return e
@@ -141,7 +144,7 @@ func (r *subscriptionRepository) SaveRule(ctx context.Context, v subscription.Ru
 }
 func (r *subscriptionRepository) receipt(ctx context.Context, scope, id, kind, fp string) ([]byte, error) {
 	var x subscriptionReceiptRow
-	e := r.tx.WithContext(ctx).Where("scope_id=? AND request_id=? AND kind=?", scope, id, kind).First(&x).Error
+	e := r.tx.WithContext(ctx).Clauses(clause.Locking{Strength: "SHARE"}).Where("scope_id=? AND request_id=? AND kind=?", scope, id, kind).First(&x).Error
 	if errors.Is(e, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

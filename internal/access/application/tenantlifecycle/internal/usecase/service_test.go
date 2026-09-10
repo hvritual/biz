@@ -11,6 +11,7 @@ import (
 	accessapp "github.com/hvritual/biz/internal/access/application"
 	"github.com/hvritual/biz/internal/access/domain"
 	"github.com/hvritual/biz/internal/access/ports"
+	"yunka.io/framework/core/identity"
 	"yunka.io/framework/execution"
 	"yunka.io/framework/requestscope"
 )
@@ -210,7 +211,8 @@ func TestTenantLifecycleStateChangesUseJoinedRootUnitOfWork(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		return ctx
+		ctx = identity.WithPrincipal(ctx, identity.Principal{Subject: "unit-platform", Authenticated: true})
+		return execution.WithIdempotencyKey(ctx, "unit-key")
 	}
 
 	created, err := service.CreateTenant(rootContext("tenant.create"), &accessv1.CreateTenantRequest{Name: "Tenant A", OwnerUserId: "owner-a", OwnerEmail: "owner@example.com", RequestId: "req-tenant-a", SalesScope: "default"})
@@ -252,4 +254,11 @@ func TestTenantLifecycleStateChangesUseJoinedRootUnitOfWork(t *testing.T) {
 	if !errors.Is(err, domain.ErrInvalidTenantTransition) {
 		t.Fatalf("closed activate err=%v", err)
 	}
+}
+
+func (r *memoryTenantRepository) ClaimCreation(context.Context, []string, string) (*domain.Tenant, error) {
+	return nil, nil
+}
+func (r *memoryTenantRepository) CompleteCreation(context.Context, []string, string, domain.Tenant) error {
+	return nil
 }

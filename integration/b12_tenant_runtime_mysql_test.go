@@ -87,7 +87,18 @@ func seedB122DefaultSubscription(t *testing.T, started *bizruntime.Started, toke
 
 	module, err := catalog.GetModule(ctx(), &commercialv1.GetModuleRequest{ModuleCode: "device-operations"})
 	if err != nil {
+		key := "b12-module-create-" + ce04Random(t)
+		module, err = catalog.CreateModule(ctx(), &commercialv1.CreateModuleRequest{RequestId: key, ModuleCode: "device-operations", Name: "device-operations", Reason: "B12 CE08 isolated catalog fixture"})
+	}
+	if err != nil {
 		t.Fatal(err)
+	}
+	if module.GetTechnicalStatus() != commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_READY {
+		key := "b12-module-ready-" + ce04Random(t)
+		module, err = catalog.SetModuleTechnicalStatus(ctx(), &commercialv1.SetModuleTechnicalStatusRequest{RequestId: key, ModuleCode: module.GetModuleCode(), Version: module.GetVersion(), TechnicalStatus: commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_READY, Reason: "B12 CE08 isolated catalog fixture"})
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 	if module.GetSalesStatus() != commercialv1.ModuleSalesStatus_MODULE_SALES_STATUS_SELLABLE {
 		key := "b12-module-sales-" + ce04Random(t)

@@ -78,22 +78,6 @@ func (s *service) PutDefaultSubscriptionRule(ctx context.Context, r *v1.PutDefau
 	if r == nil || !subscription.ValidCode(r.RuleId) || (r.SalesScope != "*" && !subscription.ValidCode(r.SalesScope)) || !subscription.ValidCode(r.PlanCode) || r.PlanVersion == 0 || r.RequestId == "" || strings.TrimSpace(r.Reason) == "" {
 		return nil, exposed(subscription.ErrInvalid)
 	}
-	eligibilityScope := r.SalesScope
-	if eligibilityScope == "*" {
-		// Wildcard rules are allowed only when the referenced immutable plan is
-		// itself globally applicable. Eligibility still receives a concrete scope.
-		eligibilityScope = "default"
-	}
-	elig, e := s.capabilities.CommercialPlanManagement().CheckPlanEligibility(ctx, &v1.CheckPlanEligibilityRequest{PlanCode: r.PlanCode, Version: r.PlanVersion, SalesScope: eligibilityScope})
-	if e != nil || elig == nil || !elig.Eligible || elig.Version == nil {
-		return nil, exposed(subscription.ErrNoEligibleDefault)
-	}
-	if r.SalesScope == "*" {
-		terms := elig.Version.GetTerms()
-		if terms == nil || len(terms.GetSalesScope()) != 1 || terms.GetSalesScope()[0] != "*" {
-			return nil, exposed(subscription.ErrNoEligibleDefault)
-		}
-	}
 	out, e := requestscope.JoinValue(ctx, s.repositories, func(sc *requestscope.View[ports.SubscriptionRepositories]) (subscription.Rule, error) {
 		repo := sc.Repositories().Subscriptions
 		call := sc.Context()
@@ -118,6 +102,28 @@ func (s *service) PutDefaultSubscriptionRule(ctx context.Context, r *v1.PutDefau
 			return subscription.Rule{}, e
 		} else if old.Version != expected {
 			return subscription.Rule{}, subscription.ErrConflict
+		}
+		if !r.Enabled && old.Version > 0 {
+			if old.PlanCode != r.PlanCode || old.PlanVersion != r.PlanVersion || old.SalesScope != r.SalesScope {
+				return subscription.Rule{}, subscription.ErrConflict
+			}
+		} else {
+			eligibilityScope := r.SalesScope
+			if eligibilityScope == "*" {
+				// Wildcard rules are allowed only when the referenced immutable plan is
+				// itself globally applicable. Eligibility still receives a concrete scope.
+				eligibilityScope = "default"
+			}
+			elig, e := s.capabilities.CommercialPlanManagement().CheckPlanEligibility(ctx, &v1.CheckPlanEligibilityRequest{PlanCode: r.PlanCode, Version: r.PlanVersion, SalesScope: eligibilityScope})
+			if e != nil || elig == nil || !elig.Eligible || elig.Version == nil {
+				return subscription.Rule{}, subscription.ErrNoEligibleDefault
+			}
+			if r.SalesScope == "*" {
+				terms := elig.Version.GetTerms()
+				if terms == nil || len(terms.GetSalesScope()) != 1 || terms.GetSalesScope()[0] != "*" {
+					return subscription.Rule{}, subscription.ErrNoEligibleDefault
+				}
+			}
 		}
 		now, e := repo.Now(call)
 		if e != nil {
@@ -180,6 +186,13 @@ func planSources(tenant, sub string, at time.Time, p *v1.PlanVersionDTO) []entit
 			out = append(out, entitlement.Source{ID: sourceID(sub, m.ModuleCode, "field", f.Key, f.Action), TenantID: tenant, SourceKind: entitlement.PlanSource, ModuleCode: m.ModuleCode, Kind: entitlement.Field, Key: f.Key, Action: f.Action, Effect: eff, EffectiveAt: at, Reason: "base subscription " + sub, ActorID: "system:subscription", Version: 1})
 		}
 	}
+	if p.Terms.ValidityMode == "fixed_days" {
+		expires := at.AddDate(0, 0, int(p.Terms.ValidityDays))
+		for i := range out {
+			expiry := expires
+			out[i].ExpiresAt = &expiry
+		}
+	}
 	return out
 }
 func (s *service) BootstrapBaseSubscription(ctx context.Context, r *v1.BootstrapTenantSubscriptionRequest) (*v1.BootstrapTenantSubscriptionResult, error) {
@@ -204,6 +217,12 @@ func (s *service) BootstrapBaseSubscription(ctx context.Context, r *v1.Bootstrap
 			return subscription.Subscription{}, e
 		}
 		if existing, e := repo.GetBase(call, r.TenantId, true); e == nil {
+			if existing.SalesScope != r.SalesScope {
+				return subscription.Subscription{}, subscription.ErrRequestConflict
+			}
+			if e := repo.SaveBootstrapReceipt(call, r.TenantId, r.RequestId, hash, existing); e != nil {
+				return subscription.Subscription{}, e
+			}
 			return existing, nil
 		} else if !errors.Is(e, subscription.ErrNotFound) {
 			return subscription.Subscription{}, e
@@ -219,7 +238,16 @@ func (s *service) BootstrapBaseSubscription(ctx context.Context, r *v1.Bootstrap
 				continue
 			}
 			elig, e := s.capabilities.CommercialPlanManagement().CheckPlanEligibility(ctx, &v1.CheckPlanEligibilityRequest{PlanCode: rule.PlanCode, Version: rule.PlanVersion, SalesScope: r.SalesScope})
-			if e == nil && elig != nil && elig.Eligible && elig.Version != nil {
+			if e != nil {
+				if status.Code(e) == codes.NotFound {
+					continue
+				}
+				return subscription.Subscription{}, e
+			}
+			if elig == nil {
+				return subscription.Subscription{}, errors.New("subscription: missing authoritative eligibility")
+			}
+			if elig.Eligible && elig.Version != nil {
 				chosen = rule
 				pv = elig.Version
 				break
