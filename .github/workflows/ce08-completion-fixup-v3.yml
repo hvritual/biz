@@ -30,7 +30,10 @@ jobs:
         run: |
           set -euo pipefail
           curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 20 "https://github.com/protocolbuffers/protobuf/releases/download/v${R}/protoc-${R}-linux-x86_64.zip" -o "$RUNNER_TEMP/p.zip"
-          echo "$S  $RUNNER_TEMP/p.zip"|sha256sum -c -; unzip -q "$RUNNER_TEMP/p.zip" -d "$RUNNER_TEMP/p"; make -C yunka.io rpc-tools
+          echo "$S  $RUNNER_TEMP/p.zip"|sha256sum -c -
+          unzip -q "$RUNNER_TEMP/p.zip" -d "$RUNNER_TEMP/p"
+          make -C yunka.io rpc-tools
+          echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
       - name: Apply product-only fixup, regenerate and push
         shell: bash
         run: |
@@ -51,12 +54,16 @@ jobs:
           gofmt -w internal/bizruntime/access_skeleton.go internal/bizruntime/subscriptions.go internal/access/application/tenantlifecycle/internal/usecase/service_test.go internal/access/policy/platform_authorization_pressure_test.go internal/commercial/domain/subscription/ce08_test.go
           make generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$RUNNER_TEMP/p/bin/protoc"
           git diff --check
-          git config user.name github-actions[bot]; git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add -A; git commit -m 'fix(ce-08): complete bootstrap wiring and adopt compatible C9 fix'; git push origin HEAD:fix/ce-08-complete
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'fix(ce-08): complete bootstrap wiring and adopt compatible C9 fix'
+          git push origin HEAD:fix/ce-08-complete
       - name: Focused compile and tests
         shell: bash
         run: |
-          set -euo pipefail; cd biz
+          set -euo pipefail
+          cd biz
           make yunka-source-check YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io"
           make check YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$RUNNER_TEMP/p/bin/protoc"
           test -z "$(git status --porcelain)"
