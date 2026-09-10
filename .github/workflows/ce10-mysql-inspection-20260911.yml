@@ -16,7 +16,7 @@ jobs:
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent" --health-interval=5s --health-timeout=5s --health-retries=30
     env:
-      CANDIDATE: 1107846ebda6a05d5d2b157a7cdab5badb0602a9
+      CANDIDATE: 8415ec2c20a38ad435b7ac1a7deb3516aae92f4c
       YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
       YUNKA_TEST_MYSQL_DSN: 'root:root@tcp(127.0.0.1:3306)/biz_ce10_inspection?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true'
       PYTHONDONTWRITEBYTECODE: '1'
@@ -39,6 +39,7 @@ jobs:
         working-directory: biz
         shell: bash
         run: |
+          set +e
           set -uo pipefail
           out="$RUNNER_TEMP/ce10-inspection"
           make yunka-source-check workspace-check > "$out/workspace.log" 2>&1
@@ -49,6 +50,7 @@ jobs:
             "$@" > "$out/$name.jsonl" 2> "$out/$name.stderr"
             echo $? > "$out/$name.exit"
           }
+          run_suite persistence go test -timeout=2m -count=1 -tags=integration -json ./internal/commercial/infrastructure/persistence -run '^TestCE10MySQL'
           run_suite mysql go test -timeout=8m -count=1 -tags=integration -json ./integration -run '^TestCE10MySQL'
           run_suite race go test -timeout=8m -race -count=1 -tags=integration -json ./integration -run '^TestCE10MySQL'
           run_suite regression go test -timeout=8m -count=1 -tags=integration -json ./integration -run '^Test(CE09MySQL|CE08MySQL|CE07MySQL|CE06MySQL|CE05MySQL|CE04MySQL|CE02|B122|B123|B124|B125|B126|AG02OwnerInvariantUsesCurrentReadAfterSnapshot)'
@@ -63,11 +65,16 @@ jobs:
           out=Path(os.environ['RUNNER_TEMP'])/'ce10-inspection'
           result={'candidate':os.environ['CANDIDATE'],'framework':os.environ['YUNKA_SHA'],'run_id':os.environ['GITHUB_RUN_ID'],'suites':{},'commands':{}}
           ok=True
-          for name in ['mysql','race','regression','all']:
-              counts=summarize([json.loads(l) for l in (out/(name+'.jsonl')).read_text().splitlines()])
+          for name in ['persistence','mysql','race','regression','all']:
+              events=[json.loads(l) for l in (out/(name+'.jsonl')).read_text().splitlines()]
               rc=int((out/(name+'.exit')).read_text())
+              try:
+                  counts=summarize(events)
+              except ValueError:
+                  counts={'failed_test_events':[e.get('Test') for e in events if e.get('Action')=='fail' and e.get('Test')], 'package_failures':[e.get('Package') for e in events if e.get('Action')=='fail' and not e.get('Test')], 'passed_test_events':sum(e.get('Action')=='pass' and bool(e.get('Test')) for e in events)}
+                  ok=False
               result['suites'][name]={'exit_code':rc,**counts}
-              ok=ok and rc==0 and counts['leaf_tests']>0 and counts['failed']==0 and counts['skipped']==0
+              ok=ok and rc==0 and counts.get('leaf_tests',0)>0 and counts.get('failed',1)==0 and counts.get('skipped',1)==0
           for name in ['workspace','vet','build']:
               rc=int((out/(name+'.exit')).read_text());result['commands'][name]=rc;ok=ok and rc==0
           result['result']='PASS' if ok else 'FAIL'
