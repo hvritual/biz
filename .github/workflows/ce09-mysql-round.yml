@@ -1,0 +1,58 @@
+name: CE-09 MySQL acceptance round
+on:
+  push:
+    branches: [control/ce09-delivery-20260910]
+    paths: ['.github/workflows/ce09-mysql-round.yml']
+permissions: {contents: write}
+concurrency: {group: ce09-product-writer, cancel-in-progress: false}
+jobs:
+  mysql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      YUNKA_TEST_MYSQL_DSN: 'root:root@tcp(127.0.0.1:3306)/ce09_matrix?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true'
+    services:
+      mysql:
+        image: mysql:8.4
+        env: {MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: ce09_matrix}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent" --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: feat/ce-09-subscription-changes, path: biz, fetch-depth: 0, persist-credentials: true}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: 33b98ceba57494abda2299e4f0290a5651dab4bc, path: yunka.io, persist-credentials: false}
+      - id: lock
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/ce09"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Format test source without relaxing assertions
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('integration/ce09_changes_mysql_test.go');s=p.read_text();s=s.replace(' "github.com/hvritual/biz/internal/commercial/domain/subscription"\n','').replace('var _ = subscription.Base\n','');p.write_text(s)
+          PY
+          gofmt -w integration/ce09*test.go
+          git diff --check
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add integration/ce09*test.go
+          if ! git diff --cached --quiet; then git commit -m 'test(ce-09): format focused MySQL acceptance'; git push origin HEAD:feat/ce-09-subscription-changes; fi
+          git archive HEAD -o "$RUNNER_TEMP/ce09/biz-source.tar"
+          git rev-parse HEAD > "$RUNNER_TEMP/ce09/candidate.txt"
+      - name: Real MySQL change matrix
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test -count=1 -tags=integration -json ./integration -run '^TestCE09MySQL' | tee "$RUNNER_TEMP/ce09/mysql.jsonl"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce09-mysql-${{ github.sha }}', path: '${{ runner.temp }}/ce09', if-no-files-found: error}
