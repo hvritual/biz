@@ -1,0 +1,29 @@
+name: CE-09 final main readback
+on:
+  push:
+    branches: [control/ce09-delivery-20260910]
+    paths: ['.github/workflows/ce09-final-main-readback.yml']
+permissions: {contents: read, actions: read, checks: read}
+jobs:
+  readback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TARGET_SHA: 12f33db5632a81c04b9de7634b5d37baf5a2bb1a
+      REQUIRE_CE09_DONE: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ env.TARGET_SHA }}', path: biz, fetch-depth: 0, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ github.sha }}', path: control, persist-credentials: false}
+      - name: Verify final main qualifiers and actual latest-main completion gates
+        env: {GH_TOKEN: '${{ github.token }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 control/.ce09/readback.py
+          echo 'CE09_FINAL_MAIN_READBACK=PASS'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce09-final-main-readback-${{ env.TARGET_SHA }}', path: '${{ runner.temp }}/ce09-readback', retention-days: 30, if-no-files-found: error}
