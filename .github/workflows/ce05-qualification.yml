@@ -14,7 +14,7 @@ jobs:
     timeout-minutes: 30
     env:
       PYTHONDONTWRITEBYTECODE: '1'
-      YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce05?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
     services:
