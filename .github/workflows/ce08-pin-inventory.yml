@@ -1,0 +1,21 @@
+name: CE-08 framework pin inventory
+on:
+  push:
+    branches: [control/ce08-completion-20260910]
+    paths: ['.github/workflows/ce08-pin-inventory.yml']
+permissions: {contents: read}
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: fix/ce-08-complete, path: biz, persist-credentials: false}
+      - name: List stale Yunka pins
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'STALE_PIN_FILES_BEGIN'
+          grep -RIl --include='*.yml' --include='*.yaml' '6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb' biz/.github/workflows | sort || true
+          echo 'STALE_PIN_FILES_END'
+          echo 'CURRENT_SOURCE_ENV'
+          cat biz/.yunka/source.env
