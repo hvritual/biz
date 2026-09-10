@@ -1,0 +1,328 @@
+{
+  "schema_version": 1,
+  "task_id": "CE-09",
+  "verified_commit": "0f275c6bfe314ca2a3016a3f02a8cf5cdf284204",
+  "result": "PASS",
+  "base_commit": "fed9051bae618ab28df200038682f808c82e854b",
+  "framework_commit": "33b98ceba57494abda2299e4f0290a5651dab4bc",
+  "implementation_pr": 43,
+  "environment": {
+    "executor": "GitHub Actions",
+    "go_version": "1.25.13",
+    "database": "workflow-owned MySQL 8.4",
+    "production_deployed": false
+  },
+  "qualification": {
+    "run_id": 34476521889,
+    "artifact_id": 10151871908,
+    "zip_sha256": "230ace3cbdda36da011e2626b46a74891a31894f0486041f131843834857ec4f",
+    "files_rehashed": 29,
+    "suite_counts_recomputed": 13
+  },
+  "main_readback": {
+    "run_id": 34476557299,
+    "artifact_id": 10151878639,
+    "zip_sha256": "ee4ee721a05f71b4c99006277dca956b97e56b1466ae3ebd7a79fc5ea853cdc6",
+    "workflows": 11,
+    "checks": 11,
+    "result": "PASS",
+    "completed_dependency_rounds": [
+      "python3 docs/commercial-entitlements/tools/check_round.py --task CE-01 --require-main",
+      "python3 docs/commercial-entitlements/tools/check_round.py --task CE-02 --require-main",
+      "python3 docs/commercial-entitlements/tools/check_round.py --task CE-03 --require-main",
+      "python3 docs/commercial-entitlements/tools/check_round.py --task CE-04 --require-main",
+      "python3 docs/commercial-entitlements/tools/check_round.py --task CE-05 --require-main",
+      "python3 docs/commercial-entitlements/tools/check_round.py --task CE-06 --require-main",
+      "python3 docs/commercial-entitlements/tools/check_round.py --task CE-07 --require-main",
+      "python3 docs/commercial-entitlements/tools/check_round.py --task CE-08 --require-main"
+    ]
+  },
+  "runtime": {
+    "run_id": 34476521810,
+    "artifact_id": 10151758290,
+    "zip_sha256": "cbbf983a9de4da7bf3d0636fd1010f5b1c8642f39244ee301cc1bea3cb384edd",
+    "result": {
+      "applications": 11,
+      "routes": 41
+    },
+    "stop": "PASS"
+  },
+  "suites": {
+    "focused": {
+      "leaf_tests": 13,
+      "pass_events": 15,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 2
+    },
+    "mysql": {
+      "leaf_tests": 39,
+      "pass_events": 40,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 0
+    },
+    "race": {
+      "leaf_tests": 39,
+      "pass_events": 40,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 0
+    },
+    "restart-before": {
+      "leaf_tests": 1,
+      "pass_events": 1,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 0
+    },
+    "restart-after": {
+      "leaf_tests": 1,
+      "pass_events": 1,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 0
+    },
+    "b12-mysql": {
+      "leaf_tests": 16,
+      "pass_events": 17,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 0
+    },
+    "ce08-mysql": {
+      "leaf_tests": 34,
+      "pass_events": 35,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 0
+    },
+    "ce07-mysql": {
+      "leaf_tests": 11,
+      "pass_events": 12,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 0
+    },
+    "ce06-mysql": {
+      "leaf_tests": 11,
+      "pass_events": 12,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 0
+    },
+    "ce05-mysql": {
+      "leaf_tests": 5,
+      "pass_events": 5,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 0
+    },
+    "ce04-mysql": {
+      "leaf_tests": 7,
+      "pass_events": 7,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 0
+    },
+    "ce02-mysql": {
+      "leaf_tests": 2,
+      "pass_events": 2,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 0
+    },
+    "all": {
+      "leaf_tests": 191,
+      "pass_events": 207,
+      "failed": 0,
+      "skipped": 0,
+      "no_test_packages": 33
+    }
+  },
+  "checks": [
+    {
+      "command": "go test -timeout=5m -count=1 -json ./internal/commercial/domain/subscriptionchange ./internal/commercial/application/subscriptionchanges/... ./internal/bizruntime ./internal/architecture -run '^TestCE09'",
+      "exit_code": 0,
+      "tests_passed": 13,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / focused.jsonl"
+    },
+    {
+      "command": "go test -timeout=5m -count=1 -tags=integration -json ./integration -run '^TestCE09MySQL'",
+      "exit_code": 0,
+      "tests_passed": 39,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / mysql.jsonl"
+    },
+    {
+      "command": "go test -timeout=5m -race -count=1 -tags=integration -json ./integration -run '^TestCE09MySQL'",
+      "exit_code": 0,
+      "tests_passed": 39,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / race.jsonl"
+    },
+    {
+      "command": "go test -timeout=5m -count=1 -tags=integration -json ./integration -run '^TestCE09PersistenceBeforeRestart$'",
+      "exit_code": 0,
+      "tests_passed": 1,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / restart-before.jsonl"
+    },
+    {
+      "command": "go test -timeout=5m -count=1 -tags=integration -json ./integration -run '^TestCE09PersistenceAfterRestart$'",
+      "exit_code": 0,
+      "tests_passed": 1,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / restart-after.jsonl"
+    },
+    {
+      "command": "go test -timeout=5m -count=1 -tags=integration -json ./integration -run '^Test(B122|B123|B124|B125|B126|AG02OwnerInvariantUsesCurrentReadAfterSnapshot)'",
+      "exit_code": 0,
+      "tests_passed": 16,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / b12-mysql.jsonl"
+    },
+    {
+      "command": "go test -timeout=5m -count=1 -tags=integration -json ./integration -run '^TestCE08MySQL'",
+      "exit_code": 0,
+      "tests_passed": 34,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / ce08-mysql.jsonl"
+    },
+    {
+      "command": "go test -timeout=5m -count=1 -tags=integration -json ./integration -run '^TestCE07MySQL'",
+      "exit_code": 0,
+      "tests_passed": 11,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / ce07-mysql.jsonl"
+    },
+    {
+      "command": "go test -timeout=5m -count=1 -tags=integration -json ./integration -run '^TestCE06MySQL'",
+      "exit_code": 0,
+      "tests_passed": 11,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / ce06-mysql.jsonl"
+    },
+    {
+      "command": "go test -timeout=5m -count=1 -tags=integration -json ./integration -run '^TestCE05MySQL'",
+      "exit_code": 0,
+      "tests_passed": 5,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / ce05-mysql.jsonl"
+    },
+    {
+      "command": "go test -timeout=5m -count=1 -tags=integration -json ./integration -run '^TestCE04MySQL'",
+      "exit_code": 0,
+      "tests_passed": 7,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / ce04-mysql.jsonl"
+    },
+    {
+      "command": "go test -timeout=5m -count=1 -tags=integration -json ./integration -run '^TestCE02'",
+      "exit_code": 0,
+      "tests_passed": 2,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / ce02-mysql.jsonl"
+    },
+    {
+      "command": "go test -timeout=5m -count=1 -json ./...",
+      "exit_code": 0,
+      "tests_passed": 191,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / all.jsonl"
+    },
+    {
+      "command": "make yunka-source-check workspace-check",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / resolution.log"
+    },
+    {
+      "command": "make check",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / check-before.log"
+    },
+    {
+      "command": "make generate && git diff --exit-code && test -z \"$(git status --porcelain)\"",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / generate-1.log"
+    },
+    {
+      "command": "make generate && git diff --exit-code && test -z \"$(git status --porcelain)\"",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / generate-2.log"
+    },
+    {
+      "command": "make check",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / check-after.log"
+    },
+    {
+      "command": "go vet ./...",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / vet.log"
+    },
+    {
+      "command": "go build ./...",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / build.log"
+    },
+    {
+      "command": "python3 docs/commercial-entitlements/tools/check_plan.py",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / plan.log"
+    },
+    {
+      "command": "python3 -m unittest discover -s docs/commercial-entitlements/tools -p 'test_*.py' -v",
+      "exit_code": 0,
+      "tests_passed": 8,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / plan-tests.log"
+    },
+    {
+      "command": "python3 -m unittest discover -s scripts -p 'test_ce04_runtime_closure.py' -v",
+      "exit_code": 0,
+      "tests_passed": 25,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / runtime-gate-tests.log"
+    },
+    {
+      "command": "python3 -m unittest discover -s scripts -p 'test_ce03_*.py' -v",
+      "exit_code": 0,
+      "tests_passed": 6,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / evidence-tests.log"
+    },
+    {
+      "command": "scripts/ce09_qualify.sh: docker restart \"$MYSQL_CONTAINER_ID\"; verify health and changed StartedAt",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "GitHub Actions run 34476521889 / artifact 10151871908 / restart.log"
+    }
+  ],
+  "sha256": {
+    "check-before.log": "1bbd4d2f4c48551ac1e45a4d311babacd228944d66bf5aea24e131fae9d7d5b0",
+    "biz-source.tar": "d07400fb081bdf37909239b5390e12b7aceeb60d1384070ab9319803fc78c2ee",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ce07-mysql.jsonl": "6664276e87fc5f6908d01eea7acd52f2fee83e93e264acfc6099768a8fe6b4c2",
+    "ce02-mysql.jsonl": "940b158378cb006ee2ba3870526871523878fd0f957280d95a594711401d0e95",
+    "plan.log": "f76d92775a1a0003a05cae12c6d6a95bdcffdbfba598b943416d76789a55043e",
+    "ce06-mysql.jsonl": "96439c8cbaf986e4580316a74c9e05162e1c3bee9cb2a8ecd6610335f42c1c62",
+    "generate-2.log": "b829bba983bd950a6bcf2390c06a84ec51980bfe63cff5f8b449b2250180f3c7",
+    "ce05-mysql.jsonl": "7c7979556a8b1e03bd6c2cedf70ea4f26e35fd5b6cc999ff2d81ae69cac07d4e",
+    "restart-before.jsonl": "524482f65b50162a904c6cf877e4deaf8e04a5c3d3d384eb610f9c8e0c8f9a1c",
+    "generate-1.log": "42e8f0789b7feb6f044ee2fa80f27cc570fe808ebb766fd03350e46933b67e1a",
+    "resolution.log": "cf8dd4afeafc100da6d8940beff9d16c9eb08469227f48ae4851dba819b4d45d",
+    "check-after.log": "4a74a68602aa03ebb6b8eacc33ce9a34917d720b3570b2645ba94e6ed62bc1ef",
+    "restart-receipt.json": "3e221fdb85aed387ea44e0677fff828b37826e6dbc9b5afc5a0ac478171682dd",
+    "race.jsonl": "172d21f32b6ef2befdd966b519d7913d17ce59e96644854ec22663cf4d10c6d7",
+    "runtime-gate-tests.log": "fb4d0f7e6c1f0d24bc0998ba8c0277da6542dd2fa1ba8fa271c085b93164db30",
+    "baseline.json": "95d2493132e77612b9fe7915408a23f34bf58cc1bea089e875f5e6b2ff829fea",
+    "focused.jsonl": "9fd2a89d90c9d5a97ec762179d05b290b16bdd418201076641b22df779e4adc5",
+    "ce08-mysql.jsonl": "862c6630fb33fa410af899577d7bc8e08e9ab60f6974029f9a5963e733a4561c",
+    "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "mysql.jsonl": "4994b8cba36e440886b5ff5d05999ce2caaa8a2f44d073c09352940c128f735d",
+    "evidence-tests.log": "bc746fec2ec628264947a73e40b73c9687b3125ce6a28b52fe0d2f8d82d5ccd7",
+    "b12-mysql.jsonl": "90731697897bea350772b5241d754c6d1ca5b29292f3e95e30e73cc28e33bf4c",
+    "plan-tests.log": "f6b0f9c63f85c4b7b67ba9f4dd3fab65951276aa9d3ed649a184d8deb2705145",
+    "ce04-mysql.jsonl": "e2cdd03cf6e802101a3e7ec65c614b85fd93556c62ace9ca46a68aab482655b4",
+    "restart.log": "edd6d42d55847e248420f279ae7e9d6c8bf6f9b388d9421909b58e1f0aada738",
+    "all.jsonl": "0a6864e6d8c61024dd1d1c888f0ce51e87dbf78657572ed124106f70b2697c78",
+    "sources.txt": "f974908567ea4c0cbb4a677325062fb1acc15d40876e6eecc0d5bf813d910ffa",
+    "restart-after.jsonl": "c5fb1506b0a4a0eb3d7050f257d322f62c9c737bbfee923e9ce81b2409cb3473"
+  },
+  "counting_note": "Leaf tests and parent pass events are distinguished. Suites overlap; never sum them as total unique tests. No-test packages are separate.",
+  "receipt_boundary": "Original business qualification remains VERIFYING/QUALIFIED_NOT_DONE. Final receipt-main qualification and actual latest-main --require-main must be observed separately in this same round; no future PASS or self-referencing receipt SHA is asserted."
+}
