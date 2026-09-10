@@ -46,6 +46,18 @@ test('collapse and expand preserve working navigation', async ({ page }) => {
   await page.getByRole('button', { name: '展开一级菜单', exact: true }).click()
   expect((await page.locator('.primary-nav').boundingBox())!.width).toBe(192)
 })
+test('hovering a module navigation item opens its side menu', async ({ page }) => {
+  await ready(page)
+  await page.locator('[data-module="devices"]').hover()
+  await expect(page.locator('.module-panel')).toBeVisible()
+  await expect(page.locator('.module-panel')).toContainText('设备管理')
+})
+test('module menu close button closes the side menu', async ({ page }) => {
+  await ready(page)
+  await openMenu(page)
+  await page.getByRole('button', { name: '关闭模块菜单', exact: true }).click()
+  await expect(page.locator('.module-panel')).toHaveCount(0)
+})
 test('filters, empty state, pagination and current-page selection work', async ({ page }) => {
   await ready(page)
   await expect(page.locator('.member-table tbody tr')).toHaveCount(10)

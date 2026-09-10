@@ -60,20 +60,13 @@ onBeforeUnmount(() => {
 })
 </script>
 <template>
-  <div
-    class="app-shell"
-    :class="{ collapsed: ui.collapsed, 'module-open': expanded, 'mobile-nav-open': ui.mobileOpen }"
-    data-business-ui
-  >
-    <AppHeader /><button
-      v-if="expanded || ui.mobileOpen"
-      class="navigation-scrim"
-      aria-label="关闭悬浮菜单"
-      tabindex="-1"
-      @click="ui.closeMenu()"
-    />
+  <div class="app-shell" :class="{ collapsed: ui.collapsed, 'module-open': expanded, 'mobile-nav-open': ui.mobileOpen }"
+    data-business-ui>
+    <AppHeader /><button v-if="expanded || ui.mobileOpen" class="navigation-scrim" aria-label="关闭悬浮菜单" tabindex="-1"
+      @click="ui.closeMenu()" />
     <aside ref="frame" class="side-frame" :class="{ joined: expanded }">
-      <PrimaryNavigation /><ModulePanel v-if="ui.module" />
+      <PrimaryNavigation />
+      <ModulePanel v-if="ui.module" />
     </aside>
     <main class="main-content" :inert="expanded || ui.mobileOpen" data-testid="main-content">
       <div v-if="!store.previewMode" class="card panel-pad">
@@ -84,29 +77,31 @@ onBeforeUnmount(() => {
       </div>
       <RouterView v-else :key="store.tenantId" />
     </main>
-    <Teleport to="body"
-      ><div v-if="ui.notice" role="status" :class="['toast', ui.noticeTone]">
-        <AppIcon
-          :name="ui.noticeTone === 'success' ? 'success' : ui.noticeTone === 'error' ? 'error' : 'help'"
-        />{{ ui.notice
+    <Teleport to="body">
+      <div v-if="ui.notice" role="status" :class="['toast', ui.noticeTone]">
+        <AppIcon :name="ui.noticeTone === 'success' ? 'success' : ui.noticeTone === 'error' ? 'error' : 'help'" />{{
+          ui.notice
         }}<button class="icon-button" aria-label="关闭提示" @click="ui.notice = ''">
           <AppIcon name="close" :size="15" />
-        </button></div
-    ></Teleport>
+        </button>
+      </div>
+    </Teleport>
   </div>
 </template>
 <style scoped>
 .app-shell {
   --current-rail: var(--rail-width);
 }
+
 .app-shell.collapsed {
   --current-rail: var(--rail-collapsed-width);
 }
+
 .side-frame {
   position: fixed;
-  left: 16px;
-  top: 76px;
-  bottom: 16px;
+  left: 8px;
+  top: var(--header-height);
+  bottom: 0;
   z-index: var(--z-nav);
   display: flex;
   align-items: stretch;
@@ -114,27 +109,35 @@ onBeforeUnmount(() => {
   box-shadow: var(--shadow-panel);
   width: calc(var(--current-rail) - 16px);
 }
+
 .side-frame.joined {
   width: calc(var(--current-rail) - 16px + var(--module-width));
   background: var(--color-surface);
   box-shadow: var(--shadow-menu);
 }
+
 .side-frame.joined :deep(.primary-nav) {
   border-radius: var(--radius-lg) 0 0 var(--radius-lg);
 }
+
 .main-content {
-  margin-left: var(--current-rail);
-  padding: calc(var(--header-height) + 20px) var(--content-padding) 24px;
+  margin-left: calc(var(--current-rail) + 8px);
+  margin-top: var(--header-height);
+  padding: 20px var(--content-padding) 24px;
+  background: white;
+  border-radius: var(--radius-sm) 0 0 0;
   min-width: 0;
   min-height: 100vh;
 }
+
 .navigation-scrim {
   position: fixed;
-  inset: var(--header-height) 0 0 var(--current-rail);
+  inset: var(--header-height) 0 0 calc(var(--current-rail) + 8px);
   z-index: var(--z-scrim);
   background: var(--color-overlay);
   cursor: default;
 }
+
 .toast {
   position: fixed;
   top: 80px;
@@ -152,20 +155,25 @@ onBeforeUnmount(() => {
   box-shadow: var(--shadow-menu);
   font-size: var(--text-sm);
 }
-.toast.success > .icon {
+
+.toast.success>.icon {
   color: var(--color-success);
 }
-.toast.error > .icon {
+
+.toast.error>.icon {
   color: var(--color-danger);
 }
-.toast.info > .icon {
+
+.toast.info>.icon {
   color: var(--color-primary);
 }
+
 @media (max-width: 767px) {
   .main-content {
     margin-left: 0;
     padding-top: calc(var(--header-height) + 14px);
   }
+
   .side-frame {
     display: none;
     top: var(--header-height);
@@ -173,26 +181,33 @@ onBeforeUnmount(() => {
     bottom: 0;
     border-radius: 0;
   }
+
   .mobile-nav-open .side-frame,
   .module-open .side-frame {
     display: flex;
   }
+
   .side-frame.joined {
     width: 100vw;
   }
+
   .side-frame :deep(.primary-nav) {
     width: 80px;
     border-radius: 0 !important;
   }
+
   .navigation-scrim {
     left: 0;
   }
+
   .side-frame :deep(.module-panel) {
     border-radius: 0;
   }
+
   .toast {
     top: 74px;
   }
+
   .app-shell {
     --current-rail: 80px;
   }
