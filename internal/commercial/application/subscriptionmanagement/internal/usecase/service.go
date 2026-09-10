@@ -78,9 +78,21 @@ func (s *service) PutDefaultSubscriptionRule(ctx context.Context, r *v1.PutDefau
 	if r == nil || !subscription.ValidCode(r.RuleId) || (r.SalesScope != "*" && !subscription.ValidCode(r.SalesScope)) || !subscription.ValidCode(r.PlanCode) || r.PlanVersion == 0 || r.RequestId == "" || strings.TrimSpace(r.Reason) == "" {
 		return nil, exposed(subscription.ErrInvalid)
 	}
-	elig, e := s.capabilities.CommercialPlanManagement().CheckPlanEligibility(ctx, &v1.CheckPlanEligibilityRequest{PlanCode: r.PlanCode, Version: r.PlanVersion, SalesScope: r.SalesScope})
-	if e != nil || elig == nil || !elig.Eligible {
+	eligibilityScope := r.SalesScope
+	if eligibilityScope == "*" {
+		// Wildcard rules are allowed only when the referenced immutable plan is
+		// itself globally applicable. Eligibility still receives a concrete scope.
+		eligibilityScope = "default"
+	}
+	elig, e := s.capabilities.CommercialPlanManagement().CheckPlanEligibility(ctx, &v1.CheckPlanEligibilityRequest{PlanCode: r.PlanCode, Version: r.PlanVersion, SalesScope: eligibilityScope})
+	if e != nil || elig == nil || !elig.Eligible || elig.Version == nil {
 		return nil, exposed(subscription.ErrNoEligibleDefault)
+	}
+	if r.SalesScope == "*" {
+		terms := elig.Version.GetTerms()
+		if terms == nil || len(terms.GetSalesScope()) != 1 || terms.GetSalesScope()[0] != "*" {
+			return nil, exposed(subscription.ErrNoEligibleDefault)
+		}
 	}
 	out, e := requestscope.JoinValue(ctx, s.repositories, func(sc *requestscope.View[ports.SubscriptionRepositories]) (subscription.Rule, error) {
 		repo := sc.Repositories().Subscriptions
@@ -175,7 +187,7 @@ func (s *service) BootstrapBaseSubscription(ctx context.Context, r *v1.Bootstrap
 	if e != nil {
 		return nil, exposed(e)
 	}
-	if r == nil || r.RequestId == "" || r.TenantId == "" || (r.SalesScope != "*" && !subscription.ValidCode(r.SalesScope)) {
+	if r == nil || r.RequestId == "" || r.TenantId == "" || !subscription.ValidCode(r.SalesScope) {
 		return nil, exposed(subscription.ErrInvalid)
 	}
 	hash := fp(a, "bootstrap", r)
