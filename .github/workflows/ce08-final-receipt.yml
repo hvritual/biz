@@ -1,0 +1,152 @@
+name: CE-08 final receipt
+on:
+  push:
+    branches: [control/ce08-completion-20260910]
+    paths: ['.github/workflows/ce08-final-receipt.yml']
+permissions: {contents: write, actions: read}
+jobs:
+  receipt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BUSINESS_SHA: 6e2be5e68ad34a834cc579afbf6a4a55dfd43b78
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: docs/ce-08-final-receipt-20260910, fetch-depth: 0, persist-credentials: true}
+      - name: Download exact already verified artifacts
+        env: {GH_TOKEN: '${{ github.token }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/receipt" "$RUNNER_TEMP/inputs"
+          for item in '10148157166 qualification' '10148096714 runtime' '10148164067 readback'; do
+            read -r id name <<< "$item"
+            curl -fsSL --retry 3 --retry-all-errors -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/hvritual/biz/actions/artifacts/$id/zip" -o "$RUNNER_TEMP/inputs/$name.zip"
+          done
+          printf '%s\n' '0f6163b61a76e8634a5662745d8ef9cd237be09180e88d29c6f6f22b6dad77a7  qualification.zip' '687689825fd5870157f1c1e7fa9268b4169ded334ca860552f96412ff0936a79  runtime.zip' '542badce50e12c2825dd6a95aba541683896bdd7343198574a08338d271e8361  readback.zip' > "$RUNNER_TEMP/inputs/SHA256SUMS"
+          (cd "$RUNNER_TEMP/inputs" && sha256sum -c SHA256SUMS)
+      - name: Validate source, all counts and raw runtime evidence; write three receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$BUSINESS_SHA"
+          git fetch origin main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$BUSINESS_SHA"
+          python3 - <<'PY'
+          import hashlib,io,json,os,re,subprocess,sys,tarfile,zipfile
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          from ce03_test_events import summarize
+          from ce04_runtime_closure import validate
+          base=Path(os.environ['RUNNER_TEMP']);sha=os.environ['BUSINESS_SHA'];q=zipfile.ZipFile(base/'inputs/qualification.zip');r=zipfile.ZipFile(base/'inputs/runtime.zip');b=zipfile.ZipFile(base/'inputs/readback.zip')
+          summary=json.loads(q.read('summary.json'));assert summary['verified_commit']==sha and summary['qualification']=='PASS' and summary['task_status']=='VERIFYING' and summary['round_check']=='QUALIFIED_NOT_DONE'
+          assert summary['framework_commit']=='33b98ceba57494abda2299e4f0290a5651dab4bc'
+          assert len(summary['sha256'])==27 and len(summary['suites'])==12
+          for name,h in summary['sha256'].items():assert hashlib.sha256(q.read(name)).hexdigest()==h,name
+          for name,expected in summary['suites'].items():assert summarize([json.loads(l) for l in q.read(name+'.jsonl').decode().splitlines()])==expected,name
+          for archive in (q,b):
+              with tarfile.open(fileobj=io.BytesIO(archive.read('biz-source.tar'))) as t:
+                  for m in t.getmembers():
+                      if m.isfile():assert Path(m.name).read_bytes()==t.extractfile(m).read(),m.name
+          checks=json.loads(b.read('main-checks.json'));assert checks['verified_commit']==sha
+          assert len(checks['workflows'])==11 and len(checks['checks'])==11
+          assert all(x['conclusion']=='success' for x in checks['workflows']+checks['checks'])
+          assert f'biz={sha}' in r.read('sources.txt').decode()
+          runtime=validate(**{k:json.loads(r.read(n)) for k,n in [('manifest','manifest.json'),('config','dev-config.json'),('status','status.json'),('graph','runtime-graph.json'),('diagnostics','diagnostics.json')]})
+          assert runtime=={'applications':10,'routes':37} and r.read('stop.log').decode().strip()=='RUNTIME_STOP_CHECK=PASS'
+          records=[]
+          def record(command,count,filename,run=34467322005,artifact=10148157166):records.append({'command':command,'exit_code':0,'tests_passed':count,'evidence':f'GitHub Actions run {run} / artifact {artifact} / {filename}'})
+          record('make yunka-source-check workspace-check',0,'resolution.log')
+          record('make check',0,'check-before.log')
+          for i in [1,2]:record('make generate && git diff --exit-code && test -z "$(git status --porcelain)"',0,f'generate-{i}.log')
+          record('make check',0,'check-after.log')
+          selectors={'focused':"go test -count=1 -json ./internal/commercial/domain/subscription ./internal/commercial/application/subscriptionmanagement/... ./internal/access/application/tenantlifecycle/... -run '^TestCE08'",'mysql':"go test -count=1 -tags=integration -json ./integration -run '^TestCE08MySQL'",'race':"go test -race -count=1 -tags=integration -json ./integration -run '^TestCE08MySQL'",'restart-before':"go test -count=1 -tags=integration -json ./integration -run '^TestCE08PersistenceBeforeRestart$'",'restart-after':"go test -count=1 -tags=integration -json ./integration -run '^TestCE08PersistenceAfterRestart$'",'all':'go test -count=1 -json ./...'}
+          script=Path('scripts/ce08_qualify.sh').read_text()
+          for name in summary['suites']:
+              if name not in selectors:
+                  line=next(l for l in script.splitlines() if '| tee "$out/'+name+'.jsonl"' in l)
+                  selectors[name]=line.split(' | tee ')[0]
+              record(selectors[name],summary['suites'][name]['leaf_tests'],name+'.jsonl')
+          record('scripts/ce08_qualify.sh: docker restart owned MySQL container; verify mysqladmin health and changed StartedAt',0,'restart.log')
+          for cmd,file in [('go vet ./...','vet.log'),('go build ./...','build.log'),('python3 docs/commercial-entitlements/tools/check_plan.py','plan.log')]:record(cmd,0,file)
+          for cmd,count,file in [("python3 -m unittest discover -s docs/commercial-entitlements/tools -p 'test_*.py' -v",8,'plan-tests.log'),("python3 -m unittest discover -s scripts -p 'test_ce04_runtime_closure.py' -v",25,'runtime-gate-tests.log'),("python3 -m unittest discover -s scripts -p 'test_ce03_*.py' -v",6,'evidence-tests.log')]:record(cmd,count,file)
+          record('scripts/ce04_runtime_closure.py: validate archived manifest/config/status/graph/diagnostics; verify clean stop',0,'closure.log; stop.log',34467321951,10148096714)
+          proof={'schema_version':1,'task_id':'CE-08','verified_commit':sha,'result':'PASS','base_commit':'4573e7fcafa7610f6bba308d3c511218cb1dfb5c','framework_commit':summary['framework_commit'],'implementation_pr':41,'environment':{'executor':'GitHub Actions','go':'1.25.13','mysql':'8.4','database':'workflow-owned disposable instance','production_deployed':False},'qualification':{'run_id':34467322005,'artifact_id':10148157166,'zip_sha256':'0f6163b61a76e8634a5662745d8ef9cd237be09180e88d29c6f6f22b6dad77a7','rehash_count':len(summary['sha256']),'recounted_suites':len(summary['suites']),'source_archive_sha256':hashlib.sha256(q.read('biz-source.tar')).hexdigest()},'suites':summary['suites'],'checks':records,'sha256':summary['sha256'],'business_main_checks':checks,'runtime':dict(runtime,run_id=34467321951,artifact_id=10148096714,zip_sha256='687689825fd5870157f1c1e7fa9268b4169ded334ca860552f96412ff0936a79',revalidated=True,stop_check='PASS'),'b12_compatibility':{'verified_commit':'52d9b75d8797da0bc1a3a33401996bfbbe92666c','run_id':34466674039,'artifact_id':10147839748,'leaf_tests':16,'pass_events':17,'failed':0,'skipped':0,'zip_sha256':'69a2469f15a6165176611df727c7d5d78634a90c3af7ab460d8fd24db7ef811b'},'counting_note':'Suites overlap and must not be added. Leaf tests exclude parent pass events; no-test packages are separate from actual test skips.','receipt_boundary':'Original business-main artifacts retain VERIFYING/QUALIFIED_NOT_DONE. This receipt binds business main, not its own commit. Final receipt-main qualification and CE08 --require-main must be observed separately in the same round; no future PASS is asserted here.'}
+          root=Path('docs/commercial-entitlements');(root/'evidence/CE-08-verification.json').write_text(json.dumps(proof,ensure_ascii=False,indent=2)+'\n')
+          titles={'focused':'CE-08 专项','mysql':'CE-08 真实 MySQL','race':'CE-08 MySQL race','restart-before':'真实数据库重启前','restart-after':'真实数据库重启后','b12-bootstrap':'B12 创建与并发回归','ce07-mysql':'CE-07 MySQL','ce06-mysql':'CE-06 MySQL','ce05-mysql':'CE-05 MySQL','ce04-mysql':'CE-04 MySQL','ce02-mysql':'CE-02 MySQL','all':'全量 Go'}
+          table='\n'.join('| '+titles[n]+' | '+str(v['leaf_tests'])+' | '+str(v['pass_events'])+' | 0 / 0 |' for n,v in summary['suites'].items())
+          text='''# CE-08 执行回执
+
+          ## 范围与结果
+          CE-08 默认开通规则与原子租户订阅初始化已实现并通过业务主线真实资格，业务 PR #41 已正常合并。原 Draft #38 关闭并保留失败候选及历史证据。当前收尾仅替换本回执、新增机器证明、更新 tasks.json 的 CE-08；不实施 CE-09。
+          机器证明见 [CE-08-verification.json](CE-08-verification.json)，领域决定见 [默认开通与原子初始化](../decisions/CE-08-default-subscription-bootstrap.md)。
+
+          ## 基线与依赖
+          续接安全 main：4573e7fcafa7610f6bba308d3c511218cb1dfb5c；最初业务基线：0d10c3a91c23d360983aa8d1e732bd350ddb1864。业务集成及 verified_commit：6e2be5e68ad34a834cc579afbf6a4a55dfd43b78。
+          CE-04、CE-07 均 DONE，依赖回执及主线祖先约束已回读。无外部业务前置条件。Yunka #181 已完成并关闭；Biz 固定 33b98ceba57494abda2299e4f0290a5651dab4bc，仅在既有基线上回放已合入框架 main 的跨域 child 窄接口修复，不整体升级 module identity。
+
+          ## 变更清单
+          subscription.proto：平台规则保存/列表、租户订阅读取及仅内部可用的 BootstrapBaseSubscription。Tenant 创建增加 request_id、可信具体 sales_scope，不接受任意 plan 选择。
+          平台默认规则提供明确优先级、范围、规则版本、命中解释、CAS 和显式合法 fallback；无合法规则时整个创建拒绝。Tenant、Owner Member、Owner Role、唯一基础订阅、PLAN 权益来源与来源版本、创建/订阅回执及审计同根事务提交。
+          Access 域持久化创建回执同时绑定主体+业务请求与主体+transport key，规范化载荷冲突拒绝，跨 runtime/重启返回相同结果；保留原 Executor、权限闭包、必填 key、执行中互斥与原子 finalization。订阅来源 fixed_days 使用数据库 UTC 到期，权威错误/损坏不能被吞成 fallback。所有生产变化、显式迁移及生成代码均包含在 PR #41 中。
+          补齐 runtime capability wiring 与10应用图；15个活跃 CI 工作流只切换框架固定版本，不减少命令或断言，历史复现工作流不改。B12 活跃资格基线只在真实16叶子回归通过后更新，保留历史版本说明。
+
+          ## 验证命令与结果
+          2026-09-10，GitHub Actions、Go 1.25.13、独占 MySQL 8.4。业务 main 的11项检查全部 success；PR #41 的17项工作流全部 success。
+          CE-08 主线 run34467322005 / artifact10148157166；ZIP SHA256：0f6163b61a76e8634a5662745d8ef9cd237be09180e88d29c6f6f22b6dad77a7。实际下载并重新核对27项文件哈希、12组 JSONL 叶子计数；源代码归档与合格 PR 候选及主线回读归档一致。所有命令、退出码与日志位置见机器证明；退出码均0。
+
+          | 套件 | 叶子用例 | pass 事件 | 失败 / 跳过 |
+          | --- | ---: | ---: | ---: |
+          '''.replace('\n          ','\n')+table+'''
+
+          套件有重叠，不累计充当总用例数；无测试文件包单列。source/workspace 检查、前后 make check、连续两次 make generate 零漂移、go vet/build 均通过。计划/回执反向测试8项、运行时检查器25项、结果汇总器6项通过。
+          真实数据库重启 StartedAt 从2026-09-10T10:41:11.141309854Z变为2026-09-10T10:43:34.701928882Z，健康恢复，前后持久化测试各1项通过。
+          runtime run34467321951 / artifact10148096714 已下载并用原 manifest/config/status/graph/diagnostics 重新验证，10个应用、37条唯一 HTTP 路径、正常停止。ZIP SHA256：687689825fd5870157f1c1e7fa9268b4169ded334ca860552f96412ff0936a79。
+          补充 B12 全套兼容回归 run34466674039：16叶子/17pass、零失败/跳过。正式 CE-08 主线每轮继续执行其中5项创建及并发核心回归，不冒称本轮再次执行了16项全部组合。
+
+          ## 反例与故障验证
+          覆盖具体规则/显式fallback、同优先级稳定排序、停售/缺失/不合资格套餐、规则重放与停售后禁用、无配置默认规则、损坏权威必须失败、租户不能管理平台规则、内部bootstrap没有RPC、同key不同载荷、跨runtime/换transport key同业务请求收敛、重复初始化唯一基础订阅、来源版本/回执/审计一致和fixed_days到期。
+          六个真实MySQL故障注入点覆盖member、role、subscription、source、receipt、audit；失败根事务不留租户/owner/权益半成品，移除原因后重试成功，最后owner规则回归保留。实际数据库重启后继续回读和重放。
+          验收修复未删除失败场景：目录fixture改用真实目录同步/套餐/规则API；补齐原根事务持久化重放；规范化有效期、锁顺序及失败关闭；两项gRPC断言按锁定Executor实际包装精确匹配code和wire message；B126允许并发执行中409或完成后相同200，但完成后重试必须200且数据库仍只有一套bootstrap树。
+          前序runner的工具PATH、生成产物摘要漂移和控制脚本精确替换/合并断言失败均保留失败日志，不作为业务通过。框架原始复现和 [阻塞机器证据](CE-08-blocker-reproduction.json) 保留，历史问题不再作为当前开放blocker。
+
+          ## 风险与回滚
+          全局规则aggregate仍串行化，资格runner样本不是生产吞吐/SLA。部署须先执行新增显式迁移再启用二进制；AutoMigrate仅开发和资格环境。本轮未生产部署、生产压力测试或生产回滚演练。
+          已成功租户及历史不可删除；事故时先停新租户创建入口、按持久化回执核对真实结果，再通过新规则版本或后续订阅变更修正；不能关闭Guard、删除审计、回拨权益版本或退回缺少新回执语义的旧路径。固定期限由权益来源到期及CE-06屏障判断，ACTIVE标签不是永久授权。
+          未实现CE-09套餐变更、CE-10 Outbox、支付、前端、实际额度扣减、输出字段过滤或存量迁移。无独立APPROVE声明，不伪造审批。
+
+          ## 集成与回读
+          业务 PR #41 合入 main@6e2be5e68ad34a834cc579afbf6a4a55dfd43b78。独立只读回读run34467559910 / artifact10148164067核对11项main工作流及checks全部success，并在该固定main回读CE-01～07的--require-main全部PASS；当时CE-08仍VERIFYING。
+          业务原始summary保留VERIFYING/QUALIFIED_NOT_DONE，不改写成DONE。本三文档回执经独立PR集成main；同轮必须再观察最终main CE-08/runtimes/receipt门禁，并实际执行check_round.py --task CE-08 --require-main。最终回读以该次Actions原始日志和GitHub记录为准，本文件不预填尚未发生的PASS，也不自引用回执提交SHA。
+
+          ## 自检
+          scope：仅CE-08及必要契约/装配/测试/兼容来源；dependency：CE-04与CE-07已DONE，无外部前置条件；quality：PR与业务main资格和原始产物已复核，最终回执main单独验收；risks：全局规则锁、迁移部署及未生产负载；rollback：保留成功事实/回执/历史，使用新版本修正，不删除租户或回拨版本。
+          '''.replace('\n          ','\n')
+          (root/'evidence/CE-08.md').write_text(text)
+          p=root/'tasks.json';content=p.read_text();plan=json.loads(content);task=next(t for t in plan['tasks'] if t['id']=='CE-08');assert task['status']=='VERIFYING'
+          original=next(line for line in content.splitlines() if '"id":"CE-08"' in line)
+          task.update(status='DONE',blocker=None,evidence='evidence/CE-08.md',integration_commit=sha,verification='evidence/CE-08-verification.json')
+          replacement='    '+json.dumps(task,ensure_ascii=False,separators=(',',':'))+','
+          p.write_text(content.replace(original,replacement))
+          print('RECEIPT_GENERATION_SOURCE_VERIFIED',sha,'rehashes=27 suites=12 main_checks=11 runtime=',runtime)
+          PY
+      - name: Validate and commit only final receipt files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 docs/commercial-entitlements/tools/check_plan.py | tee "$RUNNER_TEMP/receipt/plan.log"
+          python3 -m unittest discover -s docs/commercial-entitlements/tools -p 'test_*.py' -v 2>&1 | tee "$RUNNER_TEMP/receipt/gate-tests.log"
+          python3 docs/commercial-entitlements/tools/check_round.py --task CE-08 | tee "$RUNNER_TEMP/receipt/round-candidate.log"
+          git diff --check
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add docs/commercial-entitlements/evidence/CE-08.md docs/commercial-entitlements/evidence/CE-08-verification.json docs/commercial-entitlements/tasks.json
+          test "$(git diff --cached --name-only | wc -l)" -eq 3
+          git commit -m 'docs(ce-08): close verified business-main evidence and task ledger'
+          git push origin HEAD:docs/ce-08-final-receipt-20260910
+          git rev-parse HEAD > "$RUNNER_TEMP/receipt/receipt-commit.txt"
+          git archive HEAD -o "$RUNNER_TEMP/receipt/biz-source.tar"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce08-final-receipt-${{ github.sha }}', path: '${{ runner.temp }}/receipt', if-no-files-found: error}
