@@ -30,6 +30,10 @@ export async function commit(dialog: Locator) {
 export async function snap(page: Page, id: string) {
   mkdirSync(dir, { recursive: true })
   await page.evaluate(() => document.fonts.ready)
+  if (await page.locator('.module-panel').count()) {
+    await page.screenshot({ path: `${dir}/${id}.png`, fullPage: false, animations: 'disabled' })
+    return
+  }
   const body = page.getByRole('dialog').locator('.dialog-body')
   if (await body.count()) {
     const metrics = await body.evaluate((el) => ({
