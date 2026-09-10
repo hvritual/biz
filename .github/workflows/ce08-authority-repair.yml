@@ -50,6 +50,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = db75df962883202975bacf25a49564ff2983ed4e
           python3 ../control/.github/ce08-authority-repair.py
+          sed -i 's|yunka.io/framework/operationplan|yunka.io/pkg/operationplan|' internal/bizruntime/tenant_creation_replay.go
           { git ls-files -m '*.go'; git ls-files --others --exclude-standard '*.go'; } | sort -u | xargs -r gofmt -w
           make generate 2>&1 | tee "$RUNNER_TEMP/ce08-repair/generate.log"
           make commercial-generate 2>&1 | tee "$RUNNER_TEMP/ce08-repair/commercial-generate.log"
