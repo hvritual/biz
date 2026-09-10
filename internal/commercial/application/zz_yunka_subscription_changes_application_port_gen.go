@@ -9,6 +9,8 @@ import (
 
 // SubscriptionChangesApplication is generated from PB and contains no business implementation.
 type SubscriptionChangesApplication interface {
+	CancelPreparedSubscriptionChange(context.Context, *commercialv1.PreparedSubscriptionChangeRequest) (*commercialv1.ProvisioningCompletionDTO, error)
+	CompletePreparedSubscriptionChange(context.Context, *commercialv1.PreparedSubscriptionChangeRequest) (*commercialv1.ProvisioningCompletionDTO, error)
 	ConfirmSubscriptionChange(context.Context, *commercialv1.ConfirmSubscriptionChangeRequest) (*commercialv1.SubscriptionChangeReceiptDTO, error)
 	GetSubscriptionChangePreview(context.Context, *commercialv1.ReadSubscriptionChangeRequest) (*commercialv1.SubscriptionChangePreviewDTO, error)
 	GetSubscriptionChangeReceipt(context.Context, *commercialv1.ReadSubscriptionChangeRequest) (*commercialv1.SubscriptionChangeReceiptDTO, error)

@@ -8,7 +8,7 @@ import (
 )
 
 func (f applicationFactories) BuildCommercialSubscriptionChanges(d assembly.CommercialSubscriptionChangesDependencies) (app.SubscriptionChangesApplication, error) {
-	return subscriptionchanges.Build(persistence.NewSubscriptionChangeRepositoryFactory(), subscriptionChangeCapabilities{plan: d.CommercialPlanManagement, catalog: d.CommercialModuleCatalog}, f.snapshots, f.quotaChangePolicy)
+	return subscriptionchanges.Build(persistence.NewSubscriptionChangeRepositoryFactory(), subscriptionChangeCapabilities{plan: d.CommercialPlanManagement, catalog: d.CommercialModuleCatalog}, f.snapshots, f.quotaChangePolicy, f.provisioningPolicy)
 }
 
 type subscriptionChangeCapabilities struct {

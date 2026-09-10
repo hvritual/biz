@@ -9,6 +9,7 @@ import (
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	app "github.com/hvritual/biz/internal/commercial/application"
 	"github.com/hvritual/biz/internal/commercial/domain/plan"
+	pv "github.com/hvritual/biz/internal/commercial/domain/provisioning"
 	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	change "github.com/hvritual/biz/internal/commercial/domain/subscriptionchange"
 	"github.com/hvritual/biz/internal/commercial/ports"
@@ -20,20 +21,28 @@ import (
 )
 
 type service struct {
-	repositories requestscope.RepositoryFactory[ports.SubscriptionChangeRepositories]
-	capabilities app.SubscriptionChangesCapabilities
-	snapshots    ports.EntitlementSnapshotReader
-	quotas       ports.QuotaChangePolicy
+	provisioningPolicy ports.ProvisioningPolicy
+	repositories       requestscope.RepositoryFactory[ports.SubscriptionChangeRepositories]
+	capabilities       app.SubscriptionChangesCapabilities
+	snapshots          ports.EntitlementSnapshotReader
+	quotas             ports.QuotaChangePolicy
 }
 
-func New(r requestscope.RepositoryFactory[ports.SubscriptionChangeRepositories], c app.SubscriptionChangesCapabilities, snapshots ports.EntitlementSnapshotReader, q ports.QuotaChangePolicy) (app.SubscriptionChangesApplication, error) {
+func New(r requestscope.RepositoryFactory[ports.SubscriptionChangeRepositories], c app.SubscriptionChangesCapabilities, snapshots ports.EntitlementSnapshotReader, q ports.QuotaChangePolicy, policies ...ports.ProvisioningPolicy) (app.SubscriptionChangesApplication, error) {
 	if r == nil || c == nil || c.CommercialPlanManagement() == nil || c.CommercialModuleCatalog() == nil || snapshots == nil {
 		return nil, errors.New("subscription changes: repository, typed plan/catalog and snapshot capabilities required")
 	}
 	if q == nil {
 		q = ports.DeferredQuotaChangePolicy{}
 	}
-	return &service{repositories: r, capabilities: c, snapshots: snapshots, quotas: q}, nil
+	var provisioning ports.ProvisioningPolicy = ports.DatabaseOnlyProvisioning{}
+	if len(policies) > 1 {
+		return nil, errors.New("subscription changes: one provisioning policy required")
+	}
+	if len(policies) == 1 && policies[0] != nil {
+		provisioning = policies[0]
+	}
+	return &service{repositories: r, capabilities: c, snapshots: snapshots, quotas: q, provisioningPolicy: provisioning}, nil
 }
 func actor(ctx context.Context) (string, error) {
 	p, ok := identity.FromContext(ctx)
@@ -49,6 +58,15 @@ func expose(err error) error {
 	code := codes.Unavailable
 	reason := "SUBSCRIPTION_CHANGE_AUTHORITY_UNAVAILABLE"
 	switch {
+	case errors.Is(err, pv.ErrInvalid):
+		code = codes.InvalidArgument
+		reason = pv.ErrInvalid.Error()
+	case errors.Is(err, pv.ErrStale), errors.Is(err, pv.ErrLease), errors.Is(err, pv.ErrCancellation):
+		code = codes.FailedPrecondition
+		reason = err.Error()
+	case errors.Is(err, pv.ErrCorrupt):
+		code = codes.DataLoss
+		reason = pv.ErrCorrupt.Error()
 	case errors.Is(err, change.ErrInvalid):
 		code = codes.InvalidArgument
 		reason = change.ErrInvalid.Error()

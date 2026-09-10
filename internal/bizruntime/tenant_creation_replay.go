@@ -48,7 +48,7 @@ func (c tenantCreationReplay) CompleteInTransaction(ctx context.Context, p opera
 
 func durableReceiptOperation(id string) bool {
 	switch id {
-	case "tenant.create", "commercial.subscription.change.preview", "commercial.subscription.change.confirm":
+	case "tenant.create", "commercial.subscription.change.preview", "commercial.subscription.change.confirm", "commercial.provisioning.task.retry", "commercial.provisioning.task.cancel":
 		return true
 	}
 	return false

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	p "github.com/hvritual/biz/internal/commercial/domain/provisioning"
 	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	change "github.com/hvritual/biz/internal/commercial/domain/subscriptionchange"
 	"github.com/hvritual/biz/internal/commercial/infrastructure/consistency"
@@ -67,7 +68,7 @@ func NewSubscriptionChangeRepositoryFactory() requestscope.RepositoryFactory[por
 			return ports.SubscriptionChangeRepositories{}, errors.New("subscription changes: root transaction required")
 		}
 		t := tx.Session(&gorm.Session{SkipDefaultTransaction: true})
-		return ports.SubscriptionChangeRepositories{Changes: &subscriptionChangeRepository{tx: t}, Entitlements: &entitlementRepository{tx: t}}, nil
+		return ports.SubscriptionChangeRepositories{Changes: &subscriptionChangeRepository{tx: t}, Entitlements: &entitlementRepository{tx: t}, Tasks: &provisioningRepository{tx: t}, Events: &outboxRepository{tx: t}}, nil
 	})
 }
 func (r *subscriptionChangeRepository) Now(ctx context.Context) (time.Time, error) {
@@ -180,7 +181,10 @@ func (r *subscriptionChangeRepository) Complete(ctx context.Context, v change.Re
 	if err = r.tx.WithContext(ctx).Create(&row).Error; err != nil {
 		return err
 	}
-	return r.tx.WithContext(ctx).Create(&changeAuditRow{ChangeID: v.ChangeID, TenantID: v.TenantID, ActorID: v.ActorID, PayloadSHA256: v.Hash, Payload: string(b), CreatedAt: v.ConfirmedAt}).Error
+	if err = r.tx.WithContext(ctx).Create(&changeAuditRow{ChangeID: v.ChangeID, TenantID: v.TenantID, ActorID: v.ActorID, PayloadSHA256: v.Hash, Payload: string(b), CreatedAt: v.ConfirmedAt}).Error; err != nil {
+		return err
+	}
+	return (&outboxRepository{tx: r.tx}).Append(ctx, p.Event{TenantID: v.TenantID, AggregateID: v.After.ID, AggregateVersion: v.After.Revision, ChangeID: v.ChangeID, TaskID: v.ProvisioningTaskID, Status: v.Status, SourceVersion: v.AfterSourceVersion, EntitlementVersion: v.AfterEntitlementVersion, OccurredAt: v.ConfirmedAt}.Seal())
 }
 
 func (r *subscriptionChangeRepository) PreviewForRequest(ctx context.Context, actor, key, fp string) (*change.Preview, error) {

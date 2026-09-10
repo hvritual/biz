@@ -10,6 +10,7 @@ import (
 	app "github.com/hvritual/biz/internal/commercial/application"
 	projection "github.com/hvritual/biz/internal/commercial/application/planprojection"
 	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
+	pvmodel "github.com/hvritual/biz/internal/commercial/domain/provisioning"
 	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	"github.com/hvritual/biz/internal/commercial/ports"
 	"google.golang.org/grpc/codes"
@@ -22,15 +23,23 @@ import (
 )
 
 type service struct {
-	repositories requestscope.RepositoryFactory[ports.SubscriptionRepositories]
-	capabilities app.SubscriptionManagementCapabilities
+	provisioningPolicy ports.ProvisioningPolicy
+	repositories       requestscope.RepositoryFactory[ports.SubscriptionRepositories]
+	capabilities       app.SubscriptionManagementCapabilities
 }
 
-func New(r requestscope.RepositoryFactory[ports.SubscriptionRepositories], c app.SubscriptionManagementCapabilities) (app.SubscriptionManagementApplication, error) {
+func New(r requestscope.RepositoryFactory[ports.SubscriptionRepositories], c app.SubscriptionManagementCapabilities, policies ...ports.ProvisioningPolicy) (app.SubscriptionManagementApplication, error) {
 	if r == nil || c == nil || c.CommercialPlanManagement() == nil {
 		return nil, errors.New("subscriptions: repositories and plan capability required")
 	}
-	return &service{r, c}, nil
+	var policy ports.ProvisioningPolicy = ports.DatabaseOnlyProvisioning{}
+	if len(policies) > 1 {
+		return nil, errors.New("subscriptions: one local preparation policy required")
+	}
+	if len(policies) == 1 && policies[0] != nil {
+		policy = policies[0]
+	}
+	return &service{repositories: r, capabilities: c, provisioningPolicy: policy}, nil
 }
 func actor(ctx context.Context) (string, error) {
 	p, ok := identity.FromContext(ctx)
@@ -221,6 +230,21 @@ func (s *service) BootstrapBaseSubscription(ctx context.Context, r *v1.Bootstrap
 				return subscription.Subscription{}, errors.New("subscription: missing authoritative eligibility")
 			}
 			if elig.Eligible && elig.Version != nil {
+				// CE-08 cannot bypass actual external preparation via a default plan.
+				version, err := projection.Version(elig.Version)
+				if err != nil {
+					return subscription.Subscription{}, err
+				}
+				requirements, err := s.provisioningPolicy.Requirements(call, version)
+				if err != nil {
+					return subscription.Subscription{}, err
+				}
+				if err = pvmodel.ValidateRequirements(requirements); err != nil {
+					return subscription.Subscription{}, err
+				}
+				if len(requirements) > 0 {
+					continue
+				}
 				chosen = rule
 				pv = elig.Version
 				break

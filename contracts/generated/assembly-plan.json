@@ -63,6 +63,16 @@
       }
     },
     {
+      "id": "commercial/provisioning",
+      "domain": "commercial",
+      "name": "provisioning",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/commercial/provisioning"
+      }
+    },
+    {
       "id": "commercial/subscription_changes",
       "domain": "commercial",
       "name": "subscription_changes",
@@ -175,6 +185,15 @@
         "ownership": "reused",
         "source": "manifest.json",
         "ref": "applications/commercial/plan_management/requires/commercial/module_catalog"
+      }
+    },
+    {
+      "from": "commercial/provisioning",
+      "to": "commercial/subscription_changes",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/commercial/provisioning/requires/commercial/subscription_changes"
       }
     },
     {
@@ -348,6 +367,33 @@
         "ownership": "derived",
         "source": "application-dependency-closure",
         "ref": "commercial/plan_management-\u003ecommercial/module_catalog"
+      }
+    },
+    {
+      "from": "commercial/provisioning",
+      "to": "commercial/module_catalog",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/provisioning-\u003ecommercial/module_catalog"
+      }
+    },
+    {
+      "from": "commercial/provisioning",
+      "to": "commercial/plan_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/provisioning-\u003ecommercial/plan_management"
+      }
+    },
+    {
+      "from": "commercial/provisioning",
+      "to": "commercial/subscription_changes",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/provisioning-\u003ecommercial/subscription_changes"
       }
     },
     {
@@ -1054,6 +1100,215 @@
       }
     },
     {
+      "id": "commercial.provisioning.delivery.claim",
+      "application": "commercial/provisioning",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.provisioning.delivery.claim"
+      }
+    },
+    {
+      "id": "commercial.provisioning.delivery.complete",
+      "application": "commercial/provisioning",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.provisioning.delivery.complete"
+      }
+    },
+    {
+      "id": "commercial.provisioning.delivery.fail",
+      "application": "commercial/provisioning",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.provisioning.delivery.fail"
+      }
+    },
+    {
+      "id": "commercial.provisioning.delivery.list",
+      "application": "commercial/provisioning",
+      "bindings": [
+        {
+          "operationId": "commercial.provisioning.delivery.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.provisioning.delivery.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.provisioning.delivery.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.provisioning.delivery.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.provisioning.delivery.list"
+      }
+    },
+    {
+      "id": "commercial.provisioning.task.cancel",
+      "application": "commercial/provisioning",
+      "bindings": [
+        {
+          "operationId": "commercial.provisioning.task.cancel",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.provisioning.task.cancel/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.provisioning.task.cancel",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.provisioning.task.cancel/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.provisioning.task.cancel"
+      }
+    },
+    {
+      "id": "commercial.provisioning.task.get",
+      "application": "commercial/provisioning",
+      "bindings": [
+        {
+          "operationId": "commercial.provisioning.task.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.provisioning.task.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.provisioning.task.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.provisioning.task.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.provisioning.task.get"
+      }
+    },
+    {
+      "id": "commercial.provisioning.task.list",
+      "application": "commercial/provisioning",
+      "bindings": [
+        {
+          "operationId": "commercial.provisioning.task.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.provisioning.task.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.provisioning.task.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.provisioning.task.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.provisioning.task.list"
+      }
+    },
+    {
+      "id": "commercial.provisioning.task.retry",
+      "application": "commercial/provisioning",
+      "bindings": [
+        {
+          "operationId": "commercial.provisioning.task.retry",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.provisioning.task.retry/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.provisioning.task.retry",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.provisioning.task.retry/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.provisioning.task.retry"
+      }
+    },
+    {
+      "id": "commercial.provisioning.work.claim",
+      "application": "commercial/provisioning",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.provisioning.work.claim"
+      }
+    },
+    {
+      "id": "commercial.provisioning.work.finalize",
+      "application": "commercial/provisioning",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.provisioning.work.finalize"
+      }
+    },
+    {
+      "id": "commercial.provisioning.work.record",
+      "application": "commercial/provisioning",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.provisioning.work.record"
+      }
+    },
+    {
       "id": "commercial.subscription.bootstrap_base",
       "application": "commercial/subscription_management",
       "evidence": {
@@ -1122,6 +1377,24 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/commercial.subscription.change.get"
+      }
+    },
+    {
+      "id": "commercial.subscription.change.preparation.cancel",
+      "application": "commercial/subscription_changes",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.change.preparation.cancel"
+      }
+    },
+    {
+      "id": "commercial.subscription.change.prepared",
+      "application": "commercial/subscription_changes",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.change.prepared"
       }
     },
     {
@@ -2303,6 +2576,24 @@
       }
     },
     {
+      "from": "commercial.provisioning.task.cancel",
+      "to": "commercial.subscription.change.preparation.cancel",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.provisioning.task.cancel/requiresOperations/commercial.subscription.change.preparation.cancel"
+      }
+    },
+    {
+      "from": "commercial.provisioning.work.finalize",
+      "to": "commercial.subscription.change.prepared",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.provisioning.work.finalize/requiresOperations/commercial.subscription.change.prepared"
+      }
+    },
+    {
       "from": "commercial.subscription.bootstrap_base",
       "to": "commercial.plan.eligibility",
       "evidence": {
@@ -2336,6 +2627,33 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/commercial.subscription.change.confirm/requiresOperations/commercial.plan.get"
+      }
+    },
+    {
+      "from": "commercial.subscription.change.prepared",
+      "to": "commercial.module.plan_catalog",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.change.prepared/requiresOperations/commercial.module.plan_catalog"
+      }
+    },
+    {
+      "from": "commercial.subscription.change.prepared",
+      "to": "commercial.plan.eligibility",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.change.prepared/requiresOperations/commercial.plan.eligibility"
+      }
+    },
+    {
+      "from": "commercial.subscription.change.prepared",
+      "to": "commercial.plan.get",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.change.prepared/requiresOperations/commercial.plan.get"
       }
     },
     {
@@ -2530,6 +2848,7 @@
         "commercial/entitlement_management",
         "commercial/module_catalog",
         "commercial/plan_management",
+        "commercial/provisioning",
         "commercial/subscription_changes",
         "commercial/subscription_management",
         "deviceops/device_management",
@@ -2561,6 +2880,11 @@
         "commercial.plan.publish",
         "commercial.plan.retire",
         "commercial.plan.update",
+        "commercial.provisioning.delivery.list",
+        "commercial.provisioning.task.cancel",
+        "commercial.provisioning.task.get",
+        "commercial.provisioning.task.list",
+        "commercial.provisioning.task.retry",
         "commercial.subscription.change.confirm",
         "commercial.subscription.change.get",
         "commercial.subscription.change.preview",
@@ -2600,7 +2924,15 @@
       "internalOperations": [
         "commercial.module.entitlement_catalog",
         "commercial.module.plan_catalog",
+        "commercial.provisioning.delivery.claim",
+        "commercial.provisioning.delivery.complete",
+        "commercial.provisioning.delivery.fail",
+        "commercial.provisioning.work.claim",
+        "commercial.provisioning.work.finalize",
+        "commercial.provisioning.work.record",
         "commercial.subscription.bootstrap_base",
+        "commercial.subscription.change.preparation.cancel",
+        "commercial.subscription.change.prepared",
         "site.validate_transfer_target",
         "tenant.member.bootstrap_owner",
         "tenant.role.assert_member_deactivation_allowed",

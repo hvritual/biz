@@ -43,10 +43,11 @@ import (
 )
 
 type Started struct {
-	App          *core.App
-	Applications generatedassembly.Applications
-	httpAddress  string
-	grpcAddress  string
+	provisioningRunner *provisioningRunner
+	App                *core.App
+	Applications       generatedassembly.Applications
+	httpAddress        string
+	grpcAddress        string
 }
 
 func (started *Started) HTTPAddress() string {
@@ -79,6 +80,10 @@ func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, opti
 		ctx = context.Background()
 	}
 
+	worker, err := newProvisioningRunner(options)
+	if err != nil {
+		return nil, err
+	}
 	httpListener, err := net.Listen("tcp", config.HTTPListenAddress)
 	if err != nil {
 		return nil, fmt.Errorf("biz runtime: HTTP listen: %w", err)
@@ -113,13 +118,17 @@ func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, opti
 		return nil, err
 	}
 
+	components := []core.RuntimeComponent{httpComponent, grpcComponent}
+	if options.ProvisioningWorker.Token != "" {
+		components = append(components, worker.component())
+	}
 	result, err := generatedassembly.Bootstrap(ctx, generatedassembly.BootstrapOptions{
 		Platform: provider,
 		BindRuntime: func(bindCtx context.Context, prepared *platform.Provider) (generatedassembly.RuntimeBindings, error) {
-			return bindRuntime(bindCtx, prepared, options, authenticator)
+			return bindRuntime(bindCtx, prepared, options, authenticator, worker)
 		},
 		Transports:        generatedassembly.TransportBindings{HTTP: apiMux, RPC: grpcServer},
-		RuntimeComponents: []core.RuntimeComponent{httpComponent, grpcComponent},
+		RuntimeComponents: components,
 	})
 	if err != nil {
 		_ = httpServer.Close()
@@ -133,10 +142,12 @@ func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, opti
 		_ = result.App.Shutdown(ctx)
 		return nil, fmt.Errorf("biz runtime: diagnostics: %w", err)
 	}
-	return &Started{App: result.App, Applications: result.Applications, httpAddress: httpListener.Addr().String(), grpcAddress: grpcListener.Addr().String()}, nil
+	return &Started{provisioningRunner: worker, App: result.App, Applications: result.Applications, httpAddress: httpListener.Addr().String(), grpcAddress: grpcListener.Addr().String()}, nil
 }
 
 type applicationFactories struct {
+	provisioningPolicy commercialports.ProvisioningPolicy
+	provisioningRunner *provisioningRunner
 	quotaChangePolicy  commercialports.QuotaChangePolicy
 	snapshots          commercialports.EntitlementSnapshotReader
 	permissionVersions commercialports.PermissionVersionReader
@@ -180,7 +191,7 @@ func (factory applicationFactories) BuildDeviceopsDeviceTransfer(dependencies ge
 	return checkedTransfer{inner: service}, nil
 }
 
-func bindRuntime(ctx context.Context, provider *platform.Provider, options Options, authenticator *runtimeAuthenticator) (generatedassembly.RuntimeBindings, error) {
+func bindRuntime(ctx context.Context, provider *platform.Provider, options Options, authenticator *runtimeAuthenticator, workers ...*provisioningRunner) (generatedassembly.RuntimeBindings, error) {
 	config := options.DeviceOps
 	deviceContext, err := provider.ForModule(deviceops.GeneratedDescriptor())
 	if err != nil {
@@ -352,8 +363,14 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 		return generatedassembly.RuntimeBindings{}, err
 	}
 	authenticator.set(accessStore)
+	var worker *provisioningRunner
+	if len(workers) == 1 {
+		worker = workers[0]
+		worker.executor = executor
+		worker.authenticator = authenticator
+	}
 	return generatedassembly.RuntimeBindings{
-		Factories: applicationFactories{
+		Factories: applicationFactories{provisioningPolicy: options.ProvisioningPolicy, provisioningRunner: worker,
 			snapshots: snapshots, permissionVersions: accessStore, quotaChangePolicy: options.QuotaChangePolicy,
 			deviceRepositories: deviceRepositories,
 			site:               siteService,
