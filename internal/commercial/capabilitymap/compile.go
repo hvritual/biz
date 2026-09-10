@@ -86,6 +86,9 @@ func Compile(plans Plans, manifest Manifest, declaration Declaration, lookup Loo
 		mapping.Children = append([]Child{}, mapping.Children...)
 		sort.Slice(mapping.Children, func(i, j int) bool { return mapping.Children[i].OperationID < mapping.Children[j].OperationID })
 		entry := CompiledOperation{Mapping: mapping, ConsumerType: "internal_child", TenantRequired: op.Security.TenantRequired, RPC: op.Bindings.RPC, RequiredCapabilityCodes: []string{}}
+		if mapping.WorkerPermission != "" {
+			entry.ConsumerType = "worker"
+		}
 		if op.Bindings.RPC != "" {
 			entry.ConsumerType = "platform"
 			if op.Security.TenantRequired {
@@ -130,6 +133,11 @@ func Compile(plans Plans, manifest Manifest, declaration Declaration, lookup Loo
 }
 
 func validateMapping(m Mapping, op Operation, lookup LookupModule, owners map[string]string) error {
+	if m.WorkerPermission != "" {
+		if !codePattern.MatchString(m.WorkerPermission) || m.Classification != PlatformManagement || op.Security.TenantRequired || op.Bindings.RPC != "" || len(op.Bindings.HTTP) != 0 || len(op.Security.Authentication) == 0 || op.Security.PermissionMode != "all" || !slices.Contains(op.Security.Permissions, m.WorkerPermission) {
+			return problem("WORKER_ENTRY", op.ID, "explicit process entry requires platform authentication, ALL permission closure and no transport binding")
+		}
+	}
 	switch m.Classification {
 	case TenantBusiness:
 		if !op.Security.TenantRequired || m.ModuleCode == "" || len(m.CapabilityCodes) == 0 || m.ExemptionReason != "" {

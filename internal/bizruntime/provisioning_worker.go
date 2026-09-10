@@ -60,6 +60,7 @@ type ProvisioningTick struct {
 	TaskState  string
 }
 type provisioningRunner struct {
+	workerContext func(context.Context) (context.Context, error)
 	options       ProvisioningWorkerOptions
 	id            string
 	application   app.ProvisioningApplication
@@ -96,7 +97,7 @@ func (r *provisioningRunner) component() core.RuntimeComponent {
 	return core.RuntimeComponent{Name: "commercial-provisioning-worker", StartFunc: r.start, HealthFunc: r.health, ShutdownFunc: r.shutdown}
 }
 func (r *provisioningRunner) start(ctx context.Context) error {
-	if r.application == nil || r.executor == nil || r.authenticator == nil {
+	if r.application == nil || r.executor == nil || r.authenticator == nil || r.workerContext == nil {
 		return errors.New("provisioning: worker binding incomplete")
 	}
 	if _, err := r.callContext(ctx); err != nil {
@@ -178,7 +179,10 @@ func (r *provisioningRunner) callContext(ctx context.Context) (context.Context, 
 	if !principal.Authenticated || principal.TenantID != "" {
 		return nil, p.ErrScope
 	}
-	return identity.WithPrincipal(ctx, principal), nil
+	if r.workerContext == nil {
+		return nil, errors.New("provisioning: process admission binding missing")
+	}
+	return r.workerContext(identity.WithPrincipal(ctx, principal))
 }
 func (s *Started) RunProvisioningOnce(ctx context.Context) (ProvisioningTick, error) {
 	if s == nil || s.provisioningRunner == nil {

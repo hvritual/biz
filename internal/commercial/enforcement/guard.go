@@ -85,6 +85,12 @@ func newGuard(doc capabilitymap.Document, reader ports.EntitlementDecisionReader
 		default:
 			return nil, errors.New("commercial: unknown classification")
 		}
+		if (o.ConsumerType == "worker") != (o.WorkerPermission != "") {
+			return nil, errors.New("commercial: inconsistent worker entry declaration")
+		}
+		if o.ConsumerType == "worker" && (o.Classification != capabilitymap.PlatformManagement || o.TenantRequired || o.RPC != "") {
+			return nil, errors.New("commercial: worker entry has public or tenant authority")
+		}
 		g.operations[o.OperationID] = o
 	}
 	for _, o := range doc.Operations {
@@ -117,6 +123,12 @@ func (g *Guard) Prepare(ctx context.Context, a authz.AuthorizedOperation, _ any)
 	}
 	if o.ConsumerType == "internal_child" {
 		return nil, g.fail(ctx, id, "root", "INTERNAL_OPERATION_ROOT_DENIED", 0, false)
+	}
+	if o.ConsumerType == "worker" {
+		w, present := ctx.Value(workerContextKey{}).(workerContext)
+		if !present || w.guard != g || w.subject != p.Subject || w.tenant != p.TenantID || p.TenantID != "" || a.Policy.Mode != authz.PermissionAll || !hasWorkerPermission(a.Policy.Permissions, o.WorkerPermission) {
+			return nil, g.fail(ctx, id, "root", "WORKER_CONTEXT_REQUIRED", 0, false)
+		}
 	}
 	if o.ConsumerType == "platform" && p.TenantID != "" {
 		return nil, g.fail(ctx, id, "root", "PLATFORM_CONTEXT_REQUIRED", 0, false)

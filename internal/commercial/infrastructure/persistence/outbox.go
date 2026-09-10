@@ -125,15 +125,18 @@ func (r *outboxRepository) Claim(ctx context.Context, owner string, lease time.D
 	return &d, nil
 }
 func (r *outboxRepository) locked(ctx context.Context, id, owner string, token uint64) (outboxRow, time.Time, error) {
-	now, e := consistency.Now(r.tx.WithContext(ctx))
-	if e != nil {
-		return outboxRow{}, now, e
-	}
+	var now time.Time
 	var row outboxRow
-	e = r.tx.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Where("event_id=?", id).First(&row).Error
+	e := r.tx.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Where("event_id=?", id).First(&row).Error
 	if errors.Is(e, gorm.ErrRecordNotFound) {
 		return row, now, p.ErrNotFound
 	}
+	if e != nil {
+		return row, now, e
+	}
+	// The row may have waited behind a live transaction until after expiry.
+	// Database time sampled before acquiring it is not admission authority.
+	now, e = consistency.Now(r.tx.WithContext(ctx))
 	if e != nil {
 		return row, now, e
 	}
@@ -181,6 +184,15 @@ func (r *outboxRepository) Deliver(ctx context.Context, id, owner string, token 
 		if json.Unmarshal([]byte(head.Payload), &previous) != nil || previous.Integrity() != nil || previous.Hash != head.PayloadSHA256 || previous.AggregateVersion != head.AggregateVersion || previous.TenantID != head.TenantID || previous.AggregateID != head.AggregateID {
 			return p.DeliveryReceipt{}, p.ErrCorrupt
 		}
+	}
+	// Acquiring the inbox/projection head may itself have blocked. Recheck
+	// after every competing row lock and before committing consumer effects.
+	now, err = consistency.Now(r.tx.WithContext(ctx))
+	if err != nil {
+		return p.DeliveryReceipt{}, err
+	}
+	if row.LeaseUntil == nil || !now.Before(*row.LeaseUntil) {
+		return p.DeliveryReceipt{}, p.ErrLease
 	}
 	outcome, err := p.ClassifyDelivery(e, inbox.PayloadSHA256, head.AggregateVersion, head.PayloadSHA256)
 	if err != nil {

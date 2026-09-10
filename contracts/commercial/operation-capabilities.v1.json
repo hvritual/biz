@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "7",
+  "mapping_version": "8",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -723,14 +723,16 @@
       "classification": "platform_management",
       "capability_codes": [],
       "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "worker_permission": "platform.provisioning.execute"
     },
     {
       "operation_id": "commercial.provisioning.work.record",
       "classification": "platform_management",
       "capability_codes": [],
       "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "worker_permission": "platform.provisioning.execute"
     },
     {
       "operation_id": "commercial.provisioning.work.finalize",
@@ -744,28 +746,32 @@
           "source": "internal/commercial/application/provisioning/internal/usecase/service.go#FinalizeProvisioningWork"
         }
       ],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "worker_permission": "platform.provisioning.execute"
     },
     {
       "operation_id": "commercial.provisioning.delivery.claim",
       "classification": "platform_management",
       "capability_codes": [],
       "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "worker_permission": "platform.provisioning.execute"
     },
     {
       "operation_id": "commercial.provisioning.delivery.complete",
       "classification": "platform_management",
       "capability_codes": [],
       "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "worker_permission": "platform.provisioning.execute"
     },
     {
       "operation_id": "commercial.provisioning.delivery.fail",
       "classification": "platform_management",
       "capability_codes": [],
       "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "worker_permission": "platform.provisioning.execute"
     },
     {
       "operation_id": "commercial.provisioning.delivery.list",

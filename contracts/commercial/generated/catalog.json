@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "mapping_version": "7",
+  "mapping_version": "8",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "bf3a18c3f2de6ea56039269db7a587888347793f450e0c1b1cd8c932003de64f",
+    "contracts/commercial/operation-capabilities.v1.json": "396430cf0982aef0a1d8e2fb88e26bd5d5e7be519c0085ffb9fef049d68b3926",
     "contracts/generated/manifest.json": "c6fee0ee40a957df306e28f9ee5a7bae463a470b0a0519d731453b2424cc786d",
     "contracts/generated/operation-plans.json": "7e2150e6c3c4a92933f59511700d9e5c10a3d05a6ad68fe104ccd353bf9caaa6",
     "internal/access/application/tenant_member_lifecycle.go": "c629117c2538c45af9a75932a53ecd6109059bd56e6dc71b11eedb2e538c6cff",
@@ -378,34 +378,37 @@
       "always_required_capability_codes": []
     },
     {
+      "worker_permission": "platform.provisioning.execute",
       "operation_id": "commercial.provisioning.delivery.claim",
       "classification": "platform_management",
       "capability_codes": [],
       "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
       "children": [],
-      "consumer_type": "internal_child",
+      "consumer_type": "worker",
       "tenant_required": false,
       "required_capability_codes": [],
       "always_required_capability_codes": []
     },
     {
+      "worker_permission": "platform.provisioning.execute",
       "operation_id": "commercial.provisioning.delivery.complete",
       "classification": "platform_management",
       "capability_codes": [],
       "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
       "children": [],
-      "consumer_type": "internal_child",
+      "consumer_type": "worker",
       "tenant_required": false,
       "required_capability_codes": [],
       "always_required_capability_codes": []
     },
     {
+      "worker_permission": "platform.provisioning.execute",
       "operation_id": "commercial.provisioning.delivery.fail",
       "classification": "platform_management",
       "capability_codes": [],
       "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
       "children": [],
-      "consumer_type": "internal_child",
+      "consumer_type": "worker",
       "tenant_required": false,
       "required_capability_codes": [],
       "always_required_capability_codes": []
@@ -478,17 +481,19 @@
       "always_required_capability_codes": []
     },
     {
+      "worker_permission": "platform.provisioning.execute",
       "operation_id": "commercial.provisioning.work.claim",
       "classification": "platform_management",
       "capability_codes": [],
       "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
       "children": [],
-      "consumer_type": "internal_child",
+      "consumer_type": "worker",
       "tenant_required": false,
       "required_capability_codes": [],
       "always_required_capability_codes": []
     },
     {
+      "worker_permission": "platform.provisioning.execute",
       "operation_id": "commercial.provisioning.work.finalize",
       "classification": "platform_management",
       "capability_codes": [],
@@ -501,18 +506,19 @@
           "source": "internal/commercial/application/provisioning/internal/usecase/service.go#FinalizeProvisioningWork"
         }
       ],
-      "consumer_type": "internal_child",
+      "consumer_type": "worker",
       "tenant_required": false,
       "required_capability_codes": [],
       "always_required_capability_codes": []
     },
     {
+      "worker_permission": "platform.provisioning.execute",
       "operation_id": "commercial.provisioning.work.record",
       "classification": "platform_management",
       "capability_codes": [],
       "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
       "children": [],
-      "consumer_type": "internal_child",
+      "consumer_type": "worker",
       "tenant_required": false,
       "required_capability_codes": [],
       "always_required_capability_codes": []

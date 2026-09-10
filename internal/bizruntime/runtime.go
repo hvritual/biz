@@ -368,6 +368,7 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 		worker = workers[0]
 		worker.executor = executor
 		worker.authenticator = authenticator
+		worker.workerContext = commercialGuard.WorkerContext
 	}
 	return generatedassembly.RuntimeBindings{
 		Factories: applicationFactories{provisioningPolicy: options.ProvisioningPolicy, provisioningRunner: worker,
