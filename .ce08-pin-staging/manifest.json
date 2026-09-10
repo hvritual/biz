@@ -1,0 +1,111 @@
+{
+  "product_commit": "8da9d71f89d0e73352dab43bb89fd945a2a76a22",
+  "product_tree": "4878db897d8fa38d9f4c8974343da7374c6dbb7c",
+  "changes": [
+    {
+      "path": ".github/workflows/b12-3-tenant-member-mysql.yml",
+      "old_blob": "083271045d12e7e0eee81c47509288af8cef12a9",
+      "sha": "a80a2cffeffaa756154529ac32e3a3975d4f8902",
+      "mode": "100644",
+      "type": "blob"
+    },
+    {
+      "path": ".github/workflows/b12-4-tenant-role-mysql.yml",
+      "old_blob": "7e5c289f44ca3c14a92129800e31f2d9cf03eab4",
+      "sha": "28908c1b84bc99b7d31419e271423be4f02039eb",
+      "mode": "100644",
+      "type": "blob"
+    },
+    {
+      "path": ".github/workflows/b12-5-tenant-bootstrap-mysql.yml",
+      "old_blob": "3dc3879e2680c5c2e02af5125e70953a7c428146",
+      "sha": "6c67ca4d34aa1ce52ade4836cd6eedf2fde501d2",
+      "mode": "100644",
+      "type": "blob"
+    },
+    {
+      "path": ".github/workflows/b12-6-concurrency-mysql.yml",
+      "old_blob": "d57cdd3bfa027709f9046254e67011fda8b9cc4b",
+      "sha": "a660e27c667e2cd64fa839a360b4ac049bb8d180",
+      "mode": "100644",
+      "type": "blob"
+    },
+    {
+      "path": ".github/workflows/b12-7-runtime-qualification.yml",
+      "old_blob": "dc3520b5962fc312063a34e0b016a86882e15e08",
+      "sha": "60ccee5ad9deefe04869d3ebfb6177a0632fe582",
+      "mode": "100644",
+      "type": "blob"
+    },
+    {
+      "path": ".github/workflows/b12-8-framework-pressure-disposition.yml",
+      "old_blob": "60da4845171438200bbf24ed967c2e817dc2e166",
+      "sha": "b6100ab068b82cf66e6d13ed3942e721aaed6e62",
+      "mode": "100644",
+      "type": "blob"
+    },
+    {
+      "path": ".github/workflows/b12-multitenant-access-pressure.yml",
+      "old_blob": "13352a23432bf55a55d2c86ab78d209fd13edf42",
+      "sha": "7d24bf79c9a2b490adf904eeb1aaa5bafb491d90",
+      "mode": "100644",
+      "type": "blob"
+    },
+    {
+      "path": ".github/workflows/ce01-qualification.yml",
+      "old_blob": "34ca3305167a7145535f1feef798d06baa0cd085",
+      "sha": "2696bfb0439048adb9e640ea5773ed092f371393",
+      "mode": "100644",
+      "type": "blob"
+    },
+    {
+      "path": ".github/workflows/ce02-bootstrap.yml",
+      "old_blob": "bc507481ddc9678c85848cdd0451e5f05c7d50d2",
+      "sha": "84f9a75ade9617eb68bbed3be0105e419f0bd97f",
+      "mode": "100644",
+      "type": "blob"
+    },
+    {
+      "path": ".github/workflows/ce03-qualification.yml",
+      "old_blob": "d48e73f186c6a81fb29c54c7270a492fff687a9e",
+      "sha": "4315ddfe8353a3d7e2554683a9c6a949835d1e17",
+      "mode": "100644",
+      "type": "blob"
+    },
+    {
+      "path": ".github/workflows/ce04-qualification.yml",
+      "old_blob": "9c2f2b975e504d9e1680925b1306dc21f9f540f0",
+      "sha": "20310cacf70c9589b4e98d0929af71241d94a3d8",
+      "mode": "100644",
+      "type": "blob"
+    },
+    {
+      "path": ".github/workflows/ce05-qualification.yml",
+      "old_blob": "1458e18fb745343293516f25d9caff65c09f9932",
+      "sha": "6b64dc5146c405362168fdcab8ee9ddc5673a4d8",
+      "mode": "100644",
+      "type": "blob"
+    },
+    {
+      "path": ".github/workflows/ce06-qualification.yml",
+      "old_blob": "89147cf04033729b190d002a3237acaa729b2fc4",
+      "sha": "835c6557f5fbab4c69ab1fdb7e3c4b341fc3498c",
+      "mode": "100644",
+      "type": "blob"
+    },
+    {
+      "path": ".github/workflows/ce07-qualification.yml",
+      "old_blob": "c25ef5bd9766531bb25b31693659523c5ceef7af",
+      "sha": "d809222e292515929d13047351f03fa5f01da9f7",
+      "mode": "100644",
+      "type": "blob"
+    },
+    {
+      "path": ".github/workflows/delivery-workspace-isolation.yml",
+      "old_blob": "05186af3f1a5335cc612fad779f97f6cce5f8071",
+      "sha": "74d256bf0391f2329d7d80c8977a69ff4600efa7",
+      "mode": "100644",
+      "type": "blob"
+    }
+  ]
+}
