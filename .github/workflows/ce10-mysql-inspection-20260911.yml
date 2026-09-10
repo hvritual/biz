@@ -1,0 +1,81 @@
+name: CE-10 real MySQL inspection
+on:
+  push:
+    branches: [control/ce10-delivery-20260910]
+    paths: ['.github/workflows/ce10-mysql-inspection-20260911.yml']
+permissions: {contents: read}
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.4
+        env: {MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: biz_ce10_inspection}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent" --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      CANDIDATE: 1107846ebda6a05d5d2b157a7cdab5badb0602a9
+      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      YUNKA_TEST_MYSQL_DSN: 'root:root@tcp(127.0.0.1:3306)/biz_ce10_inspection?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ env.CANDIDATE }}', path: biz, fetch-depth: 0, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, persist-credentials: false}
+      - id: lock
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/ce10-inspection"
+          git -C biz rev-parse HEAD > "$RUNNER_TEMP/ce10-inspection/source.txt"
+          git -C yunka.io rev-parse HEAD >> "$RUNNER_TEMP/ce10-inspection/source.txt"
+          git -C biz archive HEAD -o "$RUNNER_TEMP/ce10-inspection/biz-source.tar"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Actual test commands with retained exit codes
+        working-directory: biz
+        shell: bash
+        run: |
+          set -uo pipefail
+          out="$RUNNER_TEMP/ce10-inspection"
+          make yunka-source-check workspace-check > "$out/workspace.log" 2>&1
+          echo $? > "$out/workspace.exit"
+          run_suite() {
+            name="$1"; shift
+            printf '%s\n' "$*" > "$out/$name.command"
+            "$@" > "$out/$name.jsonl" 2> "$out/$name.stderr"
+            echo $? > "$out/$name.exit"
+          }
+          run_suite mysql go test -timeout=8m -count=1 -tags=integration -json ./integration -run '^TestCE10MySQL'
+          run_suite race go test -timeout=8m -race -count=1 -tags=integration -json ./integration -run '^TestCE10MySQL'
+          run_suite regression go test -timeout=8m -count=1 -tags=integration -json ./integration -run '^Test(CE09MySQL|CE08MySQL|CE07MySQL|CE06MySQL|CE05MySQL|CE04MySQL|CE02|B122|B123|B124|B125|B126|AG02OwnerInvariantUsesCurrentReadAfterSnapshot)'
+          run_suite all go test -timeout=5m -count=1 -json ./...
+          go vet ./... > "$out/vet.log" 2>&1; echo $? > "$out/vet.exit"
+          go build ./... > "$out/build.log" 2>&1; echo $? > "$out/build.exit"
+          python3 - <<'PY'
+          import hashlib,json,os,sys
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          from ce03_test_events import summarize
+          out=Path(os.environ['RUNNER_TEMP'])/'ce10-inspection'
+          result={'candidate':os.environ['CANDIDATE'],'framework':os.environ['YUNKA_SHA'],'run_id':os.environ['GITHUB_RUN_ID'],'suites':{},'commands':{}}
+          ok=True
+          for name in ['mysql','race','regression','all']:
+              counts=summarize([json.loads(l) for l in (out/(name+'.jsonl')).read_text().splitlines()])
+              rc=int((out/(name+'.exit')).read_text())
+              result['suites'][name]={'exit_code':rc,**counts}
+              ok=ok and rc==0 and counts['leaf_tests']>0 and counts['failed']==0 and counts['skipped']==0
+          for name in ['workspace','vet','build']:
+              rc=int((out/(name+'.exit')).read_text());result['commands'][name]=rc;ok=ok and rc==0
+          result['result']='PASS' if ok else 'FAIL'
+          result['sha256']={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in out.iterdir() if p.is_file()}
+          (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps(result,indent=2))
+          sys.exit(0 if ok else 1)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce10-inspection-${{ env.CANDIDATE }}', path: '${{ runner.temp }}/ce10-inspection', retention-days: 30, if-no-files-found: error}
