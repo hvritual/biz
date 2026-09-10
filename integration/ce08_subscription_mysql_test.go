@@ -77,9 +77,9 @@ func (e *ce08Environment) publishPlan(scope string) *commercialv1.PlanVersionDTO
 		e.t.Fatal(err)
 	}
 	published, err := e.plans.PublishPlanVersion(e.ctx(), &commercialv1.ChangePlanVersionStateRequest{
-		RequestId:       "ce08-plan-publish-" + ce04Random(e.t),
-		PlanCode:        draft.GetPlanCode(),
-		Version:         draft.GetVersion(),
+		RequestId:        "ce08-plan-publish-" + ce04Random(e.t),
+		PlanCode:         draft.GetPlanCode(),
+		Version:          draft.GetVersion(),
 		ExpectedRevision: draft.GetRevision(),
 		Reason:           "CE08 MySQL acceptance publish",
 	})
@@ -190,13 +190,13 @@ func TestCE08MySQLSpecificRuleAndFallbackMaterializeConsistentEntitlements(t *te
 		t.Fatalf("entitlement source version db=%d receipt=%d", sourceVersion, sub.GetEntitlementSourceVersion())
 	}
 	for table, minimum := range map[string]int64{
-		"biz_commercial_subscriptions":          1,
-		"biz_commercial_entitlement_sources":    1,
-		"biz_commercial_subscription_receipts":  1,
-		"biz_commercial_subscription_audit":     1,
-		"biz_memberships":                       1,
-		"biz_roles":                             1,
-		"biz_member_roles":                      1,
+		"biz_commercial_subscriptions":         1,
+		"biz_commercial_entitlement_sources":   1,
+		"biz_commercial_subscription_receipts": 1,
+		"biz_commercial_subscription_audit":    1,
+		"biz_memberships":                      1,
+		"biz_roles":                            1,
+		"biz_member_roles":                     1,
 	} {
 		var count int64
 		query := e.db.Table(table)
@@ -273,7 +273,7 @@ func TestCE08MySQLSubscriptionFailureRollsBackTenantOwnerEntitlementsAndRetry(t 
 	if err := e.db.Exec("DROP TRIGGER IF EXISTS " + trigger).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := e.db.Exec("CREATE TRIGGER "+trigger+" BEFORE INSERT ON biz_commercial_subscriptions FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'ce08 forced subscription failure'").Error; err != nil {
+	if err := e.db.Exec("CREATE TRIGGER " + trigger + " BEFORE INSERT ON biz_commercial_subscriptions FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'ce08 forced subscription failure'").Error; err != nil {
 		t.Fatal(err)
 	}
 	active := true
@@ -376,7 +376,7 @@ func TestCE08MySQLMemberChildFailureRollsBackBeforeSubscription(t *testing.T) {
 	if err := e.db.Exec("DROP TRIGGER IF EXISTS " + trigger).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := e.db.Exec("CREATE TRIGGER "+trigger+" BEFORE INSERT ON biz_memberships FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'ce08 forced member failure'").Error; err != nil {
+	if err := e.db.Exec("CREATE TRIGGER " + trigger + " BEFORE INSERT ON biz_memberships FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'ce08 forced member failure'").Error; err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = e.db.Exec("DROP TRIGGER IF EXISTS " + trigger).Error }()
@@ -396,12 +396,17 @@ func TestCE08MySQLMemberChildFailureRollsBackBeforeSubscription(t *testing.T) {
 
 func TestCE08MySQLConcreteBootstrapScopeRejectsWildcardInput(t *testing.T) {
 	e := ce08New(t)
-	_, err := e.subscriptions.BootstrapBaseSubscription(e.ctx(), &commercialv1.BootstrapTenantSubscriptionRequest{RequestId: "ce08-invalid-scope-" + ce04Random(t), TenantId: "tenant-invalid-" + ce04Random(t), SalesScope: "*"})
-	if err == nil {
-		t.Fatal("wildcard tenant sales scope unexpectedly accepted")
+	before := ce08Snapshot(t, e.db)
+	stamp := ce04Random(t)
+	result := e.createTenant("ce08-invalid-scope-"+stamp, "CE08 wildcard scope "+stamp, "ce08-wildcard-owner-"+stamp, "*")
+	if result.err != nil {
+		t.Fatal(result.err)
 	}
-	if !strings.Contains(err.Error(), "SUBSCRIPTION_INVALID_REQUEST") {
-		t.Fatalf("unexpected invalid-scope error: %v", err)
+	if result.status == http.StatusOK {
+		t.Fatalf("wildcard tenant sales scope unexpectedly accepted body=%s", result.body)
+	}
+	if after := ce08Snapshot(t, e.db); after != before {
+		t.Fatalf("invalid wildcard scope leaked root state before=%+v after=%+v", before, after)
 	}
 }
 

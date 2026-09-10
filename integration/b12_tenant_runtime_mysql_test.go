@@ -192,7 +192,7 @@ func TestB122TenantLifecycleRESTAndGRPCUseUnifiedExecutor(t *testing.T) {
 		t.Fatalf("created=%+v", created)
 	}
 
-	dialCtx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	dialCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	conn, err := grpc.DialContext(dialCtx, started.GRPCAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
