@@ -19,9 +19,24 @@ for pass in 1 2; do
 done
 make check 2>&1 | tee "$out/check-after.log"
 
-go test -count=1 -json ./internal/commercial/domain/subscription ./internal/commercial/application/subscriptionmanagement/... ./internal/access/application/tenantlifecycle/... ./internal/access/policy -run '^TestCE08' | tee "$out/focused.jsonl"
+go test -count=1 -json ./internal/commercial/domain/subscription ./internal/commercial/application/subscriptionmanagement/... ./internal/access/application/tenantlifecycle/... ./internal/access/policy ./internal/bizruntime -run '^TestCE08' | tee "$out/focused.jsonl"
 go test -count=1 -tags=integration -json ./integration -run '^TestCE08MySQL' | tee "$out/mysql.jsonl"
 go test -race -count=1 -tags=integration -json ./integration -run '^TestCE08MySQL' | tee "$out/race.jsonl"
+export CE08_RESTART_RECEIPT="$out/restart-receipt.json"
+go test -count=1 -tags=integration -json ./integration -run '^TestCE08PersistenceBeforeRestart$' | tee "$out/restart-before.jsonl"
+: "${MYSQL_CONTAINER_ID:?workflow-owned MySQL required}"
+before_start="$(docker inspect -f '{{.State.StartedAt}}' "$MYSQL_CONTAINER_ID")"
+docker restart "$MYSQL_CONTAINER_ID" | tee "$out/restart.log"
+ready=0
+for attempt in $(seq 1 60); do
+  if docker exec "$MYSQL_CONTAINER_ID" mysqladmin ping -h 127.0.0.1 -proot --silent >> "$out/restart.log" 2>&1; then ready=1; break; fi
+  sleep 1
+done
+test "$ready" = 1
+after_start="$(docker inspect -f '{{.State.StartedAt}}' "$MYSQL_CONTAINER_ID")"
+test "$before_start" != "$after_start"
+printf 'before=%s\nafter=%s\n' "$before_start" "$after_start" >> "$out/restart.log"
+go test -count=1 -tags=integration -json ./integration -run '^TestCE08PersistenceAfterRestart$' | tee "$out/restart-after.jsonl"
 go test -count=1 -tags=integration -json ./integration -run '^(TestB122TenantLifecycleRESTAndGRPCUseUnifiedExecutor|TestB122TenantLifecycleUsesRootMySQLUnitOfWork|TestB125TenantCreateBootstrapsOwnerInOneRootUoW|TestB125ChildFailureRollsBackTenantAndMemberAndAllowsIdempotentRetry)$' | tee "$out/b12-bootstrap.jsonl"
 go test -count=1 -tags=integration -json ./integration -run '^TestCE07MySQL' | tee "$out/ce07-mysql.jsonl"
 go test -count=1 -tags=integration -json ./integration -run '^TestCE06MySQL' | tee "$out/ce06-mysql.jsonl"
@@ -51,7 +66,7 @@ summary={
   'task_status':task['status'],
   'suites':{}
 }
-for name in ('focused','mysql','race','b12-bootstrap','ce07-mysql','ce06-mysql','ce05-mysql','ce04-mysql','ce02-mysql','all'):
+for name in ('focused','mysql','race','restart-before','restart-after','b12-bootstrap','ce07-mysql','ce06-mysql','ce05-mysql','ce04-mysql','ce02-mysql','all'):
   rows=[json.loads(line) for line in (out/(name+'.jsonl')).read_text().splitlines()]
   summary['suites'][name]=summarize(rows)
 if task['status']=='DONE':
