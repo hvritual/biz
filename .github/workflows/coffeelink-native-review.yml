@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: f3832670659331d944ef4715b2141a40dc56c4ee
+          ref: 1e85c455a87fe71d958c1c2532caa5fdd8f7589b
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -39,7 +39,7 @@ jobs:
           current={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(Path('web').rglob('*')) if p.is_file()}
           for name,digest in preserved.items(): assert current[name]==digest,name
           sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
-          assert sha=='f3832670659331d944ef4715b2141a40dc56c4ee'
+          assert sha=='1e85c455a87fe71d958c1c2532caa5fdd8f7589b'
           Path('/tmp/customer-source-manifest.json').write_text(json.dumps({'base':'911ab19122ec009de8028fdc4b293b1358127be1','commit':sha,'current':current,'preserved':preserved},ensure_ascii=False,indent=2))
           print('Pinned native SHA:',sha,'unchanged shared components:',len(preserved),'source files:',len(current))
           PY
