@@ -28,13 +28,14 @@ jobs:
           source yunka.io/tools/toolchain.env
           echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
           mkdir -p "$RUNNER_TEMP/b12"
+          git -C biz rev-parse HEAD > "$RUNNER_TEMP/b12/start-source.txt"
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
       - name: Update real legacy fixture to new request and replay contract
         working-directory: biz
         run: |
           set -euo pipefail
-          git merge-base --is-ancestor d67ae0139c368ff02591dafe964a5328550ccb2a HEAD
+          test "$(git rev-parse HEAD)" = d67ae0139c368ff02591dafe964a5328550ccb2a
           python3 - <<'PY'
           from pathlib import Path
           p=Path('integration/b12_concurrency_mysql_test.go');s=p.read_text()
@@ -44,9 +45,11 @@ jobs:
           old='if statuses[0] != http.StatusOK || statuses[1] != http.StatusConflict {';assert s.count(old)==1
           s=s.replace(old,'if statuses[0] != http.StatusOK || (statuses[1] != http.StatusConflict && statuses[1] != http.StatusOK) {')
           marker='\tvar members, roles, assignments int64\n';assert s.count(marker)==1
-          s=s.replace(marker,'''\t// Concurrent in-progress attempts may conflict; completed attempts must
-          \t// replay the same durable response rather than create another tree.
-          \tfor _, result := range []b126HTTPResult{first, second, b126PostProto(base, "/v1/tenants", platformToken, key, message)} {
+          s=s.replace(marker,'''\t// In-progress attempts may conflict, but an attempt after completion must
+          \t// replay the identical durable result and must not create another tree.
+          \treplayed := b126PostProto(base, "/v1/tenants", platformToken, key, message)
+          \tif replayed.err != nil || replayed.status != http.StatusOK { t.Fatalf("completed replay status=%d body=%s err=%v", replayed.status, replayed.body, replayed.err) }
+          \tfor _, result := range []b126HTTPResult{first, second, replayed} {
           \t\tif result.err != nil { t.Fatal(result.err) }
           \t\tif result.status == http.StatusConflict { continue }
           \t\tif result.status != http.StatusOK { t.Fatalf("replay status=%d body=%s", result.status, result.body) }
@@ -57,16 +60,18 @@ jobs:
           \tif err := db.Table("biz_commercial_subscriptions").Where("tenant_id=?", row.ID).Count(&subscriptions).Error; err != nil || subscriptions != 1 { t.Fatalf("base subscriptions=%d err=%v", subscriptions, err) }
           \tvar members, roles, assignments int64
           '''.replace('\n          ','\n'))
-          p.write_text(s)
-          p=Path('scripts/ce08_qualify.sh');s=p.read_text();old='|TestB125)' ;assert old in s
-          p.write_text(s.replace(old,'|TestB125|TestB126ConcurrentTenantCreateSameIdempotencyKeyCreatesOneBootstrapTree)'))
+          q=Path('scripts/ce08_qualify.sh');script=q.read_text()
+          old='|TestB125ChildFailureRollsBackTenantAndMemberAndAllowsIdempotentRetry)$'
+          assert script.count(old)==1, 'exact existing bootstrap selector changed'
+          script=script.replace(old,'|TestB125ChildFailureRollsBackTenantAndMemberAndAllowsIdempotentRetry|TestB126ConcurrentTenantCreateSameIdempotencyKeyCreatesOneBootstrapTree)$')
+          p.write_text(s);q.write_text(script)
           PY
           gofmt -w integration/b12_concurrency_mysql_test.go
           git diff --check
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add integration/b12_concurrency_mysql_test.go scripts/ce08_qualify.sh
-          git commit -m 'test(ce-08): preserve B12 concurrent bootstrap assertions under durable replay'
+          git commit -m 'test(ce-08): preserve B12 concurrent bootstrap invariants under durable replay'
           git push origin HEAD:fix/ce-08-complete
           git rev-parse HEAD > "$RUNNER_TEMP/b12/verified-source.txt"
       - name: Run all B12 lifecycle and concurrency regressions
@@ -80,7 +85,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json,sys,os,subprocess
+          import json,sys,os
           from pathlib import Path
           sys.path.insert(0,'scripts');from ce03_test_events import summarize
           out=Path(os.environ['RUNNER_TEMP'])/'b12';counts=summarize([json.loads(l) for l in (out/'mysql.jsonl').read_text().splitlines()]);(out/'summary.json').write_text(json.dumps(counts,indent=2)+'\n')
