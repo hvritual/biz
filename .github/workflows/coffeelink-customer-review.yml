@@ -4,7 +4,7 @@ on:
     branches: [build/coffeelink-customer-review]
     paths: ['.github/workflows/coffeelink-customer-review.yml', '.github/customer-review-transfer/replacements.json', '.github/customer-review-transfer/additions.json']
 permissions:
-  contents: read
+  contents: write
   actions: read
 concurrency:
   group: coffeelink-customer-review
@@ -61,6 +61,24 @@ jobs:
           root=Path('.github/customer-review-transfer')
           files=unpack(root,7,'f3cb00f64354f89d964909f2c6b6d285f9221cd88840a9f916d6eadd10c74cc7')
           write_files(files)
+          packed=base64.b64decode((root/'browser-fixes.b64').read_text(),validate=True)
+          assert hashlib.sha256(packed).hexdigest()=='0cc7c683bcc72a8fea9ee3cf7315da2e17851f052f4eabe85362e55dd7745ee0'
+          for name, spec in json.loads(lzma.decompress(packed)).items():
+              p=Path(name)
+              assert (name.startswith('web/src/') or name.startswith('web/e2e/')) and '..' not in p.parts
+              assert p.suffix in ('.vue','.ts','.css')
+              if 'create' in spec:
+                  assert not p.exists(),name
+                  p.write_text(spec['create'],encoding='utf-8')
+              else:
+                  text=p.read_text(encoding='utf-8')
+                  assert hashlib.sha256(text.encode()).hexdigest()==spec['sha256'],name
+                  last=len(text)+1
+                  for start,end,replacement in reversed(spec['edits']):
+                      assert 0<=start<=end<last,(name,start,end)
+                      text=text[:start]+replacement+text[end:]
+                      last=start
+                  p.write_text(text,encoding='utf-8')
           if (root/'additions.json').exists(): write_files(json.loads((root/'additions.json').read_text()))
           edits(root/'replacements.json')
           current={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(Path('web').rglob('*')) if p.is_file()}
@@ -100,6 +118,32 @@ jobs:
         run: |
           set -o pipefail
           npm run test:e2e 2>&1 | tee /tmp/customer-e2e.log
+      - name: Publish native source to new feature branch after all checks pass
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=911ab19122ec009de8028fdc4b293b1358127be1
+          branch=feat/coffeelink-customer-ui
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$branch" >/tmp/existing-feature.json 2>/dev/null; then
+            echo 'Feature branch already exists; refusing to overwrite.'
+            exit 1
+          fi
+          git config user.name 'CoffeeLink UI review'
+          git config user.email 'noreply@openai.com'
+          git read-tree "$base"
+          git add web
+          git diff --cached --name-only "$base" > /tmp/customer-published-paths.txt
+          if grep -v '^web/' /tmp/customer-published-paths.txt; then exit 1; fi
+          if grep -E '(^|/)(node_modules|dist|screenshots|test-results|playwright-report)/|\.(ttf|otf|woff|woff2)$' /tmp/customer-published-paths.txt; then exit 1; fi
+          tree=$(git write-tree)
+          commit=$(printf 'feat(web): implement CoffeeLink customer interface review\n\nBased on 911ab19122ec009de8028fdc4b293b1358127be1. Reuse original Vue layout and UI. Native local preview with browser verified states. No main merge.\n' | git commit-tree "$tree" -p "$base")
+          GH_TOKEN="$GH_TOKEN" gh auth setup-git
+          git push origin "$commit:refs/heads/$branch"
+          printf 'branch=%s\ncommit=%s\nbase=%s\ntree=%s\nrun=%s\n' "$branch" "$commit" "$base" "$tree" "$GITHUB_RUN_ID" > /tmp/customer-native-commit.txt
+          git bundle create /tmp/customer-native.bundle "refs/remotes/origin/$branch" || git bundle create /tmp/customer-native.bundle --all
+          cat /tmp/customer-native-commit.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -111,6 +155,8 @@ jobs:
             /tmp/customer-check.log
             /tmp/customer-e2e.log
             /tmp/customer-source-manifest.json
+            /tmp/customer-native-commit.txt
+            /tmp/customer-published-paths.txt
             !web/playwright-report/**/*.ttf
             !web/playwright-report/**/*.otf
             !web/playwright-report/**/*.woff
@@ -120,5 +166,7 @@ jobs:
         if: always()
         with:
           name: coffeelink-customer-source-review
-          path: /tmp/customer-review-source.tgz
+          path: |
+            /tmp/customer-review-source.tgz
+            /tmp/customer-native.bundle
           retention-days: 7
