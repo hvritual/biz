@@ -1,0 +1,36 @@
+name: CE-08 MySQL acceptance probe
+on:
+  push:
+    branches: [control/ce08-completion-20260910]
+    paths: ['.github/workflows/ce08-mysql-probe.yml']
+permissions: {contents: read}
+jobs:
+  mysql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.4
+        env: {MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: biz_ce08_probe}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent" --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce08_probe?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: fix/ce-08-complete, path: biz, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: 33b98ceba57494abda2299e4f0290a5651dab4bc, path: yunka.io, persist-credentials: false}
+      - id: lock
+        shell: bash
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Compile and run CE-08 MySQL matrix
+        working-directory: biz
+        run: |
+          set -euo pipefail
+          go test -count=1 -tags=integration -v ./integration -run '^TestCE08MySQL'
