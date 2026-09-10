@@ -1,0 +1,38 @@
+name: CE-08 regenerate commercial catalog
+on:
+  push:
+    branches: [control/ce08-completion-20260910]
+    paths: ['.github/workflows/ce08-regenerate-commercial.yml']
+permissions: {contents: write}
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: fix/ce-08-complete, path: biz, fetch-depth: 0, persist-credentials: true}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: 33b98ceba57494abda2299e4f0290a5651dab4bc, path: yunka.io, persist-credentials: false}
+      - id: lock
+        shell: bash
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Rebuild and commit derived mapping only
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          make commercial-generate
+          git diff --check
+          git diff -- contracts/commercial/generated/catalog.json contracts/commercial/generated/catalog.ts contracts/commercial/operation-capabilities.v1.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add contracts/commercial/generated/catalog.json contracts/commercial/generated/catalog.ts contracts/commercial/operation-capabilities.v1.json
+          if git diff --cached --quiet; then
+            echo 'no commercial derived drift'; exit 0
+          fi
+          git commit -m 'chore(ce-08): refresh commercial derived catalog'
+          git push origin HEAD:fix/ce-08-complete
