@@ -1,0 +1,99 @@
+name: CE-08 B12 replay regression
+on:
+  push:
+    branches: [control/ce08-completion-20260910]
+    paths: ['.github/workflows/ce08-b12-replay-regression.yml']
+permissions: {contents: write}
+concurrency: {group: ce08-product-writer, cancel-in-progress: false}
+jobs:
+  regress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.4
+        env: {MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: biz_ce08_b12}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent" --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      YUNKA_TEST_MYSQL_DSN: 'root:root@tcp(127.0.0.1:3306)/biz_ce08_b12?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: fix/ce-08-complete, path: biz, fetch-depth: 0, persist-credentials: true}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: 33b98ceba57494abda2299e4f0290a5651dab4bc, path: yunka.io, persist-credentials: false}
+      - id: lock
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/b12"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Update real legacy fixture to new request and replay contract
+        working-directory: biz
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor d67ae0139c368ff02591dafe964a5328550ccb2a HEAD
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('integration/b12_concurrency_mysql_test.go');s=p.read_text()
+          old='message := &accessv1.CreateTenantRequest{Name: name, OwnerUserId: ownerUserID, OwnerEmail: ownerEmail}'
+          assert s.count(old)==1
+          s=s.replace(old,'message := &accessv1.CreateTenantRequest{Name: name, OwnerUserId: ownerUserID, OwnerEmail: ownerEmail, RequestId: key, SalesScope: "default"}')
+          old='if statuses[0] != http.StatusOK || statuses[1] != http.StatusConflict {';assert s.count(old)==1
+          s=s.replace(old,'if statuses[0] != http.StatusOK || (statuses[1] != http.StatusConflict && statuses[1] != http.StatusOK) {')
+          marker='\tvar members, roles, assignments int64\n';assert s.count(marker)==1
+          s=s.replace(marker,'''\t// Concurrent in-progress attempts may conflict; completed attempts must
+          \t// replay the same durable response rather than create another tree.
+          \tfor _, result := range []b126HTTPResult{first, second, b126PostProto(base, "/v1/tenants", platformToken, key, message)} {
+          \t\tif result.err != nil { t.Fatal(result.err) }
+          \t\tif result.status == http.StatusConflict { continue }
+          \t\tif result.status != http.StatusOK { t.Fatalf("replay status=%d body=%s", result.status, result.body) }
+          \t\tvar tenant accessv1.TenantDTO
+          \t\tif err := protojson.Unmarshal(result.body, &tenant); err != nil || tenant.Id != row.ID { t.Fatalf("divergent durable replay: %s %v", result.body, err) }
+          \t}
+          \tvar subscriptions int64
+          \tif err := db.Table("biz_commercial_subscriptions").Where("tenant_id=?", row.ID).Count(&subscriptions).Error; err != nil || subscriptions != 1 { t.Fatalf("base subscriptions=%d err=%v", subscriptions, err) }
+          \tvar members, roles, assignments int64
+          '''.replace('\n          ','\n'))
+          p.write_text(s)
+          p=Path('scripts/ce08_qualify.sh');s=p.read_text();old='|TestB125)' ;assert old in s
+          p.write_text(s.replace(old,'|TestB125|TestB126ConcurrentTenantCreateSameIdempotencyKeyCreatesOneBootstrapTree)'))
+          PY
+          gofmt -w integration/b12_concurrency_mysql_test.go
+          git diff --check
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add integration/b12_concurrency_mysql_test.go scripts/ce08_qualify.sh
+          git commit -m 'test(ce-08): preserve B12 concurrent bootstrap assertions under durable replay'
+          git push origin HEAD:fix/ce-08-complete
+          git rev-parse HEAD > "$RUNNER_TEMP/b12/verified-source.txt"
+      - name: Run all B12 lifecycle and concurrency regressions
+        working-directory: biz
+        run: |
+          set -euo pipefail
+          make yunka-source-check workspace-check
+          go test -count=1 -tags=integration -json ./integration -run '^Test(B122|B123|B124|B125|B126|AG02OwnerInvariantUsesCurrentReadAfterSnapshot)' | tee "$RUNNER_TEMP/b12/mysql.jsonl"
+      - name: Record new qualified compatibility baseline without rewriting history
+        working-directory: biz
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,sys,os,subprocess
+          from pathlib import Path
+          sys.path.insert(0,'scripts');from ce03_test_events import summarize
+          out=Path(os.environ['RUNNER_TEMP'])/'b12';counts=summarize([json.loads(l) for l in (out/'mysql.jsonl').read_text().splitlines()]);(out/'summary.json').write_text(json.dumps(counts,indent=2)+'\n')
+          p=Path('docs/pressure/B12-framework-pressure.md');s=p.read_text();old='QUALIFIED_YUNKA_BASELINE=6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb';assert old in s
+          s=s.replace(old,'QUALIFIED_YUNKA_BASELINE=33b98ceba57494abda2299e4f0290a5651dab4bc')
+          s+='\n## CE-08 compatibility qualification (2026-09-10)\n\nPrevious B12 qualification baseline: `6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb`; prior logs/PR evidence retain that source. The active baseline now adds only the already merged #181 C9 codegen correction. This compatibility source passed the full B122/B123/B124/B125/B126 and AG02 current-read regression in run '+os.environ['GITHUB_RUN_ID']+' at Biz '+(out/'verified-source.txt').read_text().strip()+'. Actual leaf tests: '+str(counts['leaf_tests'])+'; failures/skips: 0. CE-08 final main qualification remains a separate exit gate.\n'
+          p.write_text(s)
+          PY
+          git add docs/pressure/B12-framework-pressure.md
+          git commit -m 'docs(ce-08): record actual B12 compatibility qualification'
+          git push origin HEAD:fix/ce-08-complete
+          git rev-parse HEAD > "$RUNNER_TEMP/b12/final-candidate.txt"
+          git archive HEAD -o "$RUNNER_TEMP/b12/biz-source.tar"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce08-b12-${{ github.sha }}', path: '${{ runner.temp }}/b12', if-no-files-found: error}
