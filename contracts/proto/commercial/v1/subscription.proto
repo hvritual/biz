@@ -9,7 +9,7 @@ message DefaultSubscriptionRuleDTO { string rule_id=1; uint64 version=2; int32 p
 message PutDefaultSubscriptionRuleRequest { string request_id=1; string rule_id=2; uint64 expected_version=3; int32 priority=4; string sales_scope=5; string plan_code=6; uint64 plan_version=7; bool enabled=8; string reason=9; }
 message ListDefaultSubscriptionRulesRequest {}
 message ListDefaultSubscriptionRulesResponse { repeated DefaultSubscriptionRuleDTO rules=1; }
-message TenantSubscriptionDTO { string subscription_id=1; string tenant_id=2; string kind=3; string state=4; string plan_code=5; uint64 plan_version=6; string rule_id=7; uint64 rule_version=8; string sales_scope=9; uint64 entitlement_source_version=10; string created_at=11; string match_explanation=12; }
+message TenantSubscriptionDTO { string subscription_id=1; string tenant_id=2; string kind=3; string state=4; string plan_code=5; uint64 plan_version=6; string rule_id=7; uint64 rule_version=8; string sales_scope=9; uint64 entitlement_source_version=10; string created_at=11; string match_explanation=12; uint64 revision=13; string period_start=14; string period_end=15; bool renewal_stopped=16; string pending_change_id=17; }
 message GetTenantSubscriptionRequest { string tenant_id=1; }
 message BootstrapTenantSubscriptionRequest { string request_id=1; string tenant_id=2; string sales_scope=3; }
 message BootstrapTenantSubscriptionResult { TenantSubscriptionDTO subscription=1; }

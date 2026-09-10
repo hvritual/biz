@@ -24,7 +24,7 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "309cbd9401a2b7d8f2e95a745a604870939e4807dd62fe569fbd00c1e9faad78"
+const AssemblyPlanDigest = "28fed7fca7264d2946116a94d03e9db2736afb1d4828461524450fe7824d5113"
 
 type AccessTenantLifecycleDependencies struct {
 	AccessTenantMemberLifecycle      accessapplication.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
@@ -51,6 +51,11 @@ type CommercialPlanManagementDependencies struct {
 	CommercialModuleCatalog commercialapplication.PlanManagementToCommercialModuleCatalogChildCapability
 }
 
+type CommercialSubscriptionChangesDependencies struct {
+	CommercialModuleCatalog  commercialapplication.SubscriptionChangesToCommercialModuleCatalogChildCapability
+	CommercialPlanManagement commercialapplication.SubscriptionChangesToCommercialPlanManagementChildCapability
+}
+
 type CommercialSubscriptionManagementDependencies struct {
 	CommercialPlanManagement commercialapplication.SubscriptionManagementToCommercialPlanManagementChildCapability
 }
@@ -74,6 +79,7 @@ type ApplicationFactories interface {
 	BuildCommercialEntitlementManagement(CommercialEntitlementManagementDependencies) (commercialapplication.EntitlementManagementApplication, error)
 	BuildCommercialModuleCatalog(CommercialModuleCatalogDependencies) (commercialapplication.ModuleCatalogApplication, error)
 	BuildCommercialPlanManagement(CommercialPlanManagementDependencies) (commercialapplication.PlanManagementApplication, error)
+	BuildCommercialSubscriptionChanges(CommercialSubscriptionChangesDependencies) (commercialapplication.SubscriptionChangesApplication, error)
 	BuildCommercialSubscriptionManagement(CommercialSubscriptionManagementDependencies) (commercialapplication.SubscriptionManagementApplication, error)
 	BuildDeviceopsDeviceManagement(DeviceopsDeviceManagementDependencies) (deviceopsapplication.DeviceManagementApplication, error)
 	BuildDeviceopsDeviceTransfer(DeviceopsDeviceTransferDependencies) (deviceopsapplication.DeviceTransferApplication, error)
@@ -87,6 +93,7 @@ type Applications struct {
 	CommercialEntitlementManagement  commercialapplication.EntitlementManagementApplication
 	CommercialModuleCatalog          commercialapplication.ModuleCatalogApplication
 	CommercialPlanManagement         commercialapplication.PlanManagementApplication
+	CommercialSubscriptionChanges    commercialapplication.SubscriptionChangesApplication
 	CommercialSubscriptionManagement commercialapplication.SubscriptionManagementApplication
 	DeviceopsDeviceManagement        deviceopsapplication.DeviceManagementApplication
 	DeviceopsDeviceTransfer          deviceopsapplication.DeviceTransferApplication
@@ -137,6 +144,21 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	}
 	if applications.CommercialPlanManagement == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/plan_management")
+	}
+	commercialSubscriptionChangesCommercialModuleCatalogCapability, err := commercialapplication.NewSubscriptionChangesToCommercialModuleCatalogChildCapability(applications.CommercialModuleCatalog, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build commercial/subscription_changes dependency commercial/module_catalog: %w", err)
+	}
+	commercialSubscriptionChangesCommercialPlanManagementCapability, err := commercialapplication.NewSubscriptionChangesToCommercialPlanManagementChildCapability(applications.CommercialPlanManagement, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build commercial/subscription_changes dependency commercial/plan_management: %w", err)
+	}
+	applications.CommercialSubscriptionChanges, err = factories.BuildCommercialSubscriptionChanges(CommercialSubscriptionChangesDependencies{CommercialModuleCatalog: commercialSubscriptionChangesCommercialModuleCatalogCapability, CommercialPlanManagement: commercialSubscriptionChangesCommercialPlanManagementCapability})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application commercial/subscription_changes: %w", err)
+	}
+	if applications.CommercialSubscriptionChanges == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/subscription_changes")
 	}
 	commercialSubscriptionManagementCommercialPlanManagementCapability, err := commercialapplication.NewSubscriptionManagementToCommercialPlanManagementChildCapability(applications.CommercialPlanManagement, executor)
 	if err != nil {
@@ -306,6 +328,15 @@ func RegisterTransports(bindings TransportBindings, applications Applications, e
 	if err := commercialrpc.RegisterPlanManagementOperationExecutor(bindings.RPC, applications.CommercialPlanManagement, executor); err != nil {
 		return fmt.Errorf("yunka assembly: register gRPC commercial/plan_management: %w", err)
 	}
+	if applications.CommercialSubscriptionChanges == nil {
+		return errors.New("yunka assembly: application commercial/subscription_changes is required for transport registration")
+	}
+	if err := commercialrest.RegisterSubscriptionChangesOperationExecutor(bindings.HTTP, applications.CommercialSubscriptionChanges, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register HTTP commercial/subscription_changes: %w", err)
+	}
+	if err := commercialrpc.RegisterSubscriptionChangesOperationExecutor(bindings.RPC, applications.CommercialSubscriptionChanges, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register gRPC commercial/subscription_changes: %w", err)
+	}
 	if applications.CommercialSubscriptionManagement == nil {
 		return errors.New("yunka assembly: application commercial/subscription_management is required for transport registration")
 	}
@@ -356,7 +387,7 @@ type BootstrapOptions struct {
 
 func RuntimeInventory() core.RuntimeInventory {
 	return core.RuntimeInventory{
-		Routes:              []string{"/v1/devices", "/v1/devices/{id}", "/v1/devices/{id}/transfer", "/v1/platform/modules", "/v1/platform/modules/{module_code}", "/v1/platform/modules/{module_code}/sales-status", "/v1/platform/modules/{module_code}/technical-status", "/v1/platform/plans", "/v1/platform/plans/{plan_code}/versions", "/v1/platform/plans/{plan_code}/versions/{version}", "/v1/platform/plans/{plan_code}/versions/{version}/eligibility", "/v1/platform/plans/{plan_code}/versions/{version}/publish", "/v1/platform/plans/{plan_code}/versions/{version}/retire", "/v1/platform/subscription-default-rules", "/v1/platform/subscription-default-rules/{rule_id}", "/v1/platform/tenants/{tenant_id}/entitlement-overrides", "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", "/v1/platform/tenants/{tenant_id}/entitlements", "/v1/platform/tenants/{tenant_id}/subscription", "/v1/tenant/entitlements", "/v1/tenant/members", "/v1/tenant/members/{user_id}", "/v1/tenant/members/{user_id}/activate", "/v1/tenant/members/{user_id}/remove", "/v1/tenant/members/{user_id}/suspend", "/v1/tenant/roles", "/v1/tenant/roles/{role_id}", "/v1/tenant/roles/{role_id}/disable", "/v1/tenant/roles/{role_id}/enable", "/v1/tenant/roles/{role_id}/members", "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", "/v1/tenant/roles/{role_id}/permissions", "/v1/tenants", "/v1/tenants/{id}", "/v1/tenants/{id}/activate", "/v1/tenants/{id}/close", "/v1/tenants/{id}/suspend"},
+		Routes:              []string{"/v1/devices", "/v1/devices/{id}", "/v1/devices/{id}/transfer", "/v1/platform/modules", "/v1/platform/modules/{module_code}", "/v1/platform/modules/{module_code}/sales-status", "/v1/platform/modules/{module_code}/technical-status", "/v1/platform/plans", "/v1/platform/plans/{plan_code}/versions", "/v1/platform/plans/{plan_code}/versions/{version}", "/v1/platform/plans/{plan_code}/versions/{version}/eligibility", "/v1/platform/plans/{plan_code}/versions/{version}/publish", "/v1/platform/plans/{plan_code}/versions/{version}/retire", "/v1/platform/subscription-default-rules", "/v1/platform/subscription-default-rules/{rule_id}", "/v1/platform/tenants/{tenant_id}/entitlement-overrides", "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", "/v1/platform/tenants/{tenant_id}/entitlements", "/v1/platform/tenants/{tenant_id}/subscription", "/v1/platform/tenants/{tenant_id}/subscription/change-previews", "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm", "/v1/tenant/entitlements", "/v1/tenant/members", "/v1/tenant/members/{user_id}", "/v1/tenant/members/{user_id}/activate", "/v1/tenant/members/{user_id}/remove", "/v1/tenant/members/{user_id}/suspend", "/v1/tenant/roles", "/v1/tenant/roles/{role_id}", "/v1/tenant/roles/{role_id}/disable", "/v1/tenant/roles/{role_id}/enable", "/v1/tenant/roles/{role_id}/members", "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", "/v1/tenant/roles/{role_id}/permissions", "/v1/tenants", "/v1/tenants/{id}", "/v1/tenants/{id}/activate", "/v1/tenants/{id}/close", "/v1/tenants/{id}/suspend"},
 		RPCClientConfigured: false,
 		RPCServerCount:      1,
 	}

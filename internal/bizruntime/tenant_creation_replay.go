@@ -9,7 +9,7 @@ import (
 	"yunka.io/pkg/operationplan"
 )
 
-// Tenant creation has an Access-owned transactional response receipt. A
+// Tenant creation and CE-09 changes have owner-scoped transactional receipts. A
 // completed transport claim starts a fresh fenced attempt to read it. Security,
 // the single Executor, required header, running exclusion and atomic completion
 // are unchanged. All other operations retain their original behavior.
@@ -20,7 +20,7 @@ type tenantCreationReplay struct {
 
 func (c tenantCreationReplay) Begin(ctx context.Context, p operationplan.Plan) (context.Context, error) {
 	out, err := c.IdempotencyCoordinator.Begin(ctx, p)
-	if p.OperationID != "tenant.create" || !errors.Is(err, execution.ErrIdempotencyCompleted) {
+	if !durableReceiptOperation(p.OperationID) || !errors.Is(err, execution.ErrIdempotencyCompleted) {
 		return out, err
 	}
 	original := execution.IdempotencyKeyFrom(ctx)
@@ -44,4 +44,12 @@ func (c tenantCreationReplay) CompleteInTransaction(ctx context.Context, p opera
 		return execution.ErrIdempotencyAtomicUnavailable
 	}
 	return v.CompleteInTransaction(ctx, p, tx)
+}
+
+func durableReceiptOperation(id string) bool {
+	switch id {
+	case "tenant.create", "commercial.subscription.change.preview", "commercial.subscription.change.confirm":
+		return true
+	}
+	return false
 }

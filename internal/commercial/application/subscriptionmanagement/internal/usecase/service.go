@@ -8,6 +8,7 @@ import (
 	"fmt"
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	app "github.com/hvritual/biz/internal/commercial/application"
+	projection "github.com/hvritual/biz/internal/commercial/application/planprojection"
 	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
 	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	"github.com/hvritual/biz/internal/commercial/ports"
@@ -64,9 +65,7 @@ func fp(actor, op string, m proto.Message) string {
 	h := sha256.Sum256(append([]byte(op+"\x00"+actor+"\x00"), b...))
 	return hex.EncodeToString(h[:])
 }
-func dto(v subscription.Subscription) *v1.TenantSubscriptionDTO {
-	return &v1.TenantSubscriptionDTO{SubscriptionId: v.ID, TenantId: v.TenantID, Kind: v.Kind, State: v.State, PlanCode: v.PlanCode, PlanVersion: v.PlanVersion, RuleId: v.RuleID, RuleVersion: v.RuleVersion, SalesScope: v.SalesScope, EntitlementSourceVersion: v.EntitlementSourceVersion, CreatedAt: v.CreatedAt.Format(time.RFC3339Nano), MatchExplanation: v.MatchExplanation}
-}
+func dto(v subscription.Subscription) *v1.TenantSubscriptionDTO { return projection.SubscriptionDTO(v) }
 func ruleDTO(v subscription.Rule) *v1.DefaultSubscriptionRuleDTO {
 	return &v1.DefaultSubscriptionRuleDTO{RuleId: v.RuleID, Version: v.Version, Priority: v.Priority, SalesScope: v.SalesScope, PlanCode: v.PlanCode, PlanVersion: v.PlanVersion, Enabled: v.Enabled, Reason: v.Reason, ActorId: v.ActorID, UpdatedAt: v.UpdatedAt.Format(time.RFC3339Nano)}
 }
@@ -162,38 +161,12 @@ func (s *service) ListDefaultSubscriptionRules(ctx context.Context, _ *v1.ListDe
 	}
 	return res, nil
 }
-func sourceID(sub, module, kind, key, action string) string {
-	h := sha256.Sum256([]byte(sub + "\x00" + module + "\x00" + kind + "\x00" + key + "\x00" + action))
-	return "plan-" + hex.EncodeToString(h[:12])
-}
 func planSources(tenant, sub string, at time.Time, p *v1.PlanVersionDTO) []entitlement.Source {
-	out := []entitlement.Source{}
-	for _, m := range p.Terms.Modules {
-		out = append(out, entitlement.Source{ID: sourceID(sub, m.ModuleCode, "module", m.ModuleCode, ""), TenantID: tenant, SourceKind: entitlement.PlanSource, ModuleCode: m.ModuleCode, Kind: entitlement.Module, Key: m.ModuleCode, Effect: entitlement.Grant, EffectiveAt: at, Reason: "base subscription " + sub, ActorID: "system:subscription", Version: 1})
-		for _, c := range m.CapabilityCodes {
-			out = append(out, entitlement.Source{ID: sourceID(sub, m.ModuleCode, "capability", c, ""), TenantID: tenant, SourceKind: entitlement.PlanSource, ModuleCode: m.ModuleCode, Kind: entitlement.Capability, Key: c, Effect: entitlement.Grant, EffectiveAt: at, Reason: "base subscription " + sub, ActorID: "system:subscription", Version: 1})
-		}
-		for _, q := range m.Quotas {
-			out = append(out, entitlement.Source{ID: sourceID(sub, m.ModuleCode, "quota", q.Key, ""), TenantID: tenant, SourceKind: entitlement.PlanSource, ModuleCode: m.ModuleCode, Kind: entitlement.Quota, Key: q.Key, Effect: entitlement.QuotaReplace, Limit: entitlement.Limit{Unlimited: q.Unlimited, Value: q.Value}, EffectiveAt: at, Reason: "base subscription " + sub, ActorID: "system:subscription", Version: 1})
-		}
-		for _, f := range m.Fields {
-			eff := entitlement.Grant
-			if f.Mode == "deny" {
-				eff = entitlement.Deny
-			} else if f.Mode == "masked" {
-				eff = entitlement.SafetyMask
-			}
-			out = append(out, entitlement.Source{ID: sourceID(sub, m.ModuleCode, "field", f.Key, f.Action), TenantID: tenant, SourceKind: entitlement.PlanSource, ModuleCode: m.ModuleCode, Kind: entitlement.Field, Key: f.Key, Action: f.Action, Effect: eff, EffectiveAt: at, Reason: "base subscription " + sub, ActorID: "system:subscription", Version: 1})
-		}
+	terms, err := projection.Terms(p.GetTerms())
+	if err != nil {
+		return nil
 	}
-	if p.Terms.ValidityMode == "fixed_days" {
-		expires := at.AddDate(0, 0, int(p.Terms.ValidityDays))
-		for i := range out {
-			expiry := expires
-			out[i].ExpiresAt = &expiry
-		}
-	}
-	return out
+	return subscription.Sources(tenant, sub, at, terms)
 }
 func (s *service) BootstrapBaseSubscription(ctx context.Context, r *v1.BootstrapTenantSubscriptionRequest) (*v1.BootstrapTenantSubscriptionResult, error) {
 	a, e := actor(ctx)
@@ -278,6 +251,14 @@ func (s *service) BootstrapBaseSubscription(ctx context.Context, r *v1.Bootstrap
 			return subscription.Subscription{}, e
 		}
 		v := subscription.Subscription{ID: sid, TenantID: r.TenantId, Kind: subscription.KindBase, State: subscription.StateActive, PlanCode: chosen.PlanCode, PlanVersion: chosen.PlanVersion, RuleID: chosen.RuleID, RuleVersion: chosen.Version, SalesScope: r.SalesScope, EntitlementSourceVersion: state.Version + 1, CreatedAt: now, MatchExplanation: fmt.Sprintf("rule=%s@%d priority=%d scope=%s", chosen.RuleID, chosen.Version, chosen.Priority, chosen.SalesScope)}
+		v.Revision = 1
+		v.PeriodStart = now
+		v.SourceNamespace = sid
+		if pv.Terms.ValidityMode == "fixed_days" {
+			end := now.AddDate(0, 0, int(pv.Terms.ValidityDays))
+			v.PeriodEnd = &end
+		}
+
 		if e = v.Validate(); e != nil {
 			return v, e
 		}

@@ -342,6 +342,11 @@ type TenantSubscriptionDTO struct {
 	EntitlementSourceVersion uint64                 `protobuf:"varint,10,opt,name=entitlement_source_version,json=entitlementSourceVersion,proto3" json:"entitlement_source_version,omitempty"`
 	CreatedAt                string                 `protobuf:"bytes,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	MatchExplanation         string                 `protobuf:"bytes,12,opt,name=match_explanation,json=matchExplanation,proto3" json:"match_explanation,omitempty"`
+	Revision                 uint64                 `protobuf:"varint,13,opt,name=revision,proto3" json:"revision,omitempty"`
+	PeriodStart              string                 `protobuf:"bytes,14,opt,name=period_start,json=periodStart,proto3" json:"period_start,omitempty"`
+	PeriodEnd                string                 `protobuf:"bytes,15,opt,name=period_end,json=periodEnd,proto3" json:"period_end,omitempty"`
+	RenewalStopped           bool                   `protobuf:"varint,16,opt,name=renewal_stopped,json=renewalStopped,proto3" json:"renewal_stopped,omitempty"`
+	PendingChangeId          string                 `protobuf:"bytes,17,opt,name=pending_change_id,json=pendingChangeId,proto3" json:"pending_change_id,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -456,6 +461,41 @@ func (x *TenantSubscriptionDTO) GetCreatedAt() string {
 func (x *TenantSubscriptionDTO) GetMatchExplanation() string {
 	if x != nil {
 		return x.MatchExplanation
+	}
+	return ""
+}
+
+func (x *TenantSubscriptionDTO) GetRevision() uint64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *TenantSubscriptionDTO) GetPeriodStart() string {
+	if x != nil {
+		return x.PeriodStart
+	}
+	return ""
+}
+
+func (x *TenantSubscriptionDTO) GetPeriodEnd() string {
+	if x != nil {
+		return x.PeriodEnd
+	}
+	return ""
+}
+
+func (x *TenantSubscriptionDTO) GetRenewalStopped() bool {
+	if x != nil {
+		return x.RenewalStopped
+	}
+	return false
+}
+
+func (x *TenantSubscriptionDTO) GetPendingChangeId() string {
+	if x != nil {
+		return x.PendingChangeId
 	}
 	return ""
 }
@@ -641,7 +681,7 @@ const file_commercial_v1_subscription_proto_rawDesc = "" +
 	"\x06reason\x18\t \x01(\tR\x06reason\"%\n" +
 	"#ListDefaultSubscriptionRulesRequest\"g\n" +
 	"$ListDefaultSubscriptionRulesResponse\x12?\n" +
-	"\x05rules\x18\x01 \x03(\v2).commercial.v1.DefaultSubscriptionRuleDTOR\x05rules\"\xae\x03\n" +
+	"\x05rules\x18\x01 \x03(\v2).commercial.v1.DefaultSubscriptionRuleDTOR\x05rules\"\xe1\x04\n" +
 	"\x15TenantSubscriptionDTO\x12'\n" +
 	"\x0fsubscription_id\x18\x01 \x01(\tR\x0esubscriptionId\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x12\n" +
@@ -657,7 +697,13 @@ const file_commercial_v1_subscription_proto_rawDesc = "" +
 	" \x01(\x04R\x18entitlementSourceVersion\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\v \x01(\tR\tcreatedAt\x12+\n" +
-	"\x11match_explanation\x18\f \x01(\tR\x10matchExplanation\";\n" +
+	"\x11match_explanation\x18\f \x01(\tR\x10matchExplanation\x12\x1a\n" +
+	"\brevision\x18\r \x01(\x04R\brevision\x12!\n" +
+	"\fperiod_start\x18\x0e \x01(\tR\vperiodStart\x12\x1d\n" +
+	"\n" +
+	"period_end\x18\x0f \x01(\tR\tperiodEnd\x12'\n" +
+	"\x0frenewal_stopped\x18\x10 \x01(\bR\x0erenewalStopped\x12*\n" +
+	"\x11pending_change_id\x18\x11 \x01(\tR\x0fpendingChangeId\";\n" +
 	"\x1cGetTenantSubscriptionRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\"\x81\x01\n" +
 	"\"BootstrapTenantSubscriptionRequest\x12\x1d\n" +

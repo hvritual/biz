@@ -63,21 +63,31 @@ func Ordered(rules []Rule) []Rule {
 }
 
 type Subscription struct {
-	ID                       string    `json:"subscription_id"`
-	TenantID                 string    `json:"tenant_id"`
-	Kind                     string    `json:"kind"`
-	State                    string    `json:"state"`
-	PlanCode                 string    `json:"plan_code"`
-	PlanVersion              uint64    `json:"plan_version"`
-	RuleID                   string    `json:"rule_id"`
-	RuleVersion              uint64    `json:"rule_version"`
-	SalesScope               string    `json:"sales_scope"`
-	EntitlementSourceVersion uint64    `json:"entitlement_source_version"`
-	CreatedAt                time.Time `json:"created_at"`
-	MatchExplanation         string    `json:"match_explanation"`
+	// CE-08 payloads without these fields are normalized from immutable plan terms.
+	Revision                 uint64     `json:"revision,omitempty"`
+	PeriodStart              time.Time  `json:"period_start,omitempty"`
+	PeriodEnd                *time.Time `json:"period_end,omitempty"`
+	RenewalStopped           bool       `json:"renewal_stopped,omitempty"`
+	PendingChangeID          string     `json:"pending_change_id,omitempty"`
+	SourceNamespace          string     `json:"source_namespace,omitempty"`
+	ID                       string     `json:"subscription_id"`
+	TenantID                 string     `json:"tenant_id"`
+	Kind                     string     `json:"kind"`
+	State                    string     `json:"state"`
+	PlanCode                 string     `json:"plan_code"`
+	PlanVersion              uint64     `json:"plan_version"`
+	RuleID                   string     `json:"rule_id"`
+	RuleVersion              uint64     `json:"rule_version"`
+	SalesScope               string     `json:"sales_scope"`
+	EntitlementSourceVersion uint64     `json:"entitlement_source_version"`
+	CreatedAt                time.Time  `json:"created_at"`
+	MatchExplanation         string     `json:"match_explanation"`
 }
 
 func (s Subscription) Validate() error {
+	if s.Revision > 0 && (s.PeriodStart.IsZero() || (s.PeriodEnd != nil && !s.PeriodEnd.After(s.PeriodStart)) || s.SourceNamespace == "" || len(s.SourceNamespace) > 64 || len(s.PendingChangeID) > 64) {
+		return ErrInvalid
+	}
 	if s.ID == "" || s.TenantID == "" || s.Kind != KindBase || s.State != StateActive || !ValidCode(s.PlanCode) || s.PlanVersion == 0 || !ValidCode(s.RuleID) || s.RuleVersion == 0 || (s.SalesScope != "*" && !ValidCode(s.SalesScope)) || s.EntitlementSourceVersion == 0 || s.CreatedAt.IsZero() || s.MatchExplanation == "" {
 		return ErrInvalid
 	}

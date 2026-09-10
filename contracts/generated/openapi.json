@@ -482,6 +482,27 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.CheckPlanEligibilityRequest"
       },
+      "commercial_v1_ConfirmSubscriptionChangeRequest": {
+        "properties": {
+          "changeId": {
+            "type": "string"
+          },
+          "previewHash": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ConfirmSubscriptionChangeRequest"
+      },
       "commercial_v1_CreateEntitlementOverrideRequest": {
         "properties": {
           "effect": {
@@ -1292,6 +1313,35 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.PlanVersionDTO"
       },
+      "commercial_v1_PreviewSubscriptionChangeRequest": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "effectiveAt": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "targetPlanCode": {
+            "type": "string"
+          },
+          "targetPlanVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.PreviewSubscriptionChangeRequest"
+      },
       "commercial_v1_PutDefaultSubscriptionRuleRequest": {
         "properties": {
           "enabled": {
@@ -1329,6 +1379,18 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.PutDefaultSubscriptionRuleRequest"
+      },
+      "commercial_v1_ReadSubscriptionChangeRequest": {
+        "properties": {
+          "changeId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ReadSubscriptionChangeRequest"
       },
       "commercial_v1_RevokeEntitlementOverrideRequest": {
         "properties": {
@@ -1399,6 +1461,234 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.SetModuleTechnicalStatusRequest"
       },
+      "commercial_v1_SubscriptionChangeDependency": {
+        "properties": {
+          "moduleCode": {
+            "type": "string"
+          },
+          "requiresModules": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.SubscriptionChangeDependency"
+      },
+      "commercial_v1_SubscriptionChangePreviewDTO": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          },
+          "before": {
+            "$ref": "#/components/schemas/commercial_v1_TenantSubscriptionDTO"
+          },
+          "catalogRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "changeId": {
+            "type": "string"
+          },
+          "classification": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "currentEntitlements": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementView"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_SubscriptionChangeDependency"
+            },
+            "type": "array"
+          },
+          "effectiveAt": {
+            "type": "string"
+          },
+          "entitlementExpiresAt": {
+            "type": "string"
+          },
+          "entitlementVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "impacts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "previewHash": {
+            "type": "string"
+          },
+          "pricingBasis": {
+            "type": "string"
+          },
+          "projectedEntitlements": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementView"
+          },
+          "quotaImpacts": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_SubscriptionChangeQuotaImpact"
+            },
+            "type": "array"
+          },
+          "quotaValidationRequired": {
+            "type": "boolean"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "sourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "subscriptionRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "target": {
+            "$ref": "#/components/schemas/commercial_v1_PlanVersionDTO"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.SubscriptionChangePreviewDTO"
+      },
+      "commercial_v1_SubscriptionChangeQuotaImpact": {
+        "properties": {
+          "afterLimit": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementLimit"
+          },
+          "beforeLimit": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementLimit"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "overLimit": {
+            "type": "boolean"
+          },
+          "policy": {
+            "type": "string"
+          },
+          "usageKnown": {
+            "type": "boolean"
+          },
+          "used": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.SubscriptionChangeQuotaImpact"
+      },
+      "commercial_v1_SubscriptionChangeReceiptDTO": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          },
+          "after": {
+            "$ref": "#/components/schemas/commercial_v1_TenantSubscriptionDTO"
+          },
+          "afterEntitlementVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "afterSourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "before": {
+            "$ref": "#/components/schemas/commercial_v1_TenantSubscriptionDTO"
+          },
+          "beforeEntitlementVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "beforeSourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "changeId": {
+            "type": "string"
+          },
+          "confirmedAt": {
+            "type": "string"
+          },
+          "effectiveAt": {
+            "type": "string"
+          },
+          "entitlementExpiresAt": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "previewHash": {
+            "type": "string"
+          },
+          "pricingAuthority": {
+            "type": "string"
+          },
+          "quotaImpacts": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_SubscriptionChangeQuotaImpact"
+            },
+            "type": "array"
+          },
+          "quotaValidationRequired": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.SubscriptionChangeReceiptDTO"
+      },
       "commercial_v1_TenantSubscriptionDTO": {
         "properties": {
           "createdAt": {
@@ -1415,10 +1705,27 @@
           "matchExplanation": {
             "type": "string"
           },
+          "pendingChangeId": {
+            "type": "string"
+          },
+          "periodEnd": {
+            "type": "string"
+          },
+          "periodStart": {
+            "type": "string"
+          },
           "planCode": {
             "type": "string"
           },
           "planVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "renewalStopped": {
+            "type": "boolean"
+          },
+          "revision": {
             "format": "uint64",
             "type": "string",
             "x-yunka-protobuf-json-integer": true
@@ -2712,6 +3019,174 @@
           "commercial.v1.SubscriptionManagementApplication"
         ],
         "x-yunka-rpc": "/commercial.v1.SubscriptionManagementApplication/GetTenantSubscription"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/subscription/change-previews": {
+      "post": {
+        "operationId": "commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_PreviewSubscriptionChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_SubscriptionChangePreviewDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionChangesApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/PreviewSubscriptionChange"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}": {
+      "get": {
+        "operationId": "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "changeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_SubscriptionChangePreviewDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionChangesApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangePreview"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}": {
+      "get": {
+        "operationId": "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "changeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_SubscriptionChangeReceiptDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionChangesApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangeReceipt"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm": {
+      "post": {
+        "operationId": "commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "changeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_ConfirmSubscriptionChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_SubscriptionChangeReceiptDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionChangesApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange"
       }
     },
     "/v1/tenant/entitlements": {

@@ -26,7 +26,8 @@
         "application:commercial/module_catalog",
         "application:commercial/entitlement_management",
         "application:commercial/plan_management",
-        "application:commercial/subscription_management"
+        "application:commercial/subscription_management",
+        "application:commercial/subscription_changes"
       ],
       "inheritEnv": [
         "PATH",

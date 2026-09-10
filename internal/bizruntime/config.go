@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	commercialports "github.com/hvritual/biz/internal/commercial/ports"
 	"github.com/hvritual/biz/modules/deviceops"
 	"yunka.io/gateway/authz"
 )
@@ -33,6 +34,8 @@ func (bootstrap PlatformBootstrap) Validate() error {
 }
 
 type Options struct {
+	// A local trusted adapter only; nil conservatively defers quota reductions.
+	QuotaChangePolicy commercialports.QuotaChangePolicy
 	// Disable only the derived cache; authority reads and write barriers remain on.
 	DisableEntitlementCache bool
 	DeviceOps               deviceops.Config
