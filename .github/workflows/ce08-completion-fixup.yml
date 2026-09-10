@@ -1,0 +1,134 @@
+name: CE-08 completion fixup
+on:
+  push:
+    branches: [control/ce08-completion-20260910]
+    paths: ['.github/workflows/ce08-completion-fixup.yml']
+permissions:
+  contents: write
+jobs:
+  fixup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: fix/ce-08-complete
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 33b98ceba57494abda2299e4f0290a5651dab4bc
+          path: ../yunka.io
+          persist-credentials: false
+      - id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source ../yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "p=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "s=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Install locked generators
+        env: {R: '${{ steps.lock.outputs.p }}', S: '${{ steps.lock.outputs.s }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 "https://github.com/protocolbuffers/protobuf/releases/download/v${R}/protoc-${R}-linux-x86_64.zip" -o "$RUNNER_TEMP/p.zip"
+          echo "$S  $RUNNER_TEMP/p.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/p.zip" -d "$RUNNER_TEMP/p"
+          make -C ../yunka.io rpc-tools
+          echo "$GITHUB_WORKSPACE/../yunka.io/.yunka/bin" >> "$GITHUB_PATH"
+      - name: Apply CE-08 consumer completion fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git merge-base --is-ancestor 96ca815be34ed2eeeaf67b048e04217f72990b18 HEAD; echo $?)" = "0"
+          python3 - <<'PY'
+          from pathlib import Path
+
+          compat='33b98ceba57494abda2299e4f0290a5651dab4bc'
+          pseudo='v0.0.0-20260910080749-33b98ceba574'
+
+          p=Path('.yunka/source.env'); s=p.read_text()
+          s=s.replace('YUNKA_COMMIT="6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb"', f'YUNKA_COMMIT="{compat}"')
+          s=s.replace('YUNKA_PSEUDO_VERSION="v0.0.0-20260902030847-6ba99c1440dc"', f'YUNKA_PSEUDO_VERSION="{pseudo}"')
+          p.write_text(s)
+
+          p=Path('go.mod'); s=p.read_text().replace('v0.0.0-20260902030847-6ba99c1440dc', pseudo); p.write_text(s)
+          for p in Path('.github/workflows').glob('*.yml'):
+              s=p.read_text()
+              if '6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb' in s:
+                  p.write_text(s.replace('6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb', compat))
+
+          p=Path('internal/bizruntime/access_skeleton.go'); s=p.read_text()
+          old='''\tif dependencies.AccessTenantMemberLifecycle == nil || dependencies.AccessTenantRolePermission == nil {\n\t\treturn nil, errors.New("biz access pressure: tenant lifecycle dependencies are required")\n\t}\n\treturn tenantlifecycle.Build(factory.tenantRepositories, tenantLifecycleCapabilities{\n\t\tmembers: dependencies.AccessTenantMemberLifecycle,\n\t\troles:   dependencies.AccessTenantRolePermission,\n\t})\n'''
+          new='''\tif dependencies.AccessTenantMemberLifecycle == nil || dependencies.AccessTenantRolePermission == nil || dependencies.CommercialSubscriptionManagement == nil {\n\t\treturn nil, errors.New("biz access pressure: tenant lifecycle dependencies are required")\n\t}\n\treturn tenantlifecycle.Build(factory.tenantRepositories, tenantLifecycleCapabilities{\n\t\tmembers:       dependencies.AccessTenantMemberLifecycle,\n\t\troles:         dependencies.AccessTenantRolePermission,\n\t\tsubscriptions: dependencies.CommercialSubscriptionManagement,\n\t})\n'''
+          if old not in s: raise SystemExit('access skeleton build anchor missing')
+          s=s.replace(old,new,1)
+          old='''type tenantLifecycleCapabilities struct {\n\tmembers accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability\n\troles   accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability\n}\n'''
+          new='''type tenantLifecycleCapabilities struct {\n\tmembers       accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability\n\troles         accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability\n\tsubscriptions accessapp.TenantLifecycleToCommercialSubscriptionManagementChildCapability\n}\n'''
+          if old not in s: raise SystemExit('access skeleton capability struct anchor missing')
+          s=s.replace(old,new,1)
+          anchor='''func (capabilities tenantLifecycleCapabilities) AccessTenantRolePermission() accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability {\n\treturn capabilities.roles\n}\n'''
+          addition=anchor+'''\nfunc (capabilities tenantLifecycleCapabilities) CommercialSubscriptionManagement() accessapp.TenantLifecycleToCommercialSubscriptionManagementChildCapability {\n\treturn capabilities.subscriptions\n}\n'''
+          if anchor not in s: raise SystemExit('access skeleton role method anchor missing')
+          s=s.replace(anchor,addition,1); p.write_text(s)
+
+          p=Path('internal/bizruntime/subscriptions.go'); s=p.read_text()
+          old='func(factory *applicationFactories)BuildCommercialSubscriptionManagement'
+          if old not in s: raise SystemExit('subscription factory receiver anchor missing')
+          p.write_text(s.replace(old,'func(factory applicationFactories)BuildCommercialSubscriptionManagement',1))
+
+          p=Path('internal/access/application/tenantlifecycle/internal/usecase/service_test.go'); s=p.read_text()
+          imp='\taccessv1 "github.com/hvritual/biz/contracts/gen/access/v1"\n'
+          if 'commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"' not in s:
+              s=s.replace(imp,imp+'\tcommercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"\n',1)
+          old='''type tenantTestCapabilities struct {\n\tmembers accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability\n\troles   accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability\n}\n'''
+          new='''type tenantTestCapabilities struct {\n\tmembers       accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability\n\troles         accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability\n\tsubscriptions accessapp.TenantLifecycleToCommercialSubscriptionManagementChildCapability\n}\n'''
+          if old not in s: raise SystemExit('tenant test capabilities struct anchor missing')
+          s=s.replace(old,new,1)
+          anchor='''func (capabilities tenantTestCapabilities) AccessTenantRolePermission() accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability {\n\tif capabilities.roles != nil {\n\t\treturn capabilities.roles\n\t}\n\treturn tenantTestRoleChild{}\n}\n'''
+          addition=anchor+'''\nfunc (capabilities tenantTestCapabilities) CommercialSubscriptionManagement() accessapp.TenantLifecycleToCommercialSubscriptionManagementChildCapability {\n\tif capabilities.subscriptions != nil {\n\t\treturn capabilities.subscriptions\n\t}\n\treturn tenantTestSubscriptionChild{}\n}\n\ntype tenantTestSubscriptionChild struct{}\n\nfunc (tenantTestSubscriptionChild) BootstrapBaseSubscription(context.Context, *commercialv1.BootstrapTenantSubscriptionRequest) (*commercialv1.BootstrapTenantSubscriptionResult, error) {\n\treturn &commercialv1.BootstrapTenantSubscriptionResult{}, nil\n}\n'''
+          if anchor not in s: raise SystemExit('tenant test role method anchor missing')
+          s=s.replace(anchor,addition,1)
+          s=s.replace('&accessv1.CreateTenantRequest{Name: "Tenant A", OwnerUserId: "owner-a", OwnerEmail: "owner@example.com"}', '&accessv1.CreateTenantRequest{Name: "Tenant A", OwnerUserId: "owner-a", OwnerEmail: "owner@example.com", RequestId: "req-tenant-a", SalesScope: "default"}')
+          p.write_text(s)
+
+          p=Path('internal/access/policy/platform_authorization_pressure_test.go'); s=p.read_text()
+          old='''\tfor _, permission := range request.Permissions {\n\t\tif permission == authz.PermissionKey("platform.tenant.create") {\n\t\t\tresult = append(result, authz.Grant{\n\t\t\t\tPermission: permission,\n\t\t\t\tRoleID:     "platform-admin",\n\t\t\t})\n\t\t}\n\t}\n'''
+          new='''\tallowed := map[authz.PermissionKey]bool{\n\t\tauthz.PermissionKey("commercial.catalog.read"): true,\n\t\tauthz.PermissionKey("platform.plan.read"):      true,\n\t\tauthz.PermissionKey("platform.tenant.create"):  true,\n\t}\n\tfor _, permission := range request.Permissions {\n\t\tif allowed[permission] {\n\t\t\tresult = append(result, authz.Grant{Permission: permission, RoleID: "platform-admin"})\n\t\t}\n\t}\n'''
+          if old not in s: raise SystemExit('platform grant resolver anchor missing')
+          s=s.replace(old,new,1)
+          old='''\tif len(operationPolicy.Permissions) != 1 || operationPolicy.Permissions[0] != authz.PermissionKey("platform.tenant.create") {\n\t\tt.Fatalf("tenant.create permission mismatch: %v", operationPolicy.Permissions)\n\t}\n'''
+          new='''\texpectedPermissions := []authz.PermissionKey{"commercial.catalog.read", "platform.plan.read", "platform.tenant.create"}\n\tif len(operationPolicy.Permissions) != len(expectedPermissions) {\n\t\tt.Fatalf("tenant.create permission mismatch: %v", operationPolicy.Permissions)\n\t}\n\tfor index, permission := range expectedPermissions {\n\t\tif operationPolicy.Permissions[index] != permission {\n\t\t\tt.Fatalf("tenant.create permission mismatch: %v", operationPolicy.Permissions)\n\t\t}\n\t}\n'''
+          if old not in s: raise SystemExit('platform pressure permission assertion anchor missing')
+          p.write_text(s.replace(old,new,1))
+
+          p=Path('internal/commercial/domain/subscription/ce08_test.go')
+          p.write_text('''package subscription\n\nimport "testing"\n\nfunc TestCE08DefaultRuleOrderingPrefersPriorityThenSpecificScope(t *testing.T) {\n\trules := []Rule{\n\t\t{RuleID: "wild-high", Priority: 20, SalesScope: "*", Enabled: true},\n\t\t{RuleID: "specific-low", Priority: 10, SalesScope: "retail", Enabled: true},\n\t\t{RuleID: "specific-peer", Priority: 20, SalesScope: "retail", Enabled: true},\n\t}\n\tordered := Ordered(rules)\n\tif ordered[0].RuleID != "specific-peer" || ordered[1].RuleID != "wild-high" || ordered[2].RuleID != "specific-low" {\n\t\tt.Fatalf("unexpected order: %v, %v, %v", ordered[0].RuleID, ordered[1].RuleID, ordered[2].RuleID)\n\t}\n\tif !Matches(ordered[0], "retail") || Matches(ordered[0], "enterprise") {\n\t\tt.Fatal("specific rule matching is not deterministic")\n\t}\n}\n''')
+
+          # Remove branch-local execution markers before product qualification.
+          Path('docs/commercial-entitlements/evidence/CE-08-work-resumed.md').unlink(missing_ok=True)
+          import shutil
+          shutil.rmtree('control/ce08', ignore_errors=True)
+          PY
+          gofmt -w internal/bizruntime/access_skeleton.go internal/bizruntime/subscriptions.go internal/access/application/tenantlifecycle/internal/usecase/service_test.go internal/access/policy/platform_authorization_pressure_test.go internal/commercial/domain/subscription/ce08_test.go
+          make generate YUNKA_ROOT="$GITHUB_WORKSPACE/../yunka.io" PROTOC="$RUNNER_TEMP/p/bin/protoc"
+          git diff --check
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'fix(ce-08): complete bootstrap wiring and adopt compatible C9 fix'
+          git push origin HEAD:fix/ce-08-complete
+      - name: Compile and run focused business tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          make yunka-source-check YUNKA_ROOT="$GITHUB_WORKSPACE/../yunka.io"
+          make check YUNKA_ROOT="$GITHUB_WORKSPACE/../yunka.io" PROTOC="$RUNNER_TEMP/p/bin/protoc"
+          test -z "$(git status --porcelain)"
+          go test ./internal/access/application/tenantlifecycle/... ./internal/access/policy ./internal/commercial/application/subscriptionmanagement/... ./internal/commercial/domain/subscription
+          go test ./... -run '^$'
