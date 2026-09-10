@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 130a4fdc608419ba5105f28c4f88b126c69d8629
+          ref: f3832670659331d944ef4715b2141a40dc56c4ee
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -39,7 +39,7 @@ jobs:
           current={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(Path('web').rglob('*')) if p.is_file()}
           for name,digest in preserved.items(): assert current[name]==digest,name
           sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
-          assert sha=='130a4fdc608419ba5105f28c4f88b126c69d8629'
+          assert sha=='f3832670659331d944ef4715b2141a40dc56c4ee'
           Path('/tmp/customer-source-manifest.json').write_text(json.dumps({'base':'911ab19122ec009de8028fdc4b293b1358127be1','commit':sha,'current':current,'preserved':preserved},ensure_ascii=False,indent=2))
           print('Pinned native SHA:',sha,'unchanged shared components:',len(preserved),'source files:',len(current))
           PY
@@ -53,6 +53,8 @@ jobs:
         run: |
           set -o pipefail
           npm run check 2>&1 | tee /tmp/customer-check.log
+          npx playwright test --list | tee /tmp/customer-test-inventory.log
+          npm audit --json > /tmp/customer-dependency-audit.json || true
       - name: Install cloud Chromium and CJK runtime fonts
         working-directory: web
         run: |
@@ -78,6 +80,8 @@ jobs:
             /tmp/customer-check.log
             /tmp/customer-e2e.log
             /tmp/customer-source-manifest.json
+            /tmp/customer-test-inventory.log
+            /tmp/customer-dependency-audit.json
             !web/playwright-report/**/*.ttf
             !web/playwright-report/**/*.otf
             !web/playwright-report/**/*.woff
