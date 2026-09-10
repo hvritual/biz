@@ -10,6 +10,7 @@ import (
 	"time"
 
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
+	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	accessapp "github.com/hvritual/biz/internal/access/application"
 	"github.com/hvritual/biz/internal/access/application/tenantlifecycle"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
@@ -21,8 +22,9 @@ import (
 )
 
 type b12TenantCapabilities struct {
-	members accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
-	roles   accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability
+	members       accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability
+	roles         accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability
+	subscriptions accessapp.TenantLifecycleToCommercialSubscriptionManagementChildCapability
 }
 
 func (capabilities b12TenantCapabilities) AccessTenantMemberLifecycle() accessapp.TenantLifecycleToAccessTenantMemberLifecycleChildCapability {
@@ -30,6 +32,15 @@ func (capabilities b12TenantCapabilities) AccessTenantMemberLifecycle() accessap
 }
 func (capabilities b12TenantCapabilities) AccessTenantRolePermission() accessapp.TenantLifecycleToAccessTenantRolePermissionChildCapability {
 	return capabilities.roles
+}
+func (capabilities b12TenantCapabilities) CommercialSubscriptionManagement() accessapp.TenantLifecycleToCommercialSubscriptionManagementChildCapability {
+	return capabilities.subscriptions
+}
+
+type b12SubscriptionChild struct{}
+
+func (b12SubscriptionChild) BootstrapBaseSubscription(context.Context, *commercialv1.BootstrapTenantSubscriptionRequest) (*commercialv1.BootstrapTenantSubscriptionResult, error) {
+	return &commercialv1.BootstrapTenantSubscriptionResult{}, nil
 }
 
 type b12MemberCapabilities struct {
@@ -69,7 +80,7 @@ func newTenantLifecycleHarness(t *testing.T, db *gorm.DB) (accessapp.TenantLifec
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := tenantlifecycle.Build(tenantRepositories, b12TenantCapabilities{members: memberService, roles: roleService})
+	service, err := tenantlifecycle.Build(tenantRepositories, b12TenantCapabilities{members: memberService, roles: roleService, subscriptions: b12SubscriptionChild{}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +106,7 @@ func TestB122TenantLifecycleUsesRootMySQLUnitOfWork(t *testing.T) {
 	name := "B12-rollback-" + fmt.Sprint(time.Now().UnixNano())
 
 	ctx, root := tenantRoot(t, transactions, "tenant.create", execution.TransactionLocal)
-	created, err := service.CreateTenant(ctx, &accessv1.CreateTenantRequest{Name: name, OwnerUserId: "owner-rollback", OwnerEmail: "owner-rollback@example.invalid"})
+	created, err := service.CreateTenant(ctx, &accessv1.CreateTenantRequest{Name: name, OwnerUserId: "owner-rollback", OwnerEmail: "owner-rollback@example.invalid", RequestId: "b12-root-rollback", SalesScope: "default"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,7 +122,7 @@ func TestB122TenantLifecycleUsesRootMySQLUnitOfWork(t *testing.T) {
 	}
 
 	ctx, root = tenantRoot(t, transactions, "tenant.create", execution.TransactionLocal)
-	created, err = service.CreateTenant(ctx, &accessv1.CreateTenantRequest{Name: name + "-commit", OwnerUserId: "owner-commit", OwnerEmail: "owner-commit@example.invalid"})
+	created, err = service.CreateTenant(ctx, &accessv1.CreateTenantRequest{Name: name + "-commit", OwnerUserId: "owner-commit", OwnerEmail: "owner-commit@example.invalid", RequestId: "b12-root-commit", SalesScope: "default"})
 	if err != nil {
 		t.Fatal(err)
 	}
