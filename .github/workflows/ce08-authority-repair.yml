@@ -1,0 +1,84 @@
+name: CE-08 authority repair
+on:
+  push:
+    branches: [control/ce08-completion-20260910]
+    paths: ['.github/workflows/ce08-authority-repair.yml']
+permissions: {contents: write}
+concurrency: {group: ce08-product-writer, cancel-in-progress: false}
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.4
+        env: {MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: biz_ce08_repair}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent" --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      YUNKA_TEST_MYSQL_DSN: 'root:root@tcp(127.0.0.1:3306)/biz_ce08_repair?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: fix/ce-08-complete, path: biz, fetch-depth: 0, persist-credentials: true}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: 33b98ceba57494abda2299e4f0290a5651dab4bc, path: yunka.io, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: 0958670359ccebe1f3d1e39dfec24c9e17a45181, path: control, persist-credentials: false}
+      - id: lock
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "p=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "s=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/ce08-repair"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Locked generators
+        env: {R: '${{ steps.lock.outputs.p }}', S: '${{ steps.lock.outputs.s }}'}
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 "https://github.com/protocolbuffers/protobuf/releases/download/v${R}/protoc-${R}-linux-x86_64.zip" -o "$RUNNER_TEMP/p.zip"
+          echo "$S  $RUNNER_TEMP/p.zip"|sha256sum -c -
+          unzip -q "$RUNNER_TEMP/p.zip" -d "$RUNNER_TEMP/protoc"
+          make -C yunka.io rpc-tools
+          echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+      - name: Apply reviewed repair and generate
+        working-directory: biz
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = db75df962883202975bacf25a49564ff2983ed4e
+          python3 ../control/.github/ce08-authority-repair.py
+          { git ls-files -m '*.go'; git ls-files --others --exclude-standard '*.go'; } | sort -u | xargs -r gofmt -w
+          make generate 2>&1 | tee "$RUNNER_TEMP/ce08-repair/generate.log"
+          make commercial-generate 2>&1 | tee "$RUNNER_TEMP/ce08-repair/commercial-generate.log"
+          git diff --check
+          git diff > "$RUNNER_TEMP/ce08-repair/repair.diff"
+      - name: Compile all packages including integration
+        working-directory: biz
+        run: |
+          set -euo pipefail
+          go test -count=1 -json ./... -run '^$' 2>&1 | tee "$RUNNER_TEMP/ce08-repair/compile.jsonl"
+          go test -count=1 -tags=integration -json ./integration -run '^$' 2>&1 | tee "$RUNNER_TEMP/ce08-repair/integration-compile.jsonl"
+      - name: Commit only business changes
+        working-directory: biz
+        run: |
+          set -euo pipefail
+          test -z "$(git diff --name-only -- .github/workflows)"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'fix(ce-08): make tenant bootstrap durably replayable and honor offer expiry'
+          git push origin HEAD:fix/ce-08-complete
+          git rev-parse HEAD > "$RUNNER_TEMP/ce08-repair/verified-commit.txt"
+          git archive HEAD -o "$RUNNER_TEMP/ce08-repair/biz-source.tar"
+      - name: Actual MySQL acceptance
+        working-directory: biz
+        run: |
+          set -euo pipefail
+          go test -count=1 -tags=integration -json ./integration -run '^TestCE08MySQL' 2>&1 | tee "$RUNNER_TEMP/ce08-repair/mysql.jsonl"
+          go test -count=1 -json ./... 2>&1 | tee "$RUNNER_TEMP/ce08-repair/all.jsonl"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce08-authority-repair-${{ github.sha }}', path: '${{ runner.temp }}/ce08-repair', if-no-files-found: error}
