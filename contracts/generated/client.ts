@@ -198,6 +198,14 @@ export interface Commercial_V1_CheckPlanEligibilityRequest {
   salesScope?: string;
 }
 
+export interface Commercial_V1_ConfirmSubscriptionChangeRequest {
+  tenantId?: string;
+  changeId?: string;
+  requestId?: string;
+  previewHash?: string;
+  reason?: string;
+}
+
 export interface Commercial_V1_CreateEntitlementOverrideRequest {
   requestId?: string;
   tenantId?: string;
@@ -452,6 +460,16 @@ export interface Commercial_V1_PlanVersionDTO {
   reason?: string;
 }
 
+export interface Commercial_V1_PreviewSubscriptionChangeRequest {
+  tenantId?: string;
+  requestId?: string;
+  action?: string;
+  targetPlanCode?: string;
+  targetPlanVersion?: string;
+  effectiveAt?: string;
+  reason?: string;
+}
+
 export interface Commercial_V1_PutDefaultSubscriptionRuleRequest {
   requestId?: string;
   ruleId?: string;
@@ -462,6 +480,11 @@ export interface Commercial_V1_PutDefaultSubscriptionRuleRequest {
   planVersion?: string;
   enabled?: boolean;
   reason?: string;
+}
+
+export interface Commercial_V1_ReadSubscriptionChangeRequest {
+  tenantId?: string;
+  changeId?: string;
 }
 
 export interface Commercial_V1_RevokeEntitlementOverrideRequest {
@@ -488,6 +511,75 @@ export interface Commercial_V1_SetModuleTechnicalStatusRequest {
   reason?: string;
 }
 
+export interface Commercial_V1_SubscriptionChangeDependency {
+  moduleCode?: string;
+  requiresModules?: readonly string[];
+}
+
+export interface Commercial_V1_SubscriptionChangePreviewDTO {
+  changeId?: string;
+  tenantId?: string;
+  actorId?: string;
+  requestId?: string;
+  action?: string;
+  classification?: string;
+  mode?: string;
+  previewHash?: string;
+  before?: Commercial_V1_TenantSubscriptionDTO;
+  target?: Commercial_V1_PlanVersionDTO;
+  subscriptionRevision?: string;
+  sourceVersion?: string;
+  entitlementVersion?: string;
+  catalogRevision?: string;
+  createdAt?: string;
+  expiresAt?: string;
+  effectiveAt?: string;
+  entitlementExpiresAt?: string;
+  currentEntitlements?: Commercial_V1_EntitlementView;
+  projectedEntitlements?: Commercial_V1_EntitlementView;
+  dependencies?: readonly Commercial_V1_SubscriptionChangeDependency[];
+  quotaImpacts?: readonly Commercial_V1_SubscriptionChangeQuotaImpact[];
+  impacts?: readonly string[];
+  pricingBasis?: string;
+  quotaValidationRequired?: boolean;
+}
+
+export interface Commercial_V1_SubscriptionChangeQuotaImpact {
+  moduleCode?: string;
+  key?: string;
+  beforeLimit?: Commercial_V1_EntitlementLimit;
+  afterLimit?: Commercial_V1_EntitlementLimit;
+  usageKnown?: boolean;
+  used?: string;
+  overLimit?: boolean;
+  policy?: string;
+  evidence?: string;
+}
+
+export interface Commercial_V1_SubscriptionChangeReceiptDTO {
+  changeId?: string;
+  tenantId?: string;
+  actorId?: string;
+  requestId?: string;
+  previewHash?: string;
+  action?: string;
+  status?: string;
+  mode?: string;
+  confirmedAt?: string;
+  effectiveAt?: string;
+  entitlementExpiresAt?: string;
+  reason?: string;
+  before?: Commercial_V1_TenantSubscriptionDTO;
+  after?: Commercial_V1_TenantSubscriptionDTO;
+  beforeSourceVersion?: string;
+  afterSourceVersion?: string;
+  beforeEntitlementVersion?: string;
+  afterEntitlementVersion?: string;
+  quotaValidationRequired?: boolean;
+  pricingAuthority?: string;
+  quotaImpacts?: readonly Commercial_V1_SubscriptionChangeQuotaImpact[];
+}
+
 export interface Commercial_V1_TenantSubscriptionDTO {
   subscriptionId?: string;
   tenantId?: string;
@@ -501,6 +593,11 @@ export interface Commercial_V1_TenantSubscriptionDTO {
   entitlementSourceVersion?: string;
   createdAt?: string;
   matchExplanation?: string;
+  revision?: string;
+  periodStart?: string;
+  periodEnd?: string;
+  renewalStopped?: boolean;
+  pendingChangeId?: string;
 }
 
 export interface Commercial_V1_UpdateModuleRequest {
@@ -949,6 +1046,42 @@ export const operations = {
       { method: "PATCH", path: "/v1/platform/plans/{plan_code}/versions/{version}", body: "*" },
     ]
   },
+  "commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange",
+    requestType: "commercial.v1.ConfirmSubscriptionChangeRequest",
+    responseType: "commercial.v1.SubscriptionChangeReceiptDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm", body: "*" },
+    ]
+  },
+  "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangePreview",
+    requestType: "commercial.v1.ReadSubscriptionChangeRequest",
+    responseType: "commercial.v1.SubscriptionChangePreviewDTO",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}" },
+    ]
+  },
+  "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangeReceipt",
+    requestType: "commercial.v1.ReadSubscriptionChangeRequest",
+    responseType: "commercial.v1.SubscriptionChangeReceiptDTO",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}" },
+    ]
+  },
+  "commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/PreviewSubscriptionChange",
+    requestType: "commercial.v1.PreviewSubscriptionChangeRequest",
+    responseType: "commercial.v1.SubscriptionChangePreviewDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/tenants/{tenant_id}/subscription/change-previews", body: "*" },
+    ]
+  },
   "commercial.v1.SubscriptionManagementApplication.GetTenantSubscription": {
     fullName: "commercial.v1.SubscriptionManagementApplication.GetTenantSubscription",
     rpcPath: "/commercial.v1.SubscriptionManagementApplication/GetTenantSubscription",
@@ -1226,6 +1359,27 @@ export class Commercial_V1_PlanManagementApplicationClient {
 
   updatePlanDraft(request: Commercial_V1_UpdatePlanDraftRequest): Promise<Commercial_V1_PlanVersionDTO> {
     return this.transport.call<Commercial_V1_UpdatePlanDraftRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.UpdatePlanDraft"], request);
+  }
+
+}
+
+export class Commercial_V1_SubscriptionChangesApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  confirmSubscriptionChange(request: Commercial_V1_ConfirmSubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangeReceiptDTO> {
+    return this.transport.call<Commercial_V1_ConfirmSubscriptionChangeRequest, Commercial_V1_SubscriptionChangeReceiptDTO>(operations["commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange"], request);
+  }
+
+  getSubscriptionChangePreview(request: Commercial_V1_ReadSubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangePreviewDTO> {
+    return this.transport.call<Commercial_V1_ReadSubscriptionChangeRequest, Commercial_V1_SubscriptionChangePreviewDTO>(operations["commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview"], request);
+  }
+
+  getSubscriptionChangeReceipt(request: Commercial_V1_ReadSubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangeReceiptDTO> {
+    return this.transport.call<Commercial_V1_ReadSubscriptionChangeRequest, Commercial_V1_SubscriptionChangeReceiptDTO>(operations["commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt"], request);
+  }
+
+  previewSubscriptionChange(request: Commercial_V1_PreviewSubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangePreviewDTO> {
+    return this.transport.call<Commercial_V1_PreviewSubscriptionChangeRequest, Commercial_V1_SubscriptionChangePreviewDTO>(operations["commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange"], request);
   }
 
 }

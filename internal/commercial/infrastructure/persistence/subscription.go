@@ -187,6 +187,9 @@ func (r *subscriptionRepository) GetBase(ctx context.Context, t string, lock boo
 	if e != nil {
 		return v, e
 	}
+	if v.TenantID != x.TenantID || v.ID != x.SubscriptionID || v.PlanCode != x.PlanCode || v.PlanVersion != x.PlanVersion {
+		return v, subscription.ErrInvalid
+	}
 	return v, v.Validate()
 }
 func (r *subscriptionRepository) BootstrapReceipt(ctx context.Context, t, id, fp string) (*subscription.Subscription, error) {

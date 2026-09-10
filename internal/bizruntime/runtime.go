@@ -137,6 +137,7 @@ func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, opti
 }
 
 type applicationFactories struct {
+	quotaChangePolicy  commercialports.QuotaChangePolicy
 	snapshots          commercialports.EntitlementSnapshotReader
 	permissionVersions commercialports.PermissionVersionReader
 	deviceRepositories requestscope.RepositoryFactory[deviceports.ScopedRepositories]
@@ -353,7 +354,7 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	authenticator.set(accessStore)
 	return generatedassembly.RuntimeBindings{
 		Factories: applicationFactories{
-			snapshots: snapshots, permissionVersions: accessStore,
+			snapshots: snapshots, permissionVersions: accessStore, quotaChangePolicy: options.QuotaChangePolicy,
 			deviceRepositories: deviceRepositories,
 			site:               siteService,
 			moduleCatalog:      commercialApplication,

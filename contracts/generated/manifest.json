@@ -72,6 +72,16 @@
       }
     },
     {
+      "name": "contracts/proto/commercial/v1/subscription_change.proto",
+      "package": "commercial.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1",
+      "domain": {
+        "name": "commercial",
+        "version": "v1"
+      }
+    },
+    {
       "name": "contracts/proto/deviceops/v1/deviceops.proto",
       "package": "deviceops.v1",
       "syntax": "proto3",
@@ -957,6 +967,50 @@
           "name": "sales_scope",
           "jsonName": "salesScope",
           "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ConfirmSubscriptionChangeRequest",
+      "fullName": "commercial.v1.ConfirmSubscriptionChangeRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "preview_hash",
+          "jsonName": "previewHash",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 5,
           "kind": "scalar",
           "type": "string"
         }
@@ -2354,6 +2408,64 @@
       }
     },
     {
+      "name": "PreviewSubscriptionChangeRequest",
+      "fullName": "commercial.v1.PreviewSubscriptionChangeRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "action",
+          "jsonName": "action",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "target_plan_code",
+          "jsonName": "targetPlanCode",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "target_plan_version",
+          "jsonName": "targetPlanVersion",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "effective_at",
+          "jsonName": "effectiveAt",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "PutDefaultSubscriptionRuleRequest",
       "fullName": "commercial.v1.PutDefaultSubscriptionRuleRequest",
       "fields": [
@@ -2417,6 +2529,29 @@
           "name": "reason",
           "jsonName": "reason",
           "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ReadSubscriptionChangeRequest",
+      "fullName": "commercial.v1.ReadSubscriptionChangeRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 2,
           "kind": "scalar",
           "type": "string"
         }
@@ -2558,6 +2693,446 @@
       }
     },
     {
+      "name": "SubscriptionChangeDependency",
+      "fullName": "commercial.v1.SubscriptionChangeDependency",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "requires_modules",
+          "jsonName": "requiresModules",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "SubscriptionChangePreviewDTO",
+      "fullName": "commercial.v1.SubscriptionChangePreviewDTO",
+      "fields": [
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_id",
+          "jsonName": "actorId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "action",
+          "jsonName": "action",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "classification",
+          "jsonName": "classification",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "mode",
+          "jsonName": "mode",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "preview_hash",
+          "jsonName": "previewHash",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "before",
+          "jsonName": "before",
+          "number": 9,
+          "kind": "message",
+          "type": "commercial.v1.TenantSubscriptionDTO"
+        },
+        {
+          "name": "target",
+          "jsonName": "target",
+          "number": 10,
+          "kind": "message",
+          "type": "commercial.v1.PlanVersionDTO"
+        },
+        {
+          "name": "subscription_revision",
+          "jsonName": "subscriptionRevision",
+          "number": 11,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "source_version",
+          "jsonName": "sourceVersion",
+          "number": 12,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "entitlement_version",
+          "jsonName": "entitlementVersion",
+          "number": 13,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "catalog_revision",
+          "jsonName": "catalogRevision",
+          "number": 14,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "created_at",
+          "jsonName": "createdAt",
+          "number": 15,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "jsonName": "expiresAt",
+          "number": 16,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "effective_at",
+          "jsonName": "effectiveAt",
+          "number": 17,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "entitlement_expires_at",
+          "jsonName": "entitlementExpiresAt",
+          "number": 18,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "current_entitlements",
+          "jsonName": "currentEntitlements",
+          "number": 19,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementView"
+        },
+        {
+          "name": "projected_entitlements",
+          "jsonName": "projectedEntitlements",
+          "number": 20,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementView"
+        },
+        {
+          "name": "dependencies",
+          "jsonName": "dependencies",
+          "number": 21,
+          "kind": "message",
+          "type": "commercial.v1.SubscriptionChangeDependency",
+          "repeated": true
+        },
+        {
+          "name": "quota_impacts",
+          "jsonName": "quotaImpacts",
+          "number": 22,
+          "kind": "message",
+          "type": "commercial.v1.SubscriptionChangeQuotaImpact",
+          "repeated": true
+        },
+        {
+          "name": "impacts",
+          "jsonName": "impacts",
+          "number": 23,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "pricing_basis",
+          "jsonName": "pricingBasis",
+          "number": 24,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "quota_validation_required",
+          "jsonName": "quotaValidationRequired",
+          "number": 25,
+          "kind": "scalar",
+          "type": "bool"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "SubscriptionChangeQuotaImpact",
+      "fullName": "commercial.v1.SubscriptionChangeQuotaImpact",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "key",
+          "jsonName": "key",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "before_limit",
+          "jsonName": "beforeLimit",
+          "number": 3,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementLimit"
+        },
+        {
+          "name": "after_limit",
+          "jsonName": "afterLimit",
+          "number": 4,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementLimit"
+        },
+        {
+          "name": "usage_known",
+          "jsonName": "usageKnown",
+          "number": 5,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "used",
+          "jsonName": "used",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "over_limit",
+          "jsonName": "overLimit",
+          "number": 7,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "policy",
+          "jsonName": "policy",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "evidence",
+          "jsonName": "evidence",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "SubscriptionChangeReceiptDTO",
+      "fullName": "commercial.v1.SubscriptionChangeReceiptDTO",
+      "fields": [
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_id",
+          "jsonName": "actorId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "preview_hash",
+          "jsonName": "previewHash",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "action",
+          "jsonName": "action",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "jsonName": "status",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "mode",
+          "jsonName": "mode",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "confirmed_at",
+          "jsonName": "confirmedAt",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "effective_at",
+          "jsonName": "effectiveAt",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "entitlement_expires_at",
+          "jsonName": "entitlementExpiresAt",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "before",
+          "jsonName": "before",
+          "number": 13,
+          "kind": "message",
+          "type": "commercial.v1.TenantSubscriptionDTO"
+        },
+        {
+          "name": "after",
+          "jsonName": "after",
+          "number": 14,
+          "kind": "message",
+          "type": "commercial.v1.TenantSubscriptionDTO"
+        },
+        {
+          "name": "before_source_version",
+          "jsonName": "beforeSourceVersion",
+          "number": 15,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "after_source_version",
+          "jsonName": "afterSourceVersion",
+          "number": 16,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "before_entitlement_version",
+          "jsonName": "beforeEntitlementVersion",
+          "number": 17,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "after_entitlement_version",
+          "jsonName": "afterEntitlementVersion",
+          "number": 18,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "quota_validation_required",
+          "jsonName": "quotaValidationRequired",
+          "number": 19,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "pricing_authority",
+          "jsonName": "pricingAuthority",
+          "number": 20,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "quota_impacts",
+          "jsonName": "quotaImpacts",
+          "number": 21,
+          "kind": "message",
+          "type": "commercial.v1.SubscriptionChangeQuotaImpact",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "TenantSubscriptionDTO",
       "fullName": "commercial.v1.TenantSubscriptionDTO",
       "fields": [
@@ -2642,6 +3217,41 @@
           "name": "match_explanation",
           "jsonName": "matchExplanation",
           "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "revision",
+          "jsonName": "revision",
+          "number": 13,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "period_start",
+          "jsonName": "periodStart",
+          "number": 14,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "period_end",
+          "jsonName": "periodEnd",
+          "number": 15,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "renewal_stopped",
+          "jsonName": "renewalStopped",
+          "number": 16,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "pending_change_id",
+          "jsonName": "pendingChangeId",
+          "number": 17,
           "kind": "scalar",
           "type": "string"
         }
@@ -5102,6 +5712,198 @@
             "permissions": [
               "commercial.catalog.read",
               "platform.plan.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "SubscriptionChangesApplication",
+      "fullName": "commercial.v1.SubscriptionChangesApplication",
+      "domain": "commercial",
+      "application": {
+        "name": "subscription_changes",
+        "requires": [
+          "commercial/module_catalog",
+          "commercial/plan_management"
+        ]
+      },
+      "methods": [
+        {
+          "name": "ConfirmSubscriptionChange",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange",
+          "request": "commercial.v1.ConfirmSubscriptionChangeRequest",
+          "response": "commercial.v1.SubscriptionChangeReceiptDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.change.confirm",
+            "useCase": "confirm_subscription_change",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.subscription.confirm",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog",
+              "commercial.plan.eligibility",
+              "commercial.plan.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.change.confirm",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.subscription.confirm",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "GetSubscriptionChangePreview",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview",
+          "request": "commercial.v1.ReadSubscriptionChangeRequest",
+          "response": "commercial.v1.SubscriptionChangePreviewDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.change.preview.get",
+            "useCase": "get_subscription_change_preview",
+            "permissions": [
+              "platform.subscription.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.change.preview.get",
+            "permissions": [
+              "platform.subscription.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "GetSubscriptionChangeReceipt",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt",
+          "request": "commercial.v1.ReadSubscriptionChangeRequest",
+          "response": "commercial.v1.SubscriptionChangeReceiptDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.change.get",
+            "useCase": "get_subscription_change_receipt",
+            "permissions": [
+              "platform.subscription.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.change.get",
+            "permissions": [
+              "platform.subscription.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "PreviewSubscriptionChange",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange",
+          "request": "commercial.v1.PreviewSubscriptionChangeRequest",
+          "response": "commercial.v1.SubscriptionChangePreviewDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/tenants/{tenant_id}/subscription/change-previews",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.change.preview",
+            "useCase": "preview_subscription_change",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.subscription.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog",
+              "commercial.plan.eligibility",
+              "commercial.plan.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.change.preview",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.subscription.manage",
+              "platform.tenant.read"
             ],
             "permissionMode": "all",
             "authentication": [

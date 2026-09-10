@@ -869,6 +869,178 @@
       "bindings": {}
     },
     {
+      "operationId": "commercial.subscription.change.confirm",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "confirm_subscription_change",
+      "requestType": "commercial.v1.ConfirmSubscriptionChangeRequest",
+      "responseType": "commercial.v1.SubscriptionChangeReceiptDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.subscription.confirm",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog",
+          "commercial.plan.eligibility",
+          "commercial.plan.get"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.subscription.change.get",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "get_subscription_change_receipt",
+      "requestType": "commercial.v1.ReadSubscriptionChangeRequest",
+      "responseType": "commercial.v1.SubscriptionChangeReceiptDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.subscription.read",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangeReceipt",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.subscription.change.preview",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "preview_subscription_change",
+      "requestType": "commercial.v1.PreviewSubscriptionChangeRequest",
+      "responseType": "commercial.v1.SubscriptionChangePreviewDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.subscription.manage",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog",
+          "commercial.plan.eligibility",
+          "commercial.plan.get"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionChangesApplication/PreviewSubscriptionChange",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/tenants/{tenant_id}/subscription/change-previews",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.subscription.change.preview.get",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "get_subscription_change_preview",
+      "requestType": "commercial.v1.ReadSubscriptionChangeRequest",
+      "responseType": "commercial.v1.SubscriptionChangePreviewDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.subscription.read",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangePreview",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "commercial.subscription.get",
       "domain": "commercial",
       "application": "subscription_management",

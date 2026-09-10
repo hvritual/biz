@@ -133,7 +133,7 @@ func decodeSources(tenant string, version uint64, rows []overrideRow) (ports.Ent
 		if err := json.Unmarshal([]byte(row.Payload), &source); err != nil {
 			return ports.EntitlementState{}, err
 		}
-		if source.ModuleCode != row.ModuleCode || source.TenantID != tenant || source.ID != row.ID || source.Version != row.Version || source.SourceKind != entitlement.OverrideSource {
+		if source.ModuleCode != row.ModuleCode || source.TenantID != tenant || source.ID != row.ID || source.Version != row.Version || (source.SourceKind != entitlement.OverrideSource && source.SourceKind != entitlement.PlanSource && source.SourceKind != entitlement.AddonSource) {
 			return ports.EntitlementState{}, entitlement.ErrScope
 		}
 		if err := source.ValidateShape(); err != nil {

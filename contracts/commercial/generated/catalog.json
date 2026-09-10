@@ -1,15 +1,16 @@
 {
   "schema_version": 1,
-  "mapping_version": "5",
+  "mapping_version": "6",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "3f7a6a4547d5b59e1a97b0a603a9bd7ea5b7743a06c713838c092df4e83578e9",
-    "contracts/generated/manifest.json": "8d8b5ef76a076578b6f760deca5273c3c2a2e9d9f0e82a5f9e8f17f96ad1d93b",
-    "contracts/generated/operation-plans.json": "32891f832ab1d367de48d3b83e3fbde3fea962ce31fca53fc17e75c0cfa41838",
+    "contracts/commercial/operation-capabilities.v1.json": "b3a1b99295c11dd6da9878688ace1ec9a82eda54dfe06d6a84e25586ff6e602f",
+    "contracts/generated/manifest.json": "f828ea6406771a93f589c61c00a0f9d13c185c8a0a24823dfc3af5ff08b1892a",
+    "contracts/generated/operation-plans.json": "938288c10b54e7c1b02bb60bf10deb37275b7712016e6ede32cdec0183bd2713",
     "internal/access/application/tenant_member_lifecycle.go": "c629117c2538c45af9a75932a53ecd6109059bd56e6dc71b11eedb2e538c6cff",
     "internal/access/application/tenantlifecycle/internal/usecase/service.go": "63e3eba06691d15fa88041b660431b48e87640bfaf35954774595db9880e5d29",
-    "internal/commercial/application/entitlementmanagement/internal/usecase/service.go": "025bee67b74d1cf9be84c8620ba9a19dd47eb1a9b806b8f4dad142da9d0a74ce",
+    "internal/commercial/application/entitlementmanagement/internal/usecase/service.go": "6cbcb31645f67104b8089b6c8559a2ff0ba5d6f5eb3b49e6fa56f238040f046c",
     "internal/commercial/application/planmanagement/internal/usecase/service.go": "3534687bf60f71d844144840891ba957fab28f8452df31fa40940c6c69e221a6",
-    "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go": "3bac4fa81b4a5f70f5152518532709ae5d20fd1bdc8e154c7f007ef67ba3cadf",
+    "internal/commercial/application/subscriptionchanges/internal/usecase/context.go": "7a3916a90514dfef4c11bee6e2450d3efb282b6365cdd5d61f33c92481cf53ff",
+    "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go": "037903e575e627bc38c4cb6984085311285b1bb9042d00d52d21e17739158d47",
     "internal/deviceops/application/cross_application_transfer.go": "bffaca1f1be420371bfcb770c5ccfd79f18553938ca92de0584f5e921460d9d8",
     "internal/deviceops/application/service.go": "f7a37a30cd01fadfb5f1a1f3a6c497eaeba5dc8f706e484c445eed9193abbcaa"
   },
@@ -389,6 +390,92 @@
       ],
       "consumer_type": "internal_child",
       "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.change.confirm",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.get",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.change.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangeReceipt",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.change.preview",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.get",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.SubscriptionChangesApplication/PreviewSubscriptionChange",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.change.preview.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangePreview",
       "required_capability_codes": [],
       "always_required_capability_codes": []
     },

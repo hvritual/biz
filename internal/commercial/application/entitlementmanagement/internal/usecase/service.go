@@ -217,7 +217,7 @@ func (s *service) RevokeEntitlementOverride(ctx context.Context, req *commercial
 			return ports.OverrideReceipt{}, entitlement.ErrConflict
 		}
 		for _, current := range state.Sources {
-			if current.ID != req.Id {
+			if current.ID != req.Id || current.SourceKind != entitlement.OverrideSource {
 				continue
 			}
 			if current.RevokedAt != nil {
@@ -265,6 +265,9 @@ func (s *service) ListEntitlementOverrides(ctx context.Context, req *commercialv
 	}
 	response := &commercialv1.ListEntitlementOverridesResponse{SourceVersion: state.Version, Sources: []*commercialv1.EntitlementOverrideDTO{}}
 	for _, source := range state.Sources {
+		if source.SourceKind != entitlement.OverrideSource {
+			continue
+		}
 		response.Sources = append(response.Sources, sourceDTO(source))
 	}
 	return response, nil
