@@ -1,0 +1,78 @@
+name: CE-09 prepare candidate
+on:
+  push:
+    branches: [control/ce09-delivery-20260910]
+    paths: ['.github/workflows/ce09-prepare.yml']
+permissions: {contents: write}
+concurrency: {group: ce09-product-writer, cancel-in-progress: false}
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: feat/ce-09-subscription-changes, path: biz, fetch-depth: 0, persist-credentials: true}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ github.sha }}', path: control, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, persist-credentials: false}
+      - id: lock
+        shell: bash
+        run: |
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "p=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "s=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/ce09"
+          git -C biz rev-parse HEAD > "$RUNNER_TEMP/ce09/initial.txt"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Locked generators
+        env: {R: '${{ steps.lock.outputs.p }}', S: '${{ steps.lock.outputs.s }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 20 "https://github.com/protocolbuffers/protobuf/releases/download/v${R}/protoc-${R}-linux-x86_64.zip" -o "$RUNNER_TEMP/p.zip"
+          echo "$S  $RUNNER_TEMP/p.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/p.zip" -d "$RUNNER_TEMP/protoc"
+          make -C yunka.io rpc-tools
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+          echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
+      - name: Prepare and generate product only
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = c7183798985b104a1c05b5c4337b48372856791d
+          python3 ../control/.ce09/prepare.py | tee "$RUNNER_TEMP/ce09/prepare.log"
+          find internal/commercial/domain/subscriptionchange internal/commercial/domain/subscription internal/commercial/application/subscriptionchanges internal/commercial/application/planprojection -name '*.go' -print0 | xargs -0 gofmt -w
+          gofmt -w internal/commercial/ports/subscriptionchange.go internal/commercial/infrastructure/persistence/subscriptionchange.go internal/commercial/infrastructure/persistence/subscription.go internal/commercial/infrastructure/persistence/entitlement.go internal/commercial/application/subscriptionmanagement/internal/usecase/service.go internal/commercial/application/entitlementmanagement/internal/usecase/service.go internal/bizruntime/config.go internal/bizruntime/runtime.go internal/bizruntime/subscription_changes.go internal/bizruntime/tenant_creation_replay.go
+          make generate 2>&1 | tee "$RUNNER_TEMP/ce09/generate.log"
+          make commercial-generate 2>&1 | tee "$RUNNER_TEMP/ce09/mapping.log"
+          git diff --check
+          test -z "$(git diff --name-only -- .github/workflows server)"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'feat(ce-09): wire authoritative change composition and regenerate contracts'
+          git push origin HEAD:feat/ce-09-subscription-changes
+          git rev-parse HEAD > "$RUNNER_TEMP/ce09/candidate.txt"
+          git archive HEAD -o "$RUNNER_TEMP/ce09/biz-source.tar"
+      - name: Compile and retain existing regression assertions
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          make check 2>&1 | tee "$RUNNER_TEMP/ce09/check.log"
+          go test -count=1 -json ./... | tee "$RUNNER_TEMP/ce09/all.jsonl"
+          go test -count=1 -tags=integration ./integration -run '^$' 2>&1 | tee "$RUNNER_TEMP/ce09/integration-compile.log"
+      - name: Retain failure patch when preparation did not commit
+        if: always()
+        working-directory: biz
+        run: git diff --binary > "$RUNNER_TEMP/ce09/uncommitted.patch"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce09-prepare-${{ github.sha }}', path: '${{ runner.temp }}/ce09', if-no-files-found: error}
