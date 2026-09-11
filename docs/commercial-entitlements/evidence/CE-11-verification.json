@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "task_id": "CE-11",
+  "verified_commit": "35031f9ffd96dde62d5425125f1250dc1ba8e361",
+  "result": "PASS",
+  "checks": [
+    {
+      "command": "npm run check",
+      "exit_code": 0,
+      "tests_passed": 19,
+      "tests_failed": 0,
+      "evidence": "business-main CoffeeLink run 34566832776: type-check/lint/architecture/unit/build success; 19 Vitest tests passed"
+    },
+    {
+      "command": "npm run test:e2e",
+      "exit_code": 0,
+      "tests_passed": 11,
+      "tests_failed": 0,
+      "evidence": "business-main CoffeeLink run 34566832776 / artifact 10186334999: 11 Playwright tests, TestCE11 present, zero unexpected/skipped"
+    },
+    {
+      "command": "CE11 visual evidence verifier",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "tests_failed": 0,
+      "evidence": "artifact 10186334999 sha256 1b5e0510230c2af727ae6420e131f2fbd038fe22828677e235f0656256643473; 19 screenshots; six required viewport screenshots exact size"
+    },
+    {
+      "command": "business-main workflow/readback gate",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "tests_failed": 0,
+      "evidence": "main 35031f9ffd96dde62d5425125f1250dc1ba8e361: 13/13 workflow runs completed success including runtime and CE-02 through CE-10 regressions"
+    }
+  ]
+}

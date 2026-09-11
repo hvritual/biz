@@ -285,10 +285,11 @@
         "FR-13",
         "FR-18"
       ],
-      "status": "PLANNED",
+      "status": "DONE",
       "blocker": null,
-      "evidence": null,
-      "integration_commit": null
+      "evidence": "evidence/CE-11.md",
+      "integration_commit": "35031f9ffd96dde62d5425125f1250dc1ba8e361",
+      "verification": "evidence/CE-11-verification.json"
     },
     {
       "id": "CE-12",
