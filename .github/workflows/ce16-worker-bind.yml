@@ -7,29 +7,39 @@ permissions:
 jobs:
   patch:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    env:
+      PRODUCT_SHA: 7a0221f21eeed6cdee7e7e39c9589f31077eff7b
+      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          ref: feat/ce-16-time-scheduler
-          fetch-depth: 0
-      - name: Lock generated CE-16 head
+        with: {repository: hvritual/biz, ref: '${{ env.PRODUCT_SHA }}', path: biz, fetch-depth: 0}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, persist-credentials: false}
+      - id: lock
+        name: Lock product and toolchain
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "7a0221f21eeed6cdee7e7e39c9589f31077eff7b"
+          test "$(git -C biz rev-parse HEAD)" = "$PRODUCT_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          source yunka.io/tools/toolchain.env
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go_version }}', cache: false}
       - name: Bind CE-16 transitions to existing provisioning runner
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('internal/bizruntime/provisioning_worker.go')
+          p=Path('biz/internal/bizruntime/provisioning_worker.go')
           text=p.read_text()
           def rep(old,new):
               global text
-              if text.count(old)!=1:
-                  raise SystemExit(f'expected exactly one match for {old[:80]!r}, got {text.count(old)}')
+              n=text.count(old)
+              if n!=1:
+                  raise SystemExit(f'expected exactly one match, got {n}: {old[:100]!r}')
               text=text.replace(old,new,1)
           rep('''type ProvisioningTick struct {\n\tDeliveryID string\n\tTaskID     string\n\tTaskState  string\n}\n''','''type ProvisioningTick struct {\n\tTransitionID    string\n\tTransitionState string\n\tDeliveryID      string\n\tTaskID          string\n\tTaskState       string\n}\n''')
           rep('''\tapplication   app.ProvisioningApplication\n\texecutor      operation.Executor\n''','''\tapplication         app.ProvisioningApplication\n\tsubscriptionChanges app.SubscriptionChangesApplication\n\texecutor            operation.Executor\n''')
@@ -37,13 +47,18 @@ jobs:
           rep('''\tlease := uint32(r.options.LeaseDuration / time.Second)\n\tdelivery, e := operation.ExecuteTyped(call, r.executor, policy.OperationPlanProvisioningClaimProvisioningDelivery(), &v1.ClaimProvisioningDeliveryRequest{WorkerId: r.id, LeaseSeconds: lease}, r.application.ClaimProvisioningDelivery)\n''','''\tlease := uint32(r.options.LeaseDuration / time.Second)\n\ttransitionWork, e := operation.ExecuteTyped(call, r.executor, policy.OperationPlanSubscriptionChangesClaimCommercialTimeTransition(), &v1.ClaimCommercialTimeTransitionRequest{WorkerId: r.id, LeaseSeconds: lease}, r.subscriptionChanges.ClaimCommercialTimeTransition)\n\tif e != nil {\n\t\treturn out, e\n\t}\n\tif transitionWork != nil && transitionWork.Found {\n\t\tout.TransitionID = transitionWork.Transition.TransitionId\n\t\tcall, e = r.callContext(ctx)\n\t\tif e != nil {\n\t\t\treturn out, e\n\t\t}\n\t\tcompleted, completeErr := operation.ExecuteTyped(call, r.executor, policy.OperationPlanSubscriptionChangesCompleteCommercialTimeTransition(), &v1.CompleteCommercialTimeTransitionRequest{TransitionId: out.TransitionID, WorkerId: r.id, LeaseToken: transitionWork.LeaseToken}, r.subscriptionChanges.CompleteCommercialTimeTransition)\n\t\tif completeErr != nil {\n\t\t\treturn out, completeErr\n\t\t}\n\t\tif completed != nil {\n\t\t\tout.TransitionState = completed.State\n\t\t}\n\t}\n\tcall, e = r.callContext(ctx)\n\tif e != nil {\n\t\treturn out, e\n\t}\n\tdelivery, e := operation.ExecuteTyped(call, r.executor, policy.OperationPlanProvisioningClaimProvisioningDelivery(), &v1.ClaimProvisioningDeliveryRequest{WorkerId: r.id, LeaseSeconds: lease}, r.application.ClaimProvisioningDelivery)\n''')
           p.write_text(text)
           PY
-          gofmt -w internal/bizruntime/provisioning_worker.go
-          git diff --check
+          gofmt -w biz/internal/bizruntime/provisioning_worker.go
+          git -C biz diff --check
+          cd biz
           go test ./internal/bizruntime ./cmd/biz
+          echo "CE16_WORKER_BIND_COMPILE=PASS"
       - name: Commit worker repair
         shell: bash
         run: |
           set -euo pipefail
+          cd biz
+          test "$(git diff --name-only | wc -l)" -eq 1
+          test "$(git diff --name-only)" = "internal/bizruntime/provisioning_worker.go"
           git config user.name hvritual
           git config user.email 460657446@qq.com
           git add internal/bizruntime/provisioning_worker.go
