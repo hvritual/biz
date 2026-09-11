@@ -1,0 +1,72 @@
+name: CE-16 locked generation
+on:
+  push:
+    branches: [control/ce16-generate-20260911]
+permissions:
+  contents: write
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      PRODUCT_SHA: c32a1de12a5574dd2a73a0eb54feb28c414a5317
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/biz, ref: '${{ env.PRODUCT_SHA }}', path: biz, fetch-depth: 0}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, persist-credentials: false}
+      - id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C biz rev-parse HEAD)" = "$PRODUCT_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          source yunka.io/tools/toolchain.env
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "protoc_release=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "protoc_sha=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go_version }}', cache: false}
+      - name: Install locked generators
+        env: {RELEASE: '${{ steps.lock.outputs.protoc_release }}', CHECKSUM: '${{ steps.lock.outputs.protoc_sha }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 20 "https://github.com/protocolbuffers/protobuf/releases/download/v${RELEASE}/protoc-${RELEASE}-linux-x86_64.zip" -o "$RUNNER_TEMP/protoc.zip"
+          echo "$CHECKSUM  $RUNNER_TEMP/protoc.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/protoc.zip" -d "$RUNNER_TEMP/protoc"
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+          make -C yunka.io rpc-tools
+          echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
+      - name: Generate twice and require stable closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$RUNNER_TEMP/protoc/bin:$GITHUB_WORKSPACE/yunka.io/.yunka/bin:$PATH"
+          make -C biz YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$RUNNER_TEMP/protoc/bin/protoc" generate
+          git -C biz diff --check
+          git -C biz status --short > "$RUNNER_TEMP/first-status.txt"
+          git -C biz add -A
+          git -C biz diff --cached --binary > "$RUNNER_TEMP/first.patch"
+          git -C biz reset
+          make -C biz YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$RUNNER_TEMP/protoc/bin/protoc" generate
+          git -C biz diff --check
+          git -C biz add -A
+          git -C biz diff --cached --binary > "$RUNNER_TEMP/second.patch"
+          cmp "$RUNNER_TEMP/first.patch" "$RUNNER_TEMP/second.patch"
+          echo "CE16_GENERATION_STABLE=PASS"
+      - name: Commit generated closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          git config user.name hvritual
+          git config user.email 460657446@qq.com
+          if git diff --cached --quiet; then
+            echo "CE16_GENERATION_CHANGED=FALSE"
+          else
+            git commit -m 'chore(ce-16): regenerate scheduler contracts'
+            git push origin HEAD:refs/heads/feat/ce-16-time-scheduler
+            echo "CE16_GENERATION_HEAD=$(git rev-parse HEAD)"
+          fi
