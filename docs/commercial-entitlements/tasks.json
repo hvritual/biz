@@ -305,8 +305,8 @@
         "FR-13",
         "FR-14"
       ],
-      "status": "PLANNED",
-      "blocker": null,
+      "status": "BLOCKED",
+      "blocker": "缺少可投产的真实 Web 身份入口。exact-main 审计 run 34571019974 / artifact 10187757917 扫描 225 个代码文件，未发现 OIDC/OpenID/OAuth/WebAuthn/SAML、密码校验器、服务端会话 Cookie、CSRF 或登录/Session endpoint；当前前端明确为登录待接入且租户切换仅 demo 内存状态。现有平台身份是 API-key Bearer，按 CE-12 契约禁止暴露给浏览器。解除阻塞必须先选定并提供可真实验证的 Web 身份源及信任边界、会话/退出/过期契约；不得用 demo principal、localStorage tenant 或平台 API key 代替。",
       "evidence": null,
       "integration_commit": null
     },
