@@ -1,0 +1,52 @@
+name: CE-16 worker binding repair
+on:
+  push:
+    branches: [control/ce16-worker-bind-20260911]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/ce-16-time-scheduler
+          fetch-depth: 0
+      - name: Lock generated CE-16 head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "7a0221f21eeed6cdee7e7e39c9589f31077eff7b"
+      - name: Bind CE-16 transitions to existing provisioning runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('internal/bizruntime/provisioning_worker.go')
+          text=p.read_text()
+          def rep(old,new):
+              global text
+              if text.count(old)!=1:
+                  raise SystemExit(f'expected exactly one match for {old[:80]!r}, got {text.count(old)}')
+              text=text.replace(old,new,1)
+          rep('''type ProvisioningTick struct {\n\tDeliveryID string\n\tTaskID     string\n\tTaskState  string\n}\n''','''type ProvisioningTick struct {\n\tTransitionID    string\n\tTransitionState string\n\tDeliveryID      string\n\tTaskID          string\n\tTaskState       string\n}\n''')
+          rep('''\tapplication   app.ProvisioningApplication\n\texecutor      operation.Executor\n''','''\tapplication         app.ProvisioningApplication\n\tsubscriptionChanges app.SubscriptionChangesApplication\n\texecutor            operation.Executor\n''')
+          rep('''\tif r.application == nil || r.executor == nil || r.authenticator == nil || r.workerContext == nil {\n''','''\tif r.application == nil || r.subscriptionChanges == nil || r.executor == nil || r.authenticator == nil || r.workerContext == nil {\n''')
+          rep('''\tlease := uint32(r.options.LeaseDuration / time.Second)\n\tdelivery, e := operation.ExecuteTyped(call, r.executor, policy.OperationPlanProvisioningClaimProvisioningDelivery(), &v1.ClaimProvisioningDeliveryRequest{WorkerId: r.id, LeaseSeconds: lease}, r.application.ClaimProvisioningDelivery)\n''','''\tlease := uint32(r.options.LeaseDuration / time.Second)\n\ttransitionWork, e := operation.ExecuteTyped(call, r.executor, policy.OperationPlanSubscriptionChangesClaimCommercialTimeTransition(), &v1.ClaimCommercialTimeTransitionRequest{WorkerId: r.id, LeaseSeconds: lease}, r.subscriptionChanges.ClaimCommercialTimeTransition)\n\tif e != nil {\n\t\treturn out, e\n\t}\n\tif transitionWork != nil && transitionWork.Found {\n\t\tout.TransitionID = transitionWork.Transition.TransitionId\n\t\tcall, e = r.callContext(ctx)\n\t\tif e != nil {\n\t\t\treturn out, e\n\t\t}\n\t\tcompleted, completeErr := operation.ExecuteTyped(call, r.executor, policy.OperationPlanSubscriptionChangesCompleteCommercialTimeTransition(), &v1.CompleteCommercialTimeTransitionRequest{TransitionId: out.TransitionID, WorkerId: r.id, LeaseToken: transitionWork.LeaseToken}, r.subscriptionChanges.CompleteCommercialTimeTransition)\n\t\tif completeErr != nil {\n\t\t\treturn out, completeErr\n\t\t}\n\t\tif completed != nil {\n\t\t\tout.TransitionState = completed.State\n\t\t}\n\t}\n\tcall, e = r.callContext(ctx)\n\tif e != nil {\n\t\treturn out, e\n\t}\n\tdelivery, e := operation.ExecuteTyped(call, r.executor, policy.OperationPlanProvisioningClaimProvisioningDelivery(), &v1.ClaimProvisioningDeliveryRequest{WorkerId: r.id, LeaseSeconds: lease}, r.application.ClaimProvisioningDelivery)\n''')
+          p.write_text(text)
+          PY
+          gofmt -w internal/bizruntime/provisioning_worker.go
+          git diff --check
+          go test ./internal/bizruntime ./cmd/biz
+      - name: Commit worker repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name hvritual
+          git config user.email 460657446@qq.com
+          git add internal/bizruntime/provisioning_worker.go
+          git commit -m 'fix(ce-16): bind time transitions into provisioning runner'
+          git push origin HEAD:refs/heads/feat/ce-16-time-scheduler
+          echo "CE16_WORKER_HEAD=$(git rev-parse HEAD)"
