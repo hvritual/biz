@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 )
@@ -71,8 +72,12 @@ func TestCE12FirstPartyIdPLoginReferrerPolicyPreservesFormOrigin(t *testing.T) {
 	if got := recorder.Header().Get("Referrer-Policy"); got != "origin" {
 		t.Fatalf("login Referrer-Policy=%q want origin", got)
 	}
-	if got := recorder.Header().Get("Content-Security-Policy"); got == "" {
+	csp := recorder.Header().Get("Content-Security-Policy")
+	if csp == "" {
 		t.Fatal("login page must retain Content-Security-Policy")
+	}
+	if want := "form-action 'self' http://127.0.0.1:18081"; !strings.Contains(csp, want) {
+		t.Fatalf("login Content-Security-Policy=%q missing %q", csp, want)
 	}
 }
 
