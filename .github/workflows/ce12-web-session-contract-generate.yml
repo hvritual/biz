@@ -77,7 +77,7 @@ jobs:
           go -C biz test -count=1 ./...
           go -C biz vet ./...
           go -C biz build ./cmd/biz ./cmd/biz-idp ./cmd/biz-idp-credential
-      - name: Commit generated consumer contract
+      - name: Commit generated consumer contract on current branch head
         shell: bash
         run: |
           set -euo pipefail
@@ -85,4 +85,6 @@ jobs:
           git -C biz config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git -C biz add contracts internal modules go.mod go.sum
           git -C biz commit -m 'feat(ce-12): admit web-session in tenant operation contracts'
+          git -C biz fetch origin feat/ce-12-first-party-idp-e2e
+          git -C biz rebase origin/feat/ce-12-first-party-idp-e2e
           git -C biz push origin HEAD:feat/ce-12-first-party-idp-e2e
