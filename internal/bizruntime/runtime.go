@@ -84,6 +84,10 @@ func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, opti
 	if err != nil {
 		return nil, err
 	}
+	webAuth, err := newRuntimeWebAuth(ctx, options.WebAuth)
+	if err != nil {
+		return nil, err
+	}
 	httpListener, err := net.Listen("tcp", config.HTTPListenAddress)
 	if err != nil {
 		return nil, fmt.Errorf("biz runtime: HTTP listen: %w", err)
@@ -101,7 +105,8 @@ func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, opti
 	rootMux := http.NewServeMux()
 	rootMux.HandleFunc("GET /healthz", health.handle)
 	rootMux.Handle("GET "+diagnosticsPath, diagnosticsEndpoint)
-	rootMux.Handle("/v1/", httpAuthentication(authenticator, enforcement.HTTP(apiMux)))
+	webAuth.register(rootMux)
+	rootMux.Handle("/v1/", httpAuthentication(authenticator, webAuth, enforcement.HTTP(apiMux)))
 	httpServer := &http.Server{Handler: rootMux, ReadHeaderTimeout: 5 * time.Second}
 	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcAuthentication(authenticator), enforcement.RPC()))
 
@@ -125,7 +130,7 @@ func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, opti
 	result, err := generatedassembly.Bootstrap(ctx, generatedassembly.BootstrapOptions{
 		Platform: provider,
 		BindRuntime: func(bindCtx context.Context, prepared *platform.Provider) (generatedassembly.RuntimeBindings, error) {
-			return bindRuntime(bindCtx, prepared, options, authenticator, worker)
+			return bindRuntime(bindCtx, prepared, options, authenticator, webAuth, worker)
 		},
 		Transports:        generatedassembly.TransportBindings{HTTP: apiMux, RPC: grpcServer},
 		RuntimeComponents: components,
@@ -191,7 +196,7 @@ func (factory applicationFactories) BuildDeviceopsDeviceTransfer(dependencies ge
 	return checkedTransfer{inner: service}, nil
 }
 
-func bindRuntime(ctx context.Context, provider *platform.Provider, options Options, authenticator *runtimeAuthenticator, workers ...*provisioningRunner) (generatedassembly.RuntimeBindings, error) {
+func bindRuntime(ctx context.Context, provider *platform.Provider, options Options, authenticator *runtimeAuthenticator, webAuth *runtimeWebAuth, workers ...*provisioningRunner) (generatedassembly.RuntimeBindings, error) {
 	config := options.DeviceOps
 	deviceContext, err := provider.ForModule(deviceops.GeneratedDescriptor())
 	if err != nil {
@@ -225,6 +230,11 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 		}
 		if err := accessStore.EnsurePlatformSchema(ctx); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: platform IAM migrate: %w", err)
+		}
+		if options.WebAuth.Enabled() {
+			if err := accessStore.EnsureWebSessionSchema(ctx); err != nil {
+				return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: web session migrate: %w", err)
+			}
 		}
 		if err := commercialStore.Migrate(ctx); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: commercial module catalog migrate: %w", err)
@@ -272,6 +282,12 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 			Permissions: options.PlatformBootstrap.Permissions,
 		}); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: platform bootstrap: %w", err)
+		}
+	}
+	if options.WebAuth.Enabled() {
+		webAuth.setStore(accessStore)
+		if err := webAuth.bootstrapPlatformIdentity(ctx); err != nil {
+			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: OIDC platform identity bootstrap: %w", err)
 		}
 	}
 
@@ -443,9 +459,17 @@ func parseBearer(value string) string {
 	return strings.TrimSpace(value[7:])
 }
 
-func httpAuthentication(authenticator *runtimeAuthenticator, next http.Handler) http.Handler {
+func httpAuthentication(authenticator *runtimeAuthenticator, webAuth *runtimeWebAuth, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		principal, err := authenticator.authenticate(request.Context(), parseBearer(request.Header.Get("Authorization")))
+		var principal identity.Principal
+		var err error
+		if raw := parseBearer(request.Header.Get("Authorization")); raw != "" {
+			principal, err = authenticator.authenticate(request.Context(), raw)
+		} else if webAuth != nil && webAuth.enabled() {
+			principal, err = webAuth.authenticateAPI(request)
+		} else {
+			err = accesspersistence.ErrUnauthorized
+		}
 		if err != nil {
 			http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 			return
