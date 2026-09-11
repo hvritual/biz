@@ -92,8 +92,8 @@ func (store *Store) AuthenticatePlatform(ctx context.Context, rawToken string) (
 
 // AuthenticatePlatformSubject revalidates that a tenantless platform identity
 // still has at least one enabled credential anchored in the existing platform
-// IAM store. Web sessions call this on every request so disabling the existing
-// platform subject authority takes effect without waiting for session expiry.
+// IAM store. Web authority can therefore be revoked without waiting for its
+// browser session to expire.
 func (store *Store) AuthenticatePlatformSubject(ctx context.Context, subject, authMethod string) (identity.Principal, error) {
 	if store == nil || store.database == nil || strings.TrimSpace(subject) == "" || strings.TrimSpace(authMethod) == "" {
 		return identity.Principal{}, ErrUnauthorized
@@ -134,6 +134,12 @@ func (resolver *PrincipalGrantResolver) ResolveGrants(ctx context.Context, reque
 	subject := strings.TrimSpace(request.Principal.Subject)
 	if subject == "" || len(request.Permissions) == 0 {
 		return nil, nil
+	}
+	if _, err := resolver.store.AuthenticatePlatformSubject(ctx, subject, request.Principal.AuthMethod); err != nil {
+		if errors.Is(err, ErrUnauthorized) {
+			return nil, nil
+		}
+		return nil, err
 	}
 	keys := make([]string, 0, len(request.Permissions))
 	for _, permission := range request.Permissions {
