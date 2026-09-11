@@ -59,10 +59,10 @@ func TestCE12OIDCClaimsBindIssuerAudienceNonceAndExpiry(t *testing.T) {
 
 func TestCE12ReturnToCannotEscapeOrigin(t *testing.T) {
 	cases := map[string]string{
-		"":                              "/",
-		"/customers?tab=active":         "/customers?tab=active",
-		"https://evil.example/steal":    "/",
-		"//evil.example/steal":          "/",
+		"":                                  "/",
+		"/customers?tab=active":             "/customers?tab=active",
+		"https://evil.example/steal":        "/",
+		"//evil.example/steal":              "/",
 		"javascript:alert(document.domain)": "/",
 	}
 	for input, want := range cases {
