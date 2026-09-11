@@ -1,0 +1,22 @@
+name: CE-12 gofmt diff
+on:
+  push:
+    branches: [feat/ce-12-first-party-idp-e2e]
+    paths: ['.github/workflows/ce12-format-diff.yml']
+permissions: {contents: read}
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ github.sha }}', persist-credentials: false}
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '1.25.13', cache: false}
+      - name: Print exact gofmt diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          gofmt -d \
+            internal/access/infrastructure/persistence/first_party_idp.go \
+            internal/bizruntime/first_party_idp.go \
+            integration/ce12_browser_seed_test.go
