@@ -199,10 +199,11 @@ jobs:
         shell: bash
         run: |
           set +e
+          mkdir -p biz/web/test-results
           cp "$RUNNER_TEMP/ce12-idp.log" biz/web/test-results/ce12-idp.log 2>/dev/null
           cp "$RUNNER_TEMP/ce12-biz.log" biz/web/test-results/ce12-biz.log 2>/dev/null
           cp "$RUNNER_TEMP/ce12-discovery.json" biz/web/test-results/ce12-discovery.json 2>/dev/null
-          sha256sum biz/web/test-results/* 2>/dev/null | sort > biz/web/test-results/ce12-evidence-sha256.txt
+          find biz/web/test-results -maxdepth 1 -type f ! -name ce12-evidence-sha256.txt -print0 | sort -z | xargs -0 -r sha256sum > biz/web/test-results/ce12-evidence-sha256.txt
 
       - name: Stop CE-12 servers
         if: always()
