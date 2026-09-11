@@ -33,7 +33,7 @@ jobs:
     env:
       YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce12_browser?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
-      CE12_E2E_ENV_FILE: ${{ runner.temp }}/ce12-browser.json
+      CE12_E2E_ENV_FILE: /tmp/ce12-browser.json
       CE12_BIZ_BASE_URL: http://127.0.0.1:18080
     services:
       mysql:
