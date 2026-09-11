@@ -37,7 +37,10 @@ type EntitlementRepository interface {
 	Audit(context.Context, EntitlementAudit) error
 	SaveReceipt(context.Context, string, string, string, OverrideReceipt) error
 }
-type EntitlementRepositories struct{ Entitlements EntitlementRepository }
+type EntitlementRepositories struct {
+	Entitlements EntitlementRepository
+	Transitions  TimeTransitionRepository
+}
 
 // Providers must return real immutable, tenant-scoped source data or an error.
 // CE-04 installs no plan/add-on providers; nil is intentionally not a fake plan.
