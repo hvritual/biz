@@ -61,6 +61,21 @@ func TestCE12FirstPartyIdPLogoutRequiresExactRegisteredRedirect(t *testing.T) {
 	}
 }
 
+func TestCE12FirstPartyIdPLoginReferrerPolicyPreservesFormOrigin(t *testing.T) {
+	idp, err := newRuntimeFirstPartyIdP(testFirstPartyIdPConfig(testIDPPrivateKeyPEM(t), nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	recorder := httptest.NewRecorder()
+	idp.renderLogin(recorder, http.StatusOK, "request", "csrf", "", "")
+	if got := recorder.Header().Get("Referrer-Policy"); got != "origin" {
+		t.Fatalf("login Referrer-Policy=%q want origin", got)
+	}
+	if got := recorder.Header().Get("Content-Security-Policy"); got == "" {
+		t.Fatal("login page must retain Content-Security-Policy")
+	}
+}
+
 func testFirstPartyIdPConfig(active string, previous []FirstPartyIdPVerificationKey) FirstPartyIdPConfig {
 	return FirstPartyIdPConfig{
 		PublicURL:           "http://127.0.0.1:18081",

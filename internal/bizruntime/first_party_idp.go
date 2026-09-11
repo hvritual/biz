@@ -339,7 +339,10 @@ func (idp *runtimeFirstPartyIdP) renderLogin(writer http.ResponseWriter, status 
 	writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 	writer.Header().Set("Cache-Control", "no-store")
 	writer.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'")
-	writer.Header().Set("Referrer-Policy", "no-referrer")
+	// A navigate-mode HTML form POST needs a non-null Origin so the IdP
+	// transaction cookie remains same-site. `origin` still strips the OIDC
+	// authorization path/query from Referer, avoiding state/nonce leakage.
+	writer.Header().Set("Referrer-Policy", "origin")
 	writer.Header().Set("X-Content-Type-Options", "nosniff")
 	writer.Header().Set("X-Frame-Options", "DENY")
 	writer.WriteHeader(status)
