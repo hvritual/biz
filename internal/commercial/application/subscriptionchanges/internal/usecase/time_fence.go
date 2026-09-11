@@ -7,15 +7,14 @@ import (
 	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
 	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	change "github.com/hvritual/biz/internal/commercial/domain/subscriptionchange"
-	transition "github.com/hvritual/biz/internal/commercial/domain/timetransition"
 	"github.com/hvritual/biz/internal/commercial/ports"
 )
 
 // installTimeFence fail-closes the old PLAN authority at the requested boundary
 // before the asynchronous scheduler converges subscription state. It never
-// extends an existing natural expiry and persists the time transition in the
-// caller's original root transaction.
-func (s *service) installTimeFence(ctx context.Context, repos ports.SubscriptionChangeRepositories, m material, after *subscription.Subscription, changeID string, due, now time.Time) (uint64, uint64, error) {
+// extends an existing natural expiry. The durable transition itself is attached
+// by the time-aware receipt repository in the same root transaction.
+func (s *service) installTimeFence(ctx context.Context, repos ports.SubscriptionChangeRepositories, m material, after *subscription.Subscription, _ string, due, _ time.Time) (uint64, uint64, error) {
 	changed := false
 	for _, current := range m.state.Sources {
 		if current.SourceKind != entitlement.PlanSource || current.RevokedAt != nil {
@@ -52,17 +51,6 @@ func (s *service) installTimeFence(ctx context.Context, repos ports.Subscription
 			return 0, 0, change.ErrCorrupt
 		}
 		entitlementVersion = view.EntitlementVersion
-	}
-
-	task, err := transition.New(transition.ScheduledChange, after.TenantID, changeID, after.Revision, due, now)
-	if err != nil {
-		return 0, 0, err
-	}
-	if repos.Transitions == nil {
-		return 0, 0, change.ErrCorrupt
-	}
-	if err := repos.Transitions.Insert(ctx, task); err != nil {
-		return 0, 0, err
 	}
 	return sourceVersion, entitlementVersion, nil
 }
