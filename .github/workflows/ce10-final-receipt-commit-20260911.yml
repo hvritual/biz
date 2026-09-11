@@ -1,0 +1,55 @@
+name: CE-10 final receipt commit
+on:
+  push:
+    branches: [control/ce10-delivery-20260910]
+    paths: ['.github/workflows/ce10-final-receipt-commit-20260911.yml']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BUSINESS_SHA: 5bb4f87aa59856aad585cdc1e7e53016b6920380
+      RECEIPT_BRANCH: docs/ce-10-final-receipt-20260911
+      CANDIDATE_ARTIFACT: '10183544229'
+      CANDIDATE_ZIP: b5a5448be02e37a145b33d790a572f1ec08253c9e905cc02145d43fbd60cc940
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ env.RECEIPT_BRANCH }}', fetch-depth: 0, persist-credentials: true}
+      - name: Restore validated receipt and run candidate gates
+        env: {GH_TOKEN: '${{ github.token }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$BUSINESS_SHA"
+          git fetch origin main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$BUSINESS_SHA"
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 \
+            -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT}/zip" \
+            -o "$RUNNER_TEMP/candidate.zip"
+          echo "$CANDIDATE_ZIP  $RUNNER_TEMP/candidate.zip" | sha256sum -c -
+          mkdir "$RUNNER_TEMP/candidate"; unzip -q "$RUNNER_TEMP/candidate.zip" -d "$RUNNER_TEMP/candidate"
+          cp "$RUNNER_TEMP/candidate/tasks.json" docs/commercial-entitlements/tasks.json
+          cp "$RUNNER_TEMP/candidate/evidence/CE-10.md" docs/commercial-entitlements/evidence/CE-10.md
+          cp "$RUNNER_TEMP/candidate/evidence/CE-10-verification.json" docs/commercial-entitlements/evidence/CE-10-verification.json
+          expected=$'docs/commercial-entitlements/evidence/CE-10-verification.json\ndocs/commercial-entitlements/evidence/CE-10.md\ndocs/commercial-entitlements/tasks.json'
+          changed="$( { git diff --name-only; git ls-files --others --exclude-standard; } | sort )"
+          test "$changed" = "$expected"
+          git diff --check
+          python3 docs/commercial-entitlements/tools/check_plan.py
+          python3 -m unittest discover -s docs/commercial-entitlements/tools -p 'test_*.py' -v
+          python3 docs/commercial-entitlements/tools/check_round.py --task CE-10 --main-ref origin/main
+      - name: Commit exact three-file receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add docs/commercial-entitlements/evidence/CE-10.md docs/commercial-entitlements/evidence/CE-10-verification.json docs/commercial-entitlements/tasks.json
+          git commit -m 'docs(ce-10): close verified main receipts and DONE ledger'
+          expected=$'docs/commercial-entitlements/evidence/CE-10-verification.json\ndocs/commercial-entitlements/evidence/CE-10.md\ndocs/commercial-entitlements/tasks.json'
+          test "$(git diff --name-only origin/main...HEAD | sort)" = "$expected"
+          git push origin HEAD:"$RECEIPT_BRANCH"
