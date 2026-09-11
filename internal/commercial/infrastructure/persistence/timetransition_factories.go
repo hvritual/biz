@@ -68,18 +68,28 @@ func (r *subscriptionChangeWithTransitions) Complete(ctx context.Context, receip
 	if err := r.subscriptionChangeRepository.Complete(ctx, receipt); err != nil {
 		return err
 	}
-	if receipt.Status != change.Scheduled {
-		return nil
-	}
 	now, err := r.transitions.Now(ctx)
 	if err != nil {
 		return err
 	}
-	task, err := transition.New(transition.ScheduledChange, receipt.TenantID, receipt.ChangeID, receipt.After.Revision, receipt.EffectiveAt, now)
-	if err != nil {
-		return err
+	if receipt.Status == change.Scheduled {
+		task, err := transition.New(transition.ScheduledChange, receipt.TenantID, receipt.ChangeID, receipt.After.Revision, receipt.EffectiveAt, now)
+		if err != nil {
+			return err
+		}
+		return r.transitions.Insert(ctx, task)
 	}
-	return r.transitions.Insert(ctx, task)
+	// Any immediate fixed-period write replaces the subscription revision that a
+	// previous boundary task was bound to. Persist a new boundary in the same root
+	// so stop-renewal and provisioning cannot accidentally orphan expiration.
+	if receipt.Mode == change.Immediate && receipt.After.PeriodEnd != nil && (receipt.Status == change.Applied || receipt.Status == change.Provisioning) {
+		task, err := transition.New(transition.SubscriptionBoundary, receipt.TenantID, receipt.After.ID, receipt.After.Revision, *receipt.After.PeriodEnd, now)
+		if err != nil {
+			return err
+		}
+		return r.transitions.Insert(ctx, task)
+	}
+	return nil
 }
 
 func NewEntitlementTimeRepositoryFactory() requestscope.RepositoryFactory[ports.EntitlementRepositories] {
