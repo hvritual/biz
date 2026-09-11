@@ -64,7 +64,7 @@ func (store *Store) AuthenticateFirstPartyLogin(ctx context.Context, email, pass
 	identityHash := TokenHash(strings.ToLower(email))
 	sourceHash := TokenHash(normalizeRemoteHost(remoteAddr))
 	now := time.Now().UTC()
-	if err := store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var row firstPartyLoginThrottleRecord
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("identity_hash = ?", identityHash).First(&row).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -74,7 +74,11 @@ func (store *Store) AuthenticateFirstPartyLogin(ctx context.Context, email, pass
 			return ErrInvalidUserCredentials
 		}
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
+		if !errors.Is(err, ErrInvalidUserCredentials) {
+			return LocalUserIdentity{}, err
+		}
 		consumeDummyPasswordWork(password)
 		_ = store.recordFirstPartyLoginAudit(ctx, now, "throttled", "", identityHash, sourceHash)
 		return LocalUserIdentity{}, ErrInvalidUserCredentials

@@ -27,12 +27,18 @@ const (
 	devIDPAuthCookie    = "biz_idp_auth"
 )
 
+type firstPartyVerificationKey struct {
+	kid string
+	key *rsa.PublicKey
+}
+
 type runtimeFirstPartyIdP struct {
-	config FirstPartyIdPConfig
-	key    *rsa.PrivateKey
-	kid    string
-	mu     sync.RWMutex
-	store  *accesspersistence.Store
+	config           FirstPartyIdPConfig
+	key              *rsa.PrivateKey
+	kid              string
+	verificationKeys []firstPartyVerificationKey
+	mu               sync.RWMutex
+	store            *accesspersistence.Store
 }
 
 func newRuntimeFirstPartyIdP(config FirstPartyIdPConfig) (*runtimeFirstPartyIdP, error) {
@@ -47,17 +53,33 @@ func newRuntimeFirstPartyIdP(config FirstPartyIdPConfig) (*runtimeFirstPartyIdP,
 	if key.N.BitLen() < 2048 {
 		return nil, errors.New("biz runtime: first-party IdP RSA signing key must be at least 2048 bits")
 	}
-	kid := strings.TrimSpace(config.SigningKeyID)
-	if kid == "" {
-		encoded, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+	kid, err := rsaKeyID(&key.PublicKey, config.SigningKeyID)
+	if err != nil {
+		return nil, err
+	}
+	verificationKeys := []firstPartyVerificationKey{{kid: kid, key: &key.PublicKey}}
+	seen := map[string]struct{}{kid: struct{}{}}
+	for _, previous := range config.PreviousSigningKeys {
+		public, err := parseRSAPublicKey([]byte(previous.PEM))
 		if err != nil {
 			return nil, err
 		}
-		digest := sha256.Sum256(encoded)
-		kid = base64.RawURLEncoding.EncodeToString(digest[:12])
+		if public.N.BitLen() < 2048 {
+			return nil, errors.New("biz runtime: previous first-party IdP RSA key must be at least 2048 bits")
+		}
+		previousKid, err := rsaKeyID(public, previous.KeyID)
+		if err != nil {
+			return nil, err
+		}
+		if _, duplicate := seen[previousKid]; duplicate {
+			return nil, errors.New("biz runtime: duplicate first-party IdP signing key id")
+		}
+		seen[previousKid] = struct{}{}
+		verificationKeys = append(verificationKeys, firstPartyVerificationKey{kid: previousKid, key: public})
 	}
 	result.key = key
 	result.kid = kid
+	result.verificationKeys = verificationKeys
 	return result, nil
 }
 
@@ -125,17 +147,18 @@ func (idp *runtimeFirstPartyIdP) handleDiscovery(writer http.ResponseWriter, _ *
 }
 
 func (idp *runtimeFirstPartyIdP) handleJWKS(writer http.ResponseWriter, _ *http.Request) {
-	public := &idp.key.PublicKey
-	writeJSON(writer, http.StatusOK, map[string]any{
-		"keys": []map[string]any{{
+	keys := make([]map[string]any, 0, len(idp.verificationKeys))
+	for _, verification := range idp.verificationKeys {
+		keys = append(keys, map[string]any{
 			"kty": "RSA",
 			"use": "sig",
 			"alg": "RS256",
-			"kid": idp.kid,
-			"n":   base64.RawURLEncoding.EncodeToString(public.N.Bytes()),
-			"e":   base64.RawURLEncoding.EncodeToString(rsaExponentBytes(public.E)),
-		}},
-	})
+			"kid": verification.kid,
+			"n":   base64.RawURLEncoding.EncodeToString(verification.key.N.Bytes()),
+			"e":   base64.RawURLEncoding.EncodeToString(rsaExponentBytes(verification.key.E)),
+		})
+	}
+	writeJSON(writer, http.StatusOK, map[string]any{"keys": keys})
 }
 
 func (idp *runtimeFirstPartyIdP) handleAuthorize(writer http.ResponseWriter, request *http.Request) {
@@ -197,9 +220,13 @@ func (idp *runtimeFirstPartyIdP) handleLogin(writer http.ResponseWriter, request
 		http.Error(writer, "invalid login request", http.StatusUnauthorized)
 		return
 	}
-	identity, err := store.AuthenticateUserPassword(request.Context(), email, password)
+	identity, err := store.AuthenticateFirstPartyLogin(request.Context(), email, password, request.RemoteAddr, accesspersistence.DefaultFirstPartyLoginPolicy())
 	if err != nil {
-		idp.renderLogin(writer, http.StatusUnauthorized, requestID, csrf, email, "邮箱或密码错误")
+		if errors.Is(err, accesspersistence.ErrInvalidUserCredentials) {
+			idp.renderLogin(writer, http.StatusUnauthorized, requestID, csrf, email, "邮箱或密码错误")
+			return
+		}
+		http.Error(writer, "identity provider unavailable", http.StatusServiceUnavailable)
 		return
 	}
 	code, authorization, err := store.IssueFirstPartyAuthorizationCode(request.Context(), requestID, cookie.Value, csrf, identity.UserID, idp.config.CodeTTL)
@@ -262,17 +289,20 @@ func (idp *runtimeFirstPartyIdP) handleToken(writer http.ResponseWriter, request
 }
 
 func (idp *runtimeFirstPartyIdP) handleProviderLogout(writer http.ResponseWriter, request *http.Request) {
+	expected := strings.TrimSpace(idp.config.PostLogoutRedirectURL)
+	if expected == "" {
+		expected = strings.TrimRight(idp.config.PublicURL, "/") + "/"
+	}
 	target := strings.TrimSpace(request.URL.Query().Get("post_logout_redirect_uri"))
 	if target == "" {
-		target = strings.TrimRight(idp.config.PublicURL, "/") + "/"
+		target = expected
 	}
-	base, baseErr := url.Parse(idp.config.PublicURL)
-	redirect, redirectErr := url.Parse(target)
-	if baseErr != nil || redirectErr != nil || redirect.Scheme != base.Scheme || redirect.Host != base.Host {
+	if target != expected {
 		http.Error(writer, "invalid post logout redirect", http.StatusBadRequest)
 		return
 	}
-	http.Redirect(writer, request, redirect.String(), http.StatusFound)
+	idp.clearAuthCookie(writer)
+	http.Redirect(writer, request, target, http.StatusFound)
 }
 
 func (idp *runtimeFirstPartyIdP) signIDToken(grant accesspersistence.FirstPartyAuthorizationGrant) (string, error) {
@@ -372,6 +402,37 @@ func parseRSAPrivateKey(data []byte) (*rsa.PrivateKey, error) {
 		return nil, errors.New("biz runtime: first-party IdP signing key must be RSA")
 	}
 	return key, nil
+}
+
+func parseRSAPublicKey(data []byte) (*rsa.PublicKey, error) {
+	block, _ := pem.Decode(data)
+	if block == nil {
+		return nil, errors.New("biz runtime: invalid previous first-party IdP signing key PEM")
+	}
+	if value, err := x509.ParsePKIXPublicKey(block.Bytes); err == nil {
+		if key, ok := value.(*rsa.PublicKey); ok {
+			return key, nil
+		}
+	}
+	if key, err := x509.ParsePKCS1PublicKey(block.Bytes); err == nil {
+		return key, nil
+	}
+	if key, err := parseRSAPrivateKey(data); err == nil {
+		return &key.PublicKey, nil
+	}
+	return nil, errors.New("biz runtime: previous first-party IdP signing key must be RSA")
+}
+
+func rsaKeyID(key *rsa.PublicKey, configured string) (string, error) {
+	if configured = strings.TrimSpace(configured); configured != "" {
+		return configured, nil
+	}
+	encoded, err := x509.MarshalPKIXPublicKey(key)
+	if err != nil {
+		return "", err
+	}
+	digest := sha256.Sum256(encoded)
+	return base64.RawURLEncoding.EncodeToString(digest[:12]), nil
 }
 
 func rsaExponentBytes(exponent int) []byte {

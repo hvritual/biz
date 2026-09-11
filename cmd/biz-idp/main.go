@@ -46,16 +46,22 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("read IdP signing key: %w", err)
 	}
+	previousSigningKeys, err := readPreviousSigningKeys()
+	if err != nil {
+		return err
+	}
 	config := bizruntime.FirstPartyIdPConfig{
-		PublicURL:     publicURL,
-		ClientID:      envOr("YUNKA_BIZ_IDP_CLIENT_ID", "biz-web"),
-		RedirectURL:   redirectURL,
-		SigningKeyPEM: string(signingKey),
-		SigningKeyID:  strings.TrimSpace(os.Getenv("YUNKA_BIZ_IDP_SIGNING_KEY_ID")),
-		LoginTTL:      envDuration("YUNKA_BIZ_IDP_LOGIN_TTL", 5*time.Minute),
-		CodeTTL:       envDuration("YUNKA_BIZ_IDP_CODE_TTL", 90*time.Second),
-		TokenTTL:      envDuration("YUNKA_BIZ_IDP_TOKEN_TTL", 5*time.Minute),
-		CookieSecure:  envBool("YUNKA_BIZ_IDP_COOKIE_SECURE", true),
+		PublicURL:             publicURL,
+		ClientID:              envOr("YUNKA_BIZ_IDP_CLIENT_ID", "biz-web"),
+		RedirectURL:           redirectURL,
+		PostLogoutRedirectURL: strings.TrimSpace(os.Getenv("YUNKA_BIZ_IDP_POST_LOGOUT_REDIRECT_URL")),
+		SigningKeyPEM:         string(signingKey),
+		SigningKeyID:          strings.TrimSpace(os.Getenv("YUNKA_BIZ_IDP_SIGNING_KEY_ID")),
+		PreviousSigningKeys:   previousSigningKeys,
+		LoginTTL:              envDuration("YUNKA_BIZ_IDP_LOGIN_TTL", 5*time.Minute),
+		CodeTTL:               envDuration("YUNKA_BIZ_IDP_CODE_TTL", 90*time.Second),
+		TokenTTL:              envDuration("YUNKA_BIZ_IDP_TOKEN_TTL", 5*time.Minute),
+		CookieSecure:          envBool("YUNKA_BIZ_IDP_COOKIE_SECURE", true),
 	}
 	if err := config.Validate(); err != nil {
 		return err
@@ -71,6 +77,9 @@ func run() error {
 	if envBool("YUNKA_BIZ_IDP_AUTO_MIGRATE", false) {
 		if err := store.EnsureFirstPartyIDPSchema(context.Background()); err != nil {
 			return fmt.Errorf("migrate IdP schema: %w", err)
+		}
+		if err := store.EnsureFirstPartyIDPSecuritySchema(context.Background()); err != nil {
+			return fmt.Errorf("migrate IdP security schema: %w", err)
 		}
 	}
 	handler, err := bizruntime.NewFirstPartyIdPHandler(config, store)
@@ -103,6 +112,32 @@ func run() error {
 		defer done()
 		return server.Shutdown(shutdown)
 	}
+}
+
+func readPreviousSigningKeys() ([]bizruntime.FirstPartyIdPVerificationKey, error) {
+	rawFiles := strings.TrimSpace(os.Getenv("YUNKA_BIZ_IDP_PREVIOUS_SIGNING_KEY_FILES"))
+	if rawFiles == "" {
+		return nil, nil
+	}
+	files := strings.Split(rawFiles, ",")
+	ids := strings.Split(strings.TrimSpace(os.Getenv("YUNKA_BIZ_IDP_PREVIOUS_SIGNING_KEY_IDS")), ",")
+	keys := make([]bizruntime.FirstPartyIdPVerificationKey, 0, len(files))
+	for index, rawFile := range files {
+		file := strings.TrimSpace(rawFile)
+		if file == "" {
+			return nil, errors.New("YUNKA_BIZ_IDP_PREVIOUS_SIGNING_KEY_FILES contains an empty path")
+		}
+		pemBytes, err := os.ReadFile(file)
+		if err != nil {
+			return nil, fmt.Errorf("read previous IdP signing key %s: %w", file, err)
+		}
+		keyID := ""
+		if index < len(ids) {
+			keyID = strings.TrimSpace(ids[index])
+		}
+		keys = append(keys, bizruntime.FirstPartyIdPVerificationKey{PEM: string(pemBytes), KeyID: keyID})
+	}
+	return keys, nil
 }
 
 func envOr(name, fallback string) string {

@@ -102,16 +102,23 @@ func (config WebAuthConfig) Validate() error {
 // identity provider. It is intentionally a single-client provider for the Biz
 // BFF: member lifecycle owns users; this provider only owns password credentials
 // and short-lived OIDC protocol state.
+type FirstPartyIdPVerificationKey struct {
+	PEM   string
+	KeyID string
+}
+
 type FirstPartyIdPConfig struct {
-	PublicURL     string
-	ClientID      string
-	RedirectURL   string
-	SigningKeyPEM string
-	SigningKeyID  string
-	LoginTTL      time.Duration
-	CodeTTL       time.Duration
-	TokenTTL      time.Duration
-	CookieSecure  bool
+	PublicURL             string
+	ClientID              string
+	RedirectURL           string
+	PostLogoutRedirectURL string
+	SigningKeyPEM         string
+	SigningKeyID          string
+	PreviousSigningKeys   []FirstPartyIdPVerificationKey
+	LoginTTL              time.Duration
+	CodeTTL               time.Duration
+	TokenTTL              time.Duration
+	CookieSecure          bool
 }
 
 func (config FirstPartyIdPConfig) Enabled() bool { return strings.TrimSpace(config.PublicURL) != "" }
@@ -138,6 +145,23 @@ func (config FirstPartyIdPConfig) Validate() error {
 	}
 	if strings.TrimSpace(config.SigningKeyPEM) == "" {
 		return errors.New("biz runtime: first-party IdP RSA signing key is required")
+	}
+	if config.PostLogoutRedirectURL != "" {
+		if err := requireHTTPSOrLoopback(config.PostLogoutRedirectURL); err != nil {
+			return err
+		}
+		parsed, _ := url.Parse(config.PostLogoutRedirectURL)
+		if parsed.Fragment != "" {
+			return errors.New("biz runtime: first-party IdP post logout redirect must not contain a fragment")
+		}
+	}
+	if len(config.PreviousSigningKeys) > 4 {
+		return errors.New("biz runtime: at most four previous IdP signing keys are supported")
+	}
+	for _, previous := range config.PreviousSigningKeys {
+		if strings.TrimSpace(previous.PEM) == "" {
+			return errors.New("biz runtime: previous IdP signing key PEM must not be empty")
+		}
 	}
 	if config.LoginTTL <= 0 || config.CodeTTL <= 0 || config.TokenTTL <= 0 {
 		return errors.New("biz runtime: first-party IdP TTLs must be positive")
