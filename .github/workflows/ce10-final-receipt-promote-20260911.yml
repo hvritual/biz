@@ -1,0 +1,92 @@
+name: CE-10 final receipt promote
+on:
+  push:
+    branches: [control/ce10-delivery-20260910]
+    paths: ['.github/workflows/ce10-final-receipt-promote-20260911.yml']
+permissions:
+  contents: write
+  actions: read
+concurrency: {group: ce10-final-receipt-promote, cancel-in-progress: false}
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BUSINESS_SHA: 5bb4f87aa59856aad585cdc1e7e53016b6920380
+      RECEIPT_BRANCH: docs/ce-10-final-receipt-20260911
+      CANDIDATE_ARTIFACT: '10183483229'
+      CANDIDATE_ZIP: eafcf50a94a9f5b8544d550a0c3a87be7f452fa0a67fac4d8f656c9b968cc5d4
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ env.RECEIPT_BRANCH }}', fetch-depth: 0, persist-credentials: true}
+      - name: Lock main and obtain authenticated candidate
+        env: {GH_TOKEN: '${{ github.token }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$BUSINESS_SHA"
+          git fetch origin main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$BUSINESS_SHA"
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 \
+            -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT}/zip" \
+            -o "$RUNNER_TEMP/candidate.zip"
+          echo "$CANDIDATE_ZIP  $RUNNER_TEMP/candidate.zip" | sha256sum -c -
+          mkdir "$RUNNER_TEMP/candidate"
+          unzip -q "$RUNNER_TEMP/candidate.zip" -d "$RUNNER_TEMP/candidate"
+      - name: Normalize required receipt sections and validate proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "$RUNNER_TEMP/candidate/tasks.json" docs/commercial-entitlements/tasks.json
+          cp "$RUNNER_TEMP/candidate/evidence/CE-10-verification.json" docs/commercial-entitlements/evidence/CE-10-verification.json
+          cp "$RUNNER_TEMP/candidate/evidence/CE-10.md" docs/commercial-entitlements/evidence/CE-10.md
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, os
+          business=os.environ['BUSINESS_SHA']
+          p=Path('docs/commercial-entitlements/evidence/CE-10.md')
+          s=p.read_text()
+          s=s.replace('## 已交付语义','## 基线与依赖\n起始业务基线为 `main@12f33db5632a81c04b9de7634b5d37baf5a2bb1a`；CE-09 已 DONE，无外部 gate。业务集成及 verified_commit 为 `'+business+'`；Yunka 固定 `33b98ceba57494abda2299e4f0290a5651dab4bc`，没有框架升级。\n\n## 变更清单',1)
+          s=s.replace('## 真实失败、修复与恢复证明','## 反例与故障验证',1)
+          s=s.replace('## 业务主线验证','## 验证命令与结果',1)
+          s=s.replace('## 历史事实、风险与回滚','## 风险与回滚',1)
+          s=s.replace('## 集成与最终门禁','## 集成与回读',1)
+          s += '## 自检\nscope：仅 CE-10 Outbox/持久化开通及必要验证；dependency：CE-09 DONE，无外部 gate；quality：PR、业务 main、真实 MySQL/race/restart/runtime/readback 已通过；risks：未生产部署/吞吐验证，支付、调度和运营处置不在本轮；rollback：暂停 worker 后按持久化事实对账与版本化补偿，不删历史、不回拨版本。CE-11 未启动。\n'
+          p.write_text(s)
+          proof=json.loads(Path('docs/commercial-entitlements/evidence/CE-10-verification.json').read_text())
+          assert proof['task_id']=='CE-10' and proof['verified_commit']==business and proof['result']=='PASS'
+          assert proof['qualification']['run_id']==34556255024 and proof['qualification']['artifact_id']==10182752579
+          assert proof['main_readback']['run_id']==34556369648 and proof['main_readback']['result']=='PASS'
+          assert proof['runtime']['result']=={'applications':12,'routes':46} and proof['runtime']['stop']=='PASS'
+          assert proof['historical_state']['business_main_summary_task_status']=='VERIFYING'
+          plan=json.loads(Path('docs/commercial-entitlements/tasks.json').read_text())
+          task=next(t for t in plan['tasks'] if t['id']=='CE-10')
+          assert task['status']=='DONE' and task['integration_commit']==business
+          assert task['evidence']=='evidence/CE-10.md' and task['verification']=='evidence/CE-10-verification.json'
+          PY
+          git diff --check
+          test "$(git diff --name-only | sort)" = $'docs/commercial-entitlements/evidence/CE-10-verification.json\ndocs/commercial-entitlements/evidence/CE-10.md\ndocs/commercial-entitlements/tasks.json'
+          python3 docs/commercial-entitlements/tools/check_plan.py
+          python3 -m unittest discover -s docs/commercial-entitlements/tools -p 'test_*.py' -v
+          python3 docs/commercial-entitlements/tools/check_round.py --task CE-10 --main-ref origin/main
+      - name: Commit exact receipt delta
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add docs/commercial-entitlements/evidence/CE-10.md docs/commercial-entitlements/evidence/CE-10-verification.json docs/commercial-entitlements/tasks.json
+          git commit -m 'docs(ce-10): close verified main receipts and DONE ledger'
+          test "$(git diff --name-only origin/main...HEAD | sort)" = $'docs/commercial-entitlements/evidence/CE-10-verification.json\ndocs/commercial-entitlements/evidence/CE-10.md\ndocs/commercial-entitlements/tasks.json'
+          git push origin HEAD:"$RECEIPT_BRANCH"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ce10-final-receipt-validated
+          path: |
+            docs/commercial-entitlements/evidence/CE-10.md
+            docs/commercial-entitlements/evidence/CE-10-verification.json
+            docs/commercial-entitlements/tasks.json
+          retention-days: 30
+          if-no-files-found: error
