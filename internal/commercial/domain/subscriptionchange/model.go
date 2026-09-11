@@ -25,6 +25,7 @@ const (
 	Scheduled    = "SCHEDULED"
 	Applied      = "APPLIED"
 	Provisioning = "PROVISIONING"
+	Failed       = "FAILED"
 )
 
 var (
@@ -170,7 +171,7 @@ type Receipt struct {
 
 func (r Receipt) Seal() Receipt { r.Hash = ""; r.Hash = Digest(r); return r }
 func (r Receipt) Integrity() error {
-	if !Tenant(r.TenantID) || !Key(r.RequestID) || !Key(r.ChangeID) || r.ActorID == "" || r.Hash != r.Seal().Hash || r.Before.TenantID != r.TenantID || r.After.TenantID != r.TenantID || r.After.Revision != r.Before.Revision+1 || r.After.Revision == 0 || r.ConfirmedAt.IsZero() || len(r.PreviewHash) != 64 || (r.Status != Applied && r.Status != Scheduled && r.Status != Provisioning) || (r.Status == Provisioning && (r.ProvisioningTaskID != pv.TaskID(r.ChangeID) || r.After.PendingChangeID != r.ChangeID || r.Mode != Immediate)) {
+	if !Tenant(r.TenantID) || !Key(r.RequestID) || !Key(r.ChangeID) || r.ActorID == "" || r.Hash != r.Seal().Hash || r.Before.TenantID != r.TenantID || r.After.TenantID != r.TenantID || r.After.Revision < r.Before.Revision+1 || r.After.Revision == 0 || r.ConfirmedAt.IsZero() || len(r.PreviewHash) != 64 || (r.Status != Applied && r.Status != Scheduled && r.Status != Provisioning && r.Status != Failed) || (r.Status == Provisioning && (r.ProvisioningTaskID != pv.TaskID(r.ChangeID) || r.After.PendingChangeID != r.ChangeID || (r.Mode != Immediate && r.Mode != Scheduled))) {
 		return ErrCorrupt
 	}
 	return nil
