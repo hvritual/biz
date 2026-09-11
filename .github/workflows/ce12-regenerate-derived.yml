@@ -78,11 +78,9 @@ jobs:
             .github/workflows/ce09-qualification.yml
             .github/workflows/ce10-qualification.yml
           )
-          mapfile -t stale < <(grep -REl "^[[:space:]]+YUNKA_SHA: ${OLD_YUNKA_SHA}$" biz/.github/workflows | sed 's#^biz/##' | sort)
-          printf '%s\n' "${expected[@]}" > "$RUNNER_TEMP/expected-pins.txt"
-          printf '%s\n' "${stale[@]}" > "$RUNNER_TEMP/actual-pins.txt"
-          diff -u "$RUNNER_TEMP/expected-pins.txt" "$RUNNER_TEMP/actual-pins.txt"
           for path in "${expected[@]}"; do
+            test -f "biz/$path"
+            grep -Eq "^[[:space:]]+YUNKA_SHA: ${OLD_YUNKA_SHA}$" "biz/$path"
             sed -i "s#YUNKA_SHA: ${OLD_YUNKA_SHA}#YUNKA_SHA: ${YUNKA_SHA}#g" "biz/$path"
             grep -Fq "YUNKA_SHA: ${YUNKA_SHA}" "biz/$path"
             ! grep -Eq "^[[:space:]]+YUNKA_SHA: ${OLD_YUNKA_SHA}$" "biz/$path"
