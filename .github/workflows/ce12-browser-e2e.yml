@@ -31,6 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
+      BIZ_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       YUNKA_SHA: e323ee5833d929b5b1d0494fc29aae0aaa2b6f4a
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce12_browser?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
       CE12_E2E_ENV_FILE: /tmp/ce12-browser.json
@@ -52,7 +53,7 @@ jobs:
       - name: Checkout exact Biz candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.BIZ_SHA }}
           path: biz
           fetch-depth: 0
           persist-credentials: false
@@ -84,7 +85,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C biz rev-parse HEAD)" = "$BIZ_SHA"
+          echo "CE12_BIZ_EXACT_HEAD=$BIZ_SHA"
           test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
           bad="$(gofmt -l \
             biz/internal/access/infrastructure/persistence/first_party_idp.go \
@@ -95,6 +97,7 @@ jobs:
             biz/internal/bizruntime/first_party_idp_hardening_test.go \
             biz/internal/bizruntime/first_party_idp_server.go \
             biz/internal/bizruntime/oidc_static.go \
+            biz/internal/bizruntime/web_auth.go \
             biz/integration/ce12_browser_seed_test.go \
             biz/cmd/biz-idp/main.go \
             biz/cmd/biz-idp-credential/main.go)"
@@ -241,7 +244,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: ce12-browser-e2e-${{ github.sha }}
+          name: ce12-browser-e2e-${{ env.BIZ_SHA }}
           path: biz/web/test-results
           retention-days: 30
           if-no-files-found: error
