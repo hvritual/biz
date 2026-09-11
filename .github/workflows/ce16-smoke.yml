@@ -1,0 +1,38 @@
+name: CE-16 compile smoke
+on:
+  push:
+    branches: [control/ce16-smoke-20260911]
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PRODUCT_SHA: 7a0221f21eeed6cdee7e7e39c9589f31077eff7b
+      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/biz, ref: '${{ env.PRODUCT_SHA }}', path: biz, fetch-depth: 0, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, persist-credentials: false}
+      - id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C biz rev-parse HEAD)" = "$PRODUCT_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          source yunka.io/tools/toolchain.env
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go_version }}', cache: false}
+      - name: Compile and unit smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          go test ./internal/commercial/...
+          go test ./...
+          go vet ./...
+          go build ./...
+          echo "CE16_COMPILE_SMOKE=PASS"
