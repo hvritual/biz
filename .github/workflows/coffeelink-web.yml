@@ -43,7 +43,8 @@ jobs:
           stats = results['stats']
           assert stats.get('unexpected', 0) == 0, stats
           expected = stats.get('expected', 0)
-          assert expected >= 10, stats
+          assert expected >= 11, stats
+          assert 'TestCE11' in json.dumps(results, ensure_ascii=False), 'TestCE11 acceptance identity missing'
 
           shots = root / 'screenshots'
           required = {
@@ -61,7 +62,7 @@ jobs:
               assert data[:8] == b'\x89PNG\r\n\x1a\n', name
               width, height = struct.unpack('>II', data[16:24])
               assert (width, height) == want, (name, width, height, want)
-          print(f'CE11_VISUAL_EVIDENCE=PASS e2e={expected} screenshots={len(actual_pngs)}')
+          print(f'CE11_VISUAL_EVIDENCE=PASS e2e={expected} screenshots={len(actual_pngs)} test_identity=TestCE11')
           PY
           sha256sum test-results/screenshots/*.png | sort > test-results/screenshot-sha256.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
