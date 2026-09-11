@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
           cache: npm
@@ -29,11 +29,47 @@ jobs:
           sudo apt-get install -y fonts-noto-cjk
       - run: npm run test:e2e
         working-directory: web
-      - uses: actions/upload-artifact@v4
+      - name: Verify CE-11 nonzero tests and required screenshots
+        working-directory: web
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, struct
+
+          root = Path('test-results')
+          results = json.loads((root / 'results.json').read_text())
+          stats = results['stats']
+          assert stats.get('unexpected', 0) == 0, stats
+          expected = stats.get('expected', 0)
+          assert expected >= 10, stats
+
+          shots = root / 'screenshots'
+          required = {
+              'responsive-1366.png': (1366, 768),
+              'responsive-menu-1366.png': (1366, 768),
+              'responsive-1440.png': (1440, 900),
+              'responsive-menu-1440.png': (1440, 900),
+              'responsive-390.png': (390, 844),
+              'responsive-menu-390.png': (390, 844),
+          }
+          actual_pngs = list(shots.glob('*.png'))
+          assert len(actual_pngs) >= 18, len(actual_pngs)
+          for name, want in required.items():
+              data = (shots / name).read_bytes()
+              assert data[:8] == b'\x89PNG\r\n\x1a\n', name
+              width, height = struct.unpack('>II', data[16:24])
+              assert (width, height) == want, (name, width, height, want)
+          print(f'CE11_VISUAL_EVIDENCE=PASS e2e={expected} screenshots={len(actual_pngs)}')
+          PY
+          sha256sum test-results/screenshots/*.png | sort > test-results/screenshot-sha256.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: coffeelink-visual-review
           path: |
             web/test-results
             web/dist
+          if-no-files-found: error
           retention-days: 14
