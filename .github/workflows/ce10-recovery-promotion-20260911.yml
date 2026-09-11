@@ -1,0 +1,82 @@
+name: CE-10 recovery qualification and promotion
+on:
+  push:
+    branches: [control/ce10-delivery-20260910]
+    paths: ['.github/workflows/ce10-recovery-promotion-20260911.yml']
+permissions: {contents: write}
+concurrency: {group: ce10-product-writer, cancel-in-progress: false}
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      mysql:
+        image: mysql:8.4
+        env: {MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: biz_ce10_recovery}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      PRODUCT_SHA: 4be9c5f566314dff20f134d984fab583afabf52e
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce10_recovery?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+      MYSQL_CONTAINER_ID: '${{ job.services.mysql.id }}'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ env.PRODUCT_SHA }}', path: biz, fetch-depth: 0, persist-credentials: true}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ github.sha }}', path: control, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, persist-credentials: false}
+      - id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C biz rev-parse HEAD)" = "$PRODUCT_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          source yunka.io/tools/toolchain.env
+          echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go }}', cache: false}
+      - name: Apply only prepared recovery tests
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          sed "s/5515a48375ffe0b0cd7ccbe6c65198ab11005ac1/$PRODUCT_SHA/" ../control/.ce10/prepare-recovery-tests.py > "$RUNNER_TEMP/prepare-recovery-tests.py"
+          python3 "$RUNNER_TEMP/prepare-recovery-tests.py"
+          git diff --check
+      - name: Verify live permission and interrupted external work recovery
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          make yunka-source-check workspace-check
+          go test -timeout=4m -count=1 -tags=integration ./integration -run '^TestCE10MySQLWorkerRechecksLivePermissionBeforeEveryClaim$'
+          go test -timeout=4m -race -count=1 -tags=integration ./integration -run '^TestCE10MySQLWorkerRechecksLivePermissionBeforeEveryClaim$'
+          export CE10_RESTART_RECEIPT="$RUNNER_TEMP/ce10-recovery.json"
+          go test -timeout=4m -count=1 -tags=integration ./integration -run '^TestCE10PersistenceBeforeRestart$'
+          before="$(docker inspect -f '{{.State.StartedAt}}' "$MYSQL_CONTAINER_ID")"
+          docker restart "$MYSQL_CONTAINER_ID" >/dev/null
+          ready=0
+          for i in $(seq 1 60); do
+            if docker exec "$MYSQL_CONTAINER_ID" mysqladmin ping -h 127.0.0.1 -proot --silent >/dev/null 2>&1; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" = 1
+          after="$(docker inspect -f '{{.State.StartedAt}}' "$MYSQL_CONTAINER_ID")"
+          test "$before" != "$after"
+          go test -timeout=4m -count=1 -tags=integration ./integration -run '^TestCE10PersistenceAfterRestart$'
+      - name: Commit tested recovery assertions to product branch
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PRODUCT_SHA"
+          test "$(git diff --name-only | sort)" = $'integration/ce10_provisioning_mysql_test.go\nintegration/ce10_recovery_mysql_test.go'
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add integration/ce10_provisioning_mysql_test.go integration/ce10_recovery_mysql_test.go
+          git commit -m 'test(ce-10): prove interrupted external work recovery and live worker authorization'
+          git push origin HEAD:feat/ce-10-durable-provisioning
