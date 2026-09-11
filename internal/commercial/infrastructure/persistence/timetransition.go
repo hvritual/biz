@@ -14,19 +14,20 @@ import (
 )
 
 type timeTransitionRow struct {
-	TransitionID    string    `gorm:"column:transition_id;primaryKey"`
-	Kind            string    `gorm:"column:kind"`
-	TenantID        string    `gorm:"column:tenant_id"`
-	AuthorityID     string    `gorm:"column:authority_id"`
-	AuthorityVersion uint64   `gorm:"column:authority_version"`
-	DueAt           time.Time `gorm:"column:due_at"`
-	Revision        uint64    `gorm:"column:revision"`
-	State           string    `gorm:"column:state"`
-	LeaseUntil      *time.Time `gorm:"column:lease_until"`
-	PayloadSHA256   string    `gorm:"column:payload_sha256"`
-	Payload         string    `gorm:"column:payload"`
-	CreatedAt       time.Time `gorm:"column:created_at"`
-	UpdatedAt       time.Time `gorm:"column:updated_at"`
+	TransitionID     string     `gorm:"column:transition_id;primaryKey"`
+	Kind             string     `gorm:"column:kind"`
+	TenantID         string     `gorm:"column:tenant_id"`
+	AuthorityID      string     `gorm:"column:authority_id"`
+	AuthorityVersion uint64     `gorm:"column:authority_version"`
+	DueAt            time.Time  `gorm:"column:due_at"`
+	BusinessTimezone string     `gorm:"column:business_timezone"`
+	Revision         uint64     `gorm:"column:revision"`
+	State            string     `gorm:"column:state"`
+	LeaseUntil       *time.Time `gorm:"column:lease_until"`
+	PayloadSHA256    string     `gorm:"column:payload_sha256"`
+	Payload          string     `gorm:"column:payload"`
+	CreatedAt        time.Time  `gorm:"column:created_at"`
+	UpdatedAt        time.Time  `gorm:"column:updated_at"`
 }
 
 func (timeTransitionRow) TableName() string { return "biz_commercial_time_transitions" }
@@ -60,11 +61,11 @@ func transitionRow(t transition.Task) (timeTransitionRow, error) {
 	if err != nil {
 		return timeTransitionRow{}, err
 	}
-	return timeTransitionRow{TransitionID: t.ID, Kind: t.Kind, TenantID: t.TenantID, AuthorityID: t.AuthorityID, AuthorityVersion: t.AuthorityVersion, DueAt: t.DueAt, Revision: t.Revision, State: t.State, LeaseUntil: t.LeaseUntil, PayloadSHA256: t.Hash, Payload: string(payload), CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt}, nil
+	return timeTransitionRow{TransitionID: t.ID, Kind: t.Kind, TenantID: t.TenantID, AuthorityID: t.AuthorityID, AuthorityVersion: t.AuthorityVersion, DueAt: t.DueAt, BusinessTimezone: t.BusinessTimezone, Revision: t.Revision, State: t.State, LeaseUntil: t.LeaseUntil, PayloadSHA256: t.Hash, Payload: string(payload), CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt}, nil
 }
 func decodeTransition(row timeTransitionRow) (*transition.Task, error) {
 	var t transition.Task
-	if json.Unmarshal([]byte(row.Payload), &t) != nil || t.Integrity() != nil || t.ID != row.TransitionID || t.Kind != row.Kind || t.TenantID != row.TenantID || t.AuthorityID != row.AuthorityID || t.AuthorityVersion != row.AuthorityVersion || !t.DueAt.Equal(row.DueAt) || t.Revision != row.Revision || t.State != row.State || t.Hash != row.PayloadSHA256 || !sameTime(t.LeaseUntil, row.LeaseUntil) || !t.CreatedAt.Equal(row.CreatedAt) || !t.UpdatedAt.Equal(row.UpdatedAt) {
+	if json.Unmarshal([]byte(row.Payload), &t) != nil || t.Integrity() != nil || t.ID != row.TransitionID || t.Kind != row.Kind || t.TenantID != row.TenantID || t.AuthorityID != row.AuthorityID || t.AuthorityVersion != row.AuthorityVersion || !t.DueAt.Equal(row.DueAt) || t.BusinessTimezone != row.BusinessTimezone || t.Revision != row.Revision || t.State != row.State || t.Hash != row.PayloadSHA256 || !sameTime(t.LeaseUntil, row.LeaseUntil) || !t.CreatedAt.Equal(row.CreatedAt) || !t.UpdatedAt.Equal(row.UpdatedAt) {
 		return nil, transition.ErrCorrupt
 	}
 	return &t, nil
@@ -139,7 +140,7 @@ func (r *timeTransitionRepository) Lock(ctx context.Context, id string) (*transi
 	return decodeTransition(row)
 }
 func (r *timeTransitionRepository) Save(ctx context.Context, before, after transition.Task) error {
-	if before.ID != after.ID || before.Revision == 0 || after.Revision != before.Revision+1 || before.Kind != after.Kind || before.TenantID != after.TenantID || before.AuthorityID != after.AuthorityID || before.AuthorityVersion != after.AuthorityVersion || !before.DueAt.Equal(after.DueAt) {
+	if before.ID != after.ID || before.Revision == 0 || after.Revision != before.Revision+1 || before.Kind != after.Kind || before.TenantID != after.TenantID || before.AuthorityID != after.AuthorityID || before.AuthorityVersion != after.AuthorityVersion || !before.DueAt.Equal(after.DueAt) || before.BusinessTimezone != after.BusinessTimezone {
 		return transition.ErrConflict
 	}
 	row, err := transitionRow(after)
