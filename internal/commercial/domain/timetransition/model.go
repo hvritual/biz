@@ -46,6 +46,9 @@ func ID(kind, tenant, authority string, version uint64, due time.Time) string {
 	return "time-" + Digest([]any{kind, tenant, authority, version, CanonicalTime(due)})[:48]
 }
 
+// Task stores the authority instant in UTC and records the business timezone
+// used to display that instant. Current production sources have no trusted
+// tenant timezone authority, so callers use UTC until such an authority exists.
 type Task struct {
 	ID               string     `json:"transition_id"`
 	Kind             string     `json:"kind"`
@@ -53,6 +56,7 @@ type Task struct {
 	AuthorityID      string     `json:"authority_id"`
 	AuthorityVersion uint64     `json:"authority_version"`
 	DueAt            time.Time  `json:"due_at"`
+	BusinessTimezone string     `json:"business_timezone"`
 	Revision         uint64     `json:"revision"`
 	State            string     `json:"state"`
 	LeaseOwner       string     `json:"lease_owner,omitempty"`
@@ -65,8 +69,18 @@ type Task struct {
 }
 
 func New(kind, tenant, authority string, version uint64, due, now time.Time) (Task, error) {
+	return NewInTimezone(kind, tenant, authority, version, due, now, "UTC")
+}
+
+func NewInTimezone(kind, tenant, authority string, version uint64, due, now time.Time, businessTimezone string) (Task, error) {
 	due, now = CanonicalTime(due), CanonicalTime(now)
-	t := Task{Kind: kind, TenantID: tenant, AuthorityID: authority, AuthorityVersion: version, DueAt: due, Revision: 1, State: Queued, CreatedAt: now, UpdatedAt: now}
+	if strings.TrimSpace(businessTimezone) != businessTimezone || businessTimezone == "" || len(businessTimezone) > 64 {
+		return Task{}, ErrInvalid
+	}
+	if _, err := time.LoadLocation(businessTimezone); err != nil {
+		return Task{}, ErrInvalid
+	}
+	t := Task{Kind: kind, TenantID: tenant, AuthorityID: authority, AuthorityVersion: version, DueAt: due, BusinessTimezone: businessTimezone, Revision: 1, State: Queued, CreatedAt: now, UpdatedAt: now}
 	t.ID = ID(kind, tenant, authority, version, due)
 	t = t.Seal()
 	if err := t.Integrity(); err != nil {
@@ -77,7 +91,10 @@ func New(kind, tenant, authority string, version uint64, due, now time.Time) (Ta
 
 func (t Task) Seal() Task { t.Hash = ""; t.Hash = Digest(t); return t }
 func (t Task) Integrity() error {
-	if !Key(t.ID) || t.ID != ID(t.Kind, t.TenantID, t.AuthorityID, t.AuthorityVersion, t.DueAt) || !Tenant(t.TenantID) || !Key(t.AuthorityID) || t.AuthorityVersion == 0 || t.Revision == 0 || t.DueAt.IsZero() || t.CreatedAt.IsZero() || t.UpdatedAt.Before(t.CreatedAt) || t.Hash != t.Seal().Hash {
+	if !Key(t.ID) || t.ID != ID(t.Kind, t.TenantID, t.AuthorityID, t.AuthorityVersion, t.DueAt) || !Tenant(t.TenantID) || !Key(t.AuthorityID) || t.AuthorityVersion == 0 || t.Revision == 0 || t.DueAt.IsZero() || t.DueAt.Location() != time.UTC || t.CreatedAt.IsZero() || t.UpdatedAt.Before(t.CreatedAt) || t.Hash != t.Seal().Hash || t.BusinessTimezone == "" || len(t.BusinessTimezone) > 64 {
+		return ErrCorrupt
+	}
+	if _, err := time.LoadLocation(t.BusinessTimezone); err != nil {
 		return ErrCorrupt
 	}
 	switch t.Kind {
