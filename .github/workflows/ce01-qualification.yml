@@ -11,6 +11,16 @@ on:
       - go.mod
       - go.sum
       - .yunka/source.env
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/ce01-qualification.yml
+      - internal/architecture/**
+      - docs/commercial-entitlements/**
+      - contracts/**
+      - go.mod
+      - go.sum
+      - .yunka/source.env
   workflow_dispatch:
 
 permissions:
@@ -21,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      YUNKA_SHA: e323ee5833d929b5b1d0494fc29aae0aaa2b6f4a
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce01?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
       PYTHONDONTWRITEBYTECODE: '1'
     services:
