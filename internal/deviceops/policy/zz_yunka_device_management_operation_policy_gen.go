@@ -20,10 +20,10 @@ func DeviceManagementResolver() authz.StaticResolver {
 
 func deviceManagementPolicies() map[string]authz.Policy {
 	return map[string]authz.Policy{
-		"/deviceops.v1.DeviceApplication/CreateDevice": {Operation: OperationDeviceManagementCreateDevice, Permissions: []authz.PermissionKey{"device.create"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
-		"/deviceops.v1.DeviceApplication/DeleteDevice": {Operation: OperationDeviceManagementDeleteDevice, Permissions: []authz.PermissionKey{"device.delete"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
-		"/deviceops.v1.DeviceApplication/GetDevice":    {Operation: OperationDeviceManagementGetDevice, Permissions: []authz.PermissionKey{"device.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
-		"/deviceops.v1.DeviceApplication/ListDevices":  {Operation: OperationDeviceManagementListDevices, Permissions: []authz.PermissionKey{"device.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
-		"/deviceops.v1.DeviceApplication/UpdateDevice": {Operation: OperationDeviceManagementUpdateDevice, Permissions: []authz.PermissionKey{"device.update", "site.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
+		"/deviceops.v1.DeviceApplication/CreateDevice": {Operation: OperationDeviceManagementCreateDevice, Permissions: []authz.PermissionKey{"device.create"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/deviceops.v1.DeviceApplication/DeleteDevice": {Operation: OperationDeviceManagementDeleteDevice, Permissions: []authz.PermissionKey{"device.delete"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/deviceops.v1.DeviceApplication/GetDevice":    {Operation: OperationDeviceManagementGetDevice, Permissions: []authz.PermissionKey{"device.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/deviceops.v1.DeviceApplication/ListDevices":  {Operation: OperationDeviceManagementListDevices, Permissions: []authz.PermissionKey{"device.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/deviceops.v1.DeviceApplication/UpdateDevice": {Operation: OperationDeviceManagementUpdateDevice, Permissions: []authz.PermissionKey{"device.update", "site.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 	}
 }

@@ -3,8 +3,8 @@
   "mapping_version": "8",
   "inputs_sha256": {
     "contracts/commercial/operation-capabilities.v1.json": "396430cf0982aef0a1d8e2fb88e26bd5d5e7be519c0085ffb9fef049d68b3926",
-    "contracts/generated/manifest.json": "c6fee0ee40a957df306e28f9ee5a7bae463a470b0a0519d731453b2424cc786d",
-    "contracts/generated/operation-plans.json": "7e2150e6c3c4a92933f59511700d9e5c10a3d05a6ad68fe104ccd353bf9caaa6",
+    "contracts/generated/manifest.json": "45566755b22e707f30f49a5069a6e9fae0db901c0678fc93a6f7829fe1b313cd",
+    "contracts/generated/operation-plans.json": "c5b81e5a419fb23a7fa4f8a7a88416084391b1793f59ebc71a531d30e6456236",
     "internal/access/application/tenant_member_lifecycle.go": "c629117c2538c45af9a75932a53ecd6109059bd56e6dc71b11eedb2e538c6cff",
     "internal/access/application/tenantlifecycle/internal/usecase/service.go": "63e3eba06691d15fa88041b660431b48e87640bfaf35954774595db9880e5d29",
     "internal/commercial/application/entitlementmanagement/internal/usecase/service.go": "6cbcb31645f67104b8089b6c8559a2ff0ba5d6f5eb3b49e6fa56f238040f046c",

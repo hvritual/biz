@@ -5113,7 +5113,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -5128,7 +5129,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5152,7 +5154,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -5167,7 +5170,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5192,7 +5196,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -5207,7 +5212,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5231,7 +5237,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -5246,7 +5253,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5271,7 +5279,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "tenant.role.assert_member_deactivation_allowed"
@@ -5290,7 +5299,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5315,7 +5325,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "tenant.role.assert_member_deactivation_allowed"
@@ -5334,7 +5345,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         }
@@ -5356,7 +5368,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -5408,7 +5421,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -5423,7 +5437,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5448,7 +5463,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -5463,7 +5479,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5488,7 +5505,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -5503,7 +5521,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5528,7 +5547,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -5543,7 +5563,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5567,7 +5588,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -5582,7 +5604,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5606,7 +5629,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -5621,7 +5645,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5646,7 +5671,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -5661,7 +5687,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5686,7 +5713,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -5701,7 +5729,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5726,7 +5755,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -5741,7 +5771,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         }
@@ -5875,7 +5906,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "commercial.module.entitlement_catalog"
@@ -5895,7 +5927,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -7417,7 +7450,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -7432,7 +7466,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -7456,7 +7491,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -7471,7 +7507,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -7495,7 +7532,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -7510,7 +7548,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -7534,7 +7573,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -7549,7 +7589,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -7575,7 +7616,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "site.validate_transfer_target"
@@ -7595,7 +7637,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         }
@@ -7635,7 +7678,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "device.update",
@@ -7656,7 +7700,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         }
@@ -7678,7 +7723,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
