@@ -28,7 +28,6 @@ jobs:
           from pathlib import Path
           import re
 
-          root = Path('.')
           include_roots = [Path('cmd'), Path('internal'), Path('modules'), Path('web/src')]
           skip_parts = {'node_modules', 'dist', 'coverage'}
           files = []
@@ -46,22 +45,23 @@ jobs:
 
           web_identity_patterns = {
               'oidc': re.compile(r'\boidc\b', re.I),
-              'openid': re.compile(r'openid', re.I),
-              'oauth': re.compile(r'oauth2?|authorization_code|pkce', re.I),
-              'webauthn': re.compile(r'webauthn|passkey', re.I),
+              'openid': re.compile(r'\bopenid\b', re.I),
+              'oauth': re.compile(r'\boauth2?\b|\bauthorization_code\b|\bpkce\b', re.I),
+              'webauthn': re.compile(r'\bwebauthn\b|\bpasskey\b', re.I),
               'saml': re.compile(r'\bsaml\b', re.I),
-              'password_verifier': re.compile(r'bcrypt|argon2|scrypt|password_hash|verifyPassword|checkPassword', re.I),
-              'server_cookie': re.compile(r'Set-Cookie|http\.Cookie|SameSite', re.I),
-              'csrf': re.compile(r'csrf|xsrf', re.I),
-              'login_endpoint': re.compile(r'(/login\b|/sessions?\b|CreateSession\b|LoginHandler\b|LogoutHandler\b)', re.I),
+              'password_verifier': re.compile(r'\bbcrypt\b|\bargon2\b|\bscrypt\b|\bpassword_hash\b|\bverifyPassword\b|\bcheckPassword\b', re.I),
+              'server_cookie': re.compile(r'\bSet-Cookie\b|\bhttp\.Cookie\b|\bSameSite\b', re.I),
+              'csrf': re.compile(r'\bcsrf\b|\bxsrf\b', re.I),
+              'login_endpoint': re.compile(r'(/login\b|/sessions?\b|\bCreateSession\b|\bLoginHandler\b|\bLogoutHandler\b)', re.I),
           }
           matches = []
           for p in files:
               text = p.read_text(encoding='utf-8', errors='ignore')
+              lines = text.splitlines()
               for name, pattern in web_identity_patterns.items():
                   for m in pattern.finditer(text):
                       line = text.count('\n', 0, m.start()) + 1
-                      snippet = text.splitlines()[line-1].strip()[:220]
+                      snippet = lines[line-1].strip()[:220] if 0 < line <= len(lines) else ''
                       matches.append((name, str(p), line, snippet))
 
           print('CE12_AUDIT_BASE=0782892776316683b3c5307cba1e643483265a65')
