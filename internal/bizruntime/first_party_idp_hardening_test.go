@@ -76,8 +76,11 @@ func TestCE12FirstPartyIdPLoginReferrerPolicyPreservesFormOrigin(t *testing.T) {
 	if csp == "" {
 		t.Fatal("login page must retain Content-Security-Policy")
 	}
-	if want := "form-action 'self' http://127.0.0.1:18081"; !strings.Contains(csp, want) {
+	if want := "form-action 'self' http://127.0.0.1:18081 http://127.0.0.1:18080"; !strings.Contains(csp, want) {
 		t.Fatalf("login Content-Security-Policy=%q missing %q", csp, want)
+	}
+	if strings.Contains(csp, "/auth/callback") {
+		t.Fatalf("login Content-Security-Policy=%q must contain callback origin only", csp)
 	}
 }
 

@@ -58,7 +58,7 @@ func newRuntimeFirstPartyIdP(config FirstPartyIdPConfig) (*runtimeFirstPartyIdP,
 		return nil, err
 	}
 	verificationKeys := []firstPartyVerificationKey{{kid: kid, key: &key.PublicKey}}
-	seen := map[string]struct{}{kid: struct{}{}}
+	seen := map[string]struct{}{kid: {}}
 	for _, previous := range config.PreviousSigningKeys {
 		public, err := parseRSAPublicKey([]byte(previous.PEM))
 		if err != nil {
@@ -338,11 +338,21 @@ func (idp *runtimeFirstPartyIdP) signIDToken(grant accesspersistence.FirstPartyA
 func (idp *runtimeFirstPartyIdP) renderLogin(writer http.ResponseWriter, status int, requestID, csrf, email, message string) {
 	writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 	writer.Header().Set("Cache-Control", "no-store")
-	formAction := "'self'"
-	if publicURL, err := url.Parse(idp.config.PublicURL); err == nil && publicURL.Scheme != "" && publicURL.Host != "" {
-		formAction += " " + publicURL.Scheme + "://" + publicURL.Host
+	formActions := []string{"'self'"}
+	seenOrigins := map[string]struct{}{}
+	for _, raw := range []string{idp.config.PublicURL, idp.config.RedirectURL} {
+		parsed, err := url.Parse(strings.TrimSpace(raw))
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+			continue
+		}
+		origin := parsed.Scheme + "://" + parsed.Host
+		if _, duplicate := seenOrigins[origin]; duplicate {
+			continue
+		}
+		seenOrigins[origin] = struct{}{}
+		formActions = append(formActions, origin)
 	}
-	writer.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; form-action "+formAction+"; base-uri 'none'; frame-ancestors 'none'")
+	writer.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; form-action "+strings.Join(formActions, " ")+"; base-uri 'none'; frame-ancestors 'none'")
 	// A navigate-mode HTML form POST needs a non-null Origin so the IdP
 	// transaction cookie remains same-site. `origin` still strips the OIDC
 	// authorization path/query from Referer, avoiding state/nonce leakage.
