@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "task_id": "CE-12",
+  "verified_commit": "abb16369d846179f6705b1367d90e29c7523496e",
+  "result": "PASS",
+  "recorded_on": "2026-09-12",
+  "scope": "production first-party OIDC identity, server-side Web session and tenant switching authority; excludes live production deployment",
+  "source": {
+    "implementation_pr": 52,
+    "candidate_commit": "655199b3960bb09921bf64c6062587f5e6cbd3c4",
+    "integration_commit": "abb16369d846179f6705b1367d90e29c7523496e",
+    "yunka_commit": "e323ee5833d929b5b1d0494fc29aae0aaa2b6f4a",
+    "yunka_pseudo_version": "v0.0.0-20260911113607-e323ee5833d9"
+  },
+  "qualification": {
+    "backend": {
+      "run_id": 34626639325,
+      "job_id": 103353223507,
+      "head_branch": "main",
+      "head_sha": "abb16369d846179f6705b1367d90e29c7523496e",
+      "conclusion": "success",
+      "url": "https://github.com/hvritual/biz/actions/runs/34626639325"
+    },
+    "browser_e2e": {
+      "run_id": 34626639162,
+      "job_id": 103353222462,
+      "head_branch": "main",
+      "head_sha": "abb16369d846179f6705b1367d90e29c7523496e",
+      "conclusion": "success",
+      "url": "https://github.com/hvritual/biz/actions/runs/34626639162",
+      "artifact_id": 10274274951,
+      "artifact_name": "ce12-browser-e2e-abb16369d846179f6705b1367d90e29c7523496e",
+      "artifact_sha256": "539d44a4c305f39a23ed80ef1ce2973e1389f39f308f7fa049c67636e4c49eff",
+      "artifact_files": 8
+    }
+  },
+  "main_readback": {
+    "consumer_lock_fix_pr": 53,
+    "consumer_lock_fix_candidate": "05fc1fbaddac8b03161bdb83acdeba42b20c0f75",
+    "main_commit": "10cc2ddcaa26a3c6f8dbbcc86598813b7318923a",
+    "ce01_post_fix_run_id": 34637048171,
+    "ce01_post_fix_job_id": 103387372444,
+    "ce01_post_fix_conclusion": "success"
+  },
+  "checks": [
+    {
+      "command": "verify exact Biz/Yunka sources, CE-12 gofmt and explicit fail-closed web-session authority",
+      "exit_code": 0,
+      "evidence": "run:34626639325/job:103353223507/steps:3-8"
+    },
+    {
+      "command": "go -C biz test -count=1 ./internal/access/infrastructure/persistence ./internal/bizruntime && go -C biz test -count=1 ./internal/bizruntime -run '^TestCE12'",
+      "exit_code": 0,
+      "evidence": "run:34626639325/job:103353223507/step:9"
+    },
+    {
+      "command": "go -C biz test -count=1 -tags=integration ./integration -run '^TestCE12'",
+      "exit_code": 0,
+      "evidence": "run:34626639325/job:103353223507/step:10"
+    },
+    {
+      "command": "go -C biz test -count=1 ./...",
+      "exit_code": 0,
+      "evidence": "run:34626639325/job:103353223507/step:11"
+    },
+    {
+      "command": "go -C biz vet ./... && go -C biz build ./cmd/biz ./cmd/biz-idp ./cmd/biz-idp-credential",
+      "exit_code": 0,
+      "evidence": "run:34626639325/job:103353223507/step:12"
+    },
+    {
+      "command": "npx playwright test --config playwright.ce12.config.ts",
+      "exit_code": 0,
+      "tests_passed": 1,
+      "evidence": "run:34626639162/job:103353222462/artifact:10274274951; TestCE12BrowserRealIdPToSessionTenantIAMEntitlement; CE12_BROWSER_AUTHORITY_CHAIN=PASS"
+    },
+    {
+      "command": "CE-01 post-fix main qualification on canonical e323ee58 consumer lock",
+      "exit_code": 0,
+      "evidence": "run:34637048171/job:103387372444"
+    }
+  ],
+  "limitations": [
+    "DEPLOYMENT_READY remains unresolved; no live production deployment is claimed.",
+    "PAYMENT_PROVIDER_READY, REAL_IOT_JOB_READY and MIGRATION_DATA_READY remain unresolved.",
+    "No CE-13, CE-14 or CE-15 implementation is claimed by this receipt.",
+    "The single tests_passed count records the exact browser acceptance spec only and is not presented as the total backend test count."
+  ]
+}
