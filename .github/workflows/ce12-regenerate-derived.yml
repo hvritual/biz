@@ -94,9 +94,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mapfile -t changed < <(git -C biz diff --name-only)
+          test ${#changed[@]} -gt 0
+          for path in "${changed[@]}"; do
+            case "$path" in
+              contracts/gen/*|contracts/generated/*|contracts/commercial/generated/*|contracts/third_party/yunka/dsl/v1/options.proto|internal/*/policy/zz_yunka_*|internal/*/transport/rest/zz_yunka_*|internal/*/transport/rpc/zz_yunka_*) ;;
+              *) echo "unexpected generated path before commit: $path" >&2; exit 1 ;;
+            esac
+          done
           git -C biz config user.name 'github-actions[bot]'
           git -C biz config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git -C biz add contracts/gen contracts/generated contracts/commercial/generated contracts/third_party/yunka/dsl/v1/options.proto internal/*/policy internal/*/transport/rest internal/*/transport/rpc
+          git -C biz add -- "${changed[@]}"
           test -n "$(git -C biz diff --cached --name-only)"
           git -C biz commit -m 'chore(ce-12): refresh contract-derived artifacts'
           git -C biz push origin HEAD:feat/ce-12-first-party-idp-e2e
