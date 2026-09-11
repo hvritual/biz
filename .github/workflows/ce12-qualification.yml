@@ -1,0 +1,123 @@
+name: CE-12 qualification
+
+on:
+  push:
+    branches: [feat/ce-12-oidc-bff-session, main]
+    paths:
+      - internal/access/**
+      - internal/bizruntime/**
+      - integration/ce12_*
+      - cmd/biz/**
+      - docs/commercial-entitlements/**
+      - .github/workflows/ce12-qualification.yml
+      - go.mod
+      - go.sum
+      - .yunka/**
+  pull_request:
+    branches: [main]
+    paths:
+      - internal/access/**
+      - internal/bizruntime/**
+      - integration/ce12_*
+      - cmd/biz/**
+      - docs/commercial-entitlements/**
+      - .github/workflows/ce12-qualification.yml
+      - go.mod
+      - go.sum
+      - .yunka/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce12?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_ce12
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact Yunka baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.YUNKA_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Load locked Go
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Verify exact sources and formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          bad="$(gofmt -l biz/internal/access/infrastructure/persistence/platform.go biz/internal/access/infrastructure/persistence/web_session.go biz/internal/bizruntime/config.go biz/internal/bizruntime/oidc_client.go biz/internal/bizruntime/oidc_client_test.go biz/internal/bizruntime/runtime.go biz/internal/bizruntime/web_auth.go biz/integration/ce12_web_session_mysql_test.go biz/cmd/biz/main.go)"
+          test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
+
+      - name: Run CE-12 protocol and trust-boundary unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 ./internal/bizruntime -run '^TestCE12'
+
+      - name: Run CE-12 real MySQL session authority tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestCE12'
+
+      - name: Run ordinary Go regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 ./...
+
+      - name: Vet and build Biz runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz vet ./...
+          go -C biz build ./cmd/biz
+
+      - name: Verify candidate worktree remains clean
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git -C biz status --porcelain)"
