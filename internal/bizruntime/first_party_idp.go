@@ -86,11 +86,11 @@ func (idp *runtimeFirstPartyIdP) currentStore() *accesspersistence.Store {
 func (idp *runtimeFirstPartyIdP) providerMetadata() oidcProviderMetadata {
 	issuer := idp.config.IssuerURL()
 	return oidcProviderMetadata{
-		Issuer: issuer,
-		AuthorizationEndpoint: issuer + "/authorize",
-		TokenEndpoint: issuer + "/token",
-		JWKSURI: issuer + "/jwks",
-		EndSessionEndpoint: issuer + "/logout",
+		Issuer:                      issuer,
+		AuthorizationEndpoint:       issuer + "/authorize",
+		TokenEndpoint:               issuer + "/token",
+		JWKSURI:                     issuer + "/jwks",
+		EndSessionEndpoint:          issuer + "/logout",
 		IDTokenSigningAlgsSupported: []string{"RS256"},
 	}
 }
@@ -110,17 +110,17 @@ func (idp *runtimeFirstPartyIdP) register(mux *http.ServeMux) {
 func (idp *runtimeFirstPartyIdP) handleDiscovery(writer http.ResponseWriter, _ *http.Request) {
 	provider := idp.providerMetadata()
 	writeJSON(writer, http.StatusOK, map[string]any{
-		"issuer": provider.Issuer,
-		"authorization_endpoint": provider.AuthorizationEndpoint,
-		"token_endpoint": provider.TokenEndpoint,
-		"jwks_uri": provider.JWKSURI,
-		"end_session_endpoint": provider.EndSessionEndpoint,
-		"response_types_supported": []string{"code"},
-		"subject_types_supported": []string{"public"},
+		"issuer":                                provider.Issuer,
+		"authorization_endpoint":                provider.AuthorizationEndpoint,
+		"token_endpoint":                        provider.TokenEndpoint,
+		"jwks_uri":                              provider.JWKSURI,
+		"end_session_endpoint":                  provider.EndSessionEndpoint,
+		"response_types_supported":              []string{"code"},
+		"subject_types_supported":               []string{"public"},
 		"id_token_signing_alg_values_supported": []string{"RS256"},
 		"token_endpoint_auth_methods_supported": []string{"none"},
-		"scopes_supported": []string{"openid", "profile", "email"},
-		"code_challenge_methods_supported": []string{"S256"},
+		"scopes_supported":                      []string{"openid", "profile", "email"},
+		"code_challenge_methods_supported":      []string{"S256"},
 	})
 }
 
@@ -132,8 +132,8 @@ func (idp *runtimeFirstPartyIdP) handleJWKS(writer http.ResponseWriter, _ *http.
 			"use": "sig",
 			"alg": "RS256",
 			"kid": idp.kid,
-			"n": base64.RawURLEncoding.EncodeToString(public.N.Bytes()),
-			"e": base64.RawURLEncoding.EncodeToString(rsaExponentBytes(public.E)),
+			"n":   base64.RawURLEncoding.EncodeToString(public.N.Bytes()),
+			"e":   base64.RawURLEncoding.EncodeToString(rsaExponentBytes(public.E)),
 		}},
 	})
 }
@@ -158,12 +158,12 @@ func (idp *runtimeFirstPartyIdP) handleAuthorize(writer http.ResponseWriter, req
 		return
 	}
 	requestID, browserSecret, csrf, err := store.CreateFirstPartyAuthorizationRequest(request.Context(), accesspersistence.FirstPartyAuthorizationRequestInput{
-		ClientID: idp.config.ClientID,
-		RedirectURI: idp.config.RedirectURL,
-		State: state,
-		Nonce: nonce,
+		ClientID:      idp.config.ClientID,
+		RedirectURI:   idp.config.RedirectURL,
+		State:         state,
+		Nonce:         nonce,
 		CodeChallenge: challenge,
-		Scope: scope,
+		Scope:         scope,
 	}, idp.config.LoginTTL)
 	if err != nil {
 		http.Error(writer, "identity provider unavailable", http.StatusServiceUnavailable)
@@ -254,10 +254,10 @@ func (idp *runtimeFirstPartyIdP) handleToken(writer http.ResponseWriter, request
 	}
 	writeJSON(writer, http.StatusOK, map[string]any{
 		"access_token": accessToken,
-		"token_type": "Bearer",
-		"expires_in": int64(idp.config.TokenTTL.Seconds()),
-		"id_token": idToken,
-		"scope": grant.Scope,
+		"token_type":   "Bearer",
+		"expires_in":   int64(idp.config.TokenTTL.Seconds()),
+		"id_token":     idToken,
+		"scope":        grant.Scope,
 	})
 }
 
@@ -279,13 +279,13 @@ func (idp *runtimeFirstPartyIdP) signIDToken(grant accesspersistence.FirstPartyA
 	now := time.Now().UTC()
 	header := map[string]any{"alg": "RS256", "kid": idp.kid, "typ": "JWT"}
 	claims := map[string]any{
-		"iss": idp.config.IssuerURL(),
-		"sub": "biz-user:" + grant.UserID,
-		"aud": idp.config.ClientID,
-		"exp": now.Add(idp.config.TokenTTL).Unix(),
-		"iat": now.Unix(),
-		"nonce": grant.Nonce,
-		"email": grant.Email,
+		"iss":            idp.config.IssuerURL(),
+		"sub":            "biz-user:" + grant.UserID,
+		"aud":            idp.config.ClientID,
+		"exp":            now.Add(idp.config.TokenTTL).Unix(),
+		"iat":            now.Unix(),
+		"nonce":          grant.Nonce,
+		"email":          grant.Email,
 		"email_verified": true,
 	}
 	headerJSON, err := json.Marshal(header)
@@ -315,9 +315,9 @@ func (idp *runtimeFirstPartyIdP) renderLogin(writer http.ResponseWriter, status 
 	writer.WriteHeader(status)
 	_ = firstPartyLoginTemplate.Execute(writer, map[string]string{
 		"RequestID": requestID,
-		"CSRF": csrf,
-		"Email": email,
-		"Message": message,
+		"CSRF":      csrf,
+		"Email":     email,
+		"Message":   message,
 	})
 }
 

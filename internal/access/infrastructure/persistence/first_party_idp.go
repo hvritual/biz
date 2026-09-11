@@ -133,16 +133,16 @@ func (store *Store) SetUserPassword(ctx context.Context, userID, password string
 	hash := pbkdf2SHA256([]byte(password), salt, defaultPBKDF2Iterations, 32)
 	now := time.Now().UTC()
 	record := userPasswordCredentialRecord{
-		UserID: userID,
-		Salt: base64.RawStdEncoding.EncodeToString(salt),
-		PasswordHash: base64.RawStdEncoding.EncodeToString(hash),
-		Iterations: defaultPBKDF2Iterations,
-		Disabled: false,
+		UserID:            userID,
+		Salt:              base64.RawStdEncoding.EncodeToString(salt),
+		PasswordHash:      base64.RawStdEncoding.EncodeToString(hash),
+		Iterations:        defaultPBKDF2Iterations,
+		Disabled:          false,
 		PasswordChangedAt: now,
-		UpdatedAt: now,
+		UpdatedAt:         now,
 	}
 	return store.database.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns: []clause.Column{{Name: "user_id"}},
+		Columns:   []clause.Column{{Name: "user_id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"salt", "password_hash", "iterations", "disabled", "password_changed_at", "updated_at"}),
 	}).Create(&record).Error
 }
@@ -313,12 +313,12 @@ func (store *Store) ConsumeFirstPartyAuthorizationCode(ctx context.Context, code
 
 func firstPartyRequestFromRecord(row firstPartyAuthorizationRequestRecord) FirstPartyAuthorizationRequest {
 	return FirstPartyAuthorizationRequest{
-		ClientID: row.ClientID,
-		RedirectURI: row.RedirectURI,
-		State: row.State,
-		Nonce: row.Nonce,
+		ClientID:      row.ClientID,
+		RedirectURI:   row.RedirectURI,
+		State:         row.State,
+		Nonce:         row.Nonce,
 		CodeChallenge: row.CodeChallenge,
-		Scope: row.Scope,
+		Scope:         row.Scope,
 	}
 }
 

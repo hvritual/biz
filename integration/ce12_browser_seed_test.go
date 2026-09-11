@@ -19,12 +19,12 @@ import (
 )
 
 type ce12BrowserFixture struct {
-	BaseURL               string `json:"base_url"`
-	DiscoveryURL          string `json:"discovery_url"`
-	Email                 string `json:"email"`
-	Password              string `json:"password"`
-	AllowedTenant         string `json:"allowed_tenant"`
-	IAMDeniedTenant       string `json:"iam_denied_tenant"`
+	BaseURL                 string `json:"base_url"`
+	DiscoveryURL            string `json:"discovery_url"`
+	Email                   string `json:"email"`
+	Password                string `json:"password"`
+	AllowedTenant           string `json:"allowed_tenant"`
+	IAMDeniedTenant         string `json:"iam_denied_tenant"`
 	EntitlementDeniedTenant string `json:"entitlement_denied_tenant"`
 }
 
@@ -46,7 +46,7 @@ func TestCE12BrowserSeed(t *testing.T) {
 	}
 	if err := store.BootstrapPlatform(ctx, accesspersistence.PlatformBootstrap{
 		Subject: "platform-admin:b12",
-		Token: platformToken,
+		Token:   platformToken,
 		Permissions: []authz.PermissionKey{
 			"platform.entitlement.manage", "platform.entitlement.read", "platform.tenant.read", "commercial.catalog.read",
 		},
@@ -98,27 +98,27 @@ func TestCE12BrowserSeed(t *testing.T) {
 		t.Fatal("entitlement denied tenant has no subscription-derived source version")
 	}
 	_, err = entitlements.CreateEntitlementOverride(ce04Context(platformToken, "ce12-browser-deny-override"), &commercialv1.CreateEntitlementOverrideRequest{
-		RequestId: "ce12-browser-deny-override",
-		TenantId: entitlementDenied,
+		RequestId:       "ce12-browser-deny-override",
+		TenantId:        entitlementDenied,
 		ExpectedVersion: sourceVersion,
-		ModuleCode: "device-operations",
-		Target: commercialv1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY,
-		Key: "device.lifecycle",
-		Effect: commercialv1.EntitlementEffect_ENTITLEMENT_EFFECT_DENY,
-		EffectiveAt: time.Now().UTC().Add(-time.Minute).Format(time.RFC3339),
-		Reason: "CE12 browser E2E proves commercial denial after IAM allow",
+		ModuleCode:      "device-operations",
+		Target:          commercialv1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY,
+		Key:             "device.lifecycle",
+		Effect:          commercialv1.EntitlementEffect_ENTITLEMENT_EFFECT_DENY,
+		EffectiveAt:     time.Now().UTC().Add(-time.Minute).Format(time.RFC3339),
+		Reason:          "CE12 browser E2E proves commercial denial after IAM allow",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	fixture := ce12BrowserFixture{
-		BaseURL: "http://127.0.0.1:18080",
-		DiscoveryURL: "http://127.0.0.1:18081/idp/.well-known/openid-configuration",
-		Email: email,
-		Password: password,
-		AllowedTenant: allowed,
-		IAMDeniedTenant: iamDenied,
+		BaseURL:                 "http://127.0.0.1:18080",
+		DiscoveryURL:            "http://127.0.0.1:18081/idp/.well-known/openid-configuration",
+		Email:                   email,
+		Password:                password,
+		AllowedTenant:           allowed,
+		IAMDeniedTenant:         iamDenied,
 		EntitlementDeniedTenant: entitlementDenied,
 	}
 	payload, err := json.MarshalIndent(fixture, "", "  ")
@@ -134,11 +134,11 @@ func ce12CreateActiveTenant(t *testing.T, client accessv1.TenantLifecycleApplica
 	t.Helper()
 	stamp := ce04Random(t)
 	created, err := client.CreateTenant(ce04Context(token, "ce12-create-"+stamp), &accessv1.CreateTenantRequest{
-		Name: name,
+		Name:        name,
 		OwnerUserId: ownerID,
-		OwnerEmail: ownerEmail,
-		RequestId: "ce12-create-" + stamp,
-		SalesScope: "default",
+		OwnerEmail:  ownerEmail,
+		RequestId:   "ce12-create-" + stamp,
+		SalesScope:  "default",
 	})
 	if err != nil {
 		t.Fatal(err)
