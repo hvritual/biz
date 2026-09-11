@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 20
     env:
       YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
-      PRODUCT_SHA: c32a1de12a5574dd2a73a0eb54feb28c414a5317
+      PRODUCT_SHA: 8058c113b9e4f7586a807ca9f0ed9941f70d3274
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with: {repository: hvritual/biz, ref: '${{ env.PRODUCT_SHA }}', path: biz, fetch-depth: 0}
