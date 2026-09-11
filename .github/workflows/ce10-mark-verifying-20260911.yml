@@ -1,0 +1,35 @@
+name: CE-10 advance candidate to VERIFYING
+on:
+  push:
+    branches: [control/ce10-delivery-20260910]
+    paths: ['.github/workflows/ce10-mark-verifying-20260911.yml']
+permissions: {contents: write}
+concurrency: {group: ce10-product-writer, cancel-in-progress: false}
+jobs:
+  advance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: feat/ce-10-durable-provisioning, fetch-depth: 0, persist-credentials: true}
+      - name: Advance only CE-10 state after actual qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = a903995a6122e5ba3ae6c635f0dafccabd2d010a
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('docs/commercial-entitlements/tasks.json')
+          data=json.loads(p.read_text())
+          task=next(t for t in data['tasks'] if t['id']=='CE-10')
+          assert task['status']=='IN_PROGRESS' and task['evidence'] is None and task['integration_commit'] is None
+          task['status']='VERIFYING'
+          p.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+          PY
+          test "$(git diff --name-only)" = docs/commercial-entitlements/tasks.json
+          PYTHONDONTWRITEBYTECODE=1 python3 docs/commercial-entitlements/tools/check_plan.py
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add docs/commercial-entitlements/tasks.json
+          git commit -m 'docs(ce-10): advance qualified implementation to VERIFYING'
+          git push origin HEAD:feat/ce-10-durable-provisioning
