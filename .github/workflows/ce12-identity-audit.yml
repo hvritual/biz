@@ -1,0 +1,100 @@
+name: CE-12 web identity audit
+on:
+  push:
+    branches: [control/ce12-identity-audit-20260911]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 0782892776316683b3c5307cba1e643483265a65
+          fetch-depth: 0
+      - name: Lock exact main source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "0782892776316683b3c5307cba1e643483265a65"
+          test "$(git rev-parse origin/main)" = "0782892776316683b3c5307cba1e643483265a65"
+      - name: Audit browser identity ingress and current preview authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee ce12-identity-audit.txt
+          from pathlib import Path
+          import re
+
+          root = Path('.')
+          include_roots = [Path('cmd'), Path('internal'), Path('modules'), Path('web/src')]
+          skip_parts = {'node_modules', 'dist', 'coverage'}
+          files = []
+          for base in include_roots:
+              if not base.exists():
+                  continue
+              for p in base.rglob('*'):
+                  if not p.is_file() or any(part in skip_parts for part in p.parts):
+                      continue
+                  if p.name.startswith('zz_yunka_'):
+                      continue
+                  if p.suffix.lower() not in {'.go', '.ts', '.vue', '.js', '.tsx', '.jsx'}:
+                      continue
+                  files.append(p)
+
+          web_identity_patterns = {
+              'oidc': re.compile(r'\boidc\b', re.I),
+              'openid': re.compile(r'openid', re.I),
+              'oauth': re.compile(r'oauth2?|authorization_code|pkce', re.I),
+              'webauthn': re.compile(r'webauthn|passkey', re.I),
+              'saml': re.compile(r'\bsaml\b', re.I),
+              'password_verifier': re.compile(r'bcrypt|argon2|scrypt|password_hash|verifyPassword|checkPassword', re.I),
+              'server_cookie': re.compile(r'Set-Cookie|http\.Cookie|SameSite', re.I),
+              'csrf': re.compile(r'csrf|xsrf', re.I),
+              'login_endpoint': re.compile(r'(/login\b|/sessions?\b|CreateSession\b|LoginHandler\b|LogoutHandler\b)', re.I),
+          }
+          matches = []
+          for p in files:
+              text = p.read_text(encoding='utf-8', errors='ignore')
+              for name, pattern in web_identity_patterns.items():
+                  for m in pattern.finditer(text):
+                      line = text.count('\n', 0, m.start()) + 1
+                      snippet = text.splitlines()[line-1].strip()[:220]
+                      matches.append((name, str(p), line, snippet))
+
+          print('CE12_AUDIT_BASE=0782892776316683b3c5307cba1e643483265a65')
+          print(f'CODE_FILES_SCANNED={len(files)}')
+          print(f'WEB_IDENTITY_SIGNAL_COUNT={len(matches)}')
+          for row in matches:
+              print('SIGNAL=' + '|'.join(map(str, row)))
+
+          main = Path('cmd/biz/main.go').read_text(encoding='utf-8')
+          envs = sorted(set(re.findall(r'YUNKA_BIZ_[A-Z0-9_]+', main)))
+          print('BIZ_ENV_VARS=' + ','.join(envs))
+
+          topbar = Path('web/src/app/layout/AppTopbar.vue').read_text(encoding='utf-8')
+          tenant = Path('web/src/services/tenant.ts').read_text(encoding='utf-8')
+          platform = Path('internal/access/infrastructure/persistence/platform.go').read_text(encoding='utf-8')
+          runtime = Path('internal/bizruntime/runtime.go').read_text(encoding='utf-8')
+
+          assertions = {
+              'preview_declares_login_pending': '登录与权限由正式后端接入后提供' in topbar,
+              'tenant_switch_is_demo_memory_state': 'demo-shanghai' in tenant and 'demo-hangzhou' in tenant and 'const tenantId = ref' in tenant,
+              'platform_credential_is_api_key': 'AuthMethodAPIKey' in platform and 'platformCredentialRecord' in platform,
+              'http_accepts_bearer': 'Bearer ' in runtime or 'Bearer' in runtime,
+              'no_web_identity_signal': len(matches) == 0,
+          }
+          for key, value in assertions.items():
+              print(f'{key}={str(value).upper()}')
+          if not all(assertions.values()):
+              raise SystemExit('CE12_IDENTITY_AUDIT=REVIEW_REQUIRED')
+          print('CE12_IDENTITY_SOURCE=ABSENT')
+          PY
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ce12-identity-audit-0782892776316683b3c5307cba1e643483265a65
+          path: ce12-identity-audit.txt
+          if-no-files-found: error
