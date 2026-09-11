@@ -266,10 +266,11 @@
         "FR-14",
         "FR-18"
       ],
-      "status": "VERIFYING",
+      "status": "DONE",
       "blocker": null,
-      "evidence": null,
-      "integration_commit": null
+      "evidence": "evidence/CE-10.md",
+      "integration_commit": "5bb4f87aa59856aad585cdc1e7e53016b6920380",
+      "verification": "evidence/CE-10-verification.json"
     },
     {
       "id": "CE-11",
