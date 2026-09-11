@@ -1,4 +1,4 @@
-name: CE-12 production IdP hardening
+name: CE-12 atomic credential lifecycle
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  harden:
+  qualify:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -37,20 +37,15 @@ jobs:
         with:
           go-version: '${{ steps.lock.outputs.go_version }}'
           cache: false
-      - name: Apply production hardening
+      - name: Apply atomic credential patch
         shell: bash
         run: |
           set -euo pipefail
-          python3 biz/tools/ce12_production_hardening.py
+          python3 biz/tools/ce12_atomic_credentials.py
           gofmt -w \
-            biz/internal/access/infrastructure/persistence/first_party_idp_security.go \
-            biz/internal/access/infrastructure/persistence/web_session.go \
-            biz/internal/bizruntime/config.go \
-            biz/internal/bizruntime/first_party_idp.go \
-            biz/internal/bizruntime/first_party_idp_hardening_test.go \
-            biz/cmd/biz-idp/main.go \
-            biz/cmd/biz-idp-credential/main.go
-      - name: Qualify hardening before commit
+            biz/internal/access/infrastructure/persistence/first_party_idp.go \
+            biz/internal/access/infrastructure/persistence/first_party_idp_security.go
+      - name: Qualify atomic credential lifecycle
         shell: bash
         run: |
           set -euo pipefail
@@ -64,6 +59,8 @@ jobs:
           set -euo pipefail
           git -C biz config user.name 'github-actions[bot]'
           git -C biz config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git -C biz add internal cmd
-          git -C biz commit -m 'feat(ce-12): harden production first-party identity'
+          git -C biz add \
+            internal/access/infrastructure/persistence/first_party_idp.go \
+            internal/access/infrastructure/persistence/first_party_idp_security.go
+          git -C biz commit -m 'fix(ce-12): make credential rotation and revocation atomic'
           git -C biz push origin HEAD:feat/ce-12-first-party-idp-e2e
