@@ -1,5 +1,6 @@
 -- CE-16 durable time transitions. This table stores only server-derived authority
 -- references and bounded leases; no browser timer or client-provided script is trusted.
+-- due_at is authoritative UTC; business_timezone records display semantics separately.
 CREATE TABLE IF NOT EXISTS biz_commercial_time_transitions (
  transition_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
  kind VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
@@ -7,6 +8,7 @@ CREATE TABLE IF NOT EXISTS biz_commercial_time_transitions (
  authority_id VARCHAR(128) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
  authority_version BIGINT UNSIGNED NOT NULL,
  due_at DATETIME(6) NOT NULL,
+ business_timezone VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
  revision BIGINT UNSIGNED NOT NULL,
  state VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
  lease_until DATETIME(6) NULL,
