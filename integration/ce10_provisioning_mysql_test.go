@@ -32,6 +32,7 @@ type ce10TestAdapter struct {
 	mu                 sync.Mutex
 	outcome            string
 	panicAfterDispatch bool
+	afterDispatch      context.CancelFunc
 	prepares           int
 	reconciles         int
 	keys               []string
@@ -44,6 +45,9 @@ func (a *ce10TestAdapter) Prepare(ctx context.Context, r ports.PreparationReques
 	a.prepares++
 	a.keys = append(a.keys, r.IdempotencyKey)
 	_, a.transactionLeaked = execution.Current(ctx)
+	if a.afterDispatch != nil {
+		a.afterDispatch()
+	}
 	if a.panicAfterDispatch {
 		panic("test provider response lost")
 	}
@@ -99,7 +103,7 @@ func ce10OnDB(t *testing.T, db *gorm.DB, token string, policy *ce10TestPolicy, a
 	}
 	perms := append(ce09Permissions(), []authz.PermissionKey{"platform.provisioning.read", "platform.provisioning.manage", "platform.provisioning.cancel", "platform.provisioning.execute"}...)
 	ctx, cancel := context.WithCancel(context.Background())
-	s, err := bizruntime.BootstrapWithOptions(ctx, provider, bizruntime.Options{DeviceOps: cfg, PlatformBootstrap: bizruntime.PlatformBootstrap{Subject: "ce10:" + token, Token: token, Permissions: perms}, ProvisioningPolicy: policy, PreparationAdapters: []ports.RegisteredPreparation{{AdapterID: "ce10-test", Version: "v1", Adapter: adapter}}, ProvisioningWorker: bizruntime.ProvisioningWorkerOptions{Token: token, Automatic: false}})
+	s, err := bizruntime.BootstrapWithOptions(ctx, provider, bizruntime.Options{DeviceOps: cfg, PlatformBootstrap: bizruntime.PlatformBootstrap{Subject: "ce10:" + token, Token: token, Permissions: perms}, ProvisioningPolicy: policy, PreparationAdapters: []ports.RegisteredPreparation{{AdapterID: "ce10-test", Version: "v1", Adapter: adapter}}, ProvisioningWorker: bizruntime.ProvisioningWorkerOptions{Token: token, Automatic: false, LeaseDuration: 5 * time.Second, StepTimeout: time.Second}})
 	if err != nil {
 		cancel()
 		t.Fatal(err)
