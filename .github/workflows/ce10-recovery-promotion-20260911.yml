@@ -21,7 +21,6 @@ jobs:
       YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
       PRODUCT_SHA: 4be9c5f566314dff20f134d984fab583afabf52e
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce10_recovery?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
-      MYSQL_CONTAINER_ID: '${{ job.services.mysql.id }}'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with: {ref: '${{ env.PRODUCT_SHA }}', path: biz, fetch-depth: 0, persist-credentials: true}
@@ -49,6 +48,8 @@ jobs:
           git diff --check
       - name: Verify live permission and interrupted external work recovery
         working-directory: biz
+        env:
+          MYSQL_CONTAINER_ID: '${{ job.services.mysql.id }}'
         shell: bash
         run: |
           set -euo pipefail
