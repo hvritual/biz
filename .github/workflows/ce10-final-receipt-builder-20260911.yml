@@ -1,0 +1,172 @@
+name: CE-10 final receipt builder
+on:
+  push:
+    branches: [control/ce10-delivery-20260910]
+    paths: ['.github/workflows/ce10-final-receipt-builder-20260911.yml']
+permissions:
+  contents: write
+  actions: read
+concurrency: {group: ce10-final-receipt-builder, cancel-in-progress: false}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BUSINESS_SHA: 5bb4f87aa59856aad585cdc1e7e53016b6920380
+      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      RECEIPT_BRANCH: docs/ce-10-final-receipt-20260911
+      CE10_RUN: '34556255024'
+      CE10_ARTIFACT: '10182752579'
+      CE10_ZIP: 443dba064ffa024180fbf5dd061eb234e08fb0d2b152835476c51ded0a83de85
+      RUNTIME_RUN: '34556255136'
+      RUNTIME_ARTIFACT: '10182688674'
+      RUNTIME_ZIP: c4a7cd603017b9427f1563f58266e10e8d35882e479a48e4a558c9407b41b597
+      READBACK_RUN: '34556369648'
+      READBACK_ARTIFACT: '10182758468'
+      READBACK_ZIP: 35bc0c83bde1176fc02003f2edd474ccc1e6dcf2d8c50b690fb806ac3e498a98
+      RECEIPTS_RUN: '34556255004'
+      RECEIPTS_ARTIFACT: '10182659531'
+      RECEIPTS_ZIP: 830ae03e60f2698feac840afdc45fce5af9ce3238206a2a595f51f322033304a
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: '${{ env.RECEIPT_BRANCH }}'
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Lock receipt base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$BUSINESS_SHA"
+          git fetch origin main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$BUSINESS_SHA"
+      - name: Download and authenticate exact main artifacts
+        env: {GH_TOKEN: '${{ github.token }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/evidence"
+          get_artifact() {
+            id="$1" expected="$2" name="$3"
+            curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 \
+              -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}/zip" \
+              -o "$RUNNER_TEMP/evidence/${name}.zip"
+            echo "$expected  $RUNNER_TEMP/evidence/${name}.zip" | sha256sum -c -
+            mkdir -p "$RUNNER_TEMP/evidence/$name"
+            unzip -q "$RUNNER_TEMP/evidence/${name}.zip" -d "$RUNNER_TEMP/evidence/$name"
+          }
+          get_artifact "$CE10_ARTIFACT" "$CE10_ZIP" ce10
+          get_artifact "$RUNTIME_ARTIFACT" "$RUNTIME_ZIP" runtime
+          get_artifact "$READBACK_ARTIFACT" "$READBACK_ZIP" readback
+          get_artifact "$RECEIPTS_ARTIFACT" "$RECEIPTS_ZIP" receipts
+      - name: Build exactly three final receipt files from authenticated evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,os,re
+          root=Path.cwd(); ev=Path(os.environ['RUNNER_TEMP'])/'evidence'
+          business=os.environ['BUSINESS_SHA']; framework=os.environ['YUNKA_SHA']
+          q=json.loads((ev/'ce10/summary.json').read_text())
+          assert q['task_id']=='CE-10' and q['verified_commit']==business
+          assert q['framework_commit']==framework and q['qualification']=='PASS'
+          assert q['task_status']=='VERIFYING' and q['round_check']=='QUALIFIED_NOT_DONE'
+          for name,digest in q['sha256'].items():
+              p=ev/'ce10'/name; assert p.is_file() and hashlib.sha256(p.read_bytes()).hexdigest()==digest,name
+          rb=json.loads((ev/'readback/summary.json').read_text())
+          assert rb['main_commit']==business and rb['task_status']=='VERIFYING' and rb['result']=='PASS'
+          assert rb['workflow_count']==12 and rb['check_count']==12
+          rounds=(ev/'readback/rounds.log').read_text()
+          deps=[]
+          for i in range(1,10):
+              cmd=f'python3 docs/commercial-entitlements/tools/check_round.py --task CE-{i:02d} --require-main'
+              assert cmd in rounds and f'ROUND_CHECK=PASS task=CE-{i:02d}' in rounds
+              deps.append(cmd)
+          selected=json.loads((ev/'readback/selected.json').read_text())
+          text=json.dumps(selected,sort_keys=True)
+          for token in [os.environ['CE10_RUN'],os.environ['CE10_ARTIFACT'],os.environ['RUNTIME_RUN'],os.environ['RUNTIME_ARTIFACT'],os.environ['RECEIPTS_RUN'],os.environ['RECEIPTS_ARTIFACT']]: assert token in text,token
+          sources=(ev/'runtime/sources.txt').read_text(); assert f'biz={business}' in sources and f'yunka={framework}' in sources
+          assert (ev/'runtime/closure.log').read_text().strip()=='CE04_RUNTIME_CLOSURE=PASS {"applications": 12, "routes": 46}'
+          assert (ev/'runtime/stop.log').read_text().strip()=='RUNTIME_STOP_CHECK=PASS'
+          # The historical main summary remains VERIFYING/QUALIFIED_NOT_DONE. The final receipt records it; it never rewrites it.
+          proof={
+            'schema_version':1,'task_id':'CE-10','verified_commit':business,'result':'PASS',
+            'base_commit':'12f33db5632a81c04b9de7634b5d37baf5a2bb1a','framework_commit':framework,'implementation_pr':46,
+            'environment':{'executor':'GitHub Actions','go_version':'1.25.13','database':'workflow-owned MySQL 8.4','production_deployed':False},
+            'qualification':{'run_id':int(os.environ['CE10_RUN']),'artifact_id':int(os.environ['CE10_ARTIFACT']),'zip_sha256':os.environ['CE10_ZIP'],'files_rehashed':len(q['sha256']),'suite_counts_recomputed':len(q['suites'])},
+            'main_readback':{'run_id':int(os.environ['READBACK_RUN']),'artifact_id':int(os.environ['READBACK_ARTIFACT']),'zip_sha256':os.environ['READBACK_ZIP'],'workflows':12,'checks':12,'result':'PASS','completed_dependency_rounds':deps},
+            'round_receipts':{'run_id':int(os.environ['RECEIPTS_RUN']),'artifact_id':int(os.environ['RECEIPTS_ARTIFACT']),'zip_sha256':os.environ['RECEIPTS_ZIP'],'result':'PASS'},
+            'runtime':{'run_id':int(os.environ['RUNTIME_RUN']),'artifact_id':int(os.environ['RUNTIME_ARTIFACT']),'zip_sha256':os.environ['RUNTIME_ZIP'],'result':{'applications':12,'routes':46},'stop':'PASS'},
+            'suites':q['suites'],
+            'checks':[{**c,'evidence':f"GitHub Actions run {os.environ['CE10_RUN']} / artifact {os.environ['CE10_ARTIFACT']} / {c['log']}"} for c in q['checks']],
+            'sha256':q['sha256'],
+            'historical_state':{'business_main_summary_task_status':q['task_status'],'business_main_summary_round_check':q['round_check'],'note':'Historical qualification stays VERIFYING/QUALIFIED_NOT_DONE; DONE is established only by the separate receipt and final main readback.'}
+          }
+          for c in proof['checks']: c.pop('log',None)
+          out=root/'docs/commercial-entitlements/evidence'; out.mkdir(parents=True,exist_ok=True)
+          (out/'CE-10-verification.json').write_text(json.dumps(proof,ensure_ascii=False,indent=2)+'\n')
+          labels=[('focused','CE-10 专项'),('lease','持久化租约'),('mysql','CE-10 真实 MySQL'),('race','CE-10 MySQL race'),('restart-before','数据库重启前'),('restart-after','数据库重启后'),('ce09-mysql','CE-09 MySQL'),('ce08-mysql','CE-08 MySQL'),('ce07-mysql','CE-07 MySQL'),('ce06-mysql','CE-06 MySQL'),('ce05-mysql','CE-05 MySQL'),('ce04-mysql','CE-04 MySQL'),('ce02-mysql','CE-02 MySQL'),('b12-mysql','B12 + AG02'),('all','全量 Go')]
+          rows='\n'.join(f"| {label} | {q['suites'][key]['leaf_tests']} | {q['suites'][key]['pass_events']} | {q['suites'][key]['failed']} / {q['suites'][key]['skipped']} |" for key,label in labels)
+          md=f'''# CE-10 执行回执
+
+## 范围与结果
+CE-10 Outbox 与持久化开通任务已实现并通过业务主线真实资格，业务 PR #46 已正常合并至 `main@{business}`。本收尾只新增本回执、机器证明并更新 `tasks.json` 的 CE-10；不实施 CE-11、支付、预约调度或运营控制台。机器证明见 [CE-10-verification.json](CE-10-verification.json)，业务语义见 [CE-10 决策](../decisions/CE-10-durable-provisioning.md)。
+
+## 已交付语义
+确认套餐变更时，订阅/开通状态与事务型 Outbox 同根事务持久化；Inbox 与聚合版本保证重复及乱序通知不能覆盖新状态。持久化开通任务记录步骤、动作、审计、重试时间、租约 owner/token 和失败码。外部 provider 工作在数据库事务外执行，使用稳定 provider 幂等键；若外部动作是否成功不确定，恢复路径执行 Reconcile，而不是重复 Prepare。
+目标套餐权益不会因“已确认”提前生效：需要外部准备的变更保持旧有效权益，直至所有必要步骤 READY 后才由纯数据库事务切换；无外部步骤时可直接完成。平台提供任务查询/列表/重试/受限取消及 delivery 查询接口；取消仅允许已知无外部副作用的工作。worker 使用服务端 token，并在每次 claim 前实时检查 `platform.provisioning.execute`。
+
+## 真实失败、修复与恢复证明
+真实 MySQL 首轮暴露并修复了四项问题：`change_id` 外键字符集/排序规则不一致导致 3780；回执 schema 缺少独立 PROVISIONING 状态；后台 worker 被误判为 child-only Guard；等待行锁后仍使用锁前 DB 时间判断 lease。修复保留 FK/RESTRICT、fail-closed 授权和 lease token fencing，没有删除约束或测试。
+另以真实 MySQL 证明外部动作完成后、观察结果提交前进程中断的路径：任务保持 RUNNING、旧权益保持不变；数据库真实重启并等待真实 lease 到期后，worker 使用原 provider key Reconcile，不重复 Prepare；仅当结果 READY 后才激活目标权益。worker 权限撤销后无法 claim/provider work，恢复授权后才继续。
+
+## 业务主线验证
+2026-09-11，GitHub Actions、Go 1.25.13、MySQL 8.4。业务 main CE-10 run `{os.environ['CE10_RUN']}` / artifact `{os.environ['CE10_ARTIFACT']}`，ZIP SHA256 `{os.environ['CE10_ZIP']}`；已独立下载并复核 {len(q['sha256'])} 项内部文件哈希与 {len(q['suites'])} 组 JSONL 计数。真实数据库重启、两次生成零漂移、source/workspace/check、vet/build、计划/回执反向测试、运行时门禁与计数器均通过。
+
+| 套件 | 叶子用例 | pass 事件 | 失败 / 实际跳过 |
+| --- | ---: | ---: | ---: |
+{rows}
+
+各套件存在重叠，不累加。运行时 run `{os.environ['RUNTIME_RUN']}` / artifact `{os.environ['RUNTIME_ARTIFACT']}`，ZIP SHA256 `{os.environ['RUNTIME_ZIP']}`：12 个 application、46 条唯一 HTTP route、正常停止。独立 business-main readback run `{os.environ['READBACK_RUN']}` / artifact `{os.environ['READBACK_ARTIFACT']}`，ZIP SHA256 `{os.environ['READBACK_ZIP']}`：12/12 main workflow/check 成功，CE-01～CE-09 的 `--require-main` 均实际 PASS；CE-10 当时仍按契约保持 VERIFYING。
+
+## 历史事实、风险与回滚
+业务 main 原始 `summary.json` 保持 `VERIFYING / QUALIFIED_NOT_DONE`，不改写历史；本回执才把台账推进 DONE。数据库迁移必须先于启用 worker；本轮没有生产部署、生产吞吐/SLA、真实支付或生产回滚演练。DB polling 是本轮可靠投递机制，不宣称已采用消息中间件。
+事故时应暂停 worker/确认入口，按 task/change/provider key 和持久化 receipt/outbox/inbox 对账；不确定外部副作用必须 Reconcile。补偿通过新变更/新任务推进版本，禁止删除历史、回拨版本或把 PROVISIONING 伪装为 APPLIED。
+
+## 集成与最终门禁
+业务 PR #46 已合入 `main@{business}`。本 final receipt 分支只能与该业务 main 相差以下三份文件：`docs/commercial-entitlements/evidence/CE-10.md`、`docs/commercial-entitlements/evidence/CE-10-verification.json`、`docs/commercial-entitlements/tasks.json`。候选回执必须通过 `check_round.py --task CE-10`；正常 PR 合并后还必须在最新 main 实际执行 `check_round.py --task CE-10 --require-main`。本文件不预填未来最终 main PASS，也不自引用 receipt 提交 SHA。
+'''
+          (out/'CE-10.md').write_text(md)
+          taskfile=root/'docs/commercial-entitlements/tasks.json'; plan=json.loads(taskfile.read_text())
+          matches=[t for t in plan['tasks'] if t['id']=='CE-10']; assert len(matches)==1
+          t=matches[0]; assert t['status']=='VERIFYING' and t.get('evidence') is None and t.get('integration_commit') is None
+          t['status']='DONE';t['blocker']=None;t['evidence']='evidence/CE-10.md';t['integration_commit']=business;t['verification']='evidence/CE-10-verification.json'
+          taskfile.write_text(json.dumps(plan,ensure_ascii=False,indent=2)+'\n')
+          PY
+          git diff --check
+          test "$(git diff --name-only origin/main... | sort)" = $'docs/commercial-entitlements/evidence/CE-10-verification.json\ndocs/commercial-entitlements/evidence/CE-10.md\ndocs/commercial-entitlements/tasks.json'
+          python3 docs/commercial-entitlements/tools/check_plan.py
+          python3 -m unittest discover -s docs/commercial-entitlements/tools -p 'test_*.py' -v
+          python3 docs/commercial-entitlements/tools/check_round.py --task CE-10 --main-ref origin/main
+      - name: Commit and push bounded receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git diff --name-only origin/main... | sort)" = $'docs/commercial-entitlements/evidence/CE-10-verification.json\ndocs/commercial-entitlements/evidence/CE-10.md\ndocs/commercial-entitlements/tasks.json'
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add docs/commercial-entitlements/evidence/CE-10.md docs/commercial-entitlements/evidence/CE-10-verification.json docs/commercial-entitlements/tasks.json
+          git commit -m 'docs(ce-10): close verified main receipts and DONE ledger'
+          git push origin HEAD:"$RECEIPT_BRANCH"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ce10-final-receipt-builder
+          path: |
+            docs/commercial-entitlements/evidence/CE-10.md
+            docs/commercial-entitlements/evidence/CE-10-verification.json
+            docs/commercial-entitlements/tasks.json
+          retention-days: 30
+          if-no-files-found: error
