@@ -41,42 +41,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-
-          source = Path('biz/internal/bizruntime/first_party_idp.go')
-          text = source.read_text()
-          old = '\twriter.Header().Set("Referrer-Policy", "no-referrer")'
-          new = '\t// A navigate-mode HTML form POST needs a non-null Origin so the IdP\n\t// transaction cookie remains same-site. `origin` still strips the OIDC\n\t// authorization path/query from Referer, avoiding state/nonce leakage.\n\twriter.Header().Set("Referrer-Policy", "origin")'
-          if old not in text:
-              raise SystemExit('first_party_idp.go referrer-policy anchor missing')
-          source.write_text(text.replace(old, new, 1))
-
-          test = Path('biz/internal/bizruntime/first_party_idp_hardening_test.go')
-          text = test.read_text()
-          anchor = '\nfunc testFirstPartyIdPConfig(active string, previous []FirstPartyIdPVerificationKey) FirstPartyIdPConfig {'
-          addition = '''\nfunc TestCE12FirstPartyIdPLoginReferrerPolicyPreservesFormOrigin(t *testing.T) {
-\tidp, err := newRuntimeFirstPartyIdP(testFirstPartyIdPConfig(testIDPPrivateKeyPEM(t), nil))
-\tif err != nil {
-\t\tt.Fatal(err)
-\t}
-\trecorder := httptest.NewRecorder()
-\tidp.renderLogin(recorder, http.StatusOK, "request", "csrf", "", "")
-\tif got := recorder.Header().Get("Referrer-Policy"); got != "origin" {
-\t\tt.Fatalf("login Referrer-Policy=%q want origin", got)
-\t}
-\tif got := recorder.Header().Get("Content-Security-Policy"); got == "" {
-\t\tt.Fatal("login page must retain Content-Security-Policy")
-\t}
-}\n'''
-          if anchor not in text:
-              raise SystemExit('hardening test insertion anchor missing')
-          if 'TestCE12FirstPartyIdPLoginReferrerPolicyPreservesFormOrigin' not in text:
-              test.write_text(text.replace(anchor, addition + anchor, 1))
-          PY
-          gofmt -w \
-            biz/internal/bizruntime/first_party_idp.go \
-            biz/internal/bizruntime/first_party_idp_hardening_test.go
+          python3 biz/tools/ce12_login_origin_fix.py
+          gofmt -w biz/internal/bizruntime/first_party_idp.go biz/internal/bizruntime/first_party_idp_hardening_test.go
           git -C biz diff --check
       - name: Qualify repair before commit
         shell: bash
@@ -92,8 +58,6 @@ jobs:
           set -euo pipefail
           git -C biz config user.name 'github-actions[bot]'
           git -C biz config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git -C biz add \
-            internal/bizruntime/first_party_idp.go \
-            internal/bizruntime/first_party_idp_hardening_test.go
+          git -C biz add internal/bizruntime/first_party_idp.go internal/bizruntime/first_party_idp_hardening_test.go
           git -C biz commit -m 'fix(ce-12): preserve IdP form origin for transaction cookie'
           git -C biz push origin HEAD:feat/ce-12-first-party-idp-e2e
