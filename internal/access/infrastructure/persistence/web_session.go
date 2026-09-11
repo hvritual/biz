@@ -115,6 +115,9 @@ func (store *Store) BindOIDCPlatformIdentity(ctx context.Context, issuer, subjec
 	if store == nil || store.database == nil || issuer == "" || subject == "" || platformSubject == "" {
 		return ErrWebIdentityUnbound
 	}
+	if _, err := store.AuthenticatePlatformSubject(ctx, platformSubject, AuthMethodWeb); err != nil {
+		return ErrWebIdentityUnbound
+	}
 	var existing webIdentityRecord
 	err := store.database.WithContext(ctx).Where("issuer = ? AND subject = ?", issuer, subject).First(&existing).Error
 	if err == nil {
@@ -143,6 +146,9 @@ func (store *Store) ResolveOrBindOIDCIdentity(ctx context.Context, issuer, subje
 	var link webIdentityRecord
 	err := store.database.WithContext(ctx).Where("issuer = ? AND subject = ?", issuer, subject).First(&link).Error
 	if err == nil {
+		if err := store.validateWebIdentityAuthority(ctx, link); err != nil {
+			return WebIdentity{}, err
+		}
 		return webIdentityFromRecord(link), nil
 	}
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -171,7 +177,30 @@ func (store *Store) ResolveOrBindOIDCIdentity(ctx context.Context, issuer, subje
 	if err := store.database.WithContext(ctx).Where("issuer = ? AND subject = ?", issuer, subject).First(&link).Error; err != nil {
 		return WebIdentity{}, err
 	}
+	if err := store.validateWebIdentityAuthority(ctx, link); err != nil {
+		return WebIdentity{}, err
+	}
 	return webIdentityFromRecord(link), nil
+}
+
+func (store *Store) validateWebIdentityAuthority(ctx context.Context, link webIdentityRecord) error {
+	switch link.ActorKind {
+	case WebActorUser:
+		var count int64
+		if err := store.database.WithContext(ctx).Model(&userRecord{}).
+			Where("id = ? AND status = ?", link.ActorID, "active").Count(&count).Error; err != nil {
+			return err
+		}
+		if count != 1 {
+			return ErrUnauthorized
+		}
+		return nil
+	case WebActorPlatform:
+		_, err := store.AuthenticatePlatformSubject(ctx, link.ActorID, AuthMethodWeb)
+		return err
+	default:
+		return ErrWebIdentityUnbound
+	}
 }
 
 func webIdentityFromRecord(record webIdentityRecord) WebIdentity {
@@ -181,6 +210,10 @@ func webIdentityFromRecord(record webIdentityRecord) WebIdentity {
 func (store *Store) CreateWebSession(ctx context.Context, webIdentity WebIdentity, ttl time.Duration) (string, WebSessionAuthentication, error) {
 	if store == nil || store.database == nil || ttl <= 0 || strings.TrimSpace(webIdentity.Issuer) == "" || strings.TrimSpace(webIdentity.Subject) == "" {
 		return "", WebSessionAuthentication{}, ErrWebSessionInvalid
+	}
+	authoritative, err := store.ResolveOrBindOIDCIdentity(ctx, webIdentity.Issuer, webIdentity.Subject, "", false)
+	if err != nil {
+		return "", WebSessionAuthentication{}, err
 	}
 	token, err := randomWebSecret(32)
 	if err != nil {
@@ -192,8 +225,8 @@ func (store *Store) CreateWebSession(ctx context.Context, webIdentity WebIdentit
 	}
 	now := time.Now().UTC()
 	activeTenant := ""
-	if webIdentity.ActorKind == WebActorUser {
-		tenants, err := store.listWebTenants(ctx, webIdentity.ActorID)
+	if authoritative.ActorKind == WebActorUser {
+		tenants, err := store.listWebTenants(ctx, authoritative.ActorID)
 		if err != nil {
 			return "", WebSessionAuthentication{}, err
 		}
@@ -202,7 +235,7 @@ func (store *Store) CreateWebSession(ctx context.Context, webIdentity WebIdentit
 		}
 	}
 	record := webSessionRecord{
-		TokenHash: TokenHash(token), Issuer: webIdentity.Issuer, Subject: webIdentity.Subject,
+		TokenHash: TokenHash(token), Issuer: authoritative.Issuer, Subject: authoritative.Subject,
 		ActiveTenantID: activeTenant, CSRFToken: csrf, ExpiresAt: now.Add(ttl), CreatedAt: now, UpdatedAt: now,
 	}
 	if err := store.database.WithContext(ctx).Create(&record).Error; err != nil {
@@ -240,11 +273,18 @@ func (store *Store) authenticateWebSessionRecord(ctx context.Context, record web
 		}
 		return WebSessionAuthentication{}, err
 	}
+	if err := store.validateWebIdentityAuthority(ctx, link); err != nil {
+		return WebSessionAuthentication{}, err
+	}
 	result := WebSessionAuthentication{Session: WebSessionContext{ActorKind: link.ActorKind, ExpiresAt: record.ExpiresAt, CSRFToken: record.CSRFToken}}
 	switch link.ActorKind {
 	case WebActorPlatform:
+		principal, err := store.AuthenticatePlatformSubject(ctx, link.ActorID, AuthMethodWeb)
+		if err != nil {
+			return WebSessionAuthentication{}, err
+		}
 		result.Session.PlatformSubject = link.ActorID
-		result.Principal = identity.Principal{Subject: link.ActorID, AuthMethod: AuthMethodWeb, Authenticated: true}
+		result.Principal = principal
 	case WebActorUser:
 		result.Session.UserID = link.ActorID
 		tenants, err := store.listWebTenants(ctx, link.ActorID)
@@ -257,6 +297,9 @@ func (store *Store) authenticateWebSessionRecord(ctx context.Context, record web
 		}
 		principal, err := store.resolveWebUserPrincipal(ctx, link.ActorID, record.ActiveTenantID)
 		if err != nil {
+			if errors.Is(err, ErrUnauthorized) {
+				return result, nil
+			}
 			return WebSessionAuthentication{}, err
 		}
 		result.Session.ActiveTenantID = record.ActiveTenantID
