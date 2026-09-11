@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      PRODUCT_SHA: 7a0221f21eeed6cdee7e7e39c9589f31077eff7b
+      PRODUCT_SHA: c29a42d1e3f339b4777b1ab12f3324a77b450d00
       YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
