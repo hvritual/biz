@@ -998,29 +998,29 @@ const file_access_v1_tenant_role_proto_rawDesc = "" +
 	"\x0fDATA_SCOPE_NONE\x10\x01\x12\x13\n" +
 	"\x0fDATA_SCOPE_SELF\x10\x02\x12\x14\n" +
 	"\x10DATA_SCOPE_SITES\x10\x03\x12\x12\n" +
-	"\x0eDATA_SCOPE_ALL\x10\x042\xf5\x12\n" +
-	"\x1fTenantRolePermissionApplication\x12\xb8\x01\n" +
-	"\x10CreateTenantRole\x12\".access.v1.CreateTenantRoleRequest\x1a\x18.access.v1.TenantRoleDTO\"f\xe2\xf3\x18G\n" +
-	"\x12tenant.role.create\x12\x12create_tenant_role\x1a\x12tenant.role.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/v1/tenant/roles\x12\xb1\x01\n" +
-	"\rGetTenantRole\x12\x1f.access.v1.GetTenantRoleRequest\x1a\x18.access.v1.TenantRoleDTO\"e\xe2\xf3\x18?\n" +
-	"\x0ftenant.role.get\x12\x0fget_tenant_role\x1a\x10tenant.role.read(\x012\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x1c\x12\x1a/v1/tenant/roles/{role_id}\x12\xb8\x01\n" +
-	"\x0fListTenantRoles\x12!.access.v1.ListTenantRolesRequest\x1a\".access.v1.ListTenantRolesResponse\"^\xe2\xf3\x18B\n" +
-	"\x10tenant.role.list\x12\x11list_tenant_roles\x1a\x10tenant.role.read(\x012\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/tenant/roles\x12\xc2\x01\n" +
-	"\x10UpdateTenantRole\x12\".access.v1.UpdateTenantRoleRequest\x1a\x18.access.v1.TenantRoleDTO\"p\xe2\xf3\x18G\n" +
-	"\x12tenant.role.update\x12\x12update_tenant_role\x1a\x12tenant.role.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x1f:\x01*2\x1a/v1/tenant/roles/{role_id}\x12\xce\x01\n" +
-	"\x11DisableTenantRole\x12#.access.v1.DisableTenantRoleRequest\x1a\x18.access.v1.TenantRoleDTO\"z\xe2\xf3\x18I\n" +
-	"\x13tenant.role.disable\x12\x13disable_tenant_role\x1a\x12tenant.role.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02':\x01*\"\"/v1/tenant/roles/{role_id}/disable\x12\xc9\x01\n" +
-	"\x10EnableTenantRole\x12\".access.v1.EnableTenantRoleRequest\x1a\x18.access.v1.TenantRoleDTO\"w\xe2\xf3\x18G\n" +
-	"\x12tenant.role.enable\x12\x12enable_tenant_role\x1a\x12tenant.role.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02&:\x01*\"!/v1/tenant/roles/{role_id}/enable\x12\xf1\x01\n" +
-	"\x18SetTenantRolePermissions\x12*.access.v1.SetTenantRolePermissionsRequest\x1a\x18.access.v1.TenantRoleDTO\"\x8e\x01\xe2\xf3\x18Y\n" +
-	"\x1btenant.role.set_permissions\x12\x1bset_tenant_role_permissions\x1a\x12tenant.role.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02+:\x01*\x1a&/v1/tenant/roles/{role_id}/permissions\x12\xe5\x01\n" +
-	"\x16AssignTenantRoleMember\x12(.access.v1.AssignTenantRoleMemberRequest\x1a\x18.access.v1.TenantRoleDTO\"\x86\x01\xe2\xf3\x18U\n" +
-	"\x19tenant.role.assign_member\x12\x19assign_tenant_role_member\x1a\x12tenant.role.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02':\x01*\"\"/v1/tenant/roles/{role_id}/members\x12\xf6\x01\n" +
-	"\x16RevokeTenantRoleMember\x12(.access.v1.RevokeTenantRoleMemberRequest\x1a\x18.access.v1.TenantRoleDTO\"\x97\x01\xe2\xf3\x18U\n" +
-	"\x19tenant.role.revoke_member\x12\x19revoke_tenant_role_member\x1a\x12tenant.role.manage(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x028:\x01*\"3/v1/tenant/roles/{role_id}/members/{user_id}/revoke\x1a\xf0\x03\xda\xf3\x18\xeb\x03\n" +
+	"\x0eDATA_SCOPE_ALL\x10\x042\xff\x12\n" +
+	"\x1fTenantRolePermissionApplication\x12\xb9\x01\n" +
+	"\x10CreateTenantRole\x12\".access.v1.CreateTenantRoleRequest\x1a\x18.access.v1.TenantRoleDTO\"g\xe2\xf3\x18H\n" +
+	"\x12tenant.role.create\x12\x12create_tenant_role\x1a\x12tenant.role.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/v1/tenant/roles\x12\xb2\x01\n" +
+	"\rGetTenantRole\x12\x1f.access.v1.GetTenantRoleRequest\x1a\x18.access.v1.TenantRoleDTO\"f\xe2\xf3\x18@\n" +
+	"\x0ftenant.role.get\x12\x0fget_tenant_role\x1a\x10tenant.role.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x1c\x12\x1a/v1/tenant/roles/{role_id}\x12\xb9\x01\n" +
+	"\x0fListTenantRoles\x12!.access.v1.ListTenantRolesRequest\x1a\".access.v1.ListTenantRolesResponse\"_\xe2\xf3\x18C\n" +
+	"\x10tenant.role.list\x12\x11list_tenant_roles\x1a\x10tenant.role.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/tenant/roles\x12\xc3\x01\n" +
+	"\x10UpdateTenantRole\x12\".access.v1.UpdateTenantRoleRequest\x1a\x18.access.v1.TenantRoleDTO\"q\xe2\xf3\x18H\n" +
+	"\x12tenant.role.update\x12\x12update_tenant_role\x1a\x12tenant.role.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x1f:\x01*2\x1a/v1/tenant/roles/{role_id}\x12\xcf\x01\n" +
+	"\x11DisableTenantRole\x12#.access.v1.DisableTenantRoleRequest\x1a\x18.access.v1.TenantRoleDTO\"{\xe2\xf3\x18J\n" +
+	"\x13tenant.role.disable\x12\x13disable_tenant_role\x1a\x12tenant.role.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02':\x01*\"\"/v1/tenant/roles/{role_id}/disable\x12\xca\x01\n" +
+	"\x10EnableTenantRole\x12\".access.v1.EnableTenantRoleRequest\x1a\x18.access.v1.TenantRoleDTO\"x\xe2\xf3\x18H\n" +
+	"\x12tenant.role.enable\x12\x12enable_tenant_role\x1a\x12tenant.role.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02&:\x01*\"!/v1/tenant/roles/{role_id}/enable\x12\xf2\x01\n" +
+	"\x18SetTenantRolePermissions\x12*.access.v1.SetTenantRolePermissionsRequest\x1a\x18.access.v1.TenantRoleDTO\"\x8f\x01\xe2\xf3\x18Z\n" +
+	"\x1btenant.role.set_permissions\x12\x1bset_tenant_role_permissions\x1a\x12tenant.role.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02+:\x01*\x1a&/v1/tenant/roles/{role_id}/permissions\x12\xe6\x01\n" +
+	"\x16AssignTenantRoleMember\x12(.access.v1.AssignTenantRoleMemberRequest\x1a\x18.access.v1.TenantRoleDTO\"\x87\x01\xe2\xf3\x18V\n" +
+	"\x19tenant.role.assign_member\x12\x19assign_tenant_role_member\x1a\x12tenant.role.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02':\x01*\"\"/v1/tenant/roles/{role_id}/members\x12\xf7\x01\n" +
+	"\x16RevokeTenantRoleMember\x12(.access.v1.RevokeTenantRoleMemberRequest\x1a\x18.access.v1.TenantRoleDTO\"\x98\x01\xe2\xf3\x18V\n" +
+	"\x19tenant.role.revoke_member\x12\x19revoke_tenant_role_member\x1a\x12tenant.role.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x028:\x01*\"3/v1/tenant/roles/{role_id}/members/{user_id}/revoke\x1a\xf1\x03\xda\xf3\x18\xec\x03\n" +
 	"\x16tenant_role_permission\x1a\xb9\x01\n" +
-	"\x1btenant.role.bootstrap_owner\x12\x1bbootstrap_tenant_owner_role\x1a\x16platform.tenant.create2\x01\x02R\x04\b\x03\x10\x01Z)access.v1.BootstrapTenantOwnerRoleRequestb\x17access.v1.TenantRoleDTOj\x18BootstrapTenantOwnerRole\x1a\x94\x02\n" +
-	".tenant.role.assert_member_deactivation_allowed\x12)assert_tenant_member_deactivation_allowed\x1a\x14tenant.member.manage(\x012\x01\x02R\x04\b\x03\x10\x01Z6access.v1.AssertTenantMemberDeactivationAllowedRequestb7access.v1.AssertTenantMemberDeactivationAllowedResponsej%AssertTenantMemberDeactivationAllowedBJ\xca\xf3\x18\f\n" +
+	"\x1btenant.role.bootstrap_owner\x12\x1bbootstrap_tenant_owner_role\x1a\x16platform.tenant.create2\x01\x02R\x04\b\x03\x10\x01Z)access.v1.BootstrapTenantOwnerRoleRequestb\x17access.v1.TenantRoleDTOj\x18BootstrapTenantOwnerRole\x1a\x95\x02\n" +
+	".tenant.role.assert_member_deactivation_allowed\x12)assert_tenant_member_deactivation_allowed\x1a\x14tenant.member.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x01Z6access.v1.AssertTenantMemberDeactivationAllowedRequestb7access.v1.AssertTenantMemberDeactivationAllowedResponsej%AssertTenantMemberDeactivationAllowedBJ\xca\xf3\x18\f\n" +
 	"\x06access\x12\x02v1Z8github.com/hvritual/biz/contracts/gen/access/v1;accessv1b\x06proto3"
 
 var (

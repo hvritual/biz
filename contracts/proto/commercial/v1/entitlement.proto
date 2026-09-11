@@ -74,6 +74,6 @@ service EntitlementManagementApplication {
  }
  rpc GetMyEntitlements(GetMyEntitlementsRequest) returns (EntitlementView) {
   option (google.api.http) = { post: "/v1/tenant/entitlements" body: "*" };
-  option (yunka.dsl.v1.operation) = { id: "commercial.entitlement.get_my" use_case: "get_my_entitlements" permissions: "tenant.entitlement.read" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.entitlement_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_NONE } };
+  option (yunka.dsl.v1.operation) = { id: "commercial.entitlement.get_my" use_case: "get_my_entitlements" permissions: "tenant.entitlement.read" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION requires_operations: "commercial.module.entitlement_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_NONE } };
  }
 }

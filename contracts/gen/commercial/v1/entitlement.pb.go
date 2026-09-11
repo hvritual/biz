@@ -1304,7 +1304,7 @@ const file_commercial_v1_entitlement_proto_rawDesc = "" +
 	"\x1cENTITLEMENT_EFFECT_QUOTA_ADD\x10\x03\x12$\n" +
 	" ENTITLEMENT_EFFECT_QUOTA_REPLACE\x10\x04\x12\"\n" +
 	"\x1eENTITLEMENT_EFFECT_SAFETY_DENY\x10\x05\x12\"\n" +
-	"\x1eENTITLEMENT_EFFECT_SAFETY_MASK\x10\x062\xb6\x0e\n" +
+	"\x1eENTITLEMENT_EFFECT_SAFETY_MASK\x10\x062\xb7\x0e\n" +
 	" EntitlementManagementApplication\x12\x8f\x03\n" +
 	"\x19CreateEntitlementOverride\x12/.commercial.v1.CreateEntitlementOverrideRequest\x1a).commercial.v1.EntitlementOverrideReceipt\"\x95\x02\xe2\xf3\x18\xcf\x01\n" +
 	"&commercial.entitlement.override.create\x12\x1bcreate_entitlement_override\x1a\x1bplatform.entitlement.manage\x1a\x14platform.tenant.read\x1a\x17commercial.catalog.read2\x01\x02B\n" +
@@ -1317,9 +1317,9 @@ const file_commercial_v1_entitlement_proto_rawDesc = "" +
 	"tenant.getH\x01R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x028\x126/v1/platform/tenants/{tenant_id}/entitlement-overrides\x12\xde\x02\n" +
 	"\x13ExplainEntitlements\x12).commercial.v1.ExplainEntitlementsRequest\x1a\x1e.commercial.v1.EntitlementView\"\xfb\x01\xe2\xf3\x18\xbe\x01\n" +
 	"\x1ecommercial.entitlement.explain\x12\x14explain_entitlements\x1a\x19platform.entitlement.read\x1a\x14platform.tenant.read\x1a\x17commercial.catalog.read2\x01\x02B\n" +
-	"tenant.getB%commercial.module.entitlement_catalogH\x01R\x04\b\x03\x10\x01\x82\xd3\xe4\x93\x022:\x01*\"-/v1/platform/tenants/{tenant_id}/entitlements\x12\xa0\x02\n" +
-	"\x11GetMyEntitlements\x12'.commercial.v1.GetMyEntitlementsRequest\x1a\x1e.commercial.v1.EntitlementView\"\xc1\x01\xe2\xf3\x18\x9a\x01\n" +
-	"\x1dcommercial.entitlement.get_my\x12\x13get_my_entitlements\x1a\x17tenant.entitlement.read\x1a\x17commercial.catalog.read(\x012\x01\x02B%commercial.module.entitlement_catalogH\x01R\x04\b\x03\x10\x01\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/v1/tenant/entitlements\x1aP\xda\xf3\x18L\n" +
+	"tenant.getB%commercial.module.entitlement_catalogH\x01R\x04\b\x03\x10\x01\x82\xd3\xe4\x93\x022:\x01*\"-/v1/platform/tenants/{tenant_id}/entitlements\x12\xa1\x02\n" +
+	"\x11GetMyEntitlements\x12'.commercial.v1.GetMyEntitlementsRequest\x1a\x1e.commercial.v1.EntitlementView\"\xc2\x01\xe2\xf3\x18\x9b\x01\n" +
+	"\x1dcommercial.entitlement.get_my\x12\x13get_my_entitlements\x1a\x17tenant.entitlement.read\x1a\x17commercial.catalog.read(\x012\x02\x02\x04B%commercial.module.entitlement_catalogH\x01R\x04\b\x03\x10\x01\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/v1/tenant/entitlements\x1aP\xda\xf3\x18L\n" +
 	"\x16entitlement_management\x12\x19commercial/module_catalog\x12\x17access/tenant_lifecycleBV\xca\xf3\x18\x10\n" +
 	"\n" +
 	"commercial\x12\x02v1Z@github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1b\x06proto3"

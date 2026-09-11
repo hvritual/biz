@@ -9,8 +9,6 @@ import (
 	"testing"
 )
 
-const qualifiedYunkaRevision = "33b98ceba57494abda2299e4f0290a5651dab4bc"
-
 type ce01OperationPlans struct {
 	SchemaVersion int `json:"schemaVersion"`
 	Operations    []struct {
@@ -34,16 +32,18 @@ type ce01OperationPlans struct {
 }
 
 func TestCE01(t *testing.T) {
-	t.Run("qualified framework revision remains pinned", func(t *testing.T) {
+	t.Run("canonical Yunka source lock matches Go module graph", func(t *testing.T) {
+		commit, version := loadCE01YunkaLock(t)
 		content, err := os.ReadFile(filepath.Join("..", "..", "go.mod"))
 		if err != nil {
 			t.Fatal(err)
 		}
 		text := string(content)
-		if !strings.Contains(text, "yunka.io/framework v0.0.0-20260910080749-33b98ceba574") ||
-			!strings.Contains(text, "yunka.io/gateway v0.0.0-20260910080749-33b98ceba574") ||
-			!strings.Contains(text, "yunka.io/pkg v0.0.0-20260910080749-33b98ceba574") {
-			t.Fatalf("CE01-BASELINE: Yunka dependencies no longer resolve to %s", qualifiedYunkaRevision)
+		for _, module := range []string{"yunka.io/framework", "yunka.io/gateway", "yunka.io/pkg"} {
+			want := module + " " + version
+			if !strings.Contains(text, want) {
+				t.Fatalf("CE01-BASELINE: %s does not resolve to canonical Yunka lock %s (%s)", module, commit, version)
+			}
 		}
 	})
 
@@ -105,6 +105,32 @@ func TestCE01(t *testing.T) {
 		}
 		t.Fatal("CE01-CHILD: site.validate_transfer_target missing")
 	})
+}
+
+func loadCE01YunkaLock(t *testing.T) (string, string) {
+	t.Helper()
+	content, err := os.ReadFile(filepath.Join("..", "..", ".yunka", "source.env"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	values := map[string]string{}
+	for _, raw := range strings.Split(string(content), "\n") {
+		line := strings.TrimSpace(raw)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			t.Fatalf("CE01-BASELINE: malformed Yunka source lock line %q", raw)
+		}
+		values[strings.TrimSpace(key)] = strings.Trim(strings.TrimSpace(value), "\"")
+	}
+	commit := values["YUNKA_COMMIT"]
+	version := values["YUNKA_PSEUDO_VERSION"]
+	if commit == "" || version == "" {
+		t.Fatalf("CE01-BASELINE: canonical Yunka source lock is incomplete: commit=%q version=%q", commit, version)
+	}
+	return commit, version
 }
 
 func loadCE01OperationPlans(t *testing.T) ce01OperationPlans {

@@ -651,27 +651,27 @@ const file_deviceops_v1_deviceops_proto_rawDesc = "" +
 	"\x15TransferDeviceRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12$\n" +
 	"\x0etarget_site_id\x18\x02 \x01(\tR\ftargetSiteId\x12\x18\n" +
-	"\aversion\x18\x03 \x01(\x04R\aversion2\x9f\a\n" +
-	"\x11DeviceApplication\x12\x9e\x01\n" +
-	"\vListDevices\x12 .deviceops.v1.ListDevicesRequest\x1a!.deviceops.v1.ListDevicesResponse\"J\xe2\xf3\x183\n" +
-	"\vdevice.list\x12\flist_devices\x1a\vdevice.read(\x012\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\r\x12\v/v1/devices\x12\x92\x01\n" +
-	"\tGetDevice\x12\x1e.deviceops.v1.GetDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"L\xe2\xf3\x180\n" +
+	"\aversion\x18\x03 \x01(\x04R\aversion2\xa4\a\n" +
+	"\x11DeviceApplication\x12\x9f\x01\n" +
+	"\vListDevices\x12 .deviceops.v1.ListDevicesRequest\x1a!.deviceops.v1.ListDevicesResponse\"K\xe2\xf3\x184\n" +
+	"\vdevice.list\x12\flist_devices\x1a\vdevice.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\r\x12\v/v1/devices\x12\x93\x01\n" +
+	"\tGetDevice\x12\x1e.deviceops.v1.GetDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"M\xe2\xf3\x181\n" +
 	"\n" +
 	"device.get\x12\n" +
-	"get_device\x1a\vdevice.read(\x012\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/devices/{id}\x12\x9e\x01\n" +
-	"\fCreateDevice\x12!.deviceops.v1.CreateDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"R\xe2\xf3\x188\n" +
-	"\rdevice.create\x12\rcreate_device\x1a\rdevice.create(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/v1/devices\x12\xd0\x01\n" +
-	"\fUpdateDevice\x12!.deviceops.v1.UpdateDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"\x83\x01\xe2\xf3\x18d\n" +
-	"\rdevice.update\x12\rupdate_device\x1a\rdevice.update\x1a\tsite.read(\x012\x01\x02B\x1dsite.validate_transfer_targetH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x15:\x01*2\x10/v1/devices/{id}\x12\xab\x01\n" +
-	"\fDeleteDevice\x12!.deviceops.v1.DeleteDeviceRequest\x1a\".deviceops.v1.DeleteDeviceResponse\"T\xe2\xf3\x188\n" +
-	"\rdevice.delete\x12\rdelete_device\x1a\rdevice.delete(\x012\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x12*\x10/v1/devices/{id}\x1a2\xda\xf3\x18.\n" +
-	"\x11device_management\x12\x19deviceops/site_management2\xd6\x01\n" +
-	"\x0fSiteApplication\x1a\xc2\x01\xda\xf3\x18\xbd\x01\n" +
-	"\x0fsite_management\x1a\xa9\x01\n" +
-	"\x1dsite.validate_transfer_target\x12\x18validate_transfer_target\x1a\tsite.read(\x012\x01\x02R\x04\b\x02\x10\x01Z*deviceops.v1.ValidateTransferTargetRequestb\x14deviceops.v1.SiteDTOj\x16ValidateTransferTarget2\xdd\x02\n" +
-	"\x19DeviceTransferApplication\x12\xf0\x01\n" +
-	"\x0eTransferDevice\x12#.deviceops.v1.TransferDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"\x9f\x01\xe2\xf3\x18w\n" +
-	"\x0fdevice.transfer\x12\x0ftransfer_device\x1a\tsite.read\x1a\rdevice.update(\x012\x01\x02B\x1dsite.validate_transfer_targetB\rdevice.updateH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x1e:\x01*2\x19/v1/devices/{id}/transfer\x1aM\xda\xf3\x18I\n" +
+	"get_device\x1a\vdevice.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/devices/{id}\x12\x9f\x01\n" +
+	"\fCreateDevice\x12!.deviceops.v1.CreateDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"S\xe2\xf3\x189\n" +
+	"\rdevice.create\x12\rcreate_device\x1a\rdevice.create(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/v1/devices\x12\xd1\x01\n" +
+	"\fUpdateDevice\x12!.deviceops.v1.UpdateDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"\x84\x01\xe2\xf3\x18e\n" +
+	"\rdevice.update\x12\rupdate_device\x1a\rdevice.update\x1a\tsite.read(\x012\x02\x02\x04B\x1dsite.validate_transfer_targetH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x15:\x01*2\x10/v1/devices/{id}\x12\xac\x01\n" +
+	"\fDeleteDevice\x12!.deviceops.v1.DeleteDeviceRequest\x1a\".deviceops.v1.DeleteDeviceResponse\"U\xe2\xf3\x189\n" +
+	"\rdevice.delete\x12\rdelete_device\x1a\rdevice.delete(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x12*\x10/v1/devices/{id}\x1a2\xda\xf3\x18.\n" +
+	"\x11device_management\x12\x19deviceops/site_management2\xd7\x01\n" +
+	"\x0fSiteApplication\x1a\xc3\x01\xda\xf3\x18\xbe\x01\n" +
+	"\x0fsite_management\x1a\xaa\x01\n" +
+	"\x1dsite.validate_transfer_target\x12\x18validate_transfer_target\x1a\tsite.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01Z*deviceops.v1.ValidateTransferTargetRequestb\x14deviceops.v1.SiteDTOj\x16ValidateTransferTarget2\xde\x02\n" +
+	"\x19DeviceTransferApplication\x12\xf1\x01\n" +
+	"\x0eTransferDevice\x12#.deviceops.v1.TransferDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"\xa0\x01\xe2\xf3\x18x\n" +
+	"\x0fdevice.transfer\x12\x0ftransfer_device\x1a\tsite.read\x1a\rdevice.update(\x012\x02\x02\x04B\x1dsite.validate_transfer_targetB\rdevice.updateH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x1e:\x01*2\x19/v1/devices/{id}/transfer\x1aM\xda\xf3\x18I\n" +
 	"\x0fdevice_transfer\x12\x19deviceops/site_management\x12\x1bdeviceops/device_managementBS\xca\xf3\x18\x0f\n" +
 	"\tdeviceops\x12\x02v1Z>github.com/hvritual/biz/contracts/gen/deviceops/v1;deviceopsv1b\x06proto3"
 

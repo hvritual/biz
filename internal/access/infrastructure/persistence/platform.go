@@ -90,6 +90,28 @@ func (store *Store) AuthenticatePlatform(ctx context.Context, rawToken string) (
 	}, nil
 }
 
+// AuthenticatePlatformSubject revalidates that a tenantless platform identity
+// still has at least one enabled credential anchored in the existing platform
+// IAM store. Web authority can therefore be revoked without waiting for its
+// browser session to expire.
+func (store *Store) AuthenticatePlatformSubject(ctx context.Context, subject, authMethod string) (identity.Principal, error) {
+	if store == nil || store.database == nil || strings.TrimSpace(subject) == "" || strings.TrimSpace(authMethod) == "" {
+		return identity.Principal{}, ErrUnauthorized
+	}
+	var count int64
+	if err := store.database.WithContext(ctx).Model(&platformCredentialRecord{}).
+		Where("subject = ? AND disabled = ?", strings.TrimSpace(subject), false).
+		Count(&count).Error; err != nil {
+		return identity.Principal{}, err
+	}
+	if count == 0 {
+		return identity.Principal{}, ErrUnauthorized
+	}
+	return identity.Principal{
+		Subject: strings.TrimSpace(subject), AuthMethod: authMethod, Authenticated: true,
+	}, nil
+}
+
 // PrincipalGrantResolver is the Biz IAM projection consumed by Yunka's
 // principal-aware GrantResolver seam. Tenant-bound and tenantless authority
 // remain physically separate and cannot satisfy each other accidentally.
@@ -112,6 +134,12 @@ func (resolver *PrincipalGrantResolver) ResolveGrants(ctx context.Context, reque
 	subject := strings.TrimSpace(request.Principal.Subject)
 	if subject == "" || len(request.Permissions) == 0 {
 		return nil, nil
+	}
+	if _, err := resolver.store.AuthenticatePlatformSubject(ctx, subject, request.Principal.AuthMethod); err != nil {
+		if errors.Is(err, ErrUnauthorized) {
+			return nil, nil
+		}
+		return nil, err
 	}
 	keys := make([]string, 0, len(request.Permissions))
 	for _, permission := range request.Permissions {

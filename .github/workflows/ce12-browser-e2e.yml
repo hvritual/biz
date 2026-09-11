@@ -1,0 +1,250 @@
+name: CE-12 browser identity E2E
+
+on:
+  push:
+    branches: [feat/ce-12-first-party-idp-e2e, main]
+    paths:
+      - cmd/biz/**
+      - cmd/biz-idp/**
+      - cmd/biz-idp-credential/**
+      - internal/access/**
+      - internal/bizruntime/**
+      - internal/commercial/**
+      - integration/ce12_*
+      - web/playwright.ce12.config.ts
+      - web/tests/ce12/**
+      - docs/commercial-entitlements/**
+      - .github/workflows/ce12-browser-e2e.yml
+      - go.mod
+      - go.sum
+      - web/package.json
+      - web/package-lock.json
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      BIZ_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      YUNKA_SHA: e323ee5833d929b5b1d0494fc29aae0aaa2b6f4a
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce12_browser?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+      CE12_E2E_ENV_FILE: /tmp/ce12-browser.json
+      CE12_BIZ_BASE_URL: http://127.0.0.1:18080
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_ce12_browser
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.BIZ_SHA }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact Yunka compatibility baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.YUNKA_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Load locked Go
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Verify exact sources and format
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C biz rev-parse HEAD)" = "$BIZ_SHA"
+          echo "CE12_BIZ_EXACT_HEAD=$BIZ_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          bad="$(gofmt -l \
+            biz/internal/access/infrastructure/persistence/first_party_idp.go \
+            biz/internal/access/infrastructure/persistence/first_party_idp_security.go \
+            biz/internal/access/infrastructure/persistence/web_session.go \
+            biz/internal/bizruntime/config.go \
+            biz/internal/bizruntime/first_party_idp.go \
+            biz/internal/bizruntime/first_party_idp_hardening_test.go \
+            biz/internal/bizruntime/first_party_idp_server.go \
+            biz/internal/bizruntime/oidc_static.go \
+            biz/internal/bizruntime/web_auth.go \
+            biz/integration/ce12_browser_seed_test.go \
+            biz/cmd/biz-idp/main.go \
+            biz/cmd/biz-idp-credential/main.go)"
+          test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
+
+      - name: Compile and test CE-12 identity code
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 ./internal/access/infrastructure/persistence ./internal/bizruntime
+          go -C biz build ./cmd/biz ./cmd/biz-idp ./cmd/biz-idp-credential
+
+      - name: Seed real member authority and three tenant outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestCE12BrowserSeed$'
+          test -s "$CE12_E2E_ENV_FILE"
+
+      - name: Generate qualification IdP signing key ring
+        shell: bash
+        run: |
+          set -euo pipefail
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$RUNNER_TEMP/ce12-idp-signing.pem" >/dev/null 2>&1
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$RUNNER_TEMP/ce12-idp-previous.pem" >/dev/null 2>&1
+          chmod 600 "$RUNNER_TEMP/ce12-idp-signing.pem" "$RUNNER_TEMP/ce12-idp-previous.pem"
+
+      - name: Start first-party OIDC IdP
+        shell: bash
+        run: |
+          set -euo pipefail
+          export YUNKA_BIZ_MYSQL_DSN="$YUNKA_TEST_MYSQL_DSN"
+          export YUNKA_BIZ_IDP_PUBLIC_URL="http://127.0.0.1:18081"
+          export YUNKA_BIZ_IDP_REDIRECT_URL="http://127.0.0.1:18080/auth/callback"
+          export YUNKA_BIZ_IDP_POST_LOGOUT_REDIRECT_URL="http://127.0.0.1:18080/"
+          export YUNKA_BIZ_IDP_CLIENT_ID="biz-web"
+          export YUNKA_BIZ_IDP_SIGNING_KEY_FILE="$RUNNER_TEMP/ce12-idp-signing.pem"
+          export YUNKA_BIZ_IDP_PREVIOUS_SIGNING_KEY_FILES="$RUNNER_TEMP/ce12-idp-previous.pem"
+          export YUNKA_BIZ_IDP_COOKIE_SECURE="false"
+          export YUNKA_BIZ_IDP_LISTEN="127.0.0.1:18081"
+          export YUNKA_BIZ_IDP_AUTO_MIGRATE="true"
+          nohup go -C biz run ./cmd/biz-idp >"$RUNNER_TEMP/ce12-idp.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/ce12-idp.pid"
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18081/healthz >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:18081/healthz
+          curl -fsS http://127.0.0.1:18081/idp/.well-known/openid-configuration | tee "$RUNNER_TEMP/ce12-discovery.json"
+          curl -fsS http://127.0.0.1:18081/idp/jwks | tee "$RUNNER_TEMP/ce12-jwks.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          payload = json.loads(Path(os.environ['RUNNER_TEMP'], 'ce12-jwks.json').read_text())
+          keys = payload.get('keys', [])
+          assert len(keys) == 2, keys
+          kids = {key.get('kid') for key in keys}
+          assert None not in kids and len(kids) == 2, keys
+          print('CE12_IDP_KEY_ROLLOVER=PASS')
+          PY
+
+      - name: Start Biz BFF resource server
+        shell: bash
+        run: |
+          set -euo pipefail
+          export YUNKA_BIZ_MYSQL_DSN="$YUNKA_TEST_MYSQL_DSN"
+          export YUNKA_BIZ_HTTP_LISTEN="127.0.0.1:18080"
+          export YUNKA_BIZ_GRPC_LISTEN="127.0.0.1:18082"
+          export YUNKA_BIZ_AUTO_MIGRATE="true"
+          export YUNKA_BIZ_OIDC_ISSUER="http://127.0.0.1:18081/idp"
+          export YUNKA_BIZ_OIDC_CLIENT_ID="biz-web"
+          export YUNKA_BIZ_OIDC_REDIRECT_URL="http://127.0.0.1:18080/auth/callback"
+          export YUNKA_BIZ_OIDC_POST_LOGOUT_REDIRECT_URL="http://127.0.0.1:18080/"
+          export YUNKA_BIZ_OIDC_COOKIE_SECURE="false"
+          export YUNKA_BIZ_OIDC_SCOPES="openid profile email"
+          nohup go -C biz run ./cmd/biz >"$RUNNER_TEMP/ce12-biz.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/ce12-biz.pid"
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18080/healthz >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:18080/healthz
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: biz/web/package-lock.json
+
+      - name: Install browser E2E dependencies
+        working-directory: biz/web
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+
+      - name: Run complete browser trust chain
+        working-directory: biz/web
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright test --config playwright.ce12.config.ts
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path('test-results/ce12-results.json').read_text())
+          stats = result['stats']
+          assert stats.get('unexpected', 0) == 0, stats
+          assert stats.get('expected', 0) >= 1, stats
+          assert 'TestCE12BrowserRealIdPToSessionTenantIAMEntitlement' in json.dumps(result), 'CE-12 browser acceptance identity missing'
+          print('CE12_BROWSER_AUTHORITY_CHAIN=PASS')
+          PY
+
+      - name: Capture qualification evidence
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          mkdir -p biz/web/test-results
+          cp "$RUNNER_TEMP/ce12-idp.log" biz/web/test-results/ce12-idp.log 2>/dev/null
+          cp "$RUNNER_TEMP/ce12-biz.log" biz/web/test-results/ce12-biz.log 2>/dev/null
+          cp "$RUNNER_TEMP/ce12-discovery.json" biz/web/test-results/ce12-discovery.json 2>/dev/null
+          cp "$RUNNER_TEMP/ce12-jwks.json" biz/web/test-results/ce12-jwks.json 2>/dev/null
+          find biz/web/test-results -maxdepth 1 -type f ! -name ce12-evidence-sha256.txt -print0 | sort -z | xargs -0 -r sha256sum > biz/web/test-results/ce12-evidence-sha256.txt
+
+      - name: Stop CE-12 servers
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          test ! -f "$RUNNER_TEMP/ce12-biz.pid" || kill "$(cat "$RUNNER_TEMP/ce12-biz.pid")" 2>/dev/null
+          test ! -f "$RUNNER_TEMP/ce12-idp.pid" || kill "$(cat "$RUNNER_TEMP/ce12-idp.pid")" 2>/dev/null
+
+      - name: Verify candidate worktree remains clean
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git -C biz status --porcelain)"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ce12-browser-e2e-${{ env.BIZ_SHA }}
+          path: biz/web/test-results
+          retention-days: 30
+          if-no-files-found: error

@@ -1,0 +1,161 @@
+name: CE-12 qualification
+
+on:
+  push:
+    branches: [feat/ce-12-first-party-idp-e2e, main]
+    paths:
+      - contracts/**
+      - internal/access/**
+      - internal/bizruntime/**
+      - internal/deviceops/**
+      - integration/ce12_*
+      - cmd/biz/**
+      - cmd/biz-idp/**
+      - cmd/biz-idp-credential/**
+      - docs/commercial-entitlements/**
+      - .github/workflows/ce12-qualification.yml
+      - go.mod
+      - go.sum
+      - .yunka/**
+  pull_request:
+    branches: [main]
+    paths:
+      - contracts/**
+      - internal/access/**
+      - internal/bizruntime/**
+      - internal/deviceops/**
+      - integration/ce12_*
+      - cmd/biz/**
+      - cmd/biz-idp/**
+      - cmd/biz-idp-credential/**
+      - docs/commercial-entitlements/**
+      - .github/workflows/ce12-qualification.yml
+      - go.mod
+      - go.sum
+      - .yunka/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      BIZ_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      YUNKA_SHA: e323ee5833d929b5b1d0494fc29aae0aaa2b6f4a
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce12?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_ce12
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.BIZ_SHA }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact Yunka compatibility baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.YUNKA_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Load locked Go
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Verify exact sources and formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C biz rev-parse HEAD)" = "$BIZ_SHA"
+          echo "CE12_BIZ_EXACT_HEAD=$BIZ_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          bad="$(gofmt -l \
+            biz/internal/access/infrastructure/persistence/platform.go \
+            biz/internal/access/infrastructure/persistence/first_party_idp.go \
+            biz/internal/access/infrastructure/persistence/first_party_idp_security.go \
+            biz/internal/access/infrastructure/persistence/web_session.go \
+            biz/internal/bizruntime/config.go \
+            biz/internal/bizruntime/first_party_idp.go \
+            biz/internal/bizruntime/first_party_idp_hardening_test.go \
+            biz/internal/bizruntime/oidc_client.go \
+            biz/internal/bizruntime/oidc_client_test.go \
+            biz/internal/bizruntime/runtime.go \
+            biz/internal/bizruntime/web_auth.go \
+            biz/integration/ce12_browser_seed_test.go \
+            biz/integration/ce12_first_party_migration_test.go \
+            biz/integration/ce12_web_session_mysql_test.go \
+            biz/cmd/biz/main.go \
+            biz/cmd/biz-idp/main.go \
+            biz/cmd/biz-idp-credential/main.go)"
+          test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
+
+      - name: Verify web-session authority is explicit and fail-closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'AuthMethodWeb = "web-session"' biz/internal/access/infrastructure/persistence/web_session.go
+          ! grep -q 'AuthMethodWeb = identity.AuthMethodAPIKey' biz/internal/access/infrastructure/persistence/web_session.go
+          grep -R -q 'AUTHENTICATION_WEB_SESSION' biz/contracts/proto
+          grep -R -q 'Authentication: \[\]string{"api-key", "web-session"}' biz/internal
+          test -s biz/internal/access/infrastructure/persistence/migrations/0002_ce12_first_party_identity.sql
+
+      - name: Run CE-12 protocol and security unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 ./internal/access/infrastructure/persistence ./internal/bizruntime
+          go -C biz test -count=1 ./internal/bizruntime -run '^TestCE12'
+
+      - name: Run CE-12 real MySQL authority and migration tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestCE12'
+
+      - name: Run ordinary Go regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 ./...
+
+      - name: Vet and build production identity binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz vet ./...
+          go -C biz build ./cmd/biz ./cmd/biz-idp ./cmd/biz-idp-credential
+
+      - name: Verify candidate worktree remains clean
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git -C biz status --porcelain)"

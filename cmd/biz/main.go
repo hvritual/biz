@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -52,6 +53,28 @@ func run() error {
 	if err := config.Validate(); err != nil {
 		return err
 	}
+
+	webAuth := bizruntime.WebAuthConfig{}
+	if issuer := strings.TrimSpace(os.Getenv("YUNKA_BIZ_OIDC_ISSUER")); issuer != "" {
+		webAuth = bizruntime.WebAuthConfig{
+			IssuerURL:               issuer,
+			ClientID:                strings.TrimSpace(os.Getenv("YUNKA_BIZ_OIDC_CLIENT_ID")),
+			ClientSecret:            os.Getenv("YUNKA_BIZ_OIDC_CLIENT_SECRET"),
+			RedirectURL:             strings.TrimSpace(os.Getenv("YUNKA_BIZ_OIDC_REDIRECT_URL")),
+			PostLogoutRedirectURL:   strings.TrimSpace(os.Getenv("YUNKA_BIZ_OIDC_POST_LOGOUT_REDIRECT_URL")),
+			Scopes:                  strings.Fields(envOr("YUNKA_BIZ_OIDC_SCOPES", "openid profile email")),
+			SessionTTL:              envDuration("YUNKA_BIZ_OIDC_SESSION_TTL", 8*time.Hour),
+			FlowTTL:                 envDuration("YUNKA_BIZ_OIDC_FLOW_TTL", 5*time.Minute),
+			CookieSecure:            envBool("YUNKA_BIZ_OIDC_COOKIE_SECURE", true),
+			PlatformExternalSubject: strings.TrimSpace(os.Getenv("YUNKA_BIZ_OIDC_PLATFORM_EXTERNAL_SUBJECT")),
+			PlatformSubject:         strings.TrimSpace(os.Getenv("YUNKA_BIZ_OIDC_PLATFORM_SUBJECT")),
+			PlatformEmail:           strings.TrimSpace(os.Getenv("YUNKA_BIZ_OIDC_PLATFORM_EMAIL")),
+		}
+		if err := webAuth.Validate(); err != nil {
+			return err
+		}
+	}
+
 	provider, err := platform.New(platform.Options{
 		Config:   bizruntime.ConfigProvider{DeviceOps: config},
 		Logger:   logExt.NewBaseLogger(),
@@ -71,7 +94,13 @@ func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 	workerToken := os.Getenv("YUNKA_BIZ_PROVISIONING_WORKER_TOKEN")
-	started, err := bizruntime.BootstrapWithOptions(ctx, provider, bizruntime.Options{DeviceOps: config, ProvisioningWorker: bizruntime.ProvisioningWorkerOptions{Token: workerToken, Automatic: workerToken != ""}})
+	started, err := bizruntime.BootstrapWithOptions(ctx, provider, bizruntime.Options{
+		DeviceOps: config,
+		ProvisioningWorker: bizruntime.ProvisioningWorkerOptions{
+			Token: workerToken, Automatic: workerToken != "",
+		},
+		WebAuth: webAuth,
+	})
 	if err != nil {
 		return err
 	}
@@ -95,6 +124,18 @@ func envBool(name string, fallback bool) bool {
 	}
 	parsed, err := strconv.ParseBool(value)
 	if err != nil {
+		return fallback
+	}
+	return parsed
+}
+
+func envDuration(name string, fallback time.Duration) time.Duration {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return fallback
+	}
+	parsed, err := time.ParseDuration(value)
+	if err != nil || parsed <= 0 {
 		return fallback
 	}
 	return parsed
