@@ -1,0 +1,146 @@
+{
+  "web/src/services/siteRental/policy.spec.ts": [
+    [
+      "    const s = seed(),\n      d = draft(s)\n    d.testedFingerprint = draftFingerprint(d)\n    const next = run(s, { type: 'publish-rule', draft: d }).snapshot\n    expect(activeRule(next.rental!, 'BG-SZ-01', '2026-09')!.version).toBe(1)\n    expect(activeRule(next.rental!, 'BG-SZ-01', '2026-10')!.version).toBe(2)\n  })\n  it('changes after preview invalidate the test proof', () => {\n    const s = seed(),\n      d = draft(s)\n",
+      "    const s = seed(),\n      d = draft(s)\n    d.testedFingerprint = draftFingerprint(d)\n    const next = run(s, { type: 'publish-rule', draft: d }).snapshot\n    expect(activeRule(next.rental!, 'BG-SZ-01', '2026-09', next.sources)!.version).toBe(1)\n    expect(activeRule(next.rental!, 'BG-SZ-01', '2026-10', next.sources)!.version).toBe(2)\n  })\n  it('changes after preview invalidate the test proof', () => {\n    const s = seed(),\n      d = draft(s)\n"
+    ],
+    [
+      "    const s = seed(),\n      d = draft(s)\n    d.rule.baseCents = 100\n    const next = run(s, { type: 'save-draft', draft: d }).snapshot\n    expect(ruleForSite(next.rental!, 'SITE-041', '2026-10')!.baseCents).toBe(240000)\n  })\n})\ndescribe('对账、租户与写入闭环', () => {\n  it('creates one statement per group and period', () => {\n",
+      "    const s = seed(),\n      d = draft(s)\n    d.rule.baseCents = 100\n    const next = run(s, { type: 'save-draft', draft: d }).snapshot\n    expect(ruleForSite(next.rental!, 'SITE-041', '2026-10', next.sources)!.baseCents).toBe(240000)\n  })\n})\ndescribe('对账、租户与写入闭环', () => {\n  it('creates one statement per group and period', () => {\n"
+    ],
+    [
+      "    const raw = JSON.stringify({ ...s, rental: { schema: 1 } })\n    expect(() => loadCustomerSnapshot('shanghai', { getItem: () => raw })).toThrow('读取')\n  })\n})\n",
+      "    const raw = JSON.stringify({ ...s, rental: { schema: 1 } })\n    expect(() => loadCustomerSnapshot('shanghai', { getItem: () => raw })).toThrow('读取')\n  })\n})\n\ndescribe('合同到期、后续规则与有效时间范围', () => {\n  it('expired terms no longer participate in a later billing period', () => {\n    const s = seed()\n    expect(activeRule(s.rental!, 'BG-SH-01', '2026-09', s.sources)).toBeDefined()\n    expect(activeRule(s.rental!, 'BG-SH-01', '2026-10', s.sources)).toBeUndefined()\n    expect(ruleForSite(s.rental!, 'SITE-044', '2026-10', s.sources)).toBeUndefined()\n    expect(() => run(s, { type: 'create-statement', groupId: 'BG-SH-01', period: '2026-10' })).toThrow(\n      '没有有效计费规则',\n    )\n  })\n  it('a renewal group is selected after old contract expiry without rewriting September', () => {\n    const s = seed(),\n      old = s.rental!.rules[1]!\n    const original = s.sources.find((x) => x.id === old.contractId)!\n    s.sources.push({\n      ...original,\n      id: 'HT-RENEW',\n      facts: { ...original.facts, start: '2026-10-01', end: '2027-09-30' },\n    })\n    const next: RentalRule = {\n      ...old,\n      id: 'RV-RENEW',\n      groupId: 'BG-RENEW',\n      contractId: 'HT-RENEW',\n      version: 1,\n      effectiveFrom: '2026-10-01',\n      baseCents: 135000,\n    }\n    validateRule(s, s.rental!, next, true, now)\n    s.rental!.rules.push(next)\n    expect(ruleForSite(s.rental!, 'SITE-044', '2026-09', s.sources)!.id).toBe(old.id)\n    expect(ruleForSite(s.rental!, 'SITE-044', '2026-10', s.sources)!.id).toBe(next.id)\n  })\n  it('future non-overlapping contract intervals do not block earlier terms', () => {\n    const s = seed(),\n      old = s.rental!.rules[1]!\n    const original = s.sources.find((x) => x.id === old.contractId)!\n    s.sources.push(\n      { ...original, id: 'HT-NEAR', facts: { ...original.facts, start: '2026-10-01', end: '2026-12-31' } },\n      { ...original, id: 'HT-FUTURE', facts: { ...original.facts, start: '2027-01-01', end: '2027-12-31' } },\n    )\n    s.rental!.rules.push({\n      ...old,\n      id: 'RV-FUTURE',\n      groupId: 'BG-FUTURE',\n      contractId: 'HT-FUTURE',\n      version: 1,\n      effectiveFrom: '2027-01-01',\n    })\n    expect(() =>\n      validateRule(\n        s,\n        s.rental!,\n        {\n          ...old,\n          id: '',\n          groupId: 'BG-NEAR',\n          contractId: 'HT-NEAR',\n          version: 1,\n          effectiveFrom: '2026-10-01',\n        },\n        true,\n        now,\n      ),\n    ).not.toThrow()\n  })\n  it('a missing contract source remains visible as unverified, not as zero fees', () => {\n    const s = seed()\n    s.sources = s.sources.filter((x) => x.id !== s.rental!.rules[0]!.contractId)\n    const active = activeRule(s.rental!, 'BG-SZ-01', '2026-09', s.sources)!\n    expect(active).toBeDefined()\n    expect(quoteRental(s, s.rental!, active, '2026-09').blockers.join()).toContain('合同')\n  })\n  it('new groups cannot pretend to be later published versions', () => {\n    const s = seed(),\n      rule = {\n        ...draft(s).rule,\n        groupId: 'BG-NEW',\n        version: 8,\n        scope: 'independent' as const,\n        siteIds: ['SITE-043'],\n      }\n    expect(() => validateRule(s, s.rental!, rule)).toThrow('版本 1')\n  })\n})\n"
+    ]
+  ],
+  "web/src/services/siteRental/policy.ts": [
+    [
+      "    requireRental(rule.version === latest.version + 1, '规则版本已更新，请重新读取并创建变更')\n    requireRental(rule.effectiveFrom > latest.effectiveFrom, '新版本须晚于已有版本生效，不回溯覆盖历史')\n  }\n  // Compare effective intervals, not merely current memberships: future collisions must also be rejected.\n  for (const other of r.rules.filter((x) => x.groupId !== rule.groupId)) {\n",
+      "    requireRental(rule.version === latest.version + 1, '规则版本已更新，请重新读取并创建变更')\n    requireRental(rule.effectiveFrom > latest.effectiveFrom, '新版本须晚于已有版本生效，不回溯覆盖历史')\n  } else requireRental(rule.version === 1, '新计费组必须从版本 1 开始')\n  // Compare effective intervals, not merely current memberships: future collisions must also be rejected.\n  for (const other of r.rules.filter((x) => x.groupId !== rule.groupId)) {\n"
+    ],
+    [
+      "    if (\n      end > rule.effectiveFrom &&\n      contractEnd >= rule.effectiveFrom &&\n      other.siteIds.some((id) => rule.siteIds.includes(id))\n",
+      "    if (\n      end > rule.effectiveFrom &&\n      other.effectiveFrom <= String(contract.facts.end) &&\n      contractEnd >= rule.effectiveFrom &&\n      other.siteIds.some((id) => rule.siteIds.includes(id))\n"
+    ]
+  ],
+  "web/src/services/siteRental/model.ts": [
+    [
+      "  }\n}\nexport function activeRule(r: RentalState, groupId: string, period: string) {\n  return r.rules\n    .filter((x) => x.groupId === groupId && x.effectiveFrom <= `${period}-01`)\n    .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0]\n}\nexport function currentRules(r: RentalState, period: string) {\n  return [...new Set(r.rules.map((x) => x.groupId))]\n    .map((id) => activeRule(r, id, period))\n    .filter((x): x is RentalRule => !!x)\n}\nexport const ruleForSite = (r: RentalState, siteId: string, period: string) =>\n  currentRules(r, period).find((x) => x.siteIds.includes(siteId))\nexport const currentDeployments = (r: RentalState, siteId: string, date: string) =>\n  r.deployments.filter((d) => d.siteId === siteId && d.from <= date && (!d.until || d.until > date))\n",
+      "  }\n}\nexport function activeRule(\n  r: RentalState,\n  groupId: string,\n  period: string,\n  sources: CustomerSnapshot['sources'],\n) {\n  const rule = r.rules\n    .filter((x) => x.groupId === groupId && x.effectiveFrom <= `${period}-01`)\n    .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0]\n  if (!rule) return undefined\n  const contract = sources.find(\n    (x) => x.id === rule.contractId && x.customerId === rule.customerId && x.kind === 'contract',\n  )\n  // Expired contracts cannot shadow a successor group's terms. Missing sources still reach\n  // quote validation, where they block confirmation rather than silently becoming zero fees.\n  if (contract && String(contract.facts.end) < `${period}-01`) return undefined\n  return rule\n}\nexport function currentRules(r: RentalState, period: string, sources: CustomerSnapshot['sources']) {\n  return [...new Set(r.rules.map((x) => x.groupId))]\n    .map((id) => activeRule(r, id, period, sources))\n    .filter((x): x is RentalRule => !!x)\n}\nexport const ruleForSite = (\n  r: RentalState,\n  siteId: string,\n  period: string,\n  sources: CustomerSnapshot['sources'],\n) => currentRules(r, period, sources).find((x) => x.siteIds.includes(siteId))\nexport const currentDeployments = (r: RentalState, siteId: string, date: string) =>\n  r.deployments.filter((d) => d.siteId === siteId && d.from <= date && (!d.until || d.until > date))\n"
+    ]
+  ],
+  "web/src/services/siteRental/commands.ts": [
+    [
+      "    detail = '运营安排已更新；没有自动停租、改变额度、回收设备或撤销授权'\n  } else if (a.type === 'create-statement') {\n    const rule = activeRule(r, a.groupId, a.period)\n    requireRental(rule, '当前账期没有有效计费规则')\n    const existing = r.statements.find((x) => x.groupId === a.groupId && x.period === a.period)\n",
+      "    detail = '运营安排已更新；没有自动停租、改变额度、回收设备或撤销授权'\n  } else if (a.type === 'create-statement') {\n    const rule = activeRule(r, a.groupId, a.period, s.sources)\n    requireRental(rule, '当前账期没有有效计费规则')\n    const existing = r.statements.find((x) => x.groupId === a.groupId && x.period === a.period)\n"
+    ],
+    [
+      "    target = statement.id\n    if (a.type === 'refresh-statement' || a.type === 'confirm-statement') {\n      const rule = activeRule(r, statement.groupId, statement.period)\n      requireRental(rule, '未找到该账期规则')\n      const current = quoteRental(s, r, rule, statement.period)\n",
+      "    target = statement.id\n    if (a.type === 'refresh-statement' || a.type === 'confirm-statement') {\n      const rule = activeRule(r, statement.groupId, statement.period, s.sources)\n      requireRental(rule, '未找到该账期规则')\n      const current = quoteRental(s, r, rule, statement.period)\n"
+    ]
+  ],
+  "web/src/views/siteRental/SiteDetailView.vue": [
+    [
+      "  site = computed(() => state.value.profiles.find((x) => x.id === route.params.id)),\n  tab = computed(() => String(route.query.tab || 'overview'))\nconst rule = computed(() => (site.value ? ruleForSite(state.value, site.value.id, period.value) : undefined)),\n  quote = computed(() =>\n    rule.value ? quoteRental(store.snapshot, state.value, rule.value, period.value) : undefined,\n",
+      "  site = computed(() => state.value.profiles.find((x) => x.id === route.params.id)),\n  tab = computed(() => String(route.query.tab || 'overview'))\nconst rule = computed(() =>\n    site.value ? ruleForSite(state.value, site.value.id, period.value, store.snapshot.sources) : undefined,\n  ),\n  quote = computed(() =>\n    rule.value ? quoteRental(store.snapshot, state.value, rule.value, period.value) : undefined,\n"
+    ],
+    [
+      "      <div>\n        <span>{{ rule?.scope === 'shared' ? '所属计费组预计费用' : '本点位预计费用' }}</span\n        ><strong>{{ money(quote?.totalCents) }}</strong\n        ><small>{{ rule?.scope === 'shared' ? '非本点位独立应付' : '示例快照 · 非正式应收' }}</small>\n      </div>\n",
+      "      <div>\n        <span>{{ rule?.scope === 'shared' ? '所属计费组预计费用' : '本点位预计费用' }}</span\n        ><strong>{{\n          money(\n            rule?.scope === 'shared'\n              ? quote?.totalCents\n              : quote?.lines.find((line) => line.key === site?.id)?.totalCents,\n          )\n        }}</strong\n        ><small>{{ rule?.scope === 'shared' ? '非本点位独立应付' : '示例快照 · 非正式应收' }}</small>\n      </div>\n"
+    ],
+    [
+      "                <dt>合同来源</dt>\n                <dd>{{ rule.contractId }}</dd>\n                <dt>结算主体</dt>\n                <dd>{{ rule.billingOwner }}</dd>\n",
+      "                <dt>合同来源</dt>\n                <dd>{{ rule.contractId }}</dd>\n                <dt>合同到期</dt>\n                <dd>\n                  {{ store.snapshot.sources.find((x) => x.id === rule?.contractId)?.facts.end || '待核对' }}\n                </dd>\n                <dt>结算主体</dt>\n                <dd>{{ rule.billingOwner }}</dd>\n"
+    ]
+  ],
+  "web/src/views/siteRental/StatementsView.vue": [
+    [
+      "      <select v-model=\"group\" aria-label=\"对账计费组\">\n        <option value=\"\">请选择计费组</option>\n        <option v-for=\"rule in currentRules(state, period)\" :key=\"rule.groupId\" :value=\"rule.groupId\">\n          {{ rule.name }}\n        </option></select\n",
+      "      <select v-model=\"group\" aria-label=\"对账计费组\">\n        <option value=\"\">请选择计费组</option>\n        <option\n          v-for=\"rule in currentRules(state, period, store.snapshot.sources)\"\n          :key=\"rule.groupId\"\n          :value=\"rule.groupId\"\n        >\n          {{ rule.name }}\n        </option></select\n"
+    ]
+  ],
+  "web/src/views/siteRental/GroupsView.vue": [
+    [
+      "  detailTab = ref('计费核算')\nconst state = computed(() => rentalState(store.snapshot)),\n  rows = computed(() => currentRules(state.value, period.value)),\n  groupId = computed(() => String(route.params.groupId || '')),\n  versions = computed(() =>\n    state.value.rules.filter((x) => x.groupId === groupId.value).sort((a, b) => b.version - a.version),\n  ),\n  rule = computed(() => activeRule(state.value, groupId.value, period.value)),\n  quote = computed(() =>\n    rule.value ? quoteRental(store.snapshot, state.value, rule.value, period.value) : undefined,\n",
+      "  detailTab = ref('计费核算')\nconst state = computed(() => rentalState(store.snapshot)),\n  rows = computed(() => currentRules(state.value, period.value, store.snapshot.sources)),\n  groupId = computed(() => String(route.params.groupId || '')),\n  versions = computed(() =>\n    state.value.rules.filter((x) => x.groupId === groupId.value).sort((a, b) => b.version - a.version),\n  ),\n  rule = computed(() => activeRule(state.value, groupId.value, period.value, store.snapshot.sources)),\n  quote = computed(() =>\n    rule.value ? quoteRental(store.snapshot, state.value, rule.value, period.value) : undefined,\n"
+    ],
+    [
+      ")\nfunction bill(id: string) {\n  const x = activeRule(state.value, id, period.value)\n  return x ? money(quoteRental(store.snapshot, state.value, x, period.value).totalCents) : '—'\n}\n",
+      ")\nfunction bill(id: string) {\n  const x = activeRule(state.value, id, period.value, store.snapshot.sources)\n  return x ? money(quoteRental(store.snapshot, state.value, x, period.value).totalCents) : '—'\n}\n"
+    ],
+    [
+      "      <CustomerAlert\n        v-else\n        title=\"该账期尚无生效版本\"\n        description=\"已预约的规则不会提前参与核算。\"\n      /> </template\n    ><CustomerAlert v-else title=\"计费组不存在或不在当前租户\" tone=\"warning\" />\n",
+      "      <CustomerAlert\n        v-else\n        title=\"该账期没有有效计费规则\"\n        description=\"已到期合同停止参与新账期核算；预约版本不提前生效。历史规则仍可在版本履历查看。\"\n      /> </template\n    ><CustomerAlert v-else title=\"计费组不存在或不在当前租户\" tone=\"warning\" />\n"
+    ]
+  ],
+  "web/src/views/siteRental/SitesView.vue": [
+    [
+      "      (!applied.value.search || `${x.name}${x.id}${x.address}`.includes(applied.value.search)) &&\n      (!applied.value.mode || ruleForSite(state.value, x.id, period.value)?.mode === applied.value.mode) &&\n      (view.value !== '待验收' || x.phase === '安装验收中') &&\n      (view.value !== '共享额度' || ruleForSite(state.value, x.id, period.value)?.scope === 'shared') &&\n      (view.value !== '我的点位' || x.owner === '张敏'),\n  ),\n",
+      "      (!applied.value.search || `${x.name}${x.id}${x.address}`.includes(applied.value.search)) &&\n      (!applied.value.mode ||\n        ruleForSite(state.value, x.id, period.value, store.snapshot.sources)?.mode === applied.value.mode) &&\n      (view.value !== '待验收' || x.phase === '安装验收中') &&\n      (view.value !== '共享额度' ||\n        ruleForSite(state.value, x.id, period.value, store.snapshot.sources)?.scope === 'shared') &&\n      (view.value !== '我的点位' || x.owner === '张敏'),\n  ),\n"
+    ],
+    [
+      ")\nfunction rent(id: string) {\n  return ruleForSite(state.value, id, period.value)\n}\nfunction cost(id: string) {\n  const rule = rent(id)\n  if (!rule) return '未起租'\n  if (rule.scope === 'shared') return '计费组核算'\n  const q = quoteRental(store.snapshot, state.value, rule, period.value)\n",
+      ")\nfunction rent(id: string) {\n  return ruleForSite(state.value, id, period.value, store.snapshot.sources)\n}\nfunction cost(id: string) {\n  const rule = rent(id)\n  if (!rule) return '本期无有效规则'\n  if (rule.scope === 'shared') return '计费组核算'\n  const q = quoteRental(store.snapshot, state.value, rule, period.value)\n"
+    ],
+    [
+      "      banner\n    />\n    <div class=\"metrics-grid\">\n      <MetricCard label=\"实际服务点位\" :value=\"sites.length\" icon=\"site\" tone=\"blue\" /><MetricCard\n        label=\"服务中点位\"\n",
+      "      banner\n    />\n    <div class=\"metric-grid\">\n      <MetricCard label=\"实际服务点位\" :value=\"sites.length\" icon=\"site\" tone=\"blue\" /><MetricCard\n        label=\"服务中点位\"\n"
+    ],
+    [
+      "                    rent(site.id)!.scope === 'shared' ? '同合同共享额度' : '点位独立计算'\n                  }}</small></template\n                ><span v-else class=\"secondary\">未配置 · 不自动起租</span>\n              </td>\n              <td class=\"rental-number\">{{ usage(site.id) }}</td>\n",
+      "                    rent(site.id)!.scope === 'shared' ? '同合同共享额度' : '点位独立计算'\n                  }}</small></template\n                ><span v-else class=\"secondary\">本期无有效规则 · 待核对</span>\n              </td>\n              <td class=\"rental-number\">{{ usage(site.id) }}</td>\n"
+    ]
+  ],
+  "web/e2e/site-rental.spec.ts": [
+    [
+      "import { mkdirSync } from 'node:fs'\nconst screenDir = 'screenshots/site-rental'\ntest.use({ viewport: { width: 1536, height: 1024 }, deviceScaleFactor: 2 })\nasync function go(page: Page, path = '/sites') {\n  await page.goto('/#' + path)\n",
+      "import { mkdirSync } from 'node:fs'\nconst screenDir = 'screenshots/site-rental'\ntest.use({ viewport: { width: 1536, height: 1024 }, deviceScaleFactor: 2, locale: 'zh-CN' })\nasync function go(page: Page, path = '/sites') {\n  await page.goto('/#' + path)\n"
+    ],
+    [
+      "    const size = await body.evaluate((el) => ({ height: el.clientHeight, total: el.scrollHeight }))\n    if (size.total > size.height + 20) {\n      await body.evaluate((el) => (el.scrollTop = el.scrollHeight))\n      await page.screenshot({\n        path: `${screenDir}/${name}-continued.png`,\n        fullPage: false,\n        animations: 'disabled',\n      })\n    }\n  }\n}\n",
+      "    const size = await body.evaluate((el) => ({ height: el.clientHeight, total: el.scrollHeight }))\n    if (size.total > size.height + 20) {\n      for (\n        let offset = size.height - 100, part = 2;\n        offset < size.total;\n        offset += size.height - 100, part++\n      ) {\n        await body.evaluate((el, top) => (el.scrollTop = top), offset)\n        const suffix = part === 2 ? 'continued' : `detail-${part}`\n        await page.screenshot({\n          path: `${screenDir}/${name}-${suffix}.png`,\n          fullPage: false,\n          animations: 'disabled',\n        })\n        if (offset + size.height >= size.total) break\n      }\n    }\n  } else if (!(await page.locator('.module-panel').count())) {\n    const scrolls = await page.evaluate(() => document.documentElement.scrollHeight > innerHeight + 20)\n    if (scrolls)\n      await page.screenshot({ path: `${screenDir}/${name}-full.png`, fullPage: true, animations: 'disabled' })\n  }\n}\n"
+    ],
+    [
+      "  await go(page)\n  await expect(page.locator('.rental-site-table tbody tr')).toHaveCount(5)\n  await snap(page, 'S01-site-list')\n  const before = await page.getByTestId('main-content').boundingBox()\n",
+      "  await go(page)\n  await expect(page.locator('.rental-site-table tbody tr')).toHaveCount(5)\n  const metricBoxes = await page\n    .locator('.rental-area .metric-grid > *')\n    .evaluateAll((els) =>\n      els.map((el) => ({ x: el.getBoundingClientRect().x, y: el.getBoundingClientRect().y })),\n    )\n  expect(metricBoxes).toHaveLength(4)\n  expect(new Set(metricBoxes.map((box) => Math.round(box.y))).size).toBe(1)\n  expect(metricBoxes[3]!.x).toBeGreaterThan(metricBoxes[0]!.x)\n  await snap(page, 'S01-site-list')\n  const before = await page.getByTestId('main-content').boundingBox()\n"
+    ],
+    [
+      "  await d.getByRole('button', { name: '确认对账并冻结' }).click()\n  await expect(d).toContainText('已确认快照锁定')\n  await snap(page, 'S22-frozen-statement')\n  await d.getByRole('button', { name: '关闭', exact: true }).click()\n",
+      "  await d.getByRole('button', { name: '确认对账并冻结' }).click()\n  await expect(d).toContainText('已确认快照锁定')\n  await expect(d.locator('.rental-total')).toContainText('已确认对账金额')\n  await snap(page, 'S22-frozen-statement')\n  await d.getByRole('button', { name: '关闭', exact: true }).click()\n"
+    ],
+    [
+      "  const data = await current(page)\n  expect(data.work[0].siteIds).toEqual(['SITE-041'])\n  await go(page, `/customers/work/${data.work[0].id}`)\n  await expect(page.getByRole('link', { name: 'SITE-041 · 打开点位工作区' })).toBeVisible()\n})\n",
+      "  const data = await current(page)\n  expect(data.work[0].siteIds).toEqual(['SITE-041'])\n  await page.goto(`/#/customers/work/${data.work[0].id}`)\n  await expect(page.locator('.customer-area h1').first()).toBeVisible()\n  await expect(page.getByRole('link', { name: 'SITE-041 · 打开点位工作区' })).toBeVisible()\n})\n"
+    ],
+    [
+      "  expect(errors).toEqual([])\n})\n",
+      "  expect(errors).toEqual([])\n})\n\ntest('independent group totals are not duplicated into each site summary', async ({ page }) => {\n  const d = await openRule(page)\n  await d.getByLabel('计费模式', { exact: true }).selectOption('fixed')\n  await d.getByLabel('计费范围', { exact: true }).selectOption('independent')\n  await d.getByLabel('固定月租（元）').fill('1200')\n  await d.getByLabel('合同约定 / 变更依据').fill('双方确认按点位独立月租，客户汇总不得成为每点金额')\n  await d.getByRole('button', { name: '试算并预览影响' }).click()\n  await d.getByRole('button', { name: '确认预约发布' }).click()\n  await expect(d).toHaveCount(0)\n  await go(page, '/sites/SITE-041')\n  await page.getByLabel('点位账期').fill('2026-10')\n  const fee = page.locator('.rental-stat-strip > div').filter({ hasText: '本点位预计费用' })\n  await expect(fee).toContainText('1,200.00')\n  await expect(fee).not.toContainText('2,400.00')\n})\n\ntest('expired contract has no current quote while historical versions remain available', async ({ page }) => {\n  await go(page, '/sites/groups/BG-SH-01')\n  await page.getByLabel('计费组账期').fill('2026-10')\n  await expect(page.getByText('该账期没有有效计费规则', { exact: true })).toBeVisible()\n  await expect(page.getByRole('button', { name: '生成 / 查看对账草稿', exact: true })).toHaveCount(0)\n  await snap(page, 'S30-expired-terms')\n  await page.getByRole('button', { name: '版本履历', exact: true }).click()\n  await expect(page.locator('.rental-version')).toHaveCount(1)\n})\n"
+    ]
+  ],
+  "web/docs/site-rental/README.md": [
+    [
+      "仅允许完整自然月和未来月初的规则发布；月中起租、费用折算、计费模式中途切换、税费/优惠、多个币种及复杂阶梯单价没有凭空设定默认算法。检测投放覆盖缺口或按设备计费的月内数量变化时阻断确认，提示核对约定。连续换机、收费数量不变不会重复计租。已确认快照后到数据通过后续调整模块处理，本轮不提供伪造的调整成功按钮。\n\n规则发布不会跨合同改绑；续约应以新合同建立新计费范围并明确边界。当前关联来源仍为现有客户模块的示例合同，不是合同有效性的生产证明。\n\n## 页面与动作映射\n",
+      "仅允许完整自然月和未来月初的规则发布；月中起租、费用折算、计费模式中途切换、税费/优惠、多个币种及复杂阶梯单价没有凭空设定默认算法。检测投放覆盖缺口或按设备计费的月内数量变化时阻断确认，提示核对约定。连续换机、收费数量不变不会重复计租。已确认快照后到数据通过后续调整模块处理，本轮不提供伪造的调整成功按钮。\n\n规则发布不会跨合同改绑；续约应以新合同建立新计费范围并明确边界。当前关联来源仍为现有客户模块的示例合同，不是合同有效性的生产证明。到期合同不参与后续账期的规则选择，不遮挡续约计费组；历史账期和已确认快照仍保留原规则。按点位独立计算时，点位首屏只展示该点位分项金额，不把整组汇总额重复放到每个点位。\n\n## 页面与动作映射\n"
+    ]
+  ],
+  "web/src/components/siteRental/QuoteSummary.vue": [
+    [
+      "import StatusBadge from '@/components/ui/StatusBadge.vue'\nimport CustomerAlert from '@/components/customer/CustomerAlert.vue'\nconst props = defineProps<{ quote: RentalQuote; rule: RentalRule; trial?: boolean }>()\nconst cups = computed(() =>\n  props.quote.contributions.every((x) => x.cups !== null)\n",
+      "import StatusBadge from '@/components/ui/StatusBadge.vue'\nimport CustomerAlert from '@/components/customer/CustomerAlert.vue'\nconst props = defineProps<{ quote: RentalQuote; rule: RentalRule; trial?: boolean; confirmed?: boolean }>()\nconst cups = computed(() =>\n  props.quote.contributions.every((x) => x.cups !== null)\n"
+    ],
+    [
+      "      </div>\n      <div>\n        <span>整组{{ trial ? '试算' : '预计' }}费用</span><strong>{{ money(quote.totalCents) }}</strong>\n      </div>\n    </div>\n",
+      "      </div>\n      <div>\n        <span>{{ confirmed ? '整组已确认对账金额' : trial ? '整组试算费用' : '整组预计费用' }}</span\n        ><strong>{{ money(quote.totalCents) }}</strong>\n      </div>\n    </div>\n"
+    ],
+    [
+      "      </div>\n      <div class=\"rental-total\">\n        <span>{{ trial ? '试算合计' : '本期预计费用' }} <small>人民币 · 不含额外税费与调整</small></span\n        ><strong>{{ money(quote.totalCents) }}</strong>\n      </div>\n",
+      "      </div>\n      <div class=\"rental-total\">\n        <span\n          >{{ confirmed ? '已确认对账金额' : trial ? '试算合计' : '本期预计费用' }}\n          <small>人民币 · 不含额外税费与调整</small></span\n        ><strong>{{ money(quote.totalCents) }}</strong>\n      </div>\n"
+    ]
+  ],
+  "web/src/components/siteRental/StatementDialog.vue": [
+    [
+      "        tone=\"warning\"\n      />\n      <QuoteSummary :quote=\"statement.quote\" :rule=\"statement.rule\" />\n      <label v-if=\"statement.state !== '已确认'\"\n        >核对依据 / 异议处理说明 <b>*</b\n",
+      "        tone=\"warning\"\n      />\n      <QuoteSummary\n        :quote=\"statement.quote\"\n        :rule=\"statement.rule\"\n        :confirmed=\"statement.state === '已确认'\"\n      />\n      <label v-if=\"statement.state !== '已确认'\"\n        >核对依据 / 异议处理说明 <b>*</b\n"
+    ]
+  ]
+}
