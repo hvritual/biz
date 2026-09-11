@@ -1,0 +1,88 @@
+name: CE-12 web-session contract generation
+on:
+  push:
+    branches: [feat/ce-12-first-party-idp-e2e]
+    paths: ['.github/workflows/ce12-web-session-contract-generate.yml']
+permissions:
+  contents: write
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      YUNKA_SHA: e323ee5833d929b5b1d0494fc29aae0aaa2b6f4a
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: '${{ github.sha }}'
+          path: biz
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: '${{ env.YUNKA_SHA }}'
+          path: yunka.io
+          persist-credentials: false
+      - id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "protoc_release=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "protoc_sha=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go_version }}', cache: false}
+      - name: Install locked protobuf toolchain
+        env:
+          RELEASE: '${{ steps.lock.outputs.protoc_release }}'
+          CHECKSUM: '${{ steps.lock.outputs.protoc_sha }}'
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 "https://github.com/protocolbuffers/protobuf/releases/download/v${RELEASE}/protoc-${RELEASE}-linux-x86_64.zip" -o "$RUNNER_TEMP/protoc.zip"
+          echo "$CHECKSUM  $RUNNER_TEMP/protoc.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/protoc.zip" -d "$RUNNER_TEMP/protoc"
+          make -C yunka.io rpc-tools
+          echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+      - name: Adopt web-session DSL and mark tenant operations explicitly
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp yunka.io/contracts/proto/yunka/dsl/v1/options.proto biz/contracts/third_party/yunka/dsl/v1/options.proto
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root = Path('biz/contracts/proto')
+          pattern = re.compile(r'(tenant_required:\s*true)(\s+)(authentication:\s*AUTHENTICATION_API_KEY)(?!\s+authentication:\s*AUTHENTICATION_WEB_SESSION)')
+          changed = []
+          for path in sorted(root.rglob('*.proto')):
+              text = path.read_text()
+              updated, n = pattern.subn(lambda m: m.group(1)+m.group(2)+m.group(3)+m.group(2)+'authentication: AUTHENTICATION_WEB_SESSION', text)
+              if n:
+                  path.write_text(updated)
+                  changed.append((str(path), n))
+          if not changed:
+              raise SystemExit('no tenant API-key operations were upgraded')
+          print('WEB_SESSION_OPERATIONS', changed)
+          PY
+      - name: Regenerate Biz from canonical contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C biz generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$RUNNER_TEMP/protoc/bin/protoc"
+          grep -R 'Authentication: \[\]string{"api-key", "web-session"}' biz/internal biz/contracts/generated >/dev/null
+          go -C biz test -count=1 ./...
+          go -C biz vet ./...
+          go -C biz build ./cmd/biz ./cmd/biz-idp ./cmd/biz-idp-credential
+      - name: Commit generated consumer contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C biz config user.name 'github-actions[bot]'
+          git -C biz config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C biz add contracts internal modules go.mod go.sum
+          git -C biz commit -m 'feat(ce-12): admit web-session in tenant operation contracts'
+          git -C biz push origin HEAD:feat/ce-12-first-party-idp-e2e
