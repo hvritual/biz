@@ -1,0 +1,97 @@
+name: CE-16 capability map repair
+on:
+  push:
+    branches: [control/ce16-capability-map-20260911]
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/ce-16-time-scheduler
+          fetch-depth: 0
+      - name: Lock CE-16 product head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "6beb3bf91913a88ac657650b41138ae3148ac75e"
+      - name: Add explicit CE-16 worker operation mappings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('contracts/commercial/operation-capabilities.v1.json')
+          doc = json.loads(path.read_text())
+          if doc.get('schema_version') != 1:
+              raise SystemExit('unexpected capability-map schema')
+          if doc.get('mapping_version') != '8':
+              raise SystemExit(f"expected mapping_version=8 got {doc.get('mapping_version')!r}")
+          ids = {x['operation_id'] for x in doc['operations']}
+          wanted = {
+              'commercial.subscription.transition.claim',
+              'commercial.subscription.transition.complete',
+          }
+          overlap = ids & wanted
+          if overlap:
+              raise SystemExit(f'CE-16 mappings already exist: {sorted(overlap)}')
+
+          reason = ('CE-16 durable commercial time-transition worker. Persisted tenantless platform identity, '
+                    'platform.provisioning.execute permission, existing Executor, DB-time lease fencing and root UoW '
+                    'remain mandatory; these internal worker operations have no public transport and never grant tenant business access.')
+          doc['operations'].append({
+              'operation_id': 'commercial.subscription.transition.claim',
+              'classification': 'platform_management',
+              'capability_codes': [],
+              'children': [],
+              'exemption_reason': reason,
+              'worker_permission': 'platform.provisioning.execute',
+          })
+          condition = ('claimed due SCHEDULED_CHANGE remains authoritative and must revalidate immutable target plan, '
+                       'eligibility and current commercial module catalog before execution; other transition kinds do not call these children')
+          source = 'internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture'
+          doc['operations'].append({
+              'operation_id': 'commercial.subscription.transition.complete',
+              'classification': 'platform_management',
+              'capability_codes': [],
+              'children': [
+                  {'operation_id': 'commercial.plan.get', 'mode': 'conditional', 'condition': condition, 'source': source},
+                  {'operation_id': 'commercial.plan.eligibility', 'mode': 'conditional', 'condition': condition, 'source': source},
+                  {'operation_id': 'commercial.module.plan_catalog', 'mode': 'conditional', 'condition': condition, 'source': source},
+              ],
+              'exemption_reason': reason,
+              'worker_permission': 'platform.provisioning.execute',
+          })
+          doc['mapping_version'] = '9'
+          path.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + '\n')
+          PY
+          git diff --check
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('contracts/commercial/operation-capabilities.v1.json').read_text())
+          by={x['operation_id']:x for x in d['operations']}
+          assert d['mapping_version']=='9'
+          assert by['commercial.subscription.transition.claim']['worker_permission']=='platform.provisioning.execute'
+          assert by['commercial.subscription.transition.complete']['worker_permission']=='platform.provisioning.execute'
+          assert {x['operation_id'] for x in by['commercial.subscription.transition.complete']['children']} == {
+              'commercial.plan.get','commercial.plan.eligibility','commercial.module.plan_catalog'}
+          print('CE16_CAPABILITY_MAP=PASS mapping_version=9')
+          PY
+          test "$(git diff --name-only | wc -l)" -eq 1
+          test "$(git diff --name-only)" = "contracts/commercial/operation-capabilities.v1.json"
+      - name: Commit mapping repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name hvritual
+          git config user.email 460657446@qq.com
+          git add contracts/commercial/operation-capabilities.v1.json
+          git commit -m 'fix(ce-16): classify time transition worker operations'
+          git push origin HEAD:refs/heads/feat/ce-16-time-scheduler
+          echo "CE16_MAP_HEAD=$(git rev-parse HEAD)"
