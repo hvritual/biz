@@ -94,17 +94,23 @@ func TestCE12WebSessionTenantSelectionAndLiveAuthority(t *testing.T) {
 		Update("status", accessdomain.TenantMemberStatusSuspended).Error; err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.AuthenticateWebSession(ctx, rawSession); !errors.Is(err, accesspersistence.ErrUnauthorized) {
-		t.Fatalf("suspended membership session error = %v, want ErrUnauthorized", err)
+	authentication, err = store.AuthenticateWebSession(ctx, rawSession)
+	if err != nil {
+		t.Fatalf("identity session should survive loss of only the active tenant: %v", err)
+	}
+	if authentication.Session.ActiveTenantID != "" || authentication.Principal.Authenticated {
+		t.Fatalf("invalid active tenant must be removed from effective session context: %+v", authentication)
+	}
+	if len(authentication.Session.Tenants) != 1 || authentication.Session.Tenants[0].ID != "ce12-tenant-b" {
+		t.Fatalf("remaining valid tenant projection = %+v, want only tenant-b", authentication.Session.Tenants)
 	}
 
-	if err := db.Table("biz_memberships").
-		Where("tenant_id = ? AND user_id = ?", "ce12-tenant-a", userID).
-		Update("status", accessdomain.TenantMemberStatusActive).Error; err != nil {
-		t.Fatal(err)
+	authentication, err = store.SwitchWebSessionTenant(ctx, rawSession, "ce12-tenant-b")
+	if err != nil {
+		t.Fatalf("switch from invalidated tenant A to valid tenant B: %v", err)
 	}
-	if _, err := store.SwitchWebSessionTenant(ctx, rawSession, "ce12-tenant-b"); err != nil {
-		t.Fatalf("switch after restored membership: %v", err)
+	if authentication.Principal.TenantID != "ce12-tenant-b" {
+		t.Fatalf("principal tenant after recovery switch = %q, want tenant-b", authentication.Principal.TenantID)
 	}
 	if err := store.RevokeWebSession(ctx, rawSession); err != nil {
 		t.Fatal(err)
@@ -180,7 +186,7 @@ func TestCE12PlatformWebAuthorityStaysTenantlessAndRevocable(t *testing.T) {
 	if identityLink.ActorKind != accesspersistence.WebActorPlatform || identityLink.ActorID != platformSubject {
 		t.Fatalf("unexpected platform identity: %+v", identityLink)
 	}
-	_, session, err := store.CreateWebSession(ctx, identityLink, time.Hour)
+	rawSession, session, err := store.CreateWebSession(ctx, identityLink, time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -195,5 +201,8 @@ func TestCE12PlatformWebAuthorityStaysTenantlessAndRevocable(t *testing.T) {
 	}
 	if _, err := store.AuthenticatePlatformSubject(ctx, platformSubject, accesspersistence.AuthMethodWeb); !errors.Is(err, accesspersistence.ErrUnauthorized) {
 		t.Fatalf("disabled platform authority error = %v, want ErrUnauthorized", err)
+	}
+	if _, err := store.AuthenticateWebSession(ctx, rawSession); !errors.Is(err, accesspersistence.ErrUnauthorized) {
+		t.Fatalf("disabled platform authority must invalidate web session authority, got %v", err)
 	}
 }
