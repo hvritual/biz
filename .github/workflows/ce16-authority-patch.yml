@@ -1,0 +1,77 @@
+name: CE-16 authority patch
+on:
+  push:
+    branches: [control/ce16-authority-patch-20260911]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/ce-16-time-scheduler
+          fetch-depth: 0
+      - name: Lock product branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "8404aa0f07049645231db67da953447585491c28"
+      - name: Patch CE-16 authority boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new, count=1):
+              p=Path(path); text=p.read_text()
+              actual=text.count(old)
+              if actual != count:
+                  raise SystemExit(f'{path}: expected {count} matches, got {actual}: {old[:80]!r}')
+              p.write_text(text.replace(old,new,count))
+
+          replace('internal/commercial/domain/subscriptionchange/model.go',
+              '\tApplied      = "APPLIED"\n\tProvisioning = "PROVISIONING"\n',
+              '\tApplied      = "APPLIED"\n\tProvisioning = "PROVISIONING"\n\tFailed       = "FAILED"\n')
+          replace('internal/commercial/domain/subscriptionchange/model.go',
+              'r.After.Revision != r.Before.Revision+1',
+              'r.After.Revision < r.Before.Revision+1')
+          replace('internal/commercial/domain/subscriptionchange/model.go',
+              '(r.Status != Applied && r.Status != Scheduled && r.Status != Provisioning)',
+              '(r.Status != Applied && r.Status != Scheduled && r.Status != Provisioning && r.Status != Failed)')
+          replace('internal/commercial/domain/subscriptionchange/model.go',
+              'r.Mode != Immediate))',
+              '(r.Mode != Immediate && r.Mode != Scheduled)))')
+          replace('internal/commercial/domain/subscriptionchange/project.go',
+              'v.Version != 1 {',
+              'v.Version == 0 {')
+          replace('internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go',
+              '''\t\t} else if mode == change.Scheduled {\n\t\t\tafter.PendingChangeID = r.ChangeId\n\t\t\tv.Status = change.Scheduled\n''',
+              '''\t\t} else if mode == change.Scheduled {\n\t\t\tafter.PendingChangeID = r.ChangeId\n\t\t\tv.AfterSourceVersion, v.AfterEntitlementVersion, e = s.installTimeFence(call, repos, m, &after, at)\n\t\t\tif e != nil {\n\t\t\t\treturn v, e\n\t\t\t}\n\t\t\tv.Status = change.Scheduled\n''')
+
+          proto=Path('contracts/proto/commercial/v1/subscription_change.proto')
+          text=proto.read_text()
+          marker='service SubscriptionChangesApplication {\n'
+          if text.count(marker)!=1: raise SystemExit('service marker drift')
+          messages='''message ClaimCommercialTimeTransitionRequest { string worker_id=1; uint32 lease_seconds=2; }\nmessage CommercialTimeTransitionDTO { string transition_id=1; string kind=2; string tenant_id=3; string authority_id=4; uint64 authority_version=5; string due_at=6; string state=7; uint64 revision=8; string outcome=9; }\nmessage ClaimCommercialTimeTransitionResponse { bool found=1; CommercialTimeTransitionDTO transition=2; uint64 lease_token=3; }\nmessage CompleteCommercialTimeTransitionRequest { string transition_id=1; string worker_id=2; uint64 lease_token=3; }\nmessage CompleteCommercialTimeTransitionResponse { string transition_id=1; string state=2; string outcome=3; uint64 subscription_revision=4; uint64 source_version=5; uint64 entitlement_version=6; string provisioning_task_id=7; }\n'''
+          text=text.replace(marker,messages+marker,1)
+          close='\n };\n rpc PreviewSubscriptionChange'
+          if text.count(close)!=1: raise SystemExit('application option close drift')
+          ops='''\n operations:{id:"commercial.subscription.transition.claim" use_case:"claim_commercial_time_transition" permissions:"platform.provisioning.execute" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY composition:COMPOSITION_LOCAL execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_NONE} request_type:"commercial.v1.ClaimCommercialTimeTransitionRequest" response_type:"commercial.v1.ClaimCommercialTimeTransitionResponse" application_method:"ClaimCommercialTimeTransition"}\n operations:{id:"commercial.subscription.transition.complete" use_case:"complete_commercial_time_transition" permissions:"platform.provisioning.execute" permissions:"platform.plan.read" permissions:"commercial.catalog.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY requires_operations:"commercial.plan.get" requires_operations:"commercial.plan.eligibility" requires_operations:"commercial.module.plan_catalog" composition:COMPOSITION_LOCAL execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_NONE} request_type:"commercial.v1.CompleteCommercialTimeTransitionRequest" response_type:"commercial.v1.CompleteCommercialTimeTransitionResponse" application_method:"CompleteCommercialTimeTransition"}'''
+          text=text.replace(close,ops+close,1)
+          proto.write_text(text)
+          PY
+          git diff --check
+          git diff --name-only
+      - name: Commit product patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name hvritual
+          git config user.email 460657446@qq.com
+          git add contracts/proto/commercial/v1/subscription_change.proto internal/commercial/domain/subscriptionchange/model.go internal/commercial/domain/subscriptionchange/project.go internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go
+          git commit -m 'feat(ce-16): fence scheduled authority and add worker contract'
+          git push origin HEAD:refs/heads/feat/ce-16-time-scheduler
+          echo "CE16_PATCH_HEAD=$(git rev-parse HEAD)"
