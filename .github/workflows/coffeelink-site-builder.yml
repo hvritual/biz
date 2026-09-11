@@ -68,6 +68,15 @@ jobs:
                       text=text.replace(before,after,1)
                   p.write_text(text,encoding='utf-8')
                   data.setdefault(name,{})
+          # Required fields include the visible asterisk in their accessible label.
+          p=Path('web/e2e/site-rental.spec.ts')
+          text=p.read_text(encoding='utf-8')
+          for label in ['计费模式','计费范围']:
+              before="getByLabel('"+label+"', { exact: true })"
+              after="getByLabel('"+label+"')"
+              assert text.count(before)==1,label
+              text=text.replace(before,after,1)
+          p.write_text(text,encoding='utf-8')
           base='04dedc3826e23754f0cffa13ed5c27b5c4224071'
           preserved={}
           paths=list(Path('web/src/components/layout').glob('*.vue'))+list(Path('web/src/components/ui').glob('*.vue'))+[Path('web/src/styles/tokens.css'),Path('web/src/styles/base.css')]
