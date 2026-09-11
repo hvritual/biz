@@ -14,17 +14,17 @@ import (
 )
 
 type timeTransitionRow struct {
-	TransitionID    string `gorm:"column:transition_id;primaryKey"`
-	Kind            string `gorm:"column:kind"`
-	TenantID        string `gorm:"column:tenant_id"`
-	AuthorityID     string `gorm:"column:authority_id"`
-	AuthorityVersion uint64 `gorm:"column:authority_version"`
+	TransitionID    string    `gorm:"column:transition_id;primaryKey"`
+	Kind            string    `gorm:"column:kind"`
+	TenantID        string    `gorm:"column:tenant_id"`
+	AuthorityID     string    `gorm:"column:authority_id"`
+	AuthorityVersion uint64   `gorm:"column:authority_version"`
 	DueAt           time.Time `gorm:"column:due_at"`
-	Revision        uint64 `gorm:"column:revision"`
-	State           string `gorm:"column:state"`
+	Revision        uint64    `gorm:"column:revision"`
+	State           string    `gorm:"column:state"`
 	LeaseUntil      *time.Time `gorm:"column:lease_until"`
-	PayloadSHA256   string `gorm:"column:payload_sha256"`
-	Payload         string `gorm:"column:payload"`
+	PayloadSHA256   string    `gorm:"column:payload_sha256"`
+	Payload         string    `gorm:"column:payload"`
 	CreatedAt       time.Time `gorm:"column:created_at"`
 	UpdatedAt       time.Time `gorm:"column:updated_at"`
 }
@@ -32,13 +32,13 @@ type timeTransitionRow struct {
 func (timeTransitionRow) TableName() string { return "biz_commercial_time_transitions" }
 
 type timeTransitionAuditRow struct {
-	ID            uint64 `gorm:"column:id;primaryKey;autoIncrement"`
-	TransitionID  string `gorm:"column:transition_id"`
-	Revision      uint64 `gorm:"column:revision"`
-	State         string `gorm:"column:state"`
-	Outcome       string `gorm:"column:outcome"`
-	PayloadSHA256 string `gorm:"column:payload_sha256"`
-	Payload       string `gorm:"column:payload"`
+	ID            uint64    `gorm:"column:id;primaryKey;autoIncrement"`
+	TransitionID  string    `gorm:"column:transition_id"`
+	Revision      uint64    `gorm:"column:revision"`
+	State         string    `gorm:"column:state"`
+	Outcome       string    `gorm:"column:outcome"`
+	PayloadSHA256 string    `gorm:"column:payload_sha256"`
+	Payload       string    `gorm:"column:payload"`
 	CreatedAt     time.Time `gorm:"column:created_at"`
 }
 
@@ -90,6 +90,17 @@ func (r *timeTransitionRepository) Insert(ctx context.Context, t transition.Task
 		return nil
 	}
 	return r.audit(ctx, t)
+}
+func (r *timeTransitionRepository) Get(ctx context.Context, id string) (*transition.Task, error) {
+	var row timeTransitionRow
+	err := r.tx.WithContext(ctx).Where("transition_id=?", id).First(&row).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, transition.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return decodeTransition(row)
 }
 func (r *timeTransitionRepository) ClaimDue(ctx context.Context, owner string, now time.Time, lease time.Duration) (*transition.Task, error) {
 	db := r.tx.WithContext(ctx)
