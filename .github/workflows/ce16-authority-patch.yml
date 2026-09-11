@@ -48,79 +48,13 @@ jobs:
           p=Path('internal/commercial/domain/subscriptionchange/project.go')
           text=p.read_text()
           old='''\tfor _, v := range sources {\n\t\tif v.SourceKind != entitlement.PlanSource || v.RevokedAt != nil {\n\t\t\tcontinue\n\t\t}\n\t\tx, ok := expected[v.ID]\n\t\tif !ok || seen[v.ID] || v.TenantID != s.TenantID || v.ModuleCode != x.ModuleCode || v.Kind != x.Kind || v.Key != x.Key || v.Action != x.Action || v.Effect != x.Effect || v.Limit != x.Limit || !v.EffectiveAt.Equal(s.PeriodStart) || !sameInstant(v.ExpiresAt, s.PeriodEnd) || v.Version != 1 {\n\t\t\treturn ErrCorrupt\n\t\t}\n\t\tseen[v.ID] = true\n\t}\n'''
-          new='''\tfor _, v := range sources {\n\t\tif v.SourceKind != entitlement.PlanSource {\n\t\t\tcontinue\n\t\t}\n\t\tx, ok := expected[v.ID]\n\t\tif !ok {\n\t\t\t// Historical generations are retained only after an explicit revocation.\n\t\t\tif v.RevokedAt == nil {\n\t\t\t\treturn ErrCorrupt\n\t\t\t}\n\t\t\tcontinue\n\t\t}\n\t\tif seen[v.ID] || v.TenantID != s.TenantID || v.ModuleCode != x.ModuleCode || v.Kind != x.Kind || v.Key != x.Key || v.Action != x.Action || v.Effect != x.Effect || v.Limit != x.Limit || !v.EffectiveAt.Equal(s.PeriodStart) || !sameInstant(v.ExpiresAt, s.PeriodEnd) || v.Version == 0 {\n\t\t\treturn ErrCorrupt\n\t\t}\n\t\tif v.RevokedAt != nil && (v.RevokedAt.Before(v.EffectiveAt) || (v.ExpiresAt != nil && v.RevokedAt.After(*v.ExpiresAt))) {\n\t\t\treturn ErrCorrupt\n\t\t}\n\t\tseen[v.ID] = true\n\t}\n'''
+          new='''\tfor _, v := range sources {\n\t\tif v.SourceKind != entitlement.PlanSource {\n\t\t\tcontinue\n\t\t}\n\t\tx, ok := expected[v.ID]\n\t\tif !ok {\n\t\t\tif v.RevokedAt == nil {\n\t\t\t\treturn ErrCorrupt\n\t\t\t}\n\t\t\tcontinue\n\t\t}\n\t\tif seen[v.ID] || v.TenantID != s.TenantID || v.ModuleCode != x.ModuleCode || v.Kind != x.Kind || v.Key != x.Key || v.Action != x.Action || v.Effect != x.Effect || v.Limit != x.Limit || !v.EffectiveAt.Equal(s.PeriodStart) || !sameInstant(v.ExpiresAt, s.PeriodEnd) || v.Version == 0 {\n\t\t\treturn ErrCorrupt\n\t\t}\n\t\tif v.RevokedAt != nil && (v.RevokedAt.Before(v.EffectiveAt) || (v.ExpiresAt != nil && v.RevokedAt.After(*v.ExpiresAt))) {\n\t\t\treturn ErrCorrupt\n\t\t}\n\t\tseen[v.ID] = true\n\t}\n'''
           if text.count(old)!=1: raise SystemExit('project current-source block drift')
           p.write_text(text.replace(old,new,1))
 
           replace('internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go',
               '''\t\t} else if mode == change.Scheduled {\n\t\t\t// Reservation changes the subscription revision, not effective rights.\n\t\t\t// A second confirmation with an old preview cannot reserve another change.\n\t\t\tafter.PendingChangeID = r.ChangeId\n\t\t\tv.Status = change.Scheduled\n''',
               '''\t\t} else if mode == change.Scheduled {\n\t\t\t// Reservation changes the subscription revision, not effective rights.\n\t\t\t// A second confirmation with an old preview cannot reserve another change.\n\t\t\tafter.PendingChangeID = r.ChangeId\n\t\t\tv.AfterSourceVersion, v.AfterEntitlementVersion, e = s.installTimeFence(call, repos, m, &after, r.ChangeId, at, admitted)\n\t\t\tif e != nil {\n\t\t\t\treturn v, e\n\t\t\t}\n\t\t\tv.Status = change.Scheduled\n''')
-
-          fence=Path('internal/commercial/application/subscriptionchanges/internal/usecase/time_fence.go')
-          if fence.exists(): raise SystemExit('time_fence.go already exists')
-          fence.write_text(r'''package usecase
-
-import (
-    "context"
-    "time"
-
-    "github.com/hvritual/biz/internal/commercial/domain/entitlement"
-    "github.com/hvritual/biz/internal/commercial/domain/subscription"
-    transition "github.com/hvritual/biz/internal/commercial/domain/timetransition"
-    "github.com/hvritual/biz/internal/commercial/ports"
-)
-
-// installTimeFence fail-closes the old PLAN authority at the requested boundary
-// before the asynchronous scheduler is allowed to converge subscription state.
-// It never extends an existing fixed period and creates the transition in the
-// caller's original root transaction.
-func (s *service) installTimeFence(ctx context.Context, repos ports.SubscriptionChangeRepositories, m material, after *subscription.Subscription, changeID string, due, now time.Time) (uint64, uint64, error) {
-    changed := false
-    for _, current := range m.state.Sources {
-        if current.SourceKind != entitlement.PlanSource || current.RevokedAt != nil {
-            continue
-        }
-        // A natural expiry earlier than the requested switch is already a
-        // stronger fence; never lengthen it.
-        if current.ExpiresAt != nil && !due.Before(*current.ExpiresAt) {
-            continue
-        }
-        before := current
-        fence := due
-        current.RevokedAt = &fence
-        current.Version++
-        if err := repos.Entitlements.Revoke(ctx, current, before.Version); err != nil {
-            return 0, 0, err
-        }
-        changed = true
-    }
-    sourceVersion := m.state.Version
-    entitlementVersion := m.current.EntitlementVersion
-    if changed {
-        if err := repos.Entitlements.Advance(ctx, after.TenantID, m.state.Version); err != nil {
-            return 0, 0, err
-        }
-        sourceVersion++
-        after.EntitlementSourceVersion = sourceVersion
-        view, err := s.snapshots.ReadSnapshot(ctx, after.TenantID, nil)
-        if err != nil {
-            return 0, 0, err
-        }
-        if view.SourceVersion != sourceVersion || view.EntitlementVersion <= m.current.EntitlementVersion || view.ValidUntil == nil || view.ValidUntil.After(due) {
-            return 0, 0, change.ErrCorrupt
-        }
-        entitlementVersion = view.EntitlementVersion
-    }
-    task, err := transition.New(transition.ScheduledChange, after.TenantID, changeID, after.Revision, due, now)
-    if err != nil {
-        return 0, 0, err
-    }
-    if err := repos.Transitions.Insert(ctx, task); err != nil {
-        return 0, 0, err
-    }
-    return sourceVersion, entitlementVersion, nil
-}
-''')
 
           proto=Path('contracts/proto/commercial/v1/subscription_change.proto')
           text=proto.read_text()
@@ -134,7 +68,7 @@ func (s *service) installTimeFence(ctx context.Context, repos ports.Subscription
           text=text.replace(close,ops+close,1)
           proto.write_text(text)
           PY
-          gofmt -w internal/commercial/application/subscriptionchanges/internal/usecase/time_fence.go internal/commercial/domain/subscriptionchange/model.go internal/commercial/domain/subscriptionchange/project.go internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go
+          gofmt -w internal/commercial/domain/subscriptionchange/model.go internal/commercial/domain/subscriptionchange/project.go internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go
           git diff --check
           git diff --name-only
       - name: Commit product patch
@@ -143,7 +77,7 @@ func (s *service) installTimeFence(ctx context.Context, repos ports.Subscription
           set -euo pipefail
           git config user.name hvritual
           git config user.email 460657446@qq.com
-          git add contracts/proto/commercial/v1/subscription_change.proto internal/commercial/domain/subscriptionchange/model.go internal/commercial/domain/subscriptionchange/project.go internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go internal/commercial/application/subscriptionchanges/internal/usecase/time_fence.go
+          git add contracts/proto/commercial/v1/subscription_change.proto internal/commercial/domain/subscriptionchange/model.go internal/commercial/domain/subscriptionchange/project.go internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go
           git commit -m 'feat(ce-16): fence scheduled authority and add worker contract'
           git push origin HEAD:refs/heads/feat/ce-16-time-scheduler
           echo "CE16_PATCH_HEAD=$(git rev-parse HEAD)"
