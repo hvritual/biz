@@ -19,7 +19,13 @@ import (
 const (
 	WebActorUser     = "user"
 	WebActorPlatform = "platform"
-	AuthMethodWeb    = "web-session"
+	// Current Biz operation contracts classify server-issued credentials as
+	// api-key authentication. A browser never receives an API key: after OIDC
+	// verification the BFF replaces provider tokens with a server-side session,
+	// and only that trusted server session is projected into this existing
+	// contract authentication class. Session origin remains explicit in the Web
+	// session context and cannot be supplied by an arbitrary header.
+	AuthMethodWeb = identity.AuthMethodAPIKey
 )
 
 var (
