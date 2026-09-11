@@ -36,7 +36,7 @@ func Artifacts(document Document) (map[string][]byte, error) {
 		{"capabilityCodes", "CapabilityCode", capabilities},
 		{"moduleCodes", "ModuleCode", modules},
 		{"classifications", "Classification", []string{string(TenantBusiness), string(PlatformManagement), string(Recovery), string(FoundationExempt)}},
-		{"consumerTypes", "ConsumerType", []string{"tenant", "platform", "internal_child"}},
+		{"consumerTypes", "ConsumerType", []string{"tenant", "platform", "internal_child", "worker"}},
 	} {
 		encoded, err := json.MarshalIndent(sorted(item.values), "", "  ")
 		if err != nil {

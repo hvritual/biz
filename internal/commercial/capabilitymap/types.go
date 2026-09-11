@@ -19,12 +19,13 @@ type Declaration struct {
 }
 
 type Mapping struct {
-	OperationID     string         `json:"operation_id"`
-	Classification  Classification `json:"classification"`
-	ModuleCode      string         `json:"module_code,omitempty"`
-	CapabilityCodes []string       `json:"capability_codes"`
-	ExemptionReason string         `json:"exemption_reason,omitempty"`
-	Children        []Child        `json:"children"`
+	WorkerPermission string         `json:"worker_permission,omitempty"`
+	OperationID      string         `json:"operation_id"`
+	Classification   Classification `json:"classification"`
+	ModuleCode       string         `json:"module_code,omitempty"`
+	CapabilityCodes  []string       `json:"capability_codes"`
+	ExemptionReason  string         `json:"exemption_reason,omitempty"`
+	Children         []Child        `json:"children"`
 }
 
 type Child struct {
@@ -46,7 +47,10 @@ type Operation struct {
 	Domain      string `json:"domain"`
 	Application string `json:"application"`
 	Security    struct {
-		TenantRequired bool `json:"tenantRequired"`
+		TenantRequired bool     `json:"tenantRequired"`
+		Permissions    []string `json:"permissions"`
+		PermissionMode string   `json:"permissionMode"`
+		Authentication []string `json:"authentication"`
 	} `json:"security"`
 	Composition struct {
 		Requires []string `json:"requiresOperations"`

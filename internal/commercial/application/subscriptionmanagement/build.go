@@ -7,6 +7,6 @@ import (
 	"yunka.io/framework/requestscope"
 )
 
-func Build(r requestscope.RepositoryFactory[ports.SubscriptionRepositories], c app.SubscriptionManagementCapabilities) (app.SubscriptionManagementApplication, error) {
-	return usecase.New(r, c)
+func Build(r requestscope.RepositoryFactory[ports.SubscriptionRepositories], c app.SubscriptionManagementCapabilities, policies ...ports.ProvisioningPolicy) (app.SubscriptionManagementApplication, error) {
+	return usecase.New(r, c, policies...)
 }

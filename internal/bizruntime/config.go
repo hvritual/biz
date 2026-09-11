@@ -34,6 +34,9 @@ func (bootstrap PlatformBootstrap) Validate() error {
 }
 
 type Options struct {
+	ProvisioningPolicy  commercialports.ProvisioningPolicy
+	PreparationAdapters []commercialports.RegisteredPreparation
+	ProvisioningWorker  ProvisioningWorkerOptions
 	// A local trusted adapter only; nil conservatively defers quota reductions.
 	QuotaChangePolicy commercialports.QuotaChangePolicy
 	// Disable only the derived cache; authority reads and write barriers remain on.
@@ -44,6 +47,9 @@ type Options struct {
 
 func (options Options) Validate() error {
 	if err := options.DeviceOps.Validate(); err != nil {
+		return err
+	}
+	if err := options.ProvisioningWorker.Validate(); err != nil {
 		return err
 	}
 	return options.PlatformBootstrap.Validate()

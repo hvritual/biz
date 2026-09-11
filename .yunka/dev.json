@@ -27,7 +27,8 @@
         "application:commercial/entitlement_management",
         "application:commercial/plan_management",
         "application:commercial/subscription_management",
-        "application:commercial/subscription_changes"
+        "application:commercial/subscription_changes",
+        "application:commercial/provisioning"
       ],
       "inheritEnv": [
         "PATH",
@@ -57,6 +58,7 @@
         "HTTPS_PROXY",
         "NO_PROXY",
         "YUNKA_BIZ_MYSQL_DSN",
+        "YUNKA_BIZ_PROVISIONING_WORKER_TOKEN",
         "YUNKA_BIZ_AUTO_MIGRATE",
         "YUNKA_BIZ_BOOTSTRAP_TOKEN",
         "YUNKA_BIZ_BOOTSTRAP_TENANT_ID",

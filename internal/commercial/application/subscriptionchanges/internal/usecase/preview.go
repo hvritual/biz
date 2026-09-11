@@ -105,7 +105,14 @@ func (s *service) PreviewSubscriptionChange(ctx context.Context, r *v1.PreviewSu
 		if i.Action == change.StopRenewal {
 			impacts = append(impacts, "Stops renewal intent only; does not shorten the current entitlement period or cancel external billing.")
 		}
-		p := change.Preview{ChangeID: id, ActorID: a, Input: i, Fingerprint: change.Digest(i), Before: m.before, Target: m.target, Current: m.current, Projected: projected, Classification: classification, Mode: mode, CreatedAt: now, ExpiresAt: expires, EffectiveAt: at, EntitlementExpiresAt: end, Dependencies: m.dependencies, Quotas: quotas, Impacts: impacts, QuotaValidationRequired: deferred, PricingBasis: pricing}.Seal()
+		requirements, e := s.preparationRequirements(call, i.Action, m.target)
+		if e != nil {
+			return change.Preview{}, e
+		}
+		if len(requirements) > 0 {
+			impacts = append(impacts, "External preparation is required. Confirmation reserves intent; effective rights remain unchanged until actual readiness and authoritative activation.")
+		}
+		p := change.Preview{ProvisioningRequirements: requirements, ChangeID: id, ActorID: a, Input: i, Fingerprint: change.Digest(i), Before: m.before, Target: m.target, Current: m.current, Projected: projected, Classification: classification, Mode: mode, CreatedAt: now, ExpiresAt: expires, EffectiveAt: at, EntitlementExpiresAt: end, Dependencies: m.dependencies, Quotas: quotas, Impacts: impacts, QuotaValidationRequired: deferred, PricingBasis: pricing}.Seal()
 		if e = repo.SavePreview(call, p); e != nil {
 			return p, e
 		}

@@ -397,6 +397,28 @@ export interface Commercial_V1_ListPlanVersionsResponse {
   nextAfterVersion?: string;
 }
 
+export interface Commercial_V1_ListProvisioningDeliveriesRequest {
+  tenantId?: string;
+  afterEventId?: string;
+  limit?: number;
+}
+
+export interface Commercial_V1_ListProvisioningDeliveriesResponse {
+  deliveries?: readonly Commercial_V1_ProvisioningDeliveryDTO[];
+  nextAfterEventId?: string;
+}
+
+export interface Commercial_V1_ListProvisioningTasksRequest {
+  tenantId?: string;
+  afterTaskId?: string;
+  limit?: number;
+}
+
+export interface Commercial_V1_ListProvisioningTasksResponse {
+  tasks?: readonly Commercial_V1_ProvisioningTaskDTO[];
+  nextAfterTaskId?: string;
+}
+
 export interface Commercial_V1_ModuleDTO {
   moduleCode?: string;
   name?: string;
@@ -409,6 +431,14 @@ export interface Commercial_V1_ModuleDTO {
   fieldPolicySchemaKeys?: readonly string[];
   dependencies?: readonly string[];
   version?: string;
+}
+
+export interface Commercial_V1_MutateProvisioningTaskRequest {
+  tenantId?: string;
+  taskId?: string;
+  expectedRevision?: string;
+  requestId?: string;
+  reason?: string;
 }
 
 export interface Commercial_V1_PlanEligibilityDTO {
@@ -470,6 +500,70 @@ export interface Commercial_V1_PreviewSubscriptionChangeRequest {
   reason?: string;
 }
 
+export interface Commercial_V1_ProvisioningCompletionDTO {
+  changeId?: string;
+  subscriptionRevision?: string;
+  sourceVersion?: string;
+  entitlementVersion?: string;
+  appliedAt?: string;
+}
+
+export interface Commercial_V1_ProvisioningDeliveryDTO {
+  eventId?: string;
+  tenantId?: string;
+  aggregateId?: string;
+  aggregateVersion?: string;
+  changeId?: string;
+  taskId?: string;
+  factStatus?: string;
+  entitlementVersion?: string;
+  deliveryState?: string;
+  attempts?: number;
+  failureCode?: string;
+  nextAttemptAt?: string;
+}
+
+export interface Commercial_V1_ProvisioningRequirementDTO {
+  code?: string;
+  adapter?: string;
+  version?: string;
+  maxAttempts?: number;
+}
+
+export interface Commercial_V1_ProvisioningStepDTO {
+  requirement?: Commercial_V1_ProvisioningRequirementDTO;
+  state?: string;
+  effect?: string;
+  attempts?: number;
+  cycleAttempts?: number;
+  reconciliations?: number;
+  evidence?: string;
+  failureCode?: string;
+}
+
+export interface Commercial_V1_ProvisioningTaskDTO {
+  taskId?: string;
+  tenantId?: string;
+  changeId?: string;
+  actorId?: string;
+  state?: string;
+  revision?: string;
+  targetPlanCode?: string;
+  targetPlanVersion?: string;
+  steps?: readonly Commercial_V1_ProvisioningStepDTO[];
+  stepIndex?: number;
+  stage?: string;
+  nextAttemptAt?: string;
+  failureCode?: string;
+  retryAllowed?: boolean;
+  cancellationAllowed?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  deadline?: string;
+  completion?: Commercial_V1_ProvisioningCompletionDTO;
+  retryCycles?: number;
+}
+
 export interface Commercial_V1_PutDefaultSubscriptionRuleRequest {
   requestId?: string;
   ruleId?: string;
@@ -480,6 +574,11 @@ export interface Commercial_V1_PutDefaultSubscriptionRuleRequest {
   planVersion?: string;
   enabled?: boolean;
   reason?: string;
+}
+
+export interface Commercial_V1_ReadProvisioningTaskRequest {
+  tenantId?: string;
+  taskId?: string;
 }
 
 export interface Commercial_V1_ReadSubscriptionChangeRequest {
@@ -542,6 +641,7 @@ export interface Commercial_V1_SubscriptionChangePreviewDTO {
   impacts?: readonly string[];
   pricingBasis?: string;
   quotaValidationRequired?: boolean;
+  provisioningRequirements?: readonly Commercial_V1_ProvisioningRequirementDTO[];
 }
 
 export interface Commercial_V1_SubscriptionChangeQuotaImpact {
@@ -578,6 +678,7 @@ export interface Commercial_V1_SubscriptionChangeReceiptDTO {
   quotaValidationRequired?: boolean;
   pricingAuthority?: string;
   quotaImpacts?: readonly Commercial_V1_SubscriptionChangeQuotaImpact[];
+  provisioningTaskId?: string;
 }
 
 export interface Commercial_V1_TenantSubscriptionDTO {
@@ -1046,6 +1147,51 @@ export const operations = {
       { method: "PATCH", path: "/v1/platform/plans/{plan_code}/versions/{version}", body: "*" },
     ]
   },
+  "commercial.v1.ProvisioningApplication.CancelProvisioningTask": {
+    fullName: "commercial.v1.ProvisioningApplication.CancelProvisioningTask",
+    rpcPath: "/commercial.v1.ProvisioningApplication/CancelProvisioningTask",
+    requestType: "commercial.v1.MutateProvisioningTaskRequest",
+    responseType: "commercial.v1.ProvisioningTaskDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel", body: "*" },
+    ]
+  },
+  "commercial.v1.ProvisioningApplication.GetProvisioningTask": {
+    fullName: "commercial.v1.ProvisioningApplication.GetProvisioningTask",
+    rpcPath: "/commercial.v1.ProvisioningApplication/GetProvisioningTask",
+    requestType: "commercial.v1.ReadProvisioningTaskRequest",
+    responseType: "commercial.v1.ProvisioningTaskDTO",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}" },
+    ]
+  },
+  "commercial.v1.ProvisioningApplication.ListProvisioningDeliveries": {
+    fullName: "commercial.v1.ProvisioningApplication.ListProvisioningDeliveries",
+    rpcPath: "/commercial.v1.ProvisioningApplication/ListProvisioningDeliveries",
+    requestType: "commercial.v1.ListProvisioningDeliveriesRequest",
+    responseType: "commercial.v1.ListProvisioningDeliveriesResponse",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/provisioning/deliveries" },
+    ]
+  },
+  "commercial.v1.ProvisioningApplication.ListProvisioningTasks": {
+    fullName: "commercial.v1.ProvisioningApplication.ListProvisioningTasks",
+    rpcPath: "/commercial.v1.ProvisioningApplication/ListProvisioningTasks",
+    requestType: "commercial.v1.ListProvisioningTasksRequest",
+    responseType: "commercial.v1.ListProvisioningTasksResponse",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/provisioning/tasks" },
+    ]
+  },
+  "commercial.v1.ProvisioningApplication.RetryProvisioningTask": {
+    fullName: "commercial.v1.ProvisioningApplication.RetryProvisioningTask",
+    rpcPath: "/commercial.v1.ProvisioningApplication/RetryProvisioningTask",
+    requestType: "commercial.v1.MutateProvisioningTaskRequest",
+    responseType: "commercial.v1.ProvisioningTaskDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry", body: "*" },
+    ]
+  },
   "commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange": {
     fullName: "commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange",
     rpcPath: "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange",
@@ -1359,6 +1505,31 @@ export class Commercial_V1_PlanManagementApplicationClient {
 
   updatePlanDraft(request: Commercial_V1_UpdatePlanDraftRequest): Promise<Commercial_V1_PlanVersionDTO> {
     return this.transport.call<Commercial_V1_UpdatePlanDraftRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.UpdatePlanDraft"], request);
+  }
+
+}
+
+export class Commercial_V1_ProvisioningApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  cancelProvisioningTask(request: Commercial_V1_MutateProvisioningTaskRequest): Promise<Commercial_V1_ProvisioningTaskDTO> {
+    return this.transport.call<Commercial_V1_MutateProvisioningTaskRequest, Commercial_V1_ProvisioningTaskDTO>(operations["commercial.v1.ProvisioningApplication.CancelProvisioningTask"], request);
+  }
+
+  getProvisioningTask(request: Commercial_V1_ReadProvisioningTaskRequest): Promise<Commercial_V1_ProvisioningTaskDTO> {
+    return this.transport.call<Commercial_V1_ReadProvisioningTaskRequest, Commercial_V1_ProvisioningTaskDTO>(operations["commercial.v1.ProvisioningApplication.GetProvisioningTask"], request);
+  }
+
+  listProvisioningDeliveries(request: Commercial_V1_ListProvisioningDeliveriesRequest): Promise<Commercial_V1_ListProvisioningDeliveriesResponse> {
+    return this.transport.call<Commercial_V1_ListProvisioningDeliveriesRequest, Commercial_V1_ListProvisioningDeliveriesResponse>(operations["commercial.v1.ProvisioningApplication.ListProvisioningDeliveries"], request);
+  }
+
+  listProvisioningTasks(request: Commercial_V1_ListProvisioningTasksRequest): Promise<Commercial_V1_ListProvisioningTasksResponse> {
+    return this.transport.call<Commercial_V1_ListProvisioningTasksRequest, Commercial_V1_ListProvisioningTasksResponse>(operations["commercial.v1.ProvisioningApplication.ListProvisioningTasks"], request);
+  }
+
+  retryProvisioningTask(request: Commercial_V1_MutateProvisioningTaskRequest): Promise<Commercial_V1_ProvisioningTaskDTO> {
+    return this.transport.call<Commercial_V1_MutateProvisioningTaskRequest, Commercial_V1_ProvisioningTaskDTO>(operations["commercial.v1.ProvisioningApplication.RetryProvisioningTask"], request);
   }
 
 }

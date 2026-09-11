@@ -27,5 +27,5 @@ func MigrateSubscriptions(ctx context.Context, db *gorm.DB) error {
 			return e
 		}
 	}
-	return nil
+	return MigrateProvisioning(ctx, db)
 }

@@ -70,7 +70,8 @@ func run() error {
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
-	started, err := bizruntime.Bootstrap(ctx, provider, config)
+	workerToken := os.Getenv("YUNKA_BIZ_PROVISIONING_WORKER_TOKEN")
+	started, err := bizruntime.BootstrapWithOptions(ctx, provider, bizruntime.Options{DeviceOps: config, ProvisioningWorker: bizruntime.ProvisioningWorkerOptions{Token: workerToken, Automatic: workerToken != ""}})
 	if err != nil {
 		return err
 	}

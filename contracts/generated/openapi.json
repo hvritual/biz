@@ -1085,6 +1085,68 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.ListPlanVersionsResponse"
       },
+      "commercial_v1_ListProvisioningDeliveriesRequest": {
+        "properties": {
+          "afterEventId": {
+            "type": "string"
+          },
+          "limit": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListProvisioningDeliveriesRequest"
+      },
+      "commercial_v1_ListProvisioningDeliveriesResponse": {
+        "properties": {
+          "deliveries": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_ProvisioningDeliveryDTO"
+            },
+            "type": "array"
+          },
+          "nextAfterEventId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListProvisioningDeliveriesResponse"
+      },
+      "commercial_v1_ListProvisioningTasksRequest": {
+        "properties": {
+          "afterTaskId": {
+            "type": "string"
+          },
+          "limit": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListProvisioningTasksRequest"
+      },
+      "commercial_v1_ListProvisioningTasksResponse": {
+        "properties": {
+          "nextAfterTaskId": {
+            "type": "string"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_ProvisioningTaskDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListProvisioningTasksResponse"
+      },
       "commercial_v1_ModuleDTO": {
         "properties": {
           "capabilityCodes": {
@@ -1159,6 +1221,29 @@
         ],
         "type": "string",
         "x-yunka-proto-full-name": "commercial.v1.ModuleTechnicalStatus"
+      },
+      "commercial_v1_MutateProvisioningTaskRequest": {
+        "properties": {
+          "expectedRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.MutateProvisioningTaskRequest"
       },
       "commercial_v1_PlanEligibilityDTO": {
         "properties": {
@@ -1342,6 +1427,207 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.PreviewSubscriptionChangeRequest"
       },
+      "commercial_v1_ProvisioningCompletionDTO": {
+        "properties": {
+          "appliedAt": {
+            "type": "string"
+          },
+          "changeId": {
+            "type": "string"
+          },
+          "entitlementVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "sourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "subscriptionRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ProvisioningCompletionDTO"
+      },
+      "commercial_v1_ProvisioningDeliveryDTO": {
+        "properties": {
+          "aggregateId": {
+            "type": "string"
+          },
+          "aggregateVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "attempts": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "changeId": {
+            "type": "string"
+          },
+          "deliveryState": {
+            "type": "string"
+          },
+          "entitlementVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "eventId": {
+            "type": "string"
+          },
+          "factStatus": {
+            "type": "string"
+          },
+          "failureCode": {
+            "type": "string"
+          },
+          "nextAttemptAt": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ProvisioningDeliveryDTO"
+      },
+      "commercial_v1_ProvisioningRequirementDTO": {
+        "properties": {
+          "adapter": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "maxAttempts": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ProvisioningRequirementDTO"
+      },
+      "commercial_v1_ProvisioningStepDTO": {
+        "properties": {
+          "attempts": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "cycleAttempts": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "effect": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "failureCode": {
+            "type": "string"
+          },
+          "reconciliations": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "requirement": {
+            "$ref": "#/components/schemas/commercial_v1_ProvisioningRequirementDTO"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ProvisioningStepDTO"
+      },
+      "commercial_v1_ProvisioningTaskDTO": {
+        "properties": {
+          "actorId": {
+            "type": "string"
+          },
+          "cancellationAllowed": {
+            "type": "boolean"
+          },
+          "changeId": {
+            "type": "string"
+          },
+          "completion": {
+            "$ref": "#/components/schemas/commercial_v1_ProvisioningCompletionDTO"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "deadline": {
+            "type": "string"
+          },
+          "failureCode": {
+            "type": "string"
+          },
+          "nextAttemptAt": {
+            "type": "string"
+          },
+          "retryAllowed": {
+            "type": "boolean"
+          },
+          "retryCycles": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "revision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "stage": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "stepIndex": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_ProvisioningStepDTO"
+            },
+            "type": "array"
+          },
+          "targetPlanCode": {
+            "type": "string"
+          },
+          "targetPlanVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "taskId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ProvisioningTaskDTO"
+      },
       "commercial_v1_PutDefaultSubscriptionRuleRequest": {
         "properties": {
           "enabled": {
@@ -1379,6 +1665,18 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.PutDefaultSubscriptionRuleRequest"
+      },
+      "commercial_v1_ReadProvisioningTaskRequest": {
+        "properties": {
+          "taskId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ReadProvisioningTaskRequest"
       },
       "commercial_v1_ReadSubscriptionChangeRequest": {
         "properties": {
@@ -1542,6 +1840,12 @@
           "projectedEntitlements": {
             "$ref": "#/components/schemas/commercial_v1_EntitlementView"
           },
+          "provisioningRequirements": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_ProvisioningRequirementDTO"
+            },
+            "type": "array"
+          },
           "quotaImpacts": {
             "items": {
               "$ref": "#/components/schemas/commercial_v1_SubscriptionChangeQuotaImpact"
@@ -1662,6 +1966,9 @@
             "type": "string"
           },
           "pricingAuthority": {
+            "type": "string"
+          },
+          "provisioningTaskId": {
             "type": "string"
           },
           "quotaImpacts": {
@@ -2988,6 +3295,239 @@
           "commercial.v1.EntitlementManagementApplication"
         ],
         "x-yunka-rpc": "/commercial.v1.EntitlementManagementApplication/ExplainEntitlements"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/provisioning/deliveries": {
+      "get": {
+        "operationId": "commercial.v1.ProvisioningApplication.ListProvisioningDeliveries",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "afterEventId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ListProvisioningDeliveriesResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ProvisioningApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ProvisioningApplication/ListProvisioningDeliveries"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/provisioning/tasks": {
+      "get": {
+        "operationId": "commercial.v1.ProvisioningApplication.ListProvisioningTasks",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "afterTaskId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ListProvisioningTasksResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ProvisioningApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ProvisioningApplication/ListProvisioningTasks"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}": {
+      "get": {
+        "operationId": "commercial.v1.ProvisioningApplication.GetProvisioningTask",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "taskId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ProvisioningTaskDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ProvisioningApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ProvisioningApplication/GetProvisioningTask"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel": {
+      "post": {
+        "operationId": "commercial.v1.ProvisioningApplication.CancelProvisioningTask",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "taskId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_MutateProvisioningTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ProvisioningTaskDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ProvisioningApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ProvisioningApplication/CancelProvisioningTask"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry": {
+      "post": {
+        "operationId": "commercial.v1.ProvisioningApplication.RetryProvisioningTask",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "taskId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_MutateProvisioningTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ProvisioningTaskDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ProvisioningApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ProvisioningApplication/RetryProvisioningTask"
       }
     },
     "/v1/platform/tenants/{tenant_id}/subscription": {

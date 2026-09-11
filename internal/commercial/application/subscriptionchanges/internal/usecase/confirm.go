@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
-	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
+	pv "github.com/hvritual/biz/internal/commercial/domain/provisioning"
 	change "github.com/hvritual/biz/internal/commercial/domain/subscriptionchange"
 	"github.com/hvritual/biz/internal/commercial/ports"
 	"strings"
@@ -93,6 +93,13 @@ func (s *service) ConfirmSubscriptionChange(ctx context.Context, r *v1.ConfirmSu
 		if e != nil {
 			return change.Receipt{}, e
 		}
+		requirements, e := s.preparationRequirements(call, p.Input.Action, m.target)
+		if e != nil {
+			return change.Receipt{}, e
+		}
+		if change.Digest(requirements) != change.Digest(p.ProvisioningRequirements) {
+			return change.Receipt{}, change.ErrConflict
+		}
 		// The last database clock check is the admission point. No external I/O is
 		// performed here; expired previews cannot ride an earlier preflight check.
 		admitted, e := repo.Now(call)
@@ -112,7 +119,18 @@ func (s *service) ConfirmSubscriptionChange(ctx context.Context, r *v1.ConfirmSu
 		after.Revision++
 		after.EntitlementSourceVersion = m.state.Version
 		v := change.Receipt{ChangeID: r.ChangeId, TenantID: r.TenantId, ActorID: a, RequestID: r.RequestId, Fingerprint: fingerprint, PreviewHash: p.Hash, Action: p.Input.Action, Status: change.Applied, Mode: mode, ConfirmedAt: admitted, EffectiveAt: at, EntitlementExpiresAt: end, Reason: reason, Before: m.before, BeforeSourceVersion: m.state.Version, AfterSourceVersion: m.state.Version, BeforeEntitlementVersion: m.current.EntitlementVersion, AfterEntitlementVersion: m.current.EntitlementVersion, QuotaValidationRequired: deferred, Quotas: quotas, PricingAuthority: "PLATFORM_MANUAL_APPROVAL"}
-		if mode == change.Scheduled {
+		if mode == change.Immediate && len(requirements) > 0 {
+			after.PendingChangeID = r.ChangeId
+			task, e := pv.New(r.TenantId, pv.Approval{ChangeID: r.ChangeId, ActorID: a, PreviewHash: p.Hash, TargetHash: m.target.ContentSHA256, TargetPlanCode: m.target.PlanCode, TargetPlanVersion: m.target.Number, SubscriptionRevision: after.Revision, SourceVersion: m.state.Version, EntitlementVersion: m.current.EntitlementVersion, CatalogRevision: m.current.CatalogRevision}, requirements, admitted)
+			if e != nil {
+				return v, e
+			}
+			if e = repos.Tasks.Insert(call, task); e != nil {
+				return v, e
+			}
+			v.Status = change.Provisioning
+			v.ProvisioningTaskID = task.ID
+		} else if mode == change.Scheduled {
 			// Reservation changes the subscription revision, not effective rights.
 			// A second confirmation with an old preview cannot reserve another change.
 			after.PendingChangeID = r.ChangeId
@@ -120,51 +138,10 @@ func (s *service) ConfirmSubscriptionChange(ctx context.Context, r *v1.ConfirmSu
 		} else if p.Input.Action == change.StopRenewal {
 			after.RenewalStopped = true
 		} else {
-			sources, e := change.ProjectSources(m.before, m.old, m.target, m.state.Sources, r.ChangeId, at, end)
+			v.AfterSourceVersion, v.AfterEntitlementVersion, e = s.applySources(call, repos, m, &after, r.ChangeId, at, end)
 			if e != nil {
 				return v, e
 			}
-			existing := map[string]entitlement.Source{}
-			for _, src := range m.state.Sources {
-				existing[src.ID] = src
-			}
-			for _, src := range sources {
-				if previous, ok := existing[src.ID]; ok {
-					if src.SourceKind == entitlement.PlanSource && previous.RevokedAt == nil && src.RevokedAt != nil {
-						if e = repos.Entitlements.Revoke(call, src, previous.Version); e != nil {
-							return v, e
-						}
-					}
-				} else {
-					if e = src.Validate(m.catalog); e != nil {
-						return v, e
-					}
-					if e = repos.Entitlements.Insert(call, src); e != nil {
-						return v, e
-					}
-				}
-			}
-			if e = repos.Entitlements.Advance(call, r.TenantId, m.state.Version); e != nil {
-				return v, e
-			}
-			after.PlanCode = m.target.PlanCode
-			after.PlanVersion = m.target.Number
-			after.PeriodStart = at
-			after.PeriodEnd = end
-			after.SourceNamespace = r.ChangeId
-			after.RenewalStopped = false
-			after.EntitlementSourceVersion = m.state.Version + 1
-			v.AfterSourceVersion = after.EntitlementSourceVersion
-			// Materialize the real immutable post-change snapshot inside this same root.
-			// It is never published to shared cache until an independent committed read.
-			view, e := s.snapshots.ReadSnapshot(call, r.TenantId, nil)
-			if e != nil {
-				return v, e
-			}
-			if view.SourceVersion != v.AfterSourceVersion || view.EntitlementVersion <= v.BeforeEntitlementVersion {
-				return v, change.ErrCorrupt
-			}
-			v.AfterEntitlementVersion = view.EntitlementVersion
 		}
 		if e = repo.SaveCurrent(call, m.before, after); e != nil {
 			return v, e

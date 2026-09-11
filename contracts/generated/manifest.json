@@ -62,6 +62,16 @@
       }
     },
     {
+      "name": "contracts/proto/commercial/v1/provisioning.proto",
+      "package": "commercial.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1",
+      "domain": {
+        "name": "commercial",
+        "version": "v1"
+      }
+    },
+    {
       "name": "contracts/proto/commercial/v1/subscription.proto",
       "package": "commercial.v1",
       "syntax": "proto3",
@@ -976,6 +986,89 @@
       }
     },
     {
+      "name": "ClaimProvisioningDeliveryRequest",
+      "fullName": "commercial.v1.ClaimProvisioningDeliveryRequest",
+      "fields": [
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_seconds",
+          "jsonName": "leaseSeconds",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ClaimProvisioningWorkRequest",
+      "fullName": "commercial.v1.ClaimProvisioningWorkRequest",
+      "fields": [
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_seconds",
+          "jsonName": "leaseSeconds",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "CompleteProvisioningDeliveryRequest",
+      "fullName": "commercial.v1.CompleteProvisioningDeliveryRequest",
+      "fields": [
+        {
+          "name": "event_id",
+          "jsonName": "eventId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_token",
+          "jsonName": "leaseToken",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "failure_code",
+          "jsonName": "failureCode",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "ConfirmSubscriptionChangeRequest",
       "fullName": "commercial.v1.ConfirmSubscriptionChangeRequest",
       "fields": [
@@ -1825,6 +1918,43 @@
       }
     },
     {
+      "name": "FinalizeProvisioningWorkRequest",
+      "fullName": "commercial.v1.FinalizeProvisioningWorkRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "task_id",
+          "jsonName": "taskId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_token",
+          "jsonName": "leaseToken",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "GetModuleRequest",
       "fullName": "commercial.v1.GetModuleRequest",
       "fields": [
@@ -2041,6 +2171,114 @@
       }
     },
     {
+      "name": "ListProvisioningDeliveriesRequest",
+      "fullName": "commercial.v1.ListProvisioningDeliveriesRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "after_event_id",
+          "jsonName": "afterEventId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "limit",
+          "jsonName": "limit",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListProvisioningDeliveriesResponse",
+      "fullName": "commercial.v1.ListProvisioningDeliveriesResponse",
+      "fields": [
+        {
+          "name": "deliveries",
+          "jsonName": "deliveries",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningDeliveryDTO",
+          "repeated": true
+        },
+        {
+          "name": "next_after_event_id",
+          "jsonName": "nextAfterEventId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListProvisioningTasksRequest",
+      "fullName": "commercial.v1.ListProvisioningTasksRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "after_task_id",
+          "jsonName": "afterTaskId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "limit",
+          "jsonName": "limit",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListProvisioningTasksResponse",
+      "fullName": "commercial.v1.ListProvisioningTasksResponse",
+      "fields": [
+        {
+          "name": "tasks",
+          "jsonName": "tasks",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningTaskDTO",
+          "repeated": true
+        },
+        {
+          "name": "next_after_task_id",
+          "jsonName": "nextAfterTaskId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "ModuleDTO",
       "fullName": "commercial.v1.ModuleDTO",
       "fields": [
@@ -2129,6 +2367,50 @@
       ],
       "dto": {
         "kind": "output"
+      }
+    },
+    {
+      "name": "MutateProvisioningTaskRequest",
+      "fullName": "commercial.v1.MutateProvisioningTaskRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "task_id",
+          "jsonName": "taskId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expected_revision",
+          "jsonName": "expectedRevision",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
       }
     },
     {
@@ -2408,6 +2690,50 @@
       }
     },
     {
+      "name": "PreparedSubscriptionChangeRequest",
+      "fullName": "commercial.v1.PreparedSubscriptionChangeRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "task_id",
+          "jsonName": "taskId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_token",
+          "jsonName": "leaseToken",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "task_revision",
+          "jsonName": "taskRevision",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "PreviewSubscriptionChangeRequest",
       "fullName": "commercial.v1.PreviewSubscriptionChangeRequest",
       "fields": [
@@ -2463,6 +2789,513 @@
       ],
       "dto": {
         "kind": "input"
+      }
+    },
+    {
+      "name": "ProvisioningCompletionDTO",
+      "fullName": "commercial.v1.ProvisioningCompletionDTO",
+      "fields": [
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "subscription_revision",
+          "jsonName": "subscriptionRevision",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "source_version",
+          "jsonName": "sourceVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "entitlement_version",
+          "jsonName": "entitlementVersion",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "applied_at",
+          "jsonName": "appliedAt",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ProvisioningDeliveryDTO",
+      "fullName": "commercial.v1.ProvisioningDeliveryDTO",
+      "fields": [
+        {
+          "name": "event_id",
+          "jsonName": "eventId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "aggregate_id",
+          "jsonName": "aggregateId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "aggregate_version",
+          "jsonName": "aggregateVersion",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "task_id",
+          "jsonName": "taskId",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "fact_status",
+          "jsonName": "factStatus",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "entitlement_version",
+          "jsonName": "entitlementVersion",
+          "number": 8,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "delivery_state",
+          "jsonName": "deliveryState",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "attempts",
+          "jsonName": "attempts",
+          "number": 10,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "failure_code",
+          "jsonName": "failureCode",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "next_attempt_at",
+          "jsonName": "nextAttemptAt",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ProvisioningDeliveryResultDTO",
+      "fullName": "commercial.v1.ProvisioningDeliveryResultDTO",
+      "fields": [
+        {
+          "name": "event_id",
+          "jsonName": "eventId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "outcome",
+          "jsonName": "outcome",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "aggregate_version",
+          "jsonName": "aggregateVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "entitlement_version",
+          "jsonName": "entitlementVersion",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ProvisioningDeliveryWorkDTO",
+      "fullName": "commercial.v1.ProvisioningDeliveryWorkDTO",
+      "fields": [
+        {
+          "name": "found",
+          "jsonName": "found",
+          "number": 1,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "delivery",
+          "jsonName": "delivery",
+          "number": 2,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningDeliveryDTO"
+        },
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_token",
+          "jsonName": "leaseToken",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ProvisioningRequirementDTO",
+      "fullName": "commercial.v1.ProvisioningRequirementDTO",
+      "fields": [
+        {
+          "name": "code",
+          "jsonName": "code",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "adapter",
+          "jsonName": "adapter",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "max_attempts",
+          "jsonName": "maxAttempts",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ProvisioningStepDTO",
+      "fullName": "commercial.v1.ProvisioningStepDTO",
+      "fields": [
+        {
+          "name": "requirement",
+          "jsonName": "requirement",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningRequirementDTO"
+        },
+        {
+          "name": "state",
+          "jsonName": "state",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "effect",
+          "jsonName": "effect",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "attempts",
+          "jsonName": "attempts",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "cycle_attempts",
+          "jsonName": "cycleAttempts",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "reconciliations",
+          "jsonName": "reconciliations",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "evidence",
+          "jsonName": "evidence",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "failure_code",
+          "jsonName": "failureCode",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ProvisioningTaskDTO",
+      "fullName": "commercial.v1.ProvisioningTaskDTO",
+      "fields": [
+        {
+          "name": "task_id",
+          "jsonName": "taskId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_id",
+          "jsonName": "actorId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "jsonName": "state",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "revision",
+          "jsonName": "revision",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "target_plan_code",
+          "jsonName": "targetPlanCode",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "target_plan_version",
+          "jsonName": "targetPlanVersion",
+          "number": 8,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "steps",
+          "jsonName": "steps",
+          "number": 9,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningStepDTO",
+          "repeated": true
+        },
+        {
+          "name": "step_index",
+          "jsonName": "stepIndex",
+          "number": 10,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "stage",
+          "jsonName": "stage",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "next_attempt_at",
+          "jsonName": "nextAttemptAt",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "failure_code",
+          "jsonName": "failureCode",
+          "number": 13,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "retry_allowed",
+          "jsonName": "retryAllowed",
+          "number": 14,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "cancellation_allowed",
+          "jsonName": "cancellationAllowed",
+          "number": 15,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "created_at",
+          "jsonName": "createdAt",
+          "number": 16,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "updated_at",
+          "jsonName": "updatedAt",
+          "number": 17,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "deadline",
+          "jsonName": "deadline",
+          "number": 18,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "completion",
+          "jsonName": "completion",
+          "number": 19,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningCompletionDTO"
+        },
+        {
+          "name": "retry_cycles",
+          "jsonName": "retryCycles",
+          "number": 20,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ProvisioningWorkDTO",
+      "fullName": "commercial.v1.ProvisioningWorkDTO",
+      "fields": [
+        {
+          "name": "found",
+          "jsonName": "found",
+          "number": 1,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "task",
+          "jsonName": "task",
+          "number": 2,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningTaskDTO"
+        },
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_token",
+          "jsonName": "leaseToken",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "idempotency_key",
+          "jsonName": "idempotencyKey",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
       }
     },
     {
@@ -2538,6 +3371,29 @@
       }
     },
     {
+      "name": "ReadProvisioningTaskRequest",
+      "fullName": "commercial.v1.ReadProvisioningTaskRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "task_id",
+          "jsonName": "taskId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "ReadSubscriptionChangeRequest",
       "fullName": "commercial.v1.ReadSubscriptionChangeRequest",
       "fields": [
@@ -2552,6 +3408,64 @@
           "name": "change_id",
           "jsonName": "changeId",
           "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "RecordProvisioningWorkRequest",
+      "fullName": "commercial.v1.RecordProvisioningWorkRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "task_id",
+          "jsonName": "taskId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_token",
+          "jsonName": "leaseToken",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "outcome",
+          "jsonName": "outcome",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "evidence",
+          "jsonName": "evidence",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "failure_code",
+          "jsonName": "failureCode",
+          "number": 7,
           "kind": "scalar",
           "type": "string"
         }
@@ -2897,6 +3811,14 @@
           "number": 25,
           "kind": "scalar",
           "type": "bool"
+        },
+        {
+          "name": "provisioning_requirements",
+          "jsonName": "provisioningRequirements",
+          "number": 26,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningRequirementDTO",
+          "repeated": true
         }
       ],
       "dto": {
@@ -3126,6 +4048,13 @@
           "kind": "message",
           "type": "commercial.v1.SubscriptionChangeQuotaImpact",
           "repeated": true
+        },
+        {
+          "name": "provisioning_task_id",
+          "jsonName": "provisioningTaskId",
+          "number": 22,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
@@ -5722,6 +6651,340 @@
       ]
     },
     {
+      "name": "ProvisioningApplication",
+      "fullName": "commercial.v1.ProvisioningApplication",
+      "domain": "commercial",
+      "application": {
+        "name": "provisioning",
+        "requires": [
+          "commercial/subscription_changes"
+        ],
+        "operations": [
+          {
+            "id": "commercial.provisioning.delivery.claim",
+            "useCase": "claim_provisioning_delivery",
+            "permissions": [
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.ClaimProvisioningDeliveryRequest",
+            "responseType": "commercial.v1.ProvisioningDeliveryWorkDTO",
+            "applicationMethod": "ClaimProvisioningDelivery"
+          },
+          {
+            "id": "commercial.provisioning.delivery.complete",
+            "useCase": "complete_provisioning_delivery",
+            "permissions": [
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.CompleteProvisioningDeliveryRequest",
+            "responseType": "commercial.v1.ProvisioningDeliveryResultDTO",
+            "applicationMethod": "CompleteProvisioningDelivery"
+          },
+          {
+            "id": "commercial.provisioning.delivery.fail",
+            "useCase": "fail_provisioning_delivery",
+            "permissions": [
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.CompleteProvisioningDeliveryRequest",
+            "responseType": "commercial.v1.ProvisioningDeliveryResultDTO",
+            "applicationMethod": "FailProvisioningDelivery"
+          },
+          {
+            "id": "commercial.provisioning.work.claim",
+            "useCase": "claim_provisioning_work",
+            "permissions": [
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.ClaimProvisioningWorkRequest",
+            "responseType": "commercial.v1.ProvisioningWorkDTO",
+            "applicationMethod": "ClaimProvisioningWork"
+          },
+          {
+            "id": "commercial.provisioning.work.finalize",
+            "useCase": "finalize_provisioning_work",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.subscription.change.prepared"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.FinalizeProvisioningWorkRequest",
+            "responseType": "commercial.v1.ProvisioningTaskDTO",
+            "applicationMethod": "FinalizeProvisioningWork"
+          },
+          {
+            "id": "commercial.provisioning.work.record",
+            "useCase": "record_provisioning_work",
+            "permissions": [
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.RecordProvisioningWorkRequest",
+            "responseType": "commercial.v1.ProvisioningTaskDTO",
+            "applicationMethod": "RecordProvisioningWork"
+          }
+        ]
+      },
+      "methods": [
+        {
+          "name": "CancelProvisioningTask",
+          "fullName": "commercial.v1.ProvisioningApplication.CancelProvisioningTask",
+          "request": "commercial.v1.MutateProvisioningTaskRequest",
+          "response": "commercial.v1.ProvisioningTaskDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.provisioning.task.cancel",
+            "useCase": "cancel_provisioning_task",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.provisioning.cancel",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.subscription.change.preparation.cancel"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.provisioning.task.cancel",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.provisioning.cancel",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "GetProvisioningTask",
+          "fullName": "commercial.v1.ProvisioningApplication.GetProvisioningTask",
+          "request": "commercial.v1.ReadProvisioningTaskRequest",
+          "response": "commercial.v1.ProvisioningTaskDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.provisioning.task.get",
+            "useCase": "get_provisioning_task",
+            "permissions": [
+              "platform.provisioning.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.provisioning.task.get",
+            "permissions": [
+              "platform.provisioning.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "ListProvisioningDeliveries",
+          "fullName": "commercial.v1.ProvisioningApplication.ListProvisioningDeliveries",
+          "request": "commercial.v1.ListProvisioningDeliveriesRequest",
+          "response": "commercial.v1.ListProvisioningDeliveriesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/provisioning/deliveries"
+            }
+          ],
+          "operation": {
+            "id": "commercial.provisioning.delivery.list",
+            "useCase": "list_provisioning_deliveries",
+            "permissions": [
+              "platform.provisioning.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.provisioning.delivery.list",
+            "permissions": [
+              "platform.provisioning.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "ListProvisioningTasks",
+          "fullName": "commercial.v1.ProvisioningApplication.ListProvisioningTasks",
+          "request": "commercial.v1.ListProvisioningTasksRequest",
+          "response": "commercial.v1.ListProvisioningTasksResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/provisioning/tasks"
+            }
+          ],
+          "operation": {
+            "id": "commercial.provisioning.task.list",
+            "useCase": "list_provisioning_tasks",
+            "permissions": [
+              "platform.provisioning.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.provisioning.task.list",
+            "permissions": [
+              "platform.provisioning.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "RetryProvisioningTask",
+          "fullName": "commercial.v1.ProvisioningApplication.RetryProvisioningTask",
+          "request": "commercial.v1.MutateProvisioningTaskRequest",
+          "response": "commercial.v1.ProvisioningTaskDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.provisioning.task.retry",
+            "useCase": "retry_provisioning_task",
+            "permissions": [
+              "platform.provisioning.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.provisioning.task.retry",
+            "permissions": [
+              "platform.provisioning.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "SubscriptionChangesApplication",
       "fullName": "commercial.v1.SubscriptionChangesApplication",
       "domain": "commercial",
@@ -5730,6 +6993,54 @@
         "requires": [
           "commercial/module_catalog",
           "commercial/plan_management"
+        ],
+        "operations": [
+          {
+            "id": "commercial.subscription.change.preparation.cancel",
+            "useCase": "cancel_prepared_subscription_change",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.provisioning.cancel"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.PreparedSubscriptionChangeRequest",
+            "responseType": "commercial.v1.ProvisioningCompletionDTO",
+            "applicationMethod": "CancelPreparedSubscriptionChange"
+          },
+          {
+            "id": "commercial.subscription.change.prepared",
+            "useCase": "complete_prepared_subscription_change",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog",
+              "commercial.plan.eligibility",
+              "commercial.plan.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.PreparedSubscriptionChangeRequest",
+            "responseType": "commercial.v1.ProvisioningCompletionDTO",
+            "applicationMethod": "CompletePreparedSubscriptionChange"
+          }
         ]
       },
       "methods": [

@@ -13,16 +13,18 @@ import (
 
 	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
 	"github.com/hvritual/biz/internal/commercial/domain/plan"
+	pv "github.com/hvritual/biz/internal/commercial/domain/provisioning"
 	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 )
 
 const (
-	Switch      = "SWITCH"
-	Renew       = "RENEW"
-	StopRenewal = "STOP_RENEWAL"
-	Immediate   = "IMMEDIATE"
-	Scheduled   = "SCHEDULED"
-	Applied     = "APPLIED"
+	Switch       = "SWITCH"
+	Renew        = "RENEW"
+	StopRenewal  = "STOP_RENEWAL"
+	Immediate    = "IMMEDIATE"
+	Scheduled    = "SCHEDULED"
+	Applied      = "APPLIED"
+	Provisioning = "PROVISIONING"
 )
 
 var (
@@ -108,37 +110,39 @@ type QuotaImpact struct {
 	Evidence   string            `json:"evidence"`
 }
 type Preview struct {
-	ChangeID                string                    `json:"change_id"`
-	ActorID                 string                    `json:"actor_id"`
-	Input                   Input                     `json:"input"`
-	Fingerprint             string                    `json:"fingerprint"`
-	Hash                    string                    `json:"hash"`
-	Before                  subscription.Subscription `json:"before"`
-	Target                  plan.Version              `json:"target"`
-	Current                 entitlement.Result        `json:"current"`
-	Projected               entitlement.Result        `json:"projected"`
-	Classification          string                    `json:"classification"`
-	Mode                    string                    `json:"mode"`
-	CreatedAt               time.Time                 `json:"created_at"`
-	ExpiresAt               time.Time                 `json:"expires_at"`
-	EffectiveAt             time.Time                 `json:"effective_at"`
-	EntitlementExpiresAt    *time.Time                `json:"entitlement_expires_at,omitempty"`
-	Dependencies            []Dependency              `json:"dependencies"`
-	Quotas                  []QuotaImpact             `json:"quotas"`
-	Impacts                 []string                  `json:"impacts"`
-	QuotaValidationRequired bool                      `json:"quota_validation_required"`
-	PricingBasis            string                    `json:"pricing_basis"`
+	ProvisioningRequirements []pv.Requirement          `json:"provisioning_requirements,omitempty"`
+	ChangeID                 string                    `json:"change_id"`
+	ActorID                  string                    `json:"actor_id"`
+	Input                    Input                     `json:"input"`
+	Fingerprint              string                    `json:"fingerprint"`
+	Hash                     string                    `json:"hash"`
+	Before                   subscription.Subscription `json:"before"`
+	Target                   plan.Version              `json:"target"`
+	Current                  entitlement.Result        `json:"current"`
+	Projected                entitlement.Result        `json:"projected"`
+	Classification           string                    `json:"classification"`
+	Mode                     string                    `json:"mode"`
+	CreatedAt                time.Time                 `json:"created_at"`
+	ExpiresAt                time.Time                 `json:"expires_at"`
+	EffectiveAt              time.Time                 `json:"effective_at"`
+	EntitlementExpiresAt     *time.Time                `json:"entitlement_expires_at,omitempty"`
+	Dependencies             []Dependency              `json:"dependencies"`
+	Quotas                   []QuotaImpact             `json:"quotas"`
+	Impacts                  []string                  `json:"impacts"`
+	QuotaValidationRequired  bool                      `json:"quota_validation_required"`
+	PricingBasis             string                    `json:"pricing_basis"`
 }
 
 func (p Preview) Seal() Preview { p.Hash = ""; p.Hash = Digest(p); return p }
 func (p Preview) Integrity() error {
-	if p.Input.Validate() != nil || p.ActorID == "" || p.ChangeID != ID(p.ActorID, p.Input.TenantID, p.Input.RequestID) || p.Fingerprint != Digest(p.Input) || !p.CreatedAt.Before(p.ExpiresAt) || p.Hash != p.Seal().Hash || p.Before.TenantID != p.Input.TenantID || p.Before.Revision == 0 || p.Current.SourceVersion == 0 || p.Current.EntitlementVersion == 0 || p.Target.Integrity() != nil {
+	if pv.ValidateRequirements(p.ProvisioningRequirements) != nil || p.Input.Validate() != nil || p.ActorID == "" || p.ChangeID != ID(p.ActorID, p.Input.TenantID, p.Input.RequestID) || p.Fingerprint != Digest(p.Input) || !p.CreatedAt.Before(p.ExpiresAt) || p.Hash != p.Seal().Hash || p.Before.TenantID != p.Input.TenantID || p.Before.Revision == 0 || p.Current.SourceVersion == 0 || p.Current.EntitlementVersion == 0 || p.Target.Integrity() != nil {
 		return ErrCorrupt
 	}
 	return nil
 }
 
 type Receipt struct {
+	ProvisioningTaskID       string                    `json:"provisioning_task_id,omitempty"`
 	ChangeID                 string                    `json:"change_id"`
 	TenantID                 string                    `json:"tenant_id"`
 	ActorID                  string                    `json:"actor_id"`
@@ -166,7 +170,7 @@ type Receipt struct {
 
 func (r Receipt) Seal() Receipt { r.Hash = ""; r.Hash = Digest(r); return r }
 func (r Receipt) Integrity() error {
-	if !Tenant(r.TenantID) || !Key(r.RequestID) || !Key(r.ChangeID) || r.ActorID == "" || r.Hash != r.Seal().Hash || r.Before.TenantID != r.TenantID || r.After.TenantID != r.TenantID || r.After.Revision != r.Before.Revision+1 || r.After.Revision == 0 || r.ConfirmedAt.IsZero() || len(r.PreviewHash) != 64 || (r.Status != Applied && r.Status != Scheduled) {
+	if !Tenant(r.TenantID) || !Key(r.RequestID) || !Key(r.ChangeID) || r.ActorID == "" || r.Hash != r.Seal().Hash || r.Before.TenantID != r.TenantID || r.After.TenantID != r.TenantID || r.After.Revision != r.Before.Revision+1 || r.After.Revision == 0 || r.ConfirmedAt.IsZero() || len(r.PreviewHash) != 64 || (r.Status != Applied && r.Status != Scheduled && r.Status != Provisioning) || (r.Status == Provisioning && (r.ProvisioningTaskID != pv.TaskID(r.ChangeID) || r.After.PendingChangeID != r.ChangeID || r.Mode != Immediate)) {
 		return ErrCorrupt
 	}
 	return nil

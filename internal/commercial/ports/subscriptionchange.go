@@ -21,6 +21,8 @@ type SubscriptionChangeRepository interface {
 	Now(context.Context) (time.Time, error)
 }
 type SubscriptionChangeRepositories struct {
+	Tasks        ProvisioningRepository
+	Events       OutboxRepository
 	Changes      SubscriptionChangeRepository
 	Entitlements EntitlementRepository
 }

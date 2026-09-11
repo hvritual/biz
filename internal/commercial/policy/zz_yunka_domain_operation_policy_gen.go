@@ -5,7 +5,7 @@ package policy
 import "yunka.io/gateway/authz"
 
 func Permissions() []authz.PermissionKey {
-	return []authz.PermissionKey{"commercial.catalog.read", "platform.entitlement.manage", "platform.entitlement.read", "platform.module.manage", "platform.module.read", "platform.module.technical.manage", "platform.plan.manage", "platform.plan.publish", "platform.plan.read", "platform.subscription.confirm", "platform.subscription.manage", "platform.subscription.read", "platform.tenant.read", "tenant.entitlement.read"}
+	return []authz.PermissionKey{"commercial.catalog.read", "platform.entitlement.manage", "platform.entitlement.read", "platform.module.manage", "platform.module.read", "platform.module.technical.manage", "platform.plan.manage", "platform.plan.publish", "platform.plan.read", "platform.provisioning.cancel", "platform.provisioning.manage", "platform.provisioning.read", "platform.subscription.confirm", "platform.subscription.manage", "platform.subscription.read", "platform.tenant.read", "tenant.entitlement.read"}
 }
 
 func Resolver() authz.StaticResolver {
@@ -17,6 +17,9 @@ func Resolver() authz.StaticResolver {
 		policies[key] = value
 	}
 	for key, value := range planManagementPolicies() {
+		policies[key] = value
+	}
+	for key, value := range provisioningPolicies() {
 		policies[key] = value
 	}
 	for key, value := range subscriptionChangesPolicies() {

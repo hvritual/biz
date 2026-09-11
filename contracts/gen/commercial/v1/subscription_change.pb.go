@@ -430,14 +430,15 @@ type SubscriptionChangePreviewDTO struct {
 	EntitlementExpiresAt string           `protobuf:"bytes,18,opt,name=entitlement_expires_at,json=entitlementExpiresAt,proto3" json:"entitlement_expires_at,omitempty"`
 	CurrentEntitlements  *EntitlementView `protobuf:"bytes,19,opt,name=current_entitlements,json=currentEntitlements,proto3" json:"current_entitlements,omitempty"`
 	// Hypothetical only: entitlement_version=0, never a cacheable authority.
-	ProjectedEntitlements   *EntitlementView                 `protobuf:"bytes,20,opt,name=projected_entitlements,json=projectedEntitlements,proto3" json:"projected_entitlements,omitempty"`
-	Dependencies            []*SubscriptionChangeDependency  `protobuf:"bytes,21,rep,name=dependencies,proto3" json:"dependencies,omitempty"`
-	QuotaImpacts            []*SubscriptionChangeQuotaImpact `protobuf:"bytes,22,rep,name=quota_impacts,json=quotaImpacts,proto3" json:"quota_impacts,omitempty"`
-	Impacts                 []string                         `protobuf:"bytes,23,rep,name=impacts,proto3" json:"impacts,omitempty"`
-	PricingBasis            string                           `protobuf:"bytes,24,opt,name=pricing_basis,json=pricingBasis,proto3" json:"pricing_basis,omitempty"`
-	QuotaValidationRequired bool                             `protobuf:"varint,25,opt,name=quota_validation_required,json=quotaValidationRequired,proto3" json:"quota_validation_required,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	ProjectedEntitlements    *EntitlementView                 `protobuf:"bytes,20,opt,name=projected_entitlements,json=projectedEntitlements,proto3" json:"projected_entitlements,omitempty"`
+	Dependencies             []*SubscriptionChangeDependency  `protobuf:"bytes,21,rep,name=dependencies,proto3" json:"dependencies,omitempty"`
+	QuotaImpacts             []*SubscriptionChangeQuotaImpact `protobuf:"bytes,22,rep,name=quota_impacts,json=quotaImpacts,proto3" json:"quota_impacts,omitempty"`
+	Impacts                  []string                         `protobuf:"bytes,23,rep,name=impacts,proto3" json:"impacts,omitempty"`
+	PricingBasis             string                           `protobuf:"bytes,24,opt,name=pricing_basis,json=pricingBasis,proto3" json:"pricing_basis,omitempty"`
+	QuotaValidationRequired  bool                             `protobuf:"varint,25,opt,name=quota_validation_required,json=quotaValidationRequired,proto3" json:"quota_validation_required,omitempty"`
+	ProvisioningRequirements []*ProvisioningRequirementDTO    `protobuf:"bytes,26,rep,name=provisioning_requirements,json=provisioningRequirements,proto3" json:"provisioning_requirements,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *SubscriptionChangePreviewDTO) Reset() {
@@ -645,6 +646,13 @@ func (x *SubscriptionChangePreviewDTO) GetQuotaValidationRequired() bool {
 	return false
 }
 
+func (x *SubscriptionChangePreviewDTO) GetProvisioningRequirements() []*ProvisioningRequirementDTO {
+	if x != nil {
+		return x.ProvisioningRequirements
+	}
+	return nil
+}
+
 type SubscriptionChangeReceiptDTO struct {
 	state                    protoimpl.MessageState           `protogen:"open.v1"`
 	ChangeId                 string                           `protobuf:"bytes,1,opt,name=change_id,json=changeId,proto3" json:"change_id,omitempty"`
@@ -668,6 +676,7 @@ type SubscriptionChangeReceiptDTO struct {
 	QuotaValidationRequired  bool                             `protobuf:"varint,19,opt,name=quota_validation_required,json=quotaValidationRequired,proto3" json:"quota_validation_required,omitempty"`
 	PricingAuthority         string                           `protobuf:"bytes,20,opt,name=pricing_authority,json=pricingAuthority,proto3" json:"pricing_authority,omitempty"`
 	QuotaImpacts             []*SubscriptionChangeQuotaImpact `protobuf:"bytes,21,rep,name=quota_impacts,json=quotaImpacts,proto3" json:"quota_impacts,omitempty"`
+	ProvisioningTaskId       string                           `protobuf:"bytes,22,opt,name=provisioning_task_id,json=provisioningTaskId,proto3" json:"provisioning_task_id,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -849,11 +858,18 @@ func (x *SubscriptionChangeReceiptDTO) GetQuotaImpacts() []*SubscriptionChangeQu
 	return nil
 }
 
+func (x *SubscriptionChangeReceiptDTO) GetProvisioningTaskId() string {
+	if x != nil {
+		return x.ProvisioningTaskId
+	}
+	return ""
+}
+
 var File_commercial_v1_subscription_change_proto protoreflect.FileDescriptor
 
 const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\n" +
-	"'commercial/v1/subscription_change.proto\x12\rcommercial.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1ayunka/dsl/v1/options.proto\x1a\x18commercial/v1/plan.proto\x1a commercial/v1/subscription.proto\x1a\x1fcommercial/v1/entitlement.proto\"\x8b\x02\n" +
+	"'commercial/v1/subscription_change.proto\x12\rcommercial.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1ayunka/dsl/v1/options.proto\x1a\x18commercial/v1/plan.proto\x1a commercial/v1/subscription.proto\x1a\x1fcommercial/v1/entitlement.proto\x1a commercial/v1/provisioning.proto\"\x8b\x02\n" +
 	" PreviewSubscriptionChangeRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1d\n" +
 	"\n" +
@@ -890,7 +906,7 @@ const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\n" +
 	"over_limit\x18\a \x01(\bR\toverLimit\x12\x16\n" +
 	"\x06policy\x18\b \x01(\tR\x06policy\x12\x1a\n" +
-	"\bevidence\x18\t \x01(\tR\bevidence\"\x96\t\n" +
+	"\bevidence\x18\t \x01(\tR\bevidence\"\xfe\t\n" +
 	"\x1cSubscriptionChangePreviewDTO\x12\x1b\n" +
 	"\tchange_id\x18\x01 \x01(\tR\bchangeId\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x19\n" +
@@ -920,7 +936,8 @@ const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\rquota_impacts\x18\x16 \x03(\v2,.commercial.v1.SubscriptionChangeQuotaImpactR\fquotaImpacts\x12\x18\n" +
 	"\aimpacts\x18\x17 \x03(\tR\aimpacts\x12#\n" +
 	"\rpricing_basis\x18\x18 \x01(\tR\fpricingBasis\x12:\n" +
-	"\x19quota_validation_required\x18\x19 \x01(\bR\x17quotaValidationRequired\"\xa3\a\n" +
+	"\x19quota_validation_required\x18\x19 \x01(\bR\x17quotaValidationRequired\x12f\n" +
+	"\x19provisioning_requirements\x18\x1a \x03(\v2).commercial.v1.ProvisioningRequirementDTOR\x18provisioningRequirements\"\xd5\a\n" +
 	"\x1cSubscriptionChangeReceiptDTO\x12\x1b\n" +
 	"\tchange_id\x18\x01 \x01(\tR\bchangeId\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x19\n" +
@@ -944,7 +961,8 @@ const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\x19after_entitlement_version\x18\x12 \x01(\x04R\x17afterEntitlementVersion\x12:\n" +
 	"\x19quota_validation_required\x18\x13 \x01(\bR\x17quotaValidationRequired\x12+\n" +
 	"\x11pricing_authority\x18\x14 \x01(\tR\x10pricingAuthority\x12Q\n" +
-	"\rquota_impacts\x18\x15 \x03(\v2,.commercial.v1.SubscriptionChangeQuotaImpactR\fquotaImpacts2\xc8\r\n" +
+	"\rquota_impacts\x18\x15 \x03(\v2,.commercial.v1.SubscriptionChangeQuotaImpactR\fquotaImpacts\x120\n" +
+	"\x14provisioning_task_id\x18\x16 \x01(\tR\x12provisioningTaskId2\xef\x12\n" +
 	"\x1eSubscriptionChangesApplication\x12\xcc\x03\n" +
 	"\x19PreviewSubscriptionChange\x12/.commercial.v1.PreviewSubscriptionChangeRequest\x1a+.commercial.v1.SubscriptionChangePreviewDTO\"\xd0\x02\xe2\xf3\x18\x83\x02\n" +
 	"&commercial.subscription.change.preview\x12\x1bpreview_subscription_change\x1a\x1cplatform.subscription.manage\x1a\x14platform.tenant.read\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02B\x13commercial.plan.getB\x1bcommercial.plan.eligibilityB\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02B:\x01*\"=/v1/platform/tenants/{tenant_id}/subscription/change-previews\x12\xd9\x03\n" +
@@ -953,8 +971,10 @@ const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\x1cGetSubscriptionChangePreview\x12,.commercial.v1.ReadSubscriptionChangeRequest\x1a+.commercial.v1.SubscriptionChangePreviewDTO\"\xde\x01\xe2\xf3\x18\x88\x01\n" +
 	"*commercial.subscription.change.preview.get\x12\x1fget_subscription_change_preview\x1a\x1aplatform.subscription.read\x1a\x14platform.tenant.read2\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02K\x12I/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}\x12\xca\x02\n" +
 	"\x1cGetSubscriptionChangeReceipt\x12,.commercial.v1.ReadSubscriptionChangeRequest\x1a+.commercial.v1.SubscriptionChangeReceiptDTO\"\xce\x01\xe2\xf3\x18\x80\x01\n" +
-	"\"commercial.subscription.change.get\x12\x1fget_subscription_change_receipt\x1a\x1aplatform.subscription.read\x1a\x14platform.tenant.read2\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02C\x12A/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}\x1aQ\xda\xf3\x18M\n" +
-	"\x14subscription_changes\x12\x1acommercial/plan_management\x12\x19commercial/module_catalogBV\xca\xf3\x18\x10\n" +
+	"\"commercial.subscription.change.get\x12\x1fget_subscription_change_receipt\x1a\x1aplatform.subscription.read\x1a\x14platform.tenant.read2\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02C\x12A/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}\x1a\xf7\x05\xda\xf3\x18\xf2\x05\n" +
+	"\x14subscription_changes\x12\x1acommercial/plan_management\x12\x19commercial/module_catalog\x1a\xf7\x02\n" +
+	"'commercial.subscription.change.prepared\x12%complete_prepared_subscription_change\x1a\x1dplatform.provisioning.execute\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02B\x13commercial.plan.getB\x1bcommercial.plan.eligibilityB\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x01Z/commercial.v1.PreparedSubscriptionChangeRequestb'commercial.v1.ProvisioningCompletionDTOj\"CompletePreparedSubscriptionChange\x1a\xa8\x02\n" +
+	"1commercial.subscription.change.preparation.cancel\x12#cancel_prepared_subscription_change\x1a\x1cplatform.provisioning.cancel\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02R\x04\b\x03\x10\x01Z/commercial.v1.PreparedSubscriptionChangeRequestb'commercial.v1.ProvisioningCompletionDTOj CancelPreparedSubscriptionChangeBV\xca\xf3\x18\x10\n" +
 	"\n" +
 	"commercial\x12\x02v1Z@github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1b\x06proto3"
 
@@ -983,6 +1003,7 @@ var file_commercial_v1_subscription_change_proto_goTypes = []any{
 	(*TenantSubscriptionDTO)(nil),            // 8: commercial.v1.TenantSubscriptionDTO
 	(*PlanVersionDTO)(nil),                   // 9: commercial.v1.PlanVersionDTO
 	(*EntitlementView)(nil),                  // 10: commercial.v1.EntitlementView
+	(*ProvisioningRequirementDTO)(nil),       // 11: commercial.v1.ProvisioningRequirementDTO
 }
 var file_commercial_v1_subscription_change_proto_depIdxs = []int32{
 	7,  // 0: commercial.v1.SubscriptionChangeQuotaImpact.before_limit:type_name -> commercial.v1.EntitlementLimit
@@ -993,22 +1014,23 @@ var file_commercial_v1_subscription_change_proto_depIdxs = []int32{
 	10, // 5: commercial.v1.SubscriptionChangePreviewDTO.projected_entitlements:type_name -> commercial.v1.EntitlementView
 	3,  // 6: commercial.v1.SubscriptionChangePreviewDTO.dependencies:type_name -> commercial.v1.SubscriptionChangeDependency
 	4,  // 7: commercial.v1.SubscriptionChangePreviewDTO.quota_impacts:type_name -> commercial.v1.SubscriptionChangeQuotaImpact
-	8,  // 8: commercial.v1.SubscriptionChangeReceiptDTO.before:type_name -> commercial.v1.TenantSubscriptionDTO
-	8,  // 9: commercial.v1.SubscriptionChangeReceiptDTO.after:type_name -> commercial.v1.TenantSubscriptionDTO
-	4,  // 10: commercial.v1.SubscriptionChangeReceiptDTO.quota_impacts:type_name -> commercial.v1.SubscriptionChangeQuotaImpact
-	0,  // 11: commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange:input_type -> commercial.v1.PreviewSubscriptionChangeRequest
-	1,  // 12: commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange:input_type -> commercial.v1.ConfirmSubscriptionChangeRequest
-	2,  // 13: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview:input_type -> commercial.v1.ReadSubscriptionChangeRequest
-	2,  // 14: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt:input_type -> commercial.v1.ReadSubscriptionChangeRequest
-	5,  // 15: commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange:output_type -> commercial.v1.SubscriptionChangePreviewDTO
-	6,  // 16: commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
-	5,  // 17: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview:output_type -> commercial.v1.SubscriptionChangePreviewDTO
-	6,  // 18: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
-	15, // [15:19] is the sub-list for method output_type
-	11, // [11:15] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	11, // 8: commercial.v1.SubscriptionChangePreviewDTO.provisioning_requirements:type_name -> commercial.v1.ProvisioningRequirementDTO
+	8,  // 9: commercial.v1.SubscriptionChangeReceiptDTO.before:type_name -> commercial.v1.TenantSubscriptionDTO
+	8,  // 10: commercial.v1.SubscriptionChangeReceiptDTO.after:type_name -> commercial.v1.TenantSubscriptionDTO
+	4,  // 11: commercial.v1.SubscriptionChangeReceiptDTO.quota_impacts:type_name -> commercial.v1.SubscriptionChangeQuotaImpact
+	0,  // 12: commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange:input_type -> commercial.v1.PreviewSubscriptionChangeRequest
+	1,  // 13: commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange:input_type -> commercial.v1.ConfirmSubscriptionChangeRequest
+	2,  // 14: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview:input_type -> commercial.v1.ReadSubscriptionChangeRequest
+	2,  // 15: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt:input_type -> commercial.v1.ReadSubscriptionChangeRequest
+	5,  // 16: commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange:output_type -> commercial.v1.SubscriptionChangePreviewDTO
+	6,  // 17: commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
+	5,  // 18: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview:output_type -> commercial.v1.SubscriptionChangePreviewDTO
+	6,  // 19: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
+	16, // [16:20] is the sub-list for method output_type
+	12, // [12:16] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_commercial_v1_subscription_change_proto_init() }
@@ -1019,6 +1041,7 @@ func file_commercial_v1_subscription_change_proto_init() {
 	file_commercial_v1_plan_proto_init()
 	file_commercial_v1_subscription_proto_init()
 	file_commercial_v1_entitlement_proto_init()
+	file_commercial_v1_provisioning_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
