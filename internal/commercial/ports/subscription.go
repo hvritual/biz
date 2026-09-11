@@ -28,4 +28,5 @@ type SubscriptionRepository interface {
 type SubscriptionRepositories struct {
 	Subscriptions SubscriptionRepository
 	Entitlements  EntitlementRepository
+	Transitions   TimeTransitionRepository
 }
