@@ -1,0 +1,25 @@
+name: CE-10 business-main readback
+on:
+  push:
+    branches: [control/ce10-delivery-20260910]
+    paths: ['.github/workflows/ce10-business-main-readback-20260911.yml']
+permissions: {contents: read, actions: read, checks: read}
+jobs:
+  readback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TARGET_SHA: 5bb4f87aa59856aad585cdc1e7e53016b6920380
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ env.TARGET_SHA }}', path: biz, fetch-depth: 0, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ github.sha }}', path: control, persist-credentials: false}
+      - name: Verify terminal business main and completed dependencies
+        env: {GH_TOKEN: '${{ github.token }}'}
+        shell: bash
+        run: python3 control/.ce10/main-readback.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce10-business-main-readback-${{ env.TARGET_SHA }}', path: '${{ runner.temp }}/ce10-main-readback', retention-days: 30, if-no-files-found: error}
