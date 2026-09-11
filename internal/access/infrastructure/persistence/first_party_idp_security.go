@@ -145,21 +145,29 @@ func (store *Store) DisableUserPassword(ctx context.Context, userID string) erro
 	if store == nil || store.database == nil || userID == "" {
 		return ErrInvalidUserCredentials
 	}
-	result := store.database.WithContext(ctx).Model(&userPasswordCredentialRecord{}).Where("user_id = ?", userID).Update("disabled", true)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected != 1 {
-		return ErrInvalidUserCredentials
-	}
-	return store.RevokeWebSessionsForUser(ctx, userID)
+	return store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&userPasswordCredentialRecord{}).Where("user_id = ?", userID).Update("disabled", true)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return ErrInvalidUserCredentials
+		}
+		return revokeWebSessionsForUser(ctx, tx, userID)
+	})
 }
 
 func (store *Store) RotateUserPassword(ctx context.Context, userID, password string) error {
-	if err := store.SetUserPassword(ctx, userID, password); err != nil {
-		return err
+	userID = strings.TrimSpace(userID)
+	if store == nil || store.database == nil || userID == "" {
+		return ErrInvalidUserCredentials
 	}
-	return store.RevokeWebSessionsForUser(ctx, userID)
+	return store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := setUserPassword(ctx, tx, userID, password); err != nil {
+			return err
+		}
+		return revokeWebSessionsForUser(ctx, tx, userID)
+	})
 }
 
 func (store *Store) RevokeWebSessionsForUser(ctx context.Context, userID string) error {
@@ -167,8 +175,15 @@ func (store *Store) RevokeWebSessionsForUser(ctx context.Context, userID string)
 	if store == nil || store.database == nil || userID == "" {
 		return nil
 	}
+	return revokeWebSessionsForUser(ctx, store.database, userID)
+}
+
+func revokeWebSessionsForUser(ctx context.Context, database *gorm.DB, userID string) error {
+	if database == nil {
+		return errors.New("access: web session revoke store unavailable")
+	}
 	now := time.Now().UTC()
-	return store.database.WithContext(ctx).Exec(`
+	return database.WithContext(ctx).Exec(`
 UPDATE biz_web_sessions s
 JOIN biz_web_identities i ON i.issuer = s.issuer AND i.subject = s.subject
 SET s.revoked_at = ?, s.updated_at = ?

@@ -112,15 +112,22 @@ func (store *Store) EnsureFirstPartyIDPSchema(ctx context.Context) error {
 // user. It does not create users, memberships or roles; the member lifecycle
 // remains the account authority.
 func (store *Store) SetUserPassword(ctx context.Context, userID, password string) error {
+	if store == nil || store.database == nil {
+		return ErrInvalidUserCredentials
+	}
+	return setUserPassword(ctx, store.database, userID, password)
+}
+
+func setUserPassword(ctx context.Context, database *gorm.DB, userID, password string) error {
 	userID = strings.TrimSpace(userID)
-	if store == nil || store.database == nil || userID == "" {
+	if database == nil || userID == "" {
 		return ErrInvalidUserCredentials
 	}
 	if len(password) < 12 || len(password) > 1024 {
 		return errors.New("access: password must contain between 12 and 1024 bytes")
 	}
 	var user userRecord
-	if err := store.database.WithContext(ctx).Where("id = ? AND status = ?", userID, "active").First(&user).Error; err != nil {
+	if err := database.WithContext(ctx).Where("id = ? AND status = ?", userID, "active").First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrInvalidUserCredentials
 		}
@@ -141,7 +148,7 @@ func (store *Store) SetUserPassword(ctx context.Context, userID, password string
 		PasswordChangedAt: now,
 		UpdatedAt:         now,
 	}
-	return store.database.WithContext(ctx).Clauses(clause.OnConflict{
+	return database.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "user_id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"salt", "password_hash", "iterations", "disabled", "password_changed_at", "updated_at"}),
 	}).Create(&record).Error
