@@ -20,7 +20,7 @@ on:
       - web/package.json
       - web/package-lock.json
   pull_request:
-    branches: [feat/ce-12-oidc-bff-session, main]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      YUNKA_SHA: e323ee5833d929b5b1d0494fc29aae0aaa2b6f4a
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce12_browser?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
       CE12_E2E_ENV_FILE: /tmp/ce12-browser.json
       CE12_BIZ_BASE_URL: http://127.0.0.1:18080
@@ -57,7 +57,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Checkout exact Yunka baseline
+      - name: Checkout exact Yunka compatibility baseline
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: hvritual/yunka.io
@@ -88,9 +88,11 @@ jobs:
           test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
           bad="$(gofmt -l \
             biz/internal/access/infrastructure/persistence/first_party_idp.go \
+            biz/internal/access/infrastructure/persistence/first_party_idp_security.go \
             biz/internal/access/infrastructure/persistence/web_session.go \
             biz/internal/bizruntime/config.go \
             biz/internal/bizruntime/first_party_idp.go \
+            biz/internal/bizruntime/first_party_idp_hardening_test.go \
             biz/internal/bizruntime/first_party_idp_server.go \
             biz/internal/bizruntime/oidc_static.go \
             biz/integration/ce12_browser_seed_test.go \
@@ -112,12 +114,13 @@ jobs:
           go -C biz test -count=1 -tags=integration ./integration -run '^TestCE12BrowserSeed$'
           test -s "$CE12_E2E_ENV_FILE"
 
-      - name: Generate qualification IdP signing key
+      - name: Generate qualification IdP signing key ring
         shell: bash
         run: |
           set -euo pipefail
           openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$RUNNER_TEMP/ce12-idp-signing.pem" >/dev/null 2>&1
-          chmod 600 "$RUNNER_TEMP/ce12-idp-signing.pem"
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$RUNNER_TEMP/ce12-idp-previous.pem" >/dev/null 2>&1
+          chmod 600 "$RUNNER_TEMP/ce12-idp-signing.pem" "$RUNNER_TEMP/ce12-idp-previous.pem"
 
       - name: Start first-party OIDC IdP
         shell: bash
@@ -126,8 +129,10 @@ jobs:
           export YUNKA_BIZ_MYSQL_DSN="$YUNKA_TEST_MYSQL_DSN"
           export YUNKA_BIZ_IDP_PUBLIC_URL="http://127.0.0.1:18081"
           export YUNKA_BIZ_IDP_REDIRECT_URL="http://127.0.0.1:18080/auth/callback"
+          export YUNKA_BIZ_IDP_POST_LOGOUT_REDIRECT_URL="http://127.0.0.1:18080/"
           export YUNKA_BIZ_IDP_CLIENT_ID="biz-web"
           export YUNKA_BIZ_IDP_SIGNING_KEY_FILE="$RUNNER_TEMP/ce12-idp-signing.pem"
+          export YUNKA_BIZ_IDP_PREVIOUS_SIGNING_KEY_FILES="$RUNNER_TEMP/ce12-idp-previous.pem"
           export YUNKA_BIZ_IDP_COOKIE_SECURE="false"
           export YUNKA_BIZ_IDP_LISTEN="127.0.0.1:18081"
           export YUNKA_BIZ_IDP_AUTO_MIGRATE="true"
@@ -139,6 +144,17 @@ jobs:
           done
           curl -fsS http://127.0.0.1:18081/healthz
           curl -fsS http://127.0.0.1:18081/idp/.well-known/openid-configuration | tee "$RUNNER_TEMP/ce12-discovery.json"
+          curl -fsS http://127.0.0.1:18081/idp/jwks | tee "$RUNNER_TEMP/ce12-jwks.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          payload = json.loads(Path(os.environ['RUNNER_TEMP'], 'ce12-jwks.json').read_text())
+          keys = payload.get('keys', [])
+          assert len(keys) == 2, keys
+          kids = {key.get('kid') for key in keys}
+          assert None not in kids and len(kids) == 2, keys
+          print('CE12_IDP_KEY_ROLLOVER=PASS')
+          PY
 
       - name: Start Biz BFF resource server
         shell: bash
@@ -151,6 +167,7 @@ jobs:
           export YUNKA_BIZ_OIDC_ISSUER="http://127.0.0.1:18081/idp"
           export YUNKA_BIZ_OIDC_CLIENT_ID="biz-web"
           export YUNKA_BIZ_OIDC_REDIRECT_URL="http://127.0.0.1:18080/auth/callback"
+          export YUNKA_BIZ_OIDC_POST_LOGOUT_REDIRECT_URL="http://127.0.0.1:18080/"
           export YUNKA_BIZ_OIDC_COOKIE_SECURE="false"
           export YUNKA_BIZ_OIDC_SCOPES="openid profile email"
           nohup go -C biz run ./cmd/biz >"$RUNNER_TEMP/ce12-biz.log" 2>&1 &
@@ -203,6 +220,7 @@ jobs:
           cp "$RUNNER_TEMP/ce12-idp.log" biz/web/test-results/ce12-idp.log 2>/dev/null
           cp "$RUNNER_TEMP/ce12-biz.log" biz/web/test-results/ce12-biz.log 2>/dev/null
           cp "$RUNNER_TEMP/ce12-discovery.json" biz/web/test-results/ce12-discovery.json 2>/dev/null
+          cp "$RUNNER_TEMP/ce12-jwks.json" biz/web/test-results/ce12-jwks.json 2>/dev/null
           find biz/web/test-results -maxdepth 1 -type f ! -name ce12-evidence-sha256.txt -print0 | sort -z | xargs -0 -r sha256sum > biz/web/test-results/ce12-evidence-sha256.txt
 
       - name: Stop CE-12 servers
