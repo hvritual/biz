@@ -171,7 +171,9 @@ test("TestCE12BrowserRealIdPToSessionTenantIAMEntitlement", async ({ page, reque
 
   const devices = await browserRequest(page, data.base_url, "/v1/devices");
   expect(devices.status, devices.text).toBe(200);
-  expect(devices.json).toEqual(expect.objectContaining({ devices: expect.any(Array) }));
+  expect(devices.json).toEqual(expect.any(Object));
+  const deviceView = devices.json as { devices?: unknown[] };
+  expect(deviceView.devices ?? []).toEqual(expect.any(Array));
 
   const finalSession = sessionFrom(await browserRequest(page, data.base_url, "/auth/session"));
   expect(finalSession.active_tenant_id).toBe(data.allowed_tenant);
