@@ -2,12 +2,16 @@ name: CE-12 qualification
 
 on:
   push:
-    branches: [feat/ce-12-oidc-bff-session, main]
+    branches: [feat/ce-12-first-party-idp-e2e, main]
     paths:
+      - contracts/**
       - internal/access/**
       - internal/bizruntime/**
+      - internal/deviceops/**
       - integration/ce12_*
       - cmd/biz/**
+      - cmd/biz-idp/**
+      - cmd/biz-idp-credential/**
       - docs/commercial-entitlements/**
       - .github/workflows/ce12-qualification.yml
       - go.mod
@@ -16,10 +20,14 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - contracts/**
       - internal/access/**
       - internal/bizruntime/**
+      - internal/deviceops/**
       - integration/ce12_*
       - cmd/biz/**
+      - cmd/biz-idp/**
+      - cmd/biz-idp-credential/**
       - docs/commercial-entitlements/**
       - .github/workflows/ce12-qualification.yml
       - go.mod
@@ -33,9 +41,9 @@ permissions:
 jobs:
   qualify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     env:
-      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      YUNKA_SHA: e323ee5833d929b5b1d0494fc29aae0aaa2b6f4a
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce12?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
     services:
       mysql:
@@ -59,7 +67,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Checkout exact Yunka baseline
+      - name: Checkout exact Yunka compatibility baseline
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: hvritual/yunka.io
@@ -88,16 +96,44 @@ jobs:
           set -euo pipefail
           test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
-          bad="$(gofmt -l biz/internal/access/infrastructure/persistence/platform.go biz/internal/access/infrastructure/persistence/web_session.go biz/internal/bizruntime/config.go biz/internal/bizruntime/oidc_client.go biz/internal/bizruntime/oidc_client_test.go biz/internal/bizruntime/runtime.go biz/internal/bizruntime/web_auth.go biz/integration/ce12_web_session_mysql_test.go biz/cmd/biz/main.go)"
+          bad="$(gofmt -l \
+            biz/internal/access/infrastructure/persistence/platform.go \
+            biz/internal/access/infrastructure/persistence/first_party_idp.go \
+            biz/internal/access/infrastructure/persistence/first_party_idp_security.go \
+            biz/internal/access/infrastructure/persistence/web_session.go \
+            biz/internal/bizruntime/config.go \
+            biz/internal/bizruntime/first_party_idp.go \
+            biz/internal/bizruntime/first_party_idp_hardening_test.go \
+            biz/internal/bizruntime/oidc_client.go \
+            biz/internal/bizruntime/oidc_client_test.go \
+            biz/internal/bizruntime/runtime.go \
+            biz/internal/bizruntime/web_auth.go \
+            biz/integration/ce12_browser_seed_test.go \
+            biz/integration/ce12_first_party_migration_test.go \
+            biz/integration/ce12_web_session_mysql_test.go \
+            biz/cmd/biz/main.go \
+            biz/cmd/biz-idp/main.go \
+            biz/cmd/biz-idp-credential/main.go)"
           test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
 
-      - name: Run CE-12 protocol and trust-boundary unit tests
+      - name: Verify web-session authority is explicit and fail-closed
         shell: bash
         run: |
           set -euo pipefail
+          grep -q 'AuthMethodWeb = "web-session"' biz/internal/access/infrastructure/persistence/web_session.go
+          ! grep -q 'AuthMethodWeb = identity.AuthMethodAPIKey' biz/internal/access/infrastructure/persistence/web_session.go
+          grep -R -q 'AUTHENTICATION_WEB_SESSION' biz/contracts/proto
+          grep -R -q 'Authentication: \[\]string{"api-key", "web-session"}' biz/internal
+          test -s biz/internal/access/infrastructure/persistence/migrations/0002_ce12_first_party_identity.sql
+
+      - name: Run CE-12 protocol and security unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 ./internal/access/infrastructure/persistence ./internal/bizruntime
           go -C biz test -count=1 ./internal/bizruntime -run '^TestCE12'
 
-      - name: Run CE-12 real MySQL session authority tests
+      - name: Run CE-12 real MySQL authority and migration tests
         shell: bash
         run: |
           set -euo pipefail
@@ -109,12 +145,12 @@ jobs:
           set -euo pipefail
           go -C biz test -count=1 ./...
 
-      - name: Vet and build Biz runtime
+      - name: Vet and build production identity binaries
         shell: bash
         run: |
           set -euo pipefail
           go -C biz vet ./...
-          go -C biz build ./cmd/biz
+          go -C biz build ./cmd/biz ./cmd/biz-idp ./cmd/biz-idp-credential
 
       - name: Verify candidate worktree remains clean
         shell: bash
