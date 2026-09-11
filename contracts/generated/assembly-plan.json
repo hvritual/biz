@@ -1553,6 +1553,24 @@
       }
     },
     {
+      "id": "commercial.subscription.transition.claim",
+      "application": "commercial/subscription_changes",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.transition.claim"
+      }
+    },
+    {
+      "id": "commercial.subscription.transition.complete",
+      "application": "commercial/subscription_changes",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.transition.complete"
+      }
+    },
+    {
       "id": "device.create",
       "application": "deviceops/device_management",
       "bindings": [
@@ -2693,6 +2711,33 @@
       }
     },
     {
+      "from": "commercial.subscription.transition.complete",
+      "to": "commercial.module.plan_catalog",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.transition.complete/requiresOperations/commercial.module.plan_catalog"
+      }
+    },
+    {
+      "from": "commercial.subscription.transition.complete",
+      "to": "commercial.plan.eligibility",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.transition.complete/requiresOperations/commercial.plan.eligibility"
+      }
+    },
+    {
+      "from": "commercial.subscription.transition.complete",
+      "to": "commercial.plan.get",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.transition.complete/requiresOperations/commercial.plan.get"
+      }
+    },
+    {
       "from": "device.transfer",
       "to": "device.update",
       "evidence": {
@@ -2933,6 +2978,8 @@
         "commercial.subscription.bootstrap_base",
         "commercial.subscription.change.preparation.cancel",
         "commercial.subscription.change.prepared",
+        "commercial.subscription.transition.claim",
+        "commercial.subscription.transition.complete",
         "site.validate_transfer_target",
         "tenant.member.bootstrap_owner",
         "tenant.role.assert_member_deactivation_allowed",

@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "mapping_version": "8",
+  "mapping_version": "9",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "396430cf0982aef0a1d8e2fb88e26bd5d5e7be519c0085ffb9fef049d68b3926",
-    "contracts/generated/manifest.json": "c6fee0ee40a957df306e28f9ee5a7bae463a470b0a0519d731453b2424cc786d",
-    "contracts/generated/operation-plans.json": "7e2150e6c3c4a92933f59511700d9e5c10a3d05a6ad68fe104ccd353bf9caaa6",
+    "contracts/commercial/operation-capabilities.v1.json": "511c0d2f11563cab101c322d5fa18d4906afb86ece54aab26699ad2df4e74ce1",
+    "contracts/generated/manifest.json": "e974284ed6a0b5c388f834388073363a9e6cc4ebc9e5225f8680d0ac6f7dd538",
+    "contracts/generated/operation-plans.json": "9e17bf599b0dc5a9e0c3ac534c3baad1200eaa2c651545da357f06425c0f319c",
     "internal/access/application/tenant_member_lifecycle.go": "c629117c2538c45af9a75932a53ecd6109059bd56e6dc71b11eedb2e538c6cff",
     "internal/access/application/tenantlifecycle/internal/usecase/service.go": "63e3eba06691d15fa88041b660431b48e87640bfaf35954774595db9880e5d29",
     "internal/commercial/application/entitlementmanagement/internal/usecase/service.go": "6cbcb31645f67104b8089b6c8559a2ff0ba5d6f5eb3b49e6fa56f238040f046c",
@@ -706,6 +706,49 @@
       "consumer_type": "platform",
       "tenant_required": false,
       "rpc": "/commercial.v1.SubscriptionManagementApplication/PutDefaultSubscriptionRule",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "worker_permission": "platform.provisioning.execute",
+      "operation_id": "commercial.subscription.transition.claim",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-16 durable commercial time-transition worker. Persisted tenantless platform identity, platform.provisioning.execute permission, existing Executor, DB-time lease fencing and root UoW remain mandatory; these internal worker operations have no public transport and never grant tenant business access.",
+      "children": [],
+      "consumer_type": "worker",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "worker_permission": "platform.provisioning.execute",
+      "operation_id": "commercial.subscription.transition.complete",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-16 durable commercial time-transition worker. Persisted tenantless platform identity, platform.provisioning.execute permission, existing Executor, DB-time lease fencing and root UoW remain mandatory; these internal worker operations have no public transport and never grant tenant business access.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "conditional",
+          "condition": "claimed due SCHEDULED_CHANGE remains authoritative and must revalidate immutable target plan, eligibility and current commercial module catalog before execution; other transition kinds do not call these children",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "conditional",
+          "condition": "claimed due SCHEDULED_CHANGE remains authoritative and must revalidate immutable target plan, eligibility and current commercial module catalog before execution; other transition kinds do not call these children",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.get",
+          "mode": "conditional",
+          "condition": "claimed due SCHEDULED_CHANGE remains authoritative and must revalidate immutable target plan, eligibility and current commercial module catalog before execution; other transition kinds do not call these children",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        }
+      ],
+      "consumer_type": "worker",
+      "tenant_required": false,
       "required_capability_codes": [],
       "always_required_capability_codes": []
     },

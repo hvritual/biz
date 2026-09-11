@@ -865,6 +865,386 @@ func (x *SubscriptionChangeReceiptDTO) GetProvisioningTaskId() string {
 	return ""
 }
 
+type ClaimCommercialTimeTransitionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WorkerId      string                 `protobuf:"bytes,1,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	LeaseSeconds  uint32                 `protobuf:"varint,2,opt,name=lease_seconds,json=leaseSeconds,proto3" json:"lease_seconds,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClaimCommercialTimeTransitionRequest) Reset() {
+	*x = ClaimCommercialTimeTransitionRequest{}
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClaimCommercialTimeTransitionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClaimCommercialTimeTransitionRequest) ProtoMessage() {}
+
+func (x *ClaimCommercialTimeTransitionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClaimCommercialTimeTransitionRequest.ProtoReflect.Descriptor instead.
+func (*ClaimCommercialTimeTransitionRequest) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ClaimCommercialTimeTransitionRequest) GetWorkerId() string {
+	if x != nil {
+		return x.WorkerId
+	}
+	return ""
+}
+
+func (x *ClaimCommercialTimeTransitionRequest) GetLeaseSeconds() uint32 {
+	if x != nil {
+		return x.LeaseSeconds
+	}
+	return 0
+}
+
+type CommercialTimeTransitionDTO struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	TransitionId     string                 `protobuf:"bytes,1,opt,name=transition_id,json=transitionId,proto3" json:"transition_id,omitempty"`
+	Kind             string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	TenantId         string                 `protobuf:"bytes,3,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	AuthorityId      string                 `protobuf:"bytes,4,opt,name=authority_id,json=authorityId,proto3" json:"authority_id,omitempty"`
+	AuthorityVersion uint64                 `protobuf:"varint,5,opt,name=authority_version,json=authorityVersion,proto3" json:"authority_version,omitempty"`
+	DueAt            string                 `protobuf:"bytes,6,opt,name=due_at,json=dueAt,proto3" json:"due_at,omitempty"`
+	State            string                 `protobuf:"bytes,7,opt,name=state,proto3" json:"state,omitempty"`
+	Revision         uint64                 `protobuf:"varint,8,opt,name=revision,proto3" json:"revision,omitempty"`
+	Outcome          string                 `protobuf:"bytes,9,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	BusinessTimezone string                 `protobuf:"bytes,10,opt,name=business_timezone,json=businessTimezone,proto3" json:"business_timezone,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *CommercialTimeTransitionDTO) Reset() {
+	*x = CommercialTimeTransitionDTO{}
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommercialTimeTransitionDTO) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommercialTimeTransitionDTO) ProtoMessage() {}
+
+func (x *CommercialTimeTransitionDTO) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommercialTimeTransitionDTO.ProtoReflect.Descriptor instead.
+func (*CommercialTimeTransitionDTO) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CommercialTimeTransitionDTO) GetTransitionId() string {
+	if x != nil {
+		return x.TransitionId
+	}
+	return ""
+}
+
+func (x *CommercialTimeTransitionDTO) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *CommercialTimeTransitionDTO) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *CommercialTimeTransitionDTO) GetAuthorityId() string {
+	if x != nil {
+		return x.AuthorityId
+	}
+	return ""
+}
+
+func (x *CommercialTimeTransitionDTO) GetAuthorityVersion() uint64 {
+	if x != nil {
+		return x.AuthorityVersion
+	}
+	return 0
+}
+
+func (x *CommercialTimeTransitionDTO) GetDueAt() string {
+	if x != nil {
+		return x.DueAt
+	}
+	return ""
+}
+
+func (x *CommercialTimeTransitionDTO) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *CommercialTimeTransitionDTO) GetRevision() uint64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *CommercialTimeTransitionDTO) GetOutcome() string {
+	if x != nil {
+		return x.Outcome
+	}
+	return ""
+}
+
+func (x *CommercialTimeTransitionDTO) GetBusinessTimezone() string {
+	if x != nil {
+		return x.BusinessTimezone
+	}
+	return ""
+}
+
+type ClaimCommercialTimeTransitionResponse struct {
+	state         protoimpl.MessageState       `protogen:"open.v1"`
+	Found         bool                         `protobuf:"varint,1,opt,name=found,proto3" json:"found,omitempty"`
+	Transition    *CommercialTimeTransitionDTO `protobuf:"bytes,2,opt,name=transition,proto3" json:"transition,omitempty"`
+	LeaseToken    uint64                       `protobuf:"varint,3,opt,name=lease_token,json=leaseToken,proto3" json:"lease_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClaimCommercialTimeTransitionResponse) Reset() {
+	*x = ClaimCommercialTimeTransitionResponse{}
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClaimCommercialTimeTransitionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClaimCommercialTimeTransitionResponse) ProtoMessage() {}
+
+func (x *ClaimCommercialTimeTransitionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClaimCommercialTimeTransitionResponse.ProtoReflect.Descriptor instead.
+func (*ClaimCommercialTimeTransitionResponse) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ClaimCommercialTimeTransitionResponse) GetFound() bool {
+	if x != nil {
+		return x.Found
+	}
+	return false
+}
+
+func (x *ClaimCommercialTimeTransitionResponse) GetTransition() *CommercialTimeTransitionDTO {
+	if x != nil {
+		return x.Transition
+	}
+	return nil
+}
+
+func (x *ClaimCommercialTimeTransitionResponse) GetLeaseToken() uint64 {
+	if x != nil {
+		return x.LeaseToken
+	}
+	return 0
+}
+
+type CompleteCommercialTimeTransitionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TransitionId  string                 `protobuf:"bytes,1,opt,name=transition_id,json=transitionId,proto3" json:"transition_id,omitempty"`
+	WorkerId      string                 `protobuf:"bytes,2,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	LeaseToken    uint64                 `protobuf:"varint,3,opt,name=lease_token,json=leaseToken,proto3" json:"lease_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompleteCommercialTimeTransitionRequest) Reset() {
+	*x = CompleteCommercialTimeTransitionRequest{}
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteCommercialTimeTransitionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteCommercialTimeTransitionRequest) ProtoMessage() {}
+
+func (x *CompleteCommercialTimeTransitionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteCommercialTimeTransitionRequest.ProtoReflect.Descriptor instead.
+func (*CompleteCommercialTimeTransitionRequest) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *CompleteCommercialTimeTransitionRequest) GetTransitionId() string {
+	if x != nil {
+		return x.TransitionId
+	}
+	return ""
+}
+
+func (x *CompleteCommercialTimeTransitionRequest) GetWorkerId() string {
+	if x != nil {
+		return x.WorkerId
+	}
+	return ""
+}
+
+func (x *CompleteCommercialTimeTransitionRequest) GetLeaseToken() uint64 {
+	if x != nil {
+		return x.LeaseToken
+	}
+	return 0
+}
+
+type CompleteCommercialTimeTransitionResponse struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	TransitionId         string                 `protobuf:"bytes,1,opt,name=transition_id,json=transitionId,proto3" json:"transition_id,omitempty"`
+	State                string                 `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
+	Outcome              string                 `protobuf:"bytes,3,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	SubscriptionRevision uint64                 `protobuf:"varint,4,opt,name=subscription_revision,json=subscriptionRevision,proto3" json:"subscription_revision,omitempty"`
+	SourceVersion        uint64                 `protobuf:"varint,5,opt,name=source_version,json=sourceVersion,proto3" json:"source_version,omitempty"`
+	EntitlementVersion   uint64                 `protobuf:"varint,6,opt,name=entitlement_version,json=entitlementVersion,proto3" json:"entitlement_version,omitempty"`
+	ProvisioningTaskId   string                 `protobuf:"bytes,7,opt,name=provisioning_task_id,json=provisioningTaskId,proto3" json:"provisioning_task_id,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *CompleteCommercialTimeTransitionResponse) Reset() {
+	*x = CompleteCommercialTimeTransitionResponse{}
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteCommercialTimeTransitionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteCommercialTimeTransitionResponse) ProtoMessage() {}
+
+func (x *CompleteCommercialTimeTransitionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteCommercialTimeTransitionResponse.ProtoReflect.Descriptor instead.
+func (*CompleteCommercialTimeTransitionResponse) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *CompleteCommercialTimeTransitionResponse) GetTransitionId() string {
+	if x != nil {
+		return x.TransitionId
+	}
+	return ""
+}
+
+func (x *CompleteCommercialTimeTransitionResponse) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *CompleteCommercialTimeTransitionResponse) GetOutcome() string {
+	if x != nil {
+		return x.Outcome
+	}
+	return ""
+}
+
+func (x *CompleteCommercialTimeTransitionResponse) GetSubscriptionRevision() uint64 {
+	if x != nil {
+		return x.SubscriptionRevision
+	}
+	return 0
+}
+
+func (x *CompleteCommercialTimeTransitionResponse) GetSourceVersion() uint64 {
+	if x != nil {
+		return x.SourceVersion
+	}
+	return 0
+}
+
+func (x *CompleteCommercialTimeTransitionResponse) GetEntitlementVersion() uint64 {
+	if x != nil {
+		return x.EntitlementVersion
+	}
+	return 0
+}
+
+func (x *CompleteCommercialTimeTransitionResponse) GetProvisioningTaskId() string {
+	if x != nil {
+		return x.ProvisioningTaskId
+	}
+	return ""
+}
+
 var File_commercial_v1_subscription_change_proto protoreflect.FileDescriptor
 
 const file_commercial_v1_subscription_change_proto_rawDesc = "" +
@@ -962,7 +1342,42 @@ const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\x19quota_validation_required\x18\x13 \x01(\bR\x17quotaValidationRequired\x12+\n" +
 	"\x11pricing_authority\x18\x14 \x01(\tR\x10pricingAuthority\x12Q\n" +
 	"\rquota_impacts\x18\x15 \x03(\v2,.commercial.v1.SubscriptionChangeQuotaImpactR\fquotaImpacts\x120\n" +
-	"\x14provisioning_task_id\x18\x16 \x01(\tR\x12provisioningTaskId2\xef\x12\n" +
+	"\x14provisioning_task_id\x18\x16 \x01(\tR\x12provisioningTaskId\"h\n" +
+	"$ClaimCommercialTimeTransitionRequest\x12\x1b\n" +
+	"\tworker_id\x18\x01 \x01(\tR\bworkerId\x12#\n" +
+	"\rlease_seconds\x18\x02 \x01(\rR\fleaseSeconds\"\xd3\x02\n" +
+	"\x1bCommercialTimeTransitionDTO\x12#\n" +
+	"\rtransition_id\x18\x01 \x01(\tR\ftransitionId\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x1b\n" +
+	"\ttenant_id\x18\x03 \x01(\tR\btenantId\x12!\n" +
+	"\fauthority_id\x18\x04 \x01(\tR\vauthorityId\x12+\n" +
+	"\x11authority_version\x18\x05 \x01(\x04R\x10authorityVersion\x12\x15\n" +
+	"\x06due_at\x18\x06 \x01(\tR\x05dueAt\x12\x14\n" +
+	"\x05state\x18\a \x01(\tR\x05state\x12\x1a\n" +
+	"\brevision\x18\b \x01(\x04R\brevision\x12\x18\n" +
+	"\aoutcome\x18\t \x01(\tR\aoutcome\x12+\n" +
+	"\x11business_timezone\x18\n" +
+	" \x01(\tR\x10businessTimezone\"\xaa\x01\n" +
+	"%ClaimCommercialTimeTransitionResponse\x12\x14\n" +
+	"\x05found\x18\x01 \x01(\bR\x05found\x12J\n" +
+	"\n" +
+	"transition\x18\x02 \x01(\v2*.commercial.v1.CommercialTimeTransitionDTOR\n" +
+	"transition\x12\x1f\n" +
+	"\vlease_token\x18\x03 \x01(\x04R\n" +
+	"leaseToken\"\x8c\x01\n" +
+	"'CompleteCommercialTimeTransitionRequest\x12#\n" +
+	"\rtransition_id\x18\x01 \x01(\tR\ftransitionId\x12\x1b\n" +
+	"\tworker_id\x18\x02 \x01(\tR\bworkerId\x12\x1f\n" +
+	"\vlease_token\x18\x03 \x01(\x04R\n" +
+	"leaseToken\"\xbe\x02\n" +
+	"(CompleteCommercialTimeTransitionResponse\x12#\n" +
+	"\rtransition_id\x18\x01 \x01(\tR\ftransitionId\x12\x14\n" +
+	"\x05state\x18\x02 \x01(\tR\x05state\x12\x18\n" +
+	"\aoutcome\x18\x03 \x01(\tR\aoutcome\x123\n" +
+	"\x15subscription_revision\x18\x04 \x01(\x04R\x14subscriptionRevision\x12%\n" +
+	"\x0esource_version\x18\x05 \x01(\x04R\rsourceVersion\x12/\n" +
+	"\x13entitlement_version\x18\x06 \x01(\x04R\x12entitlementVersion\x120\n" +
+	"\x14provisioning_task_id\x18\a \x01(\tR\x12provisioningTaskId2\xff\x17\n" +
 	"\x1eSubscriptionChangesApplication\x12\xcc\x03\n" +
 	"\x19PreviewSubscriptionChange\x12/.commercial.v1.PreviewSubscriptionChangeRequest\x1a+.commercial.v1.SubscriptionChangePreviewDTO\"\xd0\x02\xe2\xf3\x18\x83\x02\n" +
 	"&commercial.subscription.change.preview\x12\x1bpreview_subscription_change\x1a\x1cplatform.subscription.manage\x1a\x14platform.tenant.read\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02B\x13commercial.plan.getB\x1bcommercial.plan.eligibilityB\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02B:\x01*\"=/v1/platform/tenants/{tenant_id}/subscription/change-previews\x12\xd9\x03\n" +
@@ -971,10 +1386,12 @@ const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\x1cGetSubscriptionChangePreview\x12,.commercial.v1.ReadSubscriptionChangeRequest\x1a+.commercial.v1.SubscriptionChangePreviewDTO\"\xde\x01\xe2\xf3\x18\x88\x01\n" +
 	"*commercial.subscription.change.preview.get\x12\x1fget_subscription_change_preview\x1a\x1aplatform.subscription.read\x1a\x14platform.tenant.read2\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02K\x12I/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}\x12\xca\x02\n" +
 	"\x1cGetSubscriptionChangeReceipt\x12,.commercial.v1.ReadSubscriptionChangeRequest\x1a+.commercial.v1.SubscriptionChangeReceiptDTO\"\xce\x01\xe2\xf3\x18\x80\x01\n" +
-	"\"commercial.subscription.change.get\x12\x1fget_subscription_change_receipt\x1a\x1aplatform.subscription.read\x1a\x14platform.tenant.read2\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02C\x12A/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}\x1a\xf7\x05\xda\xf3\x18\xf2\x05\n" +
+	"\"commercial.subscription.change.get\x12\x1fget_subscription_change_receipt\x1a\x1aplatform.subscription.read\x1a\x14platform.tenant.read2\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02C\x12A/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}\x1a\x87\v\xda\xf3\x18\x82\v\n" +
 	"\x14subscription_changes\x12\x1acommercial/plan_management\x12\x19commercial/module_catalog\x1a\xf7\x02\n" +
 	"'commercial.subscription.change.prepared\x12%complete_prepared_subscription_change\x1a\x1dplatform.provisioning.execute\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02B\x13commercial.plan.getB\x1bcommercial.plan.eligibilityB\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x01Z/commercial.v1.PreparedSubscriptionChangeRequestb'commercial.v1.ProvisioningCompletionDTOj\"CompletePreparedSubscriptionChange\x1a\xa8\x02\n" +
-	"1commercial.subscription.change.preparation.cancel\x12#cancel_prepared_subscription_change\x1a\x1cplatform.provisioning.cancel\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02R\x04\b\x03\x10\x01Z/commercial.v1.PreparedSubscriptionChangeRequestb'commercial.v1.ProvisioningCompletionDTOj CancelPreparedSubscriptionChangeBV\xca\xf3\x18\x10\n" +
+	"1commercial.subscription.change.preparation.cancel\x12#cancel_prepared_subscription_change\x1a\x1cplatform.provisioning.cancel\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02R\x04\b\x03\x10\x01Z/commercial.v1.PreparedSubscriptionChangeRequestb'commercial.v1.ProvisioningCompletionDTOj CancelPreparedSubscriptionChange\x1a\xfe\x01\n" +
+	"(commercial.subscription.transition.claim\x12 claim_commercial_time_transition\x1a\x1dplatform.provisioning.execute2\x01\x02H\x01R\x04\b\x03\x10\x01Z2commercial.v1.ClaimCommercialTimeTransitionRequestb3commercial.v1.ClaimCommercialTimeTransitionResponsej\x1dClaimCommercialTimeTransition\x1a\x8c\x03\n" +
+	"+commercial.subscription.transition.complete\x12#complete_commercial_time_transition\x1a\x1dplatform.provisioning.execute\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02B\x13commercial.plan.getB\x1bcommercial.plan.eligibilityB\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x01Z5commercial.v1.CompleteCommercialTimeTransitionRequestb6commercial.v1.CompleteCommercialTimeTransitionResponsej CompleteCommercialTimeTransitionBV\xca\xf3\x18\x10\n" +
 	"\n" +
 	"commercial\x12\x02v1Z@github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1b\x06proto3"
 
@@ -990,47 +1407,53 @@ func file_commercial_v1_subscription_change_proto_rawDescGZIP() []byte {
 	return file_commercial_v1_subscription_change_proto_rawDescData
 }
 
-var file_commercial_v1_subscription_change_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_commercial_v1_subscription_change_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_commercial_v1_subscription_change_proto_goTypes = []any{
-	(*PreviewSubscriptionChangeRequest)(nil), // 0: commercial.v1.PreviewSubscriptionChangeRequest
-	(*ConfirmSubscriptionChangeRequest)(nil), // 1: commercial.v1.ConfirmSubscriptionChangeRequest
-	(*ReadSubscriptionChangeRequest)(nil),    // 2: commercial.v1.ReadSubscriptionChangeRequest
-	(*SubscriptionChangeDependency)(nil),     // 3: commercial.v1.SubscriptionChangeDependency
-	(*SubscriptionChangeQuotaImpact)(nil),    // 4: commercial.v1.SubscriptionChangeQuotaImpact
-	(*SubscriptionChangePreviewDTO)(nil),     // 5: commercial.v1.SubscriptionChangePreviewDTO
-	(*SubscriptionChangeReceiptDTO)(nil),     // 6: commercial.v1.SubscriptionChangeReceiptDTO
-	(*EntitlementLimit)(nil),                 // 7: commercial.v1.EntitlementLimit
-	(*TenantSubscriptionDTO)(nil),            // 8: commercial.v1.TenantSubscriptionDTO
-	(*PlanVersionDTO)(nil),                   // 9: commercial.v1.PlanVersionDTO
-	(*EntitlementView)(nil),                  // 10: commercial.v1.EntitlementView
-	(*ProvisioningRequirementDTO)(nil),       // 11: commercial.v1.ProvisioningRequirementDTO
+	(*PreviewSubscriptionChangeRequest)(nil),         // 0: commercial.v1.PreviewSubscriptionChangeRequest
+	(*ConfirmSubscriptionChangeRequest)(nil),         // 1: commercial.v1.ConfirmSubscriptionChangeRequest
+	(*ReadSubscriptionChangeRequest)(nil),            // 2: commercial.v1.ReadSubscriptionChangeRequest
+	(*SubscriptionChangeDependency)(nil),             // 3: commercial.v1.SubscriptionChangeDependency
+	(*SubscriptionChangeQuotaImpact)(nil),            // 4: commercial.v1.SubscriptionChangeQuotaImpact
+	(*SubscriptionChangePreviewDTO)(nil),             // 5: commercial.v1.SubscriptionChangePreviewDTO
+	(*SubscriptionChangeReceiptDTO)(nil),             // 6: commercial.v1.SubscriptionChangeReceiptDTO
+	(*ClaimCommercialTimeTransitionRequest)(nil),     // 7: commercial.v1.ClaimCommercialTimeTransitionRequest
+	(*CommercialTimeTransitionDTO)(nil),              // 8: commercial.v1.CommercialTimeTransitionDTO
+	(*ClaimCommercialTimeTransitionResponse)(nil),    // 9: commercial.v1.ClaimCommercialTimeTransitionResponse
+	(*CompleteCommercialTimeTransitionRequest)(nil),  // 10: commercial.v1.CompleteCommercialTimeTransitionRequest
+	(*CompleteCommercialTimeTransitionResponse)(nil), // 11: commercial.v1.CompleteCommercialTimeTransitionResponse
+	(*EntitlementLimit)(nil),                         // 12: commercial.v1.EntitlementLimit
+	(*TenantSubscriptionDTO)(nil),                    // 13: commercial.v1.TenantSubscriptionDTO
+	(*PlanVersionDTO)(nil),                           // 14: commercial.v1.PlanVersionDTO
+	(*EntitlementView)(nil),                          // 15: commercial.v1.EntitlementView
+	(*ProvisioningRequirementDTO)(nil),               // 16: commercial.v1.ProvisioningRequirementDTO
 }
 var file_commercial_v1_subscription_change_proto_depIdxs = []int32{
-	7,  // 0: commercial.v1.SubscriptionChangeQuotaImpact.before_limit:type_name -> commercial.v1.EntitlementLimit
-	7,  // 1: commercial.v1.SubscriptionChangeQuotaImpact.after_limit:type_name -> commercial.v1.EntitlementLimit
-	8,  // 2: commercial.v1.SubscriptionChangePreviewDTO.before:type_name -> commercial.v1.TenantSubscriptionDTO
-	9,  // 3: commercial.v1.SubscriptionChangePreviewDTO.target:type_name -> commercial.v1.PlanVersionDTO
-	10, // 4: commercial.v1.SubscriptionChangePreviewDTO.current_entitlements:type_name -> commercial.v1.EntitlementView
-	10, // 5: commercial.v1.SubscriptionChangePreviewDTO.projected_entitlements:type_name -> commercial.v1.EntitlementView
+	12, // 0: commercial.v1.SubscriptionChangeQuotaImpact.before_limit:type_name -> commercial.v1.EntitlementLimit
+	12, // 1: commercial.v1.SubscriptionChangeQuotaImpact.after_limit:type_name -> commercial.v1.EntitlementLimit
+	13, // 2: commercial.v1.SubscriptionChangePreviewDTO.before:type_name -> commercial.v1.TenantSubscriptionDTO
+	14, // 3: commercial.v1.SubscriptionChangePreviewDTO.target:type_name -> commercial.v1.PlanVersionDTO
+	15, // 4: commercial.v1.SubscriptionChangePreviewDTO.current_entitlements:type_name -> commercial.v1.EntitlementView
+	15, // 5: commercial.v1.SubscriptionChangePreviewDTO.projected_entitlements:type_name -> commercial.v1.EntitlementView
 	3,  // 6: commercial.v1.SubscriptionChangePreviewDTO.dependencies:type_name -> commercial.v1.SubscriptionChangeDependency
 	4,  // 7: commercial.v1.SubscriptionChangePreviewDTO.quota_impacts:type_name -> commercial.v1.SubscriptionChangeQuotaImpact
-	11, // 8: commercial.v1.SubscriptionChangePreviewDTO.provisioning_requirements:type_name -> commercial.v1.ProvisioningRequirementDTO
-	8,  // 9: commercial.v1.SubscriptionChangeReceiptDTO.before:type_name -> commercial.v1.TenantSubscriptionDTO
-	8,  // 10: commercial.v1.SubscriptionChangeReceiptDTO.after:type_name -> commercial.v1.TenantSubscriptionDTO
+	16, // 8: commercial.v1.SubscriptionChangePreviewDTO.provisioning_requirements:type_name -> commercial.v1.ProvisioningRequirementDTO
+	13, // 9: commercial.v1.SubscriptionChangeReceiptDTO.before:type_name -> commercial.v1.TenantSubscriptionDTO
+	13, // 10: commercial.v1.SubscriptionChangeReceiptDTO.after:type_name -> commercial.v1.TenantSubscriptionDTO
 	4,  // 11: commercial.v1.SubscriptionChangeReceiptDTO.quota_impacts:type_name -> commercial.v1.SubscriptionChangeQuotaImpact
-	0,  // 12: commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange:input_type -> commercial.v1.PreviewSubscriptionChangeRequest
-	1,  // 13: commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange:input_type -> commercial.v1.ConfirmSubscriptionChangeRequest
-	2,  // 14: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview:input_type -> commercial.v1.ReadSubscriptionChangeRequest
-	2,  // 15: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt:input_type -> commercial.v1.ReadSubscriptionChangeRequest
-	5,  // 16: commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange:output_type -> commercial.v1.SubscriptionChangePreviewDTO
-	6,  // 17: commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
-	5,  // 18: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview:output_type -> commercial.v1.SubscriptionChangePreviewDTO
-	6,  // 19: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
-	16, // [16:20] is the sub-list for method output_type
-	12, // [12:16] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	8,  // 12: commercial.v1.ClaimCommercialTimeTransitionResponse.transition:type_name -> commercial.v1.CommercialTimeTransitionDTO
+	0,  // 13: commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange:input_type -> commercial.v1.PreviewSubscriptionChangeRequest
+	1,  // 14: commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange:input_type -> commercial.v1.ConfirmSubscriptionChangeRequest
+	2,  // 15: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview:input_type -> commercial.v1.ReadSubscriptionChangeRequest
+	2,  // 16: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt:input_type -> commercial.v1.ReadSubscriptionChangeRequest
+	5,  // 17: commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange:output_type -> commercial.v1.SubscriptionChangePreviewDTO
+	6,  // 18: commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
+	5,  // 19: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview:output_type -> commercial.v1.SubscriptionChangePreviewDTO
+	6,  // 20: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
+	17, // [17:21] is the sub-list for method output_type
+	13, // [13:17] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_commercial_v1_subscription_change_proto_init() }
@@ -1048,7 +1471,7 @@ func file_commercial_v1_subscription_change_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_commercial_v1_subscription_change_proto_rawDesc), len(file_commercial_v1_subscription_change_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

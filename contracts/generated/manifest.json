@@ -986,6 +986,59 @@
       }
     },
     {
+      "name": "ClaimCommercialTimeTransitionRequest",
+      "fullName": "commercial.v1.ClaimCommercialTimeTransitionRequest",
+      "fields": [
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_seconds",
+          "jsonName": "leaseSeconds",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ClaimCommercialTimeTransitionResponse",
+      "fullName": "commercial.v1.ClaimCommercialTimeTransitionResponse",
+      "fields": [
+        {
+          "name": "found",
+          "jsonName": "found",
+          "number": 1,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "transition",
+          "jsonName": "transition",
+          "number": 2,
+          "kind": "message",
+          "type": "commercial.v1.CommercialTimeTransitionDTO"
+        },
+        {
+          "name": "lease_token",
+          "jsonName": "leaseToken",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "ClaimProvisioningDeliveryRequest",
       "fullName": "commercial.v1.ClaimProvisioningDeliveryRequest",
       "fields": [
@@ -1029,6 +1082,173 @@
       ],
       "dto": {
         "kind": "input"
+      }
+    },
+    {
+      "name": "CommercialTimeTransitionDTO",
+      "fullName": "commercial.v1.CommercialTimeTransitionDTO",
+      "fields": [
+        {
+          "name": "transition_id",
+          "jsonName": "transitionId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "kind",
+          "jsonName": "kind",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "authority_id",
+          "jsonName": "authorityId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "authority_version",
+          "jsonName": "authorityVersion",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "due_at",
+          "jsonName": "dueAt",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "jsonName": "state",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "revision",
+          "jsonName": "revision",
+          "number": 8,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "outcome",
+          "jsonName": "outcome",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "business_timezone",
+          "jsonName": "businessTimezone",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "CompleteCommercialTimeTransitionRequest",
+      "fullName": "commercial.v1.CompleteCommercialTimeTransitionRequest",
+      "fields": [
+        {
+          "name": "transition_id",
+          "jsonName": "transitionId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_token",
+          "jsonName": "leaseToken",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "CompleteCommercialTimeTransitionResponse",
+      "fullName": "commercial.v1.CompleteCommercialTimeTransitionResponse",
+      "fields": [
+        {
+          "name": "transition_id",
+          "jsonName": "transitionId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "jsonName": "state",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "outcome",
+          "jsonName": "outcome",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "subscription_revision",
+          "jsonName": "subscriptionRevision",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "source_version",
+          "jsonName": "sourceVersion",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "entitlement_version",
+          "jsonName": "entitlementVersion",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "provisioning_task_id",
+          "jsonName": "provisioningTaskId",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
       }
     },
     {
@@ -7040,6 +7260,51 @@
             "requestType": "commercial.v1.PreparedSubscriptionChangeRequest",
             "responseType": "commercial.v1.ProvisioningCompletionDTO",
             "applicationMethod": "CompletePreparedSubscriptionChange"
+          },
+          {
+            "id": "commercial.subscription.transition.claim",
+            "useCase": "claim_commercial_time_transition",
+            "permissions": [
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.ClaimCommercialTimeTransitionRequest",
+            "responseType": "commercial.v1.ClaimCommercialTimeTransitionResponse",
+            "applicationMethod": "ClaimCommercialTimeTransition"
+          },
+          {
+            "id": "commercial.subscription.transition.complete",
+            "useCase": "complete_commercial_time_transition",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog",
+              "commercial.plan.eligibility",
+              "commercial.plan.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.CompleteCommercialTimeTransitionRequest",
+            "responseType": "commercial.v1.CompleteCommercialTimeTransitionResponse",
+            "applicationMethod": "CompleteCommercialTimeTransition"
           }
         ]
       },

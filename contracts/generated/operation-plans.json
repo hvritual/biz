@@ -1582,6 +1582,75 @@
       }
     },
     {
+      "operationId": "commercial.subscription.transition.claim",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "claim_commercial_time_transition",
+      "requestType": "commercial.v1.ClaimCommercialTimeTransitionRequest",
+      "responseType": "commercial.v1.ClaimCommercialTimeTransitionResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.provisioning.execute"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local"
+      },
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {}
+    },
+    {
+      "operationId": "commercial.subscription.transition.complete",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "complete_commercial_time_transition",
+      "requestType": "commercial.v1.CompleteCommercialTimeTransitionRequest",
+      "responseType": "commercial.v1.CompleteCommercialTimeTransitionResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.provisioning.execute"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog",
+          "commercial.plan.eligibility",
+          "commercial.plan.get"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {}
+    },
+    {
       "operationId": "device.create",
       "domain": "deviceops",
       "application": "device_management",
