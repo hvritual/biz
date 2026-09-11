@@ -1,3 +1,4 @@
+import { rentalState } from '@/services/siteRental/model'
 import type { CustomerSnapshot, FormValues, WorkItem, WorkKind } from '@/types/customer'
 import { assertRule, requireText } from './policy'
 import { operators, workKindNames } from './seed'
@@ -140,6 +141,13 @@ export function addWork(
         '本合同周期已有续约事项，请复用已有记录',
       )
     }
+  }
+  if (values.siteId) {
+    const site = rentalState(s).profiles.find(
+      (x) => x.id === String(values.siteId) && x.customerId === customerId && x.kind === 'site',
+    )
+    assertRule(site, 'INVALID_SITE', '关联点位须属于当前客户且为实际服务点位')
+    w.siteIds = [site.id]
   }
   s.work.unshift(w)
   addActivity(s, w.id, '创建事项', title)

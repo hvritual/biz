@@ -16,6 +16,17 @@ export function loadCustomerSnapshot(tenant: string, storage: Pick<Storage, 'get
       'BAD_SNAPSHOT',
       '本地预览数据格式异常；请显式重置预览数据',
     )
+    if (data.rental)
+      assertRule(
+        data.rental.schema === 1 &&
+          ['profiles', 'deployments', 'usage', 'rules', 'statements', 'operations'].every((key) =>
+            Array.isArray((data.rental as unknown as Record<string, unknown>)[key]),
+          ) &&
+          !!data.rental.drafts &&
+          typeof data.rental.drafts === 'object',
+        'BAD_RENTAL_SNAPSHOT',
+        '点位租赁预览数据损坏，原数据未覆盖',
+      )
     return data
   } catch {
     throw new Error('无法读取本地预览数据。原始数据未覆盖；请重置此租户的预览数据后重试。')

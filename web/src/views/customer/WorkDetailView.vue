@@ -44,6 +44,12 @@ const dependencies = computed(() =>
 </script>
 <template>
   <div v-if="work" class="page-stack">
+    <div v-if="work.siteIds?.length" class="row wrap">
+      <span class="secondary">关联点位</span>
+      <RouterLink v-for="siteId in work.siteIds" :key="siteId" :to="`/sites/${siteId}`" class="btn-link"
+        >{{ siteId }} · 打开点位工作区</RouterLink
+      >
+    </div>
     <PageHeading
       :title="`${work.id} · ${work.title}`"
       breadcrumb="客户事项"

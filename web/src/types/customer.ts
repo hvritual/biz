@@ -1,3 +1,4 @@
+import type { RentalState } from './siteRental'
 export type Tone = 'success' | 'warning' | 'danger' | 'neutral' | 'primary'
 export type Lifecycle = '潜在客户' | '试用中' | '合作中' | '合作终止'
 export type WorkKind = 'visit' | 'delivery' | 'service' | 'payment' | 'renewal' | 'return' | 'improvement'
@@ -31,6 +32,7 @@ export interface Contact {
   authorized: boolean
 }
 export interface WorkItem {
+  siteIds?: string[]
   id: string
   customerId: string
   title: string
@@ -164,6 +166,7 @@ export interface SavedWorkView {
   columns: string[]
 }
 export interface CustomerSnapshot {
+  rental?: RentalState
   schema: 1
   tenant: string
   revision: number

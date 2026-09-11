@@ -81,7 +81,8 @@ test('base pages and responsive viewports contain real content and no overflow',
   await ready(page, '/customers')
   await page.getByRole('button', { name: '收起一级菜单', exact: true }).click()
   await page.locator('[data-module="customers"]').click()
-  expect((await page.locator('.module-panel').boundingBox())!.x).toBe(80)
+  const foldedNav = (await page.locator('.primary-nav').boundingBox())!
+  expect((await page.locator('.module-panel').boundingBox())!.x).toBe(foldedNav.x + foldedNav.width)
   await snap(page, '46-collapsed-connected-nav')
   await page.keyboard.press('Escape')
   await page.getByRole('button', { name: '展开一级菜单', exact: true }).click()

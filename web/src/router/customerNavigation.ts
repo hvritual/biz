@@ -5,6 +5,19 @@ interface Domain {
   actions: { label: string; icon: string; path: string }[]
 }
 export const customerDomains: Record<string, Domain> = {
+  sites: {
+    description: '管理点位履约、租赁规则与独立或共享计费',
+    links: [
+      { id: 'sites', label: '点位租赁', icon: 'site', path: '/sites' },
+      { id: 'billing', label: '计费规则与共享组', icon: 'layers', path: '/sites/groups' },
+      { id: 'statements', label: '租赁对账', icon: 'file', path: '/sites/statements' },
+    ],
+    actions: [
+      { label: '新建点位', icon: 'plus', path: '/sites?action=new-site' },
+      { label: '配置计费规则', icon: 'file', path: '/sites/groups?action=new-rule' },
+      { label: '查看客户事项', icon: 'checks', path: '/customers/work' },
+    ],
+  },
   customers: {
     description: '以客户为中心，管理关系、风险与下一步行动',
     links: [
@@ -44,6 +57,7 @@ export const customerDomains: Record<string, Domain> = {
     description: '推进交付、回款、续约与退租回收',
     links: [
       { id: 'contracts', label: '合同与续约', icon: 'file', path: '/customers/contracts' },
+      { id: 'site-billing', label: '点位计费与共享组', icon: 'site', path: '/sites/groups' },
       { id: 'delivery', label: '投放交付', icon: 'site', path: '/customers/work/CS-104' },
       { id: 'service', label: '服务恢复验证', icon: 'operations', path: '/customers/work/CS-103' },
       { id: 'payment', label: '回款跟进', icon: 'order', path: '/customers/work/CS-105' },

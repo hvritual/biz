@@ -1,9 +1,11 @@
+import { siteRentalRoutes } from './siteRentalRoutes'
 import { customerRoutes } from './customerRoutes'
 import { createRouter, createWebHashHistory } from 'vue-router'
 export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     ...customerRoutes,
+    ...siteRentalRoutes,
     { path: '/', redirect: '/enterprise/members' },
     {
       path: '/dashboard',

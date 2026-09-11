@@ -1,3 +1,4 @@
+import { executeRentalCommand, type RentalCommand } from '@/services/siteRental/commands'
 import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { useEnterpriseStore } from './enterprise'
@@ -35,6 +36,19 @@ export const useCustomerStore = defineStore('customer-preview', () => {
     lastReceipt.value = result.result.detail
     return result.result
   }
+  function refreshRental() {
+    const current = loadCustomerSnapshot(enterprise.tenantId, localStorage)
+    if (current.revision > snapshot.value.revision) snapshot.value = current
+  }
+  function runRental(command: RentalCommand) {
+    if (!enterprise.previewMode || loadError.value) throw new Error('当前数据模式不可进行本地预览写入')
+    const current = loadCustomerSnapshot(enterprise.tenantId, localStorage)
+    const result = executeRentalCommand(current, command)
+    persistCustomerSnapshot(result.snapshot, localStorage)
+    snapshot.value = result.snapshot
+    lastReceipt.value = result.result.detail
+    return result.result
+  }
   function saveDraft(key: string, values: FormValues) {
     if (!enterprise.previewMode || loadError.value) throw new Error('当前数据模式不允许保存草稿')
     const persisted = loadCustomerSnapshot(enterprise.tenantId, localStorage)
@@ -65,6 +79,8 @@ export const useCustomerStore = defineStore('customer-preview', () => {
   const openWork = computed(() => snapshot.value.work.filter((w) => w.status !== '已结束'))
   return {
     snapshot,
+    runRental,
+    refreshRental,
     loadError,
     lastReceipt,
     run,

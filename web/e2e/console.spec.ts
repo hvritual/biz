@@ -38,13 +38,15 @@ test('480px flyout is joined, overlays without reflow, no submenu arrows, and su
 })
 test('collapse and expand preserve working navigation', async ({ page }) => {
   await ready(page)
+  const expandedWidth = (await page.locator('.primary-nav').boundingBox())!.width
   await page.getByRole('button', { name: '收起一级菜单', exact: true }).click()
   expect((await page.locator('.primary-nav').boundingBox())!.width).toBe(64)
   await openMenu(page)
-  expect((await page.locator('.module-panel').boundingBox())!.x).toBe(80)
+  const foldedNav = (await page.locator('.primary-nav').boundingBox())!
+  expect((await page.locator('.module-panel').boundingBox())!.x).toBe(foldedNav.x + foldedNav.width)
   await page.getByRole('button', { name: '关闭模块菜单', exact: true }).click()
   await page.getByRole('button', { name: '展开一级菜单', exact: true }).click()
-  expect((await page.locator('.primary-nav').boundingBox())!.width).toBe(192)
+  expect((await page.locator('.primary-nav').boundingBox())!.width).toBe(expandedWidth)
 })
 test('hovering a module navigation item opens its side menu', async ({ page }) => {
   await ready(page)

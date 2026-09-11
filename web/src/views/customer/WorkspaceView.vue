@@ -143,6 +143,9 @@ const activity = computed(() =>
         title="按投放关系有效期查看设备数据"
         description="此处是客户经营关联视图，不是通用设备管理。解绑后不得读取设备后续投放数据。"
       />
+      <RouterLink :to="`/sites?customer=${customer.id}`" class="btn-link"
+        >打开客户全部点位与租赁计费</RouterLink
+      >
       <div v-if="customer.id === 'CUS-0186'" class="table-scroll">
         <table class="data-table">
           <thead>
@@ -155,8 +158,13 @@ const activity = computed(() =>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="site in store.snapshot.sites" :key="site.id">
-              <td>{{ site.name }}</td>
+            <tr
+              v-for="site in store.snapshot.sites.filter((x) => x.customerId === customer!.id)"
+              :key="site.id"
+            >
+              <td>
+                <RouterLink :to="`/sites/${site.id}`" class="btn-link">{{ site.name }}</RouterLink>
+              </td>
               <td>{{ site.placement }}</td>
               <td>{{ site.device }}</td>
               <td>
