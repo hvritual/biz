@@ -1,0 +1,153 @@
+name: CoffeeLink site rental isolated browser review
+on:
+  push:
+    branches: [build/coffeelink-site-review]
+    paths: ['.github/workflows/coffeelink-site-builder.yml', '.github/site-rental-transfer/fixes.json']
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: coffeelink-site-rental-review
+  cancel-in-progress: true
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Restore hash checked changes on current native customer baseline
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64,hashlib,json,lzma,subprocess
+          from pathlib import Path
+          root=Path('.github/site-rental-transfer')
+          packed=base64.b64decode(''.join((root/f'part-{i}.b64').read_text() for i in range(4)),validate=True)
+          assert hashlib.sha256(packed).hexdigest()=='880ef5a8fbfb65a89f2fb52100f177641b0c091e4785ded72b521c382f8a658b','Transport hash mismatch'
+          data=json.loads(lzma.decompress(packed))
+          def allowed(name):
+              p=Path(name)
+              assert not p.is_absolute() and '..' not in p.parts
+              assert name.startswith('web/') or name=='.github/workflows/coffeelink-site-rental.yml'
+              assert p.suffix in ('.vue','.ts','.css','.md','.yaml','.yml')
+              assert not set(p.parts)&{'node_modules','dist','screenshots','test-results','playwright-report'}
+              return p
+          for name,spec in data.items():
+              p=allowed(name)
+              if 'create' in spec:
+                  assert not p.exists(),name
+                  p.parent.mkdir(parents=True,exist_ok=True)
+                  p.write_text(spec['create'],encoding='utf-8')
+              elif 'replace' in spec:
+                  assert name=='.github/workflows/coffeelink-site-rental.yml'
+                  p.write_text(spec['replace'],encoding='utf-8')
+              else:
+                  text=p.read_text(encoding='utf-8')
+                  assert hashlib.sha256(text.encode()).hexdigest()==spec['sha256'],name
+                  last=len(text)+1
+                  for start,end,value in reversed(spec['edits']):
+                      assert 0<=start<=end<last,(name,start,end)
+                      text=text[:start]+value+text[end:]
+                      last=start
+                  p.write_text(text,encoding='utf-8')
+          fixes=root/'fixes.json'
+          if fixes.exists():
+              for name,changes in json.loads(fixes.read_text()).items():
+                  p=allowed(name)
+                  text=p.read_text()
+                  for before,after in changes:
+                      assert text.count(before)==1,name
+                      text=text.replace(before,after,1)
+                  p.write_text(text,encoding='utf-8')
+                  data.setdefault(name,{})
+          base='04dedc3826e23754f0cffa13ed5c27b5c4224071'
+          preserved={}
+          paths=list(Path('web/src/components/layout').glob('*.vue'))+list(Path('web/src/components/ui').glob('*.vue'))+[Path('web/src/styles/tokens.css'),Path('web/src/styles/base.css')]
+          for p in paths:
+              raw=subprocess.check_output(['git','show',f'{base}:{p}'])
+              assert p.read_bytes()==raw,f'Existing layout or UI modified: {p}'
+              preserved[str(p)]=hashlib.sha256(raw).hexdigest()
+          current={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(Path('web').rglob('*')) if p.is_file()}
+          Path('/tmp/site-source-manifest.json').write_text(json.dumps({'base':base,'preserved':preserved,'current':current},indent=2))
+          Path('/tmp/site-publish-paths.json').write_text(json.dumps([name for name in data if name.startswith('web/')]))
+          print('Verified files:',len(data),'unchanged shared components:',len(preserved))
+          PY
+          tar --exclude=node_modules --exclude=dist --exclude=screenshots --exclude=test-results --exclude=playwright-report -czf /tmp/site-native-source.tgz web
+      - name: Install exact dependencies and validate type, lint, architecture, unit and build
+        working-directory: web
+        run: |
+          set -o pipefail
+          npm ci
+          npm run check 2>&1 | tee /tmp/site-check.log
+          npx playwright test --list | tee /tmp/site-test-inventory.log
+      - name: Install cloud Chromium and CJK runtime fonts
+        working-directory: web
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Actual browser regression and site rental interaction screenshots
+        working-directory: web
+        env:
+          CI: 'true'
+        run: |
+          set -o pipefail
+          npm run test:e2e 2>&1 | tee /tmp/site-e2e.log
+      - name: Publish only tested native web changes to independent feature
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          parent=3a90708ab68ab30c1c6d239df8180a8dd1e596e8
+          branch=feat/coffeelink-site-rental
+          actual=$(git ls-remote origin "refs/heads/$branch" | cut -f1)
+          test "$actual" = "$parent" || { echo 'Feature advanced; refusing overwrite'; exit 1; }
+          git read-tree "$parent"
+          python3 - <<'PY'
+          import json,subprocess
+          paths=json.load(open('/tmp/site-publish-paths.json'))
+          subprocess.run(['git','add','--',*paths],check=True)
+          PY
+          git diff --cached --name-only "$parent" > /tmp/site-published-paths.txt
+          if grep -v '^web/' /tmp/site-published-paths.txt; then exit 1; fi
+          git config user.name 'CoffeeLink UI review'
+          git config user.email 'noreply@openai.com'
+          tree=$(git write-tree)
+          commit=$(printf 'feat(web): implement site rental scopes, versioned rules and review workflows\n\nSR-01 preview only. Preserve current customer UI layout at 04dedc3. No production billing, no main merge.\n' | git commit-tree "$tree" -p "$parent")
+          gh auth setup-git
+          git push origin "$commit:refs/heads/$branch"
+          printf 'branch=%s\ncommit=%s\nparent=%s\ntree=%s\nrun=%s\n' "$branch" "$commit" "$parent" "$tree" "$GITHUB_RUN_ID" > /tmp/site-native-commit.txt
+          cat /tmp/site-native-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coffeelink-site-browser-review
+          path: |
+            web/screenshots/
+            web/test-results/
+            web/playwright-report/
+            /tmp/site-check.log
+            /tmp/site-e2e.log
+            /tmp/site-test-inventory.log
+            /tmp/site-source-manifest.json
+            /tmp/site-native-commit.txt
+            /tmp/site-published-paths.txt
+            !web/playwright-report/**/*.ttf
+            !web/playwright-report/**/*.otf
+            !web/playwright-report/**/*.woff
+            !web/playwright-report/**/*.woff2
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coffeelink-site-native-source
+          path: /tmp/site-native-source.tgz
+          retention-days: 14
