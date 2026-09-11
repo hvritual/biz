@@ -177,7 +177,7 @@ func (auth *runtimeWebAuth) handleTenants(writer http.ResponseWriter, request *h
 		return
 	}
 	writeJSON(writer, http.StatusOK, map[string]any{
-		"tenants":           authentication.Session.Tenants,
+		"tenants":          authentication.Session.Tenants,
 		"active_tenant_id": authentication.Session.ActiveTenantID,
 	})
 }
