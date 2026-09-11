@@ -18,6 +18,7 @@ type SubscriptionChangeRepository interface {
 	ReceiptForRequest(context.Context, string, string, string, string) (*change.Receipt, error)
 	SaveCurrent(context.Context, subscription.Subscription, subscription.Subscription) error
 	Complete(context.Context, change.Receipt) error
+	UpdateReceipt(context.Context, change.Receipt, change.Receipt) error
 	Now(context.Context) (time.Time, error)
 }
 type SubscriptionChangeRepositories struct {
@@ -25,6 +26,7 @@ type SubscriptionChangeRepositories struct {
 	Events       OutboxRepository
 	Changes      SubscriptionChangeRepository
 	Entitlements EntitlementRepository
+	Transitions  TimeTransitionRepository
 }
 type QuotaChangeInput struct {
 	TenantID    string
