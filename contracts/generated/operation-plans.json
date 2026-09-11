@@ -59,7 +59,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "commercial.catalog.read",
@@ -1591,7 +1592,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "device.create"
@@ -1627,7 +1629,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "device.delete"
@@ -1662,7 +1665,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "device.read"
@@ -1697,7 +1701,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "device.read"
@@ -1732,7 +1737,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "device.update",
@@ -1780,7 +1786,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "device.update",
@@ -1825,7 +1832,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "site.read"
@@ -2046,7 +2054,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.member.manage"
@@ -2108,7 +2117,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.member.read"
@@ -2143,7 +2153,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.member.manage"
@@ -2179,7 +2190,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.member.read"
@@ -2214,7 +2226,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.member.manage"
@@ -2258,7 +2271,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.member.manage"
@@ -2302,7 +2316,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.member.manage"
@@ -2326,7 +2341,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.manage"
@@ -2382,7 +2398,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.manage"
@@ -2415,7 +2432,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.manage"
@@ -2448,7 +2466,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.manage"
@@ -2481,7 +2500,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.read"
@@ -2513,7 +2533,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.read"
@@ -2545,7 +2566,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.manage"
@@ -2578,7 +2600,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.manage"
@@ -2611,7 +2634,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.manage"

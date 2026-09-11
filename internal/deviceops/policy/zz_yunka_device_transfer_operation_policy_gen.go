@@ -16,6 +16,6 @@ func DeviceTransferResolver() authz.StaticResolver {
 
 func deviceTransferPolicies() map[string]authz.Policy {
 	return map[string]authz.Policy{
-		"/deviceops.v1.DeviceTransferApplication/TransferDevice": {Operation: OperationDeviceTransferTransferDevice, Permissions: []authz.PermissionKey{"device.update", "site.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key"}},
+		"/deviceops.v1.DeviceTransferApplication/TransferDevice": {Operation: OperationDeviceTransferTransferDevice, Permissions: []authz.PermissionKey{"device.update", "site.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 	}
 }
