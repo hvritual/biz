@@ -58,17 +58,12 @@ jobs:
           go -C biz test -count=1 ./...
           go -C biz vet ./...
           go -C biz build ./cmd/biz ./cmd/biz-idp ./cmd/biz-idp-credential
-      - name: Commit production code and remove one-shot helpers
+      - name: Commit verified production code only
         shell: bash
         run: |
           set -euo pipefail
           git -C biz config user.name 'github-actions[bot]'
           git -C biz config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git -C biz rm -f \
-            .github/workflows/ce12-production-hardening.yml \
-            .github/workflows/ce12-format-diff.yml \
-            .github/workflows/ce12-web-session-contract-generate.yml \
-            tools/ce12_production_hardening.py
-          git -C biz add internal cmd .github/workflows/ce12-browser-e2e.yml .github/workflows/ce12-qualification.yml
+          git -C biz add internal cmd
           git -C biz commit -m 'feat(ce-12): harden production first-party identity'
           git -C biz push origin HEAD:feat/ce-12-first-party-idp-e2e
