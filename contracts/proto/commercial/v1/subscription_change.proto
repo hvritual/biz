@@ -70,7 +70,7 @@ message SubscriptionChangeReceiptDTO {
  string provisioning_task_id = 22;
 }
 message ClaimCommercialTimeTransitionRequest { string worker_id=1; uint32 lease_seconds=2; }
-message CommercialTimeTransitionDTO { string transition_id=1; string kind=2; string tenant_id=3; string authority_id=4; uint64 authority_version=5; string due_at=6; string state=7; uint64 revision=8; string outcome=9; }
+message CommercialTimeTransitionDTO { string transition_id=1; string kind=2; string tenant_id=3; string authority_id=4; uint64 authority_version=5; string due_at=6; string state=7; uint64 revision=8; string outcome=9; string business_timezone=10; }
 message ClaimCommercialTimeTransitionResponse { bool found=1; CommercialTimeTransitionDTO transition=2; uint64 lease_token=3; }
 message CompleteCommercialTimeTransitionRequest { string transition_id=1; string worker_id=2; uint64 lease_token=3; }
 message CompleteCommercialTimeTransitionResponse { string transition_id=1; string state=2; string outcome=3; uint64 subscription_revision=4; uint64 source_version=5; uint64 entitlement_version=6; string provisioning_task_id=7; }
