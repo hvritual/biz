@@ -13,7 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      OLD_YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
+      YUNKA_SHA: e323ee5833d929b5b1d0494fc29aae0aaa2b6f4a
     steps:
       - name: Checkout candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -61,6 +62,32 @@ jobs:
           make -C yunka.io rpc-tools
           echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
 
+      - name: Align qualification generator pins
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected=(
+            .github/workflows/b12-multitenant-access-pressure.yml
+            .github/workflows/ce02-bootstrap.yml
+            .github/workflows/ce03-qualification.yml
+            .github/workflows/ce04-qualification.yml
+            .github/workflows/ce05-qualification.yml
+            .github/workflows/ce06-qualification.yml
+            .github/workflows/ce07-qualification.yml
+            .github/workflows/ce08-qualification.yml
+            .github/workflows/ce09-qualification.yml
+            .github/workflows/ce10-qualification.yml
+          )
+          mapfile -t stale < <(grep -REl "^[[:space:]]+YUNKA_SHA: ${OLD_YUNKA_SHA}$" biz/.github/workflows | sed 's#^biz/##' | sort)
+          printf '%s\n' "${expected[@]}" > "$RUNNER_TEMP/expected-pins.txt"
+          printf '%s\n' "${stale[@]}" > "$RUNNER_TEMP/actual-pins.txt"
+          diff -u "$RUNNER_TEMP/expected-pins.txt" "$RUNNER_TEMP/actual-pins.txt"
+          for path in "${expected[@]}"; do
+            sed -i "s#YUNKA_SHA: ${OLD_YUNKA_SHA}#YUNKA_SHA: ${YUNKA_SHA}#g" "biz/$path"
+            grep -Fq "YUNKA_SHA: ${YUNKA_SHA}" "biz/$path"
+            ! grep -Eq "^[[:space:]]+YUNKA_SHA: ${OLD_YUNKA_SHA}$" "biz/$path"
+          done
+
       - name: Regenerate and constrain ownership
         shell: bash
         run: |
@@ -72,17 +99,17 @@ jobs:
           printf '%s\n' "${changed[@]}"
           for path in "${changed[@]}"; do
             case "$path" in
-              contracts/gen/*|contracts/generated/*|contracts/commercial/generated/*|contracts/third_party/yunka/dsl/v1/options.proto|internal/*/policy/zz_yunka_*|internal/*/transport/rest/zz_yunka_*|internal/*/transport/rpc/zz_yunka_*) ;;
-              *) echo "unexpected generated path: $path" >&2; exit 1 ;;
+              .github/workflows/b12-multitenant-access-pressure.yml|.github/workflows/ce02-bootstrap.yml|.github/workflows/ce03-qualification.yml|.github/workflows/ce04-qualification.yml|.github/workflows/ce05-qualification.yml|.github/workflows/ce06-qualification.yml|.github/workflows/ce07-qualification.yml|.github/workflows/ce08-qualification.yml|.github/workflows/ce09-qualification.yml|.github/workflows/ce10-qualification.yml|contracts/gen/*|contracts/generated/*|contracts/commercial/generated/*|contracts/third_party/yunka/dsl/v1/options.proto|internal/*/policy/zz_yunka_*|internal/*/transport/rest/zz_yunka_*|internal/*/transport/rpc/zz_yunka_*) ;;
+              *) echo "unexpected aligned/generated path: $path" >&2; exit 1 ;;
             esac
           done
-          git -C biz diff --binary > "$RUNNER_TEMP/generated-before.patch"
+          git -C biz diff --binary > "$RUNNER_TEMP/aligned-before.patch"
           make -C biz check
           make -C biz generate
-          git -C biz diff --binary > "$RUNNER_TEMP/generated-after.patch"
-          cmp "$RUNNER_TEMP/generated-before.patch" "$RUNNER_TEMP/generated-after.patch"
+          git -C biz diff --binary > "$RUNNER_TEMP/aligned-after.patch"
+          cmp "$RUNNER_TEMP/aligned-before.patch" "$RUNNER_TEMP/aligned-after.patch"
 
-      - name: Regression after regeneration
+      - name: Regression after aligned regeneration
         shell: bash
         run: |
           set -euo pipefail
@@ -90,7 +117,7 @@ jobs:
           go -C biz vet ./...
           go -C biz build ./cmd/biz ./cmd/biz-idp ./cmd/biz-idp-credential
 
-      - name: Commit verified derived artifacts only
+      - name: Commit verified baseline alignment and derived artifacts
         shell: bash
         run: |
           set -euo pipefail
@@ -98,13 +125,13 @@ jobs:
           test ${#changed[@]} -gt 0
           for path in "${changed[@]}"; do
             case "$path" in
-              contracts/gen/*|contracts/generated/*|contracts/commercial/generated/*|contracts/third_party/yunka/dsl/v1/options.proto|internal/*/policy/zz_yunka_*|internal/*/transport/rest/zz_yunka_*|internal/*/transport/rpc/zz_yunka_*) ;;
-              *) echo "unexpected generated path before commit: $path" >&2; exit 1 ;;
+              .github/workflows/b12-multitenant-access-pressure.yml|.github/workflows/ce02-bootstrap.yml|.github/workflows/ce03-qualification.yml|.github/workflows/ce04-qualification.yml|.github/workflows/ce05-qualification.yml|.github/workflows/ce06-qualification.yml|.github/workflows/ce07-qualification.yml|.github/workflows/ce08-qualification.yml|.github/workflows/ce09-qualification.yml|.github/workflows/ce10-qualification.yml|contracts/gen/*|contracts/generated/*|contracts/commercial/generated/*|contracts/third_party/yunka/dsl/v1/options.proto|internal/*/policy/zz_yunka_*|internal/*/transport/rest/zz_yunka_*|internal/*/transport/rpc/zz_yunka_*) ;;
+              *) echo "unexpected path before commit: $path" >&2; exit 1 ;;
             esac
           done
           git -C biz config user.name 'github-actions[bot]'
           git -C biz config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git -C biz add -- "${changed[@]}"
           test -n "$(git -C biz diff --cached --name-only)"
-          git -C biz commit -m 'chore(ce-12): refresh contract-derived artifacts'
+          git -C biz commit -m 'ci(ce-12): align qualification generator baseline'
           git -C biz push origin HEAD:feat/ce-12-first-party-idp-e2e
