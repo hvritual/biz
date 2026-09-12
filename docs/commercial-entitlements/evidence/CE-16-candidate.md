@@ -45,3 +45,8 @@ also passed. Integration compilation passed with
 This candidate has no main integration, main readback, formal machine
 verification receipt, or task-ledger update. Production deployment and physical
 database-restart certification remain outside this candidate run.
+
+The final branch-only assertion tightens the prepared trial boundary result to
+require `RESTRICTED` under zero configured grace. It was compiled locally and
+awaits the controller's main replay; the recorded protected replay predates only
+that assertion tightening.
