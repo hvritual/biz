@@ -5,6 +5,7 @@ import StatusBadge from '@/components/ui/StatusBadge.vue'
 import EntitlementDecisionTable from '@/components/platform/EntitlementDecisionTable.vue'
 import EntitlementOverrideDialog from '@/components/platform/EntitlementOverrideDialog.vue'
 import EntitlementOverrideTable from '@/components/platform/EntitlementOverrideTable.vue'
+import SubscriptionChangeWorkspace from '@/components/platform/SubscriptionChangeWorkspace.vue'
 import {
   CommercialApiError,
   commercialRequestId,
@@ -257,6 +258,8 @@ onMounted(loadModules)
         </div>
         <p v-else class="empty-text">当前没有可读取的租户订阅记录。</p>
       </section>
+
+      <SubscriptionChangeWorkspace :tenant-id="activeTenantId" :subscription="subscription" @refresh="loadWorkspace" />
 
       <section class="resolver-meta card">
         <span>evaluated_at {{ formatTime(entitlement.evaluatedAt) }}</span>
