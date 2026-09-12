@@ -333,10 +333,11 @@
         "FR-13",
         "FR-18"
       ],
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "blocker": null,
-      "evidence": null,
-      "integration_commit": null
+      "evidence": "evidence/CE-13.md",
+      "integration_commit": "c420628fce2e3dad982ad7ee3139f2afa16102af",
+      "verification": "evidence/CE-13-verification.json"
     },
     {
       "id": "CE-14",
@@ -395,10 +396,11 @@
         "FR-09",
         "FR-14"
       ],
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "blocker": null,
-      "evidence": null,
-      "integration_commit": null
+      "evidence": "evidence/CE-16.md",
+      "integration_commit": "c420628fce2e3dad982ad7ee3139f2afa16102af",
+      "verification": "evidence/CE-16-verification.json"
     },
     {
       "id": "CE-17",
