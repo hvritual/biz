@@ -52,4 +52,4 @@ API key, synthetic tenant, second executor or production demo fallback is added.
 
 Local database: reuse the single existing Docker instance and `biz_evolution` database as defined in [LOCAL-DATABASE.md](LOCAL-DATABASE.md). Per-task database creation is retired.
 
-Published samples: [19 deduplicated issue records](exception-samples.json). Source PRs #40/#45/#59/#68 are closed as superseded, with their complete heads retained by unified PR #83. The one-time GitHub metadata writer has been retired after successful readback.
+Published samples: [23 deduplicated issue records](exception-samples.json), including #89–#92 published by one-time run [34708860790](https://github.com/hvritual/biz/actions/runs/34708860790). Source PRs #40/#45/#59/#68 are closed as superseded, with their complete heads retained by unified PR #83. The one-time GitHub metadata writer has been retired after successful readback.

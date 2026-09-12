@@ -1,10 +1,11 @@
 {
   "recorded_at": "2026-09-13",
-  "status": "local-unpublished",
+  "status": "published",
   "issue_inventory": {
     "source": "/tmp/biz-ce-issues.json",
-    "checked_public_issue_numbers": "1-88",
-    "publication_note": "No matching public issue was found for these samples. issue_number remains null; a later control workflow may publish them after independent review."
+    "checked_public_issue_numbers": "1-88 before publication; 89-92 after publication",
+    "publication_run": "https://github.com/hvritual/biz/actions/runs/34708860790",
+    "publication_note": "The one-time controlled workflow created the four deduplicated public issues and was removed in the next commit."
   },
   "evidence_classes": {
     "source_review": "A reviewer established the condition from a concrete source diff or static call path. It is not a claim that a runtime test, production system, or user encountered the defect.",
@@ -13,7 +14,8 @@
   "samples": [
     {
       "local_id": "LOCAL-CE13-001",
-      "issue_number": null,
+      "issue_number": 89,
+      "issue_url": "https://github.com/hvritual/biz/issues/89",
       "title": "CE13 plan writes omitted the required Idempotency-Key header",
       "discovery": "runtime_failure",
       "reproduction_condition": "Use the CE13 platform plan client to create a draft/version, update a draft, publish, or retire a version. Each request carries requestId in JSON but did not pass it as mutate(..., { idempotencyKey }).",
@@ -25,7 +27,8 @@
     },
     {
       "local_id": "LOCAL-FRAMEWORK-001",
-      "issue_number": null,
+      "issue_number": 90,
+      "issue_url": "https://github.com/hvritual/biz/issues/90",
       "title": "Explicit gRPC CAS conflicts were rendered as generic HTTP 400",
       "discovery": "runtime_failure",
       "reproduction_condition": "A generated C9 REST adapter receives an application error with gRPC status Aborted or AlreadyExists, such as a completed/in-progress CAS or idempotency conflict.",
@@ -37,7 +40,8 @@
     },
     {
       "local_id": "LOCAL-CE16-001",
-      "issue_number": null,
+      "issue_number": 91,
+      "issue_url": "https://github.com/hvritual/biz/issues/91",
       "title": "Prepared subscription completion did not create the next revision-bound boundary",
       "discovery": "source_review",
       "reproduction_condition": "A prepared subscription change completes into a subscription revision with PeriodEnd set. The completion persists the new revision but, before the fix, did not insert a SubscriptionBoundary transition for that new revision.",
@@ -49,7 +53,8 @@
     },
     {
       "local_id": "LOCAL-CE16-002",
-      "issue_number": null,
+      "issue_number": 92,
+      "issue_url": "https://github.com/hvritual/biz/issues/92",
       "title": "Invalid commercial grace duration silently became zero",
       "discovery": "source_review",
       "reproduction_condition": "Set YUNKA_BIZ_COMMERCIAL_GRACE_DURATION to an unparsable or negative duration before starting Biz.",
