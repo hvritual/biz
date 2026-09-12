@@ -1,12 +1,16 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import coffee from '@/assets/coffee-banner.webp'
-defineProps<{ title: string; description?: string; breadcrumb?: string; banner?: boolean }>()
+const props = defineProps<{ title: string; description?: string; breadcrumb?: string; banner?: boolean }>()
+const route = useRoute()
+const effectiveBreadcrumb = computed(() => props.breadcrumb || (route.meta.surface === 'platform' ? '平台管理' : '企业中心'))
 </script>
 <template>
   <header class="page-heading">
     <div class="heading-main">
       <div class="breadcrumbs">
-        <span>{{ breadcrumb || '企业中心' }}</span
+        <span>{{ effectiveBreadcrumb }}</span
         ><span>/</span><strong>{{ title }}</strong>
       </div>
       <h1>{{ title }}</h1>
@@ -89,47 +93,21 @@ defineProps<{ title: string; description?: string; breadcrumb?: string; banner?:
   z-index: 0;
 }
 @media (max-width: 1200px) {
-  .coffee-hero {
-    width: 43%;
-    padding: 18px;
-  }
-  .coffee-hero h2 {
-    font-size: 15px;
-  }
-  .coffee-hero img {
-    opacity: 0.55;
-  }
-  .coffee-hero > div {
-    max-width: 85%;
-  }
+  .coffee-hero { width: 43%; padding: 18px; }
+  .coffee-hero h2 { font-size: 15px; }
+  .coffee-hero img { opacity: 0.55; }
+  .coffee-hero > div { max-width: 85%; }
 }
 @media (max-width: 850px) {
-  .coffee-hero {
-    display: none;
-  }
-  .page-heading {
-    min-height: 102px;
-  }
-  .breadcrumbs {
-    margin-bottom: 12px;
-  }
+  .coffee-hero { display: none; }
+  .page-heading { min-height: 102px; }
+  .breadcrumbs { margin-bottom: 12px; }
 }
 @media (max-height: 830px) and (min-width: 851px) {
-  .page-heading {
-    min-height: 86px;
-  }
-  .breadcrumbs {
-    margin-bottom: 10px;
-  }
-  .coffee-hero {
-    height: 85px;
-  }
-  .coffee-hero img {
-    height: 85px;
-    width: 205px;
-  }
-  .coffee-hero h2 {
-    font-size: 16px;
-  }
+  .page-heading { min-height: 86px; }
+  .breadcrumbs { margin-bottom: 10px; }
+  .coffee-hero { height: 85px; }
+  .coffee-hero img { height: 85px; width: 205px; }
+  .coffee-hero h2 { font-size: 16px; }
 }
 </style>
