@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "task_id": "CE-13",
+  "verified_commit": "c420628fce2e3dad982ad7ee3139f2afa16102af",
+  "result": "PASS",
+  "recorded_on": "2026-09-13",
+  "integration_commit": "c420628fce2e3dad982ad7ee3139f2afa16102af",
+  "base_commit": "cbe44e9",
+  "framework": {
+    "compatibility_commit": "9ee6640f5e19777b4c04d9e4937a93e2035eacda",
+    "canonical_main_mapping": "646598e"
+  },
+  "checks": [
+    {
+      "command": "set -a; . ./.env.local; set +a; PATH=/tmp/biz-branch-audit/toolchain/bin:$PATH GOTOOLCHAIN=go1.25.13 YUNKA_TEST_RESET_FIXTURES=1 EVOLUTION_EVIDENCE_DIR=/tmp/ce13-main-c420628 EVOLUTION_AFTER_RESET_COMMAND_JSON='[\"bash\",\"scripts/qualify-ce13-browser.sh\"]' EVOLUTION_AFTER_RESET_RESULT_JSON=/tmp/ce13-main-c420628/ce13-browser/ce13-platform-results.json python3 scripts/qualify-evolution-mysql.py",
+      "exit_code": 0,
+      "tests_passed": 4,
+      "tests_expected": 4,
+      "tests_skipped": 0,
+      "tests_flaky": 0,
+      "tests_unexpected": 0,
+      "seconds": 42.04,
+      "evidence": "/tmp/ce13-main-c420628/summary.json; /tmp/ce13-main-c420628/ce13-browser/ce13-platform-results.json"
+    },
+    {
+      "command": "PATH=/tmp/biz-branch-audit/toolchain/bin:$PATH GOTOOLCHAIN=go1.25.13 make check",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "/tmp/ce-main-check.log"
+    },
+    {
+      "command": "PATH=/tmp/biz-branch-audit/toolchain/bin:$PATH GOTOOLCHAIN=go1.25.13 go test -count=1 ./cmd/... ./internal/... ./modules/... ./integration/...",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "/tmp/ce-main-go-test.log"
+    },
+    {
+      "command": "cd web && npm run check",
+      "exit_code": 0,
+      "tests_passed": 183,
+      "evidence": "/tmp/ce-main-web-check.log"
+    }
+  ],
+  "database_recovery": {
+    "restored": true,
+    "recovery_marker_absent": true,
+    "evidence": "/tmp/ce13-main-c420628/summary.json; /tmp/ce13-main-c420628/after-reset-command.log"
+  },
+  "main_readback": {
+    "main_commit": "c420628fce2e3dad982ad7ee3139f2afa16102af"
+  },
+  "limitations": [
+    "This receipt does not claim production deployment, payment, CE14 or later task completion."
+  ]
+}

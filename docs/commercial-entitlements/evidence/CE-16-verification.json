@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "task_id": "CE-16",
+  "verified_commit": "c420628fce2e3dad982ad7ee3139f2afa16102af",
+  "result": "PASS",
+  "recorded_on": "2026-09-13",
+  "integration_commit": "c420628fce2e3dad982ad7ee3139f2afa16102af",
+  "base_commit": "cbe44e9",
+  "framework": {
+    "compatibility_commit": "9ee6640f5e19777b4c04d9e4937a93e2035eacda",
+    "canonical_main_mapping": "646598e"
+  },
+  "checks": [
+    {
+      "command": "set -a; . ./.env.local; set +a; PATH=/tmp/biz-branch-audit/toolchain/bin:$PATH GOTOOLCHAIN=go1.25.13 YUNKA_TEST_RESET_FIXTURES=1 EVOLUTION_GROUPS=CE16,CE16-restart EVOLUTION_EVIDENCE_DIR=/tmp/ce16-main-c420628 python3 scripts/qualify-evolution-mysql.py",
+      "exit_code": 0,
+      "tests_passed": 10,
+      "tests_expected": 10,
+      "tests_skipped": 0,
+      "seconds": 43.52,
+      "evidence": "/tmp/ce16-main-c420628/summary.json; /tmp/ce16-main-c420628/CE16.log"
+    },
+    {
+      "command": "set -a; . ./.env.local; set +a; PATH=/tmp/biz-branch-audit/toolchain/bin:$PATH GOTOOLCHAIN=go1.25.13 YUNKA_TEST_RESET_FIXTURES=1 EVOLUTION_GROUPS=CE16,CE16-restart EVOLUTION_EVIDENCE_DIR=/tmp/ce16-main-c420628 python3 scripts/qualify-evolution-mysql.py (CE16-restart group)",
+      "exit_code": 0,
+      "tests_passed": 2,
+      "tests_expected": 2,
+      "tests_skipped": 0,
+      "seconds": 7.87,
+      "evidence": "/tmp/ce16-main-c420628/summary.json; /tmp/ce16-main-c420628/CE16-restart.log"
+    },
+    {
+      "command": "PATH=/tmp/biz-branch-audit/toolchain/bin:$PATH GOTOOLCHAIN=go1.25.13 make check",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "/tmp/ce-main-check.log"
+    },
+    {
+      "command": "PATH=/tmp/biz-branch-audit/toolchain/bin:$PATH GOTOOLCHAIN=go1.25.13 go test -count=1 ./cmd/... ./internal/... ./modules/... ./integration/...",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "/tmp/ce-main-go-test.log"
+    },
+    {
+      "command": "cd web && npm run check",
+      "exit_code": 0,
+      "tests_passed": 183,
+      "evidence": "/tmp/ce-main-web-check.log"
+    }
+  ],
+  "database_recovery": {
+    "restored": true,
+    "recovery_marker_absent": true,
+    "evidence": "/tmp/ce16-main-c420628/summary.json"
+  },
+  "main_readback": {
+    "main_commit": "c420628fce2e3dad982ad7ee3139f2afa16102af"
+  },
+  "limitations": [
+    "This receipt does not claim production deployment, physical database restart certification or payment."
+  ]
+}
