@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -16,6 +16,8 @@ import { customerDomains } from '@/router/customerNavigation'
 const ui = useUiStore(),
   route = useRoute(),
   router = useRouter()
+const closeButton = ref<HTMLButtonElement | null>(null)
+onMounted(() => { void nextTick(() => closeButton.value?.focus()) })
 const title = computed(() => primaryNavigation.find((p) => p.id === ui.module)?.label ?? '企业中心')
 const links = computed(() =>
   ui.module === 'enterprise'
@@ -60,7 +62,7 @@ function navigate(path?: string) {
         <h2>{{ title }}</h2>
         <p>{{ description }}</p>
       </div>
-      <button class="icon-button" aria-label="关闭模块菜单" @click="ui.closeMenu()">
+      <button ref="closeButton" class="icon-button" aria-label="关闭模块菜单" @click="ui.closeMenu()">
         <AppIcon name="close" :size="18" />
       </button>
     </header>

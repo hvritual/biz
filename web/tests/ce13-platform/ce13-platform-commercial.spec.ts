@@ -351,8 +351,9 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   expect(overlayBox?.width).toBeLessThanOrEqual(481);
   expect(after?.x).toBe(before?.x);
   expect(after?.width).toBe(before?.width);
-  await page.keyboard.press("Tab");
   await expect(overlay.getByRole("button").first()).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(overlay.getByRole("button").nth(1)).toBeFocused();
   await page.screenshot({ path: testInfo.outputPath("ce13-platform-overlay-keyboard-1366x768.png"), fullPage: true });
   await page.keyboard.press("Escape");
   await expect(overlay).toBeHidden();
@@ -392,7 +393,7 @@ test("TestCE13TenantSessionCannotUsePlatformConsole", async ({ browser }) => {
   const tenant = await login(browser, data, data.tenant_email, data.tenant_password);
   await tenant.page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
   await expect(tenant.page.getByRole("heading", { name: "平台商业管理" })).toBeVisible();
-  await expect(tenant.page.getByText("当前可信平台会话无权")).toBeVisible();
+  await expect(tenant.page.getByText("当前会话无平台商业访问权限")).toBeVisible();
   await expect(tenant.page.getByRole("button", { name: "查看详情" })).toHaveCount(0);
   await tenant.context.close();
 });
