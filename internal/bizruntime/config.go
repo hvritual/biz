@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	commercialports "github.com/hvritual/biz/internal/commercial/ports"
 	"github.com/hvritual/biz/modules/deviceops"
 	"yunka.io/gateway/authz"
@@ -177,6 +178,9 @@ type Options struct {
 	ProvisioningPolicy  commercialports.ProvisioningPolicy
 	PreparationAdapters []commercialports.RegisteredPreparation
 	ProvisioningWorker  ProvisioningWorkerOptions
+	// CommercialLifecycle is trusted runtime configuration for explicit trial
+	// plan versions and the optional post-expiry grace interval.
+	CommercialLifecycle subscription.LifecyclePolicy
 	// A local trusted adapter only; nil conservatively defers quota reductions.
 	QuotaChangePolicy commercialports.QuotaChangePolicy
 	// Disable only the derived cache; authority reads and write barriers remain on.
@@ -192,6 +196,9 @@ func (options Options) Validate() error {
 		return err
 	}
 	if err := options.ProvisioningWorker.Validate(); err != nil {
+		return err
+	}
+	if err := options.CommercialLifecycle.Validate(); err != nil {
 		return err
 	}
 	if err := options.PlatformBootstrap.Validate(); err != nil {

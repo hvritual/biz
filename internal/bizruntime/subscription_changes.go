@@ -8,7 +8,7 @@ import (
 )
 
 func (f applicationFactories) BuildCommercialSubscriptionChanges(d assembly.CommercialSubscriptionChangesDependencies) (app.SubscriptionChangesApplication, error) {
-	application, err := subscriptionchanges.Build(persistence.NewSubscriptionChangeTimeRepositoryFactory(), subscriptionChangeCapabilities{plan: d.CommercialPlanManagement, catalog: d.CommercialModuleCatalog}, f.snapshots, f.quotaChangePolicy, f.provisioningPolicy)
+	application, err := subscriptionchanges.Build(persistence.NewSubscriptionChangeTimeRepositoryFactory(f.commercialLifecycle.Timezone()), subscriptionChangeCapabilities{plan: d.CommercialPlanManagement, catalog: d.CommercialModuleCatalog}, f.snapshots, f.quotaChangePolicy, f.commercialLifecycle, f.provisioningPolicy)
 	if err != nil {
 		return nil, err
 	}
