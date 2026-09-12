@@ -77,30 +77,30 @@ service ModuleCatalogApplication {
 
   rpc CreateModule(CreateModuleRequest) returns (ModuleDTO) {
     option (google.api.http) = { post: "/v1/platform/modules" body: "*" };
-    option (yunka.dsl.v1.operation) = { id: "commercial.module.create" use_case: "create_module" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.create" use_case: "create_module" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
   }
   rpc GetModule(GetModuleRequest) returns (ModuleDTO) {
     option (google.api.http) = { get: "/v1/platform/modules/{module_code}" };
-    option (yunka.dsl.v1.operation) = { id: "commercial.module.get" use_case: "get_module" permissions: "platform.module.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.get" use_case: "get_module" permissions: "platform.module.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
   }
   rpc ListModules(ListModulesRequest) returns (ListModulesResponse) {
     option (google.api.http) = { get: "/v1/platform/modules" };
-    option (yunka.dsl.v1.operation) = { id: "commercial.module.list" use_case: "list_modules" permissions: "platform.module.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.list" use_case: "list_modules" permissions: "platform.module.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
   }
   rpc UpdateModule(UpdateModuleRequest) returns (ModuleDTO) {
     option (google.api.http) = { patch: "/v1/platform/modules/{module_code}" body: "*" };
-    option (yunka.dsl.v1.operation) = { id: "commercial.module.update" use_case: "update_module" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.update" use_case: "update_module" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
   }
   rpc SetModuleSalesStatus(SetModuleSalesStatusRequest) returns (ModuleDTO) {
     option (google.api.http) = { post: "/v1/platform/modules/{module_code}/sales-status" body: "*" };
-    option (yunka.dsl.v1.operation) = { id: "commercial.module.set_sales_status" use_case: "set_module_sales_status" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.set_sales_status" use_case: "set_module_sales_status" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
   }
   rpc SetModuleTechnicalStatus(SetModuleTechnicalStatusRequest) returns (ModuleDTO) {
     option (google.api.http) = { post: "/v1/platform/modules/{module_code}/technical-status" body: "*" };
-    option (yunka.dsl.v1.operation) = { id: "commercial.module.set_technical_status" use_case: "set_module_technical_status" permissions: "platform.module.technical.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.set_technical_status" use_case: "set_module_technical_status" permissions: "platform.module.technical.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
   }
   rpc DeleteModule(DeleteModuleRequest) returns (DeleteModuleResponse) {
     option (google.api.http) = { delete: "/v1/platform/modules/{module_code}" };
-    option (yunka.dsl.v1.operation) = { id: "commercial.module.delete" use_case: "delete_module" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.delete" use_case: "delete_module" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
   }
 }

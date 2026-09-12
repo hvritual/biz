@@ -902,23 +902,23 @@ const file_commercial_v1_module_proto_rawDesc = "" +
 	"\x11ModuleSalesStatus\x12#\n" +
 	"\x1fMODULE_SALES_STATUS_UNSPECIFIED\x10\x00\x12 \n" +
 	"\x1cMODULE_SALES_STATUS_SELLABLE\x10\x01\x12\x1f\n" +
-	"\x1bMODULE_SALES_STATUS_RETIRED\x10\x022\x94\x0f\n" +
-	"\x18ModuleCatalogApplication\x12\xbb\x01\n" +
-	"\fCreateModule\x12\".commercial.v1.CreateModuleRequest\x1a\x18.commercial.v1.ModuleDTO\"m\xe2\xf3\x18J\n" +
-	"\x18commercial.module.create\x12\rcreate_module\x1a\x16platform.module.manage2\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/platform/modules\x12\xb8\x01\n" +
-	"\tGetModule\x12\x1f.commercial.v1.GetModuleRequest\x1a\x18.commercial.v1.ModuleDTO\"p\xe2\xf3\x18B\n" +
+	"\x1bMODULE_SALES_STATUS_RETIRED\x10\x022\x9b\x0f\n" +
+	"\x18ModuleCatalogApplication\x12\xbc\x01\n" +
+	"\fCreateModule\x12\".commercial.v1.CreateModuleRequest\x1a\x18.commercial.v1.ModuleDTO\"n\xe2\xf3\x18K\n" +
+	"\x18commercial.module.create\x12\rcreate_module\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/platform/modules\x12\xb9\x01\n" +
+	"\tGetModule\x12\x1f.commercial.v1.GetModuleRequest\x1a\x18.commercial.v1.ModuleDTO\"q\xe2\xf3\x18C\n" +
 	"\x15commercial.module.get\x12\n" +
-	"get_module\x1a\x14platform.module.read2\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02$\x12\"/v1/platform/modules/{module_code}\x12\xbb\x01\n" +
-	"\vListModules\x12!.commercial.v1.ListModulesRequest\x1a\".commercial.v1.ListModulesResponse\"e\xe2\xf3\x18E\n" +
-	"\x16commercial.module.list\x12\flist_modules\x1a\x14platform.module.read2\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x16\x12\x14/v1/platform/modules\x12\xc9\x01\n" +
-	"\fUpdateModule\x12\".commercial.v1.UpdateModuleRequest\x1a\x18.commercial.v1.ModuleDTO\"{\xe2\xf3\x18J\n" +
-	"\x18commercial.module.update\x12\rupdate_module\x1a\x16platform.module.manage2\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02':\x01*2\"/v1/platform/modules/{module_code}\x12\xfb\x01\n" +
-	"\x14SetModuleSalesStatus\x12*.commercial.v1.SetModuleSalesStatusRequest\x1a\x18.commercial.v1.ModuleDTO\"\x9c\x01\xe2\xf3\x18^\n" +
-	"\"commercial.module.set_sales_status\x12\x17set_module_sales_status\x1a\x16platform.module.manage2\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/platform/modules/{module_code}/sales-status\x12\x99\x02\n" +
-	"\x18SetModuleTechnicalStatus\x12..commercial.v1.SetModuleTechnicalStatusRequest\x1a\x18.commercial.v1.ModuleDTO\"\xb2\x01\xe2\xf3\x18p\n" +
-	"&commercial.module.set_technical_status\x12\x1bset_module_technical_status\x1a platform.module.technical.manage2\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x028:\x01*\"3/v1/platform/modules/{module_code}/technical-status\x12\xd1\x01\n" +
-	"\fDeleteModule\x12\".commercial.v1.DeleteModuleRequest\x1a#.commercial.v1.DeleteModuleResponse\"x\xe2\xf3\x18J\n" +
-	"\x18commercial.module.delete\x12\rdelete_module\x1a\x16platform.module.manage2\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02$*\"/v1/platform/modules/{module_code}\x1a\x86\x03\xda\xf3\x18\x81\x03\n" +
+	"get_module\x1a\x14platform.module.read2\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02$\x12\"/v1/platform/modules/{module_code}\x12\xbc\x01\n" +
+	"\vListModules\x12!.commercial.v1.ListModulesRequest\x1a\".commercial.v1.ListModulesResponse\"f\xe2\xf3\x18F\n" +
+	"\x16commercial.module.list\x12\flist_modules\x1a\x14platform.module.read2\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x16\x12\x14/v1/platform/modules\x12\xca\x01\n" +
+	"\fUpdateModule\x12\".commercial.v1.UpdateModuleRequest\x1a\x18.commercial.v1.ModuleDTO\"|\xe2\xf3\x18K\n" +
+	"\x18commercial.module.update\x12\rupdate_module\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02':\x01*2\"/v1/platform/modules/{module_code}\x12\xfc\x01\n" +
+	"\x14SetModuleSalesStatus\x12*.commercial.v1.SetModuleSalesStatusRequest\x1a\x18.commercial.v1.ModuleDTO\"\x9d\x01\xe2\xf3\x18_\n" +
+	"\"commercial.module.set_sales_status\x12\x17set_module_sales_status\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/platform/modules/{module_code}/sales-status\x12\x9a\x02\n" +
+	"\x18SetModuleTechnicalStatus\x12..commercial.v1.SetModuleTechnicalStatusRequest\x1a\x18.commercial.v1.ModuleDTO\"\xb3\x01\xe2\xf3\x18q\n" +
+	"&commercial.module.set_technical_status\x12\x1bset_module_technical_status\x1a platform.module.technical.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x028:\x01*\"3/v1/platform/modules/{module_code}/technical-status\x12\xd2\x01\n" +
+	"\fDeleteModule\x12\".commercial.v1.DeleteModuleRequest\x1a#.commercial.v1.DeleteModuleResponse\"y\xe2\xf3\x18K\n" +
+	"\x18commercial.module.delete\x12\rdelete_module\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02$*\"/v1/platform/modules/{module_code}\x1a\x86\x03\xda\xf3\x18\x81\x03\n" +
 	"\x0emodule_catalog\x1a\xab\x01\n" +
 	"\x1ecommercial.module.plan_catalog\x12\x11read_plan_catalog\x1a\x17commercial.catalog.read2\x01\x02R\x04\b\x02\x10\x01Z commercial.v1.ListModulesRequestb!commercial.v1.ListModulesResponsej\x0fReadPlanCatalog\x1a\xc0\x01\n" +
 	"%commercial.module.entitlement_catalog\x12\x18read_entitlement_catalog\x1a\x17commercial.catalog.read2\x01\x02R\x04\b\x02\x10\x01Z commercial.v1.ListModulesRequestb!commercial.v1.ListModulesResponsej\x16ReadEntitlementCatalogBV\xca\xf3\x18\x10\n" +

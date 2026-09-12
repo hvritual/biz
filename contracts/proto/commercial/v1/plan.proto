@@ -36,34 +36,34 @@ service PlanManagementApplication {
  option (yunka.dsl.v1.application) = { name: "plan_management" requires: "commercial/module_catalog" };
  rpc CreatePlanDraft(CreatePlanDraftRequest) returns (PlanVersionDTO) {
   option (google.api.http) = { post: "/v1/platform/plans" body: "*" };
-  option (yunka.dsl.v1.operation) = { id: "commercial.plan.create" use_case: "create_plan_draft" permissions: "platform.plan.manage" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.create" use_case: "create_plan_draft" permissions: "platform.plan.manage" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
  }
  rpc CreatePlanVersion(CreatePlanVersionRequest) returns (PlanVersionDTO) {
   option (google.api.http) = { post: "/v1/platform/plans/{plan_code}/versions" body: "*" };
-  option (yunka.dsl.v1.operation) = { id: "commercial.plan.clone" use_case: "create_plan_version" permissions: "platform.plan.manage" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.clone" use_case: "create_plan_version" permissions: "platform.plan.manage" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
  }
  rpc UpdatePlanDraft(UpdatePlanDraftRequest) returns (PlanVersionDTO) {
   option (google.api.http) = { patch: "/v1/platform/plans/{plan_code}/versions/{version}" body: "*" };
-  option (yunka.dsl.v1.operation) = { id: "commercial.plan.update" use_case: "update_plan_draft" permissions: "platform.plan.manage" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.update" use_case: "update_plan_draft" permissions: "platform.plan.manage" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
  }
  rpc PublishPlanVersion(ChangePlanVersionStateRequest) returns (PlanVersionDTO) {
   option (google.api.http) = { post: "/v1/platform/plans/{plan_code}/versions/{version}/publish" body: "*" };
-  option (yunka.dsl.v1.operation) = { id: "commercial.plan.publish" use_case: "publish_plan_version" permissions: "platform.plan.publish" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.publish" use_case: "publish_plan_version" permissions: "platform.plan.publish" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
  }
  rpc RetirePlanVersion(ChangePlanVersionStateRequest) returns (PlanVersionDTO) {
   option (google.api.http) = { post: "/v1/platform/plans/{plan_code}/versions/{version}/retire" body: "*" };
-  option (yunka.dsl.v1.operation) = { id: "commercial.plan.retire" use_case: "retire_plan_version" permissions: "platform.plan.publish" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.retire" use_case: "retire_plan_version" permissions: "platform.plan.publish" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
  }
  rpc GetPlanVersion(GetPlanVersionRequest) returns (PlanVersionDTO) {
   option (google.api.http) = { get: "/v1/platform/plans/{plan_code}/versions/{version}" };
-  option (yunka.dsl.v1.operation) = { id: "commercial.plan.get" use_case: "get_plan_version" permissions: "platform.plan.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.get" use_case: "get_plan_version" permissions: "platform.plan.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
  }
  rpc ListPlanVersions(ListPlanVersionsRequest) returns (ListPlanVersionsResponse) {
   option (google.api.http) = { get: "/v1/platform/plans/{plan_code}/versions" };
-  option (yunka.dsl.v1.operation) = { id: "commercial.plan.list" use_case: "list_plan_versions" permissions: "platform.plan.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.list" use_case: "list_plan_versions" permissions: "platform.plan.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
  }
  rpc CheckPlanEligibility(CheckPlanEligibilityRequest) returns (PlanEligibilityDTO) {
   option (google.api.http) = { post: "/v1/platform/plans/{plan_code}/versions/{version}/eligibility" body: "*" };
-  option (yunka.dsl.v1.operation) = { id: "commercial.plan.eligibility" use_case: "check_plan_eligibility" permissions: "platform.plan.read" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_NONE } };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.eligibility" use_case: "check_plan_eligibility" permissions: "platform.plan.read" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_NONE } };
  }
 }
