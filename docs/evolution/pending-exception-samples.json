@@ -14,5 +14,9 @@
   {
     "title": "[整合审查样本] 跨标签页账号或租户切换可能使旧业务草稿在新身份下提交",
     "body": "## 发现与影响\n移植历史真实API控制台时，前端首次会话核对与最终写请求之间可能发生另一标签页切租户；原CSRF不会随切换失效。仅比较actor_kind/user_id/tenant也无法区分platform_subject不同的平台账号。另有回读失败后仍报告回读成功的问题。\n\n## 修复与验证\n当前实现将platform_subject纳入比较，并用X-Biz-Session-Context携带原始期望身份，由服务端与实际已认证会话比较；不把客户端字段作为授权来源。最终写入前匹配失败返回409，授权仍使用服务器Principal。TestWebSessionPreconditionRejectsCrossTabTenantAndActorChanges及浏览器platform account replacement用例覆盖拒绝路径。回读状态分别报告成功/失败。此为整合审查样本，不声称已有生产越权事故。"
+  },
+  {
+    "title": "[整合异常样本] B12 执行门禁硬编码旧框架基线，与消费者锁不一致",
+    "body": "## 实际证据\n候选e7ae112的b12-7 run34702967618在Build Biz and exact Yunka CLI失败；b12-3 run34702967571和b12-5 run34702967592在运行测试步骤失败。工作流仍checkout旧33b98ce，而消费者source.env/go.mod已要求兼容基线4c67803。\n\n## 修复\nB12.3/4/5/6/7统一在checkout框架前读取biz/.yunka/source.env，以同一锁值获取源码并校验。B12.8只核对历史已验证压力回执，保留其历史固定SHA，不能把它的绿色状态当作新基线执行资格。这个样本记录的是执行门禁基线漂移，不重复已有#75的合法自定义动词注册缺陷。"
   }
 ]

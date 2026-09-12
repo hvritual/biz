@@ -45,7 +45,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_b126?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
     services:
       mysql:
@@ -69,11 +68,20 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Load current consumer framework lock
+        id: consumer_source
+        shell: bash
+        run: |
+          set -euo pipefail
+          source biz/.yunka/source.env
+          echo "YUNKA_SHA=$YUNKA_COMMIT" >> "$GITHUB_ENV"
+          echo "sha=$YUNKA_COMMIT" >> "$GITHUB_OUTPUT"
+
       - name: Checkout exact Yunka baseline
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: hvritual/yunka.io
-          ref: ${{ env.YUNKA_SHA }}
+          ref: ${{ steps.consumer_source.outputs.sha }}
           path: yunka.io
           fetch-depth: 0
           persist-credentials: false
