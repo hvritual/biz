@@ -81,6 +81,7 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 		Permissions: []authz.PermissionKey{
 			"platform.module.read",
 			"platform.module.manage",
+			"platform.plan.read",
 		},
 	}); err != nil {
 		t.Fatal(err)
