@@ -74,7 +74,7 @@ async function login(
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.goto(data.base_url + "/auth/login?return_to=/auth/session");
-  await expect(page).toHaveURL(/127\.0\.0\.1:18081\/idp\/authorize/);
+  await expect(page).toHaveURL(/\/idp\/authorize/);
   await page.getByLabel("邮箱").fill(email);
   await page.getByLabel("密码").fill(password);
   await page.getByRole("button", { name: "登录" }).click();

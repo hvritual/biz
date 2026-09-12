@@ -70,41 +70,65 @@ with marker.open('x') as stream:
     json.dump({'container': container, 'database': database, 'backup': str(backup)}, stream)
 results = []
 selected = set(filter(None, os.environ.get('EVOLUTION_GROUPS', '').split(',')))
+after_reset_command = os.environ.get('EVOLUTION_AFTER_RESET_COMMAND_JSON', '')
 try:
-    for package, label in [('./integration', 'business'), ('./integration/b13delegation', 'delegation')]:
-        binary = output / (label + '.test')
-        subprocess.run(['go', 'test', '-c', '-tags=integration', '-o', str(binary), package], cwd=root, check=True)
-        names = subprocess.check_output([str(binary), '-test.list=^Test'], cwd=root, text=True).splitlines()
-        names = [name for name in names if name.startswith('Test')]
-        if not names:
-            raise SystemExit('Empty integration test inventory: ' + package)
-        groups = {}
-        for name in names:
-            match = re.match(r'Test(CE\d+)', name)
-            group = match[1] if match else label
-            if 'PersistenceBeforeRestart' in name or 'PersistenceAfterRestart' in name:
-                group += '-restart'
-            if name.endswith('Seed'):
-                group = name
-            groups.setdefault(group, []).append(name)
-        for group, tests in groups.items():
-            if selected and group not in selected:
-                continue
-            reset_fixtures()
-            env = dict(os.environ)
-            for key in ['CE08_RESTART_RECEIPT', 'CE09_RESTART_RECEIPT', 'CE10_RESTART_RECEIPT', 'CE12_E2E_ENV_FILE', 'CE13_PLATFORM_E2E_ENV_FILE']:
-                env[key] = str(output / (group + '-' + key.lower() + '.json'))
-            log = output / (group + '.log')
-            started = time.monotonic()
-            with log.open('w') as stream:
-                result = subprocess.run([str(binary), '-test.v', '-test.count=1', '-test.timeout=15m', '-test.run=^(' + '|'.join(tests) + ')$'], cwd=root / package.removeprefix('./'), env=env, stdout=stream, stderr=subprocess.STDOUT)
-            text = log.read_text()
-            passed = len(re.findall(r'^--- PASS:', text, re.M))
-            skipped = len(re.findall(r'^--- SKIP:', text, re.M))
-            entry = {'group': group, 'package': package, 'database': database, 'expected_tests': len(tests), 'passed': passed, 'skipped': skipped, 'exit_code': result.returncode, 'seconds': round(time.monotonic() - started, 2), 'log': str(log)}
-            results.append(entry)
-            print(json.dumps(entry), flush=True)
-            (output / 'summary.json').write_text(json.dumps(results, indent=2) + '\n')
+    # Browser acceptance has to keep its seeded fixture alive while the IdP,
+    # BFF and Chromium run. A JSON argv (rather than a shell fragment) keeps
+    # the same backup/reset/restore envelope without introducing another local
+    # database workflow.
+    if after_reset_command:
+        if selected:
+            raise SystemExit('EVOLUTION_AFTER_RESET_COMMAND_JSON cannot be combined with EVOLUTION_GROUPS')
+        try:
+            command = json.loads(after_reset_command)
+        except json.JSONDecodeError as exc:
+            raise SystemExit('EVOLUTION_AFTER_RESET_COMMAND_JSON must be a JSON argv array') from exc
+        if not isinstance(command, list) or not command or not all(isinstance(part, str) and part for part in command):
+            raise SystemExit('EVOLUTION_AFTER_RESET_COMMAND_JSON must be a non-empty JSON argv array')
+        reset_fixtures()
+        log = output / 'after-reset-command.log'
+        started = time.monotonic()
+        with log.open('w') as stream:
+            result = subprocess.run(command, cwd=root, env=dict(os.environ), stdout=stream, stderr=subprocess.STDOUT)
+        entry = {'group': 'after-reset-command', 'package': '.', 'database': database, 'expected_tests': 1, 'passed': 1 if result.returncode == 0 else 0, 'skipped': 0, 'exit_code': result.returncode, 'seconds': round(time.monotonic() - started, 2), 'log': str(log)}
+        results.append(entry)
+        print(json.dumps(entry), flush=True)
+        (output / 'summary.json').write_text(json.dumps(results, indent=2) + '\n')
+    else:
+        for package, label in [('./integration', 'business'), ('./integration/b13delegation', 'delegation')]:
+            binary = output / (label + '.test')
+            subprocess.run(['go', 'test', '-c', '-tags=integration', '-o', str(binary), package], cwd=root, check=True)
+            names = subprocess.check_output([str(binary), '-test.list=^Test'], cwd=root, text=True).splitlines()
+            names = [name for name in names if name.startswith('Test')]
+            if not names:
+                raise SystemExit('Empty integration test inventory: ' + package)
+            groups = {}
+            for name in names:
+                match = re.match(r'Test(CE\d+)', name)
+                group = match[1] if match else label
+                if 'PersistenceBeforeRestart' in name or 'PersistenceAfterRestart' in name:
+                    group += '-restart'
+                if name.endswith('Seed'):
+                    group = name
+                groups.setdefault(group, []).append(name)
+            for group, tests in groups.items():
+                if selected and group not in selected:
+                    continue
+                reset_fixtures()
+                env = dict(os.environ)
+                for key in ['CE08_RESTART_RECEIPT', 'CE09_RESTART_RECEIPT', 'CE10_RESTART_RECEIPT', 'CE12_E2E_ENV_FILE', 'CE13_PLATFORM_E2E_ENV_FILE']:
+                    env[key] = str(output / (group + '-' + key.lower() + '.json'))
+                log = output / (group + '.log')
+                started = time.monotonic()
+                with log.open('w') as stream:
+                    result = subprocess.run([str(binary), '-test.v', '-test.count=1', '-test.timeout=15m', '-test.run=^(' + '|'.join(tests) + ')$'], cwd=root / package.removeprefix('./'), env=env, stdout=stream, stderr=subprocess.STDOUT)
+                text = log.read_text()
+                passed = len(re.findall(r'^--- PASS:', text, re.M))
+                skipped = len(re.findall(r'^--- SKIP:', text, re.M))
+                entry = {'group': group, 'package': package, 'database': database, 'expected_tests': len(tests), 'passed': passed, 'skipped': skipped, 'exit_code': result.returncode, 'seconds': round(time.monotonic() - started, 2), 'log': str(log)}
+                results.append(entry)
+                print(json.dumps(entry), flush=True)
+                (output / 'summary.json').write_text(json.dumps(results, indent=2) + '\n')
 finally:
     reset_fixtures()
     with backup.open('rb') as stream:

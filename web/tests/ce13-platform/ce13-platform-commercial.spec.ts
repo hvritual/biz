@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 interface Fixture {
   base_url: string;
+  web_base_url: string;
   discovery_url: string;
   allowed_email: string;
   allowed_password: string;
@@ -76,11 +77,11 @@ async function login(
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.goto(data.base_url + "/auth/login?return_to=/auth/session");
-  await expect(page).toHaveURL(/127\.0\.0\.1:18081\/idp\/authorize/);
+  await expect(page).toHaveURL(/\/idp\/authorize/);
   await page.getByLabel("邮箱").fill(email);
   await page.getByLabel("密码").fill(password);
   await page.getByRole("button", { name: "登录" }).click();
-  await expect(page).toHaveURL(data.base_url + "/auth/session");
+  await expect(page).toHaveURL(/\/auth\/session/);
   const result = await browserRequest(page, data.base_url, "/auth/session");
   expect(result.status, result.text).toBe(200);
   return { context, page, session: result.json as SessionView };
@@ -156,4 +157,204 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
   });
   expect(noCSRF.status, noCSRF.text).toBe(401);
   await allowed.context.close();
+});
+
+test("TestCE13PlatformCommercialLifecycleThroughTrustedWebSession", async ({ browser }) => {
+  const data = fixture();
+  const allowed = await login(browser, data, data.allowed_email, data.allowed_password);
+  const csrf = allowed.session.csrf_token;
+  expect(csrf).toBeTruthy();
+
+  const requestID = (name: string) => `ce13-browser-${name}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const write = (path: string, body: unknown, idempotencyKey: string, method = "POST") => browserRequest(
+    allowed.page,
+    data.base_url,
+    path,
+    {
+      method,
+      headers: { "X-CSRF-Token": String(csrf), "Idempotency-Key": idempotencyKey },
+      body,
+    },
+  );
+
+  // This creates an independent, immutable plan through the same cookie BFF
+  // boundary the console uses. It deliberately carries no browser API key.
+  const planCode = `ce13-browser-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const createID = requestID("plan-create");
+  const created = await write("/v1/platform/plans", {
+    requestId: createID,
+    planCode,
+    name: "CE-13 浏览器验收套餐",
+    terms: {
+      modules: [{ moduleCode: "device-operations", capabilityCodes: ["device.lifecycle"], quotas: [], fields: [] }],
+      salesScope: ["default"],
+      validityMode: "unlimited",
+      validityDays: 0,
+      priceRef: "",
+    },
+    reason: "CE-13 trusted web-session lifecycle acceptance",
+  }, createID);
+  expect(created.status, created.text).toBe(200);
+  const draft = created.json as { planCode: string; version: number; revision: number; state: string };
+  expect(draft.planCode).toBe(planCode);
+  expect(draft.state).toBe("DRAFT");
+
+  const staleRevision = draft.revision;
+  const updateID = requestID("plan-update");
+  const updated = await write(`/v1/platform/plans/${encodeURIComponent(planCode)}/versions/${draft.version}`, {
+    requestId: updateID,
+    planCode,
+    version: draft.version,
+    expectedRevision: staleRevision,
+    name: "CE-13 浏览器验收套餐（已更新）",
+    terms: {
+      modules: [{ moduleCode: "device-operations", capabilityCodes: ["device.lifecycle"], quotas: [], fields: [] }],
+      salesScope: ["default"], validityMode: "unlimited", validityDays: 0, priceRef: "",
+    },
+    reason: "exercise server revision CAS",
+  }, updateID, "PATCH");
+  expect(updated.status, updated.text).toBe(200);
+  const currentDraft = updated.json as { revision: number };
+
+  const conflictID = requestID("plan-conflict");
+  const conflict = await write(`/v1/platform/plans/${encodeURIComponent(planCode)}/versions/${draft.version}`, {
+    requestId: conflictID,
+    planCode,
+    version: draft.version,
+    expectedRevision: staleRevision,
+    name: "stale write must not win",
+    terms: {
+      modules: [{ moduleCode: "device-operations", capabilityCodes: ["device.lifecycle"], quotas: [], fields: [] }],
+      salesScope: ["default"], validityMode: "unlimited", validityDays: 0, priceRef: "",
+    },
+    reason: "CE-13 stale version conflict acceptance",
+  }, conflictID, "PATCH");
+  // Current HTTP adapter maps the domain revision conflict to 400. This is
+  // retained as the concrete backend gap for CE-13's UI reread behavior.
+  expect(conflict.status, conflict.text).toBe(400);
+
+  const publishID = requestID("plan-publish");
+  const published = await write(`/v1/platform/plans/${encodeURIComponent(planCode)}/versions/${draft.version}/publish`, {
+    requestId: publishID, planCode, version: draft.version, expectedRevision: currentDraft.revision,
+    reason: "publish immutable browser acceptance version",
+  }, publishID);
+  expect(published.status, published.text).toBe(200);
+  expect((published.json as { state: string }).state).toBe("PUBLISHED");
+
+  // The tenant and base subscription are seeded through the API-key-only
+  // bootstrap operation. Every CE-13 management action below is web-session.
+  const subscription = await browserRequest(allowed.page, data.base_url, `/v1/platform/tenants/${data.tenant_id}/subscription`);
+  expect(subscription.status, subscription.text).toBe(200);
+  const source = await browserRequest(allowed.page, data.base_url, `/v1/platform/tenants/${data.tenant_id}/entitlement-overrides`);
+  expect(source.status, source.text).toBe(200);
+  const sourceVersion = (source.json as { sourceVersion: number }).sourceVersion;
+
+  const overrideID = requestID("override-create");
+  const override = await write(`/v1/platform/tenants/${data.tenant_id}/entitlement-overrides`, {
+    requestId: overrideID, tenantId: data.tenant_id, expectedVersion: sourceVersion,
+    moduleCode: "device-operations", target: "ENTITLEMENT_TARGET_CAPABILITY", key: "device.lifecycle",
+    fieldAction: "", effect: "ENTITLEMENT_EFFECT_DENY", effectiveAt: "", expiresAt: "",
+    reason: "CE-13 browser source and provenance acceptance",
+  }, overrideID);
+  expect(override.status, override.text).toBe(200);
+  const overrideReceipt = override.json as { source: { id: string }; sourceVersion: number };
+  expect(overrideReceipt.source.id).toBeTruthy();
+
+  const explained = await write(`/v1/platform/tenants/${data.tenant_id}/entitlements`, {
+    tenantId: data.tenant_id, capabilityCodes: ["device.lifecycle"],
+  }, requestID("entitlement-explain"));
+  expect(explained.status, explained.text).toBe(200);
+  const decisions = (explained.json as { decisions?: Array<{ allowed: boolean; sources?: Array<{ sourceKind?: string }> }> }).decisions ?? [];
+  expect(decisions.some((decision) => !decision.allowed && (decision.sources ?? []).some((item) => item.sourceKind === "override"))).toBe(true);
+
+  const revokeID = requestID("override-revoke");
+  const revoked = await write(`/v1/platform/tenants/${data.tenant_id}/entitlement-overrides/${encodeURIComponent(overrideReceipt.source.id)}/revoke`, {
+    requestId: revokeID, tenantId: data.tenant_id, id: overrideReceipt.source.id,
+    expectedVersion: overrideReceipt.sourceVersion, reason: "CE-13 browser revoke acceptance",
+  }, revokeID);
+  expect(revoked.status, revoked.text).toBe(200);
+
+  const previewID = requestID("subscription-preview");
+  const preview = await write(`/v1/platform/tenants/${data.tenant_id}/subscription/change-previews`, {
+    requestId: previewID, tenantId: data.tenant_id, action: "STOP_RENEWAL",
+    targetPlanCode: planCode, targetPlanVersion: draft.version, effectiveAt: "",
+    reason: "CE-13 manual change preview acceptance",
+  }, previewID);
+  expect(preview.status, preview.text).toBe(200);
+  const previewDTO = preview.json as { changeId: string; previewHash: string };
+  expect(previewDTO.changeId).toBeTruthy();
+  expect(previewDTO.previewHash).toBeTruthy();
+
+  const confirmID = requestID("subscription-confirm");
+  const receipt = await write(`/v1/platform/tenants/${data.tenant_id}/subscription/changes/${encodeURIComponent(previewDTO.changeId)}/confirm`, {
+    requestId: confirmID, tenantId: data.tenant_id, changeId: previewDTO.changeId,
+    previewHash: previewDTO.previewHash, reason: "CE-13 platform manual approval",
+  }, confirmID);
+  expect(receipt.status, receipt.text).toBe(200);
+  const receiptDTO = receipt.json as { changeId: string; status: string; pricingAuthority: string };
+  expect(receiptDTO.changeId).toBe(previewDTO.changeId);
+  expect(receiptDTO.status).toBeTruthy();
+  expect(receiptDTO.pricingAuthority).toBe("PLATFORM_MANUAL_APPROVAL");
+
+  const readback = await browserRequest(allowed.page, data.base_url, `/v1/platform/tenants/${data.tenant_id}/subscription/changes/${encodeURIComponent(previewDTO.changeId)}`);
+  expect(readback.status, readback.text).toBe(200);
+  expect((readback.json as { changeId: string }).changeId).toBe(previewDTO.changeId);
+  await allowed.context.close();
+});
+
+test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInfo) => {
+  const data = fixture();
+  const context = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+  const page = await context.newPage();
+  const code = `ce13-ui-${Date.now()}`;
+
+  await page.goto(`${data.web_base_url}/auth/login?return_to=/#/platform/commercial/plans`);
+  await expect(page).toHaveURL(/\/idp\/authorize/);
+  await page.getByLabel("邮箱").fill(data.allowed_email);
+  await page.getByLabel("密码").fill(data.allowed_password);
+  await page.getByRole("button", { name: "登录" }).click();
+  await expect(page).toHaveURL(/#\/platform\/commercial\/plans/);
+
+  await page.getByRole("button", { name: "新建套餐" }).click();
+  const editor = page.getByRole("dialog", { name: "新建套餐首稿" });
+  await editor.getByLabel("套餐代码").fill(code);
+  await editor.getByLabel("套餐名称").fill("CE-13 可见控制台套餐");
+  await editor.getByRole("button", { name: "添加模块" }).click();
+  await editor.getByLabel("模块").selectOption("device-operations");
+  await editor.getByRole("button", { name: "添加范围" }).click();
+  await editor.getByPlaceholder("default").fill("default");
+  await editor.getByRole("button", { name: "提交到服务端" }).click();
+  await expect(page.getByText("套餐草稿已创建。")).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "发布版本" }).click();
+  await expect(page.getByText("套餐版本已发布；后续修订必须创建新版本。")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("ce13-plan-published-1366.png"), fullPage: true });
+
+  await page.goto(`${data.web_base_url}/#/platform/commercial/tenant-entitlements`);
+  await page.getByLabel("租户 ID").fill(data.tenant_id);
+  await page.getByRole("button", { name: "读取权益" }).click();
+  await expect(page.locator(".subscription-card")).toBeVisible();
+  await page.getByRole("button", { name: "新增专项来源" }).click();
+  const override = page.getByRole("dialog", { name: "新增专项权益来源" });
+  await override.getByLabel("模块", { exact: true }).selectOption("device-operations");
+  await override.getByLabel("目标类型", { exact: true }).selectOption("ENTITLEMENT_TARGET_CAPABILITY");
+  await override.getByLabel("目标 key", { exact: true }).selectOption("device.lifecycle");
+  await override.getByLabel("效果", { exact: true }).selectOption("ENTITLEMENT_EFFECT_DENY");
+  await override.getByLabel("原因", { exact: true }).fill("CE-13 可见来源验证");
+  await override.getByRole("button", { name: "创建专项来源" }).click();
+  await expect(page.getByText("专项权益来源已创建，正在使用服务端新版本重新解析。")).toBeVisible();
+  await expect(page.getByText("override").first()).toBeVisible();
+
+  const change = page.getByTestId("ce13-subscription-change");
+  await change.getByLabel("操作").selectOption("STOP_RENEWAL");
+  await change.getByLabel("预览原因").fill("CE-13 可见人工变更预览");
+  await change.getByRole("button", { name: "生成不可变预览" }).click();
+  await expect(change.getByText(/change /)).toBeVisible();
+  await change.getByLabel(/PLATFORM_MANUAL_APPROVAL/).check();
+  await change.getByLabel("确认原因").fill("CE-13 可见人工批准");
+  await change.getByRole("button", { name: "确认此 preview_hash" }).click();
+  await expect(change.getByText("不可变变更回执")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("ce13-tenant-change-1366.png"), fullPage: true });
+
+  await context.close();
 });

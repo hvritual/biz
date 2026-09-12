@@ -7,13 +7,19 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
+	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"yunka.io/gateway/authz"
 )
 
 type ce13PlatformBrowserFixture struct {
 	BaseURL            string `json:"base_url"`
+	WebBaseURL         string `json:"web_base_url"`
 	DiscoveryURL       string `json:"discovery_url"`
 	AllowedEmail       string `json:"allowed_email"`
 	AllowedPassword    string `json:"allowed_password"`
@@ -37,7 +43,7 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 	db := openDB(t)
 	// Reuse the qualified runtime bootstrap to materialize the commercial module
 	// catalog and all current schemas before the standalone browser servers start.
-	startB122Runtime(t, db, "ce13-seed-bootstrap-token")
+	started := startB122Runtime(t, db, "ce13-seed-bootstrap-token")
 
 	ctx := context.Background()
 	store, err := accesspersistence.New(db)
@@ -54,8 +60,10 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	baseURL := valueOrDefault(os.Getenv("CE13_BIZ_BASE_URL"), "http://127.0.0.1:18080")
+	webBaseURL := valueOrDefault(os.Getenv("CE13_WEB_BASE_URL"), baseURL)
+	issuer := valueOrDefault(os.Getenv("CE13_IDP_ISSUER"), "http://127.0.0.1:18081/idp")
 	const (
-		issuer          = "http://127.0.0.1:18081/idp"
 		allowedUserID   = "ce13-platform-allow-user"
 		allowedEmail    = "ce13.platform.allow@example.invalid"
 		allowedPassword = "CE13-Allow-Correct-Horse-2026!"
@@ -68,12 +76,10 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 		tenantUserID    = "ce13-tenant-only-user"
 		tenantEmail     = "ce13.tenant.only@example.invalid"
 		tenantPassword  = "CE13-Tenant-Correct-Horse-2026!"
-		tenantID        = "ce13-tenant-only"
 	)
 
 	seedCE13WebUser(t, store, "ce13-platform-allow-home", allowedUserID, allowedEmail, allowedPassword)
 	seedCE13WebUser(t, store, "ce13-platform-denied-home", deniedUserID, deniedEmail, deniedPassword)
-	seedCE13WebUser(t, store, tenantID, tenantUserID, tenantEmail, tenantPassword)
 
 	if err := store.BootstrapPlatform(ctx, accesspersistence.PlatformBootstrap{
 		Subject: allowedSubject,
@@ -81,11 +87,25 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 		Permissions: []authz.PermissionKey{
 			"platform.module.read",
 			"platform.module.manage",
+			"platform.module.technical.manage",
 			"platform.plan.read",
+			"platform.plan.manage",
+			"platform.plan.publish",
+			"platform.tenant.create",
+			"platform.tenant.read",
+			"platform.tenant.manage",
+			"platform.subscription.manage",
+			"platform.subscription.read",
+			"platform.subscription.confirm",
+			"platform.entitlement.manage",
+			"platform.entitlement.read",
+			"commercial.catalog.read",
 		},
 	}); err != nil {
 		t.Fatal(err)
 	}
+	tenantID := seedCE13TenantSubscription(t, started.GRPCAddress(), allowedAPIKey)
+	seedCE13WebUser(t, store, tenantID, tenantUserID, tenantEmail, tenantPassword)
 	if err := store.BootstrapPlatform(ctx, accesspersistence.PlatformBootstrap{
 		Subject: deniedSubject,
 		Token:   "ce13-platform-api-key-denied",
@@ -103,7 +123,8 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 	}
 
 	fixture := ce13PlatformBrowserFixture{
-		BaseURL:            "http://127.0.0.1:18080",
+		BaseURL:            baseURL,
+		WebBaseURL:         webBaseURL,
 		DiscoveryURL:       issuer + "/.well-known/openid-configuration",
 		AllowedEmail:       allowedEmail,
 		AllowedPassword:    allowedPassword,
@@ -124,6 +145,47 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 	if err := os.WriteFile(path, payload, 0o600); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func valueOrDefault(value, fallback string) string {
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
+// The browser qualification uses this pre-existing base subscription only as
+// the target of CE-13's platform-owned preview/confirm flow. Tenant creation
+// and default-rule bootstrap remain API-key-only operations and are therefore
+// deliberately not performed by the browser session.
+func seedCE13TenantSubscription(t *testing.T, address, token string) string {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	conn, err := grpc.DialContext(ctx, address, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	client := accessv1.NewTenantLifecycleApplicationClient(conn)
+	requestID := "ce13-browser-subscription-" + ce04Random(t)
+	requestContext := metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer "+token, "idempotency-key", requestID)
+	created, err := client.CreateTenant(requestContext, &accessv1.CreateTenantRequest{
+		RequestId:   requestID,
+		Name:        "CE-13 browser acceptance tenant",
+		OwnerUserId: "ce13-browser-owner-" + ce04Random(t),
+		OwnerEmail:  "ce13-browser-owner-" + ce04Random(t) + "@example.invalid",
+		SalesScope:  "default",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	activateID := "ce13-browser-activate-" + ce04Random(t)
+	activateContext := metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer "+token, "idempotency-key", activateID)
+	if _, err := client.ActivateTenant(activateContext, &accessv1.ActivateTenantRequest{Id: created.GetId(), Version: created.GetVersion()}); err != nil {
+		t.Fatal(err)
+	}
+	return created.GetId()
 }
 
 func seedCE13WebUser(t *testing.T, store *accesspersistence.Store, tenantID, userID, email, password string) {
