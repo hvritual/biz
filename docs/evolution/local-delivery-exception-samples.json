@@ -1,0 +1,63 @@
+{
+  "recorded_at": "2026-09-13",
+  "status": "local-unpublished",
+  "issue_inventory": {
+    "source": "/tmp/biz-ce-issues.json",
+    "checked_public_issue_numbers": "1-88",
+    "publication_note": "No matching public issue was found for these samples. issue_number remains null; a later control workflow may publish them after independent review."
+  },
+  "evidence_classes": {
+    "source_review": "A reviewer established the condition from a concrete source diff or static call path. It is not a claim that a runtime test, production system, or user encountered the defect.",
+    "runtime_failure": "A named test or execution actually failed with the stated condition. None of the four records below is promoted to this class without such evidence."
+  },
+  "samples": [
+    {
+      "local_id": "LOCAL-CE13-001",
+      "issue_number": null,
+      "title": "CE13 plan writes omitted the required Idempotency-Key header",
+      "discovery": "source_review",
+      "reproduction_condition": "Use the CE13 platform plan client to create a draft/version, update a draft, publish, or retire a version. Each request carries requestId in JSON but did not pass it as mutate(..., { idempotencyKey }).",
+      "actual_evidence": "Source review of web/src/services/commercial/platformCommercial.ts before 31f317e found all five plan mutation wrappers calling mutate without its idempotencyKey option. The server operation contracts require Idempotency-Key for these mutations.",
+      "expected": "Every plan mutation forwards its stable requestId as the HTTP Idempotency-Key header so server-side idempotency can accept and correlate the write.",
+      "fixed_by": ["31f317eddc701ca7b0b888a4c8d14ef7bb52d67c"],
+      "impact": "The UI could receive a required-key rejection and could not safely retry plan writes through the intended idempotency boundary.",
+      "runtime_failure_evidence": null
+    },
+    {
+      "local_id": "LOCAL-FRAMEWORK-001",
+      "issue_number": null,
+      "title": "Explicit gRPC CAS conflicts were rendered as generic HTTP 400",
+      "discovery": "source_review",
+      "reproduction_condition": "A generated C9 REST adapter receives an application error with gRPC status Aborted or AlreadyExists, such as a completed/in-progress CAS or idempotency conflict.",
+      "actual_evidence": "The pre-fix C9 REST generator fell through from its special idempotency errors to the generic application request failed HTTP 400 path. Review of the generated UI retry path showed that it recognizes HTTP 409 as a stale/conflict result, not a generic 400.",
+      "expected": "Only explicit gRPC Aborted and AlreadyExists map to generic application conflict HTTP 409; unknown application errors remain HTTP 400.",
+      "fixed_by": ["framework 95566098d605e58ed89f62da2616477f8eedb956", "canonical main 646598e", "compatibility 9ee6640f5e19777b4c04d9e4937a93e2035eacda"],
+      "impact": "CAS conflicts were indistinguishable from malformed application requests to the CE13 UI, preventing its conflict-specific recovery behavior.",
+      "runtime_failure_evidence": null
+    },
+    {
+      "local_id": "LOCAL-CE16-001",
+      "issue_number": null,
+      "title": "Prepared subscription completion did not create the next revision-bound boundary",
+      "discovery": "source_review",
+      "reproduction_condition": "A prepared subscription change completes into a subscription revision with PeriodEnd set. The completion persists the new revision but, before the fix, did not insert a SubscriptionBoundary transition for that new revision.",
+      "actual_evidence": "Review of CompletePreparedSubscriptionChange before ddbfe3c found receipt/event persistence after activation without transition.NewInTimezone and Transitions.Insert. The fix adds a boundary using after.ID and after.Revision; ae91064 corrects that boundary to use the configured lifecycle timezone rather than hard-coded UTC.",
+      "expected": "Each completed prepared activation with PeriodEnd creates one authoritative boundary keyed to the new subscription revision and configured business timezone.",
+      "fixed_by": ["ddbfe3c22e4d678f7572f675c051b408ece04206", "ae910640ab57cf50a637ea40d67cefda4610ca21"],
+      "impact": "The activated revision could outlive its scheduled lifecycle boundary, or calculate it in the wrong timezone, until unrelated work created another transition.",
+      "runtime_failure_evidence": null
+    },
+    {
+      "local_id": "LOCAL-CE16-002",
+      "issue_number": null,
+      "title": "Invalid commercial grace duration silently became zero",
+      "discovery": "source_review",
+      "reproduction_condition": "Set YUNKA_BIZ_COMMERCIAL_GRACE_DURATION to an unparsable or negative duration before starting Biz.",
+      "actual_evidence": "Before ddbfe3c, lifecycleConfiguration used envDuration(..., 0), whose invalid/negative parse fallback returned zero. Thus malformed configured grace was indistinguishable from the intentional unset zero-grace policy. ddbfe3c adds envGraceDuration and TestCE16GraceDurationRejectsInvalidAndNegativeValues.",
+      "expected": "Unset remains the documented zero-grace default; invalid or negative explicit values fail startup configuration rather than changing commercial behavior silently.",
+      "fixed_by": ["ddbfe3c22e4d678f7572f675c051b408ece04206"],
+      "impact": "An operator typo could bypass the configured grace period and restrict a subscription at its boundary without an explicit configuration error.",
+      "runtime_failure_evidence": null
+    }
+  ]
+}
