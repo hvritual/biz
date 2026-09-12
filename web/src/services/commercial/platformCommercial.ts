@@ -229,6 +229,101 @@ export interface TenantSubscriptionDTO {
   pendingChangeId: string
 }
 
+export type SubscriptionChangeAction = 'SWITCH' | 'RENEW' | 'STOP_RENEWAL'
+
+export interface ProvisioningRequirementDTO {
+  code: string
+  adapter: string
+  version: string
+  maxAttempts: number
+}
+
+export interface SubscriptionChangeDependency {
+  moduleCode: string
+  requiresModules: string[]
+}
+
+export interface SubscriptionChangeQuotaImpact {
+  moduleCode: string
+  key: string
+  beforeLimit?: EntitlementLimit
+  afterLimit?: EntitlementLimit
+  usageKnown: boolean
+  used: string | number
+  overLimit: boolean
+  policy: string
+  evidence: string
+}
+
+export interface SubscriptionChangePreviewDTO {
+  changeId: string
+  tenantId: string
+  actorId: string
+  requestId: string
+  action: SubscriptionChangeAction | string
+  classification: string
+  mode: string
+  previewHash: string
+  before?: TenantSubscriptionDTO
+  target?: PlanVersionDTO
+  subscriptionRevision: string | number
+  sourceVersion: string | number
+  entitlementVersion: string | number
+  catalogRevision: string | number
+  createdAt: string
+  expiresAt: string
+  effectiveAt: string
+  entitlementExpiresAt: string
+  currentEntitlements?: EntitlementView
+  projectedEntitlements?: EntitlementView
+  dependencies: SubscriptionChangeDependency[]
+  quotaImpacts: SubscriptionChangeQuotaImpact[]
+  impacts: string[]
+  pricingBasis: string
+  quotaValidationRequired: boolean
+  provisioningRequirements: ProvisioningRequirementDTO[]
+}
+
+export interface SubscriptionChangeReceiptDTO {
+  changeId: string
+  tenantId: string
+  actorId: string
+  requestId: string
+  previewHash: string
+  action: SubscriptionChangeAction | string
+  status: string
+  mode: string
+  confirmedAt: string
+  effectiveAt: string
+  entitlementExpiresAt: string
+  reason: string
+  before?: TenantSubscriptionDTO
+  after?: TenantSubscriptionDTO
+  beforeSourceVersion: string | number
+  afterSourceVersion: string | number
+  beforeEntitlementVersion: string | number
+  afterEntitlementVersion: string | number
+  quotaValidationRequired: boolean
+  pricingAuthority: string
+  quotaImpacts: SubscriptionChangeQuotaImpact[]
+  provisioningTaskId: string
+}
+
+export interface PreviewSubscriptionChangeInput {
+  requestId: string
+  action: SubscriptionChangeAction
+  targetPlanCode: string
+  targetPlanVersion: string | number
+  effectiveAt: string
+  reason: string
+}
+
+export interface ConfirmSubscriptionChangeInput {
+  requestId: string
+  previewHash: string
+  reason: string
+}
+
 interface ListModulesResponse {
   modules?: ModuleDTO[]
 }
@@ -310,14 +405,21 @@ async function trustedCsrfToken(): Promise<string> {
   return session.csrf_token
 }
 
-async function mutate<T>(path: string, method: 'POST' | 'PATCH', body: unknown): Promise<T> {
+async function mutate<T>(
+  path: string,
+  method: 'POST' | 'PATCH',
+  body: unknown,
+  options: { idempotencyKey?: string } = {},
+): Promise<T> {
   const csrf = await trustedCsrfToken()
+  const headers = new Headers({
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': csrf,
+  })
+  if (options.idempotencyKey) headers.set('Idempotency-Key', options.idempotencyKey)
   return request<T>(path, {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': csrf,
-    },
+    headers,
     body: JSON.stringify(body),
   })
 }
@@ -437,5 +539,51 @@ export function revokeEntitlementOverride(
       tenantId,
       id: overrideId,
     },
+  )
+}
+
+export function previewSubscriptionChange(tenantId: string, input: PreviewSubscriptionChangeInput) {
+  const requestId = input.requestId.trim()
+  return mutate<SubscriptionChangePreviewDTO>(
+    `/v1/platform/tenants/${encoded(tenantId)}/subscription/change-previews`,
+    'POST',
+    {
+      ...input,
+      tenantId,
+      requestId,
+      targetPlanVersion: String(input.targetPlanVersion),
+    },
+    { idempotencyKey: requestId },
+  )
+}
+
+export function confirmSubscriptionChange(
+  tenantId: string,
+  changeId: string,
+  input: ConfirmSubscriptionChangeInput,
+) {
+  const requestId = input.requestId.trim()
+  return mutate<SubscriptionChangeReceiptDTO>(
+    `/v1/platform/tenants/${encoded(tenantId)}/subscription/changes/${encoded(changeId)}/confirm`,
+    'POST',
+    {
+      ...input,
+      tenantId,
+      changeId,
+      requestId,
+    },
+    { idempotencyKey: requestId },
+  )
+}
+
+export function getSubscriptionChangePreview(tenantId: string, changeId: string) {
+  return request<SubscriptionChangePreviewDTO>(
+    `/v1/platform/tenants/${encoded(tenantId)}/subscription/change-previews/${encoded(changeId)}`,
+  )
+}
+
+export function getSubscriptionChangeReceipt(tenantId: string, changeId: string) {
+  return request<SubscriptionChangeReceiptDTO>(
+    `/v1/platform/tenants/${encoded(tenantId)}/subscription/changes/${encoded(changeId)}`,
   )
 }
