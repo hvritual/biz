@@ -241,10 +241,11 @@ test('TestCE13SubscriptionChangeConfirmPinsPreviewHashAndRendersImmutableReceipt
   await workspace.getByLabel('确认原因').fill('平台主管确认升级')
   await workspace.getByRole('button', { name: '确认此 preview_hash' }).click()
 
-  await expect(workspace.getByText('不可变变更回执')).toBeVisible()
-  await expect(workspace.getByText('APPLIED').first()).toBeVisible()
-  await expect(workspace.getByText('office-ultimate v3')).toBeVisible()
-  await expect(workspace.getByText('PLATFORM_MANUAL_APPROVAL')).toBeVisible()
+  const receipt = workspace.locator('.receipt-panel')
+  await expect(receipt.getByText('不可变变更回执')).toBeVisible()
+  await expect(receipt.getByText('APPLIED').first()).toBeVisible()
+  await expect(receipt.getByText('office-ultimate v3')).toBeVisible()
+  await expect(receipt.getByText('PLATFORM_MANUAL_APPROVAL')).toBeVisible()
 
   const requestId = String(confirmBody?.requestId)
   expect(requestId).toContain('ce13-subscription-confirm-')
