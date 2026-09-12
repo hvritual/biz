@@ -75,8 +75,11 @@ func ce09Terms(quota uint64, days uint32) *v1.PlanTerms {
 	return &v1.PlanTerms{Modules: []*v1.PlanModule{{ModuleCode: "device-operations", CapabilityCodes: []string{"device.lifecycle"}, Quotas: []*v1.PlanQuota{{Key: "tenant.devices", Value: quota}}, Fields: []*v1.PlanField{{Key: "device.identity", Action: "read", Mode: "allow"}}}}, SalesScope: []string{"ce09"}, ValidityMode: mode, ValidityDays: days}
 }
 func (e *ce09Environment) plan(terms *v1.PlanTerms) *v1.PlanVersionDTO {
+	return e.planWithCode("ce09-"+ce04Random(e.t), terms)
+}
+func (e *ce09Environment) planWithCode(code string, terms *v1.PlanTerms) *v1.PlanVersionDTO {
 	e.t.Helper()
-	d, err := e.plans.CreatePlanDraft(e.ctx(), &v1.CreatePlanDraftRequest{RequestId: ce04Random(e.t), PlanCode: "ce09-" + ce04Random(e.t), Name: "CE09 immutable offer", Terms: terms, Reason: "CE09 test fixture"})
+	d, err := e.plans.CreatePlanDraft(e.ctx(), &v1.CreatePlanDraftRequest{RequestId: ce04Random(e.t), PlanCode: code, Name: "CE09 immutable offer", Terms: terms, Reason: "CE09 test fixture"})
 	if err != nil {
 		e.t.Fatal(err)
 	}
