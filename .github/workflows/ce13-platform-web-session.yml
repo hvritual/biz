@@ -255,7 +255,14 @@ jobs:
           test ! -f "$RUNNER_TEMP/ce13-biz.pid" || kill "$(cat "$RUNNER_TEMP/ce13-biz.pid")" 2>/dev/null
           test ! -f "$RUNNER_TEMP/ce13-idp.pid" || kill "$(cat "$RUNNER_TEMP/ce13-idp.pid")" 2>/dev/null
           test ! -f "$RUNNER_TEMP/ce13-vite.pid" || kill "$(cat "$RUNNER_TEMP/ce13-vite.pid")" 2>/dev/null
-          test ! -f "$RUNNER_TEMP/ce13-vite.pid" || wait "$(cat "$RUNNER_TEMP/ce13-vite.pid")" 2>/dev/null
+          if test -f "$RUNNER_TEMP/ce13-vite.pid"; then
+            vite_pid="$(cat "$RUNNER_TEMP/ce13-vite.pid")"
+            for attempt in $(seq 1 20); do
+              kill -0 "$vite_pid" 2>/dev/null || break
+              sleep 1
+            done
+            ! kill -0 "$vite_pid" 2>/dev/null || exit 1
+          fi
 
       - name: Verify candidate worktree remains clean
         if: always()
