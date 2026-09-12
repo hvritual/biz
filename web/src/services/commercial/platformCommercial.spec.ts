@@ -1,9 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   CommercialApiError,
+  createEntitlementOverride,
   createPlanDraft,
+  explainTenantEntitlements,
+  listEntitlementOverrides,
   listPlanVersions,
   listPlatformModules,
+  revokeEntitlementOverride,
   type CreatePlanDraftInput,
 } from './platformCommercial'
 
@@ -132,5 +136,75 @@ describe('CE-13 platform commercial service', () => {
       reason: 'test',
       terms: { modules: [], salesScope: ['default'], validityMode: 'unlimited', validityDays: 0, priceRef: '' },
     })).rejects.toMatchObject<Partial<CommercialApiError>>({ status: 409, code: 'conflict' })
+  })
+
+  it('reads tenant override sources only for an explicit tenant id and never adds browser authority headers', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ sources: [{ id: 'ov-1', tenantId: 'tenant/a' }], sourceVersion: '7' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+
+    const result = await listEntitlementOverrides('tenant/a')
+
+    expect(result.sourceVersion).toBe('7')
+    expect(result.sources[0]?.id).toBe('ov-1')
+    const [url, init] = fetchMock.mock.calls[0] ?? []
+    expect(String(url)).toContain('/v1/platform/tenants/tenant%2Fa/entitlement-overrides')
+    expect(init?.credentials).toBe('include')
+    expect(new Headers(init?.headers).has('Authorization')).toBe(false)
+  })
+
+  it('explains entitlements through trusted-session CSRF and preserves explicit capability filters', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ authenticated: true, csrf_token: 'csrf-ent' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ tenantId: 'tenant-1', decisions: [] }), { status: 200 }))
+
+    await explainTenantEntitlements('tenant-1', ['device.lifecycle', ' customer.view '])
+
+    const [url, init] = fetchMock.mock.calls[1] ?? []
+    const headers = new Headers(init?.headers)
+    expect(String(url)).toContain('/v1/platform/tenants/tenant-1/entitlements')
+    expect(init?.method).toBe('POST')
+    expect(headers.get('X-CSRF-Token')).toBe('csrf-ent')
+    expect(headers.has('Authorization')).toBe(false)
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      tenantId: 'tenant-1',
+      capabilityCodes: ['device.lifecycle', 'customer.view'],
+    })
+  })
+
+  it('uses the aggregate source version for create and revoke CAS without exposing an API key', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ authenticated: true, csrf_token: 'csrf-create' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ sourceVersion: '8', source: { id: 'ov-2' } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ authenticated: true, csrf_token: 'csrf-revoke' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ sourceVersion: '9', source: { id: 'ov-2', revokedAt: 'now' } }), { status: 200 }))
+
+    await createEntitlementOverride('tenant-1', {
+      requestId: 'create-override',
+      expectedVersion: '7',
+      moduleCode: 'device',
+      target: 'ENTITLEMENT_TARGET_CAPABILITY',
+      key: 'device.lifecycle',
+      fieldAction: '',
+      effect: 'ENTITLEMENT_EFFECT_GRANT',
+      effectiveAt: '',
+      expiresAt: '',
+      reason: 'temporary grant',
+    })
+    await revokeEntitlementOverride('tenant-1', 'ov-2', {
+      requestId: 'revoke-override',
+      expectedVersion: '8',
+      reason: 'grant no longer required',
+    })
+
+    const createInit = fetchMock.mock.calls[1]?.[1]
+    const revokeInit = fetchMock.mock.calls[3]?.[1]
+    expect(JSON.parse(String(createInit?.body))).toMatchObject({ tenantId: 'tenant-1', expectedVersion: '7' })
+    expect(JSON.parse(String(revokeInit?.body))).toMatchObject({ tenantId: 'tenant-1', id: 'ov-2', expectedVersion: '8' })
+    expect(new Headers(createInit?.headers).has('Authorization')).toBe(false)
+    expect(new Headers(revokeInit?.headers).has('Authorization')).toBe(false)
   })
 })
