@@ -234,8 +234,8 @@ func TestCE16MySQLPreparedFixedDaysTrialSchedulesBoundary(t *testing.T) {
 		t.Fatalf("boundary=%+v", tick)
 	}
 	after, err := e.subscriptions.GetTenantSubscription(e.ctx(), &v1.GetTenantSubscriptionRequest{TenantId: e.tenant})
-	if err != nil || after.State == subscription.StateTrial {
-		t.Fatalf("trial did not expire: %+v err=%v", after, err)
+	if err != nil || after.State != subscription.StateRestricted {
+		t.Fatalf("zero-grace trial boundary state=%s err=%v", after.State, err)
 	}
 }
 
