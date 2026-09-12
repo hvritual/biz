@@ -3,10 +3,12 @@
 package integration
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 	"time"
 
+	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	transition "github.com/hvritual/biz/internal/commercial/domain/timetransition"
 )
@@ -33,6 +35,31 @@ func ce16InsertDueTransition(t *testing.T, e *ce10Environment, kind, authority s
 		t.Fatal(err)
 	}
 	return task.ID
+}
+
+func TestCE16MySQLOverrideExpiryTransition(t *testing.T) {
+	e := ce10New(t)
+	key := ce04Random(t)
+	expires := time.Now().UTC().Add(1200 * time.Millisecond).Truncate(time.Microsecond)
+	receipt, err := e.entitlements.CreateEntitlementOverride(ce04Context(e.token, key), &v1.CreateEntitlementOverrideRequest{TenantId: e.tenant, RequestId: key, ExpectedVersion: e.view().SourceVersion, ModuleCode: "device-operations", Target: v1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY, Key: "device.lifecycle", Effect: v1.EntitlementEffect_ENTITLEMENT_EFFECT_GRANT, ExpiresAt: expires.Format(time.RFC3339Nano), Reason: "CE16 expiry"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(time.Until(expires) + 50*time.Millisecond)
+	if _, err = e.started.RunProvisioningOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var state string
+	if err = e.db.Table("biz_commercial_time_transitions").Select("state").Where("authority_id=?", receipt.Source.Id).Scan(&state).Error; err != nil || state != transition.Applied {
+		t.Fatalf("state=%s err=%v", state, err)
+	}
+	if _, err = e.started.RunProvisioningOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var audits int64
+	if err = e.db.Table("biz_commercial_time_transition_audit").Where("transition_id IN (SELECT transition_id FROM biz_commercial_time_transitions WHERE authority_id=?) AND state=?", receipt.Source.Id, transition.Applied).Count(&audits).Error; err != nil || audits != 1 {
+		t.Fatalf("applied audits=%d err=%v", audits, err)
+	}
 }
 
 func TestCE16MySQLTrialGraceBoundaries(t *testing.T) {
