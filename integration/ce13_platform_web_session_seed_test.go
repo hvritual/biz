@@ -129,11 +129,11 @@ func seedCE13WebUser(t *testing.T, store *accesspersistence.Store, tenantID, use
 	t.Helper()
 	ctx := context.Background()
 	if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
-		TenantID: tenantID,
+		TenantID:   tenantID,
 		TenantName: tenantID,
-		UserID: userID,
-		Email: email,
-		Token: "setup-" + userID,
+		UserID:     userID,
+		Email:      email,
+		Token:      "setup-" + userID,
 	}, []authz.PermissionKey{"tenant.entitlement.read"}); err != nil {
 		t.Fatal(err)
 	}
