@@ -18,7 +18,7 @@ func SubscriptionManagementResolver() authz.StaticResolver {
 
 func subscriptionManagementPolicies() map[string]authz.Policy {
 	return map[string]authz.Policy{
-		"/commercial.v1.SubscriptionManagementApplication/GetTenantSubscription":        {Operation: OperationSubscriptionManagementGetTenantSubscription, Permissions: []authz.PermissionKey{"platform.subscription.read", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
+		"/commercial.v1.SubscriptionManagementApplication/GetTenantSubscription":        {Operation: OperationSubscriptionManagementGetTenantSubscription, Permissions: []authz.PermissionKey{"platform.subscription.read", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.SubscriptionManagementApplication/ListDefaultSubscriptionRules": {Operation: OperationSubscriptionManagementListDefaultSubscriptionRules, Permissions: []authz.PermissionKey{"platform.subscription.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
 		"/commercial.v1.SubscriptionManagementApplication/PutDefaultSubscriptionRule":   {Operation: OperationSubscriptionManagementPutDefaultSubscriptionRule, Permissions: []authz.PermissionKey{"commercial.catalog.read", "platform.plan.read", "platform.subscription.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
 	}

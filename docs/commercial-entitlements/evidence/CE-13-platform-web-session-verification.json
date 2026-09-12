@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "task": "CE-13-platform-web-session-prerequisite",
+  "status": "QUALIFIED_ON_BRANCH",
+  "base_main": "280bbb99eb4c351f9378e063d9d27574c61a0a53",
+  "qualified_candidate": "721110bfa3b137f7febf5c4cf1ad502773864c88",
+  "yunka_sha": "e323ee5833d929b5b1d0494fc29aae0aaa2b6f4a",
+  "generation_run": 34665378849,
+  "qualification_run": 34665614612,
+  "qualification_job": 103476763907,
+  "platform_web_session_operation_count": 24,
+  "acceptance_identity": "TestCE13PlatformCommercialTrustedWebSession",
+  "checks": {
+    "deterministic_generation": "PASS",
+    "operation_allowlist": "PASS",
+    "existing_api_key_compatibility": "PASS",
+    "tenant_session_platform_denial": "PASS",
+    "forged_header_denial": "PASS",
+    "platform_permission_denial": "PASS",
+    "platform_permission_allow": "PASS",
+    "csrf_unsafe_request_denial": "PASS",
+    "candidate_worktree_clean": "PASS"
+  },
+  "completion_boundary": "Branch qualification only. Main integration and post-merge qualification are still required before closing the prerequisite."
+}
