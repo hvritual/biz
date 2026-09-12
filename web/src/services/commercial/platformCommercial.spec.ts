@@ -1,12 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   CommercialApiError,
+  confirmSubscriptionChange,
   createEntitlementOverride,
   createPlanDraft,
   explainTenantEntitlements,
   listEntitlementOverrides,
   listPlanVersions,
   listPlatformModules,
+  previewSubscriptionChange,
   revokeEntitlementOverride,
   type CreatePlanDraftInput,
 } from './platformCommercial'
@@ -206,5 +208,60 @@ describe('CE-13 platform commercial service', () => {
     expect(JSON.parse(String(revokeInit?.body))).toMatchObject({ tenantId: 'tenant-1', id: 'ov-2', expectedVersion: '8' })
     expect(new Headers(createInit?.headers).has('Authorization')).toBe(false)
     expect(new Headers(revokeInit?.headers).has('Authorization')).toBe(false)
+  })
+
+  it('binds preview request_id to transport Idempotency-Key and trusted-session CSRF', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ authenticated: true, csrf_token: 'csrf-preview' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ changeId: 'chg-1', previewHash: 'hash-1' }), { status: 200 }))
+
+    await previewSubscriptionChange('tenant/a', {
+      requestId: 'preview-key-1',
+      action: 'SWITCH',
+      targetPlanCode: 'office-pro',
+      targetPlanVersion: '2',
+      effectiveAt: '',
+      reason: '平台人工切换套餐',
+    })
+
+    const [url, init] = fetchMock.mock.calls[1] ?? []
+    const headers = new Headers(init?.headers)
+    expect(String(url)).toContain('/v1/platform/tenants/tenant%2Fa/subscription/change-previews')
+    expect(init?.credentials).toBe('include')
+    expect(headers.get('X-CSRF-Token')).toBe('csrf-preview')
+    expect(headers.get('Idempotency-Key')).toBe('preview-key-1')
+    expect(headers.has('Authorization')).toBe(false)
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      tenantId: 'tenant/a',
+      requestId: 'preview-key-1',
+      action: 'SWITCH',
+      targetPlanCode: 'office-pro',
+      targetPlanVersion: '2',
+    })
+  })
+
+  it('confirms exactly the preview hash with a distinct matching transport idempotency key', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ authenticated: true, csrf_token: 'csrf-confirm' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ changeId: 'chg-1', status: 'APPLIED' }), { status: 200 }))
+
+    await confirmSubscriptionChange('tenant-1', 'chg-1', {
+      requestId: 'confirm-key-1',
+      previewHash: 'preview-sha256',
+      reason: '已核对降级影响并人工批准',
+    })
+
+    const [url, init] = fetchMock.mock.calls[1] ?? []
+    const headers = new Headers(init?.headers)
+    expect(String(url)).toContain('/v1/platform/tenants/tenant-1/subscription/changes/chg-1/confirm')
+    expect(headers.get('X-CSRF-Token')).toBe('csrf-confirm')
+    expect(headers.get('Idempotency-Key')).toBe('confirm-key-1')
+    expect(headers.has('Authorization')).toBe(false)
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      tenantId: 'tenant-1',
+      changeId: 'chg-1',
+      requestId: 'confirm-key-1',
+      previewHash: 'preview-sha256',
+    })
   })
 })
