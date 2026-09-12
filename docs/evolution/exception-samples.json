@@ -1,6 +1,6 @@
 {
-  "recorded_at": "2026-09-12",
-  "publication_run": "https://github.com/hvritual/biz/actions/runs/34703317923",
+  "recorded_at": "2026-09-13",
+  "publication_run": "https://github.com/hvritual/biz/actions/runs/34708860790",
   "samples": [
     {
       "number": 69,
@@ -96,6 +96,26 @@
       "number": 88,
       "title": "[整合异常样本] B12 执行门禁硬编码旧框架基线，与消费者锁不一致",
       "url": "https://github.com/hvritual/biz/issues/88"
+    },
+    {
+      "number": 89,
+      "title": "[异常样本] CE13 plan writes omitted the required Idempotency-Key header",
+      "url": "https://github.com/hvritual/biz/issues/89"
+    },
+    {
+      "number": 90,
+      "title": "[异常样本] Explicit gRPC CAS conflicts were rendered as generic HTTP 400",
+      "url": "https://github.com/hvritual/biz/issues/90"
+    },
+    {
+      "number": 91,
+      "title": "[异常样本] Prepared subscription completion did not create the next revision-bound boundary",
+      "url": "https://github.com/hvritual/biz/issues/91"
+    },
+    {
+      "number": 92,
+      "title": "[异常样本] Invalid commercial grace duration silently became zero",
+      "url": "https://github.com/hvritual/biz/issues/92"
     }
   ]
 }
