@@ -145,7 +145,7 @@ func (s *service) CompletePreparedSubscriptionChange(ctx context.Context, r *v1.
 			return pv.Completion{}, e
 		}
 		if after.PeriodEnd != nil {
-			boundary, e := transition.NewInTimezone(transition.SubscriptionBoundary, after.TenantID, after.ID, after.Revision, *after.PeriodEnd, admitted, "UTC")
+			boundary, e := transition.NewInTimezone(transition.SubscriptionBoundary, after.TenantID, after.ID, after.Revision, *after.PeriodEnd, admitted, s.lifecycle.Timezone())
 			if e != nil {
 				return pv.Completion{}, e
 			}
