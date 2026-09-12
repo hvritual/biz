@@ -297,3 +297,49 @@ func TestCE16ScheduledChangeExecutesOnceThroughProvisioningWorker(t *testing.T) 
 		t.Fatalf("terminal transition claimed twice: %+v", second)
 	}
 }
+
+func TestCE16MySQLConcurrentWorkersClaimOneScheduledTransition(t *testing.T) {
+	e := ce10New(t)
+	target := e.plan(ce09Terms(20, 30))
+	key := ce04Random(t)
+	due := time.Now().UTC().Add(1500 * time.Millisecond)
+	preview, err := e.changes.PreviewSubscriptionChange(ce04Context(e.token, key), &v1.PreviewSubscriptionChangeRequest{TenantId: e.tenant, RequestId: key, Action: "SWITCH", TargetPlanCode: target.PlanCode, TargetPlanVersion: target.Version, EffectiveAt: due.Format(time.RFC3339Nano), Reason: "CE16 competing workers"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = e.confirm(e.confirmation(preview)); err != nil {
+		t.Fatal(err)
+	}
+	other := ce10OnDB(t, e.db, e.token, e.policy, e.adapter)
+	other.tenant = e.tenant
+	time.Sleep(time.Until(due) + 50*time.Millisecond)
+	results := make(chan struct {
+		tick bizruntime.ProvisioningTick
+		err  error
+	}, 2)
+	for _, worker := range []*bizruntime.Started{e.started, other.started} {
+		go func(worker *bizruntime.Started) {
+			tick, err := worker.RunProvisioningOnce(context.Background())
+			results <- struct {
+				tick bizruntime.ProvisioningTick
+				err  error
+			}{tick, err}
+		}(worker)
+	}
+	applied := 0
+	for range 2 {
+		result := <-results
+		if result.err != nil {
+			t.Fatal(result.err)
+		}
+		if result.tick.TransitionID != "" {
+			if result.tick.TransitionState != "APPLIED" {
+				t.Fatalf("unexpected transition result: %+v", result.tick)
+			}
+			applied++
+		}
+	}
+	if applied != 1 || ce09Quota(t, e.view()) != 20 {
+		t.Fatalf("workers did not converge exactly once: applied=%d", applied)
+	}
+}

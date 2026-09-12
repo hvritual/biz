@@ -118,6 +118,9 @@ func (s *service) ConfirmSubscriptionChange(ctx context.Context, r *v1.ConfirmSu
 		after := m.before
 		after.Revision++
 		after.EntitlementSourceVersion = m.state.Version
+		if p.Input.Action != change.StopRenewal {
+			after.State = s.lifecycle.StateFor(m.target.PlanCode, m.target.Number)
+		}
 		v := change.Receipt{ChangeID: r.ChangeId, TenantID: r.TenantId, ActorID: a, RequestID: r.RequestId, Fingerprint: fingerprint, PreviewHash: p.Hash, Action: p.Input.Action, Status: change.Applied, Mode: mode, ConfirmedAt: admitted, EffectiveAt: at, EntitlementExpiresAt: end, Reason: reason, Before: m.before, BeforeSourceVersion: m.state.Version, AfterSourceVersion: m.state.Version, BeforeEntitlementVersion: m.current.EntitlementVersion, AfterEntitlementVersion: m.current.EntitlementVersion, QuotaValidationRequired: deferred, Quotas: quotas, PricingAuthority: "PLATFORM_MANUAL_APPROVAL"}
 		if mode == change.Immediate && len(requirements) > 0 {
 			after.PendingChangeID = r.ChangeId

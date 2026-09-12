@@ -124,7 +124,7 @@ func (s *service) CompletePreparedSubscriptionChange(ctx context.Context, r *v1.
 		after := m.before
 		after.Revision++
 		after.PendingChangeID = ""
-		after.State = subscription.StateActive
+		after.State = s.lifecycle.StateFor(m.target.PlanCode, m.target.Number)
 		source, ent, e := s.applySources(call, repos, m, &after, task.Approval.ChangeID, at, end)
 		if e != nil {
 			return pv.Completion{}, e

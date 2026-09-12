@@ -15,6 +15,7 @@ import (
 	generatedassembly "github.com/hvritual/biz/internal/assembly"
 	commercialapp "github.com/hvritual/biz/internal/commercial/application"
 	"github.com/hvritual/biz/internal/commercial/application/entitlementmanagement"
+	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	"github.com/hvritual/biz/internal/commercial/enforcement"
 	commercialpersistence "github.com/hvritual/biz/internal/commercial/infrastructure/persistence"
 	"github.com/hvritual/biz/internal/commercial/modulecatalog"
@@ -151,6 +152,7 @@ func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, opti
 }
 
 type applicationFactories struct {
+	commercialLifecycle         subscription.LifecyclePolicy
 	provisioningPolicy          commercialports.ProvisioningPolicy
 	provisioningRunner          *provisioningRunner
 	quotaChangePolicy           commercialports.QuotaChangePolicy
@@ -421,7 +423,7 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 		worker.workerContext = commercialGuard.WorkerContext
 	}
 	return generatedassembly.RuntimeBindings{
-		Factories: applicationFactories{provisioningPolicy: options.ProvisioningPolicy, provisioningRunner: worker,
+		Factories: applicationFactories{commercialLifecycle: options.CommercialLifecycle.Canonical(), provisioningPolicy: options.ProvisioningPolicy, provisioningRunner: worker,
 			snapshots: snapshots, permissionVersions: accessStore, quotaChangePolicy: options.QuotaChangePolicy,
 			deviceRepositories:          deviceRepositories,
 			site:                        siteService,

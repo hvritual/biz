@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hvritual/biz/internal/bizruntime"
+	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	"github.com/hvritual/biz/modules/deviceops"
 	"yunka.io/framework/core/eventBus"
 	"yunka.io/framework/platform"
@@ -94,8 +95,13 @@ func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 	workerToken := os.Getenv("YUNKA_BIZ_PROVISIONING_WORKER_TOKEN")
+	lifecycle, err := lifecycleConfiguration()
+	if err != nil {
+		return err
+	}
 	started, err := bizruntime.BootstrapWithOptions(ctx, provider, bizruntime.Options{
-		DeviceOps: config,
+		DeviceOps:           config,
+		CommercialLifecycle: lifecycle,
 		ProvisioningWorker: bizruntime.ProvisioningWorkerOptions{
 			Token: workerToken, Automatic: workerToken != "",
 		},
@@ -108,6 +114,32 @@ func run() error {
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()
 	return started.App.Shutdown(shutdownCtx)
+}
+
+// YUNKA_BIZ_COMMERCIAL_TRIAL_PLANS is a comma-separated list of immutable
+// plan references (for example "starter@2,trial@1"). An unset value never
+// invents a trial. Grace is a Go duration and defaults to zero, which retains
+// the fail-closed restricted-at-boundary behavior.
+func lifecycleConfiguration() (subscription.LifecyclePolicy, error) {
+	policy := subscription.LifecyclePolicy{
+		GraceDuration:    envDuration("YUNKA_BIZ_COMMERCIAL_GRACE_DURATION", 0),
+		BusinessTimezone: strings.TrimSpace(envOr("YUNKA_BIZ_COMMERCIAL_TIMEZONE", "UTC")),
+	}
+	for _, raw := range strings.Split(strings.TrimSpace(os.Getenv("YUNKA_BIZ_COMMERCIAL_TRIAL_PLANS")), ",") {
+		if raw == "" {
+			continue
+		}
+		code, version, ok := strings.Cut(strings.TrimSpace(raw), "@")
+		parsed, err := strconv.ParseUint(version, 10, 64)
+		if !ok || err != nil || parsed == 0 {
+			return subscription.LifecyclePolicy{}, fmt.Errorf("invalid YUNKA_BIZ_COMMERCIAL_TRIAL_PLANS entry %q", raw)
+		}
+		policy.TrialPlans = append(policy.TrialPlans, subscription.PlanReference{PlanCode: code, Version: parsed})
+	}
+	if err := policy.Validate(); err != nil {
+		return subscription.LifecyclePolicy{}, err
+	}
+	return policy.Canonical(), nil
 }
 
 func envOr(name, fallback string) string {
@@ -135,7 +167,7 @@ func envDuration(name string, fallback time.Duration) time.Duration {
 		return fallback
 	}
 	parsed, err := time.ParseDuration(value)
-	if err != nil || parsed <= 0 {
+	if err != nil || parsed < 0 {
 		return fallback
 	}
 	return parsed
