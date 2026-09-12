@@ -23,17 +23,17 @@ interface SessionView {
 }
 
 interface CatalogEntry {
-  plan_code?: string;
-  latest_version?: string | number;
-  latest_revision?: string | number;
-  plan_revision?: string | number;
+  planCode?: string;
+  latestVersion?: string | number;
+  latestRevision?: string | number;
+  planRevision?: string | number;
   state?: string;
   name?: string;
 }
 
 interface CatalogPage {
   plans?: CatalogEntry[];
-  next_after_plan_code?: string;
+  nextAfterPlanCode?: string;
 }
 
 interface BrowserResult {
@@ -123,25 +123,25 @@ test("TestCE13PlanCatalogTrustedPlatformDiscovery", async ({ browser, request })
   expect(first.plans).toEqual(expect.any(Array));
   expect((first.plans ?? []).length).toBe(1);
   const firstEntry = first.plans?.[0];
-  expect(firstEntry?.plan_code).toBeTruthy();
+  expect(firstEntry?.planCode).toBeTruthy();
   expect(firstEntry?.name).toBeTruthy();
-  expect(Number(firstEntry?.latest_version ?? 0)).toBeGreaterThan(0);
-  expect(Number(firstEntry?.latest_revision ?? 0)).toBeGreaterThan(0);
-  expect(Number(firstEntry?.plan_revision ?? 0)).toBeGreaterThan(0);
+  expect(Number(firstEntry?.latestVersion ?? 0)).toBeGreaterThan(0);
+  expect(Number(firstEntry?.latestRevision ?? 0)).toBeGreaterThan(0);
+  expect(Number(firstEntry?.planRevision ?? 0)).toBeGreaterThan(0);
   expect(firstEntry?.state).toBeTruthy();
 
-  if (first.next_after_plan_code) {
-    expect(first.next_after_plan_code).toBe(firstEntry?.plan_code);
+  if (first.nextAfterPlanCode) {
+    expect(first.nextAfterPlanCode).toBe(firstEntry?.planCode);
     const secondResult = await browserRequest(
       allowed.page,
       data.base_url,
-      `/v1/platform/plans?page_size=1&after_plan_code=${encodeURIComponent(first.next_after_plan_code)}`,
+      `/v1/platform/plans?page_size=1&after_plan_code=${encodeURIComponent(first.nextAfterPlanCode)}`,
     );
     expect(secondResult.status, secondResult.text).toBe(200);
     const second = secondResult.json as CatalogPage;
     expect((second.plans ?? []).length).toBe(1);
-    expect(second.plans?.[0]?.plan_code).not.toBe(firstEntry?.plan_code);
-    expect((second.plans?.[0]?.plan_code ?? "") > (firstEntry?.plan_code ?? "")).toBe(true);
+    expect(second.plans?.[0]?.planCode).not.toBe(firstEntry?.planCode);
+    expect((second.plans?.[0]?.planCode ?? "") > (firstEntry?.planCode ?? "")).toBe(true);
   }
 
   await allowed.context.close();
