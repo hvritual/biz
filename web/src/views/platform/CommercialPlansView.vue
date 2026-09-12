@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AuthorityPicker from '@/components/platform/AuthorityPicker.vue'
 import { computed, onMounted, ref } from 'vue'
 import PageHeading from '@/components/ui/PageHeading.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
@@ -286,6 +287,7 @@ onMounted(loadModules)
       <RouterLink class="commercial-tab" to="/platform/commercial/tenant-entitlements">租户权益</RouterLink>
     </section>
 
+    <AuthorityPicker kind="plans" @select="(id) => { planCodeInput = id; loadVersions(true) }" />
     <section class="card workspace-card">
       <div class="workspace-title">
         <div>

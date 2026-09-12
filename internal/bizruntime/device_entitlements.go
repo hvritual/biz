@@ -87,5 +87,9 @@ var _ deviceapp.SiteManagementApplication = checkedSite{}
 var _ deviceapp.DeviceTransferApplication = checkedTransfer{}
 
 func (w checkedDevice) AssertDeviceOwnedByActorTenant(ctx context.Context, r *devicev1.AssertDeviceOwnedByActorTenantRequest) (*devicev1.AssertDeviceOwnedByActorTenantResponse, error) {
-	return w.inner.AssertDeviceOwnedByActorTenant(ctx, r)
+	if err := enforcement.RequireExecuted(ctx, "device.assert_owned_by_actor_tenant"); err != nil {
+		return nil, err
+	}
+	value, err := w.inner.AssertDeviceOwnedByActorTenant(ctx, r)
+	return value, enforcement.ExecutionError(ctx, "device.assert_owned_by_actor_tenant", err)
 }

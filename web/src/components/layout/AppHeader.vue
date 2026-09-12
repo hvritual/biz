@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useRouter, useRoute } from 'vue-router'
@@ -11,6 +11,7 @@ const ui = useUiStore(),
   store = useEnterpriseStore(),
   router = useRouter(),
   route = useRoute()
+const live = computed(() => route.meta.surface === 'platform' || route.meta.surface === 'runtime')
 const search = ref(''),
   panel = ref('')
 function changeTenant(e: Event) {
@@ -30,29 +31,43 @@ function globalSearch() {
 </script>
 <template>
   <header class="app-header">
-    <a class="brand" href="#/enterprise/members" aria-label="CoffeeLink 企业中心"><img :src="brand"
-        alt="CoffeeLink 标识" /><span><strong>CoffeeLink</strong><small>咖啡机物联云平台</small></span></a><button
-      class="icon-button mobile-toggle" aria-label="打开主导航" @click="ui.mobileOpen = !ui.mobileOpen">
+    <a class="brand" href="#/enterprise/members" aria-label="CoffeeLink 企业中心"
+      ><img :src="brand" alt="CoffeeLink 标识" /><span
+        ><strong>CoffeeLink</strong><small>咖啡机物联云平台</small></span
+      ></a
+    ><button
+      class="icon-button mobile-toggle"
+      aria-label="打开主导航"
+      @click="ui.mobileOpen = !ui.mobileOpen"
+    >
       <AppIcon name="menu" />
     </button>
-    <div class="header-company">
-      <AppIcon name="company" :size="19" /><select :value="store.tenantId" aria-label="切换企业" @change="changeTenant">
+    <div v-if="!live" class="header-company">
+      <AppIcon name="company" :size="19" /><select
+        :value="store.tenantId"
+        aria-label="切换企业"
+        @change="changeTenant"
+      >
         <option value="shanghai">上海咖啡科技有限公司</option>
-        <option value="hangzhou">杭州咖啡运营有限公司</option>
-      </select><span class="edition">标准版</span>
+        <option value="hangzhou">杭州咖啡运营有限公司</option></select
+      ><span class="edition">标准版</span>
     </div>
-    <form class="global-search" role="search" @submit.prevent="globalSearch">
-      <AppIcon name="search" :size="16" /><input v-model="search" aria-label="全局搜索成员"
-        placeholder="搜索设备、点位、客户、订单…" /><span>⌘ K</span>
+    <div v-else class="header-company">
+      {{ route.meta.surface === 'platform' ? '平台管理' : '业务工作区' }}
+    </div>
+    <form v-if="!live" class="global-search" role="search" @submit.prevent="globalSearch">
+      <AppIcon name="search" :size="16" /><input
+        v-model="search"
+        aria-label="全局搜索成员"
+        placeholder="搜索设备、点位、客户、订单…"
+      /><span>⌘ K</span>
     </form>
-    <div class="header-actions">
+    <div v-if="!live" class="header-actions">
       <button class="icon-button notification" aria-label="通知中心" @click="panel = '通知中心'">
-        <AppIcon name="bell" :size="21" /><b>12</b>
-      </button><button class="header-link" @click="panel = '帮助中心'">
-        <AppIcon name="help" />帮助中心
-      </button><button class="header-link" @click="panel = '下载中心'">
-        <AppIcon name="download" />下载中心
-      </button><button class="profile" @click="panel = '当前账号'">
+        <AppIcon name="bell" :size="21" /><b>12</b></button
+      ><button class="header-link" @click="panel = '帮助中心'"><AppIcon name="help" />帮助中心</button
+      ><button class="header-link" @click="panel = '下载中心'"><AppIcon name="download" />下载中心</button
+      ><button class="profile" @click="panel = '当前账号'">
         <AvatarMark name="张" :size="36" tone="solid" /><span>张三<small>超级管理员</small></span>
         <AppIcon name="down" :size="14" />
       </button>
@@ -68,20 +83,23 @@ function globalSearch() {
         <p class="secondary">
           通过一级菜单打开悬浮导航；右侧快捷入口可直接邀请成员、配置角色或查看审计记录。菜单支持 Esc
           关闭及键盘操作。
-        </p>
-      </template><template v-else-if="panel === '通知中心'">
+        </p> </template
+      ><template v-else-if="panel === '通知中心'">
         <p>暂无已连接的通知源。</p>
-        <button class="btn" @click="
-          () => {
-            router.push('/system/notifications')
-            panel = ''
-          }
-        ">
+        <button
+          class="btn"
+          @click="
+            () => {
+              router.push('/system/notifications')
+              panel = ''
+            }
+          "
+        >
           前往通知设置
-        </button>
-      </template><template v-else-if="panel === '下载中心'">
-        <p>列表导出文件由浏览器直接下载，不会上传到远程服务。</p>
-      </template><template v-else>
+        </button> </template
+      ><template v-else-if="panel === '下载中心'">
+        <p>列表导出文件由浏览器直接下载，不会上传到远程服务。</p> </template
+      ><template v-else>
         <p>预览身份：张三 · 企业所有者</p>
         <p class="muted">真实登录、会话和退出由后续认证集成提供。</p>
       </template>
@@ -140,7 +158,7 @@ function globalSearch() {
   white-space: nowrap;
 }
 
-.header-company>.icon {
+.header-company > .icon {
   color: var(--color-success);
 }
 
@@ -190,7 +208,7 @@ function globalSearch() {
   color: var(--color-text-muted);
 }
 
-.global-search>span {
+.global-search > span {
   font-size: 11px;
   white-space: nowrap;
 }
@@ -295,8 +313,8 @@ function globalSearch() {
 
   .header-company,
   .global-search,
-  .profile>span:not(.avatar-mark),
-  .profile>.icon {
+  .profile > span:not(.avatar-mark),
+  .profile > .icon {
     display: none;
   }
 

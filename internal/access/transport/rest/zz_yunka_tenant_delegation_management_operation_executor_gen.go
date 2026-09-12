@@ -13,6 +13,7 @@ import (
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
+	httpbinding "yunka.io/gateway/httpbinding"
 )
 
 type TenantDelegationManagementOperationHandler struct {
@@ -31,10 +32,18 @@ func RegisterTenantDelegationManagementOperationExecutor(mux *http.ServeMux, app
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &TenantDelegationManagementOperationHandler{application: application, executor: executor}
-	mux.HandleFunc("GET /v1/tenant/delegations/{id}", handler.handleOperationGetTenantDelegation)
-	mux.HandleFunc("POST /v1/tenant/delegations/devices", handler.handleOperationGrantTenantDeviceDelegation)
-	mux.HandleFunc("GET /v1/tenant/delegations", handler.handleOperationListTenantDelegations)
-	mux.HandleFunc("POST /v1/tenant/delegations/{id}:revoke", handler.handleOperationRevokeTenantDelegation)
+	if err := httpbinding.Register(mux, "GET", "/v1/tenant/delegations/{id}", handler.handleOperationGetTenantDelegation); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenant/delegations/devices", handler.handleOperationGrantTenantDeviceDelegation); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenant/delegations", handler.handleOperationListTenantDelegations); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenant/delegations/{id}:revoke", handler.handleOperationRevokeTenantDelegation); err != nil {
+		return err
+	}
 	return nil
 }
 

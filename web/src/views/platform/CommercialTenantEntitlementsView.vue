@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AuthorityPicker from '@/components/platform/AuthorityPicker.vue'
 import { computed, onMounted, ref } from 'vue'
 import PageHeading from '@/components/ui/PageHeading.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
@@ -213,6 +214,7 @@ onMounted(loadModules)
       <RouterLink class="commercial-tab active" to="/platform/commercial/tenant-entitlements">租户权益</RouterLink>
     </section>
 
+    <AuthorityPicker kind="tenants" @select="(id) => { tenantIdInput = id; loadWorkspace() }" />
     <section class="card workspace-card">
       <div class="workspace-title">
         <div><h2>tenant_id 权益工作台</h2><p>平台 Tenant List/Get 当前仍是 API-key-only，缺口记录为 Issue #64；本页不会把 API Key 放进浏览器，也不会制造本地租户目录。</p></div>

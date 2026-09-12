@@ -248,6 +248,9 @@ func (auth *runtimeWebAuth) authenticateAPI(request *http.Request) (identity.Pri
 	if err != nil {
 		return identity.Principal{}, err
 	}
+	if err := validateExpectedWebSession(request.Header.Get("X-Biz-Session-Context"), authentication.Session); err != nil {
+		return identity.Principal{}, err
+	}
 	if authentication.Session.ActorKind == accesspersistence.WebActorUser && authentication.Session.ActiveTenantID == "" {
 		return identity.Principal{}, accesspersistence.ErrWebTenantDenied
 	}

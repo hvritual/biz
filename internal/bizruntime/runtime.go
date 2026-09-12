@@ -169,7 +169,11 @@ type applicationFactories struct {
 var _ generatedassembly.ApplicationFactories = applicationFactories{}
 
 func (factory applicationFactories) BuildDeviceopsDelegatedDeviceAccess(generatedassembly.DeviceopsDelegatedDeviceAccessDependencies) (deviceapp.DelegatedDeviceAccessApplication, error) {
-	return deviceapp.NewDelegatedService(factory.delegatedDeviceRepositories)
+	inner, err := deviceapp.NewDelegatedService(factory.delegatedDeviceRepositories)
+	if err != nil {
+		return nil, err
+	}
+	return checkedDelegatedDevice{inner: inner}, nil
 }
 
 func (factory applicationFactories) BuildCommercialModuleCatalog(generatedassembly.CommercialModuleCatalogDependencies) (commercialapp.ModuleCatalogApplication, error) {
@@ -501,6 +505,10 @@ func httpAuthentication(authenticator *runtimeAuthenticator, webAuth *runtimeWeb
 			principal, err = webAuth.authenticateAPI(request)
 		} else {
 			err = accesspersistence.ErrUnauthorized
+		}
+		if errors.Is(err, errWebSessionContextChanged) {
+			http.Error(writer, "SESSION_CONTEXT_CHANGED", http.StatusConflict)
+			return
 		}
 		if err != nil {
 			http.Error(writer, "Unauthorized", http.StatusUnauthorized)

@@ -14,6 +14,7 @@ import (
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
+	httpbinding "yunka.io/gateway/httpbinding"
 )
 
 type PlanManagementOperationHandler struct {
@@ -32,15 +33,33 @@ func RegisterPlanManagementOperationExecutor(mux *http.ServeMux, application app
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &PlanManagementOperationHandler{application: application, executor: executor}
-	mux.HandleFunc("POST /v1/platform/plans/{plan_code}/versions/{version}/eligibility", handler.handleOperationCheckPlanEligibility)
-	mux.HandleFunc("POST /v1/platform/plans", handler.handleOperationCreatePlanDraft)
-	mux.HandleFunc("POST /v1/platform/plans/{plan_code}/versions", handler.handleOperationCreatePlanVersion)
-	mux.HandleFunc("GET /v1/platform/plans/{plan_code}/versions/{version}", handler.handleOperationGetPlanVersion)
-	mux.HandleFunc("GET /v1/platform/plans/{plan_code}/versions", handler.handleOperationListPlanVersions)
-	mux.HandleFunc("GET /v1/platform/plans", handler.handleOperationListPlans)
-	mux.HandleFunc("POST /v1/platform/plans/{plan_code}/versions/{version}/publish", handler.handleOperationPublishPlanVersion)
-	mux.HandleFunc("POST /v1/platform/plans/{plan_code}/versions/{version}/retire", handler.handleOperationRetirePlanVersion)
-	mux.HandleFunc("PATCH /v1/platform/plans/{plan_code}/versions/{version}", handler.handleOperationUpdatePlanDraft)
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/plans/{plan_code}/versions/{version}/eligibility", handler.handleOperationCheckPlanEligibility); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/plans", handler.handleOperationCreatePlanDraft); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/plans/{plan_code}/versions", handler.handleOperationCreatePlanVersion); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/plans/{plan_code}/versions/{version}", handler.handleOperationGetPlanVersion); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/plans/{plan_code}/versions", handler.handleOperationListPlanVersions); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/plans", handler.handleOperationListPlans); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/plans/{plan_code}/versions/{version}/publish", handler.handleOperationPublishPlanVersion); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/plans/{plan_code}/versions/{version}/retire", handler.handleOperationRetirePlanVersion); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "PATCH", "/v1/platform/plans/{plan_code}/versions/{version}", handler.handleOperationUpdatePlanDraft); err != nil {
+		return err
+	}
 	return nil
 }
 

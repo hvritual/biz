@@ -1,0 +1,90 @@
+name: Unified evolution qualification
+on:
+  push:
+    branches: [integration/biz-evolution-20260912]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: evolution-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_evolution
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      CE08_RESTART_RECEIPT: /tmp/ce08-restart.json
+      CE09_RESTART_RECEIPT: /tmp/ce09-restart.json
+      CE10_RESTART_RECEIPT: /tmp/ce10-restart.json
+      CE12_E2E_ENV_FILE: /tmp/ce12-env.json
+      CE13_PLATFORM_E2E_ENV_FILE: /tmp/ce13-env.json
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_evolution?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: biz
+          fetch-depth: 0
+      - name: Read consumer lock
+        id: source
+        run: |
+          source biz/.yunka/source.env
+          echo "sha=$YUNKA_COMMIT" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ steps.source.outputs.sha }}
+          path: yunka.io
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache: false
+      - name: Locked protobuf tools
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          curl -fsSL --retry 3 "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_RELEASE}/protoc-${PROTOC_RELEASE}-linux-x86_64.zip" -o /tmp/protoc.zip
+          echo "$PROTOC_LINUX_X86_64_SHA256  /tmp/protoc.zip" | sha256sum -c -
+          unzip -q /tmp/protoc.zip -d /tmp/protoc
+          echo /tmp/protoc/bin >> "$GITHUB_PATH"
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@${PROTOC_GEN_GO_VERSION}
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@${PROTOC_GEN_GO_GRPC_VERSION}
+      - name: Framework compatibility regression
+        working-directory: yunka.io
+        run: go test -count=1 ./gateway/httpbinding ./pkg/contract
+      - name: Consumer generation, unit, vet and build
+        working-directory: biz
+        run: |
+          set -euo pipefail
+          make yunka-source-check workspace-check
+          make generate
+          git diff --exit-code
+          make check
+          go test -count=1 ./cmd/... ./internal/... ./modules/... ./integration/...
+          go vet ./cmd/... ./internal/... ./modules/...
+          go build ./cmd/...
+      - name: Complete MySQL suites including delegated authority
+        working-directory: biz
+        run: go test -json -p 1 -count=1 -tags=integration ./integration ./integration/b13delegation > /tmp/evolution-mysql.jsonl
+      - name: Plan and receipt regression
+        working-directory: biz
+        run: |
+          python3 docs/commercial-entitlements/tools/check_plan.py
+          python3 -m unittest discover -s docs/commercial-entitlements/tools -p 'test_*.py' -v
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: evolution-mysql-evidence
+          path: /tmp/evolution-mysql.jsonl
+          retention-days: 30

@@ -14,6 +14,7 @@ import (
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
+	httpbinding "yunka.io/gateway/httpbinding"
 )
 
 type ProvisioningOperationHandler struct {
@@ -32,11 +33,21 @@ func RegisterProvisioningOperationExecutor(mux *http.ServeMux, application appli
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &ProvisioningOperationHandler{application: application, executor: executor}
-	mux.HandleFunc("POST /v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel", handler.handleOperationCancelProvisioningTask)
-	mux.HandleFunc("GET /v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}", handler.handleOperationGetProvisioningTask)
-	mux.HandleFunc("GET /v1/platform/tenants/{tenant_id}/provisioning/deliveries", handler.handleOperationListProvisioningDeliveries)
-	mux.HandleFunc("GET /v1/platform/tenants/{tenant_id}/provisioning/tasks", handler.handleOperationListProvisioningTasks)
-	mux.HandleFunc("POST /v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry", handler.handleOperationRetryProvisioningTask)
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel", handler.handleOperationCancelProvisioningTask); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}", handler.handleOperationGetProvisioningTask); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/tenants/{tenant_id}/provisioning/deliveries", handler.handleOperationListProvisioningDeliveries); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/tenants/{tenant_id}/provisioning/tasks", handler.handleOperationListProvisioningTasks); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry", handler.handleOperationRetryProvisioningTask); err != nil {
+		return err
+	}
 	return nil
 }
 

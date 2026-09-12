@@ -13,6 +13,7 @@ import (
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
+	httpbinding "yunka.io/gateway/httpbinding"
 )
 
 type SubscriptionManagementOperationHandler struct {
@@ -31,9 +32,15 @@ func RegisterSubscriptionManagementOperationExecutor(mux *http.ServeMux, applica
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &SubscriptionManagementOperationHandler{application: application, executor: executor}
-	mux.HandleFunc("GET /v1/platform/tenants/{tenant_id}/subscription", handler.handleOperationGetTenantSubscription)
-	mux.HandleFunc("GET /v1/platform/subscription-default-rules", handler.handleOperationListDefaultSubscriptionRules)
-	mux.HandleFunc("PUT /v1/platform/subscription-default-rules/{rule_id}", handler.handleOperationPutDefaultSubscriptionRule)
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/tenants/{tenant_id}/subscription", handler.handleOperationGetTenantSubscription); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/subscription-default-rules", handler.handleOperationListDefaultSubscriptionRules); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "PUT", "/v1/platform/subscription-default-rules/{rule_id}", handler.handleOperationPutDefaultSubscriptionRule); err != nil {
+		return err
+	}
 	return nil
 }
 

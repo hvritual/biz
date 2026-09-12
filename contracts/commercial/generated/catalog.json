@@ -3,8 +3,8 @@
   "mapping_version": "10",
   "inputs_sha256": {
     "contracts/commercial/operation-capabilities.v1.json": "0d3f657c48a0f102e7eaaed0354978db9aaf6c216a25c4a95e96108295be0032",
-    "contracts/generated/manifest.json": "e50e5358bc8ffff7406b08208f0014b6974755ab39c81b72d6ae93e89153202b",
-    "contracts/generated/operation-plans.json": "dae634fafc57b88bfd58e12f6d2c32a516c0620dab045d42bb855458276ec571",
+    "contracts/generated/manifest.json": "8b8a5b1d808acfd2a7744d60f9482c32df3e6427611a3c1ff7b5939be60338e9",
+    "contracts/generated/operation-plans.json": "203b9b17ca3f0f45ecb29186b58914a4ad3f13347524d99b3252a66ee2bc0458",
     "internal/access/application/tenant_delegation.go": "b43e6709e61b7867395bc04a901a19c2a54cf4ec9565e875b354b1622e636589",
     "internal/access/application/tenant_member_lifecycle.go": "c629117c2538c45af9a75932a53ecd6109059bd56e6dc71b11eedb2e538c6cff",
     "internal/access/application/tenantlifecycle/internal/usecase/service.go": "63e3eba06691d15fa88041b660431b48e87640bfaf35954774595db9880e5d29",

@@ -21,6 +21,15 @@ func MigrateProvisioning(ctx context.Context, db *gorm.DB) error {
 		return err
 	}
 	for _, e := range entries {
+		if e.Name() == "0002_receipt_provisioning_status.sql" {
+			var later int64
+			if err := db.WithContext(ctx).Raw("SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='biz_commercial_change_receipts' AND CONSTRAINT_NAME='ce16_receipt_status' AND CONSTRAINT_TYPE='CHECK'").Scan(&later).Error; err != nil {
+				return err
+			}
+			if later > 0 {
+				continue
+			}
+		}
 		b, err := provisioningMigrations.ReadFile("provisioningmigrations/" + e.Name())
 		if err != nil {
 			return err

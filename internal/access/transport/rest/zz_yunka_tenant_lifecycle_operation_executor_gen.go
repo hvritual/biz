@@ -13,6 +13,7 @@ import (
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
+	httpbinding "yunka.io/gateway/httpbinding"
 )
 
 type TenantLifecycleOperationHandler struct {
@@ -31,13 +32,27 @@ func RegisterTenantLifecycleOperationExecutor(mux *http.ServeMux, application ap
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &TenantLifecycleOperationHandler{application: application, executor: executor}
-	mux.HandleFunc("POST /v1/tenants/{id}/activate", handler.handleOperationActivateTenant)
-	mux.HandleFunc("POST /v1/tenants/{id}/close", handler.handleOperationCloseTenant)
-	mux.HandleFunc("POST /v1/tenants", handler.handleOperationCreateTenant)
-	mux.HandleFunc("GET /v1/tenants/{id}", handler.handleOperationGetTenant)
-	mux.HandleFunc("GET /v1/tenants", handler.handleOperationListTenants)
-	mux.HandleFunc("POST /v1/tenants/{id}/suspend", handler.handleOperationSuspendTenant)
-	mux.HandleFunc("PATCH /v1/tenants/{id}", handler.handleOperationUpdateTenant)
+	if err := httpbinding.Register(mux, "POST", "/v1/tenants/{id}/activate", handler.handleOperationActivateTenant); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenants/{id}/close", handler.handleOperationCloseTenant); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenants", handler.handleOperationCreateTenant); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenants/{id}", handler.handleOperationGetTenant); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenants", handler.handleOperationListTenants); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenants/{id}/suspend", handler.handleOperationSuspendTenant); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "PATCH", "/v1/tenants/{id}", handler.handleOperationUpdateTenant); err != nil {
+		return err
+	}
 	return nil
 }
 

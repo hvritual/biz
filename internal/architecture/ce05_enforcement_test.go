@@ -69,9 +69,17 @@ func TestCE05EveryBusinessChildHasInvocationCheck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := os.ReadFile(filepath.Join(root, "internal/bizruntime/device_entitlements.go"))
+	files, err := filepath.Glob(filepath.Join(root, "internal/bizruntime/*_entitlements.go"))
 	if err != nil {
 		t.Fatal(err)
+	}
+	var b []byte
+	for _, file := range files {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		b = append(b, data...)
 	}
 	byID := map[string]capabilitymap.CompiledOperation{}
 	for _, o := range d.Operations {

@@ -6,6 +6,16 @@ export const router = createRouter({
   routes: [
     ...customerRoutes,
     ...siteRentalRoutes,
+    {
+      path: '/platform/tenants',
+      component: () => import('@/views/runtime/RuntimeConsoleView.vue'),
+      meta: { title: '租户管理', module: 'platform-commercial', surface: 'platform' },
+    },
+    {
+      path: '/workspace/:resource(members|roles|devices)',
+      component: () => import('@/views/runtime/RuntimeConsoleView.vue'),
+      meta: { title: '业务工作区', module: 'enterprise', surface: 'runtime' },
+    },
     { path: '/', redirect: '/enterprise/members' },
     {
       path: '/dashboard',

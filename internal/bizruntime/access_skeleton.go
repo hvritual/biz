@@ -12,10 +12,14 @@ func (factory applicationFactories) BuildAccessTenantDelegationManagement(depend
 	if dependencies.AccessTenantLifecycle == nil || dependencies.DeviceopsDeviceManagement == nil {
 		return nil, errors.New("biz access pressure: tenant delegation dependencies are required")
 	}
-	return accessapp.NewTenantDelegationManagementService(factory.delegationRepositories, tenantDelegationManagementCapabilities{
+	inner, err := accessapp.NewTenantDelegationManagementService(factory.delegationRepositories, tenantDelegationManagementCapabilities{
 		tenants: dependencies.AccessTenantLifecycle,
 		devices: dependencies.DeviceopsDeviceManagement,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return checkedDelegations{inner: inner}, nil
 }
 
 func (factory applicationFactories) BuildAccessTenantMemberLifecycle(dependencies generatedassembly.AccessTenantMemberLifecycleDependencies) (accessapp.TenantMemberLifecycleApplication, error) {
@@ -43,11 +47,15 @@ func (factory applicationFactories) BuildAccessTenantLifecycle(dependencies gene
 	if dependencies.AccessTenantMemberLifecycle == nil || dependencies.AccessTenantRolePermission == nil || dependencies.CommercialSubscriptionManagement == nil {
 		return nil, errors.New("biz access pressure: tenant lifecycle dependencies are required")
 	}
-	return tenantlifecycle.Build(factory.tenantRepositories, tenantLifecycleCapabilities{
+	inner, err := tenantlifecycle.Build(factory.tenantRepositories, tenantLifecycleCapabilities{
 		members:       dependencies.AccessTenantMemberLifecycle,
 		roles:         dependencies.AccessTenantRolePermission,
 		subscriptions: dependencies.CommercialSubscriptionManagement,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return checkedTenantAssertions{TenantLifecycleApplication: inner}, nil
 }
 
 type tenantDelegationManagementCapabilities struct {

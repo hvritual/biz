@@ -14,6 +14,7 @@ import (
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
+	httpbinding "yunka.io/gateway/httpbinding"
 )
 
 type DeviceManagementOperationHandler struct {
@@ -32,11 +33,21 @@ func RegisterDeviceManagementOperationExecutor(mux *http.ServeMux, application a
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &DeviceManagementOperationHandler{application: application, executor: executor}
-	mux.HandleFunc("POST /v1/devices", handler.handleOperationCreateDevice)
-	mux.HandleFunc("DELETE /v1/devices/{id}", handler.handleOperationDeleteDevice)
-	mux.HandleFunc("GET /v1/devices/{id}", handler.handleOperationGetDevice)
-	mux.HandleFunc("GET /v1/devices", handler.handleOperationListDevices)
-	mux.HandleFunc("PATCH /v1/devices/{id}", handler.handleOperationUpdateDevice)
+	if err := httpbinding.Register(mux, "POST", "/v1/devices", handler.handleOperationCreateDevice); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "DELETE", "/v1/devices/{id}", handler.handleOperationDeleteDevice); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/devices/{id}", handler.handleOperationGetDevice); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/devices", handler.handleOperationListDevices); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "PATCH", "/v1/devices/{id}", handler.handleOperationUpdateDevice); err != nil {
+		return err
+	}
 	return nil
 }
 

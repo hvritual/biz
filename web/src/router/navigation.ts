@@ -21,6 +21,9 @@ export const primaryNavigation: NavigationItem[] = [
   { id: 'system', label: '系统设置', icon: 'settings' },
 ]
 export const enterpriseNavigation: NavigationItem[] = [
+  { id: 'live-members', label: '业务成员', icon: 'users', path: '/workspace/members' },
+  { id: 'live-roles', label: '业务角色', icon: 'shield', path: '/workspace/roles' },
+  { id: 'live-devices', label: '业务设备', icon: 'device', path: '/workspace/devices' },
   { id: 'members', label: '成员管理', icon: 'users', path: '/enterprise/members' },
   { id: 'roles', label: '角色权限', icon: 'shield', path: '/enterprise/roles' },
   { id: 'organization', label: '组织架构', icon: 'organization', path: '/enterprise/organization' },
@@ -29,9 +32,15 @@ export const enterpriseNavigation: NavigationItem[] = [
   { id: 'logs', label: '操作日志', icon: 'file', path: '/enterprise/logs' },
 ]
 export const platformCommercialNavigation: NavigationItem[] = [
+  { id: 'tenants', label: '租户管理', icon: 'company', path: '/platform/tenants' },
   { id: 'modules', label: '模块目录', icon: 'database', path: '/platform/commercial/modules' },
   { id: 'plans', label: '套餐版本', icon: 'crown', path: '/platform/commercial/plans' },
-  { id: 'tenant-entitlements', label: '租户权益', icon: 'shield', path: '/platform/commercial/tenant-entitlements' },
+  {
+    id: 'tenant-entitlements',
+    label: '租户权益',
+    icon: 'shield',
+    path: '/platform/commercial/tenant-entitlements',
+  },
 ]
 export const platformCommercialQuickActions = [
   { label: '管理模块状态', icon: 'settings', path: '/platform/commercial/modules' },

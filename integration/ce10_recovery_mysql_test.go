@@ -251,3 +251,16 @@ func TestCE10MySQLWorkerRechecksLivePermissionBeforeEveryClaim(t *testing.T) {
 		t.Fatal("restored live grant not used")
 	}
 }
+
+func TestCE16ReceiptMigrationSurvivesRepeatedFullBootstrap(t *testing.T) {
+	e := ce10New(t)
+	for i := 0; i < 3; i++ {
+		if err := persistence.MigratePlans(context.Background(), e.db); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var count int64
+	if err := e.db.Raw("SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='biz_commercial_change_receipts' AND CONSTRAINT_NAME='ce16_receipt_status'").Scan(&count).Error; err != nil || count != 1 {
+		t.Fatalf("CE16 constraint not installed exactly once: %d %v", count, err)
+	}
+}

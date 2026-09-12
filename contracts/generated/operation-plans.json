@@ -2076,7 +2076,8 @@
       "responseType": "access.v1.TenantDTO",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "platform.tenant.manage"
@@ -2142,7 +2143,8 @@
       "responseType": "access.v1.TenantDTO",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "platform.tenant.manage"
@@ -2179,7 +2181,8 @@
       "responseType": "access.v1.TenantDTO",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "commercial.catalog.read",
@@ -2385,7 +2388,8 @@
       "responseType": "access.v1.TenantDTO",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "platform.tenant.read"
@@ -2421,7 +2425,8 @@
       "responseType": "access.v1.ListTenantsResponse",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "platform.tenant.read"
@@ -3071,7 +3076,8 @@
       "responseType": "access.v1.TenantDTO",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "platform.tenant.manage"
@@ -3108,7 +3114,8 @@
       "responseType": "access.v1.TenantDTO",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "platform.tenant.manage"

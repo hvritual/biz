@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { loadSnapshot, saveSnapshot } from '@/services/demo/repository'
-import { applyStatusAction, memberActionError } from '@/services/memberPolicy'
+import { applyStatusAction, memberActionError, prepareMemberStatusBatch } from '@/services/memberPolicy'
 import { departmentMoveAllowed } from '@/utils/organization'
 import { timestamp } from '@/utils/format'
 import type { Member, MemberAction, Role, AuditRecord, Company, Department } from '@/types/enterprise'
@@ -144,6 +144,36 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       'high',
     )
   }
+  function changeStatuses(
+    targets: { id: string; version: number }[],
+    action: 'activate' | 'suspend',
+    reason: string,
+  ) {
+    if (!reason.trim()) throw new Error('请填写操作原因。')
+    const updated = prepareMemberStatusBatch(members.value, roles.value, targets, action)
+    const records = targets.map(({ id }) => {
+      const before = members.value.find((m) => m.id === id)!
+      const after = updated.find((m) => m.id === id)!
+      const logId = crypto.randomUUID()
+      return {
+        id: logId,
+        time: timestamp(),
+        actor: '张三',
+        module: '成员管理',
+        action: action === 'activate' ? '批量启用成员' : '批量禁用成员',
+        target: before.name,
+        result: 'success' as const,
+        risk: 'high' as const,
+        requestId: `demo-${logId}`,
+        before: before.status,
+        after: after.status,
+        reason,
+      }
+    })
+    snapshot.value.members = updated
+    snapshot.value.logs.unshift(...records)
+    persist()
+  }
   function saveRole(role: Role) {
     if (!role.name.trim()) throw new Error('请填写角色名称。')
     if (roles.value.some((r) => r.id !== role.id && r.name === role.name)) throw new Error('角色名称已存在。')
@@ -200,6 +230,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     audit,
     saveMember,
     changeStatus,
+    changeStatuses,
     saveRole,
     saveCompany,
     saveDepartment,

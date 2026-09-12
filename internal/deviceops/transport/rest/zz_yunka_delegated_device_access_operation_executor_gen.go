@@ -13,6 +13,7 @@ import (
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
+	httpbinding "yunka.io/gateway/httpbinding"
 )
 
 type DelegatedDeviceAccessOperationHandler struct {
@@ -31,8 +32,12 @@ func RegisterDelegatedDeviceAccessOperationExecutor(mux *http.ServeMux, applicat
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &DelegatedDeviceAccessOperationHandler{application: application, executor: executor}
-	mux.HandleFunc("GET /v1/delegated/devices/{id}", handler.handleOperationGetDelegatedDevice)
-	mux.HandleFunc("PATCH /v1/delegated/devices/{id}", handler.handleOperationUpdateDelegatedDevice)
+	if err := httpbinding.Register(mux, "GET", "/v1/delegated/devices/{id}", handler.handleOperationGetDelegatedDevice); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "PATCH", "/v1/delegated/devices/{id}", handler.handleOperationUpdateDelegatedDevice); err != nil {
+		return err
+	}
 	return nil
 }
 

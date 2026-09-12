@@ -13,6 +13,7 @@ import (
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
+	httpbinding "yunka.io/gateway/httpbinding"
 )
 
 type DeviceTransferOperationHandler struct {
@@ -31,7 +32,9 @@ func RegisterDeviceTransferOperationExecutor(mux *http.ServeMux, application app
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &DeviceTransferOperationHandler{application: application, executor: executor}
-	mux.HandleFunc("PATCH /v1/devices/{id}/transfer", handler.handleOperationTransferDevice)
+	if err := httpbinding.Register(mux, "PATCH", "/v1/devices/{id}/transfer", handler.handleOperationTransferDevice); err != nil {
+		return err
+	}
 	return nil
 }
 

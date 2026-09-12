@@ -379,6 +379,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
     throw new CommercialApiError(message, response.status, 'http')
   }
 
+  if (response.status === 204) return undefined as T
   try {
     return (await response.json()) as T
   } catch {
@@ -386,7 +387,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers)
   headers.set('Accept', 'application/json')
   const response = await fetch(`${baseUrl}${path}`, {
@@ -405,11 +406,11 @@ async function trustedCsrfToken(): Promise<string> {
   return session.csrf_token
 }
 
-async function mutate<T>(
+export async function mutate<T>(
   path: string,
-  method: 'POST' | 'PATCH',
+  method: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
   body: unknown,
-  options: { idempotencyKey?: string } = {},
+  options: { idempotencyKey?: string; sessionContext?: string } = {},
 ): Promise<T> {
   const csrf = await trustedCsrfToken()
   const headers = new Headers({
@@ -417,6 +418,7 @@ async function mutate<T>(
     'X-CSRF-Token': csrf,
   })
   if (options.idempotencyKey) headers.set('Idempotency-Key', options.idempotencyKey)
+  if (options.sessionContext) headers.set('X-Biz-Session-Context', options.sessionContext)
   return request<T>(path, {
     method,
     headers,
