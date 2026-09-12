@@ -333,7 +333,7 @@
         "FR-13",
         "FR-18"
       ],
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "blocker": null,
       "evidence": null,
       "integration_commit": null
@@ -395,7 +395,7 @@
         "FR-09",
         "FR-14"
       ],
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "blocker": null,
       "evidence": null,
       "integration_commit": null
