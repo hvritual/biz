@@ -89,6 +89,39 @@ func TestCE16MySQLStaleBoundaryCannotUndoRenewal(t *testing.T) {
 	}
 }
 
+func TestCE16MySQLRenewalRacesScheduledDowngrade(t *testing.T) {
+	e := ce10New(t)
+	downgrade := e.plan(ce09Terms(5, 30))
+	renewKey, downKey := ce04Random(t), ce04Random(t)
+	renew, err := e.changes.PreviewSubscriptionChange(ce04Context(e.token, renewKey), &v1.PreviewSubscriptionChangeRequest{TenantId: e.tenant, RequestId: renewKey, Action: "RENEW", TargetPlanCode: e.old.PlanCode, TargetPlanVersion: e.old.Version, Reason: "CE16 renewal race"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	down, err := e.changes.PreviewSubscriptionChange(ce04Context(e.token, downKey), &v1.PreviewSubscriptionChangeRequest{TenantId: e.tenant, RequestId: downKey, Action: "SWITCH", TargetPlanCode: downgrade.PlanCode, TargetPlanVersion: downgrade.Version, EffectiveAt: time.Now().UTC().Add(time.Hour).Format(time.RFC3339Nano), Reason: "CE16 scheduled downgrade race"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	results := make(chan error, 2)
+	go func() { _, err := e.confirm(e.confirmation(renew)); results <- err }()
+	go func() { _, err := e.confirm(e.confirmation(down)); results <- err }()
+	ok := 0
+	for range 2 {
+		if err := <-results; err == nil {
+			ok++
+		}
+	}
+	if ok != 1 {
+		t.Fatalf("expected one serialized winner, got %d", ok)
+	}
+	current, err := e.subscriptions.GetTenantSubscription(e.ctx(), &v1.GetTenantSubscriptionRequest{TenantId: e.tenant})
+	if err != nil || current.Revision != 2 {
+		t.Fatalf("subscription=%+v err=%v", current, err)
+	}
+	if current.PendingChangeId != "" && current.PlanCode != e.old.PlanCode {
+		t.Fatalf("pending change replaced current PLAN authority: %+v", current)
+	}
+}
+
 func TestCE16MySQLTrialGraceBoundaries(t *testing.T) {
 	for _, scenario := range []struct {
 		name  string
