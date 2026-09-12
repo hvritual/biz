@@ -50,3 +50,12 @@ The final branch-only assertion tightens the prepared trial boundary result to
 require `RESTRICTED` under zero configured grace. It was compiled locally and
 awaits the controller's main replay; the recorded protected replay predates only
 that assertion tightening.
+
+## Cross-task regression
+
+After the framework conflict mapping changed, CE08's two idempotency collision
+assertions were updated to require the generic `409 application conflict`
+response while retaining their no-duplicate authority checks. Protected replay
+passed CE08 29/29 in 69.3 seconds and CE08-restart 2/2 in 2.34 seconds; logs
+and summary are under `/tmp/ce08-conflict-retry/`. The preceding protected run
+also passed CE09 32/32 plus restart 2/2, and CE10 14/14 plus restart 2/2.
