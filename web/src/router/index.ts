@@ -23,6 +23,11 @@ export const router = createRouter({
       meta: { title: '套餐版本管理', module: 'platform-commercial', surface: 'platform' },
     },
     {
+      path: '/platform/commercial/tenant-entitlements',
+      component: () => import('@/views/platform/CommercialTenantEntitlementsView.vue'),
+      meta: { title: '租户权益管理', module: 'platform-commercial', surface: 'platform' },
+    },
+    {
       path: '/enterprise/members',
       component: () => import('@/views/enterprise/MembersView.vue'),
       meta: { title: '成员管理', module: 'enterprise' },
