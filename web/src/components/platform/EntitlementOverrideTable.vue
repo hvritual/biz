@@ -2,7 +2,7 @@
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import type { EntitlementOverrideDTO } from '@/services/commercial/platformCommercial'
 
-const props = defineProps<{
+defineProps<{
   sources: EntitlementOverrideDTO[]
   sourceVersion: string | number
   pending: boolean
