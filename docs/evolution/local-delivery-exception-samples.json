@@ -8,32 +8,32 @@
   },
   "evidence_classes": {
     "source_review": "A reviewer established the condition from a concrete source diff or static call path. It is not a claim that a runtime test, production system, or user encountered the defect.",
-    "runtime_failure": "A named test or execution actually failed with the stated condition. None of the four records below is promoted to this class without such evidence."
+    "runtime_failure": "A named test or execution actually failed with the stated condition. The record names its retained result or reverse-qualification report."
   },
   "samples": [
     {
       "local_id": "LOCAL-CE13-001",
       "issue_number": null,
       "title": "CE13 plan writes omitted the required Idempotency-Key header",
-      "discovery": "source_review",
+      "discovery": "runtime_failure",
       "reproduction_condition": "Use the CE13 platform plan client to create a draft/version, update a draft, publish, or retire a version. Each request carries requestId in JSON but did not pass it as mutate(..., { idempotencyKey }).",
-      "actual_evidence": "Source review of web/src/services/commercial/platformCommercial.ts before 31f317e found all five plan mutation wrappers calling mutate without its idempotencyKey option. The server operation contracts require Idempotency-Key for these mutations.",
+      "actual_evidence": "The retained /tmp/ce13-browser-final summary records TestCE13PlatformCommercialVisibleConsoleFlow failing after submitting a plan draft, with the expected success acknowledgement absent. Source review of web/src/services/commercial/platformCommercial.ts before 31f317e established the cause: all five plan mutation wrappers called mutate without its idempotencyKey option while the server contracts require Idempotency-Key.",
       "expected": "Every plan mutation forwards its stable requestId as the HTTP Idempotency-Key header so server-side idempotency can accept and correlate the write.",
       "fixed_by": ["31f317eddc701ca7b0b888a4c8d14ef7bb52d67c"],
       "impact": "The UI could receive a required-key rejection and could not safely retry plan writes through the intended idempotency boundary.",
-      "runtime_failure_evidence": null
+      "runtime_failure_evidence": "/tmp/ce13-browser-final/summary.json and ce13-browser/ce13-platform-results.json"
     },
     {
       "local_id": "LOCAL-FRAMEWORK-001",
       "issue_number": null,
       "title": "Explicit gRPC CAS conflicts were rendered as generic HTTP 400",
-      "discovery": "source_review",
+      "discovery": "runtime_failure",
       "reproduction_condition": "A generated C9 REST adapter receives an application error with gRPC status Aborted or AlreadyExists, such as a completed/in-progress CAS or idempotency conflict.",
-      "actual_evidence": "The pre-fix C9 REST generator fell through from its special idempotency errors to the generic application request failed HTTP 400 path. Review of the generated UI retry path showed that it recognizes HTTP 409 as a stale/conflict result, not a generic 400.",
+      "actual_evidence": "The earlier final reverse-qualification report reproduced the generated REST CAS path as HTTP 400 while the CE13 conflict UI recognizes HTTP 409. Source review of the pre-fix C9 generator confirms the fall-through: only framework idempotency sentinels were special-cased before generic HTTP 400, not gRPC Aborted or AlreadyExists.",
       "expected": "Only explicit gRPC Aborted and AlreadyExists map to generic application conflict HTTP 409; unknown application errors remain HTTP 400.",
       "fixed_by": ["framework 95566098d605e58ed89f62da2616477f8eedb956", "canonical main 646598e", "compatibility 9ee6640f5e19777b4c04d9e4937a93e2035eacda"],
       "impact": "CAS conflicts were indistinguishable from malformed application requests to the CE13 UI, preventing its conflict-specific recovery behavior.",
-      "runtime_failure_evidence": null
+      "runtime_failure_evidence": "earlier final reverse-qualification report retained by the delivery controller"
     },
     {
       "local_id": "LOCAL-CE16-001",

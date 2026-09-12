@@ -10,13 +10,14 @@ created. A later control workflow may publish candidates after review.
 
 Each record states its evidence class. **Source review** means a concrete static
 source/diff inspection established the condition. It does not claim a runtime
-test failed, a production incident occurred, or a customer observed it. None of
-these candidates is currently recorded as a runtime failure.
+test failed, a production incident occurred, or a customer observed it. The
+first two candidates have retained runtime-failure evidence; the CE16 records
+remain source-review findings.
 
 | Local ID | Evidence class | Condition and impact | Fix evidence |
 | --- | --- | --- | --- |
-| LOCAL-CE13-001 | Source review | CE13 plan mutations carried `requestId` in JSON but omitted the required `Idempotency-Key` header, so required-key rejection and unsafe UI retry were possible. | `31f317e` forwards each plan mutation request ID as the mutate idempotency key. |
-| LOCAL-FRAMEWORK-001 | Source review | Generated C9 REST code treated explicit gRPC `Aborted`/`AlreadyExists` CAS conflicts as generic HTTP 400; the CE13 UI cannot recognize that as a conflict. | Framework `95566098`, canonical main `646598e`, compatibility `9ee6640` map only those codes to HTTP 409; unknown application errors remain 400. |
+| LOCAL-CE13-001 | Runtime failure | Retained CE13 browser evidence failed after plan-draft submission; source diagnosis found `requestId` was not forwarded as `Idempotency-Key`. | `31f317e` forwards each plan mutation request ID as the mutate idempotency key. |
+| LOCAL-FRAMEWORK-001 | Runtime failure | The retained final reverse report reproduced explicit `Aborted`/`AlreadyExists` CAS conflicts as generic HTTP 400, which the CE13 UI cannot recognize as a conflict. | Framework `95566098`, canonical main `646598e`, compatibility `9ee6640` map only those codes to HTTP 409; unknown application errors remain 400. |
 | LOCAL-CE16-001 | Source review | A prepared completion with `PeriodEnd` could persist a new subscription revision without creating its next revision-bound time transition; the initial correction also used hard-coded UTC. | `ddbfe3c` inserts the boundary for `after.Revision`; `ae91064` preserves the configured lifecycle timezone. |
 | LOCAL-CE16-002 | Source review | An invalid or negative `YUNKA_BIZ_COMMERCIAL_GRACE_DURATION` silently became zero, conflating an operator error with the valid unset zero-grace default. | `ddbfe3c` makes explicit invalid grace fail configuration and adds a focused test. |
 

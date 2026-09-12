@@ -1,0 +1,63 @@
+name: Publish CE delivery exception samples
+
+on:
+  push:
+    branches:
+      - chore/local-account-delivery
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create only missing candidate issues
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            const expectedRef = "refs/heads/chore/local-account-delivery";
+            if (context.ref !== expectedRef) {
+              core.setFailed("unexpected ref");
+              return;
+            }
+            const owner = "hvritual";
+            const repo = "biz";
+            const source = await github.rest.repos.getContent({
+              owner,
+              repo,
+              path: "docs/evolution/local-delivery-exception-samples.json",
+              ref: context.sha,
+            });
+            if (Array.isArray(source.data) || source.data.type !== "file") {
+              core.setFailed("candidate manifest unavailable");
+              return;
+            }
+            const manifest = JSON.parse(Buffer.from(source.data.content, "base64").toString("utf8"));
+            const existing = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: "all",
+              per_page: 100,
+            });
+            for (const sample of manifest.samples) {
+              const title = `[异常样本] ${sample.title}`;
+              const found = existing.find((issue) => !issue.pull_request && issue.title === title);
+              if (found) {
+                core.info(`#${found.number} ${found.html_url}`);
+                continue;
+              }
+              const body = [
+                `## 证据类别\n${sample.discovery}`,
+                `## 复现条件\n${sample.reproduction_condition}`,
+                `## 实际证据\n${sample.actual_evidence}`,
+                `## 预期\n${sample.expected}`,
+                `## 修复提交\n${sample.fixed_by.map((value) => `- ${value}`).join("\n")}`,
+                `## 影响\n${sample.impact}`,
+                `## 运行失败证据\n${sample.runtime_failure_evidence ?? "无；这是源码审查发现。"}`,
+                "\n该 issue 由一次性本地交付样本工作流创建；不会修改既有 issue 或 PR。",
+              ].join("\n\n");
+              const created = await github.rest.issues.create({ owner, repo, title, body });
+              core.info(`#${created.data.number} ${created.data.html_url}`);
+            }
