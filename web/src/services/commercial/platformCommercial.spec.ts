@@ -207,6 +207,8 @@ describe('CE-13 platform commercial service', () => {
     const revokeInit = fetchMock.mock.calls[3]?.[1]
     expect(JSON.parse(String(createInit?.body))).toMatchObject({ tenantId: 'tenant-1', expectedVersion: '7' })
     expect(JSON.parse(String(revokeInit?.body))).toMatchObject({ tenantId: 'tenant-1', id: 'ov-2', expectedVersion: '8' })
+    expect(new Headers(createInit?.headers).get('Idempotency-Key')).toBe('create-override')
+    expect(new Headers(revokeInit?.headers).get('Idempotency-Key')).toBe('revoke-override')
     expect(new Headers(createInit?.headers).has('Authorization')).toBe(false)
     expect(new Headers(revokeInit?.headers).has('Authorization')).toBe(false)
   })

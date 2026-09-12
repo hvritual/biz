@@ -525,7 +525,7 @@ export function createEntitlementOverride(tenantId: string, input: CreateEntitle
   return mutate<EntitlementOverrideReceipt>(`/v1/platform/tenants/${encoded(tenantId)}/entitlement-overrides`, 'POST', {
     ...input,
     tenantId,
-  })
+  }, { idempotencyKey: input.requestId })
 }
 
 export function revokeEntitlementOverride(
@@ -541,6 +541,7 @@ export function revokeEntitlementOverride(
       tenantId,
       id: overrideId,
     },
+    { idempotencyKey: input.requestId },
   )
 }
 
