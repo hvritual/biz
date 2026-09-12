@@ -104,6 +104,7 @@ describe('CE-13 platform commercial service', () => {
     expect(planInit?.method).toBe('POST')
     expect(planInit?.credentials).toBe('include')
     expect(headers.get('X-CSRF-Token')).toBe('csrf-123')
+    expect(headers.get('Idempotency-Key')).toBe('req-1')
     expect(headers.has('Authorization')).toBe(false)
     expect(JSON.parse(String(planInit?.body))).toMatchObject({ planCode: 'office-pro', requestId: 'req-1' })
   })

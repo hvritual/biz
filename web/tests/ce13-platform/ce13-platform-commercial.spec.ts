@@ -327,7 +327,7 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await editor.getByRole("button", { name: "提交到服务端" }).click();
   await expect(page.getByText("套餐草稿已创建。")).toBeVisible();
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "发布版本" }).click();
+  await page.getByRole("button", { name: "发布", exact: true }).click();
   await expect(page.getByText("套餐版本已发布；后续修订必须创建新版本。")).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("ce13-plan-published-1366.png"), fullPage: true });
 
