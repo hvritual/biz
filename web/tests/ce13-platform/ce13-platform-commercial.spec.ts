@@ -331,6 +331,8 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await expect(page.getByText("套餐版本已发布；后续修订必须创建新版本。")).toBeVisible();
   for (const [width, height] of [[1536, 1024], [1440, 900], [1366, 768], [390, 844]]) {
     await page.setViewportSize({ width, height });
+    const dimensions = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth }));
+    expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
     await page.screenshot({ path: testInfo.outputPath(`ce13-plan-published-${width}x${height}.png`), fullPage: true });
   }
 
@@ -339,6 +341,7 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   const before = await main.boundingBox();
   const platformTrigger = page.getByRole("button", { name: "平台商业", exact: true });
   await platformTrigger.focus();
+  await page.screenshot({ path: testInfo.outputPath("ce13-platform-trigger-focus-1366x768.png"), fullPage: true });
   await page.keyboard.press("Enter");
   const overlay = page.getByRole("dialog", { name: "平台商业导航" });
   await expect(overlay).toBeVisible();
@@ -348,6 +351,9 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   expect(overlayBox?.width).toBeLessThanOrEqual(481);
   expect(after?.x).toBe(before?.x);
   expect(after?.width).toBe(before?.width);
+  await page.keyboard.press("Tab");
+  await expect(overlay.getByRole("button").first()).toBeFocused();
+  await page.screenshot({ path: testInfo.outputPath("ce13-platform-overlay-keyboard-1366x768.png"), fullPage: true });
   await page.keyboard.press("Escape");
   await expect(overlay).toBeHidden();
 
