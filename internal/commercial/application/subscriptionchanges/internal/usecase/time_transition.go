@@ -71,7 +71,7 @@ func exposeTransition(err error) error {
 }
 
 type transitionResult struct {
-	Task                transition.Task
+	Task                 transition.Task
 	SubscriptionRevision uint64
 	SourceVersion        uint64
 	EntitlementVersion   uint64
@@ -217,10 +217,35 @@ func (s *service) completeSubscriptionBoundary(ctx context.Context, repos ports.
 	if raw.RenewalStopped {
 		after.State = subscription.StateEnded
 		outcome = "RENEWAL_STOPPED_ENDED"
+	} else if raw.State != subscription.StateGrace && s.lifecycle.GraceDuration > 0 {
+		// Grace is anchored at the authoritative boundary, never worker pickup.
+		// A delayed scheduler therefore cannot extend an expired entitlement.
+		graceEnd := transition.CanonicalTime(current.DueAt.Add(s.lifecycle.GraceDuration))
+		if graceEnd.After(now) {
+			after.State = subscription.StateGrace
+			after.PeriodEnd = &graceEnd
+			outcome = "TRIAL_EXPIRED_GRACE"
+			if raw.State != subscription.StateTrial {
+				outcome = "PAYMENT_OR_RENEWAL_CONFIRMATION_GRACE"
+			}
+		} else if raw.State == subscription.StateTrial {
+			outcome = "TRIAL_EXPIRED_GRACE_ELAPSED"
+		} else {
+			outcome = "PAYMENT_OR_RENEWAL_CONFIRMATION_GRACE_ELAPSED"
+		}
 	}
 	after.EntitlementSourceVersion = view.SourceVersion
 	if err := repos.Changes.SaveCurrent(ctx, raw, after); err != nil {
 		return transitionResult{}, err
+	}
+	if after.State == subscription.StateGrace {
+		next, err := transition.NewInTimezone(transition.SubscriptionBoundary, after.TenantID, after.ID, after.Revision, *after.PeriodEnd, now, current.BusinessTimezone)
+		if err != nil {
+			return transitionResult{}, err
+		}
+		if err = repos.Transitions.Insert(ctx, next); err != nil {
+			return transitionResult{}, err
+		}
 	}
 	finished, err := finishTransition(ctx, repos.Transitions, *current, worker, token, transition.Applied, outcome, now)
 	return transitionResult{Task: finished, SubscriptionRevision: after.Revision, SourceVersion: view.SourceVersion, EntitlementVersion: view.EntitlementVersion}, err
@@ -329,7 +354,7 @@ func (s *service) completeScheduledChange(ctx context.Context, repos ports.Subsc
 	after := raw
 	after.Revision++
 	after.PendingChangeID = ""
-	after.State = subscription.StateActive
+	after.State = s.lifecycle.StateFor(material.target.PlanCode, material.target.Number)
 	sourceVersion, entitlementVersion, err := s.applySources(ctx, repos, material, &after, hint.AuthorityID, receipt.EffectiveAt, receipt.EntitlementExpiresAt)
 	if err != nil {
 		if reason, terminal := terminalTransitionError(err); terminal {

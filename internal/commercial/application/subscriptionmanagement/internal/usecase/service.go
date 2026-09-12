@@ -23,14 +23,18 @@ import (
 )
 
 type service struct {
+	lifecycle          subscription.LifecyclePolicy
 	provisioningPolicy ports.ProvisioningPolicy
 	repositories       requestscope.RepositoryFactory[ports.SubscriptionRepositories]
 	capabilities       app.SubscriptionManagementCapabilities
 }
 
-func New(r requestscope.RepositoryFactory[ports.SubscriptionRepositories], c app.SubscriptionManagementCapabilities, policies ...ports.ProvisioningPolicy) (app.SubscriptionManagementApplication, error) {
+func New(r requestscope.RepositoryFactory[ports.SubscriptionRepositories], c app.SubscriptionManagementCapabilities, lifecycle subscription.LifecyclePolicy, policies ...ports.ProvisioningPolicy) (app.SubscriptionManagementApplication, error) {
 	if r == nil || c == nil || c.CommercialPlanManagement() == nil {
 		return nil, errors.New("subscriptions: repositories and plan capability required")
+	}
+	if err := lifecycle.Validate(); err != nil {
+		return nil, err
 	}
 	var policy ports.ProvisioningPolicy = ports.DatabaseOnlyProvisioning{}
 	if len(policies) > 1 {
@@ -39,7 +43,7 @@ func New(r requestscope.RepositoryFactory[ports.SubscriptionRepositories], c app
 	if len(policies) == 1 && policies[0] != nil {
 		policy = policies[0]
 	}
-	return &service{repositories: r, capabilities: c, provisioningPolicy: policy}, nil
+	return &service{repositories: r, capabilities: c, lifecycle: lifecycle.Canonical(), provisioningPolicy: policy}, nil
 }
 func actor(ctx context.Context) (string, error) {
 	p, ok := identity.FromContext(ctx)
@@ -245,6 +249,9 @@ func (s *service) BootstrapBaseSubscription(ctx context.Context, r *v1.Bootstrap
 				if len(requirements) > 0 {
 					continue
 				}
+				if s.lifecycle.StateFor(rule.PlanCode, rule.PlanVersion) == subscription.StateTrial && version.Terms.ValidityMode != "fixed_days" {
+					continue
+				}
 				chosen = rule
 				pv = elig.Version
 				break
@@ -274,7 +281,7 @@ func (s *service) BootstrapBaseSubscription(ctx context.Context, r *v1.Bootstrap
 		if e := sc.Repositories().Entitlements.Advance(call, r.TenantId, state.Version); e != nil {
 			return subscription.Subscription{}, e
 		}
-		v := subscription.Subscription{ID: sid, TenantID: r.TenantId, Kind: subscription.KindBase, State: subscription.StateActive, PlanCode: chosen.PlanCode, PlanVersion: chosen.PlanVersion, RuleID: chosen.RuleID, RuleVersion: chosen.Version, SalesScope: r.SalesScope, EntitlementSourceVersion: state.Version + 1, CreatedAt: now, MatchExplanation: fmt.Sprintf("rule=%s@%d priority=%d scope=%s", chosen.RuleID, chosen.Version, chosen.Priority, chosen.SalesScope)}
+		v := subscription.Subscription{ID: sid, TenantID: r.TenantId, Kind: subscription.KindBase, State: s.lifecycle.StateFor(chosen.PlanCode, chosen.PlanVersion), PlanCode: chosen.PlanCode, PlanVersion: chosen.PlanVersion, RuleID: chosen.RuleID, RuleVersion: chosen.Version, SalesScope: r.SalesScope, EntitlementSourceVersion: state.Version + 1, CreatedAt: now, MatchExplanation: fmt.Sprintf("rule=%s@%d priority=%d scope=%s", chosen.RuleID, chosen.Version, chosen.Priority, chosen.SalesScope)}
 		v.Revision = 1
 		v.PeriodStart = now
 		v.SourceNamespace = sid

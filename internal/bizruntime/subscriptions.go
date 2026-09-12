@@ -12,7 +12,7 @@ func (factory applicationFactories) BuildCommercialSubscriptionManagement(depend
 	if dependencies.CommercialPlanManagement == nil {
 		return nil, fmt.Errorf("bizruntime: commercial plan management dependency is required")
 	}
-	return subscriptionmanagement.Build(commercialpersistence.NewSubscriptionTimeRepositoryFactory(), subscriptionCapabilities{plan: dependencies.CommercialPlanManagement}, factory.provisioningPolicy)
+	return subscriptionmanagement.Build(commercialpersistence.NewSubscriptionTimeRepositoryFactory(factory.commercialLifecycle.Timezone()), subscriptionCapabilities{plan: dependencies.CommercialPlanManagement}, factory.commercialLifecycle, factory.provisioningPolicy)
 }
 
 type subscriptionCapabilities struct {
