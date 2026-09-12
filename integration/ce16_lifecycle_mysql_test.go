@@ -5,6 +5,7 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"testing"
 	"time"
 
@@ -35,6 +36,77 @@ func ce16InsertDueTransition(t *testing.T, e *ce10Environment, kind, authority s
 		t.Fatal(err)
 	}
 	return task.ID
+}
+
+type ce16RestartState struct {
+	Token, Tenant, TransitionID string
+	LeaseToken                  uint64
+}
+
+func TestCE16PersistenceBeforeRestart(t *testing.T) {
+	path := os.Getenv("CE16_RESTART_RECEIPT")
+	if path == "" {
+		t.Fatal("CE16_RESTART_RECEIPT required")
+	}
+	e := ce10New(t)
+	key := ce04Random(t)
+	expires := time.Now().UTC().Add(1200 * time.Millisecond).Truncate(time.Microsecond)
+	receipt, err := e.entitlements.CreateEntitlementOverride(ce04Context(e.token, key), &v1.CreateEntitlementOverrideRequest{TenantId: e.tenant, RequestId: key, ExpectedVersion: e.view().SourceVersion, ModuleCode: "device-operations", Target: v1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY, Key: "device.lifecycle", Effect: v1.EntitlementEffect_ENTITLEMENT_EFFECT_GRANT, ExpiresAt: expires.Format(time.RFC3339Nano), Reason: "CE16 restart lease"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(time.Until(expires) + 50*time.Millisecond)
+	var payload string
+	if err = e.db.Table("biz_commercial_time_transitions").Select("payload").Where("authority_id=?", receipt.Source.Id).Scan(&payload).Error; err != nil {
+		t.Fatal(err)
+	}
+	var task transition.Task
+	if err = json.Unmarshal([]byte(payload), &task); err != nil {
+		t.Fatal(err)
+	}
+	if err = task.Claim("ce16-restart", time.Now().UTC(), 5*time.Second); err != nil {
+		t.Fatal(err)
+	}
+	payloadBytes, _ := json.Marshal(task)
+	if err = e.db.Table("biz_commercial_time_transitions").Where("transition_id=?", task.ID).Updates(map[string]any{"revision": task.Revision, "state": task.State, "lease_until": task.LeaseUntil, "payload_sha256": task.Hash, "payload": string(payloadBytes), "updated_at": task.UpdatedAt}).Error; err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := json.Marshal(ce16RestartState{Token: e.token, Tenant: e.tenant, TransitionID: task.ID, LeaseToken: task.LeaseToken})
+	if err = os.WriteFile(path, raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCE16PersistenceAfterRestart(t *testing.T) {
+	path := os.Getenv("CE16_RESTART_RECEIPT")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved ce16RestartState
+	if err = json.Unmarshal(raw, &saved); err != nil {
+		t.Fatal(err)
+	}
+	e := ce10OnDB(t, openDB(t), saved.Token, &ce10TestPolicy{}, &ce10TestAdapter{outcome: "READY"})
+	e.tenant = saved.Tenant
+	deadline := time.Now().Add(8 * time.Second)
+	for time.Now().Before(deadline) {
+		var expired int64
+		if err = e.db.Table("biz_commercial_time_transitions").Where("transition_id=? AND lease_until<=UTC_TIMESTAMP(6)", saved.TransitionID).Count(&expired).Error; err != nil {
+			t.Fatal(err)
+		}
+		if expired == 1 {
+			break
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	if _, err = e.started.RunProvisioningOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var state string
+	if err = e.db.Table("biz_commercial_time_transitions").Select("state").Where("transition_id=?", saved.TransitionID).Scan(&state).Error; err != nil || state != transition.Applied {
+		t.Fatalf("state=%s err=%v", state, err)
+	}
 }
 
 func TestCE16MySQLOverrideExpiryTransition(t *testing.T) {
