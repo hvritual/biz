@@ -5812,7 +5812,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "commercial.module.entitlement_catalog",
@@ -5833,7 +5834,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5859,7 +5861,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "commercial.module.entitlement_catalog",
@@ -5880,7 +5883,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5952,7 +5956,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "tenant.get"
@@ -5971,7 +5976,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -5996,7 +6002,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "tenant.get"
@@ -6015,7 +6022,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         }
@@ -6087,7 +6095,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -6101,7 +6110,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -6124,7 +6134,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -6138,7 +6149,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -6161,7 +6173,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -6175,7 +6188,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -6198,7 +6212,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -6212,7 +6227,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -6236,7 +6252,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -6250,7 +6267,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -6274,7 +6292,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -6288,7 +6307,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -6312,7 +6332,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -6326,7 +6347,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         }
@@ -6364,7 +6386,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "commercial.module.plan_catalog"
@@ -6383,7 +6406,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -6408,7 +6432,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "commercial.module.plan_catalog"
@@ -6427,7 +6452,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -6452,7 +6478,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "commercial.module.plan_catalog"
@@ -6471,7 +6498,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -6494,7 +6522,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -6508,7 +6537,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -6531,7 +6561,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -6545,7 +6576,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -6570,7 +6602,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "commercial.module.plan_catalog"
@@ -6589,7 +6622,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -6614,7 +6648,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "commercial.module.plan_catalog"
@@ -6633,7 +6668,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -6658,7 +6694,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "commercial.module.plan_catalog"
@@ -6677,7 +6714,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         }
@@ -7100,7 +7138,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "commercial.module.plan_catalog",
@@ -7123,7 +7162,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -7147,7 +7187,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -7162,7 +7203,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -7186,7 +7228,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -7201,7 +7244,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -7228,7 +7272,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "commercial.module.plan_catalog",
@@ -7251,7 +7296,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         }
@@ -7314,7 +7360,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -7329,7 +7376,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },

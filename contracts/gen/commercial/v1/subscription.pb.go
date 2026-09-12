@@ -713,15 +713,15 @@ const file_commercial_v1_subscription_proto_rawDesc = "" +
 	"\vsales_scope\x18\x03 \x01(\tR\n" +
 	"salesScope\"m\n" +
 	"!BootstrapTenantSubscriptionResult\x12H\n" +
-	"\fsubscription\x18\x01 \x01(\v2$.commercial.v1.TenantSubscriptionDTOR\fsubscription2\xca\n" +
+	"\fsubscription\x18\x01 \x01(\v2$.commercial.v1.TenantSubscriptionDTOR\fsubscription2\xcb\n" +
 	"\n" +
 	"!SubscriptionManagementApplication\x12\xf1\x02\n" +
 	"\x1aPutDefaultSubscriptionRule\x120.commercial.v1.PutDefaultSubscriptionRuleRequest\x1a).commercial.v1.DefaultSubscriptionRuleDTO\"\xf5\x01\xe2\xf3\x18\xb4\x01\n" +
 	" commercial.subscription.rule.put\x12\x1dput_default_subscription_rule\x1a\x1cplatform.subscription.manage\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02B\x1bcommercial.plan.eligibilityH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x026:\x01*\x1a1/v1/platform/subscription-default-rules/{rule_id}\x12\xa6\x02\n" +
 	"\x1cListDefaultSubscriptionRules\x122.commercial.v1.ListDefaultSubscriptionRulesRequest\x1a3.commercial.v1.ListDefaultSubscriptionRulesResponse\"\x9c\x01\xe2\xf3\x18i\n" +
-	"!commercial.subscription.rule.list\x12\x1flist_default_subscription_rules\x1a\x1aplatform.subscription.read2\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02)\x12'/v1/platform/subscription-default-rules\x12\x97\x02\n" +
-	"\x15GetTenantSubscription\x12+.commercial.v1.GetTenantSubscriptionRequest\x1a$.commercial.v1.TenantSubscriptionDTO\"\xaa\x01\xe2\xf3\x18q\n" +
-	"\x1bcommercial.subscription.get\x12\x17get_tenant_subscription\x1a\x1aplatform.subscription.read\x1a\x14platform.tenant.read2\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02/\x12-/v1/platform/tenants/{tenant_id}/subscription\x1a\xed\x02\xda\xf3\x18\xe8\x02\n" +
+	"!commercial.subscription.rule.list\x12\x1flist_default_subscription_rules\x1a\x1aplatform.subscription.read2\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02)\x12'/v1/platform/subscription-default-rules\x12\x98\x02\n" +
+	"\x15GetTenantSubscription\x12+.commercial.v1.GetTenantSubscriptionRequest\x1a$.commercial.v1.TenantSubscriptionDTO\"\xab\x01\xe2\xf3\x18r\n" +
+	"\x1bcommercial.subscription.get\x12\x17get_tenant_subscription\x1a\x1aplatform.subscription.read\x1a\x14platform.tenant.read2\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02/\x12-/v1/platform/tenants/{tenant_id}/subscription\x1a\xed\x02\xda\xf3\x18\xe8\x02\n" +
 	"\x17subscription_management\x12\x1acommercial/plan_management\x1a\xb0\x02\n" +
 	"&commercial.subscription.bootstrap_base\x12\x1bbootstrap_base_subscription\x1a\x16platform.tenant.create\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02B\x1bcommercial.plan.eligibilityH\x01R\x04\b\x03\x10\x01Z0commercial.v1.BootstrapTenantSubscriptionRequestb/commercial.v1.BootstrapTenantSubscriptionResultj\x19BootstrapBaseSubscriptionBV\xca\xf3\x18\x10\n" +
 	"\n" +
