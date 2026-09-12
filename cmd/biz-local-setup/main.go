@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	mysql "github.com/go-sql-driver/mysql"
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
@@ -135,11 +136,9 @@ func run() error {
 	if err := store.BindOIDCPlatformIdentity(ctx, issuer, "biz-user:"+platformUserID, "local-platform-admin", creds.PlatformEmail); err != nil {
 		return fmt.Errorf("platform OIDC identity: %w", err)
 	}
-	if creds.TenantID == "" {
-		creds.TenantID, err = seedCommercialAndTenant(ctx, started.GRPCAddress(), creds.PlatformToken)
-		if err != nil {
-			return err
-		}
+	creds.TenantID, err = seedCommercialAndTenant(ctx, started.GRPCAddress(), creds.PlatformToken, creds.TenantID)
+	if err != nil {
+		return err
 	}
 	if err := saveCredentials(*path, creds); err != nil {
 		return err
@@ -162,7 +161,7 @@ func startTemporaryRuntime(ctx context.Context, db *gorm.DB, token string) (*biz
 	return bizruntime.BootstrapWithOptions(ctx, provider, bizruntime.Options{DeviceOps: config, PlatformBootstrap: bizruntime.PlatformBootstrap{Subject: "local-platform-admin", Token: token, Permissions: []authz.PermissionKey{"platform.tenant.create", "platform.tenant.read", "platform.tenant.manage", "platform.plan.read", "platform.plan.manage", "platform.plan.publish", "commercial.catalog.read", "platform.subscription.manage", "platform.subscription.read", "platform.subscription.confirm", "platform.module.manage", "platform.module.read", "platform.module.technical.manage", "platform.entitlement.read", "platform.entitlement.manage"}}})
 }
 
-func seedCommercialAndTenant(ctx context.Context, address, token string) (string, error) {
+func seedCommercialAndTenant(ctx context.Context, address, token, savedTenantID string) (string, error) {
 	conn, err := grpc.DialContext(ctx, address, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return "", err
@@ -196,22 +195,87 @@ func seedCommercialAndTenant(ctx context.Context, address, token string) (string
 	if !strings.EqualFold(published.GetState(), "published") {
 		return "", errors.New("local-free plan exists but is not published")
 	}
-	if _, err = subscriptions.PutDefaultSubscriptionRule(call("local-rule-put"), &commercialv1.PutDefaultSubscriptionRuleRequest{RequestId: "local-rule-put", RuleId: "local-free-default", Priority: -1000, SalesScope: "*", PlanCode: published.GetPlanCode(), PlanVersion: published.GetVersion(), Enabled: true, Reason: "local console setup"}); err != nil {
+	if err = ensureDefaultRule(subscriptions, call, published); err != nil {
 		return "", err
 	}
 	tenants := accessv1.NewTenantLifecycleApplicationClient(conn)
-	created, err := tenants.CreateTenant(call("local-tenant-create"), &accessv1.CreateTenantRequest{Name: "Local tenant", OwnerUserId: tenantUserID, OwnerEmail: tenantEmail, RequestId: "local-tenant-create", SalesScope: "default"})
+	tenant, err := ensureTenant(tenants, call, savedTenantID)
 	if err != nil {
 		return "", err
 	}
-	active, err := tenants.ActivateTenant(call("local-tenant-activate"), &accessv1.ActivateTenantRequest{Id: created.GetId(), Version: created.GetVersion()})
-	if err != nil {
-		return "", err
-	}
-	if active.GetStatus() != accessv1.TenantStatus_TENANT_STATUS_ACTIVE {
+	if tenant.GetStatus() != accessv1.TenantStatus_TENANT_STATUS_ACTIVE {
 		return "", errors.New("local tenant did not activate")
 	}
-	return active.GetId(), nil
+	subscription, err := subscriptions.GetTenantSubscription(call("local-tenant-subscription"), &commercialv1.GetTenantSubscriptionRequest{TenantId: tenant.GetId()})
+	if err != nil {
+		return "", err
+	}
+	if subscription.GetState() != "ACTIVE" || subscription.GetPlanCode() != published.GetPlanCode() || subscription.GetPlanVersion() != published.GetVersion() {
+		return "", errors.New("local tenant subscription is not the local-free active subscription")
+	}
+	return tenant.GetId(), nil
+}
+
+func ensureDefaultRule(subscriptions commercialv1.SubscriptionManagementApplicationClient, call func(string) context.Context, plan *commercialv1.PlanVersionDTO) error {
+	rules, err := subscriptions.ListDefaultSubscriptionRules(call("local-rule-list"), &commercialv1.ListDefaultSubscriptionRulesRequest{})
+	if err != nil {
+		return err
+	}
+	for _, rule := range rules.GetRules() {
+		if rule.GetRuleId() != "local-free-default" {
+			continue
+		}
+		if rule.GetPriority() != -1000 || rule.GetSalesScope() != "*" || rule.GetPlanCode() != plan.GetPlanCode() || rule.GetPlanVersion() != plan.GetVersion() || !rule.GetEnabled() {
+			return errors.New("local default subscription rule conflicts with existing state")
+		}
+		return nil
+	}
+	_, err = subscriptions.PutDefaultSubscriptionRule(call("local-rule-put"), &commercialv1.PutDefaultSubscriptionRuleRequest{RequestId: "local-rule-put", RuleId: "local-free-default", Priority: -1000, SalesScope: "*", PlanCode: plan.GetPlanCode(), PlanVersion: plan.GetVersion(), Enabled: true, Reason: "local console setup"})
+	return err
+}
+
+func ensureTenant(tenants accessv1.TenantLifecycleApplicationClient, call func(string) context.Context, savedTenantID string) (*accessv1.TenantDTO, error) {
+	var tenant *accessv1.TenantDTO
+	var err error
+	if savedTenantID != "" {
+		tenant, err = tenants.GetTenant(call("local-tenant-get"), &accessv1.GetTenantRequest{Id: savedTenantID})
+		if status.Code(err) == codes.NotFound {
+			return nil, errors.New("saved local tenant ID no longer exists")
+		}
+		if err != nil {
+			return nil, err
+		}
+		if tenant.GetName() != "Local tenant" {
+			return nil, errors.New("saved local tenant ID belongs to a different tenant")
+		}
+	} else {
+		listed, listErr := tenants.ListTenants(call("local-tenant-list"), &accessv1.ListTenantsRequest{})
+		if listErr != nil {
+			return nil, listErr
+		}
+		for _, candidate := range listed.GetTenants() {
+			if candidate.GetName() != "Local tenant" {
+				continue
+			}
+			if tenant != nil {
+				return nil, errors.New("multiple existing tenants match the local setup name")
+			}
+			tenant = candidate
+		}
+		if tenant == nil {
+			tenant, err = tenants.CreateTenant(call("local-tenant-create"), &accessv1.CreateTenantRequest{Name: "Local tenant", OwnerUserId: tenantUserID, OwnerEmail: tenantEmail, RequestId: "local-tenant-create", SalesScope: "default"})
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	if tenant.GetStatus() == accessv1.TenantStatus_TENANT_STATUS_ACTIVE {
+		return tenant, nil
+	}
+	if tenant.GetStatus() != accessv1.TenantStatus_TENANT_STATUS_PENDING {
+		return nil, errors.New("local tenant exists in an unsupported state")
+	}
+	return tenants.ActivateTenant(call("local-tenant-activate"), &accessv1.ActivateTenantRequest{Id: tenant.GetId(), Version: tenant.GetVersion()})
 }
 
 func ensureModule(ctx context.Context, catalog commercialv1.ModuleCatalogApplicationClient, call func(string) context.Context, code, name string) error {
@@ -239,7 +303,8 @@ func localPlanTerms() *commercialv1.PlanTerms {
 }
 
 func validateLocalDSN(dsn string) error {
-	if !strings.Contains(dsn, "tcp(127.0.0.1:13316)") || !strings.Contains(dsn, "/biz_evolution") {
+	config, err := mysql.ParseDSN(dsn)
+	if err != nil || config.Net != "tcp" || config.Addr != "127.0.0.1:13316" || config.DBName != "biz_evolution" {
 		return errors.New("local setup requires the designated biz_evolution DSN at 127.0.0.1:13316")
 	}
 	return nil
