@@ -4,7 +4,7 @@ on:
     branches: [feat/coffeelink-site-rental]
     paths: ['web/**', '.github/workflows/coffeelink-site-rental.yml']
   pull_request:
-    branches: [feat/coffeelink-customer-ui]
+    branches: [main]
     paths: ['web/**', '.github/workflows/coffeelink-site-rental.yml']
 permissions:
   contents: read
