@@ -1,77 +1,96 @@
-# CoffeeLink Vue Console
+# CoffeeLink Vue 控制台
 
-按本项目已确认的 CoffeeLink 蓝白设计与 480 px 双列悬浮导航制作的可运行 Vue 前端。此工程独立放在 `biz/web`，没有修改 Go 后端或既有框架生成产物。
+`biz/web` 是独立的 Vue 3 + Vite + TypeScript 常规前端工程。复用本仓库，不替换现有 Go/Yunka 业务。
 
-## 启动
+## 启动与验证
 
-使用 Node.js 22.12+（本次使用 22.16），npm 和已提交的 lockfile：
+需要 Node.js >= 22.12，推荐 Node 22 LTS。
 
 ```sh
 cd web
 npm ci
 npm run dev
+# http://localhost:5173/#/enterprise/members
+npm run check
+npx playwright install --with-deps chromium
+npm run test:e2e
 ```
 
-开发地址由终端输出，默认 5173。生产构建与预览：
+`npm run check` 依次执行 TypeScript、ESLint、结构检查、Vitest 与生产构建。E2E 自启动生产预览服务 `127.0.0.1:4173`，不是静态图片模拟。
 
-```sh
-npm run build
-npm run preview -- --port 4173
-```
+## 交付范围与数据边界
 
-## 已实现范围
+当前为 **明确标注的本地交互预览**，默认 `VITE_DATA_MODE=demo`。测试邮箱使用 `example.com`；图示数字来自隔离示例仓库，不代表生产事实。
 
-- 13 个一级菜单的应用框架；一级菜单可收起；企业中心、系统设置支持双列展开。
-- 480 CSS px 子菜单/快捷操作浮层，紧贴一级导航，不参与内容区布局；子菜单无箭头，选中底色宽度包裹图标和文字；Esc、遮罩、关闭按钮、键盘焦点支持。
-- 企业中心：成员列表与筛选/分页/选择导出；新增/邀请、信息修改、详情、角色与数据范围变更、密码重置回执、禁用与重新启用。
-- 角色权限（内置/自定义、权限矩阵、新建角色）、组织架构（部门树、新建部门、成员范围）、套餐信息（额度与权益、模拟切换）、企业信息（资料编辑）、操作日志（筛选、变更详情、CSV）。
-- 系统设置：基础信息、通知偏好、安全策略、接口配置四个界面。
-- 企业工作台、中文字体回退、统一设计变量、咖啡插画素材、响应式布局。
+- 企业中心：成员列表/详情、邀请、新增、资料修改、角色与数据范围调整、启用/禁用、移除确认、密码重置请求预览；角色权限、组织架构、套餐信息、企业资料、只读操作日志。
+- 系统设置：基础信息、通知、安全策略、接口接入占位与可验证的 URL 草稿、只读数据字典。
+- 工作台：企业成员状态总览、快捷动作、最近操作。
+- 其他一级业务模块仅保留导航和明确的“尚未接入”说明，不以虚构设备业务冒充交付。
 
-设备、订单、饮品等其他十个业务域本轮只保留一级导航入口，点击会明确说明尚未实现，不伪造可用业务页面。
+预览更改按租户保存到浏览器 localStorage，包含本地审计记录。切换租户清空页面筛选、选择与对话框，不会将旧企业数据带入新企业。存储失败会回滚本次内存修改。
 
-## 数据边界
+**未完成生产认证/后端联调。** 没有发送真实邀请或重置邮件，没有修改真实密码、套餐或租户安全策略，也没有生产防篡改审计。`VITE_DATA_MODE=api`（或未知值）阻断业务预览，不允许请求失败后静默回退示例数据。前端权限约束用于交互演示，不能替代服务端鉴权。
 
-**这是可交互的前端复刻，不是已接通生产服务的系统。** 初始数据来自 `services/preview`，均为合成示例，邮箱使用 `example.com`。所有操作仅影响当前浏览器内存，刷新后重置。两个演示企业分别拥有独立的成员、角色、部门、设置和日志。
+## 页面框架与设计约束
 
-密码重置不发送邮件、不修改真实密码；禁用和角色修改不执行真实会话撤销；套餐变更不支付、不创建合同。前端所有者保护、版本冲突等规则仅用于演示与回归测试，不能替代服务端授权。状态被分为账号状态与在线状态，避免把“离线”理解为“禁用”。
+设计事实源为本次用户提供的 CoffeeLink 图及历史业务界面规范。用户最终明确的几何约束优先于图中生成误差：
 
-`VITE_DATA_MODE` 当前仅支持 `preview`；配置为其他值时会显式失败，而非悄悄返回模拟数据。正式接入应先定义 API 适配器和鉴权上下文，再对接服务端真实能力，不应让 Vue 页面直接调用零散接口。
+- 一级菜单仅一级、可折叠；桌面占用 208px / 80px（含外边距）。
+- 模块浮层固定 **480 CSS px**，左侧无间隙接一级菜单，视觉连为一体。
+- 子菜单、快捷入口左右双列；快捷入口逐行排列；子菜单没有箭头；选中底色只包裹图标和文本。
+- 浮层 `position: fixed` 的外壳覆盖业务内容，打开不改变 main 的 margin、宽度或位置。
+- Esc、关闭按钮、背景点击关闭；键盘焦点返回触发项。移动端调整为视口宽度减图标栏，不能硬塞480px产生横向溢出。
+- 蓝白浅色、中文无衬线、轻阴影、统一 tokens、白色数据面板；真实文本、按钮、表格及图表由组件生成。
 
-## 目录与依赖方向
+插画及品牌标识来自用户已提供设计图的纯素材区域裁切，非将整个截图嵌成页面。源码不包含、也不分发字体文件；使用系统字体栈。
+
+刻意修正参考图中的业务歧义：账号启用/禁用与在线状态分开；统计值按同一示例数据集计算；套餐金额和额度不冒充真实报价；成员移除不等于删除全局账号；最后一位活动 owner 不可禁用、移除或降权。
+
+## 结构及组件职责
 
 ```text
 src/
-  app/                 # 启动、路由、应用框架、一级导航/浮层、布局状态
-  features/
-    members/           # 成员页面、操作对话框、纯规则与状态
-    enterprise/        # 角色/组织/套餐/企业资料/日志
-    settings/          # 4 类设置表单和租户级偏好
-    workbench/         # 企业协作工作台
-  services/            # 租户上下文、演示审计、初始数据
-  shared/
-    ui/                # 按钮、图标、对话框、指标卡、分页等无业务组件
-    lib/               # CSV 导出、图标映射、演示记录 ID
-  styles/              # tokens / 全局 / 布局 / 公共组件 / 页面
-  assets/              # CoffeeLink 标识与咖啡场景
+  App.vue                         # 只组合 AppShell
+  components/layout/              # 顶栏、一级导航、480px浮层、应用外壳
+  components/ui/                  # 无业务 store 依赖的通用原子组件
+  components/members/             # 成员表格、操作对话框、详情抽屉
+  components/roles/               # 权限矩阵/角色编辑
+  components/organization/        # 组织树
+  components/settings/            # 不同设置域的表单
+  views/                          # 页面组合与筛选/分页状态
+  stores/                         # Pinia 企业状态和 UI 状态
+  services/demo/                  # 显式示例仓库，按租户隔离
+  services/memberPolicy.ts        # 可单测的成员状态与最后 owner 规则
+  router/                         # 类型化导航配置与懒加载路由
+  types/                          # 领域展示类型
+  styles/                         # 设计 tokens 与基础样式
+  utils/                          # CSV 安全转义、组织树、格式化
 ```
 
-`shared` 不依赖 `features/services/app`；`features` 不依赖 `app`；页面不相互引用；页面按需加载。跨域组件通过显式模型接口协作，不把业务条件塞入全局组件。当前跨 feature 模型复用的角色/部门目录是有意设计；后续扩大业务规模时可将其抽为有公共入口的 IAM 领域层，而不是无限扩充共享工具目录。
+不按后端 Java 分层照搬前端；页面状态与跨页状态分开，通用 UI 不反向依赖业务层。后续真实 API 适配只能进入 services，不直接写入页面或组件。
 
-## 质量检查
+### 固化的检查
 
-```sh
-npm run check                   # TS + ESLint + 边界/规模检查 + Vitest + 构建
-npx playwright install chromium
-npm run test:e2e                # 实际浏览器工作流与截图
-```
+`scripts/check-architecture.mjs` 检查入口体量、组件上限、UI/业务依赖方向、禁止页面直接网络请求、禁止 `v-html`、480px token 与字体文件禁入。它不能证明业务正确性；成员/组织/数据状态规则另有单测，布局不推移和操作闭环另有 E2E。
 
-Linux 截图环境需自行安装中文字体（例如系统包 `fonts-noto-cjk`），仓库不分发字体文件。
+新页面必须有页面标题、真实的主要操作、加载/无结果/错误或明确的未接入状态、租户边界、键盘路径。不能引入静默演示 fallback，不得修改 Go 的 generated 文件来适配 UI。
 
-已有浏览器时可设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/path/to/chromium`。截图默认输出 `test-results/screenshots`；`SCREENSHOT_DIR` 可改位置。测试包括浮层宽度与坐标不变、收起导航、筛选空态、成员操作、租户隔离、设置，以及 1536×1024 / 1440×900 / 1366×768 / 390×844。
+## 与现有 biz 契约的接入差异
 
-## 参考规范与素材
+依据 `contracts/proto/access/v1/tenant_member.proto`：成员 DTO 目前只包含 `user_id/email/status/version`，已声明 list/get/invite/activate/suspend/remove；状态为 invited/active/suspended/removed，写操作需要幂等性与版本检查。
 
-本工程采用 Vue 官方常规模板组合，而非直接复制一个通用 admin 模板的皮肤：Vue 3 / Vite / TypeScript / Vue Router / Pinia / ESLint / Vitest / Playwright。参考来源、样式参数与有意偏差见 [DESIGN.md](DESIGN.md)。这是依照官方模式组织的新工程，不宣称执行过 `npm create vue` 命令。
+成员姓名、手机号、组织岗位、登录记录、密码重置、企业套餐与配置等展示并不是现有契约已实现的字段或能力。本轮不伪造这些接口；正式联调应明确接口负责人、认证与授权、可信租户上下文、数据范围合并规则、乐观锁冲突、幂等回执及审计。
 
-图片只用作品牌标识和咖啡插画，所有文本、菜单、表格、表单、数值和图表均为真实 DOM/SVG 组件，不是截图覆盖在网页上。
+前端不得以任意 tenant header 或浏览器 localStorage 作为生产租户权限来源。不得把登录 API key 写进源码或构建环境公开变量。
+
+## 工程参考（只参考组织与工程实践，不复制第三方后台）
+
+- Vue 官方 create-vue: https://github.com/vuejs/create-vue
+- Vue 官方文档: https://github.com/vuejs/docs
+- Pinia: https://github.com/vuejs/pinia
+- Vue Router: https://github.com/vuejs/router
+- Vite: https://github.com/vitejs/vite
+- Vue Test Utils: https://github.com/vuejs/test-utils
+- Playwright: https://github.com/microsoft/playwright
+
+使用已有分支的 Vue 3 / Vite 工具链，组件样式按本次参考图独立实现，不引入体积较大的通用后台壳。依赖版本以 lockfile 为准。

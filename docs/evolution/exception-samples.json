@@ -1,0 +1,121 @@
+{
+  "recorded_at": "2026-09-13",
+  "publication_run": "https://github.com/hvritual/biz/actions/runs/34708860790",
+  "samples": [
+    {
+      "number": 69,
+      "title": "[历史异常样本] 前端分支收敛时删除了已验收的 CE-12 真实身份浏览器测试",
+      "url": "https://github.com/hvritual/biz/issues/69"
+    },
+    {
+      "number": 70,
+      "title": "[历史异常样本][B13] 过期授权并发重授触发 MySQL 1213 死锁",
+      "url": "https://github.com/hvritual/biz/issues/70"
+    },
+    {
+      "number": 71,
+      "title": "[历史异常样本][B13] 过期授权占用 active_key 并遮蔽新授权",
+      "url": "https://github.com/hvritual/biz/issues/71"
+    },
+    {
+      "number": 72,
+      "title": "[历史异常样本][B13] 契约新增 Application 后运行时绑定和运行图遗漏",
+      "url": "https://github.com/hvritual/biz/issues/72"
+    },
+    {
+      "number": 73,
+      "title": "[整合异常样本] 套餐发现分支漏更新架构门禁，合并后完整 Go 测试失败",
+      "url": "https://github.com/hvritual/biz/issues/73"
+    },
+    {
+      "number": 74,
+      "title": "[异常样本][CE03] 符号链接仓库根路径使合法实现源误判为越界",
+      "url": "https://github.com/hvritual/biz/issues/74"
+    },
+    {
+      "number": 75,
+      "title": "[整合阻塞样本][B13] 当前 Yunka 锁定版本重新生成 :revoke 后导致全服务启动 panic",
+      "url": "https://github.com/hvritual/biz/issues/75"
+    },
+    {
+      "number": 76,
+      "title": "[整合异常样本][CE16] 回执约束迁移顺序导致重复启动 Error 3821",
+      "url": "https://github.com/hvritual/biz/issues/76"
+    },
+    {
+      "number": 77,
+      "title": "[历史异常样本][CE09] 合法 PLAN 权益来源被 override-only 解码器拒绝",
+      "url": "https://github.com/hvritual/biz/issues/77"
+    },
+    {
+      "number": 78,
+      "title": "[历史异常样本][CE09] 预约纳秒时间与数据库微秒精度冲突",
+      "url": "https://github.com/hvritual/biz/issues/78"
+    },
+    {
+      "number": 79,
+      "title": "[历史异常样本][CE10] 开通 Outbox 外键字符集不匹配导致 MySQL 3780",
+      "url": "https://github.com/hvritual/biz/issues/79"
+    },
+    {
+      "number": 80,
+      "title": "[历史异常样本][CE10] 旧回执 CHECK 拒绝 PROVISIONING 状态",
+      "url": "https://github.com/hvritual/biz/issues/80"
+    },
+    {
+      "number": 81,
+      "title": "[历史异常样本][CE10] InnoDB 等锁后沿用锁前时间放行过期租约",
+      "url": "https://github.com/hvritual/biz/issues/81"
+    },
+    {
+      "number": 82,
+      "title": "[历史异常样本][CE10] 后台 worker 被错误分类为 internal_child 而拒绝",
+      "url": "https://github.com/hvritual/biz/issues/82"
+    },
+    {
+      "number": 84,
+      "title": "[整合异常样本] 宿主 protobuf 工具版本未锁定导致 CI 再生成漂移",
+      "url": "https://github.com/hvritual/biz/issues/84"
+    },
+    {
+      "number": 85,
+      "title": "[测试异常样本] 跨任务共享 MySQL 库污染目录和身份状态，造成整包回归假失败",
+      "url": "https://github.com/hvritual/biz/issues/85"
+    },
+    {
+      "number": 86,
+      "title": "[历史回归样本][C9] Device Scope Guard 遗漏内部压力 Operation 映射",
+      "url": "https://github.com/hvritual/biz/issues/86"
+    },
+    {
+      "number": 87,
+      "title": "[整合审查样本] 跨标签页账号或租户切换可能使旧业务草稿在新身份下提交",
+      "url": "https://github.com/hvritual/biz/issues/87"
+    },
+    {
+      "number": 88,
+      "title": "[整合异常样本] B12 执行门禁硬编码旧框架基线，与消费者锁不一致",
+      "url": "https://github.com/hvritual/biz/issues/88"
+    },
+    {
+      "number": 89,
+      "title": "[异常样本] CE13 plan writes omitted the required Idempotency-Key header",
+      "url": "https://github.com/hvritual/biz/issues/89"
+    },
+    {
+      "number": 90,
+      "title": "[异常样本] Explicit gRPC CAS conflicts were rendered as generic HTTP 400",
+      "url": "https://github.com/hvritual/biz/issues/90"
+    },
+    {
+      "number": 91,
+      "title": "[异常样本] Prepared subscription completion did not create the next revision-bound boundary",
+      "url": "https://github.com/hvritual/biz/issues/91"
+    },
+    {
+      "number": 92,
+      "title": "[异常样本] Invalid commercial grace duration silently became zero",
+      "url": "https://github.com/hvritual/biz/issues/92"
+    }
+  ]
+}

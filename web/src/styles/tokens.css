@@ -1,37 +1,39 @@
-/* CoffeeLink reference-derived design tokens. Pixels are CSS pixels. */
+/* Shared design tokens. Values are normalized from the approved CoffeeLink references. */
 :root {
-  --primary: #087bff;
-  --primary-hover: #0066eb;
-  --primary-soft: #eaf3ff;
-  --primary-strong: #066ae0;
-  --text: #101b42;
-  --text-secondary: #5e6e94;
-  --text-muted: #7e8bad;
-  --canvas: #f0f7ff;
-  --surface: #fff;
-  --surface-subtle: #f7f9fd;
-  --border: #e7edf6;
-  --green: #05b881;
-  --green-soft: #e7f9f2;
-  --orange: #f59714;
-  --orange-soft: #fff5e7;
-  --purple: #8755ed;
-  --purple-soft: #f2edff;
-  --red: #ef4d65;
-  --red-soft: #fff0f3;
-  --gray: #8693b1;
-  --gray-soft: #eff2f7;
-  --overlay: rgba(19, 39, 77, 0.2);
-  --font:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei",
-    "Noto Sans CJK SC", sans-serif;
-  --font-xs: 12px;
-  --font-sm: 13px;
-  --font-body: 14px;
-  --font-md: 16px;
-  --font-lg: 20px;
-  --font-title: 26px;
-  --font-metric: 30px;
+  --color-primary: #087bff;
+  --color-primary-hover: #0068e5;
+  --color-primary-soft: #eaf3ff;
+  --color-text: #132044;
+  --color-text-secondary: #5d6d91;
+  --color-text-muted: #7684a3;
+  --color-canvas: #f0f7ff;
+  --color-surface: #fff;
+  --color-surface-soft: #f6f9fe;
+  --color-border: #e7edf6;
+  --color-border-strong: #cfd9e8;
+  --color-success: #0aad73;
+  --color-success-soft: #e9faf3;
+  --color-danger: #ed4556;
+  --color-danger-soft: #fff0f2;
+  --color-warning: #e99414;
+  --color-warning-soft: #fff7e9;
+  --color-violet: #8e54ee;
+  --color-violet-soft: #f3edff;
+  --color-overlay: rgb(33 50 77 / 29%);
+  --color-shadow: rgb(49 81 121 / 13%);
+  --color-on-primary: #fff;
+  --color-gradient-end: #89baff;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+    'Noto Sans CJK SC', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-title: 28px;
+  --text-metric: 30px;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -40,17 +42,23 @@
   --space-6: 24px;
   --space-8: 32px;
   --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --shadow-panel: 0 5px 24px rgba(52, 88, 137, 0.035);
-  --shadow-flyout: 14px 18px 44px rgba(35, 66, 111, 0.19);
-  --header-height: 64px;
-  --drawer-width: 480px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --header-height: 48px;
+  --rail-width: 156px;
+  --rail-collapsed-width: 80px;
+  --module-width: 480px;
+  --member-detail-width: 348px;
+  --z-member-detail: 30;
+  --content-padding: 24px;
   --control-height: 36px;
-  --layer-header: 20;
-  --layer-backdrop: 40;
-  --layer-rail: 50;
-  --layer-flyout: 51;
-  --layer-toast: 100;
+  --table-row-height: 64px;
+  --shadow-panel: 0 4px 20px rgb(65 109 166 / 3%);
+  --shadow-menu: 18px 20px 52px var(--color-shadow);
+  --z-header: 20;
+  --z-scrim: 35;
+  --z-nav: 40;
+  --z-dialog: 60;
+  --z-toast: 80;
 }

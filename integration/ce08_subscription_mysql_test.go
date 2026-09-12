@@ -6,11 +6,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/go-sql-driver/mysql"
-	gormmysql "gorm.io/driver/mysql"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -36,7 +33,7 @@ type ce08Environment struct {
 
 func ce08New(t *testing.T) *ce08Environment {
 	t.Helper()
-	db := ce08IsolatedDB(t)
+	db := ce08FreshFixtureDB(t)
 	return ce08OnDB(t, db)
 }
 func ce08OnDB(t *testing.T, db *gorm.DB) *ce08Environment {
@@ -623,37 +620,4 @@ func TestCE08MySQLMatchExplanationBindsRuleVersion(t *testing.T) {
 	if !strings.Contains(sub.GetMatchExplanation(), want) {
 		t.Fatalf("match explanation=%q want contains %q", sub.GetMatchExplanation(), want)
 	}
-}
-
-func ce08IsolatedDB(t *testing.T) *gorm.DB {
-	t.Helper()
-	config, err := mysql.ParseDSN(os.Getenv("YUNKA_TEST_MYSQL_DSN"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	admin := openDB(t)
-	sqlAdmin, err := admin.DB()
-	if err != nil {
-		t.Fatal(err)
-	}
-	name := "ce08_" + ce04Random(t)
-	if err := admin.Exec("CREATE DATABASE " + name + " CHARACTER SET utf8mb4").Error; err != nil {
-		t.Fatal(err)
-	}
-	config.DBName = name
-	db, err := gorm.Open(gormmysql.Open(config.FormatDSN()), &gorm.Config{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		sqlDB, _ := db.DB()
-		if sqlDB != nil {
-			_ = sqlDB.Close()
-		}
-		if err := admin.Exec("DROP DATABASE " + name).Error; err != nil {
-			t.Error(err)
-		}
-		_ = sqlAdmin.Close()
-	})
-	return db
 }

@@ -7,6 +7,8 @@ import (
 	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	application "github.com/hvritual/biz/internal/commercial/application"
 	policy "github.com/hvritual/biz/internal/commercial/policy"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	io "io"
 	"net/http"
@@ -14,6 +16,7 @@ import (
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
+	httpbinding "yunka.io/gateway/httpbinding"
 )
 
 type PlanManagementOperationHandler struct {
@@ -32,14 +35,33 @@ func RegisterPlanManagementOperationExecutor(mux *http.ServeMux, application app
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &PlanManagementOperationHandler{application: application, executor: executor}
-	mux.HandleFunc("POST /v1/platform/plans/{plan_code}/versions/{version}/eligibility", handler.handleOperationCheckPlanEligibility)
-	mux.HandleFunc("POST /v1/platform/plans", handler.handleOperationCreatePlanDraft)
-	mux.HandleFunc("POST /v1/platform/plans/{plan_code}/versions", handler.handleOperationCreatePlanVersion)
-	mux.HandleFunc("GET /v1/platform/plans/{plan_code}/versions/{version}", handler.handleOperationGetPlanVersion)
-	mux.HandleFunc("GET /v1/platform/plans/{plan_code}/versions", handler.handleOperationListPlanVersions)
-	mux.HandleFunc("POST /v1/platform/plans/{plan_code}/versions/{version}/publish", handler.handleOperationPublishPlanVersion)
-	mux.HandleFunc("POST /v1/platform/plans/{plan_code}/versions/{version}/retire", handler.handleOperationRetirePlanVersion)
-	mux.HandleFunc("PATCH /v1/platform/plans/{plan_code}/versions/{version}", handler.handleOperationUpdatePlanDraft)
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/plans/{plan_code}/versions/{version}/eligibility", handler.handleOperationCheckPlanEligibility); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/plans", handler.handleOperationCreatePlanDraft); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/plans/{plan_code}/versions", handler.handleOperationCreatePlanVersion); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/plans/{plan_code}/versions/{version}", handler.handleOperationGetPlanVersion); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/plans/{plan_code}/versions", handler.handleOperationListPlanVersions); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/plans", handler.handleOperationListPlans); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/plans/{plan_code}/versions/{version}/publish", handler.handleOperationPublishPlanVersion); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/plans/{plan_code}/versions/{version}/retire", handler.handleOperationRetirePlanVersion); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "PATCH", "/v1/platform/plans/{plan_code}/versions/{version}", handler.handleOperationUpdatePlanDraft); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -59,6 +81,10 @@ func writePlanManagementOperationError(writer http.ResponseWriter, err error) {
 	}
 	if errors.Is(err, execution.ErrIdempotencyInProgress) || errors.Is(err, execution.ErrIdempotencyCompleted) {
 		http.Error(writer, "idempotency conflict", http.StatusConflict)
+		return
+	}
+	if code := status.Code(err); code == codes.Aborted || code == codes.AlreadyExists {
+		http.Error(writer, "application conflict", http.StatusConflict)
 		return
 	}
 	if errors.Is(err, operation.ErrExecutorUnavailable) || errors.Is(err, operation.ErrSecurityUnavailable) || errors.Is(err, operation.ErrSecurityNilContext) || errors.Is(err, operation.ErrIdempotencyUnavailable) {
@@ -205,6 +231,34 @@ func (handler *PlanManagementOperationHandler) handleOperationListPlanVersions(w
 	wire.PlanCode = request.PathValue("plan_code")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanPlanManagementListPlanVersions(), wire, handler.application.ListPlanVersions)
+	if err != nil {
+		writePlanManagementOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *PlanManagementOperationHandler) handleOperationListPlans(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.ListPlansRequest{}
+	if raw := request.URL.Query().Get("after_plan_code"); raw != "" {
+		wire.AfterPlanCode = raw
+	}
+	if raw := request.URL.Query().Get("page_size"); raw != "" {
+		parsed, err := strconv.ParseUint(raw, 10, 32)
+		if err != nil {
+			http.Error(writer, "invalid request parameter", http.StatusBadRequest)
+			return
+		}
+		wire.PageSize = uint32(parsed)
+	}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanPlanManagementListPlans(), wire, handler.application.ListPlans)
 	if err != nil {
 		writePlanManagementOperationError(writer, err)
 		return

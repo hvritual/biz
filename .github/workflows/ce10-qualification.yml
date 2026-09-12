@@ -7,13 +7,15 @@ on:
     branches: [main]
   workflow_dispatch:
 permissions: {contents: read}
+env:
+  YUNKA_TEST_RESET_FIXTURES: "1"
 jobs:
   qualify:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
       PYTHONDONTWRITEBYTECODE: '1'
-      YUNKA_SHA: e323ee5833d929b5b1d0494fc29aae0aaa2b6f4a
+      YUNKA_SHA: 9ee6640f5e19777b4c04d9e4937a93e2035eacda
       BASE_SHA: 12f33db5632a81c04b9de7634b5d37baf5a2bb1a
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce10?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
     services:

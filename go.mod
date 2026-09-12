@@ -12,9 +12,9 @@ require (
 	google.golang.org/protobuf v1.36.11
 	gorm.io/driver/mysql v1.5.2
 	gorm.io/gorm v1.25.5
-	yunka.io/framework v0.0.0-20260911113607-e323ee5833d9
-	yunka.io/gateway v0.0.0-20260911113607-e323ee5833d9
-	yunka.io/pkg v0.0.0-20260911113607-e323ee5833d9
+	yunka.io/framework v0.0.0-20260913003359-9ee6640f5e19
+	yunka.io/gateway v0.0.0-20260913003359-9ee6640f5e19
+	yunka.io/pkg v0.0.0-20260913003359-9ee6640f5e19
 )
 
 require (

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "8",
+  "mapping_version": "10",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -168,6 +168,13 @@
       "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access."
     },
     {
+      "operation_id": "commercial.plan.discover",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-13 authoritative platform plan discovery; requires platform.plan.read and a tenantless principal, and never infers the catalog from tenant subscriptions."
+    },
+    {
       "operation_id": "commercial.plan.eligibility",
       "classification": "platform_management",
       "capability_codes": [],
@@ -234,7 +241,305 @@
       "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access."
     },
     {
+      "operation_id": "commercial.provisioning.delivery.claim",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "worker_permission": "platform.provisioning.execute"
+    },
+    {
+      "operation_id": "commercial.provisioning.delivery.complete",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "worker_permission": "platform.provisioning.execute"
+    },
+    {
+      "operation_id": "commercial.provisioning.delivery.fail",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "worker_permission": "platform.provisioning.execute"
+    },
+    {
+      "operation_id": "commercial.provisioning.delivery.list",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
+    },
+    {
+      "operation_id": "commercial.provisioning.task.cancel",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.subscription.change.preparation.cancel",
+          "mode": "conditional",
+          "condition": "authenticated valid untouched task cancellation without a completed replay",
+          "source": "internal/commercial/application/provisioning/internal/usecase/service.go#mutate"
+        }
+      ],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
+    },
+    {
+      "operation_id": "commercial.provisioning.task.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
+    },
+    {
+      "operation_id": "commercial.provisioning.task.list",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
+    },
+    {
+      "operation_id": "commercial.provisioning.task.retry",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
+    },
+    {
+      "operation_id": "commercial.provisioning.work.claim",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "worker_permission": "platform.provisioning.execute"
+    },
+    {
+      "operation_id": "commercial.provisioning.work.finalize",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.subscription.change.prepared",
+          "mode": "conditional",
+          "condition": "live fenced task lease with every required step READY and no prior completion",
+          "source": "internal/commercial/application/provisioning/internal/usecase/service.go#FinalizeProvisioningWork"
+        }
+      ],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "worker_permission": "platform.provisioning.execute"
+    },
+    {
+      "operation_id": "commercial.provisioning.work.record",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "worker_permission": "platform.provisioning.execute"
+    },
+    {
+      "operation_id": "commercial.subscription.bootstrap_base",
+      "classification": "foundation_exempt",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "always",
+          "source": "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go#BootstrapBaseSubscription"
+        }
+      ],
+      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM."
+    },
+    {
+      "operation_id": "commercial.subscription.change.confirm",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.plan.get",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        }
+      ],
+      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory."
+    },
+    {
+      "operation_id": "commercial.subscription.change.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory."
+    },
+    {
+      "operation_id": "commercial.subscription.change.preparation.cancel",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
+    },
+    {
+      "operation_id": "commercial.subscription.change.prepared",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.plan.get",
+          "mode": "conditional",
+          "condition": "live approved preparation requires authoritative revalidation before activation",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "conditional",
+          "condition": "live approved preparation requires authoritative revalidation before activation",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "conditional",
+          "condition": "live approved preparation requires authoritative revalidation before activation",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        }
+      ],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
+    },
+    {
+      "operation_id": "commercial.subscription.change.preview",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.plan.get",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        }
+      ],
+      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory."
+    },
+    {
+      "operation_id": "commercial.subscription.change.preview.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory."
+    },
+    {
+      "operation_id": "commercial.subscription.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM."
+    },
+    {
+      "operation_id": "commercial.subscription.rule.list",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM."
+    },
+    {
+      "operation_id": "commercial.subscription.rule.put",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "always",
+          "source": "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go#PutDefaultSubscriptionRule"
+        }
+      ],
+      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM."
+    },
+    {
+      "operation_id": "commercial.subscription.transition.claim",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-16 durable commercial time-transition worker. Persisted tenantless platform identity, platform.provisioning.execute permission, existing Executor, DB-time lease fencing and root UoW remain mandatory; these internal worker operations have no public transport and never grant tenant business access.",
+      "worker_permission": "platform.provisioning.execute"
+    },
+    {
+      "operation_id": "commercial.subscription.transition.complete",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.plan.get",
+          "mode": "conditional",
+          "condition": "claimed due SCHEDULED_CHANGE remains authoritative and must revalidate immutable target plan, eligibility and current commercial module catalog before execution; other transition kinds do not call these children",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "conditional",
+          "condition": "claimed due SCHEDULED_CHANGE remains authoritative and must revalidate immutable target plan, eligibility and current commercial module catalog before execution; other transition kinds do not call these children",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "conditional",
+          "condition": "claimed due SCHEDULED_CHANGE remains authoritative and must revalidate immutable target plan, eligibility and current commercial module catalog before execution; other transition kinds do not call these children",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        }
+      ],
+      "exemption_reason": "CE-16 durable commercial time-transition worker. Persisted tenantless platform identity, platform.provisioning.execute permission, existing Executor, DB-time lease fencing and root UoW remain mandatory; these internal worker operations have no public transport and never grant tenant business access.",
+      "worker_permission": "platform.provisioning.execute"
+    },
+    {
+      "operation_id": "device.assert_owned_by_actor_tenant",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": []
+    },
+    {
       "operation_id": "device.create",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "device.delegated_get",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "device.delegated_update",
       "classification": "tenant_business",
       "module_code": "device-operations",
       "capability_codes": [
@@ -325,6 +630,15 @@
       "exemption_reason": "平台恢复租户的管理入口不得依赖待恢复租户的套餐；仍要求 platform.tenant.manage 权限，不豁免身份认证。"
     },
     {
+      "operation_id": "tenant.assert_active",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": []
+    },
+    {
       "operation_id": "tenant.close",
       "classification": "platform_management",
       "module_code": "access-management",
@@ -359,6 +673,53 @@
         }
       ],
       "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。"
+    },
+    {
+      "operation_id": "tenant.delegation.get",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.delegation.grant_device",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [
+        {
+          "operation_id": "tenant.assert_active",
+          "mode": "always",
+          "source": "internal/access/application/tenant_delegation.go#GrantTenantDeviceDelegation"
+        },
+        {
+          "operation_id": "device.assert_owned_by_actor_tenant",
+          "mode": "always",
+          "source": "internal/access/application/tenant_delegation.go#GrantTenantDeviceDelegation"
+        }
+      ]
+    },
+    {
+      "operation_id": "tenant.delegation.list",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.delegation.revoke",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": []
     },
     {
       "operation_id": "tenant.get",
@@ -576,242 +937,6 @@
       ],
       "children": [],
       "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。"
-    },
-    {
-      "operation_id": "commercial.subscription.bootstrap_base",
-      "classification": "foundation_exempt",
-      "capability_codes": [],
-      "children": [
-        {
-          "operation_id": "commercial.plan.eligibility",
-          "mode": "always",
-          "source": "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go#BootstrapBaseSubscription"
-        }
-      ],
-      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM."
-    },
-    {
-      "operation_id": "commercial.subscription.rule.put",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [
-        {
-          "operation_id": "commercial.plan.eligibility",
-          "mode": "always",
-          "source": "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go#PutDefaultSubscriptionRule"
-        }
-      ],
-      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM."
-    },
-    {
-      "operation_id": "commercial.subscription.rule.list",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM."
-    },
-    {
-      "operation_id": "commercial.subscription.get",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM."
-    },
-    {
-      "operation_id": "commercial.subscription.change.preview",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [
-        {
-          "operation_id": "commercial.plan.get",
-          "mode": "conditional",
-          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
-          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
-        },
-        {
-          "operation_id": "commercial.plan.eligibility",
-          "mode": "conditional",
-          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
-          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
-        },
-        {
-          "operation_id": "commercial.module.plan_catalog",
-          "mode": "conditional",
-          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
-          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
-        }
-      ],
-      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory."
-    },
-    {
-      "operation_id": "commercial.subscription.change.confirm",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [
-        {
-          "operation_id": "commercial.plan.get",
-          "mode": "conditional",
-          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
-          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
-        },
-        {
-          "operation_id": "commercial.plan.eligibility",
-          "mode": "conditional",
-          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
-          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
-        },
-        {
-          "operation_id": "commercial.module.plan_catalog",
-          "mode": "conditional",
-          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
-          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
-        }
-      ],
-      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory."
-    },
-    {
-      "operation_id": "commercial.subscription.change.preview.get",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory."
-    },
-    {
-      "operation_id": "commercial.subscription.change.get",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory."
-    },
-    {
-      "operation_id": "commercial.provisioning.task.get",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
-    },
-    {
-      "operation_id": "commercial.provisioning.task.list",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
-    },
-    {
-      "operation_id": "commercial.provisioning.task.retry",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
-    },
-    {
-      "operation_id": "commercial.provisioning.task.cancel",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [
-        {
-          "operation_id": "commercial.subscription.change.preparation.cancel",
-          "mode": "conditional",
-          "condition": "authenticated valid untouched task cancellation without a completed replay",
-          "source": "internal/commercial/application/provisioning/internal/usecase/service.go#mutate"
-        }
-      ],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
-    },
-    {
-      "operation_id": "commercial.provisioning.work.claim",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
-      "worker_permission": "platform.provisioning.execute"
-    },
-    {
-      "operation_id": "commercial.provisioning.work.record",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
-      "worker_permission": "platform.provisioning.execute"
-    },
-    {
-      "operation_id": "commercial.provisioning.work.finalize",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [
-        {
-          "operation_id": "commercial.subscription.change.prepared",
-          "mode": "conditional",
-          "condition": "live fenced task lease with every required step READY and no prior completion",
-          "source": "internal/commercial/application/provisioning/internal/usecase/service.go#FinalizeProvisioningWork"
-        }
-      ],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
-      "worker_permission": "platform.provisioning.execute"
-    },
-    {
-      "operation_id": "commercial.provisioning.delivery.claim",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
-      "worker_permission": "platform.provisioning.execute"
-    },
-    {
-      "operation_id": "commercial.provisioning.delivery.complete",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
-      "worker_permission": "platform.provisioning.execute"
-    },
-    {
-      "operation_id": "commercial.provisioning.delivery.fail",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
-      "worker_permission": "platform.provisioning.execute"
-    },
-    {
-      "operation_id": "commercial.provisioning.delivery.list",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
-    },
-    {
-      "operation_id": "commercial.subscription.change.prepared",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [
-        {
-          "operation_id": "commercial.plan.get",
-          "mode": "conditional",
-          "condition": "live approved preparation requires authoritative revalidation before activation",
-          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
-        },
-        {
-          "operation_id": "commercial.plan.eligibility",
-          "mode": "conditional",
-          "condition": "live approved preparation requires authoritative revalidation before activation",
-          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
-        },
-        {
-          "operation_id": "commercial.module.plan_catalog",
-          "mode": "conditional",
-          "condition": "live approved preparation requires authoritative revalidation before activation",
-          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
-        }
-      ],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
-    },
-    {
-      "operation_id": "commercial.subscription.change.preparation.cancel",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
     }
   ]
 }

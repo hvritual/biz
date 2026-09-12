@@ -7,12 +7,15 @@ import (
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	application "github.com/hvritual/biz/internal/access/application"
 	policy "github.com/hvritual/biz/internal/access/policy"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	io "io"
 	"net/http"
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
+	httpbinding "yunka.io/gateway/httpbinding"
 )
 
 type TenantLifecycleOperationHandler struct {
@@ -31,13 +34,27 @@ func RegisterTenantLifecycleOperationExecutor(mux *http.ServeMux, application ap
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &TenantLifecycleOperationHandler{application: application, executor: executor}
-	mux.HandleFunc("POST /v1/tenants/{id}/activate", handler.handleOperationActivateTenant)
-	mux.HandleFunc("POST /v1/tenants/{id}/close", handler.handleOperationCloseTenant)
-	mux.HandleFunc("POST /v1/tenants", handler.handleOperationCreateTenant)
-	mux.HandleFunc("GET /v1/tenants/{id}", handler.handleOperationGetTenant)
-	mux.HandleFunc("GET /v1/tenants", handler.handleOperationListTenants)
-	mux.HandleFunc("POST /v1/tenants/{id}/suspend", handler.handleOperationSuspendTenant)
-	mux.HandleFunc("PATCH /v1/tenants/{id}", handler.handleOperationUpdateTenant)
+	if err := httpbinding.Register(mux, "POST", "/v1/tenants/{id}/activate", handler.handleOperationActivateTenant); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenants/{id}/close", handler.handleOperationCloseTenant); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenants", handler.handleOperationCreateTenant); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenants/{id}", handler.handleOperationGetTenant); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenants", handler.handleOperationListTenants); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenants/{id}/suspend", handler.handleOperationSuspendTenant); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "PATCH", "/v1/tenants/{id}", handler.handleOperationUpdateTenant); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -57,6 +74,10 @@ func writeTenantLifecycleOperationError(writer http.ResponseWriter, err error) {
 	}
 	if errors.Is(err, execution.ErrIdempotencyInProgress) || errors.Is(err, execution.ErrIdempotencyCompleted) {
 		http.Error(writer, "idempotency conflict", http.StatusConflict)
+		return
+	}
+	if code := status.Code(err); code == codes.Aborted || code == codes.AlreadyExists {
+		http.Error(writer, "application conflict", http.StatusConflict)
 		return
 	}
 	if errors.Is(err, operation.ErrExecutorUnavailable) || errors.Is(err, operation.ErrSecurityUnavailable) || errors.Is(err, operation.ErrSecurityNilContext) || errors.Is(err, operation.ErrIdempotencyUnavailable) {

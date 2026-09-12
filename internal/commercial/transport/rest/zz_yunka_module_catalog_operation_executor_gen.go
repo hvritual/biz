@@ -7,6 +7,8 @@ import (
 	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	application "github.com/hvritual/biz/internal/commercial/application"
 	policy "github.com/hvritual/biz/internal/commercial/policy"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	io "io"
 	"net/http"
@@ -14,6 +16,7 @@ import (
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
+	httpbinding "yunka.io/gateway/httpbinding"
 )
 
 type ModuleCatalogOperationHandler struct {
@@ -32,13 +35,27 @@ func RegisterModuleCatalogOperationExecutor(mux *http.ServeMux, application appl
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &ModuleCatalogOperationHandler{application: application, executor: executor}
-	mux.HandleFunc("POST /v1/platform/modules", handler.handleOperationCreateModule)
-	mux.HandleFunc("DELETE /v1/platform/modules/{module_code}", handler.handleOperationDeleteModule)
-	mux.HandleFunc("GET /v1/platform/modules/{module_code}", handler.handleOperationGetModule)
-	mux.HandleFunc("GET /v1/platform/modules", handler.handleOperationListModules)
-	mux.HandleFunc("POST /v1/platform/modules/{module_code}/sales-status", handler.handleOperationSetModuleSalesStatus)
-	mux.HandleFunc("POST /v1/platform/modules/{module_code}/technical-status", handler.handleOperationSetModuleTechnicalStatus)
-	mux.HandleFunc("PATCH /v1/platform/modules/{module_code}", handler.handleOperationUpdateModule)
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/modules", handler.handleOperationCreateModule); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "DELETE", "/v1/platform/modules/{module_code}", handler.handleOperationDeleteModule); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/modules/{module_code}", handler.handleOperationGetModule); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/modules", handler.handleOperationListModules); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/modules/{module_code}/sales-status", handler.handleOperationSetModuleSalesStatus); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/modules/{module_code}/technical-status", handler.handleOperationSetModuleTechnicalStatus); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "PATCH", "/v1/platform/modules/{module_code}", handler.handleOperationUpdateModule); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -58,6 +75,10 @@ func writeModuleCatalogOperationError(writer http.ResponseWriter, err error) {
 	}
 	if errors.Is(err, execution.ErrIdempotencyInProgress) || errors.Is(err, execution.ErrIdempotencyCompleted) {
 		http.Error(writer, "idempotency conflict", http.StatusConflict)
+		return
+	}
+	if code := status.Code(err); code == codes.Aborted || code == codes.AlreadyExists {
+		http.Error(writer, "application conflict", http.StatusConflict)
 		return
 	}
 	if errors.Is(err, operation.ErrExecutorUnavailable) || errors.Is(err, operation.ErrSecurityUnavailable) || errors.Is(err, operation.ErrSecurityNilContext) || errors.Is(err, operation.ErrIdempotencyUnavailable) {

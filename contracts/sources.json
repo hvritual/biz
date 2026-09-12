@@ -6,6 +6,7 @@
       "root": "contracts/proto",
       "files": [
         "access/v1/tenant.proto",
+        "access/v1/tenant_delegation.proto",
         "access/v1/tenant_member.proto",
         "access/v1/tenant_role.proto",
         "commercial/v1/entitlement.proto",
@@ -14,6 +15,7 @@
         "commercial/v1/provisioning.proto",
         "commercial/v1/subscription.proto",
         "commercial/v1/subscription_change.proto",
+        "deviceops/v1/delegated_device_access.proto",
         "deviceops/v1/deviceops.proto"
       ],
       "protoPaths": [

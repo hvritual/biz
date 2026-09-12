@@ -13,6 +13,7 @@ import (
 	"github.com/hvritual/biz/internal/bizruntime"
 	"github.com/hvritual/biz/internal/commercial/domain/plan"
 	pv "github.com/hvritual/biz/internal/commercial/domain/provisioning"
+	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	"github.com/hvritual/biz/internal/commercial/ports"
 	"github.com/hvritual/biz/modules/deviceops"
 	"google.golang.org/grpc"
@@ -90,6 +91,9 @@ type ce10Environment struct {
 }
 
 func ce10OnDB(t *testing.T, db *gorm.DB, token string, policy *ce10TestPolicy, adapter *ce10TestAdapter) *ce10Environment {
+	return ce10OnDBLifecycle(t, db, token, policy, adapter, subscription.LifecyclePolicy{})
+}
+func ce10OnDBLifecycle(t *testing.T, db *gorm.DB, token string, policy *ce10TestPolicy, adapter *ce10TestAdapter, lifecycle subscription.LifecyclePolicy) *ce10Environment {
 	t.Helper()
 	cfg := deviceops.DefaultConfig()
 	cfg.HTTPListenAddress = "127.0.0.1:0"
@@ -103,7 +107,7 @@ func ce10OnDB(t *testing.T, db *gorm.DB, token string, policy *ce10TestPolicy, a
 	}
 	perms := append(ce09Permissions(), []authz.PermissionKey{"platform.provisioning.read", "platform.provisioning.manage", "platform.provisioning.cancel", "platform.provisioning.execute"}...)
 	ctx, cancel := context.WithCancel(context.Background())
-	s, err := bizruntime.BootstrapWithOptions(ctx, provider, bizruntime.Options{DeviceOps: cfg, PlatformBootstrap: bizruntime.PlatformBootstrap{Subject: "ce10:" + token, Token: token, Permissions: perms}, ProvisioningPolicy: policy, PreparationAdapters: []ports.RegisteredPreparation{{AdapterID: "ce10-test", Version: "v1", Adapter: adapter}}, ProvisioningWorker: bizruntime.ProvisioningWorkerOptions{Token: token, Automatic: false, LeaseDuration: 5 * time.Second, StepTimeout: time.Second}})
+	s, err := bizruntime.BootstrapWithOptions(ctx, provider, bizruntime.Options{DeviceOps: cfg, CommercialLifecycle: lifecycle, PlatformBootstrap: bizruntime.PlatformBootstrap{Subject: "ce10:" + token, Token: token, Permissions: perms}, ProvisioningPolicy: policy, PreparationAdapters: []ports.RegisteredPreparation{{AdapterID: "ce10-test", Version: "v1", Adapter: adapter}}, ProvisioningWorker: bizruntime.ProvisioningWorkerOptions{Token: token, Automatic: false, LeaseDuration: 5 * time.Second, StepTimeout: time.Second}})
 	if err != nil {
 		cancel()
 		t.Fatal(err)
@@ -127,8 +131,11 @@ func ce10OnDB(t *testing.T, db *gorm.DB, token string, policy *ce10TestPolicy, a
 	return &ce10Environment{ce09Environment: e, started: s, jobs: v1.NewProvisioningApplicationClient(conn), policy: policy, adapter: adapter}
 }
 func ce10New(t *testing.T) *ce10Environment {
+	return ce10NewLifecycle(t, subscription.LifecyclePolicy{})
+}
+func ce10NewLifecycle(t *testing.T, lifecycle subscription.LifecyclePolicy) *ce10Environment {
 	t.Helper()
-	e := ce10OnDB(t, ce08IsolatedDB(t), ce04Random(t), &ce10TestPolicy{}, &ce10TestAdapter{outcome: pv.ReadyStep})
+	e := ce10OnDBLifecycle(t, ce08FreshFixtureDB(t), ce04Random(t), &ce10TestPolicy{}, &ce10TestAdapter{outcome: pv.ReadyStep}, lifecycle)
 	e.old = e.plan(ce09Terms(10, 30))
 	e.putRule("ce09", 100, e.old)
 	id := ce04Random(t)

@@ -1,9 +1,13 @@
-# Frontend change contract
+# Frontend change rules
 
-- Work inside `web/`. Do not edit Go modules, generated backend artifacts, or backend authorization while adjusting UI.
-- Maintain Vue 3 typed `<script setup>`, conventional Vite setup and strict TypeScript. Do not replace this with React or an all-in-one HTML template.
-- Follow DESIGN.md and centralized style tokens. Preserve 208/72 px primary navigation and the 480 px overlay; opening a submenu must never change the main content bounding box.
-- Keep shared UI free of business imports; use feature models for tenant-scoped data. Pages must not import other pages.
-- No business data or mutation code in App.vue. No fake production success or implicit preview fallback.
-- Never commit credentials, real member PII, system font files, node_modules or build artifacts.
-- Run `npm run check` and `npm run test:e2e`. Examine actual screenshots and record any known mismatch or untested flow; do not equate a successful build with visual fidelity.
+Read README.md before editing. Work only under web/ unless the user explicitly asks for backend changes.
+
+- App.vue is composition only. UI primitives do not import enterprise stores. Business policies belong to typed services and have unit tests.
+- Vue SFC + TypeScript, explicit props/emits, Pinia for cross-page state, local ref/computed for page state; lazy routes.
+- UI changes must use shared tokens. Do not replace data tables with card grids. Never ship screenshots as interactive controls.
+- Sidebar: primary only; joined 480px secondary flyout; side-by-side links/quick actions; no submenu chevrons; no main-content displacement.
+- Do not distribute fonts, credentials or backend source in frontend assets. Do not call network APIs from views/components.
+- Demo mode is explicit, tenant-isolated, honest about actions. API errors must never fall back to fake success.
+- Last active owner, state transitions, optimistic versioning and operation reasons must remain tested. Backend remains authority for authentication/authorization.
+- Run npm run check and npm run test:e2e. Review screenshots at 1536x1024, 1366x768 and 390x844.
+- Commit conventional source files and lockfile; do not commit node_modules, dist, screenshots, test traces or temporary upload archives.

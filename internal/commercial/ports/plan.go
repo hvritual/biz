@@ -14,6 +14,7 @@ type PlanHead struct {
 type PlanRepository interface {
 	Lock(context.Context, string) (PlanHead, error)
 	Get(context.Context, string, uint64, bool) (plan.Version, error)
+	Catalog(context.Context, string, int) ([]plan.Version, error)
 	List(context.Context, string, uint64, int) ([]plan.Version, error)
 	Receipt(context.Context, string, string, string) (*plan.Version, error)
 	Save(context.Context, PlanHead, *plan.Version, plan.Version) error

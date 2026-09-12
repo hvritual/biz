@@ -92,6 +92,10 @@ func validateSource(root, source string) error {
 	if err != nil {
 		return err
 	}
+	absoluteRoot, err = filepath.EvalSymlinks(absoluteRoot)
+	if err != nil {
+		return err
+	}
 	relative, err := filepath.Rel(absoluteRoot, full)
 	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
 		return fmt.Errorf("implementation source escapes repository: %s", source)

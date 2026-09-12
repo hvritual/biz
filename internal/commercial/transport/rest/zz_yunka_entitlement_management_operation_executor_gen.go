@@ -7,12 +7,15 @@ import (
 	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	application "github.com/hvritual/biz/internal/commercial/application"
 	policy "github.com/hvritual/biz/internal/commercial/policy"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	io "io"
 	"net/http"
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
+	httpbinding "yunka.io/gateway/httpbinding"
 )
 
 type EntitlementManagementOperationHandler struct {
@@ -31,11 +34,21 @@ func RegisterEntitlementManagementOperationExecutor(mux *http.ServeMux, applicat
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &EntitlementManagementOperationHandler{application: application, executor: executor}
-	mux.HandleFunc("POST /v1/platform/tenants/{tenant_id}/entitlement-overrides", handler.handleOperationCreateEntitlementOverride)
-	mux.HandleFunc("POST /v1/platform/tenants/{tenant_id}/entitlements", handler.handleOperationExplainEntitlements)
-	mux.HandleFunc("POST /v1/tenant/entitlements", handler.handleOperationGetMyEntitlements)
-	mux.HandleFunc("GET /v1/platform/tenants/{tenant_id}/entitlement-overrides", handler.handleOperationListEntitlementOverrides)
-	mux.HandleFunc("POST /v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", handler.handleOperationRevokeEntitlementOverride)
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/tenants/{tenant_id}/entitlement-overrides", handler.handleOperationCreateEntitlementOverride); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/tenants/{tenant_id}/entitlements", handler.handleOperationExplainEntitlements); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenant/entitlements", handler.handleOperationGetMyEntitlements); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/tenants/{tenant_id}/entitlement-overrides", handler.handleOperationListEntitlementOverrides); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", handler.handleOperationRevokeEntitlementOverride); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -55,6 +68,10 @@ func writeEntitlementManagementOperationError(writer http.ResponseWriter, err er
 	}
 	if errors.Is(err, execution.ErrIdempotencyInProgress) || errors.Is(err, execution.ErrIdempotencyCompleted) {
 		http.Error(writer, "idempotency conflict", http.StatusConflict)
+		return
+	}
+	if code := status.Code(err); code == codes.Aborted || code == codes.AlreadyExists {
+		http.Error(writer, "application conflict", http.StatusConflict)
 		return
 	}
 	if errors.Is(err, operation.ErrExecutorUnavailable) || errors.Is(err, operation.ErrSecurityUnavailable) || errors.Is(err, operation.ErrSecurityNilContext) || errors.Is(err, operation.ErrIdempotencyUnavailable) {

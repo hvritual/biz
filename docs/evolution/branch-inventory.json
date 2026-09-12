@@ -1,0 +1,291 @@
+{
+  "date": "2026-09-12",
+  "candidate": "integration/biz-evolution-20260912",
+  "branches": [
+    {
+      "branch": "agent/b13-cross-tenant-delegation-pressure",
+      "head": "506e9c117822855db318f8b4b6689d318a62ded1",
+      "disposition": "retained_by_ancestry"
+    },
+    {
+      "branch": "agent/c10-2-qualification-evidence",
+      "head": "8bb8d23dcc785236344a3f7c80537c74c0efb556",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "agent/c10-3-runtime-closure-evidence",
+      "head": "3f650a2817a1db6430cb6a72e3ca4175af9f7016",
+      "disposition": "historical_framework_candidate_superseded_by_current_generated_contracts"
+    },
+    {
+      "branch": "agent/c10-4-final-qualification-evidence",
+      "head": "075b8f95cd6398863a07395453c8da0226041789",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "agent/c10-5-release-qualification-evidence",
+      "head": "fee7a882199dc0fd2b629dd3e1b3e5e1b9807b48",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "agent/c10-final-main-verification",
+      "head": "835a371f60e6f4e494256a641cfee3be898ef868",
+      "disposition": "historical_framework_candidate_superseded_by_current_generated_contracts"
+    },
+    {
+      "branch": "agent/c10-postmerge-verification",
+      "head": "1ae3a8b0b68ae6ba6e74cbf23329cd0757fb8a5b",
+      "disposition": "historical_framework_candidate_superseded_by_current_generated_contracts"
+    },
+    {
+      "branch": "agent/c8-5-operation-security-boundary",
+      "head": "92a45ed6639df598fa03c461dd359a032bbefbc9",
+      "disposition": "historical_framework_candidate_superseded_by_current_generated_contracts"
+    },
+    {
+      "branch": "agent/c8-7-real-composition",
+      "head": "c3e80ab7b96088a326717e7d2a6af43f7dceecb9",
+      "disposition": "historical_framework_candidate_superseded_by_current_generated_contracts"
+    },
+    {
+      "branch": "agent/domain-internal-refactor",
+      "head": "401a1e7f8d02bf052209bcc2148809924dd97f4c",
+      "disposition": "superseded_by_current_runtime_and_frontend"
+    },
+    {
+      "branch": "agent/module-spec-access-pressure",
+      "head": "71e37f7b5f9d19d6e205899b52269d018b3aca3e",
+      "disposition": "superseded_by_current_runtime_and_frontend"
+    },
+    {
+      "branch": "build/coffeelink-customer-review",
+      "head": "29884779a012b53f0e2d6a22d8e75428f527a54a",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "build/coffeelink-site-review",
+      "head": "ab8cdb13d9a29b4e7f177b5e415fb99872a59707",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "build/coffeelink-visual-verify",
+      "head": "911ab19122ec009de8028fdc4b293b1358127be1",
+      "disposition": "retained_by_ancestry"
+    },
+    {
+      "branch": "build/member-layout-source-20260909",
+      "head": "9c1016a6748eb21b0a70eb82686bd56e695a0a91",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ag02-delivery-20260908",
+      "head": "ded8b64a884d1de2a8ee309c0712a6559eb375a4",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ag02-main-acceptance-20260908",
+      "head": "2be38207d262f885b944a7c66eb8b0f982098cec",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ag02-owner-qualification-20260908",
+      "head": "97db7db1b1a6281efa1c9eab77a38d7002f70fbc",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ag02-qualify-20260908",
+      "head": "05ae64e770379542733b08fe21140f0abed7921d",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ag02-qualify-final-20260908",
+      "head": "e1e4d2c9ac031dc772bbb07d7905517cf20711f4",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ag02-review-coverage-20260908",
+      "head": "067c290ad22ab21d518239ea4127eb3cef3fb103",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ag02-source-20260908",
+      "head": "24264354e2a606b0f9cf39fbe6527cbfc66c3ab6",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ce08-completion-20260910",
+      "head": "04685413bc5c9d01be27ef11955b61f5afd383db",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ce09-delivery-20260910",
+      "head": "2bd61b25873331829ff4289c5f28728cd9d52e9f",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ce10-delivery-20260910",
+      "head": "0e1cab9281e0d4b1ec68a061def40c3580d62462",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ce11-final-receipt-20260911",
+      "head": "06465abf007036dde6d0f9c90001cf42fb86c7c1",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ce12-blocker-record-20260911",
+      "head": "ced749133363db3704b499dbff10d44876382ff5",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ce12-identity-audit-20260911",
+      "head": "28474d34070c9e21b40d5e0575387e80e44a5006",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ce16-authority-patch-20260911",
+      "head": "b312851d54c695c55dbd6e712c1344505754b56f",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ce16-capability-map-20260911",
+      "head": "51182a843ced0709276154ab592d6a95b9db427a",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ce16-generate-20260911",
+      "head": "4907f2cc08e615ef539ad0eb146359d56ae199d4",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ce16-smoke-20260911",
+      "head": "386fd41547abff2a43a1778131e739c79ae925e5",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "control/ce16-worker-bind-20260911",
+      "head": "91b02d30b6dc1da3ee1fe6058af2f9803190cf12",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "docs/ce-06-main-receipts-20260909",
+      "head": "d009c64a0c552c560901b28ebc335487051a0687",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "docs/ce-06-verified-main-receipt",
+      "head": "1877ab4142c10bdc97ca61f898e827d0fc5f59a5",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "feat/ce-13-platform-commercial-console",
+      "head": "d0a0bc84a51bddab1bd3f978fc6818c3371eea48",
+      "disposition": "retained_by_ancestry"
+    },
+    {
+      "branch": "feat/ce-16-time-scheduler",
+      "head": "c29a42d1e3f339b4777b1ab12f3324a77b450d00",
+      "disposition": "retained_by_ancestry"
+    },
+    {
+      "branch": "feat/ce13-plan-catalog-discovery",
+      "head": "b466e2960fbf2c4eb5592ec34823dea132ebbba6",
+      "disposition": "retained_by_ancestry"
+    },
+    {
+      "branch": "feat/coffeelink-customer-ui",
+      "head": "04dedc3826e23754f0cffa13ed5c27b5c4224071",
+      "disposition": "retained_by_ancestry"
+    },
+    {
+      "branch": "feat/coffeelink-site-rental",
+      "head": "a8c593efa5a2c6a53bcdadb4ecde37874fd35a9b",
+      "disposition": "retained_by_ancestry"
+    },
+    {
+      "branch": "feat/coffeelink-vue-console",
+      "head": "c59324393a616ac98b1f40b93603014e26baacf4",
+      "disposition": "superseded_by_current_runtime_and_frontend"
+    },
+    {
+      "branch": "feat/coffeelink-vue-replica",
+      "head": "0196761678b31fa459a8a7be32938c21018f55eb",
+      "disposition": "superseded_by_current_runtime_and_frontend"
+    },
+    {
+      "branch": "feat/member-management-reference",
+      "head": "b764fb8714145fdde079b8a0d850db6ce7f3516a",
+      "disposition": "selected_member_components_and_batch_policy"
+    },
+    {
+      "branch": "fix/delivery-release-certification",
+      "head": "95536dc187f07f48dc14bdf2b2bec8b6c4e06e3f",
+      "disposition": "superseded_by_current_runtime_and_frontend"
+    },
+    {
+      "branch": "main",
+      "head": "bd4a155b6fc27b3a0c2b2ee03a40bdb1ba59e2c9",
+      "disposition": "retained_by_ancestry"
+    },
+    {
+      "branch": "qualification/152-module-identity-b13",
+      "head": "ebbcbe0a2ccecde31c8d6f058fa65be2ba3b0fb9",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "qualification/terminalization-t2-audit-b13",
+      "head": "b8ec9e9d2c205ba8353efad4cfeb1fa82627aab1",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "qualification/terminalization-t3-advisor-b13",
+      "head": "3a74c14ca89b1d0f7eccfab40a9b23db8ec6d591",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "qualification/terminalization-t4-changeset-b13",
+      "head": "d762e619ff57e345ed28f49a97dc7dc42ce2fc64",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "qualification/terminalization-t4-changeset-b13-reverse",
+      "head": "c968b7718d5686b4e67ebbc5e0d41ebedef47ecc",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "qualification/terminalization-t4-changeset-b13-reverse2",
+      "head": "fd9084806ce5228895da1a60cd33d6bdcd6190aa",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "qualification/terminalization-t4-changeset-b13-reverse3",
+      "head": "cf6ada1334e62075dd75fc653ca283513e039383",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "qualification/terminalization-t4-changeset-b13-reverse4",
+      "head": "9ba49fe99b1af7d3a638bac47cb149fb7f71f523",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "qualification/terminalization-t4-changeset-b13-reverse5",
+      "head": "dfd500c4626c491dc5fdf39ec7fad26ccf5755d2",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "qualification/terminalization-t4-remediation-b13",
+      "head": "d2e26f9eeebce1f9989d88ebaaf07f0d3f6196a3",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "qualification/terminalization-t5-proof-b13",
+      "head": "61b367fb36f384eb8470501d346847949900ee89",
+      "disposition": "historical_evidence_no_business_source_override"
+    },
+    {
+      "branch": "ui/phase-1-control-runtime",
+      "head": "c40c28165e2f1a3e624481d3194358bc08500762",
+      "disposition": "ported_live_operations_to_current_vue_and_trusted_sessions"
+    }
+  ]
+}

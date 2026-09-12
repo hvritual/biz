@@ -602,6 +602,41 @@
       }
     },
     {
+      "operationId": "commercial.plan.discover",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "list_plans",
+      "requestType": "commercial.v1.ListPlansRequest",
+      "responseType": "commercial.v1.ListPlansResponse",
+      "security": {
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "platform.plan.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/ListPlans",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/plans"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "commercial.plan.eligibility",
       "domain": "commercial",
       "application": "plan_management",
@@ -1607,6 +1642,102 @@
       }
     },
     {
+      "operationId": "commercial.subscription.transition.claim",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "claim_commercial_time_transition",
+      "requestType": "commercial.v1.ClaimCommercialTimeTransitionRequest",
+      "responseType": "commercial.v1.ClaimCommercialTimeTransitionResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.provisioning.execute"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local"
+      },
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {}
+    },
+    {
+      "operationId": "commercial.subscription.transition.complete",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "complete_commercial_time_transition",
+      "requestType": "commercial.v1.CompleteCommercialTimeTransitionRequest",
+      "responseType": "commercial.v1.CompleteCommercialTimeTransitionResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.provisioning.execute"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog",
+          "commercial.plan.eligibility",
+          "commercial.plan.get"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {}
+    },
+    {
+      "operationId": "device.assert_owned_by_actor_tenant",
+      "domain": "deviceops",
+      "application": "device_management",
+      "useCase": "assert_device_owned_by_actor_tenant",
+      "requestType": "deviceops.v1.AssertDeviceOwnedByActorTenantRequest",
+      "responseType": "deviceops.v1.AssertDeviceOwnedByActorTenantResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.delegation.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {}
+    },
+    {
       "operationId": "device.create",
       "domain": "deviceops",
       "application": "device_management",
@@ -1638,6 +1769,71 @@
           {
             "method": "POST",
             "path": "/v1/devices",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "device.delegated_get",
+      "domain": "deviceops",
+      "application": "delegated_device_access",
+      "useCase": "get_delegated_device",
+      "requestType": "deviceops.v1.GetDelegatedDeviceRequest",
+      "responseType": "deviceops.v1.DeviceDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "device.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/deviceops.v1.DelegatedDeviceAccessApplication/GetDelegatedDevice",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/delegated/devices/{id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "device.delegated_update",
+      "domain": "deviceops",
+      "application": "delegated_device_access",
+      "useCase": "update_delegated_device",
+      "requestType": "deviceops.v1.UpdateDelegatedDeviceRequest",
+      "responseType": "deviceops.v1.DeviceDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "device.update"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/deviceops.v1.DelegatedDeviceAccessApplication/UpdateDelegatedDevice",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/delegated/devices/{id}",
             "body": "*"
           }
         ]
@@ -1880,7 +2076,8 @@
       "responseType": "access.v1.TenantDTO",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "platform.tenant.manage"
@@ -1909,6 +2106,35 @@
       }
     },
     {
+      "operationId": "tenant.assert_active",
+      "domain": "access",
+      "application": "tenant_lifecycle",
+      "useCase": "assert_tenant_active",
+      "requestType": "access.v1.AssertTenantActiveRequest",
+      "responseType": "access.v1.AssertTenantActiveResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.delegation.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_member_lifecycle",
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
+      ],
+      "bindings": {}
+    },
+    {
       "operationId": "tenant.close",
       "domain": "access",
       "application": "tenant_lifecycle",
@@ -1917,7 +2143,8 @@
       "responseType": "access.v1.TenantDTO",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "platform.tenant.manage"
@@ -1954,7 +2181,8 @@
       "responseType": "access.v1.TenantDTO",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "commercial.catalog.read",
@@ -1997,6 +2225,161 @@
       }
     },
     {
+      "operationId": "tenant.delegation.get",
+      "domain": "access",
+      "application": "tenant_delegation_management",
+      "useCase": "get_tenant_delegation",
+      "requestType": "access.v1.GetTenantDelegationRequest",
+      "responseType": "access.v1.TenantDelegationDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.delegation.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "deviceops/device_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantDelegationApplication/GetTenantDelegation",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/delegations/{id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.delegation.grant_device",
+      "domain": "access",
+      "application": "tenant_delegation_management",
+      "useCase": "grant_tenant_device_delegation",
+      "requestType": "access.v1.GrantTenantDeviceDelegationRequest",
+      "responseType": "access.v1.TenantDelegationDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.delegation.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "device.assert_owned_by_actor_tenant",
+          "tenant.assert_active"
+        ],
+        "permissionClosure": [
+          "tenant.delegation.manage"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "deviceops/device_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantDelegationApplication/GrantTenantDeviceDelegation",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/delegations/devices",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.delegation.list",
+      "domain": "access",
+      "application": "tenant_delegation_management",
+      "useCase": "list_tenant_delegations",
+      "requestType": "access.v1.ListTenantDelegationsRequest",
+      "responseType": "access.v1.ListTenantDelegationsResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.delegation.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "deviceops/device_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantDelegationApplication/ListTenantDelegations",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/delegations"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.delegation.revoke",
+      "domain": "access",
+      "application": "tenant_delegation_management",
+      "useCase": "revoke_tenant_delegation",
+      "requestType": "access.v1.RevokeTenantDelegationRequest",
+      "responseType": "access.v1.TenantDelegationDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "tenant.delegation.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "deviceops/device_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantDelegationApplication/RevokeTenantDelegation",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/delegations/{id}:revoke",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "tenant.get",
       "domain": "access",
       "application": "tenant_lifecycle",
@@ -2005,7 +2388,8 @@
       "responseType": "access.v1.TenantDTO",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "platform.tenant.read"
@@ -2041,7 +2425,8 @@
       "responseType": "access.v1.ListTenantsResponse",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "platform.tenant.read"
@@ -2691,7 +3076,8 @@
       "responseType": "access.v1.TenantDTO",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "platform.tenant.manage"
@@ -2728,7 +3114,8 @@
       "responseType": "access.v1.TenantDTO",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "platform.tenant.manage"

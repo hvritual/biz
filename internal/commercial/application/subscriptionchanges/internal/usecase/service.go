@@ -21,6 +21,7 @@ import (
 )
 
 type service struct {
+	lifecycle          subscription.LifecyclePolicy
 	provisioningPolicy ports.ProvisioningPolicy
 	repositories       requestscope.RepositoryFactory[ports.SubscriptionChangeRepositories]
 	capabilities       app.SubscriptionChangesCapabilities
@@ -28,9 +29,12 @@ type service struct {
 	quotas             ports.QuotaChangePolicy
 }
 
-func New(r requestscope.RepositoryFactory[ports.SubscriptionChangeRepositories], c app.SubscriptionChangesCapabilities, snapshots ports.EntitlementSnapshotReader, q ports.QuotaChangePolicy, policies ...ports.ProvisioningPolicy) (app.SubscriptionChangesApplication, error) {
+func New(r requestscope.RepositoryFactory[ports.SubscriptionChangeRepositories], c app.SubscriptionChangesCapabilities, snapshots ports.EntitlementSnapshotReader, q ports.QuotaChangePolicy, lifecycle subscription.LifecyclePolicy, policies ...ports.ProvisioningPolicy) (app.SubscriptionChangesApplication, error) {
 	if r == nil || c == nil || c.CommercialPlanManagement() == nil || c.CommercialModuleCatalog() == nil || snapshots == nil {
 		return nil, errors.New("subscription changes: repository, typed plan/catalog and snapshot capabilities required")
+	}
+	if err := lifecycle.Validate(); err != nil {
+		return nil, err
 	}
 	if q == nil {
 		q = ports.DeferredQuotaChangePolicy{}
@@ -42,7 +46,7 @@ func New(r requestscope.RepositoryFactory[ports.SubscriptionChangeRepositories],
 	if len(policies) == 1 && policies[0] != nil {
 		provisioning = policies[0]
 	}
-	return &service{repositories: r, capabilities: c, snapshots: snapshots, quotas: q, provisioningPolicy: provisioning}, nil
+	return &service{repositories: r, capabilities: c, snapshots: snapshots, quotas: q, lifecycle: lifecycle.Canonical(), provisioningPolicy: provisioning}, nil
 }
 func actor(ctx context.Context) (string, error) {
 	p, ok := identity.FromContext(ctx)

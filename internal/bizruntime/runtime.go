@@ -15,6 +15,7 @@ import (
 	generatedassembly "github.com/hvritual/biz/internal/assembly"
 	commercialapp "github.com/hvritual/biz/internal/commercial/application"
 	"github.com/hvritual/biz/internal/commercial/application/entitlementmanagement"
+	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	"github.com/hvritual/biz/internal/commercial/enforcement"
 	commercialpersistence "github.com/hvritual/biz/internal/commercial/infrastructure/persistence"
 	"github.com/hvritual/biz/internal/commercial/modulecatalog"
@@ -151,20 +152,31 @@ func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, opti
 }
 
 type applicationFactories struct {
-	provisioningPolicy commercialports.ProvisioningPolicy
-	provisioningRunner *provisioningRunner
-	quotaChangePolicy  commercialports.QuotaChangePolicy
-	snapshots          commercialports.EntitlementSnapshotReader
-	permissionVersions commercialports.PermissionVersionReader
-	deviceRepositories requestscope.RepositoryFactory[deviceports.ScopedRepositories]
-	site               *deviceapp.SiteManagementService
-	moduleCatalog      commercialapp.ModuleCatalogApplication
-	tenantRepositories requestscope.RepositoryFactory[accessports.TenantRepositories]
-	memberRepositories requestscope.RepositoryFactory[accessports.TenantMemberRepositories]
-	roleRepositories   requestscope.RepositoryFactory[accessports.TenantRoleRepositories]
+	commercialLifecycle         subscription.LifecyclePolicy
+	provisioningPolicy          commercialports.ProvisioningPolicy
+	provisioningRunner          *provisioningRunner
+	quotaChangePolicy           commercialports.QuotaChangePolicy
+	snapshots                   commercialports.EntitlementSnapshotReader
+	permissionVersions          commercialports.PermissionVersionReader
+	deviceRepositories          requestscope.RepositoryFactory[deviceports.ScopedRepositories]
+	site                        *deviceapp.SiteManagementService
+	moduleCatalog               commercialapp.ModuleCatalogApplication
+	tenantRepositories          requestscope.RepositoryFactory[accessports.TenantRepositories]
+	memberRepositories          requestscope.RepositoryFactory[accessports.TenantMemberRepositories]
+	roleRepositories            requestscope.RepositoryFactory[accessports.TenantRoleRepositories]
+	delegatedDeviceRepositories requestscope.RepositoryFactory[deviceports.DelegatedRepositories]
+	delegationRepositories      requestscope.RepositoryFactory[accessports.TenantDelegationRepositories]
 }
 
 var _ generatedassembly.ApplicationFactories = applicationFactories{}
+
+func (factory applicationFactories) BuildDeviceopsDelegatedDeviceAccess(generatedassembly.DeviceopsDelegatedDeviceAccessDependencies) (deviceapp.DelegatedDeviceAccessApplication, error) {
+	inner, err := deviceapp.NewDelegatedService(factory.delegatedDeviceRepositories)
+	if err != nil {
+		return nil, err
+	}
+	return checkedDelegatedDevice{inner: inner}, nil
+}
 
 func (factory applicationFactories) BuildCommercialModuleCatalog(generatedassembly.CommercialModuleCatalogDependencies) (commercialapp.ModuleCatalogApplication, error) {
 	if factory.moduleCatalog == nil {
@@ -251,6 +263,9 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 		if err := devicepersistence.EnsureIndexes(deviceDatabase); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: indexes: %w", err)
 		}
+		if err := accesspersistence.AutoMigrateTenantDelegation(ctx, accessDatabase); err != nil {
+			return generatedassembly.RuntimeBindings{}, err
+		}
 	}
 	if bootstrap := config.Bootstrap; bootstrap.Token != "" {
 		if err := accessStore.Bootstrap(ctx, accesspersistence.Bootstrap{
@@ -303,9 +318,22 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
+	deviceOwnerResolver, err := devicepersistence.NewDeviceOwnerResolver(deviceDatabase)
+	if err != nil {
+		return generatedassembly.RuntimeBindings{}, err
+	}
+	delegationGrantResolver, err := accesspersistence.NewDelegatedDeviceGrantResolver(accessDatabase)
+	if err != nil {
+		return generatedassembly.RuntimeBindings{}, err
+	}
+	delegatedGuard, err := devicesecurity.NewDelegatedDeviceGuard(deviceOwnerResolver, delegationGrantResolver)
+	if err != nil {
+		return generatedassembly.RuntimeBindings{}, err
+	}
 	guards := authz.NewStaticGuardResolver(map[authz.OperationID]authz.OperationGuard{
 		"device.list": guard, "device.get": guard, "device.create": guard, "device.update": guard,
 		"device.delete": guard, "site.validate_transfer_target": guard, "device.transfer": guard,
+		"device.delegated_get": delegatedGuard, "device.delegated_update": delegatedGuard,
 	})
 	catalogReader, err := modulecatalog.NewService(commercialStore, modulecatalog.ProductionRegistry())
 	if err != nil {
@@ -354,6 +382,10 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
+	delegatedDeviceRepositories, err := devicepersistence.NewDelegatedRepositoryFactory(deviceDatabase)
+	if err != nil {
+		return generatedassembly.RuntimeBindings{}, err
+	}
 	tenantRepositories, err := accesspersistence.NewTenantRepositoryFactory(accessDatabase)
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
@@ -363,6 +395,10 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 		return generatedassembly.RuntimeBindings{}, err
 	}
 	roleRepositories, err := accesspersistence.NewTenantRoleRepositoryFactory(accessDatabase)
+	if err != nil {
+		return generatedassembly.RuntimeBindings{}, err
+	}
+	delegationRepositories, err := accesspersistence.NewTenantDelegationRepositoryFactory(accessDatabase)
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
@@ -387,14 +423,16 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 		worker.workerContext = commercialGuard.WorkerContext
 	}
 	return generatedassembly.RuntimeBindings{
-		Factories: applicationFactories{provisioningPolicy: options.ProvisioningPolicy, provisioningRunner: worker,
+		Factories: applicationFactories{commercialLifecycle: options.CommercialLifecycle.Canonical(), provisioningPolicy: options.ProvisioningPolicy, provisioningRunner: worker,
 			snapshots: snapshots, permissionVersions: accessStore, quotaChangePolicy: options.QuotaChangePolicy,
-			deviceRepositories: deviceRepositories,
-			site:               siteService,
-			moduleCatalog:      commercialApplication,
-			tenantRepositories: tenantRepositories,
-			memberRepositories: memberRepositories,
-			roleRepositories:   roleRepositories,
+			deviceRepositories:          deviceRepositories,
+			site:                        siteService,
+			moduleCatalog:               commercialApplication,
+			tenantRepositories:          tenantRepositories,
+			memberRepositories:          memberRepositories,
+			roleRepositories:            roleRepositories,
+			delegatedDeviceRepositories: delegatedDeviceRepositories,
+			delegationRepositories:      delegationRepositories,
 		},
 		Executor: executor,
 	}, nil
@@ -469,6 +507,10 @@ func httpAuthentication(authenticator *runtimeAuthenticator, webAuth *runtimeWeb
 			principal, err = webAuth.authenticateAPI(request)
 		} else {
 			err = accesspersistence.ErrUnauthorized
+		}
+		if errors.Is(err, errWebSessionContextChanged) {
+			http.Error(writer, "SESSION_CONTEXT_CHANGED", http.StatusConflict)
+			return
 		}
 		if err != nil {
 			http.Error(writer, "Unauthorized", http.StatusUnauthorized)

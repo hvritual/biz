@@ -7,12 +7,15 @@ import (
 	deviceopsv1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
 	application "github.com/hvritual/biz/internal/deviceops/application"
 	policy "github.com/hvritual/biz/internal/deviceops/policy"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	io "io"
 	"net/http"
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
+	httpbinding "yunka.io/gateway/httpbinding"
 )
 
 type DeviceTransferOperationHandler struct {
@@ -31,7 +34,9 @@ func RegisterDeviceTransferOperationExecutor(mux *http.ServeMux, application app
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &DeviceTransferOperationHandler{application: application, executor: executor}
-	mux.HandleFunc("PATCH /v1/devices/{id}/transfer", handler.handleOperationTransferDevice)
+	if err := httpbinding.Register(mux, "PATCH", "/v1/devices/{id}/transfer", handler.handleOperationTransferDevice); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -51,6 +56,10 @@ func writeDeviceTransferOperationError(writer http.ResponseWriter, err error) {
 	}
 	if errors.Is(err, execution.ErrIdempotencyInProgress) || errors.Is(err, execution.ErrIdempotencyCompleted) {
 		http.Error(writer, "idempotency conflict", http.StatusConflict)
+		return
+	}
+	if code := status.Code(err); code == codes.Aborted || code == codes.AlreadyExists {
+		http.Error(writer, "application conflict", http.StatusConflict)
 		return
 	}
 	if errors.Is(err, operation.ErrExecutorUnavailable) || errors.Is(err, operation.ErrSecurityUnavailable) || errors.Is(err, operation.ErrSecurityNilContext) || errors.Is(err, operation.ErrIdempotencyUnavailable) {

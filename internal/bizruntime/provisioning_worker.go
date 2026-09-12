@@ -55,24 +55,27 @@ func (o ProvisioningWorkerOptions) Validate() error {
 }
 
 type ProvisioningTick struct {
-	DeliveryID string
-	TaskID     string
-	TaskState  string
+	TransitionID    string
+	TransitionState string
+	DeliveryID      string
+	TaskID          string
+	TaskState       string
 }
 type provisioningRunner struct {
-	workerContext func(context.Context) (context.Context, error)
-	options       ProvisioningWorkerOptions
-	id            string
-	application   app.ProvisioningApplication
-	executor      operation.Executor
-	authenticator *runtimeAuthenticator
-	adapters      map[string]ports.PreparationAdapter
-	runMu         sync.Mutex
-	mu            sync.RWMutex
-	cancel        context.CancelFunc
-	done          chan struct{}
-	started       bool
-	lastError     error
+	workerContext       func(context.Context) (context.Context, error)
+	options             ProvisioningWorkerOptions
+	id                  string
+	application         app.ProvisioningApplication
+	subscriptionChanges app.SubscriptionChangesApplication
+	executor            operation.Executor
+	authenticator       *runtimeAuthenticator
+	adapters            map[string]ports.PreparationAdapter
+	runMu               sync.Mutex
+	mu                  sync.RWMutex
+	cancel              context.CancelFunc
+	done                chan struct{}
+	started             bool
+	lastError           error
 }
 
 func newProvisioningRunner(options Options) (*provisioningRunner, error) {
@@ -97,7 +100,7 @@ func (r *provisioningRunner) component() core.RuntimeComponent {
 	return core.RuntimeComponent{Name: "commercial-provisioning-worker", StartFunc: r.start, HealthFunc: r.health, ShutdownFunc: r.shutdown}
 }
 func (r *provisioningRunner) start(ctx context.Context) error {
-	if r.application == nil || r.executor == nil || r.authenticator == nil || r.workerContext == nil {
+	if r.application == nil || r.subscriptionChanges == nil || r.executor == nil || r.authenticator == nil || r.workerContext == nil {
 		return errors.New("provisioning: worker binding incomplete")
 	}
 	if _, err := r.callContext(ctx); err != nil {
@@ -199,6 +202,28 @@ func (r *provisioningRunner) tick(ctx context.Context) (ProvisioningTick, error)
 		return out, e
 	}
 	lease := uint32(r.options.LeaseDuration / time.Second)
+	transitionWork, e := operation.ExecuteTyped(call, r.executor, policy.OperationPlanSubscriptionChangesClaimCommercialTimeTransition(), &v1.ClaimCommercialTimeTransitionRequest{WorkerId: r.id, LeaseSeconds: lease}, r.subscriptionChanges.ClaimCommercialTimeTransition)
+	if e != nil {
+		return out, e
+	}
+	if transitionWork != nil && transitionWork.Found {
+		out.TransitionID = transitionWork.Transition.TransitionId
+		call, e = r.callContext(ctx)
+		if e != nil {
+			return out, e
+		}
+		completed, completeErr := operation.ExecuteTyped(call, r.executor, policy.OperationPlanSubscriptionChangesCompleteCommercialTimeTransition(), &v1.CompleteCommercialTimeTransitionRequest{TransitionId: out.TransitionID, WorkerId: r.id, LeaseToken: transitionWork.LeaseToken}, r.subscriptionChanges.CompleteCommercialTimeTransition)
+		if completeErr != nil {
+			return out, completeErr
+		}
+		if completed != nil {
+			out.TransitionState = completed.State
+		}
+	}
+	call, e = r.callContext(ctx)
+	if e != nil {
+		return out, e
+	}
 	delivery, e := operation.ExecuteTyped(call, r.executor, policy.OperationPlanProvisioningClaimProvisioningDelivery(), &v1.ClaimProvisioningDeliveryRequest{WorkerId: r.id, LeaseSeconds: lease}, r.application.ClaimProvisioningDelivery)
 	if e != nil {
 		return out, e

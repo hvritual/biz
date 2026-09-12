@@ -1,0 +1,44 @@
+version: 1
+scope: SR-01-site-rental-preview
+baseline: 04dedc3826e23754f0cffa13ed5c27b5c4224071
+navigation:
+  reuse: [AppShell, AppHeader, PrimaryNavigation, ModulePanel]
+  primary_domain: sites
+  overlay_width_css_px: 480
+  connected_gap_css_px: 0
+  shifts_main_content: false
+  submenu_arrows: false
+  quick_actions_layout: vertical_right_column
+pages:
+  - id: sites
+    route: /sites
+    template: ListPage
+    fields: [点位, 客户, 运营安排, 服务情况, 投放, 负责人, 计费约定, 用量, 预计费用, 下一步]
+    actions: [查询, 重置, 新建点位, 进入详情]
+  - id: site-detail
+    route: /sites/:id
+    template: WorkbenchPage
+    tabs: [概览, 设备与投放履历, 租约与结算, 使用数据, 服务与事项, 活动记录]
+    actions: [编辑点位, 运营停用, 恢复运营, 新建关联事项]
+  - id: billing-group
+    route: /sites/groups/:groupId?
+    template: ListPage
+    actions: [建规则, 存草稿, 无副作用试算, 预览影响, 预约发布, 查看版本]
+  - id: statement
+    route: /sites/statements
+    template: ListPage
+    actions: [生成草稿, 重复回读, 刷新来源, 登记异议, 记录解决结论, 核对冻结]
+acceptance:
+  viewports: [1536x1024, 1440x900, 1366x768, 390x844]
+  states: [正常, 空结果, 无数据, 待补传, 权限归属无效, 草稿, 并发冲突, 验证拒绝, 已确认]
+  invariants:
+    - 计费模式属于合同版本而非点位永久属性
+    - 共享额度仅整组扣减一次且基础费用仅一次
+    - 分组节点不能承载计费和用量
+    - 客户汇总出账不等于共享计费
+    - 缺失数据不等于零
+    - 草稿和试算不改变生效规则或账单
+    - 已确认快照不允许覆盖
+    - 停用不自动停租或改额度
+    - 客户与点位关联同一事项
+    - UI展示与服务端安全边界分开

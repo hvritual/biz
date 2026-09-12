@@ -30,11 +30,20 @@ func ValidateCurrentSources(s subscription.Subscription, p plan.Version, sources
 	}
 	seen := map[string]bool{}
 	for _, v := range sources {
-		if v.SourceKind != entitlement.PlanSource || v.RevokedAt != nil {
+		if v.SourceKind != entitlement.PlanSource {
 			continue
 		}
 		x, ok := expected[v.ID]
-		if !ok || seen[v.ID] || v.TenantID != s.TenantID || v.ModuleCode != x.ModuleCode || v.Kind != x.Kind || v.Key != x.Key || v.Action != x.Action || v.Effect != x.Effect || v.Limit != x.Limit || !v.EffectiveAt.Equal(s.PeriodStart) || !sameInstant(v.ExpiresAt, s.PeriodEnd) || v.Version != 1 {
+		if !ok {
+			if v.RevokedAt == nil {
+				return ErrCorrupt
+			}
+			continue
+		}
+		if seen[v.ID] || v.TenantID != s.TenantID || v.ModuleCode != x.ModuleCode || v.Kind != x.Kind || v.Key != x.Key || v.Action != x.Action || v.Effect != x.Effect || v.Limit != x.Limit || !v.EffectiveAt.Equal(s.PeriodStart) || !sameInstant(v.ExpiresAt, s.PeriodEnd) || v.Version == 0 {
+			return ErrCorrupt
+		}
+		if v.RevokedAt != nil && (v.RevokedAt.Before(v.EffectiveAt) || (v.ExpiresAt != nil && v.RevokedAt.After(*v.ExpiresAt))) {
 			return ErrCorrupt
 		}
 		seen[v.ID] = true

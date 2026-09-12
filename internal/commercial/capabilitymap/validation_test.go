@@ -108,3 +108,30 @@ func TestCE03ChildSourceMustLocateImplementation(t *testing.T) {
 		}
 	}
 }
+
+func TestCE03SourceRootSymlinkAndEscape(t *testing.T) {
+	real := t.TempDir()
+	if err := os.Mkdir(filepath.Join(real, "internal"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(real, "internal", "sample.go"), []byte("package sample\nfunc Run() {}\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	alias := filepath.Join(t.TempDir(), "repository")
+	if err := os.Symlink(real, alias); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateSource(alias, "internal/sample.go#Run"); err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(t.TempDir(), "outside.go")
+	if err := os.WriteFile(outside, []byte("package sample\nfunc Run() {}\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(real, "internal", "escape.go")); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateSource(alias, "internal/escape.go#Run"); err == nil {
+		t.Fatal("outside symlink accepted")
+	}
+}

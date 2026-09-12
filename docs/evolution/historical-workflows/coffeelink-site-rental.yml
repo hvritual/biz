@@ -1,0 +1,84 @@
+name: CoffeeLink site rental native verification
+on:
+  push:
+    branches: [feat/coffeelink-site-rental]
+    paths: ['web/**', '.github/workflows/coffeelink-site-rental.yml']
+  pull_request:
+    branches: [main]
+    paths: ['web/**', '.github/workflows/coffeelink-site-rental.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Verify reused layout and source identity
+        run: |
+          python3 - <<'PY'
+          import subprocess, hashlib, json
+          from pathlib import Path
+          base='04dedc3826e23754f0cffa13ed5c27b5c4224071'
+          paths=list(Path('web/src/components/layout').glob('*.vue'))+list(Path('web/src/components/ui').glob('*.vue'))+[Path('web/src/styles/tokens.css'),Path('web/src/styles/base.css')]
+          preserved={}
+          for p in paths:
+              original=subprocess.check_output(['git','show',f'{base}:{p}'])
+              assert p.read_bytes()==original, f'Original component modified: {p}'
+              preserved[str(p)]=hashlib.sha256(original).hexdigest()
+          current={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(Path('web').rglob('*')) if p.is_file()}
+          Path('/tmp/site-source-manifest.json').write_text(json.dumps({'base':base,'commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'preserved':preserved,'current':current},indent=2))
+          print('Unchanged layout and UI:',len(preserved))
+          PY
+          tar --exclude=node_modules --exclude=dist --exclude=screenshots --exclude=test-results --exclude=playwright-report -czf /tmp/site-native-source.tgz web
+      - name: Install exact dependencies and run checks
+        working-directory: web
+        run: |
+          set -o pipefail
+          npm ci
+          npm run check 2>&1 | tee /tmp/site-check.log
+          npx playwright test --list | tee /tmp/site-test-inventory.log
+      - name: Install cloud browser and CJK runtime fonts
+        working-directory: web
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Browser interactions, regression and independent screenshots
+        working-directory: web
+        env:
+          CI: 'true'
+        run: |
+          set -o pipefail
+          npm run test:e2e 2>&1 | tee /tmp/site-e2e.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coffeelink-site-native-review
+          path: |
+            web/screenshots/
+            web/test-results/
+            web/playwright-report/
+            /tmp/site-source-manifest.json
+            /tmp/site-check.log
+            /tmp/site-test-inventory.log
+            /tmp/site-e2e.log
+            !web/playwright-report/**/*.woff
+            !web/playwright-report/**/*.woff2
+            !web/playwright-report/**/*.ttf
+            !web/playwright-report/**/*.otf
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coffeelink-site-native-source
+          path: /tmp/site-native-source.tgz
+          retention-days: 14

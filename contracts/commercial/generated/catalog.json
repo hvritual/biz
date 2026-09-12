@@ -1,17 +1,18 @@
 {
   "schema_version": 1,
-  "mapping_version": "8",
+  "mapping_version": "10",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "396430cf0982aef0a1d8e2fb88e26bd5d5e7be519c0085ffb9fef049d68b3926",
-    "contracts/generated/manifest.json": "07cebf8d5de0464600caa47bc1f3d9181c3a1678db4bd12f510e3f455313120c",
-    "contracts/generated/operation-plans.json": "269fcf94d54eeae50a5da97a7582ee62ae9786ecb0118bec890428e5935cc3c5",
+    "contracts/commercial/operation-capabilities.v1.json": "0d3f657c48a0f102e7eaaed0354978db9aaf6c216a25c4a95e96108295be0032",
+    "contracts/generated/manifest.json": "8b8a5b1d808acfd2a7744d60f9482c32df3e6427611a3c1ff7b5939be60338e9",
+    "contracts/generated/operation-plans.json": "203b9b17ca3f0f45ecb29186b58914a4ad3f13347524d99b3252a66ee2bc0458",
+    "internal/access/application/tenant_delegation.go": "b43e6709e61b7867395bc04a901a19c2a54cf4ec9565e875b354b1622e636589",
     "internal/access/application/tenant_member_lifecycle.go": "c629117c2538c45af9a75932a53ecd6109059bd56e6dc71b11eedb2e538c6cff",
     "internal/access/application/tenantlifecycle/internal/usecase/service.go": "63e3eba06691d15fa88041b660431b48e87640bfaf35954774595db9880e5d29",
     "internal/commercial/application/entitlementmanagement/internal/usecase/service.go": "6cbcb31645f67104b8089b6c8559a2ff0ba5d6f5eb3b49e6fa56f238040f046c",
     "internal/commercial/application/planmanagement/internal/usecase/service.go": "3534687bf60f71d844144840891ba957fab28f8452df31fa40940c6c69e221a6",
     "internal/commercial/application/provisioning/internal/usecase/service.go": "92437abf3396ad9a5e3942998cd73940935949f2d06e9d366488448752273341",
-    "internal/commercial/application/subscriptionchanges/internal/usecase/context.go": "7a3916a90514dfef4c11bee6e2450d3efb282b6365cdd5d61f33c92481cf53ff",
-    "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go": "e654390c19a8172eb28ddadd85ffb26bcdcffb0e8c036d2b263c2384168a8a05",
+    "internal/commercial/application/subscriptionchanges/internal/usecase/context.go": "c3436685d29cb7c60fba6436f4faf3db9d05f445e310c8d3d9e67a06e4891c14",
+    "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go": "76a7cda5fead8bb2caa6674536ccd2c09a7324acaf91e81912233dc3b3be6563",
     "internal/deviceops/application/cross_application_transfer.go": "bffaca1f1be420371bfcb770c5ccfd79f18553938ca92de0584f5e921460d9d8",
     "internal/deviceops/application/service.go": "f7a37a30cd01fadfb5f1a1f3a6c497eaeba5dc8f706e484c445eed9193abbcaa"
   },
@@ -278,6 +279,18 @@
       "consumer_type": "platform",
       "tenant_required": false,
       "rpc": "/commercial.v1.PlanManagementApplication/CreatePlanDraft",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.discover",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-13 authoritative platform plan discovery; requires platform.plan.read and a tenantless principal, and never infers the catalog from tenant subscriptions.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/ListPlans",
       "required_capability_codes": [],
       "always_required_capability_codes": []
     },
@@ -710,6 +723,66 @@
       "always_required_capability_codes": []
     },
     {
+      "worker_permission": "platform.provisioning.execute",
+      "operation_id": "commercial.subscription.transition.claim",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-16 durable commercial time-transition worker. Persisted tenantless platform identity, platform.provisioning.execute permission, existing Executor, DB-time lease fencing and root UoW remain mandatory; these internal worker operations have no public transport and never grant tenant business access.",
+      "children": [],
+      "consumer_type": "worker",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "worker_permission": "platform.provisioning.execute",
+      "operation_id": "commercial.subscription.transition.complete",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-16 durable commercial time-transition worker. Persisted tenantless platform identity, platform.provisioning.execute permission, existing Executor, DB-time lease fencing and root UoW remain mandatory; these internal worker operations have no public transport and never grant tenant business access.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "conditional",
+          "condition": "claimed due SCHEDULED_CHANGE remains authoritative and must revalidate immutable target plan, eligibility and current commercial module catalog before execution; other transition kinds do not call these children",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "conditional",
+          "condition": "claimed due SCHEDULED_CHANGE remains authoritative and must revalidate immutable target plan, eligibility and current commercial module catalog before execution; other transition kinds do not call these children",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.get",
+          "mode": "conditional",
+          "condition": "claimed due SCHEDULED_CHANGE remains authoritative and must revalidate immutable target plan, eligibility and current commercial module catalog before execution; other transition kinds do not call these children",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        }
+      ],
+      "consumer_type": "worker",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "device.assert_owned_by_actor_tenant",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": true,
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
       "operation_id": "device.create",
       "classification": "tenant_business",
       "module_code": "device-operations",
@@ -720,6 +793,42 @@
       "consumer_type": "tenant",
       "tenant_required": true,
       "rpc": "/deviceops.v1.DeviceApplication/CreateDevice",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "device.delegated_get",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DelegatedDeviceAccessApplication/GetDelegatedDevice",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "device.delegated_update",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DelegatedDeviceAccessApplication/UpdateDelegatedDevice",
       "required_capability_codes": [
         "device.lifecycle"
       ],
@@ -869,6 +978,23 @@
       "always_required_capability_codes": []
     },
     {
+      "operation_id": "tenant.assert_active",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": true,
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
       "operation_id": "tenant.close",
       "classification": "platform_management",
       "module_code": "access-management",
@@ -913,6 +1039,89 @@
       "rpc": "/access.v1.TenantLifecycleApplication/CreateTenant",
       "required_capability_codes": [],
       "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.delegation.get",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantDelegationApplication/GetTenantDelegation",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.delegation.grant_device",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [
+        {
+          "operation_id": "device.assert_owned_by_actor_tenant",
+          "mode": "always",
+          "source": "internal/access/application/tenant_delegation.go#GrantTenantDeviceDelegation"
+        },
+        {
+          "operation_id": "tenant.assert_active",
+          "mode": "always",
+          "source": "internal/access/application/tenant_delegation.go#GrantTenantDeviceDelegation"
+        }
+      ],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantDelegationApplication/GrantTenantDeviceDelegation",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.delegation.list",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantDelegationApplication/ListTenantDelegations",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.delegation.revoke",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantDelegationApplication/RevokeTenantDelegation",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
     },
     {
       "operation_id": "tenant.get",

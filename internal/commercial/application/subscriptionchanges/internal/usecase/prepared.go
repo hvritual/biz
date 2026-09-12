@@ -2,10 +2,13 @@ package usecase
 
 import (
 	"context"
+
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	projection "github.com/hvritual/biz/internal/commercial/application/planprojection"
 	pv "github.com/hvritual/biz/internal/commercial/domain/provisioning"
+	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	change "github.com/hvritual/biz/internal/commercial/domain/subscriptionchange"
+	transition "github.com/hvritual/biz/internal/commercial/domain/timetransition"
 	"github.com/hvritual/biz/internal/commercial/ports"
 	"yunka.io/framework/requestscope"
 )
@@ -47,7 +50,7 @@ func (s *service) CompletePreparedSubscriptionChange(ctx context.Context, r *v1.
 		if e != nil {
 			return pv.Completion{}, e
 		}
-		if p == nil || receipt == nil || p.Hash != task.Approval.PreviewHash || p.ActorID != task.Approval.ActorID || receipt.ActorID != task.Approval.ActorID || receipt.Status != change.Provisioning || receipt.ProvisioningTaskID != task.ID || receipt.Mode != change.Immediate {
+		if p == nil || receipt == nil || p.Hash != task.Approval.PreviewHash || p.ActorID != task.Approval.ActorID || receipt.ActorID != task.Approval.ActorID || receipt.Status != change.Provisioning || receipt.ProvisioningTaskID != task.ID || (receipt.Mode != change.Immediate && receipt.Mode != change.Scheduled) {
 			return pv.Completion{}, pv.ErrCorrupt
 		}
 		if change.Digest(raw) != change.Digest(receipt.After) {
@@ -72,19 +75,30 @@ func (s *service) CompletePreparedSubscriptionChange(ctx context.Context, r *v1.
 				return pv.Completion{}, pv.ErrCorrupt
 			}
 		}
-		mode, at, end, e := change.Period(p.Input, m.before, p.Classification, now, m.target.Terms)
-		if e != nil {
-			return pv.Completion{}, e
-		}
-		if mode != change.Immediate {
+
+		mode := receipt.Mode
+		at := receipt.EffectiveAt
+		end := receipt.EntitlementExpiresAt
+		if mode == change.Immediate {
+			_, at, end, e = change.Period(p.Input, m.before, p.Classification, now, m.target.Terms)
+			if e != nil {
+				return pv.Completion{}, e
+			}
+		} else if at.After(now) {
 			return pv.Completion{}, pv.ErrStale
 		}
 		requested := change.QuotaChanges(m.old.Terms, m.target.Terms)
-		report, e := s.quotas.Evaluate(call, ports.QuotaChangeInput{TenantID: r.TenantId, ChangeID: task.Approval.ChangeID, Mode: mode, EffectiveAt: at, Changes: requested})
+		if p.Input.Action == change.StopRenewal {
+			requested = nil
+		}
+		// Provisioning completion always represents a present-time activation.
+		// Scheduled reductions were allowed to defer usage evidence at approval;
+		// they must pass the immediate policy now.
+		report, e := s.quotas.Evaluate(call, ports.QuotaChangeInput{TenantID: r.TenantId, ChangeID: task.Approval.ChangeID, Mode: change.Immediate, EffectiveAt: at, Changes: requested})
 		if e != nil {
 			return pv.Completion{}, e
 		}
-		deferred, e := change.CheckQuotaReport(requested, report, mode)
+		deferred, e := change.CheckQuotaReport(requested, report, change.Immediate)
 		if e != nil {
 			return pv.Completion{}, e
 		}
@@ -98,23 +112,46 @@ func (s *service) CompletePreparedSubscriptionChange(ctx context.Context, r *v1.
 		if !task.Owns(r.WorkerId, r.LeaseToken, admitted) || !admitted.Before(task.Deadline) {
 			return pv.Completion{}, pv.ErrLease
 		}
-		// Delay in a local policy cannot extend expired old rights.
-		if m.current.ValidUntil != nil && !admitted.Before(*m.current.ValidUntil) {
-			return pv.Completion{}, pv.ErrStale
-		}
-		_, at, end, e = change.Period(p.Input, m.before, p.Classification, admitted, m.target.Terms)
-		if e != nil {
-			return pv.Completion{}, e
+		if mode == change.Immediate {
+			// Delay in a local policy cannot extend expired old rights.
+			if m.current.ValidUntil != nil && !admitted.Before(*m.current.ValidUntil) {
+				return pv.Completion{}, pv.ErrStale
+			}
+			_, at, end, e = change.Period(p.Input, m.before, p.Classification, admitted, m.target.Terms)
+			if e != nil {
+				return pv.Completion{}, e
+			}
 		}
 		after := m.before
 		after.Revision++
 		after.PendingChangeID = ""
+		after.State = s.lifecycle.StateFor(m.target.PlanCode, m.target.Number)
 		source, ent, e := s.applySources(call, repos, m, &after, task.Approval.ChangeID, at, end)
 		if e != nil {
 			return pv.Completion{}, e
 		}
 		if e = repos.Changes.SaveCurrent(call, m.before, after); e != nil {
 			return pv.Completion{}, e
+		}
+		nextReceipt := *receipt
+		nextReceipt.Status = change.Applied
+		nextReceipt.After = after
+		nextReceipt.AfterSourceVersion = source
+		nextReceipt.AfterEntitlementVersion = ent
+		nextReceipt.Quotas = report
+		nextReceipt.QuotaValidationRequired = false
+		nextReceipt = nextReceipt.Seal()
+		if e = repos.Changes.UpdateReceipt(call, *receipt, nextReceipt); e != nil {
+			return pv.Completion{}, e
+		}
+		if after.PeriodEnd != nil {
+			boundary, e := transition.NewInTimezone(transition.SubscriptionBoundary, after.TenantID, after.ID, after.Revision, *after.PeriodEnd, admitted, s.lifecycle.Timezone())
+			if e != nil {
+				return pv.Completion{}, e
+			}
+			if e = repos.Transitions.Insert(call, boundary); e != nil {
+				return pv.Completion{}, e
+			}
 		}
 		if e = repos.Events.Append(call, pv.Event{TenantID: r.TenantId, AggregateID: after.ID, AggregateVersion: after.Revision, ChangeID: task.Approval.ChangeID, TaskID: task.ID, Status: pv.Applied, SourceVersion: source, EntitlementVersion: ent, OccurredAt: admitted}.Seal()); e != nil {
 			return pv.Completion{}, e
@@ -167,6 +204,12 @@ func (s *service) CancelPreparedSubscriptionChange(ctx context.Context, r *v1.Pr
 		after.PendingChangeID = ""
 		after.Revision++
 		after.EntitlementSourceVersion = view.SourceVersion
+		// Once a scheduled boundary has passed, cancellation must not revive the
+		// expired old plan. The commercial subscription remains restricted until a
+		// new trusted change is approved.
+		if raw.State == subscription.StateRestricted {
+			after.State = subscription.StateRestricted
+		}
 		if e = repos.Changes.SaveCurrent(call, raw, after); e != nil {
 			return pv.Completion{}, e
 		}

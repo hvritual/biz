@@ -7,6 +7,8 @@ import (
 	deviceopsv1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
 	application "github.com/hvritual/biz/internal/deviceops/application"
 	policy "github.com/hvritual/biz/internal/deviceops/policy"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	io "io"
 	"net/http"
@@ -14,6 +16,7 @@ import (
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
+	httpbinding "yunka.io/gateway/httpbinding"
 )
 
 type DeviceManagementOperationHandler struct {
@@ -32,11 +35,21 @@ func RegisterDeviceManagementOperationExecutor(mux *http.ServeMux, application a
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &DeviceManagementOperationHandler{application: application, executor: executor}
-	mux.HandleFunc("POST /v1/devices", handler.handleOperationCreateDevice)
-	mux.HandleFunc("DELETE /v1/devices/{id}", handler.handleOperationDeleteDevice)
-	mux.HandleFunc("GET /v1/devices/{id}", handler.handleOperationGetDevice)
-	mux.HandleFunc("GET /v1/devices", handler.handleOperationListDevices)
-	mux.HandleFunc("PATCH /v1/devices/{id}", handler.handleOperationUpdateDevice)
+	if err := httpbinding.Register(mux, "POST", "/v1/devices", handler.handleOperationCreateDevice); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "DELETE", "/v1/devices/{id}", handler.handleOperationDeleteDevice); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/devices/{id}", handler.handleOperationGetDevice); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/devices", handler.handleOperationListDevices); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "PATCH", "/v1/devices/{id}", handler.handleOperationUpdateDevice); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -56,6 +69,10 @@ func writeDeviceManagementOperationError(writer http.ResponseWriter, err error) 
 	}
 	if errors.Is(err, execution.ErrIdempotencyInProgress) || errors.Is(err, execution.ErrIdempotencyCompleted) {
 		http.Error(writer, "idempotency conflict", http.StatusConflict)
+		return
+	}
+	if code := status.Code(err); code == codes.Aborted || code == codes.AlreadyExists {
+		http.Error(writer, "application conflict", http.StatusConflict)
 		return
 	}
 	if errors.Is(err, operation.ErrExecutorUnavailable) || errors.Is(err, operation.ErrSecurityUnavailable) || errors.Is(err, operation.ErrSecurityNilContext) || errors.Is(err, operation.ErrIdempotencyUnavailable) {

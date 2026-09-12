@@ -210,6 +210,44 @@ func (store *Store) ResolveMemberSites(ctx context.Context, tenantID, userID str
 
 type Bootstrap struct{ TenantID, TenantName, UserID, Email, Token string }
 
+// BootstrapGlobalUser creates the one global account required by the local
+// first-party IdP.  It deliberately does not create a tenant, membership or
+// role. Re-running with the same identity is safe; any different existing
+// identity is an operator error rather than an invitation to overwrite data.
+type GlobalUserBootstrap struct{ ID, Email string }
+
+func (store *Store) BootstrapGlobalUser(ctx context.Context, bootstrap GlobalUserBootstrap) error {
+	if store == nil || store.database == nil {
+		return errors.New("access: global user bootstrap store unavailable")
+	}
+	id := strings.TrimSpace(bootstrap.ID)
+	email := strings.TrimSpace(bootstrap.Email)
+	if id == "" || email == "" {
+		return errors.New("access: global user bootstrap requires id and email")
+	}
+	db := store.database.WithContext(ctx)
+	var byID userRecord
+	err := db.Where("id = ?", id).First(&byID).Error
+	if err == nil {
+		if !strings.EqualFold(byID.Email, email) || byID.Status != "active" {
+			return errors.New("access: global user bootstrap conflicts with existing user id")
+		}
+		return nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	var byEmail userRecord
+	err = db.Where("LOWER(email) = LOWER(?)", email).First(&byEmail).Error
+	if err == nil {
+		return errors.New("access: global user bootstrap conflicts with existing email")
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	return db.Create(&userRecord{ID: id, Email: email, Status: "active", CreatedAt: time.Now().UTC()}).Error
+}
+
 func (store *Store) Bootstrap(ctx context.Context, config Bootstrap, permissions []authz.PermissionKey) error {
 	if strings.TrimSpace(config.Token) == "" {
 		return nil

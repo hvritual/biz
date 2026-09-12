@@ -35,7 +35,7 @@ func TestCE06AllBusinessWritesJoinInvocationBarrier(t *testing.T) {
 		writes[o.ID] = o.Execution.Transaction == "local"
 	}
 	var joined string
-	for _, f := range []string{"device_entitlements.go", "member_entitlements.go", "role_entitlements.go"} {
+	for _, f := range []string{"device_entitlements.go", "member_entitlements.go", "role_entitlements.go", "delegation_entitlements.go"} {
 		b, err := os.ReadFile(filepath.Join(root, "internal/bizruntime", f))
 		if err != nil {
 			t.Fatal(err)

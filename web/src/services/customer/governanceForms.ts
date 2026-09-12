@@ -1,0 +1,102 @@
+import type { ActionDefinition } from '@/types/customer'
+import type { ActionId } from './commands'
+import { field as f, reasonField, confirmField } from './formFields'
+export const governanceForms: Partial<Record<ActionId, ActionDefinition>> = {
+  'create-rule': {
+    title: '新建自动化规则',
+    description: '触发 → 条件 → 动作 → 分配 → 去重 → 执行回执。',
+    primary: '保存未启用草稿',
+    drawer: true,
+    fields: [
+      f('name', '规则名称'),
+      f('trigger', '触发器', 'select', true, ['合同到期', '服务超时', '长期未联系']),
+      f('days', '提前 / 超过天数', 'number'),
+      f('owner', '分配给', 'select', true, ['客户负责人', '服务负责人', '财务负责人']),
+      f('description', '规则说明', 'textarea', false),
+    ],
+    note: '租户＋业务对象＋业务周期组成去重键，不使用执行时间作为去重键。',
+  },
+  'rule-test': {
+    title: '无副作用试运行',
+    description: '只评估条件并预览影响，不执行创建、分配或通知。',
+    primary: '开始试运行',
+    fields: [],
+    note: '本地预览针对示例合同 HT-2026-018 检查重复，生产规则引擎尚未接入。',
+  },
+  'rule-publish': {
+    title: '发布自动化规则版本',
+    description: '发布前核对试运行结果与新增事项范围。',
+    primary: '发布并启用',
+    fields: [reasonField, confirmField],
+    note: '仅对未来触发事件生效；既有事项、执行日志不改写。',
+  },
+  'rule-toggle': {
+    title: '调整规则启停',
+    description: '停用不会删除已创建的事项。',
+    primary: '确认调整',
+    fields: [reasonField],
+  },
+  recover: {
+    title: '对账与执行恢复',
+    description: '先核对已有结果，再补齐未完成步骤。',
+    primary: '恢复未完成步骤',
+    drawer: true,
+    fields: [f('reconciled', '已核对业务键、既有事项和失败步骤', 'checkbox'), reasonField],
+    note: '复用原事项，只补未完成步骤。重复恢复不会再次创建事项或本地通知。',
+  },
+  'workflow-publish': {
+    title: '发布工作流新版本',
+    description: '版本变更不能静默改变正在执行的事项。',
+    primary: '发布新版本',
+    drawer: false,
+    fields: [reasonField, f('scope', '应用范围', 'select', true, ['仅新建事项']), confirmField],
+    note: '已有事项固定到原流程版本。责任、验收证据、权限和审计约束不可关闭。',
+  },
+  sla: {
+    title: '服务时限与升级策略',
+    description: '分别配置响应与恢复时限，不覆盖事项期限。',
+    primary: '保存服务策略',
+    drawer: true,
+    fields: [
+      f('responseMinutes', '首次响应时限（分钟）', 'number'),
+      f('recoveryHours', '服务恢复时限（小时）', 'number'),
+      f('calendar', '工作日历', 'select', true, ['工作日 09:00–18:00', '全年 7×24 小时']),
+      f('pause', '等待客户时的暂停规则', 'select', true, ['需人工批准后暂停恢复计时', '不暂停任何时钟']),
+    ],
+    note: '下次行动和合同到期不随服务时钟暂停。本地预览只展示策略，不运行计时调度。',
+  },
+  share: {
+    title: '共享范围与客户可见性',
+    description: '按对象、字段、附件和有效期授权。',
+    primary: '保存授权并生成预览',
+    drawer: true,
+    fields: [
+      f('workId', '共享事项', 'select', true, ['CS-104', 'CS-103', 'CS-106']),
+      f('contactId', '接收人', 'select', true, ['CT-01', 'CT-02', 'CT-03']),
+      f('expires', '授权到期日', 'date'),
+      f('fields', '共享字段', 'text', true, undefined, '事项标题,交付范围,处理进度,共享附件'),
+      f('attachments', '共享附件编号', 'text', false, undefined, '仅选择交付与验收记录，如 INST-078,ACC-041'),
+    ],
+    warning: '内部评论、谈判策略、利润与未授权设备历史默认不可见。预览链接不代表生产授权接口。',
+  },
+  'revoke-share': {
+    title: '撤销客户共享授权',
+    description: '撤销后立即阻止访问该预览投影。',
+    primary: '撤销授权',
+    fields: [reasonField],
+  },
+  'client-accept': {
+    title: '客户确认交付结果',
+    description: '仅确认本次被授权的范围。',
+    primary: '确认并提交',
+    fields: [f('reason', '确认说明', 'textarea'), confirmField],
+    note: '客户确认提交后，服务方仍需核验专业业务记录；不会直接伪造业务完成。',
+  },
+  'client-reject': {
+    title: '退回交付验收',
+    description: '说明未通过点位、问题与希望的整改结果。',
+    primary: '提交问题并退回',
+    fields: [f('reason', '问题描述与影响点位', 'textarea')],
+    note: '反馈进入原事项，保留原始验收记录和已通过部分。',
+  },
+}

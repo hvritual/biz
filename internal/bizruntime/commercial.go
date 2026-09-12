@@ -8,7 +8,7 @@ import (
 )
 
 func (factory applicationFactories) BuildCommercialEntitlementManagement(dependencies generatedassembly.CommercialEntitlementManagementDependencies) (commercialapp.EntitlementManagementApplication, error) {
-	return entitlementmanagement.Build(commercialpersistence.NewEntitlementRepositoryFactory(), entitlementCapabilities{catalog: dependencies.CommercialModuleCatalog, tenants: dependencies.AccessTenantLifecycle}, nil, factory.snapshots, factory.permissionVersions)
+	return entitlementmanagement.Build(commercialpersistence.NewEntitlementTimeRepositoryFactory(factory.commercialLifecycle.Timezone()), entitlementCapabilities{catalog: dependencies.CommercialModuleCatalog, tenants: dependencies.AccessTenantLifecycle}, nil, factory.snapshots, factory.permissionVersions)
 }
 
 type entitlementCapabilities struct {

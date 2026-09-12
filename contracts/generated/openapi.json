@@ -124,6 +124,15 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.EnableTenantRoleRequest"
       },
+      "access_v1_GetTenantDelegationRequest": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.GetTenantDelegationRequest"
+      },
       "access_v1_GetTenantMemberRequest": {
         "properties": {
           "userId": {
@@ -151,6 +160,29 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.GetTenantRoleRequest"
       },
+      "access_v1_GrantTenantDeviceDelegationRequest": {
+        "properties": {
+          "deviceId": {
+            "type": "string"
+          },
+          "expiresAtUnixMs": {
+            "format": "int64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "granteeTenantId": {
+            "type": "string"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.GrantTenantDeviceDelegationRequest"
+      },
       "access_v1_InviteTenantMemberRequest": {
         "properties": {
           "email": {
@@ -159,6 +191,23 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.InviteTenantMemberRequest"
+      },
+      "access_v1_ListTenantDelegationsRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListTenantDelegationsRequest"
+      },
+      "access_v1_ListTenantDelegationsResponse": {
+        "properties": {
+          "delegations": {
+            "items": {
+              "$ref": "#/components/schemas/access_v1_TenantDelegationDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListTenantDelegationsResponse"
       },
       "access_v1_ListTenantMembersRequest": {
         "properties": {},
@@ -249,6 +298,20 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.RemoveTenantMemberRequest"
       },
+      "access_v1_RevokeTenantDelegationRequest": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.RevokeTenantDelegationRequest"
+      },
       "access_v1_RevokeTenantRoleMemberRequest": {
         "properties": {
           "roleId": {
@@ -328,6 +391,55 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.TenantDTO"
+      },
+      "access_v1_TenantDelegationDTO": {
+        "properties": {
+          "expiresAtUnixMs": {
+            "format": "int64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "granteeTenantId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "ownerTenantId": {
+            "type": "string"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "resourceId": {
+            "type": "string"
+          },
+          "resourceKind": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/access_v1_TenantDelegationStatus"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.TenantDelegationDTO"
+      },
+      "access_v1_TenantDelegationStatus": {
+        "enum": [
+          "TENANT_DELEGATION_STATUS_UNSPECIFIED",
+          "TENANT_DELEGATION_STATUS_ACTIVE",
+          "TENANT_DELEGATION_STATUS_REVOKED"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "access.v1.TenantDelegationStatus"
       },
       "access_v1_TenantMemberDTO": {
         "properties": {
@@ -1085,6 +1197,34 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.ListPlanVersionsResponse"
       },
+      "commercial_v1_ListPlansRequest": {
+        "properties": {
+          "afterPlanCode": {
+            "type": "string"
+          },
+          "pageSize": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListPlansRequest"
+      },
+      "commercial_v1_ListPlansResponse": {
+        "properties": {
+          "nextAfterPlanCode": {
+            "type": "string"
+          },
+          "plans": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_PlanCatalogEntryDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListPlansResponse"
+      },
       "commercial_v1_ListProvisioningDeliveriesRequest": {
         "properties": {
           "afterEventId": {
@@ -1244,6 +1384,51 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.MutateProvisioningTaskRequest"
+      },
+      "commercial_v1_PlanCatalogEntryDTO": {
+        "properties": {
+          "createdAt": {
+            "type": "string"
+          },
+          "latestRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "latestVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "planCode": {
+            "type": "string"
+          },
+          "planRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "publishedAt": {
+            "type": "string"
+          },
+          "retiredAt": {
+            "type": "string"
+          },
+          "salesScope": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.PlanCatalogEntryDTO"
       },
       "commercial_v1_PlanEligibilityDTO": {
         "properties": {
@@ -2184,6 +2369,15 @@
         "type": "object",
         "x-yunka-proto-full-name": "deviceops.v1.DeviceDTO"
       },
+      "deviceops_v1_GetDelegatedDeviceRequest": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "deviceops.v1.GetDelegatedDeviceRequest"
+      },
       "deviceops_v1_GetDeviceRequest": {
         "properties": {
           "id": {
@@ -2227,6 +2421,23 @@
         "type": "object",
         "x-yunka-proto-full-name": "deviceops.v1.TransferDeviceRequest"
       },
+      "deviceops_v1_UpdateDelegatedDeviceRequest": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "deviceops.v1.UpdateDelegatedDeviceRequest"
+      },
       "deviceops_v1_UpdateDeviceRequest": {
         "properties": {
           "id": {
@@ -2255,6 +2466,76 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/v1/delegated/devices/{id}": {
+      "get": {
+        "operationId": "deviceops.v1.DelegatedDeviceAccessApplication.GetDelegatedDevice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/deviceops_v1_DeviceDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "deviceops.v1.DelegatedDeviceAccessApplication"
+        ],
+        "x-yunka-rpc": "/deviceops.v1.DelegatedDeviceAccessApplication/GetDelegatedDevice"
+      },
+      "patch": {
+        "operationId": "deviceops.v1.DelegatedDeviceAccessApplication.UpdateDelegatedDevice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/deviceops_v1_UpdateDelegatedDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/deviceops_v1_DeviceDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "deviceops.v1.DelegatedDeviceAccessApplication"
+        ],
+        "x-yunka-rpc": "/deviceops.v1.DelegatedDeviceAccessApplication/UpdateDelegatedDevice"
+      }
+    },
     "/v1/devices": {
       "get": {
         "operationId": "deviceops.v1.DeviceApplication.ListDevices",
@@ -2713,6 +2994,44 @@
       }
     },
     "/v1/platform/plans": {
+      "get": {
+        "operationId": "commercial.v1.PlanManagementApplication.ListPlans",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "afterPlanCode",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ListPlansResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.PlanManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.PlanManagementApplication/ListPlans"
+      },
       "post": {
         "operationId": "commercial.v1.PlanManagementApplication.CreatePlanDraft",
         "requestBody": {
@@ -3727,6 +4046,130 @@
           "commercial.v1.SubscriptionChangesApplication"
         ],
         "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange"
+      }
+    },
+    "/v1/tenant/delegations": {
+      "get": {
+        "operationId": "access.v1.TenantDelegationApplication.ListTenantDelegations",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_ListTenantDelegationsResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantDelegationApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantDelegationApplication/ListTenantDelegations"
+      }
+    },
+    "/v1/tenant/delegations/devices": {
+      "post": {
+        "operationId": "access.v1.TenantDelegationApplication.GrantTenantDeviceDelegation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_GrantTenantDeviceDelegationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantDelegationDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantDelegationApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantDelegationApplication/GrantTenantDeviceDelegation"
+      }
+    },
+    "/v1/tenant/delegations/{id}": {
+      "get": {
+        "operationId": "access.v1.TenantDelegationApplication.GetTenantDelegation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantDelegationDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantDelegationApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantDelegationApplication/GetTenantDelegation"
+      }
+    },
+    "/v1/tenant/delegations/{id}:revoke": {
+      "post": {
+        "operationId": "access.v1.TenantDelegationApplication.RevokeTenantDelegation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_RevokeTenantDelegationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantDelegationDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantDelegationApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantDelegationApplication/RevokeTenantDelegation"
       }
     },
     "/v1/tenant/entitlements": {
