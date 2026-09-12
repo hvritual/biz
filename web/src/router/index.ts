@@ -18,6 +18,11 @@ export const router = createRouter({
       meta: { title: '平台商业管理', module: 'platform-commercial', surface: 'platform' },
     },
     {
+      path: '/platform/commercial/plans',
+      component: () => import('@/views/platform/CommercialPlansView.vue'),
+      meta: { title: '套餐版本管理', module: 'platform-commercial', surface: 'platform' },
+    },
+    {
       path: '/enterprise/members',
       component: () => import('@/views/enterprise/MembersView.vue'),
       meta: { title: '成员管理', module: 'enterprise' },

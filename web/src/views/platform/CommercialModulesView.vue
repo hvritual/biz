@@ -64,12 +64,12 @@ onMounted(loadModules)
   <div class="page-stack" data-testid="ce13-module-catalog">
     <PageHeading
       title="平台商业管理"
-      description="管理模块目录、套餐版本与租户权益；本页只读取服务端商业事实，不使用前端示例权益"
+      description="管理模块目录、套餐版本与租户权益；页面只读取服务端商业事实，不使用前端示例权益"
     />
 
     <section class="commercial-tabs" aria-label="平台商业管理导航">
       <RouterLink class="commercial-tab active" to="/platform/commercial/modules">模块目录</RouterLink>
-      <span class="commercial-tab disabled" aria-disabled="true">套餐版本 · 后续切片</span>
+      <RouterLink class="commercial-tab" to="/platform/commercial/plans">套餐版本</RouterLink>
       <span class="commercial-tab disabled" aria-disabled="true">租户权益 · 后续切片</span>
     </section>
 
@@ -81,9 +81,9 @@ onMounted(loadModules)
     <section v-else-if="loadState === 'blocked'" class="card state-card warning" role="alert">
       <span class="state-icon"><AppIcon name="shield" :size="20" /></span>
       <div class="flex-1">
-        <strong>平台 Web Session 契约尚未开放</strong>
-        <p>{{ errorMessage || '当前平台商业 operation 只接受 API Key；浏览器不会降级使用平台 API Key。' }}</p>
-        <p class="boundary-note">后端前置问题：GitHub Issue #56。完成后本页可直接使用 CE-12 可信会话。</p>
+        <strong>当前会话无平台商业访问权限</strong>
+        <p>{{ errorMessage || '请使用已授权的平台 Web Session；浏览器不会降级使用平台 API Key。' }}</p>
+        <p class="boundary-note">平台商业 API 已支持可信 web-session；401/403 表示当前身份未认证或缺少对应平台权限。</p>
       </div>
       <button class="btn" type="button" @click="loadModules">重新检查</button>
     </section>

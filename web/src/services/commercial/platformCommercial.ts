@@ -23,15 +23,108 @@ export interface ModuleDTO {
   version: string | number
 }
 
+export interface PlanQuota {
+  key: string
+  unlimited: boolean
+  value: string | number
+}
+
+export interface PlanField {
+  key: string
+  action: string
+  mode: string
+}
+
+export interface PlanModule {
+  moduleCode: string
+  capabilityCodes: string[]
+  quotas: PlanQuota[]
+  fields: PlanField[]
+}
+
+export interface PlanTerms {
+  modules: PlanModule[]
+  salesScope: string[]
+  validityMode: string
+  validityDays: number
+  priceRef: string
+}
+
+export interface PlanVersionDTO {
+  planCode: string
+  version: string | number
+  revision: string | number
+  planRevision: string | number
+  state: string
+  name: string
+  terms: PlanTerms
+  contentSha256: string
+  createdAt: string
+  publishedAt: string
+  retiredAt: string
+  actorId: string
+  reason: string
+}
+
+export interface PlanEligibilityDTO {
+  eligible: boolean
+  reason: string
+  version?: PlanVersionDTO
+}
+
+export interface ListPlanVersionsResult {
+  versions: PlanVersionDTO[]
+  nextAfterVersion: string | number
+}
+
+export interface CreatePlanDraftInput {
+  requestId: string
+  planCode: string
+  name: string
+  terms: PlanTerms
+  reason: string
+}
+
+export interface CreatePlanVersionInput {
+  requestId: string
+  fromVersion: string | number
+  expectedPlanRevision: string | number
+  reason: string
+}
+
+export interface UpdatePlanDraftInput {
+  requestId: string
+  expectedRevision: string | number
+  name: string
+  terms: PlanTerms
+  reason: string
+}
+
+export interface ChangePlanStateInput {
+  requestId: string
+  expectedRevision: string | number
+  reason: string
+}
+
 interface ListModulesResponse {
   modules?: ModuleDTO[]
+}
+
+interface ListPlanVersionsResponse {
+  versions?: PlanVersionDTO[]
+  nextAfterVersion?: string | number
+}
+
+interface TrustedSessionResponse {
+  authenticated?: boolean
+  csrf_token?: string
 }
 
 export class CommercialApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
-    readonly code: 'unauthenticated' | 'forbidden' | 'http' | 'invalid-response',
+    readonly code: 'unauthenticated' | 'forbidden' | 'conflict' | 'http' | 'invalid-response',
   ) {
     super(message)
   }
@@ -39,6 +132,10 @@ export class CommercialApiError extends Error {
 
 const configuredBase = import.meta.env.VITE_API_BASE_URL ?? '/api'
 const baseUrl = configuredBase.endsWith('/') ? configuredBase.slice(0, -1) : configuredBase
+
+function encoded(value: string | number) {
+  return encodeURIComponent(String(value).trim())
+}
 
 async function parseError(response: Response) {
   const fallback = `商业平台接口请求失败（HTTP ${response.status}）`
@@ -50,17 +147,12 @@ async function parseError(response: Response) {
   }
 }
 
-async function request<T>(path: string): Promise<T> {
-  const response = await fetch(`${baseUrl}${path}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: { Accept: 'application/json' },
-  })
-
+async function parseResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const message = await parseError(response)
     if (response.status === 401) throw new CommercialApiError(message, 401, 'unauthenticated')
     if (response.status === 403) throw new CommercialApiError(message, 403, 'forbidden')
+    if (response.status === 409) throw new CommercialApiError(message, 409, 'conflict')
     throw new CommercialApiError(message, response.status, 'http')
   }
 
@@ -71,7 +163,109 @@ async function request<T>(path: string): Promise<T> {
   }
 }
 
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const headers = new Headers(init.headers)
+  headers.set('Accept', 'application/json')
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...init,
+    credentials: 'include',
+    headers,
+  })
+  return parseResponse<T>(response)
+}
+
+async function trustedCsrfToken(): Promise<string> {
+  const session = await request<TrustedSessionResponse>('/auth/session')
+  if (!session.authenticated || !session.csrf_token) {
+    throw new CommercialApiError('当前可信会话不可执行平台写操作', 401, 'unauthenticated')
+  }
+  return session.csrf_token
+}
+
+async function mutate<T>(path: string, method: 'POST' | 'PATCH', body: unknown): Promise<T> {
+  const csrf = await trustedCsrfToken()
+  return request<T>(path, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': csrf,
+    },
+    body: JSON.stringify(body),
+  })
+}
+
+export function commercialRequestId(prefix: string) {
+  const random = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  return `${prefix}-${random}`
+}
+
 export async function listPlatformModules(): Promise<ModuleDTO[]> {
   const result = await request<ListModulesResponse>('/v1/platform/modules')
   return Array.isArray(result.modules) ? result.modules : []
+}
+
+export async function listPlanVersions(
+  planCode: string,
+  options: { afterVersion?: string | number; pageSize?: number } = {},
+): Promise<ListPlanVersionsResult> {
+  const query = new URLSearchParams()
+  if (options.afterVersion !== undefined && String(options.afterVersion) !== '') {
+    query.set('afterVersion', String(options.afterVersion))
+  }
+  if (options.pageSize !== undefined) query.set('pageSize', String(options.pageSize))
+  const suffix = query.size ? `?${query.toString()}` : ''
+  const result = await request<ListPlanVersionsResponse>(`/v1/platform/plans/${encoded(planCode)}/versions${suffix}`)
+  return {
+    versions: Array.isArray(result.versions) ? result.versions : [],
+    nextAfterVersion: result.nextAfterVersion ?? '',
+  }
+}
+
+export function getPlanVersion(planCode: string, version: string | number) {
+  return request<PlanVersionDTO>(`/v1/platform/plans/${encoded(planCode)}/versions/${encoded(version)}`)
+}
+
+export function createPlanDraft(input: CreatePlanDraftInput) {
+  return mutate<PlanVersionDTO>('/v1/platform/plans', 'POST', input)
+}
+
+export function createPlanVersion(planCode: string, input: CreatePlanVersionInput) {
+  return mutate<PlanVersionDTO>(`/v1/platform/plans/${encoded(planCode)}/versions`, 'POST', {
+    ...input,
+    planCode,
+  })
+}
+
+export function updatePlanDraft(planCode: string, version: string | number, input: UpdatePlanDraftInput) {
+  return mutate<PlanVersionDTO>(`/v1/platform/plans/${encoded(planCode)}/versions/${encoded(version)}`, 'PATCH', {
+    ...input,
+    planCode,
+    version: String(version),
+  })
+}
+
+export function publishPlanVersion(planCode: string, version: string | number, input: ChangePlanStateInput) {
+  return mutate<PlanVersionDTO>(`/v1/platform/plans/${encoded(planCode)}/versions/${encoded(version)}/publish`, 'POST', {
+    ...input,
+    planCode,
+    version: String(version),
+  })
+}
+
+export function retirePlanVersion(planCode: string, version: string | number, input: ChangePlanStateInput) {
+  return mutate<PlanVersionDTO>(`/v1/platform/plans/${encoded(planCode)}/versions/${encoded(version)}/retire`, 'POST', {
+    ...input,
+    planCode,
+    version: String(version),
+  })
+}
+
+export function checkPlanEligibility(planCode: string, version: string | number, salesScope: string) {
+  return mutate<PlanEligibilityDTO>(`/v1/platform/plans/${encoded(planCode)}/versions/${encoded(version)}/eligibility`, 'POST', {
+    planCode,
+    version: String(version),
+    salesScope: salesScope.trim(),
+  })
 }
