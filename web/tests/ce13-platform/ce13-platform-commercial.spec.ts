@@ -275,7 +275,7 @@ test("TestCE13PlatformCommercialLifecycleThroughTrustedWebSession", async ({ bro
 
   const previewID = requestID("subscription-preview");
   const preview = await write(`/v1/platform/tenants/${data.tenant_id}/subscription/change-previews`, {
-    requestId: previewID, tenantId: data.tenant_id, action: "STOP_RENEWAL",
+    requestId: previewID, tenantId: data.tenant_id, action: "SWITCH",
     targetPlanCode: planCode, targetPlanVersion: draft.version, effectiveAt: "",
     reason: "CE-13 manual change preview acceptance",
   }, previewID);
@@ -321,12 +321,13 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await editor.getByLabel("套餐名称").fill("CE-13 可见控制台套餐");
   await editor.getByRole("button", { name: "添加模块" }).click();
   await editor.getByLabel("模块").selectOption("device-operations");
+  await editor.getByLabel("device.lifecycle").check();
   await editor.getByRole("button", { name: "添加范围" }).click();
   await editor.getByPlaceholder("default").fill("default");
   await editor.getByRole("button", { name: "提交到服务端" }).click();
   await expect(page.getByText("套餐草稿已创建。")).toBeVisible();
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "发布版本" }).click();
+  await page.getByRole("button", { name: "发布", exact: true }).click();
   await expect(page.getByText("套餐版本已发布；后续修订必须创建新版本。")).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("ce13-plan-published-1366.png"), fullPage: true });
 
@@ -346,7 +347,8 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await expect(page.getByText("override").first()).toBeVisible();
 
   const change = page.getByTestId("ce13-subscription-change");
-  await change.getByLabel("操作").selectOption("STOP_RENEWAL");
+  await change.getByLabel("目标 plan_code").fill(code);
+  await change.getByLabel("目标版本").fill("1");
   await change.getByLabel("预览原因").fill("CE-13 可见人工变更预览");
   await change.getByRole("button", { name: "生成不可变预览" }).click();
   await expect(change.getByText(/change /)).toBeVisible();

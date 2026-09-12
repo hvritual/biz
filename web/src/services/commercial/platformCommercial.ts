@@ -460,14 +460,14 @@ export function getPlanVersion(planCode: string, version: string | number) {
 }
 
 export function createPlanDraft(input: CreatePlanDraftInput) {
-  return mutate<PlanVersionDTO>('/v1/platform/plans', 'POST', input)
+  return mutate<PlanVersionDTO>('/v1/platform/plans', 'POST', input, { idempotencyKey: input.requestId })
 }
 
 export function createPlanVersion(planCode: string, input: CreatePlanVersionInput) {
   return mutate<PlanVersionDTO>(`/v1/platform/plans/${encoded(planCode)}/versions`, 'POST', {
     ...input,
     planCode,
-  })
+  }, { idempotencyKey: input.requestId })
 }
 
 export function updatePlanDraft(planCode: string, version: string | number, input: UpdatePlanDraftInput) {
@@ -475,7 +475,7 @@ export function updatePlanDraft(planCode: string, version: string | number, inpu
     ...input,
     planCode,
     version: String(version),
-  })
+  }, { idempotencyKey: input.requestId })
 }
 
 export function publishPlanVersion(planCode: string, version: string | number, input: ChangePlanStateInput) {
@@ -483,7 +483,7 @@ export function publishPlanVersion(planCode: string, version: string | number, i
     ...input,
     planCode,
     version: String(version),
-  })
+  }, { idempotencyKey: input.requestId })
 }
 
 export function retirePlanVersion(planCode: string, version: string | number, input: ChangePlanStateInput) {
@@ -491,7 +491,7 @@ export function retirePlanVersion(planCode: string, version: string | number, in
     ...input,
     planCode,
     version: String(version),
-  })
+  }, { idempotencyKey: input.requestId })
 }
 
 export function checkPlanEligibility(planCode: string, version: string | number, salesScope: string) {
