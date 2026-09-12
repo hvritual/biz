@@ -98,7 +98,7 @@ test('TestCE13TenantEntitlementWorkspaceUsesExplicitTenantAndServerExplanation',
   })
 
   await page.goto('/#/platform/commercial/tenant-entitlements')
-  await expect(page.getByText('Issue #64').first()).toBeVisible()
+  await expect(page.getByText('可信平台会话').first()).toBeVisible()
   await page.getByLabel('租户 ID').fill('tenant-1')
   await page.getByLabel(/能力过滤/).fill(' device.lifecycle ')
   await page.getByRole('button', { name: '读取权益' }).click()
