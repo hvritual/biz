@@ -8,12 +8,12 @@ COMMERCIAL_BASELINE ?=
 init:
 	@cd $(YUNKA_APP) && go run ./cmd init --root $(CURDIR) --db-prefix biz
 
-generate:
+generate: toolchain-check
 	@cd $(YUNKA_APP) && go run ./cmd generate --root $(CURDIR) --protoc $(PROTOC)
 	@go mod tidy
 	@$(MAKE) commercial-generate
 
-check:
+check: toolchain-check
 	@cd $(YUNKA_APP) && go run ./cmd check --root $(CURDIR) --protoc $(PROTOC)
 	@$(MAKE) commercial-check
 
@@ -40,7 +40,7 @@ consumer-certify: yunka-source-check workspace-check
 
 pressure: verify
 	@: "$${YUNKA_TEST_MYSQL_DSN:?YUNKA_TEST_MYSQL_DSN is required for biz pressure tests}"
-	@go test -count=1 -tags=integration ./integration
+	@python3 scripts/qualify-evolution-mysql.py
 
 run:
 	@go run ./cmd/biz
@@ -57,3 +57,7 @@ commercial-generate:
 
 commercial-check:
 	@go run ./cmd/commercial-catalog --root $(CURDIR) --baseline "$(COMMERCIAL_BASELINE)"
+
+.PHONY: toolchain-check
+toolchain-check:
+	@YUNKA_ROOT="$(YUNKA_ROOT)" PROTOC="$(PROTOC)" ./scripts/check-toolchain.sh

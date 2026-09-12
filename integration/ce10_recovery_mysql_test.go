@@ -123,7 +123,7 @@ func TestCE10PersistenceBeforeRestart(t *testing.T) {
 	if path == "" {
 		t.Fatal("CE10_RESTART_RECEIPT required")
 	}
-	e := ce10OnDB(t, openDB(t), ce04Random(t), &ce10TestPolicy{}, &ce10TestAdapter{outcome: pv.ReadyStep})
+	e := ce10OnDB(t, ce08FreshFixtureDB(t), ce04Random(t), &ce10TestPolicy{}, &ce10TestAdapter{outcome: pv.ReadyStep})
 	e.old = e.plan(ce09Terms(10, 30))
 	e.putRule("ce09", 100, e.old)
 	key := ce04Random(t)
@@ -262,5 +262,38 @@ func TestCE16ReceiptMigrationSurvivesRepeatedFullBootstrap(t *testing.T) {
 	var count int64
 	if err := e.db.Raw("SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='biz_commercial_change_receipts' AND CONSTRAINT_NAME='ce16_receipt_status'").Scan(&count).Error; err != nil || count != 1 {
 		t.Fatalf("CE16 constraint not installed exactly once: %d %v", count, err)
+	}
+}
+
+func TestCE16ScheduledChangeExecutesOnceThroughProvisioningWorker(t *testing.T) {
+	e := ce10New(t)
+	target := e.plan(ce09Terms(20, 30))
+	key := ce04Random(t)
+	due := time.Now().UTC().Add(1500 * time.Millisecond)
+	preview, err := e.changes.PreviewSubscriptionChange(ce04Context(e.token, key), &v1.PreviewSubscriptionChangeRequest{TenantId: e.tenant, RequestId: key, Action: "SWITCH", TargetPlanCode: target.PlanCode, TargetPlanVersion: target.Version, EffectiveAt: due.Format(time.RFC3339Nano), Reason: "CE16 scheduled worker regression"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	receipt, err := e.confirm(e.confirmation(preview))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if receipt.Status != "SCHEDULED" || ce09Quota(t, e.view()) != 10 {
+		t.Fatal("schedule applied before boundary")
+	}
+	time.Sleep(time.Until(due) + 50*time.Millisecond)
+	tick, err := e.started.RunProvisioningOnce(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tick.TransitionID == "" || tick.TransitionState != "APPLIED" || ce09Quota(t, e.view()) != 20 {
+		t.Fatalf("scheduled transition not applied: %+v", tick)
+	}
+	second, err := e.started.RunProvisioningOnce(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.TransitionID != "" {
+		t.Fatalf("terminal transition claimed twice: %+v", second)
 	}
 }

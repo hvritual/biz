@@ -49,3 +49,5 @@ The earlier `commercial-entitlements/evidence/INTEGRATION-20260912.md` records t
 initial frontend-only scope; this cross-branch scope supersedes its branch-chain
 and CE-16 exclusion statements. Backend access is always server-owned; no browser
 API key, synthetic tenant, second executor or production demo fallback is added.
+
+Local database: reuse the single existing Docker instance and `biz_evolution` database as defined in [LOCAL-DATABASE.md](LOCAL-DATABASE.md). Per-task database creation is retired.

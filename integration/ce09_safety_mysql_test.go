@@ -434,10 +434,12 @@ func TestCE09MySQLScheduledReceiptPersistsPastEffectiveTimeWithoutApplying(t *te
 	if err != nil {
 		t.Fatal(err)
 	}
+	// CE16 supersedes the pre-scheduler entitlement assumption: the receipt is
+	// still pending, but expired PLAN rights must not remain usable at the boundary.
 	time.Sleep(time.Until(at) + 25*time.Millisecond)
 	got, err := e.changes.GetSubscriptionChangeReceipt(e.ctx(), &v1.ReadSubscriptionChangeRequest{TenantId: e.tenant, ChangeId: p.ChangeId})
-	if err != nil || got.Status != "SCHEDULED" || !proto.Equal(got, r) || ce09Quota(t, e.view()) != 10 {
-		t.Fatal("scheduled intent falsely applied")
+	if err != nil || got.Status != "SCHEDULED" || !proto.Equal(got, r) || ce09Quota(t, e.view()) != 0 {
+		t.Fatalf("receipt must remain pending while CE16 fences expired PLAN rights: err=%v receipt=%v", err, got)
 	}
 }
 func TestCE09MySQLConfirmedPayloadDigestDetectsCorruption(t *testing.T) {

@@ -1,14 +1,18 @@
 # biz — Yunka multi-tenant Access/IAM pressure application
 
-This repository is the real-business conformance and pressure consumer for Yunka. Its current qualified scope is B12: a multi-tenant Access/IAM domain plus DeviceOps, executed through the canonical Yunka contract/compiler/runtime path against MySQL 8.4.
+Current integration and local development policy: [unified evolution](docs/evolution/README.md), [single local Docker database](docs/evolution/LOCAL-DATABASE.md).
 
-Current qualified Yunka baseline:
+This repository is the real-business consumer for Yunka. The current integration candidate combines Access/IAM, DeviceOps and delegated access, commercial entitlements and time transitions, trusted OIDC sessions, and the CoffeeLink Vue console. Historical B12 qualification remains documented below; it is not a completion claim for every new capability.
+
+Current integration framework lock (see `.yunka/source.env`):
 
 ```text
-hvritual/yunka.io@6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+hvritual/yunka.io@4c678037c1abe8a2ab0cac376d1b77f89c9f43a3
 ```
 
-That canonical Yunka main merge includes the two generic framework fixes discovered by the B12 consumer pressure wave:
+This compatibility candidate retains web-session/source-edge behavior and the canonical HttpRule custom-verb fix. It does not move framework main.
+
+The earlier B12 canonical baseline closed two generic framework fixes:
 
 - PR #108 — principal-aware grant resolution: permission authorization is not implicitly tenant-bound;
 - PR #112 — A+ edge-owned child-capability codegen: child capability identity is `(source Application -> target Application -> required Operations)`.
@@ -21,7 +25,7 @@ docs/pressure/B12-framework-pressure.md
 
 ## Current architecture
 
-The repository carries six Applications across two business domains.
+The original Access/DeviceOps baseline described here has six Applications. The current generated inventory additionally includes commercial and delegated-access Applications; `contracts/generated/assembly-plan.json` is authoritative.
 
 ### Access / IAM
 
@@ -111,8 +115,9 @@ workspace/
 ├── yunka.io/
 └── biz/
 
+source .yunka/source.env
 cd ../yunka.io
-git checkout 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+git checkout "$YUNKA_COMMIT"
 make rpc-tools
 
 cd ../biz

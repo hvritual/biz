@@ -34,6 +34,8 @@ on:
 permissions:
   contents: read
 
+env:
+  YUNKA_TEST_RESET_FIXTURES: "1"
 jobs:
   b12-4-tenant-role-mysql:
     runs-on: ubuntu-latest

@@ -5,3 +5,5 @@ coverage.out
 .yunka/cache/
 .yunka/dev-runtime.json
 .yunka/runtime-graph.json
+
+.env.local

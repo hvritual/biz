@@ -128,7 +128,7 @@ func TestB136StableAuthoritySlotRepeatedExpiredRegrant(t *testing.T) {
 	}
 
 	var slotCount int64
-	if err := db.Table("biz_tenant_delegation_authority_slots").Count(&slotCount).Error; err != nil {
+	if err := db.Table("biz_tenant_delegation_authority_slots").Where("active_key IN (SELECT active_key FROM biz_tenant_delegations WHERE id = ?)", current.ID).Count(&slotCount).Error; err != nil {
 		t.Fatal(err)
 	}
 	if slotCount != 1 {

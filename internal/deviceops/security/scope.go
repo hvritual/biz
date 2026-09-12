@@ -76,6 +76,8 @@ func (guard *Guard) Prepare(ctx context.Context, authorized authz.AuthorizedOper
 		"device.list": "device.read", "device.get": "device.read", "device.create": "device.create",
 		"device.update": "device.update", "device.delete": "device.delete", "device.transfer": "device.update",
 		"site.validate_transfer_target": "site.read",
+		// Historical internal pressure Operations retain the same resource-specific scope.
+		"device.transfer.local": "device.update", "device.provision.remote": "device.create",
 	}[authorized.Policy.Operation]
 	if resourcePermission == "" {
 		return nil, denied(authorized)

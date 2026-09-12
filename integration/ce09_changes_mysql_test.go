@@ -60,7 +60,7 @@ func ce09OnDB(t *testing.T, db *gorm.DB, token string) *ce09Environment {
 }
 func ce09New(t *testing.T) *ce09Environment {
 	t.Helper()
-	e := ce09OnDB(t, ce08IsolatedDB(t), ce04Random(t))
+	e := ce09OnDB(t, ce08FreshFixtureDB(t), ce04Random(t))
 	e.old = e.plan(ce09Terms(10, 30))
 	e.putRule("ce09", 100, e.old)
 	id := ce04Random(t)

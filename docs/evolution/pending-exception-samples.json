@@ -1,0 +1,18 @@
+[
+  {
+    "title": "[整合异常样本] 宿主 protobuf 工具版本未锁定导致 CI 再生成漂移",
+    "body": "## 实际证据\n候选5ce5a8e的CI run34699698576/job103569158457在生成零漂移检查失败；CE04 job103569158313也报protobuf-go generated content drift。\n本机protoc3.5.1、Go插件1.36.3、gRPC插件1.5.1；仓库锁为3.21.12、1.36.11、1.6.2。仅锁Go版本不足以锁外部生成器。\n\n## 修复与验收\n已使用完整锁定工具组重新生成并通过make check；Make generate/check增加check-toolchain.sh前置拒绝，避免再次生成后才由CI发现。禁止手改生成注释或跳过diff。该样本为本轮真实失败，非生产事故。"
+  },
+  {
+    "title": "[测试异常样本] 跨任务共享 MySQL 库污染目录和身份状态，造成整包回归假失败",
+    "body": "## 实际证据\n整包测试复用库出现ENTITLEMENT_SOURCE_UNAVAILABLE、PLAN_AUTHORITY_UNAVAILABLE；B13授权槽23 want1；CE12固定身份继承撤权。相同源码的TestB125TenantCreateBootstrapsOwnerInOneRootUoW在全新biz_evolution_fresh库通过。\n\n## 根因与修复\nCE02 helper删除目录/权益表并写入core/child/future自定义模块；ProductionRegistry正确拒绝这些未知模块。复用同一既有数据库，测试前备份，按任务串行重置biz_*夹具，最后恢复原数据；Before/AfterRestart保持同组；浏览器种子单独隔离。B13计数限定当前授权键仍严格要求1。scripts/qualify-evolution-mysql.py保留全部测试清单、通过与跳过数。它不代替原工作流的物理数据库重启验证。不得放宽权限拒绝来制造绿色结果。"
+  },
+  {
+    "title": "[历史回归样本][C9] Device Scope Guard 遗漏内部压力 Operation 映射",
+    "body": "## 本轮重现\n隔离库的20项基础回归中，TestC9LocalCompositionUsesOneExecutorAndOneUoW及TestC9RemoteSagaStagesBusinessWriteAndOutboxAtomically返回permission_denied。初步排查授权构造后确认根因不是GrantResolver，而是Device Scope Guard的Operation到资源权限表只保留生产操作，遗漏device.transfer.local及device.provision.remote。\n\n## 标准实现\n分别明确映射device.update与device.create；保留资源对应Grant的数据范围，不因无关device.read=all而扩大写范围。未知Operation仍拒绝。新增TestPressureOperationsKeepResourceSpecificScope并重跑两项MySQL压力。没有增加生产路由或第二授权机制。"
+  },
+  {
+    "title": "[整合审查样本] 跨标签页账号或租户切换可能使旧业务草稿在新身份下提交",
+    "body": "## 发现与影响\n移植历史真实API控制台时，前端首次会话核对与最终写请求之间可能发生另一标签页切租户；原CSRF不会随切换失效。仅比较actor_kind/user_id/tenant也无法区分platform_subject不同的平台账号。另有回读失败后仍报告回读成功的问题。\n\n## 修复与验证\n当前实现将platform_subject纳入比较，并用X-Biz-Session-Context携带原始期望身份，由服务端与实际已认证会话比较；不把客户端字段作为授权来源。最终写入前匹配失败返回409，授权仍使用服务器Principal。TestWebSessionPreconditionRejectsCrossTabTenantAndActorChanges及浏览器platform account replacement用例覆盖拒绝路径。回读状态分别报告成功/失败。此为整合审查样本，不声称已有生产越权事故。"
+  }
+]

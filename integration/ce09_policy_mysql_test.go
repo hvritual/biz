@@ -55,7 +55,7 @@ func (p *ce09TestQuotaPolicy) Evaluate(ctx context.Context, in ports.QuotaChange
 }
 func ce09WithPolicy(t *testing.T, policy ports.QuotaChangePolicy) *ce09Environment {
 	t.Helper()
-	db := ce08IsolatedDB(t)
+	db := ce08FreshFixtureDB(t)
 	token := ce04Random(t)
 	config := deviceops.DefaultConfig()
 	config.HTTPListenAddress = "127.0.0.1:0"

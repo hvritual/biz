@@ -10,6 +10,8 @@ permissions:
 concurrency:
   group: evolution-${{ github.ref }}
   cancel-in-progress: true
+env:
+  YUNKA_TEST_RESET_FIXTURES: "1"
 jobs:
   qualify:
     runs-on: ubuntu-latest
@@ -76,7 +78,11 @@ jobs:
           go build ./cmd/...
       - name: Complete MySQL suites including delegated authority
         working-directory: biz
-        run: go test -json -p 1 -count=1 -tags=integration ./integration ./integration/b13delegation > /tmp/evolution-mysql.jsonl
+        env:
+          EVOLUTION_MYSQL_CONTAINER: ${{ job.services.mysql.id }}
+          EVOLUTION_MYSQL_PASSWORD: root
+          EVOLUTION_EVIDENCE_DIR: /tmp/evolution-evidence
+        run: python3 scripts/qualify-evolution-mysql.py
       - name: Plan and receipt regression
         working-directory: biz
         run: |
@@ -86,5 +92,7 @@ jobs:
         if: always()
         with:
           name: evolution-mysql-evidence
-          path: /tmp/evolution-mysql.jsonl
+          path: |
+            /tmp/evolution-evidence/summary.json
+            /tmp/evolution-evidence/*.log
           retention-days: 30

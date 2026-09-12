@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ "${GITHUB_ACTIONS:-}" != "true" ]]; then
+  echo "Use scripts/qualify-evolution-mysql.py for backed-up local database verification" >&2
+  exit 2
+fi
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
 out="${RUNNER_TEMP:?}/ce10"
@@ -58,9 +62,17 @@ run_suite restart-after go test -timeout=3m -count=1 -tags=integration -json ./i
 # Group isolation preserves deliberate invalid/custom CE02 fixtures without
 # contaminating the Registry assumed by subsequent legacy groups.
 for group in CE09 CE08 CE07 CE06 CE05 CE04 CE02 B12; do
-  schema="ce10_qualification_${group,,}"
-  docker exec "$MYSQL_CONTAINER_ID" mysql -uroot -proot -e "CREATE DATABASE $schema" > "$out/$group-db.log" 2>&1
-  export YUNKA_TEST_MYSQL_DSN="root:root@tcp(127.0.0.1:3306)/$schema?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true"
+  # Reuse the existing workflow database; reset only test-owned fixture tables.
+  schema="${YUNKA_TEST_MYSQL_DSN#*)/}"
+  schema="${schema%%\?*}"
+  tables="$(docker exec "$MYSQL_CONTAINER_ID" mysql -uroot -proot -N -B "$schema" -e "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'biz\_%'")"
+  reset_sql="SET FOREIGN_KEY_CHECKS=0;"
+  while IFS= read -r table; do
+    [[ "$table" =~ ^biz_[A-Za-z0-9_]+$ ]] || continue
+    reset_sql+="DROP TABLE $table;"
+  done <<< "$tables"
+  reset_sql+="SET FOREIGN_KEY_CHECKS=1;"
+  docker exec "$MYSQL_CONTAINER_ID" mysql -uroot -proot "$schema" -e "$reset_sql" > "$out/$group-db.log" 2>&1
   pattern="^Test${group}MySQL"
   if [ "$group" = CE02 ]; then pattern='^TestCE02'; fi
   if [ "$group" = B12 ]; then pattern='^Test(B122|B123|B124|B125|B126|AG02OwnerInvariantUsesCurrentReadAfterSnapshot)'; fi

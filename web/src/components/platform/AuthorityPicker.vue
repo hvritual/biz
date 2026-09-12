@@ -49,6 +49,7 @@ async function load(more = false) {
       >{{ kind === 'plans' ? '选择套餐' : '选择租户'
       }}<select
         class="input"
+        :aria-label="kind === 'plans' ? '选择套餐' : '选择租户'"
         :disabled="busy"
         value=""
         @change="emit('select', ($event.target as HTMLSelectElement).value)"
