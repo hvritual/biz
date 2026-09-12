@@ -165,11 +165,11 @@ test('TestCE13TenantOverrideCreateAndRevokeUseSourceVersionCas', async ({ page }
   await page.getByRole('button', { name: '新增专项来源' }).click()
 
   const createDialog = page.getByRole('dialog', { name: '新增专项权益来源' })
-  await createDialog.getByLabel('模块').selectOption('device')
-  await createDialog.getByLabel('目标类型').selectOption('ENTITLEMENT_TARGET_CAPABILITY')
-  await createDialog.getByLabel('目标 key').selectOption('device.lifecycle')
-  await createDialog.getByLabel('效果').selectOption('ENTITLEMENT_EFFECT_GRANT')
-  await createDialog.getByLabel('原因').fill('临时开放设备生命周期能力')
+  await createDialog.getByLabel('模块', { exact: true }).selectOption('device')
+  await createDialog.getByLabel('目标类型', { exact: true }).selectOption('ENTITLEMENT_TARGET_CAPABILITY')
+  await createDialog.getByLabel('目标 key', { exact: true }).selectOption('device.lifecycle')
+  await createDialog.getByLabel('效果', { exact: true }).selectOption('ENTITLEMENT_EFFECT_GRANT')
+  await createDialog.getByLabel('原因', { exact: true }).fill('临时开放设备生命周期能力')
   await createDialog.getByRole('button', { name: '创建专项来源' }).click()
 
   await expect(page.getByText('ov-new')).toBeVisible()
@@ -178,8 +178,9 @@ test('TestCE13TenantOverrideCreateAndRevokeUseSourceVersionCas', async ({ page }
   expect(createHeaders?.authorization).toBeUndefined()
 
   await page.getByRole('button', { name: '撤销' }).click()
-  const revokeDialog = page.getByRole('dialog', { name: '撤销专项来源' })
-  await revokeDialog.getByLabel('撤销原因').fill('临时授权结束')
+  const revokeDialog = page.locator('.revoke-dialog')
+  await expect(revokeDialog.getByRole('heading', { name: '撤销专项来源' })).toBeVisible()
+  await revokeDialog.getByLabel('撤销原因', { exact: true }).fill('临时授权结束')
   await revokeDialog.getByRole('button', { name: '确认撤销' }).click()
 
   await expect(page.getByText('已撤销')).toBeVisible()
