@@ -12,7 +12,7 @@
   },
   "checks": [
     {
-      "command": "set -a; . ./.env.local; set +a; PATH=/tmp/biz-branch-audit/toolchain/bin:$PATH GOTOOLCHAIN=go1.25.13 YUNKA_TEST_RESET_FIXTURES=1 EVOLUTION_EVIDENCE_DIR=/tmp/ce13-main-c420628 EVOLUTION_AFTER_RESET_COMMAND_JSON='[\"bash\",\"scripts/qualify-ce13-browser.sh\"]' EVOLUTION_AFTER_RESET_RESULT_JSON=/tmp/ce13-main-c420628/ce13-browser/ce13-platform-results.json python3 scripts/qualify-evolution-mysql.py",
+      "command": "set -a; . ./.env.local; set +a; PATH=/tmp/biz-branch-audit/toolchain/bin:$PATH GOTOOLCHAIN=go1.25.13 PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' YUNKA_TEST_RESET_FIXTURES=1 EVOLUTION_EVIDENCE_DIR=/tmp/ce13-main-c420628 EVOLUTION_AFTER_RESET_COMMAND_JSON='[\"bash\",\"scripts/qualify-ce13-browser.sh\"]' EVOLUTION_AFTER_RESET_RESULT_JSON=/tmp/ce13-main-c420628/ce13-browser/ce13-platform-results.json python3 scripts/qualify-evolution-mysql.py",
       "exit_code": 0,
       "tests_passed": 4,
       "tests_expected": 4,
