@@ -142,7 +142,7 @@ func TestCE16MySQLTrialGraceBoundaries(t *testing.T) {
 				t.Fatal(err)
 			}
 			due := time.Now().UTC().Add(-time.Second).Truncate(time.Microsecond)
-			current.State, current.PeriodEnd = subscription.StateTrial, &due
+			current.State, current.PeriodStart, current.PeriodEnd = subscription.StateTrial, due.Add(-24*time.Hour), &due
 			payload, err := json.Marshal(current)
 			if err != nil {
 				t.Fatal(err)
@@ -186,7 +186,7 @@ func TestCE16MySQLDelayedBoundaryAfterGrace(t *testing.T) {
 	// The authoritative boundary is already two grace periods old. A late worker
 	// must not start grace from its pickup time.
 	due := time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Microsecond)
-	current.State, current.PeriodEnd = subscription.StateTrial, &due
+	current.State, current.PeriodStart, current.PeriodEnd = subscription.StateTrial, due.Add(-24*time.Hour), &due
 	payload, _ := json.Marshal(current)
 	if err := e.db.Table("biz_commercial_subscriptions").Where("tenant_id=?", e.tenant).Update("payload", string(payload)).Error; err != nil {
 		t.Fatal(err)
