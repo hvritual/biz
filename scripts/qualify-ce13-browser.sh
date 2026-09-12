@@ -24,6 +24,12 @@ cleanup() {
   find "$task_root/web/test-results" -name '*.png' -maxdepth 3 -exec cp {} "${EVOLUTION_EVIDENCE_DIR}/ce13-browser/" \; 2>/dev/null || true
   wait "$biz_pid" 2>/dev/null || true
   wait "$idp_pid" 2>/dev/null || true
+  wait "$web_pid" 2>/dev/null || true
+  for attempt in $(seq 1 20); do
+    if ! lsof -nP -iTCP:14183 -sTCP:LISTEN >/dev/null 2>&1; then break; fi
+    sleep 1
+  done
+  ! lsof -nP -iTCP:14183 -sTCP:LISTEN >/dev/null 2>&1
   rm -rf "$run_root"
 }
 trap cleanup EXIT
@@ -76,7 +82,7 @@ done
 curl -fsS http://127.0.0.1:18380/healthz >/dev/null
 
 cd "$task_root/web"
-VITE_DATA_MODE=api BIZ_DEV_API_TARGET="http://127.0.0.1:18380" npm run dev -- --host 127.0.0.1 --port 14183 >"$run_root/web.log" 2>&1 &
+VITE_DATA_MODE=api BIZ_DEV_API_TARGET="http://127.0.0.1:18380" node "$task_root/web/node_modules/vite/bin/vite.js" --host 127.0.0.1 --port 14183 >"$run_root/web.log" 2>&1 &
 web_pid="$!"
 for attempt in $(seq 1 60); do
   curl -fsS http://127.0.0.1:14183/ >/dev/null && break
