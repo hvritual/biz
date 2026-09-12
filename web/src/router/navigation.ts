@@ -17,7 +17,7 @@ export const primaryNavigation: NavigationItem[] = [
   { id: 'success', label: '客户运营', icon: 'users' },
   { id: 'rental', label: '租赁管理', icon: 'file' },
   { id: 'enterprise', label: '企业中心', icon: 'company' },
-  { id: 'platform-commercial', label: '平台商业', icon: 'crown', path: '/platform/commercial/modules' },
+  { id: 'platform-commercial', label: '平台商业', icon: 'crown' },
   { id: 'system', label: '系统设置', icon: 'settings' },
 ]
 export const enterpriseNavigation: NavigationItem[] = [
@@ -27,6 +27,17 @@ export const enterpriseNavigation: NavigationItem[] = [
   { id: 'plan', label: '套餐信息', icon: 'crown', path: '/enterprise/plan' },
   { id: 'company', label: '企业信息', icon: 'company', path: '/enterprise/company' },
   { id: 'logs', label: '操作日志', icon: 'file', path: '/enterprise/logs' },
+]
+export const platformCommercialNavigation: NavigationItem[] = [
+  { id: 'modules', label: '模块目录', icon: 'database', path: '/platform/commercial/modules' },
+  { id: 'plans', label: '套餐版本', icon: 'crown', path: '/platform/commercial/plans' },
+  { id: 'tenant-entitlements', label: '租户权益', icon: 'shield', path: '/platform/commercial/tenant-entitlements' },
+]
+export const platformCommercialQuickActions = [
+  { label: '管理模块状态', icon: 'settings', path: '/platform/commercial/modules' },
+  { label: '创建或发布套餐', icon: 'crown', path: '/platform/commercial/plans' },
+  { label: '调整租户权益', icon: 'shield', path: '/platform/commercial/tenant-entitlements' },
+  { label: '预览订阅变更', icon: 'file', path: '/platform/commercial/tenant-entitlements' },
 ]
 export const systemNavigation: NavigationItem[] = [
   { id: 'general', label: '基础设置', icon: 'settings', path: '/system/general' },
