@@ -16,7 +16,7 @@ jobs:
       - name: Emit sanitized Playwright failures
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         env:
-          GITHUB_TOKEN: \${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           script: |
             const owner = "hvritual";
