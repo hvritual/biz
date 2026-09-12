@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "mapping_version": "8",
+  "mapping_version": "9",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "396430cf0982aef0a1d8e2fb88e26bd5d5e7be519c0085ffb9fef049d68b3926",
-    "contracts/generated/manifest.json": "07cebf8d5de0464600caa47bc1f3d9181c3a1678db4bd12f510e3f455313120c",
-    "contracts/generated/operation-plans.json": "269fcf94d54eeae50a5da97a7582ee62ae9786ecb0118bec890428e5935cc3c5",
+    "contracts/commercial/operation-capabilities.v1.json": "c2eb6b7f213ca38e19040ef535320e0282d3ba55f6d1444669bdc4ad69884764",
+    "contracts/generated/manifest.json": "caa842d26076db7ced1efa09dc8c471c910305571607dcf14cf7aa4b210318be",
+    "contracts/generated/operation-plans.json": "a9198f140d435ac78f0ffb31a606bc2e7f9d3257a10a8001089a1d0b6da531c5",
     "internal/access/application/tenant_member_lifecycle.go": "c629117c2538c45af9a75932a53ecd6109059bd56e6dc71b11eedb2e538c6cff",
     "internal/access/application/tenantlifecycle/internal/usecase/service.go": "63e3eba06691d15fa88041b660431b48e87640bfaf35954774595db9880e5d29",
     "internal/commercial/application/entitlementmanagement/internal/usecase/service.go": "6cbcb31645f67104b8089b6c8559a2ff0ba5d6f5eb3b49e6fa56f238040f046c",
@@ -278,6 +278,18 @@
       "consumer_type": "platform",
       "tenant_required": false,
       "rpc": "/commercial.v1.PlanManagementApplication/CreatePlanDraft",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.discover",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-13 authoritative platform plan discovery; requires platform.plan.read and a tenantless principal, and never infers the catalog from tenant subscriptions.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/ListPlans",
       "required_capability_codes": [],
       "always_required_capability_codes": []
     },

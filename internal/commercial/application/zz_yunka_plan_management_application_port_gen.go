@@ -14,6 +14,7 @@ type PlanManagementApplication interface {
 	CreatePlanVersion(context.Context, *commercialv1.CreatePlanVersionRequest) (*commercialv1.PlanVersionDTO, error)
 	GetPlanVersion(context.Context, *commercialv1.GetPlanVersionRequest) (*commercialv1.PlanVersionDTO, error)
 	ListPlanVersions(context.Context, *commercialv1.ListPlanVersionsRequest) (*commercialv1.ListPlanVersionsResponse, error)
+	ListPlans(context.Context, *commercialv1.ListPlansRequest) (*commercialv1.ListPlansResponse, error)
 	PublishPlanVersion(context.Context, *commercialv1.ChangePlanVersionStateRequest) (*commercialv1.PlanVersionDTO, error)
 	RetirePlanVersion(context.Context, *commercialv1.ChangePlanVersionStateRequest) (*commercialv1.PlanVersionDTO, error)
 	UpdatePlanDraft(context.Context, *commercialv1.UpdatePlanDraftRequest) (*commercialv1.PlanVersionDTO, error)

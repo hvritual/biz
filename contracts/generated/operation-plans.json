@@ -602,6 +602,41 @@
       }
     },
     {
+      "operationId": "commercial.plan.discover",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "list_plans",
+      "requestType": "commercial.v1.ListPlansRequest",
+      "responseType": "commercial.v1.ListPlansResponse",
+      "security": {
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "platform.plan.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/ListPlans",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/plans"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "commercial.plan.eligibility",
       "domain": "commercial",
       "application": "plan_management",

@@ -9,6 +9,7 @@ const OperationPlanManagementCreatePlanDraft authz.OperationID = "commercial.pla
 const OperationPlanManagementCreatePlanVersion authz.OperationID = "commercial.plan.clone"
 const OperationPlanManagementGetPlanVersion authz.OperationID = "commercial.plan.get"
 const OperationPlanManagementListPlanVersions authz.OperationID = "commercial.plan.list"
+const OperationPlanManagementListPlans authz.OperationID = "commercial.plan.discover"
 const OperationPlanManagementPublishPlanVersion authz.OperationID = "commercial.plan.publish"
 const OperationPlanManagementRetirePlanVersion authz.OperationID = "commercial.plan.retire"
 const OperationPlanManagementUpdatePlanDraft authz.OperationID = "commercial.plan.update"
@@ -28,6 +29,7 @@ func planManagementPolicies() map[string]authz.Policy {
 		"/commercial.v1.PlanManagementApplication/CreatePlanVersion":    {Operation: OperationPlanManagementCreatePlanVersion, Permissions: []authz.PermissionKey{"commercial.catalog.read", "platform.plan.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.PlanManagementApplication/GetPlanVersion":       {Operation: OperationPlanManagementGetPlanVersion, Permissions: []authz.PermissionKey{"platform.plan.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.PlanManagementApplication/ListPlanVersions":     {Operation: OperationPlanManagementListPlanVersions, Permissions: []authz.PermissionKey{"platform.plan.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.PlanManagementApplication/ListPlans":            {Operation: OperationPlanManagementListPlans, Permissions: []authz.PermissionKey{"platform.plan.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.PlanManagementApplication/PublishPlanVersion":   {Operation: OperationPlanManagementPublishPlanVersion, Permissions: []authz.PermissionKey{"commercial.catalog.read", "platform.plan.publish"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.PlanManagementApplication/RetirePlanVersion":    {Operation: OperationPlanManagementRetirePlanVersion, Permissions: []authz.PermissionKey{"commercial.catalog.read", "platform.plan.publish"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.PlanManagementApplication/UpdatePlanDraft":      {Operation: OperationPlanManagementUpdatePlanDraft, Permissions: []authz.PermissionKey{"commercial.catalog.read", "platform.plan.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "8",
+  "mapping_version": "9",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -166,6 +166,13 @@
         }
       ],
       "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access."
+    },
+    {
+      "operation_id": "commercial.plan.discover",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-13 authoritative platform plan discovery; requires platform.plan.read and a tenantless principal, and never infers the catalog from tenant subscriptions."
     },
     {
       "operation_id": "commercial.plan.eligibility",

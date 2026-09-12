@@ -914,6 +914,37 @@
       }
     },
     {
+      "id": "commercial.plan.discover",
+      "application": "commercial/plan_management",
+      "bindings": [
+        {
+          "operationId": "commercial.plan.discover",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.plan.discover/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.plan.discover",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.plan.discover/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.plan.discover"
+      }
+    },
+    {
       "id": "commercial.plan.eligibility",
       "application": "commercial/plan_management",
       "bindings": [
@@ -2874,6 +2905,7 @@
         "commercial.module.update",
         "commercial.plan.clone",
         "commercial.plan.create",
+        "commercial.plan.discover",
         "commercial.plan.eligibility",
         "commercial.plan.get",
         "commercial.plan.list",

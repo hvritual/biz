@@ -428,6 +428,122 @@ func (x *PlanVersionDTO) GetReason() string {
 	return ""
 }
 
+type PlanCatalogEntryDTO struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	PlanCode       string                 `protobuf:"bytes,1,opt,name=plan_code,json=planCode,proto3" json:"plan_code,omitempty"`
+	Name           string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	LatestVersion  uint64                 `protobuf:"varint,3,opt,name=latest_version,json=latestVersion,proto3" json:"latest_version,omitempty"`
+	LatestRevision uint64                 `protobuf:"varint,4,opt,name=latest_revision,json=latestRevision,proto3" json:"latest_revision,omitempty"`
+	PlanRevision   uint64                 `protobuf:"varint,5,opt,name=plan_revision,json=planRevision,proto3" json:"plan_revision,omitempty"`
+	State          string                 `protobuf:"bytes,6,opt,name=state,proto3" json:"state,omitempty"`
+	SalesScope     []string               `protobuf:"bytes,7,rep,name=sales_scope,json=salesScope,proto3" json:"sales_scope,omitempty"`
+	CreatedAt      string                 `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	PublishedAt    string                 `protobuf:"bytes,9,opt,name=published_at,json=publishedAt,proto3" json:"published_at,omitempty"`
+	RetiredAt      string                 `protobuf:"bytes,10,opt,name=retired_at,json=retiredAt,proto3" json:"retired_at,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *PlanCatalogEntryDTO) Reset() {
+	*x = PlanCatalogEntryDTO{}
+	mi := &file_commercial_v1_plan_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PlanCatalogEntryDTO) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PlanCatalogEntryDTO) ProtoMessage() {}
+
+func (x *PlanCatalogEntryDTO) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_plan_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PlanCatalogEntryDTO.ProtoReflect.Descriptor instead.
+func (*PlanCatalogEntryDTO) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *PlanCatalogEntryDTO) GetPlanCode() string {
+	if x != nil {
+		return x.PlanCode
+	}
+	return ""
+}
+
+func (x *PlanCatalogEntryDTO) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *PlanCatalogEntryDTO) GetLatestVersion() uint64 {
+	if x != nil {
+		return x.LatestVersion
+	}
+	return 0
+}
+
+func (x *PlanCatalogEntryDTO) GetLatestRevision() uint64 {
+	if x != nil {
+		return x.LatestRevision
+	}
+	return 0
+}
+
+func (x *PlanCatalogEntryDTO) GetPlanRevision() uint64 {
+	if x != nil {
+		return x.PlanRevision
+	}
+	return 0
+}
+
+func (x *PlanCatalogEntryDTO) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *PlanCatalogEntryDTO) GetSalesScope() []string {
+	if x != nil {
+		return x.SalesScope
+	}
+	return nil
+}
+
+func (x *PlanCatalogEntryDTO) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *PlanCatalogEntryDTO) GetPublishedAt() string {
+	if x != nil {
+		return x.PublishedAt
+	}
+	return ""
+}
+
+func (x *PlanCatalogEntryDTO) GetRetiredAt() string {
+	if x != nil {
+		return x.RetiredAt
+	}
+	return ""
+}
+
 type CreatePlanDraftRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
@@ -441,7 +557,7 @@ type CreatePlanDraftRequest struct {
 
 func (x *CreatePlanDraftRequest) Reset() {
 	*x = CreatePlanDraftRequest{}
-	mi := &file_commercial_v1_plan_proto_msgTypes[5]
+	mi := &file_commercial_v1_plan_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -453,7 +569,7 @@ func (x *CreatePlanDraftRequest) String() string {
 func (*CreatePlanDraftRequest) ProtoMessage() {}
 
 func (x *CreatePlanDraftRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_plan_proto_msgTypes[5]
+	mi := &file_commercial_v1_plan_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -466,7 +582,7 @@ func (x *CreatePlanDraftRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePlanDraftRequest.ProtoReflect.Descriptor instead.
 func (*CreatePlanDraftRequest) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{5}
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CreatePlanDraftRequest) GetRequestId() string {
@@ -517,7 +633,7 @@ type CreatePlanVersionRequest struct {
 
 func (x *CreatePlanVersionRequest) Reset() {
 	*x = CreatePlanVersionRequest{}
-	mi := &file_commercial_v1_plan_proto_msgTypes[6]
+	mi := &file_commercial_v1_plan_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -529,7 +645,7 @@ func (x *CreatePlanVersionRequest) String() string {
 func (*CreatePlanVersionRequest) ProtoMessage() {}
 
 func (x *CreatePlanVersionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_plan_proto_msgTypes[6]
+	mi := &file_commercial_v1_plan_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -542,7 +658,7 @@ func (x *CreatePlanVersionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePlanVersionRequest.ProtoReflect.Descriptor instead.
 func (*CreatePlanVersionRequest) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{6}
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreatePlanVersionRequest) GetRequestId() string {
@@ -595,7 +711,7 @@ type UpdatePlanDraftRequest struct {
 
 func (x *UpdatePlanDraftRequest) Reset() {
 	*x = UpdatePlanDraftRequest{}
-	mi := &file_commercial_v1_plan_proto_msgTypes[7]
+	mi := &file_commercial_v1_plan_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -607,7 +723,7 @@ func (x *UpdatePlanDraftRequest) String() string {
 func (*UpdatePlanDraftRequest) ProtoMessage() {}
 
 func (x *UpdatePlanDraftRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_plan_proto_msgTypes[7]
+	mi := &file_commercial_v1_plan_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -620,7 +736,7 @@ func (x *UpdatePlanDraftRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdatePlanDraftRequest.ProtoReflect.Descriptor instead.
 func (*UpdatePlanDraftRequest) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{7}
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *UpdatePlanDraftRequest) GetRequestId() string {
@@ -685,7 +801,7 @@ type ChangePlanVersionStateRequest struct {
 
 func (x *ChangePlanVersionStateRequest) Reset() {
 	*x = ChangePlanVersionStateRequest{}
-	mi := &file_commercial_v1_plan_proto_msgTypes[8]
+	mi := &file_commercial_v1_plan_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -697,7 +813,7 @@ func (x *ChangePlanVersionStateRequest) String() string {
 func (*ChangePlanVersionStateRequest) ProtoMessage() {}
 
 func (x *ChangePlanVersionStateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_plan_proto_msgTypes[8]
+	mi := &file_commercial_v1_plan_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -710,7 +826,7 @@ func (x *ChangePlanVersionStateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangePlanVersionStateRequest.ProtoReflect.Descriptor instead.
 func (*ChangePlanVersionStateRequest) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{8}
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ChangePlanVersionStateRequest) GetRequestId() string {
@@ -758,7 +874,7 @@ type GetPlanVersionRequest struct {
 
 func (x *GetPlanVersionRequest) Reset() {
 	*x = GetPlanVersionRequest{}
-	mi := &file_commercial_v1_plan_proto_msgTypes[9]
+	mi := &file_commercial_v1_plan_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -770,7 +886,7 @@ func (x *GetPlanVersionRequest) String() string {
 func (*GetPlanVersionRequest) ProtoMessage() {}
 
 func (x *GetPlanVersionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_plan_proto_msgTypes[9]
+	mi := &file_commercial_v1_plan_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -783,7 +899,7 @@ func (x *GetPlanVersionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPlanVersionRequest.ProtoReflect.Descriptor instead.
 func (*GetPlanVersionRequest) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{9}
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetPlanVersionRequest) GetPlanCode() string {
@@ -800,6 +916,110 @@ func (x *GetPlanVersionRequest) GetVersion() uint64 {
 	return 0
 }
 
+type ListPlansRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AfterPlanCode string                 `protobuf:"bytes,1,opt,name=after_plan_code,json=afterPlanCode,proto3" json:"after_plan_code,omitempty"`
+	PageSize      uint32                 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPlansRequest) Reset() {
+	*x = ListPlansRequest{}
+	mi := &file_commercial_v1_plan_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPlansRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPlansRequest) ProtoMessage() {}
+
+func (x *ListPlansRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_plan_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPlansRequest.ProtoReflect.Descriptor instead.
+func (*ListPlansRequest) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ListPlansRequest) GetAfterPlanCode() string {
+	if x != nil {
+		return x.AfterPlanCode
+	}
+	return ""
+}
+
+func (x *ListPlansRequest) GetPageSize() uint32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type ListPlansResponse struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Plans             []*PlanCatalogEntryDTO `protobuf:"bytes,1,rep,name=plans,proto3" json:"plans,omitempty"`
+	NextAfterPlanCode string                 `protobuf:"bytes,2,opt,name=next_after_plan_code,json=nextAfterPlanCode,proto3" json:"next_after_plan_code,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *ListPlansResponse) Reset() {
+	*x = ListPlansResponse{}
+	mi := &file_commercial_v1_plan_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPlansResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPlansResponse) ProtoMessage() {}
+
+func (x *ListPlansResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_plan_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPlansResponse.ProtoReflect.Descriptor instead.
+func (*ListPlansResponse) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ListPlansResponse) GetPlans() []*PlanCatalogEntryDTO {
+	if x != nil {
+		return x.Plans
+	}
+	return nil
+}
+
+func (x *ListPlansResponse) GetNextAfterPlanCode() string {
+	if x != nil {
+		return x.NextAfterPlanCode
+	}
+	return ""
+}
+
 type ListPlanVersionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PlanCode      string                 `protobuf:"bytes,1,opt,name=plan_code,json=planCode,proto3" json:"plan_code,omitempty"`
@@ -811,7 +1031,7 @@ type ListPlanVersionsRequest struct {
 
 func (x *ListPlanVersionsRequest) Reset() {
 	*x = ListPlanVersionsRequest{}
-	mi := &file_commercial_v1_plan_proto_msgTypes[10]
+	mi := &file_commercial_v1_plan_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -823,7 +1043,7 @@ func (x *ListPlanVersionsRequest) String() string {
 func (*ListPlanVersionsRequest) ProtoMessage() {}
 
 func (x *ListPlanVersionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_plan_proto_msgTypes[10]
+	mi := &file_commercial_v1_plan_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -836,7 +1056,7 @@ func (x *ListPlanVersionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPlanVersionsRequest.ProtoReflect.Descriptor instead.
 func (*ListPlanVersionsRequest) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{10}
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ListPlanVersionsRequest) GetPlanCode() string {
@@ -870,7 +1090,7 @@ type ListPlanVersionsResponse struct {
 
 func (x *ListPlanVersionsResponse) Reset() {
 	*x = ListPlanVersionsResponse{}
-	mi := &file_commercial_v1_plan_proto_msgTypes[11]
+	mi := &file_commercial_v1_plan_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -882,7 +1102,7 @@ func (x *ListPlanVersionsResponse) String() string {
 func (*ListPlanVersionsResponse) ProtoMessage() {}
 
 func (x *ListPlanVersionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_plan_proto_msgTypes[11]
+	mi := &file_commercial_v1_plan_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -895,7 +1115,7 @@ func (x *ListPlanVersionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPlanVersionsResponse.ProtoReflect.Descriptor instead.
 func (*ListPlanVersionsResponse) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{11}
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ListPlanVersionsResponse) GetVersions() []*PlanVersionDTO {
@@ -923,7 +1143,7 @@ type CheckPlanEligibilityRequest struct {
 
 func (x *CheckPlanEligibilityRequest) Reset() {
 	*x = CheckPlanEligibilityRequest{}
-	mi := &file_commercial_v1_plan_proto_msgTypes[12]
+	mi := &file_commercial_v1_plan_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -935,7 +1155,7 @@ func (x *CheckPlanEligibilityRequest) String() string {
 func (*CheckPlanEligibilityRequest) ProtoMessage() {}
 
 func (x *CheckPlanEligibilityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_plan_proto_msgTypes[12]
+	mi := &file_commercial_v1_plan_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -948,7 +1168,7 @@ func (x *CheckPlanEligibilityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckPlanEligibilityRequest.ProtoReflect.Descriptor instead.
 func (*CheckPlanEligibilityRequest) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{12}
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *CheckPlanEligibilityRequest) GetPlanCode() string {
@@ -983,7 +1203,7 @@ type PlanEligibilityDTO struct {
 
 func (x *PlanEligibilityDTO) Reset() {
 	*x = PlanEligibilityDTO{}
-	mi := &file_commercial_v1_plan_proto_msgTypes[13]
+	mi := &file_commercial_v1_plan_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -995,7 +1215,7 @@ func (x *PlanEligibilityDTO) String() string {
 func (*PlanEligibilityDTO) ProtoMessage() {}
 
 func (x *PlanEligibilityDTO) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_plan_proto_msgTypes[13]
+	mi := &file_commercial_v1_plan_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1008,7 +1228,7 @@ func (x *PlanEligibilityDTO) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanEligibilityDTO.ProtoReflect.Descriptor instead.
 func (*PlanEligibilityDTO) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{13}
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *PlanEligibilityDTO) GetEligible() bool {
@@ -1075,7 +1295,22 @@ const file_commercial_v1_plan_proto_rawDesc = "" +
 	"\n" +
 	"retired_at\x18\v \x01(\tR\tretiredAt\x12\x19\n" +
 	"\bactor_id\x18\f \x01(\tR\aactorId\x12\x16\n" +
-	"\x06reason\x18\r \x01(\tR\x06reason\"\xb0\x01\n" +
+	"\x06reason\x18\r \x01(\tR\x06reason\"\xd3\x02\n" +
+	"\x13PlanCatalogEntryDTO\x12\x1b\n" +
+	"\tplan_code\x18\x01 \x01(\tR\bplanCode\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12%\n" +
+	"\x0elatest_version\x18\x03 \x01(\x04R\rlatestVersion\x12'\n" +
+	"\x0flatest_revision\x18\x04 \x01(\x04R\x0elatestRevision\x12#\n" +
+	"\rplan_revision\x18\x05 \x01(\x04R\fplanRevision\x12\x14\n" +
+	"\x05state\x18\x06 \x01(\tR\x05state\x12\x1f\n" +
+	"\vsales_scope\x18\a \x03(\tR\n" +
+	"salesScope\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\b \x01(\tR\tcreatedAt\x12!\n" +
+	"\fpublished_at\x18\t \x01(\tR\vpublishedAt\x12\x1d\n" +
+	"\n" +
+	"retired_at\x18\n" +
+	" \x01(\tR\tretiredAt\"\xb0\x01\n" +
 	"\x16CreatePlanDraftRequest\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12\x1b\n" +
@@ -1108,7 +1343,13 @@ const file_commercial_v1_plan_proto_rawDesc = "" +
 	"\x06reason\x18\x05 \x01(\tR\x06reason\"N\n" +
 	"\x15GetPlanVersionRequest\x12\x1b\n" +
 	"\tplan_code\x18\x01 \x01(\tR\bplanCode\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\x04R\aversion\"x\n" +
+	"\aversion\x18\x02 \x01(\x04R\aversion\"W\n" +
+	"\x10ListPlansRequest\x12&\n" +
+	"\x0fafter_plan_code\x18\x01 \x01(\tR\rafterPlanCode\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\rR\bpageSize\"~\n" +
+	"\x11ListPlansResponse\x128\n" +
+	"\x05plans\x18\x01 \x03(\v2\".commercial.v1.PlanCatalogEntryDTOR\x05plans\x12/\n" +
+	"\x14next_after_plan_code\x18\x02 \x01(\tR\x11nextAfterPlanCode\"x\n" +
 	"\x17ListPlanVersionsRequest\x12\x1b\n" +
 	"\tplan_code\x18\x01 \x01(\tR\bplanCode\x12#\n" +
 	"\rafter_version\x18\x02 \x01(\x04R\fafterVersion\x12\x1b\n" +
@@ -1124,7 +1365,7 @@ const file_commercial_v1_plan_proto_rawDesc = "" +
 	"\x12PlanEligibilityDTO\x12\x1a\n" +
 	"\beligible\x18\x01 \x01(\bR\beligible\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x127\n" +
-	"\aversion\x18\x03 \x01(\v2\x1d.commercial.v1.PlanVersionDTOR\aversion2\x8d\x12\n" +
+	"\aversion\x18\x03 \x01(\v2\x1d.commercial.v1.PlanVersionDTOR\aversion2\xc2\x13\n" +
 	"\x19PlanManagementApplication\x12\x82\x02\n" +
 	"\x0fCreatePlanDraft\x12%.commercial.v1.CreatePlanDraftRequest\x1a\x1d.commercial.v1.PlanVersionDTO\"\xa8\x01\xe2\xf3\x18\x86\x01\n" +
 	"\x16commercial.plan.create\x12\x11create_plan_draft\x1a\x14platform.plan.manage\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/platform/plans\x12\x9c\x02\n" +
@@ -1135,7 +1376,10 @@ const file_commercial_v1_plan_proto_rawDesc = "" +
 	"\x12PublishPlanVersion\x12,.commercial.v1.ChangePlanVersionStateRequest\x1a\x1d.commercial.v1.PlanVersionDTO\"\xd4\x01\xe2\xf3\x18\x8b\x01\n" +
 	"\x17commercial.plan.publish\x12\x14publish_plan_version\x1a\x15platform.plan.publish\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02>:\x01*\"9/v1/platform/plans/{plan_code}/versions/{version}/publish\x12\xb4\x02\n" +
 	"\x11RetirePlanVersion\x12,.commercial.v1.ChangePlanVersionStateRequest\x1a\x1d.commercial.v1.PlanVersionDTO\"\xd1\x01\xe2\xf3\x18\x89\x01\n" +
-	"\x16commercial.plan.retire\x12\x13retire_plan_version\x1a\x15platform.plan.publish\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02=:\x01*\"8/v1/platform/plans/{plan_code}/versions/{version}/retire\x12\xda\x01\n" +
+	"\x16commercial.plan.retire\x12\x13retire_plan_version\x1a\x15platform.plan.publish\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02=:\x01*\"8/v1/platform/plans/{plan_code}/versions/{version}/retire\x12\xb2\x01\n" +
+	"\tListPlans\x12\x1f.commercial.v1.ListPlansRequest\x1a .commercial.v1.ListPlansResponse\"b\xe2\xf3\x18D\n" +
+	"\x18commercial.plan.discover\x12\n" +
+	"list_plans\x1a\x12platform.plan.read2\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/platform/plans\x12\xda\x01\n" +
 	"\x0eGetPlanVersion\x12$.commercial.v1.GetPlanVersionRequest\x1a\x1d.commercial.v1.PlanVersionDTO\"\x82\x01\xe2\xf3\x18E\n" +
 	"\x13commercial.plan.get\x12\x10get_plan_version\x1a\x12platform.plan.read2\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x023\x121/v1/platform/plans/{plan_code}/versions/{version}\x12\xe0\x01\n" +
 	"\x10ListPlanVersions\x12&.commercial.v1.ListPlanVersionsRequest\x1a'.commercial.v1.ListPlanVersionsResponse\"{\xe2\xf3\x18H\n" +
@@ -1158,22 +1402,25 @@ func file_commercial_v1_plan_proto_rawDescGZIP() []byte {
 	return file_commercial_v1_plan_proto_rawDescData
 }
 
-var file_commercial_v1_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_commercial_v1_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_commercial_v1_plan_proto_goTypes = []any{
 	(*PlanQuota)(nil),                     // 0: commercial.v1.PlanQuota
 	(*PlanField)(nil),                     // 1: commercial.v1.PlanField
 	(*PlanModule)(nil),                    // 2: commercial.v1.PlanModule
 	(*PlanTerms)(nil),                     // 3: commercial.v1.PlanTerms
 	(*PlanVersionDTO)(nil),                // 4: commercial.v1.PlanVersionDTO
-	(*CreatePlanDraftRequest)(nil),        // 5: commercial.v1.CreatePlanDraftRequest
-	(*CreatePlanVersionRequest)(nil),      // 6: commercial.v1.CreatePlanVersionRequest
-	(*UpdatePlanDraftRequest)(nil),        // 7: commercial.v1.UpdatePlanDraftRequest
-	(*ChangePlanVersionStateRequest)(nil), // 8: commercial.v1.ChangePlanVersionStateRequest
-	(*GetPlanVersionRequest)(nil),         // 9: commercial.v1.GetPlanVersionRequest
-	(*ListPlanVersionsRequest)(nil),       // 10: commercial.v1.ListPlanVersionsRequest
-	(*ListPlanVersionsResponse)(nil),      // 11: commercial.v1.ListPlanVersionsResponse
-	(*CheckPlanEligibilityRequest)(nil),   // 12: commercial.v1.CheckPlanEligibilityRequest
-	(*PlanEligibilityDTO)(nil),            // 13: commercial.v1.PlanEligibilityDTO
+	(*PlanCatalogEntryDTO)(nil),           // 5: commercial.v1.PlanCatalogEntryDTO
+	(*CreatePlanDraftRequest)(nil),        // 6: commercial.v1.CreatePlanDraftRequest
+	(*CreatePlanVersionRequest)(nil),      // 7: commercial.v1.CreatePlanVersionRequest
+	(*UpdatePlanDraftRequest)(nil),        // 8: commercial.v1.UpdatePlanDraftRequest
+	(*ChangePlanVersionStateRequest)(nil), // 9: commercial.v1.ChangePlanVersionStateRequest
+	(*GetPlanVersionRequest)(nil),         // 10: commercial.v1.GetPlanVersionRequest
+	(*ListPlansRequest)(nil),              // 11: commercial.v1.ListPlansRequest
+	(*ListPlansResponse)(nil),             // 12: commercial.v1.ListPlansResponse
+	(*ListPlanVersionsRequest)(nil),       // 13: commercial.v1.ListPlanVersionsRequest
+	(*ListPlanVersionsResponse)(nil),      // 14: commercial.v1.ListPlanVersionsResponse
+	(*CheckPlanEligibilityRequest)(nil),   // 15: commercial.v1.CheckPlanEligibilityRequest
+	(*PlanEligibilityDTO)(nil),            // 16: commercial.v1.PlanEligibilityDTO
 }
 var file_commercial_v1_plan_proto_depIdxs = []int32{
 	0,  // 0: commercial.v1.PlanModule.quotas:type_name -> commercial.v1.PlanQuota
@@ -1182,29 +1429,32 @@ var file_commercial_v1_plan_proto_depIdxs = []int32{
 	3,  // 3: commercial.v1.PlanVersionDTO.terms:type_name -> commercial.v1.PlanTerms
 	3,  // 4: commercial.v1.CreatePlanDraftRequest.terms:type_name -> commercial.v1.PlanTerms
 	3,  // 5: commercial.v1.UpdatePlanDraftRequest.terms:type_name -> commercial.v1.PlanTerms
-	4,  // 6: commercial.v1.ListPlanVersionsResponse.versions:type_name -> commercial.v1.PlanVersionDTO
-	4,  // 7: commercial.v1.PlanEligibilityDTO.version:type_name -> commercial.v1.PlanVersionDTO
-	5,  // 8: commercial.v1.PlanManagementApplication.CreatePlanDraft:input_type -> commercial.v1.CreatePlanDraftRequest
-	6,  // 9: commercial.v1.PlanManagementApplication.CreatePlanVersion:input_type -> commercial.v1.CreatePlanVersionRequest
-	7,  // 10: commercial.v1.PlanManagementApplication.UpdatePlanDraft:input_type -> commercial.v1.UpdatePlanDraftRequest
-	8,  // 11: commercial.v1.PlanManagementApplication.PublishPlanVersion:input_type -> commercial.v1.ChangePlanVersionStateRequest
-	8,  // 12: commercial.v1.PlanManagementApplication.RetirePlanVersion:input_type -> commercial.v1.ChangePlanVersionStateRequest
-	9,  // 13: commercial.v1.PlanManagementApplication.GetPlanVersion:input_type -> commercial.v1.GetPlanVersionRequest
-	10, // 14: commercial.v1.PlanManagementApplication.ListPlanVersions:input_type -> commercial.v1.ListPlanVersionsRequest
-	12, // 15: commercial.v1.PlanManagementApplication.CheckPlanEligibility:input_type -> commercial.v1.CheckPlanEligibilityRequest
-	4,  // 16: commercial.v1.PlanManagementApplication.CreatePlanDraft:output_type -> commercial.v1.PlanVersionDTO
-	4,  // 17: commercial.v1.PlanManagementApplication.CreatePlanVersion:output_type -> commercial.v1.PlanVersionDTO
-	4,  // 18: commercial.v1.PlanManagementApplication.UpdatePlanDraft:output_type -> commercial.v1.PlanVersionDTO
-	4,  // 19: commercial.v1.PlanManagementApplication.PublishPlanVersion:output_type -> commercial.v1.PlanVersionDTO
-	4,  // 20: commercial.v1.PlanManagementApplication.RetirePlanVersion:output_type -> commercial.v1.PlanVersionDTO
-	4,  // 21: commercial.v1.PlanManagementApplication.GetPlanVersion:output_type -> commercial.v1.PlanVersionDTO
-	11, // 22: commercial.v1.PlanManagementApplication.ListPlanVersions:output_type -> commercial.v1.ListPlanVersionsResponse
-	13, // 23: commercial.v1.PlanManagementApplication.CheckPlanEligibility:output_type -> commercial.v1.PlanEligibilityDTO
-	16, // [16:24] is the sub-list for method output_type
-	8,  // [8:16] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	5,  // 6: commercial.v1.ListPlansResponse.plans:type_name -> commercial.v1.PlanCatalogEntryDTO
+	4,  // 7: commercial.v1.ListPlanVersionsResponse.versions:type_name -> commercial.v1.PlanVersionDTO
+	4,  // 8: commercial.v1.PlanEligibilityDTO.version:type_name -> commercial.v1.PlanVersionDTO
+	6,  // 9: commercial.v1.PlanManagementApplication.CreatePlanDraft:input_type -> commercial.v1.CreatePlanDraftRequest
+	7,  // 10: commercial.v1.PlanManagementApplication.CreatePlanVersion:input_type -> commercial.v1.CreatePlanVersionRequest
+	8,  // 11: commercial.v1.PlanManagementApplication.UpdatePlanDraft:input_type -> commercial.v1.UpdatePlanDraftRequest
+	9,  // 12: commercial.v1.PlanManagementApplication.PublishPlanVersion:input_type -> commercial.v1.ChangePlanVersionStateRequest
+	9,  // 13: commercial.v1.PlanManagementApplication.RetirePlanVersion:input_type -> commercial.v1.ChangePlanVersionStateRequest
+	11, // 14: commercial.v1.PlanManagementApplication.ListPlans:input_type -> commercial.v1.ListPlansRequest
+	10, // 15: commercial.v1.PlanManagementApplication.GetPlanVersion:input_type -> commercial.v1.GetPlanVersionRequest
+	13, // 16: commercial.v1.PlanManagementApplication.ListPlanVersions:input_type -> commercial.v1.ListPlanVersionsRequest
+	15, // 17: commercial.v1.PlanManagementApplication.CheckPlanEligibility:input_type -> commercial.v1.CheckPlanEligibilityRequest
+	4,  // 18: commercial.v1.PlanManagementApplication.CreatePlanDraft:output_type -> commercial.v1.PlanVersionDTO
+	4,  // 19: commercial.v1.PlanManagementApplication.CreatePlanVersion:output_type -> commercial.v1.PlanVersionDTO
+	4,  // 20: commercial.v1.PlanManagementApplication.UpdatePlanDraft:output_type -> commercial.v1.PlanVersionDTO
+	4,  // 21: commercial.v1.PlanManagementApplication.PublishPlanVersion:output_type -> commercial.v1.PlanVersionDTO
+	4,  // 22: commercial.v1.PlanManagementApplication.RetirePlanVersion:output_type -> commercial.v1.PlanVersionDTO
+	12, // 23: commercial.v1.PlanManagementApplication.ListPlans:output_type -> commercial.v1.ListPlansResponse
+	4,  // 24: commercial.v1.PlanManagementApplication.GetPlanVersion:output_type -> commercial.v1.PlanVersionDTO
+	14, // 25: commercial.v1.PlanManagementApplication.ListPlanVersions:output_type -> commercial.v1.ListPlanVersionsResponse
+	16, // 26: commercial.v1.PlanManagementApplication.CheckPlanEligibility:output_type -> commercial.v1.PlanEligibilityDTO
+	18, // [18:27] is the sub-list for method output_type
+	9,  // [9:18] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_commercial_v1_plan_proto_init() }
@@ -1218,7 +1468,7 @@ func file_commercial_v1_plan_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_commercial_v1_plan_proto_rawDesc), len(file_commercial_v1_plan_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -100,6 +100,19 @@ func (server *PlanManagementOperationServer) ListPlanVersions(ctx context.Contex
 	return response, nil
 }
 
+func (server *PlanManagementOperationServer) ListPlans(ctx context.Context, request *commercialv1.ListPlansRequest) (*commercialv1.ListPlansResponse, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanPlanManagementListPlans(), request, server.application.ListPlans)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *PlanManagementOperationServer) PublishPlanVersion(ctx context.Context, request *commercialv1.ChangePlanVersionStateRequest) (*commercialv1.PlanVersionDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
