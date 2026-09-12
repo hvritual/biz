@@ -228,7 +228,7 @@ func TestCE08MySQLBusinessKeyConvergesAcrossRuntimeInstances(t *testing.T) {
 	}
 	message.Name = "changed payload"
 	r := b126PostProto(other.base, "/v1/tenants", other.token, "fresh-key-"+id, message)
-	if r.err != nil || r.status != http.StatusConflict || strings.TrimSpace(string(r.body)) != "application request failed" {
+	if r.err != nil || r.status != http.StatusConflict || strings.TrimSpace(string(r.body)) != "application conflict" {
 		t.Fatalf("business payload conflict=%d %v %s", r.status, r.err, r.body)
 	}
 	ce08RPCError(t, other, "changed payload", owner, id, "default", codes.Aborted, "TENANT_CREATION_REQUEST_CONFLICT")
@@ -238,7 +238,7 @@ func TestCE08MySQLTransportKeyCannotBindAnotherRequest(t *testing.T) {
 	id := ce04Random(t)
 	created := ce08Tenant(t, e.createTenant(id, id, "o-"+id, "default"))
 	r := b126PostProto(e.base, "/v1/tenants", e.token, id, &accessv1.CreateTenantRequest{Name: id, OwnerUserId: "o-" + id, OwnerEmail: "o-" + id + "@example.invalid", RequestId: "different-" + id, SalesScope: "default"})
-	if r.err != nil || r.status != http.StatusConflict || strings.TrimSpace(string(r.body)) != "application request failed" {
+	if r.err != nil || r.status != http.StatusConflict || strings.TrimSpace(string(r.body)) != "application conflict" {
 		t.Fatalf("transport key rebound=%d %v %s", r.status, r.err, r.body)
 	}
 	if e.getSubscription(created.Id).EntitlementSourceVersion != 1 {
