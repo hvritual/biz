@@ -1,0 +1,96 @@
+name: Diagnose CoffeeLink E2E artifact
+
+on:
+  push:
+    branches:
+      - chore/local-account-delivery
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Emit sanitized Playwright failures
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        env:
+          GITHUB_TOKEN: \${{ github.token }}
+        with:
+          script: |
+            const owner = "hvritual";
+            const repo = "biz";
+            const run = 34709795287;
+            const job = 103596342196;
+            const expectedRef = "refs/heads/chore/local-account-delivery";
+            const sensitive = /(token|secret|password|dsn|authorization|cookie|environment|jdbc|postgres|\b(?:insert\s+into|select\s+|update\s+|delete\s+)\b)/i;
+            if (context.ref !== expectedRef) {
+              core.setFailed("unexpected ref");
+              return;
+            }
+            const clean = (value) => {
+              const text = String(value ?? "").replace(/\x1b\[[0-9;]*m/g, "").trim();
+              if (!text || sensitive.test(text)) return null;
+              return text.length > 360 ? text.slice(0, 360) + "…" : text;
+            };
+            const { execFileSync } = require("node:child_process");
+            const { mkdtempSync, rmSync, writeFileSync } = require("node:fs");
+            const { tmpdir } = require("node:os");
+            const { join } = require("node:path");
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+              owner, repo, run_id: run, per_page: 100,
+            });
+            const artifact = artifacts.find((item) => item.name === "coffeelink-visual-review");
+            if (!artifact) {
+              core.error("job " + job + ": Playwright artifact unavailable", { title: "CoffeeLink sanitized diagnosis" });
+              return;
+            }
+            const response = await fetch(artifact.archive_download_url, {
+              headers: { Authorization: "Bearer " + process.env.GITHUB_TOKEN },
+              redirect: "follow",
+            });
+            if (!response.ok) {
+              core.error("job " + job + ": Playwright artifact download unavailable", { title: "CoffeeLink sanitized diagnosis" });
+              return;
+            }
+            const directory = mkdtempSync(join(tmpdir(), "coffeelink-sanitized-"));
+            try {
+              const archive = join(directory, "artifact.zip");
+              writeFileSync(archive, Buffer.from(await response.arrayBuffer()), { mode: 0o600 });
+              const files = execFileSync("unzip", ["-Z1", archive], { encoding: "utf8", maxBuffer: 2 * 1024 * 1024 })
+                .split(/\r?\n/).filter((name) => /(?:playwright|results).*\.json$/i.test(name));
+              const failures = [];
+              const visit = (node, ancestry = []) => {
+                if (!node || typeof node !== "object") return;
+                const title = typeof node.title === "string" ? node.title : "";
+                const next = title ? ancestry.concat([title]) : ancestry;
+                if (Array.isArray(node.results)) {
+                  for (const result of node.results) {
+                    if (result?.status === "failed") failures.push({
+                      title: next.join(" › "),
+                      message: result?.error?.message ?? "",
+                    });
+                  }
+                }
+                for (const key of ["suites", "specs", "tests"]) {
+                  for (const child of node[key] ?? []) visit(child, next);
+                }
+              };
+              for (const name of files) {
+                const parsed = JSON.parse(execFileSync("unzip", ["-p", archive, name], { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 }));
+                visit(parsed);
+              }
+              const emitted = new Set();
+              for (const failure of failures.slice(0, 12)) {
+                const title = clean(failure.title) ?? "unnamed Playwright failure";
+                const reason = String(failure.message).split(/\r?\n/).map(clean).filter(Boolean).slice(0, 5).join("\n") || "sanitized error message unavailable";
+                const message = "job " + job + ": " + title + "\n" + reason;
+                if (emitted.has(message)) continue;
+                emitted.add(message);
+                core.error(message, { title: "CoffeeLink sanitized diagnosis" });
+              }
+              if (emitted.size === 0) core.error("job " + job + ": no sanitized failed Playwright result found", { title: "CoffeeLink sanitized diagnosis" });
+            } finally {
+              rmSync(directory, { recursive: true, force: true });
+            }
