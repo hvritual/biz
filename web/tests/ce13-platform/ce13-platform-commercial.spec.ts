@@ -49,7 +49,8 @@ async function browserRequest(
     async ({ baseURL, path, init }) => {
       const headers = new Headers(init?.headers ?? {});
       if (init?.body !== undefined) headers.set("Content-Type", "application/json");
-      const response = await fetch(baseURL + path, {
+      const routedPath = path.startsWith("/v1/") ? "/api" + path : path;
+      const response = await fetch(baseURL + routedPath, {
         method: init?.method ?? "GET",
         headers,
         credentials: "include",
@@ -76,13 +77,13 @@ async function login(
 ): Promise<{ context: BrowserContext; page: Page; session: SessionView }> {
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.goto(data.base_url + "/auth/login?return_to=/auth/session");
+  await page.goto(data.web_base_url + "/auth/login?return_to=" + encodeURIComponent("/auth/session"));
   await expect(page).toHaveURL(/\/idp\/authorize/);
   await page.getByLabel("邮箱").fill(email);
   await page.getByLabel("密码").fill(password);
   await page.getByRole("button", { name: "登录" }).click();
   await expect(page).toHaveURL(/\/auth\/session/);
-  const result = await browserRequest(page, data.base_url, "/auth/session");
+  const result = await browserRequest(page, data.web_base_url, "/auth/session");
   expect(result.status, result.text).toBe(200);
   return { context, page, session: result.json as SessionView };
 }
@@ -106,7 +107,7 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
   expect(tenant.session.authenticated).toBe(true);
   expect(tenant.session.actor_kind).toBe("user");
   expect(tenant.session.active_tenant_id).toBe(data.tenant_id);
-  const spoofed = await browserRequest(tenant.page, data.base_url, "/v1/platform/modules", {
+  const spoofed = await browserRequest(tenant.page, data.web_base_url, "/v1/platform/modules", {
     headers: {
       "X-Tenant-ID": data.tenant_id,
       "X-Platform": "true",
@@ -122,7 +123,7 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
   expect(denied.session.actor_kind).toBe("platform");
   expect(denied.session.platform_subject).toBe(data.denied_subject);
   expect(denied.session.active_tenant_id ?? "").toBe("");
-  const deniedModules = await browserRequest(denied.page, data.base_url, "/v1/platform/modules");
+  const deniedModules = await browserRequest(denied.page, data.web_base_url, "/v1/platform/modules");
   expect(deniedModules.status, deniedModules.text).toBe(403);
   await denied.context.close();
 
@@ -136,7 +137,7 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
   expect(allowed.session.active_tenant_id ?? "").toBe("");
   expect(allowed.session.csrf_token).toBeTruthy();
 
-  const modules = await browserRequest(allowed.page, data.base_url, "/v1/platform/modules");
+  const modules = await browserRequest(allowed.page, data.web_base_url, "/v1/platform/modules");
   expect(modules.status, modules.text).toBe(200);
   const view = modules.json as { modules?: unknown[] };
   expect(view.modules).toEqual(expect.any(Array));
@@ -144,7 +145,7 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
 
   // Unsafe platform operations still require the CE-12 CSRF boundary even
   // when the operation itself admits web-session authentication.
-  const noCSRF = await browserRequest(allowed.page, data.base_url, "/v1/platform/modules", {
+  const noCSRF = await browserRequest(allowed.page, data.web_base_url, "/v1/platform/modules", {
     method: "POST",
     body: {
       request_id: "ce13-no-csrf",
@@ -168,7 +169,7 @@ test("TestCE13PlatformCommercialLifecycleThroughTrustedWebSession", async ({ bro
   const requestID = (name: string) => `ce13-browser-${name}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const write = (path: string, body: unknown, idempotencyKey: string, method = "POST") => browserRequest(
     allowed.page,
-    data.base_url,
+    data.web_base_url,
     path,
     {
       method,
@@ -229,9 +230,7 @@ test("TestCE13PlatformCommercialLifecycleThroughTrustedWebSession", async ({ bro
     },
     reason: "CE-13 stale version conflict acceptance",
   }, conflictID, "PATCH");
-  // Current HTTP adapter maps the domain revision conflict to 400. This is
-  // retained as the concrete backend gap for CE-13's UI reread behavior.
-  expect(conflict.status, conflict.text).toBe(400);
+  expect(conflict.status, conflict.text).toBe(409);
 
   const publishID = requestID("plan-publish");
   const published = await write(`/v1/platform/plans/${encodeURIComponent(planCode)}/versions/${draft.version}/publish`, {
@@ -243,9 +242,9 @@ test("TestCE13PlatformCommercialLifecycleThroughTrustedWebSession", async ({ bro
 
   // The tenant and base subscription are seeded through the API-key-only
   // bootstrap operation. Every CE-13 management action below is web-session.
-  const subscription = await browserRequest(allowed.page, data.base_url, `/v1/platform/tenants/${data.tenant_id}/subscription`);
+  const subscription = await browserRequest(allowed.page, data.web_base_url, `/v1/platform/tenants/${data.tenant_id}/subscription`);
   expect(subscription.status, subscription.text).toBe(200);
-  const source = await browserRequest(allowed.page, data.base_url, `/v1/platform/tenants/${data.tenant_id}/entitlement-overrides`);
+  const source = await browserRequest(allowed.page, data.web_base_url, `/v1/platform/tenants/${data.tenant_id}/entitlement-overrides`);
   expect(source.status, source.text).toBe(200);
   const sourceVersion = (source.json as { sourceVersion: number }).sourceVersion;
 
@@ -296,7 +295,7 @@ test("TestCE13PlatformCommercialLifecycleThroughTrustedWebSession", async ({ bro
   expect(receiptDTO.status).toBeTruthy();
   expect(receiptDTO.pricingAuthority).toBe("PLATFORM_MANUAL_APPROVAL");
 
-  const readback = await browserRequest(allowed.page, data.base_url, `/v1/platform/tenants/${data.tenant_id}/subscription/changes/${encodeURIComponent(previewDTO.changeId)}`);
+  const readback = await browserRequest(allowed.page, data.web_base_url, `/v1/platform/tenants/${data.tenant_id}/subscription/changes/${encodeURIComponent(previewDTO.changeId)}`);
   expect(readback.status, readback.text).toBe(200);
   expect((readback.json as { changeId: string }).changeId).toBe(previewDTO.changeId);
   await allowed.context.close();
@@ -308,11 +307,12 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   const page = await context.newPage();
   const code = `ce13-ui-${Date.now()}`;
 
-  await page.goto(`${data.web_base_url}/auth/login?return_to=/#/platform/commercial/plans`);
+  await page.goto(`${data.web_base_url}/auth/login?return_to=${encodeURIComponent('/#/platform/commercial/plans')}`);
   await expect(page).toHaveURL(/\/idp\/authorize/);
   await page.getByLabel("邮箱").fill(data.allowed_email);
   await page.getByLabel("密码").fill(data.allowed_password);
   await page.getByRole("button", { name: "登录" }).click();
+  await page.goto(`${data.web_base_url}/#/platform/commercial/plans`);
   await expect(page).toHaveURL(/#\/platform\/commercial\/plans/);
 
   await page.getByRole("button", { name: "新建套餐" }).click();

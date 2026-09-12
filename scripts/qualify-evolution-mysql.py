@@ -133,12 +133,23 @@ try:
                     env[key] = str(output / (group + '-' + key.lower() + '.json'))
                 log = output / (group + '.log')
                 started = time.monotonic()
+                commands = []
+                if group.endswith('-restart'):
+                    # A process restart is part of the persistence assertion:
+                    # run the two helpers in distinct OS processes while
+                    # intentionally retaining the same reset fixture state.
+                    commands = [[str(binary), '-test.v', '-test.count=1', '-test.timeout=15m', '-test.run=^' + test + '$'] for test in tests]
+                else:
+                    commands = [[str(binary), '-test.v', '-test.count=1', '-test.timeout=15m', '-test.run=^(' + '|'.join(tests) + ')$']]
+                exit_code = 0
                 with log.open('w') as stream:
-                    result = subprocess.run([str(binary), '-test.v', '-test.count=1', '-test.timeout=15m', '-test.run=^(' + '|'.join(tests) + ')$'], cwd=root / package.removeprefix('./'), env=env, stdout=stream, stderr=subprocess.STDOUT)
+                    for command in commands:
+                        result = subprocess.run(command, cwd=root / package.removeprefix('./'), env=env, stdout=stream, stderr=subprocess.STDOUT)
+                        exit_code = exit_code or result.returncode
                 text = log.read_text()
                 passed = len(re.findall(r'^--- PASS:', text, re.M))
                 skipped = len(re.findall(r'^--- SKIP:', text, re.M))
-                entry = {'group': group, 'package': package, 'database': database, 'expected_tests': len(tests), 'passed': passed, 'skipped': skipped, 'exit_code': result.returncode, 'seconds': round(time.monotonic() - started, 2), 'log': str(log)}
+                entry = {'group': group, 'package': package, 'database': database, 'expected_tests': len(tests), 'passed': passed, 'skipped': skipped, 'exit_code': exit_code, 'seconds': round(time.monotonic() - started, 2), 'log': str(log)}
                 results.append(entry)
                 print(json.dumps(entry), flush=True)
                 (output / 'summary.json').write_text(json.dumps(results, indent=2) + '\n')
