@@ -78,6 +78,7 @@ test('base pages and responsive viewports contain real content and no overflow',
     await ready(page, path!)
     await snap(page, name!)
   }
+  await page.setViewportSize({ width: 1536, height: 1024 })
   await ready(page, '/customers')
   await page.getByRole('button', { name: '收起一级菜单', exact: true }).click()
   await page.locator('[data-module="customers"]').click()
