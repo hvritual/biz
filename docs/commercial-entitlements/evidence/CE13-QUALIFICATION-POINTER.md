@@ -1,1 +1,0 @@
-Branch qualification run: 34665614612. Job: 103476763907. Candidate code SHA qualified by that run: 721110bfa3b137f7febf5c4cf1ad502773864c88. Later commits in this branch are evidence-only; PR qualification must re-run at the final head before merge.

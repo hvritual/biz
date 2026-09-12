@@ -1,1 +1,0 @@
-This prerequisite is ready for normal PR review only after the branch qualification run is green. Merge completion still requires the same CE-13 qualification to pass on the PR candidate and then on latest main. Issue #56 must not be closed from branch evidence alone.
