@@ -370,7 +370,7 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await override.getByLabel("效果", { exact: true }).selectOption("ENTITLEMENT_EFFECT_DENY");
   await override.getByLabel("原因", { exact: true }).fill("CE-13 可见来源验证");
   await override.getByRole("button", { name: "创建专项来源" }).click();
-  await expect(page.getByText("CE-13 可见来源验证")).toBeVisible();
+  await expect(page.getByText("CE-13 可见来源验证", { exact: true })).toBeVisible();
   await expect(page.getByText("denies").first()).toBeVisible();
 
   const change = page.getByTestId("ce13-subscription-change");
