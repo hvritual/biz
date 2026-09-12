@@ -331,6 +331,8 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await expect(page.getByText("套餐版本已发布；后续修订必须创建新版本。")).toBeVisible();
   for (const [width, height] of [[1536, 1024], [1440, 900], [1366, 768], [390, 844]]) {
     await page.setViewportSize({ width, height });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
     const dimensions = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth }));
     expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
     await page.screenshot({ path: testInfo.outputPath(`ce13-plan-published-${width}x${height}.png`), fullPage: true });

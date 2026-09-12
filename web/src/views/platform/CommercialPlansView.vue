@@ -292,7 +292,7 @@ onMounted(loadModules)
       <div class="workspace-title">
         <div>
           <h2>套餐代码工作台</h2>
-          <p>CE-07 当前仅支持按 plan_code 查询版本；全量套餐目录接口缺口已记录为 Issue #62，本页不会用前端 seed 补齐。</p>
+          <p>可从可信套餐目录选择 plan_code，或直接输入代码读取服务端版本历史；页面不以本地 seed 补齐目录。</p>
         </div>
         <button class="btn primary" type="button" @click="openCreate">新建套餐</button>
       </div>
