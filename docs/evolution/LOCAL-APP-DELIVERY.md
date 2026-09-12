@@ -46,6 +46,17 @@ match. Stop mode needs neither credentials nor `.env.local`; it only checks
 owned PID evidence. Logs and PID files remain under ignored `.local/`. Stop the
 processes with `scripts/local-apps.sh stop` before database qualification.
 
+After both CE-13 and CE-16 have reached their independent DONE receipts and
+the local processes are ready, run the final browser acceptance using installed
+system Chrome. It reads the ignored credential file only inside the Node
+process, writes post-login screenshots under ignored `.local/login-acceptance/`,
+and prints only role-safe PASS/FAIL output:
+
+```sh
+PLAYWRIGHT_SYSTEM_CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  node scripts/accept-local-login.mjs
+```
+
 The frontend must have CE-13's real API mode and proxy/session configuration
 integrated before its `VITE_DATA_MODE=api` process is useful. CE-16 owns the
 runtime worker configuration; this launcher deliberately supplies no paid-plan
