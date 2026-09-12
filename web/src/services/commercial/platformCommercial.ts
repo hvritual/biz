@@ -106,6 +106,129 @@ export interface ChangePlanStateInput {
   reason: string
 }
 
+export type EntitlementTarget =
+  | 'ENTITLEMENT_TARGET_MODULE'
+  | 'ENTITLEMENT_TARGET_CAPABILITY'
+  | 'ENTITLEMENT_TARGET_QUOTA'
+  | 'ENTITLEMENT_TARGET_FIELD'
+
+export type EntitlementEffect =
+  | 'ENTITLEMENT_EFFECT_GRANT'
+  | 'ENTITLEMENT_EFFECT_DENY'
+  | 'ENTITLEMENT_EFFECT_QUOTA_ADD'
+  | 'ENTITLEMENT_EFFECT_QUOTA_REPLACE'
+  | 'ENTITLEMENT_EFFECT_SAFETY_DENY'
+  | 'ENTITLEMENT_EFFECT_SAFETY_MASK'
+
+export interface EntitlementLimit {
+  unlimited: boolean
+  value: string | number
+}
+
+export interface EntitlementSourceExplanation {
+  id: string
+  sourceKind: string
+  effect: string
+  state: string
+  disposition: string
+  reason: string
+  actorId: string
+}
+
+export interface EntitlementDecisionDTO {
+  kind: string
+  moduleCode: string
+  key: string
+  fieldAction: string
+  allowed: boolean
+  reason: string
+  limit?: EntitlementLimit
+  masked: boolean
+  sources: EntitlementSourceExplanation[]
+}
+
+export interface EntitlementCatalogVersion {
+  moduleCode: string
+  version: string | number
+}
+
+export interface EntitlementView {
+  tenantId: string
+  sourceVersion: string | number
+  resolverVersion: string | number
+  evaluatedAt: string
+  validUntil: string
+  nextTransitionAt: string
+  catalogVersions: EntitlementCatalogVersion[]
+  decisions: EntitlementDecisionDTO[]
+  entitlementVersion: string | number
+  catalogRevision: string | number
+  permissionVersion: string
+  permissionSubject: string
+}
+
+export interface EntitlementOverrideDTO {
+  id: string
+  tenantId: string
+  moduleCode: string
+  target: EntitlementTarget
+  key: string
+  fieldAction: string
+  effect: EntitlementEffect
+  limit?: EntitlementLimit
+  effectiveAt: string
+  expiresAt: string
+  revokedAt: string
+  reason: string
+  actorId: string
+  version: string | number
+  sourceKind: string
+}
+
+export interface ListEntitlementOverridesResult {
+  sources: EntitlementOverrideDTO[]
+  sourceVersion: string | number
+}
+
+export interface EntitlementOverrideReceipt {
+  source?: EntitlementOverrideDTO
+  sourceVersion: string | number
+}
+
+export interface CreateEntitlementOverrideInput {
+  requestId: string
+  expectedVersion: string | number
+  moduleCode: string
+  target: EntitlementTarget
+  key: string
+  fieldAction: string
+  effect: EntitlementEffect
+  limit?: EntitlementLimit
+  effectiveAt: string
+  expiresAt: string
+  reason: string
+}
+
+export interface TenantSubscriptionDTO {
+  subscriptionId: string
+  tenantId: string
+  kind: string
+  state: string
+  planCode: string
+  planVersion: string | number
+  ruleId: string
+  ruleVersion: string | number
+  salesScope: string
+  entitlementSourceVersion: string | number
+  createdAt: string
+  matchExplanation: string
+  revision: string | number
+  periodStart: string
+  periodEnd: string
+  renewalStopped: boolean
+  pendingChangeId: string
+}
+
 interface ListModulesResponse {
   modules?: ModuleDTO[]
 }
@@ -113,6 +236,11 @@ interface ListModulesResponse {
 interface ListPlanVersionsResponse {
   versions?: PlanVersionDTO[]
   nextAfterVersion?: string | number
+}
+
+interface ListEntitlementOverridesResponse {
+  sources?: EntitlementOverrideDTO[]
+  sourceVersion?: string | number
 }
 
 interface TrustedSessionResponse {
@@ -268,4 +396,46 @@ export function checkPlanEligibility(planCode: string, version: string | number,
     version: String(version),
     salesScope: salesScope.trim(),
   })
+}
+
+export function getTenantSubscription(tenantId: string) {
+  return request<TenantSubscriptionDTO>(`/v1/platform/tenants/${encoded(tenantId)}/subscription`)
+}
+
+export async function listEntitlementOverrides(tenantId: string): Promise<ListEntitlementOverridesResult> {
+  const result = await request<ListEntitlementOverridesResponse>(`/v1/platform/tenants/${encoded(tenantId)}/entitlement-overrides`)
+  return {
+    sources: Array.isArray(result.sources) ? result.sources : [],
+    sourceVersion: result.sourceVersion ?? 0,
+  }
+}
+
+export function explainTenantEntitlements(tenantId: string, capabilityCodes: string[] = []) {
+  return mutate<EntitlementView>(`/v1/platform/tenants/${encoded(tenantId)}/entitlements`, 'POST', {
+    tenantId,
+    capabilityCodes: capabilityCodes.map((item) => item.trim()).filter(Boolean),
+  })
+}
+
+export function createEntitlementOverride(tenantId: string, input: CreateEntitlementOverrideInput) {
+  return mutate<EntitlementOverrideReceipt>(`/v1/platform/tenants/${encoded(tenantId)}/entitlement-overrides`, 'POST', {
+    ...input,
+    tenantId,
+  })
+}
+
+export function revokeEntitlementOverride(
+  tenantId: string,
+  overrideId: string,
+  input: { requestId: string; expectedVersion: string | number; reason: string },
+) {
+  return mutate<EntitlementOverrideReceipt>(
+    `/v1/platform/tenants/${encoded(tenantId)}/entitlement-overrides/${encoded(overrideId)}/revoke`,
+    'POST',
+    {
+      ...input,
+      tenantId,
+      id: overrideId,
+    },
+  )
 }

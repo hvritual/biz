@@ -70,7 +70,7 @@ onMounted(loadModules)
     <section class="commercial-tabs" aria-label="平台商业管理导航">
       <RouterLink class="commercial-tab active" to="/platform/commercial/modules">模块目录</RouterLink>
       <RouterLink class="commercial-tab" to="/platform/commercial/plans">套餐版本</RouterLink>
-      <span class="commercial-tab disabled" aria-disabled="true">租户权益 · 后续切片</span>
+      <RouterLink class="commercial-tab" to="/platform/commercial/tenant-entitlements">租户权益</RouterLink>
     </section>
 
     <section v-if="loadState === 'loading'" class="card state-card" aria-live="polite">
