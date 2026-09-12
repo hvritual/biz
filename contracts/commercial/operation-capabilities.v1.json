@@ -819,6 +819,41 @@
       "capability_codes": [],
       "children": [],
       "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport."
+    },
+    {
+      "operation_id": "commercial.subscription.transition.claim",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-16 durable commercial time-transition worker. Persisted tenantless platform identity, platform.provisioning.execute permission, existing Executor, DB-time lease fencing and root UoW remain mandatory; these internal worker operations have no public transport and never grant tenant business access.",
+      "worker_permission": "platform.provisioning.execute"
+    },
+    {
+      "operation_id": "commercial.subscription.transition.complete",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.plan.get",
+          "mode": "conditional",
+          "condition": "claimed due SCHEDULED_CHANGE remains authoritative and must revalidate immutable target plan, eligibility and current commercial module catalog before execution; other transition kinds do not call these children",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "conditional",
+          "condition": "claimed due SCHEDULED_CHANGE remains authoritative and must revalidate immutable target plan, eligibility and current commercial module catalog before execution; other transition kinds do not call these children",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "conditional",
+          "condition": "claimed due SCHEDULED_CHANGE remains authoritative and must revalidate immutable target plan, eligibility and current commercial module catalog before execution; other transition kinds do not call these children",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        }
+      ],
+      "exemption_reason": "CE-16 durable commercial time-transition worker. Persisted tenantless platform identity, platform.provisioning.execute permission, existing Executor, DB-time lease fencing and root UoW remain mandatory; these internal worker operations have no public transport and never grant tenant business access.",
+      "worker_permission": "platform.provisioning.execute"
     }
   ]
 }

@@ -24,7 +24,7 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "7675c209953a21b50f1cea8662e5fadf31cea0c8dc4551039a08186e3f7f894f"
+const AssemblyPlanDigest = "33719dedf183ea251bbb00aba6968ea1cd49ed900533b66a1da3c196c6520259"
 
 type AccessTenantLifecycleDependencies struct {
 	AccessTenantMemberLifecycle      accessapplication.TenantLifecycleToAccessTenantMemberLifecycleChildCapability

@@ -45,6 +45,8 @@ export const operationIds = [
   "commercial.subscription.get",
   "commercial.subscription.rule.list",
   "commercial.subscription.rule.put",
+  "commercial.subscription.transition.claim",
+  "commercial.subscription.transition.complete",
   "device.create",
   "device.delete",
   "device.get",

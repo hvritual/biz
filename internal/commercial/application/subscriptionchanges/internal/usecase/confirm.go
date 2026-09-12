@@ -134,6 +134,10 @@ func (s *service) ConfirmSubscriptionChange(ctx context.Context, r *v1.ConfirmSu
 			// Reservation changes the subscription revision, not effective rights.
 			// A second confirmation with an old preview cannot reserve another change.
 			after.PendingChangeID = r.ChangeId
+			v.AfterSourceVersion, v.AfterEntitlementVersion, e = s.installTimeFence(call, repos, m, &after, r.ChangeId, at, admitted)
+			if e != nil {
+				return v, e
+			}
 			v.Status = change.Scheduled
 		} else if p.Input.Action == change.StopRenewal {
 			after.RenewalStopped = true
