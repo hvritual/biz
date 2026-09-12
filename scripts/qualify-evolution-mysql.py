@@ -129,7 +129,7 @@ try:
                     continue
                 reset_fixtures()
                 env = dict(os.environ)
-                for key in ['CE08_RESTART_RECEIPT', 'CE09_RESTART_RECEIPT', 'CE10_RESTART_RECEIPT', 'CE12_E2E_ENV_FILE', 'CE13_PLATFORM_E2E_ENV_FILE']:
+                for key in ['CE08_RESTART_RECEIPT', 'CE09_RESTART_RECEIPT', 'CE10_RESTART_RECEIPT', 'CE16_RESTART_RECEIPT', 'CE12_E2E_ENV_FILE', 'CE13_PLATFORM_E2E_ENV_FILE']:
                     env[key] = str(output / (group + '-' + key.lower() + '.json'))
                 log = output / (group + '.log')
                 started = time.monotonic()
