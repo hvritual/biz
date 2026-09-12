@@ -62,6 +62,33 @@ func TestCE16MySQLOverrideExpiryTransition(t *testing.T) {
 	}
 }
 
+func TestCE16MySQLStaleBoundaryCannotUndoRenewal(t *testing.T) {
+	e := ce10New(t)
+	key := ce04Random(t)
+	preview, err := e.changes.PreviewSubscriptionChange(ce04Context(e.token, key), &v1.PreviewSubscriptionChangeRequest{TenantId: e.tenant, RequestId: key, Action: "RENEW", TargetPlanCode: e.old.PlanCode, TargetPlanVersion: e.old.Version, Reason: "CE16 renewal fences stale boundary"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	renewed, err := e.confirm(e.confirmation(preview))
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := e.view()
+	due := time.Now().UTC().Add(-time.Second)
+	id := ce16InsertDueTransition(t, e, transition.SubscriptionBoundary, renewed.Before.SubscriptionId, renewed.Before.Revision, due, "UTC")
+	if tick := e.tick(); tick.TransitionState != transition.Superseded {
+		t.Fatalf("tick=%+v", tick)
+	}
+	var state string
+	if err = e.db.Table("biz_commercial_time_transitions").Select("state").Where("transition_id=?", id).Scan(&state).Error; err != nil || state != transition.Superseded {
+		t.Fatalf("state=%s err=%v", state, err)
+	}
+	after := e.view()
+	if after.SourceVersion != before.SourceVersion || after.EntitlementVersion != before.EntitlementVersion || ce09Quota(t, after) != ce09Quota(t, before) {
+		t.Fatalf("stale boundary changed renewed authority: before=%+v after=%+v", before, after)
+	}
+}
+
 func TestCE16MySQLTrialGraceBoundaries(t *testing.T) {
 	for _, scenario := range []struct {
 		name  string
