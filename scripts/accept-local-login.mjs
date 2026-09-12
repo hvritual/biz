@@ -9,7 +9,6 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const credentialsPath = process.env.YUNKA_BIZ_LOCAL_CREDENTIALS_FILE ?? join(root, ".local/biz-local-credentials.json");
 const screenshots = join(root, ".local/login-acceptance");
-const bizBase = process.env.YUNKA_BIZ_ACCEPT_BIZ_URL ?? "http://127.0.0.1:18380";
 const webBase = process.env.YUNKA_BIZ_ACCEPT_WEB_URL ?? "http://127.0.0.1:14183";
 const chrome = process.env.PLAYWRIGHT_SYSTEM_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
@@ -28,7 +27,8 @@ async function api(page, path, init = {}) {
   return page.evaluate(async ({ base, path, init }) => {
     const headers = new Headers(init.headers ?? {});
     if (init.body !== undefined) headers.set("Content-Type", "application/json");
-    const response = await fetch(base + path, {
+    const routedPath = path.startsWith("/v1/") ? "/api" + path : path;
+    const response = await fetch(base + routedPath, {
       method: init.method ?? "GET",
       headers,
       credentials: "include",
@@ -38,17 +38,17 @@ async function api(page, path, init = {}) {
     let json = null;
     try { json = text ? JSON.parse(text) : null; } catch { /* status is sufficient */ }
     return { status: response.status, json };
-  }, { base: bizBase, path, init });
+  }, { base: webBase, path, init });
 }
 
 async function login(browser, email, password) {
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.goto(`${bizBase}/auth/login?return_to=/auth/session`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${webBase}/auth/login?return_to=${encodeURIComponent("/auth/session")}`, { waitUntil: "domcontentloaded" });
   await page.getByLabel("邮箱").fill(email);
   await page.getByLabel("密码").fill(password);
   await page.getByRole("button", { name: "登录" }).click();
-  await page.waitForURL(`${bizBase}/auth/session`);
+  await page.waitForURL(/\/auth\/session/);
   const session = (await api(page, "/auth/session")).json;
   return { context, page, session };
 }
@@ -68,8 +68,8 @@ async function main() {
       const session = requireSession(platform.session, "platform");
       if ((session.active_tenant_id ?? "") !== "" || !session.platform_subject) throw new Error("platform session is not tenantless");
       if ((await api(platform.page, "/v1/tenants")).status !== 200) throw new Error("platform API unavailable");
-      await platform.page.goto(`${webBase}/#/platform/tenants`, { waitUntil: "networkidle" });
-      await platform.page.getByText("租户管理", { exact: true }).first().waitFor();
+      await platform.page.goto(`${webBase}/#/platform/commercial/modules`, { waitUntil: "networkidle" });
+      await platform.page.getByRole("heading", { name: "平台商业管理" }).waitFor();
       await platform.page.screenshot({ path: join(screenshots, "platform.png"), fullPage: true });
     } finally { await platform.context.close(); }
 

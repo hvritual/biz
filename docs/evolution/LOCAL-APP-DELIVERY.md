@@ -50,7 +50,9 @@ After both CE-13 and CE-16 have reached their independent DONE receipts and
 the local processes are ready, run the final browser acceptance using installed
 system Chrome. It reads the ignored credential file only inside the Node
 process, writes post-login screenshots under ignored `.local/login-acceptance/`,
-and prints only role-safe PASS/FAIL output:
+and prints only role-safe PASS/FAIL output. Browser authentication and API calls
+stay on the Vite Web origin: `/auth` uses its proxy and `/v1` is routed through
+`/api`, matching the CE-13 harness and preserving the callback/session origin.
 
 ```sh
 PLAYWRIGHT_SYSTEM_CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
