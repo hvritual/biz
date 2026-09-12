@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	transition "github.com/hvritual/biz/internal/commercial/domain/timetransition"
 )
 
@@ -32,6 +33,57 @@ func ce16InsertDueTransition(t *testing.T, e *ce10Environment, kind, authority s
 		t.Fatal(err)
 	}
 	return task.ID
+}
+
+func TestCE16MySQLTrialGraceBoundaries(t *testing.T) {
+	for _, scenario := range []struct {
+		name  string
+		grace time.Duration
+		want  string
+	}{
+		{name: "configured grace", grace: time.Hour, want: subscription.StateGrace},
+		{name: "zero grace", grace: 0, want: subscription.StateRestricted},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			e := ce10NewLifecycle(t, subscription.LifecyclePolicy{GraceDuration: scenario.grace})
+			var raw string
+			if err := e.db.Table("biz_commercial_subscriptions").Select("payload").Where("tenant_id=?", e.tenant).Scan(&raw).Error; err != nil {
+				t.Fatal(err)
+			}
+			var current subscription.Subscription
+			if err := json.Unmarshal([]byte(raw), &current); err != nil {
+				t.Fatal(err)
+			}
+			due := time.Now().UTC().Add(-time.Second).Truncate(time.Microsecond)
+			current.State, current.PeriodEnd = subscription.StateTrial, &due
+			payload, err := json.Marshal(current)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err = e.db.Table("biz_commercial_subscriptions").Where("tenant_id=?", e.tenant).Update("payload", string(payload)).Error; err != nil {
+				t.Fatal(err)
+			}
+			ce16InsertDueTransition(t, e, transition.SubscriptionBoundary, current.ID, current.Revision, due, "UTC")
+			tick := e.tick()
+			if tick.TransitionState != transition.Applied {
+				t.Fatalf("transition=%+v", tick)
+			}
+			var afterRaw string
+			if err = e.db.Table("biz_commercial_subscriptions").Select("payload").Where("tenant_id=?", e.tenant).Scan(&afterRaw).Error; err != nil {
+				t.Fatal(err)
+			}
+			var after subscription.Subscription
+			if err = json.Unmarshal([]byte(afterRaw), &after); err != nil || after.State != scenario.want {
+				t.Fatalf("state=%s err=%v", after.State, err)
+			}
+			if scenario.grace > 0 {
+				var next int64
+				if err = e.db.Table("biz_commercial_time_transitions").Where("kind=? AND authority_id=? AND authority_version=? AND state=?", transition.SubscriptionBoundary, current.ID, after.Revision, transition.Queued).Count(&next).Error; err != nil || next != 1 {
+					t.Fatalf("next=%d err=%v", next, err)
+				}
+			}
+		})
+	}
 }
 
 func TestCE16MySQLConfiguredTimezoneIsPersistedForDueAuthority(t *testing.T) {
