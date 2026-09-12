@@ -56,6 +56,10 @@ func (p LifecyclePolicy) StateFor(planCode string, version uint64) string {
 	return StateActive
 }
 
+func (p LifecyclePolicy) Trial(planCode string, version uint64) bool {
+	return p.StateFor(planCode, version) == StateTrial
+}
+
 func (p LifecyclePolicy) Canonical() LifecyclePolicy {
 	out := LifecyclePolicy{GraceDuration: p.GraceDuration, BusinessTimezone: p.BusinessTimezone, TrialPlans: append([]PlanReference(nil), p.TrialPlans...)}
 	sort.Slice(out.TrialPlans, func(i, j int) bool {

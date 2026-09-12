@@ -13,6 +13,9 @@ func TestCE16LifecyclePolicyRequiresExplicitTrialAndConfiguredGrace(t *testing.T
 	if policy.StateFor("starter", 2) != StateTrial || policy.StateFor("starter", 1) != StateActive {
 		t.Fatal("trial state was inferred without the configured immutable plan reference")
 	}
+	if !policy.Trial("starter", 2) || policy.Trial("starter", 1) {
+		t.Fatal("trial predicate disagrees with immutable plan configuration")
+	}
 	if err := (LifecyclePolicy{GraceDuration: time.Nanosecond}).Validate(); err == nil {
 		t.Fatal("sub-microsecond grace cannot be persisted safely")
 	}

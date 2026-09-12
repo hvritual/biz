@@ -249,6 +249,9 @@ func (s *service) BootstrapBaseSubscription(ctx context.Context, r *v1.Bootstrap
 				if len(requirements) > 0 {
 					continue
 				}
+				if s.lifecycle.StateFor(rule.PlanCode, rule.PlanVersion) == subscription.StateTrial && version.Terms.ValidityMode != "fixed_days" {
+					continue
+				}
 				chosen = rule
 				pv = elig.Version
 				break
