@@ -71,6 +71,7 @@ with marker.open('x') as stream:
 results = []
 selected = set(filter(None, os.environ.get('EVOLUTION_GROUPS', '').split(',')))
 after_reset_command = os.environ.get('EVOLUTION_AFTER_RESET_COMMAND_JSON', '')
+after_reset_result = os.environ.get('EVOLUTION_AFTER_RESET_RESULT_JSON', '')
 try:
     # Browser acceptance has to keep its seeded fixture alive while the IdP,
     # BFF and Chromium run. A JSON argv (rather than a shell fragment) keeps
@@ -79,6 +80,8 @@ try:
     if after_reset_command:
         if selected:
             raise SystemExit('EVOLUTION_AFTER_RESET_COMMAND_JSON cannot be combined with EVOLUTION_GROUPS')
+        if not after_reset_result:
+            raise SystemExit('EVOLUTION_AFTER_RESET_RESULT_JSON must name the Playwright JSON result produced by the command')
         try:
             command = json.loads(after_reset_command)
         except json.JSONDecodeError as exc:
@@ -90,7 +93,17 @@ try:
         started = time.monotonic()
         with log.open('w') as stream:
             result = subprocess.run(command, cwd=root, env=dict(os.environ), stdout=stream, stderr=subprocess.STDOUT)
-        entry = {'group': 'after-reset-command', 'package': '.', 'database': database, 'expected_tests': 1, 'passed': 1 if result.returncode == 0 else 0, 'skipped': 0, 'exit_code': result.returncode, 'seconds': round(time.monotonic() - started, 2), 'log': str(log)}
+        report = Path(after_reset_result).resolve()
+        try:
+            stats = json.loads(report.read_text())['stats']
+            expected = int(stats.get('expected', 0))
+            unexpected = int(stats.get('unexpected', 0))
+            skipped = int(stats.get('skipped', 0))
+            flaky = int(stats.get('flaky', 0))
+        except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
+            raise SystemExit('after-reset command did not produce a readable Playwright JSON result: ' + str(report)) from exc
+        passed = expected if result.returncode == 0 and expected > 0 and not unexpected and not skipped and not flaky else 0
+        entry = {'group': 'after-reset-command', 'package': '.', 'database': database, 'expected_tests': expected, 'passed': passed, 'skipped': skipped, 'flaky': flaky, 'unexpected': unexpected, 'command_exit_code': result.returncode, 'exit_code': 0 if passed == expected and expected else 1, 'seconds': round(time.monotonic() - started, 2), 'log': str(log), 'playwright_result': str(report)}
         results.append(entry)
         print(json.dumps(entry), flush=True)
         (output / 'summary.json').write_text(json.dumps(results, indent=2) + '\n')

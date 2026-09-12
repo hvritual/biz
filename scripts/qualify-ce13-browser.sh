@@ -9,6 +9,7 @@ idp_key="$run_root/idp-signing.pem"
 idp_pid=""
 biz_pid=""
 web_pid=""
+result_report="${EVOLUTION_AFTER_RESET_RESULT_JSON:?EVOLUTION_AFTER_RESET_RESULT_JSON is required}"
 
 cleanup() {
   test -z "$biz_pid" || kill "$biz_pid" 2>/dev/null || true
@@ -17,7 +18,9 @@ cleanup() {
   mkdir -p "${EVOLUTION_EVIDENCE_DIR:?}/ce13-browser"
   cp "$run_root/idp.log" "${EVOLUTION_EVIDENCE_DIR}/ce13-browser/" 2>/dev/null || true
   cp "$run_root/biz.log" "${EVOLUTION_EVIDENCE_DIR}/ce13-browser/" 2>/dev/null || true
-  cp "$task_root/web/test-results/ce13-platform-results.json" "${EVOLUTION_EVIDENCE_DIR}/ce13-browser/" 2>/dev/null || true
+  cp "$run_root/web.log" "${EVOLUTION_EVIDENCE_DIR}/ce13-browser/" 2>/dev/null || true
+  mkdir -p "$(dirname "$result_report")"
+  cp "$task_root/web/test-results/ce13-platform-results.json" "$result_report" 2>/dev/null || true
   find "$task_root/web/test-results" -name '*.png' -maxdepth 3 -exec cp {} "${EVOLUTION_EVIDENCE_DIR}/ce13-browser/" \; 2>/dev/null || true
   wait "$biz_pid" 2>/dev/null || true
   wait "$idp_pid" 2>/dev/null || true
