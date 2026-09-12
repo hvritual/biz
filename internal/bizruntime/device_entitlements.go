@@ -85,3 +85,7 @@ func (w checkedTransfer) TransferDevice(ctx context.Context, r *devicev1.Transfe
 var _ deviceapp.DeviceManagementApplication = checkedDevice{}
 var _ deviceapp.SiteManagementApplication = checkedSite{}
 var _ deviceapp.DeviceTransferApplication = checkedTransfer{}
+
+func (w checkedDevice) AssertDeviceOwnedByActorTenant(ctx context.Context, r *devicev1.AssertDeviceOwnedByActorTenantRequest) (*devicev1.AssertDeviceOwnedByActorTenantResponse, error) {
+	return w.inner.AssertDeviceOwnedByActorTenant(ctx, r)
+}

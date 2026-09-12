@@ -1,10 +1,11 @@
 {
   "schema_version": 1,
-  "mapping_version": "9",
+  "mapping_version": "10",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "ebf1294f24213bc5dea9b4aa4ba5fe06be31af6631cd6d1dcf5847787fe36d58",
-    "contracts/generated/manifest.json": "b71cc2261948698d8d2fc7f6d32b89e3c3adbe37d19ad059c792d75547da7cb3",
-    "contracts/generated/operation-plans.json": "8d59b6b587cdfe70100d8945af6dab2fc79f007840ce21b411bfecf8a829bf08",
+    "contracts/commercial/operation-capabilities.v1.json": "0d3f657c48a0f102e7eaaed0354978db9aaf6c216a25c4a95e96108295be0032",
+    "contracts/generated/manifest.json": "e50e5358bc8ffff7406b08208f0014b6974755ab39c81b72d6ae93e89153202b",
+    "contracts/generated/operation-plans.json": "dae634fafc57b88bfd58e12f6d2c32a516c0620dab045d42bb855458276ec571",
+    "internal/access/application/tenant_delegation.go": "b43e6709e61b7867395bc04a901a19c2a54cf4ec9565e875b354b1622e636589",
     "internal/access/application/tenant_member_lifecycle.go": "c629117c2538c45af9a75932a53ecd6109059bd56e6dc71b11eedb2e538c6cff",
     "internal/access/application/tenantlifecycle/internal/usecase/service.go": "63e3eba06691d15fa88041b660431b48e87640bfaf35954774595db9880e5d29",
     "internal/commercial/application/entitlementmanagement/internal/usecase/service.go": "6cbcb31645f67104b8089b6c8559a2ff0ba5d6f5eb3b49e6fa56f238040f046c",
@@ -765,6 +766,23 @@
       "always_required_capability_codes": []
     },
     {
+      "operation_id": "device.assert_owned_by_actor_tenant",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": true,
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
       "operation_id": "device.create",
       "classification": "tenant_business",
       "module_code": "device-operations",
@@ -775,6 +793,42 @@
       "consumer_type": "tenant",
       "tenant_required": true,
       "rpc": "/deviceops.v1.DeviceApplication/CreateDevice",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "device.delegated_get",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DelegatedDeviceAccessApplication/GetDelegatedDevice",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "device.delegated_update",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DelegatedDeviceAccessApplication/UpdateDelegatedDevice",
       "required_capability_codes": [
         "device.lifecycle"
       ],
@@ -924,6 +978,23 @@
       "always_required_capability_codes": []
     },
     {
+      "operation_id": "tenant.assert_active",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": true,
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
       "operation_id": "tenant.close",
       "classification": "platform_management",
       "module_code": "access-management",
@@ -968,6 +1039,89 @@
       "rpc": "/access.v1.TenantLifecycleApplication/CreateTenant",
       "required_capability_codes": [],
       "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.delegation.get",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantDelegationApplication/GetTenantDelegation",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.delegation.grant_device",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [
+        {
+          "operation_id": "device.assert_owned_by_actor_tenant",
+          "mode": "always",
+          "source": "internal/access/application/tenant_delegation.go#GrantTenantDeviceDelegation"
+        },
+        {
+          "operation_id": "tenant.assert_active",
+          "mode": "always",
+          "source": "internal/access/application/tenant_delegation.go#GrantTenantDeviceDelegation"
+        }
+      ],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantDelegationApplication/GrantTenantDeviceDelegation",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.delegation.list",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantDelegationApplication/ListTenantDelegations",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.delegation.revoke",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantDelegationApplication/RevokeTenantDelegation",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
     },
     {
       "operation_id": "tenant.get",

@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package deviceops.v1;
+
+import "deviceops/v1/deviceops.proto";
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+
+option go_package = "github.com/hvritual/biz/contracts/gen/deviceops/v1;deviceopsv1";
+option (yunka.dsl.v1.domain) = {
+  name: "deviceops"
+  version: "v1"
+};
+
+message GetDelegatedDeviceRequest {
+  string id = 1;
+}
+
+message UpdateDelegatedDeviceRequest {
+  string id = 1;
+  string name = 2;
+  uint64 version = 3;
+}
+
+service DelegatedDeviceAccessApplication {
+  option (yunka.dsl.v1.application) = {
+    name: "delegated_device_access"
+  };
+
+  rpc GetDelegatedDevice(GetDelegatedDeviceRequest) returns (DeviceDTO) {
+    option (google.api.http) = { get: "/v1/delegated/devices/{id}" };
+    option (yunka.dsl.v1.operation) = {
+      id: "device.delegated_get"
+      use_case: "get_delegated_device"
+      permissions: "device.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc UpdateDelegatedDevice(UpdateDelegatedDeviceRequest) returns (DeviceDTO) {
+    option (google.api.http) = { patch: "/v1/delegated/devices/{id}" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "device.delegated_update"
+      use_case: "update_delegated_device"
+      permissions: "device.update"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+}

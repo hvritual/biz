@@ -49,6 +49,7 @@ func TestCE13PlatformCommercialWebSessionContract(t *testing.T) {
 		"commercial.plan.publish":                    {},
 		"commercial.plan.retire":                     {},
 		"commercial.plan.get":                        {},
+		"commercial.plan.discover":                   {},
 		"commercial.plan.list":                       {},
 		"commercial.plan.eligibility":                {},
 		"commercial.entitlement.override.create":     {},

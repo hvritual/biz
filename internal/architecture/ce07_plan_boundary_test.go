@@ -42,16 +42,23 @@ func TestCE07PlanOwnerAndNoHardDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	count := 0
+	expected := map[string]bool{
+		"commercial.plan.create": false, "commercial.plan.clone": false, "commercial.plan.update": false, "commercial.plan.publish": false, "commercial.plan.retire": false, "commercial.plan.get": false, "commercial.plan.list": false, "commercial.plan.eligibility": false, "commercial.plan.discover": false,
+	}
 	for _, op := range doc.Operations {
 		if strings.HasPrefix(op.OperationID, "commercial.plan.") {
-			count++
+			if _, ok := expected[op.OperationID]; !ok {
+				t.Errorf("unexpected plan operation %s", op.OperationID)
+			}
+			expected[op.OperationID] = true
 			if op.Classification != capabilitymap.PlatformManagement {
 				t.Errorf("unprotected classification %s", op.OperationID)
 			}
 		}
 	}
-	if count != 8 {
-		t.Fatalf("expected eight declared plan operations, got %d", count)
+	for id, seen := range expected {
+		if !seen {
+			t.Errorf("missing plan operation %s", id)
+		}
 	}
 }

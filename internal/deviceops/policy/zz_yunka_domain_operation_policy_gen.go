@@ -10,6 +10,9 @@ func Permissions() []authz.PermissionKey {
 
 func Resolver() authz.StaticResolver {
 	policies := map[string]authz.Policy{}
+	for key, value := range delegatedDeviceAccessPolicies() {
+		policies[key] = value
+	}
 	for key, value := range deviceManagementPolicies() {
 		policies[key] = value
 	}
