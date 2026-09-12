@@ -218,6 +218,25 @@ func TestCE16MySQLPreparedFixedDaysTrialSchedulesBoundary(t *testing.T) {
 	if err = e.db.Table("biz_commercial_time_transitions").Where("kind=? AND authority_id=? AND authority_version=? AND state=? AND business_timezone=?", transition.SubscriptionBoundary, current.SubscriptionId, current.Revision, transition.Queued, "Asia/Shanghai").Count(&count).Error; err != nil || count != 1 {
 		t.Fatalf("prepared fixed-period boundary count=%d err=%v", count, err)
 	}
+	due := time.Now().UTC().Add(-time.Second).Truncate(time.Microsecond)
+	var persisted subscription.Subscription
+	var raw string
+	if err = e.db.Table("biz_commercial_subscriptions").Select("payload").Where("tenant_id=?", e.tenant).Scan(&raw).Error; err != nil || json.Unmarshal([]byte(raw), &persisted) != nil {
+		t.Fatal(err)
+	}
+	persisted.PeriodStart, persisted.PeriodEnd = due.Add(-24*time.Hour), &due
+	rawBytes, _ := json.Marshal(persisted)
+	if err = e.db.Table("biz_commercial_subscriptions").Where("tenant_id=?", e.tenant).Update("payload", string(rawBytes)).Error; err != nil {
+		t.Fatal(err)
+	}
+	ce16InsertDueTransition(t, e, transition.SubscriptionBoundary, current.SubscriptionId, current.Revision, due, "Asia/Shanghai")
+	if tick := e.tick(); tick.TransitionState != transition.Applied {
+		t.Fatalf("boundary=%+v", tick)
+	}
+	after, err := e.subscriptions.GetTenantSubscription(e.ctx(), &v1.GetTenantSubscriptionRequest{TenantId: e.tenant})
+	if err != nil || after.State == subscription.StateTrial {
+		t.Fatalf("trial did not expire: %+v err=%v", after, err)
+	}
 }
 
 func TestCE16MySQLTrialGraceBoundaries(t *testing.T) {
