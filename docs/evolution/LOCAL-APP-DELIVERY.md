@@ -39,10 +39,12 @@ scripts/local-apps.sh start
 
 It uses `14183` for the Vue app, `18380` for Biz HTTP, `18381` for the IdP and
 `18382` for gRPC. The launcher exports `.env.local`, builds owned binaries,
-waits for each service in order, and refuses to kill a stale PID whose command
-does not match its expected local binary. Logs and PID files remain under
-ignored `.local/`. Stop the processes with `scripts/local-apps.sh stop` before
-database qualification.
+checks the exact parsed local DSN through `biz-local-setup --validate-config`
+before starting anything, waits for each service in order, and refuses to kill
+a stale PID unless its exact binary or Vite entry and reserved listening port
+match. Stop mode needs neither credentials nor `.env.local`; it only checks
+owned PID evidence. Logs and PID files remain under ignored `.local/`. Stop the
+processes with `scripts/local-apps.sh stop` before database qualification.
 
 The frontend must have CE-13's real API mode and proxy/session configuration
 integrated before its `VITE_DATA_MODE=api` process is useful. CE-16 owns the

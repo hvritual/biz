@@ -61,6 +61,7 @@ func main() {
 
 func run() error {
 	path := flag.String("credentials-file", ".local/biz-local-credentials.json", "mode-0600 local credential file")
+	validateConfig := flag.Bool("validate-config", false, "validate the designated local DSN without connecting or writing")
 	flag.Parse()
 	dsn := strings.TrimSpace(os.Getenv("YUNKA_BIZ_MYSQL_DSN"))
 	if dsn == "" {
@@ -68,6 +69,9 @@ func run() error {
 	}
 	if err := validateLocalDSN(dsn); err != nil {
 		return err
+	}
+	if *validateConfig {
+		return nil
 	}
 	creds, exists, err := loadCredentials(*path)
 	if err != nil {
