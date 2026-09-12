@@ -1,0 +1,253 @@
+name: CE-13 plan catalog qualification
+
+on:
+  push:
+    branches: [feat/ce13-plan-catalog-discovery, main]
+    paths:
+      - contracts/proto/commercial/**
+      - contracts/gen/commercial/**
+      - contracts/generated/**
+      - contracts/commercial/**
+      - internal/commercial/**
+      - internal/access/**
+      - internal/bizruntime/**
+      - integration/ce13_plan_catalog_mysql_test.go
+      - integration/ce13_platform_web_session_seed_test.go
+      - web/playwright.ce13-plan-catalog.config.ts
+      - web/tests/ce13-plan-catalog/**
+      - .github/workflows/ce13-plan-catalog-qualification.yml
+      - go.mod
+      - go.sum
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      BIZ_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      YUNKA_SHA: e323ee5833d929b5b1d0494fc29aae0aaa2b6f4a
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce13_catalog?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+      CE13_PLATFORM_E2E_ENV_FILE: /tmp/ce13-plan-catalog-browser.json
+      CE13_BIZ_BASE_URL: http://127.0.0.1:18080
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_ce13_catalog
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.BIZ_SHA }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout exact Yunka baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ env.YUNKA_SHA }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Load locked toolchain
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "protoc_release=${PROTOC_RELEASE}" >> "$GITHUB_OUTPUT"
+          echo "protoc_sha=${PROTOC_LINUX_X86_64_SHA256}" >> "$GITHUB_OUTPUT"
+          echo "protoc_gen_go_version=${PROTOC_GEN_GO_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "protoc_gen_go_grpc_version=${PROTOC_GEN_GO_GRPC_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Install locked protobuf toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/protoc.zip"
+          install_root="$RUNNER_TEMP/protoc"
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/protocolbuffers/protobuf/releases/download/v${{ steps.lock.outputs.protoc_release }}/protoc-${{ steps.lock.outputs.protoc_release }}-linux-x86_64.zip" \
+            -o "$archive"
+          echo "${{ steps.lock.outputs.protoc_sha }}  ${archive}" | sha256sum -c -
+          mkdir -p "$install_root"
+          unzip -q "$archive" -d "$install_root"
+          echo "$install_root/bin" >> "$GITHUB_PATH"
+          GOBIN="$RUNNER_TEMP/protobuf-bin" go install "google.golang.org/protobuf/cmd/protoc-gen-go@${{ steps.lock.outputs.protoc_gen_go_version }}"
+          GOBIN="$RUNNER_TEMP/protobuf-bin" go install "google.golang.org/grpc/cmd/protoc-gen-go-grpc@${{ steps.lock.outputs.protoc_gen_go_grpc_version }}"
+          echo "$RUNNER_TEMP/protobuf-bin" >> "$GITHUB_PATH"
+
+      - name: Verify deterministic contract generation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C biz rev-parse HEAD)" = "$BIZ_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          bad="$(gofmt -l \
+            biz/internal/commercial/application/planmanagement/internal/usecase/catalog.go \
+            biz/internal/commercial/infrastructure/persistence/plan_catalog.go \
+            biz/integration/ce13_plan_catalog_mysql_test.go \
+            biz/integration/ce13_platform_web_session_seed_test.go)"
+          test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
+          make -C biz check YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
+          make -C biz generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
+          test -z "$(git -C biz status --porcelain)" || { git -C biz status --short; git -C biz diff --stat; exit 1; }
+
+      - name: Qualify plan authority and regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 ./internal/commercial/...
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestCE13PlanCatalogMySQLDeterministicPaginationAndAuthority$'
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestCE07MySQL'
+          go -C biz vet ./internal/commercial/...
+          go -C biz build ./cmd/biz ./cmd/biz-idp
+
+      - name: Seed trusted browser identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestCE13PlatformWebSessionSeed$'
+          test -s "$CE13_PLATFORM_E2E_ENV_FILE"
+          chmod 600 "$CE13_PLATFORM_E2E_ENV_FILE"
+
+      - name: Generate qualification IdP signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$RUNNER_TEMP/ce13-catalog-idp-signing.pem" >/dev/null 2>&1
+          chmod 600 "$RUNNER_TEMP/ce13-catalog-idp-signing.pem"
+
+      - name: Start first-party OIDC IdP
+        shell: bash
+        run: |
+          set -euo pipefail
+          export YUNKA_BIZ_MYSQL_DSN="$YUNKA_TEST_MYSQL_DSN"
+          export YUNKA_BIZ_IDP_PUBLIC_URL="http://127.0.0.1:18081"
+          export YUNKA_BIZ_IDP_REDIRECT_URL="http://127.0.0.1:18080/auth/callback"
+          export YUNKA_BIZ_IDP_POST_LOGOUT_REDIRECT_URL="http://127.0.0.1:18080/"
+          export YUNKA_BIZ_IDP_CLIENT_ID="biz-web"
+          export YUNKA_BIZ_IDP_SIGNING_KEY_FILE="$RUNNER_TEMP/ce13-catalog-idp-signing.pem"
+          export YUNKA_BIZ_IDP_COOKIE_SECURE="false"
+          export YUNKA_BIZ_IDP_LISTEN="127.0.0.1:18081"
+          export YUNKA_BIZ_IDP_AUTO_MIGRATE="true"
+          nohup go -C biz run ./cmd/biz-idp >"$RUNNER_TEMP/ce13-catalog-idp.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/ce13-catalog-idp.pid"
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18081/healthz >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:18081/healthz
+
+      - name: Start Biz BFF resource server
+        shell: bash
+        run: |
+          set -euo pipefail
+          export YUNKA_BIZ_MYSQL_DSN="$YUNKA_TEST_MYSQL_DSN"
+          export YUNKA_BIZ_HTTP_LISTEN="127.0.0.1:18080"
+          export YUNKA_BIZ_GRPC_LISTEN="127.0.0.1:18082"
+          export YUNKA_BIZ_AUTO_MIGRATE="true"
+          export YUNKA_BIZ_OIDC_ISSUER="http://127.0.0.1:18081/idp"
+          export YUNKA_BIZ_OIDC_CLIENT_ID="biz-web"
+          export YUNKA_BIZ_OIDC_REDIRECT_URL="http://127.0.0.1:18080/auth/callback"
+          export YUNKA_BIZ_OIDC_POST_LOGOUT_REDIRECT_URL="http://127.0.0.1:18080/"
+          export YUNKA_BIZ_OIDC_COOKIE_SECURE="false"
+          export YUNKA_BIZ_OIDC_SCOPES="openid profile email"
+          nohup go -C biz run ./cmd/biz >"$RUNNER_TEMP/ce13-catalog-biz.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/ce13-catalog-biz.pid"
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18080/healthz >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:18080/healthz
+
+      - name: Setup Node and browser
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: biz/web/package-lock.json
+
+      - name: Install browser dependencies
+        working-directory: biz/web
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+
+      - name: Run plan catalog browser authority chain
+        working-directory: biz/web
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright test --config playwright.ce13-plan-catalog.config.ts
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path('test-results/ce13-plan-catalog-results.json').read_text())
+          stats = result['stats']
+          assert stats.get('unexpected', 0) == 0, stats
+          assert stats.get('expected', 0) >= 1, stats
+          assert 'TestCE13PlanCatalogTrustedPlatformDiscovery' in json.dumps(result), 'CE-13 plan catalog browser acceptance missing'
+          print('CE13_PLAN_CATALOG=PASS')
+          PY
+
+      - name: Capture evidence
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          mkdir -p biz/web/test-results
+          cp "$RUNNER_TEMP/ce13-catalog-idp.log" biz/web/test-results/ce13-catalog-idp.log 2>/dev/null
+          cp "$RUNNER_TEMP/ce13-catalog-biz.log" biz/web/test-results/ce13-catalog-biz.log 2>/dev/null
+          find biz/web/test-results -maxdepth 1 -type f ! -name ce13-plan-catalog-sha256.txt -print0 | sort -z | xargs -0 -r sha256sum > biz/web/test-results/ce13-plan-catalog-sha256.txt
+
+      - name: Stop qualification servers
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          test ! -f "$RUNNER_TEMP/ce13-catalog-biz.pid" || kill "$(cat "$RUNNER_TEMP/ce13-catalog-biz.pid")" 2>/dev/null
+          test ! -f "$RUNNER_TEMP/ce13-catalog-idp.pid" || kill "$(cat "$RUNNER_TEMP/ce13-catalog-idp.pid")" 2>/dev/null
+
+      - name: Verify clean candidate
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git -C biz status --porcelain)"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ce13-plan-catalog-${{ env.BIZ_SHA }}
+          path: biz/web/test-results
+          retention-days: 30
+          if-no-files-found: error
