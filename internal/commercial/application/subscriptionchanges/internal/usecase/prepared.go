@@ -8,6 +8,7 @@ import (
 	pv "github.com/hvritual/biz/internal/commercial/domain/provisioning"
 	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	change "github.com/hvritual/biz/internal/commercial/domain/subscriptionchange"
+	transition "github.com/hvritual/biz/internal/commercial/domain/timetransition"
 	"github.com/hvritual/biz/internal/commercial/ports"
 	"yunka.io/framework/requestscope"
 )
@@ -142,6 +143,15 @@ func (s *service) CompletePreparedSubscriptionChange(ctx context.Context, r *v1.
 		nextReceipt = nextReceipt.Seal()
 		if e = repos.Changes.UpdateReceipt(call, *receipt, nextReceipt); e != nil {
 			return pv.Completion{}, e
+		}
+		if after.PeriodEnd != nil {
+			boundary, e := transition.NewInTimezone(transition.SubscriptionBoundary, after.TenantID, after.ID, after.Revision, *after.PeriodEnd, admitted, s.lifecycle.Timezone())
+			if e != nil {
+				return pv.Completion{}, e
+			}
+			if e = repos.Transitions.Insert(call, boundary); e != nil {
+				return pv.Completion{}, e
+			}
 		}
 		if e = repos.Events.Append(call, pv.Event{TenantID: r.TenantId, AggregateID: after.ID, AggregateVersion: after.Revision, ChangeID: task.Approval.ChangeID, TaskID: task.ID, Status: pv.Applied, SourceVersion: source, EntitlementVersion: ent, OccurredAt: admitted}.Seal()); e != nil {
 			return pv.Completion{}, e

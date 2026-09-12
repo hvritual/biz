@@ -121,8 +121,12 @@ func run() error {
 // invents a trial. Grace is a Go duration and defaults to zero, which retains
 // the fail-closed restricted-at-boundary behavior.
 func lifecycleConfiguration() (subscription.LifecyclePolicy, error) {
+	grace, err := envGraceDuration("YUNKA_BIZ_COMMERCIAL_GRACE_DURATION")
+	if err != nil {
+		return subscription.LifecyclePolicy{}, err
+	}
 	policy := subscription.LifecyclePolicy{
-		GraceDuration:    envDuration("YUNKA_BIZ_COMMERCIAL_GRACE_DURATION", 0),
+		GraceDuration:    grace,
 		BusinessTimezone: strings.TrimSpace(envOr("YUNKA_BIZ_COMMERCIAL_TIMEZONE", "UTC")),
 	}
 	for _, raw := range strings.Split(strings.TrimSpace(os.Getenv("YUNKA_BIZ_COMMERCIAL_TRIAL_PLANS")), ",") {
@@ -140,6 +144,18 @@ func lifecycleConfiguration() (subscription.LifecyclePolicy, error) {
 		return subscription.LifecyclePolicy{}, err
 	}
 	return policy.Canonical(), nil
+}
+
+func envGraceDuration(name string) (time.Duration, error) {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return 0, nil
+	}
+	parsed, err := time.ParseDuration(value)
+	if err != nil || parsed < 0 {
+		return 0, fmt.Errorf("invalid %s", name)
+	}
+	return parsed, nil
 }
 
 func envOr(name, fallback string) string {
