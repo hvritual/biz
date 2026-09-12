@@ -13,6 +13,11 @@ export const router = createRouter({
       meta: { title: '工作台', module: 'dashboard' },
     },
     {
+      path: '/platform/commercial/modules',
+      component: () => import('@/views/platform/CommercialModulesView.vue'),
+      meta: { title: '平台商业管理', module: 'platform-commercial', surface: 'platform' },
+    },
+    {
       path: '/enterprise/members',
       component: () => import('@/views/enterprise/MembersView.vue'),
       meta: { title: '成员管理', module: 'enterprise' },
