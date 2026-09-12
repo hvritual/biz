@@ -153,7 +153,6 @@ async function confirmPreview() {
       previewHash: preview.value.previewHash,
       reason: confirmReason.value.trim(),
     })
-    emit('refresh')
   } catch (error) {
     if (error instanceof CommercialApiError && error.code === 'conflict') {
       preview.value = null
