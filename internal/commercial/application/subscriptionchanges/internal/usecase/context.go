@@ -65,6 +65,9 @@ func (s *service) capture(ctx context.Context, repos ports.SubscriptionChangeRep
 		if err != nil {
 			return out, err
 		}
+		if s.lifecycle.StateFor(out.target.PlanCode, out.target.Number) == subscription.StateTrial && out.target.Terms.ValidityMode != "fixed_days" {
+			return out, change.ErrTarget
+		}
 	}
 	catalog, err := s.capabilities.CommercialModuleCatalog().ReadPlanCatalog(ctx, &v1.ListModulesRequest{})
 	if err != nil {

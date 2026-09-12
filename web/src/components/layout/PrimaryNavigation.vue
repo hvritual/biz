@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { primaryNavigation } from '@/router/navigation'
@@ -8,6 +8,7 @@ const ui = useUiStore(),
   route = useRoute(),
   router = useRouter()
 const hoverOpened = ref<string | null>(null)
+const previewLabel = computed(() => route.meta.surface === 'platform' || route.meta.surface === 'runtime' ? '可信运行会话' : '界面预览 · 示例数据')
 function activate(item: (typeof primaryNavigation)[number]) {
   if (item.path) {
     hoverOpened.value = null
@@ -58,7 +59,7 @@ function toggleCollapsed() {
       </button>
     </div>
     <footer>
-      <span v-if="!ui.collapsed" class="preview-label">界面预览 · 示例数据</span
+      <span v-if="!ui.collapsed" class="preview-label">{{ previewLabel }}</span
       ><button
         class="icon-button collapse-button"
         :aria-label="ui.collapsed ? '展开一级菜单' : '收起一级菜单'"

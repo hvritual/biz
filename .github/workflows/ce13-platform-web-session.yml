@@ -33,10 +33,11 @@ jobs:
     timeout-minutes: 40
     env:
       BIZ_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      YUNKA_SHA: 4c678037c1abe8a2ab0cac376d1b77f89c9f43a3
+      YUNKA_SHA: 9ee6640f5e19777b4c04d9e4937a93e2035eacda
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce13_platform?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
       CE13_PLATFORM_E2E_ENV_FILE: /tmp/ce13-platform-browser.json
       CE13_BIZ_BASE_URL: http://127.0.0.1:18080
+      CE13_WEB_BASE_URL: http://127.0.0.1:14183
     services:
       mysql:
         image: mysql:8.4
@@ -148,8 +149,8 @@ jobs:
           set -euo pipefail
           export YUNKA_BIZ_MYSQL_DSN="$YUNKA_TEST_MYSQL_DSN"
           export YUNKA_BIZ_IDP_PUBLIC_URL="http://127.0.0.1:18081"
-          export YUNKA_BIZ_IDP_REDIRECT_URL="http://127.0.0.1:18080/auth/callback"
-          export YUNKA_BIZ_IDP_POST_LOGOUT_REDIRECT_URL="http://127.0.0.1:18080/"
+          export YUNKA_BIZ_IDP_REDIRECT_URL="http://127.0.0.1:14183/auth/callback"
+          export YUNKA_BIZ_IDP_POST_LOGOUT_REDIRECT_URL="http://127.0.0.1:14183/"
           export YUNKA_BIZ_IDP_CLIENT_ID="biz-web"
           export YUNKA_BIZ_IDP_SIGNING_KEY_FILE="$RUNNER_TEMP/ce13-idp-signing.pem"
           export YUNKA_BIZ_IDP_COOKIE_SECURE="false"
@@ -174,8 +175,8 @@ jobs:
           export YUNKA_BIZ_AUTO_MIGRATE="true"
           export YUNKA_BIZ_OIDC_ISSUER="http://127.0.0.1:18081/idp"
           export YUNKA_BIZ_OIDC_CLIENT_ID="biz-web"
-          export YUNKA_BIZ_OIDC_REDIRECT_URL="http://127.0.0.1:18080/auth/callback"
-          export YUNKA_BIZ_OIDC_POST_LOGOUT_REDIRECT_URL="http://127.0.0.1:18080/"
+          export YUNKA_BIZ_OIDC_REDIRECT_URL="http://127.0.0.1:14183/auth/callback"
+          export YUNKA_BIZ_OIDC_POST_LOGOUT_REDIRECT_URL="http://127.0.0.1:14183/"
           export YUNKA_BIZ_OIDC_COOKIE_SECURE="false"
           export YUNKA_BIZ_OIDC_SCOPES="openid profile email"
           nohup go -C biz run ./cmd/biz >"$RUNNER_TEMP/ce13-biz.log" 2>&1 &
@@ -202,6 +203,19 @@ jobs:
           npx playwright install --with-deps chromium
           sudo apt-get install -y fonts-noto-cjk
 
+      - name: Start Vue console proxy
+        working-directory: biz/web
+        shell: bash
+        run: |
+          set -euo pipefail
+          VITE_DATA_MODE=api BIZ_DEV_API_TARGET="http://127.0.0.1:18080" nohup node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 14183 >"$RUNNER_TEMP/ce13-vite.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/ce13-vite.pid"
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:14183/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:14183/ >/dev/null
+
       - name: Run trusted platform browser authority chain
         working-directory: biz/web
         shell: bash
@@ -214,7 +228,9 @@ jobs:
           result = json.loads(Path('test-results/ce13-platform-results.json').read_text())
           stats = result['stats']
           assert stats.get('unexpected', 0) == 0, stats
-          assert stats.get('expected', 0) >= 1, stats
+          assert stats.get('skipped', 0) == 0, stats
+          assert stats.get('flaky', 0) == 0, stats
+          assert stats.get('expected', 0) >= 3, stats
           assert 'TestCE13PlatformCommercialTrustedWebSession' in json.dumps(result), 'CE-13 platform browser acceptance identity missing'
           print('CE13_PLATFORM_WEB_SESSION=PASS')
           PY
@@ -227,6 +243,7 @@ jobs:
           mkdir -p biz/web/test-results
           cp "$RUNNER_TEMP/ce13-idp.log" biz/web/test-results/ce13-idp.log 2>/dev/null
           cp "$RUNNER_TEMP/ce13-biz.log" biz/web/test-results/ce13-biz.log 2>/dev/null
+          cp "$RUNNER_TEMP/ce13-vite.log" biz/web/test-results/ce13-vite.log 2>/dev/null
           cp "$RUNNER_TEMP/ce13-discovery.json" biz/web/test-results/ce13-discovery.json 2>/dev/null
           find biz/web/test-results -maxdepth 1 -type f ! -name ce13-evidence-sha256.txt -print0 | sort -z | xargs -0 -r sha256sum > biz/web/test-results/ce13-evidence-sha256.txt
 
@@ -237,6 +254,15 @@ jobs:
           set +e
           test ! -f "$RUNNER_TEMP/ce13-biz.pid" || kill "$(cat "$RUNNER_TEMP/ce13-biz.pid")" 2>/dev/null
           test ! -f "$RUNNER_TEMP/ce13-idp.pid" || kill "$(cat "$RUNNER_TEMP/ce13-idp.pid")" 2>/dev/null
+          test ! -f "$RUNNER_TEMP/ce13-vite.pid" || kill "$(cat "$RUNNER_TEMP/ce13-vite.pid")" 2>/dev/null
+          if test -f "$RUNNER_TEMP/ce13-vite.pid"; then
+            vite_pid="$(cat "$RUNNER_TEMP/ce13-vite.pid")"
+            for attempt in $(seq 1 20); do
+              kill -0 "$vite_pid" 2>/dev/null || break
+              sleep 1
+            done
+            ! kill -0 "$vite_pid" 2>/dev/null || exit 1
+          fi
 
       - name: Verify candidate worktree remains clean
         if: always()

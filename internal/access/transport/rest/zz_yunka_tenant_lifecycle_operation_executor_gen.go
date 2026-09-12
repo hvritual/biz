@@ -7,6 +7,8 @@ import (
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	application "github.com/hvritual/biz/internal/access/application"
 	policy "github.com/hvritual/biz/internal/access/policy"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	io "io"
 	"net/http"
@@ -72,6 +74,10 @@ func writeTenantLifecycleOperationError(writer http.ResponseWriter, err error) {
 	}
 	if errors.Is(err, execution.ErrIdempotencyInProgress) || errors.Is(err, execution.ErrIdempotencyCompleted) {
 		http.Error(writer, "idempotency conflict", http.StatusConflict)
+		return
+	}
+	if code := status.Code(err); code == codes.Aborted || code == codes.AlreadyExists {
+		http.Error(writer, "application conflict", http.StatusConflict)
 		return
 	}
 	if errors.Is(err, operation.ErrExecutorUnavailable) || errors.Is(err, operation.ErrSecurityUnavailable) || errors.Is(err, operation.ErrSecurityNilContext) || errors.Is(err, operation.ErrIdempotencyUnavailable) {
