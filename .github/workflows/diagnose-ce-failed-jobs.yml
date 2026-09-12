@@ -15,18 +15,20 @@ jobs:
     steps:
       - name: Emit sanitized failure annotations
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           script: |
             const owner = "hvritual";
             const repo = "biz";
             const expectedRef = "refs/heads/chore/local-account-delivery";
             const jobs = [
-              { id: 103593276184, run: 34708663154 },
-              { id: 103593276712, run: 34708663322 },
-              { id: 103593276641, run: 34708663152 },
-              { id: 103593276199, run: 34708663277 },
+              { id: 103593276184, run: 34708663152 },
+              { id: 103593276712, run: 34708663277 },
+              { id: 103593276641, run: 34708663322 },
+              { id: 103593276199, run: 34708663154 },
             ];
-            const sensitive = /(token|secret|password|dsn|mysql|insert\s+into|select\s+|update\s+|delete\s+|authorization|cookie|environment|connection|jdbc|postgres)/i;
+            const sensitive = /(token|secret|password|dsn|authorization|cookie|environment|jdbc|postgres|\b(?:insert\s+into|select\s+|update\s+|delete\s+)\b)/i;
             const marker = /(^--- FAIL:|_test\.go:\d+:|\.spec\.ts:\d+:)/i;
             const location = /(?:_test\.go|\.spec\.ts):\d+:/;
             if (context.ref !== expectedRef) {
@@ -100,16 +102,18 @@ jobs:
                     const text = execFileSync("unzip", ["-p", archivePath, name], { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 });
                     let candidate = text;
                     if (/\.jsonl$/i.test(name)) {
-                      candidate = text.split(/\r?\n/).flatMap((line) => {
+                      const records = text.split(/\r?\n/).flatMap((line) => {
                         try {
-                          const value = JSON.parse(line);
-                          const action = String(value.Action ?? value.action ?? "");
-                          const output = value.Output ?? value.output ?? "";
-                          return /fail/i.test(action) ? [String(output)] : [];
+                          return [JSON.parse(line)];
                         } catch {
                           return [];
                         }
-                      }).join("\n");
+                      });
+                      const failed = records.some((value) => /fail/i.test(String(value.Action ?? value.action ?? "")));
+                      candidate = failed
+                        ? records.filter((value) => /output/i.test(String(value.Action ?? value.action ?? "")))
+                          .map((value) => String(value.Output ?? value.output ?? "")).join("\n")
+                        : "";
                     }
                     count += emit(job.id, "artifact", candidate);
                   }
