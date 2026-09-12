@@ -69,6 +69,32 @@ jobs:
           make -C yunka.io rpc-tools
           echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
 
+      - name: Add explicit CE-03 operation classification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('biz/contracts/commercial/operation-capabilities.v1.json')
+          data = json.loads(path.read_text())
+          operation_id = 'commercial.plan.discover'
+          operations = data['operations']
+          if not any(row.get('operation_id') == operation_id for row in operations):
+              entry = {
+                  'operation_id': operation_id,
+                  'classification': 'platform_management',
+                  'capability_codes': [],
+                  'children': [],
+                  'exemption_reason': 'CE-13 authoritative platform plan discovery; requires platform.plan.read and a tenantless principal, and never infers the catalog from tenant subscriptions.'
+              }
+              insert_at = next(i for i, row in enumerate(operations) if row.get('operation_id') == 'commercial.plan.eligibility')
+              operations.insert(insert_at, entry)
+              data['mapping_version'] = '9'
+              path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n')
+          PY
+
       - name: Generate through repository contract chain
         shell: bash
         run: |
