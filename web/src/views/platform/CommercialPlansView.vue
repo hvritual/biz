@@ -14,9 +14,7 @@ import {
   retirePlanVersion,
   updatePlanDraft,
   type ModuleDTO,
-  type PlanField,
   type PlanModule,
-  type PlanQuota,
   type PlanTerms,
   type PlanVersionDTO,
 } from '@/services/commercial/platformCommercial'
@@ -99,7 +97,8 @@ function versionKey(version: PlanVersionDTO) {
 }
 
 function statusLabel(state: string) {
-  return { DRAFT: '草稿', PUBLISHED: '已发布', RETIRED: '已停售' }[state] ?? state || '未知'
+  const labels: Record<string, string> = { DRAFT: '草稿', PUBLISHED: '已发布', RETIRED: '已停售' }
+  return labels[state] || state || '未知'
 }
 
 function statusTone(state: string): 'success' | 'warning' | 'neutral' {
@@ -218,7 +217,8 @@ function onModuleChanged(item: PlanModule) {
   item.fields = []
 }
 
-function toggleCapability(item: PlanModule, capability: string, checked: boolean) {
+function toggleCapability(item: PlanModule, capability: string, event: Event) {
+  const checked = (event.target as HTMLInputElement | null)?.checked ?? false
   item.capabilityCodes = checked
     ? Array.from(new Set([...item.capabilityCodes, capability]))
     : item.capabilityCodes.filter((value) => value !== capability)
@@ -588,7 +588,7 @@ onMounted(loadModules)
             <div class="editor-subsection">
               <strong>能力</strong>
               <div class="checkbox-grid">
-                <label v-for="capability in selectedModule(item.moduleCode)?.capabilityCodes ?? []" :key="capability" class="check-row"><input type="checkbox" :checked="item.capabilityCodes.includes(capability)" @change="toggleCapability(item, capability, ($event.target as HTMLInputElement).checked)" />{{ capability }}</label>
+                <label v-for="capability in selectedModule(item.moduleCode)?.capabilityCodes ?? []" :key="capability" class="check-row"><input type="checkbox" :checked="item.capabilityCodes.includes(capability)" @change="toggleCapability(item, capability, $event)" />{{ capability }}</label>
                 <span v-if="!selectedModule(item.moduleCode)?.capabilityCodes?.length" class="muted">当前模块没有可声明能力。</span>
               </div>
             </div>
