@@ -43,3 +43,9 @@ complete production IdP-to-UI acceptance. Existing real-IdP workflows remain
 separate. A test-process restart is not reported as a physical database restart.
 CI results for later commits are separate from these local results. Main has not
 been moved by this integration candidate.
+
+## Cloud readback
+
+Unified evolution qualification passed on candidate `e7ae112` in [run 34702967640](https://github.com/hvritual/biz/actions/runs/34702967640). Later edits align historical B12 workflow checkout with the same consumer lock and reconcile GitHub metadata; they do not change business implementation. Current-head checks remain visible in PR #83.
+
+The guarded shared-database runner also passed negative probes for a mismatched container, a concurrent verification lock, and an unresolved recovery marker.
