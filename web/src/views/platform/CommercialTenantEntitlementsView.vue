@@ -217,8 +217,8 @@ onMounted(loadModules)
     <AuthorityPicker kind="tenants" @select="(id) => { tenantIdInput = id; loadWorkspace() }" />
     <section class="card workspace-card">
       <div class="workspace-title">
-        <div><h2>tenant_id 权益工作台</h2><p>平台 Tenant List/Get 当前仍是 API-key-only，缺口记录为 Issue #64；本页不会把 API Key 放进浏览器，也不会制造本地租户目录。</p></div>
-        <span class="boundary-badge">Issue #64</span>
+        <div><h2>tenant_id 权益工作台</h2><p>选择器和输入均由可信平台会话授权；浏览器不携带 API Key，也不自行推断租户权益。</p></div>
+        <span class="boundary-badge">可信平台会话</span>
       </div>
       <form class="lookup-row" @submit.prevent="loadWorkspace">
         <label for="tenant-id">租户 ID</label>
@@ -235,7 +235,7 @@ onMounted(loadModules)
     <section v-if="actionMessage" class="notice success" role="status">{{ actionMessage }}</section>
     <section v-if="actionError && !overrideDialogOpen" class="notice danger" role="alert">{{ actionError }}</section>
 
-    <section v-if="loadState === 'idle'" class="card state-card"><strong>输入 tenant_id 开始</strong><p>租户选择器将在 #64 解除后接入真实平台租户目录。</p></section>
+    <section v-if="loadState === 'idle'" class="card state-card"><strong>选择或输入 tenant_id 开始</strong><p>读取订阅、专项来源和权益解释都由服务端平台权限决定。</p></section>
     <section v-else-if="loadState === 'loading'" class="card state-card" aria-live="polite"><strong>正在读取 {{ activeTenantId }} 的商业事实</strong><p>并行读取当前订阅、override 来源和服务端权益解释。</p></section>
     <section v-else-if="loadState === 'blocked'" class="card state-card warning" role="alert"><strong>当前平台会话无权限读取该租户权益</strong><p>{{ errorMessage }}</p><button class="btn" type="button" @click="loadWorkspace">重新检查</button></section>
     <section v-else-if="loadState === 'error'" class="card state-card danger" role="alert"><strong>租户权益读取失败</strong><p>{{ errorMessage }}</p><button class="btn" type="button" @click="loadWorkspace">重试</button></section>
