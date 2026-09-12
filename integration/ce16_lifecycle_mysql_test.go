@@ -195,7 +195,7 @@ func TestCE16MySQLRenewalRacesScheduledDowngrade(t *testing.T) {
 }
 
 func TestCE16MySQLPreparedFixedDaysTrialSchedulesBoundary(t *testing.T) {
-	e := ce10New(t)
+	e := ce10NewLifecycle(t, subscription.LifecyclePolicy{BusinessTimezone: "Asia/Shanghai"})
 	_, receipt := e.prepared()
 	for i := 0; i < 3 && e.task(receipt.ProvisioningTaskId).State != "APPLIED"; i++ {
 		e.tick()
@@ -205,7 +205,7 @@ func TestCE16MySQLPreparedFixedDaysTrialSchedulesBoundary(t *testing.T) {
 		t.Fatalf("subscription=%+v err=%v", current, err)
 	}
 	var count int64
-	if err = e.db.Table("biz_commercial_time_transitions").Where("kind=? AND authority_id=? AND authority_version=? AND state=?", transition.SubscriptionBoundary, current.SubscriptionId, current.Revision, transition.Queued).Count(&count).Error; err != nil || count != 1 {
+	if err = e.db.Table("biz_commercial_time_transitions").Where("kind=? AND authority_id=? AND authority_version=? AND state=? AND business_timezone=?", transition.SubscriptionBoundary, current.SubscriptionId, current.Revision, transition.Queued, "Asia/Shanghai").Count(&count).Error; err != nil || count != 1 {
 		t.Fatalf("prepared fixed-period boundary count=%d err=%v", count, err)
 	}
 }
