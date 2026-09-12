@@ -12,7 +12,7 @@
     "internal/commercial/application/planmanagement/internal/usecase/service.go": "3534687bf60f71d844144840891ba957fab28f8452df31fa40940c6c69e221a6",
     "internal/commercial/application/provisioning/internal/usecase/service.go": "92437abf3396ad9a5e3942998cd73940935949f2d06e9d366488448752273341",
     "internal/commercial/application/subscriptionchanges/internal/usecase/context.go": "7a3916a90514dfef4c11bee6e2450d3efb282b6365cdd5d61f33c92481cf53ff",
-    "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go": "e654390c19a8172eb28ddadd85ffb26bcdcffb0e8c036d2b263c2384168a8a05",
+    "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go": "44da37c51a8b52f81d179f6c56da3862d4678b9bca37296bc34f48acea2d07a0",
     "internal/deviceops/application/cross_application_transfer.go": "bffaca1f1be420371bfcb770c5ccfd79f18553938ca92de0584f5e921460d9d8",
     "internal/deviceops/application/service.go": "f7a37a30cd01fadfb5f1a1f3a6c497eaeba5dc8f706e484c445eed9193abbcaa"
   },
