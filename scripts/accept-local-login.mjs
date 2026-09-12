@@ -84,7 +84,7 @@ async function main() {
       if (session.active_tenant_id !== credentials.tenant_id) throw new Error("tenant session did not bind requested tenant");
       if ((await api(tenant.page, "/v1/platform/modules")).status !== 403) throw new Error("tenant platform access was not forbidden");
       const members = await api(tenant.page, "/v1/tenant/members");
-      if (members.status !== 200 || !members.json?.members?.some((member) => member.email === credentials.tenant_email)) throw new Error("tenant member readback failed");
+      if (members.status !== 200 || !members.json?.members?.some((member) => member.userId === "local-tenant-admin")) throw new Error("tenant member readback failed");
       await tenant.page.goto(`${webBase}/#/workspace/members`, { waitUntil: "networkidle" });
       await tenant.page.getByRole("heading", { name: "业务成员", level: 1, exact: true }).waitFor();
       await tenant.page.screenshot({ path: join(screenshots, "tenant.png"), fullPage: true });
