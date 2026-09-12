@@ -1,6 +1,13 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/hvritual/biz/internal/commercial/application/planprojection"
+	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
+	"github.com/hvritual/biz/internal/commercial/domain/plan"
+	"github.com/hvritual/biz/internal/commercial/modulecatalog"
+)
 
 func TestValidateLocalDSNRequiresExactEndpointAndDatabase(t *testing.T) {
 	tests := []struct {
@@ -24,4 +31,48 @@ func TestValidateLocalDSNRequiresExactEndpointAndDatabase(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLocalPlanTermsRespectProductionCatalogFieldFloor(t *testing.T) {
+	terms, err := planprojection.Terms(localPlanTerms())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := terms.Validate(localPlanCatalog()); err != nil {
+		t.Fatalf("local setup plan is not eligible: %v", err)
+	}
+	fields := map[string]string{}
+	for _, module := range terms.Modules {
+		if module.Code != "access-management" {
+			continue
+		}
+		for _, field := range module.Fields {
+			fields[field.Action] = field.Mode
+		}
+	}
+	if fields["read"] != "masked" || fields["write"] != "allow" || fields["export"] != "deny" {
+		t.Fatalf("member.profile fields=%v", fields)
+	}
+}
+
+func localPlanCatalog() plan.Catalog {
+	registry := modulecatalog.ProductionRegistry()
+	catalog := make(plan.Catalog, 0, 2)
+	for _, code := range []string{"access-management", "device-operations"} {
+		definition, ok := registry.Definition(code)
+		if !ok {
+			panic("production module definition missing: " + code)
+		}
+		catalog = append(catalog, plan.Definition{ModuleDefinition: entitlement.ModuleDefinition{
+			Code:            definition.Code,
+			Version:         1,
+			TechnicalStatus: "ready",
+			SalesStatus:     "sellable",
+			Capabilities:    definition.CapabilityCodes,
+			QuotaKeys:       definition.QuotaSchemaKeys,
+			FieldKeys:       definition.FieldPolicySchemaKeys,
+			Dependencies:    definition.Dependencies,
+		}, SalesScope: []string{"*"}})
+	}
+	return catalog
 }
