@@ -84,7 +84,7 @@ async function setupWorkspace(page: Page, current = subscription()) {
   await page.goto('/#/platform/commercial/tenant-entitlements')
   await page.getByLabel('租户 ID').fill('tenant-1')
   await page.getByRole('button', { name: '读取权益' }).click()
-  await expect(page.getByText('office-pro v2')).toBeVisible()
+  await expect(page.locator('.subscription-card').getByText('office-pro v2')).toBeVisible()
 }
 
 test('TestCE13SubscriptionChangePreviewUsesServerImpactAndMatchingIdempotencyKey', async ({ page }) => {
