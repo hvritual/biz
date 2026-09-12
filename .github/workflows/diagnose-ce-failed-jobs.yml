@@ -29,7 +29,7 @@ jobs:
               { id: 103593276199, run: 34708663154 },
             ];
             const sensitive = /(token|secret|password|dsn|authorization|cookie|environment|jdbc|postgres|\b(?:insert\s+into|select\s+|update\s+|delete\s+)\b)/i;
-            const marker = /(^--- FAIL:|_test\.go:\d+:|\.spec\.ts:\d+:)/i;
+            const failure = /^--- FAIL:/i;
             const location = /(?:_test\.go|\.spec\.ts):\d+:/;
             if (context.ref !== expectedRef) {
               core.setFailed("unexpected ref");
@@ -49,11 +49,11 @@ jobs:
               const emitted = new Set();
               let count = 0;
               for (let index = 0; index < lines.length && count < 12; index++) {
-                if (!marker.test(lines[index])) continue;
+                if (!failure.test(lines[index])) continue;
                 const safe = [];
                 for (let offset = 0; offset <= 5 && index + offset < lines.length; offset++) {
                   const line = sanitize(lines[index + offset]);
-                  if (line && (offset === 0 || marker.test(line) || location.test(line))) safe.push(line);
+                  if (line && (offset === 0 || location.test(line))) safe.push(line);
                 }
                 const message = safe.join("\n");
                 if (!message || emitted.has(message)) continue;
