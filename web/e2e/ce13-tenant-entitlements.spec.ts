@@ -103,7 +103,7 @@ test('TestCE13TenantEntitlementWorkspaceUsesExplicitTenantAndServerExplanation',
   await page.getByLabel(/能力过滤/).fill(' device.lifecycle ')
   await page.getByRole('button', { name: '读取权益' }).click()
 
-  await expect(page.getByText('office-pro v2')).toBeVisible()
+  await expect(page.locator('.subscription-card').getByText('office-pro v2')).toBeVisible()
   await expect(page.getByText('device.lifecycle').first()).toBeVisible()
   await expect(page.getByText('套餐基础能力')).toBeVisible()
   await expect(page.getByText('plan:office-pro:2')).toBeVisible()
