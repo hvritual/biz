@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { primaryNavigation } from '@/router/navigation'
@@ -6,15 +7,28 @@ import AppIcon from '@/components/ui/AppIcon.vue'
 const ui = useUiStore(),
   route = useRoute(),
   router = useRouter()
+const hoverOpened = ref<string | null>(null)
 function activate(item: (typeof primaryNavigation)[number]) {
   if (item.path) {
+    hoverOpened.value = null
     ui.closeMenu()
     void router.push(item.path)
     return
   }
+  if (hoverOpened.value === item.id && ui.module === item.id) {
+    hoverOpened.value = null
+    return
+  }
   ui.module = ui.module === item.id ? null : item.id
+  hoverOpened.value = null
+}
+function previewModule(item: (typeof primaryNavigation)[number]) {
+  if (item.path || ui.module === item.id) return
+  ui.module = item.id
+  hoverOpened.value = item.id
 }
 function toggleCollapsed() {
+  hoverOpened.value = null
   ui.closeMenu()
   ui.collapsed = !ui.collapsed
 }
@@ -38,6 +52,7 @@ function toggleCollapsed() {
         :aria-controls="item.path ? undefined : 'module-drawer'"
         :data-module="item.id"
         @click="activate(item)"
+        @mouseenter="previewModule(item)"
       >
         <AppIcon :name="item.icon" :size="20" /><span>{{ item.label }}</span>
       </button>
