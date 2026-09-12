@@ -2171,6 +2171,53 @@
       }
     },
     {
+      "name": "ListPlansRequest",
+      "fullName": "commercial.v1.ListPlansRequest",
+      "fields": [
+        {
+          "name": "after_plan_code",
+          "jsonName": "afterPlanCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListPlansResponse",
+      "fullName": "commercial.v1.ListPlansResponse",
+      "fields": [
+        {
+          "name": "plans",
+          "jsonName": "plans",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.PlanCatalogEntryDTO",
+          "repeated": true
+        },
+        {
+          "name": "next_after_plan_code",
+          "jsonName": "nextAfterPlanCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "ListProvisioningDeliveriesRequest",
       "fullName": "commercial.v1.ListProvisioningDeliveriesRequest",
       "fields": [
@@ -2411,6 +2458,86 @@
       ],
       "dto": {
         "kind": "input"
+      }
+    },
+    {
+      "name": "PlanCatalogEntryDTO",
+      "fullName": "commercial.v1.PlanCatalogEntryDTO",
+      "fields": [
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "latest_version",
+          "jsonName": "latestVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "latest_revision",
+          "jsonName": "latestRevision",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "plan_revision",
+          "jsonName": "planRevision",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "state",
+          "jsonName": "state",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "created_at",
+          "jsonName": "createdAt",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "published_at",
+          "jsonName": "publishedAt",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "retired_at",
+          "jsonName": "retiredAt",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
       }
     },
     {
@@ -6571,6 +6698,45 @@
           },
           "authorization": {
             "operationId": "commercial.plan.list",
+            "permissions": [
+              "platform.plan.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListPlans",
+          "fullName": "commercial.v1.PlanManagementApplication.ListPlans",
+          "request": "commercial.v1.ListPlansRequest",
+          "response": "commercial.v1.ListPlansResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/plans"
+            }
+          ],
+          "operation": {
+            "id": "commercial.plan.discover",
+            "useCase": "list_plans",
+            "permissions": [
+              "platform.plan.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.plan.discover",
             "permissions": [
               "platform.plan.read"
             ],

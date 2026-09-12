@@ -24,6 +24,7 @@ const (
 	PlanManagementApplication_UpdatePlanDraft_FullMethodName      = "/commercial.v1.PlanManagementApplication/UpdatePlanDraft"
 	PlanManagementApplication_PublishPlanVersion_FullMethodName   = "/commercial.v1.PlanManagementApplication/PublishPlanVersion"
 	PlanManagementApplication_RetirePlanVersion_FullMethodName    = "/commercial.v1.PlanManagementApplication/RetirePlanVersion"
+	PlanManagementApplication_ListPlans_FullMethodName            = "/commercial.v1.PlanManagementApplication/ListPlans"
 	PlanManagementApplication_GetPlanVersion_FullMethodName       = "/commercial.v1.PlanManagementApplication/GetPlanVersion"
 	PlanManagementApplication_ListPlanVersions_FullMethodName     = "/commercial.v1.PlanManagementApplication/ListPlanVersions"
 	PlanManagementApplication_CheckPlanEligibility_FullMethodName = "/commercial.v1.PlanManagementApplication/CheckPlanEligibility"
@@ -38,6 +39,7 @@ type PlanManagementApplicationClient interface {
 	UpdatePlanDraft(ctx context.Context, in *UpdatePlanDraftRequest, opts ...grpc.CallOption) (*PlanVersionDTO, error)
 	PublishPlanVersion(ctx context.Context, in *ChangePlanVersionStateRequest, opts ...grpc.CallOption) (*PlanVersionDTO, error)
 	RetirePlanVersion(ctx context.Context, in *ChangePlanVersionStateRequest, opts ...grpc.CallOption) (*PlanVersionDTO, error)
+	ListPlans(ctx context.Context, in *ListPlansRequest, opts ...grpc.CallOption) (*ListPlansResponse, error)
 	GetPlanVersion(ctx context.Context, in *GetPlanVersionRequest, opts ...grpc.CallOption) (*PlanVersionDTO, error)
 	ListPlanVersions(ctx context.Context, in *ListPlanVersionsRequest, opts ...grpc.CallOption) (*ListPlanVersionsResponse, error)
 	CheckPlanEligibility(ctx context.Context, in *CheckPlanEligibilityRequest, opts ...grpc.CallOption) (*PlanEligibilityDTO, error)
@@ -101,6 +103,16 @@ func (c *planManagementApplicationClient) RetirePlanVersion(ctx context.Context,
 	return out, nil
 }
 
+func (c *planManagementApplicationClient) ListPlans(ctx context.Context, in *ListPlansRequest, opts ...grpc.CallOption) (*ListPlansResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPlansResponse)
+	err := c.cc.Invoke(ctx, PlanManagementApplication_ListPlans_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *planManagementApplicationClient) GetPlanVersion(ctx context.Context, in *GetPlanVersionRequest, opts ...grpc.CallOption) (*PlanVersionDTO, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PlanVersionDTO)
@@ -140,6 +152,7 @@ type PlanManagementApplicationServer interface {
 	UpdatePlanDraft(context.Context, *UpdatePlanDraftRequest) (*PlanVersionDTO, error)
 	PublishPlanVersion(context.Context, *ChangePlanVersionStateRequest) (*PlanVersionDTO, error)
 	RetirePlanVersion(context.Context, *ChangePlanVersionStateRequest) (*PlanVersionDTO, error)
+	ListPlans(context.Context, *ListPlansRequest) (*ListPlansResponse, error)
 	GetPlanVersion(context.Context, *GetPlanVersionRequest) (*PlanVersionDTO, error)
 	ListPlanVersions(context.Context, *ListPlanVersionsRequest) (*ListPlanVersionsResponse, error)
 	CheckPlanEligibility(context.Context, *CheckPlanEligibilityRequest) (*PlanEligibilityDTO, error)
@@ -166,6 +179,9 @@ func (UnimplementedPlanManagementApplicationServer) PublishPlanVersion(context.C
 }
 func (UnimplementedPlanManagementApplicationServer) RetirePlanVersion(context.Context, *ChangePlanVersionStateRequest) (*PlanVersionDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method RetirePlanVersion not implemented")
+}
+func (UnimplementedPlanManagementApplicationServer) ListPlans(context.Context, *ListPlansRequest) (*ListPlansResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPlans not implemented")
 }
 func (UnimplementedPlanManagementApplicationServer) GetPlanVersion(context.Context, *GetPlanVersionRequest) (*PlanVersionDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPlanVersion not implemented")
@@ -286,6 +302,24 @@ func _PlanManagementApplication_RetirePlanVersion_Handler(srv interface{}, ctx c
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PlanManagementApplication_ListPlans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPlansRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PlanManagementApplicationServer).ListPlans(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PlanManagementApplication_ListPlans_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PlanManagementApplicationServer).ListPlans(ctx, req.(*ListPlansRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PlanManagementApplication_GetPlanVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetPlanVersionRequest)
 	if err := dec(in); err != nil {
@@ -366,6 +400,10 @@ var PlanManagementApplication_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RetirePlanVersion",
 			Handler:    _PlanManagementApplication_RetirePlanVersion_Handler,
+		},
+		{
+			MethodName: "ListPlans",
+			Handler:    _PlanManagementApplication_ListPlans_Handler,
 		},
 		{
 			MethodName: "GetPlanVersion",

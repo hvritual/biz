@@ -37,6 +37,7 @@ func RegisterPlanManagementOperationExecutor(mux *http.ServeMux, application app
 	mux.HandleFunc("POST /v1/platform/plans/{plan_code}/versions", handler.handleOperationCreatePlanVersion)
 	mux.HandleFunc("GET /v1/platform/plans/{plan_code}/versions/{version}", handler.handleOperationGetPlanVersion)
 	mux.HandleFunc("GET /v1/platform/plans/{plan_code}/versions", handler.handleOperationListPlanVersions)
+	mux.HandleFunc("GET /v1/platform/plans", handler.handleOperationListPlans)
 	mux.HandleFunc("POST /v1/platform/plans/{plan_code}/versions/{version}/publish", handler.handleOperationPublishPlanVersion)
 	mux.HandleFunc("POST /v1/platform/plans/{plan_code}/versions/{version}/retire", handler.handleOperationRetirePlanVersion)
 	mux.HandleFunc("PATCH /v1/platform/plans/{plan_code}/versions/{version}", handler.handleOperationUpdatePlanDraft)
@@ -205,6 +206,34 @@ func (handler *PlanManagementOperationHandler) handleOperationListPlanVersions(w
 	wire.PlanCode = request.PathValue("plan_code")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanPlanManagementListPlanVersions(), wire, handler.application.ListPlanVersions)
+	if err != nil {
+		writePlanManagementOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *PlanManagementOperationHandler) handleOperationListPlans(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.ListPlansRequest{}
+	if raw := request.URL.Query().Get("after_plan_code"); raw != "" {
+		wire.AfterPlanCode = raw
+	}
+	if raw := request.URL.Query().Get("page_size"); raw != "" {
+		parsed, err := strconv.ParseUint(raw, 10, 32)
+		if err != nil {
+			http.Error(writer, "invalid request parameter", http.StatusBadRequest)
+			return
+		}
+		wire.PageSize = uint32(parsed)
+	}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanPlanManagementListPlans(), wire, handler.application.ListPlans)
 	if err != nil {
 		writePlanManagementOperationError(writer, err)
 		return

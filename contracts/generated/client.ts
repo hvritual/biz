@@ -397,6 +397,16 @@ export interface Commercial_V1_ListPlanVersionsResponse {
   nextAfterVersion?: string;
 }
 
+export interface Commercial_V1_ListPlansRequest {
+  afterPlanCode?: string;
+  pageSize?: number;
+}
+
+export interface Commercial_V1_ListPlansResponse {
+  plans?: readonly Commercial_V1_PlanCatalogEntryDTO[];
+  nextAfterPlanCode?: string;
+}
+
 export interface Commercial_V1_ListProvisioningDeliveriesRequest {
   tenantId?: string;
   afterEventId?: string;
@@ -439,6 +449,19 @@ export interface Commercial_V1_MutateProvisioningTaskRequest {
   expectedRevision?: string;
   requestId?: string;
   reason?: string;
+}
+
+export interface Commercial_V1_PlanCatalogEntryDTO {
+  planCode?: string;
+  name?: string;
+  latestVersion?: string;
+  latestRevision?: string;
+  planRevision?: string;
+  state?: string;
+  salesScope?: readonly string[];
+  createdAt?: string;
+  publishedAt?: string;
+  retiredAt?: string;
 }
 
 export interface Commercial_V1_PlanEligibilityDTO {
@@ -1120,6 +1143,15 @@ export const operations = {
       { method: "GET", path: "/v1/platform/plans/{plan_code}/versions" },
     ]
   },
+  "commercial.v1.PlanManagementApplication.ListPlans": {
+    fullName: "commercial.v1.PlanManagementApplication.ListPlans",
+    rpcPath: "/commercial.v1.PlanManagementApplication/ListPlans",
+    requestType: "commercial.v1.ListPlansRequest",
+    responseType: "commercial.v1.ListPlansResponse",
+    http: [
+      { method: "GET", path: "/v1/platform/plans" },
+    ]
+  },
   "commercial.v1.PlanManagementApplication.PublishPlanVersion": {
     fullName: "commercial.v1.PlanManagementApplication.PublishPlanVersion",
     rpcPath: "/commercial.v1.PlanManagementApplication/PublishPlanVersion",
@@ -1493,6 +1525,10 @@ export class Commercial_V1_PlanManagementApplicationClient {
 
   listPlanVersions(request: Commercial_V1_ListPlanVersionsRequest): Promise<Commercial_V1_ListPlanVersionsResponse> {
     return this.transport.call<Commercial_V1_ListPlanVersionsRequest, Commercial_V1_ListPlanVersionsResponse>(operations["commercial.v1.PlanManagementApplication.ListPlanVersions"], request);
+  }
+
+  listPlans(request: Commercial_V1_ListPlansRequest): Promise<Commercial_V1_ListPlansResponse> {
+    return this.transport.call<Commercial_V1_ListPlansRequest, Commercial_V1_ListPlansResponse>(operations["commercial.v1.PlanManagementApplication.ListPlans"], request);
   }
 
   publishPlanVersion(request: Commercial_V1_ChangePlanVersionStateRequest): Promise<Commercial_V1_PlanVersionDTO> {
