@@ -86,6 +86,41 @@ func TestCE16MySQLTrialGraceBoundaries(t *testing.T) {
 	}
 }
 
+func TestCE16MySQLDelayedBoundaryAfterGrace(t *testing.T) {
+	e := ce10NewLifecycle(t, subscription.LifecyclePolicy{GraceDuration: time.Hour})
+	var raw string
+	if err := e.db.Table("biz_commercial_subscriptions").Select("payload").Where("tenant_id=?", e.tenant).Scan(&raw).Error; err != nil {
+		t.Fatal(err)
+	}
+	var current subscription.Subscription
+	if err := json.Unmarshal([]byte(raw), &current); err != nil {
+		t.Fatal(err)
+	}
+	// The authoritative boundary is already two grace periods old. A late worker
+	// must not start grace from its pickup time.
+	due := time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Microsecond)
+	current.State, current.PeriodEnd = subscription.StateTrial, &due
+	payload, _ := json.Marshal(current)
+	if err := e.db.Table("biz_commercial_subscriptions").Where("tenant_id=?", e.tenant).Update("payload", string(payload)).Error; err != nil {
+		t.Fatal(err)
+	}
+	ce16InsertDueTransition(t, e, transition.SubscriptionBoundary, current.ID, current.Revision, due, "UTC")
+	if tick := e.tick(); tick.TransitionState != transition.Applied {
+		t.Fatalf("transition=%+v", tick)
+	}
+	if err := e.db.Table("biz_commercial_subscriptions").Select("payload").Where("tenant_id=?", e.tenant).Scan(&raw).Error; err != nil {
+		t.Fatal(err)
+	}
+	var after subscription.Subscription
+	if err := json.Unmarshal([]byte(raw), &after); err != nil || after.State != subscription.StateRestricted {
+		t.Fatalf("state=%s err=%v", after.State, err)
+	}
+	var next int64
+	if err := e.db.Table("biz_commercial_time_transitions").Where("authority_id=? AND authority_version=? AND state=?", current.ID, after.Revision, transition.Queued).Count(&next).Error; err != nil || next != 0 {
+		t.Fatalf("late worker extended grace: %d %v", next, err)
+	}
+}
+
 func TestCE16MySQLConfiguredTimezoneIsPersistedForDueAuthority(t *testing.T) {
 	e := ce10New(t)
 	id := ce16InsertDueTransition(t, e, transition.EntitlementExpiry, "ce16-dst-source", 1, time.Now().UTC().Add(time.Hour), "America/New_York")
