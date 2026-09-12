@@ -1,0 +1,106 @@
+{
+  "task_id": "CE-03",
+  "verified_commit": "26d2633947bd659673c0e8afb28e50db02cd00cb",
+  "result": "PASS",
+  "framework_commit": "6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb",
+  "workflow_run": 34316282474,
+  "job_id": 102353071489,
+  "artifact_id": 10090201420,
+  "artifact_sha256": "f8a5d37c2ef9d8027b765e1ad90f7e16ff572b9674a8e9d19ccf3f0ec0889bb3",
+  "catalog": {
+    "operations": 39,
+    "capabilities": 5,
+    "classifications": {
+      "platform_management": 15,
+      "tenant_business": 22,
+      "recovery": 1,
+      "foundation_exempt": 1
+    },
+    "consumers": {
+      "platform": 14,
+      "tenant": 21,
+      "internal_child": 4
+    },
+    "child_edges": 6
+  },
+  "checks": [
+    {
+      "command": "make yunka-source-check workspace-check",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34316282474/artifacts/10090201420#resolution.log",
+      "sha256": "22be8d5753a559a0d34d03a161050f3157050849275bca5e8b69a18bff06d09f"
+    },
+    {
+      "command": "make check",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34316282474/artifacts/10090201420#check-after.log",
+      "sha256": "a29fc13c01cfabc76373290efb624eb36f3689e282a392561d8633116830cade"
+    },
+    {
+      "command": "for pass in 1 2; do make generate; git diff --exit-code; test -z \"$(git status --porcelain)\"; done",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34316282474/artifacts/10090201420#generate-2.log",
+      "sha256": "4471eab1df82711e1c78eaaf1a61f3e28051a33fee1d5352a7ab78fd78489414"
+    },
+    {
+      "command": "go test -count=1 -json ./internal/commercial/capabilitymap ./internal/architecture -run '^TestCE03'",
+      "exit_code": 0,
+      "tests_passed": 40,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34316282474/artifacts/10090201420#focused.jsonl",
+      "sha256": "4adf604010413da7cc227da232b1504fdbf8c008d3f8082d9417d8d767bc0ea1"
+    },
+    {
+      "command": "go test -count=1 -tags=integration -json ./integration -run '^TestCE02'",
+      "exit_code": 0,
+      "tests_passed": 2,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34316282474/artifacts/10090201420#mysql.jsonl",
+      "sha256": "6fb4af10a189a81c578b4e93b9f87e847ccc5d761c352ae99e17f223d7208403"
+    },
+    {
+      "command": "go test -count=1 -json ./...",
+      "exit_code": 0,
+      "tests_passed": 69,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34316282474/artifacts/10090201420#all.jsonl",
+      "sha256": "e6d4e18861b8f25115252e010164cab8a9264e2358820ea857dd003f95d570fb"
+    },
+    {
+      "command": "go vet ./...",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34316282474/artifacts/10090201420#vet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "go build ./...",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34316282474/artifacts/10090201420#build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "python3 docs/commercial-entitlements/tools/check_plan.py",
+      "exit_code": 0,
+      "tests_passed": 0,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34316282474/artifacts/10090201420#plan.log",
+      "sha256": "084f3d07bc986144608dee940526c48c29ce222974bacdead0561a901428acf6"
+    },
+    {
+      "command": "python3 -m unittest discover -s docs/commercial-entitlements/tools -p 'test_*.py' -v",
+      "exit_code": 0,
+      "tests_passed": 8,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34316282474/artifacts/10090201420#plan-tests.log",
+      "sha256": "e7baae434063823f4eeefba3d58903a0d8aa58b3b5aeeba5e2987a0b65eec40c"
+    },
+    {
+      "command": "python3 -m unittest discover -s scripts -p 'test_ce03_*.py' -v",
+      "exit_code": 0,
+      "tests_passed": 6,
+      "evidence": "https://github.com/hvritual/biz/actions/runs/34316282474/artifacts/10090201420#evidence-tests.log",
+      "sha256": "d1fc94049dde26625ec17eb278d64a7d98a33e16d83610ce86ec50ac5e4679cb"
+    }
+  ],
+  "notes": "Go counts are leaf tests per suite and not additive. Package-level no-test-file events are separate from actual skipped tests. The original business qualification preceded this DONE receipt; final-main round verification is a separate run."
+}

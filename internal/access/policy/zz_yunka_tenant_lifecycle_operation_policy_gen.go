@@ -13,7 +13,7 @@ const OperationTenantLifecycleSuspendTenant authz.OperationID = "tenant.suspend"
 const OperationTenantLifecycleUpdateTenant authz.OperationID = "tenant.update"
 
 func TenantLifecyclePermissions() []authz.PermissionKey {
-	return []authz.PermissionKey{"platform.tenant.create", "platform.tenant.manage", "platform.tenant.read"}
+	return []authz.PermissionKey{"commercial.catalog.read", "platform.plan.read", "platform.tenant.create", "platform.tenant.manage", "platform.tenant.read"}
 }
 
 func TenantLifecycleResolver() authz.StaticResolver {
@@ -24,7 +24,7 @@ func tenantLifecyclePolicies() map[string]authz.Policy {
 	return map[string]authz.Policy{
 		"/access.v1.TenantLifecycleApplication/ActivateTenant": {Operation: OperationTenantLifecycleActivateTenant, Permissions: []authz.PermissionKey{"platform.tenant.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
 		"/access.v1.TenantLifecycleApplication/CloseTenant":    {Operation: OperationTenantLifecycleCloseTenant, Permissions: []authz.PermissionKey{"platform.tenant.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
-		"/access.v1.TenantLifecycleApplication/CreateTenant":   {Operation: OperationTenantLifecycleCreateTenant, Permissions: []authz.PermissionKey{"platform.tenant.create"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
+		"/access.v1.TenantLifecycleApplication/CreateTenant":   {Operation: OperationTenantLifecycleCreateTenant, Permissions: []authz.PermissionKey{"commercial.catalog.read", "platform.plan.read", "platform.tenant.create"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
 		"/access.v1.TenantLifecycleApplication/GetTenant":      {Operation: OperationTenantLifecycleGetTenant, Permissions: []authz.PermissionKey{"platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
 		"/access.v1.TenantLifecycleApplication/ListTenants":    {Operation: OperationTenantLifecycleListTenants, Permissions: []authz.PermissionKey{"platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
 		"/access.v1.TenantLifecycleApplication/SuspendTenant":  {Operation: OperationTenantLifecycleSuspendTenant, Permissions: []authz.PermissionKey{"platform.tenant.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},

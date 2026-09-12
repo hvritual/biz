@@ -7,13 +7,14 @@ toolchain go1.25.13
 require (
 	github.com/go-sql-driver/mysql v1.7.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260810153831-ec0a7760b754
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260807164820-c8921c73eeea
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
 	gorm.io/driver/mysql v1.5.2
 	gorm.io/gorm v1.25.5
-	yunka.io/framework v0.0.0-20260902030847-6ba99c1440dc
-	yunka.io/gateway v0.0.0-20260902030847-6ba99c1440dc
-	yunka.io/pkg v0.0.0-20260902030847-6ba99c1440dc
+	yunka.io/framework v0.0.0-20260911113607-e323ee5833d9
+	yunka.io/gateway v0.0.0-20260911113607-e323ee5833d9
+	yunka.io/pkg v0.0.0-20260911113607-e323ee5833d9
 )
 
 require (
@@ -69,7 +70,6 @@ require (
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260807164820-c8921c73eeea // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 )
 

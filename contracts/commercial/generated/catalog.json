@@ -1,0 +1,1302 @@
+{
+  "schema_version": 1,
+  "mapping_version": "8",
+  "inputs_sha256": {
+    "contracts/commercial/operation-capabilities.v1.json": "396430cf0982aef0a1d8e2fb88e26bd5d5e7be519c0085ffb9fef049d68b3926",
+    "contracts/generated/manifest.json": "45566755b22e707f30f49a5069a6e9fae0db901c0678fc93a6f7829fe1b313cd",
+    "contracts/generated/operation-plans.json": "c5b81e5a419fb23a7fa4f8a7a88416084391b1793f59ebc71a531d30e6456236",
+    "internal/access/application/tenant_member_lifecycle.go": "c629117c2538c45af9a75932a53ecd6109059bd56e6dc71b11eedb2e538c6cff",
+    "internal/access/application/tenantlifecycle/internal/usecase/service.go": "63e3eba06691d15fa88041b660431b48e87640bfaf35954774595db9880e5d29",
+    "internal/commercial/application/entitlementmanagement/internal/usecase/service.go": "6cbcb31645f67104b8089b6c8559a2ff0ba5d6f5eb3b49e6fa56f238040f046c",
+    "internal/commercial/application/planmanagement/internal/usecase/service.go": "3534687bf60f71d844144840891ba957fab28f8452df31fa40940c6c69e221a6",
+    "internal/commercial/application/provisioning/internal/usecase/service.go": "92437abf3396ad9a5e3942998cd73940935949f2d06e9d366488448752273341",
+    "internal/commercial/application/subscriptionchanges/internal/usecase/context.go": "7a3916a90514dfef4c11bee6e2450d3efb282b6365cdd5d61f33c92481cf53ff",
+    "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go": "e654390c19a8172eb28ddadd85ffb26bcdcffb0e8c036d2b263c2384168a8a05",
+    "internal/deviceops/application/cross_application_transfer.go": "bffaca1f1be420371bfcb770c5ccfd79f18553938ca92de0584f5e921460d9d8",
+    "internal/deviceops/application/service.go": "f7a37a30cd01fadfb5f1a1f3a6c497eaeba5dc8f706e484c445eed9193abbcaa"
+  },
+  "retired_capability_codes": [],
+  "capabilities": [
+    {
+      "capability_code": "device.lifecycle",
+      "module_code": "device-operations"
+    },
+    {
+      "capability_code": "device.transfer",
+      "module_code": "device-operations"
+    },
+    {
+      "capability_code": "tenant.lifecycle",
+      "module_code": "access-management"
+    },
+    {
+      "capability_code": "tenant.member.lifecycle",
+      "module_code": "access-management"
+    },
+    {
+      "capability_code": "tenant.role.permission",
+      "module_code": "access-management"
+    }
+  ],
+  "operations": [
+    {
+      "operation_id": "commercial.entitlement.explain",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-04 privileged source administration or authenticated own-entitlement explanation; never grants tenant business access and never exempts IAM.",
+      "children": [
+        {
+          "operation_id": "commercial.module.entitlement_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/entitlementmanagement/internal/usecase/service.go#catalog"
+        },
+        {
+          "operation_id": "tenant.get",
+          "mode": "always",
+          "source": "internal/commercial/application/entitlementmanagement/internal/usecase/service.go#checkTenant"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.EntitlementManagementApplication/ExplainEntitlements",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.entitlement.get_my",
+      "classification": "recovery",
+      "capability_codes": [],
+      "exemption_reason": "CE-04 privileged source administration or authenticated own-entitlement explanation; never grants tenant business access and never exempts IAM.",
+      "children": [
+        {
+          "operation_id": "commercial.module.entitlement_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/entitlementmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/commercial.v1.EntitlementManagementApplication/GetMyEntitlements",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.entitlement.override.create",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-04 privileged source administration or authenticated own-entitlement explanation; never grants tenant business access and never exempts IAM.",
+      "children": [
+        {
+          "operation_id": "commercial.module.entitlement_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/entitlementmanagement/internal/usecase/service.go#catalog"
+        },
+        {
+          "operation_id": "tenant.get",
+          "mode": "always",
+          "source": "internal/commercial/application/entitlementmanagement/internal/usecase/service.go#checkTenant"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.EntitlementManagementApplication/CreateEntitlementOverride",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.entitlement.override.list",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-04 privileged source administration or authenticated own-entitlement explanation; never grants tenant business access and never exempts IAM.",
+      "children": [
+        {
+          "operation_id": "tenant.get",
+          "mode": "always",
+          "source": "internal/commercial/application/entitlementmanagement/internal/usecase/service.go#checkTenant"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.EntitlementManagementApplication/ListEntitlementOverrides",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.entitlement.override.revoke",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-04 privileged source administration or authenticated own-entitlement explanation; never grants tenant business access and never exempts IAM.",
+      "children": [
+        {
+          "operation_id": "tenant.get",
+          "mode": "always",
+          "source": "internal/commercial/application/entitlementmanagement/internal/usecase/service.go#checkTenant"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.EntitlementManagementApplication/RevokeEntitlementOverride",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.create",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ModuleCatalogApplication/CreateModule",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.delete",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ModuleCatalogApplication/DeleteModule",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.entitlement_catalog",
+      "classification": "foundation_exempt",
+      "capability_codes": [],
+      "exemption_reason": "Transport-private typed catalog query joined to an authenticated root; no tenant business action.",
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ModuleCatalogApplication/GetModule",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.list",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ModuleCatalogApplication/ListModules",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.plan_catalog",
+      "classification": "foundation_exempt",
+      "capability_codes": [],
+      "exemption_reason": "Transport-private platform catalog current-read in the existing root transaction, not a public grant or bypass.",
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.set_sales_status",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.set_technical_status",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.module.update",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ModuleCatalogApplication/UpdateModule",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.clone",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/CreatePlanVersion",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.create",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/CreatePlanDraft",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.eligibility",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/CheckPlanEligibility",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/GetPlanVersion",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.list",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/ListPlanVersions",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.publish",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/PublishPlanVersion",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.retire",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/RetirePlanVersion",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.plan.update",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.PlanManagementApplication/UpdatePlanDraft",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "worker_permission": "platform.provisioning.execute",
+      "operation_id": "commercial.provisioning.delivery.claim",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "children": [],
+      "consumer_type": "worker",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "worker_permission": "platform.provisioning.execute",
+      "operation_id": "commercial.provisioning.delivery.complete",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "children": [],
+      "consumer_type": "worker",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "worker_permission": "platform.provisioning.execute",
+      "operation_id": "commercial.provisioning.delivery.fail",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "children": [],
+      "consumer_type": "worker",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.provisioning.delivery.list",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ProvisioningApplication/ListProvisioningDeliveries",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.provisioning.task.cancel",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "children": [
+        {
+          "operation_id": "commercial.subscription.change.preparation.cancel",
+          "mode": "conditional",
+          "condition": "authenticated valid untouched task cancellation without a completed replay",
+          "source": "internal/commercial/application/provisioning/internal/usecase/service.go#mutate"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ProvisioningApplication/CancelProvisioningTask",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.provisioning.task.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ProvisioningApplication/GetProvisioningTask",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.provisioning.task.list",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ProvisioningApplication/ListProvisioningTasks",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.provisioning.task.retry",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.ProvisioningApplication/RetryProvisioningTask",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "worker_permission": "platform.provisioning.execute",
+      "operation_id": "commercial.provisioning.work.claim",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "children": [],
+      "consumer_type": "worker",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "worker_permission": "platform.provisioning.execute",
+      "operation_id": "commercial.provisioning.work.finalize",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "children": [
+        {
+          "operation_id": "commercial.subscription.change.prepared",
+          "mode": "conditional",
+          "condition": "live fenced task lease with every required step READY and no prior completion",
+          "source": "internal/commercial/application/provisioning/internal/usecase/service.go#FinalizeProvisioningWork"
+        }
+      ],
+      "consumer_type": "worker",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "worker_permission": "platform.provisioning.execute",
+      "operation_id": "commercial.provisioning.work.record",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "children": [],
+      "consumer_type": "worker",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.bootstrap_base",
+      "classification": "foundation_exempt",
+      "capability_codes": [],
+      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM.",
+      "children": [
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "always",
+          "source": "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go#BootstrapBaseSubscription"
+        }
+      ],
+      "consumer_type": "internal_child",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.change.confirm",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.get",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.change.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangeReceipt",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.change.preparation.cancel",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.change.prepared",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-10 privileged commercial task/delivery control. Persisted platform identity, permissions, existing Executor and root UoW remain mandatory; internal worker operations have no transport.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "conditional",
+          "condition": "live approved preparation requires authoritative revalidation before activation",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "conditional",
+          "condition": "live approved preparation requires authoritative revalidation before activation",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.get",
+          "mode": "conditional",
+          "condition": "live approved preparation requires authoritative revalidation before activation",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        }
+      ],
+      "consumer_type": "internal_child",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.change.preview",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory.",
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "commercial.plan.get",
+          "mode": "conditional",
+          "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.SubscriptionChangesApplication/PreviewSubscriptionChange",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.change.preview.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangePreview",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.SubscriptionManagementApplication/GetTenantSubscription",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.rule.list",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM.",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.SubscriptionManagementApplication/ListDefaultSubscriptionRules",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.rule.put",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM.",
+      "children": [
+        {
+          "operation_id": "commercial.plan.eligibility",
+          "mode": "always",
+          "source": "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go#PutDefaultSubscriptionRule"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/commercial.v1.SubscriptionManagementApplication/PutDefaultSubscriptionRule",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "device.create",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DeviceApplication/CreateDevice",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "device.delete",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DeviceApplication/DeleteDevice",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "device.get",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DeviceApplication/GetDevice",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "device.list",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DeviceApplication/ListDevices",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "device.transfer",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.transfer"
+      ],
+      "children": [
+        {
+          "operation_id": "device.update",
+          "mode": "always",
+          "source": "internal/deviceops/application/cross_application_transfer.go#TransferDevice"
+        },
+        {
+          "operation_id": "site.validate_transfer_target",
+          "mode": "always",
+          "source": "internal/deviceops/application/cross_application_transfer.go#TransferDevice"
+        }
+      ],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DeviceTransferApplication/TransferDevice",
+      "required_capability_codes": [
+        "device.transfer"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle",
+        "device.transfer"
+      ]
+    },
+    {
+      "operation_id": "device.update",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.lifecycle"
+      ],
+      "children": [
+        {
+          "operation_id": "site.validate_transfer_target",
+          "mode": "conditional",
+          "condition": "requested destination differs from the visible current device site",
+          "source": "internal/deviceops/application/service.go#UpdateDevice"
+        }
+      ],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/deviceops.v1.DeviceApplication/UpdateDevice",
+      "required_capability_codes": [
+        "device.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "site.validate_transfer_target",
+      "classification": "tenant_business",
+      "module_code": "device-operations",
+      "capability_codes": [
+        "device.transfer"
+      ],
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": true,
+      "required_capability_codes": [
+        "device.transfer"
+      ],
+      "always_required_capability_codes": [
+        "device.transfer"
+      ]
+    },
+    {
+      "operation_id": "tenant.activate",
+      "classification": "recovery",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "exemption_reason": "平台恢复租户的管理入口不得依赖待恢复租户的套餐；仍要求 platform.tenant.manage 权限，不豁免身份认证。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/access.v1.TenantLifecycleApplication/ActivateTenant",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.close",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/access.v1.TenantLifecycleApplication/CloseTenant",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.create",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。",
+      "children": [
+        {
+          "operation_id": "commercial.subscription.bootstrap_base",
+          "mode": "always",
+          "source": "internal/access/application/tenantlifecycle/internal/usecase/service.go#CreateTenant"
+        },
+        {
+          "operation_id": "tenant.member.bootstrap_owner",
+          "mode": "always",
+          "source": "internal/access/application/tenantlifecycle/internal/usecase/service.go#CreateTenant"
+        },
+        {
+          "operation_id": "tenant.role.bootstrap_owner",
+          "mode": "always",
+          "source": "internal/access/application/tenantlifecycle/internal/usecase/service.go#CreateTenant"
+        }
+      ],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/access.v1.TenantLifecycleApplication/CreateTenant",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.get",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/access.v1.TenantLifecycleApplication/GetTenant",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.list",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/access.v1.TenantLifecycleApplication/ListTenants",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.member.activate",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantMemberLifecycleApplication/ActivateTenantMember",
+      "required_capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.member.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.member.bootstrap_owner",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "exemption_reason": "租户创建根事务内的初始所有者引导，仅供已授权平台创建流程调用；不是公开购买入口。",
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.member.get",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantMemberLifecycleApplication/GetTenantMember",
+      "required_capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.member.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.member.invite",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantMemberLifecycleApplication/InviteTenantMember",
+      "required_capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.member.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.member.list",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantMemberLifecycleApplication/ListTenantMembers",
+      "required_capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.member.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.member.remove",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [
+        {
+          "operation_id": "tenant.role.assert_member_deactivation_allowed",
+          "mode": "always",
+          "source": "internal/access/application/tenant_member_lifecycle.go#RemoveTenantMember"
+        }
+      ],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantMemberLifecycleApplication/RemoveTenantMember",
+      "required_capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.member.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.member.suspend",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [
+        {
+          "operation_id": "tenant.role.assert_member_deactivation_allowed",
+          "mode": "always",
+          "source": "internal/access/application/tenant_member_lifecycle.go#SuspendTenantMember"
+        }
+      ],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantMemberLifecycleApplication/SuspendTenantMember",
+      "required_capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.member.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.assert_member_deactivation_allowed",
+      "classification": "foundation_exempt",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "exemption_reason": "最后所有者保护是内部安全不变量，不能因套餐使保护失效；保留可信租户上下文、原 IAM 权限和 child 边界。",
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": true,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.role.assign_member",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/AssignTenantRoleMember",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.bootstrap_owner",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "exemption_reason": "租户创建根事务内的初始所有者引导，仅供已授权平台创建流程调用；不是公开购买入口。",
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.role.create",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/CreateTenantRole",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.disable",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/DisableTenantRole",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.enable",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/EnableTenantRole",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.get",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/GetTenantRole",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.list",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/ListTenantRoles",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.revoke_member",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/RevokeTenantRoleMember",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.set_permissions",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/SetTenantRolePermissions",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.update",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/UpdateTenantRole",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.suspend",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/access.v1.TenantLifecycleApplication/SuspendTenant",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.update",
+      "classification": "platform_management",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。",
+      "children": [],
+      "consumer_type": "platform",
+      "tenant_required": false,
+      "rpc": "/access.v1.TenantLifecycleApplication/UpdateTenant",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    }
+  ]
+}

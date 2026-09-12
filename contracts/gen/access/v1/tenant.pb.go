@@ -151,6 +151,8 @@ type CreateTenantRequest struct {
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	OwnerUserId   string                 `protobuf:"bytes,2,opt,name=owner_user_id,json=ownerUserId,proto3" json:"owner_user_id,omitempty"`
 	OwnerEmail    string                 `protobuf:"bytes,3,opt,name=owner_email,json=ownerEmail,proto3" json:"owner_email,omitempty"`
+	RequestId     string                 `protobuf:"bytes,4,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	SalesScope    string                 `protobuf:"bytes,5,opt,name=sales_scope,json=salesScope,proto3" json:"sales_scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -202,6 +204,20 @@ func (x *CreateTenantRequest) GetOwnerUserId() string {
 func (x *CreateTenantRequest) GetOwnerEmail() string {
 	if x != nil {
 		return x.OwnerEmail
+	}
+	return ""
+}
+
+func (x *CreateTenantRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *CreateTenantRequest) GetSalesScope() string {
+	if x != nil {
+		return x.SalesScope
 	}
 	return ""
 }
@@ -555,12 +571,16 @@ const file_access_v1_tenant_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12/\n" +
 	"\x06status\x18\x03 \x01(\x0e2\x17.access.v1.TenantStatusR\x06status\x12\x18\n" +
-	"\aversion\x18\x04 \x01(\x04R\aversion:\x06\xd2\xf3\x18\x02\b\x02\"n\n" +
+	"\aversion\x18\x04 \x01(\x04R\aversion:\x06\xd2\xf3\x18\x02\b\x02\"\xae\x01\n" +
 	"\x13CreateTenantRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\"\n" +
 	"\rowner_user_id\x18\x02 \x01(\tR\vownerUserId\x12\x1f\n" +
 	"\vowner_email\x18\x03 \x01(\tR\n" +
-	"ownerEmail\"\"\n" +
+	"ownerEmail\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x04 \x01(\tR\trequestId\x12\x1f\n" +
+	"\vsales_scope\x18\x05 \x01(\tR\n" +
+	"salesScope\"\"\n" +
 	"\x10GetTenantRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x14\n" +
 	"\x12ListTenantsRequest\"E\n" +
@@ -584,11 +604,10 @@ const file_access_v1_tenant_proto_rawDesc = "" +
 	"\x15TENANT_STATUS_PENDING\x10\x01\x12\x18\n" +
 	"\x14TENANT_STATUS_ACTIVE\x10\x02\x12\x1b\n" +
 	"\x17TENANT_STATUS_SUSPENDED\x10\x03\x12\x18\n" +
-	"\x14TENANT_STATUS_CLOSED\x10\x042\xc7\n" +
-	"\n" +
-	"\x1aTenantLifecycleApplication\x12\xde\x01\n" +
-	"\fCreateTenant\x12\x1e.access.v1.CreateTenantRequest\x1a\x14.access.v1.TenantDTO\"\x97\x01\xe2\xf3\x18}\n" +
-	"\rtenant.create\x12\rcreate_tenant\x1a\x16platform.tenant.create2\x01\x02B\x1dtenant.member.bootstrap_ownerB\x1btenant.role.bootstrap_ownerH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/v1/tenants\x12\x93\x01\n" +
+	"\x14TENANT_STATUS_CLOSED\x10\x042\xc1\v\n" +
+	"\x1aTenantLifecycleApplication\x12\xb4\x02\n" +
+	"\fCreateTenant\x12\x1e.access.v1.CreateTenantRequest\x1a\x14.access.v1.TenantDTO\"\xed\x01\xe2\xf3\x18\xd2\x01\n" +
+	"\rtenant.create\x12\rcreate_tenant\x1a\x16platform.tenant.create\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02B\x1dtenant.member.bootstrap_ownerB\x1btenant.role.bootstrap_ownerB&commercial.subscription.bootstrap_baseH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/v1/tenants\x12\x93\x01\n" +
 	"\tGetTenant\x12\x1b.access.v1.GetTenantRequest\x1a\x14.access.v1.TenantDTO\"S\xe2\xf3\x187\n" +
 	"\n" +
 	"tenant.get\x12\n" +
@@ -602,8 +621,8 @@ const file_access_v1_tenant_proto_rawDesc = "" +
 	"\rSuspendTenant\x12\x1f.access.v1.SuspendTenantRequest\x1a\x14.access.v1.TenantDTO\"h\xe2\xf3\x18A\n" +
 	"\x0etenant.suspend\x12\x0esuspend_tenant\x1a\x16platform.tenant.manage2\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/v1/tenants/{id}/suspend\x12\xa6\x01\n" +
 	"\vCloseTenant\x12\x1d.access.v1.CloseTenantRequest\x1a\x14.access.v1.TenantDTO\"b\xe2\xf3\x18=\n" +
-	"\ftenant.close\x12\fclose_tenant\x1a\x16platform.tenant.manage2\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/v1/tenants/{id}/close\x1aU\xda\xf3\x18Q\n" +
-	"\x10tenant_lifecycle\x12\x1eaccess/tenant_member_lifecycle\x12\x1daccess/tenant_role_permissionBJ\xca\xf3\x18\f\n" +
+	"\ftenant.close\x12\fclose_tenant\x1a\x16platform.tenant.manage2\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/v1/tenants/{id}/close\x1ay\xda\xf3\x18u\n" +
+	"\x10tenant_lifecycle\x12\x1eaccess/tenant_member_lifecycle\x12\x1daccess/tenant_role_permission\x12\"commercial/subscription_managementBJ\xca\xf3\x18\f\n" +
 	"\x06access\x12\x02v1Z8github.com/hvritual/biz/contracts/gen/access/v1;accessv1b\x06proto3"
 
 var (

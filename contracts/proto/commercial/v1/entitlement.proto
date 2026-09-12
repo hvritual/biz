@@ -1,0 +1,79 @@
+syntax = "proto3";
+package commercial.v1;
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+option go_package = "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1";
+option (yunka.dsl.v1.domain) = { name: "commercial" version: "v1" };
+
+enum EntitlementTarget {
+ ENTITLEMENT_TARGET_UNSPECIFIED = 0;
+ ENTITLEMENT_TARGET_MODULE = 1;
+ ENTITLEMENT_TARGET_CAPABILITY = 2;
+ ENTITLEMENT_TARGET_QUOTA = 3;
+ ENTITLEMENT_TARGET_FIELD = 4;
+}
+enum EntitlementEffect {
+ ENTITLEMENT_EFFECT_UNSPECIFIED = 0;
+ ENTITLEMENT_EFFECT_GRANT = 1;
+ ENTITLEMENT_EFFECT_DENY = 2;
+ ENTITLEMENT_EFFECT_QUOTA_ADD = 3;
+ ENTITLEMENT_EFFECT_QUOTA_REPLACE = 4;
+ ENTITLEMENT_EFFECT_SAFETY_DENY = 5;
+ ENTITLEMENT_EFFECT_SAFETY_MASK = 6;
+}
+message EntitlementLimit { bool unlimited = 1; uint64 value = 2; }
+message EntitlementOverrideDTO {
+ string id = 1; string tenant_id = 2; string module_code = 3;
+ EntitlementTarget target = 4; string key = 5; string field_action = 6;
+ EntitlementEffect effect = 7; EntitlementLimit limit = 8;
+ string effective_at = 9; string expires_at = 10; string revoked_at = 11;
+ string reason = 12; string actor_id = 13; uint64 version = 14; string source_kind = 15;
+}
+message CreateEntitlementOverrideRequest {
+ string request_id = 1; string tenant_id = 2; uint64 expected_version = 3;
+ string module_code = 4; EntitlementTarget target = 5; string key = 6;
+ string field_action = 7; EntitlementEffect effect = 8; EntitlementLimit limit = 9;
+ string effective_at = 10; string expires_at = 11; string reason = 12;
+}
+message RevokeEntitlementOverrideRequest { string request_id = 1; string tenant_id = 2; string id = 3; uint64 expected_version = 4; string reason = 5; }
+message EntitlementOverrideReceipt { EntitlementOverrideDTO source = 1; uint64 source_version = 2; }
+message ListEntitlementOverridesRequest { string tenant_id = 1; }
+message ListEntitlementOverridesResponse { repeated EntitlementOverrideDTO sources = 1; uint64 source_version = 2; }
+message ExplainEntitlementsRequest { string tenant_id = 1; repeated string capability_codes = 2; }
+// Tenant identity is exclusively taken from the authenticated principal.
+message GetMyEntitlementsRequest { repeated string capability_codes = 1; }
+message EntitlementSourceExplanation { string id = 1; string source_kind = 2; string effect = 3; string state = 4; string disposition = 5; string reason = 6; string actor_id = 7; }
+message EntitlementDecisionDTO { string kind = 1; string module_code = 2; string key = 3; string field_action = 4; bool allowed = 5; string reason = 6; EntitlementLimit limit = 7; bool masked = 8; repeated EntitlementSourceExplanation sources = 9; }
+message EntitlementCatalogVersion { string module_code = 1; uint64 version = 2; }
+message EntitlementView {
+ string tenant_id = 1; uint64 source_version = 2; uint64 resolver_version = 3;
+ string evaluated_at = 4; string valid_until = 5; string next_transition_at = 6;
+ repeated EntitlementCatalogVersion catalog_versions = 7; repeated EntitlementDecisionDTO decisions = 8;
+ // Immutable derived version, not the source mutation counter.
+ uint64 entitlement_version = 9; uint64 catalog_revision = 10;
+ // Principal-specific Access fingerprint. Empty for platform tenant explanations.
+ string permission_version = 11; string permission_subject = 12;
+}
+service EntitlementManagementApplication {
+ option (yunka.dsl.v1.application) = { name: "entitlement_management" requires: "commercial/module_catalog" requires: "access/tenant_lifecycle" };
+ rpc CreateEntitlementOverride(CreateEntitlementOverrideRequest) returns (EntitlementOverrideReceipt) {
+  option (google.api.http) = { post: "/v1/platform/tenants/{tenant_id}/entitlement-overrides" body: "*" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.entitlement.override.create" use_case: "create_entitlement_override" permissions: "platform.entitlement.manage" permissions: "platform.tenant.read" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "tenant.get" requires_operations: "commercial.module.entitlement_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+ }
+ rpc RevokeEntitlementOverride(RevokeEntitlementOverrideRequest) returns (EntitlementOverrideReceipt) {
+  option (google.api.http) = { post: "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke" body: "*" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.entitlement.override.revoke" use_case: "revoke_entitlement_override" permissions: "platform.entitlement.manage" permissions: "platform.tenant.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "tenant.get" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+ }
+ rpc ListEntitlementOverrides(ListEntitlementOverridesRequest) returns (ListEntitlementOverridesResponse) {
+  option (google.api.http) = { get: "/v1/platform/tenants/{tenant_id}/entitlement-overrides" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.entitlement.override.list" use_case: "list_entitlement_overrides" permissions: "platform.entitlement.read" permissions: "platform.tenant.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "tenant.get" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
+ }
+ rpc ExplainEntitlements(ExplainEntitlementsRequest) returns (EntitlementView) {
+  option (google.api.http) = { post: "/v1/platform/tenants/{tenant_id}/entitlements" body: "*" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.entitlement.explain" use_case: "explain_entitlements" permissions: "platform.entitlement.read" permissions: "platform.tenant.read" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "tenant.get" requires_operations: "commercial.module.entitlement_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_NONE } };
+ }
+ rpc GetMyEntitlements(GetMyEntitlementsRequest) returns (EntitlementView) {
+  option (google.api.http) = { post: "/v1/tenant/entitlements" body: "*" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.entitlement.get_my" use_case: "get_my_entitlements" permissions: "tenant.entitlement.read" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION requires_operations: "commercial.module.entitlement_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_NONE } };
+ }
+}

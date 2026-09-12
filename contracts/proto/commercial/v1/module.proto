@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package commercial.v1;
+
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+
+option go_package = "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1";
+option (yunka.dsl.v1.domain) = { name: "commercial" version: "v1" };
+
+enum ModuleTechnicalStatus {
+  MODULE_TECHNICAL_STATUS_UNSPECIFIED = 0;
+  MODULE_TECHNICAL_STATUS_NOT_READY = 1;
+  MODULE_TECHNICAL_STATUS_READY = 2;
+  MODULE_TECHNICAL_STATUS_DISABLED = 3;
+}
+
+enum ModuleSalesStatus {
+  MODULE_SALES_STATUS_UNSPECIFIED = 0;
+  MODULE_SALES_STATUS_SELLABLE = 1;
+  MODULE_SALES_STATUS_RETIRED = 2;
+}
+
+message ModuleDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string module_code = 1;
+  string name = 2;
+  string category = 3;
+  repeated string sales_scope = 4;
+  ModuleTechnicalStatus technical_status = 5;
+  ModuleSalesStatus sales_status = 6;
+  repeated string capability_codes = 7;
+  repeated string quota_schema_keys = 8;
+  repeated string field_policy_schema_keys = 9;
+  repeated string dependencies = 10;
+  uint64 version = 11;
+}
+
+message CreateModuleRequest { string request_id = 1; string module_code = 2; string name = 3; string category = 4; repeated string sales_scope = 5; string reason = 6; }
+message GetModuleRequest { string module_code = 1; }
+message ListModulesRequest {}
+message ListModulesResponse { repeated ModuleDTO modules = 1; }
+message UpdateModuleRequest { string request_id = 1; string module_code = 2; string name = 3; string category = 4; repeated string sales_scope = 5; uint64 version = 6; string reason = 7; }
+message SetModuleSalesStatusRequest { string request_id = 1; string module_code = 2; ModuleSalesStatus sales_status = 3; uint64 version = 4; string reason = 5; }
+message SetModuleTechnicalStatusRequest { string request_id = 1; string module_code = 2; ModuleTechnicalStatus technical_status = 3; uint64 version = 4; string reason = 5; }
+message DeleteModuleRequest { string request_id = 1; string module_code = 2; uint64 version = 3; string reason = 4; }
+message DeleteModuleResponse { string module_code = 1; bool deleted = 2; }
+
+service ModuleCatalogApplication {
+  option (yunka.dsl.v1.application) = {
+    name: "module_catalog"
+    operations: {
+      id: "commercial.module.plan_catalog"
+      use_case: "read_plan_catalog"
+      permissions: "commercial.catalog.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: false
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+      request_type: "commercial.v1.ListModulesRequest"
+      response_type: "commercial.v1.ListModulesResponse"
+      application_method: "ReadPlanCatalog"
+    }
+    operations: {
+      id: "commercial.module.entitlement_catalog"
+      use_case: "read_entitlement_catalog"
+      permissions: "commercial.catalog.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: false
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+      request_type: "commercial.v1.ListModulesRequest"
+      response_type: "commercial.v1.ListModulesResponse"
+      application_method: "ReadEntitlementCatalog"
+    }
+  };
+
+  rpc CreateModule(CreateModuleRequest) returns (ModuleDTO) {
+    option (google.api.http) = { post: "/v1/platform/modules" body: "*" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.create" use_case: "create_module" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  }
+  rpc GetModule(GetModuleRequest) returns (ModuleDTO) {
+    option (google.api.http) = { get: "/v1/platform/modules/{module_code}" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.get" use_case: "get_module" permissions: "platform.module.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
+  }
+  rpc ListModules(ListModulesRequest) returns (ListModulesResponse) {
+    option (google.api.http) = { get: "/v1/platform/modules" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.list" use_case: "list_modules" permissions: "platform.module.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
+  }
+  rpc UpdateModule(UpdateModuleRequest) returns (ModuleDTO) {
+    option (google.api.http) = { patch: "/v1/platform/modules/{module_code}" body: "*" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.update" use_case: "update_module" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  }
+  rpc SetModuleSalesStatus(SetModuleSalesStatusRequest) returns (ModuleDTO) {
+    option (google.api.http) = { post: "/v1/platform/modules/{module_code}/sales-status" body: "*" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.set_sales_status" use_case: "set_module_sales_status" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  }
+  rpc SetModuleTechnicalStatus(SetModuleTechnicalStatusRequest) returns (ModuleDTO) {
+    option (google.api.http) = { post: "/v1/platform/modules/{module_code}/technical-status" body: "*" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.set_technical_status" use_case: "set_module_technical_status" permissions: "platform.module.technical.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  }
+  rpc DeleteModule(DeleteModuleRequest) returns (DeleteModuleResponse) {
+    option (google.api.http) = { delete: "/v1/platform/modules/{module_code}" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.delete" use_case: "delete_module" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  }
+}

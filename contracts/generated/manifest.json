@@ -32,6 +32,66 @@
       }
     },
     {
+      "name": "contracts/proto/commercial/v1/entitlement.proto",
+      "package": "commercial.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1",
+      "domain": {
+        "name": "commercial",
+        "version": "v1"
+      }
+    },
+    {
+      "name": "contracts/proto/commercial/v1/module.proto",
+      "package": "commercial.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1",
+      "domain": {
+        "name": "commercial",
+        "version": "v1"
+      }
+    },
+    {
+      "name": "contracts/proto/commercial/v1/plan.proto",
+      "package": "commercial.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1",
+      "domain": {
+        "name": "commercial",
+        "version": "v1"
+      }
+    },
+    {
+      "name": "contracts/proto/commercial/v1/provisioning.proto",
+      "package": "commercial.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1",
+      "domain": {
+        "name": "commercial",
+        "version": "v1"
+      }
+    },
+    {
+      "name": "contracts/proto/commercial/v1/subscription.proto",
+      "package": "commercial.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1",
+      "domain": {
+        "name": "commercial",
+        "version": "v1"
+      }
+    },
+    {
+      "name": "contracts/proto/commercial/v1/subscription_change.proto",
+      "package": "commercial.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1",
+      "domain": {
+        "name": "commercial",
+        "version": "v1"
+      }
+    },
+    {
       "name": "contracts/proto/deviceops/v1/deviceops.proto",
       "package": "deviceops.v1",
       "syntax": "proto3",
@@ -234,6 +294,20 @@
           "name": "owner_email",
           "jsonName": "ownerEmail",
           "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 5,
           "kind": "scalar",
           "type": "string"
         }
@@ -792,6 +866,3447 @@
       }
     },
     {
+      "name": "BootstrapTenantSubscriptionRequest",
+      "fullName": "commercial.v1.BootstrapTenantSubscriptionRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "BootstrapTenantSubscriptionResult",
+      "fullName": "commercial.v1.BootstrapTenantSubscriptionResult",
+      "fields": [
+        {
+          "name": "subscription",
+          "jsonName": "subscription",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.TenantSubscriptionDTO"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ChangePlanVersionStateRequest",
+      "fullName": "commercial.v1.ChangePlanVersionStateRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "expected_revision",
+          "jsonName": "expectedRevision",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "CheckPlanEligibilityRequest",
+      "fullName": "commercial.v1.CheckPlanEligibilityRequest",
+      "fields": [
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ClaimProvisioningDeliveryRequest",
+      "fullName": "commercial.v1.ClaimProvisioningDeliveryRequest",
+      "fields": [
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_seconds",
+          "jsonName": "leaseSeconds",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ClaimProvisioningWorkRequest",
+      "fullName": "commercial.v1.ClaimProvisioningWorkRequest",
+      "fields": [
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_seconds",
+          "jsonName": "leaseSeconds",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "CompleteProvisioningDeliveryRequest",
+      "fullName": "commercial.v1.CompleteProvisioningDeliveryRequest",
+      "fields": [
+        {
+          "name": "event_id",
+          "jsonName": "eventId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_token",
+          "jsonName": "leaseToken",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "failure_code",
+          "jsonName": "failureCode",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ConfirmSubscriptionChangeRequest",
+      "fullName": "commercial.v1.ConfirmSubscriptionChangeRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "preview_hash",
+          "jsonName": "previewHash",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "CreateEntitlementOverrideRequest",
+      "fullName": "commercial.v1.CreateEntitlementOverrideRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expected_version",
+          "jsonName": "expectedVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "target",
+          "jsonName": "target",
+          "number": 5,
+          "kind": "enum",
+          "type": "commercial.v1.EntitlementTarget"
+        },
+        {
+          "name": "key",
+          "jsonName": "key",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "field_action",
+          "jsonName": "fieldAction",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "effect",
+          "jsonName": "effect",
+          "number": 8,
+          "kind": "enum",
+          "type": "commercial.v1.EntitlementEffect"
+        },
+        {
+          "name": "limit",
+          "jsonName": "limit",
+          "number": 9,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementLimit"
+        },
+        {
+          "name": "effective_at",
+          "jsonName": "effectiveAt",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "jsonName": "expiresAt",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "CreateModuleRequest",
+      "fullName": "commercial.v1.CreateModuleRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "jsonName": "category",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "CreatePlanDraftRequest",
+      "fullName": "commercial.v1.CreatePlanDraftRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "terms",
+          "jsonName": "terms",
+          "number": 4,
+          "kind": "message",
+          "type": "commercial.v1.PlanTerms"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "CreatePlanVersionRequest",
+      "fullName": "commercial.v1.CreatePlanVersionRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "from_version",
+          "jsonName": "fromVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "expected_plan_revision",
+          "jsonName": "expectedPlanRevision",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "DefaultSubscriptionRuleDTO",
+      "fullName": "commercial.v1.DefaultSubscriptionRuleDTO",
+      "fields": [
+        {
+          "name": "rule_id",
+          "jsonName": "ruleId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "priority",
+          "jsonName": "priority",
+          "number": 3,
+          "kind": "scalar",
+          "type": "int32"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_version",
+          "jsonName": "planVersion",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "enabled",
+          "jsonName": "enabled",
+          "number": 7,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_id",
+          "jsonName": "actorId",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "updated_at",
+          "jsonName": "updatedAt",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "DeleteModuleRequest",
+      "fullName": "commercial.v1.DeleteModuleRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "DeleteModuleResponse",
+      "fullName": "commercial.v1.DeleteModuleResponse",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "deleted",
+          "jsonName": "deleted",
+          "number": 2,
+          "kind": "scalar",
+          "type": "bool"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "EntitlementCatalogVersion",
+      "fullName": "commercial.v1.EntitlementCatalogVersion",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "EntitlementDecisionDTO",
+      "fullName": "commercial.v1.EntitlementDecisionDTO",
+      "fields": [
+        {
+          "name": "kind",
+          "jsonName": "kind",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "key",
+          "jsonName": "key",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "field_action",
+          "jsonName": "fieldAction",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "allowed",
+          "jsonName": "allowed",
+          "number": 5,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "limit",
+          "jsonName": "limit",
+          "number": 7,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementLimit"
+        },
+        {
+          "name": "masked",
+          "jsonName": "masked",
+          "number": 8,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "sources",
+          "jsonName": "sources",
+          "number": 9,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementSourceExplanation",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "EntitlementLimit",
+      "fullName": "commercial.v1.EntitlementLimit",
+      "fields": [
+        {
+          "name": "unlimited",
+          "jsonName": "unlimited",
+          "number": 1,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "value",
+          "jsonName": "value",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "shared"
+      }
+    },
+    {
+      "name": "EntitlementOverrideDTO",
+      "fullName": "commercial.v1.EntitlementOverrideDTO",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "target",
+          "jsonName": "target",
+          "number": 4,
+          "kind": "enum",
+          "type": "commercial.v1.EntitlementTarget"
+        },
+        {
+          "name": "key",
+          "jsonName": "key",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "field_action",
+          "jsonName": "fieldAction",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "effect",
+          "jsonName": "effect",
+          "number": 7,
+          "kind": "enum",
+          "type": "commercial.v1.EntitlementEffect"
+        },
+        {
+          "name": "limit",
+          "jsonName": "limit",
+          "number": 8,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementLimit"
+        },
+        {
+          "name": "effective_at",
+          "jsonName": "effectiveAt",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "jsonName": "expiresAt",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "revoked_at",
+          "jsonName": "revokedAt",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_id",
+          "jsonName": "actorId",
+          "number": 13,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 14,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "source_kind",
+          "jsonName": "sourceKind",
+          "number": 15,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "EntitlementOverrideReceipt",
+      "fullName": "commercial.v1.EntitlementOverrideReceipt",
+      "fields": [
+        {
+          "name": "source",
+          "jsonName": "source",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementOverrideDTO"
+        },
+        {
+          "name": "source_version",
+          "jsonName": "sourceVersion",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "EntitlementSourceExplanation",
+      "fullName": "commercial.v1.EntitlementSourceExplanation",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "source_kind",
+          "jsonName": "sourceKind",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "effect",
+          "jsonName": "effect",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "jsonName": "state",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "disposition",
+          "jsonName": "disposition",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_id",
+          "jsonName": "actorId",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "EntitlementView",
+      "fullName": "commercial.v1.EntitlementView",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "source_version",
+          "jsonName": "sourceVersion",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "resolver_version",
+          "jsonName": "resolverVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "evaluated_at",
+          "jsonName": "evaluatedAt",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "valid_until",
+          "jsonName": "validUntil",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "next_transition_at",
+          "jsonName": "nextTransitionAt",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "catalog_versions",
+          "jsonName": "catalogVersions",
+          "number": 7,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementCatalogVersion",
+          "repeated": true
+        },
+        {
+          "name": "decisions",
+          "jsonName": "decisions",
+          "number": 8,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementDecisionDTO",
+          "repeated": true
+        },
+        {
+          "name": "entitlement_version",
+          "jsonName": "entitlementVersion",
+          "number": 9,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "catalog_revision",
+          "jsonName": "catalogRevision",
+          "number": 10,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "permission_version",
+          "jsonName": "permissionVersion",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "permission_subject",
+          "jsonName": "permissionSubject",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ExplainEntitlementsRequest",
+      "fullName": "commercial.v1.ExplainEntitlementsRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "capability_codes",
+          "jsonName": "capabilityCodes",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "FinalizeProvisioningWorkRequest",
+      "fullName": "commercial.v1.FinalizeProvisioningWorkRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "task_id",
+          "jsonName": "taskId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_token",
+          "jsonName": "leaseToken",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "GetModuleRequest",
+      "fullName": "commercial.v1.GetModuleRequest",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "GetMyEntitlementsRequest",
+      "fullName": "commercial.v1.GetMyEntitlementsRequest",
+      "fields": [
+        {
+          "name": "capability_codes",
+          "jsonName": "capabilityCodes",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "GetPlanVersionRequest",
+      "fullName": "commercial.v1.GetPlanVersionRequest",
+      "fields": [
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "GetTenantSubscriptionRequest",
+      "fullName": "commercial.v1.GetTenantSubscriptionRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListDefaultSubscriptionRulesRequest",
+      "fullName": "commercial.v1.ListDefaultSubscriptionRulesRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListDefaultSubscriptionRulesResponse",
+      "fullName": "commercial.v1.ListDefaultSubscriptionRulesResponse",
+      "fields": [
+        {
+          "name": "rules",
+          "jsonName": "rules",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.DefaultSubscriptionRuleDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListEntitlementOverridesRequest",
+      "fullName": "commercial.v1.ListEntitlementOverridesRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListEntitlementOverridesResponse",
+      "fullName": "commercial.v1.ListEntitlementOverridesResponse",
+      "fields": [
+        {
+          "name": "sources",
+          "jsonName": "sources",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementOverrideDTO",
+          "repeated": true
+        },
+        {
+          "name": "source_version",
+          "jsonName": "sourceVersion",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListModulesRequest",
+      "fullName": "commercial.v1.ListModulesRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListModulesResponse",
+      "fullName": "commercial.v1.ListModulesResponse",
+      "fields": [
+        {
+          "name": "modules",
+          "jsonName": "modules",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.ModuleDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListPlanVersionsRequest",
+      "fullName": "commercial.v1.ListPlanVersionsRequest",
+      "fields": [
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "after_version",
+          "jsonName": "afterVersion",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListPlanVersionsResponse",
+      "fullName": "commercial.v1.ListPlanVersionsResponse",
+      "fields": [
+        {
+          "name": "versions",
+          "jsonName": "versions",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.PlanVersionDTO",
+          "repeated": true
+        },
+        {
+          "name": "next_after_version",
+          "jsonName": "nextAfterVersion",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListProvisioningDeliveriesRequest",
+      "fullName": "commercial.v1.ListProvisioningDeliveriesRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "after_event_id",
+          "jsonName": "afterEventId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "limit",
+          "jsonName": "limit",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListProvisioningDeliveriesResponse",
+      "fullName": "commercial.v1.ListProvisioningDeliveriesResponse",
+      "fields": [
+        {
+          "name": "deliveries",
+          "jsonName": "deliveries",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningDeliveryDTO",
+          "repeated": true
+        },
+        {
+          "name": "next_after_event_id",
+          "jsonName": "nextAfterEventId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListProvisioningTasksRequest",
+      "fullName": "commercial.v1.ListProvisioningTasksRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "after_task_id",
+          "jsonName": "afterTaskId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "limit",
+          "jsonName": "limit",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListProvisioningTasksResponse",
+      "fullName": "commercial.v1.ListProvisioningTasksResponse",
+      "fields": [
+        {
+          "name": "tasks",
+          "jsonName": "tasks",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningTaskDTO",
+          "repeated": true
+        },
+        {
+          "name": "next_after_task_id",
+          "jsonName": "nextAfterTaskId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ModuleDTO",
+      "fullName": "commercial.v1.ModuleDTO",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "jsonName": "category",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "technical_status",
+          "jsonName": "technicalStatus",
+          "number": 5,
+          "kind": "enum",
+          "type": "commercial.v1.ModuleTechnicalStatus"
+        },
+        {
+          "name": "sales_status",
+          "jsonName": "salesStatus",
+          "number": 6,
+          "kind": "enum",
+          "type": "commercial.v1.ModuleSalesStatus"
+        },
+        {
+          "name": "capability_codes",
+          "jsonName": "capabilityCodes",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "quota_schema_keys",
+          "jsonName": "quotaSchemaKeys",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "field_policy_schema_keys",
+          "jsonName": "fieldPolicySchemaKeys",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "dependencies",
+          "jsonName": "dependencies",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 11,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "MutateProvisioningTaskRequest",
+      "fullName": "commercial.v1.MutateProvisioningTaskRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "task_id",
+          "jsonName": "taskId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expected_revision",
+          "jsonName": "expectedRevision",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "PlanEligibilityDTO",
+      "fullName": "commercial.v1.PlanEligibilityDTO",
+      "fields": [
+        {
+          "name": "eligible",
+          "jsonName": "eligible",
+          "number": 1,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "message",
+          "type": "commercial.v1.PlanVersionDTO"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "PlanField",
+      "fullName": "commercial.v1.PlanField",
+      "fields": [
+        {
+          "name": "key",
+          "jsonName": "key",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "action",
+          "jsonName": "action",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "mode",
+          "jsonName": "mode",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "shared"
+      }
+    },
+    {
+      "name": "PlanModule",
+      "fullName": "commercial.v1.PlanModule",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "capability_codes",
+          "jsonName": "capabilityCodes",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "quotas",
+          "jsonName": "quotas",
+          "number": 3,
+          "kind": "message",
+          "type": "commercial.v1.PlanQuota",
+          "repeated": true
+        },
+        {
+          "name": "fields",
+          "jsonName": "fields",
+          "number": 4,
+          "kind": "message",
+          "type": "commercial.v1.PlanField",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "shared"
+      }
+    },
+    {
+      "name": "PlanQuota",
+      "fullName": "commercial.v1.PlanQuota",
+      "fields": [
+        {
+          "name": "key",
+          "jsonName": "key",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "unlimited",
+          "jsonName": "unlimited",
+          "number": 2,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "value",
+          "jsonName": "value",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "shared"
+      }
+    },
+    {
+      "name": "PlanTerms",
+      "fullName": "commercial.v1.PlanTerms",
+      "fields": [
+        {
+          "name": "modules",
+          "jsonName": "modules",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.PlanModule",
+          "repeated": true
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "validity_mode",
+          "jsonName": "validityMode",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "validity_days",
+          "jsonName": "validityDays",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "price_ref",
+          "jsonName": "priceRef",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "shared"
+      }
+    },
+    {
+      "name": "PlanVersionDTO",
+      "fullName": "commercial.v1.PlanVersionDTO",
+      "fields": [
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "revision",
+          "jsonName": "revision",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "plan_revision",
+          "jsonName": "planRevision",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "state",
+          "jsonName": "state",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "terms",
+          "jsonName": "terms",
+          "number": 7,
+          "kind": "message",
+          "type": "commercial.v1.PlanTerms"
+        },
+        {
+          "name": "content_sha256",
+          "jsonName": "contentSha256",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "jsonName": "createdAt",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "published_at",
+          "jsonName": "publishedAt",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "retired_at",
+          "jsonName": "retiredAt",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_id",
+          "jsonName": "actorId",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 13,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "PreparedSubscriptionChangeRequest",
+      "fullName": "commercial.v1.PreparedSubscriptionChangeRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "task_id",
+          "jsonName": "taskId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_token",
+          "jsonName": "leaseToken",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "task_revision",
+          "jsonName": "taskRevision",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "PreviewSubscriptionChangeRequest",
+      "fullName": "commercial.v1.PreviewSubscriptionChangeRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "action",
+          "jsonName": "action",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "target_plan_code",
+          "jsonName": "targetPlanCode",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "target_plan_version",
+          "jsonName": "targetPlanVersion",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "effective_at",
+          "jsonName": "effectiveAt",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ProvisioningCompletionDTO",
+      "fullName": "commercial.v1.ProvisioningCompletionDTO",
+      "fields": [
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "subscription_revision",
+          "jsonName": "subscriptionRevision",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "source_version",
+          "jsonName": "sourceVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "entitlement_version",
+          "jsonName": "entitlementVersion",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "applied_at",
+          "jsonName": "appliedAt",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ProvisioningDeliveryDTO",
+      "fullName": "commercial.v1.ProvisioningDeliveryDTO",
+      "fields": [
+        {
+          "name": "event_id",
+          "jsonName": "eventId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "aggregate_id",
+          "jsonName": "aggregateId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "aggregate_version",
+          "jsonName": "aggregateVersion",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "task_id",
+          "jsonName": "taskId",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "fact_status",
+          "jsonName": "factStatus",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "entitlement_version",
+          "jsonName": "entitlementVersion",
+          "number": 8,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "delivery_state",
+          "jsonName": "deliveryState",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "attempts",
+          "jsonName": "attempts",
+          "number": 10,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "failure_code",
+          "jsonName": "failureCode",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "next_attempt_at",
+          "jsonName": "nextAttemptAt",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ProvisioningDeliveryResultDTO",
+      "fullName": "commercial.v1.ProvisioningDeliveryResultDTO",
+      "fields": [
+        {
+          "name": "event_id",
+          "jsonName": "eventId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "outcome",
+          "jsonName": "outcome",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "aggregate_version",
+          "jsonName": "aggregateVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "entitlement_version",
+          "jsonName": "entitlementVersion",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ProvisioningDeliveryWorkDTO",
+      "fullName": "commercial.v1.ProvisioningDeliveryWorkDTO",
+      "fields": [
+        {
+          "name": "found",
+          "jsonName": "found",
+          "number": 1,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "delivery",
+          "jsonName": "delivery",
+          "number": 2,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningDeliveryDTO"
+        },
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_token",
+          "jsonName": "leaseToken",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ProvisioningRequirementDTO",
+      "fullName": "commercial.v1.ProvisioningRequirementDTO",
+      "fields": [
+        {
+          "name": "code",
+          "jsonName": "code",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "adapter",
+          "jsonName": "adapter",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "max_attempts",
+          "jsonName": "maxAttempts",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ProvisioningStepDTO",
+      "fullName": "commercial.v1.ProvisioningStepDTO",
+      "fields": [
+        {
+          "name": "requirement",
+          "jsonName": "requirement",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningRequirementDTO"
+        },
+        {
+          "name": "state",
+          "jsonName": "state",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "effect",
+          "jsonName": "effect",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "attempts",
+          "jsonName": "attempts",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "cycle_attempts",
+          "jsonName": "cycleAttempts",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "reconciliations",
+          "jsonName": "reconciliations",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "evidence",
+          "jsonName": "evidence",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "failure_code",
+          "jsonName": "failureCode",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ProvisioningTaskDTO",
+      "fullName": "commercial.v1.ProvisioningTaskDTO",
+      "fields": [
+        {
+          "name": "task_id",
+          "jsonName": "taskId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_id",
+          "jsonName": "actorId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "jsonName": "state",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "revision",
+          "jsonName": "revision",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "target_plan_code",
+          "jsonName": "targetPlanCode",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "target_plan_version",
+          "jsonName": "targetPlanVersion",
+          "number": 8,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "steps",
+          "jsonName": "steps",
+          "number": 9,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningStepDTO",
+          "repeated": true
+        },
+        {
+          "name": "step_index",
+          "jsonName": "stepIndex",
+          "number": 10,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "stage",
+          "jsonName": "stage",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "next_attempt_at",
+          "jsonName": "nextAttemptAt",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "failure_code",
+          "jsonName": "failureCode",
+          "number": 13,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "retry_allowed",
+          "jsonName": "retryAllowed",
+          "number": 14,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "cancellation_allowed",
+          "jsonName": "cancellationAllowed",
+          "number": 15,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "created_at",
+          "jsonName": "createdAt",
+          "number": 16,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "updated_at",
+          "jsonName": "updatedAt",
+          "number": 17,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "deadline",
+          "jsonName": "deadline",
+          "number": 18,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "completion",
+          "jsonName": "completion",
+          "number": 19,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningCompletionDTO"
+        },
+        {
+          "name": "retry_cycles",
+          "jsonName": "retryCycles",
+          "number": 20,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ProvisioningWorkDTO",
+      "fullName": "commercial.v1.ProvisioningWorkDTO",
+      "fields": [
+        {
+          "name": "found",
+          "jsonName": "found",
+          "number": 1,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "task",
+          "jsonName": "task",
+          "number": 2,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningTaskDTO"
+        },
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_token",
+          "jsonName": "leaseToken",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "idempotency_key",
+          "jsonName": "idempotencyKey",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "PutDefaultSubscriptionRuleRequest",
+      "fullName": "commercial.v1.PutDefaultSubscriptionRuleRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "rule_id",
+          "jsonName": "ruleId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expected_version",
+          "jsonName": "expectedVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "priority",
+          "jsonName": "priority",
+          "number": 4,
+          "kind": "scalar",
+          "type": "int32"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_version",
+          "jsonName": "planVersion",
+          "number": 7,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "enabled",
+          "jsonName": "enabled",
+          "number": 8,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ReadProvisioningTaskRequest",
+      "fullName": "commercial.v1.ReadProvisioningTaskRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "task_id",
+          "jsonName": "taskId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ReadSubscriptionChangeRequest",
+      "fullName": "commercial.v1.ReadSubscriptionChangeRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "RecordProvisioningWorkRequest",
+      "fullName": "commercial.v1.RecordProvisioningWorkRequest",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "task_id",
+          "jsonName": "taskId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "worker_id",
+          "jsonName": "workerId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "lease_token",
+          "jsonName": "leaseToken",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "outcome",
+          "jsonName": "outcome",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "evidence",
+          "jsonName": "evidence",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "failure_code",
+          "jsonName": "failureCode",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "RevokeEntitlementOverrideRequest",
+      "fullName": "commercial.v1.RevokeEntitlementOverrideRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expected_version",
+          "jsonName": "expectedVersion",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "SetModuleSalesStatusRequest",
+      "fullName": "commercial.v1.SetModuleSalesStatusRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sales_status",
+          "jsonName": "salesStatus",
+          "number": 3,
+          "kind": "enum",
+          "type": "commercial.v1.ModuleSalesStatus"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "SetModuleTechnicalStatusRequest",
+      "fullName": "commercial.v1.SetModuleTechnicalStatusRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "technical_status",
+          "jsonName": "technicalStatus",
+          "number": 3,
+          "kind": "enum",
+          "type": "commercial.v1.ModuleTechnicalStatus"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "SubscriptionChangeDependency",
+      "fullName": "commercial.v1.SubscriptionChangeDependency",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "requires_modules",
+          "jsonName": "requiresModules",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "SubscriptionChangePreviewDTO",
+      "fullName": "commercial.v1.SubscriptionChangePreviewDTO",
+      "fields": [
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_id",
+          "jsonName": "actorId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "action",
+          "jsonName": "action",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "classification",
+          "jsonName": "classification",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "mode",
+          "jsonName": "mode",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "preview_hash",
+          "jsonName": "previewHash",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "before",
+          "jsonName": "before",
+          "number": 9,
+          "kind": "message",
+          "type": "commercial.v1.TenantSubscriptionDTO"
+        },
+        {
+          "name": "target",
+          "jsonName": "target",
+          "number": 10,
+          "kind": "message",
+          "type": "commercial.v1.PlanVersionDTO"
+        },
+        {
+          "name": "subscription_revision",
+          "jsonName": "subscriptionRevision",
+          "number": 11,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "source_version",
+          "jsonName": "sourceVersion",
+          "number": 12,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "entitlement_version",
+          "jsonName": "entitlementVersion",
+          "number": 13,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "catalog_revision",
+          "jsonName": "catalogRevision",
+          "number": 14,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "created_at",
+          "jsonName": "createdAt",
+          "number": 15,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "jsonName": "expiresAt",
+          "number": 16,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "effective_at",
+          "jsonName": "effectiveAt",
+          "number": 17,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "entitlement_expires_at",
+          "jsonName": "entitlementExpiresAt",
+          "number": 18,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "current_entitlements",
+          "jsonName": "currentEntitlements",
+          "number": 19,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementView"
+        },
+        {
+          "name": "projected_entitlements",
+          "jsonName": "projectedEntitlements",
+          "number": 20,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementView"
+        },
+        {
+          "name": "dependencies",
+          "jsonName": "dependencies",
+          "number": 21,
+          "kind": "message",
+          "type": "commercial.v1.SubscriptionChangeDependency",
+          "repeated": true
+        },
+        {
+          "name": "quota_impacts",
+          "jsonName": "quotaImpacts",
+          "number": 22,
+          "kind": "message",
+          "type": "commercial.v1.SubscriptionChangeQuotaImpact",
+          "repeated": true
+        },
+        {
+          "name": "impacts",
+          "jsonName": "impacts",
+          "number": 23,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "pricing_basis",
+          "jsonName": "pricingBasis",
+          "number": 24,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "quota_validation_required",
+          "jsonName": "quotaValidationRequired",
+          "number": 25,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "provisioning_requirements",
+          "jsonName": "provisioningRequirements",
+          "number": 26,
+          "kind": "message",
+          "type": "commercial.v1.ProvisioningRequirementDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "SubscriptionChangeQuotaImpact",
+      "fullName": "commercial.v1.SubscriptionChangeQuotaImpact",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "key",
+          "jsonName": "key",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "before_limit",
+          "jsonName": "beforeLimit",
+          "number": 3,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementLimit"
+        },
+        {
+          "name": "after_limit",
+          "jsonName": "afterLimit",
+          "number": 4,
+          "kind": "message",
+          "type": "commercial.v1.EntitlementLimit"
+        },
+        {
+          "name": "usage_known",
+          "jsonName": "usageKnown",
+          "number": 5,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "used",
+          "jsonName": "used",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "over_limit",
+          "jsonName": "overLimit",
+          "number": 7,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "policy",
+          "jsonName": "policy",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "evidence",
+          "jsonName": "evidence",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "SubscriptionChangeReceiptDTO",
+      "fullName": "commercial.v1.SubscriptionChangeReceiptDTO",
+      "fields": [
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_id",
+          "jsonName": "actorId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "preview_hash",
+          "jsonName": "previewHash",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "action",
+          "jsonName": "action",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "jsonName": "status",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "mode",
+          "jsonName": "mode",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "confirmed_at",
+          "jsonName": "confirmedAt",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "effective_at",
+          "jsonName": "effectiveAt",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "entitlement_expires_at",
+          "jsonName": "entitlementExpiresAt",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "before",
+          "jsonName": "before",
+          "number": 13,
+          "kind": "message",
+          "type": "commercial.v1.TenantSubscriptionDTO"
+        },
+        {
+          "name": "after",
+          "jsonName": "after",
+          "number": 14,
+          "kind": "message",
+          "type": "commercial.v1.TenantSubscriptionDTO"
+        },
+        {
+          "name": "before_source_version",
+          "jsonName": "beforeSourceVersion",
+          "number": 15,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "after_source_version",
+          "jsonName": "afterSourceVersion",
+          "number": 16,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "before_entitlement_version",
+          "jsonName": "beforeEntitlementVersion",
+          "number": 17,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "after_entitlement_version",
+          "jsonName": "afterEntitlementVersion",
+          "number": 18,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "quota_validation_required",
+          "jsonName": "quotaValidationRequired",
+          "number": 19,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "pricing_authority",
+          "jsonName": "pricingAuthority",
+          "number": 20,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "quota_impacts",
+          "jsonName": "quotaImpacts",
+          "number": 21,
+          "kind": "message",
+          "type": "commercial.v1.SubscriptionChangeQuotaImpact",
+          "repeated": true
+        },
+        {
+          "name": "provisioning_task_id",
+          "jsonName": "provisioningTaskId",
+          "number": 22,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "TenantSubscriptionDTO",
+      "fullName": "commercial.v1.TenantSubscriptionDTO",
+      "fields": [
+        {
+          "name": "subscription_id",
+          "jsonName": "subscriptionId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "kind",
+          "jsonName": "kind",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "jsonName": "state",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_version",
+          "jsonName": "planVersion",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "rule_id",
+          "jsonName": "ruleId",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "rule_version",
+          "jsonName": "ruleVersion",
+          "number": 8,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "entitlement_source_version",
+          "jsonName": "entitlementSourceVersion",
+          "number": 10,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "created_at",
+          "jsonName": "createdAt",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "match_explanation",
+          "jsonName": "matchExplanation",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "revision",
+          "jsonName": "revision",
+          "number": 13,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "period_start",
+          "jsonName": "periodStart",
+          "number": 14,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "period_end",
+          "jsonName": "periodEnd",
+          "number": 15,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "renewal_stopped",
+          "jsonName": "renewalStopped",
+          "number": 16,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "pending_change_id",
+          "jsonName": "pendingChangeId",
+          "number": 17,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "UpdateModuleRequest",
+      "fullName": "commercial.v1.UpdateModuleRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "jsonName": "category",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "UpdatePlanDraftRequest",
+      "fullName": "commercial.v1.UpdatePlanDraftRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "expected_revision",
+          "jsonName": "expectedRevision",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "terms",
+          "jsonName": "terms",
+          "number": 6,
+          "kind": "message",
+          "type": "commercial.v1.PlanTerms"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "CreateDeviceRequest",
       "fullName": "deviceops.v1.CreateDeviceRequest",
       "fields": [
@@ -1154,6 +4669,106 @@
           "number": 4
         }
       ]
+    },
+    {
+      "name": "EntitlementEffect",
+      "fullName": "commercial.v1.EntitlementEffect",
+      "values": [
+        {
+          "name": "ENTITLEMENT_EFFECT_UNSPECIFIED",
+          "number": 0
+        },
+        {
+          "name": "ENTITLEMENT_EFFECT_GRANT",
+          "number": 1
+        },
+        {
+          "name": "ENTITLEMENT_EFFECT_DENY",
+          "number": 2
+        },
+        {
+          "name": "ENTITLEMENT_EFFECT_QUOTA_ADD",
+          "number": 3
+        },
+        {
+          "name": "ENTITLEMENT_EFFECT_QUOTA_REPLACE",
+          "number": 4
+        },
+        {
+          "name": "ENTITLEMENT_EFFECT_SAFETY_DENY",
+          "number": 5
+        },
+        {
+          "name": "ENTITLEMENT_EFFECT_SAFETY_MASK",
+          "number": 6
+        }
+      ]
+    },
+    {
+      "name": "EntitlementTarget",
+      "fullName": "commercial.v1.EntitlementTarget",
+      "values": [
+        {
+          "name": "ENTITLEMENT_TARGET_UNSPECIFIED",
+          "number": 0
+        },
+        {
+          "name": "ENTITLEMENT_TARGET_MODULE",
+          "number": 1
+        },
+        {
+          "name": "ENTITLEMENT_TARGET_CAPABILITY",
+          "number": 2
+        },
+        {
+          "name": "ENTITLEMENT_TARGET_QUOTA",
+          "number": 3
+        },
+        {
+          "name": "ENTITLEMENT_TARGET_FIELD",
+          "number": 4
+        }
+      ]
+    },
+    {
+      "name": "ModuleSalesStatus",
+      "fullName": "commercial.v1.ModuleSalesStatus",
+      "values": [
+        {
+          "name": "MODULE_SALES_STATUS_UNSPECIFIED",
+          "number": 0
+        },
+        {
+          "name": "MODULE_SALES_STATUS_SELLABLE",
+          "number": 1
+        },
+        {
+          "name": "MODULE_SALES_STATUS_RETIRED",
+          "number": 2
+        }
+      ]
+    },
+    {
+      "name": "ModuleTechnicalStatus",
+      "fullName": "commercial.v1.ModuleTechnicalStatus",
+      "values": [
+        {
+          "name": "MODULE_TECHNICAL_STATUS_UNSPECIFIED",
+          "number": 0
+        },
+        {
+          "name": "MODULE_TECHNICAL_STATUS_NOT_READY",
+          "number": 1
+        },
+        {
+          "name": "MODULE_TECHNICAL_STATUS_READY",
+          "number": 2
+        },
+        {
+          "name": "MODULE_TECHNICAL_STATUS_DISABLED",
+          "number": 3
+        }
+      ]
     }
   ],
   "services": [
@@ -1165,7 +4780,8 @@
         "name": "tenant_lifecycle",
         "requires": [
           "access/tenant_member_lifecycle",
-          "access/tenant_role_permission"
+          "access/tenant_role_permission",
+          "commercial/subscription_management"
         ]
       },
       "methods": [
@@ -1261,6 +4877,8 @@
             "id": "tenant.create",
             "useCase": "create_tenant",
             "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
               "platform.tenant.create"
             ],
             "permissionMode": "all",
@@ -1268,6 +4886,7 @@
               "api-key"
             ],
             "requiresOperations": [
+              "commercial.subscription.bootstrap_base",
               "tenant.member.bootstrap_owner",
               "tenant.role.bootstrap_owner"
             ],
@@ -1280,6 +4899,8 @@
           "authorization": {
             "operationId": "tenant.create",
             "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
               "platform.tenant.create"
             ],
             "permissionMode": "all",
@@ -1492,7 +5113,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -1507,7 +5129,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -1531,7 +5154,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -1546,7 +5170,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -1571,7 +5196,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -1586,7 +5212,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -1610,7 +5237,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -1625,7 +5253,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -1650,7 +5279,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "tenant.role.assert_member_deactivation_allowed"
@@ -1669,7 +5299,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -1694,7 +5325,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "tenant.role.assert_member_deactivation_allowed"
@@ -1713,7 +5345,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         }
@@ -1735,7 +5368,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -1787,7 +5421,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -1802,7 +5437,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -1827,7 +5463,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -1842,7 +5479,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -1867,7 +5505,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -1882,7 +5521,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -1907,7 +5547,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -1922,7 +5563,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -1946,7 +5588,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -1961,7 +5604,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -1985,7 +5629,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -2000,7 +5645,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -2025,7 +5671,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -2040,7 +5687,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -2065,7 +5713,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -2080,7 +5729,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -2105,7 +5755,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -2120,6 +5771,1647 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EntitlementManagementApplication",
+      "fullName": "commercial.v1.EntitlementManagementApplication",
+      "domain": "commercial",
+      "application": {
+        "name": "entitlement_management",
+        "requires": [
+          "access/tenant_lifecycle",
+          "commercial/module_catalog"
+        ]
+      },
+      "methods": [
+        {
+          "name": "CreateEntitlementOverride",
+          "fullName": "commercial.v1.EntitlementManagementApplication.CreateEntitlementOverride",
+          "request": "commercial.v1.CreateEntitlementOverrideRequest",
+          "response": "commercial.v1.EntitlementOverrideReceipt",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/tenants/{tenant_id}/entitlement-overrides",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.entitlement.override.create",
+            "useCase": "create_entitlement_override",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.entitlement.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.entitlement_catalog",
+              "tenant.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.entitlement.override.create",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.entitlement.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "ExplainEntitlements",
+          "fullName": "commercial.v1.EntitlementManagementApplication.ExplainEntitlements",
+          "request": "commercial.v1.ExplainEntitlementsRequest",
+          "response": "commercial.v1.EntitlementView",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/tenants/{tenant_id}/entitlements",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.entitlement.explain",
+            "useCase": "explain_entitlements",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.entitlement.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.entitlement_catalog",
+              "tenant.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.entitlement.explain",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.entitlement.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "GetMyEntitlements",
+          "fullName": "commercial.v1.EntitlementManagementApplication.GetMyEntitlements",
+          "request": "commercial.v1.GetMyEntitlementsRequest",
+          "response": "commercial.v1.EntitlementView",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/entitlements",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.entitlement.get_my",
+            "useCase": "get_my_entitlements",
+            "permissions": [
+              "commercial.catalog.read",
+              "tenant.entitlement.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "commercial.module.entitlement_catalog"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.entitlement.get_my",
+            "permissions": [
+              "commercial.catalog.read",
+              "tenant.entitlement.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListEntitlementOverrides",
+          "fullName": "commercial.v1.EntitlementManagementApplication.ListEntitlementOverrides",
+          "request": "commercial.v1.ListEntitlementOverridesRequest",
+          "response": "commercial.v1.ListEntitlementOverridesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/entitlement-overrides"
+            }
+          ],
+          "operation": {
+            "id": "commercial.entitlement.override.list",
+            "useCase": "list_entitlement_overrides",
+            "permissions": [
+              "platform.entitlement.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "tenant.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.entitlement.override.list",
+            "permissions": [
+              "platform.entitlement.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "RevokeEntitlementOverride",
+          "fullName": "commercial.v1.EntitlementManagementApplication.RevokeEntitlementOverride",
+          "request": "commercial.v1.RevokeEntitlementOverrideRequest",
+          "response": "commercial.v1.EntitlementOverrideReceipt",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.entitlement.override.revoke",
+            "useCase": "revoke_entitlement_override",
+            "permissions": [
+              "platform.entitlement.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "tenant.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.entitlement.override.revoke",
+            "permissions": [
+              "platform.entitlement.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "ModuleCatalogApplication",
+      "fullName": "commercial.v1.ModuleCatalogApplication",
+      "domain": "commercial",
+      "application": {
+        "name": "module_catalog",
+        "operations": [
+          {
+            "id": "commercial.module.entitlement_catalog",
+            "useCase": "read_entitlement_catalog",
+            "permissions": [
+              "commercial.catalog.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.ListModulesRequest",
+            "responseType": "commercial.v1.ListModulesResponse",
+            "applicationMethod": "ReadEntitlementCatalog"
+          },
+          {
+            "id": "commercial.module.plan_catalog",
+            "useCase": "read_plan_catalog",
+            "permissions": [
+              "commercial.catalog.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.ListModulesRequest",
+            "responseType": "commercial.v1.ListModulesResponse",
+            "applicationMethod": "ReadPlanCatalog"
+          }
+        ]
+      },
+      "methods": [
+        {
+          "name": "CreateModule",
+          "fullName": "commercial.v1.ModuleCatalogApplication.CreateModule",
+          "request": "commercial.v1.CreateModuleRequest",
+          "response": "commercial.v1.ModuleDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/modules",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.create",
+            "useCase": "create_module",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.create",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "DeleteModule",
+          "fullName": "commercial.v1.ModuleCatalogApplication.DeleteModule",
+          "request": "commercial.v1.DeleteModuleRequest",
+          "response": "commercial.v1.DeleteModuleResponse",
+          "http": [
+            {
+              "method": "DELETE",
+              "path": "/v1/platform/modules/{module_code}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.delete",
+            "useCase": "delete_module",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.delete",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "GetModule",
+          "fullName": "commercial.v1.ModuleCatalogApplication.GetModule",
+          "request": "commercial.v1.GetModuleRequest",
+          "response": "commercial.v1.ModuleDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/modules/{module_code}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.get",
+            "useCase": "get_module",
+            "permissions": [
+              "platform.module.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.get",
+            "permissions": [
+              "platform.module.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "ListModules",
+          "fullName": "commercial.v1.ModuleCatalogApplication.ListModules",
+          "request": "commercial.v1.ListModulesRequest",
+          "response": "commercial.v1.ListModulesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/modules"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.list",
+            "useCase": "list_modules",
+            "permissions": [
+              "platform.module.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.list",
+            "permissions": [
+              "platform.module.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "SetModuleSalesStatus",
+          "fullName": "commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus",
+          "request": "commercial.v1.SetModuleSalesStatusRequest",
+          "response": "commercial.v1.ModuleDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/modules/{module_code}/sales-status",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.set_sales_status",
+            "useCase": "set_module_sales_status",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.set_sales_status",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "SetModuleTechnicalStatus",
+          "fullName": "commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus",
+          "request": "commercial.v1.SetModuleTechnicalStatusRequest",
+          "response": "commercial.v1.ModuleDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/modules/{module_code}/technical-status",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.set_technical_status",
+            "useCase": "set_module_technical_status",
+            "permissions": [
+              "platform.module.technical.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.set_technical_status",
+            "permissions": [
+              "platform.module.technical.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "UpdateModule",
+          "fullName": "commercial.v1.ModuleCatalogApplication.UpdateModule",
+          "request": "commercial.v1.UpdateModuleRequest",
+          "response": "commercial.v1.ModuleDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/platform/modules/{module_code}",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.update",
+            "useCase": "update_module",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.update",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PlanManagementApplication",
+      "fullName": "commercial.v1.PlanManagementApplication",
+      "domain": "commercial",
+      "application": {
+        "name": "plan_management",
+        "requires": [
+          "commercial/module_catalog"
+        ]
+      },
+      "methods": [
+        {
+          "name": "CheckPlanEligibility",
+          "fullName": "commercial.v1.PlanManagementApplication.CheckPlanEligibility",
+          "request": "commercial.v1.CheckPlanEligibilityRequest",
+          "response": "commercial.v1.PlanEligibilityDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/plans/{plan_code}/versions/{version}/eligibility",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.plan.eligibility",
+            "useCase": "check_plan_eligibility",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.plan.eligibility",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "CreatePlanDraft",
+          "fullName": "commercial.v1.PlanManagementApplication.CreatePlanDraft",
+          "request": "commercial.v1.CreatePlanDraftRequest",
+          "response": "commercial.v1.PlanVersionDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/plans",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.plan.create",
+            "useCase": "create_plan_draft",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.plan.create",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "CreatePlanVersion",
+          "fullName": "commercial.v1.PlanManagementApplication.CreatePlanVersion",
+          "request": "commercial.v1.CreatePlanVersionRequest",
+          "response": "commercial.v1.PlanVersionDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/plans/{plan_code}/versions",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.plan.clone",
+            "useCase": "create_plan_version",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.plan.clone",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "GetPlanVersion",
+          "fullName": "commercial.v1.PlanManagementApplication.GetPlanVersion",
+          "request": "commercial.v1.GetPlanVersionRequest",
+          "response": "commercial.v1.PlanVersionDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/plans/{plan_code}/versions/{version}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.plan.get",
+            "useCase": "get_plan_version",
+            "permissions": [
+              "platform.plan.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.plan.get",
+            "permissions": [
+              "platform.plan.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "ListPlanVersions",
+          "fullName": "commercial.v1.PlanManagementApplication.ListPlanVersions",
+          "request": "commercial.v1.ListPlanVersionsRequest",
+          "response": "commercial.v1.ListPlanVersionsResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/plans/{plan_code}/versions"
+            }
+          ],
+          "operation": {
+            "id": "commercial.plan.list",
+            "useCase": "list_plan_versions",
+            "permissions": [
+              "platform.plan.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.plan.list",
+            "permissions": [
+              "platform.plan.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "PublishPlanVersion",
+          "fullName": "commercial.v1.PlanManagementApplication.PublishPlanVersion",
+          "request": "commercial.v1.ChangePlanVersionStateRequest",
+          "response": "commercial.v1.PlanVersionDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/plans/{plan_code}/versions/{version}/publish",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.plan.publish",
+            "useCase": "publish_plan_version",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.publish"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.plan.publish",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.publish"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "RetirePlanVersion",
+          "fullName": "commercial.v1.PlanManagementApplication.RetirePlanVersion",
+          "request": "commercial.v1.ChangePlanVersionStateRequest",
+          "response": "commercial.v1.PlanVersionDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/plans/{plan_code}/versions/{version}/retire",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.plan.retire",
+            "useCase": "retire_plan_version",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.publish"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.plan.retire",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.publish"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "UpdatePlanDraft",
+          "fullName": "commercial.v1.PlanManagementApplication.UpdatePlanDraft",
+          "request": "commercial.v1.UpdatePlanDraftRequest",
+          "response": "commercial.v1.PlanVersionDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/platform/plans/{plan_code}/versions/{version}",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.plan.update",
+            "useCase": "update_plan_draft",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.plan.update",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "ProvisioningApplication",
+      "fullName": "commercial.v1.ProvisioningApplication",
+      "domain": "commercial",
+      "application": {
+        "name": "provisioning",
+        "requires": [
+          "commercial/subscription_changes"
+        ],
+        "operations": [
+          {
+            "id": "commercial.provisioning.delivery.claim",
+            "useCase": "claim_provisioning_delivery",
+            "permissions": [
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.ClaimProvisioningDeliveryRequest",
+            "responseType": "commercial.v1.ProvisioningDeliveryWorkDTO",
+            "applicationMethod": "ClaimProvisioningDelivery"
+          },
+          {
+            "id": "commercial.provisioning.delivery.complete",
+            "useCase": "complete_provisioning_delivery",
+            "permissions": [
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.CompleteProvisioningDeliveryRequest",
+            "responseType": "commercial.v1.ProvisioningDeliveryResultDTO",
+            "applicationMethod": "CompleteProvisioningDelivery"
+          },
+          {
+            "id": "commercial.provisioning.delivery.fail",
+            "useCase": "fail_provisioning_delivery",
+            "permissions": [
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.CompleteProvisioningDeliveryRequest",
+            "responseType": "commercial.v1.ProvisioningDeliveryResultDTO",
+            "applicationMethod": "FailProvisioningDelivery"
+          },
+          {
+            "id": "commercial.provisioning.work.claim",
+            "useCase": "claim_provisioning_work",
+            "permissions": [
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.ClaimProvisioningWorkRequest",
+            "responseType": "commercial.v1.ProvisioningWorkDTO",
+            "applicationMethod": "ClaimProvisioningWork"
+          },
+          {
+            "id": "commercial.provisioning.work.finalize",
+            "useCase": "finalize_provisioning_work",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.subscription.change.prepared"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.FinalizeProvisioningWorkRequest",
+            "responseType": "commercial.v1.ProvisioningTaskDTO",
+            "applicationMethod": "FinalizeProvisioningWork"
+          },
+          {
+            "id": "commercial.provisioning.work.record",
+            "useCase": "record_provisioning_work",
+            "permissions": [
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.RecordProvisioningWorkRequest",
+            "responseType": "commercial.v1.ProvisioningTaskDTO",
+            "applicationMethod": "RecordProvisioningWork"
+          }
+        ]
+      },
+      "methods": [
+        {
+          "name": "CancelProvisioningTask",
+          "fullName": "commercial.v1.ProvisioningApplication.CancelProvisioningTask",
+          "request": "commercial.v1.MutateProvisioningTaskRequest",
+          "response": "commercial.v1.ProvisioningTaskDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.provisioning.task.cancel",
+            "useCase": "cancel_provisioning_task",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.provisioning.cancel",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.subscription.change.preparation.cancel"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.provisioning.task.cancel",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.provisioning.cancel",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "GetProvisioningTask",
+          "fullName": "commercial.v1.ProvisioningApplication.GetProvisioningTask",
+          "request": "commercial.v1.ReadProvisioningTaskRequest",
+          "response": "commercial.v1.ProvisioningTaskDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.provisioning.task.get",
+            "useCase": "get_provisioning_task",
+            "permissions": [
+              "platform.provisioning.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.provisioning.task.get",
+            "permissions": [
+              "platform.provisioning.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "ListProvisioningDeliveries",
+          "fullName": "commercial.v1.ProvisioningApplication.ListProvisioningDeliveries",
+          "request": "commercial.v1.ListProvisioningDeliveriesRequest",
+          "response": "commercial.v1.ListProvisioningDeliveriesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/provisioning/deliveries"
+            }
+          ],
+          "operation": {
+            "id": "commercial.provisioning.delivery.list",
+            "useCase": "list_provisioning_deliveries",
+            "permissions": [
+              "platform.provisioning.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.provisioning.delivery.list",
+            "permissions": [
+              "platform.provisioning.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "ListProvisioningTasks",
+          "fullName": "commercial.v1.ProvisioningApplication.ListProvisioningTasks",
+          "request": "commercial.v1.ListProvisioningTasksRequest",
+          "response": "commercial.v1.ListProvisioningTasksResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/provisioning/tasks"
+            }
+          ],
+          "operation": {
+            "id": "commercial.provisioning.task.list",
+            "useCase": "list_provisioning_tasks",
+            "permissions": [
+              "platform.provisioning.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.provisioning.task.list",
+            "permissions": [
+              "platform.provisioning.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "RetryProvisioningTask",
+          "fullName": "commercial.v1.ProvisioningApplication.RetryProvisioningTask",
+          "request": "commercial.v1.MutateProvisioningTaskRequest",
+          "response": "commercial.v1.ProvisioningTaskDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.provisioning.task.retry",
+            "useCase": "retry_provisioning_task",
+            "permissions": [
+              "platform.provisioning.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.provisioning.task.retry",
+            "permissions": [
+              "platform.provisioning.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "SubscriptionChangesApplication",
+      "fullName": "commercial.v1.SubscriptionChangesApplication",
+      "domain": "commercial",
+      "application": {
+        "name": "subscription_changes",
+        "requires": [
+          "commercial/module_catalog",
+          "commercial/plan_management"
+        ],
+        "operations": [
+          {
+            "id": "commercial.subscription.change.preparation.cancel",
+            "useCase": "cancel_prepared_subscription_change",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.provisioning.cancel"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.PreparedSubscriptionChangeRequest",
+            "responseType": "commercial.v1.ProvisioningCompletionDTO",
+            "applicationMethod": "CancelPreparedSubscriptionChange"
+          },
+          {
+            "id": "commercial.subscription.change.prepared",
+            "useCase": "complete_prepared_subscription_change",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.provisioning.execute"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog",
+              "commercial.plan.eligibility",
+              "commercial.plan.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.PreparedSubscriptionChangeRequest",
+            "responseType": "commercial.v1.ProvisioningCompletionDTO",
+            "applicationMethod": "CompletePreparedSubscriptionChange"
+          }
+        ]
+      },
+      "methods": [
+        {
+          "name": "ConfirmSubscriptionChange",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange",
+          "request": "commercial.v1.ConfirmSubscriptionChangeRequest",
+          "response": "commercial.v1.SubscriptionChangeReceiptDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.change.confirm",
+            "useCase": "confirm_subscription_change",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.subscription.confirm",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog",
+              "commercial.plan.eligibility",
+              "commercial.plan.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.change.confirm",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.subscription.confirm",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "GetSubscriptionChangePreview",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview",
+          "request": "commercial.v1.ReadSubscriptionChangeRequest",
+          "response": "commercial.v1.SubscriptionChangePreviewDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.change.preview.get",
+            "useCase": "get_subscription_change_preview",
+            "permissions": [
+              "platform.subscription.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.change.preview.get",
+            "permissions": [
+              "platform.subscription.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "GetSubscriptionChangeReceipt",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt",
+          "request": "commercial.v1.ReadSubscriptionChangeRequest",
+          "response": "commercial.v1.SubscriptionChangeReceiptDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.change.get",
+            "useCase": "get_subscription_change_receipt",
+            "permissions": [
+              "platform.subscription.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.change.get",
+            "permissions": [
+              "platform.subscription.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "PreviewSubscriptionChange",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange",
+          "request": "commercial.v1.PreviewSubscriptionChangeRequest",
+          "response": "commercial.v1.SubscriptionChangePreviewDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/tenants/{tenant_id}/subscription/change-previews",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.change.preview",
+            "useCase": "preview_subscription_change",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.subscription.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog",
+              "commercial.plan.eligibility",
+              "commercial.plan.get"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.change.preview",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.subscription.manage",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "SubscriptionManagementApplication",
+      "fullName": "commercial.v1.SubscriptionManagementApplication",
+      "domain": "commercial",
+      "application": {
+        "name": "subscription_management",
+        "requires": [
+          "commercial/plan_management"
+        ],
+        "operations": [
+          {
+            "id": "commercial.subscription.bootstrap_base",
+            "useCase": "bootstrap_base_subscription",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.tenant.create"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.plan.eligibility"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.BootstrapTenantSubscriptionRequest",
+            "responseType": "commercial.v1.BootstrapTenantSubscriptionResult",
+            "applicationMethod": "BootstrapBaseSubscription"
+          }
+        ]
+      },
+      "methods": [
+        {
+          "name": "GetTenantSubscription",
+          "fullName": "commercial.v1.SubscriptionManagementApplication.GetTenantSubscription",
+          "request": "commercial.v1.GetTenantSubscriptionRequest",
+          "response": "commercial.v1.TenantSubscriptionDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/tenants/{tenant_id}/subscription"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.get",
+            "useCase": "get_tenant_subscription",
+            "permissions": [
+              "platform.subscription.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.get",
+            "permissions": [
+              "platform.subscription.read",
+              "platform.tenant.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "ListDefaultSubscriptionRules",
+          "fullName": "commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules",
+          "request": "commercial.v1.ListDefaultSubscriptionRulesRequest",
+          "response": "commercial.v1.ListDefaultSubscriptionRulesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/subscription-default-rules"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.rule.list",
+            "useCase": "list_default_subscription_rules",
+            "permissions": [
+              "platform.subscription.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.rule.list",
+            "permissions": [
+              "platform.subscription.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ]
+          }
+        },
+        {
+          "name": "PutDefaultSubscriptionRule",
+          "fullName": "commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule",
+          "request": "commercial.v1.PutDefaultSubscriptionRuleRequest",
+          "response": "commercial.v1.DefaultSubscriptionRuleDTO",
+          "http": [
+            {
+              "method": "PUT",
+              "path": "/v1/platform/subscription-default-rules/{rule_id}",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.rule.put",
+            "useCase": "put_default_subscription_rule",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.plan.eligibility"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.rule.put",
+            "permissions": [
+              "commercial.catalog.read",
+              "platform.plan.read",
+              "platform.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
               "api-key"
             ]
           }
@@ -2131,7 +7423,10 @@
       "fullName": "deviceops.v1.DeviceApplication",
       "domain": "deviceops",
       "application": {
-        "name": "device_management"
+        "name": "device_management",
+        "requires": [
+          "deviceops/site_management"
+        ]
       },
       "methods": [
         {
@@ -2155,7 +7450,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -2170,7 +7466,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -2194,7 +7491,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -2209,7 +7507,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -2233,7 +7532,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -2248,7 +7548,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -2272,7 +7573,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -2287,7 +7589,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -2307,13 +7610,19 @@
             "id": "device.update",
             "useCase": "update_device",
             "permissions": [
-              "device.update"
+              "device.update",
+              "site.read"
             ],
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
+            "requiresOperations": [
+              "site.validate_transfer_target"
+            ],
+            "composition": "local",
             "execution": {
               "transaction": "local",
               "idempotency": "required"
@@ -2322,12 +7631,14 @@
           "authorization": {
             "operationId": "device.update",
             "permissions": [
-              "device.update"
+              "device.update",
+              "site.read"
             ],
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         }
@@ -2367,7 +7678,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "requiresOperations": [
               "device.update",
@@ -2388,7 +7700,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         }
@@ -2410,7 +7723,8 @@
             "permissionMode": "all",
             "tenantRequired": true,
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",

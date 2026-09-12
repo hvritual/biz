@@ -4,14 +4,19 @@ on:
   push:
     branches:
       - agent/b12-multitenant-access-pressure
+      - main
     paths:
       - .github/workflows/b12-7-runtime-qualification.yml
       - .yunka/dev.json
       - scripts/test-runtime-readiness-gate.py
+      - scripts/ce04_runtime_closure.py
+      - scripts/test_ce04_runtime_closure.py
+      - docs/commercial-entitlements/**
       - cmd/biz/**
       - contracts/**
       - docs/pressure/B12-framework-pressure.md
       - internal/access/**
+      - internal/commercial/**
       - internal/assembly/**
       - internal/bizruntime/**
       - modules/**
@@ -24,10 +29,14 @@ on:
       - .github/workflows/b12-7-runtime-qualification.yml
       - .yunka/dev.json
       - scripts/test-runtime-readiness-gate.py
+      - scripts/ce04_runtime_closure.py
+      - scripts/test_ce04_runtime_closure.py
+      - docs/commercial-entitlements/**
       - cmd/biz/**
       - contracts/**
       - docs/pressure/B12-framework-pressure.md
       - internal/access/**
+      - internal/commercial/**
       - internal/assembly/**
       - internal/bizruntime/**
       - modules/**
@@ -43,7 +52,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      YUNKA_SHA: 6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb
+      PYTHONDONTWRITEBYTECODE: '1'
+      YUNKA_SHA: 33b98ceba57494abda2299e4f0290a5651dab4bc
       YUNKA_BIZ_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_b127?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
       YUNKA_BIZ_AUTO_MIGRATE: "true"
     services:
@@ -97,17 +107,23 @@ jobs:
           set -euo pipefail
           test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          evidence_dir="$RUNNER_TEMP/b12-7-runtime-evidence"
+          mkdir -p "$evidence_dir"
+          printf 'biz=%s\nyunka=%s\n' "$GITHUB_SHA" "$YUNKA_SHA" > "$evidence_dir/sources.txt"
+          cp biz/contracts/generated/manifest.json "$evidence_dir/manifest.json"
+          cp biz/.yunka/dev.json "$evidence_dir/dev-config.json"
 
       - name: Build Biz and exact Yunka CLI
         shell: bash
         run: |
           set -euo pipefail
           python3 biz/scripts/test-runtime-readiness-gate.py
+          python3 -m unittest discover -s biz/scripts -p 'test_ce04_runtime_closure.py' -v 2>&1 | tee "$RUNNER_TEMP/b12-7-runtime-evidence/gate-tests.log"
           go -C biz build ./...
           (cd yunka.io/app && go build -buildvcs=true -o "$RUNNER_TEMP/yunka" ./cmd)
           test -x "$RUNNER_TEMP/yunka"
 
-      - name: Prove zero-argument Access + DeviceOps runtime closure
+      - name: Prove zero-argument runtime closure against generated Applications
         shell: bash
         run: |
           set -euo pipefail
@@ -177,36 +193,18 @@ jobs:
           ' "$RUNNER_TEMP/b12-7-diagnostics.json" >/dev/null
 
           "$RUNNER_TEMP/yunka" dev status --closure --format json > "$RUNNER_TEMP/b12-7-status.json"
-          jq -e '
-            .state == "running" and
-            (.processes | length) == 1 and
-            .processes[0].name == "biz" and
-            .processes[0].state == "ready" and
-            .processes[0].ready == true and
-            .processes[0].diagnostics.ready == true and
-            ((.processes[0].graphNodes | sort) == ([
-              "application:access/tenant_lifecycle",
-              "application:access/tenant_member_lifecycle",
-              "application:access/tenant_role_permission",
-              "application:deviceops/device_management",
-              "application:deviceops/device_transfer",
-              "application:deviceops/site_management"
-            ] | sort))
-          ' "$RUNNER_TEMP/b12-7-status.json" >/dev/null
-
-          jq -e '[.edges[] | select(.kind == "runs" and .from == "process:biz")] | length == 6' .yunka/runtime-graph.json >/dev/null
-          jq -e '([.edges[] | select(.kind == "runs" and .from == "process:biz") | .to] | sort) == ([
-            "application:access/tenant_lifecycle",
-            "application:access/tenant_member_lifecycle",
-            "application:access/tenant_role_permission",
-            "application:deviceops/device_management",
-            "application:deviceops/device_transfer",
-            "application:deviceops/site_management"
-          ] | sort)' .yunka/runtime-graph.json >/dev/null
+          python3 scripts/ce04_runtime_closure.py \
+            --manifest contracts/generated/manifest.json \
+            --config .yunka/dev.json \
+            --status "$RUNNER_TEMP/b12-7-status.json" \
+            --graph .yunka/runtime-graph.json \
+            --diagnostics "$RUNNER_TEMP/b12-7-diagnostics.json" \
+            | tee "$evidence_dir/closure.log"
 
           kill -TERM "$dev_pid"
           wait "$dev_pid"
           jq -e '.state == "stopped" and .processes[0].state == "stopped"' .yunka/dev-runtime.json >/dev/null
+          echo "RUNTIME_STOP_CHECK=PASS" | tee "$evidence_dir/stop.log"
           dump_evidence
           trap - EXIT
 
@@ -217,7 +215,7 @@ jobs:
           name: b12-7-runtime-evidence
           path: ${{ runner.temp }}/b12-7-runtime-evidence
           if-no-files-found: warn
-          retention-days: 2
+          retention-days: 30
 
       - name: Require clean Biz worktree
         shell: bash

@@ -17,6 +17,7 @@ import (
 var ErrInvalid = errors.New("deviceops: invalid request")
 
 type Service struct {
+	targets      DeviceManagementToDeviceopsSiteManagementChildCapability
 	repositories requestscope.RepositoryFactory[ports.ScopedRepositories]
 }
 
@@ -25,6 +26,19 @@ func NewService(repositories requestscope.RepositoryFactory[ports.ScopedReposito
 		return nil, errors.New("deviceops: repository factory is required")
 	}
 	return &Service{repositories: repositories}, nil
+}
+
+// NewServiceWithCapabilities binds the declared conditional target lookup.
+func NewServiceWithCapabilities(repositories requestscope.RepositoryFactory[ports.ScopedRepositories], targets DeviceManagementToDeviceopsSiteManagementChildCapability) (*Service, error) {
+	if targets == nil {
+		return nil, errors.New("deviceops: target validation child required")
+	}
+	service, err := NewService(repositories)
+	if err != nil {
+		return nil, err
+	}
+	service.targets = targets
+	return service, nil
 }
 
 func (service *Service) ListDevices(ctx context.Context, _ *deviceopsv1.ListDevicesRequest) (*deviceopsv1.ListDevicesResponse, error) {
@@ -100,8 +114,15 @@ func (service *Service) UpdateDevice(ctx context.Context, request *deviceopsv1.U
 			siteID = current.SiteID
 		}
 		if siteID != current.SiteID {
-			if _, err := scope.Repositories().Site.Get(scope.Context(), siteID); err != nil {
+			if service.targets == nil {
+				return domain.Device{}, errors.New("deviceops: target validation child unavailable")
+			}
+			target, err := service.targets.ValidateTransferTarget(scope.Context(), &deviceopsv1.ValidateTransferTargetRequest{SiteId: siteID})
+			if err != nil {
 				return domain.Device{}, err
+			}
+			if target == nil || target.Id != siteID {
+				return domain.Device{}, ErrInvalid
 			}
 		}
 		current.Name, current.SiteID = name, siteID

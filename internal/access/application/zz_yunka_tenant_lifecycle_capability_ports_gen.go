@@ -6,7 +6,9 @@ import (
 	context "context"
 	errors "errors"
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
+	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	accesspolicy "github.com/hvritual/biz/internal/access/policy"
+	commercialpolicy "github.com/hvritual/biz/internal/commercial/policy"
 	operation "yunka.io/framework/operation"
 )
 
@@ -56,8 +58,37 @@ func (capability *c9TenantLifecycleToAccessTenantRolePermissionChildCapability) 
 	return operation.ExecuteChildTyped(ctx, capability.executor, accesspolicy.OperationPlanTenantRolePermissionBootstrapTenantOwnerRole(), request, capability.application.BootstrapTenantOwnerRole)
 }
 
+type TenantLifecycleToCommercialSubscriptionManagementChildCapability interface {
+	BootstrapBaseSubscription(context.Context, *commercialv1.BootstrapTenantSubscriptionRequest) (*commercialv1.BootstrapTenantSubscriptionResult, error)
+}
+
+// TenantLifecycleToCommercialSubscriptionManagementTargetApplication is the consumer-edge-owned view of the target Application.
+type TenantLifecycleToCommercialSubscriptionManagementTargetApplication interface {
+	BootstrapBaseSubscription(context.Context, *commercialv1.BootstrapTenantSubscriptionRequest) (*commercialv1.BootstrapTenantSubscriptionResult, error)
+}
+
+type c9TenantLifecycleToCommercialSubscriptionManagementChildCapability struct {
+	application TenantLifecycleToCommercialSubscriptionManagementTargetApplication
+	executor    operation.Executor
+}
+
+func NewTenantLifecycleToCommercialSubscriptionManagementChildCapability(application TenantLifecycleToCommercialSubscriptionManagementTargetApplication, executor operation.Executor) (TenantLifecycleToCommercialSubscriptionManagementChildCapability, error) {
+	if application == nil {
+		return nil, errors.New("contract C9 child capability: target application is required")
+	}
+	if executor == nil {
+		return nil, errors.New("contract C9 child capability: operation executor is required")
+	}
+	return &c9TenantLifecycleToCommercialSubscriptionManagementChildCapability{application: application, executor: executor}, nil
+}
+
+func (capability *c9TenantLifecycleToCommercialSubscriptionManagementChildCapability) BootstrapBaseSubscription(ctx context.Context, request *commercialv1.BootstrapTenantSubscriptionRequest) (*commercialv1.BootstrapTenantSubscriptionResult, error) {
+	return operation.ExecuteChildTyped(ctx, capability.executor, commercialpolicy.OperationPlanSubscriptionManagementBootstrapBaseSubscription(), request, capability.application.BootstrapBaseSubscription)
+}
+
 // TenantLifecycleCapabilities exposes edge-owned C9 child-Operation wrappers for declared operation dependencies.
 type TenantLifecycleCapabilities interface {
 	AccessTenantMemberLifecycle() TenantLifecycleToAccessTenantMemberLifecycleChildCapability
 	AccessTenantRolePermission() TenantLifecycleToAccessTenantRolePermissionChildCapability
+	CommercialSubscriptionManagement() TenantLifecycleToCommercialSubscriptionManagementChildCapability
 }

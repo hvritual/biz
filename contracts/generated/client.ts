@@ -27,6 +27,14 @@ export type Access_V1_TenantRoleStatus = "TENANT_ROLE_STATUS_UNSPECIFIED" | "TEN
 
 export type Access_V1_TenantStatus = "TENANT_STATUS_UNSPECIFIED" | "TENANT_STATUS_PENDING" | "TENANT_STATUS_ACTIVE" | "TENANT_STATUS_SUSPENDED" | "TENANT_STATUS_CLOSED";
 
+export type Commercial_V1_EntitlementEffect = "ENTITLEMENT_EFFECT_UNSPECIFIED" | "ENTITLEMENT_EFFECT_GRANT" | "ENTITLEMENT_EFFECT_DENY" | "ENTITLEMENT_EFFECT_QUOTA_ADD" | "ENTITLEMENT_EFFECT_QUOTA_REPLACE" | "ENTITLEMENT_EFFECT_SAFETY_DENY" | "ENTITLEMENT_EFFECT_SAFETY_MASK";
+
+export type Commercial_V1_EntitlementTarget = "ENTITLEMENT_TARGET_UNSPECIFIED" | "ENTITLEMENT_TARGET_MODULE" | "ENTITLEMENT_TARGET_CAPABILITY" | "ENTITLEMENT_TARGET_QUOTA" | "ENTITLEMENT_TARGET_FIELD";
+
+export type Commercial_V1_ModuleSalesStatus = "MODULE_SALES_STATUS_UNSPECIFIED" | "MODULE_SALES_STATUS_SELLABLE" | "MODULE_SALES_STATUS_RETIRED";
+
+export type Commercial_V1_ModuleTechnicalStatus = "MODULE_TECHNICAL_STATUS_UNSPECIFIED" | "MODULE_TECHNICAL_STATUS_NOT_READY" | "MODULE_TECHNICAL_STATUS_READY" | "MODULE_TECHNICAL_STATUS_DISABLED";
+
 export interface Access_V1_ActivateTenantMemberRequest {
   userId?: string;
   version?: string;
@@ -51,6 +59,8 @@ export interface Access_V1_CreateTenantRequest {
   name?: string;
   ownerUserId?: string;
   ownerEmail?: string;
+  requestId?: string;
+  salesScope?: string;
 }
 
 export interface Access_V1_CreateTenantRoleRequest {
@@ -172,6 +182,543 @@ export interface Access_V1_UpdateTenantRoleRequest {
   roleId?: string;
   name?: string;
   version?: string;
+}
+
+export interface Commercial_V1_ChangePlanVersionStateRequest {
+  requestId?: string;
+  planCode?: string;
+  version?: string;
+  expectedRevision?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_CheckPlanEligibilityRequest {
+  planCode?: string;
+  version?: string;
+  salesScope?: string;
+}
+
+export interface Commercial_V1_ConfirmSubscriptionChangeRequest {
+  tenantId?: string;
+  changeId?: string;
+  requestId?: string;
+  previewHash?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_CreateEntitlementOverrideRequest {
+  requestId?: string;
+  tenantId?: string;
+  expectedVersion?: string;
+  moduleCode?: string;
+  target?: Commercial_V1_EntitlementTarget;
+  key?: string;
+  fieldAction?: string;
+  effect?: Commercial_V1_EntitlementEffect;
+  limit?: Commercial_V1_EntitlementLimit;
+  effectiveAt?: string;
+  expiresAt?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_CreateModuleRequest {
+  requestId?: string;
+  moduleCode?: string;
+  name?: string;
+  category?: string;
+  salesScope?: readonly string[];
+  reason?: string;
+}
+
+export interface Commercial_V1_CreatePlanDraftRequest {
+  requestId?: string;
+  planCode?: string;
+  name?: string;
+  terms?: Commercial_V1_PlanTerms;
+  reason?: string;
+}
+
+export interface Commercial_V1_CreatePlanVersionRequest {
+  requestId?: string;
+  planCode?: string;
+  fromVersion?: string;
+  expectedPlanRevision?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_DefaultSubscriptionRuleDTO {
+  ruleId?: string;
+  version?: string;
+  priority?: number;
+  salesScope?: string;
+  planCode?: string;
+  planVersion?: string;
+  enabled?: boolean;
+  reason?: string;
+  actorId?: string;
+  updatedAt?: string;
+}
+
+export interface Commercial_V1_DeleteModuleRequest {
+  requestId?: string;
+  moduleCode?: string;
+  version?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_DeleteModuleResponse {
+  moduleCode?: string;
+  deleted?: boolean;
+}
+
+export interface Commercial_V1_EntitlementCatalogVersion {
+  moduleCode?: string;
+  version?: string;
+}
+
+export interface Commercial_V1_EntitlementDecisionDTO {
+  kind?: string;
+  moduleCode?: string;
+  key?: string;
+  fieldAction?: string;
+  allowed?: boolean;
+  reason?: string;
+  limit?: Commercial_V1_EntitlementLimit;
+  masked?: boolean;
+  sources?: readonly Commercial_V1_EntitlementSourceExplanation[];
+}
+
+export interface Commercial_V1_EntitlementLimit {
+  unlimited?: boolean;
+  value?: string;
+}
+
+export interface Commercial_V1_EntitlementOverrideDTO {
+  id?: string;
+  tenantId?: string;
+  moduleCode?: string;
+  target?: Commercial_V1_EntitlementTarget;
+  key?: string;
+  fieldAction?: string;
+  effect?: Commercial_V1_EntitlementEffect;
+  limit?: Commercial_V1_EntitlementLimit;
+  effectiveAt?: string;
+  expiresAt?: string;
+  revokedAt?: string;
+  reason?: string;
+  actorId?: string;
+  version?: string;
+  sourceKind?: string;
+}
+
+export interface Commercial_V1_EntitlementOverrideReceipt {
+  source?: Commercial_V1_EntitlementOverrideDTO;
+  sourceVersion?: string;
+}
+
+export interface Commercial_V1_EntitlementSourceExplanation {
+  id?: string;
+  sourceKind?: string;
+  effect?: string;
+  state?: string;
+  disposition?: string;
+  reason?: string;
+  actorId?: string;
+}
+
+export interface Commercial_V1_EntitlementView {
+  tenantId?: string;
+  sourceVersion?: string;
+  resolverVersion?: string;
+  evaluatedAt?: string;
+  validUntil?: string;
+  nextTransitionAt?: string;
+  catalogVersions?: readonly Commercial_V1_EntitlementCatalogVersion[];
+  decisions?: readonly Commercial_V1_EntitlementDecisionDTO[];
+  entitlementVersion?: string;
+  catalogRevision?: string;
+  permissionVersion?: string;
+  permissionSubject?: string;
+}
+
+export interface Commercial_V1_ExplainEntitlementsRequest {
+  tenantId?: string;
+  capabilityCodes?: readonly string[];
+}
+
+export interface Commercial_V1_GetModuleRequest {
+  moduleCode?: string;
+}
+
+export interface Commercial_V1_GetMyEntitlementsRequest {
+  capabilityCodes?: readonly string[];
+}
+
+export interface Commercial_V1_GetPlanVersionRequest {
+  planCode?: string;
+  version?: string;
+}
+
+export interface Commercial_V1_GetTenantSubscriptionRequest {
+  tenantId?: string;
+}
+
+export interface Commercial_V1_ListDefaultSubscriptionRulesRequest {
+}
+
+export interface Commercial_V1_ListDefaultSubscriptionRulesResponse {
+  rules?: readonly Commercial_V1_DefaultSubscriptionRuleDTO[];
+}
+
+export interface Commercial_V1_ListEntitlementOverridesRequest {
+  tenantId?: string;
+}
+
+export interface Commercial_V1_ListEntitlementOverridesResponse {
+  sources?: readonly Commercial_V1_EntitlementOverrideDTO[];
+  sourceVersion?: string;
+}
+
+export interface Commercial_V1_ListModulesRequest {
+}
+
+export interface Commercial_V1_ListModulesResponse {
+  modules?: readonly Commercial_V1_ModuleDTO[];
+}
+
+export interface Commercial_V1_ListPlanVersionsRequest {
+  planCode?: string;
+  afterVersion?: string;
+  pageSize?: number;
+}
+
+export interface Commercial_V1_ListPlanVersionsResponse {
+  versions?: readonly Commercial_V1_PlanVersionDTO[];
+  nextAfterVersion?: string;
+}
+
+export interface Commercial_V1_ListProvisioningDeliveriesRequest {
+  tenantId?: string;
+  afterEventId?: string;
+  limit?: number;
+}
+
+export interface Commercial_V1_ListProvisioningDeliveriesResponse {
+  deliveries?: readonly Commercial_V1_ProvisioningDeliveryDTO[];
+  nextAfterEventId?: string;
+}
+
+export interface Commercial_V1_ListProvisioningTasksRequest {
+  tenantId?: string;
+  afterTaskId?: string;
+  limit?: number;
+}
+
+export interface Commercial_V1_ListProvisioningTasksResponse {
+  tasks?: readonly Commercial_V1_ProvisioningTaskDTO[];
+  nextAfterTaskId?: string;
+}
+
+export interface Commercial_V1_ModuleDTO {
+  moduleCode?: string;
+  name?: string;
+  category?: string;
+  salesScope?: readonly string[];
+  technicalStatus?: Commercial_V1_ModuleTechnicalStatus;
+  salesStatus?: Commercial_V1_ModuleSalesStatus;
+  capabilityCodes?: readonly string[];
+  quotaSchemaKeys?: readonly string[];
+  fieldPolicySchemaKeys?: readonly string[];
+  dependencies?: readonly string[];
+  version?: string;
+}
+
+export interface Commercial_V1_MutateProvisioningTaskRequest {
+  tenantId?: string;
+  taskId?: string;
+  expectedRevision?: string;
+  requestId?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_PlanEligibilityDTO {
+  eligible?: boolean;
+  reason?: string;
+  version?: Commercial_V1_PlanVersionDTO;
+}
+
+export interface Commercial_V1_PlanField {
+  key?: string;
+  action?: string;
+  mode?: string;
+}
+
+export interface Commercial_V1_PlanModule {
+  moduleCode?: string;
+  capabilityCodes?: readonly string[];
+  quotas?: readonly Commercial_V1_PlanQuota[];
+  fields?: readonly Commercial_V1_PlanField[];
+}
+
+export interface Commercial_V1_PlanQuota {
+  key?: string;
+  unlimited?: boolean;
+  value?: string;
+}
+
+export interface Commercial_V1_PlanTerms {
+  modules?: readonly Commercial_V1_PlanModule[];
+  salesScope?: readonly string[];
+  validityMode?: string;
+  validityDays?: number;
+  priceRef?: string;
+}
+
+export interface Commercial_V1_PlanVersionDTO {
+  planCode?: string;
+  version?: string;
+  revision?: string;
+  planRevision?: string;
+  state?: string;
+  name?: string;
+  terms?: Commercial_V1_PlanTerms;
+  contentSha256?: string;
+  createdAt?: string;
+  publishedAt?: string;
+  retiredAt?: string;
+  actorId?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_PreviewSubscriptionChangeRequest {
+  tenantId?: string;
+  requestId?: string;
+  action?: string;
+  targetPlanCode?: string;
+  targetPlanVersion?: string;
+  effectiveAt?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_ProvisioningCompletionDTO {
+  changeId?: string;
+  subscriptionRevision?: string;
+  sourceVersion?: string;
+  entitlementVersion?: string;
+  appliedAt?: string;
+}
+
+export interface Commercial_V1_ProvisioningDeliveryDTO {
+  eventId?: string;
+  tenantId?: string;
+  aggregateId?: string;
+  aggregateVersion?: string;
+  changeId?: string;
+  taskId?: string;
+  factStatus?: string;
+  entitlementVersion?: string;
+  deliveryState?: string;
+  attempts?: number;
+  failureCode?: string;
+  nextAttemptAt?: string;
+}
+
+export interface Commercial_V1_ProvisioningRequirementDTO {
+  code?: string;
+  adapter?: string;
+  version?: string;
+  maxAttempts?: number;
+}
+
+export interface Commercial_V1_ProvisioningStepDTO {
+  requirement?: Commercial_V1_ProvisioningRequirementDTO;
+  state?: string;
+  effect?: string;
+  attempts?: number;
+  cycleAttempts?: number;
+  reconciliations?: number;
+  evidence?: string;
+  failureCode?: string;
+}
+
+export interface Commercial_V1_ProvisioningTaskDTO {
+  taskId?: string;
+  tenantId?: string;
+  changeId?: string;
+  actorId?: string;
+  state?: string;
+  revision?: string;
+  targetPlanCode?: string;
+  targetPlanVersion?: string;
+  steps?: readonly Commercial_V1_ProvisioningStepDTO[];
+  stepIndex?: number;
+  stage?: string;
+  nextAttemptAt?: string;
+  failureCode?: string;
+  retryAllowed?: boolean;
+  cancellationAllowed?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  deadline?: string;
+  completion?: Commercial_V1_ProvisioningCompletionDTO;
+  retryCycles?: number;
+}
+
+export interface Commercial_V1_PutDefaultSubscriptionRuleRequest {
+  requestId?: string;
+  ruleId?: string;
+  expectedVersion?: string;
+  priority?: number;
+  salesScope?: string;
+  planCode?: string;
+  planVersion?: string;
+  enabled?: boolean;
+  reason?: string;
+}
+
+export interface Commercial_V1_ReadProvisioningTaskRequest {
+  tenantId?: string;
+  taskId?: string;
+}
+
+export interface Commercial_V1_ReadSubscriptionChangeRequest {
+  tenantId?: string;
+  changeId?: string;
+}
+
+export interface Commercial_V1_RevokeEntitlementOverrideRequest {
+  requestId?: string;
+  tenantId?: string;
+  id?: string;
+  expectedVersion?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_SetModuleSalesStatusRequest {
+  requestId?: string;
+  moduleCode?: string;
+  salesStatus?: Commercial_V1_ModuleSalesStatus;
+  version?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_SetModuleTechnicalStatusRequest {
+  requestId?: string;
+  moduleCode?: string;
+  technicalStatus?: Commercial_V1_ModuleTechnicalStatus;
+  version?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_SubscriptionChangeDependency {
+  moduleCode?: string;
+  requiresModules?: readonly string[];
+}
+
+export interface Commercial_V1_SubscriptionChangePreviewDTO {
+  changeId?: string;
+  tenantId?: string;
+  actorId?: string;
+  requestId?: string;
+  action?: string;
+  classification?: string;
+  mode?: string;
+  previewHash?: string;
+  before?: Commercial_V1_TenantSubscriptionDTO;
+  target?: Commercial_V1_PlanVersionDTO;
+  subscriptionRevision?: string;
+  sourceVersion?: string;
+  entitlementVersion?: string;
+  catalogRevision?: string;
+  createdAt?: string;
+  expiresAt?: string;
+  effectiveAt?: string;
+  entitlementExpiresAt?: string;
+  currentEntitlements?: Commercial_V1_EntitlementView;
+  projectedEntitlements?: Commercial_V1_EntitlementView;
+  dependencies?: readonly Commercial_V1_SubscriptionChangeDependency[];
+  quotaImpacts?: readonly Commercial_V1_SubscriptionChangeQuotaImpact[];
+  impacts?: readonly string[];
+  pricingBasis?: string;
+  quotaValidationRequired?: boolean;
+  provisioningRequirements?: readonly Commercial_V1_ProvisioningRequirementDTO[];
+}
+
+export interface Commercial_V1_SubscriptionChangeQuotaImpact {
+  moduleCode?: string;
+  key?: string;
+  beforeLimit?: Commercial_V1_EntitlementLimit;
+  afterLimit?: Commercial_V1_EntitlementLimit;
+  usageKnown?: boolean;
+  used?: string;
+  overLimit?: boolean;
+  policy?: string;
+  evidence?: string;
+}
+
+export interface Commercial_V1_SubscriptionChangeReceiptDTO {
+  changeId?: string;
+  tenantId?: string;
+  actorId?: string;
+  requestId?: string;
+  previewHash?: string;
+  action?: string;
+  status?: string;
+  mode?: string;
+  confirmedAt?: string;
+  effectiveAt?: string;
+  entitlementExpiresAt?: string;
+  reason?: string;
+  before?: Commercial_V1_TenantSubscriptionDTO;
+  after?: Commercial_V1_TenantSubscriptionDTO;
+  beforeSourceVersion?: string;
+  afterSourceVersion?: string;
+  beforeEntitlementVersion?: string;
+  afterEntitlementVersion?: string;
+  quotaValidationRequired?: boolean;
+  pricingAuthority?: string;
+  quotaImpacts?: readonly Commercial_V1_SubscriptionChangeQuotaImpact[];
+  provisioningTaskId?: string;
+}
+
+export interface Commercial_V1_TenantSubscriptionDTO {
+  subscriptionId?: string;
+  tenantId?: string;
+  kind?: string;
+  state?: string;
+  planCode?: string;
+  planVersion?: string;
+  ruleId?: string;
+  ruleVersion?: string;
+  salesScope?: string;
+  entitlementSourceVersion?: string;
+  createdAt?: string;
+  matchExplanation?: string;
+  revision?: string;
+  periodStart?: string;
+  periodEnd?: string;
+  renewalStopped?: boolean;
+  pendingChangeId?: string;
+}
+
+export interface Commercial_V1_UpdateModuleRequest {
+  requestId?: string;
+  moduleCode?: string;
+  name?: string;
+  category?: string;
+  salesScope?: readonly string[];
+  version?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_UpdatePlanDraftRequest {
+  requestId?: string;
+  planCode?: string;
+  version?: string;
+  expectedRevision?: string;
+  name?: string;
+  terms?: Commercial_V1_PlanTerms;
+  reason?: string;
 }
 
 export interface Deviceops_V1_CreateDeviceRequest {
@@ -420,6 +967,294 @@ export const operations = {
       { method: "PATCH", path: "/v1/tenant/roles/{role_id}", body: "*" },
     ]
   },
+  "commercial.v1.EntitlementManagementApplication.CreateEntitlementOverride": {
+    fullName: "commercial.v1.EntitlementManagementApplication.CreateEntitlementOverride",
+    rpcPath: "/commercial.v1.EntitlementManagementApplication/CreateEntitlementOverride",
+    requestType: "commercial.v1.CreateEntitlementOverrideRequest",
+    responseType: "commercial.v1.EntitlementOverrideReceipt",
+    http: [
+      { method: "POST", path: "/v1/platform/tenants/{tenant_id}/entitlement-overrides", body: "*" },
+    ]
+  },
+  "commercial.v1.EntitlementManagementApplication.ExplainEntitlements": {
+    fullName: "commercial.v1.EntitlementManagementApplication.ExplainEntitlements",
+    rpcPath: "/commercial.v1.EntitlementManagementApplication/ExplainEntitlements",
+    requestType: "commercial.v1.ExplainEntitlementsRequest",
+    responseType: "commercial.v1.EntitlementView",
+    http: [
+      { method: "POST", path: "/v1/platform/tenants/{tenant_id}/entitlements", body: "*" },
+    ]
+  },
+  "commercial.v1.EntitlementManagementApplication.GetMyEntitlements": {
+    fullName: "commercial.v1.EntitlementManagementApplication.GetMyEntitlements",
+    rpcPath: "/commercial.v1.EntitlementManagementApplication/GetMyEntitlements",
+    requestType: "commercial.v1.GetMyEntitlementsRequest",
+    responseType: "commercial.v1.EntitlementView",
+    http: [
+      { method: "POST", path: "/v1/tenant/entitlements", body: "*" },
+    ]
+  },
+  "commercial.v1.EntitlementManagementApplication.ListEntitlementOverrides": {
+    fullName: "commercial.v1.EntitlementManagementApplication.ListEntitlementOverrides",
+    rpcPath: "/commercial.v1.EntitlementManagementApplication/ListEntitlementOverrides",
+    requestType: "commercial.v1.ListEntitlementOverridesRequest",
+    responseType: "commercial.v1.ListEntitlementOverridesResponse",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/entitlement-overrides" },
+    ]
+  },
+  "commercial.v1.EntitlementManagementApplication.RevokeEntitlementOverride": {
+    fullName: "commercial.v1.EntitlementManagementApplication.RevokeEntitlementOverride",
+    rpcPath: "/commercial.v1.EntitlementManagementApplication/RevokeEntitlementOverride",
+    requestType: "commercial.v1.RevokeEntitlementOverrideRequest",
+    responseType: "commercial.v1.EntitlementOverrideReceipt",
+    http: [
+      { method: "POST", path: "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", body: "*" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.CreateModule": {
+    fullName: "commercial.v1.ModuleCatalogApplication.CreateModule",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/CreateModule",
+    requestType: "commercial.v1.CreateModuleRequest",
+    responseType: "commercial.v1.ModuleDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/modules", body: "*" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.DeleteModule": {
+    fullName: "commercial.v1.ModuleCatalogApplication.DeleteModule",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/DeleteModule",
+    requestType: "commercial.v1.DeleteModuleRequest",
+    responseType: "commercial.v1.DeleteModuleResponse",
+    http: [
+      { method: "DELETE", path: "/v1/platform/modules/{module_code}" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.GetModule": {
+    fullName: "commercial.v1.ModuleCatalogApplication.GetModule",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/GetModule",
+    requestType: "commercial.v1.GetModuleRequest",
+    responseType: "commercial.v1.ModuleDTO",
+    http: [
+      { method: "GET", path: "/v1/platform/modules/{module_code}" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.ListModules": {
+    fullName: "commercial.v1.ModuleCatalogApplication.ListModules",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/ListModules",
+    requestType: "commercial.v1.ListModulesRequest",
+    responseType: "commercial.v1.ListModulesResponse",
+    http: [
+      { method: "GET", path: "/v1/platform/modules" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus": {
+    fullName: "commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus",
+    requestType: "commercial.v1.SetModuleSalesStatusRequest",
+    responseType: "commercial.v1.ModuleDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/modules/{module_code}/sales-status", body: "*" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus": {
+    fullName: "commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus",
+    requestType: "commercial.v1.SetModuleTechnicalStatusRequest",
+    responseType: "commercial.v1.ModuleDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/modules/{module_code}/technical-status", body: "*" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.UpdateModule": {
+    fullName: "commercial.v1.ModuleCatalogApplication.UpdateModule",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/UpdateModule",
+    requestType: "commercial.v1.UpdateModuleRequest",
+    responseType: "commercial.v1.ModuleDTO",
+    http: [
+      { method: "PATCH", path: "/v1/platform/modules/{module_code}", body: "*" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.CheckPlanEligibility": {
+    fullName: "commercial.v1.PlanManagementApplication.CheckPlanEligibility",
+    rpcPath: "/commercial.v1.PlanManagementApplication/CheckPlanEligibility",
+    requestType: "commercial.v1.CheckPlanEligibilityRequest",
+    responseType: "commercial.v1.PlanEligibilityDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/plans/{plan_code}/versions/{version}/eligibility", body: "*" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.CreatePlanDraft": {
+    fullName: "commercial.v1.PlanManagementApplication.CreatePlanDraft",
+    rpcPath: "/commercial.v1.PlanManagementApplication/CreatePlanDraft",
+    requestType: "commercial.v1.CreatePlanDraftRequest",
+    responseType: "commercial.v1.PlanVersionDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/plans", body: "*" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.CreatePlanVersion": {
+    fullName: "commercial.v1.PlanManagementApplication.CreatePlanVersion",
+    rpcPath: "/commercial.v1.PlanManagementApplication/CreatePlanVersion",
+    requestType: "commercial.v1.CreatePlanVersionRequest",
+    responseType: "commercial.v1.PlanVersionDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/plans/{plan_code}/versions", body: "*" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.GetPlanVersion": {
+    fullName: "commercial.v1.PlanManagementApplication.GetPlanVersion",
+    rpcPath: "/commercial.v1.PlanManagementApplication/GetPlanVersion",
+    requestType: "commercial.v1.GetPlanVersionRequest",
+    responseType: "commercial.v1.PlanVersionDTO",
+    http: [
+      { method: "GET", path: "/v1/platform/plans/{plan_code}/versions/{version}" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.ListPlanVersions": {
+    fullName: "commercial.v1.PlanManagementApplication.ListPlanVersions",
+    rpcPath: "/commercial.v1.PlanManagementApplication/ListPlanVersions",
+    requestType: "commercial.v1.ListPlanVersionsRequest",
+    responseType: "commercial.v1.ListPlanVersionsResponse",
+    http: [
+      { method: "GET", path: "/v1/platform/plans/{plan_code}/versions" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.PublishPlanVersion": {
+    fullName: "commercial.v1.PlanManagementApplication.PublishPlanVersion",
+    rpcPath: "/commercial.v1.PlanManagementApplication/PublishPlanVersion",
+    requestType: "commercial.v1.ChangePlanVersionStateRequest",
+    responseType: "commercial.v1.PlanVersionDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/plans/{plan_code}/versions/{version}/publish", body: "*" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.RetirePlanVersion": {
+    fullName: "commercial.v1.PlanManagementApplication.RetirePlanVersion",
+    rpcPath: "/commercial.v1.PlanManagementApplication/RetirePlanVersion",
+    requestType: "commercial.v1.ChangePlanVersionStateRequest",
+    responseType: "commercial.v1.PlanVersionDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/plans/{plan_code}/versions/{version}/retire", body: "*" },
+    ]
+  },
+  "commercial.v1.PlanManagementApplication.UpdatePlanDraft": {
+    fullName: "commercial.v1.PlanManagementApplication.UpdatePlanDraft",
+    rpcPath: "/commercial.v1.PlanManagementApplication/UpdatePlanDraft",
+    requestType: "commercial.v1.UpdatePlanDraftRequest",
+    responseType: "commercial.v1.PlanVersionDTO",
+    http: [
+      { method: "PATCH", path: "/v1/platform/plans/{plan_code}/versions/{version}", body: "*" },
+    ]
+  },
+  "commercial.v1.ProvisioningApplication.CancelProvisioningTask": {
+    fullName: "commercial.v1.ProvisioningApplication.CancelProvisioningTask",
+    rpcPath: "/commercial.v1.ProvisioningApplication/CancelProvisioningTask",
+    requestType: "commercial.v1.MutateProvisioningTaskRequest",
+    responseType: "commercial.v1.ProvisioningTaskDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel", body: "*" },
+    ]
+  },
+  "commercial.v1.ProvisioningApplication.GetProvisioningTask": {
+    fullName: "commercial.v1.ProvisioningApplication.GetProvisioningTask",
+    rpcPath: "/commercial.v1.ProvisioningApplication/GetProvisioningTask",
+    requestType: "commercial.v1.ReadProvisioningTaskRequest",
+    responseType: "commercial.v1.ProvisioningTaskDTO",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}" },
+    ]
+  },
+  "commercial.v1.ProvisioningApplication.ListProvisioningDeliveries": {
+    fullName: "commercial.v1.ProvisioningApplication.ListProvisioningDeliveries",
+    rpcPath: "/commercial.v1.ProvisioningApplication/ListProvisioningDeliveries",
+    requestType: "commercial.v1.ListProvisioningDeliveriesRequest",
+    responseType: "commercial.v1.ListProvisioningDeliveriesResponse",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/provisioning/deliveries" },
+    ]
+  },
+  "commercial.v1.ProvisioningApplication.ListProvisioningTasks": {
+    fullName: "commercial.v1.ProvisioningApplication.ListProvisioningTasks",
+    rpcPath: "/commercial.v1.ProvisioningApplication/ListProvisioningTasks",
+    requestType: "commercial.v1.ListProvisioningTasksRequest",
+    responseType: "commercial.v1.ListProvisioningTasksResponse",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/provisioning/tasks" },
+    ]
+  },
+  "commercial.v1.ProvisioningApplication.RetryProvisioningTask": {
+    fullName: "commercial.v1.ProvisioningApplication.RetryProvisioningTask",
+    rpcPath: "/commercial.v1.ProvisioningApplication/RetryProvisioningTask",
+    requestType: "commercial.v1.MutateProvisioningTaskRequest",
+    responseType: "commercial.v1.ProvisioningTaskDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry", body: "*" },
+    ]
+  },
+  "commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange",
+    requestType: "commercial.v1.ConfirmSubscriptionChangeRequest",
+    responseType: "commercial.v1.SubscriptionChangeReceiptDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm", body: "*" },
+    ]
+  },
+  "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangePreview",
+    requestType: "commercial.v1.ReadSubscriptionChangeRequest",
+    responseType: "commercial.v1.SubscriptionChangePreviewDTO",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}" },
+    ]
+  },
+  "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangeReceipt",
+    requestType: "commercial.v1.ReadSubscriptionChangeRequest",
+    responseType: "commercial.v1.SubscriptionChangeReceiptDTO",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}" },
+    ]
+  },
+  "commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/PreviewSubscriptionChange",
+    requestType: "commercial.v1.PreviewSubscriptionChangeRequest",
+    responseType: "commercial.v1.SubscriptionChangePreviewDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/tenants/{tenant_id}/subscription/change-previews", body: "*" },
+    ]
+  },
+  "commercial.v1.SubscriptionManagementApplication.GetTenantSubscription": {
+    fullName: "commercial.v1.SubscriptionManagementApplication.GetTenantSubscription",
+    rpcPath: "/commercial.v1.SubscriptionManagementApplication/GetTenantSubscription",
+    requestType: "commercial.v1.GetTenantSubscriptionRequest",
+    responseType: "commercial.v1.TenantSubscriptionDTO",
+    http: [
+      { method: "GET", path: "/v1/platform/tenants/{tenant_id}/subscription" },
+    ]
+  },
+  "commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules": {
+    fullName: "commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules",
+    rpcPath: "/commercial.v1.SubscriptionManagementApplication/ListDefaultSubscriptionRules",
+    requestType: "commercial.v1.ListDefaultSubscriptionRulesRequest",
+    responseType: "commercial.v1.ListDefaultSubscriptionRulesResponse",
+    http: [
+      { method: "GET", path: "/v1/platform/subscription-default-rules" },
+    ]
+  },
+  "commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule": {
+    fullName: "commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule",
+    rpcPath: "/commercial.v1.SubscriptionManagementApplication/PutDefaultSubscriptionRule",
+    requestType: "commercial.v1.PutDefaultSubscriptionRuleRequest",
+    responseType: "commercial.v1.DefaultSubscriptionRuleDTO",
+    http: [
+      { method: "PUT", path: "/v1/platform/subscription-default-rules/{rule_id}", body: "*" },
+    ]
+  },
   "deviceops.v1.DeviceApplication.CreateDevice": {
     fullName: "deviceops.v1.DeviceApplication.CreateDevice",
     rpcPath: "/deviceops.v1.DeviceApplication/CreateDevice",
@@ -575,6 +1410,164 @@ export class Access_V1_TenantRolePermissionApplicationClient {
 
   updateTenantRole(request: Access_V1_UpdateTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
     return this.transport.call<Access_V1_UpdateTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.UpdateTenantRole"], request);
+  }
+
+}
+
+export class Commercial_V1_EntitlementManagementApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  createEntitlementOverride(request: Commercial_V1_CreateEntitlementOverrideRequest): Promise<Commercial_V1_EntitlementOverrideReceipt> {
+    return this.transport.call<Commercial_V1_CreateEntitlementOverrideRequest, Commercial_V1_EntitlementOverrideReceipt>(operations["commercial.v1.EntitlementManagementApplication.CreateEntitlementOverride"], request);
+  }
+
+  explainEntitlements(request: Commercial_V1_ExplainEntitlementsRequest): Promise<Commercial_V1_EntitlementView> {
+    return this.transport.call<Commercial_V1_ExplainEntitlementsRequest, Commercial_V1_EntitlementView>(operations["commercial.v1.EntitlementManagementApplication.ExplainEntitlements"], request);
+  }
+
+  getMyEntitlements(request: Commercial_V1_GetMyEntitlementsRequest): Promise<Commercial_V1_EntitlementView> {
+    return this.transport.call<Commercial_V1_GetMyEntitlementsRequest, Commercial_V1_EntitlementView>(operations["commercial.v1.EntitlementManagementApplication.GetMyEntitlements"], request);
+  }
+
+  listEntitlementOverrides(request: Commercial_V1_ListEntitlementOverridesRequest): Promise<Commercial_V1_ListEntitlementOverridesResponse> {
+    return this.transport.call<Commercial_V1_ListEntitlementOverridesRequest, Commercial_V1_ListEntitlementOverridesResponse>(operations["commercial.v1.EntitlementManagementApplication.ListEntitlementOverrides"], request);
+  }
+
+  revokeEntitlementOverride(request: Commercial_V1_RevokeEntitlementOverrideRequest): Promise<Commercial_V1_EntitlementOverrideReceipt> {
+    return this.transport.call<Commercial_V1_RevokeEntitlementOverrideRequest, Commercial_V1_EntitlementOverrideReceipt>(operations["commercial.v1.EntitlementManagementApplication.RevokeEntitlementOverride"], request);
+  }
+
+}
+
+export class Commercial_V1_ModuleCatalogApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  createModule(request: Commercial_V1_CreateModuleRequest): Promise<Commercial_V1_ModuleDTO> {
+    return this.transport.call<Commercial_V1_CreateModuleRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.CreateModule"], request);
+  }
+
+  deleteModule(request: Commercial_V1_DeleteModuleRequest): Promise<Commercial_V1_DeleteModuleResponse> {
+    return this.transport.call<Commercial_V1_DeleteModuleRequest, Commercial_V1_DeleteModuleResponse>(operations["commercial.v1.ModuleCatalogApplication.DeleteModule"], request);
+  }
+
+  getModule(request: Commercial_V1_GetModuleRequest): Promise<Commercial_V1_ModuleDTO> {
+    return this.transport.call<Commercial_V1_GetModuleRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.GetModule"], request);
+  }
+
+  listModules(request: Commercial_V1_ListModulesRequest): Promise<Commercial_V1_ListModulesResponse> {
+    return this.transport.call<Commercial_V1_ListModulesRequest, Commercial_V1_ListModulesResponse>(operations["commercial.v1.ModuleCatalogApplication.ListModules"], request);
+  }
+
+  setModuleSalesStatus(request: Commercial_V1_SetModuleSalesStatusRequest): Promise<Commercial_V1_ModuleDTO> {
+    return this.transport.call<Commercial_V1_SetModuleSalesStatusRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus"], request);
+  }
+
+  setModuleTechnicalStatus(request: Commercial_V1_SetModuleTechnicalStatusRequest): Promise<Commercial_V1_ModuleDTO> {
+    return this.transport.call<Commercial_V1_SetModuleTechnicalStatusRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus"], request);
+  }
+
+  updateModule(request: Commercial_V1_UpdateModuleRequest): Promise<Commercial_V1_ModuleDTO> {
+    return this.transport.call<Commercial_V1_UpdateModuleRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.UpdateModule"], request);
+  }
+
+}
+
+export class Commercial_V1_PlanManagementApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  checkPlanEligibility(request: Commercial_V1_CheckPlanEligibilityRequest): Promise<Commercial_V1_PlanEligibilityDTO> {
+    return this.transport.call<Commercial_V1_CheckPlanEligibilityRequest, Commercial_V1_PlanEligibilityDTO>(operations["commercial.v1.PlanManagementApplication.CheckPlanEligibility"], request);
+  }
+
+  createPlanDraft(request: Commercial_V1_CreatePlanDraftRequest): Promise<Commercial_V1_PlanVersionDTO> {
+    return this.transport.call<Commercial_V1_CreatePlanDraftRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.CreatePlanDraft"], request);
+  }
+
+  createPlanVersion(request: Commercial_V1_CreatePlanVersionRequest): Promise<Commercial_V1_PlanVersionDTO> {
+    return this.transport.call<Commercial_V1_CreatePlanVersionRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.CreatePlanVersion"], request);
+  }
+
+  getPlanVersion(request: Commercial_V1_GetPlanVersionRequest): Promise<Commercial_V1_PlanVersionDTO> {
+    return this.transport.call<Commercial_V1_GetPlanVersionRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.GetPlanVersion"], request);
+  }
+
+  listPlanVersions(request: Commercial_V1_ListPlanVersionsRequest): Promise<Commercial_V1_ListPlanVersionsResponse> {
+    return this.transport.call<Commercial_V1_ListPlanVersionsRequest, Commercial_V1_ListPlanVersionsResponse>(operations["commercial.v1.PlanManagementApplication.ListPlanVersions"], request);
+  }
+
+  publishPlanVersion(request: Commercial_V1_ChangePlanVersionStateRequest): Promise<Commercial_V1_PlanVersionDTO> {
+    return this.transport.call<Commercial_V1_ChangePlanVersionStateRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.PublishPlanVersion"], request);
+  }
+
+  retirePlanVersion(request: Commercial_V1_ChangePlanVersionStateRequest): Promise<Commercial_V1_PlanVersionDTO> {
+    return this.transport.call<Commercial_V1_ChangePlanVersionStateRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.RetirePlanVersion"], request);
+  }
+
+  updatePlanDraft(request: Commercial_V1_UpdatePlanDraftRequest): Promise<Commercial_V1_PlanVersionDTO> {
+    return this.transport.call<Commercial_V1_UpdatePlanDraftRequest, Commercial_V1_PlanVersionDTO>(operations["commercial.v1.PlanManagementApplication.UpdatePlanDraft"], request);
+  }
+
+}
+
+export class Commercial_V1_ProvisioningApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  cancelProvisioningTask(request: Commercial_V1_MutateProvisioningTaskRequest): Promise<Commercial_V1_ProvisioningTaskDTO> {
+    return this.transport.call<Commercial_V1_MutateProvisioningTaskRequest, Commercial_V1_ProvisioningTaskDTO>(operations["commercial.v1.ProvisioningApplication.CancelProvisioningTask"], request);
+  }
+
+  getProvisioningTask(request: Commercial_V1_ReadProvisioningTaskRequest): Promise<Commercial_V1_ProvisioningTaskDTO> {
+    return this.transport.call<Commercial_V1_ReadProvisioningTaskRequest, Commercial_V1_ProvisioningTaskDTO>(operations["commercial.v1.ProvisioningApplication.GetProvisioningTask"], request);
+  }
+
+  listProvisioningDeliveries(request: Commercial_V1_ListProvisioningDeliveriesRequest): Promise<Commercial_V1_ListProvisioningDeliveriesResponse> {
+    return this.transport.call<Commercial_V1_ListProvisioningDeliveriesRequest, Commercial_V1_ListProvisioningDeliveriesResponse>(operations["commercial.v1.ProvisioningApplication.ListProvisioningDeliveries"], request);
+  }
+
+  listProvisioningTasks(request: Commercial_V1_ListProvisioningTasksRequest): Promise<Commercial_V1_ListProvisioningTasksResponse> {
+    return this.transport.call<Commercial_V1_ListProvisioningTasksRequest, Commercial_V1_ListProvisioningTasksResponse>(operations["commercial.v1.ProvisioningApplication.ListProvisioningTasks"], request);
+  }
+
+  retryProvisioningTask(request: Commercial_V1_MutateProvisioningTaskRequest): Promise<Commercial_V1_ProvisioningTaskDTO> {
+    return this.transport.call<Commercial_V1_MutateProvisioningTaskRequest, Commercial_V1_ProvisioningTaskDTO>(operations["commercial.v1.ProvisioningApplication.RetryProvisioningTask"], request);
+  }
+
+}
+
+export class Commercial_V1_SubscriptionChangesApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  confirmSubscriptionChange(request: Commercial_V1_ConfirmSubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangeReceiptDTO> {
+    return this.transport.call<Commercial_V1_ConfirmSubscriptionChangeRequest, Commercial_V1_SubscriptionChangeReceiptDTO>(operations["commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange"], request);
+  }
+
+  getSubscriptionChangePreview(request: Commercial_V1_ReadSubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangePreviewDTO> {
+    return this.transport.call<Commercial_V1_ReadSubscriptionChangeRequest, Commercial_V1_SubscriptionChangePreviewDTO>(operations["commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview"], request);
+  }
+
+  getSubscriptionChangeReceipt(request: Commercial_V1_ReadSubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangeReceiptDTO> {
+    return this.transport.call<Commercial_V1_ReadSubscriptionChangeRequest, Commercial_V1_SubscriptionChangeReceiptDTO>(operations["commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt"], request);
+  }
+
+  previewSubscriptionChange(request: Commercial_V1_PreviewSubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangePreviewDTO> {
+    return this.transport.call<Commercial_V1_PreviewSubscriptionChangeRequest, Commercial_V1_SubscriptionChangePreviewDTO>(operations["commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange"], request);
+  }
+
+}
+
+export class Commercial_V1_SubscriptionManagementApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  getTenantSubscription(request: Commercial_V1_GetTenantSubscriptionRequest): Promise<Commercial_V1_TenantSubscriptionDTO> {
+    return this.transport.call<Commercial_V1_GetTenantSubscriptionRequest, Commercial_V1_TenantSubscriptionDTO>(operations["commercial.v1.SubscriptionManagementApplication.GetTenantSubscription"], request);
+  }
+
+  listDefaultSubscriptionRules(request: Commercial_V1_ListDefaultSubscriptionRulesRequest): Promise<Commercial_V1_ListDefaultSubscriptionRulesResponse> {
+    return this.transport.call<Commercial_V1_ListDefaultSubscriptionRulesRequest, Commercial_V1_ListDefaultSubscriptionRulesResponse>(operations["commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules"], request);
+  }
+
+  putDefaultSubscriptionRule(request: Commercial_V1_PutDefaultSubscriptionRuleRequest): Promise<Commercial_V1_DefaultSubscriptionRuleDTO> {
+    return this.transport.call<Commercial_V1_PutDefaultSubscriptionRuleRequest, Commercial_V1_DefaultSubscriptionRuleDTO>(operations["commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule"], request);
   }
 
 }

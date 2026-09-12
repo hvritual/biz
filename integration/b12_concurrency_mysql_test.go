@@ -251,7 +251,7 @@ func TestB126ConcurrentTenantCreateSameIdempotencyKeyCreatesOneBootstrapTree(t *
 	ownerUserID := "b126-idem-owner-" + stamp
 	ownerEmail := ownerUserID + "@example.invalid"
 	key := "b126-tenant-create:" + stamp
-	message := &accessv1.CreateTenantRequest{Name: name, OwnerUserId: ownerUserID, OwnerEmail: ownerEmail}
+	message := &accessv1.CreateTenantRequest{Name: name, OwnerUserId: ownerUserID, OwnerEmail: ownerEmail, RequestId: key, SalesScope: "default"}
 
 	start := make(chan struct{})
 	results := make(chan b126HTTPResult, 2)
@@ -268,7 +268,7 @@ func TestB126ConcurrentTenantCreateSameIdempotencyKeyCreatesOneBootstrapTree(t *
 	}
 	statuses := []int{first.status, second.status}
 	sort.Ints(statuses)
-	if statuses[0] != http.StatusOK || statuses[1] != http.StatusConflict {
+	if statuses[0] != http.StatusOK || (statuses[1] != http.StatusConflict && statuses[1] != http.StatusOK) {
 		t.Fatalf("concurrent tenant create statuses=%v bodies=(%s,%s)", statuses, first.body, second.body)
 	}
 
@@ -283,6 +283,31 @@ func TestB126ConcurrentTenantCreateSameIdempotencyKeyCreatesOneBootstrapTree(t *
 	var row tenantRow
 	if err := db.Table("biz_tenants").Select("id").Where("name = ?", name).Take(&row).Error; err != nil {
 		t.Fatal(err)
+	}
+	// In-progress attempts may conflict, but an attempt after completion must
+	// replay the identical durable result and must not create another tree.
+	replayed := b126PostProto(base, "/v1/tenants", platformToken, key, message)
+	if replayed.err != nil || replayed.status != http.StatusOK {
+		t.Fatalf("completed replay status=%d body=%s err=%v", replayed.status, replayed.body, replayed.err)
+	}
+	for _, result := range []b126HTTPResult{first, second, replayed} {
+		if result.err != nil {
+			t.Fatal(result.err)
+		}
+		if result.status == http.StatusConflict {
+			continue
+		}
+		if result.status != http.StatusOK {
+			t.Fatalf("replay status=%d body=%s", result.status, result.body)
+		}
+		var tenant accessv1.TenantDTO
+		if err := protojson.Unmarshal(result.body, &tenant); err != nil || tenant.Id != row.ID {
+			t.Fatalf("divergent durable replay: %s %v", result.body, err)
+		}
+	}
+	var subscriptions int64
+	if err := db.Table("biz_commercial_subscriptions").Where("tenant_id=?", row.ID).Count(&subscriptions).Error; err != nil || subscriptions != 1 {
+		t.Fatalf("base subscriptions=%d err=%v", subscriptions, err)
 	}
 	var members, roles, assignments int64
 	if err := db.Table("biz_memberships").Where("tenant_id = ? AND user_id = ?", row.ID, ownerUserID).Count(&members).Error; err != nil {

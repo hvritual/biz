@@ -1,0 +1,128 @@
+// Diagnostic fixture, copied into a disposable framework checkout only.
+// PASS means the known defect was reproduced, NOT that CE-08 is qualified.
+package contract
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"go/parser"
+	"go/token"
+	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
+	"testing"
+)
+
+func ce08ProbeManifest(reverseDomainEdge bool) Manifest {
+	op := func(id, method, domain string, children ...string) OperationDeclaration {
+		v := OperationDeclaration{ID: id, UseCase: strings.ReplaceAll(id, ".", "_"), PermissionMode: "all", Permissions: []string{"probe.execute"}, RequestType: domain + ".v1.Request", ResponseType: domain + ".v1.Response", ApplicationMethod: method, Execution: &ExecutionPolicy{Transaction: "local", Idempotency: "none"}}
+		if len(children) > 0 { v.RequiresOperations = children; v.Composition = "local" }
+		return v
+	}
+	m := Manifest{SchemaVersion: ManifestVersion}
+	for _, domain := range []string{"access", "commercial"} {
+		m.Files = append(m.Files, File{Name: domain + ".proto", Package: domain + ".v1", GoPackage: "example.com/ce08probe/contracts/" + domain + "/v1;" + domain + "v1", Domain: &DomainDeclaration{Name: domain, Version: "v1"}})
+		m.Messages = append(m.Messages, Message{Name: "Request", FullName: domain + ".v1.Request"}, Message{Name: "Response", FullName: domain + ".v1.Response"})
+	}
+	m.Services = []Service{
+		{Name: "TenantLifecycleApplication", FullName: "access.v1.TenantLifecycleApplication", Domain: "access", Application: &ApplicationDeclaration{Name: "tenant_lifecycle", Requires: []string{"commercial/subscription_management"}, Operations: []OperationDeclaration{op("tenant.create", "CreateTenant", "access", "commercial.subscription.bootstrap"), op("tenant.get", "GetTenant", "access")}}},
+		{Name: "SubscriptionManagementApplication", FullName: "commercial.v1.SubscriptionManagementApplication", Domain: "commercial", Application: &ApplicationDeclaration{Name: "subscription_management", Operations: []OperationDeclaration{op("commercial.subscription.bootstrap", "Bootstrap", "commercial")}}},
+	}
+	if reverseDomainEdge {
+		m.Services = append(m.Services, Service{Name: "EntitlementManagementApplication", FullName: "commercial.v1.EntitlementManagementApplication", Domain: "commercial", Application: &ApplicationDeclaration{Name: "entitlement_management", Requires: []string{"access/tenant_lifecycle"}, Operations: []OperationDeclaration{op("commercial.entitlement.explain", "Explain", "commercial", "tenant.get")}}})
+	}
+	return m
+}
+
+func ce08HasCycle(graph map[string][]string) bool {
+	state := map[string]int{}
+	var visit func(string) bool
+	visit = func(node string) bool {
+		if state[node] == 1 { return true }; if state[node] == 2 { return false }
+		state[node] = 1
+		for _, child := range graph[node] { if visit(child) { return true } }
+		state[node] = 2; return false
+	}
+	for node := range graph { if visit(node) { return true } }
+	return false
+}
+
+func ce08Write(t *testing.T, root, name string, data []byte) {
+	t.Helper(); dst := filepath.Join(root, filepath.FromSlash(name))
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil { t.Fatal(err) }
+	if err := os.WriteFile(dst, data, 0644); err != nil { t.Fatal(err) }
+}
+
+func ce08Record(t *testing.T, name string, data []byte) {
+	t.Helper()
+	if root := os.Getenv("CE08_REPRO_OUT"); root != "" { ce08Write(t, filepath.Join(root, t.Name()), name, data) }
+}
+
+func ce08JSON(t *testing.T, name string, v any) {
+	t.Helper(); b, err := json.MarshalIndent(v, "", "  "); if err != nil { t.Fatal(err) }
+	ce08Record(t, name, append(b, '\n'))
+}
+
+func ce08Probe(t *testing.T, reverseDomainEdge bool) {
+	t.Helper()
+	m := ce08ProbeManifest(reverseDomainEdge)
+	appGraph := map[string][]string{}
+	for _, s := range m.Services { appGraph[s.Domain + "/" + s.Application.Name] = s.Application.Requires }
+	ce08JSON(t, "application-graph.json", appGraph)
+	if ce08HasCycle(appGraph) { t.Fatal("invalid diagnostic: application graph must be a DAG") }
+	plans, err := CompileOperationPlans(m)
+	if err != nil { t.Fatalf("operation compilation must succeed: %v", err) }
+	ce08JSON(t, "operation-plans.json", plans)
+	files, err := RenderC9ApplicationCode(m, ApplicationCodeOptions{RootImport: "example.com/ce08probe/internal"})
+	if err != nil { t.Fatalf("C9 generation must succeed: %v", err) }
+	again, err := RenderC9ApplicationCode(m, ApplicationCodeOptions{RootImport: "example.com/ce08probe/internal"})
+	if err != nil || len(files) != len(again) { t.Fatalf("repeat generation failed: %v", err) }
+	root := t.TempDir()
+	ce08Write(t, root, "go.mod", []byte("module example.com/ce08probe\n\ngo 1.23.0\n"))
+	for _, domain := range []string{"access", "commercial"} {
+		// DTO declarations only support package loading; no runtime or fake service is used.
+		ce08Write(t, root, "contracts/" + domain + "/v1/types.go", []byte("package " + domain + "v1\ntype Request struct{}\ntype Response struct{}\n"))
+	}
+	packageGraph := map[string][]string{}
+	for i, file := range files {
+		if file.Path != again[i].Path || !bytes.Equal(file.Content, again[i].Content) { t.Fatalf("nondeterministic generated file %s", file.Path) }
+		ce08Write(t, root, "internal/" + file.Path, file.Content)
+		ce08Record(t, "generated/" + file.Path, file.Content)
+		parsed, err := parser.ParseFile(token.NewFileSet(), file.Path, file.Content, parser.ImportsOnly)
+		if err != nil { t.Fatal(err) }
+		pkg := "example.com/ce08probe/internal/" + path.Dir(file.Path)
+		if _, exists := packageGraph[pkg]; !exists { packageGraph[pkg] = []string{} }
+		for _, imported := range parsed.Imports {
+			p, err := strconv.Unquote(imported.Path.Value); if err != nil { t.Fatal(err) }
+			if strings.HasPrefix(p, "example.com/ce08probe/internal/") { packageGraph[pkg] = append(packageGraph[pkg], p) }
+		}
+	}
+	for pkg := range packageGraph { sort.Strings(packageGraph[pkg]) }
+	ce08JSON(t, "generated-package-graph.json", packageGraph)
+	gotCycle := ce08HasCycle(packageGraph)
+	if gotCycle != reverseDomainEdge { t.Fatalf("generated Go package cycle=%v, expected=%v", gotCycle, reverseDomainEdge) }
+	cmd := exec.Command("go", "list", "-e", "-json", "./internal/access/application", "./internal/commercial/application")
+	cmd.Dir = root
+	for _, env := range os.Environ() {
+		key := strings.SplitN(env, "=", 2)[0]
+		if key != "GOWORK" && key != "GOPROXY" && key != "GOSUMDB" && key != "GOTOOLCHAIN" && key != "GOFLAGS" { cmd.Env = append(cmd.Env, env) }
+	}
+	cmd.Env = append(cmd.Env, "GOWORK=off", "GOPROXY=off", "GOSUMDB=off", "GOTOOLCHAIN=local", "GOFLAGS=")
+	output, runErr := cmd.CombinedOutput()
+	ce08Record(t, "go-list.json", output)
+	// -e retains loader diagnostics in JSON. This is NOT a full compile test;
+	// missing external runtime modules are expected in this isolated loader probe.
+	if runErr != nil { t.Fatalf("go list diagnostic runner failed: %v\n%s", runErr, output) }
+	loaderCycle := bytes.Contains(output, []byte("import cycle not allowed"))
+	if loaderCycle != reverseDomainEdge { t.Fatalf("Go loader cycle=%v, expected=%v\n%s", loaderCycle, reverseDomainEdge, output) }
+	t.Logf("application_dag=true operation_compile=PASS deterministic_generation=PASS generated_package_cycle=%v go_loader_cycle=%v", gotCycle, loaderCycle)
+	ce08Record(t, "result.txt", []byte(fmt.Sprintf("DIAGNOSTIC_ONLY\napplication_dag=true\noperation_compile=PASS\ngenerated_package_cycle=%v\ngo_loader_cycle=%v\nCE08_BUSINESS_QUALIFIED=false\n", gotCycle, loaderCycle)))
+}
+
+func TestCE08ReproCrossDomainDAGProducesPackageCycle(t *testing.T) { ce08Probe(t, true) }
+func TestCE08ReproOneWayDependencyControl(t *testing.T) { ce08Probe(t, false) }

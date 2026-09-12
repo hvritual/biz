@@ -65,6 +65,12 @@
           },
           "ownerUserId": {
             "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "salesScope": {
+            "type": "string"
           }
         },
         "type": "object",
@@ -434,6 +440,1690 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.UpdateTenantRoleRequest"
       },
+      "commercial_v1_ChangePlanVersionStateRequest": {
+        "properties": {
+          "expectedRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "planCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ChangePlanVersionStateRequest"
+      },
+      "commercial_v1_CheckPlanEligibilityRequest": {
+        "properties": {
+          "planCode": {
+            "type": "string"
+          },
+          "salesScope": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.CheckPlanEligibilityRequest"
+      },
+      "commercial_v1_ConfirmSubscriptionChangeRequest": {
+        "properties": {
+          "changeId": {
+            "type": "string"
+          },
+          "previewHash": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ConfirmSubscriptionChangeRequest"
+      },
+      "commercial_v1_CreateEntitlementOverrideRequest": {
+        "properties": {
+          "effect": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementEffect"
+          },
+          "effectiveAt": {
+            "type": "string"
+          },
+          "expectedVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "fieldAction": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "limit": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementLimit"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "target": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementTarget"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.CreateEntitlementOverrideRequest"
+      },
+      "commercial_v1_CreateModuleRequest": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "salesScope": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.CreateModuleRequest"
+      },
+      "commercial_v1_CreatePlanDraftRequest": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "planCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "terms": {
+            "$ref": "#/components/schemas/commercial_v1_PlanTerms"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.CreatePlanDraftRequest"
+      },
+      "commercial_v1_CreatePlanVersionRequest": {
+        "properties": {
+          "expectedPlanRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "fromVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "planCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.CreatePlanVersionRequest"
+      },
+      "commercial_v1_DefaultSubscriptionRuleDTO": {
+        "properties": {
+          "actorId": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "planCode": {
+            "type": "string"
+          },
+          "planVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "priority": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "ruleId": {
+            "type": "string"
+          },
+          "salesScope": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.DefaultSubscriptionRuleDTO"
+      },
+      "commercial_v1_DeleteModuleRequest": {
+        "properties": {
+          "moduleCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.DeleteModuleRequest"
+      },
+      "commercial_v1_DeleteModuleResponse": {
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          },
+          "moduleCode": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.DeleteModuleResponse"
+      },
+      "commercial_v1_EntitlementCatalogVersion": {
+        "properties": {
+          "moduleCode": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementCatalogVersion"
+      },
+      "commercial_v1_EntitlementDecisionDTO": {
+        "properties": {
+          "allowed": {
+            "type": "boolean"
+          },
+          "fieldAction": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "limit": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementLimit"
+          },
+          "masked": {
+            "type": "boolean"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_EntitlementSourceExplanation"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementDecisionDTO"
+      },
+      "commercial_v1_EntitlementEffect": {
+        "enum": [
+          "ENTITLEMENT_EFFECT_UNSPECIFIED",
+          "ENTITLEMENT_EFFECT_GRANT",
+          "ENTITLEMENT_EFFECT_DENY",
+          "ENTITLEMENT_EFFECT_QUOTA_ADD",
+          "ENTITLEMENT_EFFECT_QUOTA_REPLACE",
+          "ENTITLEMENT_EFFECT_SAFETY_DENY",
+          "ENTITLEMENT_EFFECT_SAFETY_MASK"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementEffect"
+      },
+      "commercial_v1_EntitlementLimit": {
+        "properties": {
+          "unlimited": {
+            "type": "boolean"
+          },
+          "value": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementLimit"
+      },
+      "commercial_v1_EntitlementOverrideDTO": {
+        "properties": {
+          "actorId": {
+            "type": "string"
+          },
+          "effect": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementEffect"
+          },
+          "effectiveAt": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "fieldAction": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "limit": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementLimit"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "type": "string"
+          },
+          "target": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementTarget"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementOverrideDTO"
+      },
+      "commercial_v1_EntitlementOverrideReceipt": {
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementOverrideDTO"
+          },
+          "sourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementOverrideReceipt"
+      },
+      "commercial_v1_EntitlementSourceExplanation": {
+        "properties": {
+          "actorId": {
+            "type": "string"
+          },
+          "disposition": {
+            "type": "string"
+          },
+          "effect": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementSourceExplanation"
+      },
+      "commercial_v1_EntitlementTarget": {
+        "enum": [
+          "ENTITLEMENT_TARGET_UNSPECIFIED",
+          "ENTITLEMENT_TARGET_MODULE",
+          "ENTITLEMENT_TARGET_CAPABILITY",
+          "ENTITLEMENT_TARGET_QUOTA",
+          "ENTITLEMENT_TARGET_FIELD"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementTarget"
+      },
+      "commercial_v1_EntitlementView": {
+        "properties": {
+          "catalogRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "catalogVersions": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_EntitlementCatalogVersion"
+            },
+            "type": "array"
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_EntitlementDecisionDTO"
+            },
+            "type": "array"
+          },
+          "entitlementVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "evaluatedAt": {
+            "type": "string"
+          },
+          "nextTransitionAt": {
+            "type": "string"
+          },
+          "permissionSubject": {
+            "type": "string"
+          },
+          "permissionVersion": {
+            "type": "string"
+          },
+          "resolverVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "sourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "validUntil": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.EntitlementView"
+      },
+      "commercial_v1_ExplainEntitlementsRequest": {
+        "properties": {
+          "capabilityCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ExplainEntitlementsRequest"
+      },
+      "commercial_v1_GetModuleRequest": {
+        "properties": {
+          "moduleCode": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.GetModuleRequest"
+      },
+      "commercial_v1_GetMyEntitlementsRequest": {
+        "properties": {
+          "capabilityCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.GetMyEntitlementsRequest"
+      },
+      "commercial_v1_GetPlanVersionRequest": {
+        "properties": {
+          "planCode": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.GetPlanVersionRequest"
+      },
+      "commercial_v1_GetTenantSubscriptionRequest": {
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.GetTenantSubscriptionRequest"
+      },
+      "commercial_v1_ListDefaultSubscriptionRulesRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListDefaultSubscriptionRulesRequest"
+      },
+      "commercial_v1_ListDefaultSubscriptionRulesResponse": {
+        "properties": {
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_DefaultSubscriptionRuleDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListDefaultSubscriptionRulesResponse"
+      },
+      "commercial_v1_ListEntitlementOverridesRequest": {
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListEntitlementOverridesRequest"
+      },
+      "commercial_v1_ListEntitlementOverridesResponse": {
+        "properties": {
+          "sourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_EntitlementOverrideDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListEntitlementOverridesResponse"
+      },
+      "commercial_v1_ListModulesRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListModulesRequest"
+      },
+      "commercial_v1_ListModulesResponse": {
+        "properties": {
+          "modules": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_ModuleDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListModulesResponse"
+      },
+      "commercial_v1_ListPlanVersionsRequest": {
+        "properties": {
+          "afterVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "pageSize": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "planCode": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListPlanVersionsRequest"
+      },
+      "commercial_v1_ListPlanVersionsResponse": {
+        "properties": {
+          "nextAfterVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_PlanVersionDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListPlanVersionsResponse"
+      },
+      "commercial_v1_ListProvisioningDeliveriesRequest": {
+        "properties": {
+          "afterEventId": {
+            "type": "string"
+          },
+          "limit": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListProvisioningDeliveriesRequest"
+      },
+      "commercial_v1_ListProvisioningDeliveriesResponse": {
+        "properties": {
+          "deliveries": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_ProvisioningDeliveryDTO"
+            },
+            "type": "array"
+          },
+          "nextAfterEventId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListProvisioningDeliveriesResponse"
+      },
+      "commercial_v1_ListProvisioningTasksRequest": {
+        "properties": {
+          "afterTaskId": {
+            "type": "string"
+          },
+          "limit": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListProvisioningTasksRequest"
+      },
+      "commercial_v1_ListProvisioningTasksResponse": {
+        "properties": {
+          "nextAfterTaskId": {
+            "type": "string"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_ProvisioningTaskDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListProvisioningTasksResponse"
+      },
+      "commercial_v1_ModuleDTO": {
+        "properties": {
+          "capabilityCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "category": {
+            "type": "string"
+          },
+          "dependencies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "fieldPolicySchemaKeys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quotaSchemaKeys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "salesScope": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "salesStatus": {
+            "$ref": "#/components/schemas/commercial_v1_ModuleSalesStatus"
+          },
+          "technicalStatus": {
+            "$ref": "#/components/schemas/commercial_v1_ModuleTechnicalStatus"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ModuleDTO"
+      },
+      "commercial_v1_ModuleSalesStatus": {
+        "enum": [
+          "MODULE_SALES_STATUS_UNSPECIFIED",
+          "MODULE_SALES_STATUS_SELLABLE",
+          "MODULE_SALES_STATUS_RETIRED"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "commercial.v1.ModuleSalesStatus"
+      },
+      "commercial_v1_ModuleTechnicalStatus": {
+        "enum": [
+          "MODULE_TECHNICAL_STATUS_UNSPECIFIED",
+          "MODULE_TECHNICAL_STATUS_NOT_READY",
+          "MODULE_TECHNICAL_STATUS_READY",
+          "MODULE_TECHNICAL_STATUS_DISABLED"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "commercial.v1.ModuleTechnicalStatus"
+      },
+      "commercial_v1_MutateProvisioningTaskRequest": {
+        "properties": {
+          "expectedRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.MutateProvisioningTaskRequest"
+      },
+      "commercial_v1_PlanEligibilityDTO": {
+        "properties": {
+          "eligible": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "version": {
+            "$ref": "#/components/schemas/commercial_v1_PlanVersionDTO"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.PlanEligibilityDTO"
+      },
+      "commercial_v1_PlanField": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.PlanField"
+      },
+      "commercial_v1_PlanModule": {
+        "properties": {
+          "capabilityCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_PlanField"
+            },
+            "type": "array"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "quotas": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_PlanQuota"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.PlanModule"
+      },
+      "commercial_v1_PlanQuota": {
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "unlimited": {
+            "type": "boolean"
+          },
+          "value": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.PlanQuota"
+      },
+      "commercial_v1_PlanTerms": {
+        "properties": {
+          "modules": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_PlanModule"
+            },
+            "type": "array"
+          },
+          "priceRef": {
+            "type": "string"
+          },
+          "salesScope": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "validityDays": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "validityMode": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.PlanTerms"
+      },
+      "commercial_v1_PlanVersionDTO": {
+        "properties": {
+          "actorId": {
+            "type": "string"
+          },
+          "contentSha256": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "planCode": {
+            "type": "string"
+          },
+          "planRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "publishedAt": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "retiredAt": {
+            "type": "string"
+          },
+          "revision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "state": {
+            "type": "string"
+          },
+          "terms": {
+            "$ref": "#/components/schemas/commercial_v1_PlanTerms"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.PlanVersionDTO"
+      },
+      "commercial_v1_PreviewSubscriptionChangeRequest": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "effectiveAt": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "targetPlanCode": {
+            "type": "string"
+          },
+          "targetPlanVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.PreviewSubscriptionChangeRequest"
+      },
+      "commercial_v1_ProvisioningCompletionDTO": {
+        "properties": {
+          "appliedAt": {
+            "type": "string"
+          },
+          "changeId": {
+            "type": "string"
+          },
+          "entitlementVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "sourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "subscriptionRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ProvisioningCompletionDTO"
+      },
+      "commercial_v1_ProvisioningDeliveryDTO": {
+        "properties": {
+          "aggregateId": {
+            "type": "string"
+          },
+          "aggregateVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "attempts": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "changeId": {
+            "type": "string"
+          },
+          "deliveryState": {
+            "type": "string"
+          },
+          "entitlementVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "eventId": {
+            "type": "string"
+          },
+          "factStatus": {
+            "type": "string"
+          },
+          "failureCode": {
+            "type": "string"
+          },
+          "nextAttemptAt": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ProvisioningDeliveryDTO"
+      },
+      "commercial_v1_ProvisioningRequirementDTO": {
+        "properties": {
+          "adapter": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "maxAttempts": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ProvisioningRequirementDTO"
+      },
+      "commercial_v1_ProvisioningStepDTO": {
+        "properties": {
+          "attempts": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "cycleAttempts": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "effect": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "failureCode": {
+            "type": "string"
+          },
+          "reconciliations": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "requirement": {
+            "$ref": "#/components/schemas/commercial_v1_ProvisioningRequirementDTO"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ProvisioningStepDTO"
+      },
+      "commercial_v1_ProvisioningTaskDTO": {
+        "properties": {
+          "actorId": {
+            "type": "string"
+          },
+          "cancellationAllowed": {
+            "type": "boolean"
+          },
+          "changeId": {
+            "type": "string"
+          },
+          "completion": {
+            "$ref": "#/components/schemas/commercial_v1_ProvisioningCompletionDTO"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "deadline": {
+            "type": "string"
+          },
+          "failureCode": {
+            "type": "string"
+          },
+          "nextAttemptAt": {
+            "type": "string"
+          },
+          "retryAllowed": {
+            "type": "boolean"
+          },
+          "retryCycles": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "revision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "stage": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "stepIndex": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_ProvisioningStepDTO"
+            },
+            "type": "array"
+          },
+          "targetPlanCode": {
+            "type": "string"
+          },
+          "targetPlanVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "taskId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ProvisioningTaskDTO"
+      },
+      "commercial_v1_PutDefaultSubscriptionRuleRequest": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "expectedVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "planCode": {
+            "type": "string"
+          },
+          "planVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "priority": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "ruleId": {
+            "type": "string"
+          },
+          "salesScope": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.PutDefaultSubscriptionRuleRequest"
+      },
+      "commercial_v1_ReadProvisioningTaskRequest": {
+        "properties": {
+          "taskId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ReadProvisioningTaskRequest"
+      },
+      "commercial_v1_ReadSubscriptionChangeRequest": {
+        "properties": {
+          "changeId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ReadSubscriptionChangeRequest"
+      },
+      "commercial_v1_RevokeEntitlementOverrideRequest": {
+        "properties": {
+          "expectedVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.RevokeEntitlementOverrideRequest"
+      },
+      "commercial_v1_SetModuleSalesStatusRequest": {
+        "properties": {
+          "moduleCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "salesStatus": {
+            "$ref": "#/components/schemas/commercial_v1_ModuleSalesStatus"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.SetModuleSalesStatusRequest"
+      },
+      "commercial_v1_SetModuleTechnicalStatusRequest": {
+        "properties": {
+          "moduleCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "technicalStatus": {
+            "$ref": "#/components/schemas/commercial_v1_ModuleTechnicalStatus"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.SetModuleTechnicalStatusRequest"
+      },
+      "commercial_v1_SubscriptionChangeDependency": {
+        "properties": {
+          "moduleCode": {
+            "type": "string"
+          },
+          "requiresModules": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.SubscriptionChangeDependency"
+      },
+      "commercial_v1_SubscriptionChangePreviewDTO": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          },
+          "before": {
+            "$ref": "#/components/schemas/commercial_v1_TenantSubscriptionDTO"
+          },
+          "catalogRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "changeId": {
+            "type": "string"
+          },
+          "classification": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "currentEntitlements": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementView"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_SubscriptionChangeDependency"
+            },
+            "type": "array"
+          },
+          "effectiveAt": {
+            "type": "string"
+          },
+          "entitlementExpiresAt": {
+            "type": "string"
+          },
+          "entitlementVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "impacts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "previewHash": {
+            "type": "string"
+          },
+          "pricingBasis": {
+            "type": "string"
+          },
+          "projectedEntitlements": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementView"
+          },
+          "provisioningRequirements": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_ProvisioningRequirementDTO"
+            },
+            "type": "array"
+          },
+          "quotaImpacts": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_SubscriptionChangeQuotaImpact"
+            },
+            "type": "array"
+          },
+          "quotaValidationRequired": {
+            "type": "boolean"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "sourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "subscriptionRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "target": {
+            "$ref": "#/components/schemas/commercial_v1_PlanVersionDTO"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.SubscriptionChangePreviewDTO"
+      },
+      "commercial_v1_SubscriptionChangeQuotaImpact": {
+        "properties": {
+          "afterLimit": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementLimit"
+          },
+          "beforeLimit": {
+            "$ref": "#/components/schemas/commercial_v1_EntitlementLimit"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "overLimit": {
+            "type": "boolean"
+          },
+          "policy": {
+            "type": "string"
+          },
+          "usageKnown": {
+            "type": "boolean"
+          },
+          "used": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.SubscriptionChangeQuotaImpact"
+      },
+      "commercial_v1_SubscriptionChangeReceiptDTO": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          },
+          "after": {
+            "$ref": "#/components/schemas/commercial_v1_TenantSubscriptionDTO"
+          },
+          "afterEntitlementVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "afterSourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "before": {
+            "$ref": "#/components/schemas/commercial_v1_TenantSubscriptionDTO"
+          },
+          "beforeEntitlementVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "beforeSourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "changeId": {
+            "type": "string"
+          },
+          "confirmedAt": {
+            "type": "string"
+          },
+          "effectiveAt": {
+            "type": "string"
+          },
+          "entitlementExpiresAt": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "previewHash": {
+            "type": "string"
+          },
+          "pricingAuthority": {
+            "type": "string"
+          },
+          "provisioningTaskId": {
+            "type": "string"
+          },
+          "quotaImpacts": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_SubscriptionChangeQuotaImpact"
+            },
+            "type": "array"
+          },
+          "quotaValidationRequired": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.SubscriptionChangeReceiptDTO"
+      },
+      "commercial_v1_TenantSubscriptionDTO": {
+        "properties": {
+          "createdAt": {
+            "type": "string"
+          },
+          "entitlementSourceVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "kind": {
+            "type": "string"
+          },
+          "matchExplanation": {
+            "type": "string"
+          },
+          "pendingChangeId": {
+            "type": "string"
+          },
+          "periodEnd": {
+            "type": "string"
+          },
+          "periodStart": {
+            "type": "string"
+          },
+          "planCode": {
+            "type": "string"
+          },
+          "planVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "renewalStopped": {
+            "type": "boolean"
+          },
+          "revision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "ruleId": {
+            "type": "string"
+          },
+          "ruleVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "salesScope": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "subscriptionId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.TenantSubscriptionDTO"
+      },
+      "commercial_v1_UpdateModuleRequest": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "salesScope": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.UpdateModuleRequest"
+      },
+      "commercial_v1_UpdatePlanDraftRequest": {
+        "properties": {
+          "expectedRevision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "planCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "terms": {
+            "$ref": "#/components/schemas/commercial_v1_PlanTerms"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.UpdatePlanDraftRequest"
+      },
       "deviceops_v1_CreateDeviceRequest": {
         "properties": {
           "name": {
@@ -763,6 +2453,1311 @@
           "deviceops.v1.DeviceTransferApplication"
         ],
         "x-yunka-rpc": "/deviceops.v1.DeviceTransferApplication/TransferDevice"
+      }
+    },
+    "/v1/platform/modules": {
+      "get": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.ListModules",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ListModulesResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/ListModules"
+      },
+      "post": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.CreateModule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_CreateModuleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ModuleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/CreateModule"
+      }
+    },
+    "/v1/platform/modules/{module_code}": {
+      "delete": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.DeleteModule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moduleCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "requestId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": false,
+            "schema": {
+              "format": "uint64",
+              "type": "string",
+              "x-yunka-protobuf-json-integer": true
+            }
+          },
+          {
+            "in": "query",
+            "name": "reason",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_DeleteModuleResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/DeleteModule"
+      },
+      "get": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.GetModule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moduleCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ModuleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/GetModule"
+      },
+      "patch": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.UpdateModule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moduleCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_UpdateModuleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ModuleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/UpdateModule"
+      }
+    },
+    "/v1/platform/modules/{module_code}/sales-status": {
+      "post": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moduleCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_SetModuleSalesStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ModuleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus"
+      }
+    },
+    "/v1/platform/modules/{module_code}/technical-status": {
+      "post": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moduleCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_SetModuleTechnicalStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ModuleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus"
+      }
+    },
+    "/v1/platform/plans": {
+      "post": {
+        "operationId": "commercial.v1.PlanManagementApplication.CreatePlanDraft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_CreatePlanDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_PlanVersionDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.PlanManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.PlanManagementApplication/CreatePlanDraft"
+      }
+    },
+    "/v1/platform/plans/{plan_code}/versions": {
+      "get": {
+        "operationId": "commercial.v1.PlanManagementApplication.ListPlanVersions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "planCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "afterVersion",
+            "required": false,
+            "schema": {
+              "format": "uint64",
+              "type": "string",
+              "x-yunka-protobuf-json-integer": true
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ListPlanVersionsResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.PlanManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.PlanManagementApplication/ListPlanVersions"
+      },
+      "post": {
+        "operationId": "commercial.v1.PlanManagementApplication.CreatePlanVersion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "planCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_CreatePlanVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_PlanVersionDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.PlanManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.PlanManagementApplication/CreatePlanVersion"
+      }
+    },
+    "/v1/platform/plans/{plan_code}/versions/{version}": {
+      "get": {
+        "operationId": "commercial.v1.PlanManagementApplication.GetPlanVersion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "planCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "format": "uint64",
+              "type": "string",
+              "x-yunka-protobuf-json-integer": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_PlanVersionDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.PlanManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.PlanManagementApplication/GetPlanVersion"
+      },
+      "patch": {
+        "operationId": "commercial.v1.PlanManagementApplication.UpdatePlanDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "planCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "format": "uint64",
+              "type": "string",
+              "x-yunka-protobuf-json-integer": true
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_UpdatePlanDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_PlanVersionDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.PlanManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.PlanManagementApplication/UpdatePlanDraft"
+      }
+    },
+    "/v1/platform/plans/{plan_code}/versions/{version}/eligibility": {
+      "post": {
+        "operationId": "commercial.v1.PlanManagementApplication.CheckPlanEligibility",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "planCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "format": "uint64",
+              "type": "string",
+              "x-yunka-protobuf-json-integer": true
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_CheckPlanEligibilityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_PlanEligibilityDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.PlanManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.PlanManagementApplication/CheckPlanEligibility"
+      }
+    },
+    "/v1/platform/plans/{plan_code}/versions/{version}/publish": {
+      "post": {
+        "operationId": "commercial.v1.PlanManagementApplication.PublishPlanVersion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "planCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "format": "uint64",
+              "type": "string",
+              "x-yunka-protobuf-json-integer": true
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_ChangePlanVersionStateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_PlanVersionDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.PlanManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.PlanManagementApplication/PublishPlanVersion"
+      }
+    },
+    "/v1/platform/plans/{plan_code}/versions/{version}/retire": {
+      "post": {
+        "operationId": "commercial.v1.PlanManagementApplication.RetirePlanVersion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "planCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "format": "uint64",
+              "type": "string",
+              "x-yunka-protobuf-json-integer": true
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_ChangePlanVersionStateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_PlanVersionDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.PlanManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.PlanManagementApplication/RetirePlanVersion"
+      }
+    },
+    "/v1/platform/subscription-default-rules": {
+      "get": {
+        "operationId": "commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ListDefaultSubscriptionRulesResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionManagementApplication/ListDefaultSubscriptionRules"
+      }
+    },
+    "/v1/platform/subscription-default-rules/{rule_id}": {
+      "put": {
+        "operationId": "commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ruleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_PutDefaultSubscriptionRuleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_DefaultSubscriptionRuleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionManagementApplication/PutDefaultSubscriptionRule"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/entitlement-overrides": {
+      "get": {
+        "operationId": "commercial.v1.EntitlementManagementApplication.ListEntitlementOverrides",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ListEntitlementOverridesResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.EntitlementManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.EntitlementManagementApplication/ListEntitlementOverrides"
+      },
+      "post": {
+        "operationId": "commercial.v1.EntitlementManagementApplication.CreateEntitlementOverride",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_CreateEntitlementOverrideRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_EntitlementOverrideReceipt"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.EntitlementManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.EntitlementManagementApplication/CreateEntitlementOverride"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke": {
+      "post": {
+        "operationId": "commercial.v1.EntitlementManagementApplication.RevokeEntitlementOverride",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_RevokeEntitlementOverrideRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_EntitlementOverrideReceipt"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.EntitlementManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.EntitlementManagementApplication/RevokeEntitlementOverride"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/entitlements": {
+      "post": {
+        "operationId": "commercial.v1.EntitlementManagementApplication.ExplainEntitlements",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_ExplainEntitlementsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_EntitlementView"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.EntitlementManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.EntitlementManagementApplication/ExplainEntitlements"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/provisioning/deliveries": {
+      "get": {
+        "operationId": "commercial.v1.ProvisioningApplication.ListProvisioningDeliveries",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "afterEventId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ListProvisioningDeliveriesResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ProvisioningApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ProvisioningApplication/ListProvisioningDeliveries"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/provisioning/tasks": {
+      "get": {
+        "operationId": "commercial.v1.ProvisioningApplication.ListProvisioningTasks",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "afterTaskId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ListProvisioningTasksResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ProvisioningApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ProvisioningApplication/ListProvisioningTasks"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}": {
+      "get": {
+        "operationId": "commercial.v1.ProvisioningApplication.GetProvisioningTask",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "taskId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ProvisioningTaskDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ProvisioningApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ProvisioningApplication/GetProvisioningTask"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel": {
+      "post": {
+        "operationId": "commercial.v1.ProvisioningApplication.CancelProvisioningTask",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "taskId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_MutateProvisioningTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ProvisioningTaskDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ProvisioningApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ProvisioningApplication/CancelProvisioningTask"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry": {
+      "post": {
+        "operationId": "commercial.v1.ProvisioningApplication.RetryProvisioningTask",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "taskId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_MutateProvisioningTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ProvisioningTaskDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ProvisioningApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ProvisioningApplication/RetryProvisioningTask"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/subscription": {
+      "get": {
+        "operationId": "commercial.v1.SubscriptionManagementApplication.GetTenantSubscription",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_TenantSubscriptionDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionManagementApplication/GetTenantSubscription"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/subscription/change-previews": {
+      "post": {
+        "operationId": "commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_PreviewSubscriptionChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_SubscriptionChangePreviewDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionChangesApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/PreviewSubscriptionChange"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}": {
+      "get": {
+        "operationId": "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "changeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_SubscriptionChangePreviewDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionChangesApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangePreview"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}": {
+      "get": {
+        "operationId": "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "changeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_SubscriptionChangeReceiptDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionChangesApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangeReceipt"
+      }
+    },
+    "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm": {
+      "post": {
+        "operationId": "commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "changeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_ConfirmSubscriptionChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_SubscriptionChangeReceiptDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionChangesApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange"
+      }
+    },
+    "/v1/tenant/entitlements": {
+      "post": {
+        "operationId": "commercial.v1.EntitlementManagementApplication.GetMyEntitlements",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_GetMyEntitlementsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_EntitlementView"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.EntitlementManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.EntitlementManagementApplication/GetMyEntitlements"
       }
     },
     "/v1/tenant/members": {

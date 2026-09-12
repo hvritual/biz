@@ -3,12 +3,19 @@ package usecase
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"strings"
 	"time"
+	"yunka.io/framework/core/identity"
+	"yunka.io/framework/execution"
 
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
+	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	accessapp "github.com/hvritual/biz/internal/access/application"
 	"github.com/hvritual/biz/internal/access/domain"
 	"github.com/hvritual/biz/internal/access/ports"
@@ -32,37 +39,69 @@ func New(repositories requestscope.RepositoryFactory[ports.TenantRepositories], 
 }
 
 func (service *service) CreateTenant(ctx context.Context, request *accessv1.CreateTenantRequest) (*accessv1.TenantDTO, error) {
-	if request == nil || strings.TrimSpace(request.GetName()) == "" || strings.TrimSpace(request.GetOwnerUserId()) == "" || strings.TrimSpace(request.GetOwnerEmail()) == "" {
+	if request == nil || strings.TrimSpace(request.GetName()) == "" || strings.TrimSpace(request.GetOwnerUserId()) == "" || strings.TrimSpace(request.GetOwnerEmail()) == "" || strings.TrimSpace(request.GetRequestId()) == "" || strings.TrimSpace(request.GetSalesScope()) == "" {
 		return nil, accessapp.ErrInvalidTenantRequest
 	}
 	members := service.capabilities.AccessTenantMemberLifecycle()
 	roles := service.capabilities.AccessTenantRolePermission()
-	if members == nil || roles == nil {
+	subscriptions := service.capabilities.CommercialSubscriptionManagement()
+	if members == nil || roles == nil || subscriptions == nil {
 		return nil, errors.New("access: tenant bootstrap child capabilities are required")
 	}
-	now := time.Now().UTC()
-	tenant := domain.NewTenant(newTenantID(), strings.TrimSpace(request.GetName()), now)
-	if err := requestscope.JoinDo(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRepositories]) error {
-		return scope.Repositories().Tenant.Create(scope.Context(), &tenant)
-	}); err != nil {
-		return nil, err
-	}
-	ownerUserID := strings.TrimSpace(request.GetOwnerUserId())
-	ownerEmail := strings.TrimSpace(strings.ToLower(request.GetOwnerEmail()))
-	if _, err := members.BootstrapTenantOwnerMember(ctx, &accessv1.BootstrapTenantOwnerMemberRequest{
-		TenantId: tenant.ID,
-		UserId:   ownerUserID,
-		Email:    ownerEmail,
-	}); err != nil {
-		return nil, err
-	}
-	if _, err := roles.BootstrapTenantOwnerRole(ctx, &accessv1.BootstrapTenantOwnerRoleRequest{
-		TenantId: tenant.ID,
-		UserId:   ownerUserID,
-	}); err != nil {
-		return nil, err
-	}
-	return tenantDTO(tenant), nil
+	return requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRepositories]) (*accessv1.TenantDTO, error) {
+		call := scope.Context()
+		principal, ok := identity.FromContext(call)
+		if !ok || !principal.Authenticated || principal.Subject == "" || principal.TenantID != "" {
+			return nil, status.Error(codes.PermissionDenied, "TENANT_CREATION_PLATFORM_CONTEXT_REQUIRED")
+		}
+		transportKey := execution.IdempotencyKeyFrom(call)
+		if transportKey == "" {
+			return nil, execution.ErrIdempotencyKeyRequired
+		}
+		name, ownerID, email := strings.TrimSpace(request.GetName()), strings.TrimSpace(request.GetOwnerUserId()), strings.ToLower(strings.TrimSpace(request.GetOwnerEmail()))
+		requestID, salesScope := strings.TrimSpace(request.GetRequestId()), strings.TrimSpace(request.GetSalesScope())
+		if len(name) > 200 || len(ownerID) > 64 || len(email) > 320 || len(requestID) > 128 || len(salesScope) > 96 {
+			return nil, accessapp.ErrInvalidTenantRequest
+		}
+		payload, err := json.Marshal([]string{name, ownerID, email, requestID, salesScope})
+		if err != nil {
+			return nil, err
+		}
+		fingerprint := sha256.Sum256(payload)
+		key := func(kind, id string) string {
+			h := sha256.Sum256([]byte(kind + "\x00" + principal.Subject + "\x00" + id))
+			return hex.EncodeToString(h[:])
+		}
+		keys := []string{key("business", requestID), key("transport", transportKey)}
+		repo := scope.Repositories().Tenant
+		replay, err := repo.ClaimCreation(call, keys, hex.EncodeToString(fingerprint[:]))
+		if err != nil {
+			return nil, err
+		}
+		if replay != nil {
+			if err := repo.CompleteCreation(call, keys, hex.EncodeToString(fingerprint[:]), *replay); err != nil {
+				return nil, err
+			}
+			return tenantDTO(*replay), nil
+		}
+		tenant := domain.NewTenant(newTenantID(), name, time.Now().UTC())
+		if err := repo.Create(call, &tenant); err != nil {
+			return nil, err
+		}
+		if _, err := members.BootstrapTenantOwnerMember(call, &accessv1.BootstrapTenantOwnerMemberRequest{TenantId: tenant.ID, UserId: ownerID, Email: email}); err != nil {
+			return nil, err
+		}
+		if _, err := roles.BootstrapTenantOwnerRole(call, &accessv1.BootstrapTenantOwnerRoleRequest{TenantId: tenant.ID, UserId: ownerID}); err != nil {
+			return nil, err
+		}
+		if _, err := subscriptions.BootstrapBaseSubscription(call, &commercialv1.BootstrapTenantSubscriptionRequest{RequestId: requestID, TenantId: tenant.ID, SalesScope: salesScope}); err != nil {
+			return nil, err
+		}
+		if err := repo.CompleteCreation(call, keys, hex.EncodeToString(fingerprint[:]), tenant); err != nil {
+			return nil, err
+		}
+		return tenantDTO(tenant), nil
+	})
 }
 
 func (service *service) GetTenant(ctx context.Context, request *accessv1.GetTenantRequest) (*accessv1.TenantDTO, error) {

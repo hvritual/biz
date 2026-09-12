@@ -89,6 +89,7 @@ service TenantMemberLifecycleApplication {
       permission_mode: PERMISSION_ALL
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };
   }
@@ -102,6 +103,7 @@ service TenantMemberLifecycleApplication {
       permission_mode: PERMISSION_ALL
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
       execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
     };
   }
@@ -115,6 +117,7 @@ service TenantMemberLifecycleApplication {
       permission_mode: PERMISSION_ALL
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
       execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
     };
   }
@@ -128,6 +131,7 @@ service TenantMemberLifecycleApplication {
       permission_mode: PERMISSION_ALL
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };
   }
@@ -141,6 +145,7 @@ service TenantMemberLifecycleApplication {
       permission_mode: PERMISSION_ALL
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
       requires_operations: "tenant.role.assert_member_deactivation_allowed"
       composition: COMPOSITION_LOCAL
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
@@ -156,6 +161,7 @@ service TenantMemberLifecycleApplication {
       permission_mode: PERMISSION_ALL
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
       requires_operations: "tenant.role.assert_member_deactivation_allowed"
       composition: COMPOSITION_LOCAL
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }

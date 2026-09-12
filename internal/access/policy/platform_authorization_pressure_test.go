@@ -25,12 +25,14 @@ func (resolver *platformGrantResolver) ResolveGrants(_ context.Context, request 
 	resolver.tenantID = request.Principal.TenantID
 	resolver.operation = request.Operation
 	result := make([]authz.Grant, 0, len(request.Permissions))
+	allowed := map[authz.PermissionKey]bool{
+		authz.PermissionKey("commercial.catalog.read"): true,
+		authz.PermissionKey("platform.plan.read"):      true,
+		authz.PermissionKey("platform.tenant.create"):  true,
+	}
 	for _, permission := range request.Permissions {
-		if permission == authz.PermissionKey("platform.tenant.create") {
-			result = append(result, authz.Grant{
-				Permission: permission,
-				RoleID:     "platform-admin",
-			})
+		if allowed[permission] {
+			result = append(result, authz.Grant{Permission: permission, RoleID: "platform-admin"})
 		}
 	}
 	return result, nil
@@ -48,8 +50,14 @@ func TestPressurePlatformTenantCreateAllowsTenantlessPlatformPrincipal(t *testin
 	if operationPolicy.TenantRequired {
 		t.Fatalf("tenant.create must remain non-tenant-bound: generated policy unexpectedly requires tenant")
 	}
-	if len(operationPolicy.Permissions) != 1 || operationPolicy.Permissions[0] != authz.PermissionKey("platform.tenant.create") {
+	expectedPermissions := []authz.PermissionKey{"commercial.catalog.read", "platform.plan.read", "platform.tenant.create"}
+	if len(operationPolicy.Permissions) != len(expectedPermissions) {
 		t.Fatalf("tenant.create permission mismatch: %v", operationPolicy.Permissions)
+	}
+	for index, permission := range expectedPermissions {
+		if operationPolicy.Permissions[index] != permission {
+			t.Fatalf("tenant.create permission mismatch: %v", operationPolicy.Permissions)
+		}
 	}
 
 	grants := &platformGrantResolver{}

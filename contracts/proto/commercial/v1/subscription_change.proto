@@ -1,0 +1,95 @@
+syntax = "proto3";
+package commercial.v1;
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+import "commercial/v1/plan.proto";
+import "commercial/v1/subscription.proto";
+import "commercial/v1/entitlement.proto";
+import "commercial/v1/provisioning.proto";
+option go_package = "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1";
+option (yunka.dsl.v1.domain) = { name: "commercial" version: "v1" };
+
+// CE-09 is a trusted platform/manual API. No paid flag, resource counts or
+// entitlement contents are accepted from clients. Self-service is a later route.
+message PreviewSubscriptionChangeRequest {
+ string tenant_id = 1;
+ string request_id = 2;
+ // SWITCH, RENEW or STOP_RENEWAL. Direction is calculated by the server.
+ string action = 3;
+ string target_plan_code = 4;
+ uint64 target_plan_version = 5;
+ // Empty means the server's safe default; a future UTC instant schedules only.
+ string effective_at = 6;
+ string reason = 7;
+}
+message ConfirmSubscriptionChangeRequest {
+ string tenant_id = 1;
+ string change_id = 2;
+ string request_id = 3;
+ string preview_hash = 4;
+ string reason = 5;
+}
+message ReadSubscriptionChangeRequest { string tenant_id = 1; string change_id = 2; }
+message SubscriptionChangeDependency { string module_code = 1; repeated string requires_modules = 2; }
+message SubscriptionChangeQuotaImpact {
+ string module_code = 1; string key = 2;
+ EntitlementLimit before_limit = 3; EntitlementLimit after_limit = 4;
+ bool usage_known = 5; uint64 used = 6; bool over_limit = 7;
+ string policy = 8; string evidence = 9;
+}
+message SubscriptionChangePreviewDTO {
+ string change_id = 1; string tenant_id = 2; string actor_id = 3;
+ string request_id = 4; string action = 5; string classification = 6;
+ string mode = 7; string preview_hash = 8;
+ TenantSubscriptionDTO before = 9; PlanVersionDTO target = 10;
+ uint64 subscription_revision = 11; uint64 source_version = 12;
+ uint64 entitlement_version = 13; uint64 catalog_revision = 14;
+ string created_at = 15; string expires_at = 16;
+ // IMMEDIATE instants are estimates; receipt contains actual admitted instants.
+ string effective_at = 17; string entitlement_expires_at = 18;
+ EntitlementView current_entitlements = 19;
+ // Hypothetical only: entitlement_version=0, never a cacheable authority.
+ EntitlementView projected_entitlements = 20;
+ repeated SubscriptionChangeDependency dependencies = 21;
+ repeated SubscriptionChangeQuotaImpact quota_impacts = 22;
+ repeated string impacts = 23; string pricing_basis = 24;
+ bool quota_validation_required = 25;
+ repeated ProvisioningRequirementDTO provisioning_requirements = 26;
+}
+message SubscriptionChangeReceiptDTO {
+ string change_id = 1; string tenant_id = 2; string actor_id = 3;
+ string request_id = 4; string preview_hash = 5;
+ string action = 6; string status = 7; string mode = 8;
+ string confirmed_at = 9; string effective_at = 10;
+ string entitlement_expires_at = 11; string reason = 12;
+ TenantSubscriptionDTO before = 13; TenantSubscriptionDTO after = 14;
+ uint64 before_source_version = 15; uint64 after_source_version = 16;
+ uint64 before_entitlement_version = 17; uint64 after_entitlement_version = 18;
+ bool quota_validation_required = 19; string pricing_authority = 20;
+ repeated SubscriptionChangeQuotaImpact quota_impacts = 21;
+ string provisioning_task_id = 22;
+}
+service SubscriptionChangesApplication {
+ option (yunka.dsl.v1.application) = { name: "subscription_changes" requires: "commercial/plan_management" requires: "commercial/module_catalog"
+ operations:{id:"commercial.subscription.change.prepared" use_case:"complete_prepared_subscription_change" permissions:"platform.provisioning.execute" permissions:"platform.plan.read" permissions:"commercial.catalog.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY requires_operations:"commercial.plan.get" requires_operations:"commercial.plan.eligibility" requires_operations:"commercial.module.plan_catalog" composition:COMPOSITION_LOCAL execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_NONE} request_type:"commercial.v1.PreparedSubscriptionChangeRequest" response_type:"commercial.v1.ProvisioningCompletionDTO" application_method:"CompletePreparedSubscriptionChange"}
+ operations:{id:"commercial.subscription.change.preparation.cancel" use_case:"cancel_prepared_subscription_change" permissions:"platform.provisioning.cancel" permissions:"platform.plan.read" permissions:"commercial.catalog.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_NONE} request_type:"commercial.v1.PreparedSubscriptionChangeRequest" response_type:"commercial.v1.ProvisioningCompletionDTO" application_method:"CancelPreparedSubscriptionChange"}
+ };
+ rpc PreviewSubscriptionChange(PreviewSubscriptionChangeRequest) returns (SubscriptionChangePreviewDTO) {
+  option (google.api.http) = { post: "/v1/platform/tenants/{tenant_id}/subscription/change-previews" body: "*" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.subscription.change.preview" use_case: "preview_subscription_change" permissions: "platform.subscription.manage" permissions: "platform.tenant.read" permissions: "platform.plan.read" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.plan.get" requires_operations: "commercial.plan.eligibility" requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: {transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED} };
+ }
+ rpc ConfirmSubscriptionChange(ConfirmSubscriptionChangeRequest) returns (SubscriptionChangeReceiptDTO) {
+  option (google.api.http) = { post: "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm" body: "*" };
+  // This distinct server-granted permission is manual commercial approval, not
+  // proof of a payment. Never infer it from a request field or displayed price.
+  option (yunka.dsl.v1.operation) = { id: "commercial.subscription.change.confirm" use_case: "confirm_subscription_change" permissions: "platform.subscription.confirm" permissions: "platform.tenant.read" permissions: "platform.plan.read" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.plan.get" requires_operations: "commercial.plan.eligibility" requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: {transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED} };
+ }
+ rpc GetSubscriptionChangePreview(ReadSubscriptionChangeRequest) returns (SubscriptionChangePreviewDTO) {
+  option (google.api.http) = {get: "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}"};
+  option (yunka.dsl.v1.operation) = {id: "commercial.subscription.change.preview.get" use_case: "get_subscription_change_preview" permissions: "platform.subscription.read" permissions: "platform.tenant.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: {transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE}};
+ }
+ rpc GetSubscriptionChangeReceipt(ReadSubscriptionChangeRequest) returns (SubscriptionChangeReceiptDTO) {
+  option (google.api.http) = {get: "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}"};
+  option (yunka.dsl.v1.operation) = {id: "commercial.subscription.change.get" use_case: "get_subscription_change_receipt" permissions: "platform.subscription.read" permissions: "platform.tenant.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: {transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE}};
+ }
+}

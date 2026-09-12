@@ -1,0 +1,101 @@
+# 04 独立任务执行与证据约定
+
+修订：2026-09-09。用户新增强制要求：每一轮必须独立完成。
+
+## 1. 领取与范围
+
+每轮只执行一个 CE 任务。先读本 README、任务卡、tasks.json、最新 main 与对应目录约束，记录 base SHA；确认所有 depends_on 为 DONE 且其证据可读，外部条件为 SATISFIED。硬依赖未闭合则任务不可领取为开发中。
+
+每条任务卡都包含目标、输入、交付、允许／禁止改动、验收与回滚。预计超出一个完整可审阅变更时，必须在开工前追加可独立闭环的子任务、依赖与验收，保留原编号；不能做完半项后将剩余测试或合并改称下一轮任务。
+
+历史规划提交只交付文档；当前实施状态以 tasks.json 为准，不从旧回复推定 DONE。
+
+### 1.1 每轮独立完成的强制闭环
+
+一次实施回复必须完成本轮任务的：范围核对 → 实施 → 真实验证 → 修复及复验 → GitHub 提交 → main 集成 → 主线回读／验证 → 执行回执 → 台账更新。
+
+只有上述闭环完成，才可报告本轮 DONE。只创建分支、只推送源码、只开 Draft PR、仅编译成功或只提交测试代码都不是独立完成。
+
+没有自动 CI 不构成结束任务的理由：优先使用既有可用执行环境；必要时增加该任务最小验证脚本或工作流，取得实际命令、退出码、非零测试数与日志。禁止把可自行完成的测试、合并、回读再次交给用户发起“继续”。
+
+允许依赖已完成任务，但不允许依赖另一个任务未提交的工作区。不得用合并无关分支、制造假业务、降低验收或忽略失败来凑齐完成数量。
+
+如确有权限拒绝、用户独占凭据或已证明的框架缺口，必须记录真实阻塞、已尝试的恢复和安全保存结果；这属于未完成，不得包装成独立完成，也不授权越过保护规则。仅仅“还没运行”“还没配置 CI”不是外部阻塞。
+
+## 2. 任务状态的唯一事实源
+
+状态仅维护在 tasks.json：
+
+`PLANNED → IN_PROGRESS → VERIFYING → DONE`
+
+可转入 BLOCKED（必须填写 blocker），问题解决后恢复；不以删除失败测试或修改验收标准解除阻塞。READY 为检查器推导结果，不另存一份状态。
+
+DONE 必须同时满足：依赖 DONE、外部条件满足、实际测试通过、预期交付可回读、代码已集成指定主线、证据文件存在。为避免自引用，业务提交与证据提交允许分开：先集成业务、验证 main，再提交最终证据与台账。两次提交仍属于同一实施轮，不能据此要求用户另开一轮。
+
+记录被验证的业务 SHA；证据提交 SHA 由 Git 历史体现，不写入自身内容制造循环。每个 DONE 任务除 evidence 外增加 verification，指向机器可读验证回执；verified_commit 必须等于 integration_commit。
+
+## 3. Git 交付规则
+
+建议分支 `feat/ce-XX-<topic>`；文档任务使用 docs 前缀。一个任务保持独立提交或独立 PR，基于最新 main，不将无关 UI／框架分支整体并入。
+
+实现及验证后同步到 GitHub，并按仓库现有权限和保护规则集成 main。不得 force push main、跳过保护、伪造审批。受阻时如实留下分支／PR 和阻塞说明，不宣称已经集成。
+
+只因某任务需要页面调整，不得修改 Go 权限、手改生成文件或扩大目录所有权；必须创建显式跨域任务或调整已审阅范围。
+
+## 4. 框架问题处理
+
+优先用已公开的 PB、typed child、Executor、UoW、Guard 等模型表达业务。只有真实最小重现证明公共扩展点不足时才记为框架缺口。
+
+缺口记录字段：现象、预期、固定 SHA、最小复现、真实失败证据、影响范围、可复用性、候选方案、风险、框架仓库 Issue 与阻塞任务。暂停受影响任务，不暂停无依赖的路线；禁止通过直连跨域 Repository、第二套 Executor 或手改 zz_yunka 文件绕过。
+
+框架改动独立提交到框架仓库并完成其主线验证后，再更新 biz 锁定与消费者资格。此计划本身不授权未说明的框架大改。
+
+## 5. 每个任务的执行回执
+
+新增 `docs/commercial-entitlements/evidence/CE-XX.md`，至少包含以下标题及真实内容：
+
+```text
+# CE-XX 执行回执
+## 范围与结果
+目标、实际完成、不做、与原任务差异。
+## 基线与依赖
+base SHA、框架 SHA、依赖完成证据、外部条件证明。
+## 变更清单
+实际文件／契约／迁移／接口／页面。
+## 验证命令与结果
+环境、命令、测试数、退出码、日志路径、运行时间、失败及修复。
+## 反例与故障验证
+至少任务卡要求的越权／并发／失败反例。
+## 风险与回滚
+数据／安全／兼容风险、已验证回滚或补偿步骤。
+## 集成与回读
+业务 commit、PR（若有）、main 验证 SHA、接口／配置回读结果。
+## 自检
+scope / dependency / quality / risks / rollback。
+```
+
+空占位或只写“通过”不构成证据。正式运行未做的内容应明确列为未验证；截图不得伪造成真实 API 已接通。测试统计区分顶层测试、叶子用例、父子 pass 事件，不能相加夸大通过数。
+
+机器回执 `evidence/CE-XX-verification.json` 包含 task_id、verified_commit、result=PASS、checks 数组。每项 checks 记录 command、exit_code、tests_passed 和 evidence 定位。不得伪造回执以使检查器通过；测试必须在真实执行环境已完成。
+
+## 6. 文档与台账更新
+
+任务卡记录需求，tasks.json 记录状态／依赖／交付证据路径。变更需求先更新卡片和验收矩阵；不要让 README 维护第二份手工百分比。
+
+每次改动本计划运行：
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python3 docs/commercial-entitlements/tools/check_plan.py
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s docs/commercial-entitlements/tools -p 'test_*.py' -v
+```
+
+本轮结束前在最新 main 上运行（CE-01 为例）：
+
+```sh
+git fetch origin main
+PYTHONDONTWRITEBYTECODE=1 python3 docs/commercial-entitlements/tools/check_round.py --task CE-01 --require-main
+```
+
+[check_round.py](tools/check_round.py) 拒绝未 DONE、零测试、失败命令、证据定位缺失、验证 SHA 不一致、提交不在 main 历史或未检出最新 main 的结束声明。其 [反向单测](tools/test_check_round.py) 使用临时 Git 仓库，不冒充业务验证。
+
+check_plan 只验证计划结构；check_round 增加回执与 Git 祖先约束，但不独立认证日志真实性。真正行为仍由任务测试、CI 日志与主线回读证明。禁止为了 PASS 删除任务、外部条件、失败用例或降低里程碑门槛。

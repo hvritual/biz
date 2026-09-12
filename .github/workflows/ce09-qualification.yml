@@ -1,0 +1,61 @@
+name: CE-09 qualification
+on:
+  push:
+    branches: [feat/ce-09-subscription-changes, main]
+    paths: ['contracts/**','internal/**','integration/ce09*','scripts/ce09*','docs/commercial-entitlements/**','.github/workflows/ce09-qualification.yml','Makefile','go.mod','go.sum','.yunka/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      YUNKA_SHA: e323ee5833d929b5b1d0494fc29aae0aaa2b6f4a
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce09?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env: {MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: biz_ce09}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {path: biz, ref: '${{ github.sha }}', fetch-depth: 0, persist-credentials: false}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, persist-credentials: false}
+      - id: lock
+        name: Lock source and toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+          source yunka.io/tools/toolchain.env
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "protoc_release=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "protoc_sha=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '${{ steps.lock.outputs.go_version }}', cache: false}
+      - name: Install locked generators
+        env: {RELEASE: '${{ steps.lock.outputs.protoc_release }}', CHECKSUM: '${{ steps.lock.outputs.protoc_sha }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 20 "https://github.com/protocolbuffers/protobuf/releases/download/v${RELEASE}/protoc-${RELEASE}-linux-x86_64.zip" -o "$RUNNER_TEMP/protoc.zip"
+          echo "$CHECKSUM  $RUNNER_TEMP/protoc.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/protoc.zip" -d "$RUNNER_TEMP/protoc"
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+          make -C yunka.io rpc-tools
+          echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
+      - name: Qualify previews confirmations and atomic changes
+        env: {MYSQL_CONTAINER_ID: '${{ job.services.mysql.id }}'}
+        run: bash biz/scripts/ce09_qualify.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'ce09-${{ github.sha }}', path: '${{ runner.temp }}/ce09', retention-days: 30, if-no-files-found: error}

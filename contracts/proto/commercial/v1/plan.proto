@@ -1,0 +1,69 @@
+syntax = "proto3";
+package commercial.v1;
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+option go_package = "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1";
+option (yunka.dsl.v1.domain) = { name: "commercial" version: "v1" };
+
+message PlanQuota { string key = 1; bool unlimited = 2; uint64 value = 3; }
+message PlanField { string key = 1; string action = 2; string mode = 3; }
+message PlanModule { string module_code = 1; repeated string capability_codes = 2; repeated PlanQuota quotas = 3; repeated PlanField fields = 4; }
+message PlanTerms {
+ repeated PlanModule modules = 1;
+ repeated string sales_scope = 2;
+ string validity_mode = 3;
+ uint32 validity_days = 4;
+ // Opaque pricing-owner reference, not a paid flag or amount.
+ string price_ref = 5;
+}
+message PlanVersionDTO {
+ string plan_code = 1; uint64 version = 2; uint64 revision = 3; uint64 plan_revision = 4;
+ string state = 5; string name = 6; PlanTerms terms = 7; string content_sha256 = 8;
+ string created_at = 9; string published_at = 10; string retired_at = 11;
+ string actor_id = 12; string reason = 13;
+}
+message CreatePlanDraftRequest { string request_id = 1; string plan_code = 2; string name = 3; PlanTerms terms = 4; string reason = 5; }
+message CreatePlanVersionRequest { string request_id = 1; string plan_code = 2; uint64 from_version = 3; uint64 expected_plan_revision = 4; string reason = 5; }
+message UpdatePlanDraftRequest { string request_id = 1; string plan_code = 2; uint64 version = 3; uint64 expected_revision = 4; string name = 5; PlanTerms terms = 6; string reason = 7; }
+message ChangePlanVersionStateRequest { string request_id = 1; string plan_code = 2; uint64 version = 3; uint64 expected_revision = 4; string reason = 5; }
+message GetPlanVersionRequest { string plan_code = 1; uint64 version = 2; }
+message ListPlanVersionsRequest { string plan_code = 1; uint64 after_version = 2; uint32 page_size = 3; }
+message ListPlanVersionsResponse { repeated PlanVersionDTO versions = 1; uint64 next_after_version = 2; }
+message CheckPlanEligibilityRequest { string plan_code = 1; uint64 version = 2; string sales_scope = 3; }
+message PlanEligibilityDTO { bool eligible = 1; string reason = 2; PlanVersionDTO version = 3; }
+
+service PlanManagementApplication {
+ option (yunka.dsl.v1.application) = { name: "plan_management" requires: "commercial/module_catalog" };
+ rpc CreatePlanDraft(CreatePlanDraftRequest) returns (PlanVersionDTO) {
+  option (google.api.http) = { post: "/v1/platform/plans" body: "*" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.create" use_case: "create_plan_draft" permissions: "platform.plan.manage" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+ }
+ rpc CreatePlanVersion(CreatePlanVersionRequest) returns (PlanVersionDTO) {
+  option (google.api.http) = { post: "/v1/platform/plans/{plan_code}/versions" body: "*" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.clone" use_case: "create_plan_version" permissions: "platform.plan.manage" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+ }
+ rpc UpdatePlanDraft(UpdatePlanDraftRequest) returns (PlanVersionDTO) {
+  option (google.api.http) = { patch: "/v1/platform/plans/{plan_code}/versions/{version}" body: "*" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.update" use_case: "update_plan_draft" permissions: "platform.plan.manage" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+ }
+ rpc PublishPlanVersion(ChangePlanVersionStateRequest) returns (PlanVersionDTO) {
+  option (google.api.http) = { post: "/v1/platform/plans/{plan_code}/versions/{version}/publish" body: "*" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.publish" use_case: "publish_plan_version" permissions: "platform.plan.publish" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+ }
+ rpc RetirePlanVersion(ChangePlanVersionStateRequest) returns (PlanVersionDTO) {
+  option (google.api.http) = { post: "/v1/platform/plans/{plan_code}/versions/{version}/retire" body: "*" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.retire" use_case: "retire_plan_version" permissions: "platform.plan.publish" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+ }
+ rpc GetPlanVersion(GetPlanVersionRequest) returns (PlanVersionDTO) {
+  option (google.api.http) = { get: "/v1/platform/plans/{plan_code}/versions/{version}" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.get" use_case: "get_plan_version" permissions: "platform.plan.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
+ }
+ rpc ListPlanVersions(ListPlanVersionsRequest) returns (ListPlanVersionsResponse) {
+  option (google.api.http) = { get: "/v1/platform/plans/{plan_code}/versions" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.list" use_case: "list_plan_versions" permissions: "platform.plan.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
+ }
+ rpc CheckPlanEligibility(CheckPlanEligibilityRequest) returns (PlanEligibilityDTO) {
+  option (google.api.http) = { post: "/v1/platform/plans/{plan_code}/versions/{version}/eligibility" body: "*" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.plan.eligibility" use_case: "check_plan_eligibility" permissions: "platform.plan.read" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_NONE } };
+ }
+}

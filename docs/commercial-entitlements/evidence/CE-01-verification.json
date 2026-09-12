@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "task_id": "CE-01",
+  "verified_commit": "5df140b627aa6fe2868078e8773b5f1a3558993f",
+  "result": "PASS",
+  "recorded_on": "2026-09-09",
+  "scope": "CE-01 baseline, contract, probes, qualification and independent-round execution rule; no commercial product implementation",
+  "source": {
+    "task_base": "cd951655364ee4692a57e883356b5accd5426c0f",
+    "candidate_commit": "911c99865d7b374bd368f1c510f20fc169e8041e",
+    "candidate_and_integrated_tree": "cc7085e2a9d4018c02eb2e9613bc5cb77157c462",
+    "yunka_commit": "6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb",
+    "frontend_candidate_commit": "c59324393a616ac98b1f40b93603014e26baacf4",
+    "frontend_merged": false
+  },
+  "ci": {
+    "run_id": 34308073382,
+    "job_id": 102328826992,
+    "head_branch": "main",
+    "conclusion": "success",
+    "url": "https://github.com/hvritual/biz/actions/runs/34308073382",
+    "artifact_id": 10087395702,
+    "artifact_url": "https://github.com/hvritual/biz/actions/runs/34308073382/artifacts/10087395702",
+    "artifact_sha256": "07e8303fc8c6f6c2eedd48199819da04b098a7c67051717bea05337a9bb2b6cc",
+    "artifact_downloaded_and_hashes_verified": true,
+    "artifact_retention_days": 30
+  },
+  "checks": [
+    {"command":"python3 biz/docs/commercial-entitlements/tools/check_plan.py","exit_code":0,"evidence":"run:34308073382/job:102328826992/plan.log"},
+    {"command":"python3 -m unittest discover -s biz/docs/commercial-entitlements/tools -p 'test_*.py' -v","exit_code":0,"tests_passed":8,"evidence":"run:34308073382/job:102328826992/round-gate-tests.log"},
+    {"command":"make -C biz yunka-source-check workspace-check","exit_code":0,"evidence":"run:34308073382/job:102328826992/resolution.log"},
+    {"command":"make -C biz check; twice: make -C biz generate + git -C biz diff --exit-code + assert clean status; make -C biz check","exit_code":0,"generation_passes":2,"generated_diff_empty":true,"evidence":"run:34308073382/job:102328826992/check-before.log,generate-1.log,generate-2.log,check-after.log"},
+    {"command":"go -C biz test -count=1 -json ./internal/architecture -run '^TestCE01'","exit_code":0,"tests_passed":12,"counting":"leaf cases; 3 top-level tests and 14 parent-inclusive pass events","evidence":"run:34308073382/job:102328826992/probes.jsonl"},
+    {"command":"go -C biz test -count=1 -json ./...","exit_code":0,"tests_passed":27,"counting":"leaf cases, includes CE01; 18 top-level tests and 29 parent-inclusive pass events","evidence":"run:34308073382/job:102328826992/go-test.jsonl"},
+    {"command":"go -C biz vet ./... && go -C biz build ./... && GOWORK=off go -C biz test -count=1 ./internal/architecture","exit_code":0,"evidence":"https://github.com/hvritual/biz/actions/runs/34308073382/job/102328826992#step:11:1"},
+    {"command":"go -C biz test -count=1 -tags=integration -json ./integration -run '^TestB125'","exit_code":0,"tests_passed":2,"database":"real isolated MySQL 8.4 service","evidence":"run:34308073382/job:102328826992/mysql.jsonl"},
+    {"command":"assert nonzero tests/no failures and clean biz/Yunka worktrees; emit SHA256 manifest and Operation inventory","exit_code":0,"evidence":"run:34308073382/job:102328826992/summary.json,operation-inventory.json"}
+  ],
+  "inventory": {
+    "source":"contracts/generated/operation-plans.json",
+    "operations":32,
+    "internal_operations":["site.validate_transfer_target","tenant.member.bootstrap_owner","tenant.role.assert_member_deactivation_allowed","tenant.role.bootstrap_owner"],
+    "commercial_classification_implemented":false
+  },
+  "log_sha256": {
+    "check-before.log":"a53bd151d78095c85e4cf22019f5b99a5b6b26632e2b5fa7931d282835193a08",
+    "plan.log":"3a622be3a1e8a93990ad33edc720185d736d1b47f86878a268a09fadcfb05267",
+    "generate-2.log":"faa99c560ff84ab64f4303935cb9c231dba6d679d13b8519a69c719533571e02",
+    "generate-1.log":"04bd0a3758d3111850523f00343c260f09dccf79395453e4fb05bbee901c81f8",
+    "resolution.log":"22be8d5753a559a0d34d03a161050f3157050849275bca5e8b69a18bff06d09f",
+    "probes.jsonl":"6e58490a18cd8d7464b244eab611f63e271a2eeda360d65879dc088bac6170fb",
+    "check-after.log":"d95440587b8e8a87145ec4da6a6cef33b75ec456c2ced0e276a4241f845dc98f",
+    "round-closure.log":"a7815089e1034acd83c2db060cb8555cac9b783aee9e02663cfe4279e17b8e08",
+    "operation-inventory.json":"4a0011fd167b9c31d026f8b2007d4390d26ecd310b3daa400edae0867bd46aa4",
+    "mysql.jsonl":"a18a6b20af1992ee58114b2df88e38356b68ceb654d3b243174a4c537876b2ab",
+    "go-test.jsonl":"f2fb4e510d824d72ada450f9de62c5a3ce9bfe071cb17f33cd785b33db381623",
+    "round-gate-tests.log":"0d2803871a5c759e2431b69d854d74a9d56ce5437607958f716fd2b17a8fd87d",
+    "sources.txt":"8ee1895890876461a7af5ff80c9d927ea1359415cba69915296d8c906ec76332"
+  },
+  "completion_gate": {
+    "command":"python3 docs/commercial-entitlements/tools/check_round.py --task CE-01 --require-main",
+    "note":"Executed on the subsequent evidence-containing main commit; this proof intentionally targets the already-tested implementation SHA, not its own future commit. The main qualification run must supply the final ROUND_CHECK result."
+  },
+  "limitations":["Recorder UoW and memory idempotency in runtime probes do not prove database durability; the separate MySQL tests do.","No Vue E2E, payment, commercial activation or production deployment is claimed.","Receipt/Git ancestry checks do not independently authenticate CI logs."]
+}

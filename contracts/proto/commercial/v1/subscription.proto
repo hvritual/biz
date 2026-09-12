@@ -1,0 +1,21 @@
+syntax = "proto3";
+package commercial.v1;
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+option go_package = "github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1";
+option (yunka.dsl.v1.domain) = { name: "commercial" version: "v1" };
+// CE-08 default subscription rules are platform-owned; bootstrap is internal composition only.
+message DefaultSubscriptionRuleDTO { string rule_id=1; uint64 version=2; int32 priority=3; string sales_scope=4; string plan_code=5; uint64 plan_version=6; bool enabled=7; string reason=8; string actor_id=9; string updated_at=10; }
+message PutDefaultSubscriptionRuleRequest { string request_id=1; string rule_id=2; uint64 expected_version=3; int32 priority=4; string sales_scope=5; string plan_code=6; uint64 plan_version=7; bool enabled=8; string reason=9; }
+message ListDefaultSubscriptionRulesRequest {}
+message ListDefaultSubscriptionRulesResponse { repeated DefaultSubscriptionRuleDTO rules=1; }
+message TenantSubscriptionDTO { string subscription_id=1; string tenant_id=2; string kind=3; string state=4; string plan_code=5; uint64 plan_version=6; string rule_id=7; uint64 rule_version=8; string sales_scope=9; uint64 entitlement_source_version=10; string created_at=11; string match_explanation=12; uint64 revision=13; string period_start=14; string period_end=15; bool renewal_stopped=16; string pending_change_id=17; }
+message GetTenantSubscriptionRequest { string tenant_id=1; }
+message BootstrapTenantSubscriptionRequest { string request_id=1; string tenant_id=2; string sales_scope=3; }
+message BootstrapTenantSubscriptionResult { TenantSubscriptionDTO subscription=1; }
+service SubscriptionManagementApplication {
+ option (yunka.dsl.v1.application) = { name:"subscription_management" requires:"commercial/plan_management" operations:{ id:"commercial.subscription.bootstrap_base" use_case:"bootstrap_base_subscription" permissions:"platform.tenant.create" permissions:"platform.plan.read" permissions:"commercial.catalog.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY requires_operations:"commercial.plan.eligibility" composition:COMPOSITION_LOCAL execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_NONE} request_type:"commercial.v1.BootstrapTenantSubscriptionRequest" response_type:"commercial.v1.BootstrapTenantSubscriptionResult" application_method:"BootstrapBaseSubscription" } };
+ rpc PutDefaultSubscriptionRule(PutDefaultSubscriptionRuleRequest) returns (DefaultSubscriptionRuleDTO) { option (google.api.http)={put:"/v1/platform/subscription-default-rules/{rule_id}" body:"*"}; option (yunka.dsl.v1.operation)={id:"commercial.subscription.rule.put" use_case:"put_default_subscription_rule" permissions:"platform.subscription.manage" permissions:"platform.plan.read" permissions:"commercial.catalog.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY requires_operations:"commercial.plan.eligibility" composition:COMPOSITION_LOCAL execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_REQUIRED}}; }
+ rpc ListDefaultSubscriptionRules(ListDefaultSubscriptionRulesRequest) returns (ListDefaultSubscriptionRulesResponse) { option (google.api.http)={get:"/v1/platform/subscription-default-rules"}; option (yunka.dsl.v1.operation)={id:"commercial.subscription.rule.list" use_case:"list_default_subscription_rules" permissions:"platform.subscription.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_READ_ONLY idempotency:IDEMPOTENCY_NONE}}; }
+ rpc GetTenantSubscription(GetTenantSubscriptionRequest) returns (TenantSubscriptionDTO) { option (google.api.http)={get:"/v1/platform/tenants/{tenant_id}/subscription"}; option (yunka.dsl.v1.operation)={id:"commercial.subscription.get" use_case:"get_tenant_subscription" permissions:"platform.subscription.read" permissions:"platform.tenant.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_READ_ONLY idempotency:IDEMPOTENCY_NONE}}; }
+}

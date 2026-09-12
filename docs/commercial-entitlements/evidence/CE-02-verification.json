@@ -1,0 +1,20 @@
+{
+  "task_id": "CE-02",
+  "verified_commit": "ed73396d5205bb2e12c5c6bb2cb18b36bcba5424",
+  "result": "PASS",
+  "framework_commit": "6ba99c1440dc6c9416f6afd08f3282e35fa5a3fb",
+  "workflow_run": 34310754865,
+  "artifact_id": 10088297028,
+  "artifact_sha256": "34d8f0f9b51637034d51c48107b0ba2cfd38cbab6ccff54d130397a4dea454d8",
+  "checks": [
+    {"command":"python3 docs/commercial-entitlements/tools/check_plan.py","exit_code":0,"tests_passed":0,"evidence":"https://github.com/hvritual/biz/actions/runs/34310754865/artifacts/10088297028#plan.log"},
+    {"command":"make yunka-source-check workspace-check","exit_code":0,"tests_passed":0,"evidence":"https://github.com/hvritual/biz/actions/runs/34310754865/artifacts/10088297028#resolution.log"},
+    {"command":"make check; make generate twice; git diff --exit-code; test -z \"$(git status --porcelain)\"; make check","exit_code":0,"tests_passed":0,"evidence":"https://github.com/hvritual/biz/actions/runs/34310754865/artifacts/10088297028#generate-1.log,generate-2.log,check-before.log,check-after.log"},
+    {"command":"verify generated ModuleCatalog surface","exit_code":0,"tests_passed":0,"evidence":"https://github.com/hvritual/biz/actions/runs/34310754865/artifacts/10088297028#contract.log"},
+    {"command":"go test -count=1 -json ./internal/commercial/... -run TestCE02","exit_code":0,"tests_passed":2,"evidence":"https://github.com/hvritual/biz/actions/runs/34310754865/artifacts/10088297028#unit.jsonl","sha256":"4809672f5f9c573829297f904d8dcafe5d40cbc7484a0041a70b4c6e3ae1de62"},
+    {"command":"go test -count=1 -tags=integration -json ./integration -run '^TestCE02'","exit_code":0,"tests_passed":2,"evidence":"https://github.com/hvritual/biz/actions/runs/34310754865/artifacts/10088297028#mysql.jsonl","sha256":"d553299dccbefc2f67a75c5fcd9b464d8fadd7b8a359b818b8248797d3018462"},
+    {"command":"go test -count=1 -json ./...","exit_code":0,"tests_passed":29,"pass_events":31,"evidence":"https://github.com/hvritual/biz/actions/runs/34310754865/artifacts/10088297028#go-test.jsonl","sha256":"4941d85a721b21627f2044761c35b5ee67e10ad2cc0c3bc53a1858e52e61f703"},
+    {"command":"go vet ./...; go build ./...","exit_code":0,"tests_passed":0,"evidence":"https://github.com/hvritual/biz/actions/runs/34310754865/job/102336754451"}
+  ],
+  "notes": "Counts are per suite, not additive. The original business qualification legitimately skipped round-check before this receipt existed; the receipt workflow verifies the final main separately."
+}

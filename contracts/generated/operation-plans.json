@@ -2,6 +2,1587 @@
   "schemaVersion": 2,
   "operations": [
     {
+      "operationId": "commercial.entitlement.explain",
+      "domain": "commercial",
+      "application": "entitlement_management",
+      "useCase": "explain_entitlements",
+      "requestType": "commercial.v1.ExplainEntitlementsRequest",
+      "responseType": "commercial.v1.EntitlementView",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.entitlement.read",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.entitlement_catalog",
+          "tenant.get"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.tenant.read"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.EntitlementManagementApplication/ExplainEntitlements",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/tenants/{tenant_id}/entitlements",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.entitlement.get_my",
+      "domain": "commercial",
+      "application": "entitlement_management",
+      "useCase": "get_my_entitlements",
+      "requestType": "commercial.v1.GetMyEntitlementsRequest",
+      "responseType": "commercial.v1.EntitlementView",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "tenant.entitlement.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.entitlement_catalog"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.EntitlementManagementApplication/GetMyEntitlements",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/entitlements",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.entitlement.override.create",
+      "domain": "commercial",
+      "application": "entitlement_management",
+      "useCase": "create_entitlement_override",
+      "requestType": "commercial.v1.CreateEntitlementOverrideRequest",
+      "responseType": "commercial.v1.EntitlementOverrideReceipt",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.entitlement.manage",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.entitlement_catalog",
+          "tenant.get"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.tenant.read"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.EntitlementManagementApplication/CreateEntitlementOverride",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/tenants/{tenant_id}/entitlement-overrides",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.entitlement.override.list",
+      "domain": "commercial",
+      "application": "entitlement_management",
+      "useCase": "list_entitlement_overrides",
+      "requestType": "commercial.v1.ListEntitlementOverridesRequest",
+      "responseType": "commercial.v1.ListEntitlementOverridesResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.entitlement.read",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "tenant.get"
+        ],
+        "permissionClosure": [
+          "platform.tenant.read"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.EntitlementManagementApplication/ListEntitlementOverrides",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/tenants/{tenant_id}/entitlement-overrides"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.entitlement.override.revoke",
+      "domain": "commercial",
+      "application": "entitlement_management",
+      "useCase": "revoke_entitlement_override",
+      "requestType": "commercial.v1.RevokeEntitlementOverrideRequest",
+      "responseType": "commercial.v1.EntitlementOverrideReceipt",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.entitlement.manage",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "tenant.get"
+        ],
+        "permissionClosure": [
+          "platform.tenant.read"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_lifecycle",
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.EntitlementManagementApplication/RevokeEntitlementOverride",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.module.create",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "create_module",
+      "requestType": "commercial.v1.CreateModuleRequest",
+      "responseType": "commercial.v1.ModuleDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/CreateModule",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/modules",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.module.delete",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "delete_module",
+      "requestType": "commercial.v1.DeleteModuleRequest",
+      "responseType": "commercial.v1.DeleteModuleResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/DeleteModule",
+        "http": [
+          {
+            "method": "DELETE",
+            "path": "/v1/platform/modules/{module_code}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.module.entitlement_catalog",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "read_entitlement_catalog",
+      "requestType": "commercial.v1.ListModulesRequest",
+      "responseType": "commercial.v1.ListModulesResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {}
+    },
+    {
+      "operationId": "commercial.module.get",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "get_module",
+      "requestType": "commercial.v1.GetModuleRequest",
+      "responseType": "commercial.v1.ModuleDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/GetModule",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/modules/{module_code}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.module.list",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "list_modules",
+      "requestType": "commercial.v1.ListModulesRequest",
+      "responseType": "commercial.v1.ListModulesResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/ListModules",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/modules"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.module.plan_catalog",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "read_plan_catalog",
+      "requestType": "commercial.v1.ListModulesRequest",
+      "responseType": "commercial.v1.ListModulesResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {}
+    },
+    {
+      "operationId": "commercial.module.set_sales_status",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "set_module_sales_status",
+      "requestType": "commercial.v1.SetModuleSalesStatusRequest",
+      "responseType": "commercial.v1.ModuleDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/modules/{module_code}/sales-status",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.module.set_technical_status",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "set_module_technical_status",
+      "requestType": "commercial.v1.SetModuleTechnicalStatusRequest",
+      "responseType": "commercial.v1.ModuleDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.technical.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/modules/{module_code}/technical-status",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.module.update",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "update_module",
+      "requestType": "commercial.v1.UpdateModuleRequest",
+      "responseType": "commercial.v1.ModuleDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/UpdateModule",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/platform/modules/{module_code}",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.clone",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "create_plan_version",
+      "requestType": "commercial.v1.CreatePlanVersionRequest",
+      "responseType": "commercial.v1.PlanVersionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/CreatePlanVersion",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/plans/{plan_code}/versions",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.create",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "create_plan_draft",
+      "requestType": "commercial.v1.CreatePlanDraftRequest",
+      "responseType": "commercial.v1.PlanVersionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/CreatePlanDraft",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/plans",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.eligibility",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "check_plan_eligibility",
+      "requestType": "commercial.v1.CheckPlanEligibilityRequest",
+      "responseType": "commercial.v1.PlanEligibilityDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/CheckPlanEligibility",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/plans/{plan_code}/versions/{version}/eligibility",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.get",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "get_plan_version",
+      "requestType": "commercial.v1.GetPlanVersionRequest",
+      "responseType": "commercial.v1.PlanVersionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.plan.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/GetPlanVersion",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/plans/{plan_code}/versions/{version}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.list",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "list_plan_versions",
+      "requestType": "commercial.v1.ListPlanVersionsRequest",
+      "responseType": "commercial.v1.ListPlanVersionsResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.plan.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/ListPlanVersions",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/plans/{plan_code}/versions"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.publish",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "publish_plan_version",
+      "requestType": "commercial.v1.ChangePlanVersionStateRequest",
+      "responseType": "commercial.v1.PlanVersionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.publish"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/PublishPlanVersion",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/plans/{plan_code}/versions/{version}/publish",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.retire",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "retire_plan_version",
+      "requestType": "commercial.v1.ChangePlanVersionStateRequest",
+      "responseType": "commercial.v1.PlanVersionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.publish"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/RetirePlanVersion",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/plans/{plan_code}/versions/{version}/retire",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.plan.update",
+      "domain": "commercial",
+      "application": "plan_management",
+      "useCase": "update_plan_draft",
+      "requestType": "commercial.v1.UpdatePlanDraftRequest",
+      "responseType": "commercial.v1.PlanVersionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.PlanManagementApplication/UpdatePlanDraft",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/platform/plans/{plan_code}/versions/{version}",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.provisioning.delivery.claim",
+      "domain": "commercial",
+      "application": "provisioning",
+      "useCase": "claim_provisioning_delivery",
+      "requestType": "commercial.v1.ClaimProvisioningDeliveryRequest",
+      "responseType": "commercial.v1.ProvisioningDeliveryWorkDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.provisioning.execute"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/subscription_changes"
+      ],
+      "bindings": {}
+    },
+    {
+      "operationId": "commercial.provisioning.delivery.complete",
+      "domain": "commercial",
+      "application": "provisioning",
+      "useCase": "complete_provisioning_delivery",
+      "requestType": "commercial.v1.CompleteProvisioningDeliveryRequest",
+      "responseType": "commercial.v1.ProvisioningDeliveryResultDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.provisioning.execute"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/subscription_changes"
+      ],
+      "bindings": {}
+    },
+    {
+      "operationId": "commercial.provisioning.delivery.fail",
+      "domain": "commercial",
+      "application": "provisioning",
+      "useCase": "fail_provisioning_delivery",
+      "requestType": "commercial.v1.CompleteProvisioningDeliveryRequest",
+      "responseType": "commercial.v1.ProvisioningDeliveryResultDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.provisioning.execute"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/subscription_changes"
+      ],
+      "bindings": {}
+    },
+    {
+      "operationId": "commercial.provisioning.delivery.list",
+      "domain": "commercial",
+      "application": "provisioning",
+      "useCase": "list_provisioning_deliveries",
+      "requestType": "commercial.v1.ListProvisioningDeliveriesRequest",
+      "responseType": "commercial.v1.ListProvisioningDeliveriesResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.provisioning.read",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/subscription_changes"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.ProvisioningApplication/ListProvisioningDeliveries",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/tenants/{tenant_id}/provisioning/deliveries"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.provisioning.task.cancel",
+      "domain": "commercial",
+      "application": "provisioning",
+      "useCase": "cancel_provisioning_task",
+      "requestType": "commercial.v1.MutateProvisioningTaskRequest",
+      "responseType": "commercial.v1.ProvisioningTaskDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.provisioning.cancel",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.subscription.change.preparation.cancel"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.provisioning.cancel"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/subscription_changes"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.ProvisioningApplication/CancelProvisioningTask",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.provisioning.task.get",
+      "domain": "commercial",
+      "application": "provisioning",
+      "useCase": "get_provisioning_task",
+      "requestType": "commercial.v1.ReadProvisioningTaskRequest",
+      "responseType": "commercial.v1.ProvisioningTaskDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.provisioning.read",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/subscription_changes"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.ProvisioningApplication/GetProvisioningTask",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.provisioning.task.list",
+      "domain": "commercial",
+      "application": "provisioning",
+      "useCase": "list_provisioning_tasks",
+      "requestType": "commercial.v1.ListProvisioningTasksRequest",
+      "responseType": "commercial.v1.ListProvisioningTasksResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.provisioning.read",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/subscription_changes"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.ProvisioningApplication/ListProvisioningTasks",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/tenants/{tenant_id}/provisioning/tasks"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.provisioning.task.retry",
+      "domain": "commercial",
+      "application": "provisioning",
+      "useCase": "retry_provisioning_task",
+      "requestType": "commercial.v1.MutateProvisioningTaskRequest",
+      "responseType": "commercial.v1.ProvisioningTaskDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.provisioning.manage",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/subscription_changes"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.ProvisioningApplication/RetryProvisioningTask",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.provisioning.work.claim",
+      "domain": "commercial",
+      "application": "provisioning",
+      "useCase": "claim_provisioning_work",
+      "requestType": "commercial.v1.ClaimProvisioningWorkRequest",
+      "responseType": "commercial.v1.ProvisioningWorkDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.provisioning.execute"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/subscription_changes"
+      ],
+      "bindings": {}
+    },
+    {
+      "operationId": "commercial.provisioning.work.finalize",
+      "domain": "commercial",
+      "application": "provisioning",
+      "useCase": "finalize_provisioning_work",
+      "requestType": "commercial.v1.FinalizeProvisioningWorkRequest",
+      "responseType": "commercial.v1.ProvisioningTaskDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.provisioning.execute"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.subscription.change.prepared"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.provisioning.execute"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/subscription_changes"
+      ],
+      "bindings": {}
+    },
+    {
+      "operationId": "commercial.provisioning.work.record",
+      "domain": "commercial",
+      "application": "provisioning",
+      "useCase": "record_provisioning_work",
+      "requestType": "commercial.v1.RecordProvisioningWorkRequest",
+      "responseType": "commercial.v1.ProvisioningTaskDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.provisioning.execute"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/subscription_changes"
+      ],
+      "bindings": {}
+    },
+    {
+      "operationId": "commercial.subscription.bootstrap_base",
+      "domain": "commercial",
+      "application": "subscription_management",
+      "useCase": "bootstrap_base_subscription",
+      "requestType": "commercial.v1.BootstrapTenantSubscriptionRequest",
+      "responseType": "commercial.v1.BootstrapTenantSubscriptionResult",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.tenant.create"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.plan.eligibility"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/plan_management"
+      ],
+      "bindings": {}
+    },
+    {
+      "operationId": "commercial.subscription.change.confirm",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "confirm_subscription_change",
+      "requestType": "commercial.v1.ConfirmSubscriptionChangeRequest",
+      "responseType": "commercial.v1.SubscriptionChangeReceiptDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.subscription.confirm",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog",
+          "commercial.plan.eligibility",
+          "commercial.plan.get"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.subscription.change.get",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "get_subscription_change_receipt",
+      "requestType": "commercial.v1.ReadSubscriptionChangeRequest",
+      "responseType": "commercial.v1.SubscriptionChangeReceiptDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.subscription.read",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangeReceipt",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.subscription.change.preparation.cancel",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "cancel_prepared_subscription_change",
+      "requestType": "commercial.v1.PreparedSubscriptionChangeRequest",
+      "responseType": "commercial.v1.ProvisioningCompletionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.provisioning.cancel"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {}
+    },
+    {
+      "operationId": "commercial.subscription.change.prepared",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "complete_prepared_subscription_change",
+      "requestType": "commercial.v1.PreparedSubscriptionChangeRequest",
+      "responseType": "commercial.v1.ProvisioningCompletionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.provisioning.execute"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog",
+          "commercial.plan.eligibility",
+          "commercial.plan.get"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {}
+    },
+    {
+      "operationId": "commercial.subscription.change.preview",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "preview_subscription_change",
+      "requestType": "commercial.v1.PreviewSubscriptionChangeRequest",
+      "responseType": "commercial.v1.SubscriptionChangePreviewDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.subscription.manage",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.module.plan_catalog",
+          "commercial.plan.eligibility",
+          "commercial.plan.get"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionChangesApplication/PreviewSubscriptionChange",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/tenants/{tenant_id}/subscription/change-previews",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.subscription.change.preview.get",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "get_subscription_change_preview",
+      "requestType": "commercial.v1.ReadSubscriptionChangeRequest",
+      "responseType": "commercial.v1.SubscriptionChangePreviewDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.subscription.read",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangePreview",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.subscription.get",
+      "domain": "commercial",
+      "application": "subscription_management",
+      "useCase": "get_tenant_subscription",
+      "requestType": "commercial.v1.GetTenantSubscriptionRequest",
+      "responseType": "commercial.v1.TenantSubscriptionDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.subscription.read",
+          "platform.tenant.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionManagementApplication/GetTenantSubscription",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/tenants/{tenant_id}/subscription"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.subscription.rule.list",
+      "domain": "commercial",
+      "application": "subscription_management",
+      "useCase": "list_default_subscription_rules",
+      "requestType": "commercial.v1.ListDefaultSubscriptionRulesRequest",
+      "responseType": "commercial.v1.ListDefaultSubscriptionRulesResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.subscription.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionManagementApplication/ListDefaultSubscriptionRules",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/subscription-default-rules"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.subscription.rule.put",
+      "domain": "commercial",
+      "application": "subscription_management",
+      "useCase": "put_default_subscription_rule",
+      "requestType": "commercial.v1.PutDefaultSubscriptionRuleRequest",
+      "responseType": "commercial.v1.DefaultSubscriptionRuleDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
+          "platform.subscription.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.plan.eligibility"
+        ],
+        "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionManagementApplication/PutDefaultSubscriptionRule",
+        "http": [
+          {
+            "method": "PUT",
+            "path": "/v1/platform/subscription-default-rules/{rule_id}",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "device.create",
       "domain": "deviceops",
       "application": "device_management",
@@ -11,7 +1592,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "device.create"
@@ -23,6 +1605,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/deviceops.v1.DeviceApplication/CreateDevice",
         "http": [
@@ -44,7 +1629,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "device.delete"
@@ -56,6 +1642,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/deviceops.v1.DeviceApplication/DeleteDevice",
         "http": [
@@ -76,7 +1665,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "device.read"
@@ -88,6 +1678,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/deviceops.v1.DeviceApplication/GetDevice",
         "http": [
@@ -108,7 +1701,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "device.read"
@@ -120,6 +1714,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/deviceops.v1.DeviceApplication/ListDevices",
         "http": [
@@ -140,7 +1737,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "device.update",
@@ -188,10 +1786,12 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
-          "device.update"
+          "device.update",
+          "site.read"
         ],
         "permissionMode": "all"
       },
@@ -199,7 +1799,18 @@
         "transaction": "local",
         "idempotency": "required"
       },
-      "composition": {},
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "site.validate_transfer_target"
+        ],
+        "permissionClosure": [
+          "site.read"
+        ]
+      },
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/deviceops.v1.DeviceApplication/UpdateDevice",
         "http": [
@@ -221,7 +1832,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "site.read"
@@ -258,7 +1870,8 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_member_lifecycle",
-        "access/tenant_role_permission"
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantLifecycleApplication/ActivateTenant",
@@ -294,7 +1907,8 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_member_lifecycle",
-        "access/tenant_role_permission"
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantLifecycleApplication/CloseTenant",
@@ -319,6 +1933,8 @@
           "api-key"
         ],
         "permissions": [
+          "commercial.catalog.read",
+          "platform.plan.read",
           "platform.tenant.create"
         ],
         "permissionMode": "all"
@@ -330,16 +1946,20 @@
       "composition": {
         "boundary": "local",
         "requiresOperations": [
+          "commercial.subscription.bootstrap_base",
           "tenant.member.bootstrap_owner",
           "tenant.role.bootstrap_owner"
         ],
         "permissionClosure": [
+          "commercial.catalog.read",
+          "platform.plan.read",
           "platform.tenant.create"
         ]
       },
       "applicationRequires": [
         "access/tenant_member_lifecycle",
-        "access/tenant_role_permission"
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantLifecycleApplication/CreateTenant",
@@ -375,7 +1995,8 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_member_lifecycle",
-        "access/tenant_role_permission"
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantLifecycleApplication/GetTenant",
@@ -410,7 +2031,8 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_member_lifecycle",
-        "access/tenant_role_permission"
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantLifecycleApplication/ListTenants",
@@ -432,7 +2054,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.member.manage"
@@ -494,7 +2117,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.member.read"
@@ -529,7 +2153,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.member.manage"
@@ -565,7 +2190,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.member.read"
@@ -600,7 +2226,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.member.manage"
@@ -644,7 +2271,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.member.manage"
@@ -688,7 +2316,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.member.manage"
@@ -712,7 +2341,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.manage"
@@ -768,7 +2398,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.manage"
@@ -801,7 +2432,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.manage"
@@ -834,7 +2466,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.manage"
@@ -867,7 +2500,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.read"
@@ -899,7 +2533,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.read"
@@ -931,7 +2566,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.manage"
@@ -964,7 +2600,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.manage"
@@ -997,7 +2634,8 @@
       "security": {
         "tenantRequired": true,
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "tenant.role.manage"
@@ -1043,7 +2681,8 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_member_lifecycle",
-        "access/tenant_role_permission"
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantLifecycleApplication/SuspendTenant",
@@ -1079,7 +2718,8 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_member_lifecycle",
-        "access/tenant_role_permission"
+        "access/tenant_role_permission",
+        "commercial/subscription_management"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantLifecycleApplication/UpdateTenant",

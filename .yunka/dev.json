@@ -22,7 +22,13 @@
         "application:access/tenant_role_permission",
         "application:deviceops/device_management",
         "application:deviceops/device_transfer",
-        "application:deviceops/site_management"
+        "application:deviceops/site_management",
+        "application:commercial/module_catalog",
+        "application:commercial/entitlement_management",
+        "application:commercial/plan_management",
+        "application:commercial/subscription_management",
+        "application:commercial/subscription_changes",
+        "application:commercial/provisioning"
       ],
       "inheritEnv": [
         "PATH",
@@ -52,6 +58,7 @@
         "HTTPS_PROXY",
         "NO_PROXY",
         "YUNKA_BIZ_MYSQL_DSN",
+        "YUNKA_BIZ_PROVISIONING_WORKER_TOKEN",
         "YUNKA_BIZ_AUTO_MIGRATE",
         "YUNKA_BIZ_BOOTSTRAP_TOKEN",
         "YUNKA_BIZ_BOOTSTRAP_TENANT_ID",
