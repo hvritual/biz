@@ -17,6 +17,7 @@ export const primaryNavigation: NavigationItem[] = [
   { id: 'success', label: '客户运营', icon: 'users' },
   { id: 'rental', label: '租赁管理', icon: 'file' },
   { id: 'enterprise', label: '企业中心', icon: 'company' },
+  { id: 'platform-commercial', label: '平台商业', icon: 'crown', path: '/platform/commercial/modules' },
   { id: 'system', label: '系统设置', icon: 'settings' },
 ]
 export const enterpriseNavigation: NavigationItem[] = [
