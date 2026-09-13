@@ -8,13 +8,15 @@ import AvatarMark from '@/components/ui/AvatarMark.vue'
 import UiDialog from '@/components/ui/UiDialog.vue'
 import brand from '@/assets/brand-mark.png'
 const ui = useUiStore(),
-  store = useEnterpriseStore(),
   router = useRouter(),
   route = useRoute()
-const live = computed(() => route.meta.surface === 'platform' || route.meta.surface === 'runtime')
+const apiMode = (import.meta.env.VITE_DATA_MODE ?? 'demo') === 'api'
+const store = apiMode ? null : useEnterpriseStore()
+const live = computed(() => apiMode || route.meta.surface === 'platform' || route.meta.surface === 'runtime')
 const search = ref(''),
   panel = ref('')
 function changeTenant(e: Event) {
+  if (!store) return
   ui.closeMenu()
   search.value = ''
   panel.value = ''
@@ -44,7 +46,7 @@ function globalSearch() {
     </button>
     <div v-if="!live" class="header-company">
       <AppIcon name="company" :size="19" /><select
-        :value="store.tenantId"
+        :value="store?.tenantId"
         aria-label="切换企业"
         @change="changeTenant"
       >
