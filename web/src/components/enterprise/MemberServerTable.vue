@@ -105,7 +105,12 @@ function canEdit(member: EnterpriseTenantMember) {
 .member-real-toolbar { min-height: 76px; padding: 16px 4px; gap: 16px; }
 .member-real-toolbar h2 { font-size: 16px; margin-bottom: 5px; }
 .member-real-toolbar p { color: var(--color-text-muted); font-size: 12px; line-height: 1.6; max-width: 760px; }
-.member-real-table { min-width: 1480px; }
+.member-real-table { min-width: 1240px; }
+.member-real-table th:first-child { min-width: 165px; }
+.member-real-table th:nth-child(2) { min-width: 125px; }
+.member-real-table th:nth-child(4) { min-width: 125px; }
+.member-real-table th:nth-child(5) { min-width: 120px; }
+.member-real-table th:nth-child(6) { min-width: 125px; }
 .member-real-table td { height: 64px; vertical-align: middle; }
 .member-real-table td > strong { display: block; font-size: 12px; font-weight: 600; }
 .member-real-table td > small { display: block; margin-top: 4px; color: var(--color-text-muted); font-size: 10px; }
@@ -113,7 +118,7 @@ function canEdit(member: EnterpriseTenantMember) {
 .member-real-table td:last-child {
   position: sticky;
   right: 0;
-  min-width: 190px;
+  min-width: 180px;
   background: var(--color-surface);
   border-left: 1px solid var(--color-border);
   z-index: 1;
@@ -121,7 +126,7 @@ function canEdit(member: EnterpriseTenantMember) {
 .member-real-table th:last-child { z-index: 2; }
 .member-loading, .member-empty { padding: 18px 4px; }
 .text-danger { color: var(--color-danger); }
-.role-pills { display: flex; flex-wrap: wrap; gap: 4px; max-width: 220px; }
+.role-pills { display: flex; flex-wrap: wrap; gap: 4px; max-width: 180px; }
 .role-pills .pill { display: inline-flex; gap: 4px; align-items: center; }
 .role-pills .pill.disabled { opacity: 0.62; }
 .role-pills .pill small { font-size: 9px; }
