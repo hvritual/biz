@@ -58,13 +58,7 @@ func (service *TenantMemberLifecycleService) BootstrapTenantOwnerMember(ctx cont
 		return nil, ErrInvalidTenantMemberRequest
 	}
 	member, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (domain.Membership, error) {
-		return scope.Repositories().Member.Bootstrap(
-			scope.Context(),
-			strings.TrimSpace(request.GetTenantId()),
-			strings.TrimSpace(request.GetUserId()),
-			strings.TrimSpace(strings.ToLower(request.GetEmail())),
-			time.Now().UTC(),
-		)
+		return scope.Repositories().Member.Bootstrap(scope.Context(), strings.TrimSpace(request.GetTenantId()), strings.TrimSpace(request.GetUserId()), strings.TrimSpace(strings.ToLower(request.GetEmail())), time.Now().UTC())
 	})
 	if err != nil {
 		return nil, err
@@ -107,13 +101,20 @@ func (service *TenantMemberLifecycleService) ListTenantMembers(ctx context.Conte
 	return response, nil
 }
 
-func (service *TenantMemberLifecycleService) ActivateTenantMember(ctx context.Context, request *accessv1.ActivateTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
+func (service *TenantMemberLifecycleService) UpdateTenantMemberProfile(ctx context.Context, request *accessv1.UpdateTenantMemberProfileRequest) (*accessv1.TenantMemberDTO, error) {
 	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalidTenantMemberRequest
 	}
 	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), nil, func(member *domain.Membership) error {
-		return member.Activate(time.Now().UTC())
+		return member.UpdateProfile(request.GetName(), request.GetPhone(), request.GetEmployeeId(), request.GetPosition(), request.GetDepartmentId(), time.Now().UTC())
 	})
+}
+
+func (service *TenantMemberLifecycleService) ActivateTenantMember(ctx context.Context, request *accessv1.ActivateTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
+	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
+		return nil, ErrInvalidTenantMemberRequest
+	}
+	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), nil, func(member *domain.Membership) error { return member.Activate(time.Now().UTC()) })
 }
 
 func (service *TenantMemberLifecycleService) SuspendTenantMember(ctx context.Context, request *accessv1.SuspendTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
@@ -124,9 +125,7 @@ func (service *TenantMemberLifecycleService) SuspendTenantMember(ctx context.Con
 	return service.mutate(ctx, userID, request.GetVersion(), func(callCtx context.Context) error {
 		_, err := service.capabilities.AccessTenantRolePermission().AssertTenantMemberDeactivationAllowed(callCtx, &accessv1.AssertTenantMemberDeactivationAllowedRequest{UserId: userID})
 		return err
-	}, func(member *domain.Membership) error {
-		return member.Suspend(time.Now().UTC())
-	})
+	}, func(member *domain.Membership) error { return member.Suspend(time.Now().UTC()) })
 }
 
 func (service *TenantMemberLifecycleService) RemoveTenantMember(ctx context.Context, request *accessv1.RemoveTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
@@ -137,9 +136,7 @@ func (service *TenantMemberLifecycleService) RemoveTenantMember(ctx context.Cont
 	return service.mutate(ctx, userID, request.GetVersion(), func(callCtx context.Context) error {
 		_, err := service.capabilities.AccessTenantRolePermission().AssertTenantMemberDeactivationAllowed(callCtx, &accessv1.AssertTenantMemberDeactivationAllowedRequest{UserId: userID})
 		return err
-	}, func(member *domain.Membership) error {
-		return member.Remove(time.Now().UTC())
-	})
+	}, func(member *domain.Membership) error { return member.Remove(time.Now().UTC()) })
 }
 
 func (service *TenantMemberLifecycleService) mutate(ctx context.Context, userID string, expectedVersion uint64, beforeApply func(context.Context) error, apply func(*domain.Membership) error) (*accessv1.TenantMemberDTO, error) {
@@ -183,12 +180,11 @@ func trustedTenantID(ctx context.Context) (string, error) {
 }
 
 func tenantMemberDTO(member domain.Membership) *accessv1.TenantMemberDTO {
-	return &accessv1.TenantMemberDTO{
-		UserId: member.UserID,
-		Email: member.Email,
-		Status: tenantMemberStatusDTO(member.Status),
-		Version: member.Version,
+	roles := make([]*accessv1.TenantMemberRoleDTO, 0, len(member.Roles))
+	for _, role := range member.Roles {
+		roles = append(roles, &accessv1.TenantMemberRoleDTO{RoleId: role.ID, RoleName: role.Name, RoleStatus: role.Status})
 	}
+	return &accessv1.TenantMemberDTO{UserId: member.UserID, Email: member.Email, Status: tenantMemberStatusDTO(member.Status), Version: member.Version, Name: member.Name, Phone: member.Phone, EmployeeId: member.EmployeeID, Position: member.Position, DepartmentId: member.DepartmentID, Roles: roles, DerivedDataScope: string(member.DerivedDataScope)}
 }
 
 func tenantMemberStatusDTO(status string) accessv1.TenantMemberStatus {

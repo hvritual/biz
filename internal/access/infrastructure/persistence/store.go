@@ -39,12 +39,17 @@ type userRecord struct {
 func (userRecord) TableName() string { return "biz_users" }
 
 type membershipRecord struct {
-	TenantID  string    `gorm:"column:tenant_id;primaryKey;size:64"`
-	UserID    string    `gorm:"column:user_id;primaryKey;size:64"`
-	Status    string    `gorm:"column:status;size:32;not null;index"`
-	Version   uint64    `gorm:"column:version;not null;default:1"`
-	CreatedAt time.Time `gorm:"column:created_at;not null"`
-	UpdatedAt time.Time `gorm:"column:updated_at;not null"`
+	TenantID     string    `gorm:"column:tenant_id;primaryKey;size:64"`
+	UserID       string    `gorm:"column:user_id;primaryKey;size:64"`
+	Status       string    `gorm:"column:status;size:32;not null;index"`
+	Name         string    `gorm:"column:name;size:100;not null;default:''"`
+	Phone        string    `gorm:"column:phone;size:40;not null;default:''"`
+	EmployeeID   string    `gorm:"column:employee_id;size:64;not null;default:''"`
+	Position     string    `gorm:"column:position;size:100;not null;default:''"`
+	DepartmentID string    `gorm:"column:department_id;size:64;not null;default:'';index"`
+	Version      uint64    `gorm:"column:version;not null;default:1"`
+	CreatedAt    time.Time `gorm:"column:created_at;not null"`
+	UpdatedAt    time.Time `gorm:"column:updated_at;not null"`
 }
 
 func (membershipRecord) TableName() string { return "biz_memberships" }

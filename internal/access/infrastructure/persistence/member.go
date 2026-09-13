@@ -3,6 +3,7 @@ package persistence
 import (
 	"context"
 	"errors"
+	"sort"
 	"strings"
 	"time"
 
@@ -14,9 +15,7 @@ import (
 	"yunka.io/framework/requestscope"
 )
 
-type TenantMemberRepository struct {
-	database *gorm.DB
-}
+type TenantMemberRepository struct{ database *gorm.DB }
 
 func NewTenantMemberRepository(database *gorm.DB) (*TenantMemberRepository, error) {
 	if database == nil {
@@ -46,11 +45,6 @@ func (repository *TenantMemberRepository) Invite(ctx context.Context, tenantID, 
 			if !errors.As(createErr, &mysqlErr) || mysqlErr.Number != 1062 {
 				return domain.Membership{}, createErr
 			}
-			// A concurrent invite won the unique email race. Reset the losing
-			// candidate so GORM cannot retain its primary key as an implicit
-			// predicate, then perform a locking current read. FOR UPDATE is
-			// intentional here: under MySQL REPEATABLE READ it observes the
-			// winner committed before the duplicate-key result was returned.
 			user = userRecord{}
 			if lookupErr := db.Clauses(clause.Locking{Strength: "UPDATE"}).Where("email = ?", email).First(&user).Error; lookupErr != nil {
 				return domain.Membership{}, lookupErr
@@ -64,10 +58,7 @@ func (repository *TenantMemberRepository) Invite(ctx context.Context, tenantID, 
 		return domain.Membership{}, err
 	}
 	member := domain.NewInvitedMembership(tenantID, user.ID, user.Email, now)
-	row := membershipRecord{
-		TenantID: member.TenantID, UserID: member.UserID, Status: member.Status,
-		Version: member.Version, CreatedAt: member.CreatedAt, UpdatedAt: member.UpdatedAt,
-	}
+	row := membershipRecord{TenantID: member.TenantID, UserID: member.UserID, Status: member.Status, Version: member.Version, CreatedAt: member.CreatedAt, UpdatedAt: member.UpdatedAt}
 	if err := db.Create(&row).Error; err != nil {
 		return domain.Membership{}, err
 	}
@@ -105,10 +96,7 @@ func (repository *TenantMemberRepository) Bootstrap(ctx context.Context, tenantI
 		return domain.Membership{}, err
 	}
 	member := domain.NewActiveMembership(tenantID, userID, email, now)
-	row := membershipRecord{
-		TenantID: member.TenantID, UserID: member.UserID, Status: member.Status,
-		Version: member.Version, CreatedAt: member.CreatedAt, UpdatedAt: member.UpdatedAt,
-	}
+	row := membershipRecord{TenantID: member.TenantID, UserID: member.UserID, Status: member.Status, Version: member.Version, CreatedAt: member.CreatedAt, UpdatedAt: member.UpdatedAt}
 	if err := db.Create(&row).Error; err != nil {
 		return domain.Membership{}, err
 	}
@@ -134,28 +122,23 @@ func (repository *TenantMemberRepository) List(ctx context.Context, tenantID str
 		return nil, errors.New("access persistence: tenant member repository unavailable")
 	}
 	type row struct {
-		TenantID  string
-		UserID    string
-		Email     string
-		Status    string
-		Version   uint64
-		CreatedAt time.Time
-		UpdatedAt time.Time
+		TenantID, UserID, Email, Status, Name, Phone, EmployeeID, Position, DepartmentID string
+		Version                                                                          uint64
+		CreatedAt, UpdatedAt                                                             time.Time
 	}
 	var rows []row
 	if err := repository.database.WithContext(ctx).Table("biz_memberships m").
-		Select("m.tenant_id, m.user_id, u.email, m.status, m.version, m.created_at, m.updated_at").
-		Joins("JOIN biz_users u ON u.id = m.user_id").
-		Where("m.tenant_id = ?", tenantID).
+		Select("m.tenant_id, m.user_id, u.email, m.status, m.name, m.phone, m.employee_id, m.position, m.department_id, m.version, m.created_at, m.updated_at").
+		Joins("JOIN biz_users u ON u.id = m.user_id").Where("m.tenant_id = ?", tenantID).
 		Order("m.created_at ASC, m.user_id ASC").Scan(&rows).Error; err != nil {
 		return nil, err
 	}
 	members := make([]domain.Membership, 0, len(rows))
 	for _, value := range rows {
-		members = append(members, domain.Membership{
-			TenantID: value.TenantID, UserID: value.UserID, Email: value.Email,
-			Status: value.Status, Version: value.Version, CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt,
-		})
+		members = append(members, domain.Membership{TenantID: value.TenantID, UserID: value.UserID, Email: value.Email, Status: value.Status, Name: value.Name, Phone: value.Phone, EmployeeID: value.EmployeeID, Position: value.Position, DepartmentID: value.DepartmentID, Version: value.Version, DerivedDataScope: domain.DataScopeNone, CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt})
+	}
+	if err := repository.enrichMemberAccess(ctx, members); err != nil {
+		return nil, err
 	}
 	return members, nil
 }
@@ -166,18 +149,13 @@ func (repository *TenantMemberRepository) Update(ctx context.Context, member *do
 	}
 	result := repository.database.WithContext(ctx).Model(&membershipRecord{}).
 		Where("tenant_id = ? AND user_id = ? AND version = ?", member.TenantID, member.UserID, expectedVersion).
-		Updates(map[string]any{
-			"status": member.Status,
-			"updated_at": member.UpdatedAt,
-			"version": gorm.Expr("version + 1"),
-		})
+		Updates(map[string]any{"status": member.Status, "name": member.Name, "phone": member.Phone, "employee_id": member.EmployeeID, "position": member.Position, "department_id": member.DepartmentID, "updated_at": member.UpdatedAt, "version": gorm.Expr("version + 1")})
 	if result.Error != nil {
 		return result.Error
 	}
 	if result.RowsAffected != 1 {
 		var count int64
-		if err := repository.database.WithContext(ctx).Model(&membershipRecord{}).
-			Where("tenant_id = ? AND user_id = ?", member.TenantID, member.UserID).Count(&count).Error; err != nil {
+		if err := repository.database.WithContext(ctx).Model(&membershipRecord{}).Where("tenant_id = ? AND user_id = ?", member.TenantID, member.UserID).Count(&count).Error; err != nil {
 			return err
 		}
 		if count == 0 {
@@ -194,10 +172,75 @@ func (repository *TenantMemberRepository) memberFromRecord(ctx context.Context, 
 	if err := repository.database.WithContext(ctx).Where("id = ?", row.UserID).First(&user).Error; err != nil {
 		return domain.Membership{}, err
 	}
-	return domain.Membership{
-		TenantID: row.TenantID, UserID: row.UserID, Email: user.Email,
-		Status: row.Status, Version: row.Version, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
-	}, nil
+	members := []domain.Membership{{TenantID: row.TenantID, UserID: row.UserID, Email: user.Email, Status: row.Status, Name: row.Name, Phone: row.Phone, EmployeeID: row.EmployeeID, Position: row.Position, DepartmentID: row.DepartmentID, Version: row.Version, DerivedDataScope: domain.DataScopeNone, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}}
+	if err := repository.enrichMemberAccess(ctx, members); err != nil {
+		return domain.Membership{}, err
+	}
+	return members[0], nil
+}
+
+func (repository *TenantMemberRepository) enrichMemberAccess(ctx context.Context, members []domain.Membership) error {
+	if len(members) == 0 {
+		return nil
+	}
+	tenantID := members[0].TenantID
+	userIDs := make([]string, 0, len(members))
+	index := make(map[string]int, len(members))
+	for i := range members {
+		userIDs = append(userIDs, members[i].UserID)
+		index[members[i].UserID] = i
+		members[i].Roles = nil
+		members[i].DerivedDataScope = domain.DataScopeNone
+	}
+	type accessRow struct{ UserID, RoleID, RoleName, RoleStatus, Scope string }
+	var rows []accessRow
+	if err := repository.database.WithContext(ctx).Table("biz_member_roles mr").
+		Select("mr.user_id, r.id AS role_id, r.name AS role_name, r.status AS role_status, COALESCE(pg.scope, '') AS scope").
+		Joins("JOIN biz_roles r ON r.id = mr.role_id AND r.tenant_id = mr.tenant_id").
+		Joins("LEFT JOIN biz_permission_grants pg ON pg.role_id = r.id AND pg.tenant_id = r.tenant_id").
+		Where("mr.tenant_id = ? AND mr.user_id IN ?", tenantID, userIDs).
+		Order("mr.user_id ASC, r.name ASC, r.id ASC").Scan(&rows).Error; err != nil {
+		return err
+	}
+	seen := map[string]map[string]bool{}
+	for _, row := range rows {
+		i, ok := index[row.UserID]
+		if !ok {
+			continue
+		}
+		if seen[row.UserID] == nil {
+			seen[row.UserID] = map[string]bool{}
+		}
+		if !seen[row.UserID][row.RoleID] {
+			members[i].Roles = append(members[i].Roles, domain.MemberRoleSummary{ID: row.RoleID, Name: row.RoleName, Status: row.RoleStatus})
+			seen[row.UserID][row.RoleID] = true
+		}
+		if row.RoleStatus == domain.TenantRoleStatusActive && scopeRank(domain.DataScope(row.Scope)) > scopeRank(members[i].DerivedDataScope) {
+			members[i].DerivedDataScope = domain.DataScope(row.Scope)
+		}
+	}
+	for i := range members {
+		sort.Slice(members[i].Roles, func(a, b int) bool {
+			if members[i].Roles[a].Name == members[i].Roles[b].Name {
+				return members[i].Roles[a].ID < members[i].Roles[b].ID
+			}
+			return members[i].Roles[a].Name < members[i].Roles[b].Name
+		})
+	}
+	return nil
+}
+
+func scopeRank(scope domain.DataScope) int {
+	switch scope {
+	case domain.DataScopeSelf:
+		return 1
+	case domain.DataScopeSites:
+		return 2
+	case domain.DataScopeAll:
+		return 3
+	default:
+		return 0
+	}
 }
 
 func NewTenantMemberRepositoryFactory(database *gorm.DB) (requestscope.RepositoryFactory[ports.TenantMemberRepositories], error) {
