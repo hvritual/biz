@@ -7,7 +7,8 @@ on:
       - '.github/workflows/ec-ri-02-web-verify.yml'
       - 'web/src/services/runtime/api.ts'
       - 'web/src/services/enterprise/memberRuntime.ts'
-      - 'web/src/views/enterprise/EnterpriseMembersView.vue'
+      - 'web/src/views/enterprise/**'
+      - 'web/src/components/enterprise/**'
       - 'web/e2e/enterprise-members-real.spec.ts'
 
 permissions:
@@ -73,5 +74,5 @@ jobs:
             web/screenshots
             web/test-results
             web/dist
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
