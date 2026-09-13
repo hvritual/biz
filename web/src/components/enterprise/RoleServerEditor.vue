@@ -76,7 +76,7 @@ function toggleMember(userId: string) {
 }
 
 function memberCanAssign(member: EnterpriseTenantMember) {
-  return memberIds.value.includes(member.userId) || member.status === 'TENANT_MEMBER_STATUS_ACTIVE'
+  return memberIds.value.includes(member.userId) || (enabled.value && member.status === 'TENANT_MEMBER_STATUS_ACTIVE')
 }
 
 function submit() {
@@ -165,7 +165,7 @@ function submit() {
       </section>
 
       <div class="section-heading">
-        <div><h3>关联成员</h3><p>绑定/解除分别使用独立幂等键；非启用成员不能新增绑定。</p></div>
+        <div><h3>关联成员</h3><p>绑定/解除分别使用独立幂等键；停用角色不能新增绑定，非启用成员也不能新增绑定。</p></div>
         <span class="pill">{{ memberIds.length }} 人</span>
       </div>
       <div class="member-grid">

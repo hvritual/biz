@@ -3,118 +3,59 @@ import { mkdirSync } from 'node:fs'
 
 test.skip(!process.env.ENTERPRISE_ROLE_REAL_E2E, 'runs only against the VITE_DATA_MODE=api build')
 
-type RemoteGrant = { permission: string; scope: string }
-type RemoteRole = { id: string; name: string; status: string; version: number; permissions: RemoteGrant[] }
-type RemoteRoleSummary = { roleId: string; roleName: string; roleStatus: string }
-type RemoteMember = {
-  userId: string
-  email: string
-  status: string
-  version: number
-  name: string
-  phone: string
-  employeeId: string
-  position: string
-  departmentId: string
-  roles: RemoteRoleSummary[]
-  derivedDataScope: string
-}
-type WriteRecord = { path: string; method: string; headers: Record<string, string>; body: unknown }
-type MockOptions = {
-  unauthenticated?: boolean
-  listStatus?: number
-  mutationStatus?: number
-  readbackStatus?: number
-  ownerConflict?: boolean
-}
+type Grant = { permission: string; scope: string }
+type Role = { id: string; name: string; status: string; version: number; permissions: Grant[] }
+type RoleSummary = { roleId: string; roleName: string; roleStatus: string }
+type Member = { userId: string; email: string; status: string; version: number; name: string; phone: string; employeeId: string; position: string; departmentId: string; roles: RoleSummary[]; derivedDataScope: string }
+type Write = { path: string; method: string; headers: Record<string, string>; body: unknown }
+type Options = { unauthenticated?: boolean; listStatus?: number; mutationStatus?: number; readbackStatus?: number; ownerConflict?: boolean }
+
+const active = 'TENANT_ROLE_STATUS_ACTIVE'
+const disabled = 'TENANT_ROLE_STATUS_DISABLED'
+const activeMember = 'TENANT_MEMBER_STATUS_ACTIVE'
 
 function json(route: Route, status: number, body: unknown) {
   return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
 }
+function summary(role: Role): RoleSummary { return { roleId: role.id, roleName: role.name, roleStatus: role.status } }
 
-function summary(role: RemoteRole): RemoteRoleSummary {
-  return { roleId: role.id, roleName: role.name, roleStatus: role.status }
-}
-
-async function mockRoleServer(page: Page, options: MockOptions = {}) {
-  let roles: RemoteRole[] = [
-    {
-      id: 'tenant-001:owner',
-      name: 'owner',
-      status: 'TENANT_ROLE_STATUS_ACTIVE',
-      version: 1,
-      permissions: [
-        { permission: 'tenant.member.manage', scope: 'DATA_SCOPE_ALL' },
-        { permission: 'tenant.member.read', scope: 'DATA_SCOPE_ALL' },
-        { permission: 'tenant.role.manage', scope: 'DATA_SCOPE_ALL' },
-        { permission: 'tenant.role.read', scope: 'DATA_SCOPE_ALL' },
-      ],
-    },
-    {
-      id: 'role-ops',
-      name: '运营负责人',
-      status: 'TENANT_ROLE_STATUS_ACTIVE',
-      version: 2,
-      permissions: [{ permission: 'tenant.member.read', scope: 'DATA_SCOPE_SITES' }],
-    },
-    {
-      id: 'role-disabled',
-      name: '历史查看者',
-      status: 'TENANT_ROLE_STATUS_DISABLED',
-      version: 4,
-      permissions: [{ permission: 'tenant.role.read', scope: 'DATA_SCOPE_SELF' }],
-    },
+async function mockRoleServer(page: Page, options: Options = {}) {
+  let roles: Role[] = [
+    { id: 'tenant-001:owner', name: 'owner', status: active, version: 1, permissions: [
+      { permission: 'tenant.member.manage', scope: 'DATA_SCOPE_ALL' },
+      { permission: 'tenant.member.read', scope: 'DATA_SCOPE_ALL' },
+      { permission: 'tenant.role.manage', scope: 'DATA_SCOPE_ALL' },
+      { permission: 'tenant.role.read', scope: 'DATA_SCOPE_ALL' },
+    ] },
+    { id: 'role-ops', name: '运营负责人', status: active, version: 2, permissions: [{ permission: 'tenant.member.read', scope: 'DATA_SCOPE_SITES' }] },
+    { id: 'role-disabled', name: '历史查看者', status: disabled, version: 4, permissions: [{ permission: 'tenant.role.read', scope: 'DATA_SCOPE_SELF' }] },
   ]
-  let members: RemoteMember[] = [
-    {
-      userId: 'user-001', email: 'owner@coffeelink.test', status: 'TENANT_MEMBER_STATUS_ACTIVE', version: 3,
-      name: 'Alice Chen', phone: '', employeeId: 'EMP-1001', position: '企业负责人', departmentId: 'dept-owner',
-      roles: [summary(roles[0]!)], derivedDataScope: 'all',
-    },
-    {
-      userId: 'user-002', email: 'ops@coffeelink.test', status: 'TENANT_MEMBER_STATUS_ACTIVE', version: 2,
-      name: 'Bob Lin', phone: '', employeeId: 'EMP-1002', position: '运营负责人', departmentId: 'dept-ops',
-      roles: [summary(roles[1]!)], derivedDataScope: 'sites',
-    },
+  let members: Member[] = [
+    { userId: 'user-001', email: 'owner@coffeelink.test', status: activeMember, version: 3, name: 'Alice Chen', phone: '', employeeId: 'EMP-1001', position: '企业负责人', departmentId: 'dept-owner', roles: [summary(roles[0]!)], derivedDataScope: 'all' },
+    { userId: 'user-002', email: 'ops@coffeelink.test', status: activeMember, version: 2, name: 'Bob Lin', phone: '', employeeId: 'EMP-1002', position: '运营负责人', departmentId: 'dept-ops', roles: [summary(roles[1]!)], derivedDataScope: 'sites' },
   ]
-  const writes: WriteRecord[] = []
-
+  const writes: Write[] = []
   const record = (route: Route) => {
     const request = route.request()
     writes.push({ path: new URL(request.url()).pathname, method: request.method(), headers: request.headers(), body: request.postDataJSON() })
   }
-  const replaceRole = (next: RemoteRole) => {
-    roles = roles.map((role) => (role.id === next.id ? next : role))
-    members = members.map((member) => ({
-      ...member,
-      roles: member.roles.map((item) => item.roleId === next.id ? summary(next) : item),
-    }))
+  const replaceRole = (next: Role) => {
+    roles = roles.map((role) => role.id === next.id ? next : role)
+    members = members.map((member) => ({ ...member, roles: member.roles.map((item) => item.roleId === next.id ? summary(next) : item) }))
     return next
   }
 
   await page.route('**/api/auth/session', async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
-    return json(route, 200, {
-      authenticated: true,
-      actor_kind: 'tenant',
-      user_id: 'user-001',
-      active_tenant_id: 'tenant-001',
-      csrf_token: 'csrf-real-role',
-      tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }],
-    })
+    return json(route, 200, { authenticated: true, actor_kind: 'tenant', user_id: 'user-001', active_tenant_id: 'tenant-001', csrf_token: 'csrf-real-role', tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }] })
   })
-
-  await page.route('**/api/v1/tenant/members', async (route) => {
-    return json(route, 200, { members })
-  })
-
+  await page.route('**/api/v1/tenant/members', async (route) => json(route, 200, { members }))
   await page.route(/\/api\/v1\/tenant\/roles(?:\/.*)?$/, async (route) => {
     const request = route.request()
-    const url = new URL(request.url())
-    const parts = url.pathname.split('/').filter(Boolean)
-    const roleIndex = parts.indexOf('roles')
-    const roleId = roleIndex >= 0 && parts[roleIndex + 1] ? decodeURIComponent(parts[roleIndex + 1]!) : ''
-    const action = roleIndex >= 0 ? parts[roleIndex + 2] : undefined
+    const parts = new URL(request.url()).pathname.split('/').filter(Boolean)
+    const index = parts.indexOf('roles')
+    const roleId = index >= 0 && parts[index + 1] ? decodeURIComponent(parts[index + 1]!) : ''
+    const action = index >= 0 ? parts[index + 2] : undefined
     const role = roles.find((item) => item.id === roleId)
 
     if (request.method() === 'GET') {
@@ -128,70 +69,51 @@ async function mockRoleServer(page: Page, options: MockOptions = {}) {
 
     record(route)
     if (options.mutationStatus) return json(route, options.mutationStatus, { message: 'role conflict' })
-
     if (!roleId && request.method() === 'POST') {
       const body = request.postDataJSON() as { name: string }
-      const created: RemoteRole = { id: 'role-new', name: body.name, status: 'TENANT_ROLE_STATUS_ACTIVE', version: 1, permissions: [] }
+      const created: Role = { id: 'role-new', name: body.name, status: active, version: 1, permissions: [] }
       roles = [...roles, created]
       return json(route, 200, created)
     }
     if (!role) return json(route, 404, { message: 'role not found' })
-
     if (request.method() === 'PATCH') {
       const body = request.postDataJSON() as { name: string }
       return json(route, 200, replaceRole({ ...role, name: body.name, version: role.version + 1 }))
     }
     if (request.method() === 'PUT' && action === 'permissions') {
-      const body = request.postDataJSON() as { permissions: RemoteGrant[] }
+      const body = request.postDataJSON() as { permissions: Grant[] }
       return json(route, 200, replaceRole({ ...role, permissions: body.permissions, version: role.version + 1 }))
     }
     if (request.method() === 'POST' && (action === 'enable' || action === 'disable')) {
       if (role.name === 'owner' && action === 'disable') return json(route, 409, { message: 'owner protected' })
-      return json(route, 200, replaceRole({
-        ...role,
-        status: action === 'enable' ? 'TENANT_ROLE_STATUS_ACTIVE' : 'TENANT_ROLE_STATUS_DISABLED',
-        version: role.version + 1,
-      }))
+      return json(route, 200, replaceRole({ ...role, status: action === 'enable' ? active : disabled, version: role.version + 1 }))
+    }
+    if (request.method() === 'POST' && parts.at(-1) === 'revoke') {
+      const userId = decodeURIComponent(parts[index + 3] ?? '')
+      if (options.ownerConflict && role.name === 'owner') return json(route, 409, { message: 'last owner protected' })
+      members = members.map((member) => member.userId === userId ? { ...member, roles: member.roles.filter((item) => item.roleId !== role.id) } : member)
+      return json(route, 200, role)
     }
     if (request.method() === 'POST' && action === 'members') {
       const userId = (request.postDataJSON() as { userId: string }).userId
-      members = members.map((member) => member.userId === userId && !member.roles.some((item) => item.roleId === role.id)
-        ? { ...member, roles: [...member.roles, summary(role)] }
-        : member)
-      return json(route, 200, role)
-    }
-    if (request.method() === 'POST' && parts.at(-1) === 'revoke') {
-      const userId = decodeURIComponent(parts[roleIndex + 3] ?? '')
-      if (options.ownerConflict && role.name === 'owner') return json(route, 409, { message: 'last owner protected' })
-      members = members.map((member) => member.userId === userId
-        ? { ...member, roles: member.roles.filter((item) => item.roleId !== role.id) }
-        : member)
+      members = members.map((member) => member.userId === userId && !member.roles.some((item) => item.roleId === role.id) ? { ...member, roles: [...member.roles, summary(role)] } : member)
       return json(route, 200, role)
     }
     return json(route, 400, { message: 'unsupported mutation' })
   })
-
-  return { getWrites: () => writes, getRoles: () => roles, getMembers: () => members }
+  return { getWrites: () => writes, getMembers: () => members }
 }
 
 async function openRealRoles(page: Page) {
   await page.goto('/#/enterprise/roles')
   await expect(page.locator('[data-enterprise-role-source="server"]')).toBeVisible()
 }
-
-function rowFor(page: Page, name: string) {
-  return page.locator('tbody tr').filter({ hasText: name })
-}
+function rowFor(page: Page, name: string) { return page.locator('tbody tr').filter({ hasText: name }) }
 
 test('real role page renders authoritative grants and member counts across CoffeeLink viewports', async ({ page }) => {
   await mockRoleServer(page)
   mkdirSync('screenshots', { recursive: true })
-  for (const viewport of [
-    { width: 1366, height: 768 },
-    { width: 1440, height: 900 },
-    { width: 1536, height: 1024 },
-    { width: 390, height: 844 },
-  ]) {
+  for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1536, height: 1024 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport)
     await openRealRoles(page)
     await expect(page.getByText('企业所有者', { exact: true })).toBeVisible()
@@ -214,9 +136,8 @@ test('role create and permission update use independent idempotency keys and con
   await dialog.getByRole('button', { name: '保存并回读确认' }).click()
   await expect(page.getByRole('status')).toContainText('服务端确认')
   await expect(page.getByText('华东运营', { exact: true })).toBeVisible()
-  const writes = server.getWrites()
-  const create = writes.find((item) => item.path === '/api/v1/tenant/roles')!
-  const permissions = writes.find((item) => item.path.endsWith('/role-new/permissions'))!
+  const create = server.getWrites().find((item) => item.path === '/api/v1/tenant/roles')!
+  const permissions = server.getWrites().find((item) => item.path.endsWith('/role-new/permissions'))!
   expect(create.headers['idempotency-key']).toMatch(/^enterprise-role-create-/)
   expect(permissions.headers['idempotency-key']).toMatch(/^enterprise-role-permissions-/)
   expect(create.headers['idempotency-key']).not.toBe(permissions.headers['idempotency-key'])
@@ -242,7 +163,6 @@ test('401 and 403 are surfaced and never replaced with preview roles', async ({ 
   await openRealRoles(page)
   await expect(page.getByRole('alert')).toContainText('登录会话已失效')
   await expect(page.getByText('超级管理员', { exact: true })).toHaveCount(0)
-
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockRoleServer(page, { listStatus: 403 })
   await page.reload()
@@ -255,11 +175,14 @@ test('role 409 preserves the same idempotency key and editor draft for retry', a
   await openRealRoles(page)
   await rowFor(page, '运营负责人').getByRole('button', { name: '管理' }).click()
   const dialog = page.getByRole('dialog', { name: '管理角色权限' })
+  const save = dialog.getByRole('button', { name: '保存并回读确认' })
   await dialog.locator('[data-role-name]').fill('运营负责人-冲突草稿')
-  await dialog.getByRole('button', { name: '保存并回读确认' }).click()
+  await save.click()
   await expect(dialog.getByRole('alert')).toContainText('角色版本或所有者保护规则已发生冲突')
   await expect(dialog.locator('[data-role-name]')).toHaveValue('运营负责人-冲突草稿')
-  await dialog.getByRole('button', { name: '保存并回读确认' }).click()
+  await expect(save).toBeEnabled()
+  await save.click()
+  await expect(dialog.getByRole('alert')).toContainText('角色版本或所有者保护规则已发生冲突')
   const writes = server.getWrites().filter((item) => item.method === 'PATCH')
   expect(writes).toHaveLength(2)
   expect(writes[0]?.headers['idempotency-key']).toBe(writes[1]?.headers['idempotency-key'])
