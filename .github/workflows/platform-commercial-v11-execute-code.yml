@@ -1,0 +1,57 @@
+name: Execute platform commercial V1.1 code convergence
+on:
+  push:
+    branches: [feat/platform-commercial-ui-contract-v11]
+    paths: ['.github/workflows/platform-commercial-v11-execute-code.yml']
+permissions:
+  contents: write
+jobs:
+  converge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/platform-commercial-ui-contract-v11
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Apply reviewed platform convergence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import textwrap
+          source = Path('.github/workflows/platform-commercial-v11-migration.yml').read_text().splitlines()
+          start = next(i for i, line in enumerate(source) if "python3 - <<'PY'" in line) + 1
+          end = next(i for i in range(start, len(source)) if source[i].strip() == 'PY')
+          code = textwrap.dedent('\n'.join(source[start:end]))
+          bad = "'''.replace(/^          /gm, ''))"
+          assert code.count(bad) == 1, code.count(bad)
+          code = code.replace(bad, "''')", 1)
+          compile(code, '<platform-v11-convergence>', 'exec')
+          exec(code, {'__name__': '__main__'})
+          PY
+          git checkout -- .github/workflows/coffeelink-web.yml
+          git diff --check
+      - run: npm ci
+        working-directory: web
+      - name: Verify static engineering chain
+        run: npm run check
+        working-directory: web
+      - name: Commit code, contracts and visual E2E
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/src/views/platform/CommercialModulesView.vue \
+                  web/src/views/platform/CommercialPlansView.vue \
+                  web/src/views/platform/CommercialTenantEntitlementsView.vue \
+                  web/src/router/index.ts web/ui-contracts.json \
+                  web/e2e/platform-management-visual.spec.ts docs/UI-DELIVERY-CHAIN.md
+          git commit -m 'feat(web): converge platform commercial pages on CoffeeLink V1.1'
+          git push origin HEAD:feat/platform-commercial-ui-contract-v11
