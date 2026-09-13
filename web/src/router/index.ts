@@ -45,17 +45,17 @@ export const router = createRouter({
     {
       path: '/platform/commercial/modules',
       component: () => import('@/views/platform/CommercialModulesView.vue'),
-      meta: { title: '平台商业管理', module: 'platform-commercial', surface: 'platform' },
+      meta: { title: '模块目录', module: 'platform-commercial', surface: 'platform' },
     },
     {
       path: '/platform/commercial/plans',
       component: () => import('@/views/platform/CommercialPlansView.vue'),
-      meta: { title: '套餐版本管理', module: 'platform-commercial', surface: 'platform' },
+      meta: { title: '套餐版本', module: 'platform-commercial', surface: 'platform' },
     },
     {
       path: '/platform/commercial/tenant-entitlements',
       component: () => import('@/views/platform/CommercialTenantEntitlementsView.vue'),
-      meta: { title: '租户权益管理', module: 'platform-commercial', surface: 'platform' },
+      meta: { title: '租户权益', module: 'platform-commercial', surface: 'platform' },
     },
     {
       path: '/enterprise/members',
@@ -75,7 +75,7 @@ export const router = createRouter({
     {
       path: '/enterprise/plan',
       component: () => import('@/views/enterprise/PlansView.vue'),
-      meta: { title: '套餐信息', module: 'enterprise' },
+      meta: { title: '套餐额度', module: 'enterprise' },
     },
     {
       path: '/enterprise/company',
@@ -90,7 +90,7 @@ export const router = createRouter({
     {
       path: '/system/:section(general|notifications|security|integrations|dictionary)',
       component: () => import('@/views/system/SettingsView.vue'),
-      meta: { title: '系统设置', module: 'system', pageTemplate: 'FormPage' },
+      meta: { title: '系统设置', module: 'system', surface: 'tenant', pageTemplate: 'FormPage' },
     },
     {
       path: '/:pathMatch(.*)*',
