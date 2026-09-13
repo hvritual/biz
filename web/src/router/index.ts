@@ -61,7 +61,7 @@ export const router = createRouter({
     },
     {
       path: '/enterprise/members',
-      component: () => import('@/views/enterprise/MembersView.vue'),
+      component: () => import('@/views/enterprise/MembersEntryView.vue'),
       meta: { title: '成员管理', module: 'enterprise' },
     },
     {
