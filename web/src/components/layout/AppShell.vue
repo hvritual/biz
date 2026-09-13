@@ -49,7 +49,7 @@ watch(
     if (value) {
       frame.value?.querySelector<HTMLElement>('.module-panel .icon-button')?.focus()
     } else if (old) {
-      frame.value?.querySelector<HTMLElement>(`[data-module="${old}"]`)?.focus()
+      frame.value?.querySelector<HTMLElement>(`[data-module-id="${old}"]`)?.focus()
     }
   },
 )
