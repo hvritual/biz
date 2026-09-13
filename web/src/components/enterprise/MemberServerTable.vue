@@ -109,6 +109,16 @@ function canEdit(member: EnterpriseTenantMember) {
 .member-real-table td { height: 64px; vertical-align: middle; }
 .member-real-table td > strong { display: block; font-size: 12px; font-weight: 600; }
 .member-real-table td > small { display: block; margin-top: 4px; color: var(--color-text-muted); font-size: 10px; }
+.member-real-table th:last-child,
+.member-real-table td:last-child {
+  position: sticky;
+  right: 0;
+  min-width: 190px;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  z-index: 1;
+}
+.member-real-table th:last-child { z-index: 2; }
 .member-loading, .member-empty { padding: 18px 4px; }
 .text-danger { color: var(--color-danger); }
 .role-pills { display: flex; flex-wrap: wrap; gap: 4px; max-width: 220px; }
