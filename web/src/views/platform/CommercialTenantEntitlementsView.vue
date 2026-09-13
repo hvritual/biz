@@ -202,20 +202,16 @@ onMounted(loadModules)
 </script>
 
 <template>
-  <div class="page-stack" data-testid="ce13-tenant-entitlements">
-    <PageHeading
-      title="平台商业管理"
-      description="查看租户当前订阅、服务端权益决策与完整来源链，并以 source_version CAS 管理专项授权；不在浏览器自行合并权益"
-    />
+  <div class="page-stack" data-testid="ce13-tenant-entitlements" data-ui-template="WorkbenchPage">
+    <div data-ui-region="page-heading">
+      <PageHeading
+        title="租户权益"
+        description="以租户上下文查看订阅、服务端权益决策、专项来源与变更工作区；浏览器不自行合并权益"
+      />
+    </div>
 
-    <section class="commercial-tabs" aria-label="平台商业管理导航">
-      <RouterLink class="commercial-tab" to="/platform/commercial/modules">模块目录</RouterLink>
-      <RouterLink class="commercial-tab" to="/platform/commercial/plans">套餐版本</RouterLink>
-      <RouterLink class="commercial-tab active" to="/platform/commercial/tenant-entitlements">租户权益</RouterLink>
-    </section>
-
-    <AuthorityPicker kind="tenants" @select="(id) => { tenantIdInput = id; loadWorkspace() }" />
-    <section class="card workspace-card">
+    <div data-ui-region="authority"><AuthorityPicker kind="tenants" @select="(id) => { tenantIdInput = id; loadWorkspace() }" /></div>
+    <section class="card workspace-card" data-ui-region="context">
       <div class="workspace-title">
         <div><h2>tenant_id 权益工作台</h2><p>选择器和输入均由可信平台会话授权；浏览器不携带 API Key，也不自行推断租户权益。</p></div>
         <span class="boundary-badge">可信平台会话</span>
@@ -241,14 +237,14 @@ onMounted(loadModules)
     <section v-else-if="loadState === 'error'" class="card state-card danger" role="alert"><strong>租户权益读取失败</strong><p>{{ errorMessage }}</p><button class="btn" type="button" @click="loadWorkspace">重试</button></section>
 
     <template v-else-if="loadState === 'ready' && entitlement">
-      <section class="metric-grid">
+      <section class="metric-grid" data-ui-region="metrics">
         <article class="card metric"><span>source_version</span><strong>{{ summary.sourceVersion }}</strong><small>专项来源聚合版本</small></article>
         <article class="card metric"><span>entitlement_version</span><strong>{{ summary.entitlementVersion }}</strong><small>服务端派生版本</small></article>
         <article class="card metric"><span>权益决策</span><strong>{{ summary.decisions }}</strong><small>{{ capabilityCodes().length ? '已过滤' : '全部' }}</small></article>
         <article class="card metric"><span>下一时间边界</span><strong class="time-value">{{ formatTime(String(summary.nextTransition)) }}</strong><small>next_transition_at</small></article>
       </section>
 
-      <section class="card subscription-card">
+      <section class="card subscription-card" data-ui-region="subscription">
         <div class="section-header"><div><h2>当前订阅</h2><p>订阅是权益来源之一，不等同于最终服务端决策。</p></div><StatusBadge v-if="subscription" :text="subscription.state || 'unknown'" :tone="subscription.state === 'ACTIVE' ? 'success' : 'neutral'" /></div>
         <div v-if="subscription" class="subscription-grid">
           <div><span>套餐</span><strong>{{ subscription.planCode }} v{{ subscription.planVersion }}</strong></div>
@@ -261,9 +257,9 @@ onMounted(loadModules)
         <p v-else class="empty-text">当前没有可读取的租户订阅记录。</p>
       </section>
 
-      <SubscriptionChangeWorkspace :tenant-id="activeTenantId" :subscription="subscription" @refresh="loadWorkspace" />
+      <div data-ui-region="change-workspace"><SubscriptionChangeWorkspace :tenant-id="activeTenantId" :subscription="subscription" @refresh="loadWorkspace" /></div>
 
-      <section class="resolver-meta card">
+      <section class="resolver-meta card" data-ui-region="resolver-meta">
         <span>evaluated_at {{ formatTime(entitlement.evaluatedAt) }}</span>
         <span>valid_until {{ formatTime(entitlement.validUntil) }}</span>
         <span>resolver_version {{ entitlement.resolverVersion }}</span>
@@ -271,8 +267,8 @@ onMounted(loadModules)
         <span>catalog {{ entitlement.catalogVersions?.map((item) => `${item.moduleCode}@${item.version}`).join(' · ') || '—' }}</span>
       </section>
 
-      <EntitlementDecisionTable :decisions="entitlement.decisions ?? []" />
-      <EntitlementOverrideTable :sources="overrides" :source-version="sourceVersion" :pending="pending" @create="overrideDialogOpen = true" @revoke="openRevoke" />
+      <div data-ui-region="decisions"><EntitlementDecisionTable :decisions="entitlement.decisions ?? []" /></div>
+      <div data-ui-region="overrides"><EntitlementOverrideTable :sources="overrides" :source-version="sourceVersion" :pending="pending" @create="overrideDialogOpen = true" @revoke="openRevoke" /></div>
     </template>
 
     <EntitlementOverrideDialog
@@ -297,9 +293,6 @@ onMounted(loadModules)
 </template>
 
 <style scoped>
-.commercial-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--color-border); }
-.commercial-tab { padding: 10px 14px; font-size: 13px; color: var(--color-text-secondary); text-decoration: none; border-bottom: 2px solid transparent; }
-.commercial-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: 600; }
 .workspace-card { padding: 20px; display: grid; gap: 15px; }
 .workspace-title, .section-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .workspace-title h2, .section-header h2 { margin: 0; font-size: 16px; }
@@ -328,5 +321,5 @@ onMounted(loadModules)
 .revoke-dialog label { display: grid; gap: 7px; font-size: 13px; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 @media (max-width: 900px) { .metric-grid { grid-template-columns: repeat(2, 1fr); } .subscription-grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 680px) { .lookup-row, .filter-row { grid-template-columns: 1fr; } .metric-grid, .subscription-grid { grid-template-columns: 1fr; } .commercial-tabs { overflow-x: auto; } .commercial-tab { white-space: nowrap; } }
+@media (max-width: 680px) { .lookup-row, .filter-row { grid-template-columns: 1fr; } .metric-grid, .subscription-grid { grid-template-columns: 1fr; } }
 </style>

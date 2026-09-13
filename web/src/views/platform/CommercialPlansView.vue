@@ -275,20 +275,16 @@ onMounted(loadModules)
 </script>
 
 <template>
-  <div class="page-stack" data-testid="ce13-plan-management">
-    <PageHeading
-      title="平台商业管理"
-      description="按真实 plan_code 管理套餐草稿、不可变版本、发布停售与适用资格；不从租户订阅或本地缓存反推套餐目录"
-    />
+  <div class="page-stack" data-testid="ce13-plan-management" data-ui-template="WorkbenchPage">
+    <div data-ui-region="page-heading">
+      <PageHeading
+        title="套餐版本"
+        description="围绕真实 plan_code 管理套餐草稿、不可变版本、发布停售与适用资格"
+      />
+    </div>
 
-    <section class="commercial-tabs" aria-label="平台商业管理导航">
-      <RouterLink class="commercial-tab" to="/platform/commercial/modules">模块目录</RouterLink>
-      <RouterLink class="commercial-tab active" to="/platform/commercial/plans">套餐版本</RouterLink>
-      <RouterLink class="commercial-tab" to="/platform/commercial/tenant-entitlements">租户权益</RouterLink>
-    </section>
-
-    <AuthorityPicker kind="plans" @select="(id) => { planCodeInput = id; loadVersions(true) }" />
-    <section class="card workspace-card">
+    <div data-ui-region="authority"><AuthorityPicker kind="plans" @select="(id) => { planCodeInput = id; loadVersions(true) }" /></div>
+    <section class="card workspace-card" data-ui-region="query">
       <div class="workspace-title">
         <div>
           <h2>套餐代码工作台</h2>
@@ -313,7 +309,7 @@ onMounted(loadModules)
     <section v-else-if="loadState === 'error'" class="card state-card danger" role="alert"><strong>套餐版本读取失败</strong><p>{{ errorMessage }}</p><button class="btn" type="button" @click="loadVersions(true)">重试</button></section>
 
     <template v-else>
-      <section class="metric-grid">
+      <section class="metric-grid" data-ui-region="metrics">
         <article class="card metric"><span>已读取版本</span><strong>{{ summary.count }}</strong><small>{{ activePlanCode }}</small></article>
         <article class="card metric"><span>草稿</span><strong>{{ summary.drafts }}</strong><small>DRAFT</small></article>
         <article class="card metric"><span>已发布</span><strong>{{ summary.published }}</strong><small>PUBLISHED</small></article>
@@ -322,8 +318,8 @@ onMounted(loadModules)
 
       <section v-if="loadState === 'empty'" class="card state-card"><strong>没有找到 {{ activePlanCode }} 的版本记录</strong><p>若这是新套餐，可点击“新建套餐”；页面不会将 404/空结果替换为演示数据。</p></section>
 
-      <div v-else class="plan-layout">
-        <section class="card versions-card">
+      <div v-else class="plan-layout" data-ui-region="workspace">
+        <section class="card versions-card" data-ui-region="history">
           <div class="section-header">
             <div><h2>版本历史</h2><p>发布版本内容不可覆盖；修订请克隆为新草稿。</p></div>
             <button class="btn" type="button" @click="loadVersions(true)">刷新</button>
@@ -353,17 +349,19 @@ onMounted(loadModules)
           <div v-if="nextAfterVersion" class="load-more"><button class="btn" type="button" @click="loadVersions(false)">加载更多</button></div>
         </section>
 
-        <PlanVersionDetail
-          v-if="selectedVersion"
-          :version="selectedVersion"
-          :modules="modules"
-          :pending="actionPending"
-          @edit="openEdit"
-          @publish="publishSelected"
-          @retire="retireSelected"
-          @clone="cloneSelected"
-          @eligibility="openEligibility"
-        />
+        <div class="detail-region" data-ui-region="detail">
+          <PlanVersionDetail
+            v-if="selectedVersion"
+            :version="selectedVersion"
+            :modules="modules"
+            :pending="actionPending"
+            @edit="openEdit"
+            @publish="publishSelected"
+            @retire="retireSelected"
+            @clone="cloneSelected"
+            @eligibility="openEligibility"
+          />
+        </div>
       </div>
     </template>
 
@@ -397,10 +395,7 @@ onMounted(loadModules)
 </template>
 
 <style scoped>
-.commercial-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--color-border); }
-.commercial-tab { padding: 10px 14px; font-size: 13px; color: var(--color-text-secondary); text-decoration: none; border-bottom: 2px solid transparent; }
-.commercial-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: 600; }
-.commercial-tab.disabled { color: var(--color-text-muted); cursor: not-allowed; }
+.detail-region { min-width: 0; }
 .workspace-card { padding: 20px; }
 .workspace-title, .section-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .workspace-title h2, .section-header h2 { margin: 0; font-size: 16px; }
@@ -440,8 +435,6 @@ onMounted(loadModules)
 .eligibility-result p { margin: 5px 0 0; color: var(--color-text-secondary); font-size: 13px; }
 @media (max-width: 1100px) { .plan-layout { grid-template-columns: 1fr; } }
 @media (max-width: 760px) {
-  .commercial-tabs { overflow-x: auto; }
-  .commercial-tab { white-space: nowrap; }
   .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lookup-row { grid-template-columns: 1fr; }
   .workspace-title, .section-header { align-items: flex-start; flex-wrap: wrap; }
