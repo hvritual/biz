@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 
 async function ready(page: Page) {
@@ -17,6 +17,14 @@ async function openDomain(page: Page, selector: string, title: string) {
   const panel = page.getByRole('dialog', { name: `${title}导航`, exact: true })
   await expect(panel).toBeVisible()
   return panel
+}
+
+async function expectBeforeFooter(item: Locator, panel: Locator) {
+  const itemBox = await item.boundingBox()
+  const footerBox = await panel.locator('.menu-art').boundingBox()
+  expect(itemBox).not.toBeNull()
+  expect(footerBox).not.toBeNull()
+  expect(itemBox!.y + itemBox!.height).toBeLessThanOrEqual(footerBox!.y)
 }
 
 test('module panel renders grouped business domains without entity-bound global entries', async ({ page }) => {
@@ -59,14 +67,16 @@ test('grouped customer and rental menus capture all CoffeeLink acceptance viewpo
     await page.setViewportSize(viewport)
     await ready(page)
 
-    await openDomain(page, 'customers', '客户经营')
+    let panel = await openDomain(page, 'customers', '客户经营')
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
+    await expectBeforeFooter(panel.getByRole('button', { name: '经营结果', exact: true }), panel)
     await page.screenshot({
       path: `test-results/screenshots/menu-customer-${viewport.width}.png`,
     })
 
-    await openDomain(page, 'sites', '租赁运营')
+    panel = await openDomain(page, 'sites', '租赁运营')
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
+    await expectBeforeFooter(panel.getByTitle('退租回收尚未接入'), panel)
     await page.screenshot({
       path: `test-results/screenshots/menu-rental-${viewport.width}.png`,
     })
