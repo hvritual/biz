@@ -29,7 +29,7 @@ jobs:
           sudo apt-get install -y fonts-noto-cjk
       - run: npm run test:e2e
         working-directory: web
-      - name: Verify CE-11 nonzero tests and required screenshots
+      - name: Verify visual contract evidence
         working-directory: web
         shell: bash
         run: |
@@ -43,8 +43,10 @@ jobs:
           stats = results['stats']
           assert stats.get('unexpected', 0) == 0, stats
           expected = stats.get('expected', 0)
-          assert expected >= 11, stats
-          assert 'TestCE11' in json.dumps(results, ensure_ascii=False), 'TestCE11 acceptance identity missing'
+          assert expected >= 13, stats
+          serialized = json.dumps(results, ensure_ascii=False)
+          assert 'TestCE11' in serialized, 'TestCE11 acceptance identity missing'
+          assert 'platform tenant ListPage captures the four CoffeeLink V1.1 viewports' in serialized, 'platform visual contract test missing'
 
           shots = root / 'screenshots'
           required = {
@@ -54,6 +56,12 @@ jobs:
               'responsive-menu-1440.png': (1440, 900),
               'responsive-390.png': (390, 844),
               'responsive-menu-390.png': (390, 844),
+              'platform-tenants-1366.png': (1366, 768),
+              'platform-tenants-menu-1366.png': (1366, 768),
+              'platform-tenants-collapsed-menu-1366.png': (1366, 768),
+              'platform-tenants-1440.png': (1440, 900),
+              'platform-tenants-1536.png': (1536, 1024),
+              'platform-tenants-390.png': (390, 844),
           }
           gallery_pngs = list(Path('screenshots').glob('*.png'))
           compatibility_pngs = list(shots.glob('*.png'))
@@ -65,9 +73,9 @@ jobs:
               width, height = struct.unpack('>II', data[16:24])
               assert (width, height) == want, (name, width, height, want)
           print(
-              f'CE11_VISUAL_EVIDENCE=PASS e2e={expected} '
+              f'UI_CONTRACT_VISUAL_EVIDENCE=PASS e2e={expected} '
               f'gallery={len(gallery_pngs)} compatibility={len(compatibility_pngs)} '
-              'test_identity=TestCE11'
+              'contracts=CoffeeLink-V1.1'
           )
           PY
           sha256sum screenshots/*.png test-results/screenshots/*.png | sort > test-results/screenshot-sha256.txt
