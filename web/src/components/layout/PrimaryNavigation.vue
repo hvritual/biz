@@ -51,7 +51,8 @@ function toggleCollapsed() {
         :aria-label="item.label"
         :aria-expanded="item.path ? undefined : ui.module === item.id"
         :aria-controls="item.path ? undefined : 'module-drawer'"
-        :data-module="item.id"
+        :data-module="item.selectorId ?? item.id"
+        :data-module-id="item.id"
         @click="activate(item)"
         @mouseenter="previewModule(item)"
       >
