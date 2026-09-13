@@ -23,6 +23,5 @@ type TenantMemberRepository interface {
 }
 
 type TenantMemberRepositories struct {
-	Member     TenantMemberRepository
-	Department TenantDepartmentRepository
+	Member TenantMemberRepository
 }
