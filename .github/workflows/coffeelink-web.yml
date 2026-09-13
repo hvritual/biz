@@ -32,10 +32,31 @@ jobs:
           sudo apt-get install -y fonts-noto-cjk
       - name: Run enterprise member API-mode E2E
         working-directory: web
+        shell: bash
         run: |
           set -euo pipefail
           VITE_DATA_MODE=api npm run build
           ENTERPRISE_MEMBER_REAL_E2E=1 npx playwright test e2e/enterprise-members-real.spec.ts
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          results = json.loads(Path('test-results/results.json').read_text())
+          stats = results['stats']
+          assert stats.get('unexpected', 0) == 0, stats
+          serialized = json.dumps(results, ensure_ascii=False)
+          required = [
+              'real member page renders authoritative profile, role and scope fields across CoffeeLink viewports',
+              'profile PATCH carries authoritative version and confirms only after member readback',
+              'role binding is a single idempotent operation and is confirmed from member readback',
+              '401 and 403 are surfaced and never replaced with preview members',
+              'profile 409 preserves the same idempotency key for retry',
+              'a successful write without readback is not presented as confirmed success',
+          ]
+          for title in required:
+              assert title in serialized, f'missing EC-RI-02 browser evidence: {title}'
+          print(f'EC_RI_02_MEMBER_E2E=PASS expected={stats.get("expected", 0)}')
+          PY
           npm run build
       - run: npm run test:e2e
         working-directory: web
