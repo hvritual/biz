@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
-import PageHeading from '@/components/ui/PageHeading.vue'
+import MemberServerTable from '@/components/enterprise/MemberServerTable.vue'
 import AppIcon from '@/components/ui/AppIcon.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import PageHeading from '@/components/ui/PageHeading.vue'
 import UiDialog from '@/components/ui/UiDialog.vue'
 import { loginUrl, logoutSession, type TenantRole, type TrustedSession } from '@/services/runtime/api'
 import {
@@ -12,7 +12,6 @@ import {
   inviteEnterpriseMember,
   listEnterpriseMembers,
   listEnterpriseRoles,
-  memberDataScopeLabel,
   memberRequestId,
   memberRoleRequestId,
   memberRuntimeError,
@@ -63,10 +62,7 @@ function emptyProfile(): EnterpriseMemberProfileInput {
 }
 
 function copyMember(member: EnterpriseTenantMember): EnterpriseTenantMember {
-  return {
-    ...member,
-    roles: member.roles.map((role) => ({ ...role })),
-  }
+  return { ...member, roles: member.roles.map((role) => ({ ...role })) }
 }
 
 function clearAction() {
@@ -165,22 +161,6 @@ function begin(kind: MemberMutation, member: EnterpriseTenantMember | null = nul
         departmentId: member.departmentId,
       }
     : emptyProfile()
-}
-
-function canActivate(member: EnterpriseTenantMember) {
-  return ['TENANT_MEMBER_STATUS_INVITED', 'TENANT_MEMBER_STATUS_SUSPENDED'].includes(member.status)
-}
-
-function canSuspend(member: EnterpriseTenantMember) {
-  return member.status === 'TENANT_MEMBER_STATUS_ACTIVE'
-}
-
-function canRemove(member: EnterpriseTenantMember) {
-  return member.status !== 'TENANT_MEMBER_STATUS_REMOVED'
-}
-
-function canEdit(member: EnterpriseTenantMember) {
-  return member.status !== 'TENANT_MEMBER_STATUS_REMOVED'
 }
 
 function hasRole(member: EnterpriseTenantMember | null, roleId: string) {
@@ -357,66 +337,7 @@ onBeforeUnmount(() => {
         <div class="card"><span>待激活</span><strong>{{ pendingCount }}</strong><small>Access INVITED</small></div>
         <div class="card"><span>已停用</span><strong>{{ suspendedCount }}</strong><small>Access SUSPENDED</small></div>
       </div>
-
-      <section class="card data-panel member-real-panel" aria-label="真实成员列表">
-        <div class="row-between member-real-toolbar">
-          <div>
-            <h2>企业成员</h2>
-            <p>档案、部门引用、角色和数据范围均来自服务端。部门名称与层级将在 EC-RI-04 组织域接入后解析。</p>
-          </div>
-          <button class="btn btn-primary" :disabled="busy" @click="begin('invite')">
-            <AppIcon name="invite" :size="16" />邀请成员
-          </button>
-        </div>
-        <p v-if="busy" class="muted member-loading" role="status">正在读取服务端成员数据…</p>
-        <div class="table-scroll">
-          <table class="data-table member-real-table">
-            <thead>
-              <tr>
-                <th>姓名 / 邮箱</th><th>手机号</th><th>工号</th><th>岗位</th><th>部门引用</th><th>角色</th><th>数据范围</th><th>状态</th><th>版本</th><th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="member in members" :key="member.userId">
-                <td>
-                  <strong>{{ member.name || '未填写姓名' }}</strong>
-                  <small>{{ member.email }}</small>
-                </td>
-                <td>{{ member.phone || '—' }}</td>
-                <td class="mono">{{ member.employeeId || '—' }}</td>
-                <td>{{ member.position || '—' }}</td>
-                <td class="mono">{{ member.departmentId || '未分配' }}</td>
-                <td>
-                  <div v-if="member.roles.length" class="role-pills">
-                    <span v-for="role in member.roles" :key="role.roleId" :class="['pill', { disabled: role.roleStatus !== 'TENANT_ROLE_STATUS_ACTIVE' }]">
-                      {{ role.roleName }}<small v-if="role.roleStatus !== 'TENANT_ROLE_STATUS_ACTIVE'">停用</small>
-                    </span>
-                  </div>
-                  <span v-else>—</span>
-                </td>
-                <td>{{ memberDataScopeLabel(member.derivedDataScope) }}</td>
-                <td>
-                  <StatusBadge
-                    :text="memberStatusLabel(member.status)"
-                    :tone="member.status === 'TENANT_MEMBER_STATUS_ACTIVE' ? 'success' : member.status === 'TENANT_MEMBER_STATUS_SUSPENDED' ? 'warning' : 'primary'"
-                  />
-                </td>
-                <td class="numeric">v{{ member.version }}</td>
-                <td>
-                  <div class="table-actions">
-                    <button v-if="canEdit(member)" class="btn-link" :disabled="busy" @click="begin('profile', member)">档案</button>
-                    <button v-if="canEdit(member)" class="btn-link" :disabled="busy" @click="begin('roles', member)">角色</button>
-                    <button v-if="canActivate(member)" class="btn-link" :disabled="busy" @click="begin('activate', member)">启用</button>
-                    <button v-if="canSuspend(member)" class="btn-link" :disabled="busy" @click="begin('suspend', member)">停用</button>
-                    <button v-if="canRemove(member)" class="btn-link text-danger" :disabled="busy" @click="begin('remove', member)">移除</button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div v-if="!busy && !members.length" class="member-empty">当前租户暂无可见成员。</div>
-      </section>
+      <MemberServerTable :members="members" :busy="busy" @begin="begin" />
     </template>
     <section v-else-if="session.authenticated" class="card panel-pad">
       请选择可访问租户。成员页面不会展示示例业务数据作为替代。
@@ -486,28 +407,15 @@ onBeforeUnmount(() => {
 <style scoped>
 .member-authority { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .authority-main { display: grid; gap: 4px; margin-right: auto; }
-.authority-main span, .tenant-select span, .member-real-toolbar p, .member-real-metrics small { color: var(--color-text-muted); font-size: 12px; }
+.authority-main span, .tenant-select span, .member-real-metrics small { color: var(--color-text-muted); font-size: 12px; }
 .tenant-select { display: flex; align-items: center; gap: 8px; }
 .tenant-select select { min-height: 36px; border: 1px solid var(--color-border); border-radius: 7px; padding: 0 10px; background: var(--color-surface); }
 .member-real-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .member-real-metrics > div { padding: 18px; display: grid; gap: 8px; }
 .member-real-metrics span { color: var(--color-text-secondary); font-size: 12px; }
 .member-real-metrics strong { font-size: 28px; font-variant-numeric: tabular-nums; }
-.member-real-panel { padding: 0 12px 12px; }
-.member-real-toolbar { min-height: 76px; padding: 16px 4px; gap: 16px; }
-.member-real-toolbar h2 { font-size: 16px; margin-bottom: 5px; }
-.member-real-toolbar p { line-height: 1.6; max-width: 760px; }
-.member-real-table { min-width: 1480px; }
-.member-real-table td { height: 64px; vertical-align: middle; }
-.member-real-table td > strong { display: block; font-size: 12px; font-weight: 600; }
-.member-real-table td > small { display: block; margin-top: 4px; color: var(--color-text-muted); font-size: 10px; }
-.member-loading, .member-empty { padding: 18px 4px; }
 .member-error { border-color: var(--color-danger); }
 .text-danger { color: var(--color-danger); }
-.role-pills { display: flex; flex-wrap: wrap; gap: 4px; max-width: 220px; }
-.role-pills .pill { display: inline-flex; gap: 4px; align-items: center; }
-.role-pills .pill.disabled { opacity: 0.62; }
-.role-pills .pill small { font-size: 9px; }
 .profile-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .profile-form .field small { color: var(--color-text-muted); font-size: 10px; line-height: 1.5; }
 .role-manager { display: grid; gap: 8px; }
@@ -518,7 +426,6 @@ onBeforeUnmount(() => {
 .role-row small { color: var(--color-text-muted); font-size: 10px; }
 @media (max-width: 900px) {
   .member-real-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .member-real-toolbar { align-items: flex-start; flex-direction: column; }
 }
 @media (max-width: 480px) {
   .member-real-metrics { grid-template-columns: 1fr 1fr; gap: 8px; }
