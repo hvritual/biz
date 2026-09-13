@@ -52,7 +52,9 @@ const visibleTenants = computed(() => {
   return filtered.value.slice(start, start + pageSize)
 })
 const firstVisible = computed(() => (filtered.value.length ? (Math.min(page.value, totalPages.value) - 1) * pageSize + 1 : 0))
-const lastVisible = computed(() => Math.min(filtered.value.length, firstVisible.value + visibleTenants.value.length - 1))
+const lastVisible = computed(() =>
+  filtered.value.length ? Math.min(filtered.value.length, firstVisible.value + visibleTenants.value.length - 1) : 0,
+)
 
 function identity(value: TrustedSession) {
   return `${value.actor_kind}/${value.platform_subject}/${value.user_id}/${value.active_tenant_id}`
@@ -64,19 +66,18 @@ function statusKey(status: string) {
   return 'other'
 }
 function statusLabel(status: string) {
-  return {
-    active: '已启用',
-    suspended: '已停用',
-    closed: '已关闭',
-    other: '未声明',
-  }[statusKey(status)]
+  const key = statusKey(status)
+  if (key === 'active') return '已启用'
+  if (key === 'suspended') return '已停用'
+  if (key === 'closed') return '已关闭'
+  return '未声明'
 }
 function statusTone(status: string): 'success' | 'warning' | 'danger' | 'neutral' {
-  return { active: 'success', suspended: 'warning', closed: 'danger', other: 'neutral' }[statusKey(status)] as
-    | 'success'
-    | 'warning'
-    | 'danger'
-    | 'neutral'
+  const key = statusKey(status)
+  if (key === 'active') return 'success'
+  if (key === 'suspended') return 'warning'
+  if (key === 'closed') return 'danger'
+  return 'neutral'
 }
 function clearDraft() {
   action.value = ''
