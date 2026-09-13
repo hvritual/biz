@@ -57,6 +57,12 @@ function readHeaders(session: TrustedSession) {
   return { 'X-Biz-Session-Context': sessionContext(session) }
 }
 
+// Server DTOs are snapshots, not mutable form models. Freezing keeps Vue from
+// wrapping them in reactive proxies and makes copies safe for operation drafts.
+function memberSnapshot(member: TenantMember): TenantMember {
+  return Object.freeze({ ...member })
+}
+
 export async function readEnterpriseMemberSession() {
   return readSession()
 }
@@ -70,14 +76,15 @@ export async function listEnterpriseMembers(session: TrustedSession) {
   const result = await request<{ members?: TenantMember[] }>('/v1/tenant/members', {
     headers: readHeaders(session),
   })
-  return Array.isArray(result.members) ? result.members : []
+  return Array.isArray(result.members) ? result.members.map(memberSnapshot) : []
 }
 
 export async function getEnterpriseMember(session: TrustedSession, userId: string) {
   requireTenantSession(session)
-  return request<TenantMember>(`/v1/tenant/members/${encodeURIComponent(userId)}`, {
+  const member = await request<TenantMember>(`/v1/tenant/members/${encodeURIComponent(userId)}`, {
     headers: readHeaders(session),
   })
+  return memberSnapshot(member)
 }
 
 async function memberMutate(
@@ -87,10 +94,11 @@ async function memberMutate(
   idempotencyKey: string,
 ) {
   requireTenantSession(session)
-  return mutate<TenantMember>(path, 'POST', body, {
+  const member = await mutate<TenantMember>(path, 'POST', body, {
     idempotencyKey,
     sessionContext: sessionContext(session),
   })
+  return memberSnapshot(member)
 }
 
 export function inviteEnterpriseMember(session: TrustedSession, email: string, idempotencyKey: string) {
