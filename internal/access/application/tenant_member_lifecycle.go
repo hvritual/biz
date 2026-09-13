@@ -11,6 +11,8 @@ import (
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	"github.com/hvritual/biz/internal/access/domain"
 	"github.com/hvritual/biz/internal/access/ports"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"yunka.io/framework/core/identity"
 	"yunka.io/framework/requestscope"
 )
@@ -166,6 +168,9 @@ func (service *TenantMemberLifecycleService) mutate(ctx context.Context, userID 
 		return current, nil
 	})
 	if err != nil {
+		if errors.Is(err, ports.ErrTenantMemberConflict) {
+			return nil, status.Error(codes.Aborted, err.Error())
+		}
 		return nil, err
 	}
 	return tenantMemberDTO(member), nil
