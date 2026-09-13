@@ -1,0 +1,63 @@
+name: ec-ri-04-member-department-semantics
+
+on:
+  push:
+    branches:
+      - feat/enterprise-organization-department-real-integration
+    paths:
+      - .github/workflows/ec-ri-04-member-department-semantics.yml
+
+permissions:
+  contents: write
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/enterprise-organization-department-real-integration
+          fetch-depth: 0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache: false
+      - name: Apply transition-only department validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('internal/access/application/tenant_member_lifecycle.go')
+          text = p.read_text()
+          replacements = [
+            (
+              'return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), func(callCtx context.Context) error {\n\t\t_, err := service.capabilities.AccessTenantDepartmentManagement().AssertTenantMemberDepartmentAssignmentAllowed(callCtx, &accessv1.AssertTenantMemberDepartmentAssignmentAllowedRequest{DepartmentId: strings.TrimSpace(request.GetDepartmentId())})\n\t\treturn err\n\t}, func(member *domain.Membership) error {',
+              'return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), func(callCtx context.Context, current *domain.Membership) error {\n\t\ttargetDepartmentID := strings.TrimSpace(request.GetDepartmentId())\n\t\tif targetDepartmentID == strings.TrimSpace(current.DepartmentID) {\n\t\t\treturn nil\n\t\t}\n\t\t_, err := service.capabilities.AccessTenantDepartmentManagement().AssertTenantMemberDepartmentAssignmentAllowed(callCtx, &accessv1.AssertTenantMemberDepartmentAssignmentAllowedRequest{DepartmentId: targetDepartmentID})\n\t\treturn err\n\t}, func(member *domain.Membership) error {'
+            ),
+            ('func(callCtx context.Context) error {\n\t\t_, err := service.capabilities.AccessTenantRolePermission().AssertTenantMemberDeactivationAllowed', 'func(callCtx context.Context, _ *domain.Membership) error {\n\t\t_, err := service.capabilities.AccessTenantRolePermission().AssertTenantMemberDeactivationAllowed'),
+            ('func (service *TenantMemberLifecycleService) mutate(ctx context.Context, userID string, expectedVersion uint64, beforeApply func(context.Context) error, apply func(*domain.Membership) error)', 'func (service *TenantMemberLifecycleService) mutate(ctx context.Context, userID string, expectedVersion uint64, beforeApply func(context.Context, *domain.Membership) error, apply func(*domain.Membership) error)'),
+            ('if err := beforeApply(scope.Context()); err != nil {', 'if err := beforeApply(scope.Context(), &current); err != nil {'),
+          ]
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f'missing semantic patch anchor: {old[:100]!r}')
+              text = text.replace(old, new)
+          p.write_text(text)
+          PY
+          gofmt -w internal/access/application/tenant_member_lifecycle.go
+          git diff --check
+      - name: Run Access runtime tests
+        shell: bash
+        run: go test ./internal/access/... ./internal/bizruntime/...
+      - name: Commit semantic fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add internal/access/application/tenant_member_lifecycle.go
+          git commit -m "fix(access): validate department only on reassignment"
+          git push origin HEAD:feat/enterprise-organization-department-real-integration
