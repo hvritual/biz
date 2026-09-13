@@ -60,5 +60,12 @@ func (w checkedMembers) SuspendTenantMember(ctx context.Context, r *accessv1.Sus
 	v, err := w.inner.SuspendTenantMember(ctx, r)
 	return v, enforcement.ExecutionError(ctx, "tenant.member.suspend", err)
 }
+func (w checkedMembers) UpdateTenantMemberProfile(ctx context.Context, r *accessv1.UpdateTenantMemberProfileRequest) (*accessv1.TenantMemberDTO, error) {
+	if err := enforcement.RequireExecuted(ctx, "tenant.member.profile.update"); err != nil {
+		return nil, err
+	}
+	v, err := w.inner.UpdateTenantMemberProfile(ctx, r)
+	return v, enforcement.ExecutionError(ctx, "tenant.member.profile.update", err)
+}
 
 var _ accessapp.TenantMemberLifecycleApplication = checkedMembers{}
