@@ -1,4 +1,5 @@
 name: ec-ri-04-generate
+run-name: EC-RI-04 canonical generation v2
 
 on:
   push:
