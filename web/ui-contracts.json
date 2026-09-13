@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "design_system": "CoffeeLink V1.1",
+  "visual_viewports": [
+    { "width": 1366, "height": 768 },
+    { "width": 1440, "height": 900 },
+    { "width": 1536, "height": 1024 },
+    { "width": 390, "height": 844 }
+  ],
+  "rules": {
+    "platform_surface_forbids_runtime_console": true,
+    "navigation_overlay_must_not_push_content": true,
+    "screenshots_are_acceptance_evidence": true
+  },
+  "routes": [
+    {
+      "path": "/platform/overview",
+      "component": "@/views/platform/PlatformOverviewView.vue",
+      "surface": "platform",
+      "template": "WorkbenchPage",
+      "required_regions": ["page-heading", "management-domains", "governance"]
+    },
+    {
+      "path": "/platform/tenants",
+      "component": "@/views/platform/PlatformTenantsView.vue",
+      "surface": "platform",
+      "template": "ListPage",
+      "required_regions": ["page-heading", "metrics", "query", "data", "pagination"]
+    },
+    {
+      "path": "/system/:section(general|notifications|security|integrations|dictionary)",
+      "component": "@/views/system/SettingsView.vue",
+      "surface": "tenant",
+      "template": "FormPage",
+      "required_regions": []
+    }
+  ]
+}
