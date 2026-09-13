@@ -34,6 +34,19 @@ describe('primary navigation information architecture', () => {
     expect(isPrimaryNavigationActive(customer, 'sites')).toBe(false)
   })
 
+  it('separates semantic domain ids from stable automation selectors', () => {
+    expect(
+      primaryNavigation
+        .filter((item) => item.selectorId)
+        .map((item) => [item.id, item.selectorId]),
+    ).toEqual([
+      ['customer-operations', 'customers'],
+      ['rental-operations', 'sites'],
+      ['device-operations', 'devices'],
+      ['business-operations', 'orders'],
+    ])
+  })
+
   it('keeps enterprise center aligned with the approved six functional entries and terminology', () => {
     expect(enterpriseNavigation.map((item) => item.id)).toEqual([
       'members',
