@@ -16,4 +16,5 @@ type TenantMemberLifecycleApplication interface {
 	ListTenantMembers(context.Context, *accessv1.ListTenantMembersRequest) (*accessv1.ListTenantMembersResponse, error)
 	RemoveTenantMember(context.Context, *accessv1.RemoveTenantMemberRequest) (*accessv1.TenantMemberDTO, error)
 	SuspendTenantMember(context.Context, *accessv1.SuspendTenantMemberRequest) (*accessv1.TenantMemberDTO, error)
+	UpdateTenantMemberProfile(context.Context, *accessv1.UpdateTenantMemberProfileRequest) (*accessv1.TenantMemberDTO, error)
 }

@@ -19,12 +19,27 @@ enum TenantMemberStatus {
   TENANT_MEMBER_STATUS_REMOVED = 4;
 }
 
+message TenantMemberRoleDTO {
+  string role_id = 1;
+  string role_name = 2;
+  string role_status = 3;
+}
+
 message TenantMemberDTO {
   option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
   string user_id = 1;
   string email = 2;
   TenantMemberStatus status = 3;
   uint64 version = 4;
+  string name = 5;
+  string phone = 6;
+  string employee_id = 7;
+  string position = 8;
+  string department_id = 9;
+  repeated TenantMemberRoleDTO roles = 10;
+  // UI/read-model summary only. Authorization continues to evaluate each
+  // permission grant independently. Values: none, self, sites, all.
+  string derived_data_scope = 11;
 }
 
 message InviteTenantMemberRequest {
@@ -39,6 +54,18 @@ message ListTenantMembersRequest {}
 
 message ListTenantMembersResponse {
   repeated TenantMemberDTO members = 1;
+}
+
+message UpdateTenantMemberProfileRequest {
+  string user_id = 1;
+  string name = 2;
+  string phone = 3;
+  string employee_id = 4;
+  string position = 5;
+  // Opaque organization reference in EC-RI-02. Department tree semantics,
+  // move invariants and leader validation belong to EC-RI-04.
+  string department_id = 6;
+  uint64 version = 7;
 }
 
 message ActivateTenantMemberRequest {
@@ -119,6 +146,20 @@ service TenantMemberLifecycleApplication {
       authentication: AUTHENTICATION_API_KEY
       authentication: AUTHENTICATION_WEB_SESSION
       execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc UpdateTenantMemberProfile(UpdateTenantMemberProfileRequest) returns (TenantMemberDTO) {
+    option (google.api.http) = { patch: "/v1/tenant/members/{user_id}/profile" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.profile.update"
+      use_case: "update_tenant_member_profile"
+      permissions: "tenant.member.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };
   }
 

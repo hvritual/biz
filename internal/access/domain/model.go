@@ -3,6 +3,7 @@ package domain
 import (
 	"errors"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -45,6 +46,7 @@ var OwnerRequiredPermissions = []string{
 var (
 	ErrInvalidTenantTransition       = errors.New("access: invalid tenant state transition")
 	ErrInvalidTenantMemberTransition = errors.New("access: invalid tenant member state transition")
+	ErrInvalidTenantMemberProfile    = errors.New("access: invalid tenant member profile")
 	ErrInvalidTenantRoleTransition   = errors.New("access: invalid tenant role state transition")
 	ErrProtectedOwnerRole            = errors.New("access: owner role invariant would be violated")
 )
@@ -105,22 +107,56 @@ type User struct {
 	CreatedAt time.Time
 }
 
+type MemberRoleSummary struct {
+	ID     string
+	Name   string
+	Status string
+}
+
 type Membership struct {
-	TenantID  string
-	UserID    string
-	Email     string
-	Status    string
-	Version   uint64
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	TenantID         string
+	UserID           string
+	Email            string
+	Status           string
+	Version          uint64
+	Name             string
+	Phone            string
+	EmployeeID       string
+	Position         string
+	DepartmentID     string
+	Roles            []MemberRoleSummary
+	DerivedDataScope DataScope
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 func NewInvitedMembership(tenantID, userID, email string, now time.Time) Membership {
-	return Membership{TenantID: tenantID, UserID: userID, Email: email, Status: TenantMemberStatusInvited, Version: 1, CreatedAt: now, UpdatedAt: now}
+	return Membership{TenantID: tenantID, UserID: userID, Email: email, Status: TenantMemberStatusInvited, Version: 1, DerivedDataScope: DataScopeNone, CreatedAt: now, UpdatedAt: now}
 }
 
 func NewActiveMembership(tenantID, userID, email string, now time.Time) Membership {
-	return Membership{TenantID: tenantID, UserID: userID, Email: email, Status: TenantMemberStatusActive, Version: 1, CreatedAt: now, UpdatedAt: now}
+	return Membership{TenantID: tenantID, UserID: userID, Email: email, Status: TenantMemberStatusActive, Version: 1, DerivedDataScope: DataScopeNone, CreatedAt: now, UpdatedAt: now}
+}
+
+func (membership *Membership) UpdateProfile(name, phone, employeeID, position, departmentID string, now time.Time) error {
+	if membership == nil || membership.Status == TenantMemberStatusRemoved {
+		return ErrInvalidTenantMemberProfile
+	}
+	name = strings.TrimSpace(name)
+	phone = strings.TrimSpace(phone)
+	employeeID = strings.TrimSpace(employeeID)
+	position = strings.TrimSpace(position)
+	departmentID = strings.TrimSpace(departmentID)
+	if len([]rune(name)) > 100 || len([]rune(phone)) > 40 || len([]rune(employeeID)) > 64 || len([]rune(position)) > 100 || len([]rune(departmentID)) > 64 {
+		return ErrInvalidTenantMemberProfile
+	}
+	membership.Name = name
+	membership.Phone = phone
+	membership.EmployeeID = employeeID
+	membership.Position = position
+	membership.DepartmentID = departmentID
+	membership.UpdatedAt = now
+	return nil
 }
 
 func (membership *Membership) Activate(now time.Time) error {

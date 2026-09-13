@@ -4,7 +4,7 @@
 
 将 CoffeeLink 企业中心从“完整前端预览 + 本地快照”收敛为真实租户运行面：所有读取以服务端为准，所有写操作必须具备真实鉴权、幂等、回执与回读，不允许 API 失败后静默回退为本地成功。
 
-基线：`main@a6052797d397e799fa014a2638ed8f948abc7ef7`。
+当前实施基线：`main@284e38a1a90c9d7e8d25fa02650523e1c82c8c31`（EC-RI-01 已合并）。
 
 企业中心固定范围：
 
@@ -17,9 +17,22 @@
 
 ## 2. Current state
 
+### Roadmap status
+
+| Task | Status | Current truth |
+| --- | --- | --- |
+| EC-RI-01 Member lifecycle | ✅ Completed | 企业中心 API 模式已使用真实成员生命周期 API，具备可信会话、CSRF、幂等、冲突处理与 receipt/readback。 |
+| EC-RI-02 Member profile + role binding | ✅ Completed in PR #99 candidate | 成员档案成为 tenant-scoped 服务端权威数据；角色关系和 derived data scope 来自 Access；MySQL、浏览器与视觉门禁已建立。 |
+| EC-RI-03 Role permission | ⏳ Pending | 角色页面仍待从 preview store 切换为真实 Access Role API。 |
+| EC-RI-04 Organization / Department | ⏳ Pending | `department_id` 已作为成员档案权威引用保存，但部门树/层级/负责人等组织语义尚未实现。 |
+| EC-RI-05 Tenant profile | ⏳ Pending | 企业资料仍待正式 tenant/company profile contract。 |
+| EC-RI-06 Plan / entitlement / quota | ⏳ Pending | 企业中心套餐额度仍待消费端真实权益与 usage 接入。 |
+| EC-RI-07 Server audit trail | ⏳ Pending | 操作日志仍待服务端不可伪造审计来源。 |
+| EC-RI-08 Production gate | ⏳ Pending | 等六个企业中心模块全部真实化后执行最终生产门禁。 |
+
 ### Frontend
 
-企业中心六个页面已经具备较完整的页面和交互，但 `useEnterpriseStore` 仍通过 `web/src/services/demo/repository.ts` 从 `localStorage` 读取/保存 `TenantSnapshot`。当前审计记录由前端生成 `demo-*` request id，因此不属于生产审计证据。
+EC-RI-01/02 已将 API 模式成员管理从 `services/demo/repository.ts` 分离：成员生命周期、档案、角色关系和派生数据范围以 Access 服务端为准。其它企业中心页面仍存在 preview/localStorage 路径，因此整个企业中心尚不能称为“全部前后端完整对接”。
 
 ### Backend capabilities already available
 
@@ -27,10 +40,13 @@ Access：
 
 - Tenant lifecycle
 - Tenant member lifecycle
+- Tenant member profile
 - Tenant role & permission
+- Member-role binding
 - Web-session / API-key authentication
 - authorization
 - idempotency
+- optimistic concurrency
 - MySQL persistence and multi-tenant qualification
 
 Commercial：
@@ -41,18 +57,21 @@ Commercial：
 - entitlement
 - quota definition and entitlement limits
 
-### Contract gaps
+### Remaining contract gaps
 
-当前后端 `TenantMemberDTO` 只有：
+EC-RI-02 已补齐成员管理所需权威字段：
 
-- `user_id`
-- `email`
-- `status`
-- `version`
+- `name`
+- `phone`
+- `employee_id`
+- `position`
+- `department_id`
+- role memberships
+- `derived_data_scope`
 
-但当前成员 UI 还包含姓名、手机号、工号、部门、岗位、角色和数据范围。因此第一阶段必须明确区分“服务端权威字段”和“尚未进入服务端契约的档案字段”，禁止把本地 preview 字段伪装成服务端事实。
+其中 `department_id` 只代表成员档案中的服务端权威引用；Organization / Department 的树结构、层级移动、负责人和组织数据范围语义仍属于 EC-RI-04。
 
-当前 Access contract 也没有 Organization / Department 能力；Tenant contract 只有基础租户生命周期字段，尚不能覆盖企业资料页全部字段；企业中心套餐页目前仍使用示例额度；操作日志仍是本地预览。
+当前 Access contract 仍没有完整 Organization / Department 能力；Tenant contract 只有基础租户生命周期字段，尚不能覆盖企业资料页全部字段；企业中心套餐页仍存在示例额度；操作日志仍是本地预览。
 
 ## 3. Integration principles
 
@@ -67,7 +86,7 @@ Commercial：
 
 ## 4. Implementation roadmap
 
-### EC-RI-01 — Member lifecycle real integration
+### EC-RI-01 — Member lifecycle real integration ✅
 
 **Goal**
 
@@ -80,39 +99,47 @@ Commercial：
 - Suspend member
 - Remove member
 
-**Scope**
+**Delivered**
 
-- 新增企业中心 member adapter/store，不直接复用 demo repository。
-- 复用现有可信 web session、CSRF 与 `Idempotency-Key` 实现。
-- API 模式下成员 `user_id/email/status/version` 必须来自服务端。
-- 写操作完成后重新 `GET` / list 回读。
-- 401：未登录；403：无权限；409：版本/幂等冲突；其它错误真实显示。
-- 服务端不存在的档案字段不从 demo snapshot 伪造。
+- 企业中心 member adapter 与 demo repository 分离。
+- 复用可信 web session、CSRF 与 `Idempotency-Key`。
+- API 模式下成员 `user_id/email/status/version` 来自服务端。
+- 写操作完成后 `GET` / list 双回读。
+- 401/403/409/回读失败进入真实错误状态。
+- EC-RI-01 已通过 PR #98 合并。
 
-**Not in scope**
+### EC-RI-02 — Member profile + role binding contract ✅
 
-- 姓名、手机号、工号、岗位、部门档案后端扩展。
-- 角色授权页面的正式接入。
-- 额度扣减。
-
-**Acceptance**
-
-- API 模式不读取/写入 `services/demo/repository` 的成员状态。
-- API 失败不显示成功 toast。
-- mutate 后有服务端回读。
-- Playwright 覆盖登录态、正常读写、401、403、409、回读失败。
-- 现有 demo visual review 不回归。
-
-### EC-RI-02 — Member profile + role binding contract
+**Goal**
 
 补齐成员档案中服务端尚缺字段的权威模型，并打通成员与角色关系查询：
 
 - name / phone / employee id / position
-- department membership
+- `department_id` authority reference
 - role memberships
 - derived data scope
 
-要求先定义 contract，再实现存储与 API，最后恢复企业中心完整成员列。
+**Delivered**
+
+- Contract-first：扩展 `TenantMemberDTO` 与 `TenantMemberRoleDTO`，新增 `PATCH /v1/tenant/members/{user_id}/profile`。
+- Storage：档案字段持久化到 tenant-scoped `biz_memberships`；同一全局 user 可在不同 tenant 拥有不同档案。
+- Role read model：角色摘要从 `biz_member_roles / biz_roles` 派生，不复制到 membership 表。
+- Data scope：只从 active role 的 grants 汇总 `none < self < sites < all`，仅用于成员管理读模型展示，不替代真实 authorization 判定。
+- Concurrency：profile 更新携带 `version`；stale version 映射 HTTP 409。
+- Runtime：`checkedMembers` 对 `tenant.member.profile.update` 继续执行 operation enforcement。
+- Frontend：API 模式恢复姓名、电话、工号、岗位、部门引用、角色、数据范围等完整服务端成员信息。
+- Mutations：profile、角色绑定和解除均使用 CSRF、session context、独立稳定 Idempotency-Key，并在写回执后重新读取成员事实。
+- No fake success：服务端写返回但 readback 失败时不得显示“服务端确认”。
+- MySQL gate：覆盖 tenant isolation、profile readback、role/scope derivation、disabled-role scope invariant、stale version 409。
+- Browser gate：覆盖 profile PATCH、role binding、401/403、409 同幂等键重试、readback failure。
+- Visual gate：1366×768 / 1440×900 / 1536×1024 / 390×844；桌面关键字段与操作均可见，移动端无页面级横向 overflow。
+- Permanent gates：CoffeeLink workflow 固化 EC-RI-02 浏览器断言；B12.3 MySQL workflow 纳入 EC-RI-02 integration test 触发路径。
+
+**Explicit boundary**
+
+- 本阶段不实现 Department tree / parent move / leader / organization lifecycle。
+- 本阶段不改变套餐、额度或企业资料。
+- `server/**` 保持只读。
 
 ### EC-RI-03 — Role permission real integration
 
@@ -193,8 +220,8 @@ Logo 必须走真实文件服务或明确的 asset reference，不允许 DataURL
 
 ## 5. Dependency order
 
-`EC-RI-01 Member lifecycle`
-→ `EC-RI-02 Member profile + role binding`
+`EC-RI-01 Member lifecycle ✅`
+→ `EC-RI-02 Member profile + role binding ✅`
 → `EC-RI-03 Role permission`
 → `EC-RI-04 Organization`
 → `EC-RI-05 Tenant profile`

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "10",
+  "mapping_version": "11",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -780,6 +780,15 @@
     },
     {
       "operation_id": "tenant.member.list",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.member.profile.update",
       "classification": "tenant_business",
       "module_code": "access-management",
       "capability_codes": [

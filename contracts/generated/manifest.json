@@ -973,6 +973,86 @@
           "number": 4,
           "kind": "scalar",
           "type": "uint64"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "phone",
+          "jsonName": "phone",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "employee_id",
+          "jsonName": "employeeId",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "position",
+          "jsonName": "position",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "department_id",
+          "jsonName": "departmentId",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "roles",
+          "jsonName": "roles",
+          "number": 10,
+          "kind": "message",
+          "type": "access.v1.TenantMemberRoleDTO",
+          "repeated": true
+        },
+        {
+          "name": "derived_data_scope",
+          "jsonName": "derivedDataScope",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "TenantMemberRoleDTO",
+      "fullName": "access.v1.TenantMemberRoleDTO",
+      "fields": [
+        {
+          "name": "role_id",
+          "jsonName": "roleId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "role_name",
+          "jsonName": "roleName",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "role_status",
+          "jsonName": "roleStatus",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
@@ -1022,6 +1102,64 @@
       ],
       "dto": {
         "kind": "output"
+      }
+    },
+    {
+      "name": "UpdateTenantMemberProfileRequest",
+      "fullName": "access.v1.UpdateTenantMemberProfileRequest",
+      "fields": [
+        {
+          "name": "user_id",
+          "jsonName": "userId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "phone",
+          "jsonName": "phone",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "employee_id",
+          "jsonName": "employeeId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "position",
+          "jsonName": "position",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "department_id",
+          "jsonName": "departmentId",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 7,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
       }
     },
     {
@@ -6205,6 +6343,48 @@
           },
           "authorization": {
             "operationId": "tenant.member.suspend",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "UpdateTenantMemberProfile",
+          "fullName": "access.v1.TenantMemberLifecycleApplication.UpdateTenantMemberProfile",
+          "request": "access.v1.UpdateTenantMemberProfileRequest",
+          "response": "access.v1.TenantMemberDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/tenant/members/{user_id}/profile",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.profile.update",
+            "useCase": "update_tenant_member_profile",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.profile.update",
             "permissions": [
               "tenant.member.manage"
             ],
