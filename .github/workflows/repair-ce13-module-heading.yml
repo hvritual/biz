@@ -1,0 +1,39 @@
+name: Align CE-13 module title acceptance
+on:
+  push:
+    branches: [feat/platform-commercial-ui-contract-v11]
+    paths: ['.github/workflows/repair-ce13-module-heading.yml']
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/platform-commercial-ui-contract-v11
+      - name: Update only stale module heading assertion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('web/tests/ce13-platform/ce13-platform-commercial.spec.ts')
+          source = path.read_text()
+          old = 'tenant.page.getByRole("heading", { name: "平台商业管理" })'
+          new = 'tenant.page.getByRole("heading", { name: "模块目录", exact: true })'
+          assert source.count(old) == 1, source.count(old)
+          source = source.replace(old, new, 1)
+          path.write_text(source)
+          PY
+          git diff --check
+          git diff -- web/tests/ce13-platform/ce13-platform-commercial.spec.ts
+      - name: Commit exact acceptance repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/tests/ce13-platform/ce13-platform-commercial.spec.ts
+          git commit -m 'test(ce13): align tenant denial with module catalog title'
+          git push origin HEAD:feat/platform-commercial-ui-contract-v11
