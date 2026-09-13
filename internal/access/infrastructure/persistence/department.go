@@ -6,10 +6,12 @@ import (
 	"strings"
 	"time"
 
+	mysqlDriver "github.com/go-sql-driver/mysql"
 	"github.com/hvritual/biz/internal/access/domain"
 	"github.com/hvritual/biz/internal/access/ports"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"yunka.io/framework/requestscope"
 )
 
 type departmentRecord struct {
@@ -36,6 +38,19 @@ func NewTenantDepartmentRepository(database *gorm.DB) (*TenantDepartmentReposito
 		return nil, errors.New("access persistence: tenant department database is required")
 	}
 	return &TenantDepartmentRepository{database: database}, nil
+}
+
+func NewTenantDepartmentRepositoryFactory(database *gorm.DB) (requestscope.RepositoryFactory[ports.TenantDepartmentRepositories], error) {
+	if database == nil {
+		return nil, errors.New("access persistence: department database is required")
+	}
+	return requestscope.GORMRepositories(func(_ context.Context, transaction *gorm.DB) (ports.TenantDepartmentRepositories, error) {
+		department, err := NewTenantDepartmentRepository(transaction)
+		if err != nil {
+			return ports.TenantDepartmentRepositories{}, err
+		}
+		return ports.TenantDepartmentRepositories{Department: department}, nil
+	}), nil
 }
 
 func AutoMigrateTenantDepartment(ctx context.Context, database *gorm.DB) error {
@@ -67,7 +82,7 @@ func (repository *TenantDepartmentRepository) Create(ctx context.Context, depart
 	}
 	row := departmentRecord{ID: department.ID, TenantID: department.TenantID, Name: department.Name, ParentID: department.ParentID, LeaderUserID: department.LeaderUserID, Email: department.Email, Phone: department.Phone, Status: department.Status, Sort: department.Sort, Version: department.Version, CreatedAt: department.CreatedAt, UpdatedAt: department.UpdatedAt}
 	if err := repository.database.WithContext(ctx).Create(&row).Error; err != nil {
-		if isDuplicateKey(err) {
+		if isDepartmentDuplicateKey(err) {
 			return ports.ErrTenantDepartmentExists
 		}
 		return err
@@ -106,7 +121,7 @@ func (repository *TenantDepartmentRepository) Update(ctx context.Context, depart
 		Where("tenant_id = ? AND id = ? AND version = ?", department.TenantID, department.ID, expectedVersion).
 		Updates(map[string]any{"name": department.Name, "parent_id": department.ParentID, "leader_user_id": department.LeaderUserID, "email": department.Email, "phone": department.Phone, "status": department.Status, "sort": department.Sort, "version": gorm.Expr("version + 1"), "updated_at": department.UpdatedAt})
 	if result.Error != nil {
-		if isDuplicateKey(result.Error) {
+		if isDepartmentDuplicateKey(result.Error) {
 			return ports.ErrTenantDepartmentExists
 		}
 		return result.Error
@@ -192,4 +207,9 @@ func (repository *TenantDepartmentRepository) classifyWrite(ctx context.Context,
 
 func departmentFromRecord(row departmentRecord) domain.Department {
 	return domain.Department{ID: row.ID, TenantID: row.TenantID, Name: row.Name, ParentID: row.ParentID, LeaderUserID: row.LeaderUserID, Email: row.Email, Phone: row.Phone, Status: row.Status, Sort: row.Sort, Version: row.Version, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}
+}
+
+func isDepartmentDuplicateKey(err error) bool {
+	var mysqlErr *mysqlDriver.MySQLError
+	return errors.As(err, &mysqlErr) && mysqlErr.Number == 1062
 }
