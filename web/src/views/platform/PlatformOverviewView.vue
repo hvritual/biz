@@ -79,7 +79,7 @@ const guardrails = [
           <h2>平台治理边界</h2>
           <p>把“能看到页面”与“有权执行操作”分开，所有真实写操作都需要服务端回执与回读。</p>
         </div>
-        <RouterLink class="btn" to="/system/security"><AppIcon name="settings" :size="15" />查看租户侧安全设置</RouterLink>
+        <RouterLink class="btn" to="/platform/commercial/tenant-entitlements"><AppIcon name="shield" :size="15" />查看租户权益</RouterLink>
       </div>
       <div class="guardrail-grid">
         <article v-for="item in guardrails" :key="item[0]" class="guardrail-item">
