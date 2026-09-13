@@ -11,8 +11,10 @@ on:
       - internal/assembly/**
       - internal/bizruntime/**
       - integration/ec_ri_04_department_mysql_test.go
+      - integration/ec_ri_04_department_capability_test.go
       - integration/ec_ri_02_member_profile_mysql_test.go
       - integration/b12_member_runtime_mysql_test.go
+      - integration/b12_tenant_lifecycle_mysql_test.go
       - modules/access/**
       - go.mod
       - go.sum
@@ -26,8 +28,10 @@ on:
       - internal/assembly/**
       - internal/bizruntime/**
       - integration/ec_ri_04_department_mysql_test.go
+      - integration/ec_ri_04_department_capability_test.go
       - integration/ec_ri_02_member_profile_mysql_test.go
       - integration/b12_member_runtime_mysql_test.go
+      - integration/b12_tenant_lifecycle_mysql_test.go
       - modules/access/**
       - go.mod
       - go.sum
