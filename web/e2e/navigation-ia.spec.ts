@@ -1,12 +1,19 @@
 import { expect, test, type Page } from '@playwright/test'
+import { mkdirSync } from 'node:fs'
 
 async function ready(page: Page) {
   await page.goto('/#/enterprise/members')
   await expect(page.locator('.member-table')).toBeVisible()
+  await page.evaluate(() => document.fonts.ready)
 }
 
 async function openDomain(page: Page, selector: string, title: string) {
-  await page.locator(`[data-module="${selector}"]`).click()
+  const trigger = page.locator(`[data-module="${selector}"]`)
+  if (!(await trigger.isVisible())) {
+    await page.getByRole('button', { name: '打开主导航', exact: true }).click()
+    await expect(trigger).toBeVisible()
+  }
+  await trigger.click()
   const panel = page.getByRole('dialog', { name: `${title}导航`, exact: true })
   await expect(panel).toBeVisible()
   return panel
@@ -39,4 +46,29 @@ test('module panel renders grouped business domains without entity-bound global 
   await expect(panel).toContainText('订单管理')
   await expect(panel).toContainText('数据分析')
   await expect(panel.getByText('饮品配置', { exact: true })).toHaveCount(0)
+})
+
+test('grouped customer and rental menus capture all CoffeeLink acceptance viewports', async ({ page }) => {
+  mkdirSync('test-results/screenshots', { recursive: true })
+  for (const viewport of [
+    { width: 1366, height: 768 },
+    { width: 1440, height: 900 },
+    { width: 1536, height: 1024 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await ready(page)
+
+    await openDomain(page, 'customers', '客户经营')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
+    await page.screenshot({
+      path: `test-results/screenshots/menu-customer-${viewport.width}.png`,
+    })
+
+    await openDomain(page, 'sites', '租赁运营')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
+    await page.screenshot({
+      path: `test-results/screenshots/menu-rental-${viewport.width}.png`,
+    })
+  }
 })
