@@ -82,13 +82,7 @@ onBeforeUnmount(() => {
       <ModulePanel v-if="ui.module" />
     </aside>
     <main class="main-content" :inert="expanded || ui.mobileOpen" data-testid="main-content">
-      <div v-if="!contentEnabled" class="card panel-pad">
-        <h1>真实 API 模式尚未接入当前页面</h1>
-        <p class="secondary">
-          当前页面仍属于受控预览范围。系统不会将接口失败伪装成演示数据；请返回已接入真实 API 的平台页面，或使用预览模式审核本地交互。
-        </p>
-      </div>
-      <RouterView v-else :key="store.previewMode ? store.tenantId : route.fullPath" />
+      <RouterView v-if="contentEnabled" :key="store.previewMode ? store.tenantId : route.fullPath" />
     </main>
     <Teleport to="body">
       <div v-if="ui.notice" role="status" :class="['toast', ui.noticeTone]">

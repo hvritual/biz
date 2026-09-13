@@ -6,12 +6,12 @@ describe('routeContentEnabled', () => {
     expect(routeContentEnabled(true, undefined)).toBe(true)
   })
 
-  it('allows explicitly platform-backed routes in API mode', () => {
+  it('keeps explicitly platform-backed routes available in API mode', () => {
     expect(routeContentEnabled(false, 'platform')).toBe(true)
   })
 
-  it('fails closed for preview-only routes in API mode', () => {
-    expect(routeContentEnabled(false, 'tenant')).toBe(false)
-    expect(routeContentEnabled(false, undefined)).toBe(false)
+  it('keeps pages without an API adapter visible as complete demo surfaces in API mode', () => {
+    expect(routeContentEnabled(false, 'tenant')).toBe(true)
+    expect(routeContentEnabled(false, undefined)).toBe(true)
   })
 })
