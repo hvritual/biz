@@ -49,6 +49,30 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
           go install "google.golang.org/protobuf/cmd/protoc-gen-go@${PROTOC_GEN_GO_VERSION}"
           go install "google.golang.org/grpc/cmd/protoc-gen-go-grpc@${PROTOC_GEN_GO_GRPC_VERSION}"
+      - name: Classify the new Access operation
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('contracts/commercial/operation-capabilities.v1.json')
+          data = json.loads(path.read_text())
+          operation_id = 'tenant.member.profile.update'
+          if not any(item.get('operation_id') == operation_id for item in data['operations']):
+              data['operations'].append({
+                  'operation_id': operation_id,
+                  'classification': 'tenant_business',
+                  'module_code': 'access-management',
+                  'capability_codes': ['tenant.member.lifecycle'],
+                  'children': [],
+              })
+              data['operations'].sort(key=lambda item: item['operation_id'])
+              data['mapping_version'] = str(int(data['mapping_version']) + 1)
+              path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n')
+          PY
       - name: Generate canonical contracts
         shell: bash
         run: |
