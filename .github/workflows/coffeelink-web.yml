@@ -43,10 +43,11 @@ jobs:
           stats = results['stats']
           assert stats.get('unexpected', 0) == 0, stats
           expected = stats.get('expected', 0)
-          assert expected >= 13, stats
+          assert expected >= 14, stats
           serialized = json.dumps(results, ensure_ascii=False)
           assert 'TestCE11' in serialized, 'TestCE11 acceptance identity missing'
-          assert 'platform tenant ListPage captures the four CoffeeLink V1.1 viewports' in serialized, 'platform visual contract test missing'
+          assert 'platform overview WorkbenchPage captures the four CoffeeLink V1.1 viewports' in serialized, 'platform overview visual contract test missing'
+          assert 'platform tenant ListPage captures the four CoffeeLink V1.1 viewports' in serialized, 'platform tenant visual contract test missing'
 
           shots = root / 'screenshots'
           required = {
@@ -56,6 +57,10 @@ jobs:
               'responsive-menu-1440.png': (1440, 900),
               'responsive-390.png': (390, 844),
               'responsive-menu-390.png': (390, 844),
+              'platform-overview-1366.png': (1366, 768),
+              'platform-overview-1440.png': (1440, 900),
+              'platform-overview-1536.png': (1536, 1024),
+              'platform-overview-390.png': (390, 844),
               'platform-tenants-1366.png': (1366, 768),
               'platform-tenants-menu-1366.png': (1366, 768),
               'platform-tenants-collapsed-menu-1366.png': (1366, 768),
@@ -66,7 +71,7 @@ jobs:
           gallery_pngs = list(Path('screenshots').glob('*.png'))
           compatibility_pngs = list(shots.glob('*.png'))
           actual_pngs = gallery_pngs + compatibility_pngs
-          assert len(actual_pngs) >= 18, len(actual_pngs)
+          assert len(actual_pngs) >= 22, len(actual_pngs)
           for name, want in required.items():
               data = (shots / name).read_bytes()
               assert data[:8] == b'\x89PNG\r\n\x1a\n', name
