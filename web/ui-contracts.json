@@ -22,7 +22,41 @@
   "rules": {
     "platform_surface_forbids_runtime_console": true,
     "navigation_overlay_must_not_push_content": true,
-    "screenshots_are_acceptance_evidence": true
+    "screenshots_are_acceptance_evidence": true,
+    "navigation_section_groups_required": true,
+    "navigation_forbids_entity_bound_paths": true,
+    "navigation_drink_configuration_domain": "device-operations"
+  },
+  "navigation": {
+    "primary_domains": [
+      "工作台",
+      "客户经营",
+      "租赁运营",
+      "设备运营",
+      "经营管理",
+      "企业中心",
+      "平台管理",
+      "系统设置"
+    ],
+    "required_section_groups": [
+      "客户管理",
+      "客户协同",
+      "客户成功",
+      "投放与资产",
+      "计费与结算",
+      "履约与服务",
+      "设备资产",
+      "设备配置",
+      "远程运维",
+      "服务维护",
+      "交易管理",
+      "经营分析"
+    ],
+    "forbidden_entity_path_tokens": [
+      "CUS-",
+      "CS-",
+      "SH-"
+    ]
   },
   "routes": [
     {

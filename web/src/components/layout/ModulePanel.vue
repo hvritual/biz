@@ -10,6 +10,7 @@ import {
   systemQuickActions,
   quickActions,
   primaryNavigation,
+  type NavigationItem,
 } from '@/router/navigation'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import coffee from '@/assets/coffee-menu.webp'
@@ -29,6 +30,19 @@ const links = computed(() =>
         ? systemNavigation
         : (customerDomains[ui.module ?? '']?.links ?? []),
 )
+const linkGroups = computed(() => {
+  const groups: Array<{ label: string; items: NavigationItem[] }> = []
+  for (const item of links.value) {
+    const label = item.group ?? ''
+    let group = groups.find((candidate) => candidate.label === label)
+    if (!group) {
+      group = { label, items: [] }
+      groups.push(group)
+    }
+    group.items.push(item)
+  }
+  return groups
+})
 const actions = computed(() =>
   ui.module === 'enterprise'
     ? quickActions
@@ -50,6 +64,10 @@ function navigate(path?: string) {
     void router.push(path)
   }
 }
+function isLinkActive(item: NavigationItem) {
+  if (!item.path) return false
+  return route.path === item.path.split('?')[0]
+}
 </script>
 <template>
   <section id="module-drawer" class="module-panel" role="dialog" aria-modal="true" :aria-label="title + '导航'">
@@ -65,17 +83,25 @@ function navigate(path?: string) {
     <div v-if="links.length" :class="['module-columns', { single: !actions.length }]">
       <nav class="sub-navigation" aria-label="功能菜单">
         <h3>功能菜单</h3>
-        <button
-          v-for="item in links"
-          :key="item.id"
-          :class="['sub-link', { active: route.path === item.path, unavailable: !item.path }]"
-          :aria-current="route.path === item.path ? 'page' : undefined"
-          :disabled="!item.path"
-          :title="item.path ? item.label : `${item.label}尚未接入`"
-          @click="navigate(item.path)"
+        <section
+          v-for="group in linkGroups"
+          :key="group.label || 'default'"
+          class="sub-group"
+          :data-menu-group="group.label || undefined"
         >
-          <AppIcon :name="item.icon" :size="20" /><span>{{ item.label }}</span><small v-if="!item.path">待接入</small>
-        </button>
+          <h4 v-if="group.label">{{ group.label }}</h4>
+          <button
+            v-for="item in group.items"
+            :key="item.id"
+            :class="['sub-link', { active: isLinkActive(item), unavailable: !item.path }]"
+            :aria-current="isLinkActive(item) ? 'page' : undefined"
+            :disabled="!item.path"
+            :title="item.path ? item.label : `${item.label}尚未接入`"
+            @click="navigate(item.path)"
+          >
+            <AppIcon :name="item.icon" :size="20" /><span>{{ item.label }}</span><small v-if="!item.path">待接入</small>
+          </button>
+        </section>
       </nav>
       <nav v-if="actions.length" class="quick-navigation" aria-label="快捷操作">
         <h3>快捷操作</h3>
@@ -142,7 +168,7 @@ function navigate(path?: string) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 22px;
-  flex: 1;
+  flex: 1 0 auto;
   padding-top: 20px;
   min-height: 420px;
 }
@@ -158,15 +184,25 @@ function navigate(path?: string) {
   border-left: 1px solid var(--color-border);
   padding-left: 20px;
 }
+.sub-group + .sub-group {
+  margin-top: 14px;
+}
+.sub-group h4 {
+  margin: 0 0 5px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
 .sub-link {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 9px 12px;
   width: fit-content;
   max-width: 100%;
-  min-height: 44px;
-  margin: 8px 0 10px -6px;
+  min-height: 40px;
+  margin: 3px 0 5px -6px;
   border-radius: 8px;
   font-size: 14px;
   white-space: nowrap;
@@ -281,7 +317,8 @@ function navigate(path?: string) {
 @media (max-height: 800px) {
   .module-panel { padding: 20px 24px; }
   .module-columns { min-height: 360px; padding-top: 15px; }
-  .sub-link { min-height: 40px; margin-bottom: 8px; }
+  .sub-group + .sub-group { margin-top: 10px; }
+  .sub-link { min-height: 37px; margin-bottom: 4px; }
   .quick-link { min-height: 43px; margin-bottom: 8px; }
   .module-columns h3 { margin-bottom: 12px; }
   .menu-art { min-height: 96px; margin-top: 15px; }
@@ -293,7 +330,9 @@ function navigate(path?: string) {
   .module-columns { gap: 12px; grid-template-columns: 1fr 1fr; }
   .module-columns.single { grid-template-columns: 1fr; }
   .quick-navigation { padding-left: 12px; }
-  .sub-link { font-size: 12px; gap: 7px; padding-left: 6px; padding-right: 7px; }
+  .sub-group + .sub-group { margin-top: 10px; }
+  .sub-group h4 { font-size: 10px; }
+  .sub-link { font-size: 12px; gap: 7px; padding-left: 6px; padding-right: 7px; min-height: 36px; }
   .quick-link { font-size: 11px; padding: 7px; gap: 6px; }
   .quick-icon > .icon { width: 16px; }
   .menu-art { padding: 15px; }

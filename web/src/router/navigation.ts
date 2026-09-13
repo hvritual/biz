@@ -5,6 +5,7 @@ export interface NavigationItem {
   path?: string
   matches?: string[]
   selectorId?: string
+  group?: string
 }
 
 export function isPrimaryNavigationActive(item: NavigationItem, currentModule: unknown): boolean {
@@ -34,7 +35,7 @@ export const primaryNavigation: NavigationItem[] = [
     selectorId: 'orders',
     label: '经营管理',
     icon: 'chart',
-    matches: ['orders', 'drinks', 'analytics'],
+    matches: ['orders', 'analytics'],
   },
   { id: 'enterprise', label: '企业中心', icon: 'company' },
   { id: 'platform-commercial', label: '平台管理', icon: 'crown' },
