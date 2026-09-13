@@ -25,3 +25,7 @@ type TenantDepartmentRepository interface {
 	ValidateLeader(context.Context, string, string) error
 	AssertMemberAssignmentAllowed(context.Context, string, string) error
 }
+
+type TenantDepartmentRepositories struct {
+	Department TenantDepartmentRepository
+}
