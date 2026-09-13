@@ -168,7 +168,7 @@ function isLinkActive(item: NavigationItem) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 22px;
-  flex: 1;
+  flex: 1 0 auto;
   padding-top: 20px;
   min-height: 420px;
 }
