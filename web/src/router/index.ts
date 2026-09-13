@@ -7,9 +7,24 @@ export const router = createRouter({
     ...customerRoutes,
     ...siteRentalRoutes,
     {
+      path: '/platform/overview',
+      component: () => import('@/views/platform/PlatformOverviewView.vue'),
+      meta: {
+        title: '平台管理',
+        module: 'platform-commercial',
+        surface: 'platform',
+        pageTemplate: 'WorkbenchPage',
+      },
+    },
+    {
       path: '/platform/tenants',
-      component: () => import('@/views/runtime/RuntimeConsoleView.vue'),
-      meta: { title: '租户管理', module: 'platform-commercial', surface: 'platform' },
+      component: () => import('@/views/platform/PlatformTenantsView.vue'),
+      meta: {
+        title: '租户管理',
+        module: 'platform-commercial',
+        surface: 'platform',
+        pageTemplate: 'ListPage',
+      },
     },
     {
       path: '/workspace/:resource(devices)',
@@ -75,7 +90,7 @@ export const router = createRouter({
     {
       path: '/system/:section(general|notifications|security|integrations|dictionary)',
       component: () => import('@/views/system/SettingsView.vue'),
-      meta: { title: '系统设置', module: 'system' },
+      meta: { title: '系统设置', module: 'system', pageTemplate: 'FormPage' },
     },
     {
       path: '/:pathMatch(.*)*',
