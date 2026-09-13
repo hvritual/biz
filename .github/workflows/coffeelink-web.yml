@@ -46,15 +46,16 @@ jobs:
           stats = results['stats']
           assert stats.get('unexpected', 0) == 0, stats
           expected = stats.get('expected', 0)
-          assert expected >= 19, stats
+          assert expected >= 20, stats
           serialized = json.dumps(results, ensure_ascii=False)
           assert 'TestCE11' in serialized, 'TestCE11 acceptance identity missing'
-          assert 'platform overview WorkbenchPage captures the four CoffeeLink V1.1 viewports' in serialized, 'platform overview visual contract test missing'
-          assert 'platform tenant ListPage captures the four CoffeeLink V1.1 viewports' in serialized, 'platform tenant visual contract test missing'
-          assert 'platform module catalog ListPage captures the four CoffeeLink V1.1 viewports' in serialized, 'platform module catalog visual contract test missing'
-          assert 'platform plan WorkbenchPage captures the four CoffeeLink V1.1 viewports' in serialized, 'platform plan visual contract test missing'
-          assert 'platform entitlement WorkbenchPage captures the four CoffeeLink V1.1 viewports' in serialized, 'platform entitlement visual contract test missing'
-          assert 'grouped customer and rental menus capture all CoffeeLink acceptance viewports' in serialized, 'Menu IA V2 visual contract test missing'
+          assert 'platform overview WorkbenchPage captures the four CoffeeLink V1.1 viewports' in serialized
+          assert 'platform tenant ListPage captures the four CoffeeLink V1.1 viewports' in serialized
+          assert 'platform module catalog ListPage captures the four CoffeeLink V1.1 viewports' in serialized
+          assert 'platform plan WorkbenchPage captures the four CoffeeLink V1.1 viewports' in serialized
+          assert 'platform entitlement WorkbenchPage captures the four CoffeeLink V1.1 viewports' in serialized
+          assert 'grouped customer and rental menus capture all CoffeeLink acceptance viewports' in serialized
+          assert 'rental collection workspaces capture all CoffeeLink acceptance viewports' in serialized
 
           shots = root / 'screenshots'
           required = {
@@ -95,10 +96,14 @@ jobs:
               'menu-rental-1536.png': (1536, 1024),
               'menu-rental-390.png': (390, 844),
           }
+          for flow in ['delivery', 'service', 'payment', 'returns']:
+              for width, height in [(1366, 768), (1440, 900), (1536, 1024), (390, 844)]:
+                  required[f'rental-{flow}-{width}.png'] = (width, height)
+
           gallery_pngs = list(Path('screenshots').glob('*.png'))
           compatibility_pngs = list(shots.glob('*.png'))
           actual_pngs = gallery_pngs + compatibility_pngs
-          assert len(actual_pngs) >= 42, len(actual_pngs)
+          assert len(actual_pngs) >= 58, len(actual_pngs)
           for name, want in required.items():
               data = (shots / name).read_bytes()
               assert data[:8] == b'\x89PNG\r\n\x1a\n', name

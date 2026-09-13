@@ -12,6 +12,7 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import WorkTable from '@/components/customer/WorkTable.vue'
 import WorkBoard from '@/components/customer/WorkBoard.vue'
 import WorkCalendar from '@/components/customer/WorkCalendar.vue'
+
 const store = useCustomerStore(),
   actions = useCustomerActions(),
   route = useRoute(),
@@ -26,6 +27,34 @@ const query = ref(''),
   savedView = ref('')
 const applied = ref({ query: '', kind: '', owner: '', status: '' })
 const mode = computed(() => String(route.query.view || 'list'))
+const validKind = (value: unknown) => {
+  const candidate = String(value || '')
+  return Object.prototype.hasOwnProperty.call(workKindNames, candidate) ? candidate : ''
+}
+const fixedKind = computed(() => validKind(route.meta.workKind))
+const queryKind = computed(() => validKind(route.query.kind))
+const scopeKind = computed(() => fixedKind.value || queryKind.value)
+const scopeLabel = computed(() => {
+  if (!scopeKind.value) return ''
+  if (fixedKind.value && route.meta.title) return String(route.meta.title)
+  return workKindNames[scopeKind.value as keyof typeof workKindNames]
+})
+const isRentalScope = computed(() => Boolean(fixedKind.value && route.meta.module === 'rental'))
+const pageTitle = computed(() => {
+  if (scopeLabel.value) return `${scopeLabel.value}工作台`
+  if (mode.value === 'board') return '客户事项 · 看板'
+  if (mode.value === 'calendar') return '客户事项 · 行动日历'
+  return '客户事项工作台'
+})
+const pageDescription = computed(() => {
+  const descriptions: Record<string, string> = {
+    delivery: '聚合投放排期、现场准备、安装试运行与客户验收事项',
+    service: '聚合服务处理、恢复验证与客户确认事项',
+    payment: '聚合应收关联、回款沟通、核销与结果核验事项',
+    return: '聚合回收排期、退租结算与投放终止事项',
+  }
+  return descriptions[scopeKind.value] || '以事项推动工作；以真实业务依据验证结果'
+})
 const view = computed(() => store.snapshot.views.find((v) => v.name === savedView.value))
 const filtered = computed(() =>
   store.snapshot.work.filter(
@@ -42,13 +71,18 @@ const paged = computed(() =>
   filtered.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value),
 )
 function apply() {
-  applied.value = { query: query.value.trim(), kind: kind.value, owner: owner.value, status: status.value }
+  applied.value = {
+    query: query.value.trim(),
+    kind: scopeKind.value || kind.value,
+    owner: owner.value,
+    status: status.value,
+  }
   page.value = 1
   selected.value = []
 }
 function reset() {
   query.value = ''
-  kind.value = ''
+  kind.value = scopeKind.value
   owner.value = ''
   status.value = ''
   savedView.value = ''
@@ -58,15 +92,23 @@ function useView() {
   const v = view.value
   if (v) {
     query.value = v.search
-    kind.value = v.kind
+    kind.value = scopeKind.value || v.kind
     owner.value = v.owner
     apply()
   }
 }
+function createWork() {
+  actions.open(
+    'create-work',
+    String(route.query.customer || 'CUS-0186'),
+    [],
+    scopeKind.value ? { kind: scopeKind.value } : {},
+  )
+}
 watch(
-  () => route.query.kind,
-  (k) => {
-    kind.value = String(k || '')
+  () => [route.meta.workKind, route.query.kind],
+  () => {
+    kind.value = scopeKind.value
     apply()
   },
   { immediate: true },
@@ -74,18 +116,13 @@ watch(
 watch([page, pageSize], () => (selected.value = []))
 </script>
 <template>
-  <div class="page-stack">
+  <div class="page-stack" :data-work-scope="scopeKind || undefined">
     <PageHeading
-      :title="
-        mode === 'board' ? '客户事项 · 看板' : mode === 'calendar' ? '客户事项 · 行动日历' : '客户事项工作台'
-      "
-      breadcrumb="客户经营"
-      description="以事项推动工作；以真实业务依据验证结果"
+      :title="pageTitle"
+      :breadcrumb="isRentalScope ? '租赁运营' : '客户经营'"
+      :description="pageDescription"
       ><div class="customer-heading-actions">
-        <button
-          class="btn btn-primary"
-          @click="actions.open('create-work', String(route.query.customer || 'CUS-0186'))"
-        >
+        <button class="btn btn-primary" @click="createWork">
           <AppIcon name="plus" :size="16" />新建事项
         </button>
       </div></PageHeading
@@ -100,7 +137,7 @@ watch([page, pageSize], () => (selected.value = []))
           ]"
           :key="key"
           :class="{ active: mode === key }"
-          @click="router.push({ path: '/customers/work', query: { ...route.query, view: key } })"
+          @click="router.push({ path: route.path, query: { ...route.query, view: key } })"
         >
           {{ label }}</button
         ><button
@@ -121,10 +158,11 @@ watch([page, pageSize], () => (selected.value = []))
           "
         >
           待验收</button
-        ><button @click="reset()">全部事项</button>
+        ><button @click="reset()">{{ scopeKind ? '全部本类事项' : '全部事项' }}</button>
       </nav>
       <form class="query-bar" @submit.prevent="apply">
         <SearchField v-model="query" label="搜索客户事项" placeholder="搜索事项标题、编号、客户…" /><select
+          v-if="!scopeKind"
           v-model="kind"
           class="select"
           aria-label="事项类型"
@@ -159,6 +197,7 @@ watch([page, pageSize], () => (selected.value = []))
             @click="actions.open('assign', 'work', selected)"
           >
             批量分配</button
+          ><span v-if="scopeLabel" class="pill">{{ scopeLabel }}</span
           ><span v-if="route.query.customer" class="pill">{{
             store.customerName(String(route.query.customer))
           }}</span>
