@@ -13,7 +13,7 @@ permissions:
 jobs:
   web:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -30,6 +30,13 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           sudo apt-get install -y fonts-noto-cjk
+      - name: Run enterprise member API-mode E2E
+        working-directory: web
+        run: |
+          set -euo pipefail
+          VITE_DATA_MODE=api npm run build
+          ENTERPRISE_MEMBER_REAL_E2E=1 npx playwright test e2e/enterprise-members-real.spec.ts
+          npm run build
       - run: npm run test:e2e
         working-directory: web
       - name: Verify visual contract evidence
@@ -100,19 +107,32 @@ jobs:
               for width, height in [(1366, 768), (1440, 900), (1536, 1024), (390, 844)]:
                   required[f'rental-{flow}-{width}.png'] = (width, height)
 
-          gallery_pngs = list(Path('screenshots').glob('*.png'))
+          gallery = Path('screenshots')
+          enterprise_required = {
+              'enterprise-members-real-1366.png': (1366, 768),
+              'enterprise-members-real-1440.png': (1440, 900),
+              'enterprise-members-real-1536.png': (1536, 1024),
+              'enterprise-members-real-390.png': (390, 844),
+          }
+
+          gallery_pngs = list(gallery.glob('*.png'))
           compatibility_pngs = list(shots.glob('*.png'))
           actual_pngs = gallery_pngs + compatibility_pngs
-          assert len(actual_pngs) >= 58, len(actual_pngs)
+          assert len(actual_pngs) >= 62, len(actual_pngs)
           for name, want in required.items():
               data = (shots / name).read_bytes()
+              assert data[:8] == b'\x89PNG\r\n\x1a\n', name
+              width, height = struct.unpack('>II', data[16:24])
+              assert (width, height) == want, (name, width, height, want)
+          for name, want in enterprise_required.items():
+              data = (gallery / name).read_bytes()
               assert data[:8] == b'\x89PNG\r\n\x1a\n', name
               width, height = struct.unpack('>II', data[16:24])
               assert (width, height) == want, (name, width, height, want)
           print(
               f'UI_CONTRACT_VISUAL_EVIDENCE=PASS e2e={expected} '
               f'gallery={len(gallery_pngs)} compatibility={len(compatibility_pngs)} '
-              'contracts=CoffeeLink-V1.1'
+              'contracts=CoffeeLink-V1.1 enterprise-member-api=PASS'
           )
           PY
           sha256sum screenshots/*.png test-results/screenshots/*.png | sort > test-results/screenshot-sha256.txt
