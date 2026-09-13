@@ -68,7 +68,7 @@ const guardrails = [
             <span class="capability-tag">{{ item.capability }}</span>
           </div>
           <p>{{ item.description }}</p>
-          <span class="management-link">进入管理 <AppIcon name="next" :size="15" /></span>
+          <span class="management-link">进入管理 <AppIcon name="right" :size="15" /></span>
         </div>
       </RouterLink>
     </section>
