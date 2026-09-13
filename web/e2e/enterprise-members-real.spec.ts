@@ -22,6 +22,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     { userId: 'user-002', email: 'new@coffeelink.test', status: 'TENANT_MEMBER_STATUS_INVITED', version: 1 },
   ]
   let lastWriteHeaders: Record<string, string> = {}
+  const writeHeaderHistory: Record<string, string>[] = []
 
   await page.route('**/api/auth/session', async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
@@ -42,6 +43,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
       return json(route, 200, { members })
     }
     lastWriteHeaders = request.headers()
+    writeHeaderHistory.push(lastWriteHeaders)
     if (options.mutationStatus) return json(route, options.mutationStatus, { message: 'mutation conflict' })
     const body = request.postDataJSON() as { email: string }
     const created: RemoteMember = {
@@ -69,6 +71,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     }
 
     lastWriteHeaders = request.headers()
+    writeHeaderHistory.push(lastWriteHeaders)
     if (options.mutationStatus) return json(route, options.mutationStatus, { message: 'mutation conflict' })
     const nextStatus =
       action === 'activate'
@@ -84,6 +87,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
   return {
     getMembers: () => members,
     getLastWriteHeaders: () => lastWriteHeaders,
+    getWriteHeaderHistory: () => writeHeaderHistory,
   }
 }
 
@@ -138,13 +142,21 @@ test('401 and 403 are surfaced and never replaced with preview members', async (
   await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
 })
 
-test('409 preserves the action for idempotent retry instead of reporting success', async ({ page }) => {
-  await mockMemberServer(page, { mutationStatus: 409 })
+test('409 preserves the action and the same idempotency key for retry instead of reporting success', async ({ page }) => {
+  const server = await mockMemberServer(page, { mutationStatus: 409 })
   await openRealMembers(page)
   await page.getByRole('button', { name: '停用', exact: true }).first().click()
-  await page.getByRole('button', { name: '确认操作', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('成员状态或请求版本已发生变化')
-  await expect(page.getByRole('button', { name: '重试相同操作', exact: true })).toBeVisible()
+  const dialog = page.getByRole('dialog', { name: '停用成员' })
+  await expect(dialog).toContainText('owner@coffeelink.test')
+  await dialog.getByRole('button', { name: '确认操作', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toContainText('成员状态或请求版本已发生变化')
+  const retry = dialog.getByRole('button', { name: '重试相同操作', exact: true })
+  await expect(retry).toBeVisible()
+  await retry.click()
+  await expect(dialog.getByRole('alert')).toContainText('成员状态或请求版本已发生变化')
+  const writes = server.getWriteHeaderHistory()
+  expect(writes).toHaveLength(2)
+  expect(writes[0]?.['idempotency-key']).toBe(writes[1]?.['idempotency-key'])
   await expect(page.getByRole('status')).toHaveCount(0)
 })
 
@@ -152,7 +164,8 @@ test('a successful write without readback is not presented as confirmed success'
   await mockMemberServer(page, { readbackStatus: 500 })
   await openRealMembers(page)
   await page.getByRole('button', { name: '停用', exact: true }).first().click()
-  await page.getByRole('button', { name: '确认操作', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('HTTP 500')
+  const dialog = page.getByRole('dialog', { name: '停用成员' })
+  await dialog.getByRole('button', { name: '确认操作', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toContainText('readback failed')
   await expect(page.getByText(/服务端确认/)).toHaveCount(0)
 })
