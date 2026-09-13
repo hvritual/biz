@@ -5,6 +5,9 @@ on:
     paths: ['web/**', '.github/workflows/coffeelink-web.yml']
   pull_request:
     paths: ['web/**', '.github/workflows/coffeelink-web.yml']
+concurrency:
+  group: coffeelink-web-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
