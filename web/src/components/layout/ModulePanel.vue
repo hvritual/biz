@@ -7,6 +7,7 @@ import {
   platformCommercialNavigation,
   platformCommercialQuickActions,
   systemNavigation,
+  systemQuickActions,
   quickActions,
   primaryNavigation,
 } from '@/router/navigation'
@@ -34,18 +35,13 @@ const actions = computed(() =>
     : ui.module === 'platform-commercial'
       ? platformCommercialQuickActions
       : ui.module === 'system'
-        ? [
-          { label: '修改基础设置', icon: 'settings', path: '/system/general' },
-          { label: '配置通知', icon: 'bell', path: '/system/notifications' },
-          { label: '查看安全策略', icon: 'shield', path: '/system/security' },
-          { label: '查看操作日志', icon: 'file', path: '/enterprise/logs' },
-        ]
+        ? systemQuickActions
         : (customerDomains[ui.module ?? '']?.actions ?? []),
 )
 const description = computed(() => {
   if (ui.module === 'enterprise') return '管理企业组织、成员、权限与套餐'
   if (ui.module === 'platform-commercial') return '管理平台租户、模块、套餐版本与租户权益'
-  if (ui.module === 'system') return '配置企业偏好、通知与访问策略'
+  if (ui.module === 'system') return '配置当前租户的基础偏好、安全、通知与集成'
   return customerDomains[ui.module ?? '']?.description ?? '该业务模块尚未纳入本轮前端交付'
 })
 function navigate(path?: string) {
