@@ -2,6 +2,12 @@ import { expect, test, type Page } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 
 const evidenceDir = 'test-results/screenshots'
+const viewports = [
+  [1366, 768],
+  [1440, 900],
+  [1536, 1024],
+  [390, 844],
+] as const
 
 async function installPlatformFixture(page: Page) {
   await page.route('**/api/**', async (route) => {
@@ -31,6 +37,16 @@ async function installPlatformFixture(page: Page) {
   })
 }
 
+async function openOverviewPage(page: Page, width: number, height: number) {
+  await page.setViewportSize({ width, height })
+  await page.goto('/#/platform/overview')
+  await expect(page.getByRole('heading', { name: '平台管理', exact: true, level: 1 })).toBeVisible()
+  await expect(page.getByTestId('platform-overview')).toBeVisible()
+  await expect(page.getByRole('link', { name: /租户管理/ })).toBeVisible()
+  await page.evaluate(() => document.fonts.ready)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+}
+
 async function openTenantPage(page: Page, width: number, height: number) {
   await page.setViewportSize({ width, height })
   await page.goto('/#/platform/tenants')
@@ -46,13 +62,15 @@ test.beforeEach(async ({ page }) => {
   await installPlatformFixture(page)
 })
 
+test('platform overview WorkbenchPage captures the four CoffeeLink V1.1 viewports', async ({ page }) => {
+  for (const [width, height] of viewports) {
+    await openOverviewPage(page, width, height)
+    await page.screenshot({ path: `${evidenceDir}/platform-overview-${width}.png`, fullPage: false })
+  }
+})
+
 test('platform tenant ListPage captures the four CoffeeLink V1.1 viewports', async ({ page }) => {
-  for (const [width, height] of [
-    [1366, 768],
-    [1440, 900],
-    [1536, 1024],
-    [390, 844],
-  ] as const) {
+  for (const [width, height] of viewports) {
     await openTenantPage(page, width, height)
     await page.screenshot({ path: `${evidenceDir}/platform-tenants-${width}.png`, fullPage: false })
   }
