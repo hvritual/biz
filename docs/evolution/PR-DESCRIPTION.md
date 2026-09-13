@@ -8,4 +8,9 @@ Validation: 183 frontend unit tests; 106 Chromium browser tests; 154 MySQL top-l
 
 Branch choices and exception samples are recorded under `docs/evolution/`. This PR supersedes the accumulated source work in #40, #45, #59 and #68; their heads are retained in this candidate's ancestry.
 
-This remains an integration candidate. Customer/site features remain explicit previews, CE-13/CE-16 are not marked DONE, and main/production release is not claimed.
+This document preserves the original integration-candidate context. Its former
+CE-13/CE-16 status statement has been superseded: both tasks are now `DONE` in
+the commercial-entitlements task-status authority, with their required receipts.
+Customer/site and current enterprise pages remain explicit, complete simulated-data
+previews until their page-specific real API integration is delivered. Neither
+task completion nor this historical integration record claims a production release.

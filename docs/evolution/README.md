@@ -41,14 +41,25 @@ New distinct samples: #69 (lost identity tests), #70 (delegation deadlock),
 Additional samples #76–#82 cover CE16 migration ordering and the independently documented CE09/CE10 authority, precision, foreign-key, receipt-state, lease and worker defects.
 Historical fixes remain samples; their old green runs do not certify this candidate.
 
-## Status boundary
+## Current status and frontend data boundary
 
-CE-13 and CE-16 remain IN_PROGRESS until their full acceptance, main integration
-and final receipts. This integration record does not manufacture DONE evidence.
-The earlier `commercial-entitlements/evidence/INTEGRATION-20260912.md` records the
+The task-status authority is
+[`docs/commercial-entitlements/tasks.json`](../commercial-entitlements/tasks.json),
+not this integration note. CE-13 and CE-16 have completed their independent
+acceptance, main integration and final receipts, and are `DONE` there. The
+earlier `commercial-entitlements/evidence/INTEGRATION-20260912.md` records the
 initial frontend-only scope; this cross-branch scope supersedes its branch-chain
-and CE-16 exclusion statements. Backend access is always server-owned; no browser
-API key, synthetic tenant, second executor or production demo fallback is added.
+and CE-16 exclusion statements.
+
+The current enterprise-facing pages remain an explicit, complete demo experience:
+they read and write tenant-isolated simulated data. A real API mode has not yet
+been connected to those pages. They must remain visible, including when local
+development also enables API-backed surfaces: using their demo data is an
+intentional page policy, not a fallback after an API failure. Keep the full page
+layout, navigation, states and interactions available while the API integration
+is pending. Backend access, where an independently supported surface does use
+it, remains server-owned; no browser API key, synthetic tenant or second
+executor is permitted.
 
 Local database: reuse the single existing Docker instance and `biz_evolution` database as defined in [LOCAL-DATABASE.md](LOCAL-DATABASE.md). Per-task database creation is retired.
 

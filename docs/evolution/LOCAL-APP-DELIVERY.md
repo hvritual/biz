@@ -59,7 +59,10 @@ PLAYWRIGHT_SYSTEM_CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google 
   node scripts/accept-local-login.mjs
 ```
 
-The frontend must have CE-13's real API mode and proxy/session configuration
-integrated before its `VITE_DATA_MODE=api` process is useful. CE-16 owns the
-runtime worker configuration; this launcher deliberately supplies no paid-plan
-or grace-period defaults.
+The launcher can supply proxy/session configuration for independently supported
+API surfaces, but it does not mean that the current enterprise demo pages are
+API-integrated. Those pages remain complete, tenant-isolated simulated-data
+experiences until their real API integration is separately delivered, including
+when the launcher uses `VITE_DATA_MODE=api`. Their demo data is an explicit page
+policy, never an API-error fallback. CE-16 owns the runtime worker configuration;
+this launcher deliberately supplies no paid-plan or grace-period defaults.

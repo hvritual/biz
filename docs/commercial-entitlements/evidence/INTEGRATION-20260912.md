@@ -1,8 +1,11 @@
 # Frontend integration and task-state reconciliation — 2026-09-12
 
-This is a branch-integration progress record, not a CE-13 or CE-16 completion receipt.
-`tasks.json` remains the sole task-status source. Neither task has an
-`integration_commit` or final PASS receipt.
+This is a historical branch-integration progress record, not a CE-13 or CE-16
+completion receipt. `tasks.json` remains the sole task-status source. At the
+time of this record neither task had an `integration_commit` or final PASS
+receipt; both have since completed their receipts and are now `DONE`. The
+observations below preserve the 2026-09-12 integration state and must not be
+read as the current task status.
 
 ## Observed source facts
 

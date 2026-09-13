@@ -36,13 +36,16 @@ Local logs: `/tmp/biz-branch-audit/` (not committed), notably
 
 ## Limits
 
-This is integration-candidate verification, not a CE-13/CE-16 DONE receipt or a
-production certification. Customer/site features remain explicit previews.
-Runtime UI tests include mocked HTTP contracts; they do not alone establish a
-complete production IdP-to-UI acceptance. Existing real-IdP workflows remain
-separate. A test-process restart is not reported as a physical database restart.
-CI results for later commits are separate from these local results. Main has not
-been moved by this integration candidate.
+This is a historical integration-candidate verification snapshot, not the
+CE-13/CE-16 receipt itself or a production certification. CE-13 and CE-16 have
+subsequently completed their task receipts and are `DONE` in `tasks.json`.
+Customer/site and current enterprise pages remain explicit, complete
+simulated-data previews until their page-specific API integration is delivered.
+Runtime UI tests with mocked HTTP contracts do not alone establish production
+IdP-to-UI acceptance. Existing real-IdP workflows remain separate. A
+test-process restart is not reported as a physical database restart. CI results
+for later commits are separate from these local results, and this candidate
+snapshot did not itself move main.
 
 ## Cloud readback
 

@@ -25,7 +25,8 @@ one sanitized late E2E failure:
   `web/e2e/ce13-tenant-entitlements.spec.ts:100`.
 
 The current page has removed that stale discovery notice. This records a mock
-test expectation that needs updating while retaining its explicit tenant and
-server-explanation isolation assertions; it does not claim CE13 passed. The
-artifact diagnostic workflow was deleted after readback and no trace, cookie,
-environment, or raw artifact content was retained.
+test expectation that needed updating while retaining its explicit tenant and
+server-explanation isolation assertions. The diagnostic run itself was not a
+CE-13 completion proof; CE-13's later independent receipt is now `DONE` in
+`tasks.json`. The artifact diagnostic workflow was deleted after readback and
+no trace, cookie, environment, or raw artifact content was retained.
