@@ -36,8 +36,8 @@ for (const page of contract.routes) {
   if (!block.includes(`pageTemplate: '${page.template}'`)) {
     failures.push(`${page.path}: route must declare pageTemplate ${page.template}`)
   }
-  if (page.surface === 'platform' && !block.includes("surface: 'platform'")) {
-    failures.push(`${page.path}: platform route must declare platform surface`)
+  if (!block.includes(`surface: '${page.surface}'`)) {
+    failures.push(`${page.path}: route must declare ${page.surface} surface`)
   }
 
   const file = componentFile(page.component)
