@@ -13,6 +13,7 @@ import DictionarySettings from '@/components/settings/DictionarySettings.vue'
 const route = useRoute(),
   store = useEnterpriseStore()
 const section = computed(() => String(route.params.section))
+const currentSection = computed(() => systemNavigation.find((item) => item.id === section.value) ?? systemNavigation[0])
 const component = computed(
   () =>
     ({
@@ -25,21 +26,12 @@ const component = computed(
 )
 </script>
 <template>
-  <div class="page-stack">
+  <div class="page-stack" data-ui-template="FormPage">
     <PageHeading
-      title="系统设置"
-      breadcrumb="企业运行系统"
-      description="配置当前企业的基础信息、通知偏好与访问策略"
+      :title="currentSection?.label ?? '基础设置'"
+      breadcrumb="系统设置"
+      description="配置当前企业的运行偏好；平台级租户、套餐、模块与权益由独立的平台管理系统维护。"
     />
-    <div class="tabs">
-      <RouterLink
-        v-for="item in systemNavigation"
-        :key="item.id"
-        :to="item.path!"
-        :class="['tab', { active: section === item.id }]"
-        >{{ item.label }}</RouterLink
-      >
-    </div>
     <div class="split-layout">
       <section class="card panel-pad settings-main"><component :is="component" :key="section" /></section>
       <aside class="side-summary">
@@ -80,11 +72,6 @@ const component = computed(
   </div>
 </template>
 <style scoped>
-.tabs > .tab {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-}
 .settings-main {
   padding: 28px;
 }
