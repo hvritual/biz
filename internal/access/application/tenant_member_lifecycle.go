@@ -22,6 +22,22 @@ var (
 	ErrTenantContextRequired      = errors.New("access: trusted tenant context is required")
 )
 
+type tenantMemberConflictError struct {
+	cause error
+}
+
+func (err *tenantMemberConflictError) Error() string {
+	return err.cause.Error()
+}
+
+func (err *tenantMemberConflictError) Unwrap() error {
+	return err.cause
+}
+
+func (err *tenantMemberConflictError) GRPCStatus() *status.Status {
+	return status.New(codes.Aborted, err.cause.Error())
+}
+
 type TenantMemberLifecycleService struct {
 	repositories requestscope.RepositoryFactory[ports.TenantMemberRepositories]
 	capabilities TenantMemberLifecycleCapabilities
@@ -169,7 +185,7 @@ func (service *TenantMemberLifecycleService) mutate(ctx context.Context, userID 
 	})
 	if err != nil {
 		if errors.Is(err, ports.ErrTenantMemberConflict) {
-			return nil, status.Error(codes.Aborted, err.Error())
+			return nil, &tenantMemberConflictError{cause: err}
 		}
 		return nil, err
 	}
