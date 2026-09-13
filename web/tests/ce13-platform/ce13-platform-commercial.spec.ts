@@ -341,11 +341,11 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await page.setViewportSize({ width: 1366, height: 768 });
   const main = page.getByTestId("main-content");
   const before = await main.boundingBox();
-  const platformTrigger = page.getByRole("button", { name: "平台商业", exact: true });
+  const platformTrigger = page.getByRole("button", { name: "平台管理", exact: true });
   await platformTrigger.focus();
   await page.screenshot({ path: testInfo.outputPath("ce13-platform-trigger-focus-1366x768.png"), fullPage: true });
   await page.keyboard.press("Enter");
-  const overlay = page.getByRole("dialog", { name: "平台商业导航" });
+  const overlay = page.getByRole("dialog", { name: "平台管理导航" });
   await expect(overlay).toBeVisible();
   const overlayBox = await overlay.boundingBox();
   const after = await main.boundingBox();
