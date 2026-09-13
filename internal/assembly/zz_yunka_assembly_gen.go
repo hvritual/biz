@@ -24,11 +24,14 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "c234b5d4e60ca2d4660b64a897a8363b25b76c82836afccf110bc7325c67e965"
+const AssemblyPlanDigest = "1dc7247534cc621e88b20da3db509979e34948efea1fee3b6913747325e1dc0d"
 
 type AccessTenantDelegationManagementDependencies struct {
 	AccessTenantLifecycle     accessapplication.TenantDelegationManagementToAccessTenantLifecycleChildCapability
 	DeviceopsDeviceManagement accessapplication.TenantDelegationManagementToDeviceopsDeviceManagementChildCapability
+}
+
+type AccessTenantDepartmentManagementDependencies struct {
 }
 
 type AccessTenantLifecycleDependencies struct {
@@ -38,7 +41,8 @@ type AccessTenantLifecycleDependencies struct {
 }
 
 type AccessTenantMemberLifecycleDependencies struct {
-	AccessTenantRolePermission accessapplication.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability
+	AccessTenantDepartmentManagement accessapplication.TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability
+	AccessTenantRolePermission       accessapplication.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability
 }
 
 type AccessTenantRolePermissionDependencies struct {
@@ -86,6 +90,7 @@ type DeviceopsSiteManagementDependencies struct {
 
 type ApplicationFactories interface {
 	BuildAccessTenantDelegationManagement(AccessTenantDelegationManagementDependencies) (accessapplication.TenantDelegationManagementApplication, error)
+	BuildAccessTenantDepartmentManagement(AccessTenantDepartmentManagementDependencies) (accessapplication.TenantDepartmentManagementApplication, error)
 	BuildAccessTenantLifecycle(AccessTenantLifecycleDependencies) (accessapplication.TenantLifecycleApplication, error)
 	BuildAccessTenantMemberLifecycle(AccessTenantMemberLifecycleDependencies) (accessapplication.TenantMemberLifecycleApplication, error)
 	BuildAccessTenantRolePermission(AccessTenantRolePermissionDependencies) (accessapplication.TenantRolePermissionApplication, error)
@@ -103,6 +108,7 @@ type ApplicationFactories interface {
 
 type Applications struct {
 	AccessTenantDelegationManagement accessapplication.TenantDelegationManagementApplication
+	AccessTenantDepartmentManagement accessapplication.TenantDepartmentManagementApplication
 	AccessTenantLifecycle            accessapplication.TenantLifecycleApplication
 	AccessTenantMemberLifecycle      accessapplication.TenantMemberLifecycleApplication
 	AccessTenantRolePermission       accessapplication.TenantRolePermissionApplication
@@ -127,6 +133,13 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	}
 	var applications Applications
 	var err error
+	applications.AccessTenantDepartmentManagement, err = factories.BuildAccessTenantDepartmentManagement(AccessTenantDepartmentManagementDependencies{})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_department_management: %w", err)
+	}
+	if applications.AccessTenantDepartmentManagement == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_department_management")
+	}
 	applications.AccessTenantRolePermission, err = factories.BuildAccessTenantRolePermission(AccessTenantRolePermissionDependencies{})
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_role_permission: %w", err)
@@ -134,11 +147,15 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	if applications.AccessTenantRolePermission == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_role_permission")
 	}
+	accessTenantMemberLifecycleAccessTenantDepartmentManagementCapability, err := accessapplication.NewTenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability(applications.AccessTenantDepartmentManagement, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_member_lifecycle dependency access/tenant_department_management: %w", err)
+	}
 	accessTenantMemberLifecycleAccessTenantRolePermissionCapability, err := accessapplication.NewTenantMemberLifecycleToAccessTenantRolePermissionChildCapability(applications.AccessTenantRolePermission, executor)
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_member_lifecycle dependency access/tenant_role_permission: %w", err)
 	}
-	applications.AccessTenantMemberLifecycle, err = factories.BuildAccessTenantMemberLifecycle(AccessTenantMemberLifecycleDependencies{AccessTenantRolePermission: accessTenantMemberLifecycleAccessTenantRolePermissionCapability})
+	applications.AccessTenantMemberLifecycle, err = factories.BuildAccessTenantMemberLifecycle(AccessTenantMemberLifecycleDependencies{AccessTenantDepartmentManagement: accessTenantMemberLifecycleAccessTenantDepartmentManagementCapability, AccessTenantRolePermission: accessTenantMemberLifecycleAccessTenantRolePermissionCapability})
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_member_lifecycle: %w", err)
 	}
@@ -334,6 +351,15 @@ func RegisterTransports(bindings TransportBindings, applications Applications, e
 	if err := accessrpc.RegisterTenantDelegationManagementOperationExecutor(bindings.RPC, applications.AccessTenantDelegationManagement, executor); err != nil {
 		return fmt.Errorf("yunka assembly: register gRPC access/tenant_delegation_management: %w", err)
 	}
+	if applications.AccessTenantDepartmentManagement == nil {
+		return errors.New("yunka assembly: application access/tenant_department_management is required for transport registration")
+	}
+	if err := accessrest.RegisterTenantDepartmentManagementOperationExecutor(bindings.HTTP, applications.AccessTenantDepartmentManagement, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register HTTP access/tenant_department_management: %w", err)
+	}
+	if err := accessrpc.RegisterTenantDepartmentManagementOperationExecutor(bindings.RPC, applications.AccessTenantDepartmentManagement, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register gRPC access/tenant_department_management: %w", err)
+	}
 	if applications.AccessTenantLifecycle == nil {
 		return errors.New("yunka assembly: application access/tenant_lifecycle is required for transport registration")
 	}
@@ -465,7 +491,7 @@ type BootstrapOptions struct {
 
 func RuntimeInventory() core.RuntimeInventory {
 	return core.RuntimeInventory{
-		Routes:              []string{"/v1/delegated/devices/{id}", "/v1/devices", "/v1/devices/{id}", "/v1/devices/{id}/transfer", "/v1/platform/modules", "/v1/platform/modules/{module_code}", "/v1/platform/modules/{module_code}/sales-status", "/v1/platform/modules/{module_code}/technical-status", "/v1/platform/plans", "/v1/platform/plans/{plan_code}/versions", "/v1/platform/plans/{plan_code}/versions/{version}", "/v1/platform/plans/{plan_code}/versions/{version}/eligibility", "/v1/platform/plans/{plan_code}/versions/{version}/publish", "/v1/platform/plans/{plan_code}/versions/{version}/retire", "/v1/platform/subscription-default-rules", "/v1/platform/subscription-default-rules/{rule_id}", "/v1/platform/tenants/{tenant_id}/entitlement-overrides", "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", "/v1/platform/tenants/{tenant_id}/entitlements", "/v1/platform/tenants/{tenant_id}/provisioning/deliveries", "/v1/platform/tenants/{tenant_id}/provisioning/tasks", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry", "/v1/platform/tenants/{tenant_id}/subscription", "/v1/platform/tenants/{tenant_id}/subscription/change-previews", "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm", "/v1/tenant/delegations", "/v1/tenant/delegations/devices", "/v1/tenant/delegations/{id}", "/v1/tenant/delegations/{id}:revoke", "/v1/tenant/entitlements", "/v1/tenant/members", "/v1/tenant/members/{user_id}", "/v1/tenant/members/{user_id}/activate", "/v1/tenant/members/{user_id}/profile", "/v1/tenant/members/{user_id}/remove", "/v1/tenant/members/{user_id}/suspend", "/v1/tenant/roles", "/v1/tenant/roles/{role_id}", "/v1/tenant/roles/{role_id}/disable", "/v1/tenant/roles/{role_id}/enable", "/v1/tenant/roles/{role_id}/members", "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", "/v1/tenant/roles/{role_id}/permissions", "/v1/tenants", "/v1/tenants/{id}", "/v1/tenants/{id}/activate", "/v1/tenants/{id}/close", "/v1/tenants/{id}/suspend"},
+		Routes:              []string{"/v1/delegated/devices/{id}", "/v1/devices", "/v1/devices/{id}", "/v1/devices/{id}/transfer", "/v1/platform/modules", "/v1/platform/modules/{module_code}", "/v1/platform/modules/{module_code}/sales-status", "/v1/platform/modules/{module_code}/technical-status", "/v1/platform/plans", "/v1/platform/plans/{plan_code}/versions", "/v1/platform/plans/{plan_code}/versions/{version}", "/v1/platform/plans/{plan_code}/versions/{version}/eligibility", "/v1/platform/plans/{plan_code}/versions/{version}/publish", "/v1/platform/plans/{plan_code}/versions/{version}/retire", "/v1/platform/subscription-default-rules", "/v1/platform/subscription-default-rules/{rule_id}", "/v1/platform/tenants/{tenant_id}/entitlement-overrides", "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", "/v1/platform/tenants/{tenant_id}/entitlements", "/v1/platform/tenants/{tenant_id}/provisioning/deliveries", "/v1/platform/tenants/{tenant_id}/provisioning/tasks", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry", "/v1/platform/tenants/{tenant_id}/subscription", "/v1/platform/tenants/{tenant_id}/subscription/change-previews", "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm", "/v1/tenant/delegations", "/v1/tenant/delegations/devices", "/v1/tenant/delegations/{id}", "/v1/tenant/delegations/{id}:revoke", "/v1/tenant/departments", "/v1/tenant/departments/{department_id}", "/v1/tenant/departments/{department_id}/disable", "/v1/tenant/departments/{department_id}/enable", "/v1/tenant/entitlements", "/v1/tenant/members", "/v1/tenant/members/{user_id}", "/v1/tenant/members/{user_id}/activate", "/v1/tenant/members/{user_id}/profile", "/v1/tenant/members/{user_id}/remove", "/v1/tenant/members/{user_id}/suspend", "/v1/tenant/roles", "/v1/tenant/roles/{role_id}", "/v1/tenant/roles/{role_id}/disable", "/v1/tenant/roles/{role_id}/enable", "/v1/tenant/roles/{role_id}/members", "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", "/v1/tenant/roles/{role_id}/permissions", "/v1/tenants", "/v1/tenants/{id}", "/v1/tenants/{id}/activate", "/v1/tenants/{id}/close", "/v1/tenants/{id}/suspend"},
 		RPCClientConfigured: false,
 		RPCServerCount:      1,
 	}

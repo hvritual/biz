@@ -23,6 +23,8 @@ export type Access_V1_DataScope = "DATA_SCOPE_UNSPECIFIED" | "DATA_SCOPE_NONE" |
 
 export type Access_V1_TenantDelegationStatus = "TENANT_DELEGATION_STATUS_UNSPECIFIED" | "TENANT_DELEGATION_STATUS_ACTIVE" | "TENANT_DELEGATION_STATUS_REVOKED";
 
+export type Access_V1_TenantDepartmentStatus = "TENANT_DEPARTMENT_STATUS_UNSPECIFIED" | "TENANT_DEPARTMENT_STATUS_ACTIVE" | "TENANT_DEPARTMENT_STATUS_DISABLED";
+
 export type Access_V1_TenantMemberStatus = "TENANT_MEMBER_STATUS_UNSPECIFIED" | "TENANT_MEMBER_STATUS_INVITED" | "TENANT_MEMBER_STATUS_ACTIVE" | "TENANT_MEMBER_STATUS_SUSPENDED" | "TENANT_MEMBER_STATUS_REMOVED";
 
 export type Access_V1_TenantRoleStatus = "TENANT_ROLE_STATUS_UNSPECIFIED" | "TENANT_ROLE_STATUS_ACTIVE" | "TENANT_ROLE_STATUS_DISABLED";
@@ -57,6 +59,15 @@ export interface Access_V1_CloseTenantRequest {
   version?: string;
 }
 
+export interface Access_V1_CreateTenantDepartmentRequest {
+  name?: string;
+  parentId?: string;
+  leaderUserId?: string;
+  email?: string;
+  phone?: string;
+  sort?: number;
+}
+
 export interface Access_V1_CreateTenantRequest {
   name?: string;
   ownerUserId?: string;
@@ -69,8 +80,18 @@ export interface Access_V1_CreateTenantRoleRequest {
   name?: string;
 }
 
+export interface Access_V1_DisableTenantDepartmentRequest {
+  departmentId?: string;
+  version?: string;
+}
+
 export interface Access_V1_DisableTenantRoleRequest {
   roleId?: string;
+  version?: string;
+}
+
+export interface Access_V1_EnableTenantDepartmentRequest {
+  departmentId?: string;
   version?: string;
 }
 
@@ -81,6 +102,10 @@ export interface Access_V1_EnableTenantRoleRequest {
 
 export interface Access_V1_GetTenantDelegationRequest {
   id?: string;
+}
+
+export interface Access_V1_GetTenantDepartmentRequest {
+  departmentId?: string;
 }
 
 export interface Access_V1_GetTenantMemberRequest {
@@ -111,6 +136,13 @@ export interface Access_V1_ListTenantDelegationsRequest {
 
 export interface Access_V1_ListTenantDelegationsResponse {
   delegations?: readonly Access_V1_TenantDelegationDTO[];
+}
+
+export interface Access_V1_ListTenantDepartmentsRequest {
+}
+
+export interface Access_V1_ListTenantDepartmentsResponse {
+  departments?: readonly Access_V1_TenantDepartmentDTO[];
 }
 
 export interface Access_V1_ListTenantMembersRequest {
@@ -194,6 +226,18 @@ export interface Access_V1_TenantDelegationDTO {
   expiresAtUnixMs?: string;
 }
 
+export interface Access_V1_TenantDepartmentDTO {
+  departmentId?: string;
+  name?: string;
+  parentId?: string;
+  leaderUserId?: string;
+  email?: string;
+  phone?: string;
+  status?: Access_V1_TenantDepartmentStatus;
+  sort?: number;
+  version?: string;
+}
+
 export interface Access_V1_TenantMemberDTO {
   userId?: string;
   email?: string;
@@ -219,6 +263,17 @@ export interface Access_V1_TenantRoleDTO {
   name?: string;
   status?: Access_V1_TenantRoleStatus;
   permissions?: readonly Access_V1_PermissionGrantDTO[];
+  version?: string;
+}
+
+export interface Access_V1_UpdateTenantDepartmentRequest {
+  departmentId?: string;
+  name?: string;
+  parentId?: string;
+  leaderUserId?: string;
+  email?: string;
+  phone?: string;
+  sort?: number;
   version?: string;
 }
 
@@ -898,6 +953,60 @@ export const operations = {
       { method: "POST", path: "/v1/tenant/delegations/{id}:revoke", body: "*" },
     ]
   },
+  "access.v1.TenantDepartmentManagementApplication.CreateTenantDepartment": {
+    fullName: "access.v1.TenantDepartmentManagementApplication.CreateTenantDepartment",
+    rpcPath: "/access.v1.TenantDepartmentManagementApplication/CreateTenantDepartment",
+    requestType: "access.v1.CreateTenantDepartmentRequest",
+    responseType: "access.v1.TenantDepartmentDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/departments", body: "*" },
+    ]
+  },
+  "access.v1.TenantDepartmentManagementApplication.DisableTenantDepartment": {
+    fullName: "access.v1.TenantDepartmentManagementApplication.DisableTenantDepartment",
+    rpcPath: "/access.v1.TenantDepartmentManagementApplication/DisableTenantDepartment",
+    requestType: "access.v1.DisableTenantDepartmentRequest",
+    responseType: "access.v1.TenantDepartmentDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/departments/{department_id}/disable", body: "*" },
+    ]
+  },
+  "access.v1.TenantDepartmentManagementApplication.EnableTenantDepartment": {
+    fullName: "access.v1.TenantDepartmentManagementApplication.EnableTenantDepartment",
+    rpcPath: "/access.v1.TenantDepartmentManagementApplication/EnableTenantDepartment",
+    requestType: "access.v1.EnableTenantDepartmentRequest",
+    responseType: "access.v1.TenantDepartmentDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/departments/{department_id}/enable", body: "*" },
+    ]
+  },
+  "access.v1.TenantDepartmentManagementApplication.GetTenantDepartment": {
+    fullName: "access.v1.TenantDepartmentManagementApplication.GetTenantDepartment",
+    rpcPath: "/access.v1.TenantDepartmentManagementApplication/GetTenantDepartment",
+    requestType: "access.v1.GetTenantDepartmentRequest",
+    responseType: "access.v1.TenantDepartmentDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/departments/{department_id}" },
+    ]
+  },
+  "access.v1.TenantDepartmentManagementApplication.ListTenantDepartments": {
+    fullName: "access.v1.TenantDepartmentManagementApplication.ListTenantDepartments",
+    rpcPath: "/access.v1.TenantDepartmentManagementApplication/ListTenantDepartments",
+    requestType: "access.v1.ListTenantDepartmentsRequest",
+    responseType: "access.v1.ListTenantDepartmentsResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/departments" },
+    ]
+  },
+  "access.v1.TenantDepartmentManagementApplication.UpdateTenantDepartment": {
+    fullName: "access.v1.TenantDepartmentManagementApplication.UpdateTenantDepartment",
+    rpcPath: "/access.v1.TenantDepartmentManagementApplication/UpdateTenantDepartment",
+    requestType: "access.v1.UpdateTenantDepartmentRequest",
+    responseType: "access.v1.TenantDepartmentDTO",
+    http: [
+      { method: "PATCH", path: "/v1/tenant/departments/{department_id}", body: "*" },
+    ]
+  },
   "access.v1.TenantLifecycleApplication.ActivateTenant": {
     fullName: "access.v1.TenantLifecycleApplication.ActivateTenant",
     rpcPath: "/access.v1.TenantLifecycleApplication/ActivateTenant",
@@ -1493,6 +1602,35 @@ export class Access_V1_TenantDelegationApplicationClient {
 
   revokeTenantDelegation(request: Access_V1_RevokeTenantDelegationRequest): Promise<Access_V1_TenantDelegationDTO> {
     return this.transport.call<Access_V1_RevokeTenantDelegationRequest, Access_V1_TenantDelegationDTO>(operations["access.v1.TenantDelegationApplication.RevokeTenantDelegation"], request);
+  }
+
+}
+
+export class Access_V1_TenantDepartmentManagementApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  createTenantDepartment(request: Access_V1_CreateTenantDepartmentRequest): Promise<Access_V1_TenantDepartmentDTO> {
+    return this.transport.call<Access_V1_CreateTenantDepartmentRequest, Access_V1_TenantDepartmentDTO>(operations["access.v1.TenantDepartmentManagementApplication.CreateTenantDepartment"], request);
+  }
+
+  disableTenantDepartment(request: Access_V1_DisableTenantDepartmentRequest): Promise<Access_V1_TenantDepartmentDTO> {
+    return this.transport.call<Access_V1_DisableTenantDepartmentRequest, Access_V1_TenantDepartmentDTO>(operations["access.v1.TenantDepartmentManagementApplication.DisableTenantDepartment"], request);
+  }
+
+  enableTenantDepartment(request: Access_V1_EnableTenantDepartmentRequest): Promise<Access_V1_TenantDepartmentDTO> {
+    return this.transport.call<Access_V1_EnableTenantDepartmentRequest, Access_V1_TenantDepartmentDTO>(operations["access.v1.TenantDepartmentManagementApplication.EnableTenantDepartment"], request);
+  }
+
+  getTenantDepartment(request: Access_V1_GetTenantDepartmentRequest): Promise<Access_V1_TenantDepartmentDTO> {
+    return this.transport.call<Access_V1_GetTenantDepartmentRequest, Access_V1_TenantDepartmentDTO>(operations["access.v1.TenantDepartmentManagementApplication.GetTenantDepartment"], request);
+  }
+
+  listTenantDepartments(request: Access_V1_ListTenantDepartmentsRequest): Promise<Access_V1_ListTenantDepartmentsResponse> {
+    return this.transport.call<Access_V1_ListTenantDepartmentsRequest, Access_V1_ListTenantDepartmentsResponse>(operations["access.v1.TenantDepartmentManagementApplication.ListTenantDepartments"], request);
+  }
+
+  updateTenantDepartment(request: Access_V1_UpdateTenantDepartmentRequest): Promise<Access_V1_TenantDepartmentDTO> {
+    return this.transport.call<Access_V1_UpdateTenantDepartmentRequest, Access_V1_TenantDepartmentDTO>(operations["access.v1.TenantDepartmentManagementApplication.UpdateTenantDepartment"], request);
   }
 
 }

@@ -433,16 +433,14 @@ func (x *ListTenantMembersResponse) GetMembers() []*TenantMemberDTO {
 }
 
 type UpdateTenantMemberProfileRequest struct {
-	state      protoimpl.MessageState `protogen:"open.v1"`
-	UserId     string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Name       string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Phone      string                 `protobuf:"bytes,3,opt,name=phone,proto3" json:"phone,omitempty"`
-	EmployeeId string                 `protobuf:"bytes,4,opt,name=employee_id,json=employeeId,proto3" json:"employee_id,omitempty"`
-	Position   string                 `protobuf:"bytes,5,opt,name=position,proto3" json:"position,omitempty"`
-	// Opaque organization reference in EC-RI-02. Department tree semantics,
-	// move invariants and leader validation belong to EC-RI-04.
-	DepartmentId  string `protobuf:"bytes,6,opt,name=department_id,json=departmentId,proto3" json:"department_id,omitempty"`
-	Version       uint64 `protobuf:"varint,7,opt,name=version,proto3" json:"version,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Phone         string                 `protobuf:"bytes,3,opt,name=phone,proto3" json:"phone,omitempty"`
+	EmployeeId    string                 `protobuf:"bytes,4,opt,name=employee_id,json=employeeId,proto3" json:"employee_id,omitempty"`
+	Position      string                 `protobuf:"bytes,5,opt,name=position,proto3" json:"position,omitempty"`
+	DepartmentId  string                 `protobuf:"bytes,6,opt,name=department_id,json=departmentId,proto3" json:"department_id,omitempty"`
+	Version       uint64                 `protobuf:"varint,7,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -800,23 +798,23 @@ const file_access_v1_tenant_member_proto_rawDesc = "" +
 	"\x1cTENANT_MEMBER_STATUS_INVITED\x10\x01\x12\x1f\n" +
 	"\x1bTENANT_MEMBER_STATUS_ACTIVE\x10\x02\x12\"\n" +
 	"\x1eTENANT_MEMBER_STATUS_SUSPENDED\x10\x03\x12 \n" +
-	"\x1cTENANT_MEMBER_STATUS_REMOVED\x10\x042\x83\x0f\n" +
+	"\x1cTENANT_MEMBER_STATUS_REMOVED\x10\x042\xdf\x0f\n" +
 	" TenantMemberLifecycleApplication\x12\xc7\x01\n" +
 	"\x12InviteTenantMember\x12$.access.v1.InviteTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"o\xe2\xf3\x18N\n" +
 	"\x14tenant.member.invite\x12\x14invite_tenant_member\x1a\x14tenant.member.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/tenant/members\x12\xc0\x01\n" +
 	"\x0fGetTenantMember\x12!.access.v1.GetTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"n\xe2\xf3\x18F\n" +
 	"\x11tenant.member.get\x12\x11get_tenant_member\x1a\x12tenant.member.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x1e\x12\x1c/v1/tenant/members/{user_id}\x12\xc7\x01\n" +
 	"\x11ListTenantMembers\x12#.access.v1.ListTenantMembersRequest\x1a$.access.v1.ListTenantMembersResponse\"g\xe2\xf3\x18I\n" +
-	"\x12tenant.member.list\x12\x13list_tenant_members\x1a\x12tenant.member.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/tenant/members\x12\xf8\x01\n" +
-	"\x19UpdateTenantMemberProfile\x12+.access.v1.UpdateTenantMemberProfileRequest\x1a\x1a.access.v1.TenantMemberDTO\"\x91\x01\xe2\xf3\x18^\n" +
-	"\x1ctenant.member.profile.update\x12\x1cupdate_tenant_member_profile\x1a\x14tenant.member.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02):\x01*2$/v1/tenant/members/{user_id}/profile\x12\xe3\x01\n" +
+	"\x12tenant.member.list\x12\x13list_tenant_members\x1a\x12tenant.member.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/tenant/members\x12\xaf\x02\n" +
+	"\x19UpdateTenantMemberProfile\x12+.access.v1.UpdateTenantMemberProfileRequest\x1a\x1a.access.v1.TenantMemberDTO\"\xc8\x01\xe2\xf3\x18\x94\x01\n" +
+	"\x1ctenant.member.profile.update\x12\x1cupdate_tenant_member_profile\x1a\x14tenant.member.manage(\x012\x02\x02\x04B2tenant.department.assert_member_assignment_allowedH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02):\x01*2$/v1/tenant/members/{user_id}/profile\x12\xe3\x01\n" +
 	"\x14ActivateTenantMember\x12&.access.v1.ActivateTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"\x86\x01\xe2\xf3\x18R\n" +
 	"\x16tenant.member.activate\x12\x16activate_tenant_member\x1a\x14tenant.member.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/tenant/members/{user_id}/activate\x12\x91\x02\n" +
 	"\x13SuspendTenantMember\x12%.access.v1.SuspendTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"\xb6\x01\xe2\xf3\x18\x82\x01\n" +
 	"\x15tenant.member.suspend\x12\x15suspend_tenant_member\x1a\x14tenant.member.manage(\x012\x02\x02\x04B.tenant.role.assert_member_deactivation_allowedH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02):\x01*\"$/v1/tenant/members/{user_id}/suspend\x12\x8c\x02\n" +
 	"\x12RemoveTenantMember\x12$.access.v1.RemoveTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"\xb3\x01\xe2\xf3\x18\x80\x01\n" +
-	"\x14tenant.member.remove\x12\x14remove_tenant_member\x1a\x14tenant.member.manage(\x012\x02\x02\x04B.tenant.role.assert_member_deactivation_allowedH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02(:\x01*\"#/v1/tenant/members/{user_id}/remove\x1a\x83\x02\xda\xf3\x18\xfe\x01\n" +
-	"\x17tenant_member_lifecycle\x12\x1daccess/tenant_role_permission\x1a\xc3\x01\n" +
+	"\x14tenant.member.remove\x12\x14remove_tenant_member\x1a\x14tenant.member.manage(\x012\x02\x02\x04B.tenant.role.assert_member_deactivation_allowedH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02(:\x01*\"#/v1/tenant/members/{user_id}/remove\x1a\xa8\x02\xda\xf3\x18\xa3\x02\n" +
+	"\x17tenant_member_lifecycle\x12\x1daccess/tenant_role_permission\x12#access/tenant_department_management\x1a\xc3\x01\n" +
 	"\x1dtenant.member.bootstrap_owner\x12\x1dbootstrap_tenant_owner_member\x1a\x16platform.tenant.create2\x01\x02R\x04\b\x03\x10\x01Z+access.v1.BootstrapTenantOwnerMemberRequestb\x19access.v1.TenantMemberDTOj\x1aBootstrapTenantOwnerMemberBJ\xca\xf3\x18\f\n" +
 	"\x06access\x12\x02v1Z8github.com/hvritual/biz/contracts/gen/access/v1;accessv1b\x06proto3"
 

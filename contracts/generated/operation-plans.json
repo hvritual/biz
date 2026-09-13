@@ -2380,6 +2380,233 @@
       }
     },
     {
+      "operationId": "tenant.department.assert_member_assignment_allowed",
+      "domain": "access",
+      "application": "tenant_department_management",
+      "useCase": "assert_tenant_member_department_assignment_allowed",
+      "requestType": "access.v1.AssertTenantMemberDepartmentAssignmentAllowedRequest",
+      "responseType": "access.v1.AssertTenantMemberDepartmentAssignmentAllowedResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.member.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {}
+    },
+    {
+      "operationId": "tenant.department.create",
+      "domain": "access",
+      "application": "tenant_department_management",
+      "useCase": "create_tenant_department",
+      "requestType": "access.v1.CreateTenantDepartmentRequest",
+      "responseType": "access.v1.TenantDepartmentDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.organization.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantDepartmentManagementApplication/CreateTenantDepartment",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/departments",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.department.disable",
+      "domain": "access",
+      "application": "tenant_department_management",
+      "useCase": "disable_tenant_department",
+      "requestType": "access.v1.DisableTenantDepartmentRequest",
+      "responseType": "access.v1.TenantDepartmentDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.organization.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantDepartmentManagementApplication/DisableTenantDepartment",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/departments/{department_id}/disable",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.department.enable",
+      "domain": "access",
+      "application": "tenant_department_management",
+      "useCase": "enable_tenant_department",
+      "requestType": "access.v1.EnableTenantDepartmentRequest",
+      "responseType": "access.v1.TenantDepartmentDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.organization.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantDepartmentManagementApplication/EnableTenantDepartment",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/departments/{department_id}/enable",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.department.get",
+      "domain": "access",
+      "application": "tenant_department_management",
+      "useCase": "get_tenant_department",
+      "requestType": "access.v1.GetTenantDepartmentRequest",
+      "responseType": "access.v1.TenantDepartmentDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.organization.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantDepartmentManagementApplication/GetTenantDepartment",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/departments/{department_id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.department.list",
+      "domain": "access",
+      "application": "tenant_department_management",
+      "useCase": "list_tenant_departments",
+      "requestType": "access.v1.ListTenantDepartmentsRequest",
+      "responseType": "access.v1.ListTenantDepartmentsResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.organization.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantDepartmentManagementApplication/ListTenantDepartments",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/departments"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.department.update",
+      "domain": "access",
+      "application": "tenant_department_management",
+      "useCase": "update_tenant_department",
+      "requestType": "access.v1.UpdateTenantDepartmentRequest",
+      "responseType": "access.v1.TenantDepartmentDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.organization.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantDepartmentManagementApplication/UpdateTenantDepartment",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/tenant/departments/{department_id}",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "tenant.get",
       "domain": "access",
       "application": "tenant_lifecycle",
@@ -2477,6 +2704,7 @@
       },
       "composition": {},
       "applicationRequires": [
+        "access/tenant_department_management",
         "access/tenant_role_permission"
       ],
       "bindings": {
@@ -2512,6 +2740,7 @@
       },
       "composition": {},
       "applicationRequires": [
+        "access/tenant_department_management",
         "access/tenant_role_permission"
       ],
       "bindings": {}
@@ -2540,6 +2769,7 @@
       },
       "composition": {},
       "applicationRequires": [
+        "access/tenant_department_management",
         "access/tenant_role_permission"
       ],
       "bindings": {
@@ -2576,6 +2806,7 @@
       },
       "composition": {},
       "applicationRequires": [
+        "access/tenant_department_management",
         "access/tenant_role_permission"
       ],
       "bindings": {
@@ -2613,6 +2844,7 @@
       },
       "composition": {},
       "applicationRequires": [
+        "access/tenant_department_management",
         "access/tenant_role_permission"
       ],
       "bindings": {
@@ -2647,8 +2879,17 @@
         "transaction": "local",
         "idempotency": "required"
       },
-      "composition": {},
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "tenant.department.assert_member_assignment_allowed"
+        ],
+        "permissionClosure": [
+          "tenant.member.manage"
+        ]
+      },
       "applicationRequires": [
+        "access/tenant_department_management",
         "access/tenant_role_permission"
       ],
       "bindings": {
@@ -2694,6 +2935,7 @@
         ]
       },
       "applicationRequires": [
+        "access/tenant_department_management",
         "access/tenant_role_permission"
       ],
       "bindings": {
@@ -2739,6 +2981,7 @@
         ]
       },
       "applicationRequires": [
+        "access/tenant_department_management",
         "access/tenant_role_permission"
       ],
       "bindings": {
