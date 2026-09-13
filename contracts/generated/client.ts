@@ -199,6 +199,19 @@ export interface Access_V1_TenantMemberDTO {
   email?: string;
   status?: Access_V1_TenantMemberStatus;
   version?: string;
+  name?: string;
+  phone?: string;
+  employeeId?: string;
+  position?: string;
+  departmentId?: string;
+  roles?: readonly Access_V1_TenantMemberRoleDTO[];
+  derivedDataScope?: string;
+}
+
+export interface Access_V1_TenantMemberRoleDTO {
+  roleId?: string;
+  roleName?: string;
+  roleStatus?: string;
 }
 
 export interface Access_V1_TenantRoleDTO {
@@ -206,6 +219,16 @@ export interface Access_V1_TenantRoleDTO {
   name?: string;
   status?: Access_V1_TenantRoleStatus;
   permissions?: readonly Access_V1_PermissionGrantDTO[];
+  version?: string;
+}
+
+export interface Access_V1_UpdateTenantMemberProfileRequest {
+  userId?: string;
+  name?: string;
+  phone?: string;
+  employeeId?: string;
+  position?: string;
+  departmentId?: string;
   version?: string;
 }
 
@@ -992,6 +1015,15 @@ export const operations = {
       { method: "POST", path: "/v1/tenant/members/{user_id}/suspend", body: "*" },
     ]
   },
+  "access.v1.TenantMemberLifecycleApplication.UpdateTenantMemberProfile": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.UpdateTenantMemberProfile",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/UpdateTenantMemberProfile",
+    requestType: "access.v1.UpdateTenantMemberProfileRequest",
+    responseType: "access.v1.TenantMemberDTO",
+    http: [
+      { method: "PATCH", path: "/v1/tenant/members/{user_id}/profile", body: "*" },
+    ]
+  },
   "access.v1.TenantRolePermissionApplication.AssignTenantRoleMember": {
     fullName: "access.v1.TenantRolePermissionApplication.AssignTenantRoleMember",
     rpcPath: "/access.v1.TenantRolePermissionApplication/AssignTenantRoleMember",
@@ -1523,6 +1555,10 @@ export class Access_V1_TenantMemberLifecycleApplicationClient {
 
   suspendTenantMember(request: Access_V1_SuspendTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
     return this.transport.call<Access_V1_SuspendTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.SuspendTenantMember"], request);
+  }
+
+  updateTenantMemberProfile(request: Access_V1_UpdateTenantMemberProfileRequest): Promise<Access_V1_TenantMemberDTO> {
+    return this.transport.call<Access_V1_UpdateTenantMemberProfileRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.UpdateTenantMemberProfile"], request);
   }
 
 }

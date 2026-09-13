@@ -78,19 +78,88 @@ func (TenantMemberStatus) EnumDescriptor() ([]byte, []int) {
 	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{0}
 }
 
-type TenantMemberDTO struct {
+type TenantMemberRoleDTO struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	Status        TenantMemberStatus     `protobuf:"varint,3,opt,name=status,proto3,enum=access.v1.TenantMemberStatus" json:"status,omitempty"`
-	Version       uint64                 `protobuf:"varint,4,opt,name=version,proto3" json:"version,omitempty"`
+	RoleId        string                 `protobuf:"bytes,1,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
+	RoleName      string                 `protobuf:"bytes,2,opt,name=role_name,json=roleName,proto3" json:"role_name,omitempty"`
+	RoleStatus    string                 `protobuf:"bytes,3,opt,name=role_status,json=roleStatus,proto3" json:"role_status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
+func (x *TenantMemberRoleDTO) Reset() {
+	*x = TenantMemberRoleDTO{}
+	mi := &file_access_v1_tenant_member_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TenantMemberRoleDTO) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TenantMemberRoleDTO) ProtoMessage() {}
+
+func (x *TenantMemberRoleDTO) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_member_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TenantMemberRoleDTO.ProtoReflect.Descriptor instead.
+func (*TenantMemberRoleDTO) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *TenantMemberRoleDTO) GetRoleId() string {
+	if x != nil {
+		return x.RoleId
+	}
+	return ""
+}
+
+func (x *TenantMemberRoleDTO) GetRoleName() string {
+	if x != nil {
+		return x.RoleName
+	}
+	return ""
+}
+
+func (x *TenantMemberRoleDTO) GetRoleStatus() string {
+	if x != nil {
+		return x.RoleStatus
+	}
+	return ""
+}
+
+type TenantMemberDTO struct {
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	UserId       string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Email        string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	Status       TenantMemberStatus     `protobuf:"varint,3,opt,name=status,proto3,enum=access.v1.TenantMemberStatus" json:"status,omitempty"`
+	Version      uint64                 `protobuf:"varint,4,opt,name=version,proto3" json:"version,omitempty"`
+	Name         string                 `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
+	Phone        string                 `protobuf:"bytes,6,opt,name=phone,proto3" json:"phone,omitempty"`
+	EmployeeId   string                 `protobuf:"bytes,7,opt,name=employee_id,json=employeeId,proto3" json:"employee_id,omitempty"`
+	Position     string                 `protobuf:"bytes,8,opt,name=position,proto3" json:"position,omitempty"`
+	DepartmentId string                 `protobuf:"bytes,9,opt,name=department_id,json=departmentId,proto3" json:"department_id,omitempty"`
+	Roles        []*TenantMemberRoleDTO `protobuf:"bytes,10,rep,name=roles,proto3" json:"roles,omitempty"`
+	// UI/read-model summary only. Authorization continues to evaluate each
+	// permission grant independently. Values: none, self, sites, all.
+	DerivedDataScope string `protobuf:"bytes,11,opt,name=derived_data_scope,json=derivedDataScope,proto3" json:"derived_data_scope,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
 func (x *TenantMemberDTO) Reset() {
 	*x = TenantMemberDTO{}
-	mi := &file_access_v1_tenant_member_proto_msgTypes[0]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -102,7 +171,7 @@ func (x *TenantMemberDTO) String() string {
 func (*TenantMemberDTO) ProtoMessage() {}
 
 func (x *TenantMemberDTO) ProtoReflect() protoreflect.Message {
-	mi := &file_access_v1_tenant_member_proto_msgTypes[0]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -115,7 +184,7 @@ func (x *TenantMemberDTO) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TenantMemberDTO.ProtoReflect.Descriptor instead.
 func (*TenantMemberDTO) Descriptor() ([]byte, []int) {
-	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{0}
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *TenantMemberDTO) GetUserId() string {
@@ -146,6 +215,55 @@ func (x *TenantMemberDTO) GetVersion() uint64 {
 	return 0
 }
 
+func (x *TenantMemberDTO) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *TenantMemberDTO) GetPhone() string {
+	if x != nil {
+		return x.Phone
+	}
+	return ""
+}
+
+func (x *TenantMemberDTO) GetEmployeeId() string {
+	if x != nil {
+		return x.EmployeeId
+	}
+	return ""
+}
+
+func (x *TenantMemberDTO) GetPosition() string {
+	if x != nil {
+		return x.Position
+	}
+	return ""
+}
+
+func (x *TenantMemberDTO) GetDepartmentId() string {
+	if x != nil {
+		return x.DepartmentId
+	}
+	return ""
+}
+
+func (x *TenantMemberDTO) GetRoles() []*TenantMemberRoleDTO {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
+}
+
+func (x *TenantMemberDTO) GetDerivedDataScope() string {
+	if x != nil {
+		return x.DerivedDataScope
+	}
+	return ""
+}
+
 type InviteTenantMemberRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
@@ -155,7 +273,7 @@ type InviteTenantMemberRequest struct {
 
 func (x *InviteTenantMemberRequest) Reset() {
 	*x = InviteTenantMemberRequest{}
-	mi := &file_access_v1_tenant_member_proto_msgTypes[1]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -167,7 +285,7 @@ func (x *InviteTenantMemberRequest) String() string {
 func (*InviteTenantMemberRequest) ProtoMessage() {}
 
 func (x *InviteTenantMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_access_v1_tenant_member_proto_msgTypes[1]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -180,7 +298,7 @@ func (x *InviteTenantMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InviteTenantMemberRequest.ProtoReflect.Descriptor instead.
 func (*InviteTenantMemberRequest) Descriptor() ([]byte, []int) {
-	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{1}
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *InviteTenantMemberRequest) GetEmail() string {
@@ -199,7 +317,7 @@ type GetTenantMemberRequest struct {
 
 func (x *GetTenantMemberRequest) Reset() {
 	*x = GetTenantMemberRequest{}
-	mi := &file_access_v1_tenant_member_proto_msgTypes[2]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -211,7 +329,7 @@ func (x *GetTenantMemberRequest) String() string {
 func (*GetTenantMemberRequest) ProtoMessage() {}
 
 func (x *GetTenantMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_access_v1_tenant_member_proto_msgTypes[2]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -224,7 +342,7 @@ func (x *GetTenantMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTenantMemberRequest.ProtoReflect.Descriptor instead.
 func (*GetTenantMemberRequest) Descriptor() ([]byte, []int) {
-	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{2}
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetTenantMemberRequest) GetUserId() string {
@@ -242,7 +360,7 @@ type ListTenantMembersRequest struct {
 
 func (x *ListTenantMembersRequest) Reset() {
 	*x = ListTenantMembersRequest{}
-	mi := &file_access_v1_tenant_member_proto_msgTypes[3]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -254,7 +372,7 @@ func (x *ListTenantMembersRequest) String() string {
 func (*ListTenantMembersRequest) ProtoMessage() {}
 
 func (x *ListTenantMembersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_access_v1_tenant_member_proto_msgTypes[3]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -267,7 +385,7 @@ func (x *ListTenantMembersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTenantMembersRequest.ProtoReflect.Descriptor instead.
 func (*ListTenantMembersRequest) Descriptor() ([]byte, []int) {
-	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{3}
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{4}
 }
 
 type ListTenantMembersResponse struct {
@@ -279,7 +397,7 @@ type ListTenantMembersResponse struct {
 
 func (x *ListTenantMembersResponse) Reset() {
 	*x = ListTenantMembersResponse{}
-	mi := &file_access_v1_tenant_member_proto_msgTypes[4]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -291,7 +409,7 @@ func (x *ListTenantMembersResponse) String() string {
 func (*ListTenantMembersResponse) ProtoMessage() {}
 
 func (x *ListTenantMembersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_access_v1_tenant_member_proto_msgTypes[4]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -304,7 +422,7 @@ func (x *ListTenantMembersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTenantMembersResponse.ProtoReflect.Descriptor instead.
 func (*ListTenantMembersResponse) Descriptor() ([]byte, []int) {
-	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{4}
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListTenantMembersResponse) GetMembers() []*TenantMemberDTO {
@@ -312,6 +430,100 @@ func (x *ListTenantMembersResponse) GetMembers() []*TenantMemberDTO {
 		return x.Members
 	}
 	return nil
+}
+
+type UpdateTenantMemberProfileRequest struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	UserId     string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Name       string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Phone      string                 `protobuf:"bytes,3,opt,name=phone,proto3" json:"phone,omitempty"`
+	EmployeeId string                 `protobuf:"bytes,4,opt,name=employee_id,json=employeeId,proto3" json:"employee_id,omitempty"`
+	Position   string                 `protobuf:"bytes,5,opt,name=position,proto3" json:"position,omitempty"`
+	// Opaque organization reference in EC-RI-02. Department tree semantics,
+	// move invariants and leader validation belong to EC-RI-04.
+	DepartmentId  string `protobuf:"bytes,6,opt,name=department_id,json=departmentId,proto3" json:"department_id,omitempty"`
+	Version       uint64 `protobuf:"varint,7,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateTenantMemberProfileRequest) Reset() {
+	*x = UpdateTenantMemberProfileRequest{}
+	mi := &file_access_v1_tenant_member_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateTenantMemberProfileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateTenantMemberProfileRequest) ProtoMessage() {}
+
+func (x *UpdateTenantMemberProfileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_member_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateTenantMemberProfileRequest.ProtoReflect.Descriptor instead.
+func (*UpdateTenantMemberProfileRequest) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *UpdateTenantMemberProfileRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *UpdateTenantMemberProfileRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *UpdateTenantMemberProfileRequest) GetPhone() string {
+	if x != nil {
+		return x.Phone
+	}
+	return ""
+}
+
+func (x *UpdateTenantMemberProfileRequest) GetEmployeeId() string {
+	if x != nil {
+		return x.EmployeeId
+	}
+	return ""
+}
+
+func (x *UpdateTenantMemberProfileRequest) GetPosition() string {
+	if x != nil {
+		return x.Position
+	}
+	return ""
+}
+
+func (x *UpdateTenantMemberProfileRequest) GetDepartmentId() string {
+	if x != nil {
+		return x.DepartmentId
+	}
+	return ""
+}
+
+func (x *UpdateTenantMemberProfileRequest) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
 }
 
 type ActivateTenantMemberRequest struct {
@@ -324,7 +536,7 @@ type ActivateTenantMemberRequest struct {
 
 func (x *ActivateTenantMemberRequest) Reset() {
 	*x = ActivateTenantMemberRequest{}
-	mi := &file_access_v1_tenant_member_proto_msgTypes[5]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -336,7 +548,7 @@ func (x *ActivateTenantMemberRequest) String() string {
 func (*ActivateTenantMemberRequest) ProtoMessage() {}
 
 func (x *ActivateTenantMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_access_v1_tenant_member_proto_msgTypes[5]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -349,7 +561,7 @@ func (x *ActivateTenantMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActivateTenantMemberRequest.ProtoReflect.Descriptor instead.
 func (*ActivateTenantMemberRequest) Descriptor() ([]byte, []int) {
-	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{5}
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ActivateTenantMemberRequest) GetUserId() string {
@@ -376,7 +588,7 @@ type SuspendTenantMemberRequest struct {
 
 func (x *SuspendTenantMemberRequest) Reset() {
 	*x = SuspendTenantMemberRequest{}
-	mi := &file_access_v1_tenant_member_proto_msgTypes[6]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -388,7 +600,7 @@ func (x *SuspendTenantMemberRequest) String() string {
 func (*SuspendTenantMemberRequest) ProtoMessage() {}
 
 func (x *SuspendTenantMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_access_v1_tenant_member_proto_msgTypes[6]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -401,7 +613,7 @@ func (x *SuspendTenantMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SuspendTenantMemberRequest.ProtoReflect.Descriptor instead.
 func (*SuspendTenantMemberRequest) Descriptor() ([]byte, []int) {
-	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{6}
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SuspendTenantMemberRequest) GetUserId() string {
@@ -428,7 +640,7 @@ type RemoveTenantMemberRequest struct {
 
 func (x *RemoveTenantMemberRequest) Reset() {
 	*x = RemoveTenantMemberRequest{}
-	mi := &file_access_v1_tenant_member_proto_msgTypes[7]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -440,7 +652,7 @@ func (x *RemoveTenantMemberRequest) String() string {
 func (*RemoveTenantMemberRequest) ProtoMessage() {}
 
 func (x *RemoveTenantMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_access_v1_tenant_member_proto_msgTypes[7]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -453,7 +665,7 @@ func (x *RemoveTenantMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveTenantMemberRequest.ProtoReflect.Descriptor instead.
 func (*RemoveTenantMemberRequest) Descriptor() ([]byte, []int) {
-	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{7}
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *RemoveTenantMemberRequest) GetUserId() string {
@@ -481,7 +693,7 @@ type BootstrapTenantOwnerMemberRequest struct {
 
 func (x *BootstrapTenantOwnerMemberRequest) Reset() {
 	*x = BootstrapTenantOwnerMemberRequest{}
-	mi := &file_access_v1_tenant_member_proto_msgTypes[8]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -493,7 +705,7 @@ func (x *BootstrapTenantOwnerMemberRequest) String() string {
 func (*BootstrapTenantOwnerMemberRequest) ProtoMessage() {}
 
 func (x *BootstrapTenantOwnerMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_access_v1_tenant_member_proto_msgTypes[8]
+	mi := &file_access_v1_tenant_member_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -506,7 +718,7 @@ func (x *BootstrapTenantOwnerMemberRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use BootstrapTenantOwnerMemberRequest.ProtoReflect.Descriptor instead.
 func (*BootstrapTenantOwnerMemberRequest) Descriptor() ([]byte, []int) {
-	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{8}
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *BootstrapTenantOwnerMemberRequest) GetTenantId() string {
@@ -534,19 +746,42 @@ var File_access_v1_tenant_member_proto protoreflect.FileDescriptor
 
 const file_access_v1_tenant_member_proto_rawDesc = "" +
 	"\n" +
-	"\x1daccess/v1/tenant_member.proto\x12\taccess.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1ayunka/dsl/v1/options.proto\"\x99\x01\n" +
+	"\x1daccess/v1/tenant_member.proto\x12\taccess.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1ayunka/dsl/v1/options.proto\"l\n" +
+	"\x13TenantMemberRoleDTO\x12\x17\n" +
+	"\arole_id\x18\x01 \x01(\tR\x06roleId\x12\x1b\n" +
+	"\trole_name\x18\x02 \x01(\tR\broleName\x12\x1f\n" +
+	"\vrole_status\x18\x03 \x01(\tR\n" +
+	"roleStatus\"\x89\x03\n" +
 	"\x0fTenantMemberDTO\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x125\n" +
 	"\x06status\x18\x03 \x01(\x0e2\x1d.access.v1.TenantMemberStatusR\x06status\x12\x18\n" +
-	"\aversion\x18\x04 \x01(\x04R\aversion:\x06\xd2\xf3\x18\x02\b\x02\"1\n" +
+	"\aversion\x18\x04 \x01(\x04R\aversion\x12\x12\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\x12\x14\n" +
+	"\x05phone\x18\x06 \x01(\tR\x05phone\x12\x1f\n" +
+	"\vemployee_id\x18\a \x01(\tR\n" +
+	"employeeId\x12\x1a\n" +
+	"\bposition\x18\b \x01(\tR\bposition\x12#\n" +
+	"\rdepartment_id\x18\t \x01(\tR\fdepartmentId\x124\n" +
+	"\x05roles\x18\n" +
+	" \x03(\v2\x1e.access.v1.TenantMemberRoleDTOR\x05roles\x12,\n" +
+	"\x12derived_data_scope\x18\v \x01(\tR\x10derivedDataScope:\x06\xd2\xf3\x18\x02\b\x02\"1\n" +
 	"\x19InviteTenantMemberRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\"1\n" +
 	"\x16GetTenantMemberRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"\x1a\n" +
 	"\x18ListTenantMembersRequest\"Q\n" +
 	"\x19ListTenantMembersResponse\x124\n" +
-	"\amembers\x18\x01 \x03(\v2\x1a.access.v1.TenantMemberDTOR\amembers\"P\n" +
+	"\amembers\x18\x01 \x03(\v2\x1a.access.v1.TenantMemberDTOR\amembers\"\xe1\x01\n" +
+	" UpdateTenantMemberProfileRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
+	"\x05phone\x18\x03 \x01(\tR\x05phone\x12\x1f\n" +
+	"\vemployee_id\x18\x04 \x01(\tR\n" +
+	"employeeId\x12\x1a\n" +
+	"\bposition\x18\x05 \x01(\tR\bposition\x12#\n" +
+	"\rdepartment_id\x18\x06 \x01(\tR\fdepartmentId\x12\x18\n" +
+	"\aversion\x18\a \x01(\x04R\aversion\"P\n" +
 	"\x1bActivateTenantMemberRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\x04R\aversion\"O\n" +
@@ -565,14 +800,16 @@ const file_access_v1_tenant_member_proto_rawDesc = "" +
 	"\x1cTENANT_MEMBER_STATUS_INVITED\x10\x01\x12\x1f\n" +
 	"\x1bTENANT_MEMBER_STATUS_ACTIVE\x10\x02\x12\"\n" +
 	"\x1eTENANT_MEMBER_STATUS_SUSPENDED\x10\x03\x12 \n" +
-	"\x1cTENANT_MEMBER_STATUS_REMOVED\x10\x042\x88\r\n" +
+	"\x1cTENANT_MEMBER_STATUS_REMOVED\x10\x042\x83\x0f\n" +
 	" TenantMemberLifecycleApplication\x12\xc7\x01\n" +
 	"\x12InviteTenantMember\x12$.access.v1.InviteTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"o\xe2\xf3\x18N\n" +
 	"\x14tenant.member.invite\x12\x14invite_tenant_member\x1a\x14tenant.member.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/tenant/members\x12\xc0\x01\n" +
 	"\x0fGetTenantMember\x12!.access.v1.GetTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"n\xe2\xf3\x18F\n" +
 	"\x11tenant.member.get\x12\x11get_tenant_member\x1a\x12tenant.member.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x1e\x12\x1c/v1/tenant/members/{user_id}\x12\xc7\x01\n" +
 	"\x11ListTenantMembers\x12#.access.v1.ListTenantMembersRequest\x1a$.access.v1.ListTenantMembersResponse\"g\xe2\xf3\x18I\n" +
-	"\x12tenant.member.list\x12\x13list_tenant_members\x1a\x12tenant.member.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/tenant/members\x12\xe3\x01\n" +
+	"\x12tenant.member.list\x12\x13list_tenant_members\x1a\x12tenant.member.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/tenant/members\x12\xf8\x01\n" +
+	"\x19UpdateTenantMemberProfile\x12+.access.v1.UpdateTenantMemberProfileRequest\x1a\x1a.access.v1.TenantMemberDTO\"\x91\x01\xe2\xf3\x18^\n" +
+	"\x1ctenant.member.profile.update\x12\x1cupdate_tenant_member_profile\x1a\x14tenant.member.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02):\x01*2$/v1/tenant/members/{user_id}/profile\x12\xe3\x01\n" +
 	"\x14ActivateTenantMember\x12&.access.v1.ActivateTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"\x86\x01\xe2\xf3\x18R\n" +
 	"\x16tenant.member.activate\x12\x16activate_tenant_member\x1a\x14tenant.member.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/tenant/members/{user_id}/activate\x12\x91\x02\n" +
 	"\x13SuspendTenantMember\x12%.access.v1.SuspendTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"\xb6\x01\xe2\xf3\x18\x82\x01\n" +
@@ -596,39 +833,44 @@ func file_access_v1_tenant_member_proto_rawDescGZIP() []byte {
 }
 
 var file_access_v1_tenant_member_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_access_v1_tenant_member_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_access_v1_tenant_member_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_access_v1_tenant_member_proto_goTypes = []any{
 	(TenantMemberStatus)(0),                   // 0: access.v1.TenantMemberStatus
-	(*TenantMemberDTO)(nil),                   // 1: access.v1.TenantMemberDTO
-	(*InviteTenantMemberRequest)(nil),         // 2: access.v1.InviteTenantMemberRequest
-	(*GetTenantMemberRequest)(nil),            // 3: access.v1.GetTenantMemberRequest
-	(*ListTenantMembersRequest)(nil),          // 4: access.v1.ListTenantMembersRequest
-	(*ListTenantMembersResponse)(nil),         // 5: access.v1.ListTenantMembersResponse
-	(*ActivateTenantMemberRequest)(nil),       // 6: access.v1.ActivateTenantMemberRequest
-	(*SuspendTenantMemberRequest)(nil),        // 7: access.v1.SuspendTenantMemberRequest
-	(*RemoveTenantMemberRequest)(nil),         // 8: access.v1.RemoveTenantMemberRequest
-	(*BootstrapTenantOwnerMemberRequest)(nil), // 9: access.v1.BootstrapTenantOwnerMemberRequest
+	(*TenantMemberRoleDTO)(nil),               // 1: access.v1.TenantMemberRoleDTO
+	(*TenantMemberDTO)(nil),                   // 2: access.v1.TenantMemberDTO
+	(*InviteTenantMemberRequest)(nil),         // 3: access.v1.InviteTenantMemberRequest
+	(*GetTenantMemberRequest)(nil),            // 4: access.v1.GetTenantMemberRequest
+	(*ListTenantMembersRequest)(nil),          // 5: access.v1.ListTenantMembersRequest
+	(*ListTenantMembersResponse)(nil),         // 6: access.v1.ListTenantMembersResponse
+	(*UpdateTenantMemberProfileRequest)(nil),  // 7: access.v1.UpdateTenantMemberProfileRequest
+	(*ActivateTenantMemberRequest)(nil),       // 8: access.v1.ActivateTenantMemberRequest
+	(*SuspendTenantMemberRequest)(nil),        // 9: access.v1.SuspendTenantMemberRequest
+	(*RemoveTenantMemberRequest)(nil),         // 10: access.v1.RemoveTenantMemberRequest
+	(*BootstrapTenantOwnerMemberRequest)(nil), // 11: access.v1.BootstrapTenantOwnerMemberRequest
 }
 var file_access_v1_tenant_member_proto_depIdxs = []int32{
-	0, // 0: access.v1.TenantMemberDTO.status:type_name -> access.v1.TenantMemberStatus
-	1, // 1: access.v1.ListTenantMembersResponse.members:type_name -> access.v1.TenantMemberDTO
-	2, // 2: access.v1.TenantMemberLifecycleApplication.InviteTenantMember:input_type -> access.v1.InviteTenantMemberRequest
-	3, // 3: access.v1.TenantMemberLifecycleApplication.GetTenantMember:input_type -> access.v1.GetTenantMemberRequest
-	4, // 4: access.v1.TenantMemberLifecycleApplication.ListTenantMembers:input_type -> access.v1.ListTenantMembersRequest
-	6, // 5: access.v1.TenantMemberLifecycleApplication.ActivateTenantMember:input_type -> access.v1.ActivateTenantMemberRequest
-	7, // 6: access.v1.TenantMemberLifecycleApplication.SuspendTenantMember:input_type -> access.v1.SuspendTenantMemberRequest
-	8, // 7: access.v1.TenantMemberLifecycleApplication.RemoveTenantMember:input_type -> access.v1.RemoveTenantMemberRequest
-	1, // 8: access.v1.TenantMemberLifecycleApplication.InviteTenantMember:output_type -> access.v1.TenantMemberDTO
-	1, // 9: access.v1.TenantMemberLifecycleApplication.GetTenantMember:output_type -> access.v1.TenantMemberDTO
-	5, // 10: access.v1.TenantMemberLifecycleApplication.ListTenantMembers:output_type -> access.v1.ListTenantMembersResponse
-	1, // 11: access.v1.TenantMemberLifecycleApplication.ActivateTenantMember:output_type -> access.v1.TenantMemberDTO
-	1, // 12: access.v1.TenantMemberLifecycleApplication.SuspendTenantMember:output_type -> access.v1.TenantMemberDTO
-	1, // 13: access.v1.TenantMemberLifecycleApplication.RemoveTenantMember:output_type -> access.v1.TenantMemberDTO
-	8, // [8:14] is the sub-list for method output_type
-	2, // [2:8] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	0,  // 0: access.v1.TenantMemberDTO.status:type_name -> access.v1.TenantMemberStatus
+	1,  // 1: access.v1.TenantMemberDTO.roles:type_name -> access.v1.TenantMemberRoleDTO
+	2,  // 2: access.v1.ListTenantMembersResponse.members:type_name -> access.v1.TenantMemberDTO
+	3,  // 3: access.v1.TenantMemberLifecycleApplication.InviteTenantMember:input_type -> access.v1.InviteTenantMemberRequest
+	4,  // 4: access.v1.TenantMemberLifecycleApplication.GetTenantMember:input_type -> access.v1.GetTenantMemberRequest
+	5,  // 5: access.v1.TenantMemberLifecycleApplication.ListTenantMembers:input_type -> access.v1.ListTenantMembersRequest
+	7,  // 6: access.v1.TenantMemberLifecycleApplication.UpdateTenantMemberProfile:input_type -> access.v1.UpdateTenantMemberProfileRequest
+	8,  // 7: access.v1.TenantMemberLifecycleApplication.ActivateTenantMember:input_type -> access.v1.ActivateTenantMemberRequest
+	9,  // 8: access.v1.TenantMemberLifecycleApplication.SuspendTenantMember:input_type -> access.v1.SuspendTenantMemberRequest
+	10, // 9: access.v1.TenantMemberLifecycleApplication.RemoveTenantMember:input_type -> access.v1.RemoveTenantMemberRequest
+	2,  // 10: access.v1.TenantMemberLifecycleApplication.InviteTenantMember:output_type -> access.v1.TenantMemberDTO
+	2,  // 11: access.v1.TenantMemberLifecycleApplication.GetTenantMember:output_type -> access.v1.TenantMemberDTO
+	6,  // 12: access.v1.TenantMemberLifecycleApplication.ListTenantMembers:output_type -> access.v1.ListTenantMembersResponse
+	2,  // 13: access.v1.TenantMemberLifecycleApplication.UpdateTenantMemberProfile:output_type -> access.v1.TenantMemberDTO
+	2,  // 14: access.v1.TenantMemberLifecycleApplication.ActivateTenantMember:output_type -> access.v1.TenantMemberDTO
+	2,  // 15: access.v1.TenantMemberLifecycleApplication.SuspendTenantMember:output_type -> access.v1.TenantMemberDTO
+	2,  // 16: access.v1.TenantMemberLifecycleApplication.RemoveTenantMember:output_type -> access.v1.TenantMemberDTO
+	10, // [10:17] is the sub-list for method output_type
+	3,  // [3:10] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_access_v1_tenant_member_proto_init() }
@@ -642,7 +884,7 @@ func file_access_v1_tenant_member_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_access_v1_tenant_member_proto_rawDesc), len(file_access_v1_tenant_member_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

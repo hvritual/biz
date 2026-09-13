@@ -52,6 +52,9 @@ func RegisterTenantMemberLifecycleOperationExecutor(mux *http.ServeMux, applicat
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/members/{user_id}/suspend", handler.handleOperationSuspendTenantMember); err != nil {
 		return err
 	}
+	if err := httpbinding.Register(mux, "PATCH", "/v1/tenant/members/{user_id}/profile", handler.handleOperationUpdateTenantMemberProfile); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -221,6 +224,35 @@ func (handler *TenantMemberLifecycleOperationHandler) handleOperationSuspendTena
 	wire.UserId = request.PathValue("user_id")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleSuspendTenantMember(), wire, handler.application.SuspendTenantMember)
+	if err != nil {
+		writeTenantMemberLifecycleOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *TenantMemberLifecycleOperationHandler) handleOperationUpdateTenantMemberProfile(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.UpdateTenantMemberProfileRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	wire.UserId = request.PathValue("user_id")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleUpdateTenantMemberProfile(), wire, handler.application.UpdateTenantMemberProfile)
 	if err != nil {
 		writeTenantMemberLifecycleOperationError(writer, err)
 		return

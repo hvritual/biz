@@ -2399,6 +2399,37 @@
       }
     },
     {
+      "id": "tenant.member.profile.update",
+      "application": "access/tenant_member_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.member.profile.update",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.profile.update/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.profile.update",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.profile.update/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.profile.update"
+      }
+    },
+    {
       "id": "tenant.member.remove",
       "application": "access/tenant_member_lifecycle",
       "bindings": [
@@ -3324,6 +3355,7 @@
         "tenant.member.get",
         "tenant.member.invite",
         "tenant.member.list",
+        "tenant.member.profile.update",
         "tenant.member.remove",
         "tenant.member.suspend",
         "tenant.role.assign_member",

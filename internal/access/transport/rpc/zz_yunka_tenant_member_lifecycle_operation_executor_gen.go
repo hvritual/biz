@@ -112,3 +112,16 @@ func (server *TenantMemberLifecycleOperationServer) SuspendTenantMember(ctx cont
 	}
 	return response, nil
 }
+
+func (server *TenantMemberLifecycleOperationServer) UpdateTenantMemberProfile(ctx context.Context, request *accessv1.UpdateTenantMemberProfileRequest) (*accessv1.TenantMemberDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleUpdateTenantMemberProfile(), request, server.application.UpdateTenantMemberProfile)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}

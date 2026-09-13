@@ -2626,6 +2626,43 @@
       }
     },
     {
+      "operationId": "tenant.member.profile.update",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "update_tenant_member_profile",
+      "requestType": "access.v1.UpdateTenantMemberProfileRequest",
+      "responseType": "access.v1.TenantMemberDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.member.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/UpdateTenantMemberProfile",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/tenant/members/{user_id}/profile",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "tenant.member.remove",
       "domain": "access",
       "application": "tenant_member_lifecycle",
