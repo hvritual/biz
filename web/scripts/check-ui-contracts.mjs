@@ -4,6 +4,9 @@ import { resolve } from 'node:path'
 const root = resolve('.')
 const contract = JSON.parse(readFileSync(resolve(root, 'ui-contracts.json'), 'utf8'))
 const router = readFileSync(resolve(root, 'src/router/index.ts'), 'utf8')
+const navigation = readFileSync(resolve(root, 'src/router/navigation.ts'), 'utf8')
+const customerNavigation = readFileSync(resolve(root, 'src/router/customerNavigation.ts'), 'utf8')
+const modulePanel = readFileSync(resolve(root, 'src/components/layout/ModulePanel.vue'), 'utf8')
 const failures = []
 
 function routeBlock(path) {
@@ -22,6 +25,50 @@ const expectedViewports = ['1366x768', '1440x900', '1536x1024', '390x844']
 const actualViewports = contract.visual_viewports.map(({ width, height }) => `${width}x${height}`)
 if (JSON.stringify(actualViewports) !== JSON.stringify(expectedViewports)) {
   failures.push(`visual viewports must be exactly ${expectedViewports.join(', ')}`)
+}
+
+const primaryStart = navigation.indexOf('export const primaryNavigation')
+const primaryEnd = navigation.indexOf('export const enterpriseNavigation')
+const primaryBlock = navigation.slice(primaryStart, primaryEnd)
+const primaryLabels = [...primaryBlock.matchAll(/label: '([^']+)'/g)].map((match) => match[1])
+if (JSON.stringify(primaryLabels) !== JSON.stringify(contract.navigation.primary_domains)) {
+  failures.push(`primary navigation must be exactly ${contract.navigation.primary_domains.join(' / ')}`)
+}
+
+if (contract.rules.navigation_section_groups_required) {
+  if (!navigation.includes('group?: string')) {
+    failures.push('NavigationItem must expose group metadata for second-level information architecture')
+  }
+  if (!modulePanel.includes('data-menu-group')) {
+    failures.push('ModulePanel must render navigation groups as explicit sections')
+  }
+  for (const group of contract.navigation.required_section_groups) {
+    if (!customerNavigation.includes(`group: '${group}'`)) {
+      failures.push(`navigation section group is missing: ${group}`)
+    }
+  }
+}
+
+if (contract.rules.navigation_forbids_entity_bound_paths) {
+  for (const token of contract.navigation.forbidden_entity_path_tokens) {
+    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    if (new RegExp(`path:\\s*['\"][^'\"]*${escaped}`).test(customerNavigation)) {
+      failures.push(`global navigation cannot bind to sample entity token ${token}`)
+    }
+  }
+}
+
+if (contract.rules.navigation_drink_configuration_domain === 'device-operations') {
+  const deviceStart = customerNavigation.indexOf("'device-operations':")
+  const businessStart = customerNavigation.indexOf("'business-operations':")
+  const deviceBlock = customerNavigation.slice(deviceStart, businessStart)
+  const businessBlock = customerNavigation.slice(businessStart)
+  if (!deviceBlock.includes("label: '饮品配置'")) {
+    failures.push('饮品配置 must belong to device-operations')
+  }
+  if (businessBlock.includes('饮品配置') || businessBlock.includes('饮品管理')) {
+    failures.push('经营管理 must not own device drink configuration')
+  }
 }
 
 for (const page of contract.routes) {
@@ -76,5 +123,5 @@ if (failures.length) {
 }
 
 console.log(
-  `UI contracts passed: ${contract.routes.length} guarded routes; viewports=${actualViewports.join(',')}; platform RuntimeConsole reuse blocked.`,
+  `UI contracts passed: ${contract.routes.length} guarded routes; viewports=${actualViewports.join(',')}; navigation IA guarded; platform RuntimeConsole reuse blocked.`,
 )
