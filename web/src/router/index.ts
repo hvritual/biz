@@ -66,7 +66,7 @@ export const router = createRouter({
     },
     {
       path: '/enterprise/roles',
-      component: () => import('@/views/enterprise/RolesView.vue'),
+      component: () => import('@/views/enterprise/RolesEntryView.vue'),
       meta: { title: '角色权限', module: 'enterprise' },
     },
     {

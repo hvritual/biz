@@ -30,13 +30,15 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           sudo apt-get install -y fonts-noto-cjk
-      - name: Run enterprise member API-mode E2E
+      - name: Run enterprise API-mode E2E
         working-directory: web
         shell: bash
         run: |
           set -euo pipefail
           VITE_DATA_MODE=api npm run build
-          ENTERPRISE_MEMBER_REAL_E2E=1 npx playwright test e2e/enterprise-members-real.spec.ts
+          ENTERPRISE_MEMBER_REAL_E2E=1 ENTERPRISE_ROLE_REAL_E2E=1 npx playwright test \
+            e2e/enterprise-members-real.spec.ts \
+            e2e/enterprise-roles-real.spec.ts
           python3 - <<'PY'
           from pathlib import Path
           import json
@@ -45,7 +47,7 @@ jobs:
           stats = results['stats']
           assert stats.get('unexpected', 0) == 0, stats
           serialized = json.dumps(results, ensure_ascii=False)
-          required = [
+          member_required = [
               'real member page renders authoritative profile, role and scope fields across CoffeeLink viewports',
               'profile PATCH carries authoritative version and confirms only after member readback',
               'role binding is a single idempotent operation and is confirmed from member readback',
@@ -53,9 +55,23 @@ jobs:
               'profile 409 preserves the same idempotency key for retry',
               'a successful write without readback is not presented as confirmed success',
           ]
-          for title in required:
+          role_required = [
+              'real role page renders authoritative grants and member counts across CoffeeLink viewports',
+              'role create and permission update use independent idempotency keys and confirm from role readback',
+              'role member assignment is confirmed from member readback',
+              '401 and 403 are surfaced and never replaced with preview roles',
+              'role 409 preserves the same idempotency key and editor draft for retry',
+              'owner invariant conflict is surfaced and never presented as confirmed success',
+              'a successful role write without readback is not presented as confirmed success',
+          ]
+          for title in member_required:
               assert title in serialized, f'missing EC-RI-02 browser evidence: {title}'
-          print(f'EC_RI_02_MEMBER_E2E=PASS expected={stats.get("expected", 0)}')
+          for title in role_required:
+              assert title in serialized, f'missing EC-RI-03 browser evidence: {title}'
+          print(
+              f'ENTERPRISE_REAL_E2E=PASS expected={stats.get("expected", 0)} '
+              f'ec_ri_02={len(member_required)} ec_ri_03={len(role_required)}'
+          )
           PY
           npm run build
       - run: npm run test:e2e
@@ -129,17 +145,15 @@ jobs:
                   required[f'rental-{flow}-{width}.png'] = (width, height)
 
           gallery = Path('screenshots')
-          enterprise_required = {
-              'enterprise-members-real-1366.png': (1366, 768),
-              'enterprise-members-real-1440.png': (1440, 900),
-              'enterprise-members-real-1536.png': (1536, 1024),
-              'enterprise-members-real-390.png': (390, 844),
-          }
+          enterprise_required = {}
+          for surface in ['members', 'roles']:
+              for width, height in [(1366, 768), (1440, 900), (1536, 1024), (390, 844)]:
+                  enterprise_required[f'enterprise-{surface}-real-{width}.png'] = (width, height)
 
           gallery_pngs = list(gallery.glob('*.png'))
           compatibility_pngs = list(shots.glob('*.png'))
           actual_pngs = gallery_pngs + compatibility_pngs
-          assert len(actual_pngs) >= 62, len(actual_pngs)
+          assert len(actual_pngs) >= 66, len(actual_pngs)
           for name, want in required.items():
               data = (shots / name).read_bytes()
               assert data[:8] == b'\x89PNG\r\n\x1a\n', name
@@ -153,7 +167,7 @@ jobs:
           print(
               f'UI_CONTRACT_VISUAL_EVIDENCE=PASS e2e={expected} '
               f'gallery={len(gallery_pngs)} compatibility={len(compatibility_pngs)} '
-              'contracts=CoffeeLink-V1.1 enterprise-member-api=PASS'
+              'contracts=CoffeeLink-V1.1 enterprise-member-api=PASS enterprise-role-api=PASS'
           )
           PY
           sha256sum screenshots/*.png test-results/screenshots/*.png | sort > test-results/screenshot-sha256.txt

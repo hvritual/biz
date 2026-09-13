@@ -4,7 +4,7 @@
 
 将 CoffeeLink 企业中心从“完整前端预览 + 本地快照”收敛为真实租户运行面：所有读取以服务端为准，所有写操作必须具备真实鉴权、幂等、回执与回读，不允许 API 失败后静默回退为本地成功。
 
-当前实施基线：`main@284e38a1a90c9d7e8d25fa02650523e1c82c8c31`（EC-RI-01 已合并）。
+当前实施基线：`main@0ad50fafe00c65e0d0442e8d8f09769b96971cfd`（EC-RI-02 已合并；EC-RI-03 由 PR #100 交付）。
 
 企业中心固定范围：
 
@@ -22,8 +22,8 @@
 | Task | Status | Current truth |
 | --- | --- | --- |
 | EC-RI-01 Member lifecycle | ✅ Completed | 企业中心 API 模式已使用真实成员生命周期 API，具备可信会话、CSRF、幂等、冲突处理与 receipt/readback。 |
-| EC-RI-02 Member profile + role binding | ✅ Completed in PR #99 candidate | 成员档案成为 tenant-scoped 服务端权威数据；角色关系和 derived data scope 来自 Access；MySQL、浏览器与视觉门禁已建立。 |
-| EC-RI-03 Role permission | ⏳ Pending | 角色页面仍待从 preview store 切换为真实 Access Role API。 |
+| EC-RI-02 Member profile + role binding | ✅ Completed in PR #99 | 成员档案成为 tenant-scoped 服务端权威数据；角色关系和 derived data scope 来自 Access；MySQL、浏览器与视觉门禁已建立。 |
+| EC-RI-03 Role permission | ✅ Delivered in PR #100 | 角色页面 API 模式使用真实 Access Role API；角色、permission grants、状态和成员绑定均由服务端权威数据驱动，并具备幂等、409 与 readback 门禁。 |
 | EC-RI-04 Organization / Department | ⏳ Pending | `department_id` 已作为成员档案权威引用保存，但部门树/层级/负责人等组织语义尚未实现。 |
 | EC-RI-05 Tenant profile | ⏳ Pending | 企业资料仍待正式 tenant/company profile contract。 |
 | EC-RI-06 Plan / entitlement / quota | ⏳ Pending | 企业中心套餐额度仍待消费端真实权益与 usage 接入。 |
@@ -32,7 +32,7 @@
 
 ### Frontend
 
-EC-RI-01/02 已将 API 模式成员管理从 `services/demo/repository.ts` 分离：成员生命周期、档案、角色关系和派生数据范围以 Access 服务端为准。其它企业中心页面仍存在 preview/localStorage 路径，因此整个企业中心尚不能称为“全部前后端完整对接”。
+EC-RI-01/02/03 已将 API 模式下的成员管理与角色权限从 `services/demo/repository.ts` 分离：成员生命周期、档案、角色关系、角色 permission grants、角色状态、成员绑定和派生数据范围均以 Access 服务端为准。其它企业中心页面仍存在 preview/localStorage 路径，因此整个企业中心尚不能称为“全部前后端完整对接”。
 
 ### Backend capabilities already available
 
@@ -70,6 +70,8 @@ EC-RI-02 已补齐成员管理所需权威字段：
 - `derived_data_scope`
 
 其中 `department_id` 只代表成员档案中的服务端权威引用；Organization / Department 的树结构、层级移动、负责人和组织数据范围语义仍属于 EC-RI-04。
+
+EC-RI-03 不新增第二套角色 contract，而是正式消费已有 `TenantRolePermissionService`。API 模式只暴露当前服务端 contract 实际声明的权限键；demo permission catalog 不再进入生产角色授权路径。每个 permission grant 自带独立 data scope，不能被前端压缩成一个角色级统一 scope。
 
 当前 Access contract 仍没有完整 Organization / Department 能力；Tenant contract 只有基础租户生命周期字段，尚不能覆盖企业资料页全部字段；企业中心套餐页仍存在示例额度；操作日志仍是本地预览。
 
@@ -141,16 +143,39 @@ EC-RI-02 已补齐成员管理所需权威字段：
 - 本阶段不改变套餐、额度或企业资料。
 - `server/**` 保持只读。
 
-### EC-RI-03 — Role permission real integration
+### EC-RI-03 — Role permission real integration ✅
 
-对接已有 Access Role API：
+**Goal**
+
+正式消费已有 Access `TenantRolePermissionService`，使企业中心角色权限页在 API 模式下不再依赖 preview store：
 
 - list/get/create/update
 - enable/disable
 - set permissions
 - assign/revoke member
 
-角色/权限变化必须回读，并且 owner invariant / member-deactivation invariant 继续由服务端裁决。
+**Delivered**
+
+- Runtime adapter：API 模式通过可信 web session 读取当前租户角色列表、单角色详情及 EC-RI-02 成员事实。
+- No demo authority：API 模式 permission catalog 与 `services/demo/seed.ts` 完全分离，只允许服务端 contract 当前声明的权限键进入授权编辑器。
+- Grant model：每条 permission grant 独立保存 `none/self/sites/all` data scope，不再把权限压缩成角色级统一范围。
+- Role lifecycle：创建、重命名、启用、停用、权限集替换全部调用真实 Access API。
+- Member binding：assign/revoke 分别使用真实 Role API，并以 EC-RI-02 成员 read model 做最终关系回读。
+- Owner invariant：owner 名称、启用状态与必需权限在 UI 中只读；最后一位 owner 是否可解除仍由服务端裁决，前端不复制 invariant。
+- Conflict semantics：runtime role decorator 将 stale version、owner protected mutation、last-owner revoke 等冲突保留为可 `errors.Is` 的 Go cause，同时通过 `GRPCStatus(codes.Aborted)` 映射 REST HTTP 409。
+- Stable idempotency：create/update/enable/disable/set-permissions/assign/revoke 每类写操作具有独立 `Idempotency-Key`；同一失败草稿重试复用原键，草稿改变后生成新键。
+- Receipt/readback：每次角色 mutation 先做单角色 GET 回读；整组保存最终再执行 role GET + role list + member list，任一事实未确认都不得显示成功。
+- Disabled role rule：停用角色不能新增成员绑定；UI 前置禁用，同时服务端仍为最终权威。
+- MySQL/REST gate：B12.4 固化 EC-RI-03 integration test，覆盖跨租户隔离、真实 permission update、stale version 409、owner disable 409、last-owner revoke 409，以及失败后事实不变。
+- Existing authorization gate：B12.4 原有真实授权测试继续证明 permission grant 变化会立即影响下一次鉴权判定。
+- Browser gate：CoffeeLink API-mode 覆盖真实字段、创建+权限更新、成员绑定、401/403、409 同幂等键重试、owner invariant、readback failure 不报成功。
+- Visual gate：API-mode 角色页面固定采集 1366×768 / 1440×900 / 1536×1024 / 390×844，并要求无页面级横向 overflow。
+
+**Explicit boundary**
+
+- 不实现 Organization / Department tree、parent move、leader 等 EC-RI-04 语义。
+- 不修改套餐/额度或企业资料。
+- 不修改 `server/**`。
 
 ### EC-RI-04 — Organization / Department backend
 
@@ -222,7 +247,7 @@ Logo 必须走真实文件服务或明确的 asset reference，不允许 DataURL
 
 `EC-RI-01 Member lifecycle ✅`
 → `EC-RI-02 Member profile + role binding ✅`
-→ `EC-RI-03 Role permission`
+→ `EC-RI-03 Role permission ✅`
 → `EC-RI-04 Organization`
 → `EC-RI-05 Tenant profile`
 → `EC-RI-06 Plan/quota`
