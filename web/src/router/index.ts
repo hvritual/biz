@@ -1,11 +1,13 @@
 import { siteRentalRoutes } from './siteRentalRoutes'
 import { customerRoutes } from './customerRoutes'
+import { rentalWorkRoutes } from './rentalWorkRoutes'
 import { createRouter, createWebHashHistory } from 'vue-router'
 export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     ...customerRoutes,
     ...siteRentalRoutes,
+    ...rentalWorkRoutes,
     {
       path: '/platform/overview',
       component: () => import('@/views/platform/PlatformOverviewView.vue'),
