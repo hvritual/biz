@@ -44,7 +44,7 @@ const actions = computed(() =>
 )
 const description = computed(() => {
   if (ui.module === 'enterprise') return '管理企业组织、成员、权限与套餐'
-  if (ui.module === 'platform-commercial') return '管理平台模块、套餐版本、租户权益与订阅变更'
+  if (ui.module === 'platform-commercial') return '管理平台租户、模块、套餐版本与租户权益'
   if (ui.module === 'system') return '配置企业偏好、通知与访问策略'
   return customerDomains[ui.module ?? '']?.description ?? '该业务模块尚未纳入本轮前端交付'
 })
@@ -66,20 +66,22 @@ function navigate(path?: string) {
         <AppIcon name="close" :size="18" />
       </button>
     </header>
-    <div v-if="links.length" class="module-columns">
+    <div v-if="links.length" :class="['module-columns', { single: !actions.length }]">
       <nav class="sub-navigation" aria-label="功能菜单">
         <h3>功能菜单</h3>
         <button
           v-for="item in links"
           :key="item.id"
-          :class="['sub-link', { active: route.path === item.path }]"
+          :class="['sub-link', { active: route.path === item.path, unavailable: !item.path }]"
           :aria-current="route.path === item.path ? 'page' : undefined"
+          :disabled="!item.path"
+          :title="item.path ? item.label : `${item.label}尚未接入`"
           @click="navigate(item.path)"
         >
-          <AppIcon :name="item.icon" :size="20" /><span>{{ item.label }}</span>
+          <AppIcon :name="item.icon" :size="20" /><span>{{ item.label }}</span><small v-if="!item.path">待接入</small>
         </button>
       </nav>
-      <nav class="quick-navigation" aria-label="快捷操作">
+      <nav v-if="actions.length" class="quick-navigation" aria-label="快捷操作">
         <h3>快捷操作</h3>
         <button v-for="action in actions" :key="action.label" class="quick-link" @click="navigate(action.path)">
           <span :class="['quick-icon', { orange: action.icon === 'crown' }]">
@@ -148,6 +150,9 @@ function navigate(path?: string) {
   padding-top: 20px;
   min-height: 420px;
 }
+.module-columns.single {
+  grid-template-columns: minmax(0, 1fr);
+}
 .module-columns h3 {
   font-size: var(--text-sm);
   font-weight: 650;
@@ -180,11 +185,26 @@ function navigate(path?: string) {
 .sub-link.active > .icon {
   color: var(--color-primary);
 }
-.sub-link:hover {
+.sub-link:hover:not(:disabled) {
   background: var(--color-surface-soft);
 }
-.sub-link.active:hover {
+.sub-link.active:hover:not(:disabled) {
   background: var(--color-primary-soft);
+}
+.sub-link.unavailable {
+  cursor: not-allowed;
+  color: var(--color-text-muted);
+}
+.sub-link.unavailable > .icon {
+  color: var(--color-text-muted);
+}
+.sub-link small {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--color-surface-soft);
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 500;
 }
 .quick-link {
   width: 100%;
@@ -275,6 +295,7 @@ function navigate(path?: string) {
 @media (max-width: 767px) {
   .module-panel { width: calc(100vw - 80px); min-width: 0; padding: 20px 16px; }
   .module-columns { gap: 12px; grid-template-columns: 1fr 1fr; }
+  .module-columns.single { grid-template-columns: 1fr; }
   .quick-navigation { padding-left: 12px; }
   .sub-link { font-size: 12px; gap: 7px; padding-left: 6px; padding-right: 7px; }
   .quick-link { font-size: 11px; padding: 7px; gap: 6px; }
