@@ -47,8 +47,8 @@ func NewTenantMemberLifecycleService(repositories requestscope.RepositoryFactory
 	if repositories == nil {
 		return nil, errors.New("access: tenant member repository factory is required")
 	}
-	if capabilities == nil || capabilities.AccessTenantRolePermission() == nil {
-		return nil, errors.New("access: tenant member role capability is required")
+	if capabilities == nil || capabilities.AccessTenantRolePermission() == nil || capabilities.AccessTenantDepartmentManagement() == nil {
+		return nil, errors.New("access: tenant member role and department capabilities are required")
 	}
 	return &TenantMemberLifecycleService{repositories: repositories, capabilities: capabilities}, nil
 }
@@ -123,7 +123,10 @@ func (service *TenantMemberLifecycleService) UpdateTenantMemberProfile(ctx conte
 	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalidTenantMemberRequest
 	}
-	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), nil, func(member *domain.Membership) error {
+	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), func(callCtx context.Context) error {
+		_, err := service.capabilities.AccessTenantDepartmentManagement().AssertTenantMemberDepartmentAssignmentAllowed(callCtx, &accessv1.AssertTenantMemberDepartmentAssignmentAllowedRequest{DepartmentId: strings.TrimSpace(request.GetDepartmentId())})
+		return err
+	}, func(member *domain.Membership) error {
 		return member.UpdateProfile(request.GetName(), request.GetPhone(), request.GetEmployeeId(), request.GetPosition(), request.GetDepartmentId(), time.Now().UTC())
 	})
 }

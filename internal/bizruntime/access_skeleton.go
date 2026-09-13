@@ -22,12 +22,21 @@ func (factory applicationFactories) BuildAccessTenantDelegationManagement(depend
 	return checkedDelegations{inner: inner}, nil
 }
 
+func (factory applicationFactories) BuildAccessTenantDepartmentManagement(generatedassembly.AccessTenantDepartmentManagementDependencies) (accessapp.TenantDepartmentManagementApplication, error) {
+	inner, err := accessapp.NewTenantDepartmentManagementService(factory.departmentRepositories)
+	if err != nil {
+		return nil, err
+	}
+	return checkedDepartments{inner: inner}, nil
+}
+
 func (factory applicationFactories) BuildAccessTenantMemberLifecycle(dependencies generatedassembly.AccessTenantMemberLifecycleDependencies) (accessapp.TenantMemberLifecycleApplication, error) {
-	if dependencies.AccessTenantRolePermission == nil {
-		return nil, errors.New("biz access pressure: tenant member lifecycle role dependency is required")
+	if dependencies.AccessTenantRolePermission == nil || dependencies.AccessTenantDepartmentManagement == nil {
+		return nil, errors.New("biz access pressure: tenant member lifecycle role and department dependencies are required")
 	}
 	inner, err := accessapp.NewTenantMemberLifecycleService(factory.memberRepositories, tenantMemberLifecycleCapabilities{
-		roles: dependencies.AccessTenantRolePermission,
+		departments: dependencies.AccessTenantDepartmentManagement,
+		roles:       dependencies.AccessTenantRolePermission,
 	})
 	if err != nil {
 		return nil, err
@@ -72,7 +81,12 @@ func (capabilities tenantDelegationManagementCapabilities) DeviceopsDeviceManage
 }
 
 type tenantMemberLifecycleCapabilities struct {
-	roles accessapp.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability
+	departments accessapp.TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability
+	roles       accessapp.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability
+}
+
+func (capabilities tenantMemberLifecycleCapabilities) AccessTenantDepartmentManagement() accessapp.TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability {
+	return capabilities.departments
 }
 
 func (capabilities tenantMemberLifecycleCapabilities) AccessTenantRolePermission() accessapp.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability {

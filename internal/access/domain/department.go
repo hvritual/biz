@@ -12,10 +12,10 @@ const (
 )
 
 var (
-	ErrInvalidTenantDepartment        = errors.New("access: invalid tenant department")
-	ErrInvalidTenantDepartmentMove    = errors.New("access: invalid tenant department hierarchy move")
-	ErrInvalidTenantDepartmentLeader  = errors.New("access: invalid tenant department leader")
-	ErrInvalidTenantDepartmentStatus  = errors.New("access: invalid tenant department state transition")
+	ErrInvalidTenantDepartment       = errors.New("access: invalid tenant department")
+	ErrInvalidTenantDepartmentMove   = errors.New("access: invalid tenant department hierarchy move")
+	ErrInvalidTenantDepartmentLeader = errors.New("access: invalid tenant department leader")
+	ErrInvalidTenantDepartmentStatus = errors.New("access: invalid tenant department state transition")
 )
 
 type Department struct {
@@ -35,12 +35,12 @@ type Department struct {
 
 func NewDepartment(id, tenantID, name, parentID, leaderUserID, email, phone string, sort int32, now time.Time) (Department, error) {
 	department := Department{
-		ID:           strings.TrimSpace(id),
-		TenantID:     strings.TrimSpace(tenantID),
-		Status:       TenantDepartmentStatusActive,
-		Version:      1,
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		ID:        strings.TrimSpace(id),
+		TenantID:  strings.TrimSpace(tenantID),
+		Status:    TenantDepartmentStatusActive,
+		Version:   1,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 	if err := department.Update(name, parentID, leaderUserID, email, phone, sort, now); err != nil {
 		return Department{}, err
