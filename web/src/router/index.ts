@@ -45,17 +45,17 @@ export const router = createRouter({
     {
       path: '/platform/commercial/modules',
       component: () => import('@/views/platform/CommercialModulesView.vue'),
-      meta: { title: '模块目录', module: 'platform-commercial', surface: 'platform' },
+      meta: { title: '模块目录', module: 'platform-commercial', surface: 'platform', pageTemplate: 'ListPage' },
     },
     {
       path: '/platform/commercial/plans',
       component: () => import('@/views/platform/CommercialPlansView.vue'),
-      meta: { title: '套餐版本', module: 'platform-commercial', surface: 'platform' },
+      meta: { title: '套餐版本', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage' },
     },
     {
       path: '/platform/commercial/tenant-entitlements',
       component: () => import('@/views/platform/CommercialTenantEntitlementsView.vue'),
-      meta: { title: '租户权益', module: 'platform-commercial', surface: 'platform' },
+      meta: { title: '租户权益', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage' },
     },
     {
       path: '/enterprise/members',

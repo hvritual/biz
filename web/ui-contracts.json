@@ -2,10 +2,22 @@
   "schema_version": 1,
   "design_system": "CoffeeLink V1.1",
   "visual_viewports": [
-    { "width": 1366, "height": 768 },
-    { "width": 1440, "height": 900 },
-    { "width": 1536, "height": 1024 },
-    { "width": 390, "height": 844 }
+    {
+      "width": 1366,
+      "height": 768
+    },
+    {
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "width": 390,
+      "height": 844
+    }
   ],
   "rules": {
     "platform_surface_forbids_runtime_console": true,
@@ -18,14 +30,24 @@
       "component": "@/views/platform/PlatformOverviewView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "management-domains", "governance"]
+      "required_regions": [
+        "page-heading",
+        "management-domains",
+        "governance"
+      ]
     },
     {
       "path": "/platform/tenants",
       "component": "@/views/platform/PlatformTenantsView.vue",
       "surface": "platform",
       "template": "ListPage",
-      "required_regions": ["page-heading", "metrics", "query", "data", "pagination"]
+      "required_regions": [
+        "page-heading",
+        "metrics",
+        "query",
+        "data",
+        "pagination"
+      ]
     },
     {
       "path": "/system/:section(general|notifications|security|integrations|dictionary)",
@@ -33,6 +55,49 @@
       "surface": "tenant",
       "template": "FormPage",
       "required_regions": []
+    },
+    {
+      "path": "/platform/commercial/modules",
+      "component": "@/views/platform/CommercialModulesView.vue",
+      "surface": "platform",
+      "template": "ListPage",
+      "required_regions": [
+        "page-heading",
+        "metrics",
+        "query",
+        "data"
+      ]
+    },
+    {
+      "path": "/platform/commercial/plans",
+      "component": "@/views/platform/CommercialPlansView.vue",
+      "surface": "platform",
+      "template": "WorkbenchPage",
+      "required_regions": [
+        "page-heading",
+        "authority",
+        "query",
+        "metrics",
+        "workspace",
+        "history",
+        "detail"
+      ]
+    },
+    {
+      "path": "/platform/commercial/tenant-entitlements",
+      "component": "@/views/platform/CommercialTenantEntitlementsView.vue",
+      "surface": "platform",
+      "template": "WorkbenchPage",
+      "required_regions": [
+        "page-heading",
+        "authority",
+        "context",
+        "metrics",
+        "subscription",
+        "change-workspace",
+        "decisions",
+        "overrides"
+      ]
     }
   ]
 }

@@ -32,6 +32,20 @@ const editCategory = ref('')
 const editSalesScope = ref('')
 const technicalDraft = ref<ModuleTechnicalStatus>('MODULE_TECHNICAL_STATUS_NOT_READY')
 const reason = ref('')
+const keyword = ref('')
+const technicalFilter = ref('')
+const salesFilter = ref('')
+
+const filteredModules = computed(() => {
+  const query = keyword.value.trim().toLowerCase()
+  return modules.value.filter((item) => {
+    const matchesKeyword = !query || [item.moduleCode, item.name, item.category]
+      .some((value) => String(value ?? '').toLowerCase().includes(query))
+    const matchesTechnical = !technicalFilter.value || item.technicalStatus === technicalFilter.value
+    const matchesSales = !salesFilter.value || item.salesStatus === salesFilter.value
+    return matchesKeyword && matchesTechnical && matchesSales
+  })
+})
 
 const selected = computed(() => modules.value.find((item) => item.moduleCode === selectedCode.value))
 const summary = computed(() => ({
@@ -197,17 +211,13 @@ onMounted(loadModules)
 </script>
 
 <template>
-  <div class="page-stack" data-testid="ce13-module-catalog">
-    <PageHeading
-      title="平台商业管理"
-      description="管理模块目录、技术/销售状态与依赖关系；所有配置均以服务端商业事实为准"
-    />
-
-    <section class="commercial-tabs" aria-label="平台商业管理导航">
-      <RouterLink class="commercial-tab active" to="/platform/commercial/modules">模块目录</RouterLink>
-      <RouterLink class="commercial-tab" to="/platform/commercial/plans">套餐版本</RouterLink>
-      <RouterLink class="commercial-tab" to="/platform/commercial/tenant-entitlements">租户权益</RouterLink>
-    </section>
+  <div class="page-stack" data-testid="ce13-module-catalog" data-ui-template="ListPage">
+    <div data-ui-region="page-heading">
+      <PageHeading
+        title="模块目录"
+        description="治理平台可售模块、技术状态与能力边界；所有状态均来自服务端商业事实"
+      />
+    </div>
 
     <section v-if="loadState === 'loading'" class="card state-card" aria-live="polite">
       <span class="state-icon"><AppIcon name="refresh" :size="20" /></span>
@@ -230,10 +240,33 @@ onMounted(loadModules)
     </section>
 
     <template v-else>
-      <section class="metric-grid" aria-label="模块目录摘要">
+      <section class="metric-grid" aria-label="模块目录摘要" data-ui-region="metrics">
         <article class="card metric"><span>模块总数</span><strong>{{ summary.total }}</strong><small>来自服务端目录</small></article>
         <article class="card metric"><span>技术就绪</span><strong>{{ summary.ready }}</strong><small>READY</small></article>
         <article class="card metric"><span>可销售</span><strong>{{ summary.sellable }}</strong><small>SELLABLE</small></article>
+      </section>
+
+      <section class="card query-panel" data-ui-region="query" aria-label="模块目录查询">
+        <div class="query-grid">
+          <label class="field"><span>关键词</span><input v-model.trim="keyword" class="input" placeholder="模块名称 / 代码 / 分类" /></label>
+          <label class="field"><span>技术状态</span>
+            <select v-model="technicalFilter" class="select">
+              <option value="">全部技术状态</option>
+              <option value="MODULE_TECHNICAL_STATUS_READY">技术就绪</option>
+              <option value="MODULE_TECHNICAL_STATUS_NOT_READY">未就绪</option>
+              <option value="MODULE_TECHNICAL_STATUS_DISABLED">技术停用</option>
+            </select>
+          </label>
+          <label class="field"><span>销售状态</span>
+            <select v-model="salesFilter" class="select">
+              <option value="">全部销售状态</option>
+              <option value="MODULE_SALES_STATUS_SELLABLE">可销售</option>
+              <option value="MODULE_SALES_STATUS_RETIRED">已停售</option>
+            </select>
+          </label>
+          <button class="btn query-reset" type="button" @click="keyword = ''; technicalFilter = ''; salesFilter = ''">重置</button>
+        </div>
+        <p class="query-summary">当前显示 {{ filteredModules.length }} / {{ modules.length }} 个模块；筛选只影响当前服务端目录的展示结果。</p>
       </section>
 
       <section v-if="loadState === 'empty'" class="card state-card">
@@ -241,7 +274,7 @@ onMounted(loadModules)
         <div><strong>模块目录为空</strong><p>服务端返回成功，但当前没有平台模块记录。</p></div>
       </section>
 
-      <section v-else class="card catalog-card">
+      <section v-else class="card catalog-card" data-ui-region="data">
         <div class="catalog-header">
           <div>
             <h2>模块目录</h2>
@@ -253,18 +286,19 @@ onMounted(loadModules)
           <table class="data-table">
             <thead>
               <tr>
-                <th>模块</th><th>分类</th><th>技术状态</th><th>销售状态</th><th>能力</th><th>依赖</th><th>版本</th><th>操作</th>
+                <th>模块</th><th>分类</th><th>技术状态</th><th>销售状态</th><th>能力治理</th><th>操作</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in modules" :key="item.moduleCode">
-                <td><strong>{{ item.name || item.moduleCode }}</strong><small class="module-code">{{ item.moduleCode }}</small></td>
+              <tr v-if="!filteredModules.length">
+                <td colspan="6" class="empty-row">没有符合当前筛选条件的模块。</td>
+              </tr>
+              <tr v-for="item in filteredModules" :key="item.moduleCode">
+                <td><strong>{{ item.name || item.moduleCode }}</strong><small class="module-code">{{ item.moduleCode }} · v{{ item.version }}</small></td>
                 <td>{{ item.category || '—' }}</td>
                 <td><StatusBadge :text="technicalLabel(item.technicalStatus)" :tone="item.technicalStatus === 'MODULE_TECHNICAL_STATUS_READY' ? 'success' : 'warning'" /></td>
                 <td><StatusBadge :text="salesLabel(item.salesStatus)" :tone="item.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? 'success' : 'neutral'" /></td>
-                <td><span class="count-cell">{{ item.capabilityCodes?.length ?? 0 }}</span></td>
-                <td>{{ item.dependencies?.length ? item.dependencies.join('、') : '无' }}</td>
-                <td class="numeric">{{ item.version }}</td>
+                <td><strong class="governance-count">{{ item.capabilityCodes?.length ?? 0 }} 项能力</strong><small class="cell-note">{{ item.dependencies?.length ?? 0 }} 项依赖</small></td>
                 <td><button class="btn table-action" type="button" @click="openDetail(item)">查看详情</button></td>
               </tr>
             </tbody>
@@ -329,23 +363,11 @@ onMounted(loadModules)
 </template>
 
 <style scoped>
-.commercial-tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--color-border);
-}
-.commercial-tab {
-  padding: 10px 14px;
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-}
-.commercial-tab.active {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
-  font-weight: 600;
-}
+.query-panel { padding: 18px 20px; }
+.query-grid { display: grid; grid-template-columns: minmax(220px, 1.4fr) minmax(170px, .8fr) minmax(170px, .8fr) auto; gap: 12px; align-items: end; }
+.query-grid .field { margin: 0; }
+.query-reset { min-height: 36px; }
+.query-summary { margin: 10px 0 0; color: var(--color-text-muted); font-size: 11px; }
 .state-card {
   min-height: 112px;
   display: flex;
@@ -375,7 +397,9 @@ onMounted(loadModules)
 .catalog-header h2 { margin: 0; font-size: 16px; }
 .catalog-header p { margin: 5px 0 0; color: var(--color-text-muted); font-size: 12px; }
 .module-code { display: block; margin-top: 4px; color: var(--color-text-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.count-cell { display: inline-flex; min-width: 28px; justify-content: center; }
+.governance-count { display: block; font-size: 12px; }
+.cell-note { display: block; margin-top: 4px; color: var(--color-text-muted); font-size: 11px; }
+.empty-row { padding: 28px 16px !important; text-align: center; color: var(--color-text-muted); }
 .table-action { padding: 6px 10px; min-height: 32px; }
 .flex-1 { flex: 1; }
 .detail-stack { display: grid; gap: 18px; }
@@ -397,8 +421,7 @@ onMounted(loadModules)
 @media (max-width: 760px) {
   .metric-grid, .detail-summary, .form-grid, .status-controls, .facts-grid { grid-template-columns: 1fr; }
   .form-grid .full { grid-column: auto; }
-  .commercial-tabs { overflow-x: auto; }
-  .commercial-tab { white-space: nowrap; }
+  .query-grid { grid-template-columns: 1fr; }
   .state-card, .catalog-header { align-items: flex-start; flex-wrap: wrap; }
 }
 </style>
