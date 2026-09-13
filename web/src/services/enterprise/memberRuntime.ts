@@ -75,7 +75,7 @@ export function memberDataScopeLabel(scope: string) {
       self: '仅本人',
       sites: '授权点位',
       all: '全部数据',
-    }[scope] ?? scope || '无数据权限'
+    }[scope] ?? (scope || '无数据权限')
   )
 }
 
