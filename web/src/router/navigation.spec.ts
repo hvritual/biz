@@ -3,7 +3,10 @@ import { customerDomains } from './customerNavigation'
 import {
   enterpriseNavigation,
   isPrimaryNavigationActive,
+  platformCommercialNavigation,
   primaryNavigation,
+  systemNavigation,
+  systemQuickActions,
 } from './navigation'
 
 describe('primary navigation information architecture', () => {
@@ -31,7 +34,7 @@ describe('primary navigation information architecture', () => {
     expect(isPrimaryNavigationActive(customer, 'sites')).toBe(false)
   })
 
-  it('keeps enterprise center aligned with the approved six functional entries', () => {
+  it('keeps enterprise center aligned with the approved six functional entries and terminology', () => {
     expect(enterpriseNavigation.map((item) => item.id)).toEqual([
       'members',
       'roles',
@@ -40,6 +43,7 @@ describe('primary navigation information architecture', () => {
       'company',
       'logs',
     ])
+    expect(enterpriseNavigation.map((item) => item.label)).toContain('套餐额度')
   })
 
   it('groups related operational functions and marks unimplemented routes explicitly', () => {
@@ -56,5 +60,28 @@ describe('primary navigation information architecture', () => {
     expect(
       customerDomains['business-operations']?.links.every((item) => item.path === undefined),
     ).toBe(true)
+  })
+
+  it('keeps platform management as one management-system domain', () => {
+    expect(platformCommercialNavigation.map((item) => item.label)).toEqual([
+      '平台总览',
+      '租户管理',
+      '模块目录',
+      '套餐版本',
+      '租户权益',
+    ])
+    expect(platformCommercialNavigation.every((item) => item.path?.startsWith('/platform/'))).toBe(true)
+  })
+
+  it('keeps system settings tenant-scoped and free of platform or enterprise shortcuts', () => {
+    expect(systemNavigation.map((item) => item.label)).toEqual([
+      '基础设置',
+      '安全设置',
+      '通知设置',
+      '接口与集成',
+      '数据字典',
+    ])
+    expect(systemNavigation.every((item) => item.path?.startsWith('/system/'))).toBe(true)
+    expect(systemQuickActions.every((item) => item.path.startsWith('/system/'))).toBe(true)
   })
 })
