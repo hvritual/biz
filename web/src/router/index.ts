@@ -12,7 +12,12 @@ export const router = createRouter({
       meta: { title: '租户管理', module: 'platform-commercial', surface: 'platform' },
     },
     {
-      path: '/workspace/:resource(members|roles|devices)',
+      path: '/workspace/:resource(devices)',
+      component: () => import('@/views/runtime/RuntimeConsoleView.vue'),
+      meta: { title: '业务设备', module: 'device-operations', surface: 'runtime' },
+    },
+    {
+      path: '/workspace/:resource(members|roles)',
       component: () => import('@/views/runtime/RuntimeConsoleView.vue'),
       meta: { title: '业务工作区', module: 'enterprise', surface: 'runtime' },
     },

@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
-import { primaryNavigation } from '@/router/navigation'
+import { isPrimaryNavigationActive, primaryNavigation } from '@/router/navigation'
 import AppIcon from '@/components/ui/AppIcon.vue'
 const ui = useUiStore(),
   route = useRoute(),
@@ -43,8 +43,8 @@ function toggleCollapsed() {
         :class="[
           'primary-item',
           {
-            active: route.meta.module === item.id,
-            expanded: ui.module === item.id && route.meta.module !== item.id,
+            active: isPrimaryNavigationActive(item, route.meta.module),
+            expanded: ui.module === item.id && !isPrimaryNavigationActive(item, route.meta.module),
           },
         ]"
         :title="item.label"
