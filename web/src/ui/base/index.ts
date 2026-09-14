@@ -4,5 +4,13 @@ export { default as UiInput } from './UiInput.vue'
 export { default as UiOption } from './UiOption.vue'
 export { default as UiSelect } from './UiSelect.vue'
 export { default as UiTextarea } from './UiTextarea.vue'
-export { applyUiTheme, resetUiTheme, uiThemePresets } from './theme'
-export type { UiThemePalette, UiThemePresetName } from './theme'
+export {
+  applyUiTheme,
+  initializeUiTheme,
+  resetUiTheme,
+  setUiTheme,
+  setUiThemePreset,
+  uiThemePresets,
+  useUiTheme,
+} from './theme'
+export type { ActiveUiTheme, UiThemePalette, UiThemePresetName } from './theme'

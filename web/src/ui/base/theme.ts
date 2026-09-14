@@ -67,14 +67,27 @@ function resolveTheme(theme: UiThemePresetName | UiThemePalette): ActiveUiTheme 
 
 function storeTheme(theme: ActiveUiTheme) {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(storageKey, JSON.stringify({ name: theme.name, ...theme.palette }))
+  const stored = theme.name === 'custom' ? { name: 'custom', ...theme.palette } : { name: theme.name }
+  window.localStorage.setItem(storageKey, JSON.stringify(stored))
+}
+
+function matchesPreset(value: Partial<UiThemePalette>, name: UiThemePresetName) {
+  const preset = uiThemePresets[name]
+  return (
+    value.primary === preset.primary &&
+    value.primaryHover === preset.primaryHover &&
+    value.primarySoft === preset.primarySoft &&
+    (value.onPrimary == null || value.onPrimary === preset.onPrimary) &&
+    (value.gradientEnd == null || value.gradientEnd === preset.gradientEnd)
+  )
 }
 
 function parseStoredTheme(raw: string): UiThemePresetName | UiThemePalette | null {
   try {
     const value = JSON.parse(raw) as Partial<UiThemePalette> & { name?: string }
-    if (value.name && value.name in uiThemePresets && !value.primary) {
-      return value.name as UiThemePresetName
+    if (value.name && value.name in uiThemePresets) {
+      const name = value.name as UiThemePresetName
+      if (!value.primary || matchesPreset(value, name)) return name
     }
     if (value.primary && value.primaryHover && value.primarySoft) {
       const preset = value.name && value.name in uiThemePresets

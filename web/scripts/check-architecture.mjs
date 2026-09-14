@@ -5,6 +5,7 @@ function walk(dir) { return existsSync(dir) ? readdirSync(dir, { withFileTypes: 
 const files = walk(root)
 if (existsSync(resolve(root, 'components'))) failures.push('src/components is retired; use ui/base, ui/common or features/<domain>/components')
 if (existsSync(resolve(root, 'views'))) failures.push('src/views is retired; pages belong to features/<domain>/pages')
+if (existsSync(resolve(root, 'ui/theme'))) failures.push('src/ui/theme is retired; ui/base/theme.ts is the single runtime theme authority')
 for (const file of files) {
   const path = relative(root, file).replaceAll('\\', '/')
   if (/\.(woff2?|ttf|otf)$/.test(path)) failures.push(`${path}: do not distribute font files`)
@@ -32,8 +33,11 @@ const themeApiFile = resolve(root, 'ui/base/theme.ts')
 if (!existsSync(themeApiFile)) failures.push('ui/base/theme.ts is required for application-level dynamic theming')
 else {
   const themeApi = readFileSync(themeApiFile, 'utf8')
-  for (const symbol of ['applyUiTheme', 'resetUiTheme', 'uiThemePresets']) if (!themeApi.includes(symbol)) failures.push(`ui/base/theme.ts must expose ${symbol}`)
+  for (const symbol of ['applyUiTheme', 'initializeUiTheme', 'resetUiTheme', 'setUiTheme', 'setUiThemePreset', 'uiThemePresets', 'useUiTheme']) if (!themeApi.includes(symbol)) failures.push(`ui/base/theme.ts must expose ${symbol}`)
 }
+const mainSource = readFileSync(resolve(root, 'main.ts'), 'utf8')
+if (!mainSource.includes("import { initializeUiTheme } from './ui/base'")) failures.push('main.ts must initialize the application theme through ui/base')
+if (!mainSource.includes('initializeUiTheme()')) failures.push('main.ts must initialize the persisted application theme before mounting')
 
 const appShellSource = readFileSync(resolve(root, 'features/app-shell/components/AppShell.vue'), 'utf8')
 const primaryNavigationSource = readFileSync(resolve(root, 'features/app-shell/components/PrimaryNavigation.vue'), 'utf8')
@@ -56,4 +60,4 @@ else {
   for (const path of Object.keys(manifest)) if (!business.includes(path)) failures.push(`${path}: stale component scope declaration`)
 }
 if (failures.length) { console.error(failures.join('\n')); process.exit(1) }
-console.log(`Architecture checks passed: ${files.length} source files; three UI layers, global theme API, feature pages, token ownership, native-control boundary, shell geometry and business scopes are guarded.`)
+console.log(`Architecture checks passed: ${files.length} source files; three UI layers, single-source global theme API, feature pages, token ownership, native-control boundary, shell geometry and business scopes are guarded.`)
