@@ -62,8 +62,6 @@ message UpdateTenantMemberProfileRequest {
   string phone = 3;
   string employee_id = 4;
   string position = 5;
-  // Opaque organization reference in EC-RI-02. Department tree semantics,
-  // move invariants and leader validation belong to EC-RI-04.
   string department_id = 6;
   uint64 version = 7;
 }
@@ -93,6 +91,7 @@ service TenantMemberLifecycleApplication {
   option (yunka.dsl.v1.application) = {
     name: "tenant_member_lifecycle"
     requires: "access/tenant_role_permission"
+    requires: "access/tenant_department_management"
     operations: {
       id: "tenant.member.bootstrap_owner"
       use_case: "bootstrap_tenant_owner_member"
@@ -159,6 +158,8 @@ service TenantMemberLifecycleApplication {
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
       authentication: AUTHENTICATION_WEB_SESSION
+      requires_operations: "tenant.department.assert_member_assignment_allowed"
+      composition: COMPOSITION_LOCAL
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };
   }

@@ -63,6 +63,14 @@ func TestB123ECIR02MemberProfileRoleBindingIsAuthoritativeAndTenantScoped(t *tes
 	tokenA, tokenB := "ec-ri-02-token-a-"+stamp, "ec-ri-02-token-b-"+stamp
 	seedB123TenantAdmin(t, db, tenantA, "ec-ri-02-admin-a-"+stamp, "admin-a-"+stamp+"@example.invalid", tokenA)
 	seedB123TenantAdmin(t, db, tenantB, "ec-ri-02-admin-b-"+stamp, "admin-b-"+stamp+"@example.invalid", tokenB)
+	seedECIR04OrganizationPermissions(t, db, tenantA)
+
+	department, statusCode, body := departmentHTTP(t, http.MethodPost, base+"/v1/tenant/departments", tokenA, "ec-ri-02-department:"+stamp, &accessv1.CreateTenantDepartmentRequest{
+		Name: "Customer Success",
+	})
+	if statusCode != http.StatusOK {
+		t.Fatalf("department create status=%d body=%s", statusCode, body)
+	}
 
 	sharedEmail := "profile-shared-" + stamp + "@example.invalid"
 	memberA, statusCode, body := inviteB123HTTP(t, base, tokenA, sharedEmail, "ec-ri-02-invite-a:"+stamp)
@@ -83,7 +91,7 @@ func TestB123ECIR02MemberProfileRoleBindingIsAuthoritativeAndTenantScoped(t *tes
 		Phone:        " +886900000001 ",
 		EmployeeId:   " EMP-1001 ",
 		Position:     " Customer Success Lead ",
-		DepartmentId: " dept-success ",
+		DepartmentId: department.GetDepartmentId(),
 		Version:      memberA.GetVersion(),
 	})
 	if statusCode != http.StatusOK {
@@ -92,7 +100,7 @@ func TestB123ECIR02MemberProfileRoleBindingIsAuthoritativeAndTenantScoped(t *tes
 	if updatedA.GetVersion() != memberA.GetVersion()+1 {
 		t.Fatalf("profile version=%d want=%d", updatedA.GetVersion(), memberA.GetVersion()+1)
 	}
-	if updatedA.GetName() != "Alice Chen" || updatedA.GetPhone() != "+886900000001" || updatedA.GetEmployeeId() != "EMP-1001" || updatedA.GetPosition() != "Customer Success Lead" || updatedA.GetDepartmentId() != "dept-success" {
+	if updatedA.GetName() != "Alice Chen" || updatedA.GetPhone() != "+886900000001" || updatedA.GetEmployeeId() != "EMP-1001" || updatedA.GetPosition() != "Customer Success Lead" || updatedA.GetDepartmentId() != department.GetDepartmentId() {
 		t.Fatalf("profile was not normalized/persisted: %+v", updatedA)
 	}
 

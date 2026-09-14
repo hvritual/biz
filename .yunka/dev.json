@@ -18,6 +18,7 @@
       ],
       "graphNodes": [
         "application:access/tenant_delegation_management",
+        "application:access/tenant_department_management",
         "application:access/tenant_lifecycle",
         "application:access/tenant_member_lifecycle",
         "application:access/tenant_role_permission",

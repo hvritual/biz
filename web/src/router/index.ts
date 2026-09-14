@@ -71,7 +71,7 @@ export const router = createRouter({
     },
     {
       path: '/enterprise/organization',
-      component: () => import('@/views/enterprise/OrganizationView.vue'),
+      component: () => import('@/views/enterprise/OrganizationEntryView.vue'),
       meta: { title: '组织架构', module: 'enterprise' },
     },
     {

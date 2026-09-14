@@ -163,6 +163,7 @@ type applicationFactories struct {
 	moduleCatalog               commercialapp.ModuleCatalogApplication
 	tenantRepositories          requestscope.RepositoryFactory[accessports.TenantRepositories]
 	memberRepositories          requestscope.RepositoryFactory[accessports.TenantMemberRepositories]
+	departmentRepositories      requestscope.RepositoryFactory[accessports.TenantDepartmentRepositories]
 	roleRepositories            requestscope.RepositoryFactory[accessports.TenantRoleRepositories]
 	delegatedDeviceRepositories requestscope.RepositoryFactory[deviceports.DelegatedRepositories]
 	delegationRepositories      requestscope.RepositoryFactory[accessports.TenantDelegationRepositories]
@@ -239,6 +240,9 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	if config.AutoMigrate {
 		if err := accessStore.AutoMigrate(ctx); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: access migrate: %w", err)
+		}
+		if err := accesspersistence.AutoMigrateTenantDepartment(ctx, accessDatabase); err != nil {
+			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: tenant department migrate: %w", err)
 		}
 		if err := accessStore.EnsurePlatformSchema(ctx); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: platform IAM migrate: %w", err)
@@ -394,6 +398,10 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
+	departmentRepositories, err := accesspersistence.NewTenantDepartmentRepositoryFactory(accessDatabase)
+	if err != nil {
+		return generatedassembly.RuntimeBindings{}, err
+	}
 	roleRepositories, err := accesspersistence.NewTenantRoleRepositoryFactory(accessDatabase)
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
@@ -430,6 +438,7 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 			moduleCatalog:               commercialApplication,
 			tenantRepositories:          tenantRepositories,
 			memberRepositories:          memberRepositories,
+			departmentRepositories:      departmentRepositories,
 			roleRepositories:            roleRepositories,
 			delegatedDeviceRepositories: delegatedDeviceRepositories,
 			delegationRepositories:      delegationRepositories,

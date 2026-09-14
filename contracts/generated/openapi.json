@@ -55,6 +55,31 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.CloseTenantRequest"
       },
+      "access_v1_CreateTenantDepartmentRequest": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "leaderUserId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "sort": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.CreateTenantDepartmentRequest"
+      },
       "access_v1_CreateTenantRequest": {
         "properties": {
           "name": {
@@ -96,6 +121,20 @@
         "type": "string",
         "x-yunka-proto-full-name": "access.v1.DataScope"
       },
+      "access_v1_DisableTenantDepartmentRequest": {
+        "properties": {
+          "departmentId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.DisableTenantDepartmentRequest"
+      },
       "access_v1_DisableTenantRoleRequest": {
         "properties": {
           "roleId": {
@@ -109,6 +148,20 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.DisableTenantRoleRequest"
+      },
+      "access_v1_EnableTenantDepartmentRequest": {
+        "properties": {
+          "departmentId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.EnableTenantDepartmentRequest"
       },
       "access_v1_EnableTenantRoleRequest": {
         "properties": {
@@ -132,6 +185,15 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.GetTenantDelegationRequest"
+      },
+      "access_v1_GetTenantDepartmentRequest": {
+        "properties": {
+          "departmentId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.GetTenantDepartmentRequest"
       },
       "access_v1_GetTenantMemberRequest": {
         "properties": {
@@ -208,6 +270,23 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.ListTenantDelegationsResponse"
+      },
+      "access_v1_ListTenantDepartmentsRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListTenantDepartmentsRequest"
+      },
+      "access_v1_ListTenantDepartmentsResponse": {
+        "properties": {
+          "departments": {
+            "items": {
+              "$ref": "#/components/schemas/access_v1_TenantDepartmentDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListTenantDepartmentsResponse"
       },
       "access_v1_ListTenantMembersRequest": {
         "properties": {},
@@ -441,6 +520,51 @@
         "type": "string",
         "x-yunka-proto-full-name": "access.v1.TenantDelegationStatus"
       },
+      "access_v1_TenantDepartmentDTO": {
+        "properties": {
+          "departmentId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "leaderUserId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "sort": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/access_v1_TenantDepartmentStatus"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.TenantDepartmentDTO"
+      },
+      "access_v1_TenantDepartmentStatus": {
+        "enum": [
+          "TENANT_DEPARTMENT_STATUS_UNSPECIFIED",
+          "TENANT_DEPARTMENT_STATUS_ACTIVE",
+          "TENANT_DEPARTMENT_STATUS_DISABLED"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "access.v1.TenantDepartmentStatus"
+      },
       "access_v1_TenantMemberDTO": {
         "properties": {
           "departmentId": {
@@ -556,6 +680,39 @@
         ],
         "type": "string",
         "x-yunka-proto-full-name": "access.v1.TenantStatus"
+      },
+      "access_v1_UpdateTenantDepartmentRequest": {
+        "properties": {
+          "departmentId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "leaderUserId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "sort": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.UpdateTenantDepartmentRequest"
       },
       "access_v1_UpdateTenantMemberProfileRequest": {
         "properties": {
@@ -4238,6 +4395,208 @@
           "access.v1.TenantDelegationApplication"
         ],
         "x-yunka-rpc": "/access.v1.TenantDelegationApplication/RevokeTenantDelegation"
+      }
+    },
+    "/v1/tenant/departments": {
+      "get": {
+        "operationId": "access.v1.TenantDepartmentManagementApplication.ListTenantDepartments",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_ListTenantDepartmentsResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantDepartmentManagementApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantDepartmentManagementApplication/ListTenantDepartments"
+      },
+      "post": {
+        "operationId": "access.v1.TenantDepartmentManagementApplication.CreateTenantDepartment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_CreateTenantDepartmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantDepartmentDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantDepartmentManagementApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantDepartmentManagementApplication/CreateTenantDepartment"
+      }
+    },
+    "/v1/tenant/departments/{department_id}": {
+      "get": {
+        "operationId": "access.v1.TenantDepartmentManagementApplication.GetTenantDepartment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "departmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantDepartmentDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantDepartmentManagementApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantDepartmentManagementApplication/GetTenantDepartment"
+      },
+      "patch": {
+        "operationId": "access.v1.TenantDepartmentManagementApplication.UpdateTenantDepartment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "departmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_UpdateTenantDepartmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantDepartmentDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantDepartmentManagementApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantDepartmentManagementApplication/UpdateTenantDepartment"
+      }
+    },
+    "/v1/tenant/departments/{department_id}/disable": {
+      "post": {
+        "operationId": "access.v1.TenantDepartmentManagementApplication.DisableTenantDepartment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "departmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_DisableTenantDepartmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantDepartmentDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantDepartmentManagementApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantDepartmentManagementApplication/DisableTenantDepartment"
+      }
+    },
+    "/v1/tenant/departments/{department_id}/enable": {
+      "post": {
+        "operationId": "access.v1.TenantDepartmentManagementApplication.EnableTenantDepartment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "departmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_EnableTenantDepartmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantDepartmentDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantDepartmentManagementApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantDepartmentManagementApplication/EnableTenantDepartment"
       }
     },
     "/v1/tenant/entitlements": {

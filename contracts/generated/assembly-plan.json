@@ -13,6 +13,16 @@
       }
     },
     {
+      "id": "access/tenant_department_management",
+      "domain": "access",
+      "name": "tenant_department_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_department_management"
+      }
+    },
+    {
       "id": "access/tenant_lifecycle",
       "domain": "access",
       "name": "tenant_lifecycle",
@@ -191,6 +201,15 @@
     },
     {
       "from": "access/tenant_member_lifecycle",
+      "to": "access/tenant_department_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_member_lifecycle/requires/access/tenant_department_management"
+      }
+    },
+    {
+      "from": "access/tenant_member_lifecycle",
       "to": "access/tenant_role_permission",
       "evidence": {
         "ownership": "reused",
@@ -292,6 +311,15 @@
   "applicationDependencyClosure": [
     {
       "from": "access/tenant_delegation_management",
+      "to": "access/tenant_department_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_delegation_management-\u003eaccess/tenant_department_management"
+      }
+    },
+    {
+      "from": "access/tenant_delegation_management",
       "to": "access/tenant_lifecycle",
       "evidence": {
         "ownership": "derived",
@@ -364,6 +392,15 @@
     },
     {
       "from": "access/tenant_lifecycle",
+      "to": "access/tenant_department_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_lifecycle-\u003eaccess/tenant_department_management"
+      }
+    },
+    {
+      "from": "access/tenant_lifecycle",
       "to": "access/tenant_member_lifecycle",
       "evidence": {
         "ownership": "derived",
@@ -409,11 +446,29 @@
     },
     {
       "from": "access/tenant_member_lifecycle",
+      "to": "access/tenant_department_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_member_lifecycle-\u003eaccess/tenant_department_management"
+      }
+    },
+    {
+      "from": "access/tenant_member_lifecycle",
       "to": "access/tenant_role_permission",
       "evidence": {
         "ownership": "derived",
         "source": "application-dependency-closure",
         "ref": "access/tenant_member_lifecycle-\u003eaccess/tenant_role_permission"
+      }
+    },
+    {
+      "from": "commercial/entitlement_management",
+      "to": "access/tenant_department_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/entitlement_management-\u003eaccess/tenant_department_management"
       }
     },
     {
@@ -2204,6 +2259,201 @@
       }
     },
     {
+      "id": "tenant.department.assert_member_assignment_allowed",
+      "application": "access/tenant_department_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.department.assert_member_assignment_allowed"
+      }
+    },
+    {
+      "id": "tenant.department.create",
+      "application": "access/tenant_department_management",
+      "bindings": [
+        {
+          "operationId": "tenant.department.create",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.department.create/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.department.create",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.department.create/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.department.create"
+      }
+    },
+    {
+      "id": "tenant.department.disable",
+      "application": "access/tenant_department_management",
+      "bindings": [
+        {
+          "operationId": "tenant.department.disable",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.department.disable/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.department.disable",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.department.disable/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.department.disable"
+      }
+    },
+    {
+      "id": "tenant.department.enable",
+      "application": "access/tenant_department_management",
+      "bindings": [
+        {
+          "operationId": "tenant.department.enable",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.department.enable/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.department.enable",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.department.enable/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.department.enable"
+      }
+    },
+    {
+      "id": "tenant.department.get",
+      "application": "access/tenant_department_management",
+      "bindings": [
+        {
+          "operationId": "tenant.department.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.department.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.department.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.department.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.department.get"
+      }
+    },
+    {
+      "id": "tenant.department.list",
+      "application": "access/tenant_department_management",
+      "bindings": [
+        {
+          "operationId": "tenant.department.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.department.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.department.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.department.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.department.list"
+      }
+    },
+    {
+      "id": "tenant.department.update",
+      "application": "access/tenant_department_management",
+      "bindings": [
+        {
+          "operationId": "tenant.department.update",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.department.update/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.department.update",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.department.update/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.department.update"
+      }
+    },
+    {
       "id": "tenant.get",
       "application": "access/tenant_lifecycle",
       "bindings": [
@@ -3186,6 +3436,15 @@
       }
     },
     {
+      "from": "tenant.member.profile.update",
+      "to": "tenant.department.assert_member_assignment_allowed",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.profile.update/requiresOperations/tenant.department.assert_member_assignment_allowed"
+      }
+    },
+    {
       "from": "tenant.member.remove",
       "to": "tenant.role.assert_member_deactivation_allowed",
       "evidence": {
@@ -3282,6 +3541,7 @@
       "name": "root",
       "applications": [
         "access/tenant_delegation_management",
+        "access/tenant_department_management",
         "access/tenant_lifecycle",
         "access/tenant_member_lifecycle",
         "access/tenant_role_permission",
@@ -3349,6 +3609,12 @@
         "tenant.delegation.grant_device",
         "tenant.delegation.list",
         "tenant.delegation.revoke",
+        "tenant.department.create",
+        "tenant.department.disable",
+        "tenant.department.enable",
+        "tenant.department.get",
+        "tenant.department.list",
+        "tenant.department.update",
         "tenant.get",
         "tenant.list",
         "tenant.member.activate",
@@ -3387,6 +3653,7 @@
         "device.assert_owned_by_actor_tenant",
         "site.validate_transfer_target",
         "tenant.assert_active",
+        "tenant.department.assert_member_assignment_allowed",
         "tenant.member.bootstrap_owner",
         "tenant.role.assert_member_deactivation_allowed",
         "tenant.role.bootstrap_owner"

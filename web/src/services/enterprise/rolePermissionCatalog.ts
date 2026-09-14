@@ -14,6 +14,8 @@ export type RolePermissionDefinition = {
 export const rolePermissionCatalog: RolePermissionDefinition[] = [
   { permission: 'tenant.member.read', group: '企业成员', label: '查看成员', description: '读取当前租户成员与成员档案。' },
   { permission: 'tenant.member.manage', group: '企业成员', label: '管理成员', description: '邀请、启停、移除及维护成员档案。' },
+  { permission: 'tenant.organization.read', group: '组织架构', label: '查看组织', description: '读取当前租户部门层级、负责人和成员归属。' },
+  { permission: 'tenant.organization.manage', group: '组织架构', label: '管理组织', description: '创建、修改、启停部门并维护组织关系。' },
   { permission: 'tenant.role.read', group: '角色权限', label: '查看角色', description: '读取当前租户角色与权限授权。' },
   { permission: 'tenant.role.manage', group: '角色权限', label: '管理角色', description: '创建、修改、启停角色并维护授权关系。' },
   { permission: 'tenant.delegation.read', group: '租户授权', label: '查看授权', description: '读取租户间资源授权记录。' },

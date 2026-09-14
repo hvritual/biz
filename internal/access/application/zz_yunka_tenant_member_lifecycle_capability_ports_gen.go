@@ -10,6 +10,29 @@ import (
 	operation "yunka.io/framework/operation"
 )
 
+type TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability interface {
+	AssertTenantMemberDepartmentAssignmentAllowed(context.Context, *accessv1.AssertTenantMemberDepartmentAssignmentAllowedRequest) (*accessv1.AssertTenantMemberDepartmentAssignmentAllowedResponse, error)
+}
+
+type c9TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability struct {
+	application TenantDepartmentManagementApplication
+	executor    operation.Executor
+}
+
+func NewTenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability(application TenantDepartmentManagementApplication, executor operation.Executor) (TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability, error) {
+	if application == nil {
+		return nil, errors.New("contract C9 child capability: target application is required")
+	}
+	if executor == nil {
+		return nil, errors.New("contract C9 child capability: operation executor is required")
+	}
+	return &c9TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability{application: application, executor: executor}, nil
+}
+
+func (capability *c9TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability) AssertTenantMemberDepartmentAssignmentAllowed(ctx context.Context, request *accessv1.AssertTenantMemberDepartmentAssignmentAllowedRequest) (*accessv1.AssertTenantMemberDepartmentAssignmentAllowedResponse, error) {
+	return operation.ExecuteChildTyped(ctx, capability.executor, accesspolicy.OperationPlanTenantDepartmentManagementAssertTenantMemberDepartmentAssignmentAllowed(), request, capability.application.AssertTenantMemberDepartmentAssignmentAllowed)
+}
+
 type TenantMemberLifecycleToAccessTenantRolePermissionChildCapability interface {
 	AssertTenantMemberDeactivationAllowed(context.Context, *accessv1.AssertTenantMemberDeactivationAllowedRequest) (*accessv1.AssertTenantMemberDeactivationAllowedResponse, error)
 }
@@ -35,5 +58,6 @@ func (capability *c9TenantMemberLifecycleToAccessTenantRolePermissionChildCapabi
 
 // TenantMemberLifecycleCapabilities exposes edge-owned C9 child-Operation wrappers for declared operation dependencies.
 type TenantMemberLifecycleCapabilities interface {
+	AccessTenantDepartmentManagement() TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability
 	AccessTenantRolePermission() TenantMemberLifecycleToAccessTenantRolePermissionChildCapability
 }

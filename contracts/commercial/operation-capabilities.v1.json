@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "11",
+  "mapping_version": "12",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -722,6 +722,70 @@
       "children": []
     },
     {
+      "operation_id": "tenant.department.assert_member_assignment_allowed",
+      "classification": "foundation_exempt",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "exemption_reason": "Transport-private organization validation joined to tenant.member.profile.update; it grants no independent tenant action.",
+      "children": []
+    },
+    {
+      "operation_id": "tenant.department.create",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.department.disable",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.department.enable",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.department.get",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.department.list",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.department.update",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": []
+    },
+    {
       "operation_id": "tenant.get",
       "classification": "platform_management",
       "module_code": "access-management",
@@ -794,7 +858,13 @@
       "capability_codes": [
         "tenant.member.lifecycle"
       ],
-      "children": []
+      "children": [
+        {
+          "operation_id": "tenant.department.assert_member_assignment_allowed",
+          "mode": "always",
+          "source": "internal/access/application/tenant_member_lifecycle.go#UpdateTenantMemberProfile"
+        }
+      ]
     },
     {
       "operation_id": "tenant.member.remove",

@@ -47,8 +47,8 @@ func NewTenantMemberLifecycleService(repositories requestscope.RepositoryFactory
 	if repositories == nil {
 		return nil, errors.New("access: tenant member repository factory is required")
 	}
-	if capabilities == nil || capabilities.AccessTenantRolePermission() == nil {
-		return nil, errors.New("access: tenant member role capability is required")
+	if capabilities == nil || capabilities.AccessTenantRolePermission() == nil || capabilities.AccessTenantDepartmentManagement() == nil {
+		return nil, errors.New("access: tenant member role and department capabilities are required")
 	}
 	return &TenantMemberLifecycleService{repositories: repositories, capabilities: capabilities}, nil
 }
@@ -123,7 +123,14 @@ func (service *TenantMemberLifecycleService) UpdateTenantMemberProfile(ctx conte
 	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalidTenantMemberRequest
 	}
-	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), nil, func(member *domain.Membership) error {
+	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), func(callCtx context.Context, current *domain.Membership) error {
+		targetDepartmentID := strings.TrimSpace(request.GetDepartmentId())
+		if targetDepartmentID == strings.TrimSpace(current.DepartmentID) {
+			return nil
+		}
+		_, err := service.capabilities.AccessTenantDepartmentManagement().AssertTenantMemberDepartmentAssignmentAllowed(callCtx, &accessv1.AssertTenantMemberDepartmentAssignmentAllowedRequest{DepartmentId: targetDepartmentID})
+		return err
+	}, func(member *domain.Membership) error {
 		return member.UpdateProfile(request.GetName(), request.GetPhone(), request.GetEmployeeId(), request.GetPosition(), request.GetDepartmentId(), time.Now().UTC())
 	})
 }
@@ -140,7 +147,7 @@ func (service *TenantMemberLifecycleService) SuspendTenantMember(ctx context.Con
 		return nil, ErrInvalidTenantMemberRequest
 	}
 	userID := strings.TrimSpace(request.GetUserId())
-	return service.mutate(ctx, userID, request.GetVersion(), func(callCtx context.Context) error {
+	return service.mutate(ctx, userID, request.GetVersion(), func(callCtx context.Context, _ *domain.Membership) error {
 		_, err := service.capabilities.AccessTenantRolePermission().AssertTenantMemberDeactivationAllowed(callCtx, &accessv1.AssertTenantMemberDeactivationAllowedRequest{UserId: userID})
 		return err
 	}, func(member *domain.Membership) error { return member.Suspend(time.Now().UTC()) })
@@ -151,13 +158,13 @@ func (service *TenantMemberLifecycleService) RemoveTenantMember(ctx context.Cont
 		return nil, ErrInvalidTenantMemberRequest
 	}
 	userID := strings.TrimSpace(request.GetUserId())
-	return service.mutate(ctx, userID, request.GetVersion(), func(callCtx context.Context) error {
+	return service.mutate(ctx, userID, request.GetVersion(), func(callCtx context.Context, _ *domain.Membership) error {
 		_, err := service.capabilities.AccessTenantRolePermission().AssertTenantMemberDeactivationAllowed(callCtx, &accessv1.AssertTenantMemberDeactivationAllowedRequest{UserId: userID})
 		return err
 	}, func(member *domain.Membership) error { return member.Remove(time.Now().UTC()) })
 }
 
-func (service *TenantMemberLifecycleService) mutate(ctx context.Context, userID string, expectedVersion uint64, beforeApply func(context.Context) error, apply func(*domain.Membership) error) (*accessv1.TenantMemberDTO, error) {
+func (service *TenantMemberLifecycleService) mutate(ctx context.Context, userID string, expectedVersion uint64, beforeApply func(context.Context, *domain.Membership) error, apply func(*domain.Membership) error) (*accessv1.TenantMemberDTO, error) {
 	tenantID, err := trustedTenantID(ctx)
 	if err != nil {
 		return nil, err
@@ -171,7 +178,7 @@ func (service *TenantMemberLifecycleService) mutate(ctx context.Context, userID 
 			return domain.Membership{}, ports.ErrTenantMemberConflict
 		}
 		if beforeApply != nil {
-			if err := beforeApply(scope.Context()); err != nil {
+			if err := beforeApply(scope.Context(), &current); err != nil {
 				return domain.Membership{}, err
 			}
 		}

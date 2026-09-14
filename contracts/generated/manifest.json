@@ -22,6 +22,16 @@
       }
     },
     {
+      "name": "contracts/proto/access/v1/tenant_department.proto",
+      "package": "access.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/access/v1;accessv1",
+      "domain": {
+        "name": "access",
+        "version": "v1"
+      }
+    },
+    {
       "name": "contracts/proto/access/v1/tenant_member.proto",
       "package": "access.v1",
       "syntax": "proto3",
@@ -218,6 +228,30 @@
       }
     },
     {
+      "name": "AssertTenantMemberDepartmentAssignmentAllowedRequest",
+      "fullName": "access.v1.AssertTenantMemberDepartmentAssignmentAllowedRequest",
+      "fields": [
+        {
+          "name": "department_id",
+          "jsonName": "departmentId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "AssertTenantMemberDepartmentAssignmentAllowedResponse",
+      "fullName": "access.v1.AssertTenantMemberDepartmentAssignmentAllowedResponse",
+      "fields": null,
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "AssignTenantRoleMemberRequest",
       "fullName": "access.v1.AssignTenantRoleMemberRequest",
       "fields": [
@@ -317,6 +351,57 @@
       }
     },
     {
+      "name": "CreateTenantDepartmentRequest",
+      "fullName": "access.v1.CreateTenantDepartmentRequest",
+      "fields": [
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "parent_id",
+          "jsonName": "parentId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "leader_user_id",
+          "jsonName": "leaderUserId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "email",
+          "jsonName": "email",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "phone",
+          "jsonName": "phone",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sort",
+          "jsonName": "sort",
+          "number": 6,
+          "kind": "scalar",
+          "type": "int32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "CreateTenantRequest",
       "fullName": "access.v1.CreateTenantRequest",
       "fields": [
@@ -377,12 +462,58 @@
       }
     },
     {
+      "name": "DisableTenantDepartmentRequest",
+      "fullName": "access.v1.DisableTenantDepartmentRequest",
+      "fields": [
+        {
+          "name": "department_id",
+          "jsonName": "departmentId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "DisableTenantRoleRequest",
       "fullName": "access.v1.DisableTenantRoleRequest",
       "fields": [
         {
           "name": "role_id",
           "jsonName": "roleId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "EnableTenantDepartmentRequest",
+      "fullName": "access.v1.EnableTenantDepartmentRequest",
+      "fields": [
+        {
+          "name": "department_id",
+          "jsonName": "departmentId",
           "number": 1,
           "kind": "scalar",
           "type": "string"
@@ -429,6 +560,22 @@
         {
           "name": "id",
           "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "GetTenantDepartmentRequest",
+      "fullName": "access.v1.GetTenantDepartmentRequest",
+      "fields": [
+        {
+          "name": "department_id",
+          "jsonName": "departmentId",
           "number": 1,
           "kind": "scalar",
           "type": "string"
@@ -558,6 +705,31 @@
           "number": 1,
           "kind": "message",
           "type": "access.v1.TenantDelegationDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListTenantDepartmentsRequest",
+      "fullName": "access.v1.ListTenantDepartmentsRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListTenantDepartmentsResponse",
+      "fullName": "access.v1.ListTenantDepartmentsResponse",
+      "fields": [
+        {
+          "name": "departments",
+          "jsonName": "departments",
+          "number": 1,
+          "kind": "message",
+          "type": "access.v1.TenantDepartmentDTO",
           "repeated": true
         }
       ],
@@ -943,6 +1115,78 @@
       }
     },
     {
+      "name": "TenantDepartmentDTO",
+      "fullName": "access.v1.TenantDepartmentDTO",
+      "fields": [
+        {
+          "name": "department_id",
+          "jsonName": "departmentId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "parent_id",
+          "jsonName": "parentId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "leader_user_id",
+          "jsonName": "leaderUserId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "email",
+          "jsonName": "email",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "phone",
+          "jsonName": "phone",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "jsonName": "status",
+          "number": 7,
+          "kind": "enum",
+          "type": "access.v1.TenantDepartmentStatus"
+        },
+        {
+          "name": "sort",
+          "jsonName": "sort",
+          "number": 8,
+          "kind": "scalar",
+          "type": "int32"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 9,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "TenantMemberDTO",
       "fullName": "access.v1.TenantMemberDTO",
       "fields": [
@@ -1102,6 +1346,71 @@
       ],
       "dto": {
         "kind": "output"
+      }
+    },
+    {
+      "name": "UpdateTenantDepartmentRequest",
+      "fullName": "access.v1.UpdateTenantDepartmentRequest",
+      "fields": [
+        {
+          "name": "department_id",
+          "jsonName": "departmentId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "parent_id",
+          "jsonName": "parentId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "leader_user_id",
+          "jsonName": "leaderUserId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "email",
+          "jsonName": "email",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "phone",
+          "jsonName": "phone",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sort",
+          "jsonName": "sort",
+          "number": 7,
+          "kind": "scalar",
+          "type": "int32"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 8,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
       }
     },
     {
@@ -5393,6 +5702,24 @@
       ]
     },
     {
+      "name": "TenantDepartmentStatus",
+      "fullName": "access.v1.TenantDepartmentStatus",
+      "values": [
+        {
+          "name": "TENANT_DEPARTMENT_STATUS_UNSPECIFIED",
+          "number": 0
+        },
+        {
+          "name": "TENANT_DEPARTMENT_STATUS_ACTIVE",
+          "number": 1
+        },
+        {
+          "name": "TENANT_DEPARTMENT_STATUS_DISABLED",
+          "number": 2
+        }
+      ]
+    },
+    {
       "name": "TenantMemberStatus",
       "fullName": "access.v1.TenantMemberStatus",
       "values": [
@@ -5742,6 +6069,288 @@
       ]
     },
     {
+      "name": "TenantDepartmentManagementApplication",
+      "fullName": "access.v1.TenantDepartmentManagementApplication",
+      "domain": "access",
+      "application": {
+        "name": "tenant_department_management",
+        "operations": [
+          {
+            "id": "tenant.department.assert_member_assignment_allowed",
+            "useCase": "assert_tenant_member_department_assignment_allowed",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            },
+            "requestType": "access.v1.AssertTenantMemberDepartmentAssignmentAllowedRequest",
+            "responseType": "access.v1.AssertTenantMemberDepartmentAssignmentAllowedResponse",
+            "applicationMethod": "AssertTenantMemberDepartmentAssignmentAllowed"
+          }
+        ]
+      },
+      "methods": [
+        {
+          "name": "CreateTenantDepartment",
+          "fullName": "access.v1.TenantDepartmentManagementApplication.CreateTenantDepartment",
+          "request": "access.v1.CreateTenantDepartmentRequest",
+          "response": "access.v1.TenantDepartmentDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/departments",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.department.create",
+            "useCase": "create_tenant_department",
+            "permissions": [
+              "tenant.organization.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.department.create",
+            "permissions": [
+              "tenant.organization.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "DisableTenantDepartment",
+          "fullName": "access.v1.TenantDepartmentManagementApplication.DisableTenantDepartment",
+          "request": "access.v1.DisableTenantDepartmentRequest",
+          "response": "access.v1.TenantDepartmentDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/departments/{department_id}/disable",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.department.disable",
+            "useCase": "disable_tenant_department",
+            "permissions": [
+              "tenant.organization.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.department.disable",
+            "permissions": [
+              "tenant.organization.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "EnableTenantDepartment",
+          "fullName": "access.v1.TenantDepartmentManagementApplication.EnableTenantDepartment",
+          "request": "access.v1.EnableTenantDepartmentRequest",
+          "response": "access.v1.TenantDepartmentDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/departments/{department_id}/enable",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.department.enable",
+            "useCase": "enable_tenant_department",
+            "permissions": [
+              "tenant.organization.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.department.enable",
+            "permissions": [
+              "tenant.organization.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "GetTenantDepartment",
+          "fullName": "access.v1.TenantDepartmentManagementApplication.GetTenantDepartment",
+          "request": "access.v1.GetTenantDepartmentRequest",
+          "response": "access.v1.TenantDepartmentDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/departments/{department_id}"
+            }
+          ],
+          "operation": {
+            "id": "tenant.department.get",
+            "useCase": "get_tenant_department",
+            "permissions": [
+              "tenant.organization.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.department.get",
+            "permissions": [
+              "tenant.organization.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListTenantDepartments",
+          "fullName": "access.v1.TenantDepartmentManagementApplication.ListTenantDepartments",
+          "request": "access.v1.ListTenantDepartmentsRequest",
+          "response": "access.v1.ListTenantDepartmentsResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/departments"
+            }
+          ],
+          "operation": {
+            "id": "tenant.department.list",
+            "useCase": "list_tenant_departments",
+            "permissions": [
+              "tenant.organization.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.department.list",
+            "permissions": [
+              "tenant.organization.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "UpdateTenantDepartment",
+          "fullName": "access.v1.TenantDepartmentManagementApplication.UpdateTenantDepartment",
+          "request": "access.v1.UpdateTenantDepartmentRequest",
+          "response": "access.v1.TenantDepartmentDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/tenant/departments/{department_id}",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.department.update",
+            "useCase": "update_tenant_department",
+            "permissions": [
+              "tenant.organization.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.department.update",
+            "permissions": [
+              "tenant.organization.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "TenantLifecycleApplication",
       "fullName": "access.v1.TenantLifecycleApplication",
       "domain": "access",
@@ -6072,6 +6681,7 @@
       "application": {
         "name": "tenant_member_lifecycle",
         "requires": [
+          "access/tenant_department_management",
           "access/tenant_role_permission"
         ],
         "operations": [
@@ -6378,6 +6988,10 @@
               "api-key",
               "web-session"
             ],
+            "requiresOperations": [
+              "tenant.department.assert_member_assignment_allowed"
+            ],
+            "composition": "local",
             "execution": {
               "transaction": "local",
               "idempotency": "required"
