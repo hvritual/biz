@@ -7,27 +7,34 @@ import { cn } from '@/lib/utils'
 defineOptions({ inheritAttrs: false })
 type SelectModelValue = string | number | boolean | null | undefined
 const props = withDefaults(
-  defineProps<{ placeholder?: string; disabled?: boolean; value?: SelectModelValue }>(),
-  { placeholder: '请选择', disabled: false, value: undefined },
+  defineProps<{
+    modelValue?: SelectModelValue
+    placeholder?: string
+    disabled?: boolean
+    value?: SelectModelValue
+  }>(),
+  { placeholder: '请选择', disabled: false, modelValue: undefined, value: undefined },
 )
-const emit = defineEmits<{ change: [event: Event] }>()
-const model = defineModel<SelectModelValue>({ default: undefined })
+const emit = defineEmits<{
+  'update:modelValue': [value: SelectModelValue]
+  change: [event: Event]
+}>()
 const attrs = useAttrs()
 const emptyValue = '__coffeelink_empty__'
 function toLegacyChangeEvent(value: string): Event {
   const target = { value }
   return { target, currentTarget: target } as unknown as Event
 }
-const internalValue = computed({
-  get: () => {
-    const value = model.value ?? props.value
-    return value === '' || value == null ? emptyValue : String(value)
-  },
-  set: (value: string) => {
-    const next = value === emptyValue ? '' : value
-    model.value = next
-    emit('change', toLegacyChangeEvent(next))
-  },
+const internalValue = computed(() => {
+  const value = props.modelValue !== undefined ? props.modelValue : props.value
+  return value === '' || value == null ? emptyValue : String(value)
+})
+const explicitAriaLabel = computed(() =>
+  attrs['aria-label'] == null ? undefined : String(attrs['aria-label']),
+)
+const triggerAttrs = computed(() => {
+  const { class: _class, ...rest } = attrs
+  return rest
 })
 const triggerClass = computed(() =>
   cn(
@@ -35,13 +42,20 @@ const triggerClass = computed(() =>
     attrs.class,
   ),
 )
+function handleUpdate(value: unknown) {
+  const normalized = String(value ?? emptyValue)
+  const next = normalized === emptyValue ? '' : normalized
+  emit('update:modelValue', next)
+  emit('change', toLegacyChangeEvent(next))
+}
 </script>
 <template>
-  <SelectRoot v-model="internalValue" :disabled="disabled">
+  <SelectRoot :model-value="internalValue" :disabled="disabled" @update:model-value="handleUpdate">
     <SelectTrigger
+      v-bind="triggerAttrs"
       data-slot="select-trigger"
       :class="triggerClass"
-      :aria-label="String($attrs['aria-label'] ?? placeholder)"
+      :aria-label="explicitAriaLabel"
     >
       <SelectValue :placeholder="placeholder" />
       <SelectIcon><ChevronDown class="size-4 opacity-60" /></SelectIcon>
