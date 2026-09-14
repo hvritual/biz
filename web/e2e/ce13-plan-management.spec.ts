@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
+import { selectUiOption } from './ui.helpers'
 
 const modules = {
   modules: [
@@ -82,8 +83,7 @@ test('TestCE13PlanWorkspaceReadsGeneratedPlanContract', async ({ page }) => {
   const dialog = page.getByRole('dialog', { name: '新建套餐首稿' })
   await expect(dialog).toBeVisible()
   await dialog.getByRole('button', { name: '添加模块' }).click()
-  await dialog.getByLabel('模块').click()
-  await page.getByRole('option', { name: '客户管理', exact: true }).click()
+  await selectUiOption(dialog.getByLabel('模块'), 'customer')
   await expect(dialog.getByText('customer.read')).toBeVisible()
   await expect(dialog.getByRole('button', { name: '添加额度' })).toBeEnabled()
   await expect(dialog.getByRole('button', { name: '添加字段' })).toBeEnabled()
