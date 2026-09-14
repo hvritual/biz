@@ -116,6 +116,10 @@ onBeforeUnmount(() => {
   box-shadow: var(--shadow-panel);
   width: var(--current-rail);
 }
+.side-frame :deep(.primary-nav) {
+  width: var(--current-rail);
+  flex: 0 0 var(--current-rail);
+}
 .side-frame.joined {
   width: calc(var(--current-rail) + var(--module-width));
   background: var(--color-surface);
