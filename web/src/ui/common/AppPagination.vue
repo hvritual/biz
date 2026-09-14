@@ -19,8 +19,7 @@ function change(value: number) {
     <span class="muted">共 {{ total.toLocaleString('zh-CN') }} 条</span>
     <div class="pagination-controls">
       <UiButton class="icon-button" aria-label="上一页" :disabled="page <= 1" @click="change(page - 1)">
-        <AppIcon name="left" :size="16" /></button
-      ><UiButton
+        <AppIcon name="left" :size="16" /></UiButton><UiButton
         v-for="n in visible"
         :key="n"
         :class="['page-number', { active: page === n }]"
@@ -28,12 +27,9 @@ function change(value: number) {
         :aria-current="page === n ? 'page' : undefined"
         @click="change(n)"
       >
-        {{ n }}</button
-      ><span v-if="visible.at(-1) !== pages" class="muted">…</span
-      ><UiButton v-if="visible.at(-1) !== pages" class="page-number" @click="change(pages)">{{ pages }}</button
-      ><UiButton class="icon-button" aria-label="下一页" :disabled="page >= pages" @click="change(page + 1)">
-        <AppIcon name="right" :size="16" /></button
-      ><UiSelect
+        {{ n }}</UiButton><span v-if="visible.at(-1) !== pages" class="muted">…</span
+      ><UiButton v-if="visible.at(-1) !== pages" class="page-number" @click="change(pages)">{{ pages }}</UiButton><UiButton class="icon-button" aria-label="下一页" :disabled="page >= pages" @click="change(page + 1)">
+        <AppIcon name="right" :size="16" /></UiButton><UiSelect
         class="select page-size"
         :value="pageSize"
         aria-label="每页条数"
@@ -46,8 +42,7 @@ function change(value: number) {
       >
         <UiOption :value="10">10 条/页</UiOption>
         <UiOption :value="20">20 条/页</UiOption>
-        <UiOption :value="50">50 条/页</UiOption></select
-      ><span class="page-jump muted"
+        <UiOption :value="50">50 条/页</UiOption></UiSelect><span class="page-jump muted"
         >前往
         <UiInput
           class="input"

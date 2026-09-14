@@ -123,8 +123,7 @@ function save() {
           </div>
           <div class="row">
             <UiButton v-if="department" class="btn" @click="openEditor(true)">
-              <AppIcon name="edit" :size="15" />编辑部门</button
-            ><UiButton class="btn btn-primary" @click="openEditor(false)">
+              <AppIcon name="edit" :size="15" />编辑部门</UiButton><UiButton class="btn btn-primary" @click="openEditor(false)">
               <AppIcon name="plus" :size="16" />新建部门
             </UiButton>
           </div>
@@ -231,8 +230,7 @@ function save() {
       </div>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
       <template #footer
-        ><UiButton class="btn" @click="editOpen = false">取消</button
-        ><UiButton class="btn btn-primary" @click="save">保存部门</UiButton></template
+        ><UiButton class="btn" @click="editOpen = false">取消</UiButton><UiButton class="btn btn-primary" @click="save">保存部门</UiButton></template
       ></UiDialog
     >
   </div>

@@ -322,12 +322,8 @@ function reread() {
       >
     </div>
     <template #footer
-      ><UiButton class="btn" @click="close">取消</button
-      ><UiButton class="btn" @click="save(false)">保存规则草稿</button
-      ><UiButton v-if="step === 1" class="btn btn-primary" @click="preview">试算并预览影响</button
-      ><template v-else
-        ><UiButton class="btn" @click="step = 1">返回配置</button
-        ><UiButton class="btn btn-primary" @click="save(true)">确认预约发布</UiButton></template
+      ><UiButton class="btn" @click="close">取消</UiButton><UiButton class="btn" @click="save(false)">保存规则草稿</UiButton><UiButton v-if="step === 1" class="btn btn-primary" @click="preview">试算并预览影响</UiButton><template v-else
+        ><UiButton class="btn" @click="step = 1">返回配置</UiButton><UiButton class="btn btn-primary" @click="save(true)">确认预约发布</UiButton></template
       ></template
     >
   </UiDialog>

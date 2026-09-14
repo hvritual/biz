@@ -115,8 +115,7 @@ function renew(id: string, customerId: string) {
               <td>{{ store.snapshot.work.filter((w) => w.evidenceIds.includes(c.id)).length }} 项</td>
               <td>
                 <div class="table-actions">
-                  <UiButton class="btn-link" @click="selected = c.id">查看</button
-                  ><UiButton
+                  <UiButton class="btn-link" @click="selected = c.id">查看</UiButton><UiButton
                     v-if="c.verified && !c.facts.renewal"
                     class="btn-link"
                     @click="renew(c.id, c.customerId)"

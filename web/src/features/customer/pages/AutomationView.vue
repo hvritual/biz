@@ -103,8 +103,7 @@ const matches = computed(() => (current.value ? evaluateRule(store.snapshot, cur
                       }
                     "
                   >
-                    试运行</button
-                  ><UiButton class="btn-link" @click="actions.open('rule-toggle', r.id)">
+                    试运行</UiButton><UiButton class="btn-link" @click="actions.open('rule-toggle', r.id)">
                     {{ r.enabled ? '停用' : '启用' }}
                   </UiButton>
                 </div>

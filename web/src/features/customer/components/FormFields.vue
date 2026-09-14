@@ -38,8 +38,7 @@ function update(key: string, value: string | boolean) {
           <UiOption value="">请选择</UiOption>
           <UiOption v-for="option in field.options" :key="option" :value="option">
             {{ labels?.[option] || option || '不限' }}
-          </UiOption></select
-        ><UiTextarea
+          </UiOption></UiSelect><UiTextarea
           v-else-if="field.type === 'textarea'"
           :value="String(modelValue[field.key] ?? '')"
           class="textarea"

@@ -34,8 +34,7 @@ function save() {
       ><label class="field"
         ><span>默认语言</span
         ><UiSelect v-model="draft.language" class="select">
-          <UiOption>简体中文</UiOption></select
-        ><small>当前交付仅包含简体中文界面。</small></label
+          <UiOption>简体中文</UiOption></UiSelect><small>当前交付仅包含简体中文界面。</small></label
       ><label class="field"
         ><span>默认时区</span
         ><UiSelect v-model="draft.timezone" class="select">
@@ -70,8 +69,7 @@ function save() {
       </div>
     </section>
     <div class="form-footer">
-      <UiButton class="btn" type="button" @click="draft = { ...store.settings }">取消修改</button
-      ><UiButton class="btn btn-primary" type="submit">保存设置</UiButton>
+      <UiButton class="btn" type="button" @click="draft = { ...store.settings }">取消修改</UiButton><UiButton class="btn btn-primary" type="submit">保存设置</UiButton>
     </div>
   </form>
 </template>

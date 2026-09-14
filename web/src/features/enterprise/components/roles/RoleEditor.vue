@@ -139,8 +139,7 @@ function save() {
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     </div>
     <template #footer
-      ><UiButton class="btn" @click="emit('close')">{{ readonly ? '关闭' : '取消' }}</button
-      ><UiButton v-if="!readonly" class="btn btn-primary" @click="save">保存角色</UiButton></template
+      ><UiButton class="btn" @click="emit('close')">{{ readonly ? '关闭' : '取消' }}</UiButton><UiButton v-if="!readonly" class="btn btn-primary" @click="save">保存角色</UiButton></template
     ></UiDialog
   >
 </template>

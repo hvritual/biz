@@ -53,8 +53,7 @@ function globalSearch() {
         @change="changeTenant"
       >
         <UiOption value="shanghai">上海咖啡科技有限公司</UiOption>
-        <UiOption value="hangzhou">杭州咖啡运营有限公司</UiOption></select
-      ><span class="edition">标准版</span>
+        <UiOption value="hangzhou">杭州咖啡运营有限公司</UiOption></UiSelect><span class="edition">标准版</span>
     </div>
     <div v-else class="header-company">
       {{ route.meta.surface === 'platform' ? '平台管理' : '业务工作区' }}
@@ -68,10 +67,7 @@ function globalSearch() {
     </form>
     <div v-if="!live" class="header-actions">
       <UiButton class="icon-button notification" aria-label="通知中心" @click="panel = '通知中心'">
-        <AppIcon name="bell" :size="21" /><b>12</b></button
-      ><UiButton class="header-link" @click="panel = '帮助中心'"><AppIcon name="help" />帮助中心</button
-      ><UiButton class="header-link" @click="panel = '下载中心'"><AppIcon name="download" />下载中心</button
-      ><UiButton class="profile" @click="panel = '当前账号'">
+        <AppIcon name="bell" :size="21" /><b>12</b></UiButton><UiButton class="header-link" @click="panel = '帮助中心'"><AppIcon name="help" />帮助中心</UiButton><UiButton class="header-link" @click="panel = '下载中心'"><AppIcon name="download" />下载中心</UiButton><UiButton class="profile" @click="panel = '当前账号'">
         <AvatarMark name="张" :size="36" tone="solid" /><span>张三<small>超级管理员</small></span>
         <AppIcon name="down" :size="14" />
       </UiButton>

@@ -96,8 +96,7 @@ const projection = computed(() => {
               :disabled="projection.data.status === '已结束'"
               @click="actions.open('client-accept', projection.data.grantId)"
             >
-              确认本次交付</button
-            ><UiButton
+              确认本次交付</UiButton><UiButton
               class="btn"
               :disabled="projection.data.status === '已结束'"
               @click="actions.open('client-reject', projection.data.grantId)"

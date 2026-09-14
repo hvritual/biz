@@ -78,8 +78,7 @@ function submit() {
         </div>
         <div class="row">
           <UiButton class="btn btn-primary" @click="requestOpen = true">
-            <AppIcon name="crown" :size="16" />申请升级套餐</button
-          ><UiButton class="btn" @click="requestOpen = true">申请调整额度</UiButton>
+            <AppIcon name="crown" :size="16" />申请升级套餐</UiButton><UiButton class="btn" @click="requestOpen = true">申请调整额度</UiButton>
         </div>
         <small class="preview-plan">套餐、日期与额度均为界面示例，不代表真实订阅。</small>
       </section>
@@ -195,8 +194,7 @@ function submit() {
         </label>
       </div>
       <template #footer
-        ><UiButton class="btn" @click="requestOpen = false">取消</button
-        ><UiButton class="btn btn-primary" @click="submit">记录申请</UiButton></template
+        ><UiButton class="btn" @click="requestOpen = false">取消</UiButton><UiButton class="btn btn-primary" @click="submit">记录申请</UiButton></template
       ></UiDialog
     >
   </div>

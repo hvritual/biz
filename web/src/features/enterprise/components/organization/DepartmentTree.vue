@@ -28,8 +28,7 @@ const count = (id: string) =>
       <AppIcon name="company" :size="17" /><span
         >{{ store.company.shortName
         }}<small>{{ store.members.filter((m) => m.status !== 'removed').length }}</small></span
-      ></button
-    ><UiButton
+      ></UiButton><UiButton
       v-for="d in rows"
       :key="d.id"
       :class="['tree-node', { chosen: selected === d.id }]"

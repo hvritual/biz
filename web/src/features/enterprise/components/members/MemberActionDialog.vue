@@ -298,8 +298,7 @@ async function submit() {
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     </div>
     <template #footer
-      ><UiButton class="btn" @click="emit('close')">取消</button
-      ><UiButton
+      ><UiButton class="btn" @click="emit('close')">取消</UiButton><UiButton
         :class="['btn', danger ? 'btn-danger' : 'btn-primary']"
         :disabled="busy || Boolean(blocking)"
         @click="submit"

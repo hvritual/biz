@@ -60,8 +60,7 @@ function create() {
           :value="rule.groupId"
         >
           {{ rule.name }}
-        </UiOption></select
-      ><UiInput v-model="period" type="month" aria-label="对账账期" /><UiButton
+        </UiOption></UiSelect><UiInput v-model="period" type="month" aria-label="对账账期" /><UiButton
         class="btn btn-primary"
         @click="create"
       >

@@ -79,8 +79,7 @@ function submit() {
       <p v-if="policyError || error" class="form-error" role="alert">{{ policyError || error }}</p>
     </form>
     <template #footer
-      ><UiButton class="btn" @click="emit('close')">取消</button
-      ><UiButton
+      ><UiButton class="btn" @click="emit('close')">取消</UiButton><UiButton
         class="btn"
         :class="action === 'suspend' ? 'btn-danger' : 'btn-primary'"
         :disabled="Boolean(policyError)"

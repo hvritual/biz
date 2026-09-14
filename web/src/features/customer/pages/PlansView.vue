@@ -44,8 +44,7 @@ const plans = computed(() =>
         >
           <UiOption value="">全部状态</UiOption>
           <UiOption>进行中</UiOption>
-          <UiOption>已结案</UiOption></select
-        ><UiButton
+          <UiOption>已结案</UiOption></UiSelect><UiButton
           class="btn"
           @click="
             () => {

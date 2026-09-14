@@ -34,9 +34,7 @@ function inCell(day: string, hour: string) {
     <div class="customer-section-header">
       <h2>{{ days[0]?.key }} — {{ days[6]?.key }}</h2>
       <div class="row">
-        <UiButton class="btn" aria-label="上一周" @click="offset--"><AppIcon name="left" :size="15" /></button
-        ><UiButton class="btn" @click="offset = 0">本周</button
-        ><UiButton class="btn" aria-label="下一周" @click="offset++">
+        <UiButton class="btn" aria-label="上一周" @click="offset--"><AppIcon name="left" :size="15" /></UiButton><UiButton class="btn" @click="offset = 0">本周</UiButton><UiButton class="btn" aria-label="下一周" @click="offset++">
           <AppIcon name="right" :size="15" />
         </UiButton>
       </div>

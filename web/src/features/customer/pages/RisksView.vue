@@ -88,8 +88,7 @@ const signal = computed(() => signals.find((x) => x.name === active.value)!)
             class="btn btn-primary"
             @click="actions.open('triage', customer.id, [], { workId: signal.action })"
           >
-            记录研判与下一步</button
-          ><RouterLink :to="`/customers/work/${signal.action}`" class="btn">进入已有事项</RouterLink>
+            记录研判与下一步</UiButton><RouterLink :to="`/customers/work/${signal.action}`" class="btn">进入已有事项</RouterLink>
         </div></CustomerSection
       >
       <div class="page-stack">

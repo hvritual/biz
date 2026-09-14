@@ -84,8 +84,7 @@ function toggle(id: string) {
                   name="down"
                   :size="10"
                   :class="{ ascending: column.key === sortKey && sortDirection !== 'desc' }"
-              /></span></button
-            ><template v-else>{{ column.label }}</template>
+              /></span></UiButton><template v-else>{{ column.label }}</template>
           </th>
         </tr>
       </thead>

@@ -36,8 +36,7 @@ const store = useCustomerStore(),
           :disabled="work.status === '已结束'"
           @click="actions.open('visit', work.id)"
         >
-          记录回访与承诺</button
-        ><UiButton class="btn" @click="actions.open('comment', work.id)">记录沟通</UiButton>
+          记录回访与承诺</UiButton><UiButton class="btn" @click="actions.open('comment', work.id)">记录沟通</UiButton>
       </div></CustomerSection
     ><CustomerSection title="成功标准" icon="checks"
       ><div v-for="criterion in work.criteria" :key="criterion" class="customer-record">{{ criterion }}</div>

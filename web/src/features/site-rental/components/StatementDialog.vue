@@ -6,6 +6,7 @@ import { useCustomerStore } from '@/stores/customer'
 import { rentalState } from '@/services/siteRental/model'
 import type { RentalAction } from '@/services/siteRental/commands'
 import UiDialog from '@/ui/common/UiDialog.vue'
+import Disclosure from '@/ui/common/Disclosure.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 import QuoteSummary from './QuoteSummary.vue'
@@ -88,22 +89,19 @@ function run(type: 'refresh-statement' | 'confirm-statement' | 'dispute' | 'reso
         ><UiTextarea v-model="reason" rows="2" placeholder="请记录数据口径、核对结果或异议结论" />
       </label>
       <p v-if="error" role="alert" class="rental-error">{{ error }}</p>
-      <details>
-        <summary>操作记录（{{ statement.history.length }}）</summary>
+      <Disclosure>
+        <template #summary>操作记录（{{ statement.history.length }}）</template>
         <div v-for="(h, i) in statement.history" :key="i" class="rental-history-row">
           <strong>{{ h.action }}</strong
           ><span>{{ h.reason }}</span
           ><small>{{ h.time }}</small>
         </div>
-      </details>
+      </Disclosure>
     </div>
     <p v-else role="alert">对账单不存在或不在当前租户。</p>
     <template #footer
-      ><UiButton class="btn" @click="emit('close')">关闭</button
-      ><template v-if="statement?.state === '草稿'"
-        ><UiButton class="btn" @click="run('refresh-statement')">刷新来源</button
-        ><UiButton class="btn" @click="run('dispute')">登记异议</button
-        ><UiButton
+      ><UiButton class="btn" @click="emit('close')">关闭</UiButton><template v-if="statement?.state === '草稿'"
+        ><UiButton class="btn" @click="run('refresh-statement')">刷新来源</UiButton><UiButton class="btn" @click="run('dispute')">登记异议</UiButton><UiButton
           class="btn btn-primary"
           :disabled="!!statement.quote.blockers.length"
           @click="run('confirm-statement')"

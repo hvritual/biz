@@ -1,28 +1,8 @@
-npm warn EBADENGINE Unsupported engine {
-npm warn EBADENGINE   package: 'eslint-visitor-keys@5.0.1',
-npm warn EBADENGINE   required: { node: '^20.19.0 || ^22.13.0 || >=24' },
-npm warn EBADENGINE   current: { node: 'v22.12.0', npm: '10.9.0' }
-npm warn EBADENGINE }
-npm warn EBADENGINE Unsupported engine {
-npm warn EBADENGINE   package: 'abbrev@5.0.0',
-npm warn EBADENGINE   required: { node: '^22.22.2 || ^24.15.0 || >=26.0.0' },
-npm warn EBADENGINE   current: { node: 'v22.12.0', npm: '10.9.0' }
-npm warn EBADENGINE }
-npm warn EBADENGINE Unsupported engine {
-npm warn EBADENGINE   package: 'nopt@10.0.1',
-npm warn EBADENGINE   required: { node: '^22.22.2 || ^24.15.0 || >=26.0.0' },
-npm warn EBADENGINE   current: { node: 'v22.12.0', npm: '10.9.0' }
-npm warn EBADENGINE }
-npm warn EBADENGINE Unsupported engine {
-npm warn EBADENGINE   package: 'eslint-visitor-keys@5.0.1',
-npm warn EBADENGINE   required: { node: '^20.19.0 || ^22.13.0 || >=24' },
-npm warn EBADENGINE   current: { node: 'v22.12.0', npm: '10.9.0' }
-npm warn EBADENGINE }
 npm warn deprecated whatwg-encoding@3.1.1: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
 npm warn deprecated lucide-vue-next@0.468.0: Package deprecated. Please use @lucide/vue instead.
 
-added 340 packages, and audited 341 packages in 5s
+added 341 packages, and audited 342 packages in 4s
 
 89 packages are looking for funding
   run `npm fund` for details
@@ -38,30 +18,10 @@ Run `npm audit` for details.
 > coffeelink-console@0.1.0 type-check
 > vue-tsc -b
 
-src/features/app-shell/components/AppHeader.vue(53,10): error TS2322: Type '(e: Event) => void' is not assignable to type '(value: string) => any'.
-  Types of parameters 'e' and 'value' are incompatible.
-    Type 'string' is not assignable to type 'Event'.
-src/features/customer/components/FormFields.vue(36,46): error TS2339: Property 'target' does not exist on type 'string'.
-src/features/customer/components/FormFields.vue(56,17): error TS2367: This comparison appears to be unintentional because the types '"select"' and '"number"' have no overlap.
-src/features/customer/pages/WorkDetailView.vue(74,42): error TS2367: This comparison appears to be unintentional because the types '"已结束"' and '"待验收"' have no overlap.
-src/features/enterprise/components/server/RoleServerEditor.vue(153,61): error TS2339: Property 'target' does not exist on type 'string'.
-src/features/enterprise/pages/MembersRealView.vue(313,73): error TS2322: Type '(event: Event) => Promise<void>' is not assignable to type '(value: string) => any'.
-  Types of parameters 'event' and 'value' are incompatible.
-    Type 'string' is not assignable to type 'Event'.
-src/features/enterprise/pages/OrganizationRealView.vue(233,73): error TS2322: Type '(event: Event) => Promise<void>' is not assignable to type '(value: string) => any'.
-  Types of parameters 'event' and 'value' are incompatible.
-    Type 'string' is not assignable to type 'Event'.
-src/features/enterprise/pages/OrganizationView.vue(206,24): error TS2322: Type 'null' is not assignable to type 'string | number | undefined'.
-src/features/enterprise/pages/RolesRealView.vue(320,73): error TS2322: Type '(event: Event) => Promise<void>' is not assignable to type '(value: string) => any'.
-  Types of parameters 'event' and 'value' are incompatible.
-    Type 'string' is not assignable to type 'Event'.
-src/features/platform/components/AuthorityPicker.vue(57,41): error TS2339: Property 'target' does not exist on type 'string'.
-src/features/runtime/pages/RuntimeConsoleView.vue(177,73): error TS2322: Type '(event: Event) => Promise<void>' is not assignable to type '(value: string) => any'.
-  Types of parameters 'event' and 'value' are incompatible.
-    Type 'string' is not assignable to type 'Event'.
-src/ui/common/AppPagination.vue(40,10): error TS2322: Type '($event: Event) => void' is not assignable to type '(value: string) => any'.
-  Types of parameters '$event' and 'value' are incompatible.
-    Type 'string' is not assignable to type 'Event'.
+src/features/system/components/settings/GeneralSettings.vue(36,20): error TS2322: Type 'string | number | boolean | undefined' is not assignable to type 'SelectModelValue'.
+  Type 'false' is not assignable to type 'SelectModelValue'.
+src/features/system/components/settings/GeneralSettings.vue(40,20): error TS2322: Type 'string | number | boolean | undefined' is not assignable to type 'SelectModelValue'.
+  Type 'false' is not assignable to type 'SelectModelValue'.
 TYPE_CHECK_EXIT=2
 \n===== LINT =====
 
@@ -69,191 +29,10 @@ TYPE_CHECK_EXIT=2
 > eslint .
 
 
-/home/runner/work/biz/biz/web/src/features/app-shell/components/AppHeader.vue
-  56:57  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  71:52  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  72:89  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  73:93  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
+/home/runner/work/biz/biz/web/src/ui/common/Disclosure.vue
+  1:1  error  Component name "Disclosure" should always be multi-word  vue/multi-word-component-names
 
-/home/runner/work/biz/biz/web/src/features/customer/components/CustomerActionDialog.vue
-  286:78  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  293:49  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  294:86  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/customer/components/FormFields.vue
-  41:22  error  Parsing error: x-invalid-end-tag                                                                          vue/no-parsing-error
-  43:11  error  'v-else-if' directives require being preceded by the element which has a 'v-if' or 'v-else-if' directive  vue/valid-v-else-if
-
-/home/runner/work/biz/biz/web/src/features/customer/components/GeneralWorkDetail.vue
-  39:18  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/customer/components/RenewalDetail.vue
-  85:19  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/customer/components/WorkCalendar.vue
-  37:100  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  38:54   error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/customer/pages/AutomationView.vue
-  106:24  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/customer/pages/ClientPortalView.vue
-  99:21  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/customer/pages/ContractsView.vue
-  118:73  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/customer/pages/CustomersView.vue
-  120:36  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  126:34  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  127:60  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  218:17  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  228:18  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/customer/pages/ImportView.vue
-   99:89  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-  232:56  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-  233:57  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-  235:41  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-  236:22  error  'v-else' directives require being preceded by the element which has a 'v-if' or 'v-else-if' directive  vue/valid-v-else
-  244:53  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-  262:60  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/customer/pages/PlanDetailView.vue
-  42:16  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/customer/pages/PlansView.vue
-  47:35  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/customer/pages/RisksView.vue
-  91:21  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/customer/pages/WorkDetailView.vue
-   62:48  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-   68:15  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-   69:20  error  'v-else' directives require being preceded by the element which has a 'v-if' or 'v-else-if' directive  vue/valid-v-else
-   71:17  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-  205:27  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-  206:64  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/customer/pages/WorkItemsView.vue
-  144:22  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  153:15  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  162:14  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  173:99  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  179:34  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  186:35  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  187:60  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  201:17  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  216:94  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/customer/pages/WorkspaceView.vue
-  37:49  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/enterprise/components/members/MemberActionDialog.vue
-  301:55  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/enterprise/components/members/MemberBulkDialog.vue
-  82:55  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/enterprise/components/members/MemberDetailDrawer.vue
-  151:53  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/enterprise/components/members/MemberFilters.vue
-  51:68  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/enterprise/components/members/MemberTable.vue
-  87:24  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-  88:24  error  'v-else' directives require being preceded by the element which has a 'v-if' or 'v-else-if' directive  vue/valid-v-else
-
-/home/runner/work/biz/biz/web/src/features/enterprise/components/organization/DepartmentTree.vue
-  31:8  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/enterprise/components/roles/RoleEditor.vue
-  142:81  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/enterprise/pages/AuditLogsView.vue
-  105:107  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  108:102  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  120:13   error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/enterprise/pages/CompanyView.vue
-  130:17  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/enterprise/pages/OrganizationView.vue
-  126:53  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  234:60  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/enterprise/pages/PlansView.vue
-   81:54  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  198:63  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/enterprise/pages/RolesView.vue
-   93:52  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  119:78  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  135:92  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/runtime/pages/RuntimeConsoleView.vue
-  288:86  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/site-rental/components/RuleEditor.vue
-  325:47  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-  326:57  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-  327:84  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-  328:18  error  'v-else' directives require being preceded by the element which has a 'v-if' or 'v-else-if' directive  vue/valid-v-else
-  329:54  error  Parsing error: x-invalid-end-tag                                                                       vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/site-rental/components/SiteFormDialog.vue
-  170:47  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/site-rental/components/StatementDialog.vue
-  102:55  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  104:70  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  105:60  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/site-rental/pages/SiteDetailView.vue
-  131:57  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  374:65  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/site-rental/pages/SitesView.vue
-  143:106  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  146:94   error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  151:11   error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/site-rental/pages/StatementsView.vue
-  63:20  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/system/components/settings/GeneralSettings.vue
-  37:36  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  73:86  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/features/system/components/settings/SecuritySettings.vue
-  96:72  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/ui/base/UiInput.vue
-  6:15  warning  Prop 'modelValue' requires default value to be set  vue/require-default-prop
-  6:27  error    Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
-
-/home/runner/work/biz/biz/web/src/ui/base/UiSelect.vue
-   8:7   error    'props' is assigned a value but never used          @typescript-eslint/no-unused-vars
-  10:15  warning  Prop 'modelValue' requires default value to be set  vue/require-default-prop
-  10:27  error    Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
-
-/home/runner/work/biz/biz/web/src/ui/base/UiTextarea.vue
-  6:15  warning  Prop 'modelValue' requires default value to be set  vue/require-default-prop
-  6:27  error    Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
-
-/home/runner/work/biz/biz/web/src/ui/common/AppPagination.vue
-  22:43   error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  31:16   error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  33:104  error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  35:44   error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-  49:48   error  Parsing error: x-invalid-end-tag  vue/no-parsing-error
-
-/home/runner/work/biz/biz/web/src/ui/common/Notice.vue
-  1:1  error  Component name "Notice" should always be multi-word  vue/multi-word-component-names
-
-✖ 98 problems (95 errors, 3 warnings)
+✖ 1 problem (1 error, 0 warnings)
 
 LINT_EXIT=1
 \n===== ARCHITECTURE =====
@@ -261,8 +40,8 @@ LINT_EXIT=1
 > coffeelink-console@0.1.0 check:architecture
 > node scripts/check-architecture.mjs
 
-features/site-rental/components/StatementDialog.vue: raw browser interactive controls are forbidden outside ui/base
-ARCH_EXIT=1
+Architecture checks passed: 195 source files; three UI layers, feature pages, token ownership, native-control boundary and business scopes are guarded.
+ARCH_EXIT=0
 \n===== UI CONTRACTS =====
 
 > coffeelink-console@0.1.0 check:ui-contracts

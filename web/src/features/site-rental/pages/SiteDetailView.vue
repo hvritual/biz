@@ -128,8 +128,7 @@ function changeOperation() {
       description="现场、租约、服务和下一步行动，围绕同一个点位关联"
       ><div class="rental-actions">
         <RouterLink to="/sites" class="btn">返回点位列表</RouterLink
-        ><UiButton class="btn" @click="edit = true">编辑点位</button
-        ><UiButton v-if="site.kind === 'site'" class="btn btn-primary" @click="createWork">
+        ><UiButton class="btn" @click="edit = true">编辑点位</UiButton><UiButton v-if="site.kind === 'site'" class="btn btn-primary" @click="createWork">
           <AppIcon name="plus" :size="16" />新建关联事项
         </UiButton>
       </div></PageHeading
@@ -371,8 +370,7 @@ function changeOperation() {
         <p v-if="error" class="rental-error" role="alert">{{ error }}</p>
       </form>
       <template #footer
-        ><UiButton class="btn" @click="operationOpen = false">取消</button
-        ><UiButton class="btn btn-primary" type="submit" form="rental-operation">
+        ><UiButton class="btn" @click="operationOpen = false">取消</UiButton><UiButton class="btn btn-primary" type="submit" form="rental-operation">
           确认{{ site.operation === '正常运营' ? '临时停用' : '恢复运营' }}
         </UiButton></template
       ></UiDialog

@@ -48,8 +48,7 @@ watch(
       </UiSelect></label
     >
     <div class="filter-buttons">
-      <UiButton class="btn" type="button" @click="emit('reset')">重置</button
-      ><UiButton class="btn btn-primary" type="submit">查询</UiButton>
+      <UiButton class="btn" type="button" @click="emit('reset')">重置</UiButton><UiButton class="btn btn-primary" type="submit">查询</UiButton>
     </div>
   </form>
 </template>

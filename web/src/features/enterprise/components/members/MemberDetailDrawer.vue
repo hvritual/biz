@@ -148,8 +148,7 @@ onBeforeUnmount(() => {
             </div>
             <div class="profile-actions">
               <UiButton class="btn" aria-label="编辑成员资料" @click="emit('action', 'edit', member)">
-                <AppIcon name="edit" :size="13" />编辑</button
-              ><UiButton class="btn more-button" aria-label="成员详情更多操作" @click="emit('more', member)">
+                <AppIcon name="edit" :size="13" />编辑</UiButton><UiButton class="btn more-button" aria-label="成员详情更多操作" @click="emit('more', member)">
                 <AppIcon name="more" :size="15" />
               </UiButton>
             </div>

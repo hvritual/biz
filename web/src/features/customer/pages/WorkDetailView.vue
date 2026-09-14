@@ -59,17 +59,14 @@ const dependencies = computed(() =>
       ><div class="customer-heading-actions">
         <RouterLink class="btn" to="/customers/work">返回事项</RouterLink
         ><UiButton class="btn" :disabled="!work.writable" @click="actions.open('subtask', work.id)">
-          <AppIcon name="plus" :size="16" />子事项</button
-        ><UiButton
+          <AppIcon name="plus" :size="16" />子事项</UiButton><UiButton
           v-if="work.status === '已结束'"
           class="btn btn-primary"
           @click="actions.open('reopen', work.id)"
         >
-          重新打开</button
-        ><template v-else
+          重新打开</UiButton><template v-else
           ><UiButton class="btn" :disabled="!work.writable" @click="actions.open('transition', work.id)">
-            流转事项</button
-          ><UiButton
+            流转事项</UiButton><UiButton
             class="btn btn-primary"
             :disabled="!work.writable || work.status !== '待验收'"
             @click="actions.open('accept', work.id)"
@@ -202,9 +199,7 @@ const dependencies = computed(() =>
               :disabled="!work.writable"
               @click="actions.open('reject', work.id)"
             >
-              验收不通过 / 退回处理</button
-            ><UiButton class="btn" @click="tab = '业务来源'">核对业务来源</button
-            ><UiButton v-if="dependencies.length" class="btn" @click="tab = '依赖与子事项'">
+              验收不通过 / 退回处理</UiButton><UiButton class="btn" @click="tab = '业务来源'">核对业务来源</UiButton><UiButton v-if="dependencies.length" class="btn" @click="tab = '依赖与子事项'">
               查看 {{ dependencies.length }} 项依赖
             </UiButton>
           </div></CustomerSection

@@ -34,8 +34,7 @@ const activity = computed(() =>
       description="掌握客户承诺、当前阻塞与可验证的经营结果"
       ><div class="customer-heading-actions">
         <UiButton class="btn" @click="actions.open('edit-customer', customer.id)">
-          <AppIcon name="edit" :size="16" />编辑资料</button
-        ><UiButton
+          <AppIcon name="edit" :size="16" />编辑资料</UiButton><UiButton
           class="btn btn-primary"
           @click="actions.open('create-work', customer.id, [], { customerId: customer.id })"
         >

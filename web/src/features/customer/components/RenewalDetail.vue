@@ -82,8 +82,7 @@ const dependencies = computed(() => store.snapshot.work.filter((w) => props.work
       />
       <div class="customer-inline-actions" style="margin-top: 20px">
         <UiButton class="btn" :disabled="!work.writable" @click="actions.open('comment', work.id)">
-          记录内部谈判进展</button
-        ><UiButton
+          记录内部谈判进展</UiButton><UiButton
           class="btn"
           :disabled="!work.writable || work.status === '已结束'"
           @click="actions.open('nonrenewal', work.id)"

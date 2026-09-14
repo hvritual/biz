@@ -127,8 +127,7 @@ function upload(e: Event) {
               }
             "
           >
-            取消修改</button
-          ><UiButton class="btn btn-primary" type="submit"><AppIcon name="check" :size="15" />保存修改</UiButton>
+            取消修改</UiButton><UiButton class="btn btn-primary" type="submit"><AppIcon name="check" :size="15" />保存修改</UiButton>
         </div>
       </form>
       <aside class="side-summary">

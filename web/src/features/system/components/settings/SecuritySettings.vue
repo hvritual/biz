@@ -93,8 +93,7 @@ function save() {
     </section>
     <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     <div class="form-footer">
-      <UiButton class="btn" @click="draft = { ...store.settings }">取消修改</button
-      ><UiButton class="btn btn-primary" @click="save">保存策略草稿</UiButton>
+      <UiButton class="btn" @click="draft = { ...store.settings }">取消修改</UiButton><UiButton class="btn btn-primary" @click="save">保存策略草稿</UiButton>
     </div>
   </div>
 </template>

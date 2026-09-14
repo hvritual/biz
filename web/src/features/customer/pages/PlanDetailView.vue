@@ -39,8 +39,7 @@ const progress = computed(() =>
       ><div class="customer-heading-actions">
         <RouterLink class="btn" to="/customers/plans">返回计划</RouterLink
         ><UiButton class="btn" :disabled="plan.state === '已结案'" @click="actions.open('milestone', plan.id)">
-          添加里程碑</button
-        ><UiButton
+          添加里程碑</UiButton><UiButton
           class="btn btn-primary"
           :disabled="plan.state === '已结案'"
           @click="actions.open('recap', plan.id)"

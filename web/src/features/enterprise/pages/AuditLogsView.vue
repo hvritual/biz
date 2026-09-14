@@ -102,11 +102,9 @@ function pretty(value: string) {
           @change="page = 1"
         >
           <UiOption value="">全部模块</UiOption>
-          <UiOption v-for="m in [...new Set(store.logs.map((l) => l.module))]" :key="m">{{ m }}</UiOption></select
-        ><UiSelect v-model="risk" class="select" aria-label="筛选风险等级" @change="page = 1">
+          <UiOption v-for="m in [...new Set(store.logs.map((l) => l.module))]" :key="m">{{ m }}</UiOption></UiSelect><UiSelect v-model="risk" class="select" aria-label="筛选风险等级" @change="page = 1">
           <UiOption value="">全部风险</UiOption>
-          <UiOption v-for="(label, key) in riskLabels" :key="key" :value="key">{{ label }}</UiOption></select
-        ><UiButton
+          <UiOption v-for="(label, key) in riskLabels" :key="key" :value="key">{{ label }}</UiOption></UiSelect><UiButton
           class="btn"
           @click="
             () => {
@@ -117,8 +115,7 @@ function pretty(value: string) {
             }
           "
         >
-          重置</button
-        ><UiButton class="btn btn-primary" @click="exportLogs">
+          重置</UiButton><UiButton class="btn btn-primary" @click="exportLogs">
           <AppIcon name="download" :size="16" />导出日志
         </UiButton>
       </div>

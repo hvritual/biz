@@ -96,8 +96,7 @@ function fix() {
       breadcrumb="客户经营"
       description="先校验重复与归属，再逐行确认导入结果"
       ><div class="customer-heading-actions">
-        <UiButton class="btn" @click="downloadCsv('客户导入模板.csv', [sample[0]!])">下载 CSV 模板</button
-        ><RouterLink class="btn" to="/customers">返回客户总览</RouterLink>
+        <UiButton class="btn" @click="downloadCsv('客户导入模板.csv', [sample[0]!])">下载 CSV 模板</UiButton><RouterLink class="btn" to="/customers">返回客户总览</RouterLink>
       </div></PageHeading
     >
     <div class="card customer-flow">
@@ -229,11 +228,8 @@ function fix() {
         :tone="stage === 4 ? 'success' : 'primary'"
       />
       <div class="customer-inline-actions" style="justify-content: flex-end">
-        <UiButton class="btn" @click="stage = 1">返回字段映射</button
-        ><UiButton class="btn" @click="validate">修正后重新校验</button
-        ><UiButton v-if="stage !== 4" class="btn btn-primary" :disabled="!selected.length" @click="stage = 3">
-          仅导入通过的 {{ selected.length }} 条</button
-        ><RouterLink v-else to="/customers" class="btn btn-primary">查看客户列表</RouterLink>
+        <UiButton class="btn" @click="stage = 1">返回字段映射</UiButton><UiButton class="btn" @click="validate">修正后重新校验</UiButton><UiButton v-if="stage !== 4" class="btn btn-primary" :disabled="!selected.length" @click="stage = 3">
+          仅导入通过的 {{ selected.length }} 条</UiButton><RouterLink v-else to="/customers" class="btn btn-primary">查看客户列表</RouterLink>
       </div></template
     >
     <UiDialog :open="stage === 3" title="确认导入客户" width="540px" @close="stage = 2"
@@ -241,8 +237,7 @@ function fix() {
         :title="`将创建 ${selected.length} 条客户资料`"
         description="只导入已勾选且通过的行，不覆盖同名记录。保存时会再次校验重复。"
       /><template #footer
-        ><UiButton class="btn" @click="stage = 2">取消</button
-        ><UiButton class="btn btn-primary" @click="commit">确认导入</UiButton></template
+        ><UiButton class="btn" @click="stage = 2">取消</UiButton><UiButton class="btn btn-primary" @click="commit">确认导入</UiButton></template
       ></UiDialog
     >
     <UiDialog :open="Boolean(edit)" title="修正导入字段" width="560px" @close="edit = undefined"
@@ -259,8 +254,7 @@ function fix() {
         >
       </form>
       <template #footer
-        ><UiButton class="btn" @click="edit = undefined">取消</button
-        ><UiButton class="btn btn-primary" type="submit" form="import-edit">保存并重新校验</UiButton></template
+        ><UiButton class="btn" @click="edit = undefined">取消</UiButton><UiButton class="btn btn-primary" type="submit" form="import-edit">保存并重新校验</UiButton></template
       ></UiDialog
     >
   </div>

@@ -141,8 +141,7 @@ watch([page, pageSize], () => (selected.value = []))
           :class="{ active: mode === key }"
           @click="router.push({ path: route.path, query: { ...route.query, view: key } })"
         >
-          {{ label }}</button
-        ><UiButton
+          {{ label }}</UiButton><UiButton
           @click="
             () => {
               owner = '张敏'
@@ -150,8 +149,7 @@ watch([page, pageSize], () => (selected.value = []))
             }
           "
         >
-          我的待办</button
-        ><UiButton
+          我的待办</UiButton><UiButton
           @click="
             () => {
               status = '待验收'
@@ -159,8 +157,7 @@ watch([page, pageSize], () => (selected.value = []))
             }
           "
         >
-          待验收</button
-        ><UiButton @click="reset()">{{ scopeKind ? '全部本类事项' : '全部事项' }}</UiButton>
+          待验收</UiButton><UiButton @click="reset()">{{ scopeKind ? '全部本类事项' : '全部事项' }}</UiButton>
       </nav>
       <form class="query-bar" @submit.prevent="apply">
         <SearchField v-model="query" label="搜索客户事项" placeholder="搜索事项标题、编号、客户…" /><UiSelect
@@ -170,22 +167,18 @@ watch([page, pageSize], () => (selected.value = []))
           aria-label="事项类型"
         >
           <UiOption value="">全部类型</UiOption>
-          <UiOption v-for="(label, k) in workKindNames" :key="k" :value="k">{{ label }}</UiOption></select
-        ><UiSelect v-model="owner" class="select" aria-label="事项负责人">
+          <UiOption v-for="(label, k) in workKindNames" :key="k" :value="k">{{ label }}</UiOption></UiSelect><UiSelect v-model="owner" class="select" aria-label="事项负责人">
           <UiOption value="">全部负责人</UiOption>
           <UiOption>张敏</UiOption>
           <UiOption>李川</UiOption>
           <UiOption>陈晓</UiOption>
-          <UiOption>王宁</UiOption></select
-        ><UiSelect v-model="status" class="select" aria-label="事项状态">
+          <UiOption>王宁</UiOption></UiSelect><UiSelect v-model="status" class="select" aria-label="事项状态">
           <UiOption value="">全部状态</UiOption>
           <UiOption>待开始</UiOption>
           <UiOption>处理中</UiOption>
           <UiOption>等待客户</UiOption>
           <UiOption>待验收</UiOption>
-          <UiOption>已结束</UiOption></select
-        ><UiButton class="btn btn-primary" type="submit">查询</button
-        ><UiButton class="btn" type="button" @click="reset">重置</UiButton>
+          <UiOption>已结束</UiOption></UiSelect><UiButton class="btn btn-primary" type="submit">查询</UiButton><UiButton class="btn" type="button" @click="reset">重置</UiButton>
       </form>
       <div class="customer-view-toolbar">
         <div class="row wrap">
@@ -198,8 +191,7 @@ watch([page, pageSize], () => (selected.value = []))
             :disabled="!selected.length"
             @click="actions.open('assign', 'work', selected)"
           >
-            批量分配</button
-          ><span v-if="scopeLabel" class="pill">{{ scopeLabel }}</span
+            批量分配</UiButton><span v-if="scopeLabel" class="pill">{{ scopeLabel }}</span
           ><span v-if="route.query.customer" class="pill">{{
             store.customerName(String(route.query.customer))
           }}</span>
@@ -213,8 +205,7 @@ watch([page, pageSize], () => (selected.value = []))
             @change="useView"
           >
             <UiOption value="">系统视图</UiOption>
-            <UiOption v-for="v in store.snapshot.views" :key="v.name">{{ v.name }}</UiOption></select
-          ><UiButton
+            <UiOption v-for="v in store.snapshot.views" :key="v.name">{{ v.name }}</UiOption></UiSelect><UiButton
             class="btn-link"
             @click="
               () => {

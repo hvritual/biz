@@ -167,8 +167,7 @@ function save() {
       >
     </form>
     <template #footer
-      ><UiButton class="btn" @click="close">取消</button
-      ><UiButton class="btn btn-primary" type="submit" form="rental-site-form">
+      ><UiButton class="btn" @click="close">取消</UiButton><UiButton class="btn btn-primary" type="submit" form="rental-site-form">
         保存点位（预览）
       </UiButton></template
     >

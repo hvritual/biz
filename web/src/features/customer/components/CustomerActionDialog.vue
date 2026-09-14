@@ -283,16 +283,13 @@ function useExisting() {
           tone="warning"
           class="unsaved"
           ><div class="row" style="margin-top: 10px">
-            <UiButton class="btn" type="button" @click="unsaved = false">继续编辑</button
-            ><UiButton class="btn btn-danger" type="button" @click="close(true)">放弃修改并关闭</UiButton>
+            <UiButton class="btn" type="button" @click="unsaved = false">继续编辑</UiButton><UiButton class="btn btn-danger" type="button" @click="close(true)">放弃修改并关闭</UiButton>
           </div></CustomerAlert
         >
       </form>
     </div>
     <template #footer
-      ><UiButton class="btn" @click="close()">取消</button
-      ><UiButton v-if="definition?.fields.length" class="btn" @click="saveDraft">保存草稿</button
-      ><UiButton
+      ><UiButton class="btn" @click="close()">取消</UiButton><UiButton v-if="definition?.fields.length" class="btn" @click="saveDraft">保存草稿</UiButton><UiButton
         type="submit"
         form="customer-action-form"
         class="btn btn-primary"

@@ -90,8 +90,7 @@ watch(
         >
           <UiOption value="">全部类型</UiOption>
           <UiOption value="builtin">内置角色</UiOption>
-          <UiOption value="custom">自定义角色</UiOption></select
-        ><UiButton class="btn btn-primary" @click="edit(null)">
+          <UiOption value="custom">自定义角色</UiOption></UiSelect><UiButton class="btn btn-primary" @click="edit(null)">
           <AppIcon name="plus" :size="16" />新建角色
         </UiButton>
       </div>
@@ -116,8 +115,7 @@ watch(
                     ><AppIcon :name="r.id === 'owner' ? 'crown' : 'shield'" :size="18"
                   /></span>
                   <div>
-                    <UiButton class="role-name" @click="edit(r)">{{ r.name }}</button
-                    ><small class="muted role-description">{{ r.description }}</small>
+                    <UiButton class="role-name" @click="edit(r)">{{ r.name }}</UiButton><small class="muted role-description">{{ r.description }}</small>
                   </div>
                 </div>
               </td>
@@ -132,8 +130,7 @@ watch(
               <td class="muted numeric">{{ r.updatedAt }}</td>
               <td>
                 <div class="table-actions">
-                  <UiButton class="btn-link" @click="edit(r)">{{ r.builtin ? '查看' : '编辑' }}</button
-                  ><UiButton class="btn-link" :aria-label="'复制 ' + r.name" @click="copy(r)">复制</UiButton>
+                  <UiButton class="btn-link" @click="edit(r)">{{ r.builtin ? '查看' : '编辑' }}</UiButton><UiButton class="btn-link" :aria-label="'复制 ' + r.name" @click="copy(r)">复制</UiButton>
                 </div>
               </td>
             </tr>

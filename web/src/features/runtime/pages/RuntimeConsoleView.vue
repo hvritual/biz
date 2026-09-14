@@ -285,8 +285,7 @@ onBeforeUnmount(() => {
         <p v-if="submitted && error">本次请求内容已锁定，可重试相同操作。若需修改，请关闭后重新选择。</p>
         <p v-if="error" role="alert">{{ error }}</p>
         <div class="session-bar">
-          <UiButton type="button" class="btn" :disabled="busy" @click="clearDraft">取消</button
-          ><UiButton class="btn primary" :disabled="busy" type="submit">
+          <UiButton type="button" class="btn" :disabled="busy" @click="clearDraft">取消</UiButton><UiButton class="btn primary" :disabled="busy" type="submit">
             {{ submitted && error ? '重试相同操作' : '确认操作' }}
           </UiButton>
         </div>

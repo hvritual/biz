@@ -117,15 +117,12 @@ watch(tab, () => (page.value = 1))
           <UiOption>潜在客户</UiOption>
           <UiOption>试用中</UiOption>
           <UiOption>合作中</UiOption>
-          <UiOption>合作终止</UiOption></select
-        ><UiSelect v-model="owner" class="select" aria-label="客户负责人">
+          <UiOption>合作终止</UiOption></UiSelect><UiSelect v-model="owner" class="select" aria-label="客户负责人">
           <UiOption value="">全部负责人</UiOption>
           <UiOption>张敏</UiOption>
           <UiOption>李川</UiOption>
           <UiOption>陈晓</UiOption>
-          <UiOption>王宁</UiOption></select
-        ><UiButton class="btn btn-primary" type="submit">查询</button
-        ><UiButton class="btn" type="button" @click="clear">重置</UiButton>
+          <UiOption>王宁</UiOption></UiSelect><UiButton class="btn btn-primary" type="submit">查询</UiButton><UiButton class="btn" type="button" @click="clear">重置</UiButton>
       </form>
       <div class="customer-view-toolbar">
         <div class="customer-filter-chips" style="padding: 0">
@@ -215,8 +212,7 @@ watch(tab, () => (page.value = 1))
             }
           "
         >
-          编辑客户资料</button
-        ><UiButton
+          编辑客户资料</UiButton><UiButton
           class="btn"
           @click="
             () => {
@@ -225,8 +221,7 @@ watch(tab, () => (page.value = 1))
             }
           "
         >
-          客户与事项移交</button
-        ><UiButton
+          客户与事项移交</UiButton><UiButton
           class="btn"
           @click="
             () => {

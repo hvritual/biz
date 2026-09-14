@@ -140,16 +140,13 @@ function usage(id: string) {
           placeholder="搜索点位、编号或地址" /></label
       ><UiSelect v-model="customer" aria-label="筛选客户">
         <UiOption value="">全部客户</UiOption>
-        <UiOption v-for="c in store.snapshot.customers" :key="c.id" :value="c.id">{{ c.name }}</UiOption></select
-      ><UiSelect v-model="mode" aria-label="筛选计费模式">
+        <UiOption v-for="c in store.snapshot.customers" :key="c.id" :value="c.id">{{ c.name }}</UiOption></UiSelect><UiSelect v-model="mode" aria-label="筛选计费模式">
         <UiOption value="">全部计费模式</UiOption>
-        <UiOption v-for="(name, id) in modeNames" :key="id" :value="id">{{ name }}</UiOption></select
-      ><UiInput v-model="period" aria-label="查看账期" type="month" /><UiButton
+        <UiOption v-for="(name, id) in modeNames" :key="id" :value="id">{{ name }}</UiOption></UiSelect><UiInput v-model="period" aria-label="查看账期" type="month" /><UiButton
         class="btn btn-primary"
         type="submit"
       >
-        查询</button
-      ><UiButton class="btn" type="button" @click="reset">重置</UiButton>
+        查询</UiButton><UiButton class="btn" type="button" @click="reset">重置</UiButton>
     </form>
     <section class="card">
       <div class="rental-table-caption">
