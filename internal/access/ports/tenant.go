@@ -8,8 +8,10 @@ import (
 )
 
 var (
-	ErrTenantNotFound = errors.New("access: tenant not found")
-	ErrTenantConflict = errors.New("access: tenant version conflict")
+	ErrTenantNotFound        = errors.New("access: tenant not found")
+	ErrTenantConflict        = errors.New("access: tenant version conflict")
+	ErrTenantProfileNotFound = errors.New("access: tenant profile not found")
+	ErrTenantProfileConflict = errors.New("access: tenant profile version conflict")
 )
 
 type TenantRepository interface {
@@ -17,6 +19,8 @@ type TenantRepository interface {
 	Get(context.Context, string) (domain.Tenant, error)
 	List(context.Context) ([]domain.Tenant, error)
 	Update(context.Context, *domain.Tenant, uint64) error
+	GetProfile(context.Context, string) (domain.TenantProfile, error)
+	UpdateProfile(context.Context, *domain.TenantProfile, uint64) error
 	ClaimCreation(context.Context, []string, string) (*domain.Tenant, error)
 	CompleteCreation(context.Context, []string, string, domain.Tenant) error
 }

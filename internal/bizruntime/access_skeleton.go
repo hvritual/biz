@@ -30,6 +30,14 @@ func (factory applicationFactories) BuildAccessTenantDepartmentManagement(genera
 	return checkedDepartments{inner: inner}, nil
 }
 
+func (factory applicationFactories) BuildAccessTenantProfileManagement(generatedassembly.AccessTenantProfileManagementDependencies) (accessapp.TenantProfileManagementApplication, error) {
+	inner, err := accessapp.NewTenantProfileManagementService(factory.tenantRepositories)
+	if err != nil {
+		return nil, err
+	}
+	return checkedTenantProfile{inner: inner}, nil
+}
+
 func (factory applicationFactories) BuildAccessTenantMemberLifecycle(dependencies generatedassembly.AccessTenantMemberLifecycleDependencies) (accessapp.TenantMemberLifecycleApplication, error) {
 	if dependencies.AccessTenantRolePermission == nil || dependencies.AccessTenantDepartmentManagement == nil {
 		return nil, errors.New("biz access pressure: tenant member lifecycle role and department dependencies are required")

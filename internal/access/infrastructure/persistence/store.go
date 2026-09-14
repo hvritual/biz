@@ -19,12 +19,22 @@ import (
 var ErrUnauthorized = errors.New("access: unauthorized")
 
 type tenantRecord struct {
-	ID        string    `gorm:"column:id;primaryKey;size:64"`
-	Name      string    `gorm:"column:name;size:200;not null"`
-	Status    string    `gorm:"column:status;size:32;not null;index"`
-	Version   uint64    `gorm:"column:version;not null;default:1"`
-	CreatedAt time.Time `gorm:"column:created_at;not null"`
-	UpdatedAt time.Time `gorm:"column:updated_at;not null"`
+	ID           string    `gorm:"column:id;primaryKey;size:64"`
+	Name         string    `gorm:"column:name;size:200;not null"`
+	ShortName    string    `gorm:"column:short_name;size:80;not null;default:''"`
+	Industry     string    `gorm:"column:industry;size:120;not null;default:''"`
+	CompanySize  string    `gorm:"column:company_size;size:64;not null;default:''"`
+	Timezone     string    `gorm:"column:timezone;size:64;not null;default:'Asia/Shanghai'"`
+	ContactName  string    `gorm:"column:contact_name;size:100;not null;default:''"`
+	Phone        string    `gorm:"column:phone;size:40;not null;default:''"`
+	Email        string    `gorm:"column:email;size:320;not null;default:''"`
+	Address      string    `gorm:"column:address;size:500;not null;default:''"`
+	Description  string    `gorm:"column:description;size:1000;not null;default:''"`
+	LogoAssetRef string    `gorm:"column:logo_asset_ref;size:512;not null;default:''"`
+	Status       string    `gorm:"column:status;size:32;not null;index"`
+	Version      uint64    `gorm:"column:version;not null;default:1"`
+	CreatedAt    time.Time `gorm:"column:created_at;not null"`
+	UpdatedAt    time.Time `gorm:"column:updated_at;not null"`
 }
 
 func (tenantRecord) TableName() string { return "biz_tenants" }

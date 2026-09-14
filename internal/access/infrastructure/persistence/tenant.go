@@ -90,6 +90,70 @@ func (repository *TenantRepository) Update(ctx context.Context, tenant *domain.T
 	return nil
 }
 
+func (repository *TenantRepository) GetProfile(ctx context.Context, id string) (domain.TenantProfile, error) {
+	if repository == nil || repository.database == nil {
+		return domain.TenantProfile{}, errors.New("access persistence: tenant profile repository unavailable")
+	}
+	var row tenantRecord
+	if err := repository.database.WithContext(ctx).Where("id = ?", id).First(&row).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return domain.TenantProfile{}, ports.ErrTenantProfileNotFound
+		}
+		return domain.TenantProfile{}, err
+	}
+	shortName := row.ShortName
+	if shortName == "" {
+		shortName = row.Name
+	}
+	timezone := row.Timezone
+	if timezone == "" {
+		timezone = "Asia/Shanghai"
+	}
+	return domain.TenantProfile{
+		TenantID: row.ID, Name: row.Name, ShortName: shortName, Industry: row.Industry, CompanySize: row.CompanySize,
+		Timezone: timezone, ContactName: row.ContactName, Phone: row.Phone, Email: row.Email, Address: row.Address,
+		Description: row.Description, LogoAssetRef: row.LogoAssetRef, Version: row.Version, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+	}, nil
+}
+
+func (repository *TenantRepository) UpdateProfile(ctx context.Context, profile *domain.TenantProfile, expectedVersion uint64) error {
+	if repository == nil || repository.database == nil || profile == nil || expectedVersion == 0 {
+		return errors.New("access persistence: tenant profile update requires repository, value and version")
+	}
+	result := repository.database.WithContext(ctx).Model(&tenantRecord{}).
+		Where("id = ? AND version = ?", profile.TenantID, expectedVersion).
+		Updates(map[string]any{
+			"name": profile.Name,
+			"short_name": profile.ShortName,
+			"industry": profile.Industry,
+			"company_size": profile.CompanySize,
+			"timezone": profile.Timezone,
+			"contact_name": profile.ContactName,
+			"phone": profile.Phone,
+			"email": profile.Email,
+			"address": profile.Address,
+			"description": profile.Description,
+			"logo_asset_ref": profile.LogoAssetRef,
+			"updated_at": profile.UpdatedAt,
+			"version": gorm.Expr("version + 1"),
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected != 1 {
+		var count int64
+		if err := repository.database.WithContext(ctx).Model(&tenantRecord{}).Where("id = ?", profile.TenantID).Count(&count).Error; err != nil {
+			return err
+		}
+		if count == 0 {
+			return ports.ErrTenantProfileNotFound
+		}
+		return ports.ErrTenantProfileConflict
+	}
+	profile.Version = expectedVersion + 1
+	return nil
+}
+
 func (row tenantRecord) domain() domain.Tenant {
 	return domain.Tenant{
 		ID: row.ID,
