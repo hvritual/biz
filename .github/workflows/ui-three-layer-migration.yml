@@ -1,0 +1,36 @@
+name: ui-three-layer-migration
+on:
+  push:
+    branches: [refactor/ui-three-layer-system]
+permissions:
+  contents: write
+jobs:
+  migrate:
+    if: ${{ !contains(github.event.head_commit.message, '[ui-layer-migrated]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/ui-three-layer-system
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install shadcn-vue foundation dependencies
+        working-directory: web
+        run: npm install tailwindcss @tailwindcss/vite class-variance-authority clsx tailwind-merge tw-animate-css reka-ui @lucide/vue
+      - name: Apply three-layer migration
+        working-directory: web
+        run: node scripts/migrate-ui-layers.mjs
+      - name: Format migrated frontend
+        working-directory: web
+        run: npx prettier --write "src/**/*.{vue,ts,css,json}" "scripts/*.mjs" "*.json" "*.ts"
+      - name: Commit migration result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web
+          git diff --cached --quiet && exit 0
+          git commit -m "refactor(web): migrate all UI components [ui-layer-migrated]"
+          git push origin HEAD:refactor/ui-three-layer-system
