@@ -34,10 +34,9 @@ const internalValue = computed(() => {
 const explicitAriaLabel = computed(() =>
   attrs['aria-label'] == null ? undefined : String(attrs['aria-label']),
 )
-const triggerAttrs = computed(() => {
-  const { class: _class, ...rest } = attrs
-  return rest
-})
+const triggerAttrs = computed(() =>
+  Object.fromEntries(Object.entries(attrs).filter(([key]) => key !== 'class')),
+)
 const triggerClass = computed(() =>
   cn(
     'flex h-[var(--control-height)] w-full items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-input bg-background px-3 text-[var(--text-sm)] text-foreground outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50',
