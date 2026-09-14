@@ -76,6 +76,17 @@ jobs:
           unzip -q "$archive" -d "$install_root"
           echo "$install_root/bin" >> "$GITHUB_PATH"
 
+      - name: Install locked protoc Go plugins
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          plugins="$RUNNER_TEMP/protoc-plugins"
+          mkdir -p "$plugins"
+          GOBIN="$plugins" go install "google.golang.org/protobuf/cmd/protoc-gen-go@${PROTOC_GEN_GO_VERSION}"
+          GOBIN="$plugins" go install "google.golang.org/grpc/cmd/protoc-gen-go-grpc@${PROTOC_GEN_GO_GRPC_VERSION}"
+          echo "$plugins" >> "$GITHUB_PATH"
+
       - name: Generate and verify
         shell: bash
         run: |
