@@ -40,6 +40,8 @@ const primaryNavigationSource = readFileSync(resolve(root, 'features/app-shell/c
 const modulePanelSource = readFileSync(resolve(root, 'features/app-shell/components/ModulePanel.vue'), 'utf8')
 if (primaryNavigationSource.includes('width: 64px') || appShellSource.includes('--current-rail: 80px') || modulePanelSource.includes('100vw - 80px')) failures.push('app shell must consume rail design tokens instead of legacy 64/80px widths')
 if (!appShellSource.includes('width: var(--current-rail)') || !appShellSource.includes('width: calc(var(--current-rail) + var(--module-width))')) failures.push('app shell rail/flyout geometry must be token-driven')
+const desktopRailContract = `.side-frame :deep(.primary-nav) {\n  width: var(--current-rail);\n  flex: 0 0 var(--current-rail);\n}`
+if (!appShellSource.includes(desktopRailContract)) failures.push('desktop primary navigation must pin width and flex-basis to --current-rail inside the joined flyout shell')
 if (!modulePanelSource.includes('padding: 20px') || !modulePanelSource.includes('gap: 12px') || !modulePanelSource.includes('var(--radius-xl)')) failures.push('module panel must preserve CoffeeLink V1.1 20px padding, 12px columns and 18px outer radius')
 
 const manifestFile = resolve(root, 'features/component-scopes.json')
@@ -54,4 +56,4 @@ else {
   for (const path of Object.keys(manifest)) if (!business.includes(path)) failures.push(`${path}: stale component scope declaration`)
 }
 if (failures.length) { console.error(failures.join('\n')); process.exit(1) }
-console.log(`Architecture checks passed: ${files.length} source files; three UI layers, global theme API, feature pages, token ownership, native-control boundary and business scopes are guarded.`)
+console.log(`Architecture checks passed: ${files.length} source files; three UI layers, global theme API, feature pages, token ownership, native-control boundary, shell geometry and business scopes are guarded.`)
