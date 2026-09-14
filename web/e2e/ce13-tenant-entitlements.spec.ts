@@ -1,3 +1,4 @@
+import { selectUiOption } from './ui.helpers'
 import { expect, test, type Page, type Route } from '@playwright/test'
 
 async function fulfillJson(route: Route, body: unknown, status = 200) {
@@ -165,10 +166,10 @@ test('TestCE13TenantOverrideCreateAndRevokeUseSourceVersionCas', async ({ page }
   await page.getByRole('button', { name: '新增专项来源' }).click()
 
   const createDialog = page.getByRole('dialog', { name: '新增专项权益来源' })
-  await createDialog.getByLabel('模块', { exact: true }).selectOption('device')
-  await createDialog.getByLabel('目标类型', { exact: true }).selectOption('ENTITLEMENT_TARGET_CAPABILITY')
-  await createDialog.getByLabel('目标 key', { exact: true }).selectOption('device.lifecycle')
-  await createDialog.getByLabel('效果', { exact: true }).selectOption('ENTITLEMENT_EFFECT_GRANT')
+  await selectUiOption(createDialog.getByLabel('模块', { exact: true }), 'device')
+  await selectUiOption(createDialog.getByLabel('目标类型', { exact: true }), 'ENTITLEMENT_TARGET_CAPABILITY')
+  await selectUiOption(createDialog.getByLabel('目标 key', { exact: true }), 'device.lifecycle')
+  await selectUiOption(createDialog.getByLabel('效果', { exact: true }), 'ENTITLEMENT_EFFECT_GRANT')
   await createDialog.getByLabel('原因', { exact: true }).fill('临时开放设备生命周期能力')
   await createDialog.getByRole('button', { name: '创建专项来源' }).click()
 

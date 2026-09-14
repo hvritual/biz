@@ -75,6 +75,7 @@ function toggleCollapsed() {
 </template>
 <style scoped>
 .primary-nav {
+  width: 100%;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -83,7 +84,6 @@ function toggleCollapsed() {
   overflow: hidden;
 }
 .primary-nav.collapsed {
-  width: 64px;
   padding-left: 7px;
   padding-right: 7px;
 }
@@ -94,7 +94,7 @@ function toggleCollapsed() {
 }
 .primary-item {
   width: 100%;
-  height: 47px;
+  height: 48px;
   display: flex;
   align-items: center;
   gap: 14px;

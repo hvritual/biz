@@ -1,3 +1,4 @@
+import { selectUiOption } from './ui.helpers'
 import { expect, test } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 test('live member mutation retries one command and never presents preview identity', async ({ page }) => {
@@ -124,7 +125,7 @@ test('authoritative plan discovery feeds the existing version workspace', async 
   })
   await page.goto('/#/platform/commercial/plans')
   await page.getByRole('button', { name: '读取套餐目录' }).click()
-  await page.getByLabel('选择套餐', { exact: true }).selectOption('real-plan')
+  await selectUiOption(page.getByLabel('选择套餐', { exact: true }), 'real-plan')
   await expect(page.locator('#plan-code')).toHaveValue('real-plan')
   await expect(page.getByText('没有找到 real-plan 的版本记录')).toBeVisible()
 })

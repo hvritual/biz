@@ -114,10 +114,10 @@ onBeforeUnmount(() => {
   align-items: stretch;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-panel);
-  width: calc(var(--current-rail) - 16px);
+  width: var(--current-rail);
 }
 .side-frame.joined {
-  width: calc(var(--current-rail) - 16px + var(--module-width));
+  width: calc(var(--current-rail) + var(--module-width));
   background: var(--color-surface);
   box-shadow: var(--shadow-menu);
 }
@@ -128,7 +128,7 @@ onBeforeUnmount(() => {
   margin-left: calc(var(--current-rail) + 8px);
   margin-top: var(--header-height);
   padding: 20px var(--content-padding) 24px;
-  background: white;
+  background: var(--color-surface);
   border-radius: var(--radius-sm) 0 0 0;
   min-width: 0;
   min-height: 100vh;
@@ -175,10 +175,10 @@ onBeforeUnmount(() => {
   .mobile-nav-open .side-frame,
   .module-open .side-frame { display: flex; }
   .side-frame.joined { width: 100vw; }
-  .side-frame :deep(.primary-nav) { width: 80px; border-radius: 0 !important; }
+  .side-frame :deep(.primary-nav) { width: var(--rail-collapsed-width); flex-basis: var(--rail-collapsed-width); border-radius: 0 !important; }
   .navigation-scrim { left: 0; }
   .side-frame :deep(.module-panel) { border-radius: 0; }
   .toast { top: 74px; }
-  .app-shell { --current-rail: 80px; }
+  .app-shell { --current-rail: var(--rail-collapsed-width); }
 }
 </style>

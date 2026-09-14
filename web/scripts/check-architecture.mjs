@@ -34,6 +34,14 @@ else {
   const themeApi = readFileSync(themeApiFile, 'utf8')
   for (const symbol of ['applyUiTheme', 'resetUiTheme', 'uiThemePresets']) if (!themeApi.includes(symbol)) failures.push(`ui/base/theme.ts must expose ${symbol}`)
 }
+
+const appShellSource = readFileSync(resolve(root, 'features/app-shell/components/AppShell.vue'), 'utf8')
+const primaryNavigationSource = readFileSync(resolve(root, 'features/app-shell/components/PrimaryNavigation.vue'), 'utf8')
+const modulePanelSource = readFileSync(resolve(root, 'features/app-shell/components/ModulePanel.vue'), 'utf8')
+if (primaryNavigationSource.includes('width: 64px') || appShellSource.includes('--current-rail: 80px') || modulePanelSource.includes('100vw - 80px')) failures.push('app shell must consume rail design tokens instead of legacy 64/80px widths')
+if (!appShellSource.includes('width: var(--current-rail)') || !appShellSource.includes('width: calc(var(--current-rail) + var(--module-width))')) failures.push('app shell rail/flyout geometry must be token-driven')
+if (!modulePanelSource.includes('padding: 20px') || !modulePanelSource.includes('gap: 12px') || !modulePanelSource.includes('var(--radius-xl)')) failures.push('module panel must preserve CoffeeLink V1.1 20px padding, 12px columns and 18px outer radius')
+
 const manifestFile = resolve(root, 'features/component-scopes.json')
 if (!existsSync(manifestFile)) failures.push('features/component-scopes.json is required')
 else {

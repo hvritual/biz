@@ -1,3 +1,4 @@
+import { selectUiOption } from './ui.helpers'
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 
@@ -168,7 +169,7 @@ test('department create uses CSRF and idempotency then confirms from server read
   await page.getByRole('button', { name: '新建部门', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '新建部门' })
   await dialog.getByLabel('部门名称 *').fill('市场运营部')
-  await dialog.getByLabel('负责人').selectOption('user-001')
+  await selectUiOption(dialog.getByLabel('负责人'), 'user-001')
   await dialog.getByRole('button', { name: '提交并回读确认' }).click()
   await expect(page.getByRole('status')).toContainText('服务端确认')
   await expect(page.getByText('市场运营部', { exact: true }).first()).toBeVisible()

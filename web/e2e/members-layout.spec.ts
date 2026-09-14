@@ -1,3 +1,4 @@
+import { selectUiOption } from './ui.helpers'
 import { expect, test, type Page } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 async function ready(page: Page) {
@@ -102,7 +103,7 @@ test('batch disable and enable preserve reason validation and current-page scope
 test('detail state is isolated on tenant switch and navigation flyout stays an overlay', async ({ page }) => {
   await ready(page)
   await page.getByRole('button', { name: '查看 李四', exact: true }).click()
-  await page.getByLabel('切换企业', { exact: true }).selectOption('hangzhou')
+  await selectUiOption(page.getByLabel('切换企业', { exact: true }), 'hangzhou')
   await expect(page.locator('.member-detail-panel')).toHaveCount(0)
   await expect(page.locator('.member-overview')).toContainText('24')
   await page.locator('[data-module="enterprise"]').click()

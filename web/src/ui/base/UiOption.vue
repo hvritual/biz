@@ -13,6 +13,7 @@ const normalized = computed(() => (props.value === '' || props.value == null ? '
     :value="normalized"
     :disabled="disabled"
     data-slot="select-item"
+    :data-ui-option-value="normalized"
     class="relative flex min-h-9 cursor-default select-none items-center rounded-[var(--radius-sm)] py-2 pl-8 pr-3 text-[var(--text-sm)] outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
   >
     <span class="absolute left-2.5 flex size-4 items-center justify-center">
