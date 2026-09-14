@@ -57,7 +57,8 @@ describe('base control compatibility', () => {
       props: { modelValue: '', modelModifiers: { trim: true, lazy: true } },
     })
     const textarea = wrapper.get('textarea')
-    await textarea.setValue('  delayed  ')
+    ;(textarea.element as HTMLTextAreaElement).value = '  delayed  '
+    await textarea.trigger('input')
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
     await textarea.trigger('change')
     expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['delayed'])

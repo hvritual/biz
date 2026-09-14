@@ -5,12 +5,15 @@ import { cn } from '@/lib/utils'
 defineOptions({ inheritAttrs: false })
 type InputModelValue = string | number | boolean | string[] | null | undefined
 type ModelModifiers = { number?: boolean; trim?: boolean; lazy?: boolean }
-const props = defineProps<{
-  modelValue?: InputModelValue
-  modelModifiers?: ModelModifiers
-  value?: string | number | null
-  checked?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue?: InputModelValue
+    modelModifiers?: ModelModifiers
+    value?: string | number | null
+    checked?: boolean
+  }>(),
+  { modelValue: undefined },
+)
 const emit = defineEmits<{
   'update:modelValue': [value: InputModelValue]
   input: [event: Event]
