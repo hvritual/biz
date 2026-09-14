@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiTextarea } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import { prepareMemberStatusBatch } from '@/services/memberPolicy'
-import UiDialog from '@/components/ui/UiDialog.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
 const props = defineProps<{
   open: boolean
   action: 'activate' | 'suspend'
@@ -63,7 +65,7 @@ function submit() {
     <form id="member-batch-form" class="page-stack" @submit.prevent="submit">
       <label class="field"
         ><span class="required">操作原因</span
-        ><textarea
+        ><UiTextarea
           v-model="reason"
           class="textarea"
           aria-label="操作原因"
@@ -72,13 +74,13 @@ function submit() {
         />
       </label>
       <label class="confirm-check"
-        ><input v-model="confirmed" type="checkbox" />我已核对所选成员及操作影响范围</label
+        ><UiInput v-model="confirmed" type="checkbox" />我已核对所选成员及操作影响范围</label
       >
       <p v-if="policyError || error" class="form-error" role="alert">{{ policyError || error }}</p>
     </form>
     <template #footer
-      ><button class="btn" @click="emit('close')">取消</button
-      ><button
+      ><UiButton class="btn" @click="emit('close')">取消</button
+      ><UiButton
         class="btn"
         :class="action === 'suspend' ? 'btn-danger' : 'btn-primary'"
         :disabled="Boolean(policyError)"
@@ -86,7 +88,7 @@ function submit() {
         form="member-batch-form"
       >
         确认{{ label }}
-      </button></template
+      </UiButton></template
     >
   </UiDialog>
 </template>

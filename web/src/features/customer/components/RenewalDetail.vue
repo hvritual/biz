@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed } from 'vue'
 import type { WorkItem } from '@/types/customer'
 import { useCustomerStore } from '@/stores/customer'
@@ -7,7 +9,7 @@ import { workSources } from '@/services/customer/selectors'
 import CustomerSection from './CustomerSection.vue'
 import CustomerAlert from './CustomerAlert.vue'
 import SourceRecords from './SourceRecords.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
 const props = defineProps<{ work: WorkItem }>(),
   store = useCustomerStore(),
   actions = useCustomerActions()
@@ -24,13 +26,13 @@ const dependencies = computed(() => store.snapshot.work.filter((w) => props.work
   <div class="page-stack">
     <CustomerSection title="续约范围与合同依据" icon="file">
       <template #action
-        ><button
+        ><UiButton
           class="btn-link"
           :disabled="!work.writable || work.status === '已结束' || !records.length"
           @click="actions.open('link-source', work.id, [], { sourceId: renewed?.id || original?.id || '' })"
         >
           关联生效续约合同
-        </button></template
+        </UiButton></template
       >
       <div class="customer-mini-metrics">
         <div>
@@ -79,15 +81,15 @@ const dependencies = computed(() => store.snapshot.work.filter((w) => props.work
         description="续约成功依据生效合同；本合同未续约也不直接将整个客户标记为流失。"
       />
       <div class="customer-inline-actions" style="margin-top: 20px">
-        <button class="btn" :disabled="!work.writable" @click="actions.open('comment', work.id)">
+        <UiButton class="btn" :disabled="!work.writable" @click="actions.open('comment', work.id)">
           记录内部谈判进展</button
-        ><button
+        ><UiButton
           class="btn"
           :disabled="!work.writable || work.status === '已结束'"
           @click="actions.open('nonrenewal', work.id)"
         >
           记录未续约结果
-        </button>
+        </UiButton>
       </div>
     </CustomerSection>
     <CustomerSection title="已关联原合同与续约记录" icon="link"

@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
 import type { Member, MemberAction, DataScope } from '@/types/enterprise'
 import { scopeLabels } from '@/types/enterprise'
 import { memberActionError } from '@/services/memberPolicy'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
-import UiDialog from '@/components/ui/UiDialog.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import AvatarMark from '@/components/ui/AvatarMark.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import AvatarMark from '@/ui/common/AvatarMark.vue'
 const props = defineProps<{ open: boolean; action: MemberAction; member: Member | null }>()
 const emit = defineEmits<{ close: [] }>(),
   store = useEnterpriseStore(),
@@ -137,7 +139,7 @@ async function submit() {
           <div class="form-grid">
             <label class="field"
               ><span class="required">姓名</span
-              ><input
+              ><UiInput
                 v-model="draft.name"
                 class="input"
                 maxlength="40"
@@ -145,7 +147,7 @@ async function submit() {
                 placeholder="请输入成员姓名" /></label
             ><label class="field"
               ><span class="required">邮箱</span
-              ><input
+              ><UiInput
                 v-model="draft.email"
                 class="input"
                 type="email"
@@ -154,10 +156,10 @@ async function submit() {
               /><small v-if="action === 'edit'">预览资料修改不等于变更已验证的登录凭据。</small></label
             ><label class="field"
               ><span>手机号</span
-              ><input v-model="draft.phone" class="input" maxlength="20" placeholder="选填" /></label
+              ><UiInput v-model="draft.phone" class="input" maxlength="20" placeholder="选填" /></label
             ><label class="field"
               ><span>员工编号</span
-              ><input v-model="draft.employeeId" class="input" maxlength="40" placeholder="企业内部编号"
+              ><UiInput v-model="draft.employeeId" class="input" maxlength="40" placeholder="企业内部编号"
             /></label>
           </div>
         </section>
@@ -166,18 +168,18 @@ async function submit() {
           <div class="form-grid">
             <label class="field"
               ><span class="required">所属部门</span
-              ><select v-model="draft.departmentId" class="select">
-                <option v-for="d in store.departments" :key="d.id" :value="d.id">{{ d.name }}</option>
-              </select></label
+              ><UiSelect v-model="draft.departmentId" class="select">
+                <UiOption v-for="d in store.departments" :key="d.id" :value="d.id">{{ d.name }}</UiOption>
+              </UiSelect></label
             ><label class="field"
-              ><span>岗位</span><input v-model="draft.position" class="input" maxlength="40" /></label
+              ><span>岗位</span><UiInput v-model="draft.position" class="input" maxlength="40" /></label
             ><label class="field"
-              ><span>加入日期</span><input v-model="draft.joinedAt" class="input" type="date" /></label
+              ><span>加入日期</span><UiInput v-model="draft.joinedAt" class="input" type="date" /></label
             ><label class="field"
               ><span>数据范围</span
-              ><select v-model="draft.scope" class="select">
-                <option v-for="(label, key) in scopeLabels" :key="key" :value="key">{{ label }}</option>
-              </select></label
+              ><UiSelect v-model="draft.scope" class="select">
+                <UiOption v-for="(label, key) in scopeLabels" :key="key" :value="key">{{ label }}</UiOption>
+              </UiSelect></label
             >
           </div>
         </section>
@@ -188,7 +190,7 @@ async function submit() {
               v-for="r in store.roles.filter((r) => r.enabled)"
               :key="r.id"
               :class="['role-option', { chosen: draft.roleIds.includes(r.id) }]"
-              ><input
+              ><UiInput
                 type="checkbox"
                 :checked="draft.roleIds.includes(r.id)"
                 @change="toggleRole(r.id)"
@@ -199,7 +201,7 @@ async function submit() {
         <section class="form-section">
           <label class="field"
             ><span>备注</span
-            ><textarea
+            ><UiTextarea
               v-model="draft.note"
               class="textarea"
               rows="2"
@@ -221,7 +223,7 @@ async function submit() {
             v-for="r in store.roles.filter((r) => r.enabled)"
             :key="r.id"
             :class="['role-option', { chosen: draft.roleIds.includes(r.id) }]"
-            ><input
+            ><UiInput
               type="checkbox"
               :checked="draft.roleIds.includes(r.id)"
               @change="toggleRole(r.id)"
@@ -230,9 +232,9 @@ async function submit() {
         </div>
         <label class="field"
           ><span>目标数据范围</span
-          ><select v-model="draft.scope" class="select">
-            <option v-for="(label, key) in scopeLabels" :key="key" :value="key">{{ label }}</option>
-          </select></label
+          ><UiSelect v-model="draft.scope" class="select">
+            <UiOption v-for="(label, key) in scopeLabels" :key="key" :value="key">{{ label }}</UiOption>
+          </UiSelect></label
         >
         <div class="change-preview">
           <div>
@@ -252,9 +254,9 @@ async function submit() {
             >通过身份服务向成员的已验证邮箱发送一次性重置链接。管理员不查看或保存明文密码。本预览仅记录请求，不执行真实重置。</span
           >
         </div>
-        <label class="field"><span>接收邮箱</span><input class="input" :value="draft.email" readonly /></label
+        <label class="field"><span>接收邮箱</span><UiInput class="input" :value="draft.email" readonly /></label
         ><label class="option-line"
-          ><input v-model="confirmed" type="checkbox" />我已确认成员身份，并了解此处不会发送真实邮件</label
+          ><UiInput v-model="confirmed" type="checkbox" />我已确认成员身份，并了解此处不会发送真实邮件</label
         >
         <p class="muted">
           正式接入要求：链接单次使用、短时有效；重置成功后撤销旧会话。SSO 账号应跳转身份提供方处理。
@@ -270,14 +272,14 @@ async function submit() {
           }}</span>
         </div>
         <label v-if="danger" class="option-line"
-          ><input v-model="confirmed" type="checkbox" />{{
+          ><UiInput v-model="confirmed" type="checkbox" />{{
             action === 'remove'
               ? '已完成业务交接，并确认保留历史审计记录'
               : '确认禁用当前企业访问，不删除历史数据'
           }}</label
         ><label class="field"
           ><span class="required">操作原因</span
-          ><textarea
+          ><UiTextarea
             v-model="reason"
             class="textarea"
             maxlength="300"
@@ -296,8 +298,8 @@ async function submit() {
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     </div>
     <template #footer
-      ><button class="btn" @click="emit('close')">取消</button
-      ><button
+      ><UiButton class="btn" @click="emit('close')">取消</button
+      ><UiButton
         :class="['btn', danger ? 'btn-danger' : 'btn-primary']"
         :disabled="busy || Boolean(blocking)"
         @click="submit"
@@ -317,7 +319,7 @@ async function submit() {
                       ? '确认移除'
                       : '保存变更'
         }}
-      </button></template
+      </UiButton></template
     ></UiDialog
   >
 </template>

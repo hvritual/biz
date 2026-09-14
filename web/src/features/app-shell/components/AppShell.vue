@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
@@ -7,7 +9,7 @@ import { routeContentEnabled } from '@/router/dataMode'
 import AppHeader from './AppHeader.vue'
 import PrimaryNavigation from './PrimaryNavigation.vue'
 import ModulePanel from './ModulePanel.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 const ui = useUiStore(),
   store = useEnterpriseStore(),
   route = useRoute()
@@ -70,7 +72,7 @@ onBeforeUnmount(() => {
     data-business-ui
   >
     <AppHeader />
-    <button
+    <UiButton
       v-if="expanded || ui.mobileOpen"
       class="navigation-scrim"
       aria-label="关闭悬浮菜单"
@@ -88,9 +90,9 @@ onBeforeUnmount(() => {
       <div v-if="ui.notice" role="status" :class="['toast', ui.noticeTone]">
         <AppIcon :name="ui.noticeTone === 'success' ? 'success' : ui.noticeTone === 'error' ? 'error' : 'help'" />{{
           ui.notice
-        }}<button class="icon-button" aria-label="关闭提示" @click="ui.notice = ''">
+        }}<UiButton class="icon-button" aria-label="关闭提示" @click="ui.notice = ''">
           <AppIcon name="close" :size="15" />
-        </button>
+        </UiButton>
       </div>
     </Teleport>
   </div>

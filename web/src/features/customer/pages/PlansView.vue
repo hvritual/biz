@@ -1,14 +1,16 @@
 <script setup lang="ts">
+import { UiButton, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
 import { planResults } from '@/services/customer/selectors'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import SearchField from '@/components/ui/SearchField.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import SearchField from '@/ui/common/SearchField.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import EmptyState from '@/ui/common/EmptyState.vue'
 const store = useCustomerStore(),
   actions = useCustomerActions(),
   route = useRoute(),
@@ -30,20 +32,20 @@ const plans = computed(() =>
       breadcrumb="客户运营"
       description="围绕客户阶段目标，组织里程碑、事项与结果复盘"
       ><div class="customer-heading-actions">
-        <button class="btn btn-primary" @click="actions.open('create-plan')">新建经营计划</button>
+        <UiButton class="btn btn-primary" @click="actions.open('create-plan')">新建经营计划</UiButton>
       </div></PageHeading
     >
     <section class="card data-panel">
       <div class="query-bar">
-        <SearchField v-model="query" label="搜索经营计划" placeholder="搜索计划、客户…" /><select
+        <SearchField v-model="query" label="搜索经营计划" placeholder="搜索计划、客户…" /><UiSelect
           v-model="state"
           class="select"
           aria-label="计划状态"
         >
-          <option value="">全部状态</option>
-          <option>进行中</option>
-          <option>已结案</option></select
-        ><button
+          <UiOption value="">全部状态</UiOption>
+          <UiOption>进行中</UiOption>
+          <UiOption>已结案</UiOption></select
+        ><UiButton
           class="btn"
           @click="
             () => {
@@ -53,7 +55,7 @@ const plans = computed(() =>
           "
         >
           重置
-        </button>
+        </UiButton>
       </div>
     </section>
     <CustomerSection v-for="plan in plans" :key="plan.id" :title="plan.title" icon="calendar"
@@ -86,7 +88,7 @@ const plans = computed(() =>
         {{ plan.conclusion || '执行进度与目标达成分别展示。计划结案不自动关闭未结束事项。' }}
       </p></CustomerSection
     ><EmptyState v-if="!plans.length"
-      ><button
+      ><UiButton
         class="btn"
         @click="
           () => {
@@ -96,7 +98,7 @@ const plans = computed(() =>
         "
       >
         清空筛选
-      </button></EmptyState
+      </UiButton></EmptyState
     >
   </div>
 </template>

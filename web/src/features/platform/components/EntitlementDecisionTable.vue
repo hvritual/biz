@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
 import type { EntitlementDecisionDTO } from '@/services/commercial/platformCommercial'
 
 defineProps<{ decisions: EntitlementDecisionDTO[] }>()

@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
 import { rentalState, currentRules, reviewPeriod, money } from '@/services/siteRental/model'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
-import StatementDialog from '@/components/siteRental/StatementDialog.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import EmptyState from '@/ui/common/EmptyState.vue'
+import StatementDialog from '@/features/site-rental/components/StatementDialog.vue'
 import '@/styles/siteRental.css'
 const store = useCustomerStore(),
   route = useRoute(),
@@ -50,21 +52,21 @@ function create() {
       description="这里核对本地示例合同与用量。草稿可更新，确认后不可覆盖；未向财务系统记账，也未发送客户账单。"
     />
     <div class="card rental-filters">
-      <select v-model="group" aria-label="对账计费组">
-        <option value="">请选择计费组</option>
-        <option
+      <UiSelect v-model="group" aria-label="对账计费组">
+        <UiOption value="">请选择计费组</UiOption>
+        <UiOption
           v-for="rule in currentRules(state, period, store.snapshot.sources)"
           :key="rule.groupId"
           :value="rule.groupId"
         >
           {{ rule.name }}
-        </option></select
-      ><input v-model="period" type="month" aria-label="对账账期" /><button
+        </UiOption></select
+      ><UiInput v-model="period" type="month" aria-label="对账账期" /><UiButton
         class="btn btn-primary"
         @click="create"
       >
         生成 / 查看对账草稿
-      </button>
+      </UiButton>
     </div>
     <p v-if="error" class="rental-error" role="alert">{{ error }}</p>
     <section class="card">
@@ -102,7 +104,7 @@ function create() {
                 /><small v-if="row.quote.blockers.length">{{ row.quote.blockers.length }} 项待核对</small>
               </td>
               <td class="rental-number">{{ money(row.quote.totalCents) }}<small>非正式应收</small></td>
-              <td><button class="btn-link" @click="openId = row.id">核对详情</button></td>
+              <td><UiButton class="btn-link" @click="openId = row.id">核对详情</UiButton></td>
             </tr>
           </tbody>
         </table>

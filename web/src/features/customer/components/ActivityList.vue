@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Activity } from '@/types/customer'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
 defineProps<{ items: Activity[] }>()
 </script>
 <template>

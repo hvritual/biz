@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, onBeforeUnmount, onMounted, ref, toRaw } from 'vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
 import {
   loginUrl,
   logoutSession,
@@ -188,7 +190,7 @@ onBeforeUnmount(() => {
       </div>
       <template v-if="session.authenticated">
         <StatusBadge :text="canRead ? '平台身份' : '非平台身份'" :tone="canRead ? 'primary' : 'warning'" />
-        <button class="btn" type="button" :disabled="busy" @click="logout">退出登录</button>
+        <UiButton class="btn" type="button" :disabled="busy" @click="logout">退出登录</UiButton>
       </template>
       <a v-else class="btn btn-primary" :href="loginUrl()">登录平台账号</a>
     </section>
@@ -216,20 +218,20 @@ onBeforeUnmount(() => {
       <section class="card query-panel" data-ui-region="query" aria-label="租户筛选">
         <label class="field search-field">
           <span>租户名称 / 编号</span>
-          <div class="input-with-icon"><AppIcon name="search" :size="16" /><input v-model="keyword" class="input" placeholder="输入名称或租户编号" @input="page = 1" /></div>
+          <div class="input-with-icon"><AppIcon name="search" :size="16" /><UiInput v-model="keyword" class="input" placeholder="输入名称或租户编号" @input="page = 1" /></div>
         </label>
         <label class="field status-field">
           <span>租户状态</span>
-          <select v-model="statusFilter" class="select" @change="page = 1">
-            <option value="all">全部状态</option>
-            <option value="active">已启用</option>
-            <option value="suspended">已停用</option>
-            <option value="closed">已关闭</option>
-          </select>
+          <UiSelect v-model="statusFilter" class="select" @change="page = 1">
+            <UiOption value="all">全部状态</UiOption>
+            <UiOption value="active">已启用</UiOption>
+            <UiOption value="suspended">已停用</UiOption>
+            <UiOption value="closed">已关闭</UiOption>
+          </UiSelect>
         </label>
         <div class="query-actions">
-          <button class="btn" type="button" @click="resetFilters">重置</button>
-          <button class="btn" type="button" :disabled="busy" @click="refresh"><AppIcon name="refresh" :size="15" />刷新</button>
+          <UiButton class="btn" type="button" @click="resetFilters">重置</UiButton>
+          <UiButton class="btn" type="button" :disabled="busy" @click="refresh"><AppIcon name="refresh" :size="15" />刷新</UiButton>
         </div>
       </section>
 
@@ -241,7 +243,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="table-actions">
             <span class="result-count">共 {{ filtered.length }} 条</span>
-            <button class="btn btn-primary" type="button" :disabled="busy" @click="begin('create')"><AppIcon name="plus" :size="15" />创建租户</button>
+            <UiButton class="btn btn-primary" type="button" :disabled="busy" @click="begin('create')"><AppIcon name="plus" :size="15" />创建租户</UiButton>
           </div>
         </div>
 
@@ -259,10 +261,10 @@ onBeforeUnmount(() => {
                 <td><RouterLink class="btn-link" to="/platform/commercial/tenant-entitlements">管理权益 <AppIcon name="right" :size="14" /></RouterLink></td>
                 <td>
                   <div class="row-actions">
-                    <button class="btn-link" type="button" :disabled="busy" @click="begin('rename', tenant)">修改名称</button>
-                    <button class="btn-link" type="button" :disabled="busy" @click="begin('activate', tenant)">启用</button>
-                    <button class="btn-link" type="button" :disabled="busy" @click="begin('suspend', tenant)">停用</button>
-                    <button class="btn-link danger-link" type="button" :disabled="busy" @click="begin('close', tenant)">关闭租户</button>
+                    <UiButton class="btn-link" type="button" :disabled="busy" @click="begin('rename', tenant)">修改名称</UiButton>
+                    <UiButton class="btn-link" type="button" :disabled="busy" @click="begin('activate', tenant)">启用</UiButton>
+                    <UiButton class="btn-link" type="button" :disabled="busy" @click="begin('suspend', tenant)">停用</UiButton>
+                    <UiButton class="btn-link danger-link" type="button" :disabled="busy" @click="begin('close', tenant)">关闭租户</UiButton>
                   </div>
                 </td>
               </tr>
@@ -274,9 +276,9 @@ onBeforeUnmount(() => {
         <div class="pagination" data-ui-region="pagination" aria-label="分页">
           <span>显示 {{ firstVisible }}–{{ lastVisible }} / {{ filtered.length }}</span>
           <div class="pagination-actions">
-            <button class="icon-button" type="button" aria-label="上一页" :disabled="page <= 1" @click="page--"><AppIcon name="left" :size="16" /></button>
+            <UiButton class="icon-button" type="button" aria-label="上一页" :disabled="page <= 1" @click="page--"><AppIcon name="left" :size="16" /></UiButton>
             <strong>{{ Math.min(page, totalPages) }} / {{ totalPages }}</strong>
-            <button class="icon-button" type="button" aria-label="下一页" :disabled="page >= totalPages" @click="page++"><AppIcon name="right" :size="16" /></button>
+            <UiButton class="icon-button" type="button" aria-label="下一页" :disabled="page >= totalPages" @click="page++"><AppIcon name="right" :size="16" /></UiButton>
           </div>
         </div>
       </section>
@@ -289,15 +291,15 @@ onBeforeUnmount(() => {
         </div>
         <label v-for="field in fields('tenants', action)" :key="field.key" class="field">
           <span>{{ field.label }}</span>
-          <input v-model="input[field.key]" class="input" :required="field.required" :disabled="busy || submitted" :type="field.key.toLowerCase().includes('email') ? 'email' : 'text'" />
+          <UiInput v-model="input[field.key]" class="input" :required="field.required" :disabled="busy || submitted" :type="field.key.toLowerCase().includes('email') ? 'email' : 'text'" />
         </label>
         <p v-if="action === 'suspend'" class="notice-box warning">停用会影响该租户的运行访问；套餐与模块商业事实不会由前端自动改写。</p>
         <p v-if="action === 'close'" class="notice-box danger">关闭租户属于生命周期终止操作，请确认后提交。商业权益的后续处理仍以服务端规则为准。</p>
         <p v-if="submitted && error" class="notice-box warning">本次请求内容已锁定，可重试相同操作。若需修改，请关闭后重新选择。</p>
         <p v-if="error" role="alert" class="notice-box danger">{{ error }}</p>
         <div class="dialog-actions">
-          <button type="button" class="btn" :disabled="busy" @click="clearDraft">取消</button>
-          <button class="btn btn-primary" :disabled="busy" type="submit">{{ submitted && error ? '重试相同操作' : '确认操作' }}</button>
+          <UiButton type="button" class="btn" :disabled="busy" @click="clearDraft">取消</UiButton>
+          <UiButton class="btn btn-primary" :disabled="busy" type="submit">{{ submitted && error ? '重试相同操作' : '确认操作' }}</UiButton>
         </div>
       </form>
     </UiDialog>

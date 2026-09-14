@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { UiButton, UiTextarea } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
 import { rentalState } from '@/services/siteRental/model'
 import type { RentalAction } from '@/services/siteRental/commands'
-import UiDialog from '@/components/ui/UiDialog.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 import QuoteSummary from './QuoteSummary.vue'
 const props = defineProps<{ open: boolean; id: string }>(),
   emit = defineEmits<{ close: [] }>(),
@@ -83,7 +85,7 @@ function run(type: 'refresh-statement' | 'confirm-statement' | 'dispute' | 'reso
       />
       <label v-if="statement.state !== '已确认'"
         >核对依据 / 异议处理说明 <b>*</b
-        ><textarea v-model="reason" rows="2" placeholder="请记录数据口径、核对结果或异议结论" />
+        ><UiTextarea v-model="reason" rows="2" placeholder="请记录数据口径、核对结果或异议结论" />
       </label>
       <p v-if="error" role="alert" class="rental-error">{{ error }}</p>
       <details>
@@ -97,24 +99,24 @@ function run(type: 'refresh-statement' | 'confirm-statement' | 'dispute' | 'reso
     </div>
     <p v-else role="alert">对账单不存在或不在当前租户。</p>
     <template #footer
-      ><button class="btn" @click="emit('close')">关闭</button
+      ><UiButton class="btn" @click="emit('close')">关闭</button
       ><template v-if="statement?.state === '草稿'"
-        ><button class="btn" @click="run('refresh-statement')">刷新来源</button
-        ><button class="btn" @click="run('dispute')">登记异议</button
-        ><button
+        ><UiButton class="btn" @click="run('refresh-statement')">刷新来源</button
+        ><UiButton class="btn" @click="run('dispute')">登记异议</button
+        ><UiButton
           class="btn btn-primary"
           :disabled="!!statement.quote.blockers.length"
           @click="run('confirm-statement')"
         >
           确认对账并冻结
-        </button></template
-      ><button
+        </UiButton></template
+      ><UiButton
         v-if="statement?.state === '异议处理中'"
         class="btn btn-primary"
         @click="run('resolve-dispute')"
       >
         记录解决结论
-      </button></template
+      </UiButton></template
     >
   </UiDialog>
 </template>

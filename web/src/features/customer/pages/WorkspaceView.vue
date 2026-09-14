@@ -1,17 +1,19 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerIdentity from '@/components/customer/CustomerIdentity.vue'
-import CustomerTabs from '@/components/customer/CustomerTabs.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
-import WorkTable from '@/components/customer/WorkTable.vue'
-import ActivityList from '@/components/customer/ActivityList.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerIdentity from '@/features/customer/components/CustomerIdentity.vue'
+import CustomerTabs from '@/features/customer/components/CustomerTabs.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
+import WorkTable from '@/features/customer/components/WorkTable.vue'
+import ActivityList from '@/features/customer/components/ActivityList.vue'
 const store = useCustomerStore(),
   route = useRoute(),
   actions = useCustomerActions()
@@ -31,14 +33,14 @@ const activity = computed(() =>
       breadcrumb="客户经营"
       description="掌握客户承诺、当前阻塞与可验证的经营结果"
       ><div class="customer-heading-actions">
-        <button class="btn" @click="actions.open('edit-customer', customer.id)">
+        <UiButton class="btn" @click="actions.open('edit-customer', customer.id)">
           <AppIcon name="edit" :size="16" />编辑资料</button
-        ><button
+        ><UiButton
           class="btn btn-primary"
           @click="actions.open('create-work', customer.id, [], { customerId: customer.id })"
         >
           <AppIcon name="plus" :size="16" />新建事项
-        </button>
+        </UiButton>
       </div></PageHeading
     ><CustomerIdentity :customer="customer" /><CustomerTabs :id="customer.id" :active="active" />
     <div v-if="active === 'overview'" class="customer-split">
@@ -86,7 +88,7 @@ const activity = computed(() =>
             <dt>客户负责人</dt>
             <dd>
               {{ customer.owner }}
-              <button class="btn-link" @click="actions.open('handover', customer.id)">移交责任</button>
+              <UiButton class="btn-link" @click="actions.open('handover', customer.id)">移交责任</UiButton>
             </dd>
           </dl></CustomerSection
         >
@@ -102,12 +104,12 @@ const activity = computed(() =>
             </div>
             <RouterLink :to="`/customers/work/${w.id}`" class="btn-link">推进</RouterLink>
           </div>
-          <button
+          <UiButton
             class="btn-link"
             @click="actions.open('visit', work.find((w) => w.kind === 'visit')?.id || 'CS-107')"
           >
             记录回访与承诺
-          </button></CustomerSection
+          </UiButton></CustomerSection
         >
       </div>
       <div class="page-stack">

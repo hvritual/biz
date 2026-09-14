@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiTextarea } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
@@ -14,16 +16,16 @@ import {
   money,
 } from '@/services/siteRental/model'
 import { quoteRental } from '@/services/siteRental/quote'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
-import WorkTable from '@/components/customer/WorkTable.vue'
-import ActivityList from '@/components/customer/ActivityList.vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
-import SiteFormDialog from '@/components/siteRental/SiteFormDialog.vue'
-import QuoteSummary from '@/components/siteRental/QuoteSummary.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
+import WorkTable from '@/features/customer/components/WorkTable.vue'
+import ActivityList from '@/features/customer/components/ActivityList.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
+import SiteFormDialog from '@/features/site-rental/components/SiteFormDialog.vue'
+import QuoteSummary from '@/features/site-rental/components/QuoteSummary.vue'
 import '@/styles/siteRental.css'
 const store = useCustomerStore(),
   actions = useCustomerActions(),
@@ -126,10 +128,10 @@ function changeOperation() {
       description="现场、租约、服务和下一步行动，围绕同一个点位关联"
       ><div class="rental-actions">
         <RouterLink to="/sites" class="btn">返回点位列表</RouterLink
-        ><button class="btn" @click="edit = true">编辑点位</button
-        ><button v-if="site.kind === 'site'" class="btn btn-primary" @click="createWork">
+        ><UiButton class="btn" @click="edit = true">编辑点位</button
+        ><UiButton v-if="site.kind === 'site'" class="btn btn-primary" @click="createWork">
           <AppIcon name="plus" :size="16" />新建关联事项
-        </button>
+        </UiButton>
       </div></PageHeading
     >
     <section class="card rental-identity">
@@ -195,7 +197,7 @@ function changeOperation() {
           >{{ title }}</RouterLink
         >
       </nav>
-      <input v-model="period" type="month" aria-label="点位账期" />
+      <UiInput v-model="period" type="month" aria-label="点位账期" />
     </div>
     <template v-if="tab === 'overview'"
       ><div class="customer-split">
@@ -207,9 +209,9 @@ function changeOperation() {
                 <h3>{{ site.nextAction }}</h3>
                 <p>{{ site.owner }} · {{ site.nextAt || '尚未安排核实时间' }}</p>
               </div>
-              <button class="btn" @click="openOperation">
+              <UiButton class="btn" @click="openOperation">
                 {{ site.operation === '正常运营' ? '调整运营安排' : '登记恢复运营' }}
-              </button>
+              </UiButton>
             </div>
             <p class="rental-help">连接状态、制作能力与运营安排分别判断。暂停运营不会自动停租或关闭事项。</p>
             <WorkTable
@@ -351,7 +353,7 @@ function changeOperation() {
         tone="warning"
     /></CustomerSection>
     <CustomerSection v-else-if="tab === 'service'" title="关联客户事项" icon="checks"
-      ><template #action><button class="btn btn-primary" @click="createWork">创建关联事项</button></template>
+      ><template #action><UiButton class="btn btn-primary" @click="createWork">创建关联事项</UiButton></template>
       <p class="rental-help">同一事项同时出现在客户、点位和事项工作台，状态与负责人只维护一份。</p>
       <WorkTable :items="work"
     /></CustomerSection>
@@ -364,15 +366,15 @@ function changeOperation() {
         <CustomerAlert
           title="运营停用与停租分开"
           description="本操作只登记运营安排。费用、额度、投放关系及数据授权保持原约定；账期结算时需核对停用影响。"
-        /><label>调整原因 <b>*</b><textarea v-model="reason" required /></label
-        ><label>下次核实时间 <b>*</b><input v-model="nextAt" type="datetime-local" required /></label>
+        /><label>调整原因 <b>*</b><UiTextarea v-model="reason" required /></label
+        ><label>下次核实时间 <b>*</b><UiInput v-model="nextAt" type="datetime-local" required /></label>
         <p v-if="error" class="rental-error" role="alert">{{ error }}</p>
       </form>
       <template #footer
-        ><button class="btn" @click="operationOpen = false">取消</button
-        ><button class="btn btn-primary" type="submit" form="rental-operation">
+        ><UiButton class="btn" @click="operationOpen = false">取消</button
+        ><UiButton class="btn btn-primary" type="submit" form="rental-operation">
           确认{{ site.operation === '正常运营' ? '临时停用' : '恢复运营' }}
-        </button></template
+        </UiButton></template
       ></UiDialog
     >
   </div>

@@ -1,14 +1,16 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
 import { evaluateRule } from '@/services/customer/automation'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import MetricCard from '@/components/ui/MetricCard.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import SearchField from '@/components/ui/SearchField.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import MetricCard from '@/ui/common/MetricCard.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import SearchField from '@/ui/common/SearchField.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 const store = useCustomerStore(),
   actions = useCustomerActions(),
   query = ref(''),
@@ -25,7 +27,7 @@ const matches = computed(() => (current.value ? evaluateRule(store.snapshot, cur
       description="让系统发现下一步工作，同时保留触发依据、去重规则与执行回执"
       ><div class="customer-heading-actions">
         <RouterLink to="/customers/executions" class="btn">执行记录</RouterLink
-        ><button class="btn btn-primary" @click="actions.open('create-rule')">新建规则</button>
+        ><UiButton class="btn btn-primary" @click="actions.open('create-rule')">新建规则</UiButton>
       </div></PageHeading
     >
     <div class="metric-grid">
@@ -56,12 +58,12 @@ const matches = computed(() => (current.value ? evaluateRule(store.snapshot, cur
     </div>
     <CustomerSection title="规则列表" icon="activity"
       ><div class="query-bar">
-        <SearchField v-model="query" label="搜索自动化规则" placeholder="搜索规则名称…" /><button
+        <SearchField v-model="query" label="搜索自动化规则" placeholder="搜索规则名称…" /><UiButton
           class="btn"
           @click="query = ''"
         >
           重置
-        </button>
+        </UiButton>
       </div>
       <div class="table-scroll">
         <table class="data-table">
@@ -78,7 +80,7 @@ const matches = computed(() => (current.value ? evaluateRule(store.snapshot, cur
           <tbody>
             <tr v-for="r in rules" :key="r.id" :class="{ selected: r.id === selected }">
               <td>
-                <button class="btn-link" @click="selected = r.id">{{ r.name }}</button>
+                <UiButton class="btn-link" @click="selected = r.id">{{ r.name }}</UiButton>
                 <p class="subline">{{ r.id }}</p>
               </td>
               <td>{{ r.trigger }} · {{ r.days }} 天</td>
@@ -92,7 +94,7 @@ const matches = computed(() => (current.value ? evaluateRule(store.snapshot, cur
               </td>
               <td>
                 <div class="table-actions">
-                  <button
+                  <UiButton
                     class="btn-link"
                     @click="
                       () => {
@@ -102,9 +104,9 @@ const matches = computed(() => (current.value ? evaluateRule(store.snapshot, cur
                     "
                   >
                     试运行</button
-                  ><button class="btn-link" @click="actions.open('rule-toggle', r.id)">
+                  ><UiButton class="btn-link" @click="actions.open('rule-toggle', r.id)">
                     {{ r.enabled ? '停用' : '启用' }}
-                  </button>
+                  </UiButton>
                 </div>
               </td>
             </tr>
@@ -115,9 +117,9 @@ const matches = computed(() => (current.value ? evaluateRule(store.snapshot, cur
     <div v-if="current" class="customer-split">
       <CustomerSection :title="current.name + ' · 规则详情'" icon="filter"
         ><template #action
-          ><button class="btn btn-primary" @click="actions.open('rule-publish', current.id)">
+          ><UiButton class="btn btn-primary" @click="actions.open('rule-publish', current.id)">
             发布版本
-          </button></template
+          </UiButton></template
         >
         <dl class="customer-info-list">
           <dt>触发</dt>
@@ -159,9 +161,9 @@ const matches = computed(() => (current.value ? evaluateRule(store.snapshot, cur
               )
             "
             :tone="store.snapshot.drafts[`test:${current.id}`] ? 'success' : 'primary'"
-          /><button class="btn" style="margin-top: 16px" @click="actions.open('rule-test', current.id)">
+          /><UiButton class="btn" style="margin-top: 16px" @click="actions.open('rule-test', current.id)">
             重新试运行
-          </button></CustomerSection
+          </UiButton></CustomerSection
         ><CustomerSection title="工作流与客户可见性" icon="shield"
           ><div class="customer-checklist">
             <RouterLink to="/customers/workflows" class="btn-link">管理流程模板与版本</RouterLink

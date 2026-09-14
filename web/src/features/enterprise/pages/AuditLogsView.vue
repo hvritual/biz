@@ -1,18 +1,20 @@
 <script setup lang="ts">
+import { UiButton, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
 import type { AuditRecord } from '@/types/enterprise'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import { downloadCsv } from '@/utils/format'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import MetricCard from '@/components/ui/MetricCard.vue'
-import SearchField from '@/components/ui/SearchField.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import AvatarMark from '@/components/ui/AvatarMark.vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
-import AppPagination from '@/components/ui/AppPagination.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import MetricCard from '@/ui/common/MetricCard.vue'
+import SearchField from '@/ui/common/SearchField.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import AvatarMark from '@/ui/common/AvatarMark.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
+import EmptyState from '@/ui/common/EmptyState.vue'
+import AppPagination from '@/ui/common/AppPagination.vue'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
   query = ref(''),
@@ -93,18 +95,18 @@ function pretty(value: string) {
     </div>
     <section class="card data-panel">
       <div class="query-bar">
-        <SearchField v-model="query" placeholder="搜索操作内容、对象名称、请求 ID…" /><select
+        <SearchField v-model="query" placeholder="搜索操作内容、对象名称、请求 ID…" /><UiSelect
           v-model="module"
           class="select"
           aria-label="筛选日志模块"
           @change="page = 1"
         >
-          <option value="">全部模块</option>
-          <option v-for="m in [...new Set(store.logs.map((l) => l.module))]" :key="m">{{ m }}</option></select
-        ><select v-model="risk" class="select" aria-label="筛选风险等级" @change="page = 1">
-          <option value="">全部风险</option>
-          <option v-for="(label, key) in riskLabels" :key="key" :value="key">{{ label }}</option></select
-        ><button
+          <UiOption value="">全部模块</UiOption>
+          <UiOption v-for="m in [...new Set(store.logs.map((l) => l.module))]" :key="m">{{ m }}</UiOption></select
+        ><UiSelect v-model="risk" class="select" aria-label="筛选风险等级" @change="page = 1">
+          <UiOption value="">全部风险</UiOption>
+          <UiOption v-for="(label, key) in riskLabels" :key="key" :value="key">{{ label }}</UiOption></select
+        ><UiButton
           class="btn"
           @click="
             () => {
@@ -116,9 +118,9 @@ function pretty(value: string) {
           "
         >
           重置</button
-        ><button class="btn btn-primary" @click="exportLogs">
+        ><UiButton class="btn btn-primary" @click="exportLogs">
           <AppIcon name="download" :size="16" />导出日志
-        </button>
+        </UiButton>
       </div>
       <div v-if="paged.length" class="table-scroll">
         <table class="data-table audit-table">
@@ -158,9 +160,9 @@ function pretty(value: string) {
                 />
               </td>
               <td>
-                <button class="btn-link" :aria-label="'查看日志 ' + log.action" @click="selected = log">
+                <UiButton class="btn-link" :aria-label="'查看日志 ' + log.action" @click="selected = log">
                   查看
-                </button>
+                </UiButton>
               </td>
             </tr>
           </tbody>

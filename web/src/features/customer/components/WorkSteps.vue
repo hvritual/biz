@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { WorkItem } from '@/types/customer'
 import { workflows } from '@/services/customer/seed'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 defineProps<{ work: WorkItem }>()
 </script>
 <template>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { UiButton, UiInput } from '@/ui/base'
+
 import { ref } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
   draft = ref({ ...store.settings }),
@@ -37,7 +39,7 @@ function save() {
           <h3>要求多因素认证</h3>
           <p>敏感角色登录时增加独立验证因素。</p>
         </div>
-        <button
+        <UiButton
           class="switch"
           role="switch"
           aria-label="要求多因素认证"
@@ -52,7 +54,7 @@ function save() {
           <h3>登录失败保护</h3>
           <p>连续认证失败时触发限速或临时锁定。</p>
         </div>
-        <button
+        <UiButton
           class="switch"
           role="switch"
           aria-label="登录失败保护"
@@ -62,7 +64,7 @@ function save() {
       </div>
       <label class="field inline-field"
         ><span>连续失败次数</span
-        ><input
+        ><UiInput
           v-model.number="draft.attempts"
           class="input"
           type="number"
@@ -77,7 +79,7 @@ function save() {
       <p>会话超时后重新认证；权限收回不应等待会话自然过期。</p>
       <label class="field inline-field"
         ><span>空闲会话时长</span
-        ><input v-model.number="draft.sessionMinutes" aria-label="空闲会话时长" class="input" type="number" min="5" max="480" /><small
+        ><UiInput v-model.number="draft.sessionMinutes" aria-label="空闲会话时长" class="input" type="number" min="5" max="480" /><small
           >分钟</small
         ></label
       >
@@ -91,8 +93,8 @@ function save() {
     </section>
     <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     <div class="form-footer">
-      <button class="btn" @click="draft = { ...store.settings }">取消修改</button
-      ><button class="btn btn-primary" @click="save">保存策略草稿</button>
+      <UiButton class="btn" @click="draft = { ...store.settings }">取消修改</button
+      ><UiButton class="btn btn-primary" @click="save">保存策略草稿</UiButton>
     </div>
   </div>
 </template>

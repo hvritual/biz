@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { UiButton, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import SearchField from '@/components/ui/SearchField.vue'
-import RoleServerTable from '@/components/enterprise/RoleServerTable.vue'
-import RoleServerEditor from '@/components/enterprise/RoleServerEditor.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import SearchField from '@/ui/common/SearchField.vue'
+import RoleServerTable from '@/features/enterprise/components/server/RoleServerTable.vue'
+import RoleServerEditor from '@/features/enterprise/components/server/RoleServerEditor.vue'
 import { loginUrl, logoutSession, type PermissionGrant, type TrustedSession } from '@/services/runtime/api'
 import {
   listEnterpriseMembers,
@@ -315,13 +317,13 @@ onBeforeUnmount(() => { epoch++ })
         <div class="authority-main"><strong>服务端身份</strong><span>{{ session.user_id || session.platform_subject || '已认证账号' }}</span></div>
         <label v-if="session.tenants?.length" class="tenant-select">
           <span>当前租户</span>
-          <select :value="session.active_tenant_id" :disabled="busy" @change="changeTenant">
-            <option value="" disabled>请选择租户</option>
-            <option v-for="tenant in session.tenants" :key="tenant.id" :value="tenant.id">{{ tenant.name }}</option>
-          </select>
+          <UiSelect :value="session.active_tenant_id" :disabled="busy" @change="changeTenant">
+            <UiOption value="" disabled>请选择租户</UiOption>
+            <UiOption v-for="tenant in session.tenants" :key="tenant.id" :value="tenant.id">{{ tenant.name }}</UiOption>
+          </UiSelect>
         </label>
-        <button class="btn" :disabled="busy" @click="refresh"><AppIcon name="refresh" :size="15" />刷新</button>
-        <button class="btn" :disabled="busy" @click="logout">退出登录</button>
+        <UiButton class="btn" :disabled="busy" @click="refresh"><AppIcon name="refresh" :size="15" />刷新</UiButton>
+        <UiButton class="btn" :disabled="busy" @click="logout">退出登录</UiButton>
       </template>
       <template v-else>
         <div class="authority-main"><strong>尚未登录</strong><span>真实角色数据不会回退到本地预览。</span></div>
@@ -341,7 +343,7 @@ onBeforeUnmount(() => { epoch++ })
       </div>
       <section class="card panel-pad role-toolbar">
         <SearchField v-model="query" placeholder="搜索角色名称或服务端 ID…" />
-        <button class="btn btn-primary" :disabled="busy" @click="openEditor(null)"><AppIcon name="plus" :size="15" />新建角色</button>
+        <UiButton class="btn btn-primary" :disabled="busy" @click="openEditor(null)"><AppIcon name="plus" :size="15" />新建角色</UiButton>
       </section>
       <RoleServerTable :roles="filteredRoles" :member-counts="memberCounts" :busy="busy" @edit="openEditor" />
     </template>

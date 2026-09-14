@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
@@ -12,7 +14,7 @@ import {
   primaryNavigation,
   type NavigationItem,
 } from '@/router/navigation'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 import coffee from '@/assets/coffee-menu.webp'
 import { customerDomains } from '@/router/customerNavigation'
 const ui = useUiStore(),
@@ -76,9 +78,9 @@ function isLinkActive(item: NavigationItem) {
         <h2>{{ title }}</h2>
         <p>{{ description }}</p>
       </div>
-      <button ref="closeButton" class="icon-button" aria-label="关闭模块菜单" @click="ui.closeMenu()">
+      <UiButton ref="closeButton" class="icon-button" aria-label="关闭模块菜单" @click="ui.closeMenu()">
         <AppIcon name="close" :size="18" />
-      </button>
+      </UiButton>
     </header>
     <div v-if="links.length" :class="['module-columns', { single: !actions.length }]">
       <nav class="sub-navigation" aria-label="功能菜单">
@@ -90,7 +92,7 @@ function isLinkActive(item: NavigationItem) {
           :data-menu-group="group.label || undefined"
         >
           <h4 v-if="group.label">{{ group.label }}</h4>
-          <button
+          <UiButton
             v-for="item in group.items"
             :key="item.id"
             :class="['sub-link', { active: isLinkActive(item), unavailable: !item.path }]"
@@ -100,23 +102,23 @@ function isLinkActive(item: NavigationItem) {
             @click="navigate(item.path)"
           >
             <AppIcon :name="item.icon" :size="20" /><span>{{ item.label }}</span><small v-if="!item.path">待接入</small>
-          </button>
+          </UiButton>
         </section>
       </nav>
       <nav v-if="actions.length" class="quick-navigation" aria-label="快捷操作">
         <h3>快捷操作</h3>
-        <button v-for="action in actions" :key="action.label" class="quick-link" @click="navigate(action.path)">
+        <UiButton v-for="action in actions" :key="action.label" class="quick-link" @click="navigate(action.path)">
           <span :class="['quick-icon', { orange: action.icon === 'crown' }]">
             <AppIcon :name="action.icon" :size="19" />
           </span><span>{{ action.label }}</span>
-        </button>
+        </UiButton>
       </nav>
     </div>
     <div v-else class="module-unavailable">
       <AppIcon name="lock" :size="32" />
       <h3>页面尚未接入</h3>
       <p>这里保留产品导航位置，不展示虚构业务数据。</p>
-      <button class="btn" @click="ui.module = 'enterprise'">进入企业中心</button>
+      <UiButton class="btn" @click="ui.module = 'enterprise'">进入企业中心</UiButton>
     </div>
     <footer class="menu-art">
       <div>

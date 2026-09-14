@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import { UiButton, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
 import { outcomeMetrics } from '@/services/customer/selectors'
 import { downloadCsv } from '@/utils/format'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import MetricCard from '@/components/ui/MetricCard.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
-import WorkTable from '@/components/customer/WorkTable.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import MetricCard from '@/ui/common/MetricCard.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
+import WorkTable from '@/features/customer/components/WorkTable.vue'
 const store = useCustomerStore(),
   type = ref('renewal')
 const metrics = computed(() => outcomeMetrics(store.snapshot))
@@ -29,7 +31,7 @@ function exportResults() {
       breadcrumb="客户运营"
       description="从合同、交付与核销来源核对经营结果，而不是只统计任务关闭"
       ><div class="customer-heading-actions">
-        <button class="btn" @click="exportResults">导出当前口径</button>
+        <UiButton class="btn" @click="exportResults">导出当前口径</UiButton>
       </div></PageHeading
     >
     <section class="card data-panel">
@@ -99,9 +101,9 @@ function exportResults() {
           >
             <div class="row-between">
               <strong>{{ row.title }}</strong
-              ><button class="btn-link" @click="type = row.type">
+              ><UiButton class="btn-link" @click="type = row.type">
                 {{ row.actual.toLocaleString() }} / {{ row.total.toLocaleString() }} {{ row.unit }} · 下钻
-              </button>
+              </UiButton>
             </div>
             <div class="progress-track">
               <div
@@ -125,12 +127,12 @@ function exportResults() {
     </div>
     <CustomerSection title="结果明细与事项下钻" icon="checks"
       ><template #action
-        ><select v-model="type" class="select" aria-label="结果明细类型">
-          <option value="renewal">续约明细</option>
-          <option value="delivery">交付明细</option>
-          <option value="payment">回款明细</option>
-          <option value="service">服务明细</option>
-        </select></template
+        ><UiSelect v-model="type" class="select" aria-label="结果明细类型">
+          <UiOption value="renewal">续约明细</UiOption>
+          <UiOption value="delivery">交付明细</UiOption>
+          <UiOption value="payment">回款明细</UiOption>
+          <UiOption value="service">服务明细</UiOption>
+        </UiSelect></template
       ><WorkTable :items="rows" /></CustomerSection
     ><CustomerAlert
       title="数据延迟、缺失和无权限不能显示为零"

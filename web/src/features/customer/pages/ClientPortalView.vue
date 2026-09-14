@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
 import { clientProjection } from '@/services/customer/policy'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 const store = useCustomerStore(),
   route = useRoute(),
   actions = useCustomerActions()
@@ -89,19 +91,19 @@ const projection = computed(() => {
             仅确认本次授权的交付范围。发现问题时写明点位及整改要求；已通过部分不会被覆盖。
           </p>
           <div class="customer-checklist" style="margin-top: 20px">
-            <button
+            <UiButton
               class="btn btn-primary"
               :disabled="projection.data.status === '已结束'"
               @click="actions.open('client-accept', projection.data.grantId)"
             >
               确认本次交付</button
-            ><button
+            ><UiButton
               class="btn"
               :disabled="projection.data.status === '已结束'"
               @click="actions.open('client-reject', projection.data.grantId)"
             >
               存在问题，退回整改
-            </button>
+            </UiButton>
           </div></CustomerSection
         >
       </div>

@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { ref, computed } from 'vue'
 import type { SourceRecord } from '@/types/customer'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
 import CustomerAlert from './CustomerAlert.vue'
 const props = defineProps<{ records: SourceRecord[] }>()
 const current = ref(''),
@@ -49,13 +51,13 @@ const labels: Record<string, string> = {
         </div>
       </div>
       <div class="row">
-        <StatusBadge :text="r.state" :tone="r.verified ? 'primary' : 'neutral'" /><button
+        <StatusBadge :text="r.state" :tone="r.verified ? 'primary' : 'neutral'" /><UiButton
           class="btn-link"
           :aria-label="`查看来源 ${r.id}`"
           @click="current = r.id"
         >
           查看
-        </button>
+        </UiButton>
       </div>
     </div>
     <p v-if="!records.length" class="customer-help">尚未关联业务证据，不能据此判断工作成功。</p>
@@ -78,7 +80,7 @@ const labels: Record<string, string> = {
           >
         </dl>
       </div>
-      <template #footer><button class="btn" @click="current = ''">关闭详情</button></template></UiDialog
+      <template #footer><UiButton class="btn" @click="current = ''">关闭详情</UiButton></template></UiDialog
     >
   </div>
 </template>

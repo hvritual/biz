@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
@@ -7,8 +9,8 @@ import { customerActionsKey } from '@/composables/customerActions'
 import { actionDefinitions } from '@/services/customer/forms'
 import type { ActionId } from '@/services/customer/commands'
 import type { FormValues } from '@/types/customer'
-import CustomerActionDialog from '@/components/customer/CustomerActionDialog.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import CustomerActionDialog from '@/features/customer/components/CustomerActionDialog.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 import '@/styles/customer.css'
 const store = useCustomerStore(),
   ui = useUiStore(),
@@ -50,7 +52,7 @@ watch(
       title="预览数据读取失败"
       :description="store.loadError"
       tone="danger"
-      ><button class="btn" @click="store.resetPreview">重置当前租户预览数据</button></CustomerAlert
+      ><UiButton class="btn" @click="store.resetPreview">重置当前租户预览数据</UiButton></CustomerAlert
     ><template v-else
       ><CustomerAlert
         v-if="store.lastReceipt"
@@ -58,7 +60,7 @@ watch(
         title="本地预览操作已保存"
         :description="store.lastReceipt"
         tone="success"
-        ><button class="btn-link" @click="store.lastReceipt = ''">收起回执</button></CustomerAlert
+        ><UiButton class="btn-link" @click="store.lastReceipt = ''">收起回执</UiButton></CustomerAlert
       ><RouterView />
       <p class="customer-preview-note">
         界面审核 · 示例数据 · 本地预览操作，不连接合同、财务或设备生产系统

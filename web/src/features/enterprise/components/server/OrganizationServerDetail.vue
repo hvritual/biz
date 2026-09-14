@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed } from 'vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 import { departmentStatusLabel, type EnterpriseDepartment } from '@/services/enterprise/departmentRuntime'
 import type { EnterpriseTenantMember } from '@/services/enterprise/memberRuntime'
 
@@ -38,7 +40,7 @@ function parentLabel(parentId: string) {
           <h2>{{ department.name }}</h2>
           <p>{{ department.departmentId }} · v{{ department.version }}</p>
         </div>
-        <button class="btn" :disabled="busy" @click="emit('edit', department)"><AppIcon name="edit" :size="15" />编辑部门</button>
+        <UiButton class="btn" :disabled="busy" @click="emit('edit', department)"><AppIcon name="edit" :size="15" />编辑部门</UiButton>
       </header>
       <div class="detail-grid">
         <div><span>状态</span><strong>{{ departmentStatusLabel(department.status) }}</strong></div>

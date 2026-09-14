@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useEnterpriseStore } from '@/stores/enterprise'
@@ -6,17 +8,17 @@ import { useUiStore } from '@/stores/ui'
 import type { Member, MemberAction, MemberStatus } from '@/types/enterprise'
 import { scopeLabels, statusLabels } from '@/types/enterprise'
 import { downloadCsv } from '@/utils/format'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import AppPagination from '@/components/ui/AppPagination.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
-import MemberOverview from '@/components/members/MemberOverview.vue'
-import MemberFilters, { type MemberFilterValue } from '@/components/members/MemberFilters.vue'
-import MemberTable, { type MemberSortKey } from '@/components/members/MemberTable.vue'
-import MemberActionDialog from '@/components/members/MemberActionDialog.vue'
-import MemberDetailDrawer from '@/components/members/MemberDetailDrawer.vue'
-import MemberBulkDialog from '@/components/members/MemberBulkDialog.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import AppPagination from '@/ui/common/AppPagination.vue'
+import EmptyState from '@/ui/common/EmptyState.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
+import MemberOverview from '@/features/enterprise/components/members/MemberOverview.vue'
+import MemberFilters, { type MemberFilterValue } from '@/features/enterprise/components/members/MemberFilters.vue'
+import MemberTable, { type MemberSortKey } from '@/features/enterprise/components/members/MemberTable.vue'
+import MemberActionDialog from '@/features/enterprise/components/members/MemberActionDialog.vue'
+import MemberDetailDrawer from '@/features/enterprise/components/members/MemberDetailDrawer.vue'
+import MemberBulkDialog from '@/features/enterprise/components/members/MemberBulkDialog.vue'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
   route = useRoute(),
@@ -178,25 +180,25 @@ function exportMembers() {
         <section class="card member-data-panel" aria-label="成员管理列表">
           <div class="row-between member-toolbar">
             <div class="row wrap member-tools">
-              <button class="btn btn-primary" @click="openAction('create')">
+              <UiButton class="btn btn-primary" @click="openAction('create')">
                 <AppIcon name="plus" :size="16" />添加成员
-              </button>
-              <button class="btn invite-button" @click="openAction('invite')">
+              </UiButton>
+              <UiButton class="btn invite-button" @click="openAction('invite')">
                 <AppIcon name="invite" :size="16" />邀请成员
-              </button>
-              <button class="btn" :disabled="!canActivate" @click="openBatch('activate')">
+              </UiButton>
+              <UiButton class="btn" :disabled="!canActivate" @click="openBatch('activate')">
                 <AppIcon name="checks" :size="15" />批量启用
-              </button>
-              <button class="btn" :disabled="!canSuspend" @click="openBatch('suspend')">
+              </UiButton>
+              <UiButton class="btn" :disabled="!canSuspend" @click="openBatch('suspend')">
                 <AppIcon name="lock" :size="14" />批量停用
-              </button>
-              <button
+              </UiButton>
+              <UiButton
                 class="btn"
                 :aria-label="selected.length ? '导出已选' : '导出列表'"
                 @click="exportMembers"
               >
                 <AppIcon name="download" :size="15" />导出
-              </button>
+              </UiButton>
             </div>
             <span class="selection-label"
               >已选择 <strong>{{ selected.length }}</strong> 项<span v-if="selected.length">
@@ -216,7 +218,7 @@ function exportMembers() {
             @edit="openAction('edit', $event)"
             @more="showMore"
           />
-          <EmptyState v-else><button class="btn" @click="clear">清空筛选</button></EmptyState>
+          <EmptyState v-else><UiButton class="btn" @click="clear">清空筛选</UiButton></EmptyState>
           <AppPagination v-model:page="page" v-model:page-size="pageSize" :total="filtered.length" />
         </section>
       </div>
@@ -237,7 +239,7 @@ function exportMembers() {
       @close="more = null"
     >
       <div v-if="more" class="member-operation-list">
-        <button
+        <UiButton
           @click="
             () => {
               detailId = more!.id
@@ -246,22 +248,22 @@ function exportMembers() {
           "
         >
           <AppIcon name="eye" />查看完整资料
-        </button>
-        <button @click="openAction('edit', more)"><AppIcon name="edit" />修改成员信息</button>
-        <button @click="openAction('role', more)"><AppIcon name="shield" />角色与数据权限变更</button>
-        <button @click="openAction('reset', more)"><AppIcon name="key" />密码重置</button>
-        <button v-if="more.status === 'active'" class="text-danger" @click="openAction('suspend', more)">
+        </UiButton>
+        <UiButton @click="openAction('edit', more)"><AppIcon name="edit" />修改成员信息</UiButton>
+        <UiButton @click="openAction('role', more)"><AppIcon name="shield" />角色与数据权限变更</UiButton>
+        <UiButton @click="openAction('reset', more)"><AppIcon name="key" />密码重置</UiButton>
+        <UiButton v-if="more.status === 'active'" class="text-danger" @click="openAction('suspend', more)">
           <AppIcon name="lock" />禁用当前企业访问
-        </button>
-        <button
+        </UiButton>
+        <UiButton
           v-if="(['suspended', 'invited'] as MemberStatus[]).includes(more.status)"
           @click="openAction('activate', more)"
         >
           <AppIcon name="success" />重新启用成员
-        </button>
-        <button v-if="more.status !== 'removed'" class="text-danger" @click="openAction('remove', more)">
+        </UiButton>
+        <UiButton v-if="more.status !== 'removed'" class="text-danger" @click="openAction('remove', more)">
           <AppIcon name="logout" />移除成员与交接
-        </button>
+        </UiButton>
       </div>
     </UiDialog>
   </div>

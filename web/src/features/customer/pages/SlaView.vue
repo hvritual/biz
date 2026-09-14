@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import MetricCard from '@/components/ui/MetricCard.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import MetricCard from '@/ui/common/MetricCard.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 const store = useCustomerStore(),
   actions = useCustomerActions()
 </script>
@@ -15,7 +17,7 @@ const store = useCustomerStore(),
       breadcrumb="客户运营"
       description="首次响应、服务恢复、事项期限与下一次行动分开管理"
       ><div class="customer-heading-actions">
-        <button class="btn btn-primary" @click="actions.open('sla', 'sla')">调整服务策略</button>
+        <UiButton class="btn btn-primary" @click="actions.open('sla', 'sla')">调整服务策略</UiButton>
       </div></PageHeading
     >
     <div class="metric-grid">

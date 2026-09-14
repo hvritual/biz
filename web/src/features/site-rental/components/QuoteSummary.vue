@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import type { RentalQuote, RentalRule } from '@/types/siteRental'
 import { money, summary } from '@/services/siteRental/model'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 const props = defineProps<{ quote: RentalQuote; rule: RentalRule; trial?: boolean; confirmed?: boolean }>()
 const cups = computed(() =>
   props.quote.contributions.every((x) => x.cups !== null)

@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { UiOption, UiSelect } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { statusLabels, scopeLabels } from '@/types/enterprise'
-import SearchField from '@/components/ui/SearchField.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import SearchField from '@/ui/common/SearchField.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 const query = ref(''),
   group = ref('status')
 const source = computed(() => (group.value === 'status' ? statusLabels : scopeLabels))
@@ -17,14 +19,14 @@ const entries = computed(() =>
       <AppIcon name="database" />成员状态与数据范围是业务契约的一部分，不能通过展示字典改变状态机或授权规则。
     </div>
     <div class="query-bar">
-      <SearchField v-model="query" placeholder="搜索字典键或名称…" /><select
+      <SearchField v-model="query" placeholder="搜索字典键或名称…" /><UiSelect
         v-model="group"
         class="select"
         aria-label="字典类型"
       >
-        <option value="status">成员状态</option>
-        <option value="scope">数据范围</option>
-      </select>
+        <UiOption value="status">成员状态</UiOption>
+        <UiOption value="scope">数据范围</UiOption>
+      </UiSelect>
     </div>
     <div class="table-scroll">
       <table class="data-table">

@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import AuthorityPicker from '@/components/platform/AuthorityPicker.vue'
+import { UiButton, UiInput, UiTextarea } from '@/ui/base'
+
+import AuthorityPicker from '@/features/platform/components/AuthorityPicker.vue'
 import { computed, onMounted, ref } from 'vue'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import EntitlementDecisionTable from '@/components/platform/EntitlementDecisionTable.vue'
-import EntitlementOverrideDialog from '@/components/platform/EntitlementOverrideDialog.vue'
-import EntitlementOverrideTable from '@/components/platform/EntitlementOverrideTable.vue'
-import SubscriptionChangeWorkspace from '@/components/platform/SubscriptionChangeWorkspace.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import EntitlementDecisionTable from '@/features/platform/components/EntitlementDecisionTable.vue'
+import EntitlementOverrideDialog from '@/features/platform/components/EntitlementOverrideDialog.vue'
+import EntitlementOverrideTable from '@/features/platform/components/EntitlementOverrideTable.vue'
+import SubscriptionChangeWorkspace from '@/features/platform/components/SubscriptionChangeWorkspace.vue'
 import {
   CommercialApiError,
   commercialRequestId,
@@ -218,13 +220,13 @@ onMounted(loadModules)
       </div>
       <form class="lookup-row" @submit.prevent="loadWorkspace">
         <label for="tenant-id">租户 ID</label>
-        <input id="tenant-id" v-model="tenantIdInput" class="input" autocomplete="off" placeholder="输入真实 tenant_id" />
-        <button class="btn primary" type="submit" :disabled="loadState === 'loading'">读取权益</button>
+        <UiInput id="tenant-id" v-model="tenantIdInput" class="input" autocomplete="off" placeholder="输入真实 tenant_id" />
+        <UiButton class="btn primary" type="submit" :disabled="loadState === 'loading'">读取权益</UiButton>
       </form>
       <div class="filter-row">
         <label for="capability-filter">能力过滤（可空，逗号或换行分隔）</label>
-        <input id="capability-filter" v-model="capabilityFilter" class="input" placeholder="device.lifecycle, customer.view" />
-        <button class="btn" type="button" :disabled="!activeTenantId || pending" @click="refreshExplanation">重新解释</button>
+        <UiInput id="capability-filter" v-model="capabilityFilter" class="input" placeholder="device.lifecycle, customer.view" />
+        <UiButton class="btn" type="button" :disabled="!activeTenantId || pending" @click="refreshExplanation">重新解释</UiButton>
       </div>
     </section>
 
@@ -233,8 +235,8 @@ onMounted(loadModules)
 
     <section v-if="loadState === 'idle'" class="card state-card"><strong>选择或输入 tenant_id 开始</strong><p>读取订阅、专项来源和权益解释都由服务端平台权限决定。</p></section>
     <section v-else-if="loadState === 'loading'" class="card state-card" aria-live="polite"><strong>正在读取 {{ activeTenantId }} 的商业事实</strong><p>并行读取当前订阅、override 来源和服务端权益解释。</p></section>
-    <section v-else-if="loadState === 'blocked'" class="card state-card warning" role="alert"><strong>当前平台会话无权限读取该租户权益</strong><p>{{ errorMessage }}</p><button class="btn" type="button" @click="loadWorkspace">重新检查</button></section>
-    <section v-else-if="loadState === 'error'" class="card state-card danger" role="alert"><strong>租户权益读取失败</strong><p>{{ errorMessage }}</p><button class="btn" type="button" @click="loadWorkspace">重试</button></section>
+    <section v-else-if="loadState === 'blocked'" class="card state-card warning" role="alert"><strong>当前平台会话无权限读取该租户权益</strong><p>{{ errorMessage }}</p><UiButton class="btn" type="button" @click="loadWorkspace">重新检查</UiButton></section>
+    <section v-else-if="loadState === 'error'" class="card state-card danger" role="alert"><strong>租户权益读取失败</strong><p>{{ errorMessage }}</p><UiButton class="btn" type="button" @click="loadWorkspace">重试</UiButton></section>
 
     <template v-else-if="loadState === 'ready' && entitlement">
       <section class="metric-grid" data-ui-region="metrics">
@@ -285,8 +287,8 @@ onMounted(loadModules)
       <section class="card revoke-dialog" role="dialog" aria-modal="true">
         <h2>撤销专项来源</h2>
         <p>来源 {{ revokeTarget.id }} 将保留历史，只设置 revoked_at 并递增 source_version。</p>
-        <label>撤销原因<textarea v-model="revokeReason" class="input" rows="3" /></label>
-        <div class="dialog-actions"><button class="btn" type="button" @click="revokeTarget = null">取消</button><button class="btn primary" type="button" :disabled="pending" @click="confirmRevoke">确认撤销</button></div>
+        <label>撤销原因<UiTextarea v-model="revokeReason" class="input" rows="3" /></label>
+        <div class="dialog-actions"><UiButton class="btn" type="button" @click="revokeTarget = null">取消</UiButton><UiButton class="btn primary" type="button" :disabled="pending" @click="confirmRevoke">确认撤销</UiButton></div>
       </section>
     </div>
   </div>
@@ -314,7 +316,7 @@ onMounted(loadModules)
 .subscription-grid strong { display: block; margin-top: 5px; font-size: 13px; overflow-wrap: anywhere; }
 .empty-text { color: var(--color-text-muted); font-size: 13px; }
 .resolver-meta { display: flex; flex-wrap: wrap; gap: 7px 16px; padding: 12px 16px; color: var(--color-text-muted); font-size: 11px; }
-.dialog-backdrop { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 20px; background: rgba(15, 23, 42, .36); }
+.dialog-backdrop { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 20px; background: var(--color-fixed-99fdea0b); }
 .revoke-dialog { width: min(480px, 100%); padding: 20px; }
 .revoke-dialog h2 { margin: 0; font-size: 17px; }
 .revoke-dialog p { color: var(--color-text-muted); font-size: 12px; }

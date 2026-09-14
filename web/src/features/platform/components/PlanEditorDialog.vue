@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+
 import { reactive, ref, watch } from 'vue'
 import type { ModuleDTO, PlanModule, PlanTerms, PlanVersionDTO } from '@/services/commercial/platformCommercial'
 
@@ -147,26 +149,26 @@ function submit() {
           <h2 id="plan-editor-title">{{ mode === 'create' ? '新建套餐首稿' : '编辑套餐草稿' }}</h2>
           <p>发布后内容不可覆盖；服务端仍会执行 CE-07 完整校验。</p>
         </div>
-        <button class="btn" type="button" @click="emit('close')">关闭</button>
+        <UiButton class="btn" type="button" @click="emit('close')">关闭</UiButton>
       </header>
 
       <div class="plan-editor-grid">
-        <label><span>套餐代码</span><input v-model="editor.planCode" class="input" :disabled="mode === 'edit'" autocomplete="off" /></label>
-        <label><span>套餐名称</span><input v-model="editor.name" class="input" autocomplete="off" /></label>
-        <label><span>有效期模式</span><select v-model="editor.terms.validityMode" class="input"><option value="unlimited">unlimited</option><option value="fixed_days">fixed_days</option></select></label>
-        <label v-if="editor.terms.validityMode === 'fixed_days'"><span>有效天数</span><input v-model.number="editor.terms.validityDays" class="input" type="number" min="1" max="36500" /></label>
-        <label><span>价格引用 price_ref</span><input v-model="editor.terms.priceRef" class="input" autocomplete="off" /></label>
-        <label class="wide"><span>变更原因</span><input v-model="editor.reason" class="input" autocomplete="off" /></label>
+        <label><span>套餐代码</span><UiInput v-model="editor.planCode" class="input" :disabled="mode === 'edit'" autocomplete="off" /></label>
+        <label><span>套餐名称</span><UiInput v-model="editor.name" class="input" autocomplete="off" /></label>
+        <label><span>有效期模式</span><UiSelect v-model="editor.terms.validityMode" class="input"><UiOption value="unlimited">unlimited</UiOption><UiOption value="fixed_days">fixed_days</UiOption></UiSelect></label>
+        <label v-if="editor.terms.validityMode === 'fixed_days'"><span>有效天数</span><UiInput v-model.number="editor.terms.validityDays" class="input" type="number" min="1" max="36500" /></label>
+        <label><span>价格引用 price_ref</span><UiInput v-model="editor.terms.priceRef" class="input" autocomplete="off" /></label>
+        <label class="wide"><span>变更原因</span><UiInput v-model="editor.reason" class="input" autocomplete="off" /></label>
       </div>
 
       <section class="editor-section">
         <div class="section-head">
           <div><h3>销售范围 sales_scope</h3><p>使用 * 表示全范围；适用资格查询本身不能用 *。</p></div>
-          <button class="btn" type="button" @click="addSalesScope">添加范围</button>
+          <UiButton class="btn" type="button" @click="addSalesScope">添加范围</UiButton>
         </div>
         <div v-for="(_, index) in editor.terms.salesScope" :key="`scope-${index}`" class="inline-row">
-          <input v-model="editor.terms.salesScope[index]" class="input" placeholder="default" />
-          <button class="btn danger-text" type="button" @click="removeSalesScope(index)">移除</button>
+          <UiInput v-model="editor.terms.salesScope[index]" class="input" placeholder="default" />
+          <UiButton class="btn danger-text" type="button" @click="removeSalesScope(index)">移除</UiButton>
         </div>
         <p v-if="!editor.terms.salesScope.length" class="muted">尚未声明销售范围。</p>
       </section>
@@ -174,40 +176,40 @@ function submit() {
       <section class="editor-section">
         <div class="section-head">
           <div><h3>模块与权益</h3><p v-if="moduleError" class="error-text">模块目录不可用：{{ moduleError }}</p><p v-else>模块、能力、额度键与字段键均来自真实模块目录。</p></div>
-          <button class="btn" type="button" :disabled="!modules.length" @click="addModule">添加模块</button>
+          <UiButton class="btn" type="button" :disabled="!modules.length" @click="addModule">添加模块</UiButton>
         </div>
 
         <article v-for="(item, moduleIndex) in editor.terms.modules" :key="`module-${moduleIndex}`" class="module-editor">
           <div class="module-head">
-            <label class="grow"><span>模块</span><select v-model="item.moduleCode" class="input" @change="moduleChanged(item)"><option value="">请选择</option><option v-for="module in modules" :key="module.moduleCode" :value="module.moduleCode">{{ module.name || module.moduleCode }} · {{ module.moduleCode }}</option></select></label>
-            <button class="btn danger-text" type="button" @click="removeModule(moduleIndex)">移除模块</button>
+            <label class="grow"><span>模块</span><UiSelect v-model="item.moduleCode" class="input" @change="moduleChanged(item)"><UiOption value="">请选择</UiOption><UiOption v-for="module in modules" :key="module.moduleCode" :value="module.moduleCode">{{ module.name || module.moduleCode }} · {{ module.moduleCode }}</UiOption></UiSelect></label>
+            <UiButton class="btn danger-text" type="button" @click="removeModule(moduleIndex)">移除模块</UiButton>
           </div>
 
           <div class="subsection">
             <strong>能力</strong>
             <div class="checkbox-grid">
-              <label v-for="capability in selectedModule(item.moduleCode)?.capabilityCodes ?? []" :key="capability" class="check-row"><input type="checkbox" :checked="item.capabilityCodes.includes(capability)" @change="toggleCapability(item, capability, $event)" />{{ capability }}</label>
+              <label v-for="capability in selectedModule(item.moduleCode)?.capabilityCodes ?? []" :key="capability" class="check-row"><UiInput type="checkbox" :checked="item.capabilityCodes.includes(capability)" @change="toggleCapability(item, capability, $event)" />{{ capability }}</label>
               <span v-if="!selectedModule(item.moduleCode)?.capabilityCodes?.length" class="muted">当前模块没有可声明能力。</span>
             </div>
           </div>
 
           <div class="subsection">
-            <div class="subsection-head"><strong>额度</strong><button class="btn small" type="button" :disabled="!selectedModule(item.moduleCode)?.quotaSchemaKeys?.length" @click="addQuota(item)">添加额度</button></div>
+            <div class="subsection-head"><strong>额度</strong><UiButton class="btn small" type="button" :disabled="!selectedModule(item.moduleCode)?.quotaSchemaKeys?.length" @click="addQuota(item)">添加额度</UiButton></div>
             <div v-for="(quota, quotaIndex) in item.quotas" :key="`quota-${quotaIndex}`" class="quota-row">
-              <select v-model="quota.key" class="input"><option value="">额度键</option><option v-for="key in selectedModule(item.moduleCode)?.quotaSchemaKeys ?? []" :key="key" :value="key">{{ key }}</option></select>
-              <label class="check-row"><input v-model="quota.unlimited" type="checkbox" />unlimited</label>
-              <input v-model="quota.value" class="input" type="number" min="0" :disabled="quota.unlimited" aria-label="额度值" />
-              <button class="btn danger-text" type="button" @click="item.quotas.splice(quotaIndex, 1)">移除</button>
+              <UiSelect v-model="quota.key" class="input"><UiOption value="">额度键</UiOption><UiOption v-for="key in selectedModule(item.moduleCode)?.quotaSchemaKeys ?? []" :key="key" :value="key">{{ key }}</UiOption></UiSelect>
+              <label class="check-row"><UiInput v-model="quota.unlimited" type="checkbox" />unlimited</label>
+              <UiInput v-model="quota.value" class="input" type="number" min="0" :disabled="quota.unlimited" aria-label="额度值" />
+              <UiButton class="btn danger-text" type="button" @click="item.quotas.splice(quotaIndex, 1)">移除</UiButton>
             </div>
           </div>
 
           <div class="subsection">
-            <div class="subsection-head"><strong>字段策略</strong><button class="btn small" type="button" :disabled="!selectedModule(item.moduleCode)?.fieldPolicySchemaKeys?.length" @click="addField(item)">添加字段</button></div>
+            <div class="subsection-head"><strong>字段策略</strong><UiButton class="btn small" type="button" :disabled="!selectedModule(item.moduleCode)?.fieldPolicySchemaKeys?.length" @click="addField(item)">添加字段</UiButton></div>
             <div v-for="(field, fieldIndex) in item.fields" :key="`field-${fieldIndex}`" class="field-row">
-              <select v-model="field.key" class="input"><option value="">字段键</option><option v-for="key in selectedModule(item.moduleCode)?.fieldPolicySchemaKeys ?? []" :key="key" :value="key">{{ key }}</option></select>
-              <select v-model="field.action" class="input"><option value="read">read</option><option value="write">write</option><option value="export">export</option></select>
-              <select v-model="field.mode" class="input"><option value="deny">deny</option><option value="masked">masked</option><option value="allow">allow</option></select>
-              <button class="btn danger-text" type="button" @click="item.fields.splice(fieldIndex, 1)">移除</button>
+              <UiSelect v-model="field.key" class="input"><UiOption value="">字段键</UiOption><UiOption v-for="key in selectedModule(item.moduleCode)?.fieldPolicySchemaKeys ?? []" :key="key" :value="key">{{ key }}</UiOption></UiSelect>
+              <UiSelect v-model="field.action" class="input"><UiOption value="read">read</UiOption><UiOption value="write">write</UiOption><UiOption value="export">export</UiOption></UiSelect>
+              <UiSelect v-model="field.mode" class="input"><UiOption value="deny">deny</UiOption><UiOption value="masked">masked</UiOption><UiOption value="allow">allow</UiOption></UiSelect>
+              <UiButton class="btn danger-text" type="button" @click="item.fields.splice(fieldIndex, 1)">移除</UiButton>
             </div>
           </div>
         </article>
@@ -216,15 +218,15 @@ function submit() {
 
       <div v-if="localError || serverError" class="notice danger" role="alert">{{ localError || serverError }}</div>
       <footer class="plan-editor-footer">
-        <button class="btn" type="button" @click="emit('close')">取消</button>
-        <button class="btn primary" type="button" :disabled="pending" @click="submit">{{ pending ? '提交中…' : '提交到服务端' }}</button>
+        <UiButton class="btn" type="button" @click="emit('close')">取消</UiButton>
+        <UiButton class="btn primary" type="button" :disabled="pending" @click="submit">{{ pending ? '提交中…' : '提交到服务端' }}</UiButton>
       </footer>
     </section>
   </div>
 </template>
 
 <style scoped>
-.plan-editor-backdrop { position: fixed; inset: 0; z-index: 80; background: rgb(17 24 39 / 42%); display: grid; place-items: center; padding: 24px; }
+.plan-editor-backdrop { position: fixed; inset: 0; z-index: 80; background: var(--color-fixed-cbd707e4); display: grid; place-items: center; padding: 24px; }
 .plan-editor { width: min(1080px, 96vw); max-height: 92vh; overflow: auto; padding: 20px; }
 .plan-editor-header, .plan-editor-footer, .section-head, .subsection-head, .module-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .plan-editor-header { align-items: flex-start; padding-bottom: 14px; border-bottom: 1px solid var(--color-border); }
@@ -249,11 +251,11 @@ function submit() {
 .quota-row { display: grid; grid-template-columns: minmax(160px, 1fr) auto 120px auto; gap: 8px; align-items: center; margin-top: 8px; }
 .field-row { display: grid; grid-template-columns: minmax(160px, 1fr) 110px 120px auto; gap: 8px; align-items: center; margin-top: 8px; }
 .muted { color: var(--color-text-muted); font-size: 12px; }
-.error-text { color: var(--color-danger, #d14343) !important; }
-.notice { padding: 10px 13px; border: 1px solid var(--color-danger, #d14343); border-radius: 8px; font-size: 13px; }
+.error-text { color: var(--color-danger, var(--color-fixed-ecee5ee9)) !important; }
+.notice { padding: 10px 13px; border: 1px solid var(--color-danger, var(--color-fixed-ecee5ee9)); border-radius: 8px; font-size: 13px; }
 .btn.small { min-height: 30px; padding: 4px 8px; font-size: 12px; }
 .btn.primary { background: var(--color-primary); border-color: var(--color-primary); color: white; }
-.btn.danger-text { color: var(--color-danger, #d14343); }
+.btn.danger-text { color: var(--color-danger, var(--color-fixed-ecee5ee9)); }
 .plan-editor-footer { justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--color-border); }
 @media (max-width: 760px) {
   .plan-editor-backdrop { padding: 8px; }

@@ -1,12 +1,14 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import CustomerIdentity from '@/components/customer/CustomerIdentity.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import CustomerIdentity from '@/features/customer/components/CustomerIdentity.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 const store = useCustomerStore(),
   actions = useCustomerActions(),
   active = ref('服务风险')
@@ -47,14 +49,14 @@ const signal = computed(() => signals.find((x) => x.name === active.value)!)
       description="把风险原因、来源证据与后续行动连接起来，不输出不透明的健康分"
     /><CustomerIdentity :customer="customer" />
     <nav class="customer-tabs">
-      <button
+      <UiButton
         v-for="item in signals"
         :key="item.name"
         :class="{ active: active === item.name }"
         @click="active = item.name"
       >
         {{ item.name }}
-      </button>
+      </UiButton>
     </nav>
     <div class="customer-split">
       <CustomerSection :title="signal.name + ' · 证据与判断'" icon="warning"
@@ -82,7 +84,7 @@ const signal = computed(() => signals.find((x) => x.name === active.value)!)
           <dd>{{ store.snapshot.drafts['risk:CUS-0186']?.reason || '尚未提交' }}</dd>
         </dl>
         <div class="customer-inline-actions" style="margin-top: 24px">
-          <button
+          <UiButton
             class="btn btn-primary"
             @click="actions.open('triage', customer.id, [], { workId: signal.action })"
           >

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { Customer } from '@/types/customer'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import AvatarMark from '@/components/ui/AvatarMark.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import AvatarMark from '@/ui/common/AvatarMark.vue'
 defineProps<{ customer: Customer }>()
 </script>
 <template>

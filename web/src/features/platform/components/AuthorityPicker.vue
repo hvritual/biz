@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton, UiOption, UiSelect } from '@/ui/base'
+
 import { ref } from 'vue'
 import { request } from '@/services/commercial/platformCommercial'
 import { createRuntimeApi } from '@/services/runtime/api'
@@ -39,25 +41,25 @@ async function load(more = false) {
 <template>
   <section class="card panel-pad page-stack">
     <div>
-      <button class="btn" :disabled="busy" @click="load()">
+      <UiButton class="btn" :disabled="busy" @click="load()">
         {{ kind === 'plans' ? '读取套餐目录' : '读取租户目录' }}
-      </button>
+      </UiButton>
     </div>
     <p v-if="error" role="alert">{{ error }}</p>
     <p v-if="loaded && !rows.length">目录中暂无可见记录。</p>
     <label v-if="rows.length"
       >{{ kind === 'plans' ? '选择套餐' : '选择租户'
-      }}<select
+      }}<UiSelect
         class="input"
         :aria-label="kind === 'plans' ? '选择套餐' : '选择租户'"
         :disabled="busy"
         value=""
         @change="emit('select', ($event.target as HTMLSelectElement).value)"
       >
-        <option value="" disabled>请选择</option>
-        <option v-for="row in rows" :key="row.id" :value="row.id">{{ row.name }}（{{ row.id }}）</option>
-      </select></label
+        <UiOption value="" disabled>请选择</UiOption>
+        <UiOption v-for="row in rows" :key="row.id" :value="row.id">{{ row.name }}（{{ row.id }}）</UiOption>
+      </UiSelect></label
     >
-    <button v-if="cursor" class="btn" :disabled="busy" @click="load(true)">加载更多套餐</button>
+    <UiButton v-if="cursor" class="btn" :disabled="busy" @click="load(true)">加载更多套餐</UiButton>
   </section>
 </template>

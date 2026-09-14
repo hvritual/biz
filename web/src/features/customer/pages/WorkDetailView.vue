@@ -1,25 +1,27 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
 import { workKindNames } from '@/services/customer/seed'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import AvatarMark from '@/components/ui/AvatarMark.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
-import WorkSteps from '@/components/customer/WorkSteps.vue'
-import WorkTable from '@/components/customer/WorkTable.vue'
-import ActivityList from '@/components/customer/ActivityList.vue'
-import SourceRecords from '@/components/customer/SourceRecords.vue'
-import DeliveryDetail from '@/components/customer/DeliveryDetail.vue'
-import ServiceDetail from '@/components/customer/ServiceDetail.vue'
-import PaymentDetail from '@/components/customer/PaymentDetail.vue'
-import RenewalDetail from '@/components/customer/RenewalDetail.vue'
-import ReturnDetail from '@/components/customer/ReturnDetail.vue'
-import GeneralWorkDetail from '@/components/customer/GeneralWorkDetail.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import AvatarMark from '@/ui/common/AvatarMark.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
+import WorkSteps from '@/features/customer/components/WorkSteps.vue'
+import WorkTable from '@/features/customer/components/WorkTable.vue'
+import ActivityList from '@/features/customer/components/ActivityList.vue'
+import SourceRecords from '@/features/customer/components/SourceRecords.vue'
+import DeliveryDetail from '@/features/customer/components/DeliveryDetail.vue'
+import ServiceDetail from '@/features/customer/components/ServiceDetail.vue'
+import PaymentDetail from '@/features/customer/components/PaymentDetail.vue'
+import RenewalDetail from '@/features/customer/components/RenewalDetail.vue'
+import ReturnDetail from '@/features/customer/components/ReturnDetail.vue'
+import GeneralWorkDetail from '@/features/customer/components/GeneralWorkDetail.vue'
 const store = useCustomerStore(),
   route = useRoute(),
   actions = useCustomerActions(),
@@ -56,24 +58,24 @@ const dependencies = computed(() =>
       :description="`${store.customerName(work.customerId)} · ${workKindNames[work.kind]} · 流程 v${work.workflowVersion} · 第 ${work.cycle} 轮处理`"
       ><div class="customer-heading-actions">
         <RouterLink class="btn" to="/customers/work">返回事项</RouterLink
-        ><button class="btn" :disabled="!work.writable" @click="actions.open('subtask', work.id)">
+        ><UiButton class="btn" :disabled="!work.writable" @click="actions.open('subtask', work.id)">
           <AppIcon name="plus" :size="16" />子事项</button
-        ><button
+        ><UiButton
           v-if="work.status === '已结束'"
           class="btn btn-primary"
           @click="actions.open('reopen', work.id)"
         >
           重新打开</button
         ><template v-else
-          ><button class="btn" :disabled="!work.writable" @click="actions.open('transition', work.id)">
+          ><UiButton class="btn" :disabled="!work.writable" @click="actions.open('transition', work.id)">
             流转事项</button
-          ><button
+          ><UiButton
             class="btn btn-primary"
             :disabled="!work.writable || work.status !== '待验收'"
             @click="actions.open('accept', work.id)"
           >
             事项验收
-          </button></template
+          </UiButton></template
         >
       </div></PageHeading
     >
@@ -91,14 +93,14 @@ const dependencies = computed(() =>
     />
     <WorkSteps :work="work" />
     <nav class="customer-tabs" aria-label="事项详情标签">
-      <button
+      <UiButton
         v-for="name in ['详情', '依赖与子事项', '业务来源', '评论与活动']"
         :key="name"
         :class="{ active: tab === name }"
         @click="tab = name"
       >
         {{ name }}<span v-if="name === '依赖与子事项'">（{{ dependencies.length }}）</span>
-      </button>
+      </UiButton>
     </nav>
     <div
       class="customer-split"
@@ -110,7 +112,7 @@ const dependencies = computed(() =>
           title="依赖与阻塞"
           icon="link"
           ><template #action
-            ><button class="btn-link" @click="actions.open('dependency', work.id)">添加依赖</button></template
+            ><UiButton class="btn-link" @click="actions.open('dependency', work.id)">添加依赖</UiButton></template
           ><CustomerAlert
             title="依赖未结束时，不能进入验收或成功关闭"
             description="不复制工单和业务记录，跨部门协作引用同一事项。"
@@ -132,16 +134,16 @@ const dependencies = computed(() =>
           </p></CustomerSection
         ><CustomerSection v-else-if="tab === '业务来源'" title="关联业务来源" icon="file"
           ><template #action
-            ><button class="btn-link" @click="actions.open('link-source', work.id)">
+            ><UiButton class="btn-link" @click="actions.open('link-source', work.id)">
               关联记录
-            </button></template
+            </UiButton></template
           ><SourceRecords
             :records="
               store.snapshot.sources.filter((s) => work!.evidenceIds.includes(s.id))
             " /></CustomerSection
         ><CustomerSection v-else title="评论与活动记录" icon="activity"
           ><template #action
-            ><button class="btn-link" @click="actions.open('comment', work.id)">添加评论</button></template
+            ><UiButton class="btn-link" @click="actions.open('comment', work.id)">添加评论</UiButton></template
           ><ActivityList :items="activity"
         /></CustomerSection>
       </div>
@@ -179,7 +181,7 @@ const dependencies = computed(() =>
           <div class="divider" />
           <p class="customer-help">下一步行动</p>
           <p style="line-height: 1.8; margin-top: 8px; font-size: 14px">{{ work.nextAction }}</p>
-          <button
+          <UiButton
             v-if="work.status !== '已结束'"
             class="btn-link"
             style="margin-top: 12px"
@@ -187,24 +189,24 @@ const dependencies = computed(() =>
             @click="actions.open('reschedule', work.id)"
           >
             调整行动安排
-          </button></CustomerSection
+          </UiButton></CustomerSection
         >
         <CustomerSection title="验收与结果" icon="checks"
           ><p class="customer-help">
             成功需核对业务来源；不通过则退回整改。事项“已结束”不等于经营结果“成功”。
           </p>
           <div class="customer-checklist" style="margin-top: 16px">
-            <button
+            <UiButton
               v-if="work.status !== '已结束'"
               class="btn"
               :disabled="!work.writable"
               @click="actions.open('reject', work.id)"
             >
               验收不通过 / 退回处理</button
-            ><button class="btn" @click="tab = '业务来源'">核对业务来源</button
-            ><button v-if="dependencies.length" class="btn" @click="tab = '依赖与子事项'">
+            ><UiButton class="btn" @click="tab = '业务来源'">核对业务来源</button
+            ><UiButton v-if="dependencies.length" class="btn" @click="tab = '依赖与子事项'">
               查看 {{ dependencies.length }} 项依赖
-            </button>
+            </UiButton>
           </div></CustomerSection
         ><CustomerSection title="最近记录" icon="clock"
           ><ActivityList :items="activity.slice(0, 2)"

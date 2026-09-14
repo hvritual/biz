@@ -1,16 +1,18 @@
 <script setup lang="ts">
+import { UiButton, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import type { Role } from '@/types/enterprise'
 import { scopeLabels } from '@/types/enterprise'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import MetricCard from '@/components/ui/MetricCard.vue'
-import SearchField from '@/components/ui/SearchField.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
-import RoleEditor from '@/components/roles/RoleEditor.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import MetricCard from '@/ui/common/MetricCard.vue'
+import SearchField from '@/ui/common/SearchField.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import EmptyState from '@/ui/common/EmptyState.vue'
+import RoleEditor from '@/features/enterprise/components/roles/RoleEditor.vue'
 const store = useEnterpriseStore(),
   route = useRoute(),
   router = useRouter()
@@ -81,17 +83,17 @@ watch(
     </div>
     <section class="card data-panel">
       <div class="query-bar">
-        <SearchField v-model="query" placeholder="搜索角色名称、说明…" /><select
+        <SearchField v-model="query" placeholder="搜索角色名称、说明…" /><UiSelect
           v-model="kind"
           class="select"
           aria-label="角色类型"
         >
-          <option value="">全部类型</option>
-          <option value="builtin">内置角色</option>
-          <option value="custom">自定义角色</option></select
-        ><button class="btn btn-primary" @click="edit(null)">
+          <UiOption value="">全部类型</UiOption>
+          <UiOption value="builtin">内置角色</UiOption>
+          <UiOption value="custom">自定义角色</UiOption></select
+        ><UiButton class="btn btn-primary" @click="edit(null)">
           <AppIcon name="plus" :size="16" />新建角色
-        </button>
+        </UiButton>
       </div>
       <div v-if="filtered.length" class="table-scroll">
         <table class="data-table role-table">
@@ -114,7 +116,7 @@ watch(
                     ><AppIcon :name="r.id === 'owner' ? 'crown' : 'shield'" :size="18"
                   /></span>
                   <div>
-                    <button class="role-name" @click="edit(r)">{{ r.name }}</button
+                    <UiButton class="role-name" @click="edit(r)">{{ r.name }}</button
                     ><small class="muted role-description">{{ r.description }}</small>
                   </div>
                 </div>
@@ -130,8 +132,8 @@ watch(
               <td class="muted numeric">{{ r.updatedAt }}</td>
               <td>
                 <div class="table-actions">
-                  <button class="btn-link" @click="edit(r)">{{ r.builtin ? '查看' : '编辑' }}</button
-                  ><button class="btn-link" :aria-label="'复制 ' + r.name" @click="copy(r)">复制</button>
+                  <UiButton class="btn-link" @click="edit(r)">{{ r.builtin ? '查看' : '编辑' }}</button
+                  ><UiButton class="btn-link" :aria-label="'复制 ' + r.name" @click="copy(r)">复制</UiButton>
                 </div>
               </td>
             </tr>

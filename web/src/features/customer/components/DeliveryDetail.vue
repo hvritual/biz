@@ -1,12 +1,14 @@
 <script setup lang="ts">
+import { UiButton, UiInput } from '@/ui/base'
+
 import { computed } from 'vue'
 import { workSites, workSources } from '@/services/customer/selectors'
 import type { WorkItem } from '@/types/customer'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import MetricCard from '@/components/ui/MetricCard.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import MetricCard from '@/ui/common/MetricCard.vue'
+import EmptyState from '@/ui/common/EmptyState.vue'
 import CustomerSection from './CustomerSection.vue'
 import CustomerAlert from './CustomerAlert.vue'
 import SourceRecords from './SourceRecords.vue'
@@ -52,13 +54,13 @@ const allPassed = computed(() => sites.value.length > 0 && sites.value.every((s)
     </div>
     <CustomerSection title="本次投放范围与验收" icon="site">
       <template #action
-        ><button
+        ><UiButton
           class="btn-link"
           :disabled="!work.writable || work.status === '已结束'"
           @click="actions.open('link-source', work.id)"
         >
           关联验收记录
-        </button></template
+        </UiButton></template
       >
       <div v-if="sites.length" class="table-scroll">
         <table class="data-table">
@@ -116,20 +118,20 @@ const allPassed = computed(() => sites.value.length > 0 && sites.value.every((s)
       <CustomerSection title="交付要求" icon="checks">
         <div class="customer-checklist">
           <label
-            ><input type="checkbox" :checked="sites.length > 0" disabled />投放范围归属当前客户与事项</label
+            ><UiInput type="checkbox" :checked="sites.length > 0" disabled />投放范围归属当前客户与事项</label
           >
           <label
-            ><input
+            ><UiInput
               type="checkbox"
               :checked="sites.length > 0 && sites.every((s) => s.training)"
               disabled
             />现场安装、安全检查与培训完成</label
           >
           <label
-            ><input type="checkbox" :checked="allPassed" disabled />全部点位的出杯与状态数据完成验证</label
+            ><UiInput type="checkbox" :checked="allPassed" disabled />全部点位的出杯与状态数据完成验证</label
           >
           <label
-            ><input
+            ><UiInput
               type="checkbox"
               :checked="work.status === '已结束' && work.resolution === '成功'"
               disabled

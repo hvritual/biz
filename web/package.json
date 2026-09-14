@@ -19,26 +19,34 @@
     "check": "npm run type-check && npm run lint && npm run check:architecture && npm run check:ui-contracts && npm run test:unit && npm run build"
   },
   "dependencies": {
-    "vue": "3.5.42",
-    "vue-router": "^4.5.1",
+    "@lucide/vue": "^1.46.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-vue-next": "^0.468.0",
     "pinia": "^3.0.3",
-    "lucide-vue-next": "^0.468.0"
+    "reka-ui": "^2.10.4",
+    "tailwind-merge": "^3.7.0",
+    "tailwindcss": "^4.3.3",
+    "tw-animate-css": "^1.4.0",
+    "vue": "3.5.42",
+    "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/node": "^22.0.0",
     "@vitejs/plugin-vue": "^6.0.0",
-    "@vue/tsconfig": "^0.8.0",
-    "typescript": "~5.9.2",
-    "vite": "^7.1.0",
-    "vue-tsc": "^3.0.0",
-    "vitest": "^3.2.4",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/eslint-config-typescript": "^14.9.0",
     "@vue/test-utils": "^2.4.6",
-    "jsdom": "^26.1.0",
-    "@playwright/test": "^1.55.0",
+    "@vue/tsconfig": "^0.8.0",
     "eslint": "^9.34.0",
     "eslint-plugin-vue": "^10.4.0",
-    "@vue/eslint-config-typescript": "^14.9.0",
-    "@vue/eslint-config-prettier": "^10.2.0",
-    "prettier": "^3.6.2"
+    "jsdom": "^26.1.0",
+    "prettier": "^3.6.2",
+    "typescript": "~5.9.2",
+    "vite": "^7.1.0",
+    "vitest": "^3.2.4",
+    "vue-tsc": "^3.0.0"
   }
 }

@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import AuthorityPicker from '@/components/platform/AuthorityPicker.vue'
+import { UiButton, UiInput } from '@/ui/base'
+
+import AuthorityPicker from '@/features/platform/components/AuthorityPicker.vue'
 import { computed, onMounted, ref } from 'vue'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import PlanEditorDialog from '@/components/platform/PlanEditorDialog.vue'
-import PlanVersionDetail from '@/components/platform/PlanVersionDetail.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import PlanEditorDialog from '@/features/platform/components/PlanEditorDialog.vue'
+import PlanVersionDetail from '@/features/platform/components/PlanVersionDetail.vue'
 import {
   CommercialApiError,
   checkPlanEligibility,
@@ -290,12 +292,12 @@ onMounted(loadModules)
           <h2>套餐代码工作台</h2>
           <p>可从可信套餐目录选择 plan_code，或直接输入代码读取服务端版本历史；页面不以本地 seed 补齐目录。</p>
         </div>
-        <button class="btn primary" type="button" @click="openCreate">新建套餐</button>
+        <UiButton class="btn primary" type="button" @click="openCreate">新建套餐</UiButton>
       </div>
       <form class="lookup-row" @submit.prevent="loadVersions(true)">
         <label for="plan-code">套餐代码</label>
-        <input id="plan-code" v-model="planCodeInput" class="input" autocomplete="off" placeholder="例如 office-pro" />
-        <button class="btn" type="submit" :disabled="loadState === 'loading'">读取版本</button>
+        <UiInput id="plan-code" v-model="planCodeInput" class="input" autocomplete="off" placeholder="例如 office-pro" />
+        <UiButton class="btn" type="submit" :disabled="loadState === 'loading'">读取版本</UiButton>
       </form>
       <p class="scope-note">创建/查询/编辑/发布/停售均调用真实 commercial.plan.* API；浏览器只携带 HttpOnly 会话 Cookie。</p>
     </section>
@@ -305,8 +307,8 @@ onMounted(loadModules)
 
     <section v-if="loadState === 'idle'" class="card state-card"><strong>输入套餐代码或新建套餐</strong><p>不会自动展示本地保存过的套餐代码。</p></section>
     <section v-else-if="loadState === 'loading'" class="card state-card" aria-live="polite"><strong>正在读取 {{ activePlanCode }} 的真实版本记录</strong><p>请求 /v1/platform/plans/{plan_code}/versions。</p></section>
-    <section v-else-if="loadState === 'blocked'" class="card state-card warning" role="alert"><strong>当前会话无套餐管理读取权限</strong><p>{{ errorMessage }}</p><button class="btn" type="button" @click="loadVersions(true)">重新检查</button></section>
-    <section v-else-if="loadState === 'error'" class="card state-card danger" role="alert"><strong>套餐版本读取失败</strong><p>{{ errorMessage }}</p><button class="btn" type="button" @click="loadVersions(true)">重试</button></section>
+    <section v-else-if="loadState === 'blocked'" class="card state-card warning" role="alert"><strong>当前会话无套餐管理读取权限</strong><p>{{ errorMessage }}</p><UiButton class="btn" type="button" @click="loadVersions(true)">重新检查</UiButton></section>
+    <section v-else-if="loadState === 'error'" class="card state-card danger" role="alert"><strong>套餐版本读取失败</strong><p>{{ errorMessage }}</p><UiButton class="btn" type="button" @click="loadVersions(true)">重试</UiButton></section>
 
     <template v-else>
       <section class="metric-grid" data-ui-region="metrics">
@@ -322,7 +324,7 @@ onMounted(loadModules)
         <section class="card versions-card" data-ui-region="history">
           <div class="section-header">
             <div><h2>版本历史</h2><p>发布版本内容不可覆盖；修订请克隆为新草稿。</p></div>
-            <button class="btn" type="button" @click="loadVersions(true)">刷新</button>
+            <UiButton class="btn" type="button" @click="loadVersions(true)">刷新</UiButton>
           </div>
           <div class="table-scroll">
             <table class="data-table">
@@ -346,7 +348,7 @@ onMounted(loadModules)
               </tbody>
             </table>
           </div>
-          <div v-if="nextAfterVersion" class="load-more"><button class="btn" type="button" @click="loadVersions(false)">加载更多</button></div>
+          <div v-if="nextAfterVersion" class="load-more"><UiButton class="btn" type="button" @click="loadVersions(false)">加载更多</UiButton></div>
         </section>
 
         <div class="detail-region" data-ui-region="detail">
@@ -382,11 +384,11 @@ onMounted(loadModules)
       <section class="eligibility-dialog card" role="dialog" aria-modal="true" aria-labelledby="eligibility-title">
         <header class="section-header">
           <div><h2 id="eligibility-title">适用资格预检</h2><p>{{ selectedVersion?.planCode }} v{{ selectedVersion?.version }}；结果不是订阅回执或免检许可。</p></div>
-          <button class="btn" type="button" @click="eligibilityOpen = false">关闭</button>
+          <UiButton class="btn" type="button" @click="eligibilityOpen = false">关闭</UiButton>
         </header>
         <div class="eligibility-body">
-          <label><span>sales_scope</span><input v-model="eligibilityScope" class="input" placeholder="例如 default（不能填 *）" /></label>
-          <button class="btn primary full" type="button" :disabled="!eligibilityScope.trim() || eligibilityScope.trim() === '*' || actionPending" @click="runEligibility">执行真实资格检查</button>
+          <label><span>sales_scope</span><UiInput v-model="eligibilityScope" class="input" placeholder="例如 default（不能填 *）" /></label>
+          <UiButton class="btn primary full" type="button" :disabled="!eligibilityScope.trim() || eligibilityScope.trim() === '*' || actionPending" @click="runEligibility">执行真实资格检查</UiButton>
           <div v-if="eligibilityResult" class="eligibility-result" :class="eligibilityResult.eligible ? 'allowed' : 'denied'"><strong>{{ eligibilityResult.eligible ? '可适用' : '不可适用' }}</strong><p>{{ eligibilityResult.reason || '服务端未提供额外说明' }}</p></div>
         </div>
       </section>
@@ -406,12 +408,12 @@ onMounted(loadModules)
 .input:focus { outline: 2px solid var(--color-primary-soft); border-color: var(--color-primary); }
 .scope-note { margin: 10px 0 0; font-size: 11px; color: var(--color-text-muted); }
 .notice { padding: 10px 13px; border: 1px solid var(--color-border); border-radius: 8px; font-size: 13px; }
-.notice.success { border-color: var(--color-success, #4b9a68); }
-.notice.danger { border-color: var(--color-danger, #d14343); }
+.notice.success { border-color: var(--color-success, var(--color-fixed-a93dc7bf)); }
+.notice.danger { border-color: var(--color-danger, var(--color-fixed-ecee5ee9)); }
 .state-card { min-height: 104px; padding: 20px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 6px; }
 .state-card p { margin: 0; color: var(--color-text-secondary); font-size: 13px; }
-.state-card.warning { border-color: var(--color-warning, #d9a441); }
-.state-card.danger { border-color: var(--color-danger, #d14343); }
+.state-card.warning { border-color: var(--color-warning, var(--color-fixed-b79dd458)); }
+.state-card.danger { border-color: var(--color-danger, var(--color-fixed-ecee5ee9)); }
 .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .metric { padding: 16px; }
 .metric span, .metric small { display: block; color: var(--color-text-muted); font-size: 12px; }
@@ -424,14 +426,14 @@ onMounted(loadModules)
 .data-table tbody tr:focus { outline: 2px solid var(--color-primary); outline-offset: -2px; }
 .load-more { padding: 12px; text-align: center; border-top: 1px solid var(--color-border); }
 .btn.primary { background: var(--color-primary); border-color: var(--color-primary); color: white; }
-.eligibility-backdrop { position: fixed; inset: 0; z-index: 80; background: rgb(17 24 39 / 42%); display: grid; place-items: center; padding: 24px; }
+.eligibility-backdrop { position: fixed; inset: 0; z-index: 80; background: var(--color-fixed-cbd707e4); display: grid; place-items: center; padding: 24px; }
 .eligibility-dialog { width: min(560px, 96vw); overflow: hidden; }
 .eligibility-body { padding: 18px 20px; }
 .eligibility-body label { display: grid; gap: 6px; }
 .full { width: 100%; margin-top: 12px; }
 .eligibility-result { margin-top: 14px; padding: 14px; border-radius: 8px; border: 1px solid var(--color-border); }
-.eligibility-result.allowed { border-color: var(--color-success, #4b9a68); }
-.eligibility-result.denied { border-color: var(--color-danger, #d14343); }
+.eligibility-result.allowed { border-color: var(--color-success, var(--color-fixed-a93dc7bf)); }
+.eligibility-result.denied { border-color: var(--color-danger, var(--color-fixed-ecee5ee9)); }
 .eligibility-result p { margin: 5px 0 0; color: var(--color-text-secondary); font-size: 13px; }
 @media (max-width: 1100px) { .plan-layout { grid-template-columns: 1fr; } }
 @media (max-width: 760px) {

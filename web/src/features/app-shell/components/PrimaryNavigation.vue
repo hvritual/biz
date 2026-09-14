@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { isPrimaryNavigationActive, primaryNavigation } from '@/router/navigation'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 const ui = useUiStore(),
   route = useRoute(),
   router = useRouter()
@@ -37,7 +39,7 @@ function toggleCollapsed() {
 <template>
   <nav class="primary-nav" aria-label="一级导航" :class="{ collapsed: ui.collapsed }">
     <div class="nav-items">
-      <button
+      <UiButton
         v-for="item in primaryNavigation"
         :key="item.id"
         :class="[
@@ -57,17 +59,17 @@ function toggleCollapsed() {
         @mouseenter="previewModule(item)"
       >
         <AppIcon :name="item.icon" :size="20" /><span>{{ item.label }}</span>
-      </button>
+      </UiButton>
     </div>
     <footer>
       <span v-if="!ui.collapsed" class="preview-label">{{ previewLabel }}</span
-      ><button
+      ><UiButton
         class="icon-button collapse-button"
         :aria-label="ui.collapsed ? '展开一级菜单' : '收起一级菜单'"
         @click="toggleCollapsed"
       >
         <AppIcon :name="ui.collapsed ? 'expand' : 'collapse'" :size="17" />
-      </button>
+      </UiButton>
     </footer>
   </nav>
 </template>
@@ -120,7 +122,7 @@ function toggleCollapsed() {
 .primary-item.active {
   background: linear-gradient(105deg, var(--color-primary), var(--color-gradient-end));
   color: var(--color-on-primary);
-  box-shadow: 0 4px 12px rgb(8 123 255 / 12%);
+  box-shadow: 0 4px 12px var(--color-fixed-77a43b18);
 }
 .primary-item.active > .icon {
   color: var(--color-on-primary);

@@ -1,15 +1,17 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import AvatarMark from '@/components/ui/AvatarMark.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import CustomerIdentity from '@/components/customer/CustomerIdentity.vue'
-import CustomerTabs from '@/components/customer/CustomerTabs.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import AvatarMark from '@/ui/common/AvatarMark.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import CustomerIdentity from '@/features/customer/components/CustomerIdentity.vue'
+import CustomerTabs from '@/features/customer/components/CustomerTabs.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 const store = useCustomerStore(),
   route = useRoute(),
   actions = useCustomerActions()
@@ -25,7 +27,7 @@ const contacts = computed(() => store.snapshot.contacts.filter((c) => c.customer
       breadcrumb="客户经营"
       description="客户对接人、内部责任人与客户侧授权分别管理"
       ><div class="customer-heading-actions">
-        <button class="btn btn-primary" @click="actions.open('contact', customer.id)">新增联系人</button>
+        <UiButton class="btn btn-primary" @click="actions.open('contact', customer.id)">新增联系人</UiButton>
       </div></PageHeading
     ><CustomerIdentity :customer="customer" /><CustomerTabs :id="customer.id" active="contacts" />
     <div class="customer-split">
@@ -92,9 +94,9 @@ const contacts = computed(() => store.snapshot.contacts.filter((c) => c.customer
               </div>
             </div>
           </div>
-          <button class="btn-link" style="margin-top: 12px" @click="actions.open('handover', customer.id)">
+          <UiButton class="btn-link" style="margin-top: 12px" @click="actions.open('handover', customer.id)">
             移交客户与可编辑事项
-          </button></CustomerSection
+          </UiButton></CustomerSection
         ><CustomerSection title="责任边界" icon="shield"
           ><p class="customer-help">
             客户负责人负责长期关系；事项负责人负责一件具体工作。移交客户不默认接管其他团队的事项。

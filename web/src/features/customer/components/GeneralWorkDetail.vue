@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import type { WorkItem } from '@/types/customer'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
@@ -28,14 +30,14 @@ const store = useCustomerStore(),
         <dd>{{ work.owner }}</dd>
       </dl>
       <div style="margin-top: 20px" class="customer-inline-actions">
-        <button
+        <UiButton
           v-if="work.kind === 'visit'"
           class="btn btn-primary"
           :disabled="work.status === '已结束'"
           @click="actions.open('visit', work.id)"
         >
           记录回访与承诺</button
-        ><button class="btn" @click="actions.open('comment', work.id)">记录沟通</button>
+        ><UiButton class="btn" @click="actions.open('comment', work.id)">记录沟通</UiButton>
       </div></CustomerSection
     ><CustomerSection title="成功标准" icon="checks"
       ><div v-for="criterion in work.criteria" :key="criterion" class="customer-record">{{ criterion }}</div>
@@ -45,9 +47,9 @@ const store = useCustomerStore(),
     ><CustomerSection title="关联业务依据" icon="file"
       ><SourceRecords
         :records="store.snapshot.sources.filter((s) => work.evidenceIds.includes(s.id))"
-      /><button class="btn-link" @click="actions.open('link-source', work.id)">
+      /><UiButton class="btn-link" @click="actions.open('link-source', work.id)">
         关联业务来源
-      </button></CustomerSection
+      </UiButton></CustomerSection
     >
   </div>
 </template>

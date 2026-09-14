@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Member, MemberAction } from '@/types/enterprise'
 import { scopeLabels, statusLabels } from '@/types/enterprise'
 import { useEnterpriseStore } from '@/stores/enterprise'
-import AvatarMark from '@/components/ui/AvatarMark.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import AvatarMark from '@/ui/common/AvatarMark.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 import MemberRoleTags from './MemberRoleTags.vue'
 import MemberDetailOverview from './MemberDetailOverview.vue'
 const props = defineProps<{ member: Member | null }>()
@@ -102,7 +104,7 @@ onBeforeUnmount(() => {
 <template>
   <Teleport to="body">
     <Transition name="detail-backdrop"
-      ><button
+      ><UiButton
         v-if="member && mobile"
         class="member-detail-backdrop"
         tabindex="-1"
@@ -121,9 +123,9 @@ onBeforeUnmount(() => {
       >
         <header class="detail-header">
           <h2 id="member-detail-title">成员详情</h2>
-          <button class="icon-button" data-close-detail aria-label="关闭成员详情" @click="emit('close')">
+          <UiButton class="icon-button" data-close-detail aria-label="关闭成员详情" @click="emit('close')">
             <AppIcon name="close" :size="18" />
-          </button>
+          </UiButton>
         </header>
         <div class="detail-scroll">
           <div class="detail-profile">
@@ -145,15 +147,15 @@ onBeforeUnmount(() => {
               <MemberRoleTags :ids="member.roleIds" />
             </div>
             <div class="profile-actions">
-              <button class="btn" aria-label="编辑成员资料" @click="emit('action', 'edit', member)">
+              <UiButton class="btn" aria-label="编辑成员资料" @click="emit('action', 'edit', member)">
                 <AppIcon name="edit" :size="13" />编辑</button
-              ><button class="btn more-button" aria-label="成员详情更多操作" @click="emit('more', member)">
+              ><UiButton class="btn more-button" aria-label="成员详情更多操作" @click="emit('more', member)">
                 <AppIcon name="more" :size="15" />
-              </button>
+              </UiButton>
             </div>
           </div>
           <div class="detail-tabs" role="tablist" aria-label="成员详情栏目">
-            <button
+            <UiButton
               v-for="(item, index) in tabs"
               :id="`detail-tab-${index}`"
               :key="item"
@@ -166,7 +168,7 @@ onBeforeUnmount(() => {
               @keydown="moveTab($event, index)"
             >
               {{ item }}
-            </button>
+            </UiButton>
           </div>
           <div
             id="member-tab-content"
@@ -178,7 +180,7 @@ onBeforeUnmount(() => {
             <div v-else-if="tab === '角色权限'" class="tab-body">
               <div class="row-between">
                 <h3>已分配角色</h3>
-                <button class="btn-link" @click="emit('action', 'role', member)">调整角色</button>
+                <UiButton class="btn-link" @click="emit('action', 'role', member)">调整角色</UiButton>
               </div>
               <article
                 v-for="role in store.roles.filter((r) => member!.roleIds.includes(r.id))"
@@ -197,7 +199,7 @@ onBeforeUnmount(() => {
             <div v-else-if="tab === '数据权限'" class="tab-body">
               <div class="row-between">
                 <h3>当前数据范围</h3>
-                <button class="btn-link" @click="emit('action', 'role', member)">调整范围</button>
+                <UiButton class="btn-link" @click="emit('action', 'role', member)">调整范围</UiButton>
               </div>
               <div class="scope-summary">
                 <AppIcon name="database" :size="24" />
@@ -246,7 +248,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   background: var(--color-surface);
   border-left: 1px solid var(--color-border);
-  box-shadow: -6px 0 24px rgb(49 81 121 / 4%);
+  box-shadow: -6px 0 24px var(--color-fixed-849eef7a);
   z-index: var(--z-member-detail);
 }
 .detail-header {

@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { UiButton, UiInput } from '@/ui/base'
+
 import type { WorkItem, SavedWorkView } from '@/types/customer'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
 import { workKindNames } from '@/services/customer/seed'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import AvatarMark from '@/components/ui/AvatarMark.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import AvatarMark from '@/ui/common/AvatarMark.vue'
 const props = withDefaults(
   defineProps<{ items: WorkItem[]; selected?: string[]; selectable?: boolean; view?: SavedWorkView }>(),
   { selected: () => [], selectable: false, view: undefined },
@@ -23,7 +25,7 @@ const visible = (field: string) => !props.view || props.view.columns.includes(fi
       <thead>
         <tr>
           <th v-if="selectable" class="check-cell">
-            <input
+            <UiInput
               type="checkbox"
               aria-label="选择当前页全部事项"
               :checked="items.length > 0 && items.every((w) => selected.includes(w.id))"
@@ -47,7 +49,7 @@ const visible = (field: string) => !props.view || props.view.columns.includes(fi
       <tbody>
         <tr v-for="w in items" :key="w.id" :class="{ selected: selected.includes(w.id) }">
           <td v-if="selectable" class="check-cell">
-            <input
+            <UiInput
               type="checkbox"
               :aria-label="`选择 ${w.id}`"
               :checked="selected.includes(w.id)"
@@ -94,13 +96,13 @@ const visible = (field: string) => !props.view || props.view.columns.includes(fi
           <td>
             <div class="table-actions">
               <RouterLink class="btn-link" :to="`/customers/work/${w.id}`">查看</RouterLink
-              ><button
+              ><UiButton
                 class="btn-link"
                 :disabled="!w.writable"
                 @click="actions.open(w.status === '已结束' ? 'reopen' : 'reschedule', w.id)"
               >
                 {{ w.status === '已结束' ? '重开' : '改期' }}
-              </button>
+              </UiButton>
             </div>
           </td>
         </tr>

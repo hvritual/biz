@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 const store = useCustomerStore(),
   actions = useCustomerActions()
 </script>
@@ -15,7 +17,7 @@ const store = useCustomerStore(),
       breadcrumb="客户经营"
       description="客户也是平台租户，但不能默认看到你的内部经营资料"
       ><div class="customer-heading-actions">
-        <button class="btn btn-primary" @click="actions.open('share', 'CUS-0186')">新建共享授权</button>
+        <UiButton class="btn btn-primary" @click="actions.open('share', 'CUS-0186')">新建共享授权</UiButton>
       </div></PageHeading
     ><CustomerAlert
       title="授权到对象、字段、附件及有效期"
@@ -62,13 +64,13 @@ const store = useCustomerStore(),
               <td>
                 <div class="table-actions">
                   <RouterLink :to="`/customers/client/${grant.id}`" class="btn-link">客户视角</RouterLink
-                  ><button
+                  ><UiButton
                     class="btn-link"
                     :disabled="grant.revoked"
                     @click="actions.open('revoke-share', grant.id)"
                   >
                     撤销
-                  </button>
+                  </UiButton>
                 </div>
               </td>
             </tr>

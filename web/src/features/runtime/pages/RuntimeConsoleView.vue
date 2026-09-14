@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, onBeforeUnmount, ref, toRaw, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
 import {
   loginUrl,
   logoutSession,
@@ -172,16 +174,16 @@ onBeforeUnmount(() => {
         ><span>当前身份：{{ session.actor_kind === 'platform' ? '平台操作员' : session.user_id }}</span>
         <label v-if="session.actor_kind !== 'platform'"
           >当前租户
-          <select :value="session.active_tenant_id" :disabled="busy" @change="changeTenant">
-            <option value="" disabled>选择租户</option>
-            <option v-for="tenant in session.tenants" :key="tenant.id" :value="tenant.id">
+          <UiSelect :value="session.active_tenant_id" :disabled="busy" @change="changeTenant">
+            <UiOption value="" disabled>选择租户</UiOption>
+            <UiOption v-for="tenant in session.tenants" :key="tenant.id" :value="tenant.id">
               {{ tenant.name }}
-            </option>
-          </select></label
+            </UiOption>
+          </UiSelect></label
         >
-        <button class="btn" :disabled="busy" @click="logout">退出登录</button> </template
+        <UiButton class="btn" :disabled="busy" @click="logout">退出登录</UiButton> </template
       ><a v-else class="btn primary" :href="loginUrl()">登录业务账号</a>
-      <button class="btn" :disabled="busy" @click="refresh">刷新</button>
+      <UiButton class="btn" :disabled="busy" @click="refresh">刷新</UiButton>
     </section>
     <p v-if="error" role="alert" class="notice-box">{{ error }}</p>
     <p v-if="notice" role="status" class="notice-box">{{ notice }}</p>
@@ -192,9 +194,9 @@ onBeforeUnmount(() => {
     <section v-else class="card panel-pad">
       <div class="session-bar">
         <h2>{{ labels[resource] }}</h2>
-        <button class="btn primary" :disabled="busy" @click="begin('create')">
+        <UiButton class="btn primary" :disabled="busy" @click="begin('create')">
           {{ actions[resource].create }}
-        </button>
+        </UiButton>
       </div>
       <p v-if="busy" role="status">正在读取或提交…</p>
       <div class="table-scroll">
@@ -215,7 +217,7 @@ onBeforeUnmount(() => {
               <td>{{ rowStatus(row) }}</td>
               <td>{{ row.version }}</td>
               <td class="row-actions">
-                <button
+                <UiButton
                   v-for="[id, label] in rowActions"
                   :key="id"
                   class="btn"
@@ -223,7 +225,7 @@ onBeforeUnmount(() => {
                   @click="begin(id, row)"
                 >
                   {{ label }}
-                </button>
+                </UiButton>
               </td>
             </tr>
           </tbody>
@@ -242,7 +244,7 @@ onBeforeUnmount(() => {
         </p>
         <label v-for="field in fields(resource, action)" :key="field.key"
           >{{ field.label
-          }}<input
+          }}<UiInput
             v-model="input[field.key]"
             :required="field.required"
             :disabled="busy || submitted"
@@ -251,31 +253,31 @@ onBeforeUnmount(() => {
         <template v-if="action === 'permissions'">
           <p>此操作替换整组权限。空列表会移除角色全部权限。</p>
           <div v-for="(grant, index) in permissions" :key="index" class="session-bar">
-            <label>权限代码<input v-model="grant.permission" required :disabled="busy || submitted" /></label
+            <label>权限代码<UiInput v-model="grant.permission" required :disabled="busy || submitted" /></label
             ><label
-              >数据范围<select v-model="grant.scope" :disabled="busy || submitted">
-                <option value="DATA_SCOPE_NONE">无</option>
-                <option value="DATA_SCOPE_SELF">本人</option>
-                <option value="DATA_SCOPE_SITES">授权点位</option>
-                <option value="DATA_SCOPE_ALL">全部</option>
-              </select></label
-            ><button
+              >数据范围<UiSelect v-model="grant.scope" :disabled="busy || submitted">
+                <UiOption value="DATA_SCOPE_NONE">无</UiOption>
+                <UiOption value="DATA_SCOPE_SELF">本人</UiOption>
+                <UiOption value="DATA_SCOPE_SITES">授权点位</UiOption>
+                <UiOption value="DATA_SCOPE_ALL">全部</UiOption>
+              </UiSelect></label
+            ><UiButton
               type="button"
               class="btn"
               :disabled="busy || submitted"
               @click="permissions.splice(index, 1)"
             >
               移除权限
-            </button>
+            </UiButton>
           </div>
-          <button
+          <UiButton
             type="button"
             class="btn"
             :disabled="busy || submitted"
             @click="permissions.push({ permission: '', scope: 'DATA_SCOPE_NONE' })"
           >
             添加权限
-          </button>
+          </UiButton>
         </template>
         <p v-if="['suspend', 'close', 'remove', 'disable', 'delete', 'revoke'].includes(action)">
           请确认此操作，可能影响访问权限或移除业务记录。
@@ -283,10 +285,10 @@ onBeforeUnmount(() => {
         <p v-if="submitted && error">本次请求内容已锁定，可重试相同操作。若需修改，请关闭后重新选择。</p>
         <p v-if="error" role="alert">{{ error }}</p>
         <div class="session-bar">
-          <button type="button" class="btn" :disabled="busy" @click="clearDraft">取消</button
-          ><button class="btn primary" :disabled="busy" type="submit">
+          <UiButton type="button" class="btn" :disabled="busy" @click="clearDraft">取消</button
+          ><UiButton class="btn primary" :disabled="busy" type="submit">
             {{ submitted && error ? '重试相同操作' : '确认操作' }}
-          </button>
+          </UiButton>
         </div>
       </form>
     </UiDialog>
@@ -313,7 +315,7 @@ td,
 th {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  border-bottom: 1px solid var(--border-color, var(--color-border));
 }
 .row-actions {
   display: flex;
@@ -328,7 +330,7 @@ label {
 input,
 select {
   min-height: 36px;
-  border: 1px solid var(--border-color, #e5e7eb);
+  border: 1px solid var(--border-color, var(--color-border));
   border-radius: 6px;
   padding: 6px 10px;
 }

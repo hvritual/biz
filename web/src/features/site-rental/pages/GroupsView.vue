@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton, UiInput } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
@@ -12,14 +14,14 @@ import {
   money,
 } from '@/services/siteRental/model'
 import { quoteRental } from '@/services/siteRental/quote'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
-import RuleEditor from '@/components/siteRental/RuleEditor.vue'
-import QuoteSummary from '@/components/siteRental/QuoteSummary.vue'
-import StatementDialog from '@/components/siteRental/StatementDialog.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
+import RuleEditor from '@/features/site-rental/components/RuleEditor.vue'
+import QuoteSummary from '@/features/site-rental/components/QuoteSummary.vue'
+import StatementDialog from '@/features/site-rental/components/StatementDialog.vue'
 import '@/styles/siteRental.css'
 const store = useCustomerStore(),
   route = useRoute(),
@@ -84,9 +86,9 @@ function bill(id: string) {
         <RouterLink :to="groupId ? '/sites/groups' : '/sites'" class="btn">{{
           groupId ? '返回计费组' : '点位列表'
         }}</RouterLink
-        ><button class="btn btn-primary" @click="edit(groupId || undefined)">
+        ><UiButton class="btn btn-primary" @click="edit(groupId || undefined)">
           <AppIcon name="plus" :size="16" />{{ groupId ? '创建规则变更' : '新建计费规则' }}
-        </button>
+        </UiButton>
       </div></PageHeading
     >
     <div class="rental-mode-guide">
@@ -105,18 +107,18 @@ function bill(id: string) {
     </div>
     <div class="rental-toolbar">
       <nav v-if="groupId" class="customer-tabs" aria-label="计费组详情">
-        <button
+        <UiButton
           v-for="name in ['计费核算', '版本履历']"
           :key="name"
           :class="{ active: detailTab === name }"
           @click="detailTab = name"
         >
           {{ name }}
-        </button>
+        </UiButton>
       </nav>
       <p v-else class="rental-help">计费币种：CNY · 自然月 · 规则不会改变 SaaS 套餐配额</p>
       <label class="rental-inline-label"
-        >查看账期 <input v-model="period" type="month" aria-label="计费组账期"
+        >查看账期 <UiInput v-model="period" type="month" aria-label="计费组账期"
       /></label>
     </div>
     <template v-if="!groupId">
@@ -161,7 +163,7 @@ function bill(id: string) {
                 <td class="rental-number">{{ bill(item.groupId) }}</td>
                 <td>
                   <RouterLink :to="`/sites/groups/${item.groupId}`" class="btn-link">查看</RouterLink>
-                  <button class="btn-link" @click="edit(item.groupId)">变更</button>
+                  <UiButton class="btn-link" @click="edit(item.groupId)">变更</UiButton>
                 </td>
               </tr>
             </tbody>
@@ -175,7 +177,7 @@ function bill(id: string) {
             <strong>{{ draft.rule.name }}</strong>
             <p>{{ draft.rule.effectiveFrom }} · 未生效</p>
           </div>
-          <button class="btn" @click="edit(draft.rule.groupId)">继续编辑</button>
+          <UiButton class="btn" @click="edit(draft.rule.groupId)">继续编辑</UiButton>
         </div></CustomerSection
       >
       <CustomerSection
@@ -201,7 +203,7 @@ function bill(id: string) {
         title="用量贡献与计费结果"
         icon="layers"
         ><template #action
-          ><button class="btn btn-primary" @click="generate(groupId)">生成 / 查看对账草稿</button></template
+          ><UiButton class="btn btn-primary" @click="generate(groupId)">生成 / 查看对账草稿</UiButton></template
         ><QuoteSummary :quote="quote" :rule="rule" />
         <dl class="rental-definition">
           <dt>结算主体</dt>

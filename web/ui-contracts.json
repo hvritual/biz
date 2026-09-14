@@ -35,42 +35,42 @@
   "routes": [
     {
       "path": "/platform/overview",
-      "component": "@/views/platform/PlatformOverviewView.vue",
+      "component": "@/features/platform/pages/PlatformOverviewView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
       "required_regions": ["page-heading", "management-domains", "governance"]
     },
     {
       "path": "/platform/tenants",
-      "component": "@/views/platform/PlatformTenantsView.vue",
+      "component": "@/features/platform/pages/PlatformTenantsView.vue",
       "surface": "platform",
       "template": "ListPage",
       "required_regions": ["page-heading", "metrics", "query", "data", "pagination"]
     },
     {
       "path": "/system/:section(general|notifications|security|integrations|dictionary)",
-      "component": "@/views/system/SettingsView.vue",
+      "component": "@/features/system/pages/SettingsView.vue",
       "surface": "tenant",
       "template": "FormPage",
       "required_regions": []
     },
     {
       "path": "/platform/commercial/modules",
-      "component": "@/views/platform/CommercialModulesView.vue",
+      "component": "@/features/platform/pages/CommercialModulesView.vue",
       "surface": "platform",
       "template": "ListPage",
       "required_regions": ["page-heading", "metrics", "query", "data"]
     },
     {
       "path": "/platform/commercial/plans",
-      "component": "@/views/platform/CommercialPlansView.vue",
+      "component": "@/features/platform/pages/CommercialPlansView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
       "required_regions": ["page-heading", "authority", "query", "metrics", "workspace", "history", "detail"]
     },
     {
       "path": "/platform/commercial/tenant-entitlements",
-      "component": "@/views/platform/CommercialTenantEntitlementsView.vue",
+      "component": "@/features/platform/pages/CommercialTenantEntitlementsView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
       "required_regions": ["page-heading", "authority", "context", "metrics", "subscription", "change-workspace", "decisions", "overrides"]

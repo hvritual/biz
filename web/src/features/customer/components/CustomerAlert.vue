@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppIcon from '@/components/ui/AppIcon.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 withDefaults(defineProps<{ title: string; description?: string; tone?: string }>(), {
   tone: 'primary',
   description: '',

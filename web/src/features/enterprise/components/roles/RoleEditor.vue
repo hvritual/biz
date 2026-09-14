@@ -1,12 +1,14 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
 import type { Role, DataScope } from '@/types/enterprise'
 import { scopeLabels } from '@/types/enterprise'
 import { permissionCatalog } from '@/services/demo/seed'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
-import UiDialog from '@/components/ui/UiDialog.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 const props = defineProps<{ open: boolean; role: Role | null }>(),
   emit = defineEmits<{ close: [] }>()
 const store = useEnterpriseStore(),
@@ -72,7 +74,7 @@ function save() {
       <div class="form-grid">
         <label class="field"
           ><span class="required">角色名称</span
-          ><input
+          ><UiInput
             v-model="draft.name"
             class="input"
             maxlength="40"
@@ -80,14 +82,14 @@ function save() {
             placeholder="例如：华东区域运营" /></label
         ><label class="field"
           ><span>数据范围</span
-          ><select v-model="draft.scope" class="select" :disabled="readonly">
-            <option v-for="(label, key) in scopeLabels" :key="key" :value="key as DataScope">
+          ><UiSelect v-model="draft.scope" class="select" :disabled="readonly">
+            <UiOption v-for="(label, key) in scopeLabels" :key="key" :value="key as DataScope">
               {{ label }}
-            </option>
-          </select></label
+            </UiOption>
+          </UiSelect></label
         ><label class="field full-width"
           ><span>角色说明</span
-          ><textarea
+          ><UiTextarea
             v-model="draft.description"
             class="textarea"
             rows="2"
@@ -113,7 +115,7 @@ function save() {
             <tr v-for="module in permissionCatalog" :key="module.id">
               <td>{{ module.name }}</td>
               <td v-for="(label, a) in actionNames" :key="a">
-                <input
+                <UiInput
                   v-if="module.actions.includes(a)"
                   type="checkbox"
                   :aria-label="module.name + ' ' + label"
@@ -132,13 +134,13 @@ function save() {
         />仅展示该模块实际声明的操作维度。“—”表示不适用，不等同于未勾选。真实权限须由后端鉴权执行。
       </div>
       <label class="option-line"
-        ><input v-model="draft.enabled" type="checkbox" :disabled="readonly" />启用此角色</label
+        ><UiInput v-model="draft.enabled" type="checkbox" :disabled="readonly" />启用此角色</label
       >
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     </div>
     <template #footer
-      ><button class="btn" @click="emit('close')">{{ readonly ? '关闭' : '取消' }}</button
-      ><button v-if="!readonly" class="btn btn-primary" @click="save">保存角色</button></template
+      ><UiButton class="btn" @click="emit('close')">{{ readonly ? '关闭' : '取消' }}</button
+      ><UiButton v-if="!readonly" class="btn btn-primary" @click="save">保存角色</UiButton></template
     ></UiDialog
   >
 </template>

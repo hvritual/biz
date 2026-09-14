@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { UiButton, UiInput } from '@/ui/base'
+
 import { ref } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
   webhook = ref(String(store.settings.webhook ?? '')),
@@ -45,7 +47,7 @@ function save() {
       <h3>Webhook 配置草稿</h3>
       <label class="field"
         ><span>回调地址</span
-        ><input v-model="webhook" class="input" placeholder="https://example.com/webhook" type="url" /><small
+        ><UiInput v-model="webhook" class="input" placeholder="https://example.com/webhook" type="url" /><small
           >保存草稿不会向该地址发送请求。正式接入需服务端完成地址验证与签名投递。</small
         ></label
       >
@@ -63,7 +65,7 @@ function save() {
       </div>
     </div>
     <p v-if="error" class="form-error" role="alert">{{ error }}</p>
-    <div class="form-footer"><button class="btn btn-primary" @click="save">保存回调草稿</button></div>
+    <div class="form-footer"><UiButton class="btn btn-primary" @click="save">保存回调草稿</UiButton></div>
   </div>
 </template>
 <style scoped>

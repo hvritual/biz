@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed } from 'vue'
 import type { Member } from '@/types/enterprise'
 import { scopeLabels, statusLabels } from '@/types/enterprise'
 import { useEnterpriseStore } from '@/stores/enterprise'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import AvatarMark from '@/components/ui/AvatarMark.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import AvatarMark from '@/ui/common/AvatarMark.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 import MemberRoleTags from './MemberRoleTags.vue'
 const props = defineProps<{ member: Member }>()
 const emit = defineEmits<{ logs: [] }>()
@@ -88,7 +90,7 @@ const scopeDescription = computed(
   <section class="detail-section activity-section">
     <div class="row-between">
       <h3>最近活动</h3>
-      <button class="btn-link" @click="emit('logs')">查看更多<AppIcon name="right" :size="12" /></button>
+      <UiButton class="btn-link" @click="emit('logs')">查看更多<AppIcon name="right" :size="12" /></UiButton>
     </div>
     <ol class="member-timeline">
       <li v-for="log in recent" :key="log.id">

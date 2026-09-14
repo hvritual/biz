@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 const store = useCustomerStore(),
   actions = useCustomerActions(),
   selected = ref('RUN-240')
@@ -45,7 +47,7 @@ const current = computed(() => store.snapshot.executions.find((e) => e.id === se
                 <RouterLink :to="`/customers/work/${e.workId}`" class="btn-link">{{ e.workId }}</RouterLink>
               </td>
               <td><StatusBadge :text="e.state" :tone="e.state === '部分失败' ? 'danger' : 'success'" /></td>
-              <td><button class="btn-link" @click="selected = e.id">查看执行链</button></td>
+              <td><UiButton class="btn-link" @click="selected = e.id">查看执行链</UiButton></td>
             </tr>
           </tbody>
         </table>
@@ -54,13 +56,13 @@ const current = computed(() => store.snapshot.executions.find((e) => e.id === se
     <div v-if="current" class="customer-split">
       <CustomerSection :title="`${current.id} · 对账与恢复`" icon="refresh"
         ><template #action
-          ><button
+          ><UiButton
             class="btn btn-primary"
             :disabled="current.state !== '部分失败'"
             @click="actions.open('recover', current.id)"
           >
             恢复未完成步骤
-          </button></template
+          </UiButton></template
         ><CustomerAlert
           :title="current.state === '部分失败' ? '事项已存在，通知步骤失败' : '执行记录已完成核对'"
           :description="

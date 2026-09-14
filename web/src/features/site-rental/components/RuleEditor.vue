@@ -1,12 +1,14 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
+
 import { ref, watch, computed } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
 import { rentalState, modeNames, nextPeriod, summary } from '@/services/siteRental/model'
 import { draftFingerprint, validateRule } from '@/services/siteRental/policy'
 import { quoteRental } from '@/services/siteRental/quote'
 import type { RentalDraft, RentalQuote, RentalRule } from '@/types/siteRental'
-import UiDialog from '@/components/ui/UiDialog.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 import QuoteSummary from './QuoteSummary.vue'
 const props = defineProps<{ open: boolean; groupId?: string }>(),
   emit = defineEmits<{ close: []; published: [id: string] }>()
@@ -182,54 +184,54 @@ function reread() {
         />
         <div class="rental-field-grid">
           <label class="rental-full"
-            >计费规则 / 组名称 <b>*</b><input v-model="draft.rule.name" required maxlength="80"
+            >计费规则 / 组名称 <b>*</b><UiInput v-model="draft.rule.name" required maxlength="80"
           /></label>
           <label
             >关联客户 <b>*</b
-            ><select v-model="draft.rule.customerId" :disabled="!!previous" @change="customerChanged">
-              <option value="" disabled>请选择客户</option>
-              <option
+            ><UiSelect v-model="draft.rule.customerId" :disabled="!!previous" @change="customerChanged">
+              <UiOption value="" disabled>请选择客户</UiOption>
+              <UiOption
                 v-for="c in store.snapshot.customers.filter((x) => !x.archived)"
                 :key="c.id"
                 :value="c.id"
               >
                 {{ c.name }}
-              </option>
-            </select></label
+              </UiOption>
+            </UiSelect></label
           >
           <label
             >有效合同来源 <b>*</b
-            ><select v-model="draft.rule.contractId" :disabled="!!previous">
-              <option value="" disabled>请选择已核验合同</option>
-              <option v-for="c in contracts" :key="c.id" :value="c.id">{{ c.id }} · {{ c.title }}</option>
-            </select></label
+            ><UiSelect v-model="draft.rule.contractId" :disabled="!!previous">
+              <UiOption value="" disabled>请选择已核验合同</UiOption>
+              <UiOption v-for="c in contracts" :key="c.id" :value="c.id">{{ c.id }} · {{ c.title }}</UiOption>
+            </UiSelect></label
           >
           <label
             >计费模式 <b>*</b
-            ><select v-model="draft.rule.mode" @change="draft.rule.scope = '' as RentalRule['scope']">
-              <option v-for="(label, id) in modeNames" :key="id" :value="id">{{ label }}</option>
-            </select></label
+            ><UiSelect v-model="draft.rule.mode" @change="draft.rule.scope = '' as RentalRule['scope']">
+              <UiOption v-for="(label, id) in modeNames" :key="id" :value="id">{{ label }}</UiOption>
+            </UiSelect></label
           >
           <label
             >计费范围 <b>*</b
-            ><select v-model="draft.rule.scope">
-              <option disabled value="">必须明确选择</option>
-              <option value="independent">各点位独立计算</option>
-              <option v-if="draft.rule.mode === 'included'" value="shared">同合同指定点位共享</option>
-            </select></label
+            ><UiSelect v-model="draft.rule.scope">
+              <UiOption disabled value="">必须明确选择</UiOption>
+              <UiOption value="independent">各点位独立计算</UiOption>
+              <UiOption v-if="draft.rule.mode === 'included'" value="shared">同合同指定点位共享</UiOption>
+            </UiSelect></label
           >
           <label v-if="draft.rule.mode === 'included'" class="rental-full"
             >保底算法 <b>*</b
-            ><select v-model="draft.rule.minimumKind">
-              <option value="included">基础费用含杯数 ＋ 超量计费</option>
-              <option value="minimum-spend">最低消费金额（与含杯数算法分开）</option>
-            </select></label
+            ><UiSelect v-model="draft.rule.minimumKind">
+              <UiOption value="included">基础费用含杯数 ＋ 超量计费</UiOption>
+              <UiOption value="minimum-spend">最低消费金额（与含杯数算法分开）</UiOption>
+            </UiSelect></label
           >
           <label v-if="draft.rule.mode === 'fixed'"
-            >月租收费单位<select v-model="draft.rule.fixedUnit">
-              <option value="site">元 / 点位 / 月</option>
-              <option value="device">元 / 在租设备 / 月</option>
-            </select></label
+            >月租收费单位<UiSelect v-model="draft.rule.fixedUnit">
+              <UiOption value="site">元 / 点位 / 月</UiOption>
+              <UiOption value="device">元 / 在租设备 / 月</UiOption>
+            </UiSelect></label
           >
           <label v-if="draft.rule.mode !== 'metered'"
             >{{
@@ -238,17 +240,17 @@ function reread() {
                 : draft.rule.minimumKind === 'included'
                   ? '基础费用'
                   : '最低消费金额'
-            }}（元）<input v-model="base" type="number" min="0" step="0.01"
+            }}（元）<UiInput v-model="base" type="number" min="0" step="0.01"
           /></label>
           <label v-if="draft.rule.mode !== 'fixed'"
             >{{
               draft.rule.mode === 'included' && draft.rule.minimumKind === 'included'
                 ? '超量单价'
                 : '可计费单价'
-            }}（元 / 杯）<input v-model="price" type="number" min="0.01" step="0.01"
+            }}（元 / 杯）<UiInput v-model="price" type="number" min="0.01" step="0.01"
           /></label>
           <label v-if="draft.rule.mode === 'included' && draft.rule.minimumKind === 'included'"
-            >{{ draft.rule.scope === 'shared' ? '整组共享' : '每个点位独立' }}含杯额度（杯）<input
+            >{{ draft.rule.scope === 'shared' ? '整组共享' : '每个点位独立' }}含杯额度（杯）<UiInput
               v-model.number="draft.rule.includedCups"
               type="number"
               min="1"
@@ -260,9 +262,9 @@ function reread() {
           <p>试算输入不作为未来预测。只列同客户实际服务点位；共享组不平均分配额度。</p>
           <div v-for="site in sites" :key="site.id" class="rental-selector-row">
             <label
-              ><input v-model="draft.rule.siteIds" type="checkbox" :value="site.id" /> {{ site.name }}
+              ><UiInput v-model="draft.rule.siteIds" type="checkbox" :value="site.id" /> {{ site.name }}
               <small>{{ site.id }}</small></label
-            ><input
+            ><UiInput
               v-if="draft.rule.siteIds.includes(site.id)"
               v-model.number="draft.samples[site.id]"
               type="number"
@@ -275,20 +277,20 @@ function reread() {
           <p v-if="!sites.length">请先选择客户。</p>
         </fieldset>
         <div class="rental-field-grid">
-          <label>结算主体 <b>*</b><input v-model="draft.rule.billingOwner" /></label
+          <label>结算主体 <b>*</b><UiInput v-model="draft.rule.billingOwner" /></label
           ><label
-            >账单汇总方式<select v-model="draft.rule.billPresentation">
-              <option>客户汇总</option>
-              <option>分别结算</option>
-            </select></label
+            >账单汇总方式<UiSelect v-model="draft.rule.billPresentation">
+              <UiOption>客户汇总</UiOption>
+              <UiOption>分别结算</UiOption>
+            </UiSelect></label
           ><label
-            >预约生效日期 <b>*</b><input v-model="draft.rule.effectiveFrom" type="date" /><small
+            >预约生效日期 <b>*</b><UiInput v-model="draft.rule.effectiveFrom" type="date" /><small
               >仅支持下一账期或以后的月初</small
             ></label
-          ><label>币种与账期<input value="CNY · 自然月 · Asia/Shanghai" readonly /></label
+          ><label>币种与账期<UiInput value="CNY · 自然月 · Asia/Shanghai" readonly /></label
           ><label class="rental-full"
             >合同约定 / 变更依据 <b>*</b
-            ><textarea v-model="draft.rule.reason" rows="2" placeholder="记录已确认的条款与本次变更原因" />
+            ><UiTextarea v-model="draft.rule.reason" rows="2" placeholder="记录已确认的条款与本次变更原因" />
           </label>
         </div>
       </template>
@@ -312,20 +314,20 @@ function reread() {
         </p>
       </template>
       <p v-if="error" class="rental-error" role="alert">
-        {{ error }} <button class="btn-link" @click="reread">重新读取</button>
+        {{ error }} <UiButton class="btn-link" @click="reread">重新读取</UiButton>
       </p>
       <CustomerAlert v-if="discard" title="草稿尚未保存" tone="warning"
-        ><button class="btn" @click="discard = false">继续编辑</button>
-        <button class="btn btn-danger" @click="emit('close')">放弃修改</button></CustomerAlert
+        ><UiButton class="btn" @click="discard = false">继续编辑</UiButton>
+        <UiButton class="btn btn-danger" @click="emit('close')">放弃修改</UiButton></CustomerAlert
       >
     </div>
     <template #footer
-      ><button class="btn" @click="close">取消</button
-      ><button class="btn" @click="save(false)">保存规则草稿</button
-      ><button v-if="step === 1" class="btn btn-primary" @click="preview">试算并预览影响</button
+      ><UiButton class="btn" @click="close">取消</button
+      ><UiButton class="btn" @click="save(false)">保存规则草稿</button
+      ><UiButton v-if="step === 1" class="btn btn-primary" @click="preview">试算并预览影响</button
       ><template v-else
-        ><button class="btn" @click="step = 1">返回配置</button
-        ><button class="btn btn-primary" @click="save(true)">确认预约发布</button></template
+        ><UiButton class="btn" @click="step = 1">返回配置</button
+        ><UiButton class="btn btn-primary" @click="save(true)">确认预约发布</UiButton></template
       ></template
     >
   </UiDialog>

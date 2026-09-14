@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiInput } from '@/ui/base'
+
 import AppIcon from './AppIcon.vue'
 defineProps<{ modelValue: string; placeholder?: string; label?: string }>()
 defineEmits<{ 'update:modelValue': [value: string] }>()
@@ -6,7 +8,7 @@ defineEmits<{ 'update:modelValue': [value: string] }>()
 <template>
   <label class="search-field"
     ><AppIcon name="search" :size="16" /><span class="sr-only">{{ label || placeholder || '搜索' }}</span
-    ><input
+    ><UiInput
       :value="modelValue"
       :placeholder="placeholder"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"

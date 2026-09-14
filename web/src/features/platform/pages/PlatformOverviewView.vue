@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import AppIcon from '@/components/ui/AppIcon.vue'
-import PageHeading from '@/components/ui/PageHeading.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
 
 const domains = [
   {
@@ -100,7 +100,7 @@ const guardrails = [
   align-items: center;
   gap: 14px;
   padding: 16px 18px;
-  border-color: rgb(37 99 235 / 16%);
+  border-color: var(--color-fixed-5b4ddd4f);
   background: linear-gradient(110deg, var(--color-primary-soft), var(--color-surface));
 }
 .scope-icon {
@@ -149,8 +149,8 @@ const guardrails = [
 }
 .management-card:hover {
   transform: translateY(-2px);
-  border-color: rgb(37 99 235 / 24%);
-  box-shadow: 0 14px 30px rgb(31 41 55 / 9%);
+  border-color: var(--color-fixed-b0d29828);
+  box-shadow: 0 14px 30px var(--color-fixed-53fa2381);
 }
 .management-icon {
   display: grid;

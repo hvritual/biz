@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { UiButton, UiInput } from '@/ui/base'
+
 import { computed } from 'vue'
 import type { Member } from '@/types/enterprise'
 import { scopeLabels, statusLabels } from '@/types/enterprise'
 import { useEnterpriseStore } from '@/stores/enterprise'
-import AvatarMark from '@/components/ui/AvatarMark.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import AvatarMark from '@/ui/common/AvatarMark.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 import MemberRoleTags from './MemberRoleTags.vue'
 export type MemberSortKey = 'name' | 'departmentId' | 'status' | 'lastLogin' | 'joinedAt'
 const props = defineProps<{
@@ -54,7 +56,7 @@ function toggle(id: string) {
       <thead>
         <tr>
           <th class="check-cell">
-            <input
+            <UiInput
               type="checkbox"
               aria-label="选择当前页全部成员"
               :checked="allSelected"
@@ -70,7 +72,7 @@ function toggle(id: string) {
               column.key === sortKey ? (sortDirection === 'desc' ? 'descending' : 'ascending') : undefined
             "
           >
-            <button
+            <UiButton
               v-if="column.key"
               class="column-sort"
               :aria-label="`按${column.label}排序`"
@@ -95,7 +97,7 @@ function toggle(id: string) {
           :data-member-id="member.id"
         >
           <td class="check-cell">
-            <input
+            <UiInput
               type="checkbox"
               :aria-label="'选择 ' + member.name"
               :checked="selected.includes(member.id)"
@@ -103,7 +105,7 @@ function toggle(id: string) {
             />
           </td>
           <td>
-            <button
+            <UiButton
               class="member-identity"
               :aria-label="`查看 ${member.name}资料`"
               @click="emit('detail', member)"
@@ -113,7 +115,7 @@ function toggle(id: string) {
                 :size="28"
                 :tone="member.roleIds.includes('owner') ? 'slate' : 'solid'"
               /><strong :title="member.name">{{ member.name }}</strong>
-            </button>
+            </UiButton>
           </td>
           <td class="contact-cell">
             <span :title="`${member.phone} / ${member.email}`">{{ member.email }}</span>
@@ -145,7 +147,7 @@ function toggle(id: string) {
           <td class="muted numeric time-cell">{{ member.joinedAt }}</td>
           <td class="actions-column">
             <div class="table-actions">
-              <button
+              <UiButton
                 class="btn-link"
                 :aria-label="'查看 ' + member.name"
                 :aria-expanded="detailId === member.id"
@@ -153,17 +155,17 @@ function toggle(id: string) {
                 @click="emit('detail', member)"
               >
                 查看
-              </button>
-              <button class="btn-link" :aria-label="'编辑 ' + member.name" @click="emit('edit', member)">
+              </UiButton>
+              <UiButton class="btn-link" :aria-label="'编辑 ' + member.name" @click="emit('edit', member)">
                 编辑
-              </button>
-              <button
+              </UiButton>
+              <UiButton
                 class="icon-button"
                 :aria-label="member.name + ' 更多操作'"
                 @click="emit('more', member)"
               >
                 <AppIcon name="more" :size="17" />
-              </button>
+              </UiButton>
             </div>
           </td>
         </tr>

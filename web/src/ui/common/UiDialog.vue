@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import AppIcon from './AppIcon.vue'
 const props = withDefaults(
@@ -61,9 +63,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
       >
         <header>
           <h2>{{ title }}</h2>
-          <button class="icon-button" aria-label="关闭弹窗" @click="emit('close')">
+          <UiButton class="icon-button" aria-label="关闭弹窗" @click="emit('close')">
             <AppIcon name="close" />
-          </button>
+          </UiButton>
         </header>
         <div class="dialog-body"><slot /></div>
         <footer v-if="$slots.footer"><slot name="footer" /></footer>

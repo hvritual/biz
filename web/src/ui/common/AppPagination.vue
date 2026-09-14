@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+
 import { computed } from 'vue'
 import AppIcon from './AppIcon.vue'
 const props = defineProps<{ total: number; page: number; pageSize: number }>()
@@ -16,9 +18,9 @@ function change(value: number) {
   <footer class="pagination">
     <span class="muted">共 {{ total.toLocaleString('zh-CN') }} 条</span>
     <div class="pagination-controls">
-      <button class="icon-button" aria-label="上一页" :disabled="page <= 1" @click="change(page - 1)">
+      <UiButton class="icon-button" aria-label="上一页" :disabled="page <= 1" @click="change(page - 1)">
         <AppIcon name="left" :size="16" /></button
-      ><button
+      ><UiButton
         v-for="n in visible"
         :key="n"
         :class="['page-number', { active: page === n }]"
@@ -28,10 +30,10 @@ function change(value: number) {
       >
         {{ n }}</button
       ><span v-if="visible.at(-1) !== pages" class="muted">…</span
-      ><button v-if="visible.at(-1) !== pages" class="page-number" @click="change(pages)">{{ pages }}</button
-      ><button class="icon-button" aria-label="下一页" :disabled="page >= pages" @click="change(page + 1)">
+      ><UiButton v-if="visible.at(-1) !== pages" class="page-number" @click="change(pages)">{{ pages }}</button
+      ><UiButton class="icon-button" aria-label="下一页" :disabled="page >= pages" @click="change(page + 1)">
         <AppIcon name="right" :size="16" /></button
-      ><select
+      ><UiSelect
         class="select page-size"
         :value="pageSize"
         aria-label="每页条数"
@@ -42,12 +44,12 @@ function change(value: number) {
           }
         "
       >
-        <option :value="10">10 条/页</option>
-        <option :value="20">20 条/页</option>
-        <option :value="50">50 条/页</option></select
+        <UiOption :value="10">10 条/页</UiOption>
+        <UiOption :value="20">20 条/页</UiOption>
+        <UiOption :value="50">50 条/页</UiOption></select
       ><span class="page-jump muted"
         >前往
-        <input
+        <UiInput
           class="input"
           type="number"
           :value="page"

@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, onBeforeUnmount, ref } from 'vue'
-import MemberServerTable from '@/components/enterprise/MemberServerTable.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
+import MemberServerTable from '@/features/enterprise/components/server/MemberServerTable.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
 import { loginUrl, logoutSession, type TenantRole, type TrustedSession } from '@/services/runtime/api'
 import {
   activateEnterpriseMember,
@@ -308,15 +310,15 @@ onBeforeUnmount(() => {
         </div>
         <label v-if="session.tenants?.length" class="tenant-select">
           <span>当前租户</span>
-          <select :value="session.active_tenant_id" :disabled="busy" @change="changeTenant">
-            <option value="" disabled>请选择租户</option>
-            <option v-for="tenant in session.tenants" :key="tenant.id" :value="tenant.id">
+          <UiSelect :value="session.active_tenant_id" :disabled="busy" @change="changeTenant">
+            <UiOption value="" disabled>请选择租户</UiOption>
+            <UiOption v-for="tenant in session.tenants" :key="tenant.id" :value="tenant.id">
               {{ tenant.name }}
-            </option>
-          </select>
+            </UiOption>
+          </UiSelect>
         </label>
-        <button class="btn" :disabled="busy" @click="refresh"><AppIcon name="refresh" :size="15" />刷新</button>
-        <button class="btn" :disabled="busy" @click="logout">退出登录</button>
+        <UiButton class="btn" :disabled="busy" @click="refresh"><AppIcon name="refresh" :size="15" />刷新</UiButton>
+        <UiButton class="btn" :disabled="busy" @click="logout">退出登录</UiButton>
       </template>
       <template v-else>
         <div class="authority-main">
@@ -355,14 +357,14 @@ onBeforeUnmount(() => {
         </div>
         <label v-if="action === 'invite'" class="field">
           <span class="required">成员邮箱</span>
-          <input v-model="email" class="input" type="email" :disabled="busy || submitted" autocomplete="off" />
+          <UiInput v-model="email" class="input" type="email" :disabled="busy || submitted" autocomplete="off" />
         </label>
         <div v-else-if="action === 'profile' && selected" class="form-grid profile-form">
-          <label class="field"><span>姓名</span><input v-model="profile.name" class="input" maxlength="100" :disabled="busy || submitted" /></label>
-          <label class="field"><span>手机号</span><input v-model="profile.phone" class="input" maxlength="40" :disabled="busy || submitted" /></label>
-          <label class="field"><span>工号</span><input v-model="profile.employeeId" class="input" maxlength="64" :disabled="busy || submitted" /></label>
-          <label class="field"><span>岗位</span><input v-model="profile.position" class="input" maxlength="100" :disabled="busy || submitted" /></label>
-          <label class="field full-width"><span>部门引用</span><input v-model="profile.departmentId" class="input" maxlength="64" :disabled="busy || submitted" /><small>当前保存后端 department_id；部门树语义由 EC-RI-04 提供。</small></label>
+          <label class="field"><span>姓名</span><UiInput v-model="profile.name" class="input" maxlength="100" :disabled="busy || submitted" /></label>
+          <label class="field"><span>手机号</span><UiInput v-model="profile.phone" class="input" maxlength="40" :disabled="busy || submitted" /></label>
+          <label class="field"><span>工号</span><UiInput v-model="profile.employeeId" class="input" maxlength="64" :disabled="busy || submitted" /></label>
+          <label class="field"><span>岗位</span><UiInput v-model="profile.position" class="input" maxlength="100" :disabled="busy || submitted" /></label>
+          <label class="field full-width"><span>部门引用</span><UiInput v-model="profile.departmentId" class="input" maxlength="64" :disabled="busy || submitted" /><small>当前保存后端 department_id；部门树语义由 EC-RI-04 提供。</small></label>
         </div>
         <div v-else-if="action === 'roles' && selected" class="role-manager">
           <div class="member-role-context">
@@ -375,14 +377,14 @@ onBeforeUnmount(() => {
               <small>{{ role.status === 'TENANT_ROLE_STATUS_ACTIVE' ? '角色启用' : '角色已停用' }}</small>
             </div>
             <span v-if="hasRole(selected, role.id)" class="pill">已绑定</span>
-            <button
+            <UiButton
               class="btn"
               :class="{ 'text-danger': hasRole(selected, role.id) }"
               :disabled="Boolean(roleBusyId) || (!hasRole(selected, role.id) && role.status !== 'TENANT_ROLE_STATUS_ACTIVE')"
               @click="toggleRole(role)"
             >
               {{ roleBusyId === role.id ? '处理中…' : roleRetry?.roleId === role.id ? '重试相同操作' : hasRole(selected, role.id) ? '解除' : '绑定' }}
-            </button>
+            </UiButton>
           </div>
           <p v-if="!roles.length" class="muted">当前租户没有可配置角色。</p>
           <p v-if="roleError" class="form-error" role="alert">{{ roleError }}</p>
@@ -397,8 +399,8 @@ onBeforeUnmount(() => {
         <p v-if="action !== 'roles' && error" class="form-error" role="alert">{{ error }}</p>
       </div>
       <template #footer>
-        <button class="btn" :disabled="busy || Boolean(roleBusyId)" @click="clearAction">{{ action === 'roles' ? '完成' : '取消' }}</button>
-        <button v-if="action !== 'roles'" class="btn btn-primary" :disabled="busy" @click="submit">{{ submitted && error ? '重试相同操作' : '确认操作' }}</button>
+        <UiButton class="btn" :disabled="busy || Boolean(roleBusyId)" @click="clearAction">{{ action === 'roles' ? '完成' : '取消' }}</UiButton>
+        <UiButton v-if="action !== 'roles'" class="btn btn-primary" :disabled="busy" @click="submit">{{ submitted && error ? '重试相同操作' : '确认操作' }}</UiButton>
       </template>
     </UiDialog>
   </div>

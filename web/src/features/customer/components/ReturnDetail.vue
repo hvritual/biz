@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton, UiInput } from '@/ui/base'
+
 import { computed } from 'vue'
 import type { WorkItem } from '@/types/customer'
 import { useCustomerStore } from '@/stores/customer'
@@ -7,7 +9,7 @@ import { workSources } from '@/services/customer/selectors'
 import CustomerSection from './CustomerSection.vue'
 import CustomerAlert from './CustomerAlert.vue'
 import SourceRecords from './SourceRecords.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
 const props = defineProps<{ work: WorkItem }>(),
   store = useCustomerStore(),
   actions = useCustomerActions()
@@ -55,14 +57,14 @@ const termination = computed(() =>
       </dl>
       <div class="customer-checklist" style="margin-top: 24px">
         <label v-for="record in records" :key="record.id"
-          ><input type="checkbox" :checked="work.evidenceIds.includes(record.id)" disabled />{{ record.title
-          }}<button
+          ><UiInput type="checkbox" :checked="work.evidenceIds.includes(record.id)" disabled />{{ record.title
+          }}<UiButton
             class="btn-link"
             :disabled="!work.writable || work.status === '已结束'"
             @click="actions.open('link-source', work.id, [], { sourceId: record.id })"
           >
             核对 {{ record.id }}
-          </button></label
+          </UiButton></label
         >
         <p v-if="!records.length" class="customer-help">尚无本事项回收、结算或终止记录。</p>
       </div>

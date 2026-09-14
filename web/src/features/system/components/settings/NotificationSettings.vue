@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { UiButton, UiInput } from '@/ui/base'
+
 import { ref } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
   draft = ref({ ...store.settings })
@@ -28,14 +30,14 @@ function save() {
           <strong>站内通知</strong>
           <p>在通知中心接收消息</p>
         </div>
-        <input v-model="draft.notificationInApp" type="checkbox" /></label
+        <UiInput v-model="draft.notificationInApp" type="checkbox" /></label
       ><label class="channel-card"
         ><AppIcon name="mail" :size="26" />
         <div>
           <strong>邮件通知</strong>
           <p>通过已验证邮箱接收</p>
         </div>
-        <input v-model="draft.notificationEmail" type="checkbox"
+        <UiInput v-model="draft.notificationEmail" type="checkbox"
       /></label>
     </div>
     <div class="form-section">
@@ -46,7 +48,7 @@ function save() {
           <strong>{{ item.title }}</strong>
           <p>{{ item.description }}</p>
         </div>
-        <button
+        <UiButton
           class="switch"
           role="switch"
           :aria-label="item.title"
@@ -58,7 +60,7 @@ function save() {
     <div class="notice-box">
       <AppIcon name="help" />通知订阅为界面预览，消息投递状态必须以实际服务端回执为准。
     </div>
-    <div class="form-footer"><button class="btn btn-primary" @click="save">保存通知设置</button></div>
+    <div class="form-footer"><UiButton class="btn btn-primary" @click="save">保存通知设置</UiButton></div>
   </div>
 </template>
 <style scoped>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
@@ -8,8 +10,8 @@ import { closeRequirements, canArchive } from '@/services/customer/policy'
 import { workKindNames } from '@/services/customer/seed'
 import type { ActionId } from '@/services/customer/commands'
 import type { FormValues } from '@/types/customer'
-import UiDialog from '@/components/ui/UiDialog.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
 import CustomerAlert from './CustomerAlert.vue'
 import FormFields from './FormFields.vue'
 import EvidencePicker from './EvidencePicker.vue'
@@ -211,7 +213,7 @@ function useExisting() {
         title="发现已有同名客户，建议直接使用"
         :description="`${duplicate.name} · ${duplicate.id} · ${duplicate.owner}`"
         tone="warning"
-        ><button class="btn-link" type="button" @click="useExisting">使用已有客户</button></CustomerAlert
+        ><UiButton class="btn-link" type="button" @click="useExisting">使用已有客户</UiButton></CustomerAlert
       >
       <CustomerAlert
         v-if="blockers.length"
@@ -261,7 +263,7 @@ function useExisting() {
           title="并发更新，未覆盖任何记录"
           :description="`你的编辑版本 v${version} · 最新版本 v${currentVersion}`"
           tone="warning"
-          ><button
+          ><UiButton
             class="btn"
             type="button"
             @click="
@@ -272,7 +274,7 @@ function useExisting() {
             "
           >
             读取最新版本并保留草稿
-          </button></CustomerAlert
+          </UiButton></CustomerAlert
         >
         <CustomerAlert
           v-if="unsaved"
@@ -281,23 +283,23 @@ function useExisting() {
           tone="warning"
           class="unsaved"
           ><div class="row" style="margin-top: 10px">
-            <button class="btn" type="button" @click="unsaved = false">继续编辑</button
-            ><button class="btn btn-danger" type="button" @click="close(true)">放弃修改并关闭</button>
+            <UiButton class="btn" type="button" @click="unsaved = false">继续编辑</button
+            ><UiButton class="btn btn-danger" type="button" @click="close(true)">放弃修改并关闭</UiButton>
           </div></CustomerAlert
         >
       </form>
     </div>
     <template #footer
-      ><button class="btn" @click="close()">取消</button
-      ><button v-if="definition?.fields.length" class="btn" @click="saveDraft">保存草稿</button
-      ><button
+      ><UiButton class="btn" @click="close()">取消</button
+      ><UiButton v-if="definition?.fields.length" class="btn" @click="saveDraft">保存草稿</button
+      ><UiButton
         type="submit"
         form="customer-action-form"
         class="btn btn-primary"
         :disabled="busy || Boolean(duplicate) || blockers.length > 0 || missing.length > 0"
       >
         {{ busy ? '正在保存…' : definition?.primary }}
-      </button></template
+      </UiButton></template
     ></UiDialog
   >
 </template>

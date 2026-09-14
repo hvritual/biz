@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
 import {
   CommercialApiError,
   commercialRequestId,
@@ -188,15 +190,15 @@ function describeError(error: unknown, fallback: string) {
 
     <template v-else>
       <div class="form-grid">
-        <label class="field" for="subscription-action"><span>操作</span><select id="subscription-action" v-model="action" class="input"><option value="SWITCH">切换套餐</option><option value="RENEW">续期</option><option value="STOP_RENEWAL">停止续期</option></select></label>
-        <label class="field" for="change-target-code"><span>目标 plan_code</span><input id="change-target-code" v-model="targetPlanCode" class="input" :disabled="action !== 'SWITCH'" :placeholder="action === 'SWITCH' ? '例如 office-pro' : subscription.planCode" /></label>
-        <label class="field" for="change-target-version"><span>目标版本</span><input id="change-target-version" v-model="targetPlanVersion" class="input" :disabled="action !== 'SWITCH'" :placeholder="action === 'SWITCH' ? '例如 2' : String(subscription.planVersion)" /></label>
-        <label class="field" for="change-effective-at"><span>指定未来生效时间（可空）</span><input id="change-effective-at" v-model="effectiveAt" class="input" type="datetime-local" /></label>
-        <label class="field wide" for="change-preview-reason"><span>预览原因</span><textarea id="change-preview-reason" v-model="previewReason" class="input" rows="2" :placeholder="`${actionLabel}的业务原因`" /></label>
+        <label class="field" for="subscription-action"><span>操作</span><UiSelect id="subscription-action" v-model="action" class="input"><UiOption value="SWITCH">切换套餐</UiOption><UiOption value="RENEW">续期</UiOption><UiOption value="STOP_RENEWAL">停止续期</UiOption></UiSelect></label>
+        <label class="field" for="change-target-code"><span>目标 plan_code</span><UiInput id="change-target-code" v-model="targetPlanCode" class="input" :disabled="action !== 'SWITCH'" :placeholder="action === 'SWITCH' ? '例如 office-pro' : subscription.planCode" /></label>
+        <label class="field" for="change-target-version"><span>目标版本</span><UiInput id="change-target-version" v-model="targetPlanVersion" class="input" :disabled="action !== 'SWITCH'" :placeholder="action === 'SWITCH' ? '例如 2' : String(subscription.planVersion)" /></label>
+        <label class="field" for="change-effective-at"><span>指定未来生效时间（可空）</span><UiInput id="change-effective-at" v-model="effectiveAt" class="input" type="datetime-local" /></label>
+        <label class="field wide" for="change-preview-reason"><span>预览原因</span><UiTextarea id="change-preview-reason" v-model="previewReason" class="input" rows="2" :placeholder="`${actionLabel}的业务原因`" /></label>
       </div>
       <div class="form-actions">
         <span>当前：<strong>{{ planLabel(subscription) }}</strong> · revision {{ subscription.revision }} · pending {{ subscription.pendingChangeId || '无' }}</span>
-        <button class="btn primary" type="button" :disabled="pending" @click="createPreview">{{ pending ? '处理中…' : '生成不可变预览' }}</button>
+        <UiButton class="btn primary" type="button" :disabled="pending" @click="createPreview">{{ pending ? '处理中…' : '生成不可变预览' }}</UiButton>
       </div>
 
       <p v-if="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
@@ -237,9 +239,9 @@ function describeError(error: unknown, fallback: string) {
         </div>
 
         <div class="confirm-box">
-          <label class="check"><input v-model="manualApproval" type="checkbox" />我确认这是 <strong>PLATFORM_MANUAL_APPROVAL</strong>，不把它当作付款成功证明。</label>
-          <label class="field" for="change-confirm-reason"><span>确认原因</span><textarea id="change-confirm-reason" v-model="confirmReason" class="input" rows="2" placeholder="说明为什么批准本次商业变更" /></label>
-          <button class="btn primary" type="button" :disabled="pending || previewExpired" @click="confirmPreview">确认此 preview_hash</button>
+          <label class="check"><UiInput v-model="manualApproval" type="checkbox" />我确认这是 <strong>PLATFORM_MANUAL_APPROVAL</strong>，不把它当作付款成功证明。</label>
+          <label class="field" for="change-confirm-reason"><span>确认原因</span><UiTextarea id="change-confirm-reason" v-model="confirmReason" class="input" rows="2" placeholder="说明为什么批准本次商业变更" /></label>
+          <UiButton class="btn primary" type="button" :disabled="pending || previewExpired" @click="confirmPreview">确认此 preview_hash</UiButton>
         </div>
       </section>
 
@@ -265,7 +267,7 @@ function describeError(error: unknown, fallback: string) {
 .input:disabled { opacity: .65; }
 .form-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 20px 18px; font-size: 12px; color: var(--color-text-secondary); }
 .btn.primary { background: var(--color-primary); border-color: var(--color-primary); color: white; }
-.error { margin: 0 20px 18px; padding: 10px 12px; border-radius: 8px; color: var(--color-danger, #b42318); background: rgba(180, 35, 24, .08); }
+.error { margin: 0 20px 18px; padding: 10px 12px; border-radius: 8px; color: var(--color-danger, var(--color-fixed-fdb6b83b)); background: var(--color-fixed-5acf4123); }
 .preview-panel, .receipt-panel { border-top: 1px solid var(--color-border); }
 .preview-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; background: var(--color-surface-subtle); }
 .preview-head > div:first-child { display: flex; align-items: center; gap: 8px; }
@@ -275,20 +277,20 @@ function describeError(error: unknown, fallback: string) {
 .facts-grid > div { min-width: 0; padding: 13px 14px; background: var(--color-surface); }
 .facts-grid span, td small { display: block; color: var(--color-text-muted); font-size: 11px; }
 .facts-grid strong { display: block; margin-top: 4px; font-size: 13px; word-break: break-word; }
-.expired, .danger-text { color: var(--color-danger, #b42318) !important; }
+.expired, .danger-text { color: var(--color-danger, var(--color-fixed-fdb6b83b)) !important; }
 .impact-block { padding: 16px 20px; border-top: 1px solid var(--color-border); }
 .impact-block h3 { margin: 0 0 8px; font-size: 13px; }
 .impact-block ul { margin: 0; padding-left: 20px; color: var(--color-text-secondary); font-size: 12px; }
 .impact-block li + li { margin-top: 5px; }
 code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.authority-note { display: grid; gap: 4px; margin: 16px 20px; padding: 12px; border: 1px solid var(--color-success, #4b9a68); border-radius: 8px; font-size: 12px; }
-.authority-note.warning { border-color: var(--color-warning, #d9a441); }
+.authority-note { display: grid; gap: 4px; margin: 16px 20px; padding: 12px; border: 1px solid var(--color-success, var(--color-fixed-a93dc7bf)); border-radius: 8px; font-size: 12px; }
+.authority-note.warning { border-color: var(--color-warning, var(--color-fixed-b79dd458)); }
 .authority-note span { color: var(--color-text-secondary); }
 .confirm-box { display: grid; gap: 12px; padding: 0 20px 20px; }
 .check { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--color-text-secondary); }
 .check input { margin-top: 2px; }
 .receipt-panel { margin-top: 0; }
-.scheduled-note { margin: 14px 20px 18px !important; padding: 12px; border: 1px solid var(--color-warning, #d9a441); border-radius: 8px; color: var(--color-text-secondary) !important; }
+.scheduled-note { margin: 14px 20px 18px !important; padding: 12px; border: 1px solid var(--color-warning, var(--color-fixed-b79dd458)); border-radius: 8px; color: var(--color-text-secondary) !important; }
 @media (max-width: 900px) { .facts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) { .form-grid, .facts-grid { grid-template-columns: 1fr; } .form-actions, .preview-head, .section-header, .receipt-panel header { align-items: flex-start; flex-direction: column; } .hash { max-width: 100%; } }
 </style>

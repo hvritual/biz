@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import EmptyState from '@/components/ui/EmptyState.vue'
+import EmptyState from '@/ui/common/EmptyState.vue'
 </script>
 <template>
   <div class="card panel-pad">

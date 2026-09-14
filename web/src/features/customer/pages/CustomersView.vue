@@ -1,17 +1,19 @@
 <script setup lang="ts">
+import { UiButton, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
 import { downloadCsv } from '@/utils/format'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import MetricCard from '@/components/ui/MetricCard.vue'
-import SearchField from '@/components/ui/SearchField.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import AppPagination from '@/components/ui/AppPagination.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import AvatarMark from '@/components/ui/AvatarMark.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import MetricCard from '@/ui/common/MetricCard.vue'
+import SearchField from '@/ui/common/SearchField.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import AppPagination from '@/ui/common/AppPagination.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import AvatarMark from '@/ui/common/AvatarMark.vue'
+import EmptyState from '@/ui/common/EmptyState.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
 const store = useCustomerStore(),
   actions = useCustomerActions()
 const search = ref(''),
@@ -61,9 +63,9 @@ watch(tab, () => (page.value = 1))
       ><div class="customer-heading-actions">
         <RouterLink class="btn" to="/customers/import"
           ><AppIcon name="upload" :size="16" />导入客户</RouterLink
-        ><button class="btn btn-primary" @click="actions.open('create-customer')">
+        ><UiButton class="btn btn-primary" @click="actions.open('create-customer')">
           <AppIcon name="plus" :size="16" />新建客户
-        </button>
+        </UiButton>
       </div></PageHeading
     >
     <div class="metric-grid">
@@ -96,34 +98,34 @@ watch(tab, () => (page.value = 1))
     </div>
     <section class="card data-panel">
       <nav class="customer-tabs" aria-label="客户视图">
-        <button
+        <UiButton
           v-for="name in ['全部客户', '我的客户', '存在风险', '已归档']"
           :key="name"
           :class="{ active: tab === name }"
           @click="tab = name"
         >
           {{ name }}
-        </button>
+        </UiButton>
       </nav>
       <form class="query-bar" @submit.prevent="apply">
-        <SearchField v-model="search" label="搜索客户" placeholder="搜索客户名称、客户编号…" /><select
+        <SearchField v-model="search" label="搜索客户" placeholder="搜索客户名称、客户编号…" /><UiSelect
           v-model="lifecycle"
           class="select"
           aria-label="客户生命周期"
         >
-          <option value="">全部生命周期</option>
-          <option>潜在客户</option>
-          <option>试用中</option>
-          <option>合作中</option>
-          <option>合作终止</option></select
-        ><select v-model="owner" class="select" aria-label="客户负责人">
-          <option value="">全部负责人</option>
-          <option>张敏</option>
-          <option>李川</option>
-          <option>陈晓</option>
-          <option>王宁</option></select
-        ><button class="btn btn-primary" type="submit">查询</button
-        ><button class="btn" type="button" @click="clear">重置</button>
+          <UiOption value="">全部生命周期</UiOption>
+          <UiOption>潜在客户</UiOption>
+          <UiOption>试用中</UiOption>
+          <UiOption>合作中</UiOption>
+          <UiOption>合作终止</UiOption></select
+        ><UiSelect v-model="owner" class="select" aria-label="客户负责人">
+          <UiOption value="">全部负责人</UiOption>
+          <UiOption>张敏</UiOption>
+          <UiOption>李川</UiOption>
+          <UiOption>陈晓</UiOption>
+          <UiOption>王宁</UiOption></select
+        ><UiButton class="btn btn-primary" type="submit">查询</button
+        ><UiButton class="btn" type="button" @click="clear">重置</UiButton>
       </form>
       <div class="customer-view-toolbar">
         <div class="customer-filter-chips" style="padding: 0">
@@ -132,9 +134,9 @@ watch(tab, () => (page.value = 1))
           ><span class="pill">{{ applied.owner || '全部负责人' }}</span
           ><span v-if="applied.search" class="pill">{{ applied.search }}</span>
         </div>
-        <button class="btn-link" @click="exportList">
+        <UiButton class="btn-link" @click="exportList">
           <AppIcon name="download" :size="16" />导出当前结果
-        </button>
+        </UiButton>
       </div>
       <div v-if="paged.length" class="table-scroll">
         <table class="data-table">
@@ -177,7 +179,7 @@ watch(tab, () => (page.value = 1))
               <td>
                 <div class="table-actions">
                   <RouterLink class="btn-link" :to="`/customers/accounts/${c.id}`">工作区</RouterLink
-                  ><button class="btn-link" :aria-label="`管理 ${c.name}`" @click="more = c.id">更多</button>
+                  ><UiButton class="btn-link" :aria-label="`管理 ${c.name}`" @click="more = c.id">更多</UiButton>
                 </div>
               </td>
             </tr>
@@ -185,7 +187,7 @@ watch(tab, () => (page.value = 1))
         </table>
       </div>
       <EmptyState v-else
-        ><button
+        ><UiButton
           class="btn"
           @click="
             () => {
@@ -195,7 +197,7 @@ watch(tab, () => (page.value = 1))
           "
         >
           清空筛选
-        </button></EmptyState
+        </UiButton></EmptyState
       ><AppPagination v-model:page="page" v-model:page-size="pageSize" :total="filtered.length" />
     </section>
     <UiDialog
@@ -204,7 +206,7 @@ watch(tab, () => (page.value = 1))
       width="440px"
       @close="more = ''"
       ><div class="customer-checklist">
-        <button
+        <UiButton
           class="btn"
           @click="
             () => {
@@ -214,7 +216,7 @@ watch(tab, () => (page.value = 1))
           "
         >
           编辑客户资料</button
-        ><button
+        ><UiButton
           class="btn"
           @click="
             () => {
@@ -224,7 +226,7 @@ watch(tab, () => (page.value = 1))
           "
         >
           客户与事项移交</button
-        ><button
+        ><UiButton
           class="btn"
           @click="
             () => {
@@ -234,7 +236,7 @@ watch(tab, () => (page.value = 1))
           "
         >
           {{ target?.archived ? '恢复客户' : '归档前检查' }}
-        </button>
+        </UiButton>
       </div></UiDialog
     >
   </div>

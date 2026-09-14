@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { UiButton, UiOption, UiSelect } from '@/ui/base'
+
 import { reactive, watch } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { statusLabels } from '@/types/enterprise'
-import SearchField from '@/components/ui/SearchField.vue'
+import SearchField from '@/ui/common/SearchField.vue'
 export interface MemberFilterValue {
   query: string
   department: string
@@ -24,30 +26,30 @@ watch(
     <SearchField v-model="draft.query" label="搜索成员" placeholder="搜索姓名、手机号、邮箱…" />
     <label class="filter-item"
       ><span>所属部门</span
-      ><select v-model="draft.department" class="select" aria-label="筛选部门">
-        <option value="">全部部门</option>
-        <option v-for="item in store.departments" :key="item.id" :value="item.id">{{ item.name }}</option>
-      </select></label
+      ><UiSelect v-model="draft.department" class="select" aria-label="筛选部门">
+        <UiOption value="">全部部门</UiOption>
+        <UiOption v-for="item in store.departments" :key="item.id" :value="item.id">{{ item.name }}</UiOption>
+      </UiSelect></label
     >
     <label class="filter-item"
       ><span>角色</span
-      ><select v-model="draft.role" class="select" aria-label="筛选角色">
-        <option value="">全部角色</option>
-        <option v-for="item in store.roles" :key="item.id" :value="item.id">{{ item.name }}</option>
-      </select></label
+      ><UiSelect v-model="draft.role" class="select" aria-label="筛选角色">
+        <UiOption value="">全部角色</UiOption>
+        <UiOption v-for="item in store.roles" :key="item.id" :value="item.id">{{ item.name }}</UiOption>
+      </UiSelect></label
     >
     <label class="filter-item"
       ><span>状态</span
-      ><select v-model="draft.status" class="select" aria-label="筛选账号状态">
-        <option value="">全部状态</option>
-        <option v-for="(text, statusKey) in statusLabels" :key="statusKey" :value="statusKey">
+      ><UiSelect v-model="draft.status" class="select" aria-label="筛选账号状态">
+        <UiOption value="">全部状态</UiOption>
+        <UiOption v-for="(text, statusKey) in statusLabels" :key="statusKey" :value="statusKey">
           {{ text }}
-        </option>
-      </select></label
+        </UiOption>
+      </UiSelect></label
     >
     <div class="filter-buttons">
-      <button class="btn" type="button" @click="emit('reset')">重置</button
-      ><button class="btn btn-primary" type="submit">查询</button>
+      <UiButton class="btn" type="button" @click="emit('reset')">重置</button
+      ><UiButton class="btn btn-primary" type="submit">查询</UiButton>
     </div>
   </form>
 </template>

@@ -85,3 +85,22 @@
   --z-dialog: 60;
   --z-toast: 80;
 }
+
+/* fixed colors centralized by three-layer migration */
+:root {
+  --color-fixed-a93dc7bf: #4b9a68;
+  --color-fixed-fdb6b83b: #b42318;
+  --color-fixed-ecee5ee9: #d14343;
+  --color-fixed-b79dd458: #d9a441;
+  --color-fixed-cbd707e4: rgb(17 24 39 / 42%);
+  --color-fixed-91215eab: rgb(231 237 246 / 55%);
+  --color-fixed-08d5b1db: rgb(255 255 255 / 90%);
+  --color-fixed-53fa2381: rgb(31 41 55 / 9%);
+  --color-fixed-5b4ddd4f: rgb(37 99 235 / 16%);
+  --color-fixed-b0d29828: rgb(37 99 235 / 24%);
+  --color-fixed-849eef7a: rgb(49 81 121 / 4%);
+  --color-fixed-777fc1a0: rgb(8 123 255 / 10%);
+  --color-fixed-77a43b18: rgb(8 123 255 / 12%);
+  --color-fixed-99fdea0b: rgba(15, 23, 42, .36);
+  --color-fixed-5acf4123: rgba(180, 35, 24, .08);
+}

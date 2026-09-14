@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import type { WorkItem } from '@/types/customer'
 import { useCustomerActions } from '@/composables/customerActions'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 const props = defineProps<{ items: WorkItem[] }>()
 const actions = useCustomerActions(),
   offset = ref(0)
@@ -32,11 +34,11 @@ function inCell(day: string, hour: string) {
     <div class="customer-section-header">
       <h2>{{ days[0]?.key }} — {{ days[6]?.key }}</h2>
       <div class="row">
-        <button class="btn" aria-label="上一周" @click="offset--"><AppIcon name="left" :size="15" /></button
-        ><button class="btn" @click="offset = 0">本周</button
-        ><button class="btn" aria-label="下一周" @click="offset++">
+        <UiButton class="btn" aria-label="上一周" @click="offset--"><AppIcon name="left" :size="15" /></button
+        ><UiButton class="btn" @click="offset = 0">本周</button
+        ><UiButton class="btn" aria-label="下一周" @click="offset++">
           <AppIcon name="right" :size="15" />
-        </button>
+        </UiButton>
       </div>
     </div>
     <div class="calendar-scroll">
@@ -46,7 +48,7 @@ function inCell(day: string, hour: string) {
         <template v-for="hour in hours" :key="hour"
           ><div class="calendar-time">{{ hour }}</div>
           <div v-for="day in days" :key="`${day.key}${hour}`" class="calendar-cell">
-            <button
+            <UiButton
               v-for="work in inCell(day.key, hour)"
               :key="work.id"
               class="calendar-event"
@@ -54,7 +56,7 @@ function inCell(day: string, hour: string) {
             >
               <strong>{{ work.id }} · {{ work.owner }}</strong
               ><span>{{ work.nextAction }}</span>
-            </button>
+            </UiButton>
           </div></template
         >
       </div>

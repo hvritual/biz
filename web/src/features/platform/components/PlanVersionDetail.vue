@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import { UiButton } from '@/ui/base'
+
+import StatusBadge from '@/ui/common/StatusBadge.vue'
 import type { ModuleDTO, PlanTerms, PlanVersionDTO } from '@/services/commercial/platformCommercial'
 
 const props = defineProps<{
@@ -55,11 +57,11 @@ function moduleName(code: string) {
         <p>{{ version.planCode }} · v{{ version.version }} · plan revision {{ version.planRevision }}</p>
       </div>
       <div class="actions">
-        <button v-if="version.state === 'DRAFT'" class="btn" type="button" @click="emit('edit')">编辑草稿</button>
-        <button v-if="version.state === 'DRAFT'" class="btn primary" type="button" :disabled="pending" @click="emit('publish')">发布</button>
-        <button v-if="version.state === 'PUBLISHED'" class="btn" type="button" :disabled="pending" @click="emit('retire')">停售</button>
-        <button v-if="version.state !== 'DRAFT'" class="btn" type="button" :disabled="pending" @click="emit('clone')">创建新版本</button>
-        <button class="btn" type="button" @click="emit('eligibility')">资格预检</button>
+        <UiButton v-if="version.state === 'DRAFT'" class="btn" type="button" @click="emit('edit')">编辑草稿</UiButton>
+        <UiButton v-if="version.state === 'DRAFT'" class="btn primary" type="button" :disabled="pending" @click="emit('publish')">发布</UiButton>
+        <UiButton v-if="version.state === 'PUBLISHED'" class="btn" type="button" :disabled="pending" @click="emit('retire')">停售</UiButton>
+        <UiButton v-if="version.state !== 'DRAFT'" class="btn" type="button" :disabled="pending" @click="emit('clone')">创建新版本</UiButton>
+        <UiButton class="btn" type="button" @click="emit('eligibility')">资格预检</UiButton>
       </div>
     </header>
 

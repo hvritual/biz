@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
+
 import { computed, reactive, ref, watch } from 'vue'
 import type {
   CreateEntitlementOverrideInput,
@@ -154,41 +156,41 @@ function submit() {
     <section class="dialog card" role="dialog" aria-modal="true" aria-labelledby="override-title">
       <header class="dialog-header">
         <div><h2 id="override-title">新增专项权益来源</h2><p>source_version {{ sourceVersion }} · 服务端 source_kind 固定为 override</p></div>
-        <button class="btn" type="button" @click="emit('close')">关闭</button>
+        <UiButton class="btn" type="button" @click="emit('close')">关闭</UiButton>
       </header>
 
       <div class="dialog-body">
-        <div class="field"><label for="override-module">模块</label><select id="override-module" v-model="form.moduleCode" class="input"><option v-for="item in modules" :key="item.moduleCode" :value="item.moduleCode">{{ item.name || item.moduleCode }} · {{ item.moduleCode }}</option></select></div>
-        <div class="field"><label for="override-target">目标类型</label><select id="override-target" v-model="form.target" class="input"><option value="ENTITLEMENT_TARGET_MODULE">模块</option><option value="ENTITLEMENT_TARGET_CAPABILITY">能力</option><option value="ENTITLEMENT_TARGET_QUOTA">额度</option><option value="ENTITLEMENT_TARGET_FIELD">字段动作</option></select></div>
-        <div v-if="form.target !== 'ENTITLEMENT_TARGET_MODULE'" class="field"><label for="override-key">目标 key</label><select id="override-key" v-model="form.key" class="input"><option value="">请选择</option><option v-for="key in availableKeys" :key="key" :value="key">{{ key }}</option></select></div>
-        <div v-if="form.target === 'ENTITLEMENT_TARGET_FIELD'" class="field"><label for="override-field-action">字段动作</label><select id="override-field-action" v-model="form.fieldAction" class="input"><option value="read">read</option><option value="write">write</option><option value="export">export</option></select></div>
-        <div class="field"><label for="override-effect">效果</label><select id="override-effect" v-model="form.effect" class="input"><option v-for="item in effects" :key="item.value" :value="item.value">{{ item.label }}</option></select></div>
+        <div class="field"><label for="override-module">模块</label><UiSelect id="override-module" v-model="form.moduleCode" class="input"><UiOption v-for="item in modules" :key="item.moduleCode" :value="item.moduleCode">{{ item.name || item.moduleCode }} · {{ item.moduleCode }}</UiOption></UiSelect></div>
+        <div class="field"><label for="override-target">目标类型</label><UiSelect id="override-target" v-model="form.target" class="input"><UiOption value="ENTITLEMENT_TARGET_MODULE">模块</UiOption><UiOption value="ENTITLEMENT_TARGET_CAPABILITY">能力</UiOption><UiOption value="ENTITLEMENT_TARGET_QUOTA">额度</UiOption><UiOption value="ENTITLEMENT_TARGET_FIELD">字段动作</UiOption></UiSelect></div>
+        <div v-if="form.target !== 'ENTITLEMENT_TARGET_MODULE'" class="field"><label for="override-key">目标 key</label><UiSelect id="override-key" v-model="form.key" class="input"><UiOption value="">请选择</UiOption><UiOption v-for="key in availableKeys" :key="key" :value="key">{{ key }}</UiOption></UiSelect></div>
+        <div v-if="form.target === 'ENTITLEMENT_TARGET_FIELD'" class="field"><label for="override-field-action">字段动作</label><UiSelect id="override-field-action" v-model="form.fieldAction" class="input"><UiOption value="read">read</UiOption><UiOption value="write">write</UiOption><UiOption value="export">export</UiOption></UiSelect></div>
+        <div class="field"><label for="override-effect">效果</label><UiSelect id="override-effect" v-model="form.effect" class="input"><UiOption v-for="item in effects" :key="item.value" :value="item.value">{{ item.label }}</UiOption></UiSelect></div>
 
         <div v-if="form.target === 'ENTITLEMENT_TARGET_QUOTA'" class="quota-box">
-          <label class="checkbox" for="override-unlimited"><input id="override-unlimited" v-model="form.unlimited" type="checkbox" />无限额度</label>
-          <div v-if="!form.unlimited" class="field"><label for="override-limit">额度值</label><input id="override-limit" v-model="form.value" class="input" type="number" min="0" step="1" /></div>
+          <label class="checkbox" for="override-unlimited"><UiInput id="override-unlimited" v-model="form.unlimited" type="checkbox" />无限额度</label>
+          <div v-if="!form.unlimited" class="field"><label for="override-limit">额度值</label><UiInput id="override-limit" v-model="form.value" class="input" type="number" min="0" step="1" /></div>
           <p>0 与 unlimited 语义不同；quota_add 必须是有限正数。</p>
         </div>
 
         <div class="two-column">
-          <div class="field"><label for="override-effective-at">生效时间（可空）</label><input id="override-effective-at" v-model="form.effectiveAt" class="input" type="datetime-local" /></div>
-          <div class="field"><label for="override-expires-at">到期时间（可空）</label><input id="override-expires-at" v-model="form.expiresAt" class="input" type="datetime-local" /></div>
+          <div class="field"><label for="override-effective-at">生效时间（可空）</label><UiInput id="override-effective-at" v-model="form.effectiveAt" class="input" type="datetime-local" /></div>
+          <div class="field"><label for="override-expires-at">到期时间（可空）</label><UiInput id="override-expires-at" v-model="form.expiresAt" class="input" type="datetime-local" /></div>
         </div>
-        <div class="field"><label for="override-reason">原因</label><textarea id="override-reason" v-model="form.reason" class="input textarea" rows="3" placeholder="说明为什么需要本次专项授权或限制" /></div>
+        <div class="field"><label for="override-reason">原因</label><UiTextarea id="override-reason" v-model="form.reason" class="input textarea" rows="3" placeholder="说明为什么需要本次专项授权或限制" /></div>
 
         <p v-if="formError || error" class="dialog-error" role="alert">{{ formError || error }}</p>
       </div>
 
       <footer class="dialog-footer">
-        <button class="btn" type="button" @click="emit('close')">取消</button>
-        <button class="btn primary" type="button" :disabled="pending" @click="submit">{{ pending ? '提交中…' : '创建专项来源' }}</button>
+        <UiButton class="btn" type="button" @click="emit('close')">取消</UiButton>
+        <UiButton class="btn primary" type="button" :disabled="pending" @click="submit">{{ pending ? '提交中…' : '创建专项来源' }}</UiButton>
       </footer>
     </section>
   </div>
 </template>
 
 <style scoped>
-.dialog-backdrop { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 24px; background: rgba(15, 23, 42, .36); }
+.dialog-backdrop { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 24px; background: var(--color-fixed-99fdea0b); }
 .dialog { width: min(760px, 100%); max-height: calc(100vh - 48px); overflow: auto; }
 .dialog-header, .dialog-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 20px; }
 .dialog-header { border-bottom: 1px solid var(--color-border); }
@@ -201,6 +203,6 @@ function submit() {
 .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .quota-box { padding: 14px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-subtle); }
 .checkbox { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-.dialog-error { margin: 0; padding: 10px 12px; border-radius: 8px; color: var(--color-danger, #b42318); background: rgba(180, 35, 24, .08); }
+.dialog-error { margin: 0; padding: 10px 12px; border-radius: 8px; color: var(--color-danger, var(--color-fixed-fdb6b83b)); background: var(--color-fixed-5acf4123); }
 @media (max-width: 700px) { .two-column { grid-template-columns: 1fr; } .dialog-backdrop { padding: 10px; } }
 </style>

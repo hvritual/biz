@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
+
 import type { FormField, FormValues } from '@/types/customer'
 const props = defineProps<{ fields: FormField[]; modelValue: FormValues; labels?: Record<string, string> }>()
 const emit = defineEmits<{ 'update:modelValue': [FormValues] }>()
@@ -16,7 +18,7 @@ function update(key: string, value: string | boolean) {
       :class="{ 'full-width': field.full }"
       ><template v-if="field.type === 'checkbox'"
         ><span class="check-field"
-          ><input
+          ><UiInput
             :checked="Boolean(modelValue[field.key])"
             type="checkbox"
             :required="field.required"
@@ -25,7 +27,7 @@ function update(key: string, value: string | boolean) {
         ></template
       ><template v-else
         ><span :class="{ required: field.required }">{{ field.label }}</span
-        ><select
+        ><UiSelect
           v-if="field.type === 'select'"
           :value="String(modelValue[field.key] ?? '')"
           class="select"
@@ -33,18 +35,18 @@ function update(key: string, value: string | boolean) {
           :disabled="field.readonly"
           @change="update(field.key, ($event.target as HTMLSelectElement).value)"
         >
-          <option value="">请选择</option>
-          <option v-for="option in field.options" :key="option" :value="option">
+          <UiOption value="">请选择</UiOption>
+          <UiOption v-for="option in field.options" :key="option" :value="option">
             {{ labels?.[option] || option || '不限' }}
-          </option></select
-        ><textarea
+          </UiOption></select
+        ><UiTextarea
           v-else-if="field.type === 'textarea'"
           :value="String(modelValue[field.key] ?? '')"
           class="textarea"
           :required="field.required"
           :readonly="field.readonly"
           maxlength="1000"
-          @input="update(field.key, ($event.target as HTMLTextAreaElement).value)" /><input
+          @input="update(field.key, ($event.target as HTMLTextAreaElement).value)" /><UiInput
           v-else
           :value="String(modelValue[field.key] ?? '')"
           class="input"

@@ -1,14 +1,16 @@
 <script setup lang="ts">
+import { UiButton, UiInput } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
 import { workKindNames, workflows } from '@/services/customer/seed'
 import type { WorkKind } from '@/types/customer'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 const store = useCustomerStore(),
   actions = useCustomerActions(),
   kind = ref<WorkKind>('renewal')
@@ -26,15 +28,15 @@ const versions = computed(() =>
       description="按事项类型复用工作流，保留关键业务校验与在途版本"
       ><div class="customer-heading-actions">
         <RouterLink class="btn" to="/customers/sla">服务时限策略</RouterLink
-        ><button class="btn btn-primary" @click="actions.open('workflow-publish', 'workflow')">
+        ><UiButton class="btn btn-primary" @click="actions.open('workflow-publish', 'workflow')">
           发布新版本
-        </button>
+        </UiButton>
       </div></PageHeading
     >
     <nav class="customer-tabs">
-      <button v-for="(label, k) in workKindNames" :key="k" :class="{ active: kind === k }" @click="kind = k">
+      <UiButton v-for="(label, k) in workKindNames" :key="k" :class="{ active: kind === k }" @click="kind = k">
         {{ label }}
-      </button>
+      </UiButton>
     </nav>
     <div class="card customer-flow">
       <div
@@ -99,7 +101,7 @@ const versions = computed(() =>
               '原始结果与操作审计保留',
             ]"
             :key="rule"
-            ><input type="checkbox" checked disabled />{{ rule }}</label
+            ><UiInput type="checkbox" checked disabled />{{ rule }}</label
           >
         </div></CustomerSection
       >

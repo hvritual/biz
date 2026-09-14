@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import AppIcon from '@/components/ui/AppIcon.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import { UiButton } from '@/ui/base'
+
+import AppIcon from '@/ui/common/AppIcon.vue'
+import EmptyState from '@/ui/common/EmptyState.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
 import { roleGrantScopeLabel, rolePermissionLabel } from '@/services/enterprise/rolePermissionCatalog'
 import { roleStatusLabel, type EnterpriseTenantRole } from '@/services/enterprise/roleRuntime'
 
@@ -64,9 +66,9 @@ function permissionSummary(role: EnterpriseTenantRole) {
               </div>
             </td>
             <td>
-              <button class="btn-link" :disabled="busy" @click="emit('edit', role)">
+              <UiButton class="btn-link" :disabled="busy" @click="emit('edit', role)">
                 {{ role.protectedOwner ? '查看与成员' : '管理' }}
-              </button>
+              </UiButton>
             </td>
           </tr>
         </tbody>

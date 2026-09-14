@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import { UiButton } from '@/ui/base'
+
+import StatusBadge from '@/ui/common/StatusBadge.vue'
 import type { EntitlementOverrideDTO } from '@/services/commercial/platformCommercial'
 
 defineProps<{
@@ -49,7 +51,7 @@ function limitLabel(source: EntitlementOverrideDTO) {
   <section class="card source-card">
     <div class="section-header">
       <div><h2>专项权益来源</h2><p>聚合 source_version {{ sourceVersion }}；撤销保留历史来源，不提供删除。</p></div>
-      <button class="btn primary" type="button" :disabled="pending" @click="emit('create')">新增专项来源</button>
+      <UiButton class="btn primary" type="button" :disabled="pending" @click="emit('create')">新增专项来源</UiButton>
     </div>
 
     <div v-if="!sources.length" class="empty">当前租户没有专项 override 来源。</div>
@@ -65,7 +67,7 @@ function limitLabel(source: EntitlementOverrideDTO) {
             <td><StatusBadge :text="sourceState(source).text" :tone="sourceState(source).tone" /></td>
             <td><small>from {{ source.effectiveAt || '创建时' }}</small><small>to {{ source.expiresAt || '无到期' }}</small></td>
             <td><span>{{ source.reason || '—' }}</span><small>{{ source.actorId || '—' }}</small></td>
-            <td><button v-if="!source.revokedAt" class="btn small danger" type="button" :disabled="pending" @click="emit('revoke', source)">撤销</button></td>
+            <td><UiButton v-if="!source.revokedAt" class="btn small danger" type="button" :disabled="pending" @click="emit('revoke', source)">撤销</UiButton></td>
           </tr>
         </tbody>
       </table>
@@ -82,5 +84,5 @@ function limitLabel(source: EntitlementOverrideDTO) {
 td small { display: block; margin-top: 3px; color: var(--color-text-muted); font-size: 11px; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
 .btn.small { padding: 6px 9px; font-size: 12px; }
-.btn.danger { color: var(--color-danger, #b42318); }
+.btn.danger { color: var(--color-danger, var(--color-fixed-fdb6b83b)); }
 </style>

@@ -1,0 +1,226 @@
+{
+  "app-shell/components/AppHeader.vue": {
+    "scenario": "应用框架 · 业务布局与导航 · AppHeader",
+    "scope": "仅用于应用框架业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "app-shell/components/AppShell.vue": {
+    "scenario": "应用框架 · 业务布局与导航 · AppShell",
+    "scope": "仅用于应用框架业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "app-shell/components/ModulePanel.vue": {
+    "scenario": "应用框架 · 业务布局与导航 · ModulePanel",
+    "scope": "仅用于应用框架业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "app-shell/components/PrimaryNavigation.vue": {
+    "scenario": "应用框架 · 业务布局与导航 · PrimaryNavigation",
+    "scope": "仅用于应用框架业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/ActivityList.vue": {
+    "scenario": "客户经营 · 业务列表 · ActivityList",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/CustomerActionDialog.vue": {
+    "scenario": "客户经营 · 业务操作弹窗 · CustomerActionDialog",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/CustomerAlert.vue": {
+    "scenario": "客户经营 · 领域展示 · CustomerAlert",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/CustomerIdentity.vue": {
+    "scenario": "客户经营 · 领域展示 · CustomerIdentity",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/CustomerSection.vue": {
+    "scenario": "客户经营 · 领域展示 · CustomerSection",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/CustomerTabs.vue": {
+    "scenario": "客户经营 · 领域展示 · CustomerTabs",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/DeliveryDetail.vue": {
+    "scenario": "客户经营 · 详情展示 · DeliveryDetail",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/EvidencePicker.vue": {
+    "scenario": "客户经营 · 领域展示 · EvidencePicker",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/FormFields.vue": {
+    "scenario": "客户经营 · 业务编辑 · FormFields",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/GeneralWorkDetail.vue": {
+    "scenario": "客户经营 · 详情展示 · GeneralWorkDetail",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/PaymentDetail.vue": {
+    "scenario": "客户经营 · 详情展示 · PaymentDetail",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/PaymentSnapshot.vue": {
+    "scenario": "客户经营 · 领域展示 · PaymentSnapshot",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/RenewalDetail.vue": {
+    "scenario": "客户经营 · 详情展示 · RenewalDetail",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/ReturnDetail.vue": {
+    "scenario": "客户经营 · 详情展示 · ReturnDetail",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/ServiceDetail.vue": {
+    "scenario": "客户经营 · 详情展示 · ServiceDetail",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/SourceRecords.vue": {
+    "scenario": "客户经营 · 领域展示 · SourceRecords",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/WorkBoard.vue": {
+    "scenario": "客户经营 · 领域展示 · WorkBoard",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/WorkCalendar.vue": {
+    "scenario": "客户经营 · 领域展示 · WorkCalendar",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/WorkSteps.vue": {
+    "scenario": "客户经营 · 领域展示 · WorkSteps",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "customer/components/WorkTable.vue": {
+    "scenario": "客户经营 · 业务列表 · WorkTable",
+    "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/members/MemberActionDialog.vue": {
+    "scenario": "企业中心 · 业务操作弹窗 · MemberActionDialog",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/members/MemberBulkDialog.vue": {
+    "scenario": "企业中心 · 业务操作弹窗 · MemberBulkDialog",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/members/MemberDetailDrawer.vue": {
+    "scenario": "企业中心 · 详情展示 · MemberDetailDrawer",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/members/MemberDetailOverview.vue": {
+    "scenario": "企业中心 · 详情展示 · MemberDetailOverview",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/members/MemberFilters.vue": {
+    "scenario": "企业中心 · 业务筛选 · MemberFilters",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/members/MemberOverview.vue": {
+    "scenario": "企业中心 · 领域展示 · MemberOverview",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/members/MemberRoleTags.vue": {
+    "scenario": "企业中心 · 领域展示 · MemberRoleTags",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/members/MemberTable.vue": {
+    "scenario": "企业中心 · 业务列表 · MemberTable",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/organization/DepartmentTree.vue": {
+    "scenario": "企业中心 · 层级导航 · DepartmentTree",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/roles/RoleEditor.vue": {
+    "scenario": "企业中心 · 业务编辑 · RoleEditor",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/server/MemberServerTable.vue": {
+    "scenario": "企业中心 · 业务列表 · MemberServerTable",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/server/OrganizationServerDetail.vue": {
+    "scenario": "企业中心 · 详情展示 · OrganizationServerDetail",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/server/OrganizationServerEditor.vue": {
+    "scenario": "企业中心 · 业务编辑 · OrganizationServerEditor",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/server/OrganizationServerTree.vue": {
+    "scenario": "企业中心 · 层级导航 · OrganizationServerTree",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/server/RoleServerEditor.vue": {
+    "scenario": "企业中心 · 业务编辑 · RoleServerEditor",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/server/RoleServerTable.vue": {
+    "scenario": "企业中心 · 业务列表 · RoleServerTable",
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "platform/components/AuthorityPicker.vue": {
+    "scenario": "平台管理 · 领域展示 · AuthorityPicker",
+    "scope": "仅用于平台管理业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "platform/components/EntitlementDecisionTable.vue": {
+    "scenario": "平台管理 · 业务列表 · EntitlementDecisionTable",
+    "scope": "仅用于平台管理业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "platform/components/EntitlementOverrideDialog.vue": {
+    "scenario": "平台管理 · 业务操作弹窗 · EntitlementOverrideDialog",
+    "scope": "仅用于平台管理业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "platform/components/EntitlementOverrideTable.vue": {
+    "scenario": "平台管理 · 业务列表 · EntitlementOverrideTable",
+    "scope": "仅用于平台管理业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "platform/components/PlanEditorDialog.vue": {
+    "scenario": "平台管理 · 业务操作弹窗 · PlanEditorDialog",
+    "scope": "仅用于平台管理业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "platform/components/PlanVersionDetail.vue": {
+    "scenario": "平台管理 · 详情展示 · PlanVersionDetail",
+    "scope": "仅用于平台管理业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "platform/components/SubscriptionChangeWorkspace.vue": {
+    "scenario": "平台管理 · 领域展示 · SubscriptionChangeWorkspace",
+    "scope": "仅用于平台管理业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "site-rental/components/QuoteSummary.vue": {
+    "scenario": "租赁运营 · 领域展示 · QuoteSummary",
+    "scope": "仅用于租赁运营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "site-rental/components/RuleEditor.vue": {
+    "scenario": "租赁运营 · 业务编辑 · RuleEditor",
+    "scope": "仅用于租赁运营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "site-rental/components/SiteFormDialog.vue": {
+    "scenario": "租赁运营 · 业务操作弹窗 · SiteFormDialog",
+    "scope": "仅用于租赁运营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "site-rental/components/StatementDialog.vue": {
+    "scenario": "租赁运营 · 业务操作弹窗 · StatementDialog",
+    "scope": "仅用于租赁运营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "system/components/settings/DictionarySettings.vue": {
+    "scenario": "系统设置 · 领域展示 · DictionarySettings",
+    "scope": "仅用于系统设置业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "system/components/settings/GeneralSettings.vue": {
+    "scenario": "系统设置 · 领域展示 · GeneralSettings",
+    "scope": "仅用于系统设置业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "system/components/settings/IntegrationSettings.vue": {
+    "scenario": "系统设置 · 领域展示 · IntegrationSettings",
+    "scope": "仅用于系统设置业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "system/components/settings/NotificationSettings.vue": {
+    "scenario": "系统设置 · 领域展示 · NotificationSettings",
+    "scope": "仅用于系统设置业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "system/components/settings/SecuritySettings.vue": {
+    "scenario": "系统设置 · 领域展示 · SecuritySettings",
+    "scope": "仅用于系统设置业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  }
+}

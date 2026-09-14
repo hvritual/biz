@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
@@ -14,13 +16,13 @@ import {
   money,
 } from '@/services/siteRental/model'
 import { quoteRental } from '@/services/siteRental/quote'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import MetricCard from '@/components/ui/MetricCard.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
-import AppPagination from '@/components/ui/AppPagination.vue'
-import SiteFormDialog from '@/components/siteRental/SiteFormDialog.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import MetricCard from '@/ui/common/MetricCard.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import EmptyState from '@/ui/common/EmptyState.vue'
+import AppPagination from '@/ui/common/AppPagination.vue'
+import SiteFormDialog from '@/features/site-rental/components/SiteFormDialog.vue'
 import '@/styles/siteRental.css'
 const store = useCustomerStore(),
   route = useRoute(),
@@ -114,40 +116,40 @@ function usage(id: string) {
     </div>
     <div class="rental-toolbar">
       <div class="customer-tabs" aria-label="点位工作视图">
-        <button
+        <UiButton
           v-for="tab in ['全部点位', '我的点位', '待验收', '共享额度']"
           :key="tab"
           :class="{ active: view === tab }"
           @click="view = tab"
         >
           {{ tab }}
-        </button>
+        </UiButton>
       </div>
       <div class="rental-actions">
         <RouterLink to="/sites/groups" class="btn">计费规则与共享组</RouterLink
-        ><button class="btn btn-primary" @click="open = true">
+        ><UiButton class="btn btn-primary" @click="open = true">
           <AppIcon name="plus" :size="16" />新建点位
-        </button>
+        </UiButton>
       </div>
     </div>
     <form class="card rental-filters" @submit.prevent="query">
       <label class="rental-search"
-        ><AppIcon name="search" :size="16" /><input
+        ><AppIcon name="search" :size="16" /><UiInput
           v-model="search"
           aria-label="搜索点位"
           placeholder="搜索点位、编号或地址" /></label
-      ><select v-model="customer" aria-label="筛选客户">
-        <option value="">全部客户</option>
-        <option v-for="c in store.snapshot.customers" :key="c.id" :value="c.id">{{ c.name }}</option></select
-      ><select v-model="mode" aria-label="筛选计费模式">
-        <option value="">全部计费模式</option>
-        <option v-for="(name, id) in modeNames" :key="id" :value="id">{{ name }}</option></select
-      ><input v-model="period" aria-label="查看账期" type="month" /><button
+      ><UiSelect v-model="customer" aria-label="筛选客户">
+        <UiOption value="">全部客户</UiOption>
+        <UiOption v-for="c in store.snapshot.customers" :key="c.id" :value="c.id">{{ c.name }}</UiOption></select
+      ><UiSelect v-model="mode" aria-label="筛选计费模式">
+        <UiOption value="">全部计费模式</UiOption>
+        <UiOption v-for="(name, id) in modeNames" :key="id" :value="id">{{ name }}</UiOption></select
+      ><UiInput v-model="period" aria-label="查看账期" type="month" /><UiButton
         class="btn btn-primary"
         type="submit"
       >
         查询</button
-      ><button class="btn" type="button" @click="reset">重置</button>
+      ><UiButton class="btn" type="button" @click="reset">重置</UiButton>
     </form>
     <section class="card">
       <div class="rental-table-caption">

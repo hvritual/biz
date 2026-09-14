@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import type { WorkItem, WorkStatus } from '@/types/customer'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
 import { workKindNames } from '@/services/customer/seed'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import AvatarMark from '@/components/ui/AvatarMark.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import AvatarMark from '@/ui/common/AvatarMark.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
 defineProps<{ items: WorkItem[] }>()
 const store = useCustomerStore(),
   actions = useCustomerActions()
@@ -44,14 +46,14 @@ function drop(e: DragEvent, status: WorkStatus) {
         >
           <div class="row-between">
             <small>{{ w.id }}</small
-            ><button
+            ><UiButton
               class="icon-button"
               :aria-label="`流转 ${w.id}`"
               :disabled="!w.writable"
               @click="actions.open(w.status === '已结束' ? 'reopen' : 'transition', w.id)"
             >
               <AppIcon name="more" :size="17" />
-            </button>
+            </UiButton>
           </div>
           <RouterLink :to="`/customers/work/${w.id}`" class="work-title">{{ w.title }}</RouterLink>
           <p class="work-client">{{ store.customerName(w.customerId) }}</p>

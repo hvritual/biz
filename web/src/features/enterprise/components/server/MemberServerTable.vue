@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import AppIcon from '@/components/ui/AppIcon.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import { UiButton } from '@/ui/base'
+
+import AppIcon from '@/ui/common/AppIcon.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
 import {
   memberDataScopeLabel,
   memberStatusLabel,
@@ -41,9 +43,9 @@ function canEdit(member: EnterpriseTenantMember) {
         <h2>企业成员</h2>
         <p>档案、部门引用、角色和数据范围均来自服务端。部门名称与层级将在 EC-RI-04 组织域接入后解析。</p>
       </div>
-      <button class="btn btn-primary" :disabled="busy" @click="emit('begin', 'invite', null)">
+      <UiButton class="btn btn-primary" :disabled="busy" @click="emit('begin', 'invite', null)">
         <AppIcon name="invite" :size="16" />邀请成员
-      </button>
+      </UiButton>
     </div>
     <p v-if="busy" class="muted member-loading" role="status">正在读取服务端成员数据…</p>
     <div class="table-scroll">
@@ -87,11 +89,11 @@ function canEdit(member: EnterpriseTenantMember) {
             </td>
             <td>
               <div class="table-actions">
-                <button v-if="canEdit(member)" class="btn-link" :disabled="busy" @click="emit('begin', 'profile', member)">档案</button>
-                <button v-if="canEdit(member)" class="btn-link" :disabled="busy" @click="emit('begin', 'roles', member)">角色</button>
-                <button v-if="canActivate(member)" class="btn-link" :disabled="busy" @click="emit('begin', 'activate', member)">启用</button>
-                <button v-if="canSuspend(member)" class="btn-link" :disabled="busy" @click="emit('begin', 'suspend', member)">停用</button>
-                <button v-if="canRemove(member)" class="btn-link text-danger" :disabled="busy" @click="emit('begin', 'remove', member)">移除</button>
+                <UiButton v-if="canEdit(member)" class="btn-link" :disabled="busy" @click="emit('begin', 'profile', member)">档案</UiButton>
+                <UiButton v-if="canEdit(member)" class="btn-link" :disabled="busy" @click="emit('begin', 'roles', member)">角色</UiButton>
+                <UiButton v-if="canActivate(member)" class="btn-link" :disabled="busy" @click="emit('begin', 'activate', member)">启用</UiButton>
+                <UiButton v-if="canSuspend(member)" class="btn-link" :disabled="busy" @click="emit('begin', 'suspend', member)">停用</UiButton>
+                <UiButton v-if="canRemove(member)" class="btn-link text-danger" :disabled="busy" @click="emit('begin', 'remove', member)">移除</UiButton>
               </div>
             </td>
           </tr>

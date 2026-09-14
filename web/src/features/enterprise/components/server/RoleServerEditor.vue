@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 import type { PermissionGrant } from '@/services/runtime/api'
 import type { EnterpriseTenantMember } from '@/services/enterprise/memberRuntime'
 import {
@@ -109,7 +111,7 @@ function submit() {
       <div class="form-grid">
         <label class="field">
           <span class="required">角色名称</span>
-          <input
+          <UiInput
             v-model="name"
             class="input"
             maxlength="80"
@@ -119,7 +121,7 @@ function submit() {
           />
         </label>
         <label class="option-line role-enabled">
-          <input v-model="enabled" type="checkbox" :disabled="busy || protectedOwner" data-role-enabled />
+          <UiInput v-model="enabled" type="checkbox" :disabled="busy || protectedOwner" data-role-enabled />
           启用此角色
         </label>
       </div>
@@ -134,7 +136,7 @@ function submit() {
           <h4>{{ group.name }}</h4>
           <div v-for="item in group.permissions" :key="item.permission" class="permission-row">
             <label class="permission-main">
-              <input
+              <UiInput
                 type="checkbox"
                 :checked="Boolean(grant(item.permission))"
                 :disabled="busy || protectedOwner"
@@ -143,15 +145,15 @@ function submit() {
               />
               <span><strong>{{ item.label }}</strong><small>{{ item.permission }} · {{ item.description }}</small></span>
             </label>
-            <select
+            <UiSelect
               class="select scope-select"
               :value="grant(item.permission)?.scope ?? 'none'"
               :disabled="busy || protectedOwner || !grant(item.permission)"
               :aria-label="item.label + ' 数据范围'"
               @change="changeScope(item.permission, ($event.target as HTMLSelectElement).value)"
             >
-              <option v-for="scope in roleGrantScopeOptions" :key="scope.value" :value="scope.value">{{ scope.label }}</option>
-            </select>
+              <UiOption v-for="scope in roleGrantScopeOptions" :key="scope.value" :value="scope.value">{{ scope.label }}</UiOption>
+            </UiSelect>
           </div>
         </section>
       </div>
@@ -170,7 +172,7 @@ function submit() {
       </div>
       <div class="member-grid">
         <label v-for="member in members" :key="member.userId" class="member-option">
-          <input
+          <UiInput
             type="checkbox"
             :checked="memberIds.includes(member.userId)"
             :disabled="busy || !memberCanAssign(member)"
@@ -184,10 +186,10 @@ function submit() {
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     </div>
     <template #footer>
-      <button class="btn" :disabled="busy" @click="emit('close')">取消</button>
-      <button class="btn btn-primary" :disabled="busy || !name.trim()" @click="submit">
+      <UiButton class="btn" :disabled="busy" @click="emit('close')">取消</UiButton>
+      <UiButton class="btn btn-primary" :disabled="busy || !name.trim()" @click="submit">
         {{ busy ? '服务端处理中…' : '保存并回读确认' }}
-      </button>
+      </UiButton>
     </template>
   </UiDialog>
 </template>

@@ -7,7 +7,7 @@ const router = readFileSync(resolve(root, 'src/router/index.ts'), 'utf8')
 const navigation = readFileSync(resolve(root, 'src/router/navigation.ts'), 'utf8')
 const customerNavigation = readFileSync(resolve(root, 'src/router/customerNavigation.ts'), 'utf8')
 const rentalWorkRoutes = readFileSync(resolve(root, 'src/router/rentalWorkRoutes.ts'), 'utf8')
-const modulePanel = readFileSync(resolve(root, 'src/components/layout/ModulePanel.vue'), 'utf8')
+const modulePanel = readFileSync(resolve(root, 'src/features/app-shell/components/ModulePanel.vue'), 'utf8')
 const failures = []
 
 function routeBlock(path) {
@@ -76,7 +76,7 @@ if (contract.rules.navigation_rental_work_collections_required) {
     failures.push('router must import rentalWorkRoutes')
   }
   if (!router.includes('...rentalWorkRoutes')) failures.push('router must mount rentalWorkRoutes')
-  if (!rentalWorkRoutes.includes("component: () => import('@/views/customer/CustomerAreaView.vue')")) {
+  if (!rentalWorkRoutes.includes("component: () => import('@/features/customer/pages/CustomerAreaView.vue')")) {
     failures.push('rental work collections must preserve CustomerAreaView action context')
   }
   for (const entry of contract.navigation.rental_work_collections) {

@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed } from 'vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 import { departmentStatusLabel, type EnterpriseDepartment } from '@/services/enterprise/departmentRuntime'
 import type { EnterpriseTenantMember } from '@/services/enterprise/memberRuntime'
 
@@ -71,7 +73,7 @@ const visibleRows = computed(() => {
       <div><strong>部门树</strong><span>按服务端 sort 与层级排列</span></div>
     </header>
     <div v-if="visibleRows.length" class="tree-list">
-      <button
+      <UiButton
         v-for="row in visibleRows"
         :key="row.department.departmentId"
         class="tree-row"
@@ -84,7 +86,7 @@ const visibleRows = computed(() => {
           <i :class="['status-dot', row.department.status === 'TENANT_DEPARTMENT_STATUS_ACTIVE' ? 'success' : 'muted']" />
           {{ departmentStatusLabel(row.department.status) }} · {{ memberCount[row.department.departmentId] ?? 0 }} 人
         </span>
-      </button>
+      </UiButton>
     </div>
     <div v-else class="empty-state">暂无匹配的服务端部门。</div>
   </section>

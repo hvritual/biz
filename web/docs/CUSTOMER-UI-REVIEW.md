@@ -13,7 +13,7 @@
 
 复用原 `AppShell`、`AppHeader`、`PrimaryNavigation`、`PageHeading`、`MetricCard`、`UiDialog`、`StatusBadge`、`AvatarMark`、`AppPagination`、`EmptyState`、`AppIcon` 等，不修改这些组件及原 `tokens.css` / `base.css`。`ModulePanel` 只扩展客户域数据映射，客户经营使用既有一级菜单入口，未创建第二套侧栏。
 
-- `src/views/customer/`：路由页面与页面级查询/选择状态。
+- `src/features/customer/`：路由页面与页面级查询/选择状态。
 - `src/components/customer/`：事项视图、业务详情、证据选择与领域动作表单。
 - `src/services/customer/`：类型化规则、命令、来源投影、规则评估、导入校验和持久化边界。
 - `src/stores/customer.ts`：租户隔离的本地状态、版本冲突、草稿、操作幂等与回读。

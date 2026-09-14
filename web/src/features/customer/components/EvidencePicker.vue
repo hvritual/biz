@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { UiInput } from '@/ui/base'
+
 import { computed } from 'vue'
 import type { SourceRecord } from '@/types/customer'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
 const props = defineProps<{ sources: SourceRecord[]; modelValue: string }>()
 const emit = defineEmits<{ 'update:modelValue': [string] }>()
 const selected = computed(() => props.modelValue.split(',').filter(Boolean))
@@ -17,7 +19,7 @@ function toggle(id: string, on: boolean) {
     <p class="field-title">关联已核验业务来源 <span class="text-danger">*</span></p>
     <div class="evidence-list">
       <label v-for="source in sources" :key="source.id" class="evidence-option"
-        ><input
+        ><UiInput
           type="checkbox"
           :checked="selected.includes(source.id)"
           :disabled="!source.verified"

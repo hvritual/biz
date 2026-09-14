@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+
 import { ref } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 import brand from '@/assets/brand-mark.png'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
@@ -28,19 +30,19 @@ function save() {
     <div class="form-grid">
       <label class="field full-width"
         ><span class="required">平台显示名称</span
-        ><input v-model="draft.platformName" class="input" maxlength="60" required /></label
+        ><UiInput v-model="draft.platformName" class="input" maxlength="60" required /></label
       ><label class="field"
         ><span>默认语言</span
-        ><select v-model="draft.language" class="select">
-          <option>简体中文</option></select
+        ><UiSelect v-model="draft.language" class="select">
+          <UiOption>简体中文</UiOption></select
         ><small>当前交付仅包含简体中文界面。</small></label
       ><label class="field"
         ><span>默认时区</span
-        ><select v-model="draft.timezone" class="select">
-          <option value="Asia/Shanghai">中国标准时间 · UTC+08:00</option>
-          <option value="UTC">协调世界时 · UTC</option>
-          <option value="Europe/Berlin">欧洲柏林时间</option>
-        </select></label
+        ><UiSelect v-model="draft.timezone" class="select">
+          <UiOption value="Asia/Shanghai">中国标准时间 · UTC+08:00</UiOption>
+          <UiOption value="UTC">协调世界时 · UTC</UiOption>
+          <UiOption value="Europe/Berlin">欧洲柏林时间</UiOption>
+        </UiSelect></label
       >
     </div>
     <section class="form-section">
@@ -68,8 +70,8 @@ function save() {
       </div>
     </section>
     <div class="form-footer">
-      <button class="btn" type="button" @click="draft = { ...store.settings }">取消修改</button
-      ><button class="btn btn-primary" type="submit">保存设置</button>
+      <UiButton class="btn" type="button" @click="draft = { ...store.settings }">取消修改</button
+      ><UiButton class="btn btn-primary" type="submit">保存设置</UiButton>
     </div>
   </form>
 </template>

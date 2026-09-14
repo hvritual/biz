@@ -1,18 +1,20 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import type { Department } from '@/types/enterprise'
 import { descendantIds, departmentMoveAllowed } from '@/utils/organization'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import MetricCard from '@/components/ui/MetricCard.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import AvatarMark from '@/components/ui/AvatarMark.vue'
-import DepartmentTree from '@/components/organization/DepartmentTree.vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
-import AppPagination from '@/components/ui/AppPagination.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import MetricCard from '@/ui/common/MetricCard.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import AvatarMark from '@/ui/common/AvatarMark.vue'
+import DepartmentTree from '@/features/enterprise/components/organization/DepartmentTree.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
+import AppPagination from '@/ui/common/AppPagination.vue'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
   router = useRouter()
@@ -120,11 +122,11 @@ function save() {
             <p class="department-description">{{ department?.description || '当前企业的全部组织与成员' }}</p>
           </div>
           <div class="row">
-            <button v-if="department" class="btn" @click="openEditor(true)">
+            <UiButton v-if="department" class="btn" @click="openEditor(true)">
               <AppIcon name="edit" :size="15" />编辑部门</button
-            ><button class="btn btn-primary" @click="openEditor(false)">
+            ><UiButton class="btn btn-primary" @click="openEditor(false)">
               <AppIcon name="plus" :size="16" />新建部门
-            </button>
+            </UiButton>
           </div>
         </div>
         <div class="department-overview">
@@ -153,12 +155,12 @@ function save() {
         </div>
         <div class="row-between section-heading">
           <h3>成员列表</h3>
-          <button
+          <UiButton
             class="btn-link"
             @click="router.push({ path: '/enterprise/members', query: { department: selected } })"
           >
             前往成员管理<AppIcon name="right" :size="14" />
-          </button>
+          </UiButton>
         </div>
         <div class="table-scroll">
           <table class="data-table org-member-table">
@@ -195,14 +197,14 @@ function save() {
       ><div class="form-grid">
         <label class="field"
           ><span class="required">部门名称</span
-          ><input v-model="draft.name" class="input" maxlength="40" /></label
+          ><UiInput v-model="draft.name" class="input" maxlength="40" /></label
         ><label class="field"
-          ><span>部门编号</span><input v-model="draft.code" class="input" maxlength="30" /></label
+          ><span>部门编号</span><UiInput v-model="draft.code" class="input" maxlength="30" /></label
         ><label class="field"
           ><span>上级部门</span
-          ><select v-model="draft.parentId" class="select">
-            <option :value="null">企业根组织</option>
-            <option
+          ><UiSelect v-model="draft.parentId" class="select">
+            <UiOption :value="null">企业根组织</UiOption>
+            <UiOption
               v-for="d in store.departments.filter(
                 (d) => !descendantIds(store.departments, draft.id).includes(d.id),
               )"
@@ -210,27 +212,27 @@ function save() {
               :value="d.id"
             >
               {{ d.name }}
-            </option>
-          </select></label
+            </UiOption>
+          </UiSelect></label
         ><label class="field"
           ><span>部门负责人</span
-          ><select v-model="draft.leaderId" class="select">
-            <option v-for="m in store.members.filter((m) => m.status === 'active')" :key="m.id" :value="m.id">
+          ><UiSelect v-model="draft.leaderId" class="select">
+            <UiOption v-for="m in store.members.filter((m) => m.status === 'active')" :key="m.id" :value="m.id">
               {{ m.name }}
-            </option>
-          </select></label
+            </UiOption>
+          </UiSelect></label
         ><label class="field full-width"
           ><span>部门职责</span
-          ><textarea v-model="draft.description" class="textarea" maxlength="300" /></label
-        ><label class="option-line"><input v-model="draft.enabled" type="checkbox" />启用部门</label>
+          ><UiTextarea v-model="draft.description" class="textarea" maxlength="300" /></label
+        ><label class="option-line"><UiInput v-model="draft.enabled" type="checkbox" />启用部门</label>
       </div>
       <div class="notice-box department-notice">
         <AppIcon name="help" />组织调整会影响“所属部门及下级”的数据范围。真实授权变更必须由服务端重新计算。
       </div>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
       <template #footer
-        ><button class="btn" @click="editOpen = false">取消</button
-        ><button class="btn btn-primary" @click="save">保存部门</button></template
+        ><UiButton class="btn" @click="editOpen = false">取消</button
+        ><UiButton class="btn btn-primary" @click="save">保存部门</UiButton></template
       ></UiDialog
     >
   </div>

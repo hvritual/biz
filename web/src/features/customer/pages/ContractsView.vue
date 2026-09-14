@@ -1,15 +1,17 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import MetricCard from '@/components/ui/MetricCard.vue'
-import SearchField from '@/components/ui/SearchField.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
-import SourceRecords from '@/components/customer/SourceRecords.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import MetricCard from '@/ui/common/MetricCard.vue'
+import SearchField from '@/ui/common/SearchField.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
+import SourceRecords from '@/features/customer/components/SourceRecords.vue'
 const store = useCustomerStore(),
   route = useRoute(),
   router = useRouter(),
@@ -75,12 +77,12 @@ function renew(id: string, customerId: string) {
     </div>
     <CustomerSection title="客户合同记录" icon="file"
       ><div class="query-bar">
-        <SearchField v-model="query" label="搜索合同" placeholder="搜索合同编号、标题…" /><button
+        <SearchField v-model="query" label="搜索合同" placeholder="搜索合同编号、标题…" /><UiButton
           class="btn"
           @click="query = ''"
         >
           重置
-        </button>
+        </UiButton>
       </div>
       <div class="table-scroll">
         <table class="data-table">
@@ -113,14 +115,14 @@ function renew(id: string, customerId: string) {
               <td>{{ store.snapshot.work.filter((w) => w.evidenceIds.includes(c.id)).length }} 项</td>
               <td>
                 <div class="table-actions">
-                  <button class="btn-link" @click="selected = c.id">查看</button
-                  ><button
+                  <UiButton class="btn-link" @click="selected = c.id">查看</button
+                  ><UiButton
                     v-if="c.verified && !c.facts.renewal"
                     class="btn-link"
                     @click="renew(c.id, c.customerId)"
                   >
                     推进续约
-                  </button>
+                  </UiButton>
                 </div>
               </td>
             </tr>
@@ -131,7 +133,7 @@ function renew(id: string, customerId: string) {
         title="优先复用本次合同周期的续约事项"
         description="重复点击推进续约会进入已有事项，而不是每天生成新的续约工作。合同生效状态仍以来源模块为准。" /></CustomerSection
     ><CustomerSection v-if="selected" title="合同来源详情" icon="link"
-      ><template #action><button class="btn-link" @click="selected = ''">收起</button></template
+      ><template #action><UiButton class="btn-link" @click="selected = ''">收起</UiButton></template
       ><SourceRecords :records="contracts.filter((c) => c.id === selected)"
     /></CustomerSection>
   </div>

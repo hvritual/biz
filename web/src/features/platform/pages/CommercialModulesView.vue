@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
+
 import { computed, onMounted, ref } from 'vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
 import {
   CommercialApiError,
   listPlatformModules,
@@ -230,13 +232,13 @@ onMounted(loadModules)
         <strong>当前会话无平台商业访问权限</strong>
         <p>{{ errorMessage || '请使用已授权的平台 Web Session；浏览器不会降级使用平台 API Key。' }}</p>
       </div>
-      <button class="btn" type="button" @click="loadModules">重新检查</button>
+      <UiButton class="btn" type="button" @click="loadModules">重新检查</UiButton>
     </section>
 
     <section v-else-if="loadState === 'error'" class="card state-card danger" role="alert">
       <span class="state-icon"><AppIcon name="help" :size="20" /></span>
       <div class="flex-1"><strong>模块目录读取失败</strong><p>{{ errorMessage }}</p></div>
-      <button class="btn" type="button" @click="loadModules">重试</button>
+      <UiButton class="btn" type="button" @click="loadModules">重试</UiButton>
     </section>
 
     <template v-else>
@@ -248,23 +250,23 @@ onMounted(loadModules)
 
       <section class="card query-panel" data-ui-region="query" aria-label="模块目录查询">
         <div class="query-grid">
-          <label class="field"><span>关键词</span><input v-model.trim="keyword" class="input" placeholder="模块名称 / 代码 / 分类" /></label>
+          <label class="field"><span>关键词</span><UiInput v-model.trim="keyword" class="input" placeholder="模块名称 / 代码 / 分类" /></label>
           <label class="field"><span>技术状态</span>
-            <select v-model="technicalFilter" class="select">
-              <option value="">全部技术状态</option>
-              <option value="MODULE_TECHNICAL_STATUS_READY">技术就绪</option>
-              <option value="MODULE_TECHNICAL_STATUS_NOT_READY">未就绪</option>
-              <option value="MODULE_TECHNICAL_STATUS_DISABLED">技术停用</option>
-            </select>
+            <UiSelect v-model="technicalFilter" class="select">
+              <UiOption value="">全部技术状态</UiOption>
+              <UiOption value="MODULE_TECHNICAL_STATUS_READY">技术就绪</UiOption>
+              <UiOption value="MODULE_TECHNICAL_STATUS_NOT_READY">未就绪</UiOption>
+              <UiOption value="MODULE_TECHNICAL_STATUS_DISABLED">技术停用</UiOption>
+            </UiSelect>
           </label>
           <label class="field"><span>销售状态</span>
-            <select v-model="salesFilter" class="select">
-              <option value="">全部销售状态</option>
-              <option value="MODULE_SALES_STATUS_SELLABLE">可销售</option>
-              <option value="MODULE_SALES_STATUS_RETIRED">已停售</option>
-            </select>
+            <UiSelect v-model="salesFilter" class="select">
+              <UiOption value="">全部销售状态</UiOption>
+              <UiOption value="MODULE_SALES_STATUS_SELLABLE">可销售</UiOption>
+              <UiOption value="MODULE_SALES_STATUS_RETIRED">已停售</UiOption>
+            </UiSelect>
           </label>
-          <button class="btn query-reset" type="button" @click="keyword = ''; technicalFilter = ''; salesFilter = ''">重置</button>
+          <UiButton class="btn query-reset" type="button" @click="keyword = ''; technicalFilter = ''; salesFilter = ''">重置</UiButton>
         </div>
         <p class="query-summary">当前显示 {{ filteredModules.length }} / {{ modules.length }} 个模块；筛选只影响当前服务端目录的展示结果。</p>
       </section>
@@ -280,7 +282,7 @@ onMounted(loadModules)
             <h2>模块目录</h2>
             <p>技术状态与销售状态独立管理；模块能力、额度模板、字段策略与依赖由服务端代码注册表声明。</p>
           </div>
-          <button class="btn" type="button" @click="loadModules"><AppIcon name="refresh" :size="15" />刷新</button>
+          <UiButton class="btn" type="button" @click="loadModules"><AppIcon name="refresh" :size="15" />刷新</UiButton>
         </div>
         <div class="table-scroll">
           <table class="data-table">
@@ -299,7 +301,7 @@ onMounted(loadModules)
                 <td><StatusBadge :text="technicalLabel(item.technicalStatus)" :tone="item.technicalStatus === 'MODULE_TECHNICAL_STATUS_READY' ? 'success' : 'warning'" /></td>
                 <td><StatusBadge :text="salesLabel(item.salesStatus)" :tone="item.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? 'success' : 'neutral'" /></td>
                 <td><strong class="governance-count">{{ item.capabilityCodes?.length ?? 0 }} 项能力</strong><small class="cell-note">{{ item.dependencies?.length ?? 0 }} 项依赖</small></td>
-                <td><button class="btn table-action" type="button" @click="openDetail(item)">查看详情</button></td>
+                <td><UiButton class="btn table-action" type="button" @click="openDetail(item)">查看详情</UiButton></td>
               </tr>
             </tbody>
           </table>
@@ -319,9 +321,9 @@ onMounted(loadModules)
         <section class="detail-section">
           <div class="section-heading"><div><h3>基础配置</h3><p>仅维护商业元数据；技术能力代码仍由服务端 Registry 管理。</p></div></div>
           <div class="form-grid">
-            <label class="field"><span>模块名称</span><input v-model="editName" class="input" /></label>
-            <label class="field"><span>分类</span><input v-model="editCategory" class="input" /></label>
-            <label class="field full"><span>销售范围</span><input v-model="editSalesScope" class="input" placeholder="default, enterprise" /></label>
+            <label class="field"><span>模块名称</span><UiInput v-model="editName" class="input" /></label>
+            <label class="field"><span>分类</span><UiInput v-model="editCategory" class="input" /></label>
+            <label class="field full"><span>销售范围</span><UiInput v-model="editSalesScope" class="input" placeholder="default, enterprise" /></label>
           </div>
         </section>
 
@@ -329,11 +331,11 @@ onMounted(loadModules)
           <div class="section-heading"><div><h3>技术与销售状态</h3><p>两类状态独立变更，不通过停售隐式关闭技术能力。</p></div></div>
           <div class="status-controls">
             <label class="field"><span>技术状态</span>
-              <select v-model="technicalDraft" class="select">
-                <option value="MODULE_TECHNICAL_STATUS_NOT_READY">未就绪</option>
-                <option value="MODULE_TECHNICAL_STATUS_READY">技术就绪</option>
-                <option value="MODULE_TECHNICAL_STATUS_DISABLED">技术停用</option>
-              </select>
+              <UiSelect v-model="technicalDraft" class="select">
+                <UiOption value="MODULE_TECHNICAL_STATUS_NOT_READY">未就绪</UiOption>
+                <UiOption value="MODULE_TECHNICAL_STATUS_READY">技术就绪</UiOption>
+                <UiOption value="MODULE_TECHNICAL_STATUS_DISABLED">技术停用</UiOption>
+              </UiSelect>
             </label>
             <div class="field"><span>销售状态</span><strong>{{ salesLabel(selected.salesStatus) }}</strong></div>
           </div>
@@ -346,17 +348,17 @@ onMounted(loadModules)
           <div><h3>字段策略</h3><p v-if="!selected.fieldPolicySchemaKeys?.length" class="muted">无</p><div v-else class="tag-list"><span v-for="item in selected.fieldPolicySchemaKeys" :key="item" class="fact-tag">{{ item }}</span></div></div>
         </section>
 
-        <label class="field"><span>变更原因</span><textarea v-model="reason" class="textarea" maxlength="500" placeholder="说明本次模块配置或状态调整原因" /></label>
+        <label class="field"><span>变更原因</span><UiTextarea v-model="reason" class="textarea" maxlength="500" placeholder="说明本次模块配置或状态调整原因" /></label>
         <div v-if="actionError" class="notice-box error" role="alert">{{ actionError }}</div>
         <div v-if="actionMessage" class="notice-box" role="status">{{ actionMessage }}</div>
       </div>
       <template #footer>
-        <button class="btn" type="button" @click="detailOpen = false">关闭</button>
-        <button class="btn" type="button" :disabled="actionPending || !selected" @click="applyTechnicalStatus">应用技术状态</button>
-        <button class="btn" type="button" :disabled="actionPending || !selected" @click="applySalesStatus">
+        <UiButton class="btn" type="button" @click="detailOpen = false">关闭</UiButton>
+        <UiButton class="btn" type="button" :disabled="actionPending || !selected" @click="applyTechnicalStatus">应用技术状态</UiButton>
+        <UiButton class="btn" type="button" :disabled="actionPending || !selected" @click="applySalesStatus">
           {{ selected?.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? '停售销售' : '恢复销售' }}
-        </button>
-        <button class="btn btn-primary" type="button" :disabled="actionPending || !selected" @click="saveMetadata">保存基础配置</button>
+        </UiButton>
+        <UiButton class="btn btn-primary" type="button" :disabled="actionPending || !selected" @click="saveMetadata">保存基础配置</UiButton>
       </template>
     </UiDialog>
   </div>
@@ -376,8 +378,8 @@ onMounted(loadModules)
   padding: 22px;
 }
 .state-card p { margin: 5px 0 0; color: var(--color-text-secondary); font-size: 13px; }
-.state-card.warning { border-color: var(--color-warning, #d9a441); }
-.state-card.danger { border-color: var(--color-danger, #d14343); }
+.state-card.warning { border-color: var(--color-warning, var(--color-fixed-b79dd458)); }
+.state-card.danger { border-color: var(--color-danger, var(--color-fixed-ecee5ee9)); }
 .state-icon {
   width: 38px;
   height: 38px;

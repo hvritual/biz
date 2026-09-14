@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { descendantIds, flattenDepartments } from '@/utils/organization'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import SearchField from '@/components/ui/SearchField.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import SearchField from '@/ui/common/SearchField.vue'
 defineProps<{ selected: string }>()
 const emit = defineEmits<{ select: [id: string] }>()
 const store = useEnterpriseStore(),
@@ -19,7 +21,7 @@ const count = (id: string) =>
 <template>
   <section class="card department-tree">
     <h3>组织架构</h3>
-    <SearchField v-model="query" placeholder="搜索部门名称" /><button
+    <SearchField v-model="query" placeholder="搜索部门名称" /><UiButton
       :class="['tree-node root-node', { chosen: selected === '' }]"
       @click="emit('select', '')"
     >
@@ -27,7 +29,7 @@ const count = (id: string) =>
         >{{ store.company.shortName
         }}<small>{{ store.members.filter((m) => m.status !== 'removed').length }}</small></span
       ></button
-    ><button
+    ><UiButton
       v-for="d in rows"
       :key="d.id"
       :class="['tree-node', { chosen: selected === d.id }]"
@@ -37,7 +39,7 @@ const count = (id: string) =>
       <AppIcon :name="d.depth ? 'folder' : 'organization'" :size="16" /><span
         >{{ d.name }}<small>{{ count(d.id) }}</small></span
       >
-    </button>
+    </UiButton>
   </section>
 </template>
 <style scoped>

@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { UiButton, UiTextarea } from '@/ui/base'
+
 import { ref } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 const store = useCustomerStore(),
   reason = ref(''),
   saved = ref(false),
@@ -55,7 +57,7 @@ function save() {
         <form class="page-stack" @submit.prevent="save">
           <label class="field"
             ><span class="required">申请原因</span
-            ><textarea
+            ><UiTextarea
               v-model="reason"
               class="textarea"
               required
@@ -68,7 +70,7 @@ function save() {
             title="申请草稿已在本地保存"
             description="未向管理员或生产权限服务发送；需要接入真实审批服务后提交。"
             tone="success"
-          /><button class="btn btn-primary" type="submit">保存申请草稿</button>
+          /><UiButton class="btn btn-primary" type="submit">保存申请草稿</UiButton>
         </form></CustomerSection
       >
     </div>

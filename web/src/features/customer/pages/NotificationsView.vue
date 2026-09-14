@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
 import { useUiStore } from '@/stores/ui'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 const store = useCustomerStore(),
   ui = useUiStore(),
   filter = ref('全部'),
@@ -29,7 +31,7 @@ function read(id: string) {
       description="让待办可见，同时避免把“已读”误当作“工作完成”"
     />
     <nav class="customer-tabs">
-      <button
+      <UiButton
         v-for="name in ['全部', '未读']"
         :key="name"
         :class="{ active: filter === name }"
@@ -39,20 +41,20 @@ function read(id: string) {
         }}<span v-if="name === '未读'"
           >（{{ store.snapshot.notifications.filter((n) => !n.read).length }}）</span
         >
-      </button>
+      </UiButton>
     </nav>
     <div class="customer-split">
       <CustomerSection title="需要关注的工作" icon="bell"
         ><div v-for="notice in notices" :key="notice.id" class="customer-record">
           <div>
-            <button class="btn-link mainline" @click="selected = notice.id">{{ notice.title }}</button>
+            <UiButton class="btn-link mainline" @click="selected = notice.id">{{ notice.title }}</UiButton>
             <p>{{ notice.description }}</p>
           </div>
           <div class="customer-checklist">
             <StatusBadge
               :text="notice.read ? '已读' : '未读'"
               :tone="notice.read ? 'neutral' : 'primary'"
-            /><button class="btn-link" :disabled="notice.read" @click="read(notice.id)">标记已读</button>
+            /><UiButton class="btn-link" :disabled="notice.read" @click="read(notice.id)">标记已读</UiButton>
           </div>
         </div>
         <p v-if="!notices.length" class="customer-help">当前没有未读通知。</p></CustomerSection

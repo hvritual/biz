@@ -1,15 +1,17 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
 import { parseCustomerCsv, validateImport, type ImportRow } from '@/services/customer/importer'
 import { downloadCsv } from '@/utils/format'
 import { operators } from '@/services/customer/seed'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import MetricCard from '@/components/ui/MetricCard.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import MetricCard from '@/ui/common/MetricCard.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 const store = useCustomerStore(),
   stage = ref(0),
   raw = ref(''),
@@ -94,7 +96,7 @@ function fix() {
       breadcrumb="客户经营"
       description="先校验重复与归属，再逐行确认导入结果"
       ><div class="customer-heading-actions">
-        <button class="btn" @click="downloadCsv('客户导入模板.csv', [sample[0]!])">下载 CSV 模板</button
+        <UiButton class="btn" @click="downloadCsv('客户导入模板.csv', [sample[0]!])">下载 CSV 模板</button
         ><RouterLink class="btn" to="/customers">返回客户总览</RouterLink>
       </div></PageHeading
     >
@@ -114,12 +116,12 @@ function fix() {
       ><div class="customer-empty">
         <h3>上传 UTF-8 CSV 客户资料</h3>
         <p>支持客户名称、客户类型、客户负责人三项字段。最多 500 行，文件不超过 1 MB。</p>
-        <input type="file" accept=".csv,text/csv" aria-label="选择客户 CSV 文件" @change="loadFile" /><button
+        <UiInput type="file" accept=".csv,text/csv" aria-label="选择客户 CSV 文件" @change="loadFile" /><UiButton
           class="btn"
           @click="loadSample"
         >
           载入示例文件并校验
-        </button>
+        </UiButton>
       </div></CustomerSection
     >
     <CustomerSection v-if="stage === 1" title="字段映射" icon="organization"
@@ -132,14 +134,14 @@ function fix() {
           :key="key"
           class="field"
           ><span>{{ label }}</span
-          ><select v-model.number="mapping[key]" class="select">
-            <option v-for="(head, index) in data[0]" :key="index" :value="index">{{ head }}</option>
-          </select></label
+          ><UiSelect v-model.number="mapping[key]" class="select">
+            <UiOption v-for="(head, index) in data[0]" :key="index" :value="index">{{ head }}</UiOption>
+          </UiSelect></label
         >
       </div>
-      <button class="btn btn-primary" style="margin-top: 20px" @click="validate">
+      <UiButton class="btn btn-primary" style="margin-top: 20px" @click="validate">
         逐行校验
-      </button></CustomerSection
+      </UiButton></CustomerSection
     >
     <template v-if="stage >= 2"
       ><div class="metric-grid">
@@ -189,7 +191,7 @@ function fix() {
             <tbody>
               <tr v-for="row in rows" :key="row.line">
                 <td>
-                  <input
+                  <UiInput
                     v-model="row.selected"
                     type="checkbox"
                     :disabled="row.result !== '通过'"
@@ -215,7 +217,7 @@ function fix() {
                 <td>
                   <RouterLink v-if="row.existing" :to="`/customers/accounts/${row.existing}`" class="btn-link"
                     >查看已有客户</RouterLink
-                  ><button v-else class="btn-link" @click="edit = { ...row }">修改字段</button>
+                  ><UiButton v-else class="btn-link" @click="edit = { ...row }">修改字段</UiButton>
                 </td>
               </tr>
             </tbody>
@@ -227,9 +229,9 @@ function fix() {
         :tone="stage === 4 ? 'success' : 'primary'"
       />
       <div class="customer-inline-actions" style="justify-content: flex-end">
-        <button class="btn" @click="stage = 1">返回字段映射</button
-        ><button class="btn" @click="validate">修正后重新校验</button
-        ><button v-if="stage !== 4" class="btn btn-primary" :disabled="!selected.length" @click="stage = 3">
+        <UiButton class="btn" @click="stage = 1">返回字段映射</button
+        ><UiButton class="btn" @click="validate">修正后重新校验</button
+        ><UiButton v-if="stage !== 4" class="btn btn-primary" :disabled="!selected.length" @click="stage = 3">
           仅导入通过的 {{ selected.length }} 条</button
         ><RouterLink v-else to="/customers" class="btn btn-primary">查看客户列表</RouterLink>
       </div></template
@@ -239,26 +241,26 @@ function fix() {
         :title="`将创建 ${selected.length} 条客户资料`"
         description="只导入已勾选且通过的行，不覆盖同名记录。保存时会再次校验重复。"
       /><template #footer
-        ><button class="btn" @click="stage = 2">取消</button
-        ><button class="btn btn-primary" @click="commit">确认导入</button></template
+        ><UiButton class="btn" @click="stage = 2">取消</button
+        ><UiButton class="btn btn-primary" @click="commit">确认导入</UiButton></template
       ></UiDialog
     >
     <UiDialog :open="Boolean(edit)" title="修正导入字段" width="560px" @close="edit = undefined"
       ><form v-if="edit" id="import-edit" class="page-stack" @submit.prevent="fix">
-        <label class="field"><span>客户名称</span><input v-model="edit.name" class="input" required /></label
+        <label class="field"><span>客户名称</span><UiInput v-model="edit.name" class="input" required /></label
         ><label class="field"
-          ><span>客户类型</span><input v-model="edit.category" class="input" required /></label
+          ><span>客户类型</span><UiInput v-model="edit.category" class="input" required /></label
         ><label class="field"
           ><span>有效负责人</span
-          ><select v-model="edit.owner" class="select" required>
-            <option value="">请选择</option>
-            <option v-for="owner in operators" :key="owner">{{ owner }}</option>
-          </select></label
+          ><UiSelect v-model="edit.owner" class="select" required>
+            <UiOption value="">请选择</UiOption>
+            <UiOption v-for="owner in operators" :key="owner">{{ owner }}</UiOption>
+          </UiSelect></label
         >
       </form>
       <template #footer
-        ><button class="btn" @click="edit = undefined">取消</button
-        ><button class="btn btn-primary" type="submit" form="import-edit">保存并重新校验</button></template
+        ><UiButton class="btn" @click="edit = undefined">取消</button
+        ><UiButton class="btn btn-primary" type="submit" form="import-edit">保存并重新校验</UiButton></template
       ></UiDialog
     >
   </div>

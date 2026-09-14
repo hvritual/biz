@@ -1,15 +1,17 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
 import { planResults } from '@/services/customer/selectors'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import CustomerSection from '@/components/customer/CustomerSection.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
-import WorkTable from '@/components/customer/WorkTable.vue'
-import ActivityList from '@/components/customer/ActivityList.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import CustomerSection from '@/features/customer/components/CustomerSection.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
+import WorkTable from '@/features/customer/components/WorkTable.vue'
+import ActivityList from '@/features/customer/components/ActivityList.vue'
 const store = useCustomerStore(),
   route = useRoute(),
   actions = useCustomerActions()
@@ -36,15 +38,15 @@ const progress = computed(() =>
       :description="`${store.customerName(plan.customerId)} · ${plan.id} · ${plan.start} 至 ${plan.end}`"
       ><div class="customer-heading-actions">
         <RouterLink class="btn" to="/customers/plans">返回计划</RouterLink
-        ><button class="btn" :disabled="plan.state === '已结案'" @click="actions.open('milestone', plan.id)">
+        ><UiButton class="btn" :disabled="plan.state === '已结案'" @click="actions.open('milestone', plan.id)">
           添加里程碑</button
-        ><button
+        ><UiButton
           class="btn btn-primary"
           :disabled="plan.state === '已结案'"
           @click="actions.open('recap', plan.id)"
         >
           结案与复盘
-        </button>
+        </UiButton>
       </div></PageHeading
     ><CustomerAlert
       v-if="plan.state === '已结案'"

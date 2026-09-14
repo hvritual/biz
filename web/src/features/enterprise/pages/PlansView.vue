@@ -1,12 +1,14 @@
 <script setup lang="ts">
+import { UiButton, UiOption, UiSelect, UiTextarea } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
   route = useRoute(),
@@ -75,9 +77,9 @@ function submit() {
           <div><span>订阅周期</span><strong>按年</strong></div>
         </div>
         <div class="row">
-          <button class="btn btn-primary" @click="requestOpen = true">
+          <UiButton class="btn btn-primary" @click="requestOpen = true">
             <AppIcon name="crown" :size="16" />申请升级套餐</button
-          ><button class="btn" @click="requestOpen = true">申请调整额度</button>
+          ><UiButton class="btn" @click="requestOpen = true">申请调整额度</UiButton>
         </div>
         <small class="preview-plan">套餐、日期与额度均为界面示例，不代表真实订阅。</small>
       </section>
@@ -104,14 +106,14 @@ function submit() {
     </div>
     <section class="card panel-pad">
       <div class="tabs">
-        <button
+        <UiButton
           v-for="t in ['套餐概览', '功能权益', '使用额度', '变更记录']"
           :key="t"
           :class="['tab', { active: tab === t }]"
           @click="tab = t"
         >
           {{ t }}
-        </button>
+        </UiButton>
       </div>
       <template v-if="tab === '套餐概览' || tab === '功能权益'"
         ><div class="row-between plan-section-heading">
@@ -177,14 +179,14 @@ function submit() {
         </div>
         <label class="field"
           ><span>意向套餐</span
-          ><select v-model="targetPlan" class="select">
-            <option>企业版</option>
-            <option>标准版扩容</option>
-            <option>联系商务定制</option>
-          </select></label
+          ><UiSelect v-model="targetPlan" class="select">
+            <UiOption>企业版</UiOption>
+            <UiOption>标准版扩容</UiOption>
+            <UiOption>联系商务定制</UiOption>
+          </UiSelect></label
         ><label class="field"
           ><span>需求说明</span
-          ><textarea
+          ><UiTextarea
             v-model="note"
             class="textarea"
             maxlength="500"
@@ -193,8 +195,8 @@ function submit() {
         </label>
       </div>
       <template #footer
-        ><button class="btn" @click="requestOpen = false">取消</button
-        ><button class="btn btn-primary" @click="submit">记录申请</button></template
+        ><UiButton class="btn" @click="requestOpen = false">取消</button
+        ><UiButton class="btn btn-primary" @click="submit">记录申请</UiButton></template
       ></UiDialog
     >
   </div>

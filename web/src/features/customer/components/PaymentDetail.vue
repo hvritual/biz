@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UiButton } from '@/ui/base'
+
 import { computed } from 'vue'
 import type { WorkItem } from '@/types/customer'
 import { useCustomerStore } from '@/stores/customer'
@@ -19,13 +21,13 @@ const records = computed(() =>
   <div class="page-stack">
     <CustomerSection title="关联应收与核销进展" icon="order">
       <template #action
-        ><button
+        ><UiButton
           class="btn-link"
           :disabled="!work.writable || work.status === '已结束'"
           @click="actions.open('reschedule', work.id)"
         >
           核对回款结果
-        </button></template
+        </UiButton></template
       >
       <PaymentSnapshot :work="work" />
       <dl class="customer-info-list" style="margin-top: 20px">
@@ -48,13 +50,13 @@ const records = computed(() =>
         <dt>下次行动</dt>
         <dd>
           {{ work.nextAt.replace('T', ' ') }}
-          <button
+          <UiButton
             class="btn-link"
             :disabled="!work.writable || work.status === '已结束'"
             @click="actions.open('reschedule', work.id)"
           >
             调整安排
-          </button>
+          </UiButton>
         </dd>
         <dt>数据权限</dt>
         <dd><RouterLink to="/customers/restricted" class="btn-link">查看财务字段受限示例</RouterLink></dd>
@@ -62,13 +64,13 @@ const records = computed(() =>
     </CustomerSection>
     <CustomerSection title="财务业务来源" icon="file">
       <template #action
-        ><button
+        ><UiButton
           class="btn-link"
           :disabled="!work.writable || work.status === '已结束' || !records.length"
           @click="actions.open('link-source', work.id)"
         >
           核对最新核销记录
-        </button></template
+        </UiButton></template
       >
       <SourceRecords :records="receivable ? [receivable] : []" />
     </CustomerSection>

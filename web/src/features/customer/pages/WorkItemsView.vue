@@ -1,17 +1,19 @@
 <script setup lang="ts">
+import { UiButton, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
 import { useCustomerActions } from '@/composables/customerActions'
 import { workKindNames } from '@/services/customer/seed'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import SearchField from '@/components/ui/SearchField.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import AppPagination from '@/components/ui/AppPagination.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
-import WorkTable from '@/components/customer/WorkTable.vue'
-import WorkBoard from '@/components/customer/WorkBoard.vue'
-import WorkCalendar from '@/components/customer/WorkCalendar.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import SearchField from '@/ui/common/SearchField.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import AppPagination from '@/ui/common/AppPagination.vue'
+import EmptyState from '@/ui/common/EmptyState.vue'
+import WorkTable from '@/features/customer/components/WorkTable.vue'
+import WorkBoard from '@/features/customer/components/WorkBoard.vue'
+import WorkCalendar from '@/features/customer/components/WorkCalendar.vue'
 
 const store = useCustomerStore(),
   actions = useCustomerActions(),
@@ -122,14 +124,14 @@ watch([page, pageSize], () => (selected.value = []))
       :breadcrumb="isRentalScope ? '租赁运营' : '客户经营'"
       :description="pageDescription"
       ><div class="customer-heading-actions">
-        <button class="btn btn-primary" @click="createWork">
+        <UiButton class="btn btn-primary" @click="createWork">
           <AppIcon name="plus" :size="16" />新建事项
-        </button>
+        </UiButton>
       </div></PageHeading
     >
     <div class="card data-panel">
       <nav class="customer-tabs" aria-label="事项工作台视图">
-        <button
+        <UiButton
           v-for="[key, label] in [
             ['list', '列表'],
             ['board', '看板'],
@@ -140,7 +142,7 @@ watch([page, pageSize], () => (selected.value = []))
           @click="router.push({ path: route.path, query: { ...route.query, view: key } })"
         >
           {{ label }}</button
-        ><button
+        ><UiButton
           @click="
             () => {
               owner = '张敏'
@@ -149,7 +151,7 @@ watch([page, pageSize], () => (selected.value = []))
           "
         >
           我的待办</button
-        ><button
+        ><UiButton
           @click="
             () => {
               status = '待验收'
@@ -158,39 +160,39 @@ watch([page, pageSize], () => (selected.value = []))
           "
         >
           待验收</button
-        ><button @click="reset()">{{ scopeKind ? '全部本类事项' : '全部事项' }}</button>
+        ><UiButton @click="reset()">{{ scopeKind ? '全部本类事项' : '全部事项' }}</UiButton>
       </nav>
       <form class="query-bar" @submit.prevent="apply">
-        <SearchField v-model="query" label="搜索客户事项" placeholder="搜索事项标题、编号、客户…" /><select
+        <SearchField v-model="query" label="搜索客户事项" placeholder="搜索事项标题、编号、客户…" /><UiSelect
           v-if="!scopeKind"
           v-model="kind"
           class="select"
           aria-label="事项类型"
         >
-          <option value="">全部类型</option>
-          <option v-for="(label, k) in workKindNames" :key="k" :value="k">{{ label }}</option></select
-        ><select v-model="owner" class="select" aria-label="事项负责人">
-          <option value="">全部负责人</option>
-          <option>张敏</option>
-          <option>李川</option>
-          <option>陈晓</option>
-          <option>王宁</option></select
-        ><select v-model="status" class="select" aria-label="事项状态">
-          <option value="">全部状态</option>
-          <option>待开始</option>
-          <option>处理中</option>
-          <option>等待客户</option>
-          <option>待验收</option>
-          <option>已结束</option></select
-        ><button class="btn btn-primary" type="submit">查询</button
-        ><button class="btn" type="button" @click="reset">重置</button>
+          <UiOption value="">全部类型</UiOption>
+          <UiOption v-for="(label, k) in workKindNames" :key="k" :value="k">{{ label }}</UiOption></select
+        ><UiSelect v-model="owner" class="select" aria-label="事项负责人">
+          <UiOption value="">全部负责人</UiOption>
+          <UiOption>张敏</UiOption>
+          <UiOption>李川</UiOption>
+          <UiOption>陈晓</UiOption>
+          <UiOption>王宁</UiOption></select
+        ><UiSelect v-model="status" class="select" aria-label="事项状态">
+          <UiOption value="">全部状态</UiOption>
+          <UiOption>待开始</UiOption>
+          <UiOption>处理中</UiOption>
+          <UiOption>等待客户</UiOption>
+          <UiOption>待验收</UiOption>
+          <UiOption>已结束</UiOption></select
+        ><UiButton class="btn btn-primary" type="submit">查询</button
+        ><UiButton class="btn" type="button" @click="reset">重置</UiButton>
       </form>
       <div class="customer-view-toolbar">
         <div class="row wrap">
           <span class="customer-help">{{
             selected.length ? '当前页已选 ' + selected.length + ' 项' : '共 ' + filtered.length + ' 项'
           }}</span
-          ><button
+          ><UiButton
             v-if="mode === 'list'"
             class="btn"
             :disabled="!selected.length"
@@ -203,16 +205,16 @@ watch([page, pageSize], () => (selected.value = []))
           }}</span>
         </div>
         <div class="row wrap">
-          <select
+          <UiSelect
             v-if="store.snapshot.views.length"
             v-model="savedView"
             class="select"
             aria-label="已保存视图"
             @change="useView"
           >
-            <option value="">系统视图</option>
-            <option v-for="v in store.snapshot.views" :key="v.name">{{ v.name }}</option></select
-          ><button
+            <UiOption value="">系统视图</UiOption>
+            <UiOption v-for="v in store.snapshot.views" :key="v.name">{{ v.name }}</UiOption></select
+          ><UiButton
             class="btn-link"
             @click="
               () => {
@@ -225,7 +227,7 @@ watch([page, pageSize], () => (selected.value = []))
             "
           >
             <AppIcon name="eye" :size="16" />保存视图与显示设置
-          </button>
+          </UiButton>
         </div>
       </div>
       <template v-if="mode === 'list'"
@@ -234,7 +236,7 @@ watch([page, pageSize], () => (selected.value = []))
           v-model:selected="selected"
           :items="paged"
           selectable
-          :view="view" /><EmptyState v-else><button class="btn" @click="reset">清空筛选</button></EmptyState
+          :view="view" /><EmptyState v-else><UiButton class="btn" @click="reset">清空筛选</UiButton></EmptyState
         ><AppPagination v-model:page="page" v-model:page-size="pageSize" :total="filtered.length"
       /></template>
     </div>

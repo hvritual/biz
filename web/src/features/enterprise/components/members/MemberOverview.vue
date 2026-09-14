@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
 const store = useEnterpriseStore()
 const inUse = computed(() => store.members.filter((m) => m.status !== 'removed').length)
 // Matches the preview plan's member allocation; this is not a production entitlement.

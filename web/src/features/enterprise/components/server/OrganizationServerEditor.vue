@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, ref, watch } from 'vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
 import type { EnterpriseDepartment, EnterpriseDepartmentDraft } from '@/services/enterprise/departmentRuntime'
 import type { EnterpriseTenantMember } from '@/services/enterprise/memberRuntime'
 
@@ -79,18 +81,18 @@ watch(() => [props.open, props.department?.departmentId, props.department?.versi
 <template>
   <UiDialog :open="open" :title="department ? '编辑部门' : '新建部门'" width="660px" @close="!busy && emit('close')">
     <div class="editor-form">
-      <label class="field"><span>部门名称 *</span><input v-model="draft.name" maxlength="100" placeholder="例如：客户成功部" /></label>
-      <label class="field"><span>上级部门</span><select v-model="draft.parentId"><option value="">顶级部门</option><option v-for="item in parentOptions" :key="item.departmentId" :value="item.departmentId">{{ item.name }}</option></select></label>
-      <label class="field"><span>负责人</span><select v-model="draft.leaderUserId"><option value="">未设置</option><option v-for="member in activeMembers" :key="member.userId" :value="member.userId">{{ member.name || member.email || member.userId }}</option></select></label>
-      <label class="field"><span>排序</span><input v-model.number="draft.sort" type="number" min="0" step="1" /></label>
-      <label class="field"><span>联系邮箱</span><input v-model="draft.email" type="email" maxlength="320" placeholder="department@example.com" /></label>
-      <label class="field"><span>联系电话</span><input v-model="draft.phone" maxlength="40" placeholder="可选" /></label>
-      <label class="switch-field"><input v-model="draft.enabled" type="checkbox" /><span><strong>启用部门</strong><small>停用后保留历史归属，但禁止新的成员转入。</small></span></label>
+      <label class="field"><span>部门名称 *</span><UiInput v-model="draft.name" maxlength="100" placeholder="例如：客户成功部" /></label>
+      <label class="field"><span>上级部门</span><UiSelect v-model="draft.parentId"><UiOption value="">顶级部门</UiOption><UiOption v-for="item in parentOptions" :key="item.departmentId" :value="item.departmentId">{{ item.name }}</UiOption></UiSelect></label>
+      <label class="field"><span>负责人</span><UiSelect v-model="draft.leaderUserId"><UiOption value="">未设置</UiOption><UiOption v-for="member in activeMembers" :key="member.userId" :value="member.userId">{{ member.name || member.email || member.userId }}</UiOption></UiSelect></label>
+      <label class="field"><span>排序</span><UiInput v-model.number="draft.sort" type="number" min="0" step="1" /></label>
+      <label class="field"><span>联系邮箱</span><UiInput v-model="draft.email" type="email" maxlength="320" placeholder="department@example.com" /></label>
+      <label class="field"><span>联系电话</span><UiInput v-model="draft.phone" maxlength="40" placeholder="可选" /></label>
+      <label class="switch-field"><UiInput v-model="draft.enabled" type="checkbox" /><span><strong>启用部门</strong><small>停用后保留历史归属，但禁止新的成员转入。</small></span></label>
       <p v-if="error" class="notice-box organization-error" role="alert">{{ error }}</p>
     </div>
     <template #footer>
-      <button class="btn" :disabled="busy" @click="emit('close')">取消</button>
-      <button class="btn btn-primary" :disabled="busy" @click="submit">{{ busy ? '提交中…' : '提交并回读确认' }}</button>
+      <UiButton class="btn" :disabled="busy" @click="emit('close')">取消</UiButton>
+      <UiButton class="btn btn-primary" :disabled="busy" @click="submit">{{ busy ? '提交中…' : '提交并回读确认' }}</UiButton>
     </template>
   </UiDialog>
 </template>

@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
-import PageHeading from '@/components/ui/PageHeading.vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import PageHeading from '@/ui/common/PageHeading.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import StatusBadge from '@/ui/common/StatusBadge.vue'
 import brand from '@/assets/brand-mark.png'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
@@ -56,33 +58,33 @@ function upload(e: Event) {
         <div class="form-grid">
           <label class="field"
             ><span class="required">企业名称</span
-            ><input v-model="draft.name" class="input" required maxlength="100" /></label
+            ><UiInput v-model="draft.name" class="input" required maxlength="100" /></label
           ><label class="field"
             ><span class="required">企业简称</span
-            ><input v-model="draft.shortName" class="input" required maxlength="30" /></label
+            ><UiInput v-model="draft.shortName" class="input" required maxlength="30" /></label
           ><label class="field"
-            ><span>所属行业</span><input v-model="draft.industry" class="input" maxlength="80" /></label
+            ><span>所属行业</span><UiInput v-model="draft.industry" class="input" maxlength="80" /></label
           ><label class="field"
             ><span>企业规模</span
-            ><select v-model="draft.size" class="select">
-              <option>1–10 人</option>
-              <option>10–50 人</option>
-              <option>50–200 人</option>
-              <option>200 人以上</option>
-            </select></label
+            ><UiSelect v-model="draft.size" class="select">
+              <UiOption>1–10 人</UiOption>
+              <UiOption>10–50 人</UiOption>
+              <UiOption>50–200 人</UiOption>
+              <UiOption>200 人以上</UiOption>
+            </UiSelect></label
           ><label class="field"
             ><span>默认时区</span
-            ><select v-model="draft.timezone" class="select">
-              <option value="Asia/Shanghai">中国标准时间 · UTC+08:00</option>
-              <option value="UTC">协调世界时 · UTC</option>
-              <option value="Europe/Berlin">欧洲柏林 · 按当地夏令时规则</option>
-            </select></label
+            ><UiSelect v-model="draft.timezone" class="select">
+              <UiOption value="Asia/Shanghai">中国标准时间 · UTC+08:00</UiOption>
+              <UiOption value="UTC">协调世界时 · UTC</UiOption>
+              <UiOption value="Europe/Berlin">欧洲柏林 · 按当地夏令时规则</UiOption>
+            </UiSelect></label
           >
           <div class="field">
             <span>企业 Logo</span>
             <div class="logo-control">
               <img :src="logo" alt="企业 Logo 预览" /><label class="btn"
-                ><AppIcon name="upload" :size="15" />选择图片<input
+                ><AppIcon name="upload" :size="15" />选择图片<UiInput
                   class="sr-only"
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
@@ -94,28 +96,28 @@ function upload(e: Event) {
           </div>
           <label class="field full-width"
             ><span>企业简介</span
-            ><textarea v-model="draft.description" class="textarea" rows="3" maxlength="500" />
+            ><UiTextarea v-model="draft.description" class="textarea" rows="3" maxlength="500" />
           </label>
         </div>
         <section class="form-section">
           <h3>联系信息</h3>
           <div class="form-grid">
             <label class="field"
-              ><span>联系人</span><input v-model="draft.contact" class="input" maxlength="40" /></label
+              ><span>联系人</span><UiInput v-model="draft.contact" class="input" maxlength="40" /></label
             ><label class="field"
-              ><span>联系电话</span><input v-model="draft.phone" class="input" maxlength="30" /></label
+              ><span>联系电话</span><UiInput v-model="draft.phone" class="input" maxlength="30" /></label
             ><label class="field"
               ><span class="required">企业邮箱</span
-              ><input v-model="draft.email" class="input" type="email" required maxlength="150" /></label
+              ><UiInput v-model="draft.email" class="input" type="email" required maxlength="150" /></label
             ><label class="field"
-              ><span>联系地址</span><input v-model="draft.address" class="input" maxlength="200"
+              ><span>联系地址</span><UiInput v-model="draft.address" class="input" maxlength="200"
             /></label>
           </div>
         </section>
         <p v-if="error" class="form-error" role="alert">{{ error }}</p>
         <div class="form-footer">
           <span v-if="changed" class="muted flex-1">有尚未保存的修改</span
-          ><button
+          ><UiButton
             class="btn"
             type="button"
             @click="
@@ -126,7 +128,7 @@ function upload(e: Event) {
             "
           >
             取消修改</button
-          ><button class="btn btn-primary" type="submit"><AppIcon name="check" :size="15" />保存修改</button>
+          ><UiButton class="btn btn-primary" type="submit"><AppIcon name="check" :size="15" />保存修改</UiButton>
         </div>
       </form>
       <aside class="side-summary">

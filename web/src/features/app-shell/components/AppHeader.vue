@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+
 import { computed, ref } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useRouter, useRoute } from 'vue-router'
-import AppIcon from '@/components/ui/AppIcon.vue'
-import AvatarMark from '@/components/ui/AvatarMark.vue'
-import UiDialog from '@/components/ui/UiDialog.vue'
+import AppIcon from '@/ui/common/AppIcon.vue'
+import AvatarMark from '@/ui/common/AvatarMark.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
 import brand from '@/assets/brand-mark.png'
 const ui = useUiStore(),
   router = useRouter(),
@@ -37,42 +39,42 @@ function globalSearch() {
       ><img :src="brand" alt="CoffeeLink 标识" /><span
         ><strong>CoffeeLink</strong><small>咖啡机物联云平台</small></span
       ></a
-    ><button
+    ><UiButton
       class="icon-button mobile-toggle"
       aria-label="打开主导航"
       @click="ui.mobileOpen = !ui.mobileOpen"
     >
       <AppIcon name="menu" />
-    </button>
+    </UiButton>
     <div v-if="!live" class="header-company">
-      <AppIcon name="company" :size="19" /><select
+      <AppIcon name="company" :size="19" /><UiSelect
         :value="store?.tenantId"
         aria-label="切换企业"
         @change="changeTenant"
       >
-        <option value="shanghai">上海咖啡科技有限公司</option>
-        <option value="hangzhou">杭州咖啡运营有限公司</option></select
+        <UiOption value="shanghai">上海咖啡科技有限公司</UiOption>
+        <UiOption value="hangzhou">杭州咖啡运营有限公司</UiOption></select
       ><span class="edition">标准版</span>
     </div>
     <div v-else class="header-company">
       {{ route.meta.surface === 'platform' ? '平台管理' : '业务工作区' }}
     </div>
     <form v-if="!live" class="global-search" role="search" @submit.prevent="globalSearch">
-      <AppIcon name="search" :size="16" /><input
+      <AppIcon name="search" :size="16" /><UiInput
         v-model="search"
         aria-label="全局搜索成员"
         placeholder="搜索设备、点位、客户、订单…"
       /><span>⌘ K</span>
     </form>
     <div v-if="!live" class="header-actions">
-      <button class="icon-button notification" aria-label="通知中心" @click="panel = '通知中心'">
+      <UiButton class="icon-button notification" aria-label="通知中心" @click="panel = '通知中心'">
         <AppIcon name="bell" :size="21" /><b>12</b></button
-      ><button class="header-link" @click="panel = '帮助中心'"><AppIcon name="help" />帮助中心</button
-      ><button class="header-link" @click="panel = '下载中心'"><AppIcon name="download" />下载中心</button
-      ><button class="profile" @click="panel = '当前账号'">
+      ><UiButton class="header-link" @click="panel = '帮助中心'"><AppIcon name="help" />帮助中心</button
+      ><UiButton class="header-link" @click="panel = '下载中心'"><AppIcon name="download" />下载中心</button
+      ><UiButton class="profile" @click="panel = '当前账号'">
         <AvatarMark name="张" :size="36" tone="solid" /><span>张三<small>超级管理员</small></span>
         <AppIcon name="down" :size="14" />
-      </button>
+      </UiButton>
     </div>
   </header>
   <UiDialog :open="Boolean(panel)" :title="panel" @close="panel = ''">
@@ -88,7 +90,7 @@ function globalSearch() {
         </p> </template
       ><template v-else-if="panel === '通知中心'">
         <p>暂无已连接的通知源。</p>
-        <button
+        <UiButton
           class="btn"
           @click="
             () => {
@@ -98,7 +100,7 @@ function globalSearch() {
           "
         >
           前往通知设置
-        </button> </template
+        </UiButton> </template
       ><template v-else-if="panel === '下载中心'">
         <p>列表导出文件由浏览器直接下载，不会上传到远程服务。</p> </template
       ><template v-else>
@@ -117,7 +119,7 @@ function globalSearch() {
   display: flex;
   align-items: center;
   gap: 20px;
-  /* background: rgb(255 255 255 / 90%); */
+  /* background: var(--color-fixed-08d5b1db); */
   /* border-bottom: 1px solid var(--color-border); */
   padding: 0 24px 0 20px;
   backdrop-filter: blur(10px);

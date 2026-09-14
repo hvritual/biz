@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
+
 import { ref, watch } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
 import type { RentalSite } from '@/types/siteRental'
 import { rentalState } from '@/services/siteRental/model'
 import { operators } from '@/services/customer/seed'
-import UiDialog from '@/components/ui/UiDialog.vue'
-import CustomerAlert from '@/components/customer/CustomerAlert.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
+import CustomerAlert from '@/features/customer/components/CustomerAlert.vue'
 const props = defineProps<{ open: boolean; siteId?: string }>(),
   emit = defineEmits<{ close: []; saved: [id: string] }>()
 const store = useCustomerStore(),
@@ -95,80 +97,80 @@ function save() {
       <div class="rental-field-grid">
         <label
           >所属客户 <b>*</b
-          ><select v-model="form.customerId" required :disabled="!!siteId">
-            <option disabled value="">请选择客户</option>
-            <option
+          ><UiSelect v-model="form.customerId" required :disabled="!!siteId">
+            <UiOption disabled value="">请选择客户</UiOption>
+            <UiOption
               v-for="c in store.snapshot.customers.filter((x) => !x.archived)"
               :key="c.id"
               :value="c.id"
             >
               {{ c.name }}
-            </option>
-          </select></label
+            </UiOption>
+          </UiSelect></label
         >
         <label
           >节点类型 <b>*</b
-          ><select v-model="form.kind" :disabled="!!siteId">
-            <option value="site">实际服务点位</option>
-            <option value="group">组织分组（不计费、不投放）</option>
-          </select></label
+          ><UiSelect v-model="form.kind" :disabled="!!siteId">
+            <UiOption value="site">实际服务点位</UiOption>
+            <UiOption value="group">组织分组（不计费、不投放）</UiOption>
+          </UiSelect></label
         >
-        <label>点位名称 <b>*</b><input v-model="form.name" required maxlength="80" /></label
+        <label>点位名称 <b>*</b><UiInput v-model="form.name" required maxlength="80" /></label
         ><label
-          >上级位置 / 分组 <b>*</b><input v-model="form.parent" required placeholder="如 上海总部 / 3 楼"
+          >上级位置 / 分组 <b>*</b><UiInput v-model="form.parent" required placeholder="如 上海总部 / 3 楼"
         /></label>
         <label class="rental-full"
-          >详细地址 <b>*</b><input v-model="form.address" required placeholder="城市、楼宇、楼层与具体位置"
+          >详细地址 <b>*</b><UiInput v-model="form.address" required placeholder="城市、楼宇、楼层与具体位置"
         /></label>
         <label
-          >使用场景<select v-model="form.scene">
-            <option>企业办公</option>
-            <option>酒店公共空间</option>
-            <option>商业场馆</option>
-            <option>其他</option>
-          </select></label
-        ><label>开放时间<input v-model="form.hours" /></label>
+          >使用场景<UiSelect v-model="form.scene">
+            <UiOption>企业办公</UiOption>
+            <UiOption>酒店公共空间</UiOption>
+            <UiOption>商业场馆</UiOption>
+            <UiOption>其他</UiOption>
+          </UiSelect></label
+        ><label>开放时间<UiInput v-model="form.hours" /></label>
       </div>
       <h3>责任人与现场约束</h3>
       <div class="rental-field-grid">
         <label
           >出租方点位负责人 <b>*</b
-          ><select v-model="form.owner" required>
-            <option v-for="owner in operators" :key="owner">{{ owner }}</option>
-          </select></label
-        ><label>客户现场联系人 <b>*</b><input v-model="form.contact" required /></label>
-        <label>联系方式<input v-model="form.phone" placeholder="允许展示脱敏联系方式" /></label
-        ><label>清洁责任<input v-model="form.cleaning" /></label>
+          ><UiSelect v-model="form.owner" required>
+            <UiOption v-for="owner in operators" :key="owner">{{ owner }}</UiOption>
+          </UiSelect></label
+        ><label>客户现场联系人 <b>*</b><UiInput v-model="form.contact" required /></label>
+        <label>联系方式<UiInput v-model="form.phone" placeholder="允许展示脱敏联系方式" /></label
+        ><label>清洁责任<UiInput v-model="form.cleaning" /></label>
         <label
-          >补货责任<select v-model="form.supplies">
-            <option>待确认</option>
-            <option>出租方补货</option>
-            <option>客户自行采购</option>
-          </select></label
-        ><label>下次行动<input v-model="form.nextAt" type="datetime-local" /></label>
+          >补货责任<UiSelect v-model="form.supplies">
+            <UiOption>待确认</UiOption>
+            <UiOption>出租方补货</UiOption>
+            <UiOption>客户自行采购</UiOption>
+          </UiSelect></label
+        ><label>下次行动<UiInput v-model="form.nextAt" type="datetime-local" /></label>
         <label class="rental-full"
-          >进场与服务约束<textarea
+          >进场与服务约束<UiTextarea
             v-model="form.access"
             rows="2"
             placeholder="进场预约、货梯、工作日与安全要求"
           />
         </label>
-        <label>供水条件<input v-model="form.water" /></label
-        ><label>电源条件<input v-model="form.power" /></label
-        ><label>网络条件<input v-model="form.network" /></label
-        ><label>下一步行动<input v-model="form.nextAction" /></label>
+        <label>供水条件<UiInput v-model="form.water" /></label
+        ><label>电源条件<UiInput v-model="form.power" /></label
+        ><label>网络条件<UiInput v-model="form.network" /></label
+        ><label>下一步行动<UiInput v-model="form.nextAction" /></label>
       </div>
       <p v-if="error" role="alert" class="rental-error">{{ error }}</p>
       <CustomerAlert v-if="discard" title="存在未保存修改" tone="warning"
-        ><button type="button" class="btn" @click="discard = false">继续编辑</button>
-        <button type="button" class="btn btn-danger" @click="emit('close')">放弃修改</button></CustomerAlert
+        ><UiButton type="button" class="btn" @click="discard = false">继续编辑</UiButton>
+        <UiButton type="button" class="btn btn-danger" @click="emit('close')">放弃修改</UiButton></CustomerAlert
       >
     </form>
     <template #footer
-      ><button class="btn" @click="close">取消</button
-      ><button class="btn btn-primary" type="submit" form="rental-site-form">
+      ><UiButton class="btn" @click="close">取消</button
+      ><UiButton class="btn btn-primary" type="submit" form="rental-site-form">
         保存点位（预览）
-      </button></template
+      </UiButton></template
     >
   </UiDialog>
 </template>
