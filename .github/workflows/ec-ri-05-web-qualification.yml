@@ -70,7 +70,7 @@ jobs:
           for title in required_titles:
               assert title in serialized, f'missing EC-RI-05 browser evidence: {title}'
           shots = Path('screenshots')
-          for width, height in [(1366, 768), (1440, 900), (390, 844)]:
+          for width, height in [(1366, 768), (1440, 900), (1536, 1024), (390, 844)]:
               path = shots / f'enterprise-company-real-{width}.png'
               data = path.read_bytes()
               assert data[:8] == b'\x89PNG\r\n\x1a\n', path

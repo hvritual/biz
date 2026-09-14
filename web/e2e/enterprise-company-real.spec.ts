@@ -91,7 +91,7 @@ async function openRealCompany(page: Page) {
 test('real company page renders only authoritative Tenant Profile data across CoffeeLink viewports', async ({ page }) => {
   await mockTenantProfileServer(page)
   mkdirSync('screenshots', { recursive: true })
-  for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+  for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1536, height: 1024 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport)
     await openRealCompany(page)
     await expect(page.getByLabel('企业名称')).toHaveValue('CoffeeLink 租赁运营有限公司')
@@ -108,7 +108,7 @@ test('company update sends trusted-session headers and idempotency then confirms
   await page.getByLabel('企业简称').fill('CoffeeLink Pro')
   await page.getByLabel('企业邮箱').fill('success@coffeelink.test')
   await page.getByRole('button', { name: '保存并回读确认' }).click()
-  await expect(page.getByRole('status')).toContainText('企业资料已由服务端确认 · v8')
+  await expect(page.getByText('企业资料已由服务端确认 · v8', { exact: true })).toBeVisible()
   await expect(page.getByText('v8', { exact: true })).toBeVisible()
 
   const write = server.getWrites()[0]!
