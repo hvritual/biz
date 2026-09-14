@@ -6,6 +6,7 @@ on:
       - feat/enterprise-organization-department-real-integration
     paths:
       - .github/workflows/ec-ri-04-web-qualification.yml
+      - web/**
 
 permissions:
   contents: read
@@ -73,5 +74,5 @@ jobs:
             web/screenshots
             web/test-results
             web/dist
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
