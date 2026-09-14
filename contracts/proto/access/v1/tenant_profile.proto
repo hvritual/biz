@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package access.v1;
+
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+
+option go_package = "github.com/hvritual/biz/contracts/gen/access/v1;accessv1";
+option (yunka.dsl.v1.domain) = {
+  name: "access"
+  version: "v1"
+};
+
+message TenantProfileDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string tenant_id = 1;
+  string name = 2;
+  string short_name = 3;
+  string industry = 4;
+  string company_size = 5;
+  string timezone = 6;
+  string contact_name = 7;
+  string phone = 8;
+  string email = 9;
+  string address = 10;
+  string description = 11;
+  string logo_asset_ref = 12;
+  uint64 version = 13;
+}
+
+message GetTenantProfileRequest {}
+
+message UpdateTenantProfileRequest {
+  string name = 1;
+  string short_name = 2;
+  string industry = 3;
+  string company_size = 4;
+  string timezone = 5;
+  string contact_name = 6;
+  string phone = 7;
+  string email = 8;
+  string address = 9;
+  string description = 10;
+  string logo_asset_ref = 11;
+  uint64 version = 12;
+}
+
+service TenantProfileManagementApplication {
+  option (yunka.dsl.v1.application) = { name: "tenant_profile_management" };
+
+  rpc GetTenantProfile(GetTenantProfileRequest) returns (TenantProfileDTO) {
+    option (google.api.http) = { get: "/v1/tenant/profile" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.profile.get"
+      use_case: "get_tenant_profile"
+      permissions: "tenant.organization.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc UpdateTenantProfile(UpdateTenantProfileRequest) returns (TenantProfileDTO) {
+    option (google.api.http) = { patch: "/v1/tenant/profile" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.profile.update"
+      use_case: "update_tenant_profile"
+      permissions: "tenant.organization.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+}

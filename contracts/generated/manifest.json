@@ -42,6 +42,16 @@
       }
     },
     {
+      "name": "contracts/proto/access/v1/tenant_profile.proto",
+      "package": "access.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/access/v1;accessv1",
+      "domain": {
+        "name": "access",
+        "version": "v1"
+      }
+    },
+    {
       "name": "contracts/proto/access/v1/tenant_role.proto",
       "package": "access.v1",
       "syntax": "proto3",
@@ -597,6 +607,14 @@
           "type": "string"
         }
       ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "GetTenantProfileRequest",
+      "fullName": "access.v1.GetTenantProfileRequest",
+      "fields": null,
       "dto": {
         "kind": "input"
       }
@@ -1304,6 +1322,106 @@
       }
     },
     {
+      "name": "TenantProfileDTO",
+      "fullName": "access.v1.TenantProfileDTO",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "short_name",
+          "jsonName": "shortName",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "industry",
+          "jsonName": "industry",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "company_size",
+          "jsonName": "companySize",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "timezone",
+          "jsonName": "timezone",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "contact_name",
+          "jsonName": "contactName",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "phone",
+          "jsonName": "phone",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "email",
+          "jsonName": "email",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "address",
+          "jsonName": "address",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "jsonName": "description",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "logo_asset_ref",
+          "jsonName": "logoAssetRef",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 13,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "TenantRoleDTO",
       "fullName": "access.v1.TenantRoleDTO",
       "fields": [
@@ -1463,6 +1581,99 @@
           "name": "version",
           "jsonName": "version",
           "number": 7,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "UpdateTenantProfileRequest",
+      "fullName": "access.v1.UpdateTenantProfileRequest",
+      "fields": [
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "short_name",
+          "jsonName": "shortName",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "industry",
+          "jsonName": "industry",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "company_size",
+          "jsonName": "companySize",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "timezone",
+          "jsonName": "timezone",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "contact_name",
+          "jsonName": "contactName",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "phone",
+          "jsonName": "phone",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "email",
+          "jsonName": "email",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "address",
+          "jsonName": "address",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "jsonName": "description",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "logo_asset_ref",
+          "jsonName": "logoAssetRef",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 12,
           "kind": "scalar",
           "type": "uint64"
         }
@@ -7001,6 +7212,99 @@
             "operationId": "tenant.member.profile.update",
             "permissions": [
               "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TenantProfileManagementApplication",
+      "fullName": "access.v1.TenantProfileManagementApplication",
+      "domain": "access",
+      "application": {
+        "name": "tenant_profile_management"
+      },
+      "methods": [
+        {
+          "name": "GetTenantProfile",
+          "fullName": "access.v1.TenantProfileManagementApplication.GetTenantProfile",
+          "request": "access.v1.GetTenantProfileRequest",
+          "response": "access.v1.TenantProfileDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/profile"
+            }
+          ],
+          "operation": {
+            "id": "tenant.profile.get",
+            "useCase": "get_tenant_profile",
+            "permissions": [
+              "tenant.organization.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.profile.get",
+            "permissions": [
+              "tenant.organization.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "UpdateTenantProfile",
+          "fullName": "access.v1.TenantProfileManagementApplication.UpdateTenantProfile",
+          "request": "access.v1.UpdateTenantProfileRequest",
+          "response": "access.v1.TenantProfileDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/tenant/profile",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.profile.update",
+            "useCase": "update_tenant_profile",
+            "permissions": [
+              "tenant.organization.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.profile.update",
+            "permissions": [
+              "tenant.organization.manage"
             ],
             "permissionMode": "all",
             "tenantRequired": true,

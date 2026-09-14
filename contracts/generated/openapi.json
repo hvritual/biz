@@ -204,6 +204,11 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.GetTenantMemberRequest"
       },
+      "access_v1_GetTenantProfileRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.GetTenantProfileRequest"
+      },
       "access_v1_GetTenantRequest": {
         "properties": {
           "id": {
@@ -635,6 +640,53 @@
         "type": "string",
         "x-yunka-proto-full-name": "access.v1.TenantMemberStatus"
       },
+      "access_v1_TenantProfileDTO": {
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "companySize": {
+            "type": "string"
+          },
+          "contactName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "industry": {
+            "type": "string"
+          },
+          "logoAssetRef": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "shortName": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.TenantProfileDTO"
+      },
       "access_v1_TenantRoleDTO": {
         "properties": {
           "id": {
@@ -742,6 +794,50 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.UpdateTenantMemberProfileRequest"
+      },
+      "access_v1_UpdateTenantProfileRequest": {
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "companySize": {
+            "type": "string"
+          },
+          "contactName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "industry": {
+            "type": "string"
+          },
+          "logoAssetRef": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "shortName": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.UpdateTenantProfileRequest"
       },
       "access_v1_UpdateTenantRequest": {
         "properties": {
@@ -4873,6 +4969,56 @@
           "access.v1.TenantMemberLifecycleApplication"
         ],
         "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/SuspendTenantMember"
+      }
+    },
+    "/v1/tenant/profile": {
+      "get": {
+        "operationId": "access.v1.TenantProfileManagementApplication.GetTenantProfile",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantProfileDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantProfileManagementApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantProfileManagementApplication/GetTenantProfile"
+      },
+      "patch": {
+        "operationId": "access.v1.TenantProfileManagementApplication.UpdateTenantProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_UpdateTenantProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantProfileDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantProfileManagementApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantProfileManagementApplication/UpdateTenantProfile"
       }
     },
     "/v1/tenant/roles": {

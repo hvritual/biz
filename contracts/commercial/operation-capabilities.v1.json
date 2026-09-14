@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "12",
+  "mapping_version": "13",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -895,6 +895,24 @@
           "source": "internal/access/application/tenant_member_lifecycle.go#SuspendTenantMember"
         }
       ]
+    },
+    {
+      "operation_id": "tenant.profile.get",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.profile.update",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": []
     },
     {
       "operation_id": "tenant.role.assert_member_deactivation_allowed",
