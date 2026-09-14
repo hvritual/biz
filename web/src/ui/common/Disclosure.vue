@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ChevronDown } from 'lucide-vue-next'
 import { UiCollapsible } from '@/ui/base'
+
+defineOptions({ name: 'UiDisclosure' })
 </script>
 <template>
   <UiCollapsible data-ui-pattern="Disclosure">
