@@ -15,10 +15,10 @@ import (
 var ErrInvalidTenantProfileRequest = errors.New("access: invalid tenant profile request")
 
 type TenantProfileManagementService struct {
-	repositories requestscope.RepositoryFactory[ports.TenantRepositories]
+	repositories requestscope.RepositoryFactory[ports.TenantProfileRepositories]
 }
 
-func NewTenantProfileManagementService(repositories requestscope.RepositoryFactory[ports.TenantRepositories]) (*TenantProfileManagementService, error) {
+func NewTenantProfileManagementService(repositories requestscope.RepositoryFactory[ports.TenantProfileRepositories]) (*TenantProfileManagementService, error) {
 	if repositories == nil {
 		return nil, errors.New("access: tenant profile repository factory is required")
 	}
@@ -30,8 +30,8 @@ func (service *TenantProfileManagementService) GetTenantProfile(ctx context.Cont
 	if err != nil {
 		return nil, err
 	}
-	profile, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRepositories]) (domain.TenantProfile, error) {
-		return scope.Repositories().Tenant.GetProfile(scope.Context(), tenantID)
+	profile, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantProfileRepositories]) (domain.TenantProfile, error) {
+		return scope.Repositories().Profile.GetProfile(scope.Context(), tenantID)
 	})
 	if err != nil {
 		return nil, err
@@ -47,8 +47,8 @@ func (service *TenantProfileManagementService) UpdateTenantProfile(ctx context.C
 	if err != nil {
 		return nil, err
 	}
-	profile, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRepositories]) (domain.TenantProfile, error) {
-		repository := scope.Repositories().Tenant
+	profile, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantProfileRepositories]) (domain.TenantProfile, error) {
+		repository := scope.Repositories().Profile
 		current, err := repository.GetProfile(scope.Context(), tenantID)
 		if err != nil {
 			return domain.TenantProfile{}, err
@@ -83,18 +83,18 @@ func tenantProfileDTO(profile domain.TenantProfile) *accessv1.TenantProfileDTO {
 		timezone = "Asia/Shanghai"
 	}
 	return &accessv1.TenantProfileDTO{
-		TenantId: profile.TenantID,
-		Name: profile.Name,
-		ShortName: shortName,
-		Industry: profile.Industry,
-		CompanySize: profile.CompanySize,
-		Timezone: timezone,
-		ContactName: profile.ContactName,
-		Phone: profile.Phone,
-		Email: profile.Email,
-		Address: profile.Address,
-		Description: profile.Description,
+		TenantId:     profile.TenantID,
+		Name:         profile.Name,
+		ShortName:    shortName,
+		Industry:     profile.Industry,
+		CompanySize:  profile.CompanySize,
+		Timezone:     timezone,
+		ContactName:  profile.ContactName,
+		Phone:        profile.Phone,
+		Email:        profile.Email,
+		Address:      profile.Address,
+		Description:  profile.Description,
 		LogoAssetRef: profile.LogoAssetRef,
-		Version: profile.Version,
+		Version:      profile.Version,
 	}
 }

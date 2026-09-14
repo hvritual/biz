@@ -31,7 +31,7 @@ func (factory applicationFactories) BuildAccessTenantDepartmentManagement(genera
 }
 
 func (factory applicationFactories) BuildAccessTenantProfileManagement(generatedassembly.AccessTenantProfileManagementDependencies) (accessapp.TenantProfileManagementApplication, error) {
-	inner, err := accessapp.NewTenantProfileManagementService(factory.tenantRepositories)
+	inner, err := accessapp.NewTenantProfileManagementService(factory.tenantProfileRepositories)
 	if err != nil {
 		return nil, err
 	}

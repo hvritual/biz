@@ -68,10 +68,10 @@ func (repository *TenantRepository) Update(ctx context.Context, tenant *domain.T
 	result := repository.database.WithContext(ctx).Model(&tenantRecord{}).
 		Where("id = ? AND version = ?", tenant.ID, expectedVersion).
 		Updates(map[string]any{
-			"name": tenant.Name,
-			"status": tenant.Status,
+			"name":       tenant.Name,
+			"status":     tenant.Status,
 			"updated_at": tenant.UpdatedAt,
-			"version": gorm.Expr("version + 1"),
+			"version":    gorm.Expr("version + 1"),
 		})
 	if result.Error != nil {
 		return result.Error
@@ -123,19 +123,19 @@ func (repository *TenantRepository) UpdateProfile(ctx context.Context, profile *
 	result := repository.database.WithContext(ctx).Model(&tenantRecord{}).
 		Where("id = ? AND version = ?", profile.TenantID, expectedVersion).
 		Updates(map[string]any{
-			"name": profile.Name,
-			"short_name": profile.ShortName,
-			"industry": profile.Industry,
-			"company_size": profile.CompanySize,
-			"timezone": profile.Timezone,
-			"contact_name": profile.ContactName,
-			"phone": profile.Phone,
-			"email": profile.Email,
-			"address": profile.Address,
-			"description": profile.Description,
+			"name":           profile.Name,
+			"short_name":     profile.ShortName,
+			"industry":       profile.Industry,
+			"company_size":   profile.CompanySize,
+			"timezone":       profile.Timezone,
+			"contact_name":   profile.ContactName,
+			"phone":          profile.Phone,
+			"email":          profile.Email,
+			"address":        profile.Address,
+			"description":    profile.Description,
 			"logo_asset_ref": profile.LogoAssetRef,
-			"updated_at": profile.UpdatedAt,
-			"version": gorm.Expr("version + 1"),
+			"updated_at":     profile.UpdatedAt,
+			"version":        gorm.Expr("version + 1"),
 		})
 	if result.Error != nil {
 		return result.Error
@@ -156,10 +156,10 @@ func (repository *TenantRepository) UpdateProfile(ctx context.Context, profile *
 
 func (row tenantRecord) domain() domain.Tenant {
 	return domain.Tenant{
-		ID: row.ID,
-		Name: row.Name,
-		Status: row.Status,
-		Version: row.Version,
+		ID:        row.ID,
+		Name:      row.Name,
+		Status:    row.Status,
+		Version:   row.Version,
 		CreatedAt: row.CreatedAt,
 		UpdatedAt: row.UpdatedAt,
 	}
@@ -175,5 +175,18 @@ func NewTenantRepositoryFactory(database *gorm.DB) (requestscope.RepositoryFacto
 			return ports.TenantRepositories{}, err
 		}
 		return ports.TenantRepositories{Tenant: tenant}, nil
+	}), nil
+}
+
+func NewTenantProfileRepositoryFactory(database *gorm.DB) (requestscope.RepositoryFactory[ports.TenantProfileRepositories], error) {
+	if database == nil {
+		return nil, errors.New("access persistence: tenant profile database is required")
+	}
+	return requestscope.GORMRepositories(func(_ context.Context, transaction *gorm.DB) (ports.TenantProfileRepositories, error) {
+		repository, err := NewTenantRepository(transaction)
+		if err != nil {
+			return ports.TenantProfileRepositories{}, err
+		}
+		return ports.TenantProfileRepositories{Profile: repository}, nil
 	}), nil
 }

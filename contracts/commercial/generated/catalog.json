@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "mapping_version": "12",
+  "mapping_version": "13",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "f810bd7dbdb367e962850adcb18963eacd723bf436df6bc5b7fa7d16fd4e656f",
-    "contracts/generated/manifest.json": "74c4194a3e41692cdc527342b34e4c9dbe79a5f641b778dd34a5c1dcd81ba63d",
-    "contracts/generated/operation-plans.json": "1b351e283f0267a1fc5a06f5caa2f66e87a10fddd8e416bd5b37f3c6db1d268e",
+    "contracts/commercial/operation-capabilities.v1.json": "3df0a16cb7ab5e6ba9823626fe00c65c8b50e48401c61926a05239f86b65a9ca",
+    "contracts/generated/manifest.json": "341451093513f0656efce05b8f59343a84de0d2660b747bf4ff91f7c0d1b3e78",
+    "contracts/generated/operation-plans.json": "298e3d25bcea5f71c842e4786e3e94f9ddc7c1b98eadb50295ed4875b5058f9b",
     "internal/access/application/tenant_delegation.go": "b43e6709e61b7867395bc04a901a19c2a54cf4ec9565e875b354b1622e636589",
     "internal/access/application/tenant_member_lifecycle.go": "a7c5cd556a4df410fe625a74eb8d570dffe2abc215d485cdd5ddef6388b5ffa0",
     "internal/access/application/tenantlifecycle/internal/usecase/service.go": "63e3eba06691d15fa88041b660431b48e87640bfaf35954774595db9880e5d29",
@@ -1431,6 +1431,42 @@
       ],
       "always_required_capability_codes": [
         "tenant.member.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.profile.get",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantProfileManagementApplication/GetTenantProfile",
+      "required_capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "tenant.profile.update",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantProfileManagementApplication/UpdateTenantProfile",
+      "required_capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.lifecycle"
       ]
     },
     {

@@ -43,6 +43,16 @@
       }
     },
     {
+      "id": "access/tenant_profile_management",
+      "domain": "access",
+      "name": "tenant_profile_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_profile_management"
+      }
+    },
+    {
       "id": "access/tenant_role_permission",
       "domain": "access",
       "name": "tenant_role_permission",
@@ -2742,6 +2752,68 @@
       }
     },
     {
+      "id": "tenant.profile.get",
+      "application": "access/tenant_profile_management",
+      "bindings": [
+        {
+          "operationId": "tenant.profile.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.profile.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.profile.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.profile.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.profile.get"
+      }
+    },
+    {
+      "id": "tenant.profile.update",
+      "application": "access/tenant_profile_management",
+      "bindings": [
+        {
+          "operationId": "tenant.profile.update",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.profile.update/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.profile.update",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.profile.update/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.profile.update"
+      }
+    },
+    {
       "id": "tenant.role.assert_member_deactivation_allowed",
       "application": "access/tenant_role_permission",
       "evidence": {
@@ -3544,6 +3616,7 @@
         "access/tenant_department_management",
         "access/tenant_lifecycle",
         "access/tenant_member_lifecycle",
+        "access/tenant_profile_management",
         "access/tenant_role_permission",
         "commercial/entitlement_management",
         "commercial/module_catalog",
@@ -3624,6 +3697,8 @@
         "tenant.member.profile.update",
         "tenant.member.remove",
         "tenant.member.suspend",
+        "tenant.profile.get",
+        "tenant.profile.update",
         "tenant.role.assign_member",
         "tenant.role.create",
         "tenant.role.disable",

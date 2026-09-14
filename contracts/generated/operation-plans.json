@@ -2996,6 +2996,73 @@
       }
     },
     {
+      "operationId": "tenant.profile.get",
+      "domain": "access",
+      "application": "tenant_profile_management",
+      "useCase": "get_tenant_profile",
+      "requestType": "access.v1.GetTenantProfileRequest",
+      "responseType": "access.v1.TenantProfileDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.organization.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantProfileManagementApplication/GetTenantProfile",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/profile"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.profile.update",
+      "domain": "access",
+      "application": "tenant_profile_management",
+      "useCase": "update_tenant_profile",
+      "requestType": "access.v1.UpdateTenantProfileRequest",
+      "responseType": "access.v1.TenantProfileDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.organization.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantProfileManagementApplication/UpdateTenantProfile",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/tenant/profile",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "tenant.role.assert_member_deactivation_allowed",
       "domain": "access",
       "application": "tenant_role_permission",
