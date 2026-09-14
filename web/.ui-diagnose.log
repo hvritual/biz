@@ -2,7 +2,7 @@ npm warn deprecated whatwg-encoding@3.1.1: Use @exodus/bytes instead for a more 
 npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
 npm warn deprecated lucide-vue-next@0.468.0: Package deprecated. Please use @lucide/vue instead.
 
-added 341 packages, and audited 342 packages in 4s
+added 341 packages, and audited 342 packages in 6s
 
 89 packages are looking for funding
   run `npm fund` for details
@@ -18,23 +18,13 @@ Run `npm audit` for details.
 > coffeelink-console@0.1.0 type-check
 > vue-tsc -b
 
-src/features/system/components/settings/GeneralSettings.vue(36,20): error TS2322: Type 'string | number | boolean | undefined' is not assignable to type 'SelectModelValue'.
-  Type 'false' is not assignable to type 'SelectModelValue'.
-src/features/system/components/settings/GeneralSettings.vue(40,20): error TS2322: Type 'string | number | boolean | undefined' is not assignable to type 'SelectModelValue'.
-  Type 'false' is not assignable to type 'SelectModelValue'.
-TYPE_CHECK_EXIT=2
+TYPE_CHECK_EXIT=0
 \n===== LINT =====
 
 > coffeelink-console@0.1.0 lint
 > eslint .
 
-
-/home/runner/work/biz/biz/web/src/ui/common/Disclosure.vue
-  1:1  error  Component name "Disclosure" should always be multi-word  vue/multi-word-component-names
-
-✖ 1 problem (1 error, 0 warnings)
-
-LINT_EXIT=1
+LINT_EXIT=0
 \n===== ARCHITECTURE =====
 
 > coffeelink-console@0.1.0 check:architecture
