@@ -22,6 +22,20 @@ describe('base control compatibility', () => {
     expect((input.element as HTMLInputElement).value).toBe('reset')
   })
 
+  it('preserves number and trim modifiers after native inputs become base components', async () => {
+    const numberInput = mount(UiInput, {
+      props: { modelValue: 1, modelModifiers: { number: true } },
+    })
+    await numberInput.get('input').setValue('42.5')
+    expect(numberInput.emitted('update:modelValue')?.at(-1)).toEqual([42.5])
+
+    const trimInput = mount(UiInput, {
+      props: { modelValue: '', modelModifiers: { trim: true } },
+    })
+    await trimInput.get('input').setValue('  coffee  ')
+    expect(trimInput.emitted('update:modelValue')?.at(-1)).toEqual(['coffee'])
+  })
+
   it('keeps legacy textarea value and input events controlled by the caller', async () => {
     const onInput = vi.fn()
     const wrapper = mount(UiTextarea, {
@@ -36,6 +50,17 @@ describe('base control compatibility', () => {
 
     await wrapper.setProps({ value: 'reset' })
     expect((textarea.element as HTMLTextAreaElement).value).toBe('reset')
+  })
+
+  it('preserves textarea modifiers and lazy updates', async () => {
+    const wrapper = mount(UiTextarea, {
+      props: { modelValue: '', modelModifiers: { trim: true, lazy: true } },
+    })
+    const textarea = wrapper.get('textarea')
+    await textarea.setValue('  delayed  ')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    await textarea.trigger('change')
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['delayed'])
   })
 
   it('does not replace an enclosing field label with the placeholder', () => {

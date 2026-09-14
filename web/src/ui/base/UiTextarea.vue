@@ -4,7 +4,12 @@ import { cn } from '@/lib/utils'
 
 defineOptions({ inheritAttrs: false })
 type TextareaModelValue = string | number | null | undefined
-const props = defineProps<{ modelValue?: TextareaModelValue; value?: TextareaModelValue }>()
+type ModelModifiers = { number?: boolean; trim?: boolean; lazy?: boolean }
+const props = defineProps<{
+  modelValue?: TextareaModelValue
+  modelModifiers?: ModelModifiers
+  value?: TextareaModelValue
+}>()
 const emit = defineEmits<{
   'update:modelValue': [value: TextareaModelValue]
   input: [event: Event]
@@ -18,11 +23,22 @@ const classes = computed(() =>
     attrs.class,
   ),
 )
+function normalizeText(value: string): string | number {
+  const trimmed = props.modelModifiers?.trim ? value.trim() : value
+  if (!props.modelModifiers?.number) return trimmed
+  const parsed = Number.parseFloat(trimmed)
+  return Number.isNaN(parsed) ? trimmed : parsed
+}
 function handleInput(event: Event) {
-  emit('update:modelValue', (event.target as HTMLTextAreaElement).value)
+  if (!props.modelModifiers?.lazy) {
+    emit('update:modelValue', normalizeText((event.target as HTMLTextAreaElement).value))
+  }
   emit('input', event)
 }
 function handleChange(event: Event) {
+  if (props.modelModifiers?.lazy) {
+    emit('update:modelValue', normalizeText((event.target as HTMLTextAreaElement).value))
+  }
   emit('change', event)
 }
 </script>

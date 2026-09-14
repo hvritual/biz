@@ -4,8 +4,10 @@ import { cn } from '@/lib/utils'
 
 defineOptions({ inheritAttrs: false })
 type InputModelValue = string | number | boolean | string[] | null | undefined
+type ModelModifiers = { number?: boolean; trim?: boolean; lazy?: boolean }
 const props = defineProps<{
   modelValue?: InputModelValue
+  modelModifiers?: ModelModifiers
   value?: string | number | null
   checked?: boolean
 }>()
@@ -35,14 +37,22 @@ const classes = computed(() =>
     attrs.class,
   ),
 )
+function normalizeText(value: string): string | number {
+  const trimmed = props.modelModifiers?.trim ? value.trim() : value
+  if (!props.modelModifiers?.number) return trimmed
+  const parsed = Number.parseFloat(trimmed)
+  return Number.isNaN(parsed) ? trimmed : parsed
+}
 function handleInput(event: Event) {
   const target = event.target as HTMLInputElement
-  if (!checkable.value) emit('update:modelValue', target.value)
+  if (!checkable.value && !props.modelModifiers?.lazy) emit('update:modelValue', normalizeText(target.value))
   emit('input', event)
 }
 function handleChange(event: Event) {
   const target = event.target as HTMLInputElement
-  if (inputType.value === 'checkbox') {
+  if (!checkable.value && props.modelModifiers?.lazy) {
+    emit('update:modelValue', normalizeText(target.value))
+  } else if (inputType.value === 'checkbox') {
     if (Array.isArray(props.modelValue)) {
       const item = String(props.value ?? '')
       const next = target.checked

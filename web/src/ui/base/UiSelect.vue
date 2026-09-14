@@ -6,14 +6,16 @@ import { cn } from '@/lib/utils'
 
 defineOptions({ inheritAttrs: false })
 type SelectModelValue = string | number | boolean | null | undefined
+type ModelModifiers = { number?: boolean; trim?: boolean }
 const props = withDefaults(
   defineProps<{
     modelValue?: SelectModelValue
+    modelModifiers?: ModelModifiers
     placeholder?: string
     disabled?: boolean
     value?: SelectModelValue
   }>(),
-  { placeholder: '请选择', disabled: false, modelValue: undefined, value: undefined },
+  { placeholder: '请选择', disabled: false, modelValue: undefined, modelModifiers: undefined, value: undefined },
 )
 const emit = defineEmits<{
   'update:modelValue': [value: SelectModelValue]
@@ -21,7 +23,7 @@ const emit = defineEmits<{
 }>()
 const attrs = useAttrs()
 const emptyValue = '__coffeelink_empty__'
-function toLegacyChangeEvent(value: string): Event {
+function toLegacyChangeEvent(value: SelectModelValue): Event {
   const target = { value }
   return { target, currentTarget: target } as unknown as Event
 }
@@ -42,9 +44,15 @@ const triggerClass = computed(() =>
     attrs.class,
   ),
 )
+function normalizeModelValue(value: string): string | number {
+  const trimmed = props.modelModifiers?.trim ? value.trim() : value
+  if (!props.modelModifiers?.number) return trimmed
+  const parsed = Number.parseFloat(trimmed)
+  return Number.isNaN(parsed) ? trimmed : parsed
+}
 function handleUpdate(value: unknown) {
   const normalized = String(value ?? emptyValue)
-  const next = normalized === emptyValue ? '' : normalized
+  const next = normalized === emptyValue ? '' : normalizeModelValue(normalized)
   emit('update:modelValue', next)
   emit('change', toLegacyChangeEvent(next))
 }
