@@ -87,6 +87,40 @@ jobs:
           GOBIN="$plugins" go install "google.golang.org/grpc/cmd/protoc-gen-go-grpc@${PROTOC_GEN_GO_GRPC_VERSION}"
           echo "$plugins" >> "$GITHUB_PATH"
 
+      - name: Classify Tenant Profile commercial operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('contracts/commercial/operation-capabilities.v1.json')
+          data = json.loads(path.read_text(encoding='utf-8'))
+          data['mapping_version'] = '13'
+          entries = {
+              'tenant.profile.get': {
+                  'operation_id': 'tenant.profile.get',
+                  'classification': 'tenant_business',
+                  'module_code': 'access-management',
+                  'capability_codes': ['tenant.lifecycle'],
+                  'children': [],
+              },
+              'tenant.profile.update': {
+                  'operation_id': 'tenant.profile.update',
+                  'classification': 'tenant_business',
+                  'module_code': 'access-management',
+                  'capability_codes': ['tenant.lifecycle'],
+                  'children': [],
+              },
+          }
+          operations = [item for item in data['operations'] if item['operation_id'] not in entries]
+          operations.extend(entries.values())
+          data['operations'] = sorted(operations, key=lambda item: item['operation_id'])
+          path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+
       - name: Generate and verify
         shell: bash
         run: |
