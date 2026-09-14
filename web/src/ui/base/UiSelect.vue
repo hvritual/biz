@@ -5,7 +5,7 @@ import { SelectContent, SelectIcon, SelectPortal, SelectRoot, SelectTrigger, Sel
 import { cn } from '@/lib/utils'
 
 defineOptions({ inheritAttrs: false })
-type SelectModelValue = string | number | null | undefined
+type SelectModelValue = string | number | boolean | null | undefined
 const props = withDefaults(
   defineProps<{ placeholder?: string; disabled?: boolean; value?: SelectModelValue }>(),
   { placeholder: '请选择', disabled: false, value: undefined },
