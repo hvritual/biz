@@ -23,9 +23,6 @@ jobs:
       - name: Apply three-layer migration
         working-directory: web
         run: node scripts/migrate-ui-layers.mjs
-      - name: Format migrated frontend
-        working-directory: web
-        run: npx prettier --write "src/**/*.{vue,ts,css,json}" "scripts/*.mjs" "*.json" "*.ts"
       - name: Commit migration result
         run: |
           git config user.name github-actions[bot]
