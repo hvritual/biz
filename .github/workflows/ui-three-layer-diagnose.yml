@@ -14,15 +14,42 @@ jobs:
           ref: refactor/ui-three-layer-system
       - uses: actions/setup-node@v4
         with:
-          node-version: '22.12.0'
+          node-version: '22'
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - name: Capture frontend checks
+      - name: Repair migrated templates and capture frontend checks
         shell: bash
         run: |
           set +e
           cd web
           npm ci > .ui-diagnose.log 2>&1
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('src')
+          mapping = {
+              'button': 'UiButton',
+              'input': 'UiInput',
+              'select': 'UiSelect',
+              'option': 'UiOption',
+              'textarea': 'UiTextarea',
+          }
+          for path in root.rglob('*.vue'):
+              if 'ui/base' in path.as_posix():
+                  continue
+              source = path.read_text()
+              for tag, component in mapping.items():
+                  source = re.sub(rf'<{tag}\b', f'<{component}', source, flags=re.I)
+                  source = re.sub(rf'</{tag}\s*>', f'</{component}>', source, flags=re.I)
+              if path.as_posix().endswith('features/site-rental/components/StatementDialog.vue'):
+                  source = source.replace('<details>', '<Disclosure>').replace('</details>', '</Disclosure>')
+                  source = source.replace('<summary>', '<template #summary>').replace('</summary>', '</template>')
+                  if "import Disclosure from '@/ui/common/Disclosure.vue'" not in source:
+                      marker = "import UiDialog from '@/ui/common/UiDialog.vue'\n"
+                      source = source.replace(marker, marker + "import Disclosure from '@/ui/common/Disclosure.vue'\n")
+              path.write_text(source)
+          PY
           echo '\n===== TYPE CHECK =====' >> .ui-diagnose.log
           npm run type-check >> .ui-diagnose.log 2>&1
           echo "TYPE_CHECK_EXIT=$?" >> .ui-diagnose.log
@@ -35,10 +62,10 @@ jobs:
           echo '\n===== UI CONTRACTS =====' >> .ui-diagnose.log
           npm run check:ui-contracts >> .ui-diagnose.log 2>&1
           echo "UI_CONTRACT_EXIT=$?" >> .ui-diagnose.log
-      - name: Commit diagnostic
+      - name: Commit repaired migration and diagnostic
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add -f web/.ui-diagnose.log
-          git commit -m "chore(web): capture UI check diagnostics [ui-diagnose]"
+          git add web
+          git commit -m "fix(web): repair migrated UI contracts [ui-diagnose]"
           git push origin HEAD:refactor/ui-three-layer-system
