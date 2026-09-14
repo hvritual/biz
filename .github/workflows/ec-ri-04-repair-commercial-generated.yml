@@ -18,13 +18,27 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: feat/enterprise-organization-department-real-integration
+          path: biz
           fetch-depth: 0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 9ee6640f5e19777b4c04d9e4937a93e2035eacda
+          path: yunka.io
+          persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
           go-version: '1.25.13'
           cache: false
+      - name: Verify locked source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C yunka.io rev-parse HEAD)" = '9ee6640f5e19777b4c04d9e4937a93e2035eacda'
+          grep -F 'YUNKA_COMMIT="9ee6640f5e19777b4c04d9e4937a93e2035eacda"' biz/.yunka/source.env
       - name: Regenerate commercial catalog
         shell: bash
+        working-directory: biz
         run: |
           set -euo pipefail
           make commercial-generate
@@ -33,6 +47,7 @@ jobs:
           git status --short
       - name: Commit derived artifacts only
         shell: bash
+        working-directory: biz
         run: |
           set -euo pipefail
           git add contracts/commercial/generated/catalog.json contracts/commercial/generated/catalog.ts
