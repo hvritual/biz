@@ -1,0 +1,44 @@
+name: ui-three-layer-diagnose
+on:
+  push:
+    branches: [refactor/ui-three-layer-system]
+permissions:
+  contents: write
+jobs:
+  diagnose:
+    if: ${{ !contains(github.event.head_commit.message, '[ui-diagnose]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/ui-three-layer-system
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Capture frontend checks
+        shell: bash
+        run: |
+          set +e
+          cd web
+          npm ci > .ui-diagnose.log 2>&1
+          echo '\n===== TYPE CHECK =====' >> .ui-diagnose.log
+          npm run type-check >> .ui-diagnose.log 2>&1
+          echo "TYPE_CHECK_EXIT=$?" >> .ui-diagnose.log
+          echo '\n===== LINT =====' >> .ui-diagnose.log
+          npm run lint >> .ui-diagnose.log 2>&1
+          echo "LINT_EXIT=$?" >> .ui-diagnose.log
+          echo '\n===== ARCHITECTURE =====' >> .ui-diagnose.log
+          npm run check:architecture >> .ui-diagnose.log 2>&1
+          echo "ARCH_EXIT=$?" >> .ui-diagnose.log
+          echo '\n===== UI CONTRACTS =====' >> .ui-diagnose.log
+          npm run check:ui-contracts >> .ui-diagnose.log 2>&1
+          echo "UI_CONTRACT_EXIT=$?" >> .ui-diagnose.log
+      - name: Commit diagnostic
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -f web/.ui-diagnose.log
+          git commit -m "chore(web): capture UI check diagnostics [ui-diagnose]"
+          git push origin HEAD:refactor/ui-three-layer-system
