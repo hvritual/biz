@@ -27,6 +27,13 @@ for (const file of files) {
 }
 const tokens = readFileSync(resolve(root, 'styles/tokens.css'), 'utf8')
 for (const [name, value] of [['--header-height', '56px'], ['--rail-width', '200px'], ['--rail-collapsed-width', '68px'], ['--module-width', '480px']]) if (!tokens.includes(`${name}: ${value}`)) failures.push(`${name} must be ${value}`)
+if (!tokens.includes('--primary: var(--color-primary)')) failures.push('shadcn semantic primary token must resolve through CoffeeLink primary token')
+const themeApiFile = resolve(root, 'ui/base/theme.ts')
+if (!existsSync(themeApiFile)) failures.push('ui/base/theme.ts is required for application-level dynamic theming')
+else {
+  const themeApi = readFileSync(themeApiFile, 'utf8')
+  for (const symbol of ['applyUiTheme', 'resetUiTheme', 'uiThemePresets']) if (!themeApi.includes(symbol)) failures.push(`ui/base/theme.ts must expose ${symbol}`)
+}
 const manifestFile = resolve(root, 'features/component-scopes.json')
 if (!existsSync(manifestFile)) failures.push('features/component-scopes.json is required')
 else {
@@ -39,4 +46,4 @@ else {
   for (const path of Object.keys(manifest)) if (!business.includes(path)) failures.push(`${path}: stale component scope declaration`)
 }
 if (failures.length) { console.error(failures.join('\n')); process.exit(1) }
-console.log(`Architecture checks passed: ${files.length} source files; three UI layers, feature pages, token ownership, native-control boundary and business scopes are guarded.`)
+console.log(`Architecture checks passed: ${files.length} source files; three UI layers, global theme API, feature pages, token ownership, native-control boundary and business scopes are guarded.`)
