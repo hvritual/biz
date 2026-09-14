@@ -87,6 +87,109 @@ jobs:
           GOBIN="$plugins" go install "google.golang.org/grpc/cmd/protoc-gen-go-grpc@${PROTOC_GEN_GO_GRPC_VERSION}"
           echo "$plugins" >> "$GITHUB_PATH"
 
+      - name: Refine Tenant Profile repository boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          python3 - <<'PY'
+          from pathlib import Path
+
+          ports = Path('internal/access/ports/tenant.go')
+          text = ports.read_text(encoding='utf-8')
+          text = text.replace('\n\tErrTenantProfileNotFound = errors.New("access: tenant profile not found")\n\tErrTenantProfileConflict = errors.New("access: tenant profile version conflict")', '')
+          text = text.replace('\n\tGetProfile(context.Context, string) (domain.TenantProfile, error)\n\tUpdateProfile(context.Context, *domain.TenantProfile, uint64) error', '')
+          ports.write_text(text, encoding='utf-8')
+
+          Path('internal/access/ports/tenant_profile.go').write_text('''package ports
+
+          import (
+          \t"context"
+          \t"errors"
+
+          \t"github.com/hvritual/biz/internal/access/domain"
+          )
+
+          var (
+          \tErrTenantProfileNotFound = errors.New("access: tenant profile not found")
+          \tErrTenantProfileConflict = errors.New("access: tenant profile version conflict")
+          )
+
+          type TenantProfileRepository interface {
+          \tGetProfile(context.Context, string) (domain.TenantProfile, error)
+          \tUpdateProfile(context.Context, *domain.TenantProfile, uint64) error
+          }
+
+          type TenantProfileRepositories struct {
+          \tProfile TenantProfileRepository
+          }
+          '''.replace('          ', ''), encoding='utf-8')
+
+          app = Path('internal/access/application/tenant_profile_management.go')
+          text = app.read_text(encoding='utf-8')
+          text = text.replace('requestscope.RepositoryFactory[ports.TenantRepositories]', 'requestscope.RepositoryFactory[ports.TenantProfileRepositories]')
+          text = text.replace('requestscope.View[ports.TenantRepositories]', 'requestscope.View[ports.TenantProfileRepositories]')
+          text = text.replace('scope.Repositories().Tenant.GetProfile', 'scope.Repositories().Profile.GetProfile')
+          text = text.replace('repository := scope.Repositories().Tenant', 'repository := scope.Repositories().Profile')
+          app.write_text(text, encoding='utf-8')
+
+          persistence = Path('internal/access/infrastructure/persistence/tenant.go')
+          text = persistence.read_text(encoding='utf-8')
+          if 'func NewTenantProfileRepositoryFactory' not in text:
+              text += '''
+
+          func NewTenantProfileRepositoryFactory(database *gorm.DB) (requestscope.RepositoryFactory[ports.TenantProfileRepositories], error) {
+          \tif database == nil {
+          \t\treturn nil, errors.New("access persistence: tenant profile database is required")
+          \t}
+          \treturn requestscope.GORMRepositories(func(_ context.Context, transaction *gorm.DB) (ports.TenantProfileRepositories, error) {
+          \t\trepository, err := NewTenantRepository(transaction)
+          \t\tif err != nil {
+          \t\t\treturn ports.TenantProfileRepositories{}, err
+          \t\t}
+          \t\treturn ports.TenantProfileRepositories{Profile: repository}, nil
+          \t}), nil
+          }
+          '''.replace('          ', '')
+          persistence.write_text(text, encoding='utf-8')
+
+          skeleton = Path('internal/bizruntime/access_skeleton.go')
+          text = skeleton.read_text(encoding='utf-8')
+          marker = '''func (factory applicationFactories) BuildAccessTenantProfileManagement(generatedassembly.AccessTenantProfileManagementDependencies) (accessapp.TenantProfileManagementApplication, error) {
+          \tinner, err := accessapp.NewTenantProfileManagementService(factory.tenantRepositories)
+          '''.replace('          ', '')
+          replacement = '''func (factory applicationFactories) BuildAccessTenantProfileManagement(generatedassembly.AccessTenantProfileManagementDependencies) (accessapp.TenantProfileManagementApplication, error) {
+          \tinner, err := accessapp.NewTenantProfileManagementService(factory.tenantProfileRepositories)
+          '''.replace('          ', '')
+          if marker not in text:
+              raise SystemExit('tenant profile factory marker not found')
+          skeleton.write_text(text.replace(marker, replacement), encoding='utf-8')
+
+          runtime = Path('internal/bizruntime/runtime.go')
+          text = runtime.read_text(encoding='utf-8')
+          field_marker = '\ttenantRepositories          requestscope.RepositoryFactory[accessports.TenantRepositories]\n'
+          if '\ttenantProfileRepositories   requestscope.RepositoryFactory[accessports.TenantProfileRepositories]\n' not in text:
+              text = text.replace(field_marker, field_marker + '\ttenantProfileRepositories   requestscope.RepositoryFactory[accessports.TenantProfileRepositories]\n')
+          factory_marker = '''\ttenantRepositories, err := accesspersistence.NewTenantRepositoryFactory(accessDatabase)
+          \tif err != nil {
+          \t\treturn generatedassembly.RuntimeBindings{}, err
+          \t}
+          '''.replace('          ', '')
+          factory_replacement = factory_marker + '''\ttenantProfileRepositories, err := accesspersistence.NewTenantProfileRepositoryFactory(accessDatabase)
+          \tif err != nil {
+          \t\treturn generatedassembly.RuntimeBindings{}, err
+          \t}
+          '''.replace('          ', '')
+          if 'tenantProfileRepositories, err :=' not in text:
+              if factory_marker not in text:
+                  raise SystemExit('runtime tenant repository factory marker not found')
+              text = text.replace(factory_marker, factory_replacement)
+          binding_marker = '\t\t\ttenantRepositories:          tenantRepositories,\n'
+          if '\t\t\ttenantProfileRepositories:   tenantProfileRepositories,\n' not in text:
+              text = text.replace(binding_marker, binding_marker + '\t\t\ttenantProfileRepositories:   tenantProfileRepositories,\n')
+          runtime.write_text(text, encoding='utf-8')
+          PY
+
       - name: Classify Tenant Profile commercial operations
         shell: bash
         run: |
@@ -95,25 +198,12 @@ jobs:
           python3 - <<'PY'
           import json
           from pathlib import Path
-
           path = Path('contracts/commercial/operation-capabilities.v1.json')
           data = json.loads(path.read_text(encoding='utf-8'))
           data['mapping_version'] = '13'
           entries = {
-              'tenant.profile.get': {
-                  'operation_id': 'tenant.profile.get',
-                  'classification': 'tenant_business',
-                  'module_code': 'access-management',
-                  'capability_codes': ['tenant.lifecycle'],
-                  'children': [],
-              },
-              'tenant.profile.update': {
-                  'operation_id': 'tenant.profile.update',
-                  'classification': 'tenant_business',
-                  'module_code': 'access-management',
-                  'capability_codes': ['tenant.lifecycle'],
-                  'children': [],
-              },
+              'tenant.profile.get': {'operation_id': 'tenant.profile.get', 'classification': 'tenant_business', 'module_code': 'access-management', 'capability_codes': ['tenant.lifecycle'], 'children': []},
+              'tenant.profile.update': {'operation_id': 'tenant.profile.update', 'classification': 'tenant_business', 'module_code': 'access-management', 'capability_codes': ['tenant.lifecycle'], 'children': []},
           }
           operations = [item for item in data['operations'] if item['operation_id'] not in entries]
           operations.extend(entries.values())
@@ -126,7 +216,7 @@ jobs:
         run: |
           set -euo pipefail
           cd biz
-          gofmt -w internal/access/domain/tenant_profile.go internal/access/application/tenant_profile_management.go internal/access/ports/tenant.go internal/access/infrastructure/persistence/store.go internal/access/infrastructure/persistence/tenant.go internal/bizruntime/access_skeleton.go internal/bizruntime/tenant_profile_entitlements.go
+          gofmt -w internal/access/domain/tenant_profile.go internal/access/application/tenant_profile_management.go internal/access/ports/tenant.go internal/access/ports/tenant_profile.go internal/access/infrastructure/persistence/store.go internal/access/infrastructure/persistence/tenant.go internal/bizruntime/access_skeleton.go internal/bizruntime/runtime.go internal/bizruntime/tenant_profile_entitlements.go
           YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)" make generate
           YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)" make check
           go test ./internal/access/... ./internal/bizruntime/... ./internal/architecture/...
