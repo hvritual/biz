@@ -104,6 +104,16 @@ if '"mapping_version": "13"' in text:
     text = text.replace('"mapping_version": "13"', '"mapping_version": "14"', 1)
 mapping.write_text(text)
 
+ce13 = Path("internal/architecture/ce13_platform_web_session_contract_test.go")
+text = ce13.read_text()
+old = 'allowedCommercialWeb := map[string]struct{}{"commercial.entitlement.get_my": {}}'
+new = 'allowedCommercialWeb := map[string]struct{}{\n\t\t"commercial.entitlement.get_my":  {},\n\t\t"commercial.subscription.get_my": {},\n\t}'
+if new not in text:
+    if old not in text:
+        raise SystemExit("CE-13 commercial web-session allowlist anchor not found")
+    text = text.replace(old, new, 1)
+ce13.write_text(text)
+
 router = Path("web/src/router/index.ts")
 text = router.read_text()
 old = "component: () => import('@/features/enterprise/pages/PlansView.vue'),"
