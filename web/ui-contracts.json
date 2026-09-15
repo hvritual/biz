@@ -33,47 +33,21 @@
     ]
   },
   "routes": [
-    {
-      "path": "/platform/overview",
-      "component": "@/features/platform/pages/PlatformOverviewView.vue",
-      "surface": "platform",
-      "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "management-domains", "governance"]
-    },
-    {
-      "path": "/platform/tenants",
-      "component": "@/features/platform/pages/PlatformTenantsView.vue",
-      "surface": "platform",
-      "template": "ListPage",
-      "required_regions": ["page-heading", "metrics", "query", "data", "pagination"]
-    },
-    {
-      "path": "/system/:section(general|notifications|security|integrations|dictionary)",
-      "component": "@/features/system/pages/SettingsView.vue",
-      "surface": "tenant",
-      "template": "FormPage",
-      "required_regions": []
-    },
-    {
-      "path": "/platform/commercial/modules",
-      "component": "@/features/platform/pages/CommercialModulesView.vue",
-      "surface": "platform",
-      "template": "ListPage",
-      "required_regions": ["page-heading", "metrics", "query", "data"]
-    },
-    {
-      "path": "/platform/commercial/plans",
-      "component": "@/features/platform/pages/CommercialPlansView.vue",
-      "surface": "platform",
-      "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "authority", "query", "metrics", "workspace", "history", "detail"]
-    },
-    {
-      "path": "/platform/commercial/tenant-entitlements",
-      "component": "@/features/platform/pages/CommercialTenantEntitlementsView.vue",
-      "surface": "platform",
-      "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "authority", "context", "metrics", "subscription", "change-workspace", "decisions", "overrides"]
-    }
+    { "path": "/platform/overview", "component": "@/features/platform/pages/PlatformOverviewView.vue", "surface": "platform", "template": "WorkbenchPage", "required_regions": ["page-heading", "management-domains", "governance"] },
+    { "path": "/platform/tenants", "component": "@/features/platform/pages/PlatformTenantsView.vue", "surface": "platform", "template": "ListPage", "required_regions": ["page-heading", "metrics", "query", "data", "pagination"] },
+    { "path": "/system/:section(general|notifications|security|integrations|dictionary)", "component": "@/features/system/pages/SettingsView.vue", "surface": "tenant", "template": "FormPage", "required_regions": [] },
+    { "path": "/platform/commercial/modules", "component": "@/features/platform/pages/CommercialModulesView.vue", "surface": "platform", "template": "ListPage", "required_regions": ["page-heading", "metrics", "query", "data"] },
+    { "path": "/platform/commercial/plans", "component": "@/features/platform/pages/CommercialPlansView.vue", "surface": "platform", "template": "WorkbenchPage", "required_regions": ["page-heading", "authority", "query", "metrics", "workspace", "history", "detail"] },
+    { "path": "/platform/commercial/tenant-entitlements", "component": "@/features/platform/pages/CommercialTenantEntitlementsView.vue", "surface": "platform", "template": "WorkbenchPage", "required_regions": ["page-heading", "authority", "context", "metrics", "subscription", "change-workspace", "decisions", "overrides"] },
+    { "path": "/platform/commercial/features", "component": "@/features/platform/pages/LifecycleManagementView.vue", "surface": "platform", "template": "WorkbenchPage", "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"] },
+    { "path": "/platform/commercial/subscriptions", "component": "@/features/platform/pages/LifecycleManagementView.vue", "surface": "platform", "template": "WorkbenchPage", "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"] },
+    { "path": "/platform/commercial/authorization", "component": "@/features/platform/pages/LifecycleManagementView.vue", "surface": "platform", "template": "WorkbenchPage", "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"] },
+    { "path": "/platform/commercial/quotas", "component": "@/features/platform/pages/LifecycleManagementView.vue", "surface": "platform", "template": "WorkbenchPage", "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"] },
+    { "path": "/platform/commercial/usage-billing", "component": "@/features/platform/pages/LifecycleManagementView.vue", "surface": "platform", "template": "WorkbenchPage", "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"] },
+    { "path": "/platform/commercial/changes", "component": "@/features/platform/pages/LifecycleManagementView.vue", "surface": "platform", "template": "WorkbenchPage", "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"] },
+    { "path": "/platform/commercial/add-ons", "component": "@/features/platform/pages/LifecycleManagementView.vue", "surface": "platform", "template": "WorkbenchPage", "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"] },
+    { "path": "/platform/commercial/overrides", "component": "@/features/platform/pages/LifecycleManagementView.vue", "surface": "platform", "template": "WorkbenchPage", "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"] },
+    { "path": "/platform/commercial/expiry", "component": "@/features/platform/pages/LifecycleManagementView.vue", "surface": "platform", "template": "WorkbenchPage", "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"] },
+    { "path": "/platform/commercial/audit", "component": "@/features/platform/pages/LifecycleManagementView.vue", "surface": "platform", "template": "WorkbenchPage", "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"] }
   ]
 }
