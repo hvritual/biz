@@ -11,6 +11,7 @@ import (
 type SubscriptionManagementApplication interface {
 	BootstrapBaseSubscription(context.Context, *commercialv1.BootstrapTenantSubscriptionRequest) (*commercialv1.BootstrapTenantSubscriptionResult, error)
 	GetMySubscription(context.Context, *commercialv1.GetMySubscriptionRequest) (*commercialv1.TenantSubscriptionDTO, error)
+	GetMyTenantUsage(context.Context, *commercialv1.GetMyTenantUsageRequest) (*commercialv1.GetMyTenantUsageResponse, error)
 	GetTenantSubscription(context.Context, *commercialv1.GetTenantSubscriptionRequest) (*commercialv1.TenantSubscriptionDTO, error)
 	ListDefaultSubscriptionRules(context.Context, *commercialv1.ListDefaultSubscriptionRulesRequest) (*commercialv1.ListDefaultSubscriptionRulesResponse, error)
 	PutDefaultSubscriptionRule(context.Context, *commercialv1.PutDefaultSubscriptionRuleRequest) (*commercialv1.DefaultSubscriptionRuleDTO, error)

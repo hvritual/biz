@@ -506,6 +506,13 @@ export interface Commercial_V1_GetMyEntitlementsRequest {
 export interface Commercial_V1_GetMySubscriptionRequest {
 }
 
+export interface Commercial_V1_GetMyTenantUsageRequest {
+}
+
+export interface Commercial_V1_GetMyTenantUsageResponse {
+  usages?: readonly Commercial_V1_TenantQuotaUsageDTO[];
+}
+
 export interface Commercial_V1_GetPlanVersionRequest {
   planCode?: string;
   version?: string;
@@ -854,6 +861,14 @@ export interface Commercial_V1_SubscriptionChangeReceiptDTO {
   pricingAuthority?: string;
   quotaImpacts?: readonly Commercial_V1_SubscriptionChangeQuotaImpact[];
   provisioningTaskId?: string;
+}
+
+export interface Commercial_V1_TenantQuotaUsageDTO {
+  moduleCode?: string;
+  key?: string;
+  known?: boolean;
+  used?: string;
+  evidence?: string;
 }
 
 export interface Commercial_V1_TenantSubscriptionDTO {
@@ -1548,6 +1563,15 @@ export const operations = {
       { method: "GET", path: "/v1/tenant/subscription" },
     ]
   },
+  "commercial.v1.SubscriptionManagementApplication.GetMyTenantUsage": {
+    fullName: "commercial.v1.SubscriptionManagementApplication.GetMyTenantUsage",
+    rpcPath: "/commercial.v1.SubscriptionManagementApplication/GetMyTenantUsage",
+    requestType: "commercial.v1.GetMyTenantUsageRequest",
+    responseType: "commercial.v1.GetMyTenantUsageResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/usage" },
+    ]
+  },
   "commercial.v1.SubscriptionManagementApplication.GetTenantSubscription": {
     fullName: "commercial.v1.SubscriptionManagementApplication.GetTenantSubscription",
     rpcPath: "/commercial.v1.SubscriptionManagementApplication/GetTenantSubscription",
@@ -1969,6 +1993,10 @@ export class Commercial_V1_SubscriptionManagementApplicationClient {
 
   getMySubscription(request: Commercial_V1_GetMySubscriptionRequest): Promise<Commercial_V1_TenantSubscriptionDTO> {
     return this.transport.call<Commercial_V1_GetMySubscriptionRequest, Commercial_V1_TenantSubscriptionDTO>(operations["commercial.v1.SubscriptionManagementApplication.GetMySubscription"], request);
+  }
+
+  getMyTenantUsage(request: Commercial_V1_GetMyTenantUsageRequest): Promise<Commercial_V1_GetMyTenantUsageResponse> {
+    return this.transport.call<Commercial_V1_GetMyTenantUsageRequest, Commercial_V1_GetMyTenantUsageResponse>(operations["commercial.v1.SubscriptionManagementApplication.GetMyTenantUsage"], request);
   }
 
   getTenantSubscription(request: Commercial_V1_GetTenantSubscriptionRequest): Promise<Commercial_V1_TenantSubscriptionDTO> {

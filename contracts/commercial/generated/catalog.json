@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "mapping_version": "14",
+  "mapping_version": "15",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "d0dc5daa5661ccfd0f470d7a6401b274bc9f34a52a7c6a149464e42c360bd78c",
-    "contracts/generated/manifest.json": "2ee0519fcea25b1f74d754b1cfd2c827ca879418b1c209c5902dc112d62edb21",
-    "contracts/generated/operation-plans.json": "cad5ba8fc7eab257555aad6e92a0cdaebbcebef7d101f5d939a73516e9ed24c7",
+    "contracts/commercial/operation-capabilities.v1.json": "10e5985f7b6fec5cbfd0771dd7e8e3fb7639abfed12bdf2c6b7c6530db8bab32",
+    "contracts/generated/manifest.json": "e3a564fbdb367734b55c69571a101fcdb5e5bde5a27de69441e4bdfc92684183",
+    "contracts/generated/operation-plans.json": "cfd8a9ef2131c9a38ea195475d2f55aef4352372f4fb27d146c78e8923221953",
     "internal/access/application/tenant_delegation.go": "b43e6709e61b7867395bc04a901a19c2a54cf4ec9565e875b354b1622e636589",
     "internal/access/application/tenant_member_lifecycle.go": "a7c5cd556a4df410fe625a74eb8d570dffe2abc215d485cdd5ddef6388b5ffa0",
     "internal/access/application/tenantlifecycle/internal/usecase/service.go": "63e3eba06691d15fa88041b660431b48e87640bfaf35954774595db9880e5d29",
@@ -13,6 +13,7 @@
     "internal/commercial/application/provisioning/internal/usecase/service.go": "92437abf3396ad9a5e3942998cd73940935949f2d06e9d366488448752273341",
     "internal/commercial/application/subscriptionchanges/internal/usecase/context.go": "c3436685d29cb7c60fba6436f4faf3db9d05f445e310c8d3d9e67a06e4891c14",
     "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go": "7e6d141af2e12741b0ffe40b9a009a24d5928ab36499cd02bacd0bd30cf5b446",
+    "internal/commercial/application/subscriptionmanagement/internal/usecase/usage.go": "1f685e5e93b210d3adf881d02acf811adbfe5dc2c8688bde4ce4f569e6a33c0c",
     "internal/deviceops/application/cross_application_transfer.go": "bffaca1f1be420371bfcb770c5ccfd79f18553938ca92de0584f5e921460d9d8",
     "internal/deviceops/application/service.go": "f7a37a30cd01fadfb5f1a1f3a6c497eaeba5dc8f706e484c445eed9193abbcaa"
   },
@@ -705,6 +706,24 @@
       "always_required_capability_codes": []
     },
     {
+      "operation_id": "commercial.subscription.get_my_usage",
+      "classification": "recovery",
+      "capability_codes": [],
+      "exemption_reason": "EC-RI-06 authenticated current-tenant usage projection; it only reports authoritative usage facts for the trusted tenant and remains protected by tenant.entitlement.read.",
+      "children": [
+        {
+          "operation_id": "tenant.member.count_quota_usage",
+          "mode": "always",
+          "source": "internal/commercial/application/subscriptionmanagement/internal/usecase/usage.go#GetMyTenantUsage"
+        }
+      ],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/commercial.v1.SubscriptionManagementApplication/GetMyTenantUsage",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
       "operation_id": "commercial.subscription.rule.list",
       "classification": "platform_management",
       "capability_codes": [],
@@ -1316,6 +1335,20 @@
       "children": [],
       "consumer_type": "internal_child",
       "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "tenant.member.count_quota_usage",
+      "classification": "foundation_exempt",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "exemption_reason": "EC-RI-06 transport-private authoritative quota meter joined to commercial.subscription.get_my_usage; it accepts no tenant id and grants no independent tenant action.",
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": true,
       "required_capability_codes": [],
       "always_required_capability_codes": []
     },

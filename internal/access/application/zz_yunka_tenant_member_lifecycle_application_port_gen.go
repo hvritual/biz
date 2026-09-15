@@ -11,6 +11,7 @@ import (
 type TenantMemberLifecycleApplication interface {
 	ActivateTenantMember(context.Context, *accessv1.ActivateTenantMemberRequest) (*accessv1.TenantMemberDTO, error)
 	BootstrapTenantOwnerMember(context.Context, *accessv1.BootstrapTenantOwnerMemberRequest) (*accessv1.TenantMemberDTO, error)
+	CountTenantQuotaMembers(context.Context, *accessv1.CountTenantQuotaMembersRequest) (*accessv1.CountTenantQuotaMembersResponse, error)
 	GetTenantMember(context.Context, *accessv1.GetTenantMemberRequest) (*accessv1.TenantMemberDTO, error)
 	InviteTenantMember(context.Context, *accessv1.InviteTenantMemberRequest) (*accessv1.TenantMemberDTO, error)
 	ListTenantMembers(context.Context, *accessv1.ListTenantMembersRequest) (*accessv1.ListTenantMembersResponse, error)

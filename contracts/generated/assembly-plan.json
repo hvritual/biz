@@ -283,6 +283,15 @@
     },
     {
       "from": "commercial/subscription_management",
+      "to": "access/tenant_member_lifecycle",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/commercial/subscription_management/requires/access/tenant_member_lifecycle"
+      }
+    },
+    {
+      "from": "commercial/subscription_management",
       "to": "commercial/plan_management",
       "evidence": {
         "ownership": "reused",
@@ -587,6 +596,33 @@
         "ownership": "derived",
         "source": "application-dependency-closure",
         "ref": "commercial/subscription_changes-\u003ecommercial/plan_management"
+      }
+    },
+    {
+      "from": "commercial/subscription_management",
+      "to": "access/tenant_department_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/subscription_management-\u003eaccess/tenant_department_management"
+      }
+    },
+    {
+      "from": "commercial/subscription_management",
+      "to": "access/tenant_member_lifecycle",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/subscription_management-\u003eaccess/tenant_member_lifecycle"
+      }
+    },
+    {
+      "from": "commercial/subscription_management",
+      "to": "access/tenant_role_permission",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/subscription_management-\u003eaccess/tenant_role_permission"
       }
     },
     {
@@ -1728,6 +1764,37 @@
       }
     },
     {
+      "id": "commercial.subscription.get_my_usage",
+      "application": "commercial/subscription_management",
+      "bindings": [
+        {
+          "operationId": "commercial.subscription.get_my_usage",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.subscription.get_my_usage/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.subscription.get_my_usage",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.subscription.get_my_usage/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.get_my_usage"
+      }
+    },
+    {
       "id": "commercial.subscription.rule.list",
       "application": "commercial/subscription_management",
       "bindings": [
@@ -2597,6 +2664,15 @@
       }
     },
     {
+      "id": "tenant.member.count_quota_usage",
+      "application": "access/tenant_member_lifecycle",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.count_quota_usage"
+      }
+    },
+    {
       "id": "tenant.member.get",
       "application": "access/tenant_member_lifecycle",
       "bindings": [
@@ -3431,6 +3507,15 @@
       }
     },
     {
+      "from": "commercial.subscription.get_my_usage",
+      "to": "tenant.member.count_quota_usage",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.get_my_usage/requiresOperations/tenant.member.count_quota_usage"
+      }
+    },
+    {
       "from": "commercial.subscription.rule.put",
       "to": "commercial.plan.eligibility",
       "evidence": {
@@ -3697,6 +3782,7 @@
         "commercial.subscription.change.preview.get",
         "commercial.subscription.get",
         "commercial.subscription.get_my",
+        "commercial.subscription.get_my_usage",
         "commercial.subscription.rule.list",
         "commercial.subscription.rule.put",
         "device.create",
@@ -3762,6 +3848,7 @@
         "tenant.assert_active",
         "tenant.department.assert_member_assignment_allowed",
         "tenant.member.bootstrap_owner",
+        "tenant.member.count_quota_usage",
         "tenant.role.assert_member_deactivation_allowed",
         "tenant.role.bootstrap_owner"
       ],

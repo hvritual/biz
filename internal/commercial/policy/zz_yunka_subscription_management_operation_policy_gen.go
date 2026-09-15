@@ -5,6 +5,7 @@ package policy
 import "yunka.io/gateway/authz"
 
 const OperationSubscriptionManagementGetMySubscription authz.OperationID = "commercial.subscription.get_my"
+const OperationSubscriptionManagementGetMyTenantUsage authz.OperationID = "commercial.subscription.get_my_usage"
 const OperationSubscriptionManagementGetTenantSubscription authz.OperationID = "commercial.subscription.get"
 const OperationSubscriptionManagementListDefaultSubscriptionRules authz.OperationID = "commercial.subscription.rule.list"
 const OperationSubscriptionManagementPutDefaultSubscriptionRule authz.OperationID = "commercial.subscription.rule.put"
@@ -20,6 +21,7 @@ func SubscriptionManagementResolver() authz.StaticResolver {
 func subscriptionManagementPolicies() map[string]authz.Policy {
 	return map[string]authz.Policy{
 		"/commercial.v1.SubscriptionManagementApplication/GetMySubscription":            {Operation: OperationSubscriptionManagementGetMySubscription, Permissions: []authz.PermissionKey{"tenant.entitlement.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.SubscriptionManagementApplication/GetMyTenantUsage":             {Operation: OperationSubscriptionManagementGetMyTenantUsage, Permissions: []authz.PermissionKey{"tenant.entitlement.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.SubscriptionManagementApplication/GetTenantSubscription":        {Operation: OperationSubscriptionManagementGetTenantSubscription, Permissions: []authz.PermissionKey{"platform.subscription.read", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.SubscriptionManagementApplication/ListDefaultSubscriptionRules": {Operation: OperationSubscriptionManagementListDefaultSubscriptionRules, Permissions: []authz.PermissionKey{"platform.subscription.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
 		"/commercial.v1.SubscriptionManagementApplication/PutDefaultSubscriptionRule":   {Operation: OperationSubscriptionManagementPutDefaultSubscriptionRule, Permissions: []authz.PermissionKey{"commercial.catalog.read", "platform.plan.read", "platform.subscription.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
