@@ -2,8 +2,8 @@ package bizruntime
 
 import (
 	"fmt"
+
 	"github.com/hvritual/biz/internal/assembly"
-	accessapp "github.com/hvritual/biz/internal/access/application"
 	commercialapp "github.com/hvritual/biz/internal/commercial/application"
 	"github.com/hvritual/biz/internal/commercial/application/subscriptionmanagement"
 	commercialpersistence "github.com/hvritual/biz/internal/commercial/infrastructure/persistence"
@@ -36,5 +36,3 @@ func (c subscriptionCapabilities) CommercialPlanManagement() commercialapp.Subsc
 func (c subscriptionCapabilities) AccessTenantMemberLifecycle() commercialapp.SubscriptionManagementToAccessTenantMemberLifecycleChildCapability {
 	return c.members
 }
-
-var _ accessapp.TenantMemberLifecycleApplication = nil
