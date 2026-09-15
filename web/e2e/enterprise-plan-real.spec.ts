@@ -134,6 +134,8 @@ test('real plan page renders authoritative subscription, entitlement and usage f
 test('tenant plan and usage reads never send arbitrary tenant ids and bind to trusted session', async ({ page }) => {
   const captured = await mockPlanServer(page)
   await openRealPlan(page)
+  await expect.poll(() => captured.entitlementBodies.length).toBe(1)
+  await expect.poll(() => captured.usagePaths.length).toBe(1)
   expect(captured.subscriptionPaths).toContain('/api/v1/tenant/subscription')
   expect(captured.subscriptionPaths.some((path) => path.includes('tenant-001'))).toBe(false)
   expect(captured.entitlementBodies).toHaveLength(1)
