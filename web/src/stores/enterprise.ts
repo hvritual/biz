@@ -1,38 +1,157 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { loadSnapshot, saveSnapshot } from '@/services/demo/repository'
+import {
+  createEnterpriseDataSource,
+  type EnterpriseSourceState,
+} from '@/services/enterprise/dataSource'
 import { applyStatusAction, memberActionError, prepareMemberStatusBatch } from '@/services/memberPolicy'
 import { departmentMoveAllowed } from '@/utils/organization'
 import { timestamp } from '@/utils/format'
-import type { Member, MemberAction, Role, AuditRecord, Company, Department } from '@/types/enterprise'
+import type { Member, MemberAction, Role, AuditRecord, Company, Department, DataScope } from '@/types/enterprise'
+import {
+  activateEnterpriseMember,
+  assignEnterpriseMemberRole,
+  getEnterpriseMember,
+  inviteEnterpriseMember,
+  memberRequestId,
+  memberRoleRequestId,
+  readEnterpriseMemberSession,
+  removeEnterpriseMember,
+  revokeEnterpriseMemberRole,
+  sameTrustedSession,
+  suspendEnterpriseMember,
+  updateEnterpriseMemberProfile,
+  type EnterpriseTenantMember,
+} from '@/services/enterprise/memberRuntime'
+import {
+  createEnterpriseRole,
+  disableEnterpriseRole,
+  enableEnterpriseRole,
+  readEnterpriseRoleSession,
+  roleRequestId,
+  setEnterpriseRolePermissions,
+  updateEnterpriseRole,
+  type EnterpriseTenantRole,
+} from '@/services/enterprise/roleRuntime'
+import {
+  createEnterpriseDepartment,
+  disableEnterpriseDepartment,
+  enableEnterpriseDepartment,
+  getEnterpriseDepartment,
+  readEnterpriseDepartmentSession,
+  departmentRequestId,
+  updateEnterpriseDepartment,
+  type EnterpriseDepartmentDraft,
+} from '@/services/enterprise/departmentRuntime'
+import {
+  getEnterpriseTenantProfile,
+  readEnterpriseTenantProfileSession,
+  tenantProfileRequestId,
+  updateEnterpriseTenantProfile,
+} from '@/services/enterprise/tenantProfileRuntime'
+import { loginUrl, type PermissionGrant, type TrustedSession } from '@/services/runtime/api'
+
+function serverMemberStatus(status: Member['status']) {
+  switch (status) {
+    case 'active': return 'TENANT_MEMBER_STATUS_ACTIVE'
+    case 'suspended': return 'TENANT_MEMBER_STATUS_SUSPENDED'
+    case 'removed': return 'TENANT_MEMBER_STATUS_REMOVED'
+    default: return 'TENANT_MEMBER_STATUS_INVITED'
+  }
+}
+
+function grantScope(scope: DataScope) {
+  if (scope === 'all') return 'all'
+  if (scope === 'self') return 'self'
+  return 'sites'
+}
+
 export const useEnterpriseStore = defineStore('enterprise', () => {
-  const tenantId = ref('shanghai'),
-    snapshot = ref(loadSnapshot('shanghai'))
-  const members = computed(() => snapshot.value.members),
-    roles = computed(() => snapshot.value.roles)
-  const departments = computed(() => snapshot.value.departments),
-    company = computed(() => snapshot.value.company)
-  const logs = computed(() => snapshot.value.logs),
-    settings = computed(() => snapshot.value.settings)
-  const previewMode = (import.meta.env.VITE_DATA_MODE ?? 'demo') === 'demo'
+  const dataSource = createEnterpriseDataSource()
+  const initial = dataSource.initial()
+  const tenantId = ref(initial.tenantId)
+  const snapshot = ref(initial.snapshot)
+  const session = ref<TrustedSession | null>(initial.session)
+  const loading = ref(false)
+  const ready = ref(dataSource.kind === 'demo')
+  const sourceError = ref('')
+
+  const members = computed(() => snapshot.value.members)
+  const roles = computed(() => snapshot.value.roles)
+  const departments = computed(() => snapshot.value.departments)
+  const company = computed(() => snapshot.value.company)
+  const logs = computed(() => snapshot.value.logs)
+  const settings = computed(() => snapshot.value.settings)
+  const previewMode = dataSource.kind === 'demo'
+  const sourceKind = dataSource.kind
+  const authenticated = computed(() => previewMode || Boolean(session.value?.authenticated))
+  const tenantOptions = computed(() =>
+    previewMode
+      ? [
+          { id: 'shanghai', name: '上海咖啡科技有限公司' },
+          { id: 'hangzhou', name: '杭州咖啡运营有限公司' },
+        ]
+      : (session.value?.tenants ?? []),
+  )
+
   const departmentName = (id: string) => departments.value.find((d) => d.id === id)?.name ?? '未分配部门'
   const roleName = (id: string) => roles.value.find((r) => r.id === id)?.name ?? '未知角色'
+
   let lastPersisted = JSON.stringify(snapshot.value)
-  function persist() {
+
+  function applySourceState(state: EnterpriseSourceState) {
+    tenantId.value = state.tenantId
+    snapshot.value = state.snapshot
+    session.value = state.session
+    lastPersisted = JSON.stringify(state.snapshot)
+  }
+
+  function errorMessage(error: unknown) {
+    return error instanceof Error ? error.message : '企业数据服务请求失败。'
+  }
+
+  async function refresh() {
+    loading.value = true
+    sourceError.value = ''
     try {
-      saveSnapshot(tenantId.value, snapshot.value)
+      applySourceState(await dataSource.load(tenantId.value || undefined))
+      ready.value = true
+    } catch (error) {
+      sourceError.value = errorMessage(error)
+      ready.value = true
+      throw error
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function switchTenant(id: string) {
+    if (!id || id === tenantId.value) return
+    if (previewMode && !tenantOptions.value.some((tenant) => tenant.id === id)) return
+    loading.value = true
+    sourceError.value = ''
+    try {
+      applySourceState(await dataSource.switchTenant(id))
+      ready.value = true
+    } catch (error) {
+      sourceError.value = errorMessage(error)
+      throw error
+    } finally {
+      loading.value = false
+    }
+  }
+
+  function persist() {
+    if (!previewMode) return
+    try {
+      dataSource.persist(tenantId.value, snapshot.value)
       lastPersisted = JSON.stringify(snapshot.value)
     } catch {
       snapshot.value = JSON.parse(lastPersisted)
       throw new Error('本地存储不可用，本次变更未保存。请检查浏览器存储权限。')
     }
   }
-  function switchTenant(id: string) {
-    if (!['shanghai', 'hangzhou'].includes(id)) return
-    tenantId.value = id
-    snapshot.value = loadSnapshot(id)
-    lastPersisted = JSON.stringify(snapshot.value)
-  }
+
   function audit(
     module: string,
     action: string,
@@ -42,6 +161,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     reason = '',
     risk: AuditRecord['risk'] = 'low',
   ) {
+    if (!previewMode) return
     const id = crypto.randomUUID()
     snapshot.value.logs.unshift({
       id,
@@ -59,162 +179,441 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     })
     persist()
   }
-  function saveMember(draft: Member, action: MemberAction, expectedVersion: number) {
-    const current = members.value.find((m) => m.id === draft.id)
-    if (current && current.version !== expectedVersion)
-      throw new Error('成员资料已被其他操作修改，请重新打开后重试。')
+
+  async function stableMemberSession() {
+    const expected = session.value
+    if (!expected?.authenticated || !expected.active_tenant_id) throw new Error('请先登录并选择可访问租户。')
+    const current = await readEnterpriseMemberSession()
+    if (!sameTrustedSession(expected, current)) {
+      await refresh()
+      throw new Error('会话或当前租户已变化，请刷新后重新操作。')
+    }
+    return current
+  }
+
+  function asServerMember(member: Member): EnterpriseTenantMember {
+    return {
+      userId: member.id,
+      email: member.email,
+      status: serverMemberStatus(member.status),
+      version: member.runtimeVersion ?? member.version,
+      name: member.name,
+      phone: member.phone,
+      employeeId: member.employeeId,
+      position: member.position,
+      departmentId: member.departmentId,
+      roles: member.roleIds.map((roleId) => ({
+        roleId,
+        roleName: roleName(roleId),
+        roleStatus: roles.value.find((role) => role.id === roleId)?.enabled
+          ? 'TENANT_ROLE_STATUS_ACTIVE'
+          : 'TENANT_ROLE_STATUS_DISABLED',
+      })),
+      derivedDataScope: member.scope === 'all' ? 'all' : member.scope === 'self' ? 'self' : 'sites',
+    }
+  }
+
+  function validateMemberDraft(draft: Member, current?: Member) {
+    if (
+      !draft.roleIds.length ||
+      draft.roleIds.some((id) => !roles.value.some((role) => role.id === id && role.enabled))
+    ) throw new Error('请选择至少一个已启用的有效角色。')
+    if (departments.value.length && !departments.value.some((department) => department.id === draft.departmentId && department.enabled)) {
+      throw new Error('请选择有效且启用的所属部门。')
+    }
+    if (!draft.name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim())) {
+      throw new Error('请填写姓名和有效邮箱。')
+    }
+    if (
+      members.value.some(
+        (member) => member.id !== draft.id && member.email.toLowerCase() === draft.email.toLowerCase() && member.status !== 'removed',
+      )
+    ) throw new Error('当前企业已存在该邮箱的成员。')
+    if (!current && previewMode && members.value.filter((member) => member.status !== 'removed').length >= 500) {
+      throw new Error('成员额度已用完，请先申请扩容。')
+    }
+  }
+
+  async function saveMember(draft: Member, action: MemberAction, expectedVersion: number) {
+    const current = members.value.find((member) => member.id === draft.id)
+    if (current && current.version !== expectedVersion) throw new Error('成员资料已被其他操作修改，请重新打开后重试。')
     if (current) {
       const error = memberActionError(action, current, members.value, roles.value, draft.roleIds)
       if (error) throw new Error(error)
     }
-    if (
-      !draft.roleIds.length ||
-      draft.roleIds.some((id) => !roles.value.some((r) => r.id === id && r.enabled))
-    )
-      throw new Error('请选择至少一个已启用的有效角色。')
-    if (!departments.value.some((d) => d.id === draft.departmentId && d.enabled))
-      throw new Error('请选择有效且启用的所属部门。')
-    draft = { ...draft, email: draft.email.trim() }
-    if (!draft.name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email))
-      throw new Error('请填写姓名和有效邮箱。')
-    if (
-      members.value.some(
-        (m) =>
-          m.id !== draft.id && m.email.toLowerCase() === draft.email.toLowerCase() && m.status !== 'removed',
+    validateMemberDraft({ ...draft, email: draft.email.trim() }, current)
+
+    if (previewMode) {
+      const updated = {
+        ...draft,
+        name: draft.name.trim(),
+        email: draft.email.trim(),
+        version: expectedVersion + 1,
+      }
+      if (current) snapshot.value.members = snapshot.value.members.map((member) => member.id === draft.id ? updated : member)
+      else snapshot.value.members.unshift(updated)
+      audit(
+        '成员管理',
+        action === 'role'
+          ? '变更成员角色'
+          : action === 'edit'
+            ? '修改成员信息'
+            : action === 'invite'
+              ? '创建成员邀请'
+              : '新增成员',
+        draft.name,
+        current
+          ? JSON.stringify({ name: current.name, department: departmentName(current.departmentId), roles: current.roleIds.map(roleName) })
+          : '无',
+        JSON.stringify({ name: updated.name, department: departmentName(updated.departmentId), roles: updated.roleIds.map(roleName) }),
+        '界面预览操作',
+        action === 'role' ? 'high' : 'low',
       )
-    )
-      throw new Error('当前企业已存在该邮箱的成员。')
-    if (!current && members.value.filter((m) => m.status !== 'removed').length >= 500)
-      throw new Error('成员额度已用完，请先申请扩容。')
-    const updated = {
-      ...draft,
-      name: draft.name.trim(),
-      email: draft.email.trim(),
-      version: expectedVersion + 1,
+      return
     }
-    if (current) snapshot.value.members = snapshot.value.members.map((m) => (m.id === draft.id ? updated : m))
-    else snapshot.value.members.unshift(updated)
-    audit(
-      '成员管理',
-      action === 'role'
-        ? '变更成员角色'
-        : action === 'edit'
-          ? '修改成员信息'
-          : action === 'invite'
-            ? '创建成员邀请'
-            : '新增成员',
-      draft.name,
-      current
-        ? JSON.stringify({
-            name: current.name,
-            department: departmentName(current.departmentId),
-            roles: current.roleIds.map(roleName),
-          })
-        : '无',
-      JSON.stringify({
-        name: updated.name,
-        department: departmentName(updated.departmentId),
-        roles: updated.roleIds.map(roleName),
-      }),
-      '界面预览操作',
-      action === 'role' ? 'high' : 'low',
-    )
+
+    const trusted = await stableMemberSession()
+    if (action === 'role') {
+      if (!current) throw new Error('成员不存在。')
+      if (draft.scope !== current.scope) {
+        throw new Error('真实服务的数据范围由角色权限派生，当前不支持按成员单独覆盖数据范围。')
+      }
+      const add = draft.roleIds.filter((roleId) => !current.roleIds.includes(roleId))
+      const remove = current.roleIds.filter((roleId) => !draft.roleIds.includes(roleId))
+      for (const roleId of add) {
+        await assignEnterpriseMemberRole(trusted, current.id, roleId, memberRoleRequestId('assign'))
+      }
+      for (const roleId of remove) {
+        await revokeEnterpriseMemberRole(trusted, current.id, roleId, memberRoleRequestId('revoke'))
+      }
+      await getEnterpriseMember(trusted, current.id)
+      await refresh()
+      return
+    }
+
+    if (action === 'create' || action === 'invite') {
+      let receipt = await inviteEnterpriseMember(trusted, draft.email, memberRequestId('invite'))
+      receipt = await updateEnterpriseMemberProfile(
+        trusted,
+        receipt,
+        {
+          name: draft.name,
+          phone: draft.phone,
+          employeeId: draft.employeeId,
+          position: draft.position,
+          departmentId: draft.departmentId,
+        },
+        memberRequestId('profile'),
+      )
+      for (const roleId of draft.roleIds) {
+        await assignEnterpriseMemberRole(trusted, receipt.userId, roleId, memberRoleRequestId('assign'))
+      }
+      await getEnterpriseMember(trusted, receipt.userId)
+      await refresh()
+      return
+    }
+
+    if (action === 'edit') {
+      if (!current) throw new Error('成员不存在。')
+      const receipt = await updateEnterpriseMemberProfile(
+        trusted,
+        asServerMember(current),
+        {
+          name: draft.name,
+          phone: draft.phone,
+          employeeId: draft.employeeId,
+          position: draft.position,
+          departmentId: draft.departmentId,
+        },
+        memberRequestId('profile'),
+      )
+      await getEnterpriseMember(trusted, receipt.userId)
+      await refresh()
+      return
+    }
+
+    throw new Error('该成员操作不应通过资料保存入口执行。')
   }
-  function changeStatus(
+
+  async function changeStatus(
     id: string,
     action: 'activate' | 'suspend' | 'remove',
     version: number,
     reason: string,
   ) {
-    const member = members.value.find((m) => m.id === id)
+    const member = members.value.find((value) => value.id === id)
     if (!member) throw new Error('成员不存在。')
     if (member.version !== version) throw new Error('成员状态已变化，请刷新后重试。')
-    const error = memberActionError(action, member, members.value, roles.value)
-    if (error) throw new Error(error)
+    const policy = memberActionError(action, member, members.value, roles.value)
+    if (policy) throw new Error(policy)
     if (!reason.trim()) throw new Error('请填写操作原因。')
-    const updated = applyStatusAction(action, member)
-    snapshot.value.members = snapshot.value.members.map((m) => (m.id === id ? updated : m))
-    audit(
-      '成员管理',
-      action === 'activate' ? '启用成员' : action === 'suspend' ? '禁用成员' : '移除成员',
-      member.name,
-      member.status,
-      updated.status,
-      reason,
-      'high',
-    )
+
+    if (previewMode) {
+      const updated = applyStatusAction(action, member)
+      snapshot.value.members = snapshot.value.members.map((value) => value.id === id ? updated : value)
+      audit(
+        '成员管理',
+        action === 'activate' ? '启用成员' : action === 'suspend' ? '禁用成员' : '移除成员',
+        member.name,
+        member.status,
+        updated.status,
+        reason,
+        'high',
+      )
+      return
+    }
+
+    const trusted = await stableMemberSession()
+    const server = asServerMember(member)
+    const key = memberRequestId(action)
+    const receipt = action === 'activate'
+      ? await activateEnterpriseMember(trusted, server, key)
+      : action === 'suspend'
+        ? await suspendEnterpriseMember(trusted, server, key)
+        : await removeEnterpriseMember(trusted, server, key)
+    await getEnterpriseMember(trusted, receipt.userId)
+    await refresh()
   }
-  function changeStatuses(
+
+  async function changeStatuses(
     targets: { id: string; version: number }[],
     action: 'activate' | 'suspend',
     reason: string,
   ) {
     if (!reason.trim()) throw new Error('请填写操作原因。')
-    const updated = prepareMemberStatusBatch(members.value, roles.value, targets, action)
-    const records = targets.map(({ id }) => {
-      const before = members.value.find((m) => m.id === id)!
-      const after = updated.find((m) => m.id === id)!
-      const logId = crypto.randomUUID()
-      return {
-        id: logId,
-        time: timestamp(),
-        actor: '张三',
-        module: '成员管理',
-        action: action === 'activate' ? '批量启用成员' : '批量禁用成员',
-        target: before.name,
-        result: 'success' as const,
-        risk: 'high' as const,
-        requestId: `demo-${logId}`,
-        before: before.status,
-        after: after.status,
-        reason,
+    if (previewMode) {
+      const updated = prepareMemberStatusBatch(members.value, roles.value, targets, action)
+      const records = targets.map(({ id }) => {
+        const before = members.value.find((member) => member.id === id)!
+        const after = updated.find((member) => member.id === id)!
+        const logId = crypto.randomUUID()
+        return {
+          id: logId,
+          time: timestamp(),
+          actor: '张三',
+          module: '成员管理',
+          action: action === 'activate' ? '批量启用成员' : '批量禁用成员',
+          target: before.name,
+          result: 'success' as const,
+          risk: 'high' as const,
+          requestId: `demo-${logId}`,
+          before: before.status,
+          after: after.status,
+          reason,
+        }
+      })
+      snapshot.value.members = updated
+      snapshot.value.logs.unshift(...records)
+      persist()
+      return
+    }
+
+    prepareMemberStatusBatch(members.value, roles.value, targets, action)
+    const trusted = await stableMemberSession()
+    let failure: unknown = null
+    try {
+      for (const target of targets) {
+        const member = members.value.find((value) => value.id === target.id)
+        if (!member) throw new Error('批量操作中存在已不存在的成员，请刷新后重试。')
+        const server = asServerMember(member)
+        if (action === 'activate') await activateEnterpriseMember(trusted, server, memberRequestId('activate'))
+        else await suspendEnterpriseMember(trusted, server, memberRequestId('suspend'))
       }
-    })
-    snapshot.value.members = updated
-    snapshot.value.logs.unshift(...records)
-    persist()
+    } catch (error) {
+      failure = error
+    }
+    await refresh()
+    if (failure) throw failure
   }
-  function saveRole(role: Role) {
+
+  function asServerRole(role: Role): EnterpriseTenantRole {
+    return {
+      id: role.id,
+      name: role.name,
+      status: role.enabled ? 'TENANT_ROLE_STATUS_ACTIVE' : 'TENANT_ROLE_STATUS_DISABLED',
+      version: role.runtimeVersion ?? 0,
+      permissions: role.permissions.map((permission) => ({ permission, scope: grantScope(role.scope) })),
+      protectedOwner: role.builtin,
+    }
+  }
+
+  async function stableRoleSession() {
+    const expected = session.value
+    if (!expected?.authenticated || !expected.active_tenant_id) throw new Error('请先登录并选择可访问租户。')
+    const current = await readEnterpriseRoleSession()
+    if (!sameTrustedSession(expected, current)) {
+      await refresh()
+      throw new Error('会话或当前租户已变化，请刷新后重新操作。')
+    }
+    return current
+  }
+
+  async function saveRole(role: Role) {
     if (!role.name.trim()) throw new Error('请填写角色名称。')
-    if (roles.value.some((r) => r.id !== role.id && r.name === role.name)) throw new Error('角色名称已存在。')
-    const old = roles.value.find((r) => r.id === role.id)
+    if (roles.value.some((value) => value.id !== role.id && value.name === role.name)) throw new Error('角色名称已存在。')
+    const old = roles.value.find((value) => value.id === role.id)
     if (old?.builtin) throw new Error('内置角色不可直接修改，请复制为自定义角色。')
-    const updated = { ...role, updatedAt: timestamp() }
-    snapshot.value.roles = old
-      ? roles.value.map((r) => (r.id === role.id ? updated : r))
-      : [...roles.value, updated]
-    audit(
-      '角色权限',
-      old ? '更新角色权限' : '新建角色',
-      role.name,
-      old?.permissions.join(', ') ?? '',
-      role.permissions.join(', '),
-      '界面预览操作',
-      'high',
-    )
+
+    if (previewMode) {
+      const updated = { ...role, updatedAt: timestamp() }
+      snapshot.value.roles = old
+        ? roles.value.map((value) => value.id === role.id ? updated : value)
+        : [...roles.value, updated]
+      audit(
+        '角色权限',
+        old ? '更新角色权限' : '新建角色',
+        role.name,
+        old?.permissions.join(', ') ?? '',
+        role.permissions.join(', '),
+        '界面预览操作',
+        'high',
+      )
+      return
+    }
+
+    const trusted = await stableRoleSession()
+    let serverRole: EnterpriseTenantRole
+    if (!old) {
+      serverRole = await createEnterpriseRole(trusted, role.name, roleRequestId('create')) as EnterpriseTenantRole
+    } else {
+      serverRole = asServerRole(old)
+      if (old.name !== role.name) {
+        serverRole = await updateEnterpriseRole(trusted, serverRole, role.name, roleRequestId('update'))
+      }
+    }
+    const grants: PermissionGrant[] = role.permissions.map((permission) => ({
+      permission,
+      scope: grantScope(role.scope),
+    }))
+    serverRole = await setEnterpriseRolePermissions(trusted, serverRole, grants, roleRequestId('permissions'))
+    const active = serverRole.status === 'TENANT_ROLE_STATUS_ACTIVE'
+    if (role.enabled !== active) {
+      serverRole = role.enabled
+        ? await enableEnterpriseRole(trusted, serverRole, roleRequestId('enable'))
+        : await disableEnterpriseRole(trusted, serverRole, roleRequestId('disable'))
+    }
+    void serverRole
+    await refresh()
   }
-  function saveCompany(value: Company) {
-    const before = JSON.stringify(company.value)
-    snapshot.value.company = { ...value }
-    audit('企业信息', '修改企业资料', value.name, before, JSON.stringify(value))
+
+  async function stableDepartmentSession() {
+    const expected = session.value
+    if (!expected?.authenticated || !expected.active_tenant_id) throw new Error('请先登录并选择可访问租户。')
+    const current = await readEnterpriseDepartmentSession()
+    if (!sameTrustedSession(expected, current)) {
+      await refresh()
+      throw new Error('会话或当前租户已变化，请刷新后重新操作。')
+    }
+    return current
   }
-  function saveDepartment(value: Department) {
-    if (!departmentMoveAllowed(departments.value, value.id, value.parentId))
-      throw new Error('部门不能移动到自身或下级部门。')
-    if (!value.enabled && members.value.some((m) => m.departmentId === value.id && m.status !== 'removed'))
+
+  async function saveDepartment(value: Department) {
+    if (!departmentMoveAllowed(departments.value, value.id, value.parentId)) throw new Error('部门不能移动到自身或下级部门。')
+    if (!value.enabled && members.value.some((member) => member.departmentId === value.id && member.status !== 'removed')) {
       throw new Error('请先转移部门成员，再停用部门。')
+    }
     if (!value.name.trim()) throw new Error('请填写部门名称。')
-    const exists = departments.value.some((d) => d.id === value.id)
-    snapshot.value.departments = exists
-      ? departments.value.map((d) => (d.id === value.id ? { ...value } : d))
-      : [...departments.value, { ...value }]
-    audit('组织架构', exists ? '编辑部门' : '新建部门', value.name)
+    const exists = departments.value.find((department) => department.id === value.id)
+
+    if (previewMode) {
+      snapshot.value.departments = exists
+        ? departments.value.map((department) => department.id === value.id ? { ...value } : department)
+        : [...departments.value, { ...value }]
+      audit('组织架构', exists ? '编辑部门' : '新建部门', value.name)
+      return
+    }
+
+    const trusted = await stableDepartmentSession()
+    const draft: EnterpriseDepartmentDraft = {
+      name: value.name,
+      parentId: value.parentId ?? '',
+      leaderUserId: value.leaderId,
+      email: value.email ?? '',
+      phone: value.phone ?? '',
+      sort: value.sort ?? 0,
+      enabled: value.enabled,
+    }
+    let receipt
+    if (exists) {
+      const current = await getEnterpriseDepartment(trusted, exists.id)
+      receipt = await updateEnterpriseDepartment(trusted, current, draft, departmentRequestId('update'))
+      const active = receipt.status === 'TENANT_DEPARTMENT_STATUS_ACTIVE'
+      if (value.enabled !== active) {
+        receipt = value.enabled
+          ? await enableEnterpriseDepartment(trusted, receipt, departmentRequestId('enable'))
+          : await disableEnterpriseDepartment(trusted, receipt, departmentRequestId('disable'))
+      }
+    } else {
+      receipt = await createEnterpriseDepartment(trusted, draft, departmentRequestId('create'))
+      if (!value.enabled && receipt.status === 'TENANT_DEPARTMENT_STATUS_ACTIVE') {
+        receipt = await disableEnterpriseDepartment(trusted, receipt, departmentRequestId('disable'))
+      }
+    }
+    void receipt
+    await refresh()
   }
+
+  async function stableProfileSession() {
+    const expected = session.value
+    if (!expected?.authenticated || !expected.active_tenant_id) throw new Error('请先登录并选择可访问租户。')
+    const current = await readEnterpriseTenantProfileSession()
+    if (!sameTrustedSession(expected, current)) {
+      await refresh()
+      throw new Error('会话或当前租户已变化，请刷新后重新操作。')
+    }
+    return current
+  }
+
+  async function saveCompany(value: Company) {
+    if (previewMode) {
+      const before = JSON.stringify(company.value)
+      snapshot.value.company = { ...value }
+      audit('企业信息', '修改企业资料', value.name, before, JSON.stringify(value))
+      return
+    }
+
+    const trusted = await stableProfileSession()
+    const current = await getEnterpriseTenantProfile(trusted)
+    await updateEnterpriseTenantProfile(
+      trusted,
+      current,
+      {
+        name: value.name,
+        shortName: value.shortName,
+        industry: value.industry,
+        companySize: value.size,
+        timezone: value.timezone,
+        contactName: value.contact,
+        phone: value.phone,
+        email: value.email,
+        address: value.address,
+        description: value.description,
+        logoAssetRef: value.logoAssetRef ?? current.logoAssetRef,
+      },
+      tenantProfileRequestId(),
+    )
+    await refresh()
+  }
+
+  async function requestPasswordReset(member: Member, reason: string) {
+    if (!reason.trim()) throw new Error('请填写操作原因。')
+    if (!previewMode) throw new Error('真实服务当前未提供管理员密码重置命令，不能制造伪成功记录。')
+    audit('成员管理', '创建密码重置请求（预览）', member.name, '未请求', '待接入身份服务', reason, 'high')
+  }
+
   function saveSettings(values: Record<string, string | number | boolean>) {
+    if (!previewMode) throw new Error('真实系统设置尚未接入服务端，不允许回退到本地预览写入。')
     const before = JSON.stringify(settings.value)
     snapshot.value.settings = { ...settings.value, ...values }
     audit('系统设置', '更新系统设置', '当前企业', before, JSON.stringify(values), '界面预览操作', 'medium')
   }
+
+  function loginHref() {
+    return loginUrl()
+  }
+
+  if (!previewMode) void refresh().catch(() => undefined)
+
   return {
     tenantId,
     members,
@@ -224,8 +623,17 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     logs,
     settings,
     previewMode,
+    sourceKind,
+    sourceError,
+    session,
+    loading,
+    ready,
+    authenticated,
+    tenantOptions,
     departmentName,
     roleName,
+    loginHref,
+    refresh,
     switchTenant,
     audit,
     saveMember,
@@ -234,6 +642,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     saveRole,
     saveCompany,
     saveDepartment,
+    requestPasswordReset,
     saveSettings,
   }
 })
