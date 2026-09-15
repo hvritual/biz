@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package access.v1;
+
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+
+option go_package = "github.com/hvritual/biz/contracts/gen/access/v1;accessv1";
+option (yunka.dsl.v1.domain) = {
+  name: "access"
+  version: "v1"
+};
+
+message TenantAuditRecordDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string audit_id = 1;
+  string occurred_at = 2;
+  string actor_subject = 3;
+  string actor_user_id = 4;
+  string auth_method = 5;
+  string auth_channel = 6;
+  string session_ref = 7;
+  string request_id = 8;
+  string idempotency_ref = 9;
+  string operation_id = 10;
+  string module = 11;
+  string target = 12;
+  string result = 13;
+  string risk = 14;
+  string receipt_ref = 15;
+  string reason = 16;
+  string request_digest = 17;
+}
+
+message ListTenantAuditRecordsRequest {
+  string query = 1;
+  string operation_id = 2;
+  string result = 3;
+  string risk = 4;
+  uint32 page = 5;
+  uint32 page_size = 6;
+}
+
+message ListTenantAuditRecordsResponse {
+  repeated TenantAuditRecordDTO records = 1;
+  uint64 total = 2;
+  uint32 page = 3;
+  uint32 page_size = 4;
+}
+
+message GetTenantAuditRecordRequest {
+  string audit_id = 1;
+}
+
+message ExportTenantAuditRecordsRequest {
+  string query = 1;
+  string operation_id = 2;
+  string result = 3;
+  string risk = 4;
+  uint32 max_rows = 5;
+}
+
+message ExportTenantAuditRecordsResponse {
+  string export_id = 1;
+  string generated_at = 2;
+  repeated TenantAuditRecordDTO records = 3;
+}
+
+service TenantAuditManagementApplication {
+  option (yunka.dsl.v1.application) = { name: "tenant_audit_management" };
+
+  rpc ListTenantAuditRecords(ListTenantAuditRecordsRequest) returns (ListTenantAuditRecordsResponse) {
+    option (google.api.http) = { get: "/v1/tenant/audit-logs" };
+    option (yunka.dsl.v1.operation) = {
+      id: "access.audit.list"
+      use_case: "list_tenant_audit_records"
+      permissions: "tenant.audit.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc GetTenantAuditRecord(GetTenantAuditRecordRequest) returns (TenantAuditRecordDTO) {
+    option (google.api.http) = { get: "/v1/tenant/audit-logs/{audit_id}" };
+    option (yunka.dsl.v1.operation) = {
+      id: "access.audit.get"
+      use_case: "get_tenant_audit_record"
+      permissions: "tenant.audit.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc ExportTenantAuditRecords(ExportTenantAuditRecordsRequest) returns (ExportTenantAuditRecordsResponse) {
+    option (google.api.http) = { post: "/v1/tenant/audit-logs/exports" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "access.audit.export"
+      use_case: "export_tenant_audit_records"
+      permissions: "tenant.audit.export"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+}
