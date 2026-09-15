@@ -3085,6 +3085,14 @@
       }
     },
     {
+      "name": "GetMySubscriptionRequest",
+      "fullName": "commercial.v1.GetMySubscriptionRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "GetPlanVersionRequest",
       "fullName": "commercial.v1.GetPlanVersionRequest",
       "fields": [
@@ -9388,6 +9396,47 @@
         ]
       },
       "methods": [
+        {
+          "name": "GetMySubscription",
+          "fullName": "commercial.v1.SubscriptionManagementApplication.GetMySubscription",
+          "request": "commercial.v1.GetMySubscriptionRequest",
+          "response": "commercial.v1.TenantSubscriptionDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/subscription"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.get_my",
+            "useCase": "get_my_subscription",
+            "permissions": [
+              "tenant.entitlement.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.get_my",
+            "permissions": [
+              "tenant.entitlement.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
         {
           "name": "GetTenantSubscription",
           "fullName": "commercial.v1.SubscriptionManagementApplication.GetTenantSubscription",

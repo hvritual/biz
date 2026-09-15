@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "13",
+  "mapping_version": "14",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -455,6 +455,13 @@
       "capability_codes": [],
       "children": [],
       "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM."
+    },
+    {
+      "operation_id": "commercial.subscription.get_my",
+      "classification": "recovery",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "EC-RI-06 authenticated current-tenant commercial projection; it exposes only the caller tenant subscription selected from trusted identity and remains protected by tenant.entitlement.read."
     },
     {
       "operation_id": "commercial.subscription.rule.list",

@@ -52,6 +52,13 @@ func actor(ctx context.Context) (string, error) {
 	}
 	return p.Subject, nil
 }
+func tenantActor(ctx context.Context) (identity.Principal, error) {
+	p, ok := identity.FromContext(ctx)
+	if !ok || !p.Authenticated || p.Subject == "" || p.TenantID == "" {
+		return identity.Principal{}, subscription.ErrScope
+	}
+	return p, nil
+}
 func exposed(e error) error {
 	if e == nil {
 		return nil
@@ -318,6 +325,20 @@ func (s *service) GetTenantSubscription(ctx context.Context, r *v1.GetTenantSubs
 	}
 	v, e := requestscope.JoinValue(ctx, s.repositories, func(sc *requestscope.View[ports.SubscriptionRepositories]) (subscription.Subscription, error) {
 		return sc.Repositories().Subscriptions.GetBase(sc.Context(), r.TenantId, false)
+	})
+	if e != nil {
+		return nil, exposed(e)
+	}
+	return dto(v), nil
+}
+
+func (s *service) GetMySubscription(ctx context.Context, _ *v1.GetMySubscriptionRequest) (*v1.TenantSubscriptionDTO, error) {
+	p, e := tenantActor(ctx)
+	if e != nil {
+		return nil, exposed(e)
+	}
+	v, e := requestscope.JoinValue(ctx, s.repositories, func(sc *requestscope.View[ports.SubscriptionRepositories]) (subscription.Subscription, error) {
+		return sc.Repositories().Subscriptions.GetBase(sc.Context(), p.TenantID, false)
 	})
 	if e != nil {
 		return nil, exposed(e)

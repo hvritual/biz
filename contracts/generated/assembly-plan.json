@@ -1697,6 +1697,37 @@
       }
     },
     {
+      "id": "commercial.subscription.get_my",
+      "application": "commercial/subscription_management",
+      "bindings": [
+        {
+          "operationId": "commercial.subscription.get_my",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.subscription.get_my/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.subscription.get_my",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.subscription.get_my/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.get_my"
+      }
+    },
+    {
       "id": "commercial.subscription.rule.list",
       "application": "commercial/subscription_management",
       "bindings": [
@@ -3665,6 +3696,7 @@
         "commercial.subscription.change.preview",
         "commercial.subscription.change.preview.get",
         "commercial.subscription.get",
+        "commercial.subscription.get_my",
         "commercial.subscription.rule.list",
         "commercial.subscription.rule.put",
         "device.create",

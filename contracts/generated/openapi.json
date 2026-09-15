@@ -1400,6 +1400,11 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.GetMyEntitlementsRequest"
       },
+      "commercial_v1_GetMySubscriptionRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.GetMySubscriptionRequest"
+      },
       "commercial_v1_GetPlanVersionRequest": {
         "properties": {
           "planCode": {
@@ -5352,6 +5357,27 @@
           "access.v1.TenantRolePermissionApplication"
         ],
         "x-yunka-rpc": "/access.v1.TenantRolePermissionApplication/SetTenantRolePermissions"
+      }
+    },
+    "/v1/tenant/subscription": {
+      "get": {
+        "operationId": "commercial.v1.SubscriptionManagementApplication.GetMySubscription",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_TenantSubscriptionDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionManagementApplication/GetMySubscription"
       }
     },
     "/v1/tenants": {
