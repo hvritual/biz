@@ -1,3 +1,4 @@
+import { selectUiOption } from './ui.helpers'
 import { test, expect, type Page } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 const screenDir = 'screenshots/site-rental'
@@ -119,7 +120,7 @@ test('new site saves and reads back without automatically renting or provisionin
   await go(page)
   await page.getByRole('button', { name: '新建点位', exact: true }).click()
   const d = page.getByRole('dialog', { name: '新建点位档案' })
-  await d.getByLabel('所属客户').selectOption('CUS-0186')
+  await selectUiOption(d.getByLabel('所属客户'), 'CUS-0186')
   await d.getByLabel('点位名称').fill('研发楼 · 5 楼茶水间')
   await d.getByLabel('上级位置 / 分组').fill('上海总部 / 研发楼')
   await d.getByLabel('详细地址').fill('上海 · 研发楼 5F')
@@ -139,7 +140,7 @@ test('duplicate point fails with draft preserved', async ({ page }) => {
   await go(page)
   await page.getByRole('button', { name: '新建点位', exact: true }).click()
   const d = page.getByRole('dialog')
-  await d.getByLabel('所属客户').selectOption('CUS-0186')
+  await selectUiOption(d.getByLabel('所属客户'), 'CUS-0186')
   await d.getByLabel('点位名称').fill('苏州园区大堂')
   await d.getByLabel('上级位置 / 分组').fill('苏州运营片区')
   await d.getByLabel('详细地址').fill('苏州园区')
@@ -186,8 +187,8 @@ for (const [mode, name] of [
 ])
   test(`explicit independent ${mode} configuration`, async ({ page }) => {
     const d = await openRule(page)
-    await d.getByLabel('计费模式', { exact: false }).selectOption(mode!)
-    await d.getByLabel('计费范围').selectOption('independent')
+    await selectUiOption(d.getByLabel('计费模式', { exact: false }), mode!)
+    await selectUiOption(d.getByLabel('计费范围'), 'independent')
     if (mode === 'fixed') await d.getByLabel('固定月租（元）').fill('1200')
     await d.getByLabel('SITE-041 试算杯数').fill('600')
     await d.getByLabel('SITE-042 试算杯数').fill('1300')
@@ -201,13 +202,13 @@ test('missing scope or mid-period date cannot be published', async ({ page }) =>
   await go(page, '/sites/groups?action=new-rule')
   const d = page.getByRole('dialog')
   await d.getByLabel('计费规则 / 组名称').fill('测试规则')
-  await d.getByLabel('关联客户').selectOption('CUS-0186')
-  await d.getByLabel('有效合同来源').selectOption('HT-2026-041')
+  await selectUiOption(d.getByLabel('关联客户'), 'CUS-0186')
+  await selectUiOption(d.getByLabel('有效合同来源'), 'HT-2026-041')
   await d.getByLabel('固定月租（元）').fill('1200')
   await d.getByLabel('合同约定 / 变更依据').fill('测试校验')
   await d.getByRole('button', { name: '试算并预览影响' }).click()
   await expect(d.getByRole('alert')).toContainText('明确选择')
-  await d.getByLabel('计费范围').selectOption('independent')
+  await selectUiOption(d.getByLabel('计费范围'), 'independent')
   await d.getByLabel('预约生效日期').fill('2026-10-15')
   await d.getByRole('button', { name: '试算并预览影响' }).click()
   await expect(d.getByRole('alert')).toContainText('月初')
@@ -277,7 +278,7 @@ test('tenant switching closes drafts and clears previous rental writes', async (
   await page.getByRole('dialog').getByLabel('点位名称').fill('未保存草稿')
   await page.getByRole('dialog').getByRole('button', { name: '取消', exact: true }).click()
   await page.getByRole('button', { name: '放弃修改', exact: true }).click()
-  await page.getByLabel('切换企业', { exact: true }).selectOption('hangzhou')
+  await selectUiOption(page.getByLabel('切换企业', { exact: true }), 'hangzhou')
   await go(page, '/sites/statements')
   await expect(page.getByText('本账期尚无对账记录')).toBeVisible()
 })
@@ -330,8 +331,8 @@ test('responsive views and dialogs are reachable without viewport overflow or co
 
 test('independent group totals are not duplicated into each site summary', async ({ page }) => {
   const d = await openRule(page)
-  await d.getByLabel('计费模式').selectOption('fixed')
-  await d.getByLabel('计费范围').selectOption('independent')
+  await selectUiOption(d.getByLabel('计费模式'), 'fixed')
+  await selectUiOption(d.getByLabel('计费范围'), 'independent')
   await d.getByLabel('固定月租（元）').fill('1200')
   await d.getByLabel('合同约定 / 变更依据').fill('双方确认按点位独立月租，客户汇总不得成为每点金额')
   await d.getByRole('button', { name: '试算并预览影响' }).click()

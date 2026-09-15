@@ -1,3 +1,4 @@
+import { selectUiOption } from './ui.helpers'
 import { test, expect } from '@playwright/test'
 import { ready, action, fill, commit, snap, state } from './customer.helpers'
 
@@ -39,9 +40,9 @@ test('tenant switch isolates customer changes and closes dirty dialog', async ({
   await fill(d, { name: '上海独立客户审核' })
   await commit(d)
   await ready(page, '/customers')
-  await page.getByLabel('切换企业', { exact: true }).selectOption('hangzhou')
+  await selectUiOption(page.getByLabel('切换企业', { exact: true }), 'hangzhou')
   await expect(page.locator('.customer-area')).not.toContainText('上海独立客户审核')
-  await page.getByLabel('切换企业', { exact: true }).selectOption('shanghai')
+  await selectUiOption(page.getByLabel('切换企业', { exact: true }), 'shanghai')
   await expect(page.locator('.customer-area')).toContainText('上海独立客户审核')
 })
 test('safe archive restore and shared view revoke have real preview state', async ({ page }) => {

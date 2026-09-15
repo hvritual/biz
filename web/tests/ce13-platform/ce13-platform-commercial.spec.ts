@@ -320,7 +320,8 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await editor.getByLabel("套餐代码").fill(code);
   await editor.getByLabel("套餐名称").fill("CE-13 可见控制台套餐");
   await editor.getByRole("button", { name: "添加模块" }).click();
-  await editor.getByLabel("模块").selectOption("device-operations");
+  await editor.getByLabel("模块").click();
+  await page.locator('[data-slot="select-item"][data-ui-option-value="device-operations"]').click();
   await editor.getByLabel("device.lifecycle").check();
   await editor.getByRole("button", { name: "添加范围" }).click();
   await editor.getByPlaceholder("default").fill("default");
@@ -366,10 +367,14 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await expect(page.locator(".subscription-card")).toBeVisible();
   await page.getByRole("button", { name: "新增专项来源" }).click();
   const override = page.getByRole("dialog", { name: "新增专项权益来源" });
-  await override.getByLabel("模块", { exact: true }).selectOption("device-operations");
-  await override.getByLabel("目标类型", { exact: true }).selectOption("ENTITLEMENT_TARGET_CAPABILITY");
-  await override.getByLabel("目标 key", { exact: true }).selectOption("device.lifecycle");
-  await override.getByLabel("效果", { exact: true }).selectOption("ENTITLEMENT_EFFECT_DENY");
+  await override.getByLabel("模块", { exact: true }).click();
+  await page.locator('[data-slot="select-item"][data-ui-option-value="device-operations"]').click();
+  await override.getByLabel("目标类型", { exact: true }).click();
+  await page.locator('[data-slot="select-item"][data-ui-option-value="ENTITLEMENT_TARGET_CAPABILITY"]').click();
+  await override.getByLabel("目标 key", { exact: true }).click();
+  await page.locator('[data-slot="select-item"][data-ui-option-value="device.lifecycle"]').click();
+  await override.getByLabel("效果", { exact: true }).click();
+  await page.locator('[data-slot="select-item"][data-ui-option-value="ENTITLEMENT_EFFECT_DENY"]').click();
   await override.getByLabel("原因", { exact: true }).fill("CE-13 可见来源验证");
   await override.getByRole("button", { name: "创建专项来源" }).click();
   await expect(page.getByText("CE-13 可见来源验证", { exact: true })).toBeVisible();

@@ -2,6 +2,7 @@ import { expect, type Page, type Locator } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createCustomerSeed } from '../src/services/customer/seed'
+import { selectUiOption } from './ui.helpers'
 const dir = resolve('screenshots/customer-ui')
 export async function ready(page: Page, path = '/customers') {
   await page.goto('/#' + path)
@@ -17,10 +18,17 @@ export async function action(page: Page, path: string, kind: string) {
 }
 export async function fill(dialog: Locator, values: Record<string, string | boolean>) {
   for (const [key, value] of Object.entries(values)) {
-    const input = dialog.locator(`[data-field="${key}"]`).locator('input,select,textarea')
-    if (typeof value === 'boolean') await input.setChecked(value)
-    else if ((await input.evaluate((e) => e.tagName)) === 'SELECT') await input.selectOption(value)
-    else await input.fill(value)
+    const field = dialog.locator(`[data-field="${key}"]`)
+    if (typeof value === 'boolean') {
+      await field.getByRole('checkbox').setChecked(value)
+      continue
+    }
+    const combobox = field.getByRole('combobox')
+    if (await combobox.count()) {
+      await selectUiOption(combobox, value)
+      continue
+    }
+    await field.locator('input,textarea').first().fill(value)
   }
 }
 export async function commit(dialog: Locator) {

@@ -2,23 +2,23 @@ import type { RouteRecordRaw } from 'vue-router'
 export const siteRentalRoutes: RouteRecordRaw[] = [
   {
     path: '/sites',
-    component: () => import('@/views/customer/CustomerAreaView.vue'),
+    component: () => import('@/features/customer/pages/CustomerAreaView.vue'),
     meta: { module: 'sites' },
     children: [
-      { path: '', component: () => import('@/views/siteRental/SitesView.vue'), meta: { title: '点位租赁' } },
+      { path: '', component: () => import('@/features/site-rental/pages/SitesView.vue'), meta: { title: '点位租赁' } },
       {
         path: 'groups/:groupId?',
-        component: () => import('@/views/siteRental/GroupsView.vue'),
+        component: () => import('@/features/site-rental/pages/GroupsView.vue'),
         meta: { title: '计费规则与共享组' },
       },
       {
         path: 'statements',
-        component: () => import('@/views/siteRental/StatementsView.vue'),
+        component: () => import('@/features/site-rental/pages/StatementsView.vue'),
         meta: { title: '租赁对账' },
       },
       {
         path: ':id',
-        component: () => import('@/views/siteRental/SiteDetailView.vue'),
+        component: () => import('@/features/site-rental/pages/SiteDetailView.vue'),
         meta: { title: '点位工作区' },
       },
     ],

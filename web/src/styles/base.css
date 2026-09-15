@@ -106,7 +106,7 @@ small {
 }
 .card {
   background: var(--color-surface);
-  border: 1px solid rgb(231 237 246 / 55%);
+  border: 1px solid var(--color-fixed-91215eab);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-panel);
 }
@@ -167,7 +167,7 @@ small {
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: var(--color-on-primary);
-  box-shadow: 0 3px 8px rgb(8 123 255 / 10%);
+  box-shadow: 0 3px 8px var(--color-fixed-777fc1a0);
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--color-primary-hover);

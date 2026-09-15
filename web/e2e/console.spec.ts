@@ -1,3 +1,4 @@
+import { selectUiOption } from './ui.helpers'
 import { test, expect, type Page } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 const screenDir = 'screenshots'
@@ -40,7 +41,7 @@ test('collapse and expand preserve working navigation', async ({ page }) => {
   await ready(page)
   const expandedWidth = (await page.locator('.primary-nav').boundingBox())!.width
   await page.getByRole('button', { name: '收起一级菜单', exact: true }).click()
-  expect((await page.locator('.primary-nav').boundingBox())!.width).toBe(64)
+  expect((await page.locator('.primary-nav').boundingBox())!.width).toBe(68)
   await openMenu(page)
   const foldedNav = (await page.locator('.primary-nav').boundingBox())!
   expect((await page.locator('.module-panel').boundingBox())!.x).toBe(foldedNav.x + foldedNav.width)
@@ -147,11 +148,11 @@ test('tenant switch clears queries, selections, dialogs and isolates data', asyn
   await d.getByLabel('姓名', { exact: true }).fill('上海独立成员')
   await d.getByRole('button', { name: '保存变更', exact: true }).click()
   await page.getByLabel('搜索成员', { exact: true }).fill('上海独立成员')
-  await page.getByLabel('切换企业', { exact: true }).selectOption('hangzhou')
+  await selectUiOption(page.getByLabel('切换企业', { exact: true }), 'hangzhou')
   await expect(page.getByLabel('搜索成员', { exact: true })).toHaveValue('')
   await expect(page.locator('.metric-value').first()).toContainText('24')
   await expect(page.getByRole('button', { name: '编辑 李四', exact: true })).toBeVisible()
-  await page.getByLabel('切换企业', { exact: true }).selectOption('shanghai')
+  await selectUiOption(page.getByLabel('切换企业', { exact: true }), 'shanghai')
   await expect(page.getByRole('button', { name: '编辑 上海独立成员', exact: true })).toBeVisible()
 })
 test('role creation uses real permissions matrix, builtin role read-only', async ({ page }) => {
@@ -232,6 +233,6 @@ test('visual gallery: native viewport, menu, collapsed and all implemented pages
   await page.getByRole('button', { name: '打开主导航', exact: true }).click()
   await openMenu(page)
   await page.screenshot({ path: `${screenDir}/20-mobile-menu.png` })
-  expect((await page.locator('.module-panel').boundingBox())!.width).toBe(310)
+  expect((await page.locator('.module-panel').boundingBox())!.width).toBe(322)
   expect(errors).toEqual([])
 })
