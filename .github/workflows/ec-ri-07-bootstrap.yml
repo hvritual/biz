@@ -1,6 +1,6 @@
 name: ec-ri-07-bootstrap
 
-# retry: audit operations use normal tenant-business capability mapping and invocation fencing
+# final canonical generation after server, web, and MySQL qualification sources are locked
 on:
   push:
     branches:
