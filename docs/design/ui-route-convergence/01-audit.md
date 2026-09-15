@@ -6,7 +6,7 @@
 
 ## 1. 审计目标
 
-确认产品路由是否始终落到唯一业务页面，数据模式是否只影响数据/命令适配层，而不是切换整套 UI；同时确认 Runtime Console、Preview/Demo、真实 API 页面、视觉回归是否存在绕过设计系统和产品信息架构的路径。
+确认产品路由是否始终落到唯一业务页面，数据模式是否只影响数据/命令适配层，而不是切换整套 UI 或 Shell；同时确认 Runtime Console、Preview/Demo、真实 API 页面、视觉回归是否存在绕过设计系统和产品信息架构的路径。
 
 ## 2. 结论
 
@@ -20,16 +20,18 @@
 | `/enterprise/plan` | `PlansView.vue` | `PlansRealView.vue` | P0 |
 | `/enterprise/company` | `CompanyView.vue` | `CompanyRealView.vue` | P0 |
 
+同时发现应用 Shell 也存在同源偏差：`AppHeader.vue` 直接读取 `VITE_DATA_MODE`，API 模式被强制判定为“业务工作区”，从而隐藏企业切换、全局搜索和租户产品头部。即使五个业务页面收敛，如果 Shell 继续按数据模式切换，API 环境仍会表现成另一套产品。
+
 根因不是“某个页面样式没跟上”，而是架构允许：
 
 ```text
-Route
-  -> EntryView
-      -> DemoView
-      -> RealView
+Route / Shell
+  -> data mode branch
+      -> Demo UI
+      -> API UI
 ```
 
-这会自然产生两套 DOM、两套交互、两套组件、两套验收标准，并使“API 接通”被误解为“再做一套页面”。
+这会自然产生两套 DOM、两套交互、两套组件、两套验收标准，并使“API 接通”被误解为“再做一套页面或 Shell”。
 
 ## 3. P0：当前存在的偏差
 
@@ -66,6 +68,18 @@ Route
 
 当前存在 `enterprise-*-real.spec.ts` 与 `members-layout.spec.ts` 等不同测试路线。真实能力测试不能证明设计页面在 API 模式下仍成立；设计截图也不能证明真实 API 路径成立。
 
+### P0-05 App Shell 按数据模式切换产品形态
+
+`AppHeader.vue` 直接以 `VITE_DATA_MODE === 'api'` 判断 `live`，并在 API 模式下不创建企业 Store，隐藏企业切换、全局搜索与企业级头部动作。
+
+这不是数据源差异，而是产品 Shell 差异。它会导致同一路由在 demo/API 下拥有不同导航语义和页面上下文。
+
+修复原则：
+
+- Header/Shell 只能由 route surface 决定平台、租户、runtime 产品上下文；
+- `VITE_DATA_MODE` 不得决定导航、Header、Sidebar、Layout 的产品结构；
+- 企业切换必须调用统一 Enterprise facade，demo/API 在 facade 下选择实现。
+
 ## 4. P1：已修复但必须永久防回归
 
 ### P1-01 平台租户页误用 RuntimeConsole
@@ -82,7 +96,7 @@ Route
 
 ### P2-02 `dataMode.ts` 的语义容易被滥用
 
-数据模式只能用于选择 adapter/repository；禁止用于 route component、page component、layout component 的切换。
+数据模式只能用于选择 adapter/repository；禁止用于 route component、page component、Header、Sidebar、Layout 的切换。
 
 ### P2-03 视觉合同覆盖不完整
 
@@ -91,7 +105,7 @@ Route
 ## 6. 正确目标结构
 
 ```text
-Router
+Router + Product Shell
   -> Canonical Business Page (唯一)
       -> Business Components (唯一)
           -> Application Facade / Store
@@ -103,12 +117,13 @@ Router
 强制原则：
 
 1. Route 不知道 demo/api。
-2. Page 不知道 demo/api。
-3. Business component 不通过环境变量切换整棵 UI。
-4. Store/Application Facade 可以暴露 `source / loading / error / session` 等状态，但数据模式选择发生在 adapter factory。
-5. API 模式失败必须显式失败，不得静默降级为 demo 数据。
-6. Demo 与 API 必须投影为同一个 view model。
-7. 写操作必须通过统一 command port，并保持服务端幂等、版本检查、回读确认。
+2. Product Shell 不知道 demo/api；只识别 surface / product context。
+3. Page 不知道 demo/api。
+4. Business component 不通过环境变量切换整棵 UI。
+5. Store/Application Facade 可以暴露 `source / loading / error / session` 等状态，但数据模式选择发生在 adapter factory。
+6. API 模式失败必须显式失败，不得静默降级为 demo 数据。
+7. Demo 与 API 必须投影为同一个 view model。
+8. 写操作必须通过统一 command port，并保持服务端幂等、版本检查、回读确认。
 
 ## 7. 审计判定标准
 
@@ -116,8 +131,9 @@ Router
 
 - `web/src/features/**/pages` 中不存在 `EntryView`；
 - 正式业务页面不存在 `*RealView.vue` / `*DemoView.vue` 平行实现；
-- `VITE_DATA_MODE` 不出现在 `features/**/pages`、router component 选择逻辑中；
+- `VITE_DATA_MODE` 不出现在 `features/**/pages`、`features/app-shell/**`、router component 选择逻辑中；
 - 企业中心五条路由直接指向 canonical `*View.vue`；
+- Header/Shell 在 demo/API 下保持同一产品结构，只由 route surface 区分 platform/runtime/tenant；
 - 真实 API adapter 与 demo adapter 产出统一 view model；
 - API 模式无登录/403/409/5xx 时显示真实错误或空态，不回退示例数据；
 - demo 与 API 使用同一组件树和相同 `data-ui-*` 区域合同；
