@@ -76,7 +76,9 @@ func (security auditedSecurity) Prepare(ctx context.Context, plan operationplan.
 	return context.WithValue(secured, auditStateContextKey{}, state), nil
 }
 
-type auditObserver struct{ sink accessports.AuditEventAppender }
+type auditObserver struct {
+	sink accessports.AuditEventAppender
+}
 
 func (observer auditObserver) Observe(ctx context.Context, event operation.Event) {
 	if observer.sink == nil || event.Kind != operation.InvocationRoot || event.Phase != operation.PhaseOutcome || event.Outcome == operation.OutcomeStarted {
