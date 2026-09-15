@@ -2,7 +2,7 @@
 
 ## 0. 目标
 
-把“API 接入 = 新建一套 RealView”的路线彻底收敛为“唯一业务页面 + 可替换数据/命令适配器”，并以机器门禁防止回归。
+把“API 接入 = 新建一套 RealView / 改一套 Shell”的路线彻底收敛为“唯一业务页面 + 唯一 Product Shell + 可替换数据/命令适配器”，并以机器门禁防止回归。
 
 ## 1. 修复范围
 
@@ -13,6 +13,7 @@
 - 企业中心 Organization
 - 企业中心 Plans
 - 企业中心 Company
+- AppHeader / AppShell 产品上下文收敛
 - Router canonical mapping
 - Enterprise Store / facade 数据源边界
 - Route convergence gate
@@ -38,6 +39,7 @@
 - `02-policy.md`
 - `03-repair-plan.md`
 - `ui-route-contract.json`
+- `README.md`
 
 验收：问题、目标、规则、路线、机器可读合同一致。
 
@@ -45,9 +47,9 @@
 
 新增 `web/scripts/check-route-convergence.mjs` 并纳入 `npm run check`。
 
-验收：人为重新创建 EntryView、RealView、page-level VITE_DATA_MODE 或把 RuntimeConsole 挂到业务 surface 时检查必须失败。
+验收：人为重新创建 EntryView、RealView、page-level / app-shell-level VITE_DATA_MODE 或把 RuntimeConsole 挂到业务 surface 时检查必须失败。
 
-### RC-03 Router 收敛
+### RC-03 Product Shell 与 Router 收敛
 
 企业中心正式路由直接指向：
 
@@ -57,9 +59,14 @@
 - `PlansView.vue`
 - `CompanyView.vue`
 
-删除 route-level EntryView。
+同时：
 
-验收：router 不含 `EntryView`、不按 data mode 选择 component。
+- `AppHeader` 不再把 API mode 等价为 runtime；
+- 企业 Header、租户切换和全局搜索在 demo/API 使用同一结构；
+- `AppShell` 不再通过 data mode 控制 RouterView；
+- 只有 route `surface` 决定 platform / tenant / runtime 产品上下文。
+
+验收：router 不含 `EntryView`，Header/Shell/Router 不按 data mode 选择产品 UI。
 
 ### RC-04 统一 Enterprise Data Source
 
@@ -71,7 +78,7 @@
 
 要求：
 
-- 页面不读 `VITE_DATA_MODE`；
+- 页面与 Product Shell 不读 `VITE_DATA_MODE`；
 - API 错误不 fallback demo；
 - source/loading/error/session 由 store/facade 暴露；
 - 切租户后统一 refresh；
@@ -93,6 +100,7 @@
 
 - 同一 RolesView；
 - role list / permissions 投影；
+- 权限目录在 API 路径只能使用服务端合同声明的 permission keys；
 - create/update/enable/disable/set-permissions 走 command adapter；
 - owner/builtin 保护保留；
 - API 成功后 readback/refresh。
@@ -136,7 +144,8 @@
 - 原设计视觉测试继续访问相同 canonical route；
 - 增加 gate unit test；
 - 至少验证 unauthenticated / forbidden / conflict / success readback；
-- 验证 API mode 不出现 demo seed 文案或本地伪成功。
+- 验证 API mode 不出现 demo seed 文案或本地伪成功；
+- 验证 API mode Header/rail/secondary navigation 与 tenant surface 保持一致。
 
 ### RC-12 视觉验收
 
@@ -166,7 +175,8 @@ API-mode：
 
 - `docs/design/ui-route-convergence/**`
 - `web/src/features/enterprise/**`
-- `web/src/stores/enterprise.ts`
+- `web/src/features/app-shell/**`
+- `web/src/stores/enterprise*.ts`
 - `web/src/services/enterprise/**`
 - `web/src/router/**`
 - `web/scripts/**`
@@ -189,9 +199,10 @@ API-mode：
 - [ ] 五条企业中心正式路由只有一个 canonical page
 - [ ] 无 EntryView
 - [ ] 无业务 RealView/DemoView
-- [ ] pages 无 VITE_DATA_MODE
+- [ ] pages / app-shell 无 VITE_DATA_MODE 产品结构分支
 - [ ] demo/api 数据通过 adapter/facade 选择
 - [ ] API 不 fallback demo
+- [ ] tenant surface 的 Header/rail/navigation 在 demo/API 保持一致
 - [ ] trusted session / tenant / idempotency / CAS / readback 保留
 - [ ] UI contract 覆盖企业中心五路由
 - [ ] route convergence gate 纳入 `npm run check`
