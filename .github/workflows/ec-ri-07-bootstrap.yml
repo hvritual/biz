@@ -1,5 +1,6 @@
 name: ec-ri-07-bootstrap
 
+# retry: tenant_audit.proto is now registered in contracts/sources.json
 on:
   push:
     branches:
