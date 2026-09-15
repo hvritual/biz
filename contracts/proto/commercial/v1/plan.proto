@@ -61,9 +61,8 @@ service PlanManagementApplication {
    use_case: "read_tenant_subscription_plan_version"
    permissions: "tenant.subscription.manage"
    permission_mode: PERMISSION_ALL
-   tenant_required: true
+   tenant_required: false
    authentication: AUTHENTICATION_API_KEY
-   authentication: AUTHENTICATION_WEB_SESSION
    execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
    request_type: "commercial.v1.GetPlanVersionRequest"
    response_type: "commercial.v1.PlanVersionDTO"
@@ -75,9 +74,8 @@ service PlanManagementApplication {
    permissions: "tenant.subscription.manage"
    permissions: "commercial.catalog.read"
    permission_mode: PERMISSION_ALL
-   tenant_required: true
+   tenant_required: false
    authentication: AUTHENTICATION_API_KEY
-   authentication: AUTHENTICATION_WEB_SESSION
    requires_operations: "commercial.module.plan_catalog"
    composition: COMPOSITION_LOCAL
    execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
@@ -91,9 +89,8 @@ service PlanManagementApplication {
    permissions: "tenant.subscription.manage"
    permissions: "commercial.catalog.read"
    permission_mode: PERMISSION_ALL
-   tenant_required: true
+   tenant_required: false
    authentication: AUTHENTICATION_API_KEY
-   authentication: AUTHENTICATION_WEB_SESSION
    requires_operations: "commercial.module.plan_catalog"
    composition: COMPOSITION_LOCAL
    execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
