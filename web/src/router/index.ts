@@ -2,6 +2,7 @@ import { siteRentalRoutes } from './siteRentalRoutes'
 import { customerRoutes } from './customerRoutes'
 import { rentalWorkRoutes } from './rentalWorkRoutes'
 import { createRouter, createWebHashHistory } from 'vue-router'
+
 export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
@@ -61,33 +62,33 @@ export const router = createRouter({
     },
     {
       path: '/enterprise/members',
-      component: () => import('@/features/enterprise/pages/MembersEntryView.vue'),
-      meta: { title: '成员管理', module: 'enterprise' },
+      component: () => import('@/features/enterprise/pages/MembersView.vue'),
+      meta: { title: '成员管理', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage' },
     },
     {
       path: '/enterprise/roles',
-      component: () => import('@/features/enterprise/pages/RolesEntryView.vue'),
-      meta: { title: '角色权限', module: 'enterprise' },
+      component: () => import('@/features/enterprise/pages/RolesView.vue'),
+      meta: { title: '角色权限', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage' },
     },
     {
       path: '/enterprise/organization',
-      component: () => import('@/features/enterprise/pages/OrganizationEntryView.vue'),
-      meta: { title: '组织架构', module: 'enterprise' },
+      component: () => import('@/features/enterprise/pages/OrganizationView.vue'),
+      meta: { title: '组织架构', module: 'enterprise', surface: 'tenant', pageTemplate: 'WorkbenchPage' },
     },
     {
       path: '/enterprise/plan',
-      component: () => import('@/features/enterprise/pages/PlansEntryView.vue'),
-      meta: { title: '套餐额度', module: 'enterprise' },
+      component: () => import('@/features/enterprise/pages/PlansView.vue'),
+      meta: { title: '套餐额度', module: 'enterprise', surface: 'tenant', pageTemplate: 'WorkbenchPage' },
     },
     {
       path: '/enterprise/company',
-      component: () => import('@/features/enterprise/pages/CompanyEntryView.vue'),
-      meta: { title: '企业信息', module: 'enterprise' },
+      component: () => import('@/features/enterprise/pages/CompanyView.vue'),
+      meta: { title: '企业信息', module: 'enterprise', surface: 'tenant', pageTemplate: 'FormPage' },
     },
     {
       path: '/enterprise/logs',
       component: () => import('@/features/enterprise/pages/AuditLogsView.vue'),
-      meta: { title: '操作日志', module: 'enterprise' },
+      meta: { title: '操作日志', module: 'enterprise', surface: 'tenant' },
     },
     {
       path: '/system/:section(general|notifications|security|integrations|dictionary)',
@@ -102,6 +103,7 @@ export const router = createRouter({
   ],
   scrollBehavior: () => ({ top: 0 }),
 })
+
 router.afterEach((to) => {
   document.title = `${String(to.meta.title ?? '企业中心')} · CoffeeLink`
 })
