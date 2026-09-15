@@ -16,6 +16,14 @@ def write(path: str, content: str) -> None:
     target.write_text(content, encoding='utf-8')
 
 
+def replace_once(path: str, old: str, new: str) -> None:
+    target = ROOT / path
+    content = target.read_text(encoding='utf-8')
+    if old not in content:
+        raise RuntimeError(f'expected test-contract anchor missing in {path}: {old}')
+    target.write_text(content.replace(old, new, 1), encoding='utf-8')
+
+
 router_path = 'web/src/router/index.ts'
 router = git_show('HEAD', router_path)
 platform_routes = '''    {
@@ -111,8 +119,37 @@ for required in [
     if required not in {route.get('path') for route in routes}:
         raise RuntimeError(f'missing merged UI contract: {required}')
 
-subprocess.check_call(['git', 'add', router_path, 'web/src/router/navigation.ts', 'web/src/router/navigation.spec.ts', contracts_path], cwd=ROOT)
+# Canonical API E2E assertions follow the product-level error contract. The source banner intentionally
+# converts raw authentication responses into a user-facing fail-closed state, while form readback
+# errors are scoped to the form alert instead of the simultaneous global source-status alert.
+company_spec = 'web/e2e/enterprise-company-real.spec.ts'
+replace_once(
+    company_spec,
+    "  await expect(page.getByRole('alert')).toContainText('tenant profile readback failed')",
+    "  await expect(page.locator('.form-error[role=\"alert\"]')).toContainText('tenant profile readback failed')",
+)
+replace_once(
+    company_spec,
+    "  await expect(page.getByText('unauthenticated', { exact: true })).toBeVisible()",
+    "  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('登录会话已失效或尚未登录')",
+)
+members_spec = 'web/e2e/enterprise-members-real.spec.ts'
+replace_once(
+    members_spec,
+    "  await expect(page.getByText('unauthenticated', { exact: true })).toBeVisible()",
+    "  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('登录会话已失效或尚未登录')",
+)
+
+subprocess.check_call([
+    'git', 'add',
+    router_path,
+    'web/src/router/navigation.ts',
+    'web/src/router/navigation.spec.ts',
+    contracts_path,
+    company_spec,
+    members_spec,
+], cwd=ROOT)
 unmerged = subprocess.check_output(['git', 'diff', '--name-only', '--diff-filter=U'], cwd=ROOT, text=True).strip()
 if unmerged:
     raise RuntimeError(f'unexpected unresolved main-sync conflicts:\n{unmerged}')
-print('Main synchronization conflicts resolved: canonical enterprise routes preserved, platform lifecycle routes/contracts absorbed.')
+print('Main synchronization conflicts resolved: canonical enterprise routes preserved, platform lifecycle routes/contracts absorbed, API E2E error contracts aligned.')
