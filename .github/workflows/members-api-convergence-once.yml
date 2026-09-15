@@ -20,6 +20,26 @@ jobs:
           node-version: '22.12.0'
           cache: npm
           cache-dependency-path: web/package-lock.json
+      - name: Correct staged detail patch target
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          patch = Path('web/scripts/members-api-convergence.mjs')
+          source = patch.read_text()
+          anchor = "detail = replaceOnce(\n  detail,\n  `<div class=\"notice-box\">示例权限仅用于界面预览；实际授权以服务端校验为准。</div>`"
+          start = source.index(anchor)
+          end = source.index("\n)\n", start) + 3
+          patch.write_text(source[:start] + source[end:])
+
+          drawer = Path('web/src/features/enterprise/components/members/MemberDetailDrawer.vue')
+          content = drawer.read_text()
+          old = '<div class="notice-box">示例权限仅用于界面预览；实际授权以服务端校验为准。</div>'
+          new = '''<div class="notice-box">{{\n                store.previewMode\n                  ? '示例权限仅用于界面预览；实际授权以服务端校验为准。'\n                  : '数据范围由服务端角色权限派生，本页只展示权威回读结果。'\n              }}</div>'''
+          if old not in content:
+              raise SystemExit('missing MemberDetailDrawer scope notice anchor')
+          drawer.write_text(content.replace(old, new, 1))
+          PY
       - name: Apply Members canonical API patch
         run: node web/scripts/members-api-convergence.mjs
       - name: Install web dependencies
@@ -48,6 +68,6 @@ jobs:
           rm .github/workflows/members-api-convergence-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add web/src/stores/enterprise.ts web/src/features/enterprise/pages/MembersView.vue web/src/features/enterprise/components/members/MemberActionDialog.vue web/src/features/enterprise/components/members/MemberDetailOverview.vue web/e2e/enterprise-members-real.spec.ts web/scripts/members-api-convergence.mjs .github/workflows/members-api-convergence-once.yml
+          git add web/src/stores/enterprise.ts web/src/features/enterprise/pages/MembersView.vue web/src/features/enterprise/components/members/MemberActionDialog.vue web/src/features/enterprise/components/members/MemberDetailOverview.vue web/src/features/enterprise/components/members/MemberDetailDrawer.vue web/e2e/enterprise-members-real.spec.ts web/scripts/members-api-convergence.mjs .github/workflows/members-api-convergence-once.yml
           git commit -m "fix(enterprise): converge members canonical API contract"
           git push origin HEAD:refactor/ui-route-convergence
