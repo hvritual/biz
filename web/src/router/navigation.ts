@@ -52,23 +52,34 @@ export const enterpriseNavigation: NavigationItem[] = [
 ]
 
 export const platformCommercialNavigation: NavigationItem[] = [
-  { id: 'overview', label: '平台总览', icon: 'home', path: '/platform/overview' },
-  { id: 'tenants', label: '租户管理', icon: 'company', path: '/platform/tenants' },
-  { id: 'modules', label: '模块目录', icon: 'database', path: '/platform/commercial/modules' },
-  { id: 'plans', label: '套餐版本', icon: 'crown', path: '/platform/commercial/plans' },
+  { id: 'overview', label: '平台总览', icon: 'home', path: '/platform/overview', group: '总览' },
+  { id: 'tenants', label: '租户管理', icon: 'company', path: '/platform/tenants', group: '租户生命周期' },
+  { id: 'subscriptions', label: '租户订阅', icon: 'file', path: '/platform/commercial/subscriptions', group: '租户生命周期' },
+  { id: 'changes', label: '套餐变更', icon: 'refresh', path: '/platform/commercial/changes', group: '租户生命周期' },
+  { id: 'expiry', label: '到期与宽限', icon: 'clock', path: '/platform/commercial/expiry', group: '租户生命周期' },
+  { id: 'modules', label: '模块目录', icon: 'database', path: '/platform/commercial/modules', group: '产品与定价' },
+  { id: 'features', label: '商业功能', icon: 'layers', path: '/platform/commercial/features', group: '产品与定价' },
+  { id: 'plans', label: '套餐版本', icon: 'crown', path: '/platform/commercial/plans', group: '产品与定价' },
+  { id: 'add-ons', label: '增购项', icon: 'plus', path: '/platform/commercial/add-ons', group: '产品与定价' },
   {
     id: 'tenant-entitlements',
     label: '租户权益',
     icon: 'shield',
     path: '/platform/commercial/tenant-entitlements',
+    group: '权益与授权',
   },
+  { id: 'authorization', label: '授权诊断', icon: 'checks', path: '/platform/commercial/authorization', group: '权益与授权' },
+  { id: 'quotas', label: '额度管理', icon: 'database', path: '/platform/commercial/quotas', group: '权益与授权' },
+  { id: 'overrides', label: '专项授权', icon: 'key', path: '/platform/commercial/overrides', group: '权益与授权' },
+  { id: 'usage-billing', label: '用量计费', icon: 'chart', path: '/platform/commercial/usage-billing', group: '计量与治理' },
+  { id: 'audit', label: '商业审计', icon: 'file', path: '/platform/commercial/audit', group: '计量与治理' },
 ]
 
 export const platformCommercialQuickActions = [
   { label: '打开租户管理', icon: 'company', path: '/platform/tenants' },
-  { label: '管理模块状态', icon: 'settings', path: '/platform/commercial/modules' },
   { label: '创建或发布套餐', icon: 'crown', path: '/platform/commercial/plans' },
   { label: '调整租户权益', icon: 'shield', path: '/platform/commercial/tenant-entitlements' },
+  { label: '查看用量计费', icon: 'chart', path: '/platform/commercial/usage-billing' },
 ]
 
 export const systemNavigation: NavigationItem[] = [
