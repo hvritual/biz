@@ -146,7 +146,7 @@ test('failed export preserves the same idempotency key for retry and never shows
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(page.getByRole('status')).toHaveCount(0)
   await page.getByRole('button', { name: '重试导出' }).click()
-  expect(server.writes).toHaveLength(2)
+  await expect.poll(() => server.writes.length).toBe(2)
   expect(server.writes[0]?.headers['idempotency-key']).toBe(server.writes[1]?.headers['idempotency-key'])
 })
 
