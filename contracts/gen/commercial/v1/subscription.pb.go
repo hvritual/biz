@@ -684,6 +684,164 @@ func (x *BootstrapTenantSubscriptionResult) GetSubscription() *TenantSubscriptio
 	return nil
 }
 
+// TenantQuotaUsageDTO is a measured usage fact. Missing quota keys remain
+// unknown; clients must never infer zero from absence.
+type TenantQuotaUsageDTO struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ModuleCode    string                 `protobuf:"bytes,1,opt,name=module_code,json=moduleCode,proto3" json:"module_code,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	Known         bool                   `protobuf:"varint,3,opt,name=known,proto3" json:"known,omitempty"`
+	Used          uint64                 `protobuf:"varint,4,opt,name=used,proto3" json:"used,omitempty"`
+	Evidence      string                 `protobuf:"bytes,5,opt,name=evidence,proto3" json:"evidence,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TenantQuotaUsageDTO) Reset() {
+	*x = TenantQuotaUsageDTO{}
+	mi := &file_commercial_v1_subscription_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TenantQuotaUsageDTO) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TenantQuotaUsageDTO) ProtoMessage() {}
+
+func (x *TenantQuotaUsageDTO) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_subscription_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TenantQuotaUsageDTO.ProtoReflect.Descriptor instead.
+func (*TenantQuotaUsageDTO) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_subscription_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *TenantQuotaUsageDTO) GetModuleCode() string {
+	if x != nil {
+		return x.ModuleCode
+	}
+	return ""
+}
+
+func (x *TenantQuotaUsageDTO) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *TenantQuotaUsageDTO) GetKnown() bool {
+	if x != nil {
+		return x.Known
+	}
+	return false
+}
+
+func (x *TenantQuotaUsageDTO) GetUsed() uint64 {
+	if x != nil {
+		return x.Used
+	}
+	return 0
+}
+
+func (x *TenantQuotaUsageDTO) GetEvidence() string {
+	if x != nil {
+		return x.Evidence
+	}
+	return ""
+}
+
+type GetMyTenantUsageRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetMyTenantUsageRequest) Reset() {
+	*x = GetMyTenantUsageRequest{}
+	mi := &file_commercial_v1_subscription_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetMyTenantUsageRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetMyTenantUsageRequest) ProtoMessage() {}
+
+func (x *GetMyTenantUsageRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_subscription_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetMyTenantUsageRequest.ProtoReflect.Descriptor instead.
+func (*GetMyTenantUsageRequest) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_subscription_proto_rawDescGZIP(), []int{10}
+}
+
+type GetMyTenantUsageResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Usages        []*TenantQuotaUsageDTO `protobuf:"bytes,1,rep,name=usages,proto3" json:"usages,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetMyTenantUsageResponse) Reset() {
+	*x = GetMyTenantUsageResponse{}
+	mi := &file_commercial_v1_subscription_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetMyTenantUsageResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetMyTenantUsageResponse) ProtoMessage() {}
+
+func (x *GetMyTenantUsageResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_subscription_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetMyTenantUsageResponse.ProtoReflect.Descriptor instead.
+func (*GetMyTenantUsageResponse) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_subscription_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *GetMyTenantUsageResponse) GetUsages() []*TenantQuotaUsageDTO {
+	if x != nil {
+		return x.Usages
+	}
+	return nil
+}
+
 var File_commercial_v1_subscription_proto protoreflect.FileDescriptor
 
 const file_commercial_v1_subscription_proto_rawDesc = "" +
@@ -750,7 +908,17 @@ const file_commercial_v1_subscription_proto_rawDesc = "" +
 	"\vsales_scope\x18\x03 \x01(\tR\n" +
 	"salesScope\"m\n" +
 	"!BootstrapTenantSubscriptionResult\x12H\n" +
-	"\fsubscription\x18\x01 \x01(\v2$.commercial.v1.TenantSubscriptionDTOR\fsubscription2\xaf\f\n" +
+	"\fsubscription\x18\x01 \x01(\v2$.commercial.v1.TenantSubscriptionDTOR\fsubscription\"\x8e\x01\n" +
+	"\x13TenantQuotaUsageDTO\x12\x1f\n" +
+	"\vmodule_code\x18\x01 \x01(\tR\n" +
+	"moduleCode\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12\x14\n" +
+	"\x05known\x18\x03 \x01(\bR\x05known\x12\x12\n" +
+	"\x04used\x18\x04 \x01(\x04R\x04used\x12\x1a\n" +
+	"\bevidence\x18\x05 \x01(\tR\bevidence\"\x19\n" +
+	"\x17GetMyTenantUsageRequest\"V\n" +
+	"\x18GetMyTenantUsageResponse\x12:\n" +
+	"\x06usages\x18\x01 \x03(\v2\".commercial.v1.TenantQuotaUsageDTOR\x06usages2\xd8\x0e\n" +
 	"!SubscriptionManagementApplication\x12\xf1\x02\n" +
 	"\x1aPutDefaultSubscriptionRule\x120.commercial.v1.PutDefaultSubscriptionRuleRequest\x1a).commercial.v1.DefaultSubscriptionRuleDTO\"\xf5\x01\xe2\xf3\x18\xb4\x01\n" +
 	" commercial.subscription.rule.put\x12\x1dput_default_subscription_rule\x1a\x1cplatform.subscription.manage\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02B\x1bcommercial.plan.eligibilityH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x026:\x01*\x1a1/v1/platform/subscription-default-rules/{rule_id}\x12\xa6\x02\n" +
@@ -759,8 +927,10 @@ const file_commercial_v1_subscription_proto_rawDesc = "" +
 	"\x15GetTenantSubscription\x12+.commercial.v1.GetTenantSubscriptionRequest\x1a$.commercial.v1.TenantSubscriptionDTO\"\xab\x01\xe2\xf3\x18r\n" +
 	"\x1bcommercial.subscription.get\x12\x17get_tenant_subscription\x1a\x1aplatform.subscription.read\x1a\x14platform.tenant.read2\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02/\x12-/v1/platform/tenants/{tenant_id}/subscription\x12\xe1\x01\n" +
 	"\x11GetMySubscription\x12'.commercial.v1.GetMySubscriptionRequest\x1a$.commercial.v1.TenantSubscriptionDTO\"}\xe2\xf3\x18Z\n" +
-	"\x1ecommercial.subscription.get_my\x12\x13get_my_subscription\x1a\x17tenant.entitlement.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/tenant/subscription\x1a\xed\x02\xda\xf3\x18\xe8\x02\n" +
-	"\x17subscription_management\x12\x1acommercial/plan_management\x1a\xb0\x02\n" +
+	"\x1ecommercial.subscription.get_my\x12\x13get_my_subscription\x1a\x17tenant.entitlement.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/tenant/subscription\x12\x86\x02\n" +
+	"\x10GetMyTenantUsage\x12&.commercial.v1.GetMyTenantUsageRequest\x1a'.commercial.v1.GetMyTenantUsageResponse\"\xa0\x01\xe2\xf3\x18\x83\x01\n" +
+	"$commercial.subscription.get_my_usage\x12\x13get_my_tenant_usage\x1a\x17tenant.entitlement.read(\x012\x02\x02\x04B\x1ftenant.member.count_quota_usageH\x01R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/tenant/usage\x1a\x8d\x03\xda\xf3\x18\x88\x03\n" +
+	"\x17subscription_management\x12\x1acommercial/plan_management\x12\x1eaccess/tenant_member_lifecycle\x1a\xb0\x02\n" +
 	"&commercial.subscription.bootstrap_base\x12\x1bbootstrap_base_subscription\x1a\x16platform.tenant.create\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02B\x1bcommercial.plan.eligibilityH\x01R\x04\b\x03\x10\x01Z0commercial.v1.BootstrapTenantSubscriptionRequestb/commercial.v1.BootstrapTenantSubscriptionResultj\x19BootstrapBaseSubscriptionBV\xca\xf3\x18\x10\n" +
 	"\n" +
 	"commercial\x12\x02v1Z@github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1b\x06proto3"
@@ -777,7 +947,7 @@ func file_commercial_v1_subscription_proto_rawDescGZIP() []byte {
 	return file_commercial_v1_subscription_proto_rawDescData
 }
 
-var file_commercial_v1_subscription_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_commercial_v1_subscription_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_commercial_v1_subscription_proto_goTypes = []any{
 	(*DefaultSubscriptionRuleDTO)(nil),           // 0: commercial.v1.DefaultSubscriptionRuleDTO
 	(*PutDefaultSubscriptionRuleRequest)(nil),    // 1: commercial.v1.PutDefaultSubscriptionRuleRequest
@@ -788,23 +958,29 @@ var file_commercial_v1_subscription_proto_goTypes = []any{
 	(*GetMySubscriptionRequest)(nil),             // 6: commercial.v1.GetMySubscriptionRequest
 	(*BootstrapTenantSubscriptionRequest)(nil),   // 7: commercial.v1.BootstrapTenantSubscriptionRequest
 	(*BootstrapTenantSubscriptionResult)(nil),    // 8: commercial.v1.BootstrapTenantSubscriptionResult
+	(*TenantQuotaUsageDTO)(nil),                  // 9: commercial.v1.TenantQuotaUsageDTO
+	(*GetMyTenantUsageRequest)(nil),              // 10: commercial.v1.GetMyTenantUsageRequest
+	(*GetMyTenantUsageResponse)(nil),             // 11: commercial.v1.GetMyTenantUsageResponse
 }
 var file_commercial_v1_subscription_proto_depIdxs = []int32{
-	0, // 0: commercial.v1.ListDefaultSubscriptionRulesResponse.rules:type_name -> commercial.v1.DefaultSubscriptionRuleDTO
-	4, // 1: commercial.v1.BootstrapTenantSubscriptionResult.subscription:type_name -> commercial.v1.TenantSubscriptionDTO
-	1, // 2: commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule:input_type -> commercial.v1.PutDefaultSubscriptionRuleRequest
-	2, // 3: commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules:input_type -> commercial.v1.ListDefaultSubscriptionRulesRequest
-	5, // 4: commercial.v1.SubscriptionManagementApplication.GetTenantSubscription:input_type -> commercial.v1.GetTenantSubscriptionRequest
-	6, // 5: commercial.v1.SubscriptionManagementApplication.GetMySubscription:input_type -> commercial.v1.GetMySubscriptionRequest
-	0, // 6: commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule:output_type -> commercial.v1.DefaultSubscriptionRuleDTO
-	3, // 7: commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules:output_type -> commercial.v1.ListDefaultSubscriptionRulesResponse
-	4, // 8: commercial.v1.SubscriptionManagementApplication.GetTenantSubscription:output_type -> commercial.v1.TenantSubscriptionDTO
-	4, // 9: commercial.v1.SubscriptionManagementApplication.GetMySubscription:output_type -> commercial.v1.TenantSubscriptionDTO
-	6, // [6:10] is the sub-list for method output_type
-	2, // [2:6] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	0,  // 0: commercial.v1.ListDefaultSubscriptionRulesResponse.rules:type_name -> commercial.v1.DefaultSubscriptionRuleDTO
+	4,  // 1: commercial.v1.BootstrapTenantSubscriptionResult.subscription:type_name -> commercial.v1.TenantSubscriptionDTO
+	9,  // 2: commercial.v1.GetMyTenantUsageResponse.usages:type_name -> commercial.v1.TenantQuotaUsageDTO
+	1,  // 3: commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule:input_type -> commercial.v1.PutDefaultSubscriptionRuleRequest
+	2,  // 4: commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules:input_type -> commercial.v1.ListDefaultSubscriptionRulesRequest
+	5,  // 5: commercial.v1.SubscriptionManagementApplication.GetTenantSubscription:input_type -> commercial.v1.GetTenantSubscriptionRequest
+	6,  // 6: commercial.v1.SubscriptionManagementApplication.GetMySubscription:input_type -> commercial.v1.GetMySubscriptionRequest
+	10, // 7: commercial.v1.SubscriptionManagementApplication.GetMyTenantUsage:input_type -> commercial.v1.GetMyTenantUsageRequest
+	0,  // 8: commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule:output_type -> commercial.v1.DefaultSubscriptionRuleDTO
+	3,  // 9: commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules:output_type -> commercial.v1.ListDefaultSubscriptionRulesResponse
+	4,  // 10: commercial.v1.SubscriptionManagementApplication.GetTenantSubscription:output_type -> commercial.v1.TenantSubscriptionDTO
+	4,  // 11: commercial.v1.SubscriptionManagementApplication.GetMySubscription:output_type -> commercial.v1.TenantSubscriptionDTO
+	11, // 12: commercial.v1.SubscriptionManagementApplication.GetMyTenantUsage:output_type -> commercial.v1.GetMyTenantUsageResponse
+	8,  // [8:13] is the sub-list for method output_type
+	3,  // [3:8] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_commercial_v1_subscription_proto_init() }
@@ -818,7 +994,7 @@ func file_commercial_v1_subscription_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_commercial_v1_subscription_proto_rawDesc), len(file_commercial_v1_subscription_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

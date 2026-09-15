@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "14",
+  "mapping_version": "15",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -464,6 +464,19 @@
       "exemption_reason": "EC-RI-06 authenticated current-tenant commercial projection; it exposes only the caller tenant subscription selected from trusted identity and remains protected by tenant.entitlement.read."
     },
     {
+      "operation_id": "commercial.subscription.get_my_usage",
+      "classification": "recovery",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "tenant.member.count_quota_usage",
+          "mode": "always",
+          "source": "internal/commercial/application/subscriptionmanagement/internal/usecase/usage.go#GetMyTenantUsage"
+        }
+      ],
+      "exemption_reason": "EC-RI-06 authenticated current-tenant usage projection; it only reports authoritative usage facts for the trusted tenant and remains protected by tenant.entitlement.read."
+    },
+    {
       "operation_id": "commercial.subscription.rule.list",
       "classification": "platform_management",
       "capability_codes": [],
@@ -830,6 +843,16 @@
       ],
       "children": [],
       "exemption_reason": "租户创建根事务内的初始所有者引导，仅供已授权平台创建流程调用；不是公开购买入口。"
+    },
+    {
+      "operation_id": "tenant.member.count_quota_usage",
+      "classification": "foundation_exempt",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [],
+      "exemption_reason": "EC-RI-06 transport-private authoritative quota meter joined to commercial.subscription.get_my_usage; it accepts no tenant id and grants no independent tenant action."
     },
     {
       "operation_id": "tenant.member.get",

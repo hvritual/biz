@@ -49,6 +49,57 @@ func TestECRI06TenantSubscriptionReadIsSessionScoped(t *testing.T) {
 	}
 }
 
+func TestECRI06TenantUsageReadIsSessionScopedAndComposed(t *testing.T) {
+	root := filepath.Join("..", "..")
+	protoBytes, err := os.ReadFile(filepath.Join(root, "contracts", "proto", "commercial", "v1", "subscription.proto"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	proto := string(protoBytes)
+	for _, required := range []string{
+		"message GetMyTenantUsageRequest {}",
+		`get:"/v1/tenant/usage"`,
+		`id:"commercial.subscription.get_my_usage"`,
+		`requires_operations:"tenant.member.count_quota_usage"`,
+		`permissions:"tenant.entitlement.read"`,
+		"tenant_required:true",
+	} {
+		if !strings.Contains(proto, required) {
+			t.Fatalf("tenant usage contract missing %q", required)
+		}
+	}
+	if strings.Contains(proto, "message GetMyTenantUsageRequest { string tenant_id") {
+		t.Fatal("tenant usage request must not accept tenant_id")
+	}
+
+	accessProtoBytes, err := os.ReadFile(filepath.Join(root, "contracts", "proto", "access", "v1", "tenant_member.proto"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	accessProto := string(accessProtoBytes)
+	for _, required := range []string{
+		`id: "tenant.member.count_quota_usage"`,
+		`permissions: "tenant.entitlement.read"`,
+		`request_type: "access.v1.CountTenantQuotaMembersRequest"`,
+		`application_method: "CountTenantQuotaMembers"`,
+	} {
+		if !strings.Contains(accessProto, required) {
+			t.Fatalf("authoritative member meter contract missing %q", required)
+		}
+	}
+
+	usageBytes, err := os.ReadFile(filepath.Join(root, "internal", "commercial", "application", "subscriptionmanagement", "internal", "usecase", "usage.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	usage := string(usageBytes)
+	for _, required := range []string{"tenantActor(ctx)", "AccessTenantMemberLifecycle()", "CountTenantQuotaMembers", `memberQuotaModule = "access-management"`, `memberQuotaKey    = "tenant.members"`} {
+		if !strings.Contains(usage, required) {
+			t.Fatalf("tenant usage composition missing %q", required)
+		}
+	}
+}
+
 func TestECRI06TenantOwnerCanReadCommercialEntitlements(t *testing.T) {
 	root := filepath.Join("..", "..")
 	modelBytes, err := os.ReadFile(filepath.Join(root, "internal", "access", "domain", "model.go"))

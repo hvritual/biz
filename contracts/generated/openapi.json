@@ -1405,6 +1405,23 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.GetMySubscriptionRequest"
       },
+      "commercial_v1_GetMyTenantUsageRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.GetMyTenantUsageRequest"
+      },
+      "commercial_v1_GetMyTenantUsageResponse": {
+        "properties": {
+          "usages": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_TenantQuotaUsageDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.GetMyTenantUsageResponse"
+      },
       "commercial_v1_GetPlanVersionRequest": {
         "properties": {
           "planCode": {
@@ -2506,6 +2523,29 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.SubscriptionChangeReceiptDTO"
+      },
+      "commercial_v1_TenantQuotaUsageDTO": {
+        "properties": {
+          "evidence": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "known": {
+            "type": "boolean"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "used": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.TenantQuotaUsageDTO"
       },
       "commercial_v1_TenantSubscriptionDTO": {
         "properties": {
@@ -5378,6 +5418,27 @@
           "commercial.v1.SubscriptionManagementApplication"
         ],
         "x-yunka-rpc": "/commercial.v1.SubscriptionManagementApplication/GetMySubscription"
+      }
+    },
+    "/v1/tenant/usage": {
+      "get": {
+        "operationId": "commercial.v1.SubscriptionManagementApplication.GetMyTenantUsage",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_GetMyTenantUsageResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionManagementApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionManagementApplication/GetMyTenantUsage"
       }
     },
     "/v1/tenants": {

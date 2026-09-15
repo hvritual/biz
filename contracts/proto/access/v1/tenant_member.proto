@@ -56,6 +56,15 @@ message ListTenantMembersResponse {
   repeated TenantMemberDTO members = 1;
 }
 
+// Internal quota meter used by Commercial composition. No tenant id is accepted:
+// the trusted tenant principal is the only source of scope.
+message CountTenantQuotaMembersRequest {}
+
+message CountTenantQuotaMembersResponse {
+  uint64 used = 1;
+  string evidence = 2;
+}
+
 message UpdateTenantMemberProfileRequest {
   string user_id = 1;
   string name = 2;
@@ -103,6 +112,19 @@ service TenantMemberLifecycleApplication {
       request_type: "access.v1.BootstrapTenantOwnerMemberRequest"
       response_type: "access.v1.TenantMemberDTO"
       application_method: "BootstrapTenantOwnerMember"
+    }
+    operations: {
+      id: "tenant.member.count_quota_usage"
+      use_case: "count_tenant_quota_usage"
+      permissions: "tenant.entitlement.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+      request_type: "access.v1.CountTenantQuotaMembersRequest"
+      response_type: "access.v1.CountTenantQuotaMembersResponse"
+      application_method: "CountTenantQuotaMembers"
     }
   };
 

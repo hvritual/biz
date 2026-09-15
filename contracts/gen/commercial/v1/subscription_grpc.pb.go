@@ -23,6 +23,7 @@ const (
 	SubscriptionManagementApplication_ListDefaultSubscriptionRules_FullMethodName = "/commercial.v1.SubscriptionManagementApplication/ListDefaultSubscriptionRules"
 	SubscriptionManagementApplication_GetTenantSubscription_FullMethodName        = "/commercial.v1.SubscriptionManagementApplication/GetTenantSubscription"
 	SubscriptionManagementApplication_GetMySubscription_FullMethodName            = "/commercial.v1.SubscriptionManagementApplication/GetMySubscription"
+	SubscriptionManagementApplication_GetMyTenantUsage_FullMethodName             = "/commercial.v1.SubscriptionManagementApplication/GetMyTenantUsage"
 )
 
 // SubscriptionManagementApplicationClient is the client API for SubscriptionManagementApplication service.
@@ -33,6 +34,7 @@ type SubscriptionManagementApplicationClient interface {
 	ListDefaultSubscriptionRules(ctx context.Context, in *ListDefaultSubscriptionRulesRequest, opts ...grpc.CallOption) (*ListDefaultSubscriptionRulesResponse, error)
 	GetTenantSubscription(ctx context.Context, in *GetTenantSubscriptionRequest, opts ...grpc.CallOption) (*TenantSubscriptionDTO, error)
 	GetMySubscription(ctx context.Context, in *GetMySubscriptionRequest, opts ...grpc.CallOption) (*TenantSubscriptionDTO, error)
+	GetMyTenantUsage(ctx context.Context, in *GetMyTenantUsageRequest, opts ...grpc.CallOption) (*GetMyTenantUsageResponse, error)
 }
 
 type subscriptionManagementApplicationClient struct {
@@ -83,6 +85,16 @@ func (c *subscriptionManagementApplicationClient) GetMySubscription(ctx context.
 	return out, nil
 }
 
+func (c *subscriptionManagementApplicationClient) GetMyTenantUsage(ctx context.Context, in *GetMyTenantUsageRequest, opts ...grpc.CallOption) (*GetMyTenantUsageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetMyTenantUsageResponse)
+	err := c.cc.Invoke(ctx, SubscriptionManagementApplication_GetMyTenantUsage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SubscriptionManagementApplicationServer is the server API for SubscriptionManagementApplication service.
 // All implementations should embed UnimplementedSubscriptionManagementApplicationServer
 // for forward compatibility.
@@ -91,6 +103,7 @@ type SubscriptionManagementApplicationServer interface {
 	ListDefaultSubscriptionRules(context.Context, *ListDefaultSubscriptionRulesRequest) (*ListDefaultSubscriptionRulesResponse, error)
 	GetTenantSubscription(context.Context, *GetTenantSubscriptionRequest) (*TenantSubscriptionDTO, error)
 	GetMySubscription(context.Context, *GetMySubscriptionRequest) (*TenantSubscriptionDTO, error)
+	GetMyTenantUsage(context.Context, *GetMyTenantUsageRequest) (*GetMyTenantUsageResponse, error)
 }
 
 // UnimplementedSubscriptionManagementApplicationServer should be embedded to have
@@ -111,6 +124,9 @@ func (UnimplementedSubscriptionManagementApplicationServer) GetTenantSubscriptio
 }
 func (UnimplementedSubscriptionManagementApplicationServer) GetMySubscription(context.Context, *GetMySubscriptionRequest) (*TenantSubscriptionDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetMySubscription not implemented")
+}
+func (UnimplementedSubscriptionManagementApplicationServer) GetMyTenantUsage(context.Context, *GetMyTenantUsageRequest) (*GetMyTenantUsageResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetMyTenantUsage not implemented")
 }
 func (UnimplementedSubscriptionManagementApplicationServer) testEmbeddedByValue() {}
 
@@ -204,6 +220,24 @@ func _SubscriptionManagementApplication_GetMySubscription_Handler(srv interface{
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SubscriptionManagementApplication_GetMyTenantUsage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMyTenantUsageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionManagementApplicationServer).GetMyTenantUsage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionManagementApplication_GetMyTenantUsage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionManagementApplicationServer).GetMyTenantUsage(ctx, req.(*GetMyTenantUsageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SubscriptionManagementApplication_ServiceDesc is the grpc.ServiceDesc for SubscriptionManagementApplication service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -226,6 +260,10 @@ var SubscriptionManagementApplication_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetMySubscription",
 			Handler:    _SubscriptionManagementApplication_GetMySubscription_Handler,
+		},
+		{
+			MethodName: "GetMyTenantUsage",
+			Handler:    _SubscriptionManagementApplication_GetMyTenantUsage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

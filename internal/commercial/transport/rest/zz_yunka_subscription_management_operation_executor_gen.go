@@ -37,6 +37,9 @@ func RegisterSubscriptionManagementOperationExecutor(mux *http.ServeMux, applica
 	if err := httpbinding.Register(mux, "GET", "/v1/tenant/subscription", handler.handleOperationGetMySubscription); err != nil {
 		return err
 	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenant/usage", handler.handleOperationGetMyTenantUsage); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "GET", "/v1/platform/tenants/{tenant_id}/subscription", handler.handleOperationGetTenantSubscription); err != nil {
 		return err
 	}
@@ -82,6 +85,23 @@ func (handler *SubscriptionManagementOperationHandler) handleOperationGetMySubsc
 	wire := &commercialv1.GetMySubscriptionRequest{}
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionManagementGetMySubscription(), wire, handler.application.GetMySubscription)
+	if err != nil {
+		writeSubscriptionManagementOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *SubscriptionManagementOperationHandler) handleOperationGetMyTenantUsage(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.GetMyTenantUsageRequest{}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionManagementGetMyTenantUsage(), wire, handler.application.GetMyTenantUsage)
 	if err != nil {
 		writeSubscriptionManagementOperationError(writer, err)
 		return

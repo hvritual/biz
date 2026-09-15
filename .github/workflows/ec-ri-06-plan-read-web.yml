@@ -3,11 +3,12 @@ name: ec-ri-06-plan-read-web
 on:
   push:
     branches:
-      - feat/ec-ri-06-tenant-plan-read
+      - main
     paths:
       - .github/workflows/ec-ri-06-plan-read-web.yml
       - web/**
       - contracts/proto/commercial/v1/subscription.proto
+      - contracts/proto/access/v1/tenant_member.proto
       - contracts/commercial/operation-capabilities.v1.json
       - contracts/generated/openapi.json
       - internal/architecture/ec_ri_06_tenant_plan_read_test.go
@@ -18,6 +19,7 @@ on:
       - .github/workflows/ec-ri-06-plan-read-web.yml
       - web/**
       - contracts/proto/commercial/v1/subscription.proto
+      - contracts/proto/access/v1/tenant_member.proto
       - contracts/commercial/operation-capabilities.v1.json
       - contracts/generated/openapi.json
       - internal/architecture/ec_ri_06_tenant_plan_read_test.go
@@ -53,7 +55,7 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           sudo apt-get install -y fonts-noto-cjk
-      - name: Run tenant plan API-mode E2E
+      - name: Run tenant plan and usage API-mode E2E
         working-directory: web
         shell: bash
         run: |
@@ -68,9 +70,11 @@ jobs:
           assert stats.get('unexpected', 0) == 0, stats
           serialized = json.dumps(results, ensure_ascii=False)
           required_titles = [
-              'real plan page renders only authoritative subscription and entitlement facts across CoffeeLink viewports',
-              'tenant plan read never sends an arbitrary tenant id and binds entitlement read to trusted session',
-              'quota limits are authoritative while unknown usage is never rendered as zero or a percentage',
+              'real plan page renders authoritative subscription, entitlement and usage facts across CoffeeLink viewports',
+              'tenant plan and usage reads never send arbitrary tenant ids and bind to trusted session',
+              'finite member quota uses authoritative usage while unsupported quotas stay unknown instead of zero',
+              'member quota below limit renders authoritative remaining capacity',
+              'usage authority 5xx keeps quota limits visible but explicitly degrades usage to unknown',
               '401 and 403 are explicit and never fall back to demo plan data',
               'entitlement authority failure stays visible instead of substituting preview quotas',
           ]
@@ -83,12 +87,12 @@ jobs:
               assert data[:8] == b'\x89PNG\r\n\x1a\n', path
               got = struct.unpack('>II', data[16:24])
               assert got == (width, height), (path, got)
-          print(f'EC_RI_06_PLAN_READ_WEB=PASS expected={stats.get("expected", 0)}')
+          print(f'EC_RI_06_PLAN_USAGE_WEB=PASS expected={stats.get("expected", 0)}')
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: ec-ri-06-plan-read-visual-review
+          name: ec-ri-06-plan-usage-visual-review
           path: |
             web/screenshots
             web/test-results

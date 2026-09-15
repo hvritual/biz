@@ -361,6 +361,37 @@
       }
     },
     {
+      "name": "CountTenantQuotaMembersRequest",
+      "fullName": "access.v1.CountTenantQuotaMembersRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "CountTenantQuotaMembersResponse",
+      "fullName": "access.v1.CountTenantQuotaMembersResponse",
+      "fields": [
+        {
+          "name": "used",
+          "jsonName": "used",
+          "number": 1,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "evidence",
+          "jsonName": "evidence",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "CreateTenantDepartmentRequest",
       "fullName": "access.v1.CreateTenantDepartmentRequest",
       "fields": [
@@ -3093,6 +3124,31 @@
       }
     },
     {
+      "name": "GetMyTenantUsageRequest",
+      "fullName": "commercial.v1.GetMyTenantUsageRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "GetMyTenantUsageResponse",
+      "fullName": "commercial.v1.GetMyTenantUsageResponse",
+      "fields": [
+        {
+          "name": "usages",
+          "jsonName": "usages",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.TenantQuotaUsageDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "GetPlanVersionRequest",
       "fullName": "commercial.v1.GetPlanVersionRequest",
       "fields": [
@@ -5294,6 +5350,50 @@
       }
     },
     {
+      "name": "TenantQuotaUsageDTO",
+      "fullName": "commercial.v1.TenantQuotaUsageDTO",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "key",
+          "jsonName": "key",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "known",
+          "jsonName": "known",
+          "number": 3,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "used",
+          "jsonName": "used",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "evidence",
+          "jsonName": "evidence",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "TenantSubscriptionDTO",
       "fullName": "commercial.v1.TenantSubscriptionDTO",
       "fields": [
@@ -6921,6 +7021,26 @@
             "requestType": "access.v1.BootstrapTenantOwnerMemberRequest",
             "responseType": "access.v1.TenantMemberDTO",
             "applicationMethod": "BootstrapTenantOwnerMember"
+          },
+          {
+            "id": "tenant.member.count_quota_usage",
+            "useCase": "count_tenant_quota_usage",
+            "permissions": [
+              "tenant.entitlement.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "access.v1.CountTenantQuotaMembersRequest",
+            "responseType": "access.v1.CountTenantQuotaMembersResponse",
+            "applicationMethod": "CountTenantQuotaMembers"
           }
         ]
       },
@@ -9366,6 +9486,7 @@
       "application": {
         "name": "subscription_management",
         "requires": [
+          "access/tenant_member_lifecycle",
           "commercial/plan_management"
         ],
         "operations": [
@@ -9426,6 +9547,51 @@
           },
           "authorization": {
             "operationId": "commercial.subscription.get_my",
+            "permissions": [
+              "tenant.entitlement.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "GetMyTenantUsage",
+          "fullName": "commercial.v1.SubscriptionManagementApplication.GetMyTenantUsage",
+          "request": "commercial.v1.GetMyTenantUsageRequest",
+          "response": "commercial.v1.GetMyTenantUsageResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/usage"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.get_my_usage",
+            "useCase": "get_my_tenant_usage",
+            "permissions": [
+              "tenant.entitlement.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "tenant.member.count_quota_usage"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.get_my_usage",
             "permissions": [
               "tenant.entitlement.read"
             ],

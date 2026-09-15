@@ -1276,6 +1276,7 @@
         ]
       },
       "applicationRequires": [
+        "access/tenant_member_lifecycle",
         "commercial/plan_management"
       ],
       "bindings": {}
@@ -1549,6 +1550,7 @@
       },
       "composition": {},
       "applicationRequires": [
+        "access/tenant_member_lifecycle",
         "commercial/plan_management"
       ],
       "bindings": {
@@ -1585,6 +1587,7 @@
       },
       "composition": {},
       "applicationRequires": [
+        "access/tenant_member_lifecycle",
         "commercial/plan_management"
       ],
       "bindings": {
@@ -1593,6 +1596,51 @@
           {
             "method": "GET",
             "path": "/v1/tenant/subscription"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.subscription.get_my_usage",
+      "domain": "commercial",
+      "application": "subscription_management",
+      "useCase": "get_my_tenant_usage",
+      "requestType": "commercial.v1.GetMyTenantUsageRequest",
+      "responseType": "commercial.v1.GetMyTenantUsageResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.entitlement.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "tenant.member.count_quota_usage"
+        ],
+        "permissionClosure": [
+          "tenant.entitlement.read"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_member_lifecycle",
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionManagementApplication/GetMyTenantUsage",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/usage"
           }
         ]
       }
@@ -1619,6 +1667,7 @@
       },
       "composition": {},
       "applicationRequires": [
+        "access/tenant_member_lifecycle",
         "commercial/plan_management"
       ],
       "bindings": {
@@ -1664,6 +1713,7 @@
         ]
       },
       "applicationRequires": [
+        "access/tenant_member_lifecycle",
         "commercial/plan_management"
       ],
       "bindings": {
@@ -2772,6 +2822,35 @@
       },
       "execution": {
         "transaction": "local",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_department_management",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {}
+    },
+    {
+      "operationId": "tenant.member.count_quota_usage",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "count_tenant_quota_usage",
+      "requestType": "access.v1.CountTenantQuotaMembersRequest",
+      "responseType": "access.v1.CountTenantQuotaMembersResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.entitlement.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
         "idempotency": "none"
       },
       "composition": {},

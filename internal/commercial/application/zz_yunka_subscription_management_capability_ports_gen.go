@@ -5,10 +5,40 @@ package application
 import (
 	context "context"
 	errors "errors"
+	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
+	accesspolicy "github.com/hvritual/biz/internal/access/policy"
 	commercialpolicy "github.com/hvritual/biz/internal/commercial/policy"
 	operation "yunka.io/framework/operation"
 )
+
+type SubscriptionManagementToAccessTenantMemberLifecycleChildCapability interface {
+	CountTenantQuotaMembers(context.Context, *accessv1.CountTenantQuotaMembersRequest) (*accessv1.CountTenantQuotaMembersResponse, error)
+}
+
+// SubscriptionManagementToAccessTenantMemberLifecycleTargetApplication is the consumer-edge-owned view of the target Application.
+type SubscriptionManagementToAccessTenantMemberLifecycleTargetApplication interface {
+	CountTenantQuotaMembers(context.Context, *accessv1.CountTenantQuotaMembersRequest) (*accessv1.CountTenantQuotaMembersResponse, error)
+}
+
+type c9SubscriptionManagementToAccessTenantMemberLifecycleChildCapability struct {
+	application SubscriptionManagementToAccessTenantMemberLifecycleTargetApplication
+	executor    operation.Executor
+}
+
+func NewSubscriptionManagementToAccessTenantMemberLifecycleChildCapability(application SubscriptionManagementToAccessTenantMemberLifecycleTargetApplication, executor operation.Executor) (SubscriptionManagementToAccessTenantMemberLifecycleChildCapability, error) {
+	if application == nil {
+		return nil, errors.New("contract C9 child capability: target application is required")
+	}
+	if executor == nil {
+		return nil, errors.New("contract C9 child capability: operation executor is required")
+	}
+	return &c9SubscriptionManagementToAccessTenantMemberLifecycleChildCapability{application: application, executor: executor}, nil
+}
+
+func (capability *c9SubscriptionManagementToAccessTenantMemberLifecycleChildCapability) CountTenantQuotaMembers(ctx context.Context, request *accessv1.CountTenantQuotaMembersRequest) (*accessv1.CountTenantQuotaMembersResponse, error) {
+	return operation.ExecuteChildTyped(ctx, capability.executor, accesspolicy.OperationPlanTenantMemberLifecycleCountTenantQuotaMembers(), request, capability.application.CountTenantQuotaMembers)
+}
 
 type SubscriptionManagementToCommercialPlanManagementChildCapability interface {
 	CheckPlanEligibility(context.Context, *commercialv1.CheckPlanEligibilityRequest) (*commercialv1.PlanEligibilityDTO, error)
@@ -35,5 +65,6 @@ func (capability *c9SubscriptionManagementToCommercialPlanManagementChildCapabil
 
 // SubscriptionManagementCapabilities exposes edge-owned C9 child-Operation wrappers for declared operation dependencies.
 type SubscriptionManagementCapabilities interface {
+	AccessTenantMemberLifecycle() SubscriptionManagementToAccessTenantMemberLifecycleChildCapability
 	CommercialPlanManagement() SubscriptionManagementToCommercialPlanManagementChildCapability
 }
