@@ -6,6 +6,8 @@ on:
       - feat/ec-ri-06-tenant-plan-read
     paths:
       - .github/workflows/ec-ri-06-bootstrap-source.yml
+      - scripts/ec_ri_06_bootstrap.py
+      - internal/architecture/ec_ri_06_tenant_plan_read_test.go
 
 permissions:
   contents: write
