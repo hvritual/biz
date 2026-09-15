@@ -107,7 +107,7 @@ service TenantAuditManagementApplication {
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
       authentication: AUTHENTICATION_WEB_SESSION
-      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_REQUIRED }
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };
   }
 }
