@@ -36,6 +36,9 @@ func (capability *c9SubscriptionChangesToCommercialModuleCatalogChildCapability)
 type SubscriptionChangesToCommercialPlanManagementChildCapability interface {
 	CheckPlanEligibility(context.Context, *commercialv1.CheckPlanEligibilityRequest) (*commercialv1.PlanEligibilityDTO, error)
 	GetPlanVersion(context.Context, *commercialv1.GetPlanVersionRequest) (*commercialv1.PlanVersionDTO, error)
+	ListTenantChangeTargets(context.Context, *commercialv1.ListTenantChangeTargetsRequest) (*commercialv1.ListTenantChangeTargetsResponse, error)
+	ReadTenantSubscriptionPlanVersion(context.Context, *commercialv1.GetPlanVersionRequest) (*commercialv1.PlanVersionDTO, error)
+	ResolveTenantChangeTarget(context.Context, *commercialv1.ResolveTenantChangeTargetRequest) (*commercialv1.PlanEligibilityDTO, error)
 }
 
 type c9SubscriptionChangesToCommercialPlanManagementChildCapability struct {
@@ -59,6 +62,18 @@ func (capability *c9SubscriptionChangesToCommercialPlanManagementChildCapability
 
 func (capability *c9SubscriptionChangesToCommercialPlanManagementChildCapability) GetPlanVersion(ctx context.Context, request *commercialv1.GetPlanVersionRequest) (*commercialv1.PlanVersionDTO, error) {
 	return operation.ExecuteChildTyped(ctx, capability.executor, commercialpolicy.OperationPlanPlanManagementGetPlanVersion(), request, capability.application.GetPlanVersion)
+}
+
+func (capability *c9SubscriptionChangesToCommercialPlanManagementChildCapability) ListTenantChangeTargets(ctx context.Context, request *commercialv1.ListTenantChangeTargetsRequest) (*commercialv1.ListTenantChangeTargetsResponse, error) {
+	return operation.ExecuteChildTyped(ctx, capability.executor, commercialpolicy.OperationPlanPlanManagementListTenantChangeTargets(), request, capability.application.ListTenantChangeTargets)
+}
+
+func (capability *c9SubscriptionChangesToCommercialPlanManagementChildCapability) ReadTenantSubscriptionPlanVersion(ctx context.Context, request *commercialv1.GetPlanVersionRequest) (*commercialv1.PlanVersionDTO, error) {
+	return operation.ExecuteChildTyped(ctx, capability.executor, commercialpolicy.OperationPlanPlanManagementReadTenantSubscriptionPlanVersion(), request, capability.application.ReadTenantSubscriptionPlanVersion)
+}
+
+func (capability *c9SubscriptionChangesToCommercialPlanManagementChildCapability) ResolveTenantChangeTarget(ctx context.Context, request *commercialv1.ResolveTenantChangeTargetRequest) (*commercialv1.PlanEligibilityDTO, error) {
+	return operation.ExecuteChildTyped(ctx, capability.executor, commercialpolicy.OperationPlanPlanManagementResolveTenantChangeTarget(), request, capability.application.ResolveTenantChangeTarget)
 }
 
 // SubscriptionChangesCapabilities exposes edge-owned C9 child-Operation wrappers for declared operation dependencies.

@@ -63,9 +63,14 @@ func TestCE13PlatformCommercialWebSessionContract(t *testing.T) {
 		"commercial.subscription.change.get":         {},
 	}
 	allowedCommercialWeb := map[string]struct{}{
-		"commercial.entitlement.get_my":        {},
-		"commercial.subscription.get_my":       {},
-		"commercial.subscription.get_my_usage": {},
+		"commercial.entitlement.get_my":                 {},
+		"commercial.subscription.get_my":                {},
+		"commercial.subscription.get_my_usage":          {},
+		"commercial.subscription.change.targets_my":     {},
+		"commercial.subscription.change.preview_my":     {},
+		"commercial.subscription.change.preview_my.get": {},
+		"commercial.subscription.change.confirm_my":     {},
+		"commercial.subscription.change.get_my":         {},
 	}
 	for id := range expectedPlatformWeb {
 		allowedCommercialWeb[id] = struct{}{}
@@ -84,6 +89,11 @@ func TestCE13PlatformCommercialWebSessionContract(t *testing.T) {
 			want := []string{"api-key", "web-session"}
 			if strings.Join(authentication, ",") != strings.Join(want, ",") {
 				t.Fatalf("%s authentication = %v, want exactly %v", operation.OperationID, authentication, want)
+			}
+		}
+		if strings.HasPrefix(operation.OperationID, "commercial.plan.change_target.") || operation.OperationID == "commercial.plan.subscription_snapshot" {
+			if hasWeb || strings.Join(authentication, ",") != "api-key" {
+				t.Fatalf("transport-private plan helper %s authentication = %v, want API-key-only", operation.OperationID, authentication)
 			}
 		}
 		if hasWeb {

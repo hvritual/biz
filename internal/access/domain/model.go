@@ -45,6 +45,7 @@ var OwnerRequiredPermissions = []string{
 	"tenant.organization.read",
 	"tenant.role.manage",
 	"tenant.role.read",
+	"tenant.subscription.manage",
 }
 
 var (

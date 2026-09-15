@@ -20,6 +20,8 @@ import (
 	"yunka.io/framework/requestscope"
 )
 
+var errExternalApprovalRequired = errors.New("SUBSCRIPTION_CHANGE_EXTERNAL_APPROVAL_REQUIRED")
+
 type service struct {
 	lifecycle          subscription.LifecyclePolicy
 	provisioningPolicy ports.ProvisioningPolicy
@@ -83,6 +85,9 @@ func expose(err error) error {
 	case errors.Is(err, change.ErrConflict), errors.Is(err, change.ErrRequestConflict), errors.Is(err, change.ErrPending):
 		code = codes.Aborted
 		reason = err.Error()
+	case errors.Is(err, errExternalApprovalRequired):
+		code = codes.FailedPrecondition
+		reason = errExternalApprovalRequired.Error()
 	case errors.Is(err, change.ErrExpired), errors.Is(err, change.ErrPeriod), errors.Is(err, change.ErrTarget), errors.Is(err, change.ErrQuota):
 		code = codes.FailedPrecondition
 		reason = err.Error()

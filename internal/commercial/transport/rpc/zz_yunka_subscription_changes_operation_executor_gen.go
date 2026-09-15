@@ -35,6 +35,19 @@ func RegisterSubscriptionChangesOperationExecutor(registrar grpc.ServiceRegistra
 	return nil
 }
 
+func (server *SubscriptionChangesOperationServer) ConfirmMySubscriptionChange(ctx context.Context, request *commercialv1.ConfirmMySubscriptionChangeRequest) (*commercialv1.SubscriptionChangeReceiptDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanSubscriptionChangesConfirmMySubscriptionChange(), request, server.application.ConfirmMySubscriptionChange)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *SubscriptionChangesOperationServer) ConfirmSubscriptionChange(ctx context.Context, request *commercialv1.ConfirmSubscriptionChangeRequest) (*commercialv1.SubscriptionChangeReceiptDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
@@ -42,6 +55,32 @@ func (server *SubscriptionChangesOperationServer) ConfirmSubscriptionChange(ctx 
 		}
 	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanSubscriptionChangesConfirmSubscriptionChange(), request, server.application.ConfirmSubscriptionChange)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *SubscriptionChangesOperationServer) GetMySubscriptionChangePreview(ctx context.Context, request *commercialv1.ReadMySubscriptionChangePreviewRequest) (*commercialv1.SubscriptionChangePreviewDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanSubscriptionChangesGetMySubscriptionChangePreview(), request, server.application.GetMySubscriptionChangePreview)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *SubscriptionChangesOperationServer) GetMySubscriptionChangeReceipt(ctx context.Context, request *commercialv1.ReadMySubscriptionChangeReceiptRequest) (*commercialv1.SubscriptionChangeReceiptDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanSubscriptionChangesGetMySubscriptionChangeReceipt(), request, server.application.GetMySubscriptionChangeReceipt)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
@@ -68,6 +107,32 @@ func (server *SubscriptionChangesOperationServer) GetSubscriptionChangeReceipt(c
 		}
 	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanSubscriptionChangesGetSubscriptionChangeReceipt(), request, server.application.GetSubscriptionChangeReceipt)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *SubscriptionChangesOperationServer) ListMySubscriptionChangeTargets(ctx context.Context, request *commercialv1.ListMySubscriptionChangeTargetsRequest) (*commercialv1.ListMySubscriptionChangeTargetsResponse, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanSubscriptionChangesListMySubscriptionChangeTargets(), request, server.application.ListMySubscriptionChangeTargets)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *SubscriptionChangesOperationServer) PreviewMySubscriptionChange(ctx context.Context, request *commercialv1.PreviewMySubscriptionChangeRequest) (*commercialv1.SubscriptionChangePreviewDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanSubscriptionChangesPreviewMySubscriptionChange(), request, server.application.PreviewMySubscriptionChange)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}

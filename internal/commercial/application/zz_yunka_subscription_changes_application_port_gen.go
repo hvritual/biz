@@ -13,8 +13,13 @@ type SubscriptionChangesApplication interface {
 	ClaimCommercialTimeTransition(context.Context, *commercialv1.ClaimCommercialTimeTransitionRequest) (*commercialv1.ClaimCommercialTimeTransitionResponse, error)
 	CompleteCommercialTimeTransition(context.Context, *commercialv1.CompleteCommercialTimeTransitionRequest) (*commercialv1.CompleteCommercialTimeTransitionResponse, error)
 	CompletePreparedSubscriptionChange(context.Context, *commercialv1.PreparedSubscriptionChangeRequest) (*commercialv1.ProvisioningCompletionDTO, error)
+	ConfirmMySubscriptionChange(context.Context, *commercialv1.ConfirmMySubscriptionChangeRequest) (*commercialv1.SubscriptionChangeReceiptDTO, error)
 	ConfirmSubscriptionChange(context.Context, *commercialv1.ConfirmSubscriptionChangeRequest) (*commercialv1.SubscriptionChangeReceiptDTO, error)
+	GetMySubscriptionChangePreview(context.Context, *commercialv1.ReadMySubscriptionChangePreviewRequest) (*commercialv1.SubscriptionChangePreviewDTO, error)
+	GetMySubscriptionChangeReceipt(context.Context, *commercialv1.ReadMySubscriptionChangeReceiptRequest) (*commercialv1.SubscriptionChangeReceiptDTO, error)
 	GetSubscriptionChangePreview(context.Context, *commercialv1.ReadSubscriptionChangeRequest) (*commercialv1.SubscriptionChangePreviewDTO, error)
 	GetSubscriptionChangeReceipt(context.Context, *commercialv1.ReadSubscriptionChangeRequest) (*commercialv1.SubscriptionChangeReceiptDTO, error)
+	ListMySubscriptionChangeTargets(context.Context, *commercialv1.ListMySubscriptionChangeTargetsRequest) (*commercialv1.ListMySubscriptionChangeTargetsResponse, error)
+	PreviewMySubscriptionChange(context.Context, *commercialv1.PreviewMySubscriptionChangeRequest) (*commercialv1.SubscriptionChangePreviewDTO, error)
 	PreviewSubscriptionChange(context.Context, *commercialv1.PreviewSubscriptionChangeRequest) (*commercialv1.SubscriptionChangePreviewDTO, error)
 }

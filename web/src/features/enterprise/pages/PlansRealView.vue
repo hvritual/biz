@@ -4,6 +4,7 @@ import PageHeading from '@/ui/common/PageHeading.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import { UiButton } from '@/ui/base'
+import PlanChangeLifecycle from '@/features/enterprise/components/PlanChangeLifecycle.vue'
 import type { EntitlementDecisionDTO } from '@/services/commercial/platformCommercial'
 import {
   enterprisePlanRuntimeError,
@@ -123,6 +124,14 @@ async function load() {
   }
 }
 
+async function refreshAfterChange() {
+  try {
+    model.value = await loadEnterprisePlanReadModel()
+  } catch (error) {
+    errorMessage.value = enterprisePlanRuntimeError(error)
+  }
+}
+
 onMounted(() => void load())
 </script>
 
@@ -130,11 +139,11 @@ onMounted(() => void load())
   <div class="page-stack" data-enterprise-plan-source="server">
     <PageHeading
       title="套餐额度"
-      description="当前订阅、功能权益、额度上限与已接入用量均来自服务端权威数据"
+      description="当前订阅、功能权益、额度用量与套餐变更均由服务端权威链路驱动"
     />
 
     <div v-if="loading" class="card state-card" role="status">正在读取当前租户套餐、权益与用量…</div>
-    <div v-else-if="errorMessage" class="card state-card error-state" role="alert">
+    <div v-else-if="errorMessage && !model" class="card state-card error-state" role="alert">
       <div>
         <strong>无法读取套餐额度</strong>
         <p>{{ errorMessage }}</p>
@@ -142,12 +151,17 @@ onMounted(() => void load())
       <UiButton class="btn" @click="load">重新读取</UiButton>
     </div>
 
-    <template v-else-if="subscription && entitlements">
+    <template v-else-if="subscription && entitlements && model">
       <div class="source-bar">
         <span><AppIcon name="shield" :size="15" /> Tenant Commercial API</span>
-        <span>租户 {{ model?.session.active_tenant_id }}</span>
+        <span>租户 {{ model.session.active_tenant_id }}</span>
         <span>权益版本 {{ entitlements.entitlementVersion }}</span>
         <span>已接入用量 {{ knownUsageCount }} 项</span>
+        <span v-if="subscription.pendingChangeId">待处理 {{ subscription.pendingChangeId }}</span>
+      </div>
+
+      <div v-if="errorMessage" class="card inline-error" role="alert">
+        <span>{{ errorMessage }}</span><UiButton class="btn" @click="refreshAfterChange">重新读取权威状态</UiButton>
       </div>
 
       <div class="plan-top">
@@ -172,7 +186,7 @@ onMounted(() => void load())
 
           <div class="read-boundary">
             <AppIcon name="help" :size="16" />
-            本切片只增加权威用量读取与额度状态判断。升级、续费、购买额度仍必须进入后续真实 preview / confirm / payment 链路。
+            套餐切换、续订、停止续费已接入 tenant preview / confirm / receipt 权威链路；存在价格引用时必须等待外部商业或支付审批，页面不会自行认定已付款。
           </div>
         </section>
 
@@ -187,7 +201,7 @@ onMounted(() => void load())
             <div><span>额度项</span><strong>{{ quotaDecisions.length }}</strong><small>项</small></div>
             <div><span>权威用量</span><strong>{{ knownUsageCount }}</strong><small>项已接入</small></div>
           </div>
-          <p v-if="model?.usageError" class="usage-note usage-warning">
+          <p v-if="model.usageError" class="usage-note usage-warning">
             用量服务暂不可用：{{ model.usageError }}。未取得权威 meter 的额度保持“未知”，不会显示为 0。
           </p>
           <p v-else class="usage-note">
@@ -195,6 +209,12 @@ onMounted(() => void load())
           </p>
         </section>
       </div>
+
+      <PlanChangeLifecycle
+        :session="model.session"
+        :subscription="subscription"
+        @changed="refreshAfterChange"
+      />
 
       <section class="card panel-pad">
         <div class="tabs">
@@ -261,6 +281,7 @@ onMounted(() => void load())
 .state-card { min-height: 150px; padding: 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .error-state strong { color: var(--color-danger); }
 .error-state p { margin-top: 8px; color: var(--color-text-secondary); }
+.inline-error { padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--color-danger); }
 .source-bar { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; padding: 10px 14px; border: 1px solid var(--color-border); border-radius: 10px; color: var(--color-text-secondary); font-size: 12px; }
 .source-bar span { display: inline-flex; align-items: center; gap: 6px; }
 .plan-top { display: grid; grid-template-columns: 1fr 1.05fr; gap: 16px; }
@@ -292,5 +313,5 @@ onMounted(() => void load())
 .empty-row { color: var(--color-text-muted); text-align: center; padding: 24px; }
 .quota-table { min-width: 820px; }
 @media (max-width: 900px) { .plan-top { grid-template-columns: 1fr; } .feature-grid { grid-template-columns: 1fr; } }
-@media (max-width: 560px) { .current-plan, .authority-summary, .panel-pad { padding: 18px; } .plan-heading { align-items: flex-start; } .plan-meta-grid, .summary-grid, .overview-grid { grid-template-columns: 1fr; } .source-bar { align-items: flex-start; flex-direction: column; } .tabs { overflow-x: auto; } .tab { flex: 0 0 auto; } }
+@media (max-width: 560px) { .current-plan, .authority-summary, .panel-pad { padding: 18px; } .plan-heading { align-items: flex-start; } .plan-meta-grid, .summary-grid, .overview-grid { grid-template-columns: 1fr; } .source-bar { align-items: flex-start; flex-direction: column; } .tabs { overflow-x: auto; } .tab { flex: 0 0 auto; } .inline-error { align-items: stretch; flex-direction: column; } }
 </style>

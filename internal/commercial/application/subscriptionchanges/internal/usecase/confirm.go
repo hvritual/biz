@@ -2,11 +2,12 @@ package usecase
 
 import (
 	"context"
+	"strings"
+
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	pv "github.com/hvritual/biz/internal/commercial/domain/provisioning"
 	change "github.com/hvritual/biz/internal/commercial/domain/subscriptionchange"
 	"github.com/hvritual/biz/internal/commercial/ports"
-	"strings"
 	"yunka.io/framework/requestscope"
 )
 
@@ -15,150 +16,169 @@ func (s *service) ConfirmSubscriptionChange(ctx context.Context, r *v1.ConfirmSu
 	if err != nil {
 		return nil, expose(err)
 	}
-	if r == nil || !change.Tenant(r.TenantId) || !change.Key(r.ChangeId) || !validKey(ctx, r.RequestId) || len(r.PreviewHash) != 64 || !change.Reason(r.Reason) {
+	if r == nil {
 		return nil, expose(change.ErrInvalid)
 	}
-	reason := strings.TrimSpace(r.Reason)
-	fingerprint := change.Digest([]string{a, r.TenantId, r.RequestId, r.ChangeId, r.PreviewHash, reason})
+	return s.confirm(ctx, a, r.TenantId, r.ChangeId, r.RequestId, r.PreviewHash, r.Reason, false)
+}
+
+func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requestID, previewHash, reason string, tenantSelfService bool) (*v1.SubscriptionChangeReceiptDTO, error) {
+	if !change.Tenant(tenantID) || !change.Key(changeID) || !validKey(ctx, requestID) || len(previewHash) != 64 || !change.Reason(reason) {
+		return nil, expose(change.ErrInvalid)
+	}
+	reason = strings.TrimSpace(reason)
+	fingerprint := change.Digest([]string{actorID, tenantID, requestID, changeID, previewHash, reason})
 	result, err := requestscope.JoinValue(ctx, s.repositories, func(sc *requestscope.View[ports.SubscriptionChangeRepositories]) (change.Receipt, error) {
 		repos, call := sc.Repositories(), sc.Context()
 		repo := repos.Changes
-		raw, e := repo.LockTenant(call, r.TenantId)
-		if e != nil {
-			return change.Receipt{}, e
+		raw, err := repo.LockTenant(call, tenantID)
+		if err != nil {
+			return change.Receipt{}, err
 		}
-		replay, e := repo.ReceiptForRequest(call, r.TenantId, a, r.RequestId, fingerprint)
-		if e != nil {
-			return change.Receipt{}, e
+		replay, err := repo.ReceiptForRequest(call, tenantID, actorID, requestID, fingerprint)
+		if err != nil {
+			return change.Receipt{}, err
 		}
 		if replay != nil {
 			return *replay, nil
 		}
-		already, e := repo.Receipt(call, r.TenantId, r.ChangeId, true)
-		if e != nil {
-			return change.Receipt{}, e
+		already, err := repo.Receipt(call, tenantID, changeID, true)
+		if err != nil {
+			return change.Receipt{}, err
 		}
 		if already != nil {
 			return change.Receipt{}, change.ErrRequestConflict
 		}
-		p, e := repo.Preview(call, r.TenantId, r.ChangeId, true)
-		if e != nil {
-			return change.Receipt{}, e
+		preview, err := repo.Preview(call, tenantID, changeID, true)
+		if err != nil {
+			return change.Receipt{}, err
 		}
-		if p == nil {
+		if preview == nil {
 			return change.Receipt{}, change.ErrNotFound
 		}
-		if p.ActorID != a {
+		if preview.ActorID != actorID || preview.Input.TenantID != tenantID {
 			return change.Receipt{}, change.ErrScope
 		}
-		if p.Hash != r.PreviewHash {
+		if preview.Hash != previewHash {
 			return change.Receipt{}, change.ErrConflict
 		}
-		now, e := repo.Now(call)
-		if e != nil {
-			return change.Receipt{}, e
+		if tenantSelfService && preview.PricingBasis != "NO_PRICE_REFERENCE" {
+			return change.Receipt{}, errExternalApprovalRequired
 		}
-		if !now.Before(p.ExpiresAt) {
+		now, err := repo.Now(call)
+		if err != nil {
+			return change.Receipt{}, err
+		}
+		if !now.Before(preview.ExpiresAt) {
 			return change.Receipt{}, change.ErrExpired
 		}
 		if raw.PendingChangeID != "" {
 			return change.Receipt{}, change.ErrPending
 		}
-		m, e := s.capture(call, repos, raw, p.Input)
-		if e != nil {
-			return change.Receipt{}, e
+		var material material
+		if tenantSelfService {
+			material, err = s.captureTenant(call, repos, raw, preview.Input)
+		} else {
+			material, err = s.capture(call, repos, raw, preview.Input)
 		}
-		if change.Digest(m.before) != change.Digest(p.Before) || m.current.SourceVersion != p.Current.SourceVersion || m.current.EntitlementVersion != p.Current.EntitlementVersion || m.current.CatalogRevision != p.Current.CatalogRevision || m.target.ContentSHA256 != p.Target.ContentSHA256 {
+		if err != nil {
+			return change.Receipt{}, err
+		}
+		if change.Digest(material.before) != change.Digest(preview.Before) || material.current.SourceVersion != preview.Current.SourceVersion || material.current.EntitlementVersion != preview.Current.EntitlementVersion || material.current.CatalogRevision != preview.Current.CatalogRevision || material.target.ContentSHA256 != preview.Target.ContentSHA256 {
 			return change.Receipt{}, change.ErrConflict
 		}
-		mode, at, end, e := change.Period(p.Input, m.before, p.Classification, now, m.target.Terms)
-		if e != nil {
-			return change.Receipt{}, e
+		mode, at, end, err := change.Period(preview.Input, material.before, preview.Classification, now, material.target.Terms)
+		if err != nil {
+			return change.Receipt{}, err
 		}
-		if mode != p.Mode || (mode == change.Scheduled && !at.Equal(p.EffectiveAt)) {
+		if mode != preview.Mode || (mode == change.Scheduled && !at.Equal(preview.EffectiveAt)) {
 			return change.Receipt{}, change.ErrConflict
 		}
 		if mode == change.Scheduled && !at.After(now) {
 			return change.Receipt{}, change.ErrExpired
 		}
-		requested := change.QuotaChanges(m.old.Terms, m.target.Terms)
-		if p.Input.Action == change.StopRenewal {
+		requested := change.QuotaChanges(material.old.Terms, material.target.Terms)
+		if preview.Input.Action == change.StopRenewal {
 			requested = nil
 		}
-		quotas, e := s.quotas.Evaluate(call, ports.QuotaChangeInput{TenantID: r.TenantId, ChangeID: r.ChangeId, Mode: mode, EffectiveAt: at, Changes: requested})
-		if e != nil {
-			return change.Receipt{}, e
+		quotas, err := s.quotas.Evaluate(call, ports.QuotaChangeInput{TenantID: tenantID, ChangeID: changeID, Mode: mode, EffectiveAt: at, Changes: requested})
+		if err != nil {
+			return change.Receipt{}, err
 		}
-		deferred, e := change.CheckQuotaReport(requested, quotas, mode)
-		if e != nil {
-			return change.Receipt{}, e
+		deferred, err := change.CheckQuotaReport(requested, quotas, mode)
+		if err != nil {
+			return change.Receipt{}, err
 		}
-		requirements, e := s.preparationRequirements(call, p.Input.Action, m.target)
-		if e != nil {
-			return change.Receipt{}, e
+		requirements, err := s.preparationRequirements(call, preview.Input.Action, material.target)
+		if err != nil {
+			return change.Receipt{}, err
 		}
-		if change.Digest(requirements) != change.Digest(p.ProvisioningRequirements) {
+		if change.Digest(requirements) != change.Digest(preview.ProvisioningRequirements) {
 			return change.Receipt{}, change.ErrConflict
 		}
 		// The last database clock check is the admission point. No external I/O is
 		// performed here; expired previews cannot ride an earlier preflight check.
-		admitted, e := repo.Now(call)
-		if e != nil {
-			return change.Receipt{}, e
+		admitted, err := repo.Now(call)
+		if err != nil {
+			return change.Receipt{}, err
 		}
-		if !admitted.Before(p.ExpiresAt) {
+		if !admitted.Before(preview.ExpiresAt) {
 			return change.Receipt{}, change.ErrExpired
 		}
 		if mode == change.Immediate {
-			_, at, end, e = change.Period(p.Input, m.before, p.Classification, admitted, m.target.Terms)
-			if e != nil {
-				return change.Receipt{}, e
+			_, at, end, err = change.Period(preview.Input, material.before, preview.Classification, admitted, material.target.Terms)
+			if err != nil {
+				return change.Receipt{}, err
 			}
 		}
-		after := m.before
+		after := material.before
 		after.Revision++
-		after.EntitlementSourceVersion = m.state.Version
-		if p.Input.Action != change.StopRenewal {
-			after.State = s.lifecycle.StateFor(m.target.PlanCode, m.target.Number)
+		after.EntitlementSourceVersion = material.state.Version
+		if preview.Input.Action != change.StopRenewal {
+			after.State = s.lifecycle.StateFor(material.target.PlanCode, material.target.Number)
 		}
-		v := change.Receipt{ChangeID: r.ChangeId, TenantID: r.TenantId, ActorID: a, RequestID: r.RequestId, Fingerprint: fingerprint, PreviewHash: p.Hash, Action: p.Input.Action, Status: change.Applied, Mode: mode, ConfirmedAt: admitted, EffectiveAt: at, EntitlementExpiresAt: end, Reason: reason, Before: m.before, BeforeSourceVersion: m.state.Version, AfterSourceVersion: m.state.Version, BeforeEntitlementVersion: m.current.EntitlementVersion, AfterEntitlementVersion: m.current.EntitlementVersion, QuotaValidationRequired: deferred, Quotas: quotas, PricingAuthority: "PLATFORM_MANUAL_APPROVAL"}
+		pricingAuthority := "PLATFORM_MANUAL_APPROVAL"
+		if tenantSelfService {
+			pricingAuthority = "TENANT_SELF_SERVICE_NO_PRICE_REFERENCE"
+		}
+		receipt := change.Receipt{ChangeID: changeID, TenantID: tenantID, ActorID: actorID, RequestID: requestID, Fingerprint: fingerprint, PreviewHash: preview.Hash, Action: preview.Input.Action, Status: change.Applied, Mode: mode, ConfirmedAt: admitted, EffectiveAt: at, EntitlementExpiresAt: end, Reason: reason, Before: material.before, BeforeSourceVersion: material.state.Version, AfterSourceVersion: material.state.Version, BeforeEntitlementVersion: material.current.EntitlementVersion, AfterEntitlementVersion: material.current.EntitlementVersion, QuotaValidationRequired: deferred, Quotas: quotas, PricingAuthority: pricingAuthority}
 		if mode == change.Immediate && len(requirements) > 0 {
-			after.PendingChangeID = r.ChangeId
-			task, e := pv.New(r.TenantId, pv.Approval{ChangeID: r.ChangeId, ActorID: a, PreviewHash: p.Hash, TargetHash: m.target.ContentSHA256, TargetPlanCode: m.target.PlanCode, TargetPlanVersion: m.target.Number, SubscriptionRevision: after.Revision, SourceVersion: m.state.Version, EntitlementVersion: m.current.EntitlementVersion, CatalogRevision: m.current.CatalogRevision}, requirements, admitted)
-			if e != nil {
-				return v, e
+			after.PendingChangeID = changeID
+			task, err := pv.New(tenantID, pv.Approval{ChangeID: changeID, ActorID: actorID, PreviewHash: preview.Hash, TargetHash: material.target.ContentSHA256, TargetPlanCode: material.target.PlanCode, TargetPlanVersion: material.target.Number, SubscriptionRevision: after.Revision, SourceVersion: material.state.Version, EntitlementVersion: material.current.EntitlementVersion, CatalogRevision: material.current.CatalogRevision}, requirements, admitted)
+			if err != nil {
+				return receipt, err
 			}
-			if e = repos.Tasks.Insert(call, task); e != nil {
-				return v, e
+			if err = repos.Tasks.Insert(call, task); err != nil {
+				return receipt, err
 			}
-			v.Status = change.Provisioning
-			v.ProvisioningTaskID = task.ID
+			receipt.Status = change.Provisioning
+			receipt.ProvisioningTaskID = task.ID
 		} else if mode == change.Scheduled {
 			// Reservation changes the subscription revision, not effective rights.
 			// A second confirmation with an old preview cannot reserve another change.
-			after.PendingChangeID = r.ChangeId
-			v.AfterSourceVersion, v.AfterEntitlementVersion, e = s.installTimeFence(call, repos, m, &after, r.ChangeId, at, admitted)
-			if e != nil {
-				return v, e
+			after.PendingChangeID = changeID
+			receipt.AfterSourceVersion, receipt.AfterEntitlementVersion, err = s.installTimeFence(call, repos, material, &after, changeID, at, admitted)
+			if err != nil {
+				return receipt, err
 			}
-			v.Status = change.Scheduled
-		} else if p.Input.Action == change.StopRenewal {
+			receipt.Status = change.Scheduled
+		} else if preview.Input.Action == change.StopRenewal {
 			after.RenewalStopped = true
 		} else {
-			v.AfterSourceVersion, v.AfterEntitlementVersion, e = s.applySources(call, repos, m, &after, r.ChangeId, at, end)
-			if e != nil {
-				return v, e
+			receipt.AfterSourceVersion, receipt.AfterEntitlementVersion, err = s.applySources(call, repos, material, &after, changeID, at, end)
+			if err != nil {
+				return receipt, err
 			}
 		}
-		if e = repo.SaveCurrent(call, m.before, after); e != nil {
-			return v, e
+		if err = repo.SaveCurrent(call, material.before, after); err != nil {
+			return receipt, err
 		}
-		v.After = after
-		v = v.Seal()
-		if e = repo.Complete(call, v); e != nil {
-			return v, e
+		receipt.After = after
+		receipt = receipt.Seal()
+		if err = repo.Complete(call, receipt); err != nil {
+			return receipt, err
 		}
-		return v, nil
+		return receipt, nil
 	})
 	if err != nil {
 		return nil, expose(err)

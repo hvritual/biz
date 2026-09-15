@@ -95,6 +95,10 @@
     "scenario": "客户经营 · 业务列表 · WorkTable",
     "scope": "仅用于客户经营业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
   },
+  "enterprise/components/PlanChangeLifecycle.vue": {
+    "scenario": "企业中心 · 套餐变更生命周期 · PlanChangeLifecycle",
+    "scope": "仅用于企业中心租户套餐目标发现、权威预览、审批边界、确认与回执展示；跨业务复用必须下沉 ui/common，不得绕过 ui/base 或直接访问网络。"
+  },
   "enterprise/components/members/MemberActionDialog.vue": {
     "scenario": "企业中心 · 业务操作弹窗 · MemberActionDialog",
     "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"

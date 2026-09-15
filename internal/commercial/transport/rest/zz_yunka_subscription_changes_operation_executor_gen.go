@@ -34,13 +34,28 @@ func RegisterSubscriptionChangesOperationExecutor(mux *http.ServeMux, applicatio
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &SubscriptionChangesOperationHandler{application: application, executor: executor}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenant/subscription/changes/{change_id}/confirm", handler.handleOperationConfirmMySubscriptionChange); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "POST", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm", handler.handleOperationConfirmSubscriptionChange); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenant/subscription/change-previews/{change_id}", handler.handleOperationGetMySubscriptionChangePreview); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenant/subscription/changes/{change_id}", handler.handleOperationGetMySubscriptionChangeReceipt); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "GET", "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}", handler.handleOperationGetSubscriptionChangePreview); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "GET", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}", handler.handleOperationGetSubscriptionChangeReceipt); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenant/subscription/change-targets", handler.handleOperationListMySubscriptionChangeTargets); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenant/subscription/change-previews", handler.handleOperationPreviewMySubscriptionChange); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "POST", "/v1/platform/tenants/{tenant_id}/subscription/change-previews", handler.handleOperationPreviewSubscriptionChange); err != nil {
@@ -78,6 +93,35 @@ func writeSubscriptionChangesOperationError(writer http.ResponseWriter, err erro
 	http.Error(writer, "application request failed", http.StatusBadRequest)
 }
 
+func (handler *SubscriptionChangesOperationHandler) handleOperationConfirmMySubscriptionChange(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.ConfirmMySubscriptionChangeRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	wire.ChangeId = request.PathValue("change_id")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionChangesConfirmMySubscriptionChange(), wire, handler.application.ConfirmMySubscriptionChange)
+	if err != nil {
+		writeSubscriptionChangesOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
 func (handler *SubscriptionChangesOperationHandler) handleOperationConfirmSubscriptionChange(writer http.ResponseWriter, request *http.Request) {
 	wire := &commercialv1.ConfirmSubscriptionChangeRequest{}
 	body, err := io.ReadAll(request.Body)
@@ -95,6 +139,42 @@ func (handler *SubscriptionChangesOperationHandler) handleOperationConfirmSubscr
 	wire.ChangeId = request.PathValue("change_id")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionChangesConfirmSubscriptionChange(), wire, handler.application.ConfirmSubscriptionChange)
+	if err != nil {
+		writeSubscriptionChangesOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *SubscriptionChangesOperationHandler) handleOperationGetMySubscriptionChangePreview(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.ReadMySubscriptionChangePreviewRequest{}
+	wire.ChangeId = request.PathValue("change_id")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionChangesGetMySubscriptionChangePreview(), wire, handler.application.GetMySubscriptionChangePreview)
+	if err != nil {
+		writeSubscriptionChangesOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *SubscriptionChangesOperationHandler) handleOperationGetMySubscriptionChangeReceipt(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.ReadMySubscriptionChangeReceiptRequest{}
+	wire.ChangeId = request.PathValue("change_id")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionChangesGetMySubscriptionChangeReceipt(), wire, handler.application.GetMySubscriptionChangeReceipt)
 	if err != nil {
 		writeSubscriptionChangesOperationError(writer, err)
 		return
@@ -133,6 +213,51 @@ func (handler *SubscriptionChangesOperationHandler) handleOperationGetSubscripti
 	wire.ChangeId = request.PathValue("change_id")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionChangesGetSubscriptionChangeReceipt(), wire, handler.application.GetSubscriptionChangeReceipt)
+	if err != nil {
+		writeSubscriptionChangesOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *SubscriptionChangesOperationHandler) handleOperationListMySubscriptionChangeTargets(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.ListMySubscriptionChangeTargetsRequest{}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionChangesListMySubscriptionChangeTargets(), wire, handler.application.ListMySubscriptionChangeTargets)
+	if err != nil {
+		writeSubscriptionChangesOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *SubscriptionChangesOperationHandler) handleOperationPreviewMySubscriptionChange(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.PreviewMySubscriptionChangeRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionChangesPreviewMySubscriptionChange(), wire, handler.application.PreviewMySubscriptionChange)
 	if err != nil {
 		writeSubscriptionChangesOperationError(writer, err)
 		return
