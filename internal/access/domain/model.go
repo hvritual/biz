@@ -45,6 +45,7 @@ var OwnerRequiredPermissions = []string{
 	"tenant.organization.read",
 	"tenant.role.manage",
 	"tenant.role.read",
+	"tenant.subscription.manage",
 }
 
 var (
@@ -151,7 +152,7 @@ func (membership *Membership) UpdateProfile(name, phone, employeeID, position, d
 	employeeID = strings.TrimSpace(employeeID)
 	position = strings.TrimSpace(position)
 	departmentID = strings.TrimSpace(departmentID)
-	if len([]rune(name)) > 100 || len([]rune(phone)) > 40 || len([]rune(employeeID)) > 64 || len([]rune(position)) > 100 || len([]rune(departmentID)) > 64 {
+	if len(name) > 120 || len(phone) > 40 || len(employeeID) > 80 || len(position) > 120 || len(departmentID) > 64 {
 		return ErrInvalidTenantMemberProfile
 	}
 	membership.Name = name
@@ -164,7 +165,7 @@ func (membership *Membership) UpdateProfile(name, phone, employeeID, position, d
 }
 
 func (membership *Membership) Activate(now time.Time) error {
-	if membership == nil || (membership.Status != TenantMemberStatusInvited && membership.Status != TenantMemberStatusSuspended) {
+	if membership == nil || membership.Status != TenantMemberStatusInvited {
 		return ErrInvalidTenantMemberTransition
 	}
 	membership.Status = TenantMemberStatusActive
@@ -182,7 +183,7 @@ func (membership *Membership) Suspend(now time.Time) error {
 }
 
 func (membership *Membership) Remove(now time.Time) error {
-	if membership == nil || membership.Status == TenantMemberStatusRemoved {
+	if membership == nil || (membership.Status != TenantMemberStatusInvited && membership.Status != TenantMemberStatusActive && membership.Status != TenantMemberStatusSuspended) {
 		return ErrInvalidTenantMemberTransition
 	}
 	membership.Status = TenantMemberStatusRemoved
@@ -190,112 +191,15 @@ func (membership *Membership) Remove(now time.Time) error {
 	return nil
 }
 
-type Role struct {
-	ID          string
-	TenantID    string
-	Name        string
-	Status      string
-	Permissions []PermissionGrant
-	Version     uint64
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-func NewRole(id, tenantID, name string, now time.Time) Role {
-	return Role{ID: id, TenantID: tenantID, Name: name, Status: TenantRoleStatusActive, Version: 1, CreatedAt: now, UpdatedAt: now}
-}
-
-func NewOwnerRole(id, tenantID string, now time.Time) Role {
-	role := NewRole(id, tenantID, TenantOwnerRoleName, now)
-	role.Permissions = make([]PermissionGrant, 0, len(OwnerRequiredPermissions))
-	for _, permission := range OwnerRequiredPermissions {
-		role.Permissions = append(role.Permissions, PermissionGrant{TenantID: tenantID, RoleID: id, Permission: permission, Scope: DataScopeAll})
+func (membership *Membership) SetRoles(roles []MemberRoleSummary) {
+	if membership == nil {
+		return
 	}
-	return role
-}
-
-func (role Role) IsOwner() bool { return role.Name == TenantOwnerRoleName }
-
-func (role *Role) Rename(name string, now time.Time) error {
-	if role == nil || role.Status == TenantRoleStatusDisabled || role.IsOwner() || name == TenantOwnerRoleName {
-		return ErrInvalidTenantRoleTransition
-	}
-	role.Name = name
-	role.UpdatedAt = now
-	return nil
-}
-
-func (role *Role) Disable(now time.Time) error {
-	if role == nil || role.Status != TenantRoleStatusActive {
-		return ErrInvalidTenantRoleTransition
-	}
-	if role.IsOwner() {
-		return ErrProtectedOwnerRole
-	}
-	role.Status = TenantRoleStatusDisabled
-	role.UpdatedAt = now
-	return nil
-}
-
-func (role *Role) Enable(now time.Time) error {
-	if role == nil || role.Status != TenantRoleStatusDisabled {
-		return ErrInvalidTenantRoleTransition
-	}
-	role.Status = TenantRoleStatusActive
-	role.UpdatedAt = now
-	return nil
-}
-
-func (role *Role) ReplacePermissions(grants []PermissionGrant, now time.Time) error {
-	if role == nil {
-		return ErrInvalidTenantRoleTransition
-	}
-	if role.IsOwner() && !containsOwnerRequiredPermissions(grants) {
-		return ErrProtectedOwnerRole
-	}
-	role.Permissions = append([]PermissionGrant(nil), grants...)
-	sort.Slice(role.Permissions, func(i, j int) bool { return role.Permissions[i].Permission < role.Permissions[j].Permission })
-	role.UpdatedAt = now
-	return nil
-}
-
-func containsOwnerRequiredPermissions(grants []PermissionGrant) bool {
-	values := make(map[string]DataScope, len(grants))
-	for _, grant := range grants {
-		values[grant.Permission] = grant.Scope
-	}
-	for _, required := range OwnerRequiredPermissions {
-		if values[required] != DataScopeAll {
-			return false
+	membership.Roles = append([]MemberRoleSummary(nil), roles...)
+	sort.Slice(membership.Roles, func(i, j int) bool {
+		if membership.Roles[i].Name == membership.Roles[j].Name {
+			return membership.Roles[i].ID < membership.Roles[j].ID
 		}
-	}
-	return true
-}
-
-type MemberRole struct {
-	TenantID string
-	UserID   string
-	RoleID   string
-}
-
-type PermissionGrant struct {
-	TenantID   string
-	RoleID     string
-	Permission string
-	Scope      DataScope
-}
-
-type MemberSite struct {
-	TenantID string
-	UserID   string
-	SiteID   string
-}
-
-type Credential struct {
-	TokenHash string
-	TenantID  string
-	UserID    string
-	ExpiresAt *time.Time
-	Disabled  bool
-	CreatedAt time.Time
+		return membership.Roles[i].Name < membership.Roles[j].Name
+	})
 }
