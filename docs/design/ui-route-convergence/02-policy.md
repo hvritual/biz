@@ -31,9 +31,9 @@ application facade
 禁止：
 
 ```text
-router/page
-  if api -> RealView
-  else   -> DemoView
+router/page/shell
+  if api -> API UI tree
+  else   -> Demo UI tree
 ```
 
 `VITE_DATA_MODE` 只允许存在于：
@@ -45,10 +45,28 @@ router/page
 不得存在于：
 
 - `src/features/**/pages/**`；
+- `src/features/app-shell/**`；
 - `src/router/index.ts` 的 component 选择；
-- layout / navigation 中用于页面替换的分支。
+- Header / Sidebar / Layout / Navigation 中用于改变产品结构的分支。
 
-## 3. View Model 合同
+## 3. Product Shell 合同
+
+Header、Primary Navigation、Secondary Navigation、Page Layout 的产品形态只能由 route surface / product context 决定。
+
+### MUST
+
+- `surface: tenant` 在 demo/API 下保持相同企业级 Shell；
+- `surface: platform` 使用平台管理上下文；
+- `surface: runtime` 才允许技术工作区上下文；
+- 企业切换统一调用 Enterprise facade，由 facade 决定 demo snapshot 或真实 session tenant selector。
+
+### MUST NOT
+
+- 禁止把 `api mode` 等价为 `runtime surface`；
+- 禁止 API 模式隐藏正式租户导航、搜索、Header 功能以规避真实接入；
+- 禁止通过数据源状态替换整个 Sidebar/Header。
+
+## 4. View Model 合同
 
 Demo Adapter 与 API Adapter 必须返回相同的业务 View Model。
 
@@ -60,7 +78,7 @@ Demo Adapter 与 API Adapter 必须返回相同的业务 View Model。
 
 这些值必须在 adapter / projection 层转换为统一前端领域类型。
 
-## 4. Command 合同
+## 5. Command 合同
 
 页面只能调用 application/store 暴露的业务命令，不直接编排：
 
@@ -80,7 +98,7 @@ API Adapter 必须保持现有真实能力：
 5. server readback；
 6. 失败不写本地伪成功状态。
 
-## 5. 错误与降级
+## 6. 错误与降级
 
 API 模式：
 
@@ -92,7 +110,7 @@ API 模式：
 
 Demo 模式可使用本地 snapshot，但必须通过同一 facade/view model 进入页面。
 
-## 6. Runtime Console 边界
+## 7. Runtime Console 边界
 
 `RuntimeConsoleView.vue` 只能用于 `surface: runtime` 技术工作区。
 
@@ -102,7 +120,7 @@ Demo 模式可使用本地 snapshot，但必须通过同一 facade/view model �
 - 正式导航链接到 runtime route 代替业务页面；
 - 以 Runtime Console 验收正式产品页面。
 
-## 7. 视觉合同
+## 8. 视觉合同
 
 正式业务路由必须声明：
 
@@ -111,7 +129,7 @@ Demo 模式可使用本地 snapshot，但必须通过同一 facade/view model �
 - page template；
 - required regions。
 
-API-mode 与 demo-mode 必须共享同一 canonical component。
+API-mode 与 demo-mode 必须共享同一 canonical component 和同一 Product Shell。
 
 视觉证据固定 viewport：
 
@@ -122,13 +140,14 @@ API-mode 与 demo-mode 必须共享同一 canonical component。
 
 API-mode 至少验证：
 
+- Header/rail/secondary panel 与 demo 结构一致；
 - 页面主结构不变；
 - 导航布局不变；
 - loading/error/empty 不破坏布局；
 - 数据列表、详情、抽屉/弹窗沿用设计系统；
 - 不出现技术控制台 UI。
 
-## 8. 测试合同
+## 9. 测试合同
 
 `npm run check` 必须包含：
 
@@ -145,11 +164,12 @@ Route convergence gate 至少检查：
 1. 不存在 `EntryView.vue`；
 2. 不存在业务 `*RealView.vue` / `*DemoView.vue`；
 3. pages 不引用 `VITE_DATA_MODE`；
-4. 企业中心 canonical route 映射正确；
-5. 非 runtime surface 不引用 RuntimeConsole；
-6. route contract 中企业中心五路由齐全。
+4. app-shell 不引用 `VITE_DATA_MODE` 改变产品结构；
+5. 企业中心 canonical route 映射正确；
+6. 非 runtime surface 不引用 RuntimeConsole；
+7. route contract 中企业中心五路由齐全。
 
-## 9. PR 与合并门槛
+## 10. PR 与合并门槛
 
 以下证据未齐全时禁止 merge：
 
@@ -159,10 +179,10 @@ Route convergence gate 至少检查：
 - 四 viewport visual evidence 通过；
 - 无未解释的 screenshot diff；
 - 无 `EntryView/RealView/DemoView` 新增；
-- PR diff 未重新引入 route-level data mode switch；
+- PR diff 未重新引入 route/shell-level data mode switch；
 - 最新 main 已同步，merge 前重新跑关键 gate。
 
-## 10. 例外流程
+## 11. 例外流程
 
 如确需两套产品页面（例如完全不同品牌/产品，而非数据源差异），必须：
 
