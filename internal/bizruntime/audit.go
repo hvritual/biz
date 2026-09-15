@@ -6,14 +6,18 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/hvritual/biz/internal/access/domain"
+	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	accessports "github.com/hvritual/biz/internal/access/ports"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"gorm.io/gorm"
 	"yunka.io/framework/core/identity"
 	"yunka.io/framework/core/runtimecontext"
 	"yunka.io/framework/execution"
@@ -23,8 +27,15 @@ import (
 
 type auditStateContextKey struct{}
 
-type auditState struct {
-	event domain.AuditEvent
+type auditState struct{ event domain.AuditEvent }
+
+func newAuditedOperationExecutor(database *gorm.DB, security operation.SecurityPhase, transactions execution.TransactionFactory, idempotency execution.IdempotencyCoordinator) (operation.Executor, error) {
+	repository, err := accesspersistence.NewAuditRepository(database)
+	if err != nil {
+		return nil, err
+	}
+	wrapped := auditedSecurity{inner: security, sink: repository}
+	return operation.NewExecutorWithOptions(wrapped, operation.ExecutorOptions{Transactions: transactions, Idempotency: idempotency}, auditObserver{sink: repository}), nil
 }
 
 type auditedSecurity struct {
@@ -94,13 +105,13 @@ func shouldAuditOperation(plan operationplan.Plan, principal identity.Principal)
 }
 
 func buildAuditState(ctx context.Context, plan operationplan.Plan, input any, principal identity.Principal) auditState {
-	metadata, _ := runtimecontext.MetadataFrom(ctx)
+	transport, _ := runtimecontext.MetadataFrom(ctx)
 	idempotencyRef := opaqueRef(execution.IdempotencyKeyFrom(ctx))
 	seed := principal.TenantID + "\x00" + plan.OperationID + "\x00"
 	if idempotencyRef != "" {
 		seed += idempotencyRef
-	} else if metadata.RequestID != "" {
-		seed += metadata.RequestID
+	} else if transport.RequestID != "" {
+		seed += transport.RequestID
 	} else {
 		seed += uuid.NewString()
 	}
@@ -111,18 +122,70 @@ func buildAuditState(ctx context.Context, plan operationplan.Plan, input any, pr
 	receiptRef := ""
 	if idempotencyRef != "" {
 		receiptRef = "idempotency:" + idempotencyRef
-	} else if metadata.RequestID != "" {
-		receiptRef = "request:" + metadata.RequestID
+	} else if transport.RequestID != "" {
+		receiptRef = "request:" + transport.RequestID
 	}
-	attributes := metadata.Attributes
+	attributes := transport.Attributes
 	return auditState{event: domain.AuditEvent{
 		EventID: auditID + "-a", AuditID: auditID, EventType: domain.AuditEventAttempt,
 		TenantID: principal.TenantID, ActorSubject: principal.Subject, ActorUserID: principal.UserID,
 		AuthMethod: principal.AuthMethod, AuthChannel: attributes["auth_channel"], SessionRef: attributes["session_ref"],
-		RequestID: metadata.RequestID, IdempotencyRef: idempotencyRef, OperationID: plan.OperationID,
+		RequestID: transport.RequestID, IdempotencyRef: idempotencyRef, OperationID: plan.OperationID,
 		Module: plan.Domain, Target: target, RequestDigest: requestDigest, ReceiptRef: receiptRef, Reason: reason,
 		Risk: auditRisk(plan.OperationID), Outcome: domain.AuditResultPending, OccurredAt: time.Now().UTC(),
 	}}
+}
+
+func withAuditHTTPMetadata(request *http.Request, principal identity.Principal, webAuth *runtimeWebAuth) *http.Request {
+	if request == nil {
+		return request
+	}
+	ctx := identity.WithPrincipal(request.Context(), principal)
+	current, _ := runtimecontext.MetadataFrom(ctx)
+	attributes := cloneAuditAttributes(current.Attributes)
+	attributes["auth_channel"] = "api-key"
+	secret := parseBearer(request.Header.Get("Authorization"))
+	if secret == "" {
+		attributes["auth_channel"] = "web-session"
+		if webAuth != nil {
+			if cookie, err := request.Cookie(webAuth.sessionCookieName()); err == nil {
+				secret = cookie.Value
+			}
+		}
+	}
+	attributes["session_ref"] = opaqueRef(secret)
+	current.Transport = "http"
+	current.Protocol = request.Proto
+	current.Route = request.URL.Path
+	current.Method = request.Method
+	current.RequestID = uuid.NewString()
+	current.Attributes = attributes
+	return request.WithContext(runtimecontext.WithMetadata(ctx, current))
+}
+
+func withAuditGRPCMetadata(ctx context.Context, principal identity.Principal, incoming metadata.MD) context.Context {
+	ctx = identity.WithPrincipal(ctx, principal)
+	current, _ := runtimecontext.MetadataFrom(ctx)
+	attributes := cloneAuditAttributes(current.Attributes)
+	attributes["auth_channel"] = "api-key"
+	secret := ""
+	if values := incoming.Get("authorization"); len(values) > 0 {
+		secret = parseBearer(values[0])
+	}
+	attributes["session_ref"] = opaqueRef(secret)
+	current.Transport = "grpc"
+	current.Protocol = "grpc"
+	current.RequestID = uuid.NewString()
+	current.Attributes = attributes
+	return runtimecontext.WithMetadata(ctx, current)
+}
+
+func cloneAuditAttributes(source map[string]string) map[string]string {
+	result := make(map[string]string, len(source)+2)
+	for key, value := range source {
+		result[key] = value
+	}
+	return result
 }
 
 func auditOutcome(value operation.Outcome) string {
@@ -168,8 +231,7 @@ func auditTargetAndReason(input any, tenantID string) (string, string) {
 	for _, name := range []protoreflect.Name{"member_id", "user_id", "role_id", "department_id", "delegation_id", "change_id", "target_plan_code", "plan_code", "device_id", "site_id", "id"} {
 		if field := fields.ByName(name); field != nil && field.Kind() == protoreflect.StringKind && reflection.Has(field) {
 			if value := strings.TrimSpace(reflection.Get(field).String()); value != "" {
-				reason := auditReason(reflection, fields)
-				return string(name) + ":" + value, reason
+				return string(name) + ":" + value, auditReason(reflection, fields)
 			}
 		}
 	}
