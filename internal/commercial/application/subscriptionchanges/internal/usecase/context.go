@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	projection "github.com/hvritual/biz/internal/commercial/application/planprojection"
 	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
@@ -24,12 +25,26 @@ type material struct {
 }
 
 func (s *service) capture(ctx context.Context, repos ports.SubscriptionChangeRepositories, raw subscription.Subscription, i change.Input) (material, error) {
+	return s.captureWithPlanAuthority(ctx, repos, raw, i, false)
+}
+
+func (s *service) captureTenant(ctx context.Context, repos ports.SubscriptionChangeRepositories, raw subscription.Subscription, i change.Input) (material, error) {
+	return s.captureWithPlanAuthority(ctx, repos, raw, i, true)
+}
+
+func (s *service) captureWithPlanAuthority(ctx context.Context, repos ports.SubscriptionChangeRepositories, raw subscription.Subscription, i change.Input, tenantSelfService bool) (material, error) {
 	out := material{}
-	old, err := s.capabilities.CommercialPlanManagement().GetPlanVersion(ctx, &v1.GetPlanVersionRequest{PlanCode: raw.PlanCode, Version: raw.PlanVersion})
+	var oldDTO *v1.PlanVersionDTO
+	var err error
+	if tenantSelfService {
+		oldDTO, err = s.capabilities.CommercialPlanManagement().ReadTenantSubscriptionPlanVersion(ctx, &v1.GetPlanVersionRequest{PlanCode: raw.PlanCode, Version: raw.PlanVersion})
+	} else {
+		oldDTO, err = s.capabilities.CommercialPlanManagement().GetPlanVersion(ctx, &v1.GetPlanVersionRequest{PlanCode: raw.PlanCode, Version: raw.PlanVersion})
+	}
 	if err != nil {
 		return out, err
 	}
-	out.old, err = projection.Version(old)
+	out.old, err = projection.Version(oldDTO)
 	if err != nil {
 		return out, err
 	}
@@ -48,12 +63,17 @@ func (s *service) capture(ctx context.Context, repos ports.SubscriptionChangeRep
 	}
 	out.target = out.old
 	if i.Action != change.StopRenewal {
-		eligible, e := s.capabilities.CommercialPlanManagement().CheckPlanEligibility(ctx, &v1.CheckPlanEligibilityRequest{PlanCode: i.TargetPlanCode, Version: i.TargetPlanVersion, SalesScope: raw.SalesScope})
-		if e != nil {
-			if status.Code(e) == codes.NotFound {
+		var eligible *v1.PlanEligibilityDTO
+		if tenantSelfService {
+			eligible, err = s.capabilities.CommercialPlanManagement().ResolveTenantChangeTarget(ctx, &v1.ResolveTenantChangeTargetRequest{PlanCode: i.TargetPlanCode, Version: i.TargetPlanVersion, SalesScope: raw.SalesScope})
+		} else {
+			eligible, err = s.capabilities.CommercialPlanManagement().CheckPlanEligibility(ctx, &v1.CheckPlanEligibilityRequest{PlanCode: i.TargetPlanCode, Version: i.TargetPlanVersion, SalesScope: raw.SalesScope})
+		}
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
 				return out, change.ErrTarget
 			}
-			return out, e
+			return out, err
 		}
 		if eligible == nil || eligible.Version == nil {
 			return out, change.ErrCorrupt
