@@ -2,11 +2,12 @@ package usecase
 
 import (
 	"context"
+	"time"
+
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
 	change "github.com/hvritual/biz/internal/commercial/domain/subscriptionchange"
 	"github.com/hvritual/biz/internal/commercial/ports"
-	"time"
 	"yunka.io/framework/requestscope"
 )
 
@@ -19,20 +20,33 @@ func (s *service) PreviewSubscriptionChange(ctx context.Context, r *v1.PreviewSu
 	if err != nil {
 		return nil, expose(err)
 	}
-	if !validKey(ctx, i.RequestID) {
+	return s.preview(ctx, a, i, false)
+}
+
+func (s *service) preview(ctx context.Context, actorID string, input change.Input, tenantSelfService bool) (*v1.SubscriptionChangePreviewDTO, error) {
+	if !validKey(ctx, input.RequestID) {
 		return nil, expose(change.ErrInvalid)
 	}
-	id := change.ID(a, i.TenantID, i.RequestID)
+	id := change.ID(actorID, input.TenantID, input.RequestID)
 	result, err := requestscope.JoinValue(ctx, s.repositories, func(sc *requestscope.View[ports.SubscriptionChangeRepositories]) (change.Preview, error) {
 		repos, call := sc.Repositories(), sc.Context()
 		repo := repos.Changes
-		raw, e := repo.LockTenant(call, i.TenantID)
-		if e != nil {
-			return change.Preview{}, e
+		raw, err := repo.LockTenant(call, input.TenantID)
+		if err != nil {
+			return change.Preview{}, err
 		}
-		existing, e := repo.PreviewForRequest(call, a, i.RequestID, change.Digest(i))
-		if e != nil {
-			return change.Preview{}, e
+		i := input
+		if tenantSelfService {
+			i, err = normalizeTenantPreviewInput(i, raw)
+			if err != nil {
+				return change.Preview{}, err
+			}
+		} else if err = i.Validate(); err != nil {
+			return change.Preview{}, err
+		}
+		existing, err := repo.PreviewForRequest(call, actorID, i.RequestID, change.Digest(i))
+		if err != nil {
+			return change.Preview{}, err
 		}
 		if existing != nil {
 			return *existing, nil
@@ -43,59 +57,67 @@ func (s *service) PreviewSubscriptionChange(ctx context.Context, r *v1.PreviewSu
 		if i.Action == change.StopRenewal && raw.RenewalStopped {
 			return change.Preview{}, change.ErrConflict
 		}
-		m, e := s.capture(call, repos, raw, i)
-		if e != nil {
-			return change.Preview{}, e
+		var material material
+		if tenantSelfService {
+			material, err = s.captureTenant(call, repos, raw, i)
+		} else {
+			material, err = s.capture(call, repos, raw, i)
 		}
-		now, e := repo.Now(call)
-		if e != nil {
-			return change.Preview{}, e
+		if err != nil {
+			return change.Preview{}, err
+		}
+		now, err := repo.Now(call)
+		if err != nil {
+			return change.Preview{}, err
 		}
 		classification := i.Action
 		if i.Action == change.Switch {
-			classification = change.Classify(m.old.Terms, m.target.Terms)
+			classification = change.Classify(material.old.Terms, material.target.Terms)
 		}
-		mode, at, end, e := change.Period(i, m.before, classification, now, m.target.Terms)
-		if e != nil {
-			return change.Preview{}, e
+		mode, at, end, err := change.Period(i, material.before, classification, now, material.target.Terms)
+		if err != nil {
+			return change.Preview{}, err
 		}
 		expires := now.Add(10 * time.Minute)
-		if boundary := m.current.ValidUntil; boundary != nil && boundary.Before(expires) {
+		if boundary := material.current.ValidUntil; boundary != nil && boundary.Before(expires) {
 			expires = *boundary
 		}
 		if !expires.After(now) {
 			return change.Preview{}, change.ErrExpired
 		}
-		projected := m.current
+		projected := material.current
 		quotas := []change.QuotaImpact{}
 		deferred := false
 		if i.Action != change.StopRenewal {
-			sources, e := change.ProjectSources(m.before, m.old, m.target, m.state.Sources, id, at, end)
-			if e != nil {
-				return change.Preview{}, e
+			sources, err := change.ProjectSources(material.before, material.old, material.target, material.state.Sources, id, at, end)
+			if err != nil {
+				return change.Preview{}, err
 			}
-			projected, e = entitlement.Resolve(i.TenantID, m.state.Version+1, at, m.catalog, sources, nil)
-			if e != nil {
-				return change.Preview{}, e
+			projected, err = entitlement.Resolve(i.TenantID, material.state.Version+1, at, material.catalog, sources, nil)
+			if err != nil {
+				return change.Preview{}, err
 			}
-			requested := change.QuotaChanges(m.old.Terms, m.target.Terms)
-			quotas, e = s.quotas.Evaluate(call, ports.QuotaChangeInput{TenantID: i.TenantID, ChangeID: id, Mode: mode, EffectiveAt: at, Changes: requested})
-			if e != nil {
-				return change.Preview{}, e
+			requested := change.QuotaChanges(material.old.Terms, material.target.Terms)
+			quotas, err = s.quotas.Evaluate(call, ports.QuotaChangeInput{TenantID: i.TenantID, ChangeID: id, Mode: mode, EffectiveAt: at, Changes: requested})
+			if err != nil {
+				return change.Preview{}, err
 			}
-			deferred, e = change.CheckQuotaReport(requested, quotas, mode)
-			if e != nil {
-				return change.Preview{}, e
+			deferred, err = change.CheckQuotaReport(requested, quotas, mode)
+			if err != nil {
+				return change.Preview{}, err
 			}
 		}
 		// A projection is not a new immutable snapshot and must never be cached as one.
 		projected.EntitlementVersion = 0
-		projected.CatalogRevision = m.current.CatalogRevision
+		projected.CatalogRevision = material.current.CatalogRevision
 		pricing := "NO_PRICE_REFERENCE"
-		if m.target.Terms.PriceRef != "" {
+		if material.target.Terms.PriceRef != "" {
 			pricing = "PLATFORM_MANUAL_APPROVAL_REQUIRED"
 		}
 		impacts := []string{"Existing tenant data is preserved; this operation never deletes resources.", "Projected rights include existing overrides and safety restrictions.", "No resource consumption or output-field enforcement is added by CE-09."}
+		if tenantSelfService {
+			impacts = append(impacts, "Tenant self-service preview only: subscription and entitlement authority remain unchanged until a separate future confirmation path succeeds.")
+		}
 		if mode == change.Scheduled {
 			impacts = append(impacts, "Scheduled intent only: existing rights remain unchanged until a future validated executor applies it.")
 		}
@@ -105,18 +127,18 @@ func (s *service) PreviewSubscriptionChange(ctx context.Context, r *v1.PreviewSu
 		if i.Action == change.StopRenewal {
 			impacts = append(impacts, "Stops renewal intent only; does not shorten the current entitlement period or cancel external billing.")
 		}
-		requirements, e := s.preparationRequirements(call, i.Action, m.target)
-		if e != nil {
-			return change.Preview{}, e
+		requirements, err := s.preparationRequirements(call, i.Action, material.target)
+		if err != nil {
+			return change.Preview{}, err
 		}
 		if len(requirements) > 0 {
 			impacts = append(impacts, "External preparation is required. Confirmation reserves intent; effective rights remain unchanged until actual readiness and authoritative activation.")
 		}
-		p := change.Preview{ProvisioningRequirements: requirements, ChangeID: id, ActorID: a, Input: i, Fingerprint: change.Digest(i), Before: m.before, Target: m.target, Current: m.current, Projected: projected, Classification: classification, Mode: mode, CreatedAt: now, ExpiresAt: expires, EffectiveAt: at, EntitlementExpiresAt: end, Dependencies: m.dependencies, Quotas: quotas, Impacts: impacts, QuotaValidationRequired: deferred, PricingBasis: pricing}.Seal()
-		if e = repo.SavePreview(call, p); e != nil {
-			return p, e
+		preview := change.Preview{ProvisioningRequirements: requirements, ChangeID: id, ActorID: actorID, Input: i, Fingerprint: change.Digest(i), Before: material.before, Target: material.target, Current: material.current, Projected: projected, Classification: classification, Mode: mode, CreatedAt: now, ExpiresAt: expires, EffectiveAt: at, EntitlementExpiresAt: end, Dependencies: material.dependencies, Quotas: quotas, Impacts: impacts, QuotaValidationRequired: deferred, PricingBasis: pricing}.Seal()
+		if err = repo.SavePreview(call, preview); err != nil {
+			return preview, err
 		}
-		return p, nil
+		return preview, nil
 	})
 	if err != nil {
 		return nil, expose(err)
