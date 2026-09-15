@@ -1,0 +1,90 @@
+name: ec-ri-05-web-qualification
+
+on:
+  push:
+    branches:
+      - feat/enterprise-tenant-profile-real-integration
+    paths:
+      - .github/workflows/ec-ri-05-web-qualification.yml
+      - web/**
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/ec-ri-05-web-qualification.yml
+      - web/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact candidate
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npm run check
+        working-directory: web
+      - name: Install Chromium and Chinese fonts
+        working-directory: web
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Run Tenant Profile API-mode E2E
+        working-directory: web
+        shell: bash
+        run: |
+          set -euo pipefail
+          VITE_DATA_MODE=api npm run build
+          ENTERPRISE_COMPANY_REAL_E2E=1 npx playwright test e2e/enterprise-company-real.spec.ts
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, struct
+          results = json.loads(Path('test-results/results.json').read_text())
+          stats = results['stats']
+          assert stats.get('unexpected', 0) == 0, stats
+          serialized = json.dumps(results, ensure_ascii=False)
+          required_titles = [
+              'real company page renders only authoritative Tenant Profile data across CoffeeLink viewports',
+              'company update sends trusted-session headers and idempotency then confirms only after readback',
+              'company 409 preserves draft and reuses the same idempotency key',
+              'successful PATCH without GET readback is not presented as confirmed success',
+              '401 and 403 never fall back to demo company data',
+              'API mode has no browser DataURL logo upload success path',
+          ]
+          for title in required_titles:
+              assert title in serialized, f'missing EC-RI-05 browser evidence: {title}'
+          shots = Path('screenshots')
+          for width, height in [(1366, 768), (1440, 900), (1536, 1024), (390, 844)]:
+              path = shots / f'enterprise-company-real-{width}.png'
+              data = path.read_bytes()
+              assert data[:8] == b'\x89PNG\r\n\x1a\n', path
+              got = struct.unpack('>II', data[16:24])
+              assert got == (width, height), (path, got)
+          print(f'EC_RI_05_WEB=PASS expected={stats.get("expected", 0)}')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ec-ri-05-tenant-profile-visual-review
+          path: |
+            web/screenshots
+            web/test-results
+            web/dist
+          if-no-files-found: warn
+          retention-days: 7

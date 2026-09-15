@@ -162,6 +162,7 @@ type applicationFactories struct {
 	site                        *deviceapp.SiteManagementService
 	moduleCatalog               commercialapp.ModuleCatalogApplication
 	tenantRepositories          requestscope.RepositoryFactory[accessports.TenantRepositories]
+	tenantProfileRepositories   requestscope.RepositoryFactory[accessports.TenantProfileRepositories]
 	memberRepositories          requestscope.RepositoryFactory[accessports.TenantMemberRepositories]
 	departmentRepositories      requestscope.RepositoryFactory[accessports.TenantDepartmentRepositories]
 	roleRepositories            requestscope.RepositoryFactory[accessports.TenantRoleRepositories]
@@ -394,6 +395,10 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
+	tenantProfileRepositories, err := accesspersistence.NewTenantProfileRepositoryFactory(accessDatabase)
+	if err != nil {
+		return generatedassembly.RuntimeBindings{}, err
+	}
 	memberRepositories, err := accesspersistence.NewTenantMemberRepositoryFactory(accessDatabase)
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
@@ -437,6 +442,7 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 			site:                        siteService,
 			moduleCatalog:               commercialApplication,
 			tenantRepositories:          tenantRepositories,
+			tenantProfileRepositories:   tenantProfileRepositories,
 			memberRepositories:          memberRepositories,
 			departmentRepositories:      departmentRepositories,
 			roleRepositories:            roleRepositories,

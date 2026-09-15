@@ -21,6 +21,7 @@
         "application:access/tenant_department_management",
         "application:access/tenant_lifecycle",
         "application:access/tenant_member_lifecycle",
+        "application:access/tenant_profile_management",
         "application:access/tenant_role_permission",
         "application:deviceops/delegated_device_access",
         "application:deviceops/device_management",

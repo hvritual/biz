@@ -81,7 +81,7 @@ export const router = createRouter({
     },
     {
       path: '/enterprise/company',
-      component: () => import('@/features/enterprise/pages/CompanyView.vue'),
+      component: () => import('@/features/enterprise/pages/CompanyEntryView.vue'),
       meta: { title: '企业信息', module: 'enterprise' },
     },
     {
