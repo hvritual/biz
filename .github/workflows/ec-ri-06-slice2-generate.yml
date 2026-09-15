@@ -36,7 +36,7 @@ jobs:
         with:
           go-version: '1.25.13'
           cache: false
-      - name: Install locked protoc
+      - name: Install locked protobuf toolchain
         shell: bash
         run: |
           set -euo pipefail
@@ -50,6 +50,9 @@ jobs:
           mkdir -p "$install_root"
           unzip -q "$archive" -d "$install_root"
           echo "$install_root/bin" >> "$GITHUB_PATH"
+          go install "google.golang.org/protobuf/cmd/protoc-gen-go@${PROTOC_GEN_GO_VERSION}"
+          go install "google.golang.org/grpc/cmd/protoc-gen-go-grpc@${PROTOC_GEN_GO_GRPC_VERSION}"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Verify locked framework source
         shell: bash
         run: |
@@ -60,8 +63,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          export PATH="$(go env GOPATH)/bin:$PATH"
           cd biz
-          make generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
+          make generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$RUNNER_TEMP/protoc/bin/protoc"
       - name: Commit deterministic generated artifacts
         shell: bash
         run: |
