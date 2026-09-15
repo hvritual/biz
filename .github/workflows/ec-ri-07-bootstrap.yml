@@ -1,6 +1,6 @@
 name: ec-ri-07-bootstrap
 
-# retry: audit operations use normal tenant-business capability mapping without exemptions
+# retry: audit operations use normal tenant-business capability mapping and invocation fencing
 on:
   push:
     branches:
@@ -84,6 +84,7 @@ jobs:
           if old not in text:
               raise SystemExit('executor anchor not found')
           text = text.replace(old, new, 1)
+          text = text.replace('\t"yunka.io/framework/operation"\n', '', 1)
           old = '''\t\tnext.ServeHTTP(writer, request.WithContext(identity.WithPrincipal(request.Context(), principal)))\n'''
           new = '''\t\tnext.ServeHTTP(writer, withAuditHTTPMetadata(request, principal, webAuth))\n'''
           if old not in text:
@@ -121,6 +122,7 @@ jobs:
             internal/access/ports/tenant.go \
             internal/bizruntime/audit.go \
             internal/bizruntime/audit_application.go \
+            internal/bizruntime/audit_entitlements.go \
             internal/bizruntime/runtime.go
       - name: Generate canonical contracts and assembly
         shell: bash
