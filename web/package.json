@@ -16,7 +16,8 @@
     "test:e2e": "playwright test",
     "check:architecture": "node scripts/check-architecture.mjs",
     "check:ui-contracts": "node scripts/check-ui-contracts.mjs",
-    "check": "npm run type-check && npm run lint && npm run check:architecture && npm run check:ui-contracts && npm run test:unit && npm run build"
+    "check:route-convergence": "node scripts/check-route-convergence.mjs",
+    "check": "npm run type-check && npm run lint && npm run check:architecture && npm run check:ui-contracts && npm run check:route-convergence && npm run test:unit && npm run build"
   },
   "dependencies": {
     "@lucide/vue": "^1.46.0",
