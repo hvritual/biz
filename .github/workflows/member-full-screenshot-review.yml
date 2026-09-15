@@ -1,0 +1,143 @@
+name: member-full-screenshot-review
+
+on:
+  push:
+    branches:
+      - review/member-management-full-screenshots
+    paths:
+      - .github/workflows/member-full-screenshot-review.yml
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: review/member-management-full-screenshots
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+      - name: Build current main-derived UI
+        working-directory: web
+        run: npm run build
+      - name: Install Chromium and Chinese fonts
+        working-directory: web
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Capture full member management states
+        working-directory: web
+        shell: bash
+        run: |
+          cat > e2e/__member_full_review.spec.ts <<'TS'
+          import { test, expect, type Page } from '@playwright/test'
+          import { mkdirSync } from 'node:fs'
+
+          const dir = 'member-full-screenshots'
+
+          async function ready(page: Page) {
+            await page.goto('/#/enterprise/members')
+            await expect(page.locator('.member-table')).toBeVisible()
+            await page.evaluate(() => document.fonts.ready)
+          }
+
+          async function memberAction(page: Page, name: string, action: string) {
+            await page.getByRole('button', { name: `${name} 更多操作`, exact: true }).click()
+            await page.getByRole('dialog').getByRole('button', { name: action, exact: true }).click()
+          }
+
+          test('capture every member management interaction state', async ({ page }) => {
+            mkdirSync(dir, { recursive: true })
+            await page.setViewportSize({ width: 1536, height: 1024 })
+            await ready(page)
+            await page.screenshot({ path: `${dir}/01-overview-list-filter-bulk-export.png`, fullPage: true })
+
+            await page.getByRole('button', { name: '邀请成员', exact: true }).click()
+            await expect(page.getByRole('dialog', { name: '邀请成员', exact: true })).toBeVisible()
+            await page.screenshot({ path: `${dir}/02-invite-member.png`, fullPage: true })
+            await page.getByRole('button', { name: '关闭弹窗', exact: true }).click()
+
+            await page.getByRole('button', { name: '编辑 李四', exact: true }).click()
+            await expect(page.getByRole('dialog', { name: '修改成员信息', exact: true })).toBeVisible()
+            await page.screenshot({ path: `${dir}/03-edit-member-profile.png`, fullPage: true })
+            await page.getByRole('button', { name: '关闭弹窗', exact: true }).click()
+
+            await page.getByRole('button', { name: '查看 李四', exact: true }).click()
+            let detail = page.getByRole('dialog', { name: '成员详情', exact: true })
+            await expect(detail).toBeVisible()
+            await page.screenshot({ path: `${dir}/04-member-detail-basic.png`, fullPage: true })
+            await detail.getByRole('tab', { name: '角色权限', exact: true }).click()
+            await page.screenshot({ path: `${dir}/05-member-detail-roles.png`, fullPage: true })
+            await detail.getByRole('tab', { name: '数据权限', exact: true }).click()
+            await page.screenshot({ path: `${dir}/06-member-detail-data-scope.png`, fullPage: true })
+            await detail.getByRole('tab', { name: '操作日志', exact: true }).click()
+            await page.screenshot({ path: `${dir}/07-member-detail-audit-log.png`, fullPage: true })
+            await detail.getByRole('button', { name: '关闭成员详情', exact: true }).click()
+
+            await memberAction(page, '李四', '角色与数据权限变更')
+            await expect(page.getByRole('dialog', { name: '角色变更与权限调整', exact: true })).toBeVisible()
+            await page.screenshot({ path: `${dir}/08-role-and-data-scope-change.png`, fullPage: true })
+            await page.getByRole('button', { name: '关闭弹窗', exact: true }).click()
+
+            await memberAction(page, '李四', '禁用当前企业访问')
+            await expect(page.getByRole('dialog', { name: '禁用成员', exact: true })).toBeVisible()
+            await page.screenshot({ path: `${dir}/09-disable-member.png`, fullPage: true })
+            await page.getByRole('button', { name: '关闭弹窗', exact: true }).click()
+
+            await memberAction(page, '张三', '禁用当前企业访问')
+            await expect(page.getByRole('dialog', { name: '禁用成员', exact: true })).toContainText('最后一位企业所有者')
+            await page.screenshot({ path: `${dir}/10-last-owner-protection.png`, fullPage: true })
+            await page.getByRole('button', { name: '关闭弹窗', exact: true }).click()
+
+            await memberAction(page, '李四', '密码重置')
+            await expect(page.getByRole('dialog', { name: '密码重置', exact: true })).toBeVisible()
+            await page.screenshot({ path: `${dir}/11-password-reset-request.png`, fullPage: true })
+            await page.getByRole('button', { name: '关闭弹窗', exact: true }).click()
+
+            await page.getByLabel('选择 李四', { exact: true }).check()
+            await page.getByLabel('选择 王五', { exact: true }).check()
+            await page.getByRole('button', { name: '批量停用', exact: true }).click()
+            let batch = page.getByRole('dialog', { name: '批量停用成员', exact: true })
+            await expect(batch).toBeVisible()
+            await page.screenshot({ path: `${dir}/12-batch-disable.png`, fullPage: true })
+            await batch.getByLabel('操作原因', { exact: true }).fill('截图验证')
+            await batch.getByRole('checkbox').check()
+            await batch.getByRole('button', { name: '确认批量停用', exact: true }).click()
+
+            await page.getByLabel('选择 李四', { exact: true }).check()
+            await page.getByLabel('选择 王五', { exact: true }).check()
+            await page.getByRole('button', { name: '批量启用', exact: true }).click()
+            batch = page.getByRole('dialog', { name: '批量启用成员', exact: true })
+            await expect(batch).toBeVisible()
+            await page.screenshot({ path: `${dir}/13-batch-enable.png`, fullPage: true })
+            await page.getByRole('button', { name: '关闭弹窗', exact: true }).click()
+
+            await page.setViewportSize({ width: 390, height: 844 })
+            await ready(page)
+            await page.screenshot({ path: `${dir}/14-mobile-members.png`, fullPage: true })
+            await page.getByRole('button', { name: '查看 李四', exact: true }).click()
+            detail = page.getByRole('dialog', { name: '成员详情', exact: true })
+            await expect(detail).toHaveAttribute('aria-modal', 'true')
+            await page.screenshot({ path: `${dir}/15-mobile-member-detail.png`, fullPage: true })
+          })
+          TS
+          npx playwright test e2e/__member_full_review.spec.ts
+          test "$(find member-full-screenshots -maxdepth 1 -name '*.png' | wc -l)" -eq 15
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: member-management-full-screenshots
+          path: web/member-full-screenshots
+          if-no-files-found: error
+          retention-days: 7
