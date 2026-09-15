@@ -4,7 +4,7 @@
 
 将 CoffeeLink 企业中心从“完整前端预览 + 本地快照”收敛为真实租户运行面：所有读取以服务端为准，所有写操作必须具备真实鉴权、幂等、回执与回读，不允许 API 失败后静默回退为本地成功。
 
-当前主线基线：`main@7691ad68ca9252f6456b8c77eaf04bfac91e6cbf`（EC-RI-01～05 已合并）。EC-RI-06 按独立切片推进，当前首个切片只关闭租户套餐/权益/额度上限的权威读取，不提前宣称整个 EC-RI-06 完成。
+当前主线基线：`main@2a167885ba9a6a349d3a13eee90a4d8c818d55e5`（EC-RI-06 Slice 1 / PR #104 已合并）。EC-RI-06 按独立切片推进，Slice 2 正在关闭 `tenant.members` 权威用量读取；upgrade/change 写链路仍未进入。
 
 企业中心固定范围：
 
@@ -26,7 +26,7 @@
 | EC-RI-03 Role permission | ✅ Completed in PR #100 | 角色页面 API 模式使用真实 Access Role API；角色、permission grants、状态和成员绑定均由服务端权威数据驱动，并具备幂等、409 与 readback 门禁。 |
 | EC-RI-04 Organization / Department | ✅ Completed in PR #101 | Department contract、持久化、层级/负责人/成员归属约束、真实组织页面、MySQL 与浏览器/视觉门禁已合并主线。 |
 | EC-RI-05 Tenant profile | ✅ Completed in PR #103 | 企业资料 API 模式使用真实 Tenant Profile API；企业字段、版本 CAS、租户隔离、asset reference、幂等、readback、MySQL/browser/visual gate 已合并主线。 |
-| EC-RI-06 Plan / entitlement / quota | 🚧 In progress | 首个独立切片已实现当前租户 subscription、entitlement 与 quota limit 权威读取；usage、upgrade/change preview、confirm + receipt 仍待后续切片。 |
+| EC-RI-06 Plan / entitlement / quota | 🚧 In progress | Slice 1 已合并当前租户 subscription、entitlement 与 quota limit 权威读取；Slice 2 已实现 `tenant.members` 权威用量 meter、tenant-scoped usage projection 与额度耗尽判断，待本轮 PR 门禁；其余 usage meters 与 upgrade/change 写链路仍待后续切片。 |
 | EC-RI-07 Server audit trail | ⏳ Pending | 操作日志仍待服务端不可伪造审计来源。 |
 | EC-RI-08 Production gate | ⏳ Pending | 等六个企业中心模块全部真实化后执行最终生产门禁。 |
 
@@ -46,7 +46,7 @@ EC-RI-01～05 已将 API 模式下的成员管理、角色权限、组织架构�
 - API 模式禁止 DataURL Logo，生产路径只接受资产引用；
 - 1366×768 / 1440×900 / 1536×1024 / 390×844 视觉证据与页面横向 overflow 检查。
 
-EC-RI-06 首个切片进一步把套餐额度 API 模式从本地示例状态分离：当前订阅、模块/能力决策与 quota limit 来自 Commercial 权威服务；尚未接通的 usage 必须明确显示“权威用量未接入”，禁止以 `0`、假百分比或本地示例替代。
+EC-RI-06 已把套餐额度 API 模式从本地示例状态分离：当前订阅、模块/能力决策与 quota limit 来自 Commercial 权威服务；Slice 2 进一步通过 `GET /v1/tenant/usage` 接入 `access-management / tenant.members` 权威 meter。成员额度规则固定为 invited / active / suspended 占用、removed 释放；其余尚未接 meter 的 quota 继续显示“未知”，禁止以 `0`、假百分比或本地示例替代。
 
 套餐升级/续费写链路与操作日志仍未完成真实服务路径，因此整个企业中心尚不能称为“全部前后端完整对接”。
 
@@ -77,12 +77,13 @@ Commercial：
 - tenant-scoped subscription projection
 - entitlement
 - quota definition and entitlement limits
+- tenant-scoped authoritative quota usage projection（当前已接 `tenant.members`）
 
 ### Remaining contract gaps
 
 EC-RI-04 已关闭 Organization / Department contract 缺口，EC-RI-05 已关闭 Tenant/company profile 真实化缺口。EC-RI-06 首个切片关闭“当前租户订阅 + entitlement/quota limit 只读消费视图”缺口。当前剩余真实化缺口集中在：
 
-- authoritative usage counters；
+- 其余 quota 的 authoritative usage meters（当前仅 `tenant.members` 已接入）；
 - 套餐 upgrade/change preview；
 - confirm + receipt/readback；
 - 不可由前端伪造的 server audit trail。
@@ -177,6 +178,20 @@ EC-RI-04 已关闭 Organization / Department contract 缺口，EC-RI-05 已关�
 - 权威 usage 尚未接入时明确展示“权威用量未接入”；不计算假使用率，不把未知值写成 `0`。
 - 浏览器门禁覆盖 tenant id 不可伪造、trusted session/CSRF、401/403 无 demo fallback、quota limit 权威性、unknown usage 语义与四个 CoffeeLink 视口。
 - 架构门禁固定检查 self-service contract 不接受 tenant id、服务按 `Principal.TenantID` 选 subscription、owner 商业只读权限存在。
+
+**Slice 2 — authoritative `tenant.members` usage read**
+
+本轮只关闭第一个真实 usage meter，不引入通用 CE-19 计量平台：
+
+- Access 新增 transport-private `tenant.member.count_quota_usage` child operation；调用方不能提交 tenant id，范围只来自 trusted tenant principal。
+- `TenantMemberRepository.CountQuotaMembers` 直接统计 `biz_memberships` 权威事实：`invited / active / suspended` 占用额度，`removed` 才释放额度。
+- Commercial 新增 `GET /v1/tenant/usage`，通过 C9 child capability 组合 Access meter，不跨域直接读取 Access 表，也不新增第二套 usage 持久化。
+- usage item 使用 canonical entitlement key：`module_code=access-management`、`key=tenant.members`；仅权威 meter 返回 `known=true`。
+- finite quota 只有 `known=true` 时计算 used / remaining / exhausted；unlimited quota 永不误判耗尽；没有 meter 的 quota 保持“未知”，禁止默认成 `0`。
+- usage 5xx 只降级用量展示为“未知”，仍保留 subscription / entitlement limit 权威事实；401/403/tenant conflict 继续作为认证授权边界，不做 demo fallback。
+- MySQL gate 覆盖邀请占用、暂停占用、移除释放、双租户隔离、query tenant id 不可越权和缺少 `tenant.entitlement.read` 的 403。
+- Browser gate 覆盖 used / remaining / exhausted、unsupported quota unknown、usage 5xx 显式降级、usage 403 无 fallback，以及 1366×768 / 1440×900 / 1536×1024 / 390×844 视觉证据。
+- CE-03 capability mapping 升级到 mapping version 15，显式分类 tenant usage root 与内部 meter，未绕过商业治理门禁。
 
 **Remaining EC-RI-06 slices**
 
