@@ -100,7 +100,7 @@ export const router = createRouter({
     { path: '/enterprise/organization', component: () => import('@/features/enterprise/pages/OrganizationEntryView.vue'), meta: { title: '组织架构', module: 'enterprise' } },
     { path: '/enterprise/plan', component: () => import('@/features/enterprise/pages/PlansEntryView.vue'), meta: { title: '套餐额度', module: 'enterprise' } },
     { path: '/enterprise/company', component: () => import('@/features/enterprise/pages/CompanyEntryView.vue'), meta: { title: '企业信息', module: 'enterprise' } },
-    { path: '/enterprise/logs', component: () => import('@/features/enterprise/pages/AuditLogsView.vue'), meta: { title: '操作日志', module: 'enterprise' } },
+    { path: '/enterprise/logs', component: () => import('@/features/enterprise/pages/AuditLogsEntryView.vue'), meta: { title: '操作日志', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage' } },
     {
       path: '/system/:section(general|notifications|security|integrations|dictionary)',
       component: () => import('@/features/system/pages/SettingsView.vue'),

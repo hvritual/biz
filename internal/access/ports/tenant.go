@@ -23,4 +23,5 @@ type TenantRepository interface {
 
 type TenantRepositories struct {
 	Tenant TenantRepository
+	Audit  TenantAuditRepository
 }
