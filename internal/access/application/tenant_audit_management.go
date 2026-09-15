@@ -17,12 +17,12 @@ import (
 var ErrInvalidTenantAuditRequest = errors.New("access: invalid tenant audit request")
 
 type TenantAuditManagementService struct {
-	repositories requestscope.RepositoryFactory[ports.TenantAuditRepositories]
+	repositories requestscope.RepositoryFactory[ports.TenantRepositories]
 }
 
-func NewTenantAuditManagementService(repositories requestscope.RepositoryFactory[ports.TenantAuditRepositories]) (*TenantAuditManagementService, error) {
+func NewTenantAuditManagementService(repositories requestscope.RepositoryFactory[ports.TenantRepositories]) (*TenantAuditManagementService, error) {
 	if repositories == nil {
-		return nil, errors.New("access: tenant audit repository factory is required")
+		return nil, errors.New("access: tenant repository factory is required for audit")
 	}
 	return &TenantAuditManagementService{repositories: repositories}, nil
 }
@@ -36,7 +36,7 @@ func (service *TenantAuditManagementService) ListTenantAuditRecords(ctx context.
 	if err != nil {
 		return nil, err
 	}
-	records, total, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantAuditRepositories]) (auditPage, error) {
+	records, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRepositories]) (auditPage, error) {
 		items, count, err := scope.Repositories().Audit.ListAuditRecords(scope.Context(), tenantID, filter)
 		return auditPage{records: items, total: count}, err
 	})
@@ -59,7 +59,7 @@ func (service *TenantAuditManagementService) GetTenantAuditRecord(ctx context.Co
 	if err != nil {
 		return nil, err
 	}
-	record, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantAuditRepositories]) (domain.AuditRecord, error) {
+	record, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRepositories]) (domain.AuditRecord, error) {
 		return scope.Repositories().Audit.GetAuditRecord(scope.Context(), tenantID, strings.TrimSpace(request.GetAuditId()))
 	})
 	if err != nil {
@@ -77,7 +77,7 @@ func (service *TenantAuditManagementService) ExportTenantAuditRecords(ctx contex
 	if err != nil {
 		return nil, err
 	}
-	page, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantAuditRepositories]) (auditPage, error) {
+	page, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRepositories]) (auditPage, error) {
 		records, total, err := scope.Repositories().Audit.ListAuditRecords(scope.Context(), tenantID, filter)
 		return auditPage{records: records, total: total}, err
 	})
