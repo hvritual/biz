@@ -16,6 +16,7 @@ import {
   inviteEnterpriseMember,
   memberRequestId,
   memberRoleRequestId,
+  memberRuntimeError,
   readEnterpriseMemberSession,
   removeEnterpriseMember,
   revokeEnterpriseMemberRole,
@@ -102,6 +103,31 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   let lastPersisted = JSON.stringify(snapshot.value)
   let activeDomains: EnterpriseDomain[] = []
   let companyMutation: { tenantId: string; signature: string; key: string } | null = null
+  let memberMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
+
+  function memberMutationSignature(draft: Member, action: MemberAction, expectedVersion: number) {
+    return JSON.stringify({
+      action,
+      expectedVersion,
+      id: draft.id,
+      email: draft.email.trim().toLowerCase(),
+      name: draft.name.trim(),
+      phone: draft.phone.trim(),
+      employeeId: draft.employeeId.trim(),
+      departmentId: draft.departmentId,
+      position: draft.position.trim(),
+      roleIds: [...draft.roleIds].sort(),
+      scope: draft.scope,
+    })
+  }
+
+  function memberMutationKey(signature: string, slot: string, create: () => string) {
+    if (!memberMutation || memberMutation.tenantId !== tenantId.value || memberMutation.signature !== signature) {
+      memberMutation = { tenantId: tenantId.value, signature, keys: {} }
+    }
+    memberMutation.keys[slot] ??= create()
+    return memberMutation.keys[slot]!
+  }
 
   function applySourceState(state: EnterpriseSourceState, domains = state.loadedDomains, replace = false) {
     tenantId.value = state.tenantId
@@ -156,6 +182,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       const state = await dataSource.switchTenant(id, activeDomains)
       applySourceState(state, activeDomains, true)
       companyMutation = null
+      memberMutation = null
       ready.value = true
     } catch (error) {
       sourceError.value = errorMessage(error)
@@ -260,6 +287,9 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
 
   async function saveMember(draft: Member, action: MemberAction, expectedVersion: number) {
     const current = members.value.find((member) => member.id === draft.id)
+    if (!previewMode && current && action === 'edit' && draft.email.trim().toLowerCase() !== current.email.trim().toLowerCase()) {
+      throw new Error('登录邮箱由成员关系与身份服务管理，当前成员资料接口不支持修改。')
+    }
     if (current && current.version !== expectedVersion) throw new Error('成员资料已被其他操作修改，请重新打开后重试。')
     if (current) {
       const error = memberActionError(action, current, members.value, roles.value, draft.roleIds)
@@ -296,67 +326,96 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       return
     }
 
-    const trusted = await stableMemberSession()
-    if (action === 'role') {
-      if (!current) throw new Error('成员不存在。')
-      if (draft.scope !== current.scope) {
-        throw new Error('真实服务的数据范围由角色权限派生，当前不支持按成员单独覆盖数据范围。')
-      }
-      const add = draft.roleIds.filter((roleId) => !current.roleIds.includes(roleId))
-      const remove = current.roleIds.filter((roleId) => !draft.roleIds.includes(roleId))
-      for (const roleId of add) {
-        await assignEnterpriseMemberRole(trusted, current.id, roleId, memberRoleRequestId('assign'))
-      }
-      for (const roleId of remove) {
-        await revokeEnterpriseMemberRole(trusted, current.id, roleId, memberRoleRequestId('revoke'))
-      }
-      await getEnterpriseMember(trusted, current.id)
-      await refresh()
-      return
-    }
+    const signature = memberMutationSignature(draft, action, expectedVersion)
+    const key = (slot: string, create: () => string) => memberMutationKey(signature, slot, create)
 
-    if (action === 'create' || action === 'invite') {
-      let receipt = await inviteEnterpriseMember(trusted, draft.email, memberRequestId('invite'))
-      receipt = await updateEnterpriseMemberProfile(
-        trusted,
-        receipt,
-        {
-          name: draft.name,
-          phone: draft.phone,
-          employeeId: draft.employeeId,
-          position: draft.position,
-          departmentId: draft.departmentId,
-        },
-        memberRequestId('profile'),
-      )
-      for (const roleId of draft.roleIds) {
-        await assignEnterpriseMemberRole(trusted, receipt.userId, roleId, memberRoleRequestId('assign'))
+    try {
+      const trusted = await stableMemberSession()
+      if (action === 'role') {
+        if (!current) throw new Error('成员不存在。')
+        if (draft.scope !== current.scope) {
+          throw new Error('真实服务的数据范围由角色权限派生，当前不支持按成员单独覆盖数据范围。')
+        }
+        const add = draft.roleIds.filter((roleId) => !current.roleIds.includes(roleId))
+        const remove = current.roleIds.filter((roleId) => !draft.roleIds.includes(roleId))
+        for (const roleId of add) {
+          await assignEnterpriseMemberRole(
+            trusted,
+            current.id,
+            roleId,
+            key(`role-assign-${roleId}`, () => memberRoleRequestId('assign')),
+          )
+        }
+        for (const roleId of remove) {
+          await revokeEnterpriseMemberRole(
+            trusted,
+            current.id,
+            roleId,
+            key(`role-revoke-${roleId}`, () => memberRoleRequestId('revoke')),
+          )
+        }
+        await getEnterpriseMember(trusted, current.id)
+        await refresh(['members', 'roles', 'departments'])
+        memberMutation = null
+        return
       }
-      await getEnterpriseMember(trusted, receipt.userId)
-      await refresh()
-      return
-    }
 
-    if (action === 'edit') {
-      if (!current) throw new Error('成员不存在。')
-      const receipt = await updateEnterpriseMemberProfile(
-        trusted,
-        asServerMember(current),
-        {
-          name: draft.name,
-          phone: draft.phone,
-          employeeId: draft.employeeId,
-          position: draft.position,
-          departmentId: draft.departmentId,
-        },
-        memberRequestId('profile'),
-      )
-      await getEnterpriseMember(trusted, receipt.userId)
-      await refresh()
-      return
-    }
+      if (action === 'create' || action === 'invite') {
+        let receipt = await inviteEnterpriseMember(trusted, draft.email, key('invite', () => memberRequestId('invite')))
+        receipt = await updateEnterpriseMemberProfile(
+          trusted,
+          receipt,
+          {
+            name: draft.name,
+            phone: draft.phone,
+            employeeId: draft.employeeId,
+            position: draft.position,
+            departmentId: draft.departmentId,
+          },
+          key('profile', () => memberRequestId('profile')),
+        )
+        for (const roleId of draft.roleIds) {
+          await assignEnterpriseMemberRole(
+            trusted,
+            receipt.userId,
+            roleId,
+            key(`role-assign-${roleId}`, () => memberRoleRequestId('assign')),
+          )
+        }
+        if (action === 'create') {
+          const invited = await getEnterpriseMember(trusted, receipt.userId)
+          await activateEnterpriseMember(trusted, invited, key('activate', () => memberRequestId('activate')))
+        }
+        await getEnterpriseMember(trusted, receipt.userId)
+        await refresh(['members', 'roles', 'departments'])
+        memberMutation = null
+        return
+      }
 
-    throw new Error('该成员操作不应通过资料保存入口执行。')
+      if (action === 'edit') {
+        if (!current) throw new Error('成员不存在。')
+        const receipt = await updateEnterpriseMemberProfile(
+          trusted,
+          asServerMember(current),
+          {
+            name: draft.name,
+            phone: draft.phone,
+            employeeId: draft.employeeId,
+            position: draft.position,
+            departmentId: draft.departmentId,
+          },
+          key('profile', () => memberRequestId('profile')),
+        )
+        await getEnterpriseMember(trusted, receipt.userId)
+        await refresh(['members', 'roles', 'departments'])
+        memberMutation = null
+        return
+      }
+
+      throw new Error('该成员操作不应通过资料保存入口执行。')
+    } catch (error) {
+      throw new Error(memberRuntimeError(error))
+    }
   }
 
   async function changeStatus(

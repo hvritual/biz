@@ -165,7 +165,7 @@ function exportMembers() {
     ui.toast((e as Error).message, 'error')
   }
 }
-onMounted(() => void store.ensureDomains(['members', 'roles']).catch(() => undefined))
+onMounted(() => void store.ensureDomains(['members', 'roles', 'departments']).catch(() => undefined))
 </script>
 <template>
   <div class="members-view" data-enterprise-page="members" data-ui-template="ListPage" :class="{ 'has-detail': Boolean(detail) }">
