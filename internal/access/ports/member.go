@@ -19,6 +19,7 @@ type TenantMemberRepository interface {
 	Bootstrap(context.Context, string, string, string, time.Time) (domain.Membership, error)
 	Get(context.Context, string, string) (domain.Membership, error)
 	List(context.Context, string) ([]domain.Membership, error)
+	CountQuotaMembers(context.Context, string) (uint64, error)
 	Update(context.Context, *domain.Membership, uint64) error
 }
 
