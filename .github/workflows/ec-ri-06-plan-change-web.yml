@@ -1,11 +1,22 @@
 name: ec-ri-06-plan-change-web
 
 on:
-  push:
+  pull_request:
     branches:
-      - feat/ec-ri-06-tenant-change-preview
+      - main
     paths:
-      - .github/workflows/ec-ri-06-plan-change-web.yml
+      - 'contracts/proto/commercial/v1/plan.proto'
+      - 'contracts/proto/commercial/v1/subscription_change.proto'
+      - 'internal/commercial/application/planmanagement/**'
+      - 'internal/commercial/application/subscriptionchanges/**'
+      - 'internal/architecture/ce07_plan_boundary_test.go'
+      - 'internal/architecture/ce09_subscription_change_test.go'
+      - 'internal/architecture/ce13_platform_web_session_contract_test.go'
+      - 'web/src/features/enterprise/**'
+      - 'web/src/services/enterprise/planChangeRuntime.ts'
+      - 'web/e2e/enterprise-plan-change-real.spec.ts'
+      - '.github/workflows/ec-ri-06-plan-change-web.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -21,7 +32,6 @@ jobs:
       - name: Checkout exact candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: feat/ec-ri-06-tenant-change-preview
           fetch-depth: 0
           persist-credentials: false
       - name: Setup Node
