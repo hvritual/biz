@@ -19,16 +19,33 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SubscriptionChangesApplication_PreviewSubscriptionChange_FullMethodName    = "/commercial.v1.SubscriptionChangesApplication/PreviewSubscriptionChange"
-	SubscriptionChangesApplication_ConfirmSubscriptionChange_FullMethodName    = "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange"
-	SubscriptionChangesApplication_GetSubscriptionChangePreview_FullMethodName = "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangePreview"
-	SubscriptionChangesApplication_GetSubscriptionChangeReceipt_FullMethodName = "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangeReceipt"
+	SubscriptionChangesApplication_ListMySubscriptionChangeTargets_FullMethodName = "/commercial.v1.SubscriptionChangesApplication/ListMySubscriptionChangeTargets"
+	SubscriptionChangesApplication_PreviewMySubscriptionChange_FullMethodName     = "/commercial.v1.SubscriptionChangesApplication/PreviewMySubscriptionChange"
+	SubscriptionChangesApplication_GetMySubscriptionChangePreview_FullMethodName  = "/commercial.v1.SubscriptionChangesApplication/GetMySubscriptionChangePreview"
+	SubscriptionChangesApplication_ConfirmMySubscriptionChange_FullMethodName     = "/commercial.v1.SubscriptionChangesApplication/ConfirmMySubscriptionChange"
+	SubscriptionChangesApplication_GetMySubscriptionChangeReceipt_FullMethodName  = "/commercial.v1.SubscriptionChangesApplication/GetMySubscriptionChangeReceipt"
+	SubscriptionChangesApplication_PreviewSubscriptionChange_FullMethodName       = "/commercial.v1.SubscriptionChangesApplication/PreviewSubscriptionChange"
+	SubscriptionChangesApplication_ConfirmSubscriptionChange_FullMethodName       = "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange"
+	SubscriptionChangesApplication_GetSubscriptionChangePreview_FullMethodName    = "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangePreview"
+	SubscriptionChangesApplication_GetSubscriptionChangeReceipt_FullMethodName    = "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangeReceipt"
 )
 
 // SubscriptionChangesApplicationClient is the client API for SubscriptionChangesApplication service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SubscriptionChangesApplicationClient interface {
+	// Tenant self-service target discovery exposes only published, server-eligible
+	// target versions for the current subscription sales scope.
+	ListMySubscriptionChangeTargets(ctx context.Context, in *ListMySubscriptionChangeTargetsRequest, opts ...grpc.CallOption) (*ListMySubscriptionChangeTargetsResponse, error)
+	// This creates only a short-lived decision artifact. It never confirms a
+	// change, never mutates subscription/entitlement authority and never starts provisioning.
+	PreviewMySubscriptionChange(ctx context.Context, in *PreviewMySubscriptionChangeRequest, opts ...grpc.CallOption) (*SubscriptionChangePreviewDTO, error)
+	GetMySubscriptionChangePreview(ctx context.Context, in *ReadMySubscriptionChangePreviewRequest, opts ...grpc.CallOption) (*SubscriptionChangePreviewDTO, error)
+	// Tenant confirmation is allowed only when the preview has no external price
+	// authority requirement. A price_ref remains fail-closed and must go through
+	// the existing platform commercial/payment approval path.
+	ConfirmMySubscriptionChange(ctx context.Context, in *ConfirmMySubscriptionChangeRequest, opts ...grpc.CallOption) (*SubscriptionChangeReceiptDTO, error)
+	GetMySubscriptionChangeReceipt(ctx context.Context, in *ReadMySubscriptionChangeReceiptRequest, opts ...grpc.CallOption) (*SubscriptionChangeReceiptDTO, error)
 	PreviewSubscriptionChange(ctx context.Context, in *PreviewSubscriptionChangeRequest, opts ...grpc.CallOption) (*SubscriptionChangePreviewDTO, error)
 	ConfirmSubscriptionChange(ctx context.Context, in *ConfirmSubscriptionChangeRequest, opts ...grpc.CallOption) (*SubscriptionChangeReceiptDTO, error)
 	GetSubscriptionChangePreview(ctx context.Context, in *ReadSubscriptionChangeRequest, opts ...grpc.CallOption) (*SubscriptionChangePreviewDTO, error)
@@ -41,6 +58,56 @@ type subscriptionChangesApplicationClient struct {
 
 func NewSubscriptionChangesApplicationClient(cc grpc.ClientConnInterface) SubscriptionChangesApplicationClient {
 	return &subscriptionChangesApplicationClient{cc}
+}
+
+func (c *subscriptionChangesApplicationClient) ListMySubscriptionChangeTargets(ctx context.Context, in *ListMySubscriptionChangeTargetsRequest, opts ...grpc.CallOption) (*ListMySubscriptionChangeTargetsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListMySubscriptionChangeTargetsResponse)
+	err := c.cc.Invoke(ctx, SubscriptionChangesApplication_ListMySubscriptionChangeTargets_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *subscriptionChangesApplicationClient) PreviewMySubscriptionChange(ctx context.Context, in *PreviewMySubscriptionChangeRequest, opts ...grpc.CallOption) (*SubscriptionChangePreviewDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubscriptionChangePreviewDTO)
+	err := c.cc.Invoke(ctx, SubscriptionChangesApplication_PreviewMySubscriptionChange_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *subscriptionChangesApplicationClient) GetMySubscriptionChangePreview(ctx context.Context, in *ReadMySubscriptionChangePreviewRequest, opts ...grpc.CallOption) (*SubscriptionChangePreviewDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubscriptionChangePreviewDTO)
+	err := c.cc.Invoke(ctx, SubscriptionChangesApplication_GetMySubscriptionChangePreview_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *subscriptionChangesApplicationClient) ConfirmMySubscriptionChange(ctx context.Context, in *ConfirmMySubscriptionChangeRequest, opts ...grpc.CallOption) (*SubscriptionChangeReceiptDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubscriptionChangeReceiptDTO)
+	err := c.cc.Invoke(ctx, SubscriptionChangesApplication_ConfirmMySubscriptionChange_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *subscriptionChangesApplicationClient) GetMySubscriptionChangeReceipt(ctx context.Context, in *ReadMySubscriptionChangeReceiptRequest, opts ...grpc.CallOption) (*SubscriptionChangeReceiptDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubscriptionChangeReceiptDTO)
+	err := c.cc.Invoke(ctx, SubscriptionChangesApplication_GetMySubscriptionChangeReceipt_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *subscriptionChangesApplicationClient) PreviewSubscriptionChange(ctx context.Context, in *PreviewSubscriptionChangeRequest, opts ...grpc.CallOption) (*SubscriptionChangePreviewDTO, error) {
@@ -87,6 +154,18 @@ func (c *subscriptionChangesApplicationClient) GetSubscriptionChangeReceipt(ctx 
 // All implementations should embed UnimplementedSubscriptionChangesApplicationServer
 // for forward compatibility.
 type SubscriptionChangesApplicationServer interface {
+	// Tenant self-service target discovery exposes only published, server-eligible
+	// target versions for the current subscription sales scope.
+	ListMySubscriptionChangeTargets(context.Context, *ListMySubscriptionChangeTargetsRequest) (*ListMySubscriptionChangeTargetsResponse, error)
+	// This creates only a short-lived decision artifact. It never confirms a
+	// change, never mutates subscription/entitlement authority and never starts provisioning.
+	PreviewMySubscriptionChange(context.Context, *PreviewMySubscriptionChangeRequest) (*SubscriptionChangePreviewDTO, error)
+	GetMySubscriptionChangePreview(context.Context, *ReadMySubscriptionChangePreviewRequest) (*SubscriptionChangePreviewDTO, error)
+	// Tenant confirmation is allowed only when the preview has no external price
+	// authority requirement. A price_ref remains fail-closed and must go through
+	// the existing platform commercial/payment approval path.
+	ConfirmMySubscriptionChange(context.Context, *ConfirmMySubscriptionChangeRequest) (*SubscriptionChangeReceiptDTO, error)
+	GetMySubscriptionChangeReceipt(context.Context, *ReadMySubscriptionChangeReceiptRequest) (*SubscriptionChangeReceiptDTO, error)
 	PreviewSubscriptionChange(context.Context, *PreviewSubscriptionChangeRequest) (*SubscriptionChangePreviewDTO, error)
 	ConfirmSubscriptionChange(context.Context, *ConfirmSubscriptionChangeRequest) (*SubscriptionChangeReceiptDTO, error)
 	GetSubscriptionChangePreview(context.Context, *ReadSubscriptionChangeRequest) (*SubscriptionChangePreviewDTO, error)
@@ -100,6 +179,21 @@ type SubscriptionChangesApplicationServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSubscriptionChangesApplicationServer struct{}
 
+func (UnimplementedSubscriptionChangesApplicationServer) ListMySubscriptionChangeTargets(context.Context, *ListMySubscriptionChangeTargetsRequest) (*ListMySubscriptionChangeTargetsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListMySubscriptionChangeTargets not implemented")
+}
+func (UnimplementedSubscriptionChangesApplicationServer) PreviewMySubscriptionChange(context.Context, *PreviewMySubscriptionChangeRequest) (*SubscriptionChangePreviewDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method PreviewMySubscriptionChange not implemented")
+}
+func (UnimplementedSubscriptionChangesApplicationServer) GetMySubscriptionChangePreview(context.Context, *ReadMySubscriptionChangePreviewRequest) (*SubscriptionChangePreviewDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetMySubscriptionChangePreview not implemented")
+}
+func (UnimplementedSubscriptionChangesApplicationServer) ConfirmMySubscriptionChange(context.Context, *ConfirmMySubscriptionChangeRequest) (*SubscriptionChangeReceiptDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method ConfirmMySubscriptionChange not implemented")
+}
+func (UnimplementedSubscriptionChangesApplicationServer) GetMySubscriptionChangeReceipt(context.Context, *ReadMySubscriptionChangeReceiptRequest) (*SubscriptionChangeReceiptDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetMySubscriptionChangeReceipt not implemented")
+}
 func (UnimplementedSubscriptionChangesApplicationServer) PreviewSubscriptionChange(context.Context, *PreviewSubscriptionChangeRequest) (*SubscriptionChangePreviewDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method PreviewSubscriptionChange not implemented")
 }
@@ -130,6 +224,96 @@ func RegisterSubscriptionChangesApplicationServer(s grpc.ServiceRegistrar, srv S
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&SubscriptionChangesApplication_ServiceDesc, srv)
+}
+
+func _SubscriptionChangesApplication_ListMySubscriptionChangeTargets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListMySubscriptionChangeTargetsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionChangesApplicationServer).ListMySubscriptionChangeTargets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionChangesApplication_ListMySubscriptionChangeTargets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionChangesApplicationServer).ListMySubscriptionChangeTargets(ctx, req.(*ListMySubscriptionChangeTargetsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SubscriptionChangesApplication_PreviewMySubscriptionChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PreviewMySubscriptionChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionChangesApplicationServer).PreviewMySubscriptionChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionChangesApplication_PreviewMySubscriptionChange_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionChangesApplicationServer).PreviewMySubscriptionChange(ctx, req.(*PreviewMySubscriptionChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SubscriptionChangesApplication_GetMySubscriptionChangePreview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReadMySubscriptionChangePreviewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionChangesApplicationServer).GetMySubscriptionChangePreview(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionChangesApplication_GetMySubscriptionChangePreview_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionChangesApplicationServer).GetMySubscriptionChangePreview(ctx, req.(*ReadMySubscriptionChangePreviewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SubscriptionChangesApplication_ConfirmMySubscriptionChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmMySubscriptionChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionChangesApplicationServer).ConfirmMySubscriptionChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionChangesApplication_ConfirmMySubscriptionChange_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionChangesApplicationServer).ConfirmMySubscriptionChange(ctx, req.(*ConfirmMySubscriptionChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SubscriptionChangesApplication_GetMySubscriptionChangeReceipt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReadMySubscriptionChangeReceiptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionChangesApplicationServer).GetMySubscriptionChangeReceipt(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionChangesApplication_GetMySubscriptionChangeReceipt_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionChangesApplicationServer).GetMySubscriptionChangeReceipt(ctx, req.(*ReadMySubscriptionChangeReceiptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _SubscriptionChangesApplication_PreviewSubscriptionChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -211,6 +395,26 @@ var SubscriptionChangesApplication_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "commercial.v1.SubscriptionChangesApplication",
 	HandlerType: (*SubscriptionChangesApplicationServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListMySubscriptionChangeTargets",
+			Handler:    _SubscriptionChangesApplication_ListMySubscriptionChangeTargets_Handler,
+		},
+		{
+			MethodName: "PreviewMySubscriptionChange",
+			Handler:    _SubscriptionChangesApplication_PreviewMySubscriptionChange_Handler,
+		},
+		{
+			MethodName: "GetMySubscriptionChangePreview",
+			Handler:    _SubscriptionChangesApplication_GetMySubscriptionChangePreview_Handler,
+		},
+		{
+			MethodName: "ConfirmMySubscriptionChange",
+			Handler:    _SubscriptionChangesApplication_ConfirmMySubscriptionChange_Handler,
+		},
+		{
+			MethodName: "GetMySubscriptionChangeReceipt",
+			Handler:    _SubscriptionChangesApplication_GetMySubscriptionChangeReceipt_Handler,
+		},
 		{
 			MethodName: "PreviewSubscriptionChange",
 			Handler:    _SubscriptionChangesApplication_PreviewSubscriptionChange_Handler,

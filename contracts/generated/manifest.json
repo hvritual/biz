@@ -2197,6 +2197,43 @@
       }
     },
     {
+      "name": "ConfirmMySubscriptionChangeRequest",
+      "fullName": "commercial.v1.ConfirmMySubscriptionChangeRequest",
+      "fields": [
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "preview_hash",
+          "jsonName": "previewHash",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "ConfirmSubscriptionChangeRequest",
       "fullName": "commercial.v1.ConfirmSubscriptionChangeRequest",
       "fields": [
@@ -3278,6 +3315,38 @@
       }
     },
     {
+      "name": "ListMySubscriptionChangeTargetsRequest",
+      "fullName": "commercial.v1.ListMySubscriptionChangeTargetsRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListMySubscriptionChangeTargetsResponse",
+      "fullName": "commercial.v1.ListMySubscriptionChangeTargetsResponse",
+      "fields": [
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "targets",
+          "jsonName": "targets",
+          "number": 2,
+          "kind": "message",
+          "type": "commercial.v1.PlanVersionDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "ListPlanVersionsRequest",
       "fullName": "commercial.v1.ListPlanVersionsRequest",
       "fields": [
@@ -3480,6 +3549,39 @@
           "number": 2,
           "kind": "scalar",
           "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListTenantChangeTargetsRequest",
+      "fullName": "commercial.v1.ListTenantChangeTargetsRequest",
+      "fields": [
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListTenantChangeTargetsResponse",
+      "fullName": "commercial.v1.ListTenantChangeTargetsResponse",
+      "fields": [
+        {
+          "name": "targets",
+          "jsonName": "targets",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.PlanVersionDTO",
+          "repeated": true
         }
       ],
       "dto": {
@@ -4015,6 +4117,57 @@
           "number": 5,
           "kind": "scalar",
           "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "PreviewMySubscriptionChangeRequest",
+      "fullName": "commercial.v1.PreviewMySubscriptionChangeRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "action",
+          "jsonName": "action",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "target_plan_code",
+          "jsonName": "targetPlanCode",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "target_plan_version",
+          "jsonName": "targetPlanVersion",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "effective_at",
+          "jsonName": "effectiveAt",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
@@ -4659,6 +4812,38 @@
       }
     },
     {
+      "name": "ReadMySubscriptionChangePreviewRequest",
+      "fullName": "commercial.v1.ReadMySubscriptionChangePreviewRequest",
+      "fields": [
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ReadMySubscriptionChangeReceiptRequest",
+      "fullName": "commercial.v1.ReadMySubscriptionChangeReceiptRequest",
+      "fields": [
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "ReadProvisioningTaskRequest",
       "fullName": "commercial.v1.ReadProvisioningTaskRequest",
       "fields": [
@@ -4754,6 +4939,36 @@
           "name": "failure_code",
           "jsonName": "failureCode",
           "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ResolveTenantChangeTargetRequest",
+      "fullName": "commercial.v1.ResolveTenantChangeTargetRequest",
+      "fields": [
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 3,
           "kind": "scalar",
           "type": "string"
         }
@@ -8454,6 +8669,72 @@
         "name": "plan_management",
         "requires": [
           "commercial/module_catalog"
+        ],
+        "operations": [
+          {
+            "id": "commercial.plan.change_target.list",
+            "useCase": "list_tenant_change_targets",
+            "permissions": [
+              "commercial.catalog.read",
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.ListTenantChangeTargetsRequest",
+            "responseType": "commercial.v1.ListTenantChangeTargetsResponse",
+            "applicationMethod": "ListTenantChangeTargets"
+          },
+          {
+            "id": "commercial.plan.change_target.resolve",
+            "useCase": "resolve_tenant_change_target",
+            "permissions": [
+              "commercial.catalog.read",
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.ResolveTenantChangeTargetRequest",
+            "responseType": "commercial.v1.PlanEligibilityDTO",
+            "applicationMethod": "ResolveTenantChangeTarget"
+          },
+          {
+            "id": "commercial.plan.subscription_snapshot",
+            "useCase": "read_tenant_subscription_plan_version",
+            "permissions": [
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.GetPlanVersionRequest",
+            "responseType": "commercial.v1.PlanVersionDTO",
+            "applicationMethod": "ReadTenantSubscriptionPlanVersion"
+          }
         ]
       },
       "methods": [
@@ -9292,6 +9573,56 @@
       },
       "methods": [
         {
+          "name": "ConfirmMySubscriptionChange",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.ConfirmMySubscriptionChange",
+          "request": "commercial.v1.ConfirmMySubscriptionChangeRequest",
+          "response": "commercial.v1.SubscriptionChangeReceiptDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/subscription/changes/{change_id}/confirm",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.change.confirm_my",
+            "useCase": "confirm_my_subscription_change",
+            "permissions": [
+              "commercial.catalog.read",
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog",
+              "commercial.plan.change_target.resolve",
+              "commercial.plan.subscription_snapshot"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.change.confirm_my",
+            "permissions": [
+              "commercial.catalog.read",
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "ConfirmSubscriptionChange",
           "fullName": "commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange",
           "request": "commercial.v1.ConfirmSubscriptionChangeRequest",
@@ -9337,6 +9668,88 @@
               "platform.tenant.read"
             ],
             "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "GetMySubscriptionChangePreview",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangePreview",
+          "request": "commercial.v1.ReadMySubscriptionChangePreviewRequest",
+          "response": "commercial.v1.SubscriptionChangePreviewDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/subscription/change-previews/{change_id}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.change.preview_my.get",
+            "useCase": "get_my_subscription_change_preview",
+            "permissions": [
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.change.preview_my.get",
+            "permissions": [
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "GetMySubscriptionChangeReceipt",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangeReceipt",
+          "request": "commercial.v1.ReadMySubscriptionChangeReceiptRequest",
+          "response": "commercial.v1.SubscriptionChangeReceiptDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/subscription/changes/{change_id}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.change.get_my",
+            "useCase": "get_my_subscription_change_receipt",
+            "permissions": [
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.change.get_my",
+            "permissions": [
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
             "authentication": [
               "api-key",
               "web-session"
@@ -9419,6 +9832,103 @@
               "platform.tenant.read"
             ],
             "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListMySubscriptionChangeTargets",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChangeTargets",
+          "request": "commercial.v1.ListMySubscriptionChangeTargetsRequest",
+          "response": "commercial.v1.ListMySubscriptionChangeTargetsResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/subscription/change-targets"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.change.targets_my",
+            "useCase": "list_my_subscription_change_targets",
+            "permissions": [
+              "commercial.catalog.read",
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "commercial.plan.change_target.list"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.change.targets_my",
+            "permissions": [
+              "commercial.catalog.read",
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "PreviewMySubscriptionChange",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.PreviewMySubscriptionChange",
+          "request": "commercial.v1.PreviewMySubscriptionChangeRequest",
+          "response": "commercial.v1.SubscriptionChangePreviewDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/subscription/change-previews",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.change.preview_my",
+            "useCase": "preview_my_subscription_change",
+            "permissions": [
+              "commercial.catalog.read",
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "commercial.module.plan_catalog",
+              "commercial.plan.change_target.resolve",
+              "commercial.plan.subscription_snapshot"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.change.preview_my",
+            "permissions": [
+              "commercial.catalog.read",
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
             "authentication": [
               "api-key",
               "web-session"

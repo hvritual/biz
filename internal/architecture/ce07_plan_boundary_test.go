@@ -51,7 +51,7 @@ func TestCE07PlanOwnerAndNoHardDelete(t *testing.T) {
 	private := map[string]bool{
 		"commercial.plan.subscription_snapshot": false,
 		"commercial.plan.change_target.resolve": false,
-		"commercial.plan.change_target.list": false,
+		"commercial.plan.change_target.list":    false,
 	}
 	for _, op := range doc.Operations {
 		if !strings.HasPrefix(op.OperationID, "commercial.plan.") {

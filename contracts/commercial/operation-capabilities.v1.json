@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "15",
+  "mapping_version": "17",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -142,6 +142,32 @@
       "exemption_reason": "平台模块目录管理不依赖租户购买权益；仍由 platform.module.* 权限保护。"
     },
     {
+      "operation_id": "commercial.plan.change_target.list",
+      "classification": "foundation_exempt",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/tenant_change.go#ListTenantChangeTargets"
+        }
+      ],
+      "exemption_reason": "EC-RI-06 transport-private tenant target discovery. It returns only latest published eligible versions for the server-owned sales scope and exposes no draft management surface."
+    },
+    {
+      "operation_id": "commercial.plan.change_target.resolve",
+      "classification": "foundation_exempt",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/tenant_change.go#ResolveTenantChangeTarget"
+        }
+      ],
+      "exemption_reason": "EC-RI-06 transport-private target resolver. The trusted parent supplies the current subscription sales scope; only published eligible plans can pass."
+    },
+    {
       "operation_id": "commercial.plan.clone",
       "classification": "platform_management",
       "capability_codes": [],
@@ -226,6 +252,13 @@
         }
       ],
       "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access."
+    },
+    {
+      "operation_id": "commercial.plan.subscription_snapshot",
+      "classification": "foundation_exempt",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "EC-RI-06 transport-private exact current-plan reader. It is reachable only as a C9 child from authenticated tenant subscription-change roots and has no HTTP or Web Session transport."
     },
     {
       "operation_id": "commercial.plan.update",
@@ -377,11 +410,42 @@
       "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory."
     },
     {
+      "operation_id": "commercial.subscription.change.confirm_my",
+      "classification": "recovery",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.plan.subscription_snapshot",
+          "mode": "always",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go#confirm"
+        },
+        {
+          "operation_id": "commercial.plan.change_target.resolve",
+          "mode": "conditional",
+          "condition": "preview action is SWITCH or RENEW; STOP_RENEWAL has no target lookup",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go#confirm"
+        },
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#captureWithPlanAuthority"
+        }
+      ],
+      "exemption_reason": "EC-RI-06 tenant confirmation fully revalidates the preview and current authorities. Any target with price_ref fails closed with SUBSCRIPTION_CHANGE_EXTERNAL_APPROVAL_REQUIRED; no client field can assert payment or approval."
+    },
+    {
       "operation_id": "commercial.subscription.change.get",
       "classification": "platform_management",
       "capability_codes": [],
       "children": [],
       "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory."
+    },
+    {
+      "operation_id": "commercial.subscription.change.get_my",
+      "classification": "recovery",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "EC-RI-06 trusted-tenant receipt readback for APPLIED, SCHEDULED or PROVISIONING lifecycle state; it performs no mutation."
     },
     {
       "operation_id": "commercial.subscription.change.preparation.cancel",
@@ -448,6 +512,50 @@
       "capability_codes": [],
       "children": [],
       "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory."
+    },
+    {
+      "operation_id": "commercial.subscription.change.preview_my",
+      "classification": "recovery",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.plan.subscription_snapshot",
+          "mode": "always",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#captureWithPlanAuthority"
+        },
+        {
+          "operation_id": "commercial.plan.change_target.resolve",
+          "mode": "conditional",
+          "condition": "action is SWITCH or RENEW; STOP_RENEWAL has no target lookup",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#captureWithPlanAuthority"
+        },
+        {
+          "operation_id": "commercial.module.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#captureWithPlanAuthority"
+        }
+      ],
+      "exemption_reason": "EC-RI-06 tenant decision preview. It persists only an expiring preview artifact, does not mutate subscription or entitlement authority, and remains protected by tenant.subscription.manage."
+    },
+    {
+      "operation_id": "commercial.subscription.change.preview_my.get",
+      "classification": "recovery",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "EC-RI-06 actor-and-tenant-bound readback of an expiring self-service preview artifact; it performs no commercial mutation."
+    },
+    {
+      "operation_id": "commercial.subscription.change.targets_my",
+      "classification": "recovery",
+      "capability_codes": [],
+      "children": [
+        {
+          "operation_id": "commercial.plan.change_target.list",
+          "mode": "always",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/selfservice.go#ListMySubscriptionChangeTargets"
+        }
+      ],
+      "exemption_reason": "EC-RI-06 authenticated current-tenant change-target projection. IAM tenant.subscription.manage remains mandatory and target discovery cannot grant target-plan capabilities."
     },
     {
       "operation_id": "commercial.subscription.get",

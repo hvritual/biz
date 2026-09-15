@@ -91,7 +91,12 @@ func TestCE09DeclaredChangeSecurityAndTransportAreExact(t *testing.T) {
 
 	descriptor := v1.File_commercial_v1_subscription_change_proto.Services().ByName("SubscriptionChangesApplication")
 	if descriptor == nil || descriptor.Methods().Len() != 9 {
-		t.Fatalf("subscription change RPC count=%v, want 9", func() int { if descriptor == nil { return -1 }; return descriptor.Methods().Len() }())
+		t.Fatalf("subscription change RPC count=%v, want 9", func() int {
+			if descriptor == nil {
+				return -1
+			}
+			return descriptor.Methods().Len()
+		}())
 	}
 	for _, name := range []protoreflect.Name{"CompletePreparedSubscriptionChange", "CancelPreparedSubscriptionChange"} {
 		if descriptor.Methods().ByName(name) != nil {

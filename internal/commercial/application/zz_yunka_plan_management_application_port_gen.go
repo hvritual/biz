@@ -15,7 +15,10 @@ type PlanManagementApplication interface {
 	GetPlanVersion(context.Context, *commercialv1.GetPlanVersionRequest) (*commercialv1.PlanVersionDTO, error)
 	ListPlanVersions(context.Context, *commercialv1.ListPlanVersionsRequest) (*commercialv1.ListPlanVersionsResponse, error)
 	ListPlans(context.Context, *commercialv1.ListPlansRequest) (*commercialv1.ListPlansResponse, error)
+	ListTenantChangeTargets(context.Context, *commercialv1.ListTenantChangeTargetsRequest) (*commercialv1.ListTenantChangeTargetsResponse, error)
 	PublishPlanVersion(context.Context, *commercialv1.ChangePlanVersionStateRequest) (*commercialv1.PlanVersionDTO, error)
+	ReadTenantSubscriptionPlanVersion(context.Context, *commercialv1.GetPlanVersionRequest) (*commercialv1.PlanVersionDTO, error)
+	ResolveTenantChangeTarget(context.Context, *commercialv1.ResolveTenantChangeTargetRequest) (*commercialv1.PlanEligibilityDTO, error)
 	RetirePlanVersion(context.Context, *commercialv1.ChangePlanVersionStateRequest) (*commercialv1.PlanVersionDTO, error)
 	UpdatePlanDraft(context.Context, *commercialv1.UpdatePlanDraftRequest) (*commercialv1.PlanVersionDTO, error)
 }

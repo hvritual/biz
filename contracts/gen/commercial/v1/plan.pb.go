@@ -1252,6 +1252,156 @@ func (x *PlanEligibilityDTO) GetVersion() *PlanVersionDTO {
 	return nil
 }
 
+// Transport-private tenant change helpers. These messages have no HTTP binding;
+// the trusted subscription-change root supplies sales_scope and current plan.
+type ListTenantChangeTargetsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SalesScope    string                 `protobuf:"bytes,1,opt,name=sales_scope,json=salesScope,proto3" json:"sales_scope,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListTenantChangeTargetsRequest) Reset() {
+	*x = ListTenantChangeTargetsRequest{}
+	mi := &file_commercial_v1_plan_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTenantChangeTargetsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTenantChangeTargetsRequest) ProtoMessage() {}
+
+func (x *ListTenantChangeTargetsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_plan_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTenantChangeTargetsRequest.ProtoReflect.Descriptor instead.
+func (*ListTenantChangeTargetsRequest) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ListTenantChangeTargetsRequest) GetSalesScope() string {
+	if x != nil {
+		return x.SalesScope
+	}
+	return ""
+}
+
+type ListTenantChangeTargetsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Targets       []*PlanVersionDTO      `protobuf:"bytes,1,rep,name=targets,proto3" json:"targets,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListTenantChangeTargetsResponse) Reset() {
+	*x = ListTenantChangeTargetsResponse{}
+	mi := &file_commercial_v1_plan_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTenantChangeTargetsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTenantChangeTargetsResponse) ProtoMessage() {}
+
+func (x *ListTenantChangeTargetsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_plan_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTenantChangeTargetsResponse.ProtoReflect.Descriptor instead.
+func (*ListTenantChangeTargetsResponse) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ListTenantChangeTargetsResponse) GetTargets() []*PlanVersionDTO {
+	if x != nil {
+		return x.Targets
+	}
+	return nil
+}
+
+type ResolveTenantChangeTargetRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PlanCode      string                 `protobuf:"bytes,1,opt,name=plan_code,json=planCode,proto3" json:"plan_code,omitempty"`
+	Version       uint64                 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	SalesScope    string                 `protobuf:"bytes,3,opt,name=sales_scope,json=salesScope,proto3" json:"sales_scope,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveTenantChangeTargetRequest) Reset() {
+	*x = ResolveTenantChangeTargetRequest{}
+	mi := &file_commercial_v1_plan_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveTenantChangeTargetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveTenantChangeTargetRequest) ProtoMessage() {}
+
+func (x *ResolveTenantChangeTargetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_plan_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveTenantChangeTargetRequest.ProtoReflect.Descriptor instead.
+func (*ResolveTenantChangeTargetRequest) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_plan_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *ResolveTenantChangeTargetRequest) GetPlanCode() string {
+	if x != nil {
+		return x.PlanCode
+	}
+	return ""
+}
+
+func (x *ResolveTenantChangeTargetRequest) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *ResolveTenantChangeTargetRequest) GetSalesScope() string {
+	if x != nil {
+		return x.SalesScope
+	}
+	return ""
+}
+
 var File_commercial_v1_plan_proto protoreflect.FileDescriptor
 
 const file_commercial_v1_plan_proto_rawDesc = "" +
@@ -1365,7 +1515,17 @@ const file_commercial_v1_plan_proto_rawDesc = "" +
 	"\x12PlanEligibilityDTO\x12\x1a\n" +
 	"\beligible\x18\x01 \x01(\bR\beligible\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x127\n" +
-	"\aversion\x18\x03 \x01(\v2\x1d.commercial.v1.PlanVersionDTOR\aversion2\xc2\x13\n" +
+	"\aversion\x18\x03 \x01(\v2\x1d.commercial.v1.PlanVersionDTOR\aversion\"A\n" +
+	"\x1eListTenantChangeTargetsRequest\x12\x1f\n" +
+	"\vsales_scope\x18\x01 \x01(\tR\n" +
+	"salesScope\"Z\n" +
+	"\x1fListTenantChangeTargetsResponse\x127\n" +
+	"\atargets\x18\x01 \x03(\v2\x1d.commercial.v1.PlanVersionDTOR\atargets\"z\n" +
+	" ResolveTenantChangeTargetRequest\x12\x1b\n" +
+	"\tplan_code\x18\x01 \x01(\tR\bplanCode\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\x04R\aversion\x12\x1f\n" +
+	"\vsales_scope\x18\x03 \x01(\tR\n" +
+	"salesScope2\xce\x19\n" +
 	"\x19PlanManagementApplication\x12\x82\x02\n" +
 	"\x0fCreatePlanDraft\x12%.commercial.v1.CreatePlanDraftRequest\x1a\x1d.commercial.v1.PlanVersionDTO\"\xa8\x01\xe2\xf3\x18\x86\x01\n" +
 	"\x16commercial.plan.create\x12\x11create_plan_draft\x1a\x14platform.plan.manage\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/platform/plans\x12\x9c\x02\n" +
@@ -1385,8 +1545,11 @@ const file_commercial_v1_plan_proto_rawDesc = "" +
 	"\x10ListPlanVersions\x12&.commercial.v1.ListPlanVersionsRequest\x1a'.commercial.v1.ListPlanVersionsResponse\"{\xe2\xf3\x18H\n" +
 	"\x14commercial.plan.list\x12\x12list_plan_versions\x1a\x12platform.plan.read2\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02)\x12'/v1/platform/plans/{plan_code}/versions\x12\xc3\x02\n" +
 	"\x14CheckPlanEligibility\x12*.commercial.v1.CheckPlanEligibilityRequest\x1a!.commercial.v1.PlanEligibilityDTO\"\xdb\x01\xe2\xf3\x18\x8e\x01\n" +
-	"\x1bcommercial.plan.eligibility\x12\x16check_plan_eligibility\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x01\x82\xd3\xe4\x93\x02B:\x01*\"=/v1/platform/plans/{plan_code}/versions/{version}/eligibility\x1a0\xda\xf3\x18,\n" +
-	"\x0fplan_management\x12\x19commercial/module_catalogBV\xca\xf3\x18\x10\n" +
+	"\x1bcommercial.plan.eligibility\x12\x16check_plan_eligibility\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x01\x82\xd3\xe4\x93\x02B:\x01*\"=/v1/platform/plans/{plan_code}/versions/{version}/eligibility\x1a\xbb\x06\xda\xf3\x18\xb6\x06\n" +
+	"\x0fplan_management\x12\x19commercial/module_catalog\x1a\xd9\x01\n" +
+	"%commercial.plan.subscription_snapshot\x12%read_tenant_subscription_plan_version\x1a\x1atenant.subscription.manage2\x01\x02R\x04\b\x02\x10\x01Z#commercial.v1.GetPlanVersionRequestb\x1ccommercial.v1.PlanVersionDTOj!ReadTenantSubscriptionPlanVersion\x1a\x92\x02\n" +
+	"%commercial.plan.change_target.resolve\x12\x1cresolve_tenant_change_target\x1a\x1atenant.subscription.manage\x1a\x17commercial.catalog.read2\x01\x02B\x1ecommercial.module.plan_catalogH\x01R\x04\b\x02\x10\x01Z.commercial.v1.ResolveTenantChangeTargetRequestb commercial.v1.PlanEligibilityDTOj\x19ResolveTenantChangeTarget\x1a\x96\x02\n" +
+	"\"commercial.plan.change_target.list\x12\x1alist_tenant_change_targets\x1a\x1atenant.subscription.manage\x1a\x17commercial.catalog.read2\x01\x02B\x1ecommercial.module.plan_catalogH\x01R\x04\b\x02\x10\x01Z,commercial.v1.ListTenantChangeTargetsRequestb-commercial.v1.ListTenantChangeTargetsResponsej\x17ListTenantChangeTargetsBV\xca\xf3\x18\x10\n" +
 	"\n" +
 	"commercial\x12\x02v1Z@github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1b\x06proto3"
 
@@ -1402,25 +1565,28 @@ func file_commercial_v1_plan_proto_rawDescGZIP() []byte {
 	return file_commercial_v1_plan_proto_rawDescData
 }
 
-var file_commercial_v1_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_commercial_v1_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_commercial_v1_plan_proto_goTypes = []any{
-	(*PlanQuota)(nil),                     // 0: commercial.v1.PlanQuota
-	(*PlanField)(nil),                     // 1: commercial.v1.PlanField
-	(*PlanModule)(nil),                    // 2: commercial.v1.PlanModule
-	(*PlanTerms)(nil),                     // 3: commercial.v1.PlanTerms
-	(*PlanVersionDTO)(nil),                // 4: commercial.v1.PlanVersionDTO
-	(*PlanCatalogEntryDTO)(nil),           // 5: commercial.v1.PlanCatalogEntryDTO
-	(*CreatePlanDraftRequest)(nil),        // 6: commercial.v1.CreatePlanDraftRequest
-	(*CreatePlanVersionRequest)(nil),      // 7: commercial.v1.CreatePlanVersionRequest
-	(*UpdatePlanDraftRequest)(nil),        // 8: commercial.v1.UpdatePlanDraftRequest
-	(*ChangePlanVersionStateRequest)(nil), // 9: commercial.v1.ChangePlanVersionStateRequest
-	(*GetPlanVersionRequest)(nil),         // 10: commercial.v1.GetPlanVersionRequest
-	(*ListPlansRequest)(nil),              // 11: commercial.v1.ListPlansRequest
-	(*ListPlansResponse)(nil),             // 12: commercial.v1.ListPlansResponse
-	(*ListPlanVersionsRequest)(nil),       // 13: commercial.v1.ListPlanVersionsRequest
-	(*ListPlanVersionsResponse)(nil),      // 14: commercial.v1.ListPlanVersionsResponse
-	(*CheckPlanEligibilityRequest)(nil),   // 15: commercial.v1.CheckPlanEligibilityRequest
-	(*PlanEligibilityDTO)(nil),            // 16: commercial.v1.PlanEligibilityDTO
+	(*PlanQuota)(nil),                        // 0: commercial.v1.PlanQuota
+	(*PlanField)(nil),                        // 1: commercial.v1.PlanField
+	(*PlanModule)(nil),                       // 2: commercial.v1.PlanModule
+	(*PlanTerms)(nil),                        // 3: commercial.v1.PlanTerms
+	(*PlanVersionDTO)(nil),                   // 4: commercial.v1.PlanVersionDTO
+	(*PlanCatalogEntryDTO)(nil),              // 5: commercial.v1.PlanCatalogEntryDTO
+	(*CreatePlanDraftRequest)(nil),           // 6: commercial.v1.CreatePlanDraftRequest
+	(*CreatePlanVersionRequest)(nil),         // 7: commercial.v1.CreatePlanVersionRequest
+	(*UpdatePlanDraftRequest)(nil),           // 8: commercial.v1.UpdatePlanDraftRequest
+	(*ChangePlanVersionStateRequest)(nil),    // 9: commercial.v1.ChangePlanVersionStateRequest
+	(*GetPlanVersionRequest)(nil),            // 10: commercial.v1.GetPlanVersionRequest
+	(*ListPlansRequest)(nil),                 // 11: commercial.v1.ListPlansRequest
+	(*ListPlansResponse)(nil),                // 12: commercial.v1.ListPlansResponse
+	(*ListPlanVersionsRequest)(nil),          // 13: commercial.v1.ListPlanVersionsRequest
+	(*ListPlanVersionsResponse)(nil),         // 14: commercial.v1.ListPlanVersionsResponse
+	(*CheckPlanEligibilityRequest)(nil),      // 15: commercial.v1.CheckPlanEligibilityRequest
+	(*PlanEligibilityDTO)(nil),               // 16: commercial.v1.PlanEligibilityDTO
+	(*ListTenantChangeTargetsRequest)(nil),   // 17: commercial.v1.ListTenantChangeTargetsRequest
+	(*ListTenantChangeTargetsResponse)(nil),  // 18: commercial.v1.ListTenantChangeTargetsResponse
+	(*ResolveTenantChangeTargetRequest)(nil), // 19: commercial.v1.ResolveTenantChangeTargetRequest
 }
 var file_commercial_v1_plan_proto_depIdxs = []int32{
 	0,  // 0: commercial.v1.PlanModule.quotas:type_name -> commercial.v1.PlanQuota
@@ -1432,29 +1598,30 @@ var file_commercial_v1_plan_proto_depIdxs = []int32{
 	5,  // 6: commercial.v1.ListPlansResponse.plans:type_name -> commercial.v1.PlanCatalogEntryDTO
 	4,  // 7: commercial.v1.ListPlanVersionsResponse.versions:type_name -> commercial.v1.PlanVersionDTO
 	4,  // 8: commercial.v1.PlanEligibilityDTO.version:type_name -> commercial.v1.PlanVersionDTO
-	6,  // 9: commercial.v1.PlanManagementApplication.CreatePlanDraft:input_type -> commercial.v1.CreatePlanDraftRequest
-	7,  // 10: commercial.v1.PlanManagementApplication.CreatePlanVersion:input_type -> commercial.v1.CreatePlanVersionRequest
-	8,  // 11: commercial.v1.PlanManagementApplication.UpdatePlanDraft:input_type -> commercial.v1.UpdatePlanDraftRequest
-	9,  // 12: commercial.v1.PlanManagementApplication.PublishPlanVersion:input_type -> commercial.v1.ChangePlanVersionStateRequest
-	9,  // 13: commercial.v1.PlanManagementApplication.RetirePlanVersion:input_type -> commercial.v1.ChangePlanVersionStateRequest
-	11, // 14: commercial.v1.PlanManagementApplication.ListPlans:input_type -> commercial.v1.ListPlansRequest
-	10, // 15: commercial.v1.PlanManagementApplication.GetPlanVersion:input_type -> commercial.v1.GetPlanVersionRequest
-	13, // 16: commercial.v1.PlanManagementApplication.ListPlanVersions:input_type -> commercial.v1.ListPlanVersionsRequest
-	15, // 17: commercial.v1.PlanManagementApplication.CheckPlanEligibility:input_type -> commercial.v1.CheckPlanEligibilityRequest
-	4,  // 18: commercial.v1.PlanManagementApplication.CreatePlanDraft:output_type -> commercial.v1.PlanVersionDTO
-	4,  // 19: commercial.v1.PlanManagementApplication.CreatePlanVersion:output_type -> commercial.v1.PlanVersionDTO
-	4,  // 20: commercial.v1.PlanManagementApplication.UpdatePlanDraft:output_type -> commercial.v1.PlanVersionDTO
-	4,  // 21: commercial.v1.PlanManagementApplication.PublishPlanVersion:output_type -> commercial.v1.PlanVersionDTO
-	4,  // 22: commercial.v1.PlanManagementApplication.RetirePlanVersion:output_type -> commercial.v1.PlanVersionDTO
-	12, // 23: commercial.v1.PlanManagementApplication.ListPlans:output_type -> commercial.v1.ListPlansResponse
-	4,  // 24: commercial.v1.PlanManagementApplication.GetPlanVersion:output_type -> commercial.v1.PlanVersionDTO
-	14, // 25: commercial.v1.PlanManagementApplication.ListPlanVersions:output_type -> commercial.v1.ListPlanVersionsResponse
-	16, // 26: commercial.v1.PlanManagementApplication.CheckPlanEligibility:output_type -> commercial.v1.PlanEligibilityDTO
-	18, // [18:27] is the sub-list for method output_type
-	9,  // [9:18] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	4,  // 9: commercial.v1.ListTenantChangeTargetsResponse.targets:type_name -> commercial.v1.PlanVersionDTO
+	6,  // 10: commercial.v1.PlanManagementApplication.CreatePlanDraft:input_type -> commercial.v1.CreatePlanDraftRequest
+	7,  // 11: commercial.v1.PlanManagementApplication.CreatePlanVersion:input_type -> commercial.v1.CreatePlanVersionRequest
+	8,  // 12: commercial.v1.PlanManagementApplication.UpdatePlanDraft:input_type -> commercial.v1.UpdatePlanDraftRequest
+	9,  // 13: commercial.v1.PlanManagementApplication.PublishPlanVersion:input_type -> commercial.v1.ChangePlanVersionStateRequest
+	9,  // 14: commercial.v1.PlanManagementApplication.RetirePlanVersion:input_type -> commercial.v1.ChangePlanVersionStateRequest
+	11, // 15: commercial.v1.PlanManagementApplication.ListPlans:input_type -> commercial.v1.ListPlansRequest
+	10, // 16: commercial.v1.PlanManagementApplication.GetPlanVersion:input_type -> commercial.v1.GetPlanVersionRequest
+	13, // 17: commercial.v1.PlanManagementApplication.ListPlanVersions:input_type -> commercial.v1.ListPlanVersionsRequest
+	15, // 18: commercial.v1.PlanManagementApplication.CheckPlanEligibility:input_type -> commercial.v1.CheckPlanEligibilityRequest
+	4,  // 19: commercial.v1.PlanManagementApplication.CreatePlanDraft:output_type -> commercial.v1.PlanVersionDTO
+	4,  // 20: commercial.v1.PlanManagementApplication.CreatePlanVersion:output_type -> commercial.v1.PlanVersionDTO
+	4,  // 21: commercial.v1.PlanManagementApplication.UpdatePlanDraft:output_type -> commercial.v1.PlanVersionDTO
+	4,  // 22: commercial.v1.PlanManagementApplication.PublishPlanVersion:output_type -> commercial.v1.PlanVersionDTO
+	4,  // 23: commercial.v1.PlanManagementApplication.RetirePlanVersion:output_type -> commercial.v1.PlanVersionDTO
+	12, // 24: commercial.v1.PlanManagementApplication.ListPlans:output_type -> commercial.v1.ListPlansResponse
+	4,  // 25: commercial.v1.PlanManagementApplication.GetPlanVersion:output_type -> commercial.v1.PlanVersionDTO
+	14, // 26: commercial.v1.PlanManagementApplication.ListPlanVersions:output_type -> commercial.v1.ListPlanVersionsResponse
+	16, // 27: commercial.v1.PlanManagementApplication.CheckPlanEligibility:output_type -> commercial.v1.PlanEligibilityDTO
+	19, // [19:28] is the sub-list for method output_type
+	10, // [10:19] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_commercial_v1_plan_proto_init() }
@@ -1468,7 +1635,7 @@ func file_commercial_v1_plan_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_commercial_v1_plan_proto_rawDesc), len(file_commercial_v1_plan_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

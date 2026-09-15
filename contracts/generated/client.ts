@@ -347,6 +347,13 @@ export interface Commercial_V1_CheckPlanEligibilityRequest {
   salesScope?: string;
 }
 
+export interface Commercial_V1_ConfirmMySubscriptionChangeRequest {
+  changeId?: string;
+  requestId?: string;
+  previewHash?: string;
+  reason?: string;
+}
+
 export interface Commercial_V1_ConfirmSubscriptionChangeRequest {
   tenantId?: string;
   changeId?: string;
@@ -545,6 +552,14 @@ export interface Commercial_V1_ListModulesResponse {
   modules?: readonly Commercial_V1_ModuleDTO[];
 }
 
+export interface Commercial_V1_ListMySubscriptionChangeTargetsRequest {
+}
+
+export interface Commercial_V1_ListMySubscriptionChangeTargetsResponse {
+  salesScope?: string;
+  targets?: readonly Commercial_V1_PlanVersionDTO[];
+}
+
 export interface Commercial_V1_ListPlanVersionsRequest {
   planCode?: string;
   afterVersion?: string;
@@ -672,6 +687,15 @@ export interface Commercial_V1_PlanVersionDTO {
   reason?: string;
 }
 
+export interface Commercial_V1_PreviewMySubscriptionChangeRequest {
+  requestId?: string;
+  action?: string;
+  targetPlanCode?: string;
+  targetPlanVersion?: string;
+  effectiveAt?: string;
+  reason?: string;
+}
+
 export interface Commercial_V1_PreviewSubscriptionChangeRequest {
   tenantId?: string;
   requestId?: string;
@@ -756,6 +780,14 @@ export interface Commercial_V1_PutDefaultSubscriptionRuleRequest {
   planVersion?: string;
   enabled?: boolean;
   reason?: string;
+}
+
+export interface Commercial_V1_ReadMySubscriptionChangePreviewRequest {
+  changeId?: string;
+}
+
+export interface Commercial_V1_ReadMySubscriptionChangeReceiptRequest {
+  changeId?: string;
 }
 
 export interface Commercial_V1_ReadProvisioningTaskRequest {
@@ -1518,6 +1550,15 @@ export const operations = {
       { method: "POST", path: "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry", body: "*" },
     ]
   },
+  "commercial.v1.SubscriptionChangesApplication.ConfirmMySubscriptionChange": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.ConfirmMySubscriptionChange",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/ConfirmMySubscriptionChange",
+    requestType: "commercial.v1.ConfirmMySubscriptionChangeRequest",
+    responseType: "commercial.v1.SubscriptionChangeReceiptDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/subscription/changes/{change_id}/confirm", body: "*" },
+    ]
+  },
   "commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange": {
     fullName: "commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange",
     rpcPath: "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange",
@@ -1525,6 +1566,24 @@ export const operations = {
     responseType: "commercial.v1.SubscriptionChangeReceiptDTO",
     http: [
       { method: "POST", path: "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm", body: "*" },
+    ]
+  },
+  "commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangePreview": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangePreview",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/GetMySubscriptionChangePreview",
+    requestType: "commercial.v1.ReadMySubscriptionChangePreviewRequest",
+    responseType: "commercial.v1.SubscriptionChangePreviewDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/subscription/change-previews/{change_id}" },
+    ]
+  },
+  "commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangeReceipt": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangeReceipt",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/GetMySubscriptionChangeReceipt",
+    requestType: "commercial.v1.ReadMySubscriptionChangeReceiptRequest",
+    responseType: "commercial.v1.SubscriptionChangeReceiptDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/subscription/changes/{change_id}" },
     ]
   },
   "commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview": {
@@ -1543,6 +1602,24 @@ export const operations = {
     responseType: "commercial.v1.SubscriptionChangeReceiptDTO",
     http: [
       { method: "GET", path: "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}" },
+    ]
+  },
+  "commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChangeTargets": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChangeTargets",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/ListMySubscriptionChangeTargets",
+    requestType: "commercial.v1.ListMySubscriptionChangeTargetsRequest",
+    responseType: "commercial.v1.ListMySubscriptionChangeTargetsResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/subscription/change-targets" },
+    ]
+  },
+  "commercial.v1.SubscriptionChangesApplication.PreviewMySubscriptionChange": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.PreviewMySubscriptionChange",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/PreviewMySubscriptionChange",
+    requestType: "commercial.v1.PreviewMySubscriptionChangeRequest",
+    responseType: "commercial.v1.SubscriptionChangePreviewDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/subscription/change-previews", body: "*" },
     ]
   },
   "commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange": {
@@ -1970,8 +2047,20 @@ export class Commercial_V1_ProvisioningApplicationClient {
 export class Commercial_V1_SubscriptionChangesApplicationClient {
   constructor(private readonly transport: RpcTransport) {}
 
+  confirmMySubscriptionChange(request: Commercial_V1_ConfirmMySubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangeReceiptDTO> {
+    return this.transport.call<Commercial_V1_ConfirmMySubscriptionChangeRequest, Commercial_V1_SubscriptionChangeReceiptDTO>(operations["commercial.v1.SubscriptionChangesApplication.ConfirmMySubscriptionChange"], request);
+  }
+
   confirmSubscriptionChange(request: Commercial_V1_ConfirmSubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangeReceiptDTO> {
     return this.transport.call<Commercial_V1_ConfirmSubscriptionChangeRequest, Commercial_V1_SubscriptionChangeReceiptDTO>(operations["commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange"], request);
+  }
+
+  getMySubscriptionChangePreview(request: Commercial_V1_ReadMySubscriptionChangePreviewRequest): Promise<Commercial_V1_SubscriptionChangePreviewDTO> {
+    return this.transport.call<Commercial_V1_ReadMySubscriptionChangePreviewRequest, Commercial_V1_SubscriptionChangePreviewDTO>(operations["commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangePreview"], request);
+  }
+
+  getMySubscriptionChangeReceipt(request: Commercial_V1_ReadMySubscriptionChangeReceiptRequest): Promise<Commercial_V1_SubscriptionChangeReceiptDTO> {
+    return this.transport.call<Commercial_V1_ReadMySubscriptionChangeReceiptRequest, Commercial_V1_SubscriptionChangeReceiptDTO>(operations["commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangeReceipt"], request);
   }
 
   getSubscriptionChangePreview(request: Commercial_V1_ReadSubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangePreviewDTO> {
@@ -1980,6 +2069,14 @@ export class Commercial_V1_SubscriptionChangesApplicationClient {
 
   getSubscriptionChangeReceipt(request: Commercial_V1_ReadSubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangeReceiptDTO> {
     return this.transport.call<Commercial_V1_ReadSubscriptionChangeRequest, Commercial_V1_SubscriptionChangeReceiptDTO>(operations["commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt"], request);
+  }
+
+  listMySubscriptionChangeTargets(request: Commercial_V1_ListMySubscriptionChangeTargetsRequest): Promise<Commercial_V1_ListMySubscriptionChangeTargetsResponse> {
+    return this.transport.call<Commercial_V1_ListMySubscriptionChangeTargetsRequest, Commercial_V1_ListMySubscriptionChangeTargetsResponse>(operations["commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChangeTargets"], request);
+  }
+
+  previewMySubscriptionChange(request: Commercial_V1_PreviewMySubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangePreviewDTO> {
+    return this.transport.call<Commercial_V1_PreviewMySubscriptionChangeRequest, Commercial_V1_SubscriptionChangePreviewDTO>(operations["commercial.v1.SubscriptionChangesApplication.PreviewMySubscriptionChange"], request);
   }
 
   previewSubscriptionChange(request: Commercial_V1_PreviewSubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangePreviewDTO> {
