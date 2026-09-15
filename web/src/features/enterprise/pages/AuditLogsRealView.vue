@@ -72,8 +72,13 @@ function formatTime(value: string) {
   const timestamp = Date.parse(value)
   if (!Number.isFinite(timestamp)) return value
   return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
   }).format(new Date(timestamp))
 }
 
@@ -133,7 +138,6 @@ async function loadPage() {
   const expectedSession = session.value
   busy.value = true
   error.value = ''
-  notice.value = ''
   selected.value = null
   try {
     const current = await readEnterpriseAuditSession()
@@ -161,6 +165,7 @@ async function applyFilters() {
     risk: riskDraft.value,
   }
   exportRetry.value = null
+  notice.value = ''
   if (page.value !== 1) {
     page.value = 1
     return
@@ -175,6 +180,7 @@ async function resetFilters() {
   riskDraft.value = ''
   activeFilter.value = {}
   exportRetry.value = null
+  notice.value = ''
   if (page.value !== 1) {
     page.value = 1
     return
@@ -227,8 +233,8 @@ async function openDetail(record: EnterpriseAuditRecord) {
     const current = await readEnterpriseAuditSession()
     if (token !== epoch) return
     if (!sameAuditSession(expectedSession, current)) {
-      await refresh()
-      error.value = '会话或当前租户已变化，请重新选择日志。'
+      detailBusy.value = false
+      void refresh()
       return
     }
     const detail = await getEnterpriseAuditRecord(current, record.auditId)
@@ -257,8 +263,8 @@ async function exportLogs() {
     const current = await readEnterpriseAuditSession()
     if (token !== epoch) return
     if (!sameAuditSession(expectedSession, current)) {
-      await refresh()
-      error.value = '会话或当前租户已变化，未执行日志导出。'
+      exportBusy.value = false
+      void refresh()
       return
     }
     const exported = await exportEnterpriseAuditRecords(current, filter, key)
@@ -280,8 +286,7 @@ async function exportLogs() {
       ]),
     ])
     exportRetry.value = null
-    notice.value = `服务端导出已完成：${exported.records.length} 条；导出操作本身已进入审计链。`
-    await loadPage()
+    notice.value = `服务端导出已完成：${exported.records.length} 条；导出操作本身已进入审计链，可刷新列表查看。`
   } catch (e) {
     if (token === epoch) error.value = auditRuntimeError(e)
   } finally {
@@ -338,7 +343,7 @@ onBeforeUnmount(() => {
       <div class="metric-grid">
         <MetricCard label="审计记录" :value="total" icon="file" caption="当前筛选的服务端记录总数" />
         <MetricCard label="当前页高风险" :value="pageHighRisk" icon="shield" tone="orange" caption="仅统计当前分页" />
-        <MetricCard label="当前页失败" :value="pageFailures" icon="alert" tone="purple" caption="failure / panic" />
+        <MetricCard label="当前页失败" :value="pageFailures" icon="file" tone="purple" caption="failure / panic" />
         <MetricCard label="当前页导出" :value="pageExports" icon="download" tone="green" caption="access.audit.export" />
       </div>
 
