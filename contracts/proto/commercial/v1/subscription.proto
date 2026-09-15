@@ -14,10 +14,32 @@ message GetTenantSubscriptionRequest { string tenant_id=1; }
 message GetMySubscriptionRequest {}
 message BootstrapTenantSubscriptionRequest { string request_id=1; string tenant_id=2; string sales_scope=3; }
 message BootstrapTenantSubscriptionResult { TenantSubscriptionDTO subscription=1; }
+
+// TenantQuotaUsageDTO is a measured usage fact. Missing quota keys remain
+// unknown; clients must never infer zero from absence.
+message TenantQuotaUsageDTO {
+ string module_code=1;
+ string key=2;
+ bool known=3;
+ uint64 used=4;
+ string evidence=5;
+}
+message GetMyTenantUsageRequest {}
+message GetMyTenantUsageResponse { repeated TenantQuotaUsageDTO usages=1; }
+
 service SubscriptionManagementApplication {
- option (yunka.dsl.v1.application) = { name:"subscription_management" requires:"commercial/plan_management" operations:{ id:"commercial.subscription.bootstrap_base" use_case:"bootstrap_base_subscription" permissions:"platform.tenant.create" permissions:"platform.plan.read" permissions:"commercial.catalog.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY requires_operations:"commercial.plan.eligibility" composition:COMPOSITION_LOCAL execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_NONE} request_type:"commercial.v1.BootstrapTenantSubscriptionRequest" response_type:"commercial.v1.BootstrapTenantSubscriptionResult" application_method:"BootstrapBaseSubscription" } };
+ option (yunka.dsl.v1.application) = {
+  name:"subscription_management"
+  requires:"commercial/plan_management"
+  requires:"access/tenant_member_lifecycle"
+  operations:{ id:"commercial.subscription.bootstrap_base" use_case:"bootstrap_base_subscription" permissions:"platform.tenant.create" permissions:"platform.plan.read" permissions:"commercial.catalog.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY requires_operations:"commercial.plan.eligibility" composition:COMPOSITION_LOCAL execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_NONE} request_type:"commercial.v1.BootstrapTenantSubscriptionRequest" response_type:"commercial.v1.BootstrapTenantSubscriptionResult" application_method:"BootstrapBaseSubscription" }
+ };
  rpc PutDefaultSubscriptionRule(PutDefaultSubscriptionRuleRequest) returns (DefaultSubscriptionRuleDTO) { option (google.api.http)={put:"/v1/platform/subscription-default-rules/{rule_id}" body:"*"}; option (yunka.dsl.v1.operation)={id:"commercial.subscription.rule.put" use_case:"put_default_subscription_rule" permissions:"platform.subscription.manage" permissions:"platform.plan.read" permissions:"commercial.catalog.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY requires_operations:"commercial.plan.eligibility" composition:COMPOSITION_LOCAL execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_REQUIRED}}; }
  rpc ListDefaultSubscriptionRules(ListDefaultSubscriptionRulesRequest) returns (ListDefaultSubscriptionRulesResponse) { option (google.api.http)={get:"/v1/platform/subscription-default-rules"}; option (yunka.dsl.v1.operation)={id:"commercial.subscription.rule.list" use_case:"list_default_subscription_rules" permissions:"platform.subscription.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_READ_ONLY idempotency:IDEMPOTENCY_NONE}}; }
  rpc GetTenantSubscription(GetTenantSubscriptionRequest) returns (TenantSubscriptionDTO) { option (google.api.http)={get:"/v1/platform/tenants/{tenant_id}/subscription"}; option (yunka.dsl.v1.operation)={id:"commercial.subscription.get" use_case:"get_tenant_subscription" permissions:"platform.subscription.read" permissions:"platform.tenant.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY authentication:AUTHENTICATION_WEB_SESSION execution:{transaction:TRANSACTION_READ_ONLY idempotency:IDEMPOTENCY_NONE}}; }
  rpc GetMySubscription(GetMySubscriptionRequest) returns (TenantSubscriptionDTO) { option (google.api.http)={get:"/v1/tenant/subscription"}; option (yunka.dsl.v1.operation)={id:"commercial.subscription.get_my" use_case:"get_my_subscription" permissions:"tenant.entitlement.read" permission_mode:PERMISSION_ALL tenant_required:true authentication:AUTHENTICATION_API_KEY authentication:AUTHENTICATION_WEB_SESSION execution:{transaction:TRANSACTION_READ_ONLY idempotency:IDEMPOTENCY_NONE}}; }
+ rpc GetMyTenantUsage(GetMyTenantUsageRequest) returns (GetMyTenantUsageResponse) {
+  option (google.api.http)={get:"/v1/tenant/usage"};
+  option (yunka.dsl.v1.operation)={id:"commercial.subscription.get_my_usage" use_case:"get_my_tenant_usage" permissions:"tenant.entitlement.read" permission_mode:PERMISSION_ALL tenant_required:true authentication:AUTHENTICATION_API_KEY authentication:AUTHENTICATION_WEB_SESSION requires_operations:"tenant.member.count_quota_usage" composition:COMPOSITION_LOCAL execution:{transaction:TRANSACTION_READ_ONLY idempotency:IDEMPOTENCY_NONE}};
+ }
 }
