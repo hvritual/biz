@@ -2,6 +2,7 @@ package bizruntime
 
 import (
 	"context"
+
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	accessapp "github.com/hvritual/biz/internal/access/application"
 	"github.com/hvritual/biz/internal/commercial/enforcement"
@@ -24,6 +25,13 @@ func (w checkedMembers) BootstrapTenantOwnerMember(ctx context.Context, r *acces
 	}
 	v, err := w.inner.BootstrapTenantOwnerMember(ctx, r)
 	return v, enforcement.ExecutionError(ctx, "tenant.member.bootstrap_owner", err)
+}
+func (w checkedMembers) CountTenantQuotaMembers(ctx context.Context, r *accessv1.CountTenantQuotaMembersRequest) (*accessv1.CountTenantQuotaMembersResponse, error) {
+	if err := enforcement.RequireExecuted(ctx, "tenant.member.count_quota_usage"); err != nil {
+		return nil, err
+	}
+	v, err := w.inner.CountTenantQuotaMembers(ctx, r)
+	return v, enforcement.ExecutionError(ctx, "tenant.member.count_quota_usage", err)
 }
 func (w checkedMembers) GetTenantMember(ctx context.Context, r *accessv1.GetTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
 	if err := enforcement.RequireExecuted(ctx, "tenant.member.get"); err != nil {
