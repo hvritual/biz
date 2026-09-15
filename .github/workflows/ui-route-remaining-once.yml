@@ -16,7 +16,6 @@ jobs:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     env:
-      VITE_DATA_MODE: api
       ENTERPRISE_ROLE_REAL_E2E: '1'
       ENTERPRISE_ORGANIZATION_REAL_E2E: '1'
       ENTERPRISE_PLAN_REAL_E2E: '1'
@@ -40,12 +39,16 @@ jobs:
         run: npm run check
       - name: Build canonical API-mode UI
         working-directory: web
+        env:
+          VITE_DATA_MODE: api
         run: npm run build
       - name: Install Chromium
         working-directory: web
         run: npx playwright install --with-deps chromium
       - name: Verify remaining canonical API domains
         working-directory: web
+        env:
+          VITE_DATA_MODE: api
         run: >-
           npx playwright test
           e2e/enterprise-organization-real.spec.ts
