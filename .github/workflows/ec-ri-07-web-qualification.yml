@@ -1,0 +1,44 @@
+name: ec-ri-07-web-qualification
+
+on:
+  push:
+    branches:
+      - feat/ec-ri-07-server-audit-trail
+    paths:
+      - .github/workflows/ec-ri-07-web-qualification.yml
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/ec-ri-07-server-audit-trail
+          fetch-depth: 0
+      - name: Verify Node runtime
+        run: node --version
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+      - name: Run frontend qualification
+        working-directory: web
+        run: npm run check
+      - name: Build API mode
+        working-directory: web
+        env:
+          VITE_DATA_MODE: api
+        run: npm run build
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: Run EC-RI-07 API-mode E2E
+        working-directory: web
+        env:
+          VITE_DATA_MODE: api
+          ENTERPRISE_AUDIT_REAL_E2E: "1"
+        run: npm run test:e2e -- enterprise-audit-real.spec.ts
