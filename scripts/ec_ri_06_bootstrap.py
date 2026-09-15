@@ -78,6 +78,32 @@ if '"tenant.entitlement.read"' not in text:
     )
 model.write_text(text)
 
+mapping = Path("contracts/commercial/operation-capabilities.v1.json")
+text = mapping.read_text()
+platform_mapping = '''    {
+      "operation_id": "commercial.subscription.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-08 platform default subscription control/bootstrap; never a tenant-purchased business operation and never bypasses IAM."
+    },
+'''
+tenant_mapping = '''    {
+      "operation_id": "commercial.subscription.get_my",
+      "classification": "recovery",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "EC-RI-06 authenticated current-tenant commercial projection; it exposes only the caller tenant subscription selected from trusted identity and remains protected by tenant.entitlement.read."
+    },
+'''
+if tenant_mapping not in text:
+    if platform_mapping not in text:
+        raise SystemExit("commercial capability mapping anchor not found")
+    text = text.replace(platform_mapping, platform_mapping + tenant_mapping, 1)
+if '"mapping_version": "13"' in text:
+    text = text.replace('"mapping_version": "13"', '"mapping_version": "14"', 1)
+mapping.write_text(text)
+
 router = Path("web/src/router/index.ts")
 text = router.read_text()
 old = "component: () => import('@/features/enterprise/pages/PlansView.vue'),"
