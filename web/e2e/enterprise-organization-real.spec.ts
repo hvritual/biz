@@ -76,6 +76,10 @@ async function mockOrganizationServer(page: Page, options: Options = {}) {
     })
   })
   await page.route('**/api/v1/tenant/members', async (route) => json(route, 200, { members }))
+  await page.route('**/api/v1/tenant/roles', async (route) => json(route, 200, { roles: [
+    { id: 'owner', name: 'owner', status: 'TENANT_ROLE_STATUS_ACTIVE', version: 1, permissions: [] },
+    { id: 'csm', name: '客户成功', status: 'TENANT_ROLE_STATUS_ACTIVE', version: 1, permissions: [] },
+  ] }))
   await page.route(/\/api\/v1\/tenant\/departments(?:\/.*)?$/, async (route) => {
     const request = route.request()
     const parts = new URL(request.url()).pathname.split('/').filter(Boolean)
@@ -146,7 +150,7 @@ async function openRealOrganization(page: Page) {
 }
 
 async function selectDepartment(page: Page, name: string) {
-  await page.locator('.tree-row').filter({ hasText: name }).click()
+  await page.getByRole('button', { name: new RegExp(`^${name}`) }).click()
 }
 
 test('real organization page renders authoritative hierarchy across CoffeeLink viewports', async ({ page }) => {
@@ -155,9 +159,9 @@ test('real organization page renders authoritative hierarchy across CoffeeLink v
   for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1536, height: 1024 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport)
     await openRealOrganization(page)
-    await expect(page.getByText('运营中心', { exact: true }).first()).toBeVisible()
-    await expect(page.getByText('客户成功部', { exact: true }).first()).toBeVisible()
-    await expect(page.getByText('历史业务部', { exact: true }).first()).toBeVisible()
+    await expect(page.getByRole('button', { name: /^运营中心/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^客户成功部/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^历史业务部/ })).toBeVisible()
     await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
     await page.screenshot({ path: `screenshots/enterprise-organization-real-${viewport.width}.png` })
@@ -168,14 +172,16 @@ test('department create uses CSRF and idempotency then confirms from server read
   const server = await mockOrganizationServer(page)
   await openRealOrganization(page)
   await page.getByRole('button', { name: '新建部门', exact: true }).click()
-  const dialog = page.getByRole('dialog', { name: '新建部门' })
-  await dialog.getByLabel('部门名称 *').fill('市场运营部')
-  await selectUiOption(dialog.getByLabel('负责人'), 'user-001')
-  await dialog.getByRole('button', { name: '提交并回读确认' }).click()
+  const dialog = page.getByRole('dialog', { name: '部门信息' })
+  await dialog.getByLabel('部门名称').fill('市场运营部')
+  await selectUiOption(dialog.getByLabel('部门负责人'), 'user-001')
+  await expect(dialog.getByLabel('部门编号')).toHaveAttribute('readonly', '')
+  await expect(dialog.getByLabel('部门职责')).toHaveAttribute('readonly', '')
+  await dialog.getByRole('button', { name: '保存部门' }).click()
   await expect(page.getByRole('status')).toContainText('服务端确认')
-  await expect(page.getByText('市场运营部', { exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: /^市场运营部/ })).toBeVisible()
   const write = server.getWrites().find((item) => item.path === '/api/v1/tenant/departments')!
-  expect(write.headers['idempotency-key']).toMatch(/^enterprise-department-create-new-/)
+  expect(write.headers['idempotency-key']).toMatch(/^enterprise-department-create-/)
   expect(write.headers['x-csrf-token']).toBe('csrf-real-organization')
   expect(write.headers['x-biz-session-context']).toContain('tenant-001')
 })
@@ -185,17 +191,16 @@ test('department 409 preserves editor draft and the same idempotency key for ret
   await openRealOrganization(page)
   await selectDepartment(page, '客户成功部')
   await page.getByRole('button', { name: '编辑部门' }).click()
-  const dialog = page.getByRole('dialog', { name: '编辑部门' })
-  await dialog.getByLabel('部门名称 *').fill('客户增长部')
-  const save = dialog.getByRole('button', { name: '提交并回读确认' })
+  const dialog = page.getByRole('dialog', { name: '部门信息' })
+  await dialog.getByLabel('部门名称').fill('客户增长部')
+  const save = dialog.getByRole('button', { name: '保存部门' })
   await save.click()
   await expect(dialog.getByRole('alert')).toContainText('部门版本、层级、负责人或成员归属规则发生冲突')
-  await expect(dialog.getByLabel('部门名称 *')).toHaveValue('客户增长部')
+  await expect(dialog.getByLabel('部门名称')).toHaveValue('客户增长部')
   await expect(save).toBeEnabled()
   await save.click()
-  await expect(dialog.getByRole('alert')).toContainText('部门版本、层级、负责人或成员归属规则发生冲突')
+  await expect.poll(() => server.getWrites().filter((item) => item.method === 'PATCH').length).toBe(2)
   const patches = server.getWrites().filter((item) => item.method === 'PATCH')
-  expect(patches).toHaveLength(2)
   expect(patches[0]?.headers['idempotency-key']).toBe(patches[1]?.headers['idempotency-key'])
   await expect(page.getByRole('status')).toHaveCount(0)
 })
@@ -217,9 +222,9 @@ test('successful department write without readback is never shown as confirmed s
   await openRealOrganization(page)
   await selectDepartment(page, '客户成功部')
   await page.getByRole('button', { name: '编辑部门' }).click()
-  const dialog = page.getByRole('dialog', { name: '编辑部门' })
-  await dialog.getByLabel('部门名称 *').fill('未确认部门')
-  await dialog.getByRole('button', { name: '提交并回读确认' }).click()
+  const dialog = page.getByRole('dialog', { name: '部门信息' })
+  await dialog.getByLabel('部门名称').fill('未确认部门')
+  await dialog.getByRole('button', { name: '保存部门' }).click()
   await expect(dialog.getByRole('alert')).toContainText('department readback failed')
   await expect(page.getByText(/部门配置已由服务端确认/)).toHaveCount(0)
 })

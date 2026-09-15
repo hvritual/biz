@@ -81,7 +81,7 @@ function submitDemoChange() {
     <PageHeading title="套餐信息" description="查看当前订阅、可用功能与使用额度，让业务增长有据可依" />
     <EnterpriseSourceBanner />
 
-    <div v-if="plan.loading" class="card state-card" role="status">正在读取当前租户套餐、权益与用量…</div>
+    <div v-if="plan.loading && !plan.model" class="card state-card" role="status">正在读取当前租户套餐、权益与用量…</div>
     <div v-else-if="plan.error && plan.isServerBacked && !plan.model" class="card state-card error-state" role="alert">
       <div>
         <strong>无法读取套餐额度</strong>

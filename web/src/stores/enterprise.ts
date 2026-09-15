@@ -29,8 +29,10 @@ import {
   createEnterpriseRole,
   disableEnterpriseRole,
   enableEnterpriseRole,
+  getEnterpriseRole,
   readEnterpriseRoleSession,
   roleRequestId,
+  roleRuntimeError,
   setEnterpriseRolePermissions,
   updateEnterpriseRole,
   type EnterpriseTenantRole,
@@ -42,6 +44,7 @@ import {
   getEnterpriseDepartment,
   readEnterpriseDepartmentSession,
   departmentRequestId,
+  departmentRuntimeError,
   updateEnterpriseDepartment,
   type EnterpriseDepartmentDraft,
 } from '@/services/enterprise/departmentRuntime'
@@ -104,6 +107,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   let activeDomains: EnterpriseDomain[] = []
   let companyMutation: { tenantId: string; signature: string; key: string } | null = null
   let memberMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
+  let roleMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
+  let departmentMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
 
   function memberMutationSignature(draft: Member, action: MemberAction, expectedVersion: number) {
     return JSON.stringify({
@@ -129,6 +134,47 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     return memberMutation.keys[slot]!
   }
 
+  function roleMutationSignature(role: Role, current?: Role) {
+    return JSON.stringify({
+      id: role.id,
+      name: role.name.trim(),
+      enabled: role.enabled,
+      scope: role.scope,
+      permissions: [...role.permissions].sort(),
+      version: current?.runtimeVersion ?? 0,
+    })
+  }
+
+  function roleMutationKey(signature: string, slot: string, create: () => string) {
+    if (!roleMutation || roleMutation.tenantId !== tenantId.value || roleMutation.signature !== signature) {
+      roleMutation = { tenantId: tenantId.value, signature, keys: {} }
+    }
+    roleMutation.keys[slot] ??= create()
+    return roleMutation.keys[slot]!
+  }
+
+  function departmentMutationSignature(value: Department, current?: Department) {
+    return JSON.stringify({
+      id: value.id,
+      name: value.name.trim(),
+      parentId: value.parentId ?? '',
+      leaderId: value.leaderId,
+      email: value.email ?? '',
+      phone: value.phone ?? '',
+      sort: value.sort ?? 0,
+      enabled: value.enabled,
+      version: current?.runtimeVersion ?? 0,
+    })
+  }
+
+  function departmentMutationKey(signature: string, slot: string, create: () => string) {
+    if (!departmentMutation || departmentMutation.tenantId !== tenantId.value || departmentMutation.signature !== signature) {
+      departmentMutation = { tenantId: tenantId.value, signature, keys: {} }
+    }
+    departmentMutation.keys[slot] ??= create()
+    return departmentMutation.keys[slot]!
+  }
+
   function applySourceState(state: EnterpriseSourceState, domains = state.loadedDomains, replace = false) {
     tenantId.value = state.tenantId
     session.value = state.session
@@ -147,7 +193,12 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     lastPersisted = JSON.stringify(snapshot.value)
   }
 
-  function errorMessage(error: unknown) {
+  function errorMessage(error: unknown, domains: EnterpriseDomain[] = activeDomains) {
+    const primary = domains[0]
+    if (primary === 'members') return memberRuntimeError(error)
+    if (primary === 'roles') return roleRuntimeError(error)
+    if (primary === 'departments') return departmentRuntimeError(error)
+    if (primary === 'company') return tenantProfileRuntimeError(error)
     return error instanceof Error ? error.message : '企业数据服务请求失败。'
   }
 
@@ -160,7 +211,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       applySourceState(state, activeDomains)
       ready.value = true
     } catch (error) {
-      sourceError.value = errorMessage(error)
+      sourceError.value = errorMessage(error, activeDomains)
       ready.value = true
       throw error
     } finally {
@@ -183,6 +234,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       applySourceState(state, activeDomains, true)
       companyMutation = null
       memberMutation = null
+      roleMutation = null
+      departmentMutation = null
       ready.value = true
     } catch (error) {
       sourceError.value = errorMessage(error)
@@ -554,29 +607,41 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       return
     }
 
-    const trusted = await stableRoleSession()
-    let serverRole: EnterpriseTenantRole
-    if (!old) {
-      serverRole = await createEnterpriseRole(trusted, role.name, roleRequestId('create')) as EnterpriseTenantRole
-    } else {
-      serverRole = asServerRole(old)
-      if (old.name !== role.name) {
-        serverRole = await updateEnterpriseRole(trusted, serverRole, role.name, roleRequestId('update'))
+    const signature = roleMutationSignature(role, old)
+    const key = (slot: string, create: () => string) => roleMutationKey(signature, slot, create)
+    try {
+      const trusted = await stableRoleSession()
+      let serverRole: EnterpriseTenantRole
+      if (!old) {
+        serverRole = await createEnterpriseRole(trusted, role.name, key('create', () => roleRequestId('create'))) as EnterpriseTenantRole
+      } else {
+        serverRole = asServerRole(old)
+        if (old.name !== role.name) {
+          serverRole = await updateEnterpriseRole(trusted, serverRole, role.name, key('update', () => roleRequestId('update')))
+        }
       }
+      const grants: PermissionGrant[] = role.permissions.map((permission) => ({
+        permission,
+        scope: grantScope(role.scope),
+      }))
+      serverRole = await setEnterpriseRolePermissions(
+        trusted,
+        serverRole,
+        grants,
+        key('permissions', () => roleRequestId('permissions')),
+      )
+      const active = serverRole.status === 'TENANT_ROLE_STATUS_ACTIVE'
+      if (role.enabled !== active) {
+        serverRole = role.enabled
+          ? await enableEnterpriseRole(trusted, serverRole, key('enable', () => roleRequestId('enable')))
+          : await disableEnterpriseRole(trusted, serverRole, key('disable', () => roleRequestId('disable')))
+      }
+      await getEnterpriseRole(trusted, serverRole.id)
+      await refresh(['roles', 'members'])
+      roleMutation = null
+    } catch (error) {
+      throw new Error(roleRuntimeError(error))
     }
-    const grants: PermissionGrant[] = role.permissions.map((permission) => ({
-      permission,
-      scope: grantScope(role.scope),
-    }))
-    serverRole = await setEnterpriseRolePermissions(trusted, serverRole, grants, roleRequestId('permissions'))
-    const active = serverRole.status === 'TENANT_ROLE_STATUS_ACTIVE'
-    if (role.enabled !== active) {
-      serverRole = role.enabled
-        ? await enableEnterpriseRole(trusted, serverRole, roleRequestId('enable'))
-        : await disableEnterpriseRole(trusted, serverRole, roleRequestId('disable'))
-    }
-    void serverRole
-    await refresh()
   }
 
   async function stableDepartmentSession() {
@@ -606,34 +671,46 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       return
     }
 
-    const trusted = await stableDepartmentSession()
-    const draft: EnterpriseDepartmentDraft = {
-      name: value.name,
-      parentId: value.parentId ?? '',
-      leaderUserId: value.leaderId,
-      email: value.email ?? '',
-      phone: value.phone ?? '',
-      sort: value.sort ?? 0,
-      enabled: value.enabled,
-    }
-    let receipt
-    if (exists) {
-      const current = await getEnterpriseDepartment(trusted, exists.id)
-      receipt = await updateEnterpriseDepartment(trusted, current, draft, departmentRequestId('update'))
-      const active = receipt.status === 'TENANT_DEPARTMENT_STATUS_ACTIVE'
-      if (value.enabled !== active) {
-        receipt = value.enabled
-          ? await enableEnterpriseDepartment(trusted, receipt, departmentRequestId('enable'))
-          : await disableEnterpriseDepartment(trusted, receipt, departmentRequestId('disable'))
+    const signature = departmentMutationSignature(value, exists)
+    const key = (slot: string, create: () => string) => departmentMutationKey(signature, slot, create)
+    try {
+      const trusted = await stableDepartmentSession()
+      const draft: EnterpriseDepartmentDraft = {
+        name: value.name,
+        parentId: value.parentId ?? '',
+        leaderUserId: value.leaderId,
+        email: value.email ?? '',
+        phone: value.phone ?? '',
+        sort: value.sort ?? 0,
+        enabled: value.enabled,
       }
-    } else {
-      receipt = await createEnterpriseDepartment(trusted, draft, departmentRequestId('create'))
-      if (!value.enabled && receipt.status === 'TENANT_DEPARTMENT_STATUS_ACTIVE') {
-        receipt = await disableEnterpriseDepartment(trusted, receipt, departmentRequestId('disable'))
+      let receipt
+      if (exists) {
+        const current = await getEnterpriseDepartment(trusted, exists.id)
+        receipt = await updateEnterpriseDepartment(
+          trusted,
+          current,
+          draft,
+          key('update', () => departmentRequestId('update')),
+        )
+        const active = receipt.status === 'TENANT_DEPARTMENT_STATUS_ACTIVE'
+        if (value.enabled !== active) {
+          receipt = value.enabled
+            ? await enableEnterpriseDepartment(trusted, receipt, key('enable', () => departmentRequestId('enable')))
+            : await disableEnterpriseDepartment(trusted, receipt, key('disable', () => departmentRequestId('disable')))
+        }
+      } else {
+        receipt = await createEnterpriseDepartment(trusted, draft, key('create', () => departmentRequestId('create')))
+        if (!value.enabled && receipt.status === 'TENANT_DEPARTMENT_STATUS_ACTIVE') {
+          receipt = await disableEnterpriseDepartment(trusted, receipt, key('disable', () => departmentRequestId('disable')))
+        }
       }
+      await getEnterpriseDepartment(trusted, receipt.departmentId)
+      await refresh(['departments', 'members', 'roles'])
+      departmentMutation = null
+    } catch (error) {
+      throw new Error(departmentRuntimeError(error))
     }
-    void receipt
-    await refresh()
   }
 
   async function stableProfileSession() {

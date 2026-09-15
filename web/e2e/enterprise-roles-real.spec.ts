@@ -1,3 +1,4 @@
+import { selectUiOption } from './ui.helpers'
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 
@@ -119,7 +120,8 @@ test('real role page renders authoritative grants and member counts across Coffe
     await openRealRoles(page)
     await expect(page.getByText('企业所有者', { exact: true })).toBeVisible()
     await expect(page.getByText('运营负责人', { exact: true }).first()).toBeVisible()
-    await expect(page.getByText(/查看成员/).first()).toBeVisible()
+    await expect(rowFor(page, '运营负责人')).toContainText('1 人')
+    await expect(rowFor(page, '运营负责人')).toContainText('指定数据')
     await expect(page.getByText('超级管理员', { exact: true })).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
     await page.screenshot({ path: `screenshots/enterprise-roles-real-${viewport.width}.png` })
@@ -131,11 +133,10 @@ test('role create and permission update use independent idempotency keys and con
   await openRealRoles(page)
   await page.getByRole('button', { name: '新建角色', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '新建角色' })
-  await dialog.locator('[data-role-name]').fill('华东运营')
+  await dialog.getByLabel('角色名称').fill('华东运营')
   await dialog.getByLabel('查看成员', { exact: true }).check()
-  await dialog.getByLabel('查看成员 数据范围').click()
-  await page.getByRole('option', { name: '授权点位', exact: true }).click()
-  await dialog.getByRole('button', { name: '保存并回读确认' }).click()
+  await selectUiOption(dialog.getByLabel('数据范围'), 'custom')
+  await dialog.getByRole('button', { name: '保存角色' }).click()
   await expect(page.getByRole('status')).toContainText('服务端确认')
   await expect(page.getByText('华东运营', { exact: true })).toBeVisible()
   const create = server.getWrites().find((item) => item.path === '/api/v1/tenant/roles')!
@@ -147,17 +148,14 @@ test('role create and permission update use independent idempotency keys and con
   expect(permissions.body).toMatchObject({ roleId: 'role-new', version: 1 })
 })
 
-test('role member assignment is confirmed from member readback', async ({ page }) => {
+test('canonical roles page exposes authoritative member counts while membership changes stay on Members flow', async ({ page }) => {
   const server = await mockRoleServer(page)
   await openRealRoles(page)
-  await rowFor(page, '运营负责人').getByRole('button', { name: '管理' }).click()
-  const dialog = page.getByRole('dialog', { name: '管理角色权限' })
-  await dialog.getByLabel('角色成员 Alice Chen').check()
-  await dialog.getByRole('button', { name: '保存并回读确认' }).click()
-  await expect(page.getByRole('status')).toContainText('服务端确认')
-  const write = server.getWrites().find((item) => item.path.endsWith('/role-ops/members'))!
-  expect(write.headers['idempotency-key']).toMatch(/^enterprise-role-assign-user-001-/)
-  expect(server.getMembers().find((member) => member.userId === 'user-001')?.roles.some((role) => role.roleId === 'role-ops')).toBe(true)
+  const row = rowFor(page, '运营负责人')
+  await expect(row).toContainText('1 人')
+  await expect(row.getByRole('button', { name: '编辑' })).toBeVisible()
+  await expect(row.getByRole('button', { name: '管理' })).toHaveCount(0)
+  expect(server.getWrites()).toHaveLength(0)
 })
 
 test('401 and 403 are surfaced and never replaced with preview roles', async ({ page }) => {
@@ -175,13 +173,13 @@ test('401 and 403 are surfaced and never replaced with preview roles', async ({ 
 test('role 409 preserves the same idempotency key and editor draft for retry', async ({ page }) => {
   const server = await mockRoleServer(page, { mutationStatus: 409 })
   await openRealRoles(page)
-  await rowFor(page, '运营负责人').getByRole('button', { name: '管理' }).click()
-  const dialog = page.getByRole('dialog', { name: '管理角色权限' })
-  const save = dialog.getByRole('button', { name: '保存并回读确认' })
-  await dialog.locator('[data-role-name]').fill('运营负责人-冲突草稿')
+  await rowFor(page, '运营负责人').getByRole('button', { name: '编辑' }).click()
+  const dialog = page.getByRole('dialog', { name: '编辑角色权限' })
+  const save = dialog.getByRole('button', { name: '保存角色' })
+  await dialog.getByLabel('角色名称').fill('运营负责人-冲突草稿')
   await save.click()
   await expect(dialog.getByRole('alert')).toContainText('角色版本或所有者保护规则已发生冲突')
-  await expect(dialog.locator('[data-role-name]')).toHaveValue('运营负责人-冲突草稿')
+  await expect(dialog.getByLabel('角色名称')).toHaveValue('运营负责人-冲突草稿')
   await expect(save).toBeEnabled()
   await save.click()
   await expect(dialog.getByRole('alert')).toContainText('角色版本或所有者保护规则已发生冲突')
@@ -191,24 +189,23 @@ test('role 409 preserves the same idempotency key and editor draft for retry', a
   await expect(page.getByRole('status')).toHaveCount(0)
 })
 
-test('owner invariant conflict is surfaced and never presented as confirmed success', async ({ page }) => {
-  await mockRoleServer(page, { ownerConflict: true })
+test('protected owner role is read-only in the canonical role editor', async ({ page }) => {
+  const server = await mockRoleServer(page)
   await openRealRoles(page)
-  await rowFor(page, '企业所有者').getByRole('button', { name: '查看与成员' }).click()
-  const dialog = page.getByRole('dialog', { name: '企业所有者角色' })
-  await dialog.getByLabel('角色成员 Alice Chen').uncheck()
-  await dialog.getByRole('button', { name: '保存并回读确认' }).click()
-  await expect(dialog.getByRole('alert')).toContainText('角色版本或所有者保护规则已发生冲突')
-  await expect(page.getByText(/角色配置已由服务端确认/)).toHaveCount(0)
+  await rowFor(page, '企业所有者').getByRole('button', { name: '查看' }).click()
+  const dialog = page.getByRole('dialog', { name: '内置角色详情' })
+  await expect(dialog.getByText(/内置角色只读/)).toBeVisible()
+  await expect(dialog.getByRole('button', { name: '保存角色' })).toHaveCount(0)
+  expect(server.getWrites()).toHaveLength(0)
 })
 
 test('a successful role write without readback is not presented as confirmed success', async ({ page }) => {
   await mockRoleServer(page, { readbackStatus: 500 })
   await openRealRoles(page)
-  await rowFor(page, '运营负责人').getByRole('button', { name: '管理' }).click()
-  const dialog = page.getByRole('dialog', { name: '管理角色权限' })
-  await dialog.locator('[data-role-name]').fill('未确认角色名')
-  await dialog.getByRole('button', { name: '保存并回读确认' }).click()
+  await rowFor(page, '运营负责人').getByRole('button', { name: '编辑' }).click()
+  const dialog = page.getByRole('dialog', { name: '编辑角色权限' })
+  await dialog.getByLabel('角色名称').fill('未确认角色名')
+  await dialog.getByRole('button', { name: '保存角色' }).click()
   await expect(dialog.getByRole('alert')).toContainText('role readback failed')
   await expect(page.getByText(/角色配置已由服务端确认/)).toHaveCount(0)
 })

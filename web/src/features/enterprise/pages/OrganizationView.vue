@@ -86,7 +86,7 @@ watch(
   },
   { immediate: true },
 )
-onMounted(() => void store.ensureDomains(['departments', 'members']).catch(() => undefined))
+onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).catch(() => undefined))
 </script>
 <template>
   <div class="page-stack" data-enterprise-page="organization" data-ui-template="WorkbenchPage">
@@ -210,7 +210,7 @@ onMounted(() => void store.ensureDomains(['departments', 'members']).catch(() =>
           ><span class="required">部门名称</span
           ><UiInput v-model="draft.name" class="input" maxlength="40" /></label
         ><label class="field"
-          ><span>部门编号</span><UiInput v-model="draft.code" class="input" maxlength="30" /></label
+          ><span>部门编号</span><UiInput v-model="draft.code" class="input" maxlength="30" :readonly="store.sourceKind === 'api'" :placeholder="store.sourceKind === 'api' ? '服务端合同暂未提供部门编号' : ''" /></label
         ><label class="field"
           ><span>上级部门</span
           ><UiSelect v-model="draft.parentId" class="select">
@@ -234,7 +234,7 @@ onMounted(() => void store.ensureDomains(['departments', 'members']).catch(() =>
           </UiSelect></label
         ><label class="field full-width"
           ><span>部门职责</span
-          ><UiTextarea v-model="draft.description" class="textarea" maxlength="300" /></label
+          ><UiTextarea v-model="draft.description" class="textarea" maxlength="300" :readonly="store.sourceKind === 'api'" :placeholder="store.sourceKind === 'api' ? '服务端合同暂未提供部门职责字段' : ''" /></label
         ><label class="option-line"><UiInput v-model="draft.enabled" type="checkbox" />启用部门</label>
       </div>
       <div class="notice-box department-notice">
@@ -252,6 +252,9 @@ onMounted(() => void store.ensureDomains(['departments', 'members']).catch(() =>
   display: grid;
   grid-template-columns: 244px minmax(0, 1fr);
   gap: 16px;
+}
+.organization-layout > * {
+  min-width: 0;
 }
 .department-description {
   font-size: 12px;

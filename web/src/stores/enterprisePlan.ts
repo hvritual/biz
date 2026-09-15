@@ -130,7 +130,7 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
     error.value = ''
     try {
       model.value = await loadEnterprisePlanReadModel()
-      if (model.value.usageError) error.value = model.value.usageError
+      if (model.value.usageError) error.value = `用量服务暂不可用：${model.value.usageError}`
     } catch (cause) {
       model.value = null
       error.value = enterprisePlanRuntimeError(cause)

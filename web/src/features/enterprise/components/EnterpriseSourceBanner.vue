@@ -36,10 +36,11 @@ async function refresh() {
       <AppIcon name="shield" :size="17" />
       <div>
         <strong>{{ store.authenticated ? '真实服务数据' : '需要登录业务账号' }}</strong>
-        <span v-if="store.sourceError" class="source-error">{{ store.sourceError }}</span>
+        <span v-if="store.sourceError" class="source-error" role="alert">{{ store.sourceError }}</span>
         <span v-else-if="store.loading">正在读取服务端数据…</span>
         <span v-else-if="store.authenticated">当前页面保持统一产品界面，数据与写操作由服务端确认。</span>
-        <span v-else>API 模式不会回退到本地示例数据。</span>
+        <span v-else-if="store.ready" class="source-error" role="alert">登录会话已失效或尚未登录；API 模式不会回退到本地示例数据。</span>
+        <span v-else>正在确认登录会话…</span>
       </div>
     </div>
 

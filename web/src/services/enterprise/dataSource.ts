@@ -105,7 +105,7 @@ export function projectMember(value: EnterpriseTenantMember): Member {
 export function projectRole(value: EnterpriseTenantRole): Role {
   return {
     id: value.id,
-    name: value.name,
+    name: value.protectedOwner && value.name === 'owner' ? '企业所有者' : value.name,
     description: '',
     builtin: value.protectedOwner,
     enabled: value.status === 'TENANT_ROLE_STATUS_ACTIVE',
