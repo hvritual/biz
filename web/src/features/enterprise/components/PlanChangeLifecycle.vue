@@ -189,7 +189,7 @@ async function confirmPreview() {
           </div>
           <div v-if="targetsLoading" class="inline-state">正在读取服务端可用套餐…</div>
           <div v-else class="target-grid">
-            <button
+            <UiButton
               v-for="target in targets"
               :key="`${target.planCode}:${target.version}`"
               type="button"
@@ -199,7 +199,7 @@ async function confirmPreview() {
               <span class="row-between"><strong>{{ target.name || target.planCode }}</strong><span>v{{ target.version }}</span></span>
               <small>{{ target.planCode }}</small>
               <span class="target-meta">{{ target.terms?.modules?.length ?? 0 }} 个模块 · {{ priceLabel(target) }}</span>
-            </button>
+            </UiButton>
             <div v-if="targets.length === 0" class="empty-target">当前销售范围没有其他可切换的已发布套餐。</div>
           </div>
         </div>
