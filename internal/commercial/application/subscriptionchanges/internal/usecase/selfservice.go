@@ -91,6 +91,40 @@ func (s *service) GetMySubscriptionChangePreview(ctx context.Context, request *v
 	return previewDTO(*preview), nil
 }
 
+func (s *service) ConfirmMySubscriptionChange(ctx context.Context, request *v1.ConfirmMySubscriptionChangeRequest) (*v1.SubscriptionChangeReceiptDTO, error) {
+	principal, err := tenantChangeActor(ctx)
+	if err != nil {
+		return nil, expose(err)
+	}
+	if request == nil {
+		return nil, expose(change.ErrInvalid)
+	}
+	return s.confirm(ctx, principal.Subject, principal.TenantID, request.ChangeId, request.RequestId, request.PreviewHash, request.Reason, true)
+}
+
+func (s *service) GetMySubscriptionChangeReceipt(ctx context.Context, request *v1.ReadMySubscriptionChangeReceiptRequest) (*v1.SubscriptionChangeReceiptDTO, error) {
+	principal, err := tenantChangeActor(ctx)
+	if err != nil {
+		return nil, expose(err)
+	}
+	if request == nil || !change.Key(request.ChangeId) {
+		return nil, expose(change.ErrInvalid)
+	}
+	receipt, err := requestscope.JoinValue(ctx, s.repositories, func(scope *requestscope.View[ports.SubscriptionChangeRepositories]) (*change.Receipt, error) {
+		return scope.Repositories().Changes.Receipt(scope.Context(), principal.TenantID, request.ChangeId, false)
+	})
+	if err != nil {
+		return nil, expose(err)
+	}
+	if receipt == nil {
+		return nil, expose(change.ErrNotFound)
+	}
+	if receipt.TenantID != principal.TenantID {
+		return nil, expose(change.ErrScope)
+	}
+	return receiptDTO(*receipt), nil
+}
+
 func tenantPreviewInput(tenantID string, request *v1.PreviewMySubscriptionChangeRequest) (change.Input, error) {
 	if request == nil || !change.Tenant(tenantID) {
 		return change.Input{}, change.ErrInvalid
