@@ -54,16 +54,8 @@ describe('primary navigation information architecture', () => {
       ...domain.actions.map((item) => item.path),
     ])
     expect(paths.some((path) => /\/(?:CUS-|CS-|SH-)[^/?]*/.test(String(path)))).toBe(false)
-
-    const expected: Record<string, string> = {
-      投放交付: '/rental/delivery',
-      服务恢复验证: '/rental/service',
-      回款跟进: '/rental/payment',
-      退租回收: '/rental/returns',
-    }
-    for (const [label, path] of Object.entries(expected)) {
-      expect(customerDomains['rental-operations']?.links.find((item) => item.label === label)?.path).toBe(path)
-    }
+    const expected: Record<string, string> = { 投放交付: '/rental/delivery', 服务恢复验证: '/rental/service', 回款跟进: '/rental/payment', 退租回收: '/rental/returns' }
+    for (const [label, path] of Object.entries(expected)) expect(customerDomains['rental-operations']?.links.find((item) => item.label === label)?.path).toBe(path)
   })
 
   it('places drink configuration under device operations rather than business operations', () => {
@@ -73,8 +65,15 @@ describe('primary navigation information architecture', () => {
     expect(customerDomains['business-operations']?.links.every((item) => item.path === undefined)).toBe(true)
   })
 
-  it('keeps platform management as one management-system domain', () => {
-    expect(platformCommercialNavigation.map((item) => item.label)).toEqual(['平台总览', '租户管理', '模块目录', '套餐版本', '租户权益'])
+  it('keeps platform management as one grouped lifecycle control-plane domain', () => {
+    expect(platformCommercialNavigation.map((item) => item.label)).toEqual([
+      '平台总览', '租户管理', '租户订阅', '套餐变更', '到期与宽限',
+      '模块目录', '商业功能', '套餐版本', '增购项',
+      '租户权益', '授权诊断', '额度管理', '专项授权', '用量计费', '商业审计',
+    ])
+    expect(Array.from(new Set(platformCommercialNavigation.map((item) => item.group).filter(Boolean)))).toEqual([
+      '总览', '租户生命周期', '产品与定价', '权益与授权', '计量与治理',
+    ])
     expect(platformCommercialNavigation.every((item) => item.path?.startsWith('/platform/'))).toBe(true)
   })
 
