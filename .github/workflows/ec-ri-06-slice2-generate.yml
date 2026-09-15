@@ -59,6 +59,41 @@ jobs:
           set -euo pipefail
           cd biz
           YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" ./scripts/verify-yunka-source.sh
+      - name: Classify EC-RI-06 tenant usage operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("contracts/commercial/operation-capabilities.v1.json")
+          document = json.loads(path.read_text())
+          by_id = {item["operation_id"]: item for item in document["operations"]}
+          by_id["commercial.subscription.get_my_usage"] = {
+              "operation_id": "commercial.subscription.get_my_usage",
+              "classification": "recovery",
+              "capability_codes": [],
+              "children": [{
+                  "operation_id": "tenant.member.count_quota_usage",
+                  "mode": "always",
+                  "source": "internal/commercial/application/subscriptionmanagement/internal/usecase/usage.go#GetMyTenantUsage",
+              }],
+              "exemption_reason": "EC-RI-06 authenticated current-tenant usage projection; it only reports authoritative usage facts for the trusted tenant and remains protected by tenant.entitlement.read.",
+          }
+          by_id["tenant.member.count_quota_usage"] = {
+              "operation_id": "tenant.member.count_quota_usage",
+              "classification": "foundation_exempt",
+              "module_code": "access-management",
+              "capability_codes": ["tenant.member.lifecycle"],
+              "children": [],
+              "exemption_reason": "EC-RI-06 transport-private authoritative quota meter joined to commercial.subscription.get_my_usage; it accepts no tenant id and grants no independent tenant action.",
+          }
+          document["mapping_version"] = "15"
+          document["operations"] = sorted(by_id.values(), key=lambda item: item["operation_id"])
+          path.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n")
+          PY
       - name: Generate canonical contracts and assembly
         shell: bash
         run: |
@@ -66,7 +101,7 @@ jobs:
           export PATH="$(go env GOPATH)/bin:$PATH"
           cd biz
           make generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$RUNNER_TEMP/protoc/bin/protoc"
-      - name: Commit deterministic generated artifacts
+      - name: Commit deterministic source and generated artifacts
         shell: bash
         run: |
           set -euo pipefail
