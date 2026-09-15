@@ -120,7 +120,7 @@ for required in [
         raise RuntimeError(f'missing merged UI contract: {required}')
 
 # Canonical API E2E assertions follow the product-level error contract. The source banner intentionally
-# converts raw authentication responses into a user-facing fail-closed state, while form readback
+# converts raw authentication responses into a stable user-facing fail-closed state, while form readback
 # errors are scoped to the form alert instead of the simultaneous global source-status alert.
 company_spec = 'web/e2e/enterprise-company-real.spec.ts'
 replace_once(
@@ -131,13 +131,13 @@ replace_once(
 replace_once(
     company_spec,
     "  await expect(page.getByText('unauthenticated', { exact: true })).toBeVisible()",
-    "  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('登录会话已失效或尚未登录')",
+    "  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('登录会话已失效')",
 )
 members_spec = 'web/e2e/enterprise-members-real.spec.ts'
 replace_once(
     members_spec,
     "  await expect(page.getByText('unauthenticated', { exact: true })).toBeVisible()",
-    "  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('登录会话已失效或尚未登录')",
+    "  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('登录会话已失效')",
 )
 
 subprocess.check_call([
