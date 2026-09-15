@@ -7,10 +7,24 @@ import {
 } from '@/services/commercial/platformCommercial'
 import { readSession, sessionContext, type TrustedSession } from '@/services/runtime/api'
 
+export type EnterpriseQuotaUsage = Readonly<{
+  moduleCode: string
+  key: string
+  known: boolean
+  used: string | number
+  evidence: string
+}>
+
+export type EnterpriseTenantUsage = Readonly<{
+  usages: EnterpriseQuotaUsage[]
+}>
+
 export type EnterprisePlanReadModel = Readonly<{
   session: TrustedSession
   subscription: TenantSubscriptionDTO
   entitlements: EntitlementView
+  usage: EnterpriseTenantUsage
+  usageError: string
 }>
 
 function requireTenantSession(session: TrustedSession) {
@@ -49,6 +63,20 @@ export async function getMyTenantEntitlements(session: TrustedSession) {
   )
 }
 
+export async function getMyTenantUsage(session: TrustedSession) {
+  requireTenantSession(session)
+  return request<EnterpriseTenantUsage>('/v1/tenant/usage', {
+    headers: { 'X-Biz-Session-Context': sessionContext(session) },
+  })
+}
+
+function isUsageAuthBoundaryError(error: unknown) {
+  return (
+    error instanceof CommercialApiError &&
+    (error.code === 'unauthenticated' || error.code === 'forbidden' || error.code === 'conflict')
+  )
+}
+
 export async function loadEnterprisePlanReadModel(): Promise<EnterprisePlanReadModel> {
   const session = await readEnterprisePlanSession()
   requireTenantSession(session)
@@ -62,5 +90,15 @@ export async function loadEnterprisePlanReadModel(): Promise<EnterprisePlanReadM
   if (entitlements.tenantId && entitlements.tenantId !== session.active_tenant_id) {
     throw new Error('权益服务返回了不属于当前租户的数据。')
   }
-  return Object.freeze({ session, subscription, entitlements })
+
+  let usage: EnterpriseTenantUsage = { usages: [] }
+  let usageError = ''
+  try {
+    usage = await getMyTenantUsage(session)
+  } catch (error) {
+    if (isUsageAuthBoundaryError(error)) throw error
+    usageError = enterprisePlanRuntimeError(error)
+  }
+
+  return Object.freeze({ session, subscription, entitlements, usage, usageError })
 }
