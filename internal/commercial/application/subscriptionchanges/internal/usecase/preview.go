@@ -111,12 +111,15 @@ func (s *service) preview(ctx context.Context, actorID string, input change.Inpu
 		projected.EntitlementVersion = 0
 		projected.CatalogRevision = material.current.CatalogRevision
 		pricing := "NO_PRICE_REFERENCE"
-		if material.target.Terms.PriceRef != "" {
+		if i.Action != change.StopRenewal && material.target.Terms.PriceRef != "" {
 			pricing = "PLATFORM_MANUAL_APPROVAL_REQUIRED"
 		}
 		impacts := []string{"Existing tenant data is preserved; this operation never deletes resources.", "Projected rights include existing overrides and safety restrictions.", "No resource consumption or output-field enforcement is added by CE-09."}
 		if tenantSelfService {
-			impacts = append(impacts, "Tenant self-service preview only: subscription and entitlement authority remain unchanged until a separate future confirmation path succeeds.")
+			impacts = append(impacts, "Tenant self-service preview only: subscription and entitlement authority remain unchanged until a separate confirmation succeeds.")
+			if pricing != "NO_PRICE_REFERENCE" {
+				impacts = append(impacts, "This target carries a price reference. Tenant confirmation is fail-closed until the external commercial/payment approval authority has admitted the change.")
+			}
 		}
 		if mode == change.Scheduled {
 			impacts = append(impacts, "Scheduled intent only: existing rights remain unchanged until a future validated executor applies it.")
