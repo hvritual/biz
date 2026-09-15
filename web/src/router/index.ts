@@ -76,7 +76,7 @@ export const router = createRouter({
     },
     {
       path: '/enterprise/plan',
-      component: () => import('@/features/enterprise/pages/PlansView.vue'),
+      component: () => import('@/features/enterprise/pages/PlansEntryView.vue'),
       meta: { title: '套餐额度', module: 'enterprise' },
     },
     {

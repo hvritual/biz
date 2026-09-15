@@ -37,6 +37,8 @@ const (
 )
 
 var OwnerRequiredPermissions = []string{
+	"commercial.catalog.read",
+	"tenant.entitlement.read",
 	"tenant.member.manage",
 	"tenant.member.read",
 	"tenant.organization.manage",

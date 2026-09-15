@@ -503,6 +503,9 @@ export interface Commercial_V1_GetMyEntitlementsRequest {
   capabilityCodes?: readonly string[];
 }
 
+export interface Commercial_V1_GetMySubscriptionRequest {
+}
+
 export interface Commercial_V1_GetPlanVersionRequest {
   planCode?: string;
   version?: string;
@@ -1536,6 +1539,15 @@ export const operations = {
       { method: "POST", path: "/v1/platform/tenants/{tenant_id}/subscription/change-previews", body: "*" },
     ]
   },
+  "commercial.v1.SubscriptionManagementApplication.GetMySubscription": {
+    fullName: "commercial.v1.SubscriptionManagementApplication.GetMySubscription",
+    rpcPath: "/commercial.v1.SubscriptionManagementApplication/GetMySubscription",
+    requestType: "commercial.v1.GetMySubscriptionRequest",
+    responseType: "commercial.v1.TenantSubscriptionDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/subscription" },
+    ]
+  },
   "commercial.v1.SubscriptionManagementApplication.GetTenantSubscription": {
     fullName: "commercial.v1.SubscriptionManagementApplication.GetTenantSubscription",
     rpcPath: "/commercial.v1.SubscriptionManagementApplication/GetTenantSubscription",
@@ -1954,6 +1966,10 @@ export class Commercial_V1_SubscriptionChangesApplicationClient {
 
 export class Commercial_V1_SubscriptionManagementApplicationClient {
   constructor(private readonly transport: RpcTransport) {}
+
+  getMySubscription(request: Commercial_V1_GetMySubscriptionRequest): Promise<Commercial_V1_TenantSubscriptionDTO> {
+    return this.transport.call<Commercial_V1_GetMySubscriptionRequest, Commercial_V1_TenantSubscriptionDTO>(operations["commercial.v1.SubscriptionManagementApplication.GetMySubscription"], request);
+  }
 
   getTenantSubscription(request: Commercial_V1_GetTenantSubscriptionRequest): Promise<Commercial_V1_TenantSubscriptionDTO> {
     return this.transport.call<Commercial_V1_GetTenantSubscriptionRequest, Commercial_V1_TenantSubscriptionDTO>(operations["commercial.v1.SubscriptionManagementApplication.GetTenantSubscription"], request);

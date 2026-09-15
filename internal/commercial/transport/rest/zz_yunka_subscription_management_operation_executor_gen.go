@@ -34,6 +34,9 @@ func RegisterSubscriptionManagementOperationExecutor(mux *http.ServeMux, applica
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &SubscriptionManagementOperationHandler{application: application, executor: executor}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenant/subscription", handler.handleOperationGetMySubscription); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "GET", "/v1/platform/tenants/{tenant_id}/subscription", handler.handleOperationGetTenantSubscription); err != nil {
 		return err
 	}
@@ -73,6 +76,23 @@ func writeSubscriptionManagementOperationError(writer http.ResponseWriter, err e
 		return
 	}
 	http.Error(writer, "application request failed", http.StatusBadRequest)
+}
+
+func (handler *SubscriptionManagementOperationHandler) handleOperationGetMySubscription(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.GetMySubscriptionRequest{}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionManagementGetMySubscription(), wire, handler.application.GetMySubscription)
+	if err != nil {
+		writeSubscriptionManagementOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
 }
 
 func (handler *SubscriptionManagementOperationHandler) handleOperationGetTenantSubscription(writer http.ResponseWriter, request *http.Request) {

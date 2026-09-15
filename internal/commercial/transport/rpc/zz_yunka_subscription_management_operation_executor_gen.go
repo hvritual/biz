@@ -35,6 +35,19 @@ func RegisterSubscriptionManagementOperationExecutor(registrar grpc.ServiceRegis
 	return nil
 }
 
+func (server *SubscriptionManagementOperationServer) GetMySubscription(ctx context.Context, request *commercialv1.GetMySubscriptionRequest) (*commercialv1.TenantSubscriptionDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanSubscriptionManagementGetMySubscription(), request, server.application.GetMySubscription)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *SubscriptionManagementOperationServer) GetTenantSubscription(ctx context.Context, request *commercialv1.GetTenantSubscriptionRequest) (*commercialv1.TenantSubscriptionDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {

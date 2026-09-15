@@ -62,7 +62,10 @@ func TestCE13PlatformCommercialWebSessionContract(t *testing.T) {
 		"commercial.subscription.change.preview.get": {},
 		"commercial.subscription.change.get":         {},
 	}
-	allowedCommercialWeb := map[string]struct{}{"commercial.entitlement.get_my": {}}
+	allowedCommercialWeb := map[string]struct{}{
+		"commercial.entitlement.get_my":  {},
+		"commercial.subscription.get_my": {},
+	}
 	for id := range expectedPlatformWeb {
 		allowedCommercialWeb[id] = struct{}{}
 	}

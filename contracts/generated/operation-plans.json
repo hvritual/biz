@@ -1562,6 +1562,42 @@
       }
     },
     {
+      "operationId": "commercial.subscription.get_my",
+      "domain": "commercial",
+      "application": "subscription_management",
+      "useCase": "get_my_subscription",
+      "requestType": "commercial.v1.GetMySubscriptionRequest",
+      "responseType": "commercial.v1.TenantSubscriptionDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.entitlement.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionManagementApplication/GetMySubscription",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/subscription"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "commercial.subscription.rule.list",
       "domain": "commercial",
       "application": "subscription_management",

@@ -4,7 +4,7 @@
 
 将 CoffeeLink 企业中心从“完整前端预览 + 本地快照”收敛为真实租户运行面：所有读取以服务端为准，所有写操作必须具备真实鉴权、幂等、回执与回读，不允许 API 失败后静默回退为本地成功。
 
-当前主线基线：`main@c89ec471306c91f49fdf265f1766495abb1f4f08`（EC-RI-01～04 已合并）。EC-RI-05 已在独立集成分支完成实现并进入 PR #103 最终资格收口。
+当前主线基线：`main@7691ad68ca9252f6456b8c77eaf04bfac91e6cbf`（EC-RI-01～05 已合并）。EC-RI-06 按独立切片推进，当前首个切片只关闭租户套餐/权益/额度上限的权威读取，不提前宣称整个 EC-RI-06 完成。
 
 企业中心固定范围：
 
@@ -25,8 +25,8 @@
 | EC-RI-02 Member profile + role binding | ✅ Completed in PR #99 | 成员档案成为 tenant-scoped 服务端权威数据；角色关系和 derived data scope 来自 Access；MySQL、浏览器与视觉门禁已建立。 |
 | EC-RI-03 Role permission | ✅ Completed in PR #100 | 角色页面 API 模式使用真实 Access Role API；角色、permission grants、状态和成员绑定均由服务端权威数据驱动，并具备幂等、409 与 readback 门禁。 |
 | EC-RI-04 Organization / Department | ✅ Completed in PR #101 | Department contract、持久化、层级/负责人/成员归属约束、真实组织页面、MySQL 与浏览器/视觉门禁已合并主线。 |
-| EC-RI-05 Tenant profile | ✅ Implementation complete in PR #103 | 企业资料 API 模式使用真实 Tenant Profile API；企业字段、版本 CAS、租户隔离、asset reference、幂等、readback、MySQL/browser/visual gate 已建立。 |
-| EC-RI-06 Plan / entitlement / quota | ⏳ Pending | 企业中心套餐额度仍待消费端真实权益与 usage 接入。 |
+| EC-RI-05 Tenant profile | ✅ Completed in PR #103 | 企业资料 API 模式使用真实 Tenant Profile API；企业字段、版本 CAS、租户隔离、asset reference、幂等、readback、MySQL/browser/visual gate 已合并主线。 |
+| EC-RI-06 Plan / entitlement / quota | 🚧 In progress | 首个独立切片已实现当前租户 subscription、entitlement 与 quota limit 权威读取；usage、upgrade/change preview、confirm + receipt 仍待后续切片。 |
 | EC-RI-07 Server audit trail | ⏳ Pending | 操作日志仍待服务端不可伪造审计来源。 |
 | EC-RI-08 Production gate | ⏳ Pending | 等六个企业中心模块全部真实化后执行最终生产门禁。 |
 
@@ -46,7 +46,9 @@ EC-RI-01～05 已将 API 模式下的成员管理、角色权限、组织架构�
 - API 模式禁止 DataURL Logo，生产路径只接受资产引用；
 - 1366×768 / 1440×900 / 1536×1024 / 390×844 视觉证据与页面横向 overflow 检查。
 
-套餐额度、操作日志仍存在 preview 或未完成真实服务路径，因此整个企业中心尚不能称为“全部前后端完整对接”。
+EC-RI-06 首个切片进一步把套餐额度 API 模式从本地示例状态分离：当前订阅、模块/能力决策与 quota limit 来自 Commercial 权威服务；尚未接通的 usage 必须明确显示“权威用量未接入”，禁止以 `0`、假百分比或本地示例替代。
+
+套餐升级/续费写链路与操作日志仍未完成真实服务路径，因此整个企业中心尚不能称为“全部前后端完整对接”。
 
 ### Backend capabilities already available
 
@@ -72,14 +74,17 @@ Commercial：
 - module catalog
 - plan/version
 - subscription
+- tenant-scoped subscription projection
 - entitlement
 - quota definition and entitlement limits
 
 ### Remaining contract gaps
 
-EC-RI-04 已关闭 Organization / Department contract 缺口，EC-RI-05 已关闭 Tenant/company profile 真实化缺口。当前剩余真实化缺口集中在：
+EC-RI-04 已关闭 Organization / Department contract 缺口，EC-RI-05 已关闭 Tenant/company profile 真实化缺口。EC-RI-06 首个切片关闭“当前租户订阅 + entitlement/quota limit 只读消费视图”缺口。当前剩余真实化缺口集中在：
 
-- 套餐、entitlement、quota 的企业中心消费视图及权威 usage；
+- authoritative usage counters；
+- 套餐 upgrade/change preview；
+- confirm + receipt/readback；
 - 不可由前端伪造的 server audit trail。
 
 `derived_data_scope` 仍按 EC-RI-02 的角色 permission grants 聚合规则生成成员读模型。EC-RI-04 提供权威 `department_id`、部门层级与组织关系作为后续数据范围策略的输入，但**不把部门层级直接等价为 authorization 或重写既有角色授权语义**。
@@ -145,7 +150,7 @@ EC-RI-04 已关闭 Organization / Department contract 缺口，EC-RI-05 已关�
 - 不改变 Tenant lifecycle 的平台控制面职责。
 - `server/**` 保持只读。
 
-### EC-RI-06 — Plan, entitlement and quota real integration
+### EC-RI-06 — Plan, entitlement and quota real integration 🚧
 
 企业中心套餐额度改为消费端视图：
 
@@ -158,6 +163,28 @@ EC-RI-04 已关闭 Organization / Department contract 缺口，EC-RI-05 已关�
 - incremental upgrade pricing authority retained by Commercial/Pricing
 
 禁止硬编码成员 500、点位 150、设备 500、存储 500 GB 等示例上限。
+
+**Slice 1 — authoritative tenant plan read**
+
+已完成首个独立只读切片：
+
+- 新增 `GET /v1/tenant/subscription`，复用既有 `SubscriptionManagementApplication` 与 SubscriptionRepository，不新增第二套 subscription 模型或持久化表。
+- 请求不接受 tenant id；租户范围只从可信 principal/session 的 `TenantID` 获取。
+- 新 operation `commercial.subscription.get_my` 纳入 CE-03 capability mapping，并将 Web Session 放行限制在显式 tenant self-service read allowlist，不扩大 provisioning/platform commercial 认证面。
+- tenant owner 权限闭包补齐 `tenant.entitlement.read` 与 `commercial.catalog.read`，使默认租户管理员能够读取自身商业事实而无需 `platform.*` 权限。
+- API 模式 `PlansEntryView -> PlansRealView` 消费 `GET /v1/tenant/subscription` 与 `POST /v1/tenant/entitlements`，不再使用本地示例套餐作为失败兜底。
+- 当前订阅 plan code/version/state/period/revision、模块/能力决策与 quota limit 均由服务端返回。
+- 权威 usage 尚未接入时明确展示“权威用量未接入”；不计算假使用率，不把未知值写成 `0`。
+- 浏览器门禁覆盖 tenant id 不可伪造、trusted session/CSRF、401/403 无 demo fallback、quota limit 权威性、unknown usage 语义与四个 CoffeeLink 视口。
+- 架构门禁固定检查 self-service contract 不接受 tenant id、服务按 `Principal.TenantID` 选 subscription、owner 商业只读权限存在。
+
+**Remaining EC-RI-06 slices**
+
+- authoritative usage counters；
+- upgrade/change preview；
+- confirm + stable idempotency + receipt/readback；
+- incremental upgrade price projection 继续由 Commercial/Pricing 权威链路给出；
+- 不在真实后端能力缺失时伪造续费/购买成功。
 
 ### EC-RI-07 — Server audit trail
 
@@ -194,11 +221,11 @@ EC-RI-04 已关闭 Organization / Department contract 缺口，EC-RI-05 已关�
 → `EC-RI-03 Role permission ✅`
 → `EC-RI-04 Organization ✅`
 → `EC-RI-05 Tenant profile ✅`
-→ `EC-RI-06 Plan/quota`
+→ `EC-RI-06 Plan/quota 🚧`
 → `EC-RI-07 Audit`
 → `EC-RI-08 Production gate`
 
-EC-RI-05 与 EC-RI-06 在 EC-RI-01 后具备并行条件，但每轮仍保持独立 PR。
+EC-RI-06 继续按独立切片交付；只有 usage、preview、confirm/receipt 均关闭后，才可将整个 EC-RI-06 标记为完成。
 
 ## 6. Definition of done
 

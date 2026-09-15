@@ -544,6 +544,42 @@ func (x *GetTenantSubscriptionRequest) GetTenantId() string {
 	return ""
 }
 
+type GetMySubscriptionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetMySubscriptionRequest) Reset() {
+	*x = GetMySubscriptionRequest{}
+	mi := &file_commercial_v1_subscription_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetMySubscriptionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetMySubscriptionRequest) ProtoMessage() {}
+
+func (x *GetMySubscriptionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_subscription_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetMySubscriptionRequest.ProtoReflect.Descriptor instead.
+func (*GetMySubscriptionRequest) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_subscription_proto_rawDescGZIP(), []int{6}
+}
+
 type BootstrapTenantSubscriptionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
@@ -555,7 +591,7 @@ type BootstrapTenantSubscriptionRequest struct {
 
 func (x *BootstrapTenantSubscriptionRequest) Reset() {
 	*x = BootstrapTenantSubscriptionRequest{}
-	mi := &file_commercial_v1_subscription_proto_msgTypes[6]
+	mi := &file_commercial_v1_subscription_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -567,7 +603,7 @@ func (x *BootstrapTenantSubscriptionRequest) String() string {
 func (*BootstrapTenantSubscriptionRequest) ProtoMessage() {}
 
 func (x *BootstrapTenantSubscriptionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_subscription_proto_msgTypes[6]
+	mi := &file_commercial_v1_subscription_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -580,7 +616,7 @@ func (x *BootstrapTenantSubscriptionRequest) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use BootstrapTenantSubscriptionRequest.ProtoReflect.Descriptor instead.
 func (*BootstrapTenantSubscriptionRequest) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_subscription_proto_rawDescGZIP(), []int{6}
+	return file_commercial_v1_subscription_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *BootstrapTenantSubscriptionRequest) GetRequestId() string {
@@ -613,7 +649,7 @@ type BootstrapTenantSubscriptionResult struct {
 
 func (x *BootstrapTenantSubscriptionResult) Reset() {
 	*x = BootstrapTenantSubscriptionResult{}
-	mi := &file_commercial_v1_subscription_proto_msgTypes[7]
+	mi := &file_commercial_v1_subscription_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -625,7 +661,7 @@ func (x *BootstrapTenantSubscriptionResult) String() string {
 func (*BootstrapTenantSubscriptionResult) ProtoMessage() {}
 
 func (x *BootstrapTenantSubscriptionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_subscription_proto_msgTypes[7]
+	mi := &file_commercial_v1_subscription_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -638,7 +674,7 @@ func (x *BootstrapTenantSubscriptionResult) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use BootstrapTenantSubscriptionResult.ProtoReflect.Descriptor instead.
 func (*BootstrapTenantSubscriptionResult) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_subscription_proto_rawDescGZIP(), []int{7}
+	return file_commercial_v1_subscription_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *BootstrapTenantSubscriptionResult) GetSubscription() *TenantSubscriptionDTO {
@@ -705,7 +741,8 @@ const file_commercial_v1_subscription_proto_rawDesc = "" +
 	"\x0frenewal_stopped\x18\x10 \x01(\bR\x0erenewalStopped\x12*\n" +
 	"\x11pending_change_id\x18\x11 \x01(\tR\x0fpendingChangeId\";\n" +
 	"\x1cGetTenantSubscriptionRequest\x12\x1b\n" +
-	"\ttenant_id\x18\x01 \x01(\tR\btenantId\"\x81\x01\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\"\x1a\n" +
+	"\x18GetMySubscriptionRequest\"\x81\x01\n" +
 	"\"BootstrapTenantSubscriptionRequest\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12\x1b\n" +
@@ -713,15 +750,16 @@ const file_commercial_v1_subscription_proto_rawDesc = "" +
 	"\vsales_scope\x18\x03 \x01(\tR\n" +
 	"salesScope\"m\n" +
 	"!BootstrapTenantSubscriptionResult\x12H\n" +
-	"\fsubscription\x18\x01 \x01(\v2$.commercial.v1.TenantSubscriptionDTOR\fsubscription2\xcb\n" +
-	"\n" +
+	"\fsubscription\x18\x01 \x01(\v2$.commercial.v1.TenantSubscriptionDTOR\fsubscription2\xaf\f\n" +
 	"!SubscriptionManagementApplication\x12\xf1\x02\n" +
 	"\x1aPutDefaultSubscriptionRule\x120.commercial.v1.PutDefaultSubscriptionRuleRequest\x1a).commercial.v1.DefaultSubscriptionRuleDTO\"\xf5\x01\xe2\xf3\x18\xb4\x01\n" +
 	" commercial.subscription.rule.put\x12\x1dput_default_subscription_rule\x1a\x1cplatform.subscription.manage\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02B\x1bcommercial.plan.eligibilityH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x026:\x01*\x1a1/v1/platform/subscription-default-rules/{rule_id}\x12\xa6\x02\n" +
 	"\x1cListDefaultSubscriptionRules\x122.commercial.v1.ListDefaultSubscriptionRulesRequest\x1a3.commercial.v1.ListDefaultSubscriptionRulesResponse\"\x9c\x01\xe2\xf3\x18i\n" +
 	"!commercial.subscription.rule.list\x12\x1flist_default_subscription_rules\x1a\x1aplatform.subscription.read2\x01\x02R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02)\x12'/v1/platform/subscription-default-rules\x12\x98\x02\n" +
 	"\x15GetTenantSubscription\x12+.commercial.v1.GetTenantSubscriptionRequest\x1a$.commercial.v1.TenantSubscriptionDTO\"\xab\x01\xe2\xf3\x18r\n" +
-	"\x1bcommercial.subscription.get\x12\x17get_tenant_subscription\x1a\x1aplatform.subscription.read\x1a\x14platform.tenant.read2\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02/\x12-/v1/platform/tenants/{tenant_id}/subscription\x1a\xed\x02\xda\xf3\x18\xe8\x02\n" +
+	"\x1bcommercial.subscription.get\x12\x17get_tenant_subscription\x1a\x1aplatform.subscription.read\x1a\x14platform.tenant.read2\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02/\x12-/v1/platform/tenants/{tenant_id}/subscription\x12\xe1\x01\n" +
+	"\x11GetMySubscription\x12'.commercial.v1.GetMySubscriptionRequest\x1a$.commercial.v1.TenantSubscriptionDTO\"}\xe2\xf3\x18Z\n" +
+	"\x1ecommercial.subscription.get_my\x12\x13get_my_subscription\x1a\x17tenant.entitlement.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/tenant/subscription\x1a\xed\x02\xda\xf3\x18\xe8\x02\n" +
 	"\x17subscription_management\x12\x1acommercial/plan_management\x1a\xb0\x02\n" +
 	"&commercial.subscription.bootstrap_base\x12\x1bbootstrap_base_subscription\x1a\x16platform.tenant.create\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02B\x1bcommercial.plan.eligibilityH\x01R\x04\b\x03\x10\x01Z0commercial.v1.BootstrapTenantSubscriptionRequestb/commercial.v1.BootstrapTenantSubscriptionResultj\x19BootstrapBaseSubscriptionBV\xca\xf3\x18\x10\n" +
 	"\n" +
@@ -739,7 +777,7 @@ func file_commercial_v1_subscription_proto_rawDescGZIP() []byte {
 	return file_commercial_v1_subscription_proto_rawDescData
 }
 
-var file_commercial_v1_subscription_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_commercial_v1_subscription_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_commercial_v1_subscription_proto_goTypes = []any{
 	(*DefaultSubscriptionRuleDTO)(nil),           // 0: commercial.v1.DefaultSubscriptionRuleDTO
 	(*PutDefaultSubscriptionRuleRequest)(nil),    // 1: commercial.v1.PutDefaultSubscriptionRuleRequest
@@ -747,8 +785,9 @@ var file_commercial_v1_subscription_proto_goTypes = []any{
 	(*ListDefaultSubscriptionRulesResponse)(nil), // 3: commercial.v1.ListDefaultSubscriptionRulesResponse
 	(*TenantSubscriptionDTO)(nil),                // 4: commercial.v1.TenantSubscriptionDTO
 	(*GetTenantSubscriptionRequest)(nil),         // 5: commercial.v1.GetTenantSubscriptionRequest
-	(*BootstrapTenantSubscriptionRequest)(nil),   // 6: commercial.v1.BootstrapTenantSubscriptionRequest
-	(*BootstrapTenantSubscriptionResult)(nil),    // 7: commercial.v1.BootstrapTenantSubscriptionResult
+	(*GetMySubscriptionRequest)(nil),             // 6: commercial.v1.GetMySubscriptionRequest
+	(*BootstrapTenantSubscriptionRequest)(nil),   // 7: commercial.v1.BootstrapTenantSubscriptionRequest
+	(*BootstrapTenantSubscriptionResult)(nil),    // 8: commercial.v1.BootstrapTenantSubscriptionResult
 }
 var file_commercial_v1_subscription_proto_depIdxs = []int32{
 	0, // 0: commercial.v1.ListDefaultSubscriptionRulesResponse.rules:type_name -> commercial.v1.DefaultSubscriptionRuleDTO
@@ -756,11 +795,13 @@ var file_commercial_v1_subscription_proto_depIdxs = []int32{
 	1, // 2: commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule:input_type -> commercial.v1.PutDefaultSubscriptionRuleRequest
 	2, // 3: commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules:input_type -> commercial.v1.ListDefaultSubscriptionRulesRequest
 	5, // 4: commercial.v1.SubscriptionManagementApplication.GetTenantSubscription:input_type -> commercial.v1.GetTenantSubscriptionRequest
-	0, // 5: commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule:output_type -> commercial.v1.DefaultSubscriptionRuleDTO
-	3, // 6: commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules:output_type -> commercial.v1.ListDefaultSubscriptionRulesResponse
-	4, // 7: commercial.v1.SubscriptionManagementApplication.GetTenantSubscription:output_type -> commercial.v1.TenantSubscriptionDTO
-	5, // [5:8] is the sub-list for method output_type
-	2, // [2:5] is the sub-list for method input_type
+	6, // 5: commercial.v1.SubscriptionManagementApplication.GetMySubscription:input_type -> commercial.v1.GetMySubscriptionRequest
+	0, // 6: commercial.v1.SubscriptionManagementApplication.PutDefaultSubscriptionRule:output_type -> commercial.v1.DefaultSubscriptionRuleDTO
+	3, // 7: commercial.v1.SubscriptionManagementApplication.ListDefaultSubscriptionRules:output_type -> commercial.v1.ListDefaultSubscriptionRulesResponse
+	4, // 8: commercial.v1.SubscriptionManagementApplication.GetTenantSubscription:output_type -> commercial.v1.TenantSubscriptionDTO
+	4, // 9: commercial.v1.SubscriptionManagementApplication.GetMySubscription:output_type -> commercial.v1.TenantSubscriptionDTO
+	6, // [6:10] is the sub-list for method output_type
+	2, // [2:6] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
 	2, // [2:2] is the sub-list for extension extendee
 	0, // [0:2] is the sub-list for field type_name
@@ -777,7 +818,7 @@ func file_commercial_v1_subscription_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_commercial_v1_subscription_proto_rawDesc), len(file_commercial_v1_subscription_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
