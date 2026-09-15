@@ -33,8 +33,10 @@ function routeBlock(path) {
   return router.slice(start, next < 0 ? router.length : next)
 }
 
-const pageRoot = resolve(root, 'src/features')
-const pageFiles = walk(pageRoot).filter((path) => path.includes('/pages/') && path.endsWith('.vue'))
+const featureRoot = resolve(root, 'src/features')
+const featureFiles = walk(featureRoot).filter((path) => path.endsWith('.vue'))
+const pageFiles = featureFiles.filter((path) => path.includes('/pages/'))
+const shellFiles = featureFiles.filter((path) => path.includes('/features/app-shell/'))
 
 for (const file of pageFiles) {
   const name = basename(file)
@@ -48,6 +50,15 @@ for (const file of pageFiles) {
     failures.push(`${rel}: business page must not embed RuntimeConsoleView.vue`)
   }
 }
+
+for (const file of shellFiles) {
+  const source = readFileSync(file, 'utf8')
+  if (source.includes('VITE_DATA_MODE')) {
+    failures.push(`${relative(root, file)}: product shell must not branch product structure using VITE_DATA_MODE`)
+  }
+}
+
+if (router.includes('VITE_DATA_MODE')) failures.push('src/router/index.ts: router must not select components using VITE_DATA_MODE')
 
 for (const expected of contract.canonical_routes) {
   const block = routeBlock(expected.path)
@@ -79,9 +90,18 @@ for (const block of routeBlocks) {
 const enterpriseStorePath = resolve(root, 'src/stores/enterprise.ts')
 if (existsSync(enterpriseStorePath)) {
   const source = readFileSync(enterpriseStorePath, 'utf8')
-  if (source.includes("from '@/services/demo/repository'") && !source.includes('createEnterpriseDataSource')) {
+  if (source.includes("from '@/services/demo/repository'")) {
+    failures.push('enterprise store must not import the demo repository directly; use createEnterpriseDataSource')
+  }
+  if (!source.includes('createEnterpriseDataSource')) {
     failures.push('enterprise store must select demo/api through the enterprise data-source boundary')
   }
+}
+
+const dataSourcePath = resolve(root, 'src/services/enterprise/dataSource.ts')
+if (!existsSync(dataSourcePath)) failures.push('enterprise data-source boundary is missing')
+else if (!readFileSync(dataSourcePath, 'utf8').includes('VITE_DATA_MODE')) {
+  failures.push('enterprise data-source boundary must own data-mode selection')
 }
 
 if (failures.length) {
@@ -90,4 +110,6 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log(`Route convergence passed: ${contract.canonical_routes.length} canonical enterprise routes; no parallel page trees detected.`)
+console.log(
+  `Route convergence passed: ${contract.canonical_routes.length} canonical enterprise routes; product shell has no data-mode UI branch; no parallel page trees detected.`,
+)
