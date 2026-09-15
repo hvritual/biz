@@ -46,8 +46,62 @@ message ListPlanVersionsResponse { repeated PlanVersionDTO versions = 1; uint64 
 message CheckPlanEligibilityRequest { string plan_code = 1; uint64 version = 2; string sales_scope = 3; }
 message PlanEligibilityDTO { bool eligible = 1; string reason = 2; PlanVersionDTO version = 3; }
 
+// Transport-private tenant change helpers. These messages have no HTTP binding;
+// the trusted subscription-change root supplies sales_scope and current plan.
+message ListTenantChangeTargetsRequest { string sales_scope = 1; }
+message ListTenantChangeTargetsResponse { repeated PlanVersionDTO targets = 1; }
+message ResolveTenantChangeTargetRequest { string plan_code = 1; uint64 version = 2; string sales_scope = 3; }
+
 service PlanManagementApplication {
- option (yunka.dsl.v1.application) = { name: "plan_management" requires: "commercial/module_catalog" };
+ option (yunka.dsl.v1.application) = {
+  name: "plan_management"
+  requires: "commercial/module_catalog"
+  operations: {
+   id: "commercial.plan.subscription_snapshot"
+   use_case: "read_tenant_subscription_plan_version"
+   permissions: "tenant.subscription.manage"
+   permission_mode: PERMISSION_ALL
+   tenant_required: true
+   authentication: AUTHENTICATION_API_KEY
+   authentication: AUTHENTICATION_WEB_SESSION
+   execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+   request_type: "commercial.v1.GetPlanVersionRequest"
+   response_type: "commercial.v1.PlanVersionDTO"
+   application_method: "ReadTenantSubscriptionPlanVersion"
+  }
+  operations: {
+   id: "commercial.plan.change_target.resolve"
+   use_case: "resolve_tenant_change_target"
+   permissions: "tenant.subscription.manage"
+   permissions: "commercial.catalog.read"
+   permission_mode: PERMISSION_ALL
+   tenant_required: true
+   authentication: AUTHENTICATION_API_KEY
+   authentication: AUTHENTICATION_WEB_SESSION
+   requires_operations: "commercial.module.plan_catalog"
+   composition: COMPOSITION_LOCAL
+   execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+   request_type: "commercial.v1.ResolveTenantChangeTargetRequest"
+   response_type: "commercial.v1.PlanEligibilityDTO"
+   application_method: "ResolveTenantChangeTarget"
+  }
+  operations: {
+   id: "commercial.plan.change_target.list"
+   use_case: "list_tenant_change_targets"
+   permissions: "tenant.subscription.manage"
+   permissions: "commercial.catalog.read"
+   permission_mode: PERMISSION_ALL
+   tenant_required: true
+   authentication: AUTHENTICATION_API_KEY
+   authentication: AUTHENTICATION_WEB_SESSION
+   requires_operations: "commercial.module.plan_catalog"
+   composition: COMPOSITION_LOCAL
+   execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+   request_type: "commercial.v1.ListTenantChangeTargetsRequest"
+   response_type: "commercial.v1.ListTenantChangeTargetsResponse"
+   application_method: "ListTenantChangeTargets"
+  }
+ };
  rpc CreatePlanDraft(CreatePlanDraftRequest) returns (PlanVersionDTO) {
   option (google.api.http) = { post: "/v1/platform/plans" body: "*" };
   option (yunka.dsl.v1.operation) = { id: "commercial.plan.create" use_case: "create_plan_draft" permissions: "platform.plan.manage" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
