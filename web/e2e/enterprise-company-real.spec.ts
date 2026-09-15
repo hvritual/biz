@@ -89,28 +89,34 @@ async function openRealCompany(page: Page) {
   await expect(page.locator('[data-enterprise-source="api"]')).toBeVisible()
 }
 
-test('real company page renders only authoritative Tenant Profile data across CoffeeLink viewports', async ({ page }) => {
+test('canonical company page renders authoritative profile across CoffeeLink viewports', async ({ page }) => {
   await mockTenantProfileServer(page)
   mkdirSync('screenshots', { recursive: true })
-  for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1536, height: 1024 }, { width: 390, height: 844 }]) {
+  for (const viewport of [
+    { width: 1366, height: 768 },
+    { width: 1440, height: 900 },
+    { width: 1536, height: 1024 },
+    { width: 390, height: 844 },
+  ]) {
     await page.setViewportSize(viewport)
     await openRealCompany(page)
     await expect(page.getByLabel('企业名称')).toHaveValue('CoffeeLink 租赁运营有限公司')
-    await expect(page.getByText('Tenant Profile API')).toBeVisible()
+    await expect(page.getByLabel('企业简称')).toHaveValue('CoffeeLink')
+    await expect(page.getByText('真实服务数据', { exact: true })).toBeVisible()
     await expect(page.getByText('上海云迹科技有限公司', { exact: true })).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
     await page.screenshot({ path: `screenshots/enterprise-company-real-${viewport.width}.png`, fullPage: false })
   }
 })
 
-test('company update sends trusted-session headers and idempotency then confirms only after readback', async ({ page }) => {
+test('canonical company save carries trusted headers and confirms only after readback', async ({ page }) => {
   const server = await mockTenantProfileServer(page)
   await openRealCompany(page)
   await page.getByLabel('企业简称').fill('CoffeeLink Pro')
   await page.getByLabel('企业邮箱').fill('success@coffeelink.test')
-  await page.getByRole('button', { name: '保存并回读确认' }).click()
-  await expect(page.getByText('企业资料已由服务端确认 · v8', { exact: true })).toBeVisible()
-  await expect(page.getByText('v8', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: '保存修改', exact: true }).click()
+  await expect(page.getByText('企业资料已由服务端确认并回读。', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('企业简称')).toHaveValue('CoffeeLink Pro')
 
   const write = server.getWrites()[0]!
   expect(write.path).toBe('/api/v1/tenant/profile')
@@ -123,11 +129,11 @@ test('company update sends trusted-session headers and idempotency then confirms
   expect(write.body.version).toBe(7)
 })
 
-test('company 409 preserves draft and reuses the same idempotency key', async ({ page }) => {
+test('company 409 preserves the canonical draft and reuses one idempotency key', async ({ page }) => {
   const server = await mockTenantProfileServer(page, { mutationStatus: 409 })
   await openRealCompany(page)
   await page.getByLabel('企业简称').fill('冲突中的草稿')
-  const save = page.getByRole('button', { name: '保存并回读确认' })
+  const save = page.getByRole('button', { name: '保存修改', exact: true })
   await save.click()
   await expect(page.getByRole('alert')).toContainText('企业资料已被其他操作修改')
   await expect(page.getByLabel('企业简称')).toHaveValue('冲突中的草稿')
@@ -136,35 +142,37 @@ test('company 409 preserves draft and reuses the same idempotency key', async ({
   const writes = server.getWrites()
   expect(writes).toHaveLength(2)
   expect(writes[0]?.headers['idempotency-key']).toBe(writes[1]?.headers['idempotency-key'])
-  await expect(page.getByRole('status')).toHaveCount(0)
+  await expect(page.getByText('企业资料已由服务端确认并回读。', { exact: true })).toHaveCount(0)
 })
 
-test('successful PATCH without GET readback is not presented as confirmed success', async ({ page }) => {
+test('successful PATCH without GET readback is not presented as canonical success', async ({ page }) => {
   await mockTenantProfileServer(page, { readbackStatus: 500 })
   await openRealCompany(page)
   await page.getByLabel('企业简称').fill('未确认资料')
-  await page.getByRole('button', { name: '保存并回读确认' }).click()
+  await page.getByRole('button', { name: '保存修改', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('tenant profile readback failed')
-  await expect(page.getByRole('status')).toHaveCount(0)
+  await expect(page.getByText('企业资料已由服务端确认并回读。', { exact: true })).toHaveCount(0)
 })
 
-test('401 and 403 never fall back to demo company data', async ({ page }) => {
+test('401 and 403 remain explicit and never fall back to demo company data', async ({ page }) => {
   await mockTenantProfileServer(page, { unauthenticated: true })
   await openRealCompany(page)
-  await expect(page.getByRole('alert')).toContainText('登录会话已失效')
+  await expect(page.getByText('需要登录业务账号', { exact: true })).toBeVisible()
+  await expect(page.getByText('unauthenticated', { exact: true })).toBeVisible()
   await expect(page.getByText('上海云迹科技有限公司', { exact: true })).toHaveCount(0)
 
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockTenantProfileServer(page, { readStatus: 403 })
   await page.reload()
-  await expect(page.getByRole('alert')).toContainText('没有维护企业资料的权限')
+  await expect(page.getByText('tenant profile denied', { exact: true })).toBeVisible()
   await expect(page.getByText('上海云迹科技有限公司', { exact: true })).toHaveCount(0)
 })
 
-test('API mode has no browser DataURL logo upload success path', async ({ page }) => {
+test('API company page exposes server asset reference instead of browser DataURL upload', async ({ page }) => {
   await mockTenantProfileServer(page)
   await openRealCompany(page)
   await expect(page.locator('input[type="file"]')).toHaveCount(0)
-  await page.getByRole('button', { name: '资产服务上传' }).click()
-  await expect(page.getByText(/API 模式禁止 DataURL Logo/)).toBeVisible()
+  await expect(page.getByText('Logo 由资产服务管理', { exact: true })).toBeVisible()
+  await expect(page.getByText('asset://tenant/logo/default', { exact: true })).toBeVisible()
+  await expect(page.getByText(/API 模式不生成 DataURL/)).toBeVisible()
 })

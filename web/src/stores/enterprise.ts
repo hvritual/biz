@@ -48,6 +48,7 @@ import {
   getEnterpriseTenantProfile,
   readEnterpriseTenantProfileSession,
   tenantProfileRequestId,
+  tenantProfileRuntimeError,
   updateEnterpriseTenantProfile,
 } from '@/services/enterprise/tenantProfileRuntime'
 import { loginUrl, type PermissionGrant, type TrustedSession } from '@/services/runtime/api'
@@ -100,6 +101,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
 
   let lastPersisted = JSON.stringify(snapshot.value)
   let activeDomains: EnterpriseDomain[] = []
+  let companyMutation: { tenantId: string; signature: string; key: string } | null = null
 
   function applySourceState(state: EnterpriseSourceState, domains = state.loadedDomains, replace = false) {
     tenantId.value = state.tenantId
@@ -153,6 +155,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     try {
       const state = await dataSource.switchTenant(id, activeDomains)
       applySourceState(state, activeDomains, true)
+      companyMutation = null
       ready.value = true
     } catch (error) {
       sourceError.value = errorMessage(error)
@@ -593,27 +596,53 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       return
     }
 
-    const trusted = await stableProfileSession()
-    const current = await getEnterpriseTenantProfile(trusted)
-    await updateEnterpriseTenantProfile(
-      trusted,
-      current,
-      {
-        name: value.name,
-        shortName: value.shortName,
-        industry: value.industry,
-        companySize: value.size,
-        timezone: value.timezone,
-        contactName: value.contact,
-        phone: value.phone,
-        email: value.email,
-        address: value.address,
-        description: value.description,
-        logoAssetRef: value.logoAssetRef ?? current.logoAssetRef,
-      },
-      tenantProfileRequestId(),
-    )
-    await refresh()
+    const signature = JSON.stringify({
+      name: value.name.trim(),
+      shortName: value.shortName.trim(),
+      industry: value.industry.trim(),
+      size: value.size.trim(),
+      timezone: value.timezone.trim(),
+      contact: value.contact.trim(),
+      phone: value.phone.trim(),
+      email: value.email.trim(),
+      address: value.address.trim(),
+      description: value.description.trim(),
+      logoAssetRef: value.logoAssetRef ?? '',
+    })
+    if (!companyMutation || companyMutation.tenantId !== tenantId.value || companyMutation.signature !== signature) {
+      companyMutation = {
+        tenantId: tenantId.value,
+        signature,
+        key: tenantProfileRequestId(tenantId.value),
+      }
+    }
+
+    try {
+      const trusted = await stableProfileSession()
+      const current = await getEnterpriseTenantProfile(trusted)
+      await updateEnterpriseTenantProfile(
+        trusted,
+        current,
+        {
+          name: value.name,
+          shortName: value.shortName,
+          industry: value.industry,
+          companySize: value.size,
+          timezone: value.timezone,
+          contactName: value.contact,
+          phone: value.phone,
+          email: value.email,
+          address: value.address,
+          description: value.description,
+          logoAssetRef: value.logoAssetRef ?? current.logoAssetRef,
+        },
+        companyMutation.key,
+      )
+      await refresh(['company'])
+      companyMutation = null
+    } catch (error) {
+      throw new Error(tenantProfileRuntimeError(error))
+    }
   }
 
   async function requestPasswordReset(member: Member, reason: string) {

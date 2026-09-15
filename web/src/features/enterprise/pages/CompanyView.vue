@@ -93,7 +93,8 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
           <div class="field">
             <span>企业 Logo</span>
             <div class="logo-control">
-              <img :src="logo" alt="企业 Logo 预览" /><label class="btn"
+              <img :src="logo" alt="企业 Logo 预览" />
+              <label v-if="store.previewMode" class="btn"
                 ><AppIcon name="upload" :size="15" />选择图片<UiInput
                   class="sr-only"
                   type="file"
@@ -101,8 +102,16 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
                   aria-label="选择企业 Logo"
                   @change="upload"
               /></label>
+              <div v-else class="logo-api-state" aria-label="企业 Logo 服务端资产状态">
+                <AppIcon name="shield" :size="16" />
+                <div>
+                  <strong>Logo 由资产服务管理</strong>
+                  <small>{{ store.company.logoAssetRef || '尚未配置资产引用' }}</small>
+                </div>
+              </div>
             </div>
-            <small>PNG / JPG / WebP，最大 2 MB；当前仅预览。</small>
+            <small v-if="store.previewMode">PNG / JPG / WebP，最大 2 MB；当前仅预览。</small>
+            <small v-else>API 模式不生成 DataURL，也不制造尚未接入的上传成功状态。</small>
           </div>
           <label class="field full-width"
             ><span>企业简介</span
@@ -194,6 +203,28 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
   width: 42px;
   height: 45px;
   object-fit: contain;
+}
+.logo-api-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--color-text-secondary);
+}
+.logo-api-state strong,
+.logo-api-state small {
+  display: block;
+}
+.logo-api-state strong {
+  color: var(--color-text);
+  font-size: 12px;
+}
+.logo-api-state small {
+  margin-top: 3px;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .company-identity {
   text-align: center;
