@@ -48,6 +48,13 @@ message PreviewMySubscriptionChangeRequest {
  string reason = 6;
 }
 message ReadMySubscriptionChangePreviewRequest { string change_id = 1; }
+message ConfirmMySubscriptionChangeRequest {
+ string change_id = 1;
+ string request_id = 2;
+ string preview_hash = 3;
+ string reason = 4;
+}
+message ReadMySubscriptionChangeReceiptRequest { string change_id = 1; }
 
 message SubscriptionChangeDependency { string module_code = 1; repeated string requires_modules = 2; }
 message SubscriptionChangeQuotaImpact {
@@ -116,6 +123,17 @@ service SubscriptionChangesApplication {
  rpc GetMySubscriptionChangePreview(ReadMySubscriptionChangePreviewRequest) returns (SubscriptionChangePreviewDTO) {
   option (google.api.http) = {get: "/v1/tenant/subscription/change-previews/{change_id}"};
   option (yunka.dsl.v1.operation) = {id: "commercial.subscription.change.preview_my.get" use_case: "get_my_subscription_change_preview" permissions: "tenant.subscription.manage" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: {transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE}};
+ }
+ // Tenant confirmation is allowed only when the preview has no external price
+ // authority requirement. A price_ref remains fail-closed and must go through
+ // the existing platform commercial/payment approval path.
+ rpc ConfirmMySubscriptionChange(ConfirmMySubscriptionChangeRequest) returns (SubscriptionChangeReceiptDTO) {
+  option (google.api.http) = { post: "/v1/tenant/subscription/changes/{change_id}/confirm" body: "*" };
+  option (yunka.dsl.v1.operation) = { id: "commercial.subscription.change.confirm_my" use_case: "confirm_my_subscription_change" permissions: "tenant.subscription.manage" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION requires_operations: "commercial.plan.subscription_snapshot" requires_operations: "commercial.plan.change_target.resolve" requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: {transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED} };
+ }
+ rpc GetMySubscriptionChangeReceipt(ReadMySubscriptionChangeReceiptRequest) returns (SubscriptionChangeReceiptDTO) {
+  option (google.api.http) = {get: "/v1/tenant/subscription/changes/{change_id}"};
+  option (yunka.dsl.v1.operation) = {id: "commercial.subscription.change.get_my" use_case: "get_my_subscription_change_receipt" permissions: "tenant.subscription.manage" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: {transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE}};
  }
 
  rpc PreviewSubscriptionChange(PreviewSubscriptionChangeRequest) returns (SubscriptionChangePreviewDTO) {
