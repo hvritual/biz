@@ -6,5 +6,9 @@ import (
 )
 
 func (factory applicationFactories) BuildAccessTenantAuditManagement(generatedassembly.AccessTenantAuditManagementDependencies) (accessapp.TenantAuditManagementApplication, error) {
-	return accessapp.NewTenantAuditManagementService(factory.tenantRepositories)
+	inner, err := accessapp.NewTenantAuditManagementService(factory.tenantRepositories)
+	if err != nil {
+		return nil, err
+	}
+	return checkedTenantAudit{inner: inner}, nil
 }
