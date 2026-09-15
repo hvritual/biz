@@ -1,0 +1,49 @@
+name: UI Route Convergence Apply
+
+on:
+  push:
+    branches:
+      - refactor/ui-route-convergence
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply one-shot convergence migration
+        if: ${{ !contains(github.event.head_commit.message, '[route-convergence-applied]') }}
+        working-directory: web
+        run: node scripts/apply-route-convergence.mjs
+
+      - name: Commit migrated sources
+        if: ${{ !contains(github.event.head_commit.message, '[route-convergence-applied]') }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No migration changes"
+          else
+            git commit -m "refactor(ui): converge enterprise canonical routes [route-convergence-applied]"
+            git push origin HEAD:refactor/ui-route-convergence
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Verify web convergence
+        working-directory: web
+        run: npm run check
