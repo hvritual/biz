@@ -87,10 +87,10 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
       ]
     }
 
-    const usage = new Map(
+    const usage = new Map<string, number | null>(
       model.value.usage.usages
         .filter((item) => item.known)
-        .map((item) => [`${item.moduleCode}:${item.key}`, parseNumber(item.used)] as const),
+        .map((item): [string, number | null] => [`${item.moduleCode}:${item.key}`, parseNumber(item.used)]),
     )
     return model.value.entitlements.decisions
       .filter((decision) => decision.kind === 'quota')
