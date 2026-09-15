@@ -209,15 +209,16 @@ async function openFlow(page: Page) {
   await page.locator('[data-plan-change-open]').click()
   const lifecycle = page.locator('[data-plan-change-lifecycle]')
   await lifecycle.scrollIntoViewIfNeeded()
-  await expect(page.getByText('专业版', { exact: true })).toBeVisible()
+  await expect(lifecycle.getByText(/专业版/).first()).toBeVisible()
   return lifecycle
 }
 
 async function selectTargetAndPreview(page: Page) {
-  await page.getByRole('button', { name: /专业版/ }).click()
-  await page.locator('[data-plan-change-preview]').click()
-  await expect(page.getByText('权威预览', { exact: false })).toBeVisible()
-  await expect(page.getByText(/UPGRADE/).first()).toBeVisible()
+  const lifecycle = page.locator('[data-plan-change-lifecycle]')
+  await lifecycle.getByRole('button', { name: /专业版/ }).click()
+  await lifecycle.locator('[data-plan-change-preview]').click()
+  await expect(lifecycle.getByText(/UPGRADE/).first()).toBeVisible()
+  await expect(lifecycle.locator('.steps').getByText(/权威预览/).first()).toBeVisible()
 }
 
 function screenshot(name: string) {
