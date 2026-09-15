@@ -1,0 +1,93 @@
+name: UI Route Main Sync Qualification Once
+
+on:
+  push:
+    branches:
+      - refactor/ui-route-convergence
+    paths:
+      - web/scripts/resolve-ui-route-main-sync.py
+      - .github/workflows/ui-route-main-sync-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  merge-and-qualify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.2'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Merge latest main without committing
+        run: |
+          git fetch origin main
+          git merge --no-commit --no-ff origin/main || true
+          python3 web/scripts/resolve-ui-route-main-sync.py
+          if [ -n "$(git diff --name-only --diff-filter=U)" ]; then
+            echo "Unresolved merge conflicts remain"
+            git diff --name-only --diff-filter=U
+            exit 1
+          fi
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+      - name: Run full static and unit gate
+        working-directory: web
+        run: npm run check
+      - name: Build canonical API-mode UI
+        working-directory: web
+        env:
+          VITE_DATA_MODE: api
+        run: npm run build
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: Run all canonical Enterprise API E2E
+        working-directory: web
+        env:
+          VITE_DATA_MODE: api
+          ENTERPRISE_MEMBER_REAL_E2E: '1'
+          ENTERPRISE_ROLE_REAL_E2E: '1'
+          ENTERPRISE_ORGANIZATION_REAL_E2E: '1'
+          ENTERPRISE_COMPANY_REAL_E2E: '1'
+          ENTERPRISE_PLAN_REAL_E2E: '1'
+          ENTERPRISE_PLAN_CHANGE_E2E: '1'
+        run: >-
+          npx playwright test
+          e2e/enterprise-company-real.spec.ts
+          e2e/enterprise-members-real.spec.ts
+          e2e/enterprise-organization-real.spec.ts
+          e2e/enterprise-roles-real.spec.ts
+          e2e/enterprise-plan-real.spec.ts
+          e2e/enterprise-plan-change-real.spec.ts
+      - name: Rebuild canonical demo UI
+        working-directory: web
+        run: npm run build
+      - name: Run full CoffeeLink Playwright regression
+        working-directory: web
+        run: npx playwright test
+      - name: Upload final route-convergence evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-route-convergence-final-evidence
+          path: |
+            web/screenshots
+            web/test-results
+            web/playwright-report
+          if-no-files-found: ignore
+      - name: Commit qualified merge and self-clean
+        run: |
+          rm web/scripts/resolve-ui-route-main-sync.py
+          rm .github/workflows/ui-route-main-sync-once.yml
+          git add -A
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "merge(main): absorb platform lifecycle into canonical UI"
+          git push origin HEAD:refactor/ui-route-convergence
