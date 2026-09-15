@@ -6,6 +6,7 @@ on:
       - refactor/ui-route-convergence
     paths:
       - web/scripts/apply-remaining-route-convergence.py
+      - web/scripts/apply-remaining-route-convergence-followup.py
       - .github/workflows/ui-route-remaining-once.yml
 
 permissions:
@@ -30,7 +31,9 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - name: Apply remaining convergence migration
-        run: python3 web/scripts/apply-remaining-route-convergence.py
+        run: |
+          python3 web/scripts/apply-remaining-route-convergence.py
+          python3 web/scripts/apply-remaining-route-convergence-followup.py
       - name: Install web dependencies
         working-directory: web
         run: npm ci
@@ -58,6 +61,7 @@ jobs:
       - name: Commit verified migration and self-clean
         run: |
           rm web/scripts/apply-remaining-route-convergence.py
+          rm web/scripts/apply-remaining-route-convergence-followup.py
           rm .github/workflows/ui-route-remaining-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
