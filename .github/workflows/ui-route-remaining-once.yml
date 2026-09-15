@@ -7,6 +7,7 @@ on:
     paths:
       - web/scripts/apply-remaining-route-convergence.py
       - web/scripts/apply-remaining-route-convergence-followup.py
+      - web/scripts/apply-remaining-route-convergence-final.py
       - .github/workflows/ui-route-remaining-once.yml
 
 permissions:
@@ -34,6 +35,7 @@ jobs:
         run: |
           python3 web/scripts/apply-remaining-route-convergence.py
           python3 web/scripts/apply-remaining-route-convergence-followup.py
+          python3 web/scripts/apply-remaining-route-convergence-final.py
       - name: Install web dependencies
         working-directory: web
         run: npm ci
@@ -62,6 +64,7 @@ jobs:
         run: |
           rm web/scripts/apply-remaining-route-convergence.py
           rm web/scripts/apply-remaining-route-convergence-followup.py
+          rm web/scripts/apply-remaining-route-convergence-final.py
           rm .github/workflows/ui-route-remaining-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
