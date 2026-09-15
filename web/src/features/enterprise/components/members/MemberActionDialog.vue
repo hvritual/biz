@@ -84,31 +84,24 @@ async function submit() {
   busy.value = true
   try {
     if (structural.value || props.action === 'role')
-      store.saveMember(draft.value, props.action, props.member?.version ?? 0)
+      await store.saveMember(draft.value, props.action, props.member?.version ?? 0)
     else if (['suspend', 'activate', 'remove'].includes(props.action))
-      store.changeStatus(
+      await store.changeStatus(
         draft.value.id,
         props.action as 'suspend' | 'activate' | 'remove',
         props.member!.version,
         reason.value,
       )
     else if (props.action === 'reset') {
-      store.audit(
-        '成员管理',
-        '创建密码重置请求（预览）',
-        draft.value.name,
-        '未请求',
-        '待接入身份服务',
-        reason.value,
-        'high',
-      )
+      await store.requestPasswordReset(draft.value, reason.value)
     }
-    const message =
-      props.action === 'reset'
+    const message = store.previewMode
+      ? props.action === 'reset'
         ? '已记录预览重置请求；未发送邮件，也未改变真实密码。'
         : props.action === 'invite'
           ? '已创建预览邀请记录；未实际发送邀请邮件。'
           : '变更已保存到当前企业的本地预览数据。'
+      : '变更已由服务端确认并完成权威回读。'
     ui.toast(message, props.action === 'reset' || props.action === 'invite' ? 'info' : 'success')
     emit('close')
   } catch (e) {

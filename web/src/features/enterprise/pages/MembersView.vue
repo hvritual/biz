@@ -19,6 +19,7 @@ import MemberTable, { type MemberSortKey } from '@/features/enterprise/component
 import MemberActionDialog from '@/features/enterprise/components/members/MemberActionDialog.vue'
 import MemberDetailDrawer from '@/features/enterprise/components/members/MemberDetailDrawer.vue'
 import MemberBulkDialog from '@/features/enterprise/components/members/MemberBulkDialog.vue'
+import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
   route = useRoute(),
@@ -144,7 +145,7 @@ function exportMembers() {
     const output = selected.value.length
       ? filtered.value.filter((m) => selected.value.includes(m.id))
       : filtered.value
-    downloadCsv('成员列表-界面预览.csv', [
+    downloadCsv('成员列表.csv', [
       ['姓名', '手机号', '邮箱', '部门', '角色', '数据权限', '账号状态', '最后登录', '加入时间'],
       ...output.map((m) => [
         m.name,
@@ -158,15 +159,15 @@ function exportMembers() {
         m.joinedAt,
       ]),
     ])
-    store.audit('成员管理', '导出成员列表', `${output.length} 条预览数据`)
-    ui.toast(`已导出 ${output.length} 条预览记录。`)
+    store.audit('成员管理', '导出成员列表', `${output.length} 条数据`)
+    ui.toast(`已导出 ${output.length} 条记录。`)
   } catch (e) {
     ui.toast((e as Error).message, 'error')
   }
 }
 </script>
 <template>
-  <div class="members-view" :class="{ 'has-detail': Boolean(detail) }">
+  <div class="members-view" data-ui-template="ListPage" :class="{ 'has-detail': Boolean(detail) }">
     <div class="member-main">
       <div class="page-stack members-stack">
         <PageHeading
@@ -175,6 +176,7 @@ function exportMembers() {
           banner
           compact
         />
+        <EnterpriseSourceBanner />
         <MemberOverview />
         <MemberFilters :value="filters" @apply="applyFilters" @reset="clear" />
         <section class="card member-data-panel" aria-label="成员管理列表">

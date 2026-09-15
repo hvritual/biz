@@ -31,7 +31,7 @@ watch(
   () => route.query.action,
   (action) => {
     if (action === 'upgrade') {
-      if (plan.serverChangeContext) lifecycleOpen.value = true
+      if (plan.isServerBacked) lifecycleOpen.value = true
       else requestOpen.value = true
       void router.replace({ path: route.path, query: {} })
     }
@@ -61,7 +61,7 @@ function quotaPercent(used: number | null, total: number | null) {
 }
 
 function openChange() {
-  if (plan.serverChangeContext) lifecycleOpen.value = true
+  if (plan.isServerBacked) lifecycleOpen.value = true
   else requestOpen.value = true
 }
 

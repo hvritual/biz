@@ -1,20 +1,21 @@
 <script setup lang="ts">
 import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
 
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import PageHeading from '@/ui/common/PageHeading.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import brand from '@/assets/brand-mark.png'
+import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
   draft = ref({ ...store.company }),
   error = ref(''),
   logo = ref(brand)
 const changed = computed(() => JSON.stringify(draft.value) !== JSON.stringify(store.company))
-function save() {
+async function save() {
   error.value = ''
   if (!draft.value.name.trim()) {
     error.value = '请填写企业名称。'
@@ -25,8 +26,8 @@ function save() {
     return
   }
   try {
-    store.saveCompany(draft.value)
-    ui.toast('企业资料已保存到本地预览。')
+    await store.saveCompany(draft.value)
+    ui.toast(store.sourceKind === 'api' ? '企业资料已由服务端确认并回读。' : '企业资料已保存到本地预览。')
   } catch (e) {
     error.value = e instanceof Error ? e.message : '保存失败。'
   }
@@ -45,10 +46,18 @@ function upload(e: Event) {
   }
   reader.readAsDataURL(file)
 }
+watch(
+  () => store.company,
+  (value) => {
+    draft.value = { ...value }
+  },
+  { immediate: true },
+)
 </script>
 <template>
-  <div class="page-stack">
+  <div class="page-stack" data-ui-template="FormPage">
     <PageHeading title="企业信息" description="维护企业基本资料与联系信息，统一团队的身份与展示" />
+    <EnterpriseSourceBanner />
     <div class="split-layout">
       <form class="card panel-pad company-form" @submit.prevent="save">
         <div class="row-between block-title">
@@ -142,7 +151,7 @@ function upload(e: Event) {
             <dt>租户标识</dt>
             <dd class="mono">{{ store.tenantId }}</dd>
             <dt>当前套餐</dt>
-            <dd>标准版（示例）</dd>
+            <dd>{{ store.sourceKind === 'api' ? '由套餐服务提供' : '标准版（示例）' }}</dd>
             <dt>企业成员</dt>
             <dd>{{ store.members.filter((m) => m.status !== 'removed').length }} 人</dd>
           </dl>

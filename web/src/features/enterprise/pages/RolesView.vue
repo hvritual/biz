@@ -13,6 +13,7 @@ import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import EmptyState from '@/ui/common/EmptyState.vue'
 import RoleEditor from '@/features/enterprise/components/roles/RoleEditor.vue'
+import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
 const store = useEnterpriseStore(),
   route = useRoute(),
   router = useRouter()
@@ -54,8 +55,9 @@ watch(
 )
 </script>
 <template>
-  <div class="page-stack">
+  <div class="page-stack" data-ui-template="ListPage">
     <PageHeading title="角色权限" description="以最小必要权限分配职责，独立控制功能权限与数据范围" />
+    <EnterpriseSourceBanner />
     <div class="metric-grid">
       <MetricCard
         label="角色总数"
