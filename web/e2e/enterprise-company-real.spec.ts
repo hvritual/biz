@@ -85,7 +85,8 @@ async function mockTenantProfileServer(page: Page, options: Options = {}) {
 
 async function openRealCompany(page: Page) {
   await page.goto('/#/enterprise/company')
-  await expect(page.locator('[data-enterprise-company-source="server"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-page="company"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-source="api"]')).toBeVisible()
 }
 
 test('real company page renders only authoritative Tenant Profile data across CoffeeLink viewports', async ({ page }) => {

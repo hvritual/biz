@@ -214,7 +214,8 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
 
 async function openRealMembers(page: Page) {
   await page.goto('/#/enterprise/members')
-  await expect(page.locator('[data-enterprise-member-source="server"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-page="members"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-source="api"]')).toBeVisible()
 }
 
 test('real member page renders authoritative profile, role and scope fields across CoffeeLink viewports', async ({ page }) => {

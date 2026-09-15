@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
 
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import PageHeading from '@/ui/common/PageHeading.vue'
@@ -53,9 +53,10 @@ watch(
   },
   { immediate: true },
 )
+onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
 </script>
 <template>
-  <div class="page-stack" data-ui-template="FormPage">
+  <div class="page-stack" data-enterprise-page="company" data-ui-template="FormPage">
     <PageHeading title="企业信息" description="维护企业基本资料与联系信息，统一团队的身份与展示" />
     <EnterpriseSourceBanner />
     <div class="split-layout">

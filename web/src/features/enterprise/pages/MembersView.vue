@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { UiButton } from '@/ui/base'
 
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
@@ -165,9 +165,10 @@ function exportMembers() {
     ui.toast((e as Error).message, 'error')
   }
 }
+onMounted(() => void store.ensureDomains(['members', 'roles']).catch(() => undefined))
 </script>
 <template>
-  <div class="members-view" data-ui-template="ListPage" :class="{ 'has-detail': Boolean(detail) }">
+  <div class="members-view" data-enterprise-page="members" data-ui-template="ListPage" :class="{ 'has-detail': Boolean(detail) }">
     <div class="member-main">
       <div class="page-stack members-stack">
         <PageHeading

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { UiButton, UiOption, UiSelect } from '@/ui/base'
 
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import type { Role } from '@/types/enterprise'
@@ -53,9 +53,10 @@ watch(
   },
   { immediate: true },
 )
+onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undefined))
 </script>
 <template>
-  <div class="page-stack" data-ui-template="ListPage">
+  <div class="page-stack" data-enterprise-page="roles" data-ui-template="ListPage">
     <PageHeading title="角色权限" description="以最小必要权限分配职责，独立控制功能权限与数据范围" />
     <EnterpriseSourceBanner />
     <div class="metric-grid">

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import {
   createEnterpriseDataSource,
+  type EnterpriseDomain,
   type EnterpriseSourceState,
 } from '@/services/enterprise/dataSource'
 import { applyStatusAction, memberActionError, prepareMemberStatusBatch } from '@/services/memberPolicy'
@@ -98,23 +99,37 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   const roleName = (id: string) => roles.value.find((r) => r.id === id)?.name ?? '未知角色'
 
   let lastPersisted = JSON.stringify(snapshot.value)
+  let activeDomains: EnterpriseDomain[] = []
 
-  function applySourceState(state: EnterpriseSourceState) {
+  function applySourceState(state: EnterpriseSourceState, domains = state.loadedDomains, replace = false) {
     tenantId.value = state.tenantId
-    snapshot.value = state.snapshot
     session.value = state.session
-    lastPersisted = JSON.stringify(state.snapshot)
+    if (previewMode || replace) {
+      snapshot.value = state.snapshot
+    } else {
+      const current = snapshot.value
+      snapshot.value = {
+        ...current,
+        members: domains.includes('members') ? state.snapshot.members : current.members,
+        roles: domains.includes('roles') ? state.snapshot.roles : current.roles,
+        departments: domains.includes('departments') ? state.snapshot.departments : current.departments,
+        company: domains.includes('company') ? state.snapshot.company : current.company,
+      }
+    }
+    lastPersisted = JSON.stringify(snapshot.value)
   }
 
   function errorMessage(error: unknown) {
     return error instanceof Error ? error.message : '企业数据服务请求失败。'
   }
 
-  async function refresh() {
+  async function refresh(domains: EnterpriseDomain[] = activeDomains) {
+    activeDomains = [...new Set(domains)]
     loading.value = true
     sourceError.value = ''
     try {
-      applySourceState(await dataSource.load(tenantId.value || undefined))
+      const state = await dataSource.load(tenantId.value || undefined, activeDomains)
+      applySourceState(state, activeDomains)
       ready.value = true
     } catch (error) {
       sourceError.value = errorMessage(error)
@@ -125,13 +140,19 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     }
   }
 
+  async function ensureDomains(domains: EnterpriseDomain[]) {
+    activeDomains = [...new Set(domains)]
+    await refresh(activeDomains)
+  }
+
   async function switchTenant(id: string) {
     if (!id || id === tenantId.value) return
     if (previewMode && !tenantOptions.value.some((tenant) => tenant.id === id)) return
     loading.value = true
     sourceError.value = ''
     try {
-      applySourceState(await dataSource.switchTenant(id))
+      const state = await dataSource.switchTenant(id, activeDomains)
+      applySourceState(state, activeDomains, true)
       ready.value = true
     } catch (error) {
       sourceError.value = errorMessage(error)
@@ -612,7 +633,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     return loginUrl()
   }
 
-  if (!previewMode) void refresh().catch(() => undefined)
+  if (!previewMode) void refresh([]).catch(() => undefined)
 
   return {
     tenantId,
@@ -634,6 +655,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     roleName,
     loginHref,
     refresh,
+    ensureDomains,
     switchTenant,
     audit,
     saveMember,

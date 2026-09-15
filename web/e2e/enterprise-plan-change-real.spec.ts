@@ -205,7 +205,8 @@ async function mockServer(page: Page, options: Options = {}): Promise<Captured> 
 
 async function openFlow(page: Page) {
   await page.goto('/#/enterprise/plan')
-  await expect(page.locator('[data-enterprise-plan-source="server"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-page="plan"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-source="api"]')).toBeVisible()
   await page.locator('[data-plan-change-open]').click()
   const lifecycle = page.locator('[data-plan-change-lifecycle]')
   await lifecycle.scrollIntoViewIfNeeded()

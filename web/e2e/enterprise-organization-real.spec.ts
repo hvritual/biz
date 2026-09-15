@@ -141,7 +141,8 @@ async function mockOrganizationServer(page: Page, options: Options = {}) {
 
 async function openRealOrganization(page: Page) {
   await page.goto('/#/enterprise/organization')
-  await expect(page.locator('[data-enterprise-organization-source="server"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-page="organization"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-source="api"]')).toBeVisible()
 }
 
 async function selectDepartment(page: Page, name: string) {

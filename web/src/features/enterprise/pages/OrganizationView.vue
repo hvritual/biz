@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
 
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
@@ -86,9 +86,10 @@ watch(
   },
   { immediate: true },
 )
+onMounted(() => void store.ensureDomains(['departments', 'members']).catch(() => undefined))
 </script>
 <template>
-  <div class="page-stack" data-ui-template="WorkbenchPage">
+  <div class="page-stack" data-enterprise-page="organization" data-ui-template="WorkbenchPage">
     <PageHeading title="组织架构" description="管理部门与汇报关系，让组织协作与数据边界保持清晰" />
     <EnterpriseSourceBanner />
     <div class="metric-grid">

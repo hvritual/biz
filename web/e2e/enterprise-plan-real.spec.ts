@@ -112,7 +112,8 @@ async function mockPlanServer(page: Page, options: Options = {}): Promise<Captur
 
 async function openRealPlan(page: Page) {
   await page.goto('/#/enterprise/plan')
-  await expect(page.locator('[data-enterprise-plan-source="server"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-page="plan"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-source="api"]')).toBeVisible()
 }
 
 test('real plan page renders authoritative subscription, entitlement and usage facts across CoffeeLink viewports', async ({ page }) => {

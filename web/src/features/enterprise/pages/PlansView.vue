@@ -77,7 +77,7 @@ function submitDemoChange() {
 </script>
 
 <template>
-  <div class="page-stack" data-ui-template="WorkbenchPage">
+  <div class="page-stack" data-enterprise-page="plan" data-ui-template="WorkbenchPage">
     <PageHeading title="套餐信息" description="查看当前订阅、可用功能与使用额度，让业务增长有据可依" />
     <EnterpriseSourceBanner />
 
