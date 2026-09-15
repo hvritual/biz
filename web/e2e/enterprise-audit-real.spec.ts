@@ -81,8 +81,9 @@ async function mockAuditServer(page: Page, options: { readStatus?: number; expor
   })
 
   await page.route('**/api/v1/tenant/audit-logs**', async (route) => {
-    if (options.readStatus) return json(route, options.readStatus, { message: 'audit read denied' })
     const url = new URL(route.request().url())
+    if (url.pathname !== '/api/v1/tenant/audit-logs') return route.fallback()
+    if (options.readStatus) return json(route, options.readStatus, { message: 'audit read denied' })
     return json(route, 200, {
       records,
       total: 1,
