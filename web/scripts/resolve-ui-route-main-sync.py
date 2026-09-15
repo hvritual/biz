@@ -119,9 +119,8 @@ for required in [
     if required not in {route.get('path') for route in routes}:
         raise RuntimeError(f'missing merged UI contract: {required}')
 
-# Canonical API E2E assertions follow the product-level error contract. The source banner intentionally
-# converts raw authentication responses into a stable user-facing fail-closed state, while form readback
-# errors are scoped to the form alert instead of the simultaneous global source-status alert.
+# Canonical API E2E assertions follow the product-level error contract. Raw transport messages are not
+# a stable UI contract: 401/403 are mapped to user-facing fail-closed states, while demo data must stay absent.
 company_spec = 'web/e2e/enterprise-company-real.spec.ts'
 replace_once(
     company_spec,
@@ -133,11 +132,21 @@ replace_once(
     "  await expect(page.getByText('unauthenticated', { exact: true })).toBeVisible()",
     "  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('登录会话已失效')",
 )
+replace_once(
+    company_spec,
+    "  await expect(page.getByText('tenant profile denied', { exact: true })).toBeVisible()",
+    "  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('当前账号没有维护企业资料的权限')",
+)
 members_spec = 'web/e2e/enterprise-members-real.spec.ts'
 replace_once(
     members_spec,
     "  await expect(page.getByText('unauthenticated', { exact: true })).toBeVisible()",
     "  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('登录会话已失效')",
+)
+replace_once(
+    members_spec,
+    "  await expect(page.getByText('list denied', { exact: true })).toBeVisible()",
+    "  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('当前账号没有管理企业成员的权限')",
 )
 
 subprocess.check_call([
