@@ -47,7 +47,7 @@ Canonical Page
 
 当前领域需求：
 
-- Members: members + roles
+- Members: members + roles + departments
 - Roles: roles + members
 - Organization: departments + members
 - Company: company
@@ -105,11 +105,50 @@ fix(enterprise): converge company canonical API contract
 
 本轮最初一次资格任务因把 `VITE_DATA_MODE=api` 错设为 job 全局变量而使 demo unit tests 在 API 模式执行，被 `npm run check` 正确阻断且未提交半成品。验证配置修正为：静态/unit gate 使用默认 demo 语义，仅 API build 与 Company Playwright 注入 `VITE_DATA_MODE=api`，随后完整通过。
 
-## 6. 尚未完成的合并门槛
+## 6. Members canonical API 独立验收
+
+Members 已完成第二项独立 API 页面收敛，提交：
+
+```text
+7291c92aa04294638616d3aafaf5732e273329f9
+fix(enterprise): converge members canonical API contract
+```
+
+本轮将真实成员服务能力收敛到 canonical `MembersView`，没有恢复 RealView，也没有通过删除安全断言来换取绿灯：
+
+- Members 页面明确声明并按需加载 `members + roles + departments`，满足成员列表、角色标签、部门名称和编辑器的真实展示依赖；
+- 新增/邀请成员不再使用 `operations`、`role-2` 等 demo 固定 ID，默认部门和角色从当前服务端目录中的可用项派生；
+- API 模式下已有成员邮箱改为只读，避免把身份服务控制的登录邮箱伪装成可写字段；
+- API 模式下加入日期改为“服务端未提供”，不再允许本地写入；
+- API 模式下成员级数据范围改为只读，明确由角色权限服务派生；
+- API 模式下备注编辑入口移除并明确标识当前成员资料 API 未提供该写入字段；
+- 成员详情中的加入日期、备注、数据权限来源不再把 demo 合成字段呈现成服务端事实；
+- 同一租户、同一成员草稿发生 409 后再次提交时复用同一逻辑请求的 idempotency key；草稿、动作、目标版本或租户变化后才生成新的逻辑请求状态；
+- Invite / Create / Edit / Role Change 只有完成成员 GET readback 与当前页面 domains 刷新后才清理幂等状态并允许 UI 报告服务端确认；
+- Profile PATCH 不发送 `email / scope / joinedAt / note` 等当前接口不支持的字段；
+- 401 / 403 / readback failure 显式失败，不回退本地 demo 成员数据。
+
+一次性资格验证 `Members API Convergence Once` 已通过并自清理临时脚本/workflow。验证结果：
+
+- `npm run check`: PASS；
+- TypeScript / ESLint / Architecture / UI Contract / Route Convergence: PASS；
+- unit tests: `201 passed / 201`；
+- default production build: PASS；
+- `VITE_DATA_MODE=api` production build: PASS；
+- `enterprise-members-real.spec.ts`: `7 passed / 7`；
+- Members 四视口：1366×768 / 1440×900 / 1536×1024 / 390×844；
+- canonical invite authoritative role/department dependency: PASS；
+- trusted session / CSRF / idempotency / CAS/version / server readback 合同：PASS；
+- 409 草稿保留 + 相同 idempotency key 重试：PASS；
+- successful write without GET readback 不展示成功：PASS；
+- API unsupported fields 不再出现可写伪能力：PASS。
+
+第一次 one-shot 在应用补丁阶段因 detail notice 文件定位错误被立即阻断，未修改/提交业务文件。修正补丁目标后，第二次资格任务完整通过再提交，临时脚本和 workflow 随正式提交一并删除。
+
+## 7. 尚未完成的合并门槛
 
 以下任何一项未通过都不得合并 `main`：
 
-- Members canonical API 合同收敛；
 - Roles canonical API 合同收敛；
 - Organization canonical API 合同收敛；
 - Plans / PlanChange canonical API 合同收敛；
