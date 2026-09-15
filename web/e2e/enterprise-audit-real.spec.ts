@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
+import { mkdirSync } from 'node:fs'
 
 test.skip(!process.env.ENTERPRISE_AUDIT_REAL_E2E, 'runs only against the VITE_DATA_MODE=api build')
 
@@ -102,6 +103,7 @@ async function openAudit(page: Page) {
 
 test('API mode renders authoritative audit data across CoffeeLink viewports without demo fallback', async ({ page }) => {
   await mockAuditServer(page)
+  mkdirSync('screenshots', { recursive: true })
   for (const viewport of [
     { width: 1366, height: 768 },
     { width: 1440, height: 900 },
@@ -114,6 +116,7 @@ test('API mode renders authoritative audit data across CoffeeLink viewports with
     await expect(page.getByText('user_id:user-002', { exact: true })).toBeVisible()
     await expect(page.getByText('当前记录存储于本地预览')).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
+    await page.screenshot({ path: `screenshots/enterprise-audit-real-${viewport.width}.png`, fullPage: false })
   }
 })
 
