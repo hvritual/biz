@@ -4,16 +4,20 @@ import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
 import { computed, ref, watch } from 'vue'
 import type { Role, DataScope } from '@/types/enterprise'
 import { scopeLabels } from '@/types/enterprise'
-import { permissionCatalog } from '@/services/demo/seed'
+import { permissionCatalog as demoPermissionCatalog } from '@/services/demo/seed'
+import { rolePermissionGroups } from '@/services/enterprise/rolePermissionCatalog'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
-const props = defineProps<{ open: boolean; role: Role | null }>(),
-  emit = defineEmits<{ close: [] }>()
-const store = useEnterpriseStore(),
-  ui = useUiStore(),
-  error = ref('')
+
+const props = defineProps<{ open: boolean; role: Role | null }>()
+const emit = defineEmits<{ close: [] }>()
+const store = useEnterpriseStore()
+const ui = useUiStore()
+const error = ref('')
+const busy = ref(false)
+
 const draft = ref<Role>({
   id: '',
   name: '',
@@ -24,10 +28,32 @@ const draft = ref<Role>({
   permissions: [],
   updatedAt: '',
 })
+
 const readonly = computed(() => Boolean(props.role?.builtin))
-const actionNames: Record<string, string> = { read: '查看', manage: '管理', assign: '分配', export: '导出' }
+const apiMode = computed(() => store.sourceKind === 'api')
+const permissionGroups = computed(() => {
+  if (apiMode.value) {
+    return rolePermissionGroups().map((group) => ({
+      name: group.name,
+      items: group.permissions.map((item) => ({
+        key: item.permission,
+        label: item.label,
+        description: item.description,
+      })),
+    }))
+  }
+  return demoPermissionCatalog.map((module) => ({
+    name: module.name,
+    items: module.actions.map((action) => ({
+      key: `${module.id}.${action}`,
+      label: ({ read: '查看', manage: '管理', assign: '分配', export: '导出' } as Record<string, string>)[action] ?? action,
+      description: `${module.name} · ${action}`,
+    })),
+  }))
+})
+
 watch(
-  () => [props.open, props.role],
+  () => [props.open, props.role, store.sourceKind] as const,
   () => {
     error.value = ''
     draft.value = props.role
@@ -38,120 +64,169 @@ watch(
           description: '',
           builtin: false,
           enabled: true,
-          scope: 'department',
+          scope: apiMode.value ? 'custom' : 'department',
           permissions: [],
           updatedAt: '',
         }
   },
   { immediate: true },
 )
+
 function toggle(value: string) {
   if (readonly.value) return
   draft.value.permissions = draft.value.permissions.includes(value)
-    ? draft.value.permissions.filter((p) => p !== value)
+    ? draft.value.permissions.filter((permission) => permission !== value)
     : [...draft.value.permissions, value]
 }
-function save() {
+
+async function save() {
+  error.value = ''
+  busy.value = true
   try {
-    store.saveRole(draft.value)
-    ui.toast('角色配置已保存到本地预览，操作已记录。')
+    await store.saveRole(draft.value)
+    ui.toast(
+      store.previewMode
+        ? '角色配置已保存到当前企业预览，操作已记录。'
+        : '角色配置已由服务端确认并完成权威回读。',
+      'success',
+    )
     emit('close')
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : '保存失败。'
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : '保存失败。'
+  } finally {
+    busy.value = false
   }
 }
 </script>
+
 <template>
   <UiDialog
     :open="open"
     :title="readonly ? '内置角色详情' : role ? '编辑角色权限' : '新建角色'"
     width="850px"
     @close="emit('close')"
-    ><div class="page-stack">
+  >
+    <div class="page-stack">
       <div v-if="readonly" class="notice-box">
         <AppIcon name="shield" />内置角色只读。企业所有者拥有受保护的管理能力，不能通过此页面修改或禁用。
       </div>
+      <div v-if="apiMode" class="notice-box">
+        <AppIcon name="help" />真实模式只展示服务端合同声明的 permission keys。数据范围会映射到服务端 grant scope；角色说明当前不写入服务端。
+      </div>
+
       <div class="form-grid">
-        <label class="field"
-          ><span class="required">角色名称</span
-          ><UiInput
+        <label class="field">
+          <span class="required">角色名称</span>
+          <UiInput
             v-model="draft.name"
             class="input"
             maxlength="40"
             :readonly="readonly"
-            placeholder="例如：华东区域运营" /></label
-        ><label class="field"
-          ><span>数据范围</span
-          ><UiSelect v-model="draft.scope" class="select" :disabled="readonly">
-            <UiOption v-for="(label, key) in scopeLabels" :key="key" :value="key as DataScope">
-              {{ label }}
-            </UiOption>
-          </UiSelect></label
-        ><label class="field full-width"
-          ><span>角色说明</span
-          ><UiTextarea
+            placeholder="例如：华东区域运营"
+          />
+        </label>
+        <label class="field">
+          <span>数据范围</span>
+          <UiSelect v-model="draft.scope" class="select" :disabled="readonly">
+            <template v-if="apiMode">
+              <UiOption value="all">全部数据</UiOption>
+              <UiOption value="self">仅本人</UiOption>
+              <UiOption value="custom">授权点位 / 指定数据</UiOption>
+            </template>
+            <template v-else>
+              <UiOption v-for="(label, key) in scopeLabels" :key="key" :value="key as DataScope">
+                {{ label }}
+              </UiOption>
+            </template>
+          </UiSelect>
+        </label>
+        <label class="field full-width">
+          <span>角色说明</span>
+          <UiTextarea
             v-model="draft.description"
             class="textarea"
             rows="2"
-            :readonly="readonly"
+            :readonly="readonly || apiMode"
             maxlength="300"
-            placeholder="描述该角色的职责和授权边界"
+            :placeholder="apiMode ? '当前服务端角色合同未提供说明字段' : '描述该角色的职责和授权边界'"
           />
         </label>
       </div>
+
       <div class="row-between">
         <h3>功能权限</h3>
         <span class="muted">已选 {{ draft.permissions.length }} 项</span>
       </div>
-      <div class="table-scroll">
-        <table class="data-table permissions-table">
-          <thead>
-            <tr>
-              <th>功能模块</th>
-              <th v-for="label in actionNames" :key="label">{{ label }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="module in permissionCatalog" :key="module.id">
-              <td>{{ module.name }}</td>
-              <td v-for="(label, a) in actionNames" :key="a">
-                <UiInput
-                  v-if="module.actions.includes(a)"
-                  type="checkbox"
-                  :aria-label="module.name + ' ' + label"
-                  :checked="draft.permissions.includes(module.id + '.' + a)"
-                  :disabled="readonly"
-                  @change="toggle(module.id + '.' + a)"
-                /><span v-else class="muted">—</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="permission-groups">
+        <section v-for="group in permissionGroups" :key="group.name" class="permission-group">
+          <h4>{{ group.name }}</h4>
+          <label v-for="item in group.items" :key="item.key" class="permission-item">
+            <UiInput
+              type="checkbox"
+              :aria-label="item.label"
+              :checked="draft.permissions.includes(item.key)"
+              :disabled="readonly"
+              @change="toggle(item.key)"
+            />
+            <span>
+              <strong>{{ item.label }}</strong>
+              <small>{{ item.description }}</small>
+            </span>
+          </label>
+        </section>
       </div>
-      <div class="notice-box">
-        <AppIcon
-          name="help"
-        />仅展示该模块实际声明的操作维度。“—”表示不适用，不等同于未勾选。真实权限须由后端鉴权执行。
-      </div>
-      <label class="option-line"
-        ><UiInput v-model="draft.enabled" type="checkbox" :disabled="readonly" />启用此角色</label
-      >
+
+      <label class="option-line">
+        <UiInput v-model="draft.enabled" type="checkbox" :disabled="readonly" />启用此角色
+      </label>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     </div>
-    <template #footer
-      ><UiButton class="btn" @click="emit('close')">{{ readonly ? '关闭' : '取消' }}</UiButton><UiButton v-if="!readonly" class="btn btn-primary" @click="save">保存角色</UiButton></template
-    ></UiDialog
-  >
+
+    <template #footer>
+      <UiButton class="btn" @click="emit('close')">{{ readonly ? '关闭' : '取消' }}</UiButton>
+      <UiButton v-if="!readonly" class="btn btn-primary" :disabled="busy" @click="save">
+        {{ busy ? '正在保存…' : '保存角色' }}
+      </UiButton>
+    </template>
+  </UiDialog>
 </template>
+
 <style scoped>
-.permissions-table th:not(:first-child),
-.permissions-table td:not(:first-child) {
-  text-align: center;
+.permission-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-height: 360px;
+  overflow: auto;
 }
-.permissions-table td {
-  height: 44px;
+.permission-group {
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  padding: 14px;
 }
-.permissions-table {
-  min-width: 480px;
+.permission-group h4 {
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.permission-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px 0;
+}
+.permission-item strong,
+.permission-item small {
+  display: block;
+}
+.permission-item strong {
+  font-size: 12px;
+}
+.permission-item small {
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+@media (max-width: 767px) {
+  .permission-groups { grid-template-columns: 1fr; }
 }
 </style>
