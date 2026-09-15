@@ -1,0 +1,73 @@
+name: ec-ri-06-plan-change-web
+
+on:
+  push:
+    branches:
+      - feat/ec-ri-06-tenant-change-preview
+    paths:
+      - .github/workflows/ec-ri-06-plan-change-web.yml
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/ec-ri-06-tenant-change-preview
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Check frontend contracts
+        run: npm run check
+      - name: Install Chromium and Chinese fonts
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Run tenant plan change lifecycle E2E
+        env:
+          ENTERPRISE_PLAN_CHANGE_E2E: '1'
+        run: |
+          set -euo pipefail
+          VITE_DATA_MODE=api npm run build
+          npx playwright test e2e/enterprise-plan-change-real.spec.ts
+      - name: Verify screenshot evidence
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          names = [
+            'enterprise-plan-change-targets-1440',
+            'enterprise-plan-change-preview-1440',
+            'enterprise-plan-change-external-approval-1440',
+            'enterprise-plan-change-applied-1440',
+            'enterprise-plan-change-scheduled-1440',
+            'enterprise-plan-change-provisioning-1440',
+          ]
+          for name in names:
+            path = Path('screenshots') / f'{name}.png'
+            data = path.read_bytes()
+            assert data[:8] == b'\x89PNG\r\n\x1a\n', path
+            assert struct.unpack('>II', data[16:24]) == (1440, 900), path
+          print('EC_RI_06_PLAN_CHANGE_SCREENSHOTS=PASS')
+          PY
+      - name: Upload lifecycle screenshots
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ec-ri-06-plan-change-screenshots
+          path: web/screenshots/enterprise-plan-change-*.png
+          retention-days: 14
+          if-no-files-found: error
