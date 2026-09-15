@@ -6,6 +6,14 @@ on:
       - feat/ec-ri-07-server-audit-trail
     paths:
       - .github/workflows/ec-ri-07-web-qualification.yml
+      - web/**
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/ec-ri-07-web-qualification.yml
+      - web/**
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,30 +23,73 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout branch
+      - name: Checkout exact candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: feat/ec-ri-07-server-audit-trail
+          ref: ${{ github.sha }}
           fetch-depth: 0
-      - name: Verify Node runtime
-        run: node --version
+          persist-credentials: false
+      - name: Verify exact candidate
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - name: Setup Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
       - name: Install web dependencies
         working-directory: web
         run: npm ci
       - name: Run frontend qualification
         working-directory: web
         run: npm run check
-      - name: Build API mode
+      - name: Install Chromium and Chinese fonts
         working-directory: web
-        env:
-          VITE_DATA_MODE: api
-        run: npm run build
-      - name: Install Chromium
-        working-directory: web
-        run: npx playwright install --with-deps chromium
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
       - name: Run EC-RI-07 API-mode E2E
         working-directory: web
-        env:
-          VITE_DATA_MODE: api
-          ENTERPRISE_AUDIT_REAL_E2E: "1"
-        run: npm run test:e2e -- enterprise-audit-real.spec.ts
+        shell: bash
+        run: |
+          set -euo pipefail
+          VITE_DATA_MODE=api npm run build
+          ENTERPRISE_AUDIT_REAL_E2E=1 npx playwright test e2e/enterprise-audit-real.spec.ts
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, struct
+
+          results = json.loads(Path('test-results/results.json').read_text())
+          stats = results['stats']
+          assert stats.get('unexpected', 0) == 0, stats
+          serialized = json.dumps(results, ensure_ascii=False)
+          required_titles = [
+              'API mode renders authoritative audit data across CoffeeLink viewports without demo fallback',
+              'detail is read from the server and exposes trace references without inventing before/after payloads',
+              'audit export uses trusted session, CSRF and idempotency and reports only server-confirmed success',
+              'failed export preserves the same idempotency key for retry and never shows fake success',
+              '403 read failure does not fall back to local audit preview data',
+          ]
+          for title in required_titles:
+              assert title in serialized, f'missing EC-RI-07 browser evidence: {title}'
+
+          shots = Path('screenshots')
+          for width, height in [(1366, 768), (1440, 900), (1536, 1024), (390, 844)]:
+              path = shots / f'enterprise-audit-real-{width}.png'
+              data = path.read_bytes()
+              assert data[:8] == b'\x89PNG\r\n\x1a\n', path
+              got = struct.unpack('>II', data[16:24])
+              assert got == (width, height), (path, got)
+          print(f'EC_RI_07_WEB=PASS expected={stats.get("expected", 0)}')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ec-ri-07-audit-visual-review
+          path: |
+            web/screenshots
+            web/test-results
+            web/dist
+          if-no-files-found: warn
+          retention-days: 7
