@@ -1,0 +1,53 @@
+name: Members API Convergence Once
+
+on:
+  push:
+    branches:
+      - refactor/ui-route-convergence
+
+permissions:
+  contents: write
+
+jobs:
+  converge-members:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Apply Members canonical API patch
+        run: node web/scripts/members-api-convergence.mjs
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+      - name: Run full static and unit gate
+        working-directory: web
+        run: npm run check
+      - name: Build canonical API-mode UI
+        working-directory: web
+        env:
+          VITE_DATA_MODE: api
+        run: npm run build
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: Verify Members canonical API contract
+        working-directory: web
+        env:
+          VITE_DATA_MODE: api
+          ENTERPRISE_MEMBER_REAL_E2E: '1'
+        run: npx playwright test e2e/enterprise-members-real.spec.ts
+      - name: Commit converged Members implementation
+        run: |
+          rm web/scripts/members-api-convergence.mjs
+          rm .github/workflows/members-api-convergence-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/src/stores/enterprise.ts web/src/features/enterprise/pages/MembersView.vue web/src/features/enterprise/components/members/MemberActionDialog.vue web/src/features/enterprise/components/members/MemberDetailOverview.vue web/e2e/enterprise-members-real.spec.ts web/scripts/members-api-convergence.mjs .github/workflows/members-api-convergence-once.yml
+          git commit -m "fix(enterprise): converge members canonical API contract"
+          git push origin HEAD:refactor/ui-route-convergence
