@@ -26,6 +26,8 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Merge latest main without committing
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main
           git merge --no-commit --no-ff origin/main || true
           python3 web/scripts/resolve-ui-route-main-sync.py
@@ -87,7 +89,5 @@ jobs:
           rm web/scripts/resolve-ui-route-main-sync.py
           rm .github/workflows/ui-route-main-sync-once.yml
           git add -A
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "merge(main): absorb platform lifecycle into canonical UI"
           git push origin HEAD:refactor/ui-route-convergence
