@@ -11,9 +11,6 @@ permissions:
 jobs:
   converge-company:
     runs-on: ubuntu-latest
-    env:
-      VITE_DATA_MODE: api
-      ENTERPRISE_COMPANY_REAL_E2E: '1'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,12 +30,17 @@ jobs:
         run: npm run check
       - name: Build canonical API-mode UI
         working-directory: web
+        env:
+          VITE_DATA_MODE: api
         run: npm run build
       - name: Install Chromium
         working-directory: web
         run: npx playwright install --with-deps chromium
       - name: Verify Company canonical API contract
         working-directory: web
+        env:
+          VITE_DATA_MODE: api
+          ENTERPRISE_COMPANY_REAL_E2E: '1'
         run: npx playwright test e2e/enterprise-company-real.spec.ts
       - name: Commit converged Company implementation
         run: |
