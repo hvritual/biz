@@ -1,3 +1,4 @@
+import { validatePatternBindings } from './pattern-contracts.mjs'
 import { basename, resolve } from 'node:path'
 import { StaticSource, componentFile, readStrictJson } from './static-source.mjs'
 import { validateUiContract } from './ui-contract-schema.mjs'
@@ -5,6 +6,7 @@ import { componentSources, readVue, verifyPageSource } from './vue-source.mjs'
 
 export function checkUiModel(root) {
   const contract = validateUiContract(readStrictJson(resolve(root, 'ui-contracts.json')))
+  validatePatternBindings(contract)
   const reader = new StaticSource(root)
   const routes = reader.router(resolve(root, 'src/router/index.ts'))
   const navigationFile = resolve(root, 'src/router/navigation.ts')

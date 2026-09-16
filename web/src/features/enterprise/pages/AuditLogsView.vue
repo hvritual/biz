@@ -85,8 +85,8 @@ const {
           <MetricCard label="当前页导出" :value="pageExports" icon="download" tone="green" caption="access.audit.export" />
         </div>
 
-        <section class="card data-panel">
-          <div class="query-bar audit-query-bar">
+        <section class="card data-panel" data-ui-region="data">
+          <div class="query-bar audit-query-bar" data-ui-region="query">
             <SearchField v-model="queryDraft" placeholder="搜索操作、对象、操作人或请求 ID…" />
             <UiInput v-model="operationDraft" class="input operation-filter" placeholder="操作 ID，例如 access.audit.export" />
             <UiSelect v-model="resultDraft" class="select" aria-label="筛选执行结果">
@@ -175,8 +175,8 @@ const {
           caption="成员或日志文件导出"
         />
       </div>
-      <section class="card data-panel">
-        <div class="query-bar">
+      <section class="card data-panel" data-ui-region="data">
+        <div class="query-bar" data-ui-region="query">
           <SearchField v-model="demoQuery" placeholder="搜索操作内容、对象名称、请求 ID…" />
           <UiSelect v-model="demoModule" class="select" aria-label="筛选日志模块" @change="demoPage = 1">
             <UiOption value="">全部模块</UiOption>

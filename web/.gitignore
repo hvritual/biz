@@ -8,3 +8,6 @@ coverage/
 
 screenshots/
 .visual-build.mjs
+
+# Derived design index; source and contracts remain authoritative.
+.cache/

@@ -92,7 +92,7 @@ function submitDemoChange() {
 
     <template v-else>
       <div class="plan-top">
-        <section class="card current-plan">
+        <section class="card current-plan" data-ui-region="subscription">
           <div class="row">
             <span class="plan-crown"><AppIcon name="crown" :size="30" /></span>
             <div>
@@ -117,7 +117,7 @@ function submitDemoChange() {
           </small>
         </section>
 
-        <section class="card quota-overview">
+        <section class="card quota-overview" data-ui-region="quota-summary">
           <div class="row-between">
             <h2>额度使用概览</h2>
             <span class="muted">当前企业</span>
@@ -148,7 +148,7 @@ function submitDemoChange() {
         @changed="plan.refreshAfterChange"
       />
 
-      <section class="card panel-pad">
+      <section class="card panel-pad" data-ui-region="workspace">
         <div class="tabs">
           <UiButton v-for="item in ['套餐概览', '功能权益', '使用额度', '变更记录']" :key="item" :class="['tab', { active: tab === item }]" @click="tab = item">
             {{ item }}

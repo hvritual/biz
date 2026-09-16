@@ -117,8 +117,8 @@ onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).ca
         caption="按负责人身份去重"
       />
     </div>
-    <div class="organization-layout">
-      <DepartmentTree
+    <div class="organization-layout" data-ui-region="workspace">
+      <DepartmentTree data-ui-region="organization-tree"
         :selected="selected"
         @select="
           ($event: string) => {
@@ -127,7 +127,7 @@ onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).ca
           }
         "
       />
-      <section class="card panel-pad">
+      <section class="card panel-pad" data-ui-region="department-detail">
         <div class="row-between">
           <div>
             <h2>{{ department?.name || store.company.name }}</h2>

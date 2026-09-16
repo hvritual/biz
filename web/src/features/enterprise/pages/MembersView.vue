@@ -179,9 +179,9 @@ onMounted(() => void store.ensureDomains(['members', 'roles', 'departments']).ca
         />
         <EnterpriseSourceBanner />
         <MemberOverview />
-        <MemberFilters :value="filters" @apply="applyFilters" @reset="clear" />
-        <section class="card member-data-panel" aria-label="成员管理列表">
-          <div class="row-between member-toolbar">
+        <MemberFilters data-ui-region="query" :value="filters" @apply="applyFilters" @reset="clear" />
+        <section data-ui-region="data" class="card member-data-panel" aria-label="成员管理列表">
+          <div class="row-between member-toolbar" data-ui-region="toolbar">
             <div class="row wrap member-tools">
               <UiButton class="btn btn-primary" @click="openAction('create')">
                 <AppIcon name="plus" :size="16" />添加成员
@@ -222,7 +222,7 @@ onMounted(() => void store.ensureDomains(['members', 'roles', 'departments']).ca
             @more="showMore"
           />
           <EmptyState v-else><UiButton class="btn" @click="clear">清空筛选</UiButton></EmptyState>
-          <AppPagination v-model:page="page" v-model:page-size="pageSize" :total="filtered.length" />
+          <AppPagination data-ui-region="pagination" v-model:page="page" v-model:page-size="pageSize" :total="filtered.length" />
         </section>
       </div>
     </div>

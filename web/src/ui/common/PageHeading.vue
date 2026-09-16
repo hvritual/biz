@@ -24,7 +24,7 @@ const effectiveBannerDescription = computed(() =>
 </script>
 
 <template>
-  <header class="page-heading">
+  <header class="page-heading" data-ui-region="page-heading">
     <div class="heading-main">
       <div class="breadcrumbs">
         <span>{{ effectiveBreadcrumb }}</span><span>/</span><strong>{{ title }}</strong>

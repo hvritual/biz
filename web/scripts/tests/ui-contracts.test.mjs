@@ -53,6 +53,7 @@ test('removing a page declaration cannot hide an existing business route', (t) =
   edit(root,'ui-contracts.json',(source)=>{
     const c=JSON.parse(source)
     c.routes=c.routes.filter((page)=>page.path!=='/platform/tenants')
+    for (const pattern of Object.values(c.patterns ?? {})) pattern.examples = pattern.examples.filter((path)=>path!=='/platform/tenants')
     return JSON.stringify(c)
   })
   assert.ok(checkUiModel(root).failures.some((error)=>error.includes('/platform/tenants') && error.includes('missing')))

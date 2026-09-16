@@ -60,7 +60,7 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
     <PageHeading title="企业信息" description="维护企业基本资料与联系信息，统一团队的身份与展示" />
     <EnterpriseSourceBanner />
     <div class="split-layout">
-      <form class="card panel-pad company-form" @submit.prevent="save">
+      <form data-ui-region="form-workspace" class="card panel-pad company-form" @submit.prevent="save">
         <div class="row-between block-title">
           <h2>基本信息</h2>
           <StatusBadge text="企业正常" />
@@ -134,7 +134,7 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
           </div>
         </section>
         <p v-if="error" class="form-error" role="alert">{{ error }}</p>
-        <div class="form-footer">
+        <div class="form-footer" data-ui-region="form-actions">
           <span v-if="changed" class="muted flex-1">有尚未保存的修改</span
           ><UiButton
             class="btn"
@@ -149,7 +149,7 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
             取消修改</UiButton><UiButton class="btn btn-primary" type="submit"><AppIcon name="check" :size="15" />保存修改</UiButton>
         </div>
       </form>
-      <aside class="side-summary">
+      <aside class="side-summary" data-ui-region="scope">
         <section class="card panel-pad">
           <h2>企业资料概览</h2>
           <div class="company-identity">
