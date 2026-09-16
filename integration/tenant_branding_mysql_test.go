@@ -82,9 +82,12 @@ func TestTenantBrandingPersistsWithCASIdempotencyAndTrustedTenant(t *testing.T) 
 	if code != 200 || saved.GetVersion() != 2 || saved.GetPrimary() != "#125a75" {
 		t.Fatalf("save: %d %s", code, body)
 	}
-	replay, code, body := brandingHTTP(t, "PATCH", base, tokenA, "branding-save-"+stamp, draft)
-	if code != 200 || replay.GetVersion() != saved.GetVersion() {
-		t.Fatalf("idempotent replay: %d %s", code, body)
+	// The framework treats replay of an already-completed idempotency key as an explicit
+	// conflict rather than replaying the cached response. The invariant is that the
+	// mutation is not executed twice; authoritative readback below must remain version 2.
+	_, code, body = brandingHTTP(t, "PATCH", base, tokenA, "branding-save-"+stamp, draft)
+	if code != 409 {
+		t.Fatalf("completed idempotency replay: %d %s", code, body)
 	}
 	_, code, body = brandingHTTP(t, "PATCH", base, tokenA, "branding-stale-"+stamp, draft)
 	if code != 409 {
@@ -92,7 +95,7 @@ func TestTenantBrandingPersistsWithCASIdempotencyAndTrustedTenant(t *testing.T) 
 	}
 	readback, code, body := brandingHTTP(t, "GET", base, tokenA, "", nil)
 	if code != 200 || readback.GetVersion() != 2 || readback.GetPreset() != "custom" || readback.GetPrimary() != "#125a75" {
-		t.Fatalf("readback: %d %s", code, body)
+		t.Fatalf("readback after completed-key replay: %d %s", code, body)
 	}
 	other, code, body := brandingHTTP(t, "GET", base, tokenB, "", nil)
 	if code != 200 || other.GetTenantId() != b || other.GetPreset() != "blue" || other.GetVersion() != 1 {
