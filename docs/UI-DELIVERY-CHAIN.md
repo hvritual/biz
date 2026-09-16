@@ -1,7 +1,7 @@
 # CoffeeLink UI 交付工程链
 
 > 当前设计基线：`docs/design/COFFEELINK-BUSINESS-UI-V1.2.md`  
-> 当前代码复核基线：`main@d9ad0e068a89ac37bbb02ba4fdf59f371f80c267`
+> 当前代码复核基线：`main@403afe3d2d0d751a1669ac5dbb739dd8afa2895c`（#143 页面模式补齐前）
 
 ## 1. 目标
 
@@ -43,11 +43,13 @@ Route
 当前模板：
 
 - `WorkbenchPage`：管理域总览与组合治理工作台；
-- `ListPage`：标题、必要指标、查询、数据区、分页；
+- `ListPage`：标题、查询和数据区；指标、工具栏、分页与详情按实际集合需求选用；
 - `FormPage`：设置与配置页面；
 - `MetricsPage`：保留给经营统计类页面，不要求当前核心路由强制使用。
 
 页面组件必须暴露 `data-ui-template`；契约要求的结构区域必须暴露 `data-ui-region`。
+
+模式的唯一机器定义现位于同一合同的 `patterns`；适用/不适用、必需/可选区、状态义务与消费者接入见 [页面模式](design/PAGE-PATTERNS.md)。设计义务不等于业务接口完成，MetricsPage 仍为预留。
 
 ## 4. Design System
 
