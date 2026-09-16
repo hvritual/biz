@@ -163,7 +163,7 @@ async function save() {
           <label v-for="item in group.items" :key="item.key" class="permission-item">
             <UiInput
               type="checkbox"
-              :aria-label="item.label"
+              :aria-label="`${group.name} ${item.label}`"
               :checked="draft.permissions.includes(item.key)"
               :disabled="readonly"
               @change="toggle(item.key)"

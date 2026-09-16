@@ -270,6 +270,14 @@ async function submit() {
           >
         </div>
         <label class="field"><span>接收邮箱</span><UiInput class="input" :value="draft.email" readonly /></label
+        ><label class="field"
+          ><span class="required">操作原因</span
+          ><UiTextarea
+            v-model="reason"
+            class="textarea"
+            maxlength="300"
+            placeholder="请记录发起密码重置请求的原因，用于审计追踪"
+          /></label
         ><label class="option-line"
           ><UiInput v-model="confirmed" type="checkbox" />我已确认成员身份，并了解此处不会发送真实邮件</label
         >

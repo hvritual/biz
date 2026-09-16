@@ -136,6 +136,7 @@ test('password reset records explicit preview request, no plaintext password', a
   await expect(d).toContainText('不执行真实重置')
   await expect(d.locator('input[type="password"]')).toHaveCount(0)
   await d.getByRole('checkbox').check()
+  await d.getByLabel('操作原因', { exact: true }).fill('成员身份已核验，发起密码重置预览请求')
   await d.getByRole('button', { name: '记录重置请求', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('未发送邮件')
   await ready(page, '/enterprise/logs')
