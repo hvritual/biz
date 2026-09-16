@@ -1,0 +1,8 @@
+export const memberDetailMessages = {
+  'zh-CN': {
+    personal: '个人信息', phone: '手机号', employeeId: '工号', accountStatus: '账号状态', joinedAt: '加入时间', lastLogin: '最后登录', note: '备注', notFilled: '未填写', notRecorded: '未记录', serverUnsupported: '服务端未提供', noNote: '暂无备注', organizationInfo: '组织信息', departmentHead: '部门负责人', notSet: '未设置', position: '岗位', rolePermissions: '角色权限', dataPermissions: '数据权限', recentActivity: '最近活动', viewMore: '查看更多', joinedCompany: '加入当前企业', relationshipRecord: '成员关系记录 · 示例数据', scopeAll: '可访问当前企业授权范围内的全部业务数据。', scopeDepartment: '仅可访问所属部门的已授权业务数据。', scopeDepartmentTree: '可访问本部门及下级部门的已授权数据。', scopeSelf: '仅可访问与本人相关的已授权数据。', scopeCustom: '按指定范围授权，具体对象以服务端规则为准。'
+  },
+  'en-US': {
+    personal: 'Profile information', phone: 'Phone', employeeId: 'Employee ID', accountStatus: 'Account status', joinedAt: 'Joined', lastLogin: 'Last sign-in', note: 'Note', notFilled: 'Not provided', notRecorded: 'Not recorded', serverUnsupported: 'Not provided by server', noNote: 'No note', organizationInfo: 'Organization', departmentHead: 'Department lead', notSet: 'Not set', position: 'Position', rolePermissions: 'Roles & permissions', dataPermissions: 'Data permissions', recentActivity: 'Recent activity', viewMore: 'View more', joinedCompany: 'Joined current tenant', relationshipRecord: 'Membership record · sample data', scopeAll: 'Can access all authorized business data in the current tenant.', scopeDepartment: 'Can access authorized data for the assigned department.', scopeDepartmentTree: 'Can access authorized data for the department and descendants.', scopeSelf: 'Can access authorized data related to this member only.', scopeCustom: 'Uses an explicit scope; server rules remain authoritative.'
+  }
+} as const

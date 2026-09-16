@@ -120,7 +120,7 @@ test('suspend and activate require reason and update state', async ({ page }) =>
   d = page.getByRole('dialog', { name: '重新启用成员', exact: true })
   await d.getByLabel('操作原因', { exact: true }).fill('身份和角色已复核')
   await d.getByRole('button', { name: '确认启用', exact: true }).click()
-  await expect(page.locator('.member-table tbody tr').nth(1).getByText('启用', { exact: true })).toBeVisible()
+  await expect(page.locator('.member-table tbody tr').nth(1).getByText('正常', { exact: true })).toBeVisible()
 })
 test('last owner is protected in the UI', async ({ page }) => {
   await ready(page)
