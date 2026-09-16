@@ -109,7 +109,20 @@
   },
   "enterprise/components/members/MemberDetailDrawer.vue": {
     "scenario": "企业中心 · 详情展示 · MemberDetailDrawer",
-    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+    "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。",
+    "aliases": [
+      "成员详情",
+      "member details"
+    ],
+    "useWhen": [
+      "在成员列表上下文中查看当前成员基本信息、角色与数据范围"
+    ],
+    "avoidWhen": [
+      "不能用作全局功能导航或批量成员选择器"
+    ],
+    "examples": [
+      "src/features/enterprise/pages/MembersView.vue"
+    ]
   },
   "enterprise/components/members/MemberDetailOverview.vue": {
     "scenario": "企业中心 · 详情展示 · MemberDetailOverview",
