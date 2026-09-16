@@ -15,7 +15,7 @@ const store = useEnterpriseStore()
 const route = useRoute()
 const frame = ref<HTMLElement>()
 const expanded = computed(() => Boolean(ui.module))
-const routeKey = computed(() => `${store.tenantId || 'no-tenant'}:${route.fullPath}`)
+const routeKey = computed(() => `${store.tenantId || 'no-tenant'}:${route.path}`)
 
 function viewport() {
   if (window.innerWidth < 768) ui.collapsed = true
