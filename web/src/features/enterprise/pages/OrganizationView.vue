@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
 
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
@@ -15,10 +15,11 @@ import AvatarMark from '@/ui/common/AvatarMark.vue'
 import DepartmentTree from '@/features/enterprise/components/organization/DepartmentTree.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import AppPagination from '@/ui/common/AppPagination.vue'
+import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
   router = useRouter()
-const selected = ref('operations'),
+const selected = ref(''),
   page = ref(1),
   pageSize = ref(10),
   editOpen = ref(false),
@@ -27,7 +28,7 @@ const draft = ref<Department>({
   id: '',
   name: '',
   parentId: null,
-  leaderId: 'member-1',
+  leaderId: '',
   code: '',
   description: '',
   enabled: true,
@@ -52,14 +53,14 @@ function openEditor(edit: boolean) {
           id: crypto.randomUUID(),
           name: '',
           parentId: selected.value || null,
-          leaderId: 'member-1',
+          leaderId: store.members.find((member) => member.status === 'active')?.id ?? '',
           code: '',
           description: '',
           enabled: true,
         }
   editOpen.value = true
 }
-function save() {
+async function save() {
   try {
     if (!departmentMoveAllowed(store.departments, draft.value.id, draft.value.parentId))
       throw new Error('部门不能移动到自身或其下级部门。')
@@ -68,18 +69,29 @@ function save() {
       store.members.some((m) => m.departmentId === draft.value.id && m.status !== 'removed')
     )
       throw new Error('请先转移该部门成员，再停用部门。')
-    store.saveDepartment(draft.value)
+    await store.saveDepartment(draft.value)
     selected.value = draft.value.id
     editOpen.value = false
-    ui.toast('组织调整已保存到当前企业预览。')
+    ui.toast(store.sourceKind === 'api' ? '组织调整已由服务端确认并回读。' : '组织调整已保存到当前企业预览。')
   } catch (e) {
     error.value = e instanceof Error ? e.message : '保存失败。'
   }
 }
+watch(
+  () => store.departments.map((department) => department.id).join(','),
+  () => {
+    if (selected.value && store.departments.some((department) => department.id === selected.value)) return
+    selected.value = store.departments[0]?.id ?? ''
+    page.value = 1
+  },
+  { immediate: true },
+)
+onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).catch(() => undefined))
 </script>
 <template>
-  <div class="page-stack">
+  <div class="page-stack" data-enterprise-page="organization" data-ui-template="WorkbenchPage">
     <PageHeading title="组织架构" description="管理部门与汇报关系，让组织协作与数据边界保持清晰" />
+    <EnterpriseSourceBanner />
     <div class="metric-grid">
       <MetricCard
         label="部门数量"
@@ -198,7 +210,7 @@ function save() {
           ><span class="required">部门名称</span
           ><UiInput v-model="draft.name" class="input" maxlength="40" /></label
         ><label class="field"
-          ><span>部门编号</span><UiInput v-model="draft.code" class="input" maxlength="30" /></label
+          ><span>部门编号</span><UiInput v-model="draft.code" class="input" maxlength="30" :readonly="store.sourceKind === 'api'" :placeholder="store.sourceKind === 'api' ? '服务端合同暂未提供部门编号' : ''" /></label
         ><label class="field"
           ><span>上级部门</span
           ><UiSelect v-model="draft.parentId" class="select">
@@ -222,7 +234,7 @@ function save() {
           </UiSelect></label
         ><label class="field full-width"
           ><span>部门职责</span
-          ><UiTextarea v-model="draft.description" class="textarea" maxlength="300" /></label
+          ><UiTextarea v-model="draft.description" class="textarea" maxlength="300" :readonly="store.sourceKind === 'api'" :placeholder="store.sourceKind === 'api' ? '服务端合同暂未提供部门职责字段' : ''" /></label
         ><label class="option-line"><UiInput v-model="draft.enabled" type="checkbox" />启用部门</label>
       </div>
       <div class="notice-box department-notice">
@@ -240,6 +252,9 @@ function save() {
   display: grid;
   grid-template-columns: 244px minmax(0, 1fr);
   gap: 16px;
+}
+.organization-layout > * {
+  min-width: 0;
 }
 .department-description {
   font-size: 12px;

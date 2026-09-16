@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
+import { selectUiOption } from './ui.helpers'
 import { mkdirSync } from 'node:fs'
 
 test.skip(!process.env.ENTERPRISE_MEMBER_REAL_E2E, 'runs only against the VITE_DATA_MODE=api build')
@@ -17,7 +18,8 @@ type RemoteMember = {
   roles: RemoteRoleSummary[]
   derivedDataScope: string
 }
-type RemoteRole = { id: string; name: string; status: string; version: number; permissions: unknown[] }
+type RemoteRole = { id: string; name: string; status: string; version: number; permissions: unknown[]; protectedOwner?: boolean }
+type RemoteDepartment = { departmentId: string; name: string; parentId: string; leaderUserId: string; email: string; phone: string; status: string; sort: number; version: number }
 
 type MockOptions = {
   listStatus?: number
@@ -32,6 +34,11 @@ const roleCatalog: RemoteRole[] = [
   { id: 'role-ops', name: '运营负责人', status: 'TENANT_ROLE_STATUS_ACTIVE', version: 2, permissions: [] },
   { id: 'role-viewer', name: '经营查看者', status: 'TENANT_ROLE_STATUS_ACTIVE', version: 1, permissions: [] },
   { id: 'role-legacy', name: '历史角色', status: 'TENANT_ROLE_STATUS_DISABLED', version: 4, permissions: [] },
+]
+
+const departmentCatalog: RemoteDepartment[] = [
+  { departmentId: 'dept-success', name: '客户成功部', parentId: '', leaderUserId: 'user-001', email: 'success@coffeelink.test', phone: '', status: 'TENANT_DEPARTMENT_STATUS_ACTIVE', sort: 10, version: 3 },
+  { departmentId: 'dept-rental', name: '租赁运营部', parentId: '', leaderUserId: 'user-001', email: 'rental@coffeelink.test', phone: '', status: 'TENANT_DEPARTMENT_STATUS_ACTIVE', sort: 20, version: 2 },
 ]
 
 function json(route: Route, status: number, body: unknown) {
@@ -103,6 +110,10 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
 
   await page.route('**/api/v1/tenant/roles', async (route) => {
     return json(route, 200, { roles: roleCatalog })
+  })
+
+  await page.route('**/api/v1/tenant/departments', async (route) => {
+    return json(route, 200, { departments: departmentCatalog })
   })
 
   await page.route(/\/api\/v1\/tenant\/roles\/[^/]+\/members(?:\/[^/]+\/revoke)?$/, async (route) => {
@@ -212,12 +223,13 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
   }
 }
 
-async function openRealMembers(page: Page) {
+async function openCanonicalMembers(page: Page) {
   await page.goto('/#/enterprise/members')
-  await expect(page.locator('[data-enterprise-member-source="server"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-page="members"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-source="api"]')).toBeVisible()
 }
 
-test('real member page renders authoritative profile, role and scope fields across CoffeeLink viewports', async ({ page }) => {
+test('canonical member page renders authoritative member, role, department and scope across CoffeeLink viewports', async ({ page }) => {
   await mockMemberServer(page)
   mkdirSync('screenshots', { recursive: true })
   for (const viewport of [
@@ -227,105 +239,128 @@ test('real member page renders authoritative profile, role and scope fields acro
     { width: 390, height: 844 },
   ]) {
     await page.setViewportSize(viewport)
-    await openRealMembers(page)
-    await expect(page.getByText('Alice Chen', { exact: true })).toBeVisible()
-    await expect(page.getByText('EMP-1001', { exact: true })).toBeVisible()
-    await expect(page.getByText('dept-success', { exact: true })).toBeVisible()
-    await expect(page.getByText('运营负责人', { exact: true }).first()).toBeVisible()
-    await expect(page.getByText('授权点位', { exact: true })).toBeVisible()
-    await expect(page.getByText('上海咖啡科技有限公司', { exact: true })).toHaveCount(0)
+    await openCanonicalMembers(page)
+    const row = page.locator('[data-member-id="user-001"]')
+    await expect(row).toBeVisible()
+    await expect(row).toContainText('Alice Chen')
+    await expect(row).toContainText('客户成功部')
+    await expect(row).toContainText('运营负责人')
+    await expect(row).toContainText('指定数据')
+    await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
     await page.screenshot({ path: `screenshots/enterprise-members-real-${viewport.width}.png` })
   }
 })
 
-test('invite uses csrf, idempotency and session context then confirms with server readback', async ({ page }) => {
+test('canonical invite uses loaded role and department, trusted headers and authoritative readback', async ({ page }) => {
   const server = await mockMemberServer(page)
-  await openRealMembers(page)
+  await openCanonicalMembers(page)
   await page.getByRole('button', { name: '邀请成员', exact: true }).click()
-  await page.getByLabel('成员邮箱').fill('invitee@coffeelink.test')
-  await page.getByRole('button', { name: '确认操作', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '邀请成员' })
+  await dialog.getByLabel('姓名').fill('Invitee User')
+  await dialog.getByLabel('邮箱').fill('invitee@coffeelink.test')
+  await expect(dialog.getByLabel('所属部门')).toContainText('客户成功部')
+  await expect(dialog.getByLabel('数据范围')).toHaveValue('保存后由角色权限服务派生')
+  await expect(dialog.getByLabel('运营负责人')).toBeChecked()
+  await dialog.getByRole('button', { name: '创建邀请', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('服务端确认')
-  await expect(page.getByText('invitee@coffeelink.test', { exact: true })).toBeVisible()
-  const write = server.getWrites().at(-1)!
-  expect(write.headers['x-csrf-token']).toBe('csrf-real-member')
-  expect(write.headers['idempotency-key']).toMatch(/^enterprise-member-invite-/)
-  expect(write.headers['x-biz-session-context']).toContain('tenant-001')
+  await expect(page.locator('[data-member-id="user-003"]')).toContainText('Invitee User')
+  const invite = server.getWrites().find((item) => item.path === '/api/v1/tenant/members' && item.method === 'POST')!
+  expect(invite.headers['x-csrf-token']).toBe('csrf-real-member')
+  expect(invite.headers['idempotency-key']).toMatch(/^enterprise-member-invite-/)
+  expect(invite.headers['x-biz-session-context']).toContain('tenant-001')
+  expect(server.getMembers().find((member) => member.userId === 'user-003')).toMatchObject({
+    name: 'Invitee User',
+    departmentId: 'dept-success',
+  })
 })
 
-test('profile PATCH carries authoritative version and confirms only after member readback', async ({ page }) => {
+test('canonical profile edit exposes only supported fields and sends authoritative version', async ({ page }) => {
   const server = await mockMemberServer(page)
-  await openRealMembers(page)
-  await page.getByRole('button', { name: '档案', exact: true }).first().click()
-  const dialog = page.getByRole('dialog', { name: '编辑成员档案' })
+  await openCanonicalMembers(page)
+  await page.getByRole('button', { name: '编辑 Alice Chen', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '修改成员信息' })
+  await expect(dialog.getByLabel('邮箱')).toHaveAttribute('readonly', '')
+  await expect(dialog.getByLabel('加入日期')).toHaveValue('服务端未提供')
+  await expect(dialog.getByLabel('数据范围')).toHaveValue('指定数据')
+  await expect(dialog.getByText(/成员资料 API 未提供备注写入字段/)).toBeVisible()
   await dialog.getByLabel('姓名').fill('Alice Updated')
   await dialog.getByLabel('手机号').fill('+886900000009')
-  await dialog.getByLabel('工号').fill('EMP-2009')
+  await dialog.getByLabel('员工编号').fill('EMP-2009')
   await dialog.getByLabel('岗位').fill('租赁运营负责人')
-  await dialog.getByLabel('部门引用').fill('dept-rental')
-  await dialog.getByRole('button', { name: '确认操作', exact: true }).click()
+  await selectUiOption(dialog.getByLabel('所属部门'), 'dept-rental')
+  await dialog.getByRole('button', { name: '保存变更', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('服务端确认')
-  await expect(page.getByText('Alice Updated', { exact: true })).toBeVisible()
+  const row = page.locator('[data-member-id="user-001"]')
+  await expect(row).toContainText('Alice Updated')
+  await expect(row).toContainText('租赁运营部')
   const write = server.getWrites().find((item) => item.path.endsWith('/profile'))!
   expect(write.method).toBe('PATCH')
   expect(write.headers['x-csrf-token']).toBe('csrf-real-member')
   expect(write.headers['idempotency-key']).toMatch(/^enterprise-member-profile-/)
   expect(write.headers['x-biz-session-context']).toContain('tenant-001')
-  expect(write.body).toMatchObject({ userId: 'user-001', version: 3, departmentId: 'dept-rental' })
+  expect(write.body).toMatchObject({ userId: 'user-001', version: 3, departmentId: 'dept-rental', employeeId: 'EMP-2009' })
+  expect(write.body).not.toHaveProperty('email')
+  expect(write.body).not.toHaveProperty('scope')
+  expect(write.body).not.toHaveProperty('joinedAt')
+  expect(write.body).not.toHaveProperty('note')
 })
 
-test('role binding is a single idempotent operation and is confirmed from member readback', async ({ page }) => {
+test('canonical role change is idempotent, scope remains server-derived and readback confirms membership', async ({ page }) => {
   const server = await mockMemberServer(page)
-  await openRealMembers(page)
-  await page.getByRole('button', { name: '角色', exact: true }).first().click()
-  const dialog = page.getByRole('dialog', { name: '管理成员角色' })
-  const viewerRow = dialog.locator('.role-row').filter({ hasText: '经营查看者' })
-  await viewerRow.getByRole('button', { name: '绑定', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('角色关系已由服务端确认')
-  await expect(viewerRow.getByText('已绑定', { exact: true })).toBeVisible()
+  await openCanonicalMembers(page)
+  await page.getByRole('button', { name: 'Alice Chen 更多操作', exact: true }).click()
+  await page.getByRole('button', { name: '角色与数据权限变更', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '角色变更与权限调整' })
+  await expect(dialog.getByLabel('目标数据范围')).toHaveValue('保存后由角色权限服务派生')
+  await dialog.getByLabel('经营查看者').check()
+  await dialog.getByRole('button', { name: '保存变更', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('服务端确认')
+  await expect(page.locator('[data-member-id="user-001"]')).toContainText('经营查看者')
   const write = server.getWrites().find((item) => item.path.endsWith('/roles/role-viewer/members'))!
   expect(write.method).toBe('POST')
   expect(write.headers['idempotency-key']).toMatch(/^enterprise-member-role-assign-/)
   expect(write.headers['x-csrf-token']).toBe('csrf-real-member')
 })
 
-test('401 and 403 are surfaced and never replaced with preview members', async ({ page }) => {
+test('401 and 403 remain explicit and never replace API members with preview data', async ({ page }) => {
   await mockMemberServer(page, { unauthenticated: true })
-  await openRealMembers(page)
-  await expect(page.getByRole('alert')).toContainText('登录会话已失效')
+  await openCanonicalMembers(page)
+  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('登录会话已失效')
   await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
 
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockMemberServer(page, { listStatus: 403 })
   await page.reload()
-  await expect(page.getByRole('alert')).toContainText('没有管理企业成员的权限')
+  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('当前账号没有管理企业成员的权限')
   await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
 })
 
-test('profile 409 preserves the same idempotency key for retry', async ({ page }) => {
+test('canonical profile 409 preserves draft and reuses the same idempotency key', async ({ page }) => {
   const server = await mockMemberServer(page, { mutationStatus: 409 })
-  await openRealMembers(page)
-  await page.getByRole('button', { name: '档案', exact: true }).first().click()
-  const dialog = page.getByRole('dialog', { name: '编辑成员档案' })
+  await openCanonicalMembers(page)
+  await page.getByRole('button', { name: '编辑 Alice Chen', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '修改成员信息' })
   await dialog.getByLabel('姓名').fill('conflicting change')
-  await dialog.getByRole('button', { name: '确认操作', exact: true }).click()
+  const save = dialog.getByRole('button', { name: '保存变更', exact: true })
+  await save.click()
   await expect(dialog.getByRole('alert')).toContainText('成员状态或请求版本已发生变化')
-  const retry = dialog.getByRole('button', { name: '重试相同操作', exact: true })
-  await retry.click()
+  await expect(dialog.getByLabel('姓名')).toHaveValue('conflicting change')
+  await save.click()
   await expect(dialog.getByRole('alert')).toContainText('成员状态或请求版本已发生变化')
   const writes = server.getWrites().filter((item) => item.path.endsWith('/profile'))
   expect(writes).toHaveLength(2)
   expect(writes[0]?.headers['idempotency-key']).toBe(writes[1]?.headers['idempotency-key'])
-  await expect(page.getByRole('status')).toHaveCount(0)
+  await expect(page.getByText(/变更已由服务端确认并完成权威回读/)).toHaveCount(0)
 })
 
-test('a successful write without readback is not presented as confirmed success', async ({ page }) => {
+test('successful member write without GET readback is never presented as canonical success', async ({ page }) => {
   await mockMemberServer(page, { readbackStatus: 500 })
-  await openRealMembers(page)
-  await page.getByRole('button', { name: '档案', exact: true }).first().click()
-  const dialog = page.getByRole('dialog', { name: '编辑成员档案' })
+  await openCanonicalMembers(page)
+  await page.getByRole('button', { name: '编辑 Alice Chen', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '修改成员信息' })
   await dialog.getByLabel('姓名').fill('unconfirmed change')
-  await dialog.getByRole('button', { name: '确认操作', exact: true }).click()
+  await dialog.getByRole('button', { name: '保存变更', exact: true }).click()
   await expect(dialog.getByRole('alert')).toContainText('readback failed')
-  await expect(page.getByText(/服务端确认/)).toHaveCount(0)
+  await expect(page.getByText(/变更已由服务端确认并完成权威回读/)).toHaveCount(0)
 })

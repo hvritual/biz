@@ -16,7 +16,7 @@ npx playwright install --with-deps chromium
 npm run test:e2e
 ```
 
-`npm run check` 依次执行 TypeScript、ESLint、三层 UI 架构检查、UI Contract、Vitest 与生产构建。E2E 自启动生产预览服务 `127.0.0.1:4173`，不是静态图片模拟。
+`npm run check` 依次执行 TypeScript、ESLint、三层 UI 架构检查、UI Contract、Route Convergence、Vitest 与生产构建。E2E 自启动生产预览服务 `127.0.0.1:4173`，不是静态图片模拟。
 
 ## 交付范围与数据边界
 
@@ -31,7 +31,7 @@ npm run test:e2e
 
 ## 页面框架与设计约束
 
-设计事实源为 CoffeeLink Business UI Spec V1.1。明确几何约束优先于参考图中的生成误差：
+当前设计规范为 [CoffeeLink Business UI Spec V1.2](../docs/design/COFFEELINK-BUSINESS-UI-V1.2.md)。设计系统维护、唯一事实源、索引和 AI 生成边界见 [Design System Runtime](../docs/design/DESIGN-SYSTEM-RUNTIME.md)；交付步骤见 [UI 交付链](../docs/UI-DELIVERY-CHAIN.md)。V1.1 作为历史来源保留，明确几何约束优先于参考图中的生成误差：
 
 - 顶栏固定 **56px**。
 - CoffeeLink 连接式一级栏：展开 **200px**，折叠 **68px**；允许应用主题在规范范围内调整，但页面不得硬编码自己的侧栏尺寸。
@@ -122,7 +122,7 @@ src/
 - UI 基础层不得依赖业务 Store/Service；
 - scoped CSS 的颜色 Token 所有权；
 - 业务组件必须存在场景/范围声明；
-- CoffeeLink V1.1 的 header / rail / flyout 关键 Token；
+- CoffeeLink 延续自 V1.1 的 header / rail / flyout 关键 Token；
 - 组件体量、`v-html`、字体文件等基础工程约束。
 
 `scripts/check-ui-contracts.mjs` 继续保护页面模板、导航信息架构、租赁集合、平台/运行面边界和四个验收视口。业务状态、租户隔离、最后 owner、幂等键、乐观锁和服务端读回由单测与 Playwright E2E 负责。

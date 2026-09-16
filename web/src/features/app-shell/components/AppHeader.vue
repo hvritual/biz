@@ -9,23 +9,36 @@ import AppIcon from '@/ui/common/AppIcon.vue'
 import AvatarMark from '@/ui/common/AvatarMark.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import brand from '@/assets/brand-mark.png'
-const ui = useUiStore(),
-  router = useRouter(),
-  route = useRoute()
-const apiMode = (import.meta.env.VITE_DATA_MODE ?? 'demo') === 'api'
-const store = apiMode ? null : useEnterpriseStore()
-const live = computed(() => apiMode || route.meta.surface === 'platform' || route.meta.surface === 'runtime')
-const search = ref(''),
-  panel = ref('')
-function changeTenant(e: Event) {
-  if (!store) return
+
+const ui = useUiStore()
+const store = useEnterpriseStore()
+const router = useRouter()
+const route = useRoute()
+
+const live = computed(() => route.meta.surface === 'platform' || route.meta.surface === 'runtime')
+const search = ref('')
+const panel = ref('')
+
+async function changeTenant(event: Event) {
+  const tenantId = (event.target as HTMLSelectElement).value
+  if (!tenantId) return
   ui.closeMenu()
   search.value = ''
   panel.value = ''
-  void router.replace({ path: route.path, query: {} })
-  store.switchTenant((e.target as HTMLSelectElement).value)
-  ui.toast('已切换企业，数据与操作状态已隔离。', 'info')
+  await router.replace({ path: route.path, query: {} })
+  try {
+    await store.switchTenant(tenantId)
+    ui.toast(
+      store.sourceKind === 'api'
+        ? '已切换企业，并从服务端重新读取当前租户数据。'
+        : '已切换企业，数据与操作状态已隔离。',
+      'info',
+    )
+  } catch (error) {
+    ui.toast(error instanceof Error ? error.message : '切换企业失败。', 'error')
+  }
 }
+
 function globalSearch() {
   if (search.value.trim()) {
     void router.push({ path: '/enterprise/members', query: { q: search.value.trim() } })
@@ -33,58 +46,72 @@ function globalSearch() {
   }
 }
 </script>
+
 <template>
   <header class="app-header">
-    <a class="brand" href="#/enterprise/members" aria-label="CoffeeLink 企业中心"
-      ><img :src="brand" alt="CoffeeLink 标识" /><span
-        ><strong>CoffeeLink</strong><small>咖啡机物联云平台</small></span
-      ></a
-    ><UiButton
-      class="icon-button mobile-toggle"
-      aria-label="打开主导航"
-      @click="ui.mobileOpen = !ui.mobileOpen"
-    >
+    <a class="brand" href="#/enterprise/members" aria-label="CoffeeLink 企业中心">
+      <img :src="brand" alt="CoffeeLink 标识" />
+      <span><strong>CoffeeLink</strong><small>咖啡机物联云平台</small></span>
+    </a>
+    <UiButton class="icon-button mobile-toggle" aria-label="打开主导航" @click="ui.mobileOpen = !ui.mobileOpen">
       <AppIcon name="menu" />
     </UiButton>
+
     <div v-if="!live" class="header-company">
-      <AppIcon name="company" :size="19" /><UiSelect
-        :value="store?.tenantId"
-        aria-label="切换企业"
-        @change="changeTenant"
-      >
-        <UiOption value="shanghai">上海咖啡科技有限公司</UiOption>
-        <UiOption value="hangzhou">杭州咖啡运营有限公司</UiOption></UiSelect><span class="edition">标准版</span>
+      <AppIcon name="company" :size="19" />
+      <UiSelect :value="store.tenantId" aria-label="切换企业" :disabled="store.loading" @change="changeTenant">
+        <UiOption v-if="store.tenantOptions.length === 0" value="" disabled>请选择企业</UiOption>
+        <UiOption v-for="tenant in store.tenantOptions" :key="tenant.id" :value="tenant.id">
+          {{ tenant.name }}
+        </UiOption>
+      </UiSelect>
+      <span class="edition">{{ store.sourceKind === 'api' ? '实时数据' : '标准版' }}</span>
     </div>
     <div v-else class="header-company">
       {{ route.meta.surface === 'platform' ? '平台管理' : '业务工作区' }}
     </div>
+
     <form v-if="!live" class="global-search" role="search" @submit.prevent="globalSearch">
-      <AppIcon name="search" :size="16" /><UiInput
-        v-model="search"
-        aria-label="全局搜索成员"
-        placeholder="搜索设备、点位、客户、订单…"
-      /><span>⌘ K</span>
+      <AppIcon name="search" :size="16" />
+      <UiInput v-model="search" aria-label="全局搜索成员" placeholder="搜索设备、点位、客户、订单…" />
+      <span>⌘ K</span>
     </form>
+
     <div v-if="!live" class="header-actions">
       <UiButton class="icon-button notification" aria-label="通知中心" @click="panel = '通知中心'">
-        <AppIcon name="bell" :size="21" /><b>12</b></UiButton><UiButton class="header-link" @click="panel = '帮助中心'"><AppIcon name="help" />帮助中心</UiButton><UiButton class="header-link" @click="panel = '下载中心'"><AppIcon name="download" />下载中心</UiButton><UiButton class="profile" @click="panel = '当前账号'">
-        <AvatarMark name="张" :size="36" tone="solid" /><span>张三<small>超级管理员</small></span>
+        <AppIcon name="bell" :size="21" /><b>12</b>
+      </UiButton>
+      <UiButton class="header-link" @click="panel = '帮助中心'"><AppIcon name="help" />帮助中心</UiButton>
+      <UiButton class="header-link" @click="panel = '下载中心'"><AppIcon name="download" />下载中心</UiButton>
+      <UiButton class="profile" @click="panel = '当前账号'">
+        <AvatarMark :name="store.session?.user_id || '张'" :size="36" tone="solid" />
+        <span>
+          {{ store.session?.user_id || '张三' }}
+          <small>{{ store.sourceKind === 'api' ? '当前登录账号' : '超级管理员' }}</small>
+        </span>
         <AppIcon name="down" :size="14" />
       </UiButton>
     </div>
   </header>
+
   <UiDialog :open="Boolean(panel)" :title="panel" @close="panel = ''">
     <div class="page-stack">
       <div class="notice-box">
-        <AppIcon name="help" />当前为独立前端预览环境，未连接生产账号、通知或下载服务。
+        <AppIcon name="help" />
+        {{
+          store.sourceKind === 'api'
+            ? '当前企业页面使用真实服务数据；未接入的通知、下载等能力会明确显示不可用，不会回退到本地模拟。'
+            : '当前为独立前端预览环境，未连接生产账号、通知或下载服务。'
+        }}
       </div>
       <template v-if="panel === '帮助中心'">
         <h3>企业中心使用指南</h3>
         <p class="secondary">
           通过一级菜单打开悬浮导航；右侧快捷入口可直接邀请成员、配置角色或查看审计记录。菜单支持 Esc
           关闭及键盘操作。
-        </p> </template
-      ><template v-else-if="panel === '通知中心'">
+        </p>
+      </template>
+      <template v-else-if="panel === '通知中心'">
         <p>暂无已连接的通知源。</p>
         <UiButton
           class="btn"
@@ -96,16 +123,24 @@ function globalSearch() {
           "
         >
           前往通知设置
-        </UiButton> </template
-      ><template v-else-if="panel === '下载中心'">
-        <p>列表导出文件由浏览器直接下载，不会上传到远程服务。</p> </template
-      ><template v-else>
-        <p>预览身份：张三 · 企业所有者</p>
-        <p class="muted">真实登录、会话和退出由后续认证集成提供。</p>
+        </UiButton>
+      </template>
+      <template v-else-if="panel === '下载中心'">
+        <p>列表导出文件由浏览器直接下载，不会上传到远程服务。</p>
+      </template>
+      <template v-else>
+        <p v-if="store.sourceKind === 'api'">
+          当前账号：{{ store.session?.user_id || '未识别' }} · 当前租户：{{ store.tenantId || '未选择' }}
+        </p>
+        <p v-else>预览身份：张三 · 企业所有者</p>
+        <p class="muted">
+          {{ store.sourceKind === 'api' ? '身份、会话与租户上下文由真实服务提供。' : '预览环境不会创建真实登录会话。' }}
+        </p>
       </template>
     </div>
   </UiDialog>
 </template>
+
 <style scoped>
 .app-header {
   height: var(--header-height);
@@ -115,221 +150,44 @@ function globalSearch() {
   display: flex;
   align-items: center;
   gap: 20px;
-  /* background: var(--color-fixed-08d5b1db); */
-  /* border-bottom: 1px solid var(--color-border); */
   padding: 0 24px 0 20px;
   backdrop-filter: blur(10px);
 }
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 176px;
-  flex-shrink: 0;
-  color: var(--color-text);
-}
-
-.brand img {
-  width: 38px;
-  height: 43px;
-  object-fit: contain;
-  mix-blend-mode: multiply;
-}
-
-.brand strong {
-  display: block;
-  font-size: 21px;
-  line-height: 1.2;
-  letter-spacing: -0.6px;
-  font-weight: 750;
-}
-
-.brand small {
-  display: block;
-  font-size: 11px;
-  margin-top: 2px;
-}
-
-.header-company {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  white-space: nowrap;
-}
-
-.header-company > .icon {
-  color: var(--color-success);
-}
-
-.header-company select {
-  border: 0;
-  background: transparent;
-  font-size: 12px;
-  font-weight: 600;
-  max-width: 190px;
-  outline-offset: 4px;
-}
-
-.edition {
-  font-size: 12px;
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  border-radius: 7px;
-  padding: 8px 11px;
-}
-
-.global-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  height: 36px;
-  border: 1px solid var(--color-border);
-  border-radius: 9px;
-  background: var(--color-surface-soft);
-  margin: 0 auto;
-  max-width: 470px;
-  flex: 1;
-  min-width: 100px;
-  color: var(--color-text-muted);
-}
-
-.global-search input {
-  border: 0;
-  background: none;
-  outline: 0;
-  min-width: 0;
-  flex: 1;
-  font-size: 12px;
-}
-
-.global-search input::placeholder {
-  color: var(--color-text-muted);
-}
-
-.global-search > span {
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.header-link {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  padding: 0;
-  font-size: 12px;
-}
-
-.notification {
-  position: relative;
-}
-
-.notification b {
-  position: absolute;
-  right: -1px;
-  top: 0;
-  color: var(--color-on-primary);
-  background: var(--color-danger);
-  font-size: 9px;
-  line-height: 14px;
-  min-width: 15px;
-  border-radius: 9px;
-  border: 1px solid var(--color-surface);
-}
-
-.profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-align: left;
-  padding: 0 0 0 12px;
-  border-left: 1px solid var(--color-border);
-  font-size: 13px;
-}
-
-.profile small {
-  display: block;
-  color: var(--color-text-muted);
-  font-size: 11px;
-}
-
-.mobile-toggle {
-  display: none;
-}
-
+.brand { display: flex; align-items: center; gap: 7px; width: 176px; flex-shrink: 0; color: var(--color-text); }
+.brand img { width: 38px; height: 43px; object-fit: contain; mix-blend-mode: multiply; }
+.brand strong { display: block; font-size: 21px; line-height: 1.2; letter-spacing: -0.6px; font-weight: 750; }
+.brand small { display: block; font-size: 11px; margin-top: 2px; }
+.header-company { display: flex; align-items: center; gap: 9px; white-space: nowrap; }
+.header-company > .icon { color: var(--color-success); }
+.header-company select { border: 0; background: transparent; font-size: 12px; font-weight: 600; max-width: 190px; outline-offset: 4px; }
+.edition { font-size: 12px; background: var(--color-primary-soft); color: var(--color-primary); border-radius: 7px; padding: 8px 11px; }
+.global-search { display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 36px; border: 1px solid var(--color-border); border-radius: 9px; background: var(--color-surface-soft); margin: 0 auto; max-width: 470px; flex: 1; min-width: 100px; color: var(--color-text-muted); }
+.global-search input { border: 0; background: none; outline: 0; min-width: 0; flex: 1; font-size: 12px; }
+.global-search input::placeholder { color: var(--color-text-muted); }
+.global-search > span { font-size: 11px; white-space: nowrap; }
+.header-actions { display: flex; align-items: center; gap: 16px; }
+.header-link { display: flex; align-items: center; gap: 6px; white-space: nowrap; padding: 0; font-size: 12px; }
+.notification { position: relative; }
+.notification b { position: absolute; right: -1px; top: 0; color: var(--color-on-primary); background: var(--color-danger); font-size: 9px; line-height: 14px; min-width: 15px; border-radius: 9px; border: 1px solid var(--color-surface); }
+.profile { display: flex; align-items: center; gap: 10px; text-align: left; padding: 0 0 0 12px; border-left: 1px solid var(--color-border); font-size: 13px; }
+.profile small { display: block; color: var(--color-text-muted); font-size: 11px; }
+.mobile-toggle { display: none; }
 @media (max-width: 1250px) {
-  .header-link {
-    display: none;
-  }
-
-  .header-company select {
-    max-width: 155px;
-  }
-
-  .header-actions {
-    gap: 9px;
-  }
-
-  .app-header {
-    gap: 14px;
-  }
-
-  .edition {
-    display: none;
-  }
+  .header-link { display: none; }
+  .header-company select { max-width: 155px; }
+  .header-actions { gap: 9px; }
+  .app-header { gap: 14px; }
+  .edition { display: none; }
 }
-
 @media (max-width: 767px) {
-  .app-header {
-    padding: 0 14px;
-    gap: 8px;
-  }
-
-  .brand {
-    width: auto;
-    flex: 1;
-  }
-
-  .brand strong {
-    font-size: 19px;
-  }
-
-  .brand img {
-    height: 37px;
-    width: 31px;
-  }
-
-  .brand small {
-    font-size: 10px;
-  }
-
-  .header-company,
-  .global-search,
-  .profile > span:not(.avatar-mark),
-  .profile > .icon {
-    display: none;
-  }
-
-  .profile {
-    padding-left: 5px;
-    border: 0;
-  }
-
-  .mobile-toggle {
-    display: flex;
-    order: -1;
-  }
-
-  .header-actions {
-    gap: 2px;
-  }
+  .app-header { padding: 0 14px; gap: 8px; }
+  .brand { width: auto; flex: 1; }
+  .brand strong { font-size: 19px; }
+  .brand img { height: 37px; width: 31px; }
+  .brand small { font-size: 10px; }
+  .header-company, .global-search, .profile > span:not(.avatar-mark), .profile > .icon { display: none; }
+  .profile { padding-left: 5px; border: 0; }
+  .mobile-toggle { display: flex; order: -1; }
+  .header-actions { gap: 2px; }
 }
 </style>

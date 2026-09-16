@@ -177,6 +177,55 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.EnableTenantRoleRequest"
       },
+      "access_v1_ExportTenantAuditRecordsRequest": {
+        "properties": {
+          "maxRows": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "operationId": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "risk": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ExportTenantAuditRecordsRequest"
+      },
+      "access_v1_ExportTenantAuditRecordsResponse": {
+        "properties": {
+          "exportId": {
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "string"
+          },
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/access_v1_TenantAuditRecordDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ExportTenantAuditRecordsResponse"
+      },
+      "access_v1_GetTenantAuditRecordRequest": {
+        "properties": {
+          "auditId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.GetTenantAuditRecordRequest"
+      },
       "access_v1_GetTenantDelegationRequest": {
         "properties": {
           "id": {
@@ -258,6 +307,57 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.InviteTenantMemberRequest"
+      },
+      "access_v1_ListTenantAuditRecordsRequest": {
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "page": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "pageSize": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "risk": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListTenantAuditRecordsRequest"
+      },
+      "access_v1_ListTenantAuditRecordsResponse": {
+        "properties": {
+          "page": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "pageSize": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/access_v1_TenantAuditRecordDTO"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListTenantAuditRecordsResponse"
       },
       "access_v1_ListTenantDelegationsRequest": {
         "properties": {},
@@ -455,6 +555,63 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.SuspendTenantRequest"
+      },
+      "access_v1_TenantAuditRecordDTO": {
+        "properties": {
+          "actorSubject": {
+            "type": "string"
+          },
+          "actorUserId": {
+            "type": "string"
+          },
+          "auditId": {
+            "type": "string"
+          },
+          "authChannel": {
+            "type": "string"
+          },
+          "authMethod": {
+            "type": "string"
+          },
+          "idempotencyRef": {
+            "type": "string"
+          },
+          "module": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string"
+          },
+          "operationId": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "receiptRef": {
+            "type": "string"
+          },
+          "requestDigest": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "risk": {
+            "type": "string"
+          },
+          "sessionRef": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.TenantAuditRecordDTO"
       },
       "access_v1_TenantDTO": {
         "properties": {
@@ -4494,6 +4651,141 @@
           "commercial.v1.SubscriptionChangesApplication"
         ],
         "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange"
+      }
+    },
+    "/v1/tenant/audit-logs": {
+      "get": {
+        "operationId": "access.v1.TenantAuditManagementApplication.ListTenantAuditRecords",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "operationId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "result",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "risk",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_ListTenantAuditRecordsResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantAuditManagementApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantAuditManagementApplication/ListTenantAuditRecords"
+      }
+    },
+    "/v1/tenant/audit-logs/exports": {
+      "post": {
+        "operationId": "access.v1.TenantAuditManagementApplication.ExportTenantAuditRecords",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_ExportTenantAuditRecordsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_ExportTenantAuditRecordsResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantAuditManagementApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantAuditManagementApplication/ExportTenantAuditRecords"
+      }
+    },
+    "/v1/tenant/audit-logs/{audit_id}": {
+      "get": {
+        "operationId": "access.v1.TenantAuditManagementApplication.GetTenantAuditRecord",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "auditId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantAuditRecordDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantAuditManagementApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantAuditManagementApplication/GetTenantAuditRecord"
       }
     },
     "/v1/tenant/delegations": {

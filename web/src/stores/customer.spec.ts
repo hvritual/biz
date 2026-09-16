@@ -19,11 +19,11 @@ describe('customer preview persistence and tenant safeguards', () => {
     const s = useCustomerStore(),
       e = useEnterpriseStore()
     s.saveDraft('test', { name: '上海草稿' })
-    e.switchTenant('hangzhou')
+    await e.switchTenant('hangzhou')
     await nextTick()
     expect(s.snapshot.tenant).toBe('hangzhou')
     expect(s.snapshot.drafts.test).toBeUndefined()
-    e.switchTenant('shanghai')
+    await e.switchTenant('shanghai')
     await nextTick()
     expect(s.snapshot.drafts.test?.name).toBe('上海草稿')
   })

@@ -6,6 +6,7 @@
       "root": "contracts/proto",
       "files": [
         "access/v1/tenant.proto",
+        "access/v1/tenant_audit.proto",
         "access/v1/tenant_delegation.proto",
         "access/v1/tenant_department.proto",
         "access/v1/tenant_profile.proto",

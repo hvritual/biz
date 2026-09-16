@@ -60,7 +60,8 @@ test('safe archive restore and shared view revoke have real preview state', asyn
   await expect(page.locator('.customer-area')).toContainText('授权')
   await expect(page.getByRole('button', { name: '确认交付', exact: true })).toHaveCount(0)
 })
-test('base pages and responsive viewports contain real content and no overflow', async ({ page }) => {
+
+test('customer page gallery captures each existing business workspace', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   page.on('console', (msg) => {
@@ -79,15 +80,29 @@ test('base pages and responsive viewports contain real content and no overflow',
     await ready(page, path!)
     await snap(page, name!)
   }
+  expect(errors).toEqual([])
+})
+
+test('base pages and responsive viewports contain real content and no overflow', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  // Start this interaction in its own browser context, not the gallery's retained UI state.
   await page.setViewportSize({ width: 1536, height: 1024 })
   await ready(page, '/customers')
+  await expect(page.locator('.primary-nav')).not.toHaveClass(/collapsed/)
   await page.getByRole('button', { name: '收起一级菜单', exact: true }).click()
+  await expect(page.locator('.primary-nav')).toHaveClass(/collapsed/)
   await page.locator('[data-module="customers"]').click()
   const foldedNav = (await page.locator('.primary-nav').boundingBox())!
   expect((await page.locator('.module-panel').boundingBox())!.x).toBe(foldedNav.x + foldedNav.width)
   await snap(page, '46-collapsed-connected-nav')
   await page.keyboard.press('Escape')
+  await expect(page.locator('.module-panel')).toHaveCount(0)
   await page.getByRole('button', { name: '展开一级菜单', exact: true }).click()
+  await expect(page.locator('.primary-nav')).not.toHaveClass(/collapsed/)
   for (const [width, height] of [
     [1366, 768],
     [1440, 900],

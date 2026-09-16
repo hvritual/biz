@@ -205,9 +205,11 @@ async function mockServer(page: Page, options: Options = {}): Promise<Captured> 
 
 async function openFlow(page: Page) {
   await page.goto('/#/enterprise/plan')
-  await expect(page.locator('[data-enterprise-plan-source="server"]')).toBeVisible()
-  await page.locator('[data-plan-change-open]').click()
+  await expect(page.locator('[data-enterprise-page="plan"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-source="api"]')).toBeVisible()
+  await page.getByRole('button', { name: '管理套餐变更', exact: true }).click()
   const lifecycle = page.locator('[data-plan-change-lifecycle]')
+  await lifecycle.locator('[data-plan-change-open]').click()
   await lifecycle.scrollIntoViewIfNeeded()
   await expect(lifecycle.getByText(/专业版/).first()).toBeVisible()
   return lifecycle
@@ -279,7 +281,8 @@ for (const status of ['APPLIED', 'SCHEDULED', 'PROVISIONING'] as const) {
     expect(captured.confirmHeaders[0]?.['x-biz-session-context']).toContain('tenant-001')
     expect(captured.confirmHeaders[0]?.['x-csrf-token']).toBe('csrf-plan-change')
     expect(captured.confirmHeaders[0]?.['idempotency-key']).toBeTruthy()
-    if (status !== 'APPLIED') await expect(page.getByText(/待处理 chg-tenant-preview-001/)).toBeVisible()
+    await expect(page.locator('[data-plan-change-receipt]')).toContainText(status)
+    await expect(page.locator('[data-plan-change-lifecycle]')).toContainText('chg-tenant-preview-001')
     await page.locator('[data-plan-change-lifecycle]').scrollIntoViewIfNeeded()
     await page.screenshot({ path: screenshot(`enterprise-plan-change-${status.toLowerCase()}-1440`), fullPage: false })
   })

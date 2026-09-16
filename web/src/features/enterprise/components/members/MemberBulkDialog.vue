@@ -35,7 +35,7 @@ watch(
     error.value = ''
   },
 )
-function submit() {
+async function submit() {
   if (policyError.value) return
   if (!reason.value.trim()) {
     error.value = '请填写操作原因。'
@@ -46,8 +46,8 @@ function submit() {
     return
   }
   try {
-    store.changeStatuses(props.targets, props.action, reason.value.trim())
-    ui.toast(`已${label.value} ${props.targets.length} 位成员（本地预览），未修改真实账号。`)
+    await store.changeStatuses(props.targets, props.action, reason.value.trim())
+    ui.toast(store.previewMode ? `已${label.value} ${props.targets.length} 位成员（本地预览），未修改真实账号。` : `已${label.value} ${props.targets.length} 位成员，并完成服务端回读。`)
     emit('saved')
   } catch (e) {
     error.value = (e as Error).message

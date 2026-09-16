@@ -19,9 +19,14 @@ export type EnterpriseTenantUsage = Readonly<{
   usages: EnterpriseQuotaUsage[]
 }>
 
+export type EnterprisePlanSubscription = TenantSubscriptionDTO &
+  Readonly<{
+    updatedAt?: string
+  }>
+
 export type EnterprisePlanReadModel = Readonly<{
   session: TrustedSession
-  subscription: TenantSubscriptionDTO
+  subscription: EnterprisePlanSubscription
   entitlements: EntitlementView
   usage: EnterpriseTenantUsage
   usageError: string

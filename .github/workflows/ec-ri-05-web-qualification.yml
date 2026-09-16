@@ -60,12 +60,12 @@ jobs:
           assert stats.get('unexpected', 0) == 0, stats
           serialized = json.dumps(results, ensure_ascii=False)
           required_titles = [
-              'real company page renders only authoritative Tenant Profile data across CoffeeLink viewports',
-              'company update sends trusted-session headers and idempotency then confirms only after readback',
-              'company 409 preserves draft and reuses the same idempotency key',
-              'successful PATCH without GET readback is not presented as confirmed success',
-              '401 and 403 never fall back to demo company data',
-              'API mode has no browser DataURL logo upload success path',
+              'canonical company page renders authoritative profile across CoffeeLink viewports',
+              'canonical company save carries trusted headers and confirms only after readback',
+              'company 409 preserves the canonical draft and reuses one idempotency key',
+              'successful PATCH without GET readback is not presented as canonical success',
+              '401 and 403 remain explicit and never fall back to demo company data',
+              'API company page exposes server asset reference instead of browser DataURL upload',
           ]
           for title in required_titles:
               assert title in serialized, f'missing EC-RI-05 browser evidence: {title}'

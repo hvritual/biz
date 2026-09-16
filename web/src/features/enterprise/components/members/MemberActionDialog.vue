@@ -36,6 +36,28 @@ const blocking = computed(() =>
     ? memberActionError(props.action, props.member, store.members, store.roles, draft.value?.roleIds)
     : null,
 )
+function newMemberDraft(action: MemberAction): Member {
+  const department = store.departments.find((item) => item.enabled)
+  const role = store.roles.find((item) => item.enabled && !item.builtin) ?? store.roles.find((item) => item.enabled)
+  return {
+    id: crypto.randomUUID(),
+    name: '',
+    email: '',
+    phone: '',
+    employeeId: '',
+    departmentId: department?.id ?? '',
+    position: '',
+    roleIds: role ? [role.id] : [],
+    scope: role?.scope ?? 'custom',
+    status: action === 'invite' ? 'invited' : 'active',
+    online: false,
+    joinedAt: store.previewMode ? new Date().toISOString().slice(0, 10) : '',
+    lastLogin: null,
+    version: 0,
+    mfa: false,
+    note: '',
+  }
+}
 watch(
   () => [props.open, props.action, props.member] as const,
   () => {
@@ -44,24 +66,7 @@ watch(
     confirmed.value = false
     draft.value = props.member
       ? (JSON.parse(JSON.stringify(props.member)) as Member)
-      : {
-          id: crypto.randomUUID(),
-          name: '',
-          email: '',
-          phone: '',
-          employeeId: '',
-          departmentId: 'operations',
-          position: '业务专员',
-          roleIds: ['role-2'],
-          scope: 'department',
-          status: props.action === 'invite' ? 'invited' : 'active',
-          online: false,
-          joinedAt: new Date().toISOString().slice(0, 10),
-          lastLogin: null,
-          version: 0,
-          mfa: false,
-          note: '',
-        }
+      : newMemberDraft(props.action)
   },
   { immediate: true },
 )
@@ -84,31 +89,24 @@ async function submit() {
   busy.value = true
   try {
     if (structural.value || props.action === 'role')
-      store.saveMember(draft.value, props.action, props.member?.version ?? 0)
+      await store.saveMember(draft.value, props.action, props.member?.version ?? 0)
     else if (['suspend', 'activate', 'remove'].includes(props.action))
-      store.changeStatus(
+      await store.changeStatus(
         draft.value.id,
         props.action as 'suspend' | 'activate' | 'remove',
         props.member!.version,
         reason.value,
       )
     else if (props.action === 'reset') {
-      store.audit(
-        '成员管理',
-        '创建密码重置请求（预览）',
-        draft.value.name,
-        '未请求',
-        '待接入身份服务',
-        reason.value,
-        'high',
-      )
+      await store.requestPasswordReset(draft.value, reason.value)
     }
-    const message =
-      props.action === 'reset'
+    const message = store.previewMode
+      ? props.action === 'reset'
         ? '已记录预览重置请求；未发送邮件，也未改变真实密码。'
         : props.action === 'invite'
           ? '已创建预览邀请记录；未实际发送邀请邮件。'
           : '变更已保存到当前企业的本地预览数据。'
+      : '变更已由服务端确认并完成权威回读。'
     ui.toast(message, props.action === 'reset' || props.action === 'invite' ? 'info' : 'success')
     emit('close')
   } catch (e) {
@@ -152,8 +150,10 @@ async function submit() {
                 class="input"
                 type="email"
                 required
+                :readonly="!store.previewMode && action === 'edit'"
                 placeholder="name@example.com"
-              /><small v-if="action === 'edit'">预览资料修改不等于变更已验证的登录凭据。</small></label
+              /><small v-if="action === 'edit' && store.previewMode">预览资料修改不等于变更已验证的登录凭据。</small
+              ><small v-else-if="action === 'edit'">登录邮箱由成员关系与身份服务管理，当前资料接口不支持修改。</small></label
             ><label class="field"
               ><span>手机号</span
               ><UiInput v-model="draft.phone" class="input" maxlength="20" placeholder="选填" /></label
@@ -174,12 +174,21 @@ async function submit() {
             ><label class="field"
               ><span>岗位</span><UiInput v-model="draft.position" class="input" maxlength="40" /></label
             ><label class="field"
-              ><span>加入日期</span><UiInput v-model="draft.joinedAt" class="input" type="date" /></label
+              ><span>加入日期</span
+              ><UiInput v-if="store.previewMode" v-model="draft.joinedAt" class="input" type="date"
+              /><UiInput v-else class="input" value="服务端未提供" readonly
+              /><small v-if="!store.previewMode">当前成员资料接口未提供加入日期写入能力。</small></label
             ><label class="field"
               ><span>数据范围</span
-              ><UiSelect v-model="draft.scope" class="select">
+              ><UiSelect v-if="store.previewMode" v-model="draft.scope" class="select">
                 <UiOption v-for="(label, key) in scopeLabels" :key="key" :value="key">{{ label }}</UiOption>
-              </UiSelect></label
+              </UiSelect
+              ><UiInput
+                v-else
+                class="input"
+                :value="member ? scopeLabels[draft.scope] : '保存后由角色权限服务派生'"
+                readonly
+              /><small v-if="!store.previewMode">真实数据范围由角色权限服务派生，不能按成员直接覆盖。</small></label
             >
           </div>
         </section>
@@ -199,7 +208,7 @@ async function submit() {
           </div>
         </section>
         <section class="form-section">
-          <label class="field"
+          <label v-if="store.previewMode" class="field"
             ><span>备注</span
             ><UiTextarea
               v-model="draft.note"
@@ -209,13 +218,18 @@ async function submit() {
               placeholder="补充成员职责或说明"
             />
           </label>
+          <div v-else class="notice-box">当前成员资料 API 未提供备注写入字段，本页面不提供不可持久化的编辑入口。</div>
         </section>
       </form>
       <template v-else-if="action === 'role'"
         ><div class="notice-box">
           <AppIcon
             name="shield"
-          />角色权限与数据范围分别配置。变更后按最新授权重新计算访问范围，不要求成员重新登录来激活权限。
+          />{{
+            store.previewMode
+              ? '角色权限与数据范围分别配置。变更后按最新授权重新计算访问范围，不要求成员重新登录来激活权限。'
+              : '真实数据范围由角色权限服务派生；此处只修改角色，保存后以服务端权威回读范围为准。'
+          }}
         </div>
         <h3>选择目标角色</h3>
         <div class="role-options">
@@ -232,9 +246,10 @@ async function submit() {
         </div>
         <label class="field"
           ><span>目标数据范围</span
-          ><UiSelect v-model="draft.scope" class="select">
+          ><UiSelect v-if="store.previewMode" v-model="draft.scope" class="select">
             <UiOption v-for="(label, key) in scopeLabels" :key="key" :value="key">{{ label }}</UiOption>
-          </UiSelect></label
+          </UiSelect
+          ><UiInput v-else class="input" value="保存后由角色权限服务派生" readonly /></label
         >
         <div class="change-preview">
           <div>
@@ -245,7 +260,7 @@ async function submit() {
           <div>
             <small>变更后</small
             ><strong>{{ draft.roleIds.map(store.roleName).join('、') || '尚未选择' }}</strong>
-            <p>{{ scopeLabels[draft.scope as DataScope] }}</p>
+            <p>{{ store.previewMode ? scopeLabels[draft.scope as DataScope] : '保存后由服务端派生' }}</p>
           </div>
         </div></template
       ><template v-else-if="action === 'reset'"
@@ -255,6 +270,14 @@ async function submit() {
           >
         </div>
         <label class="field"><span>接收邮箱</span><UiInput class="input" :value="draft.email" readonly /></label
+        ><label class="field"
+          ><span class="required">操作原因</span
+          ><UiTextarea
+            v-model="reason"
+            class="textarea"
+            maxlength="300"
+            placeholder="请记录发起密码重置请求的原因，用于审计追踪"
+          /></label
         ><label class="option-line"
           ><UiInput v-model="confirmed" type="checkbox" />我已确认成员身份，并了解此处不会发送真实邮件</label
         >
@@ -293,7 +316,11 @@ async function submit() {
         </p></template
       >
       <div v-if="action === 'invite'" class="notice-box">
-        <AppIcon name="mail" />邀请记录将在本地预览中创建。邮件投递、有效期和激活凭证需由服务端提供。
+        <AppIcon name="mail" />{{
+          store.previewMode
+            ? '邀请记录将在本地预览中创建。邮件投递、有效期和激活凭证需由服务端提供。'
+            : '邀请会调用真实成员服务；只有资料、角色关系与成员回读全部完成后才显示成功。'
+        }}
       </div>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     </div>

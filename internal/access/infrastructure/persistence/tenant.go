@@ -174,7 +174,11 @@ func NewTenantRepositoryFactory(database *gorm.DB) (requestscope.RepositoryFacto
 		if err != nil {
 			return ports.TenantRepositories{}, err
 		}
-		return ports.TenantRepositories{Tenant: tenant}, nil
+		audit, err := NewAuditRepository(transaction)
+		if err != nil {
+			return ports.TenantRepositories{}, err
+		}
+		return ports.TenantRepositories{Tenant: tenant, Audit: audit}, nil
 	}), nil
 }
 

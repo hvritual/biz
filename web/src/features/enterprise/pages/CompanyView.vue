@@ -1,20 +1,21 @@
 <script setup lang="ts">
 import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
 
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import PageHeading from '@/ui/common/PageHeading.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import brand from '@/assets/brand-mark.png'
+import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
   draft = ref({ ...store.company }),
   error = ref(''),
   logo = ref(brand)
 const changed = computed(() => JSON.stringify(draft.value) !== JSON.stringify(store.company))
-function save() {
+async function save() {
   error.value = ''
   if (!draft.value.name.trim()) {
     error.value = '请填写企业名称。'
@@ -25,8 +26,8 @@ function save() {
     return
   }
   try {
-    store.saveCompany(draft.value)
-    ui.toast('企业资料已保存到本地预览。')
+    await store.saveCompany(draft.value)
+    ui.toast(store.sourceKind === 'api' ? '企业资料已由服务端确认并回读。' : '企业资料已保存到本地预览。')
   } catch (e) {
     error.value = e instanceof Error ? e.message : '保存失败。'
   }
@@ -45,10 +46,19 @@ function upload(e: Event) {
   }
   reader.readAsDataURL(file)
 }
+watch(
+  () => store.company,
+  (value) => {
+    draft.value = { ...value }
+  },
+  { immediate: true },
+)
+onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
 </script>
 <template>
-  <div class="page-stack">
+  <div class="page-stack" data-enterprise-page="company" data-ui-template="FormPage">
     <PageHeading title="企业信息" description="维护企业基本资料与联系信息，统一团队的身份与展示" />
+    <EnterpriseSourceBanner />
     <div class="split-layout">
       <form class="card panel-pad company-form" @submit.prevent="save">
         <div class="row-between block-title">
@@ -83,7 +93,8 @@ function upload(e: Event) {
           <div class="field">
             <span>企业 Logo</span>
             <div class="logo-control">
-              <img :src="logo" alt="企业 Logo 预览" /><label class="btn"
+              <img :src="logo" alt="企业 Logo 预览" />
+              <label v-if="store.previewMode" class="btn"
                 ><AppIcon name="upload" :size="15" />选择图片<UiInput
                   class="sr-only"
                   type="file"
@@ -91,8 +102,16 @@ function upload(e: Event) {
                   aria-label="选择企业 Logo"
                   @change="upload"
               /></label>
+              <div v-else class="logo-api-state" aria-label="企业 Logo 服务端资产状态">
+                <AppIcon name="shield" :size="16" />
+                <div>
+                  <strong>Logo 由资产服务管理</strong>
+                  <small>{{ store.company.logoAssetRef || '尚未配置资产引用' }}</small>
+                </div>
+              </div>
             </div>
-            <small>PNG / JPG / WebP，最大 2 MB；当前仅预览。</small>
+            <small v-if="store.previewMode">PNG / JPG / WebP，最大 2 MB；当前仅预览。</small>
+            <small v-else>API 模式不生成 DataURL，也不制造尚未接入的上传成功状态。</small>
           </div>
           <label class="field full-width"
             ><span>企业简介</span
@@ -142,7 +161,7 @@ function upload(e: Event) {
             <dt>租户标识</dt>
             <dd class="mono">{{ store.tenantId }}</dd>
             <dt>当前套餐</dt>
-            <dd>标准版（示例）</dd>
+            <dd>{{ store.sourceKind === 'api' ? '由套餐服务提供' : '标准版（示例）' }}</dd>
             <dt>企业成员</dt>
             <dd>{{ store.members.filter((m) => m.status !== 'removed').length }} 人</dd>
           </dl>
@@ -184,6 +203,28 @@ function upload(e: Event) {
   width: 42px;
   height: 45px;
   object-fit: contain;
+}
+.logo-api-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--color-text-secondary);
+}
+.logo-api-state strong,
+.logo-api-state small {
+  display: block;
+}
+.logo-api-state strong {
+  color: var(--color-text);
+  font-size: 12px;
+}
+.logo-api-state small {
+  margin-top: 3px;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .company-identity {
   text-align: center;

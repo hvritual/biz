@@ -36,7 +36,6 @@ import (
 	"yunka.io/framework/core/identity"
 	"yunka.io/framework/execution"
 	"yunka.io/framework/execution/idempotencygorm"
-	"yunka.io/framework/operation"
 	"yunka.io/framework/platform"
 	"yunka.io/framework/requestscope"
 	"yunka.io/framework/runtimecomponent"
@@ -381,7 +380,10 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
-	executor := operation.NewExecutorWithOptions(security, operation.ExecutorOptions{Transactions: transactions, Idempotency: tenantCreationReplay{idempotency}})
+	executor, err := newAuditedOperationExecutor(accessDatabase, security, transactions, tenantCreationReplay{idempotency})
+	if err != nil {
+		return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: audit executor: %w", err)
+	}
 
 	deviceRepositories, err := devicepersistence.NewScopedRepositoryFactory(deviceDatabase)
 	if err != nil {
@@ -531,7 +533,7 @@ func httpAuthentication(authenticator *runtimeAuthenticator, webAuth *runtimeWeb
 			http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(writer, request.WithContext(identity.WithPrincipal(request.Context(), principal)))
+		next.ServeHTTP(writer, withAuditHTTPMetadata(request, principal, webAuth))
 	})
 }
 
@@ -546,6 +548,6 @@ func grpcAuthentication(authenticator *runtimeAuthenticator) grpc.UnaryServerInt
 		if err != nil {
 			return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 		}
-		return handler(identity.WithPrincipal(ctx, principal), request)
+		return handler(withAuditGRPCMetadata(ctx, principal, md), request)
 	}
 }

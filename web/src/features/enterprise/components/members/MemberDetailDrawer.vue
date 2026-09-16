@@ -210,7 +210,11 @@ onBeforeUnmount(() => {
               <p class="secondary">
                 功能权限决定可以执行的操作，数据范围决定可以访问的对象。此处展示当前成员的范围配置。
               </p>
-              <div class="notice-box">示例权限仅用于界面预览；实际授权以服务端校验为准。</div>
+              <div class="notice-box">{{
+                store.previewMode
+                  ? '示例权限仅用于界面预览；实际授权以服务端校验为准。'
+                  : '数据范围由服务端角色权限派生，本页只展示权威回读结果。'
+              }}</div>
             </div>
             <div v-else class="tab-body">
               <h3>成员操作记录</h3>

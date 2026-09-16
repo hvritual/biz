@@ -8,9 +8,9 @@ beforeEach(() => {
   setActivePinia(createPinia())
 })
 describe('member selection operations', () => {
-  it('suspends selected members and records one audit event per member', () => {
+  it('suspends selected members and records one audit event per member', async () => {
     const store = useEnterpriseStore()
-    store.changeStatuses(
+    await store.changeStatuses(
       [
         { id: 'member-2', version: 1 },
         { id: 'member-3', version: 1 },
@@ -20,7 +20,7 @@ describe('member selection operations', () => {
     )
     expect(store.members.slice(1, 3).every((m) => m.status === 'suspended' && m.version === 2)).toBe(true)
     expect(store.logs.slice(0, 2).map((log) => log.target)).toEqual(['李四', '王五'])
-    store.changeStatuses(
+    await store.changeStatuses(
       [
         { id: 'member-2', version: 2 },
         { id: 'member-3', version: 2 },
@@ -30,11 +30,11 @@ describe('member selection operations', () => {
     )
     expect(store.members.slice(1, 3).every((m) => m.status === 'active')).toBe(true)
   })
-  it('fails the whole batch when a later record has a stale version', () => {
+  it('fails the whole batch when a later record has a stale version', async () => {
     const store = useEnterpriseStore(),
       before = JSON.stringify(store.members),
       logs = store.logs.length
-    expect(() =>
+    await expect(
       store.changeStatuses(
         [
           { id: 'member-2', version: 1 },
@@ -43,13 +43,13 @@ describe('member selection operations', () => {
         'suspend',
         '测试',
       ),
-    ).toThrow('状态已变化')
+    ).rejects.toThrow('状态已变化')
     expect(JSON.stringify(store.members)).toBe(before)
     expect(store.logs).toHaveLength(logs)
   })
-  it('refuses an owner in a batch without changing an earlier selected member', () => {
+  it('refuses an owner in a batch without changing an earlier selected member', async () => {
     const store = useEnterpriseStore()
-    expect(() =>
+    await expect(
       store.changeStatuses(
         [
           { id: 'member-2', version: 1 },
@@ -58,7 +58,7 @@ describe('member selection operations', () => {
         'suspend',
         '测试',
       ),
-    ).toThrow('最后一位企业所有者')
+    ).rejects.toThrow('最后一位企业所有者')
     expect(store.members[1]?.status).toBe('active')
   })
   it('prevents collectively disabling all owners, not only one-at-a-time checks', () => {
@@ -77,11 +77,11 @@ describe('member selection operations', () => {
     ).toThrow('最后一位企业所有者')
     expect(seed.members[0]?.status).toBe('active')
   })
-  it('requires a reason, nonempty unique selection and valid statuses', () => {
+  it('requires a reason, nonempty unique selection and valid statuses', async () => {
     const store = useEnterpriseStore()
-    expect(() => store.changeStatuses([{ id: 'member-2', version: 1 }], 'suspend', '')).toThrow('原因')
-    expect(() => store.changeStatuses([], 'suspend', '测试')).toThrow('选择')
-    expect(() =>
+    await expect(store.changeStatuses([{ id: 'member-2', version: 1 }], 'suspend', '')).rejects.toThrow('原因')
+    await expect(store.changeStatuses([], 'suspend', '测试')).rejects.toThrow('选择')
+    await expect(
       store.changeStatuses(
         [
           { id: 'member-2', version: 1 },
@@ -90,18 +90,18 @@ describe('member selection operations', () => {
         'suspend',
         '测试',
       ),
-    ).toThrow('重复')
-    expect(() => store.changeStatuses([{ id: 'member-2', version: 1 }], 'activate', '测试')).toThrow(
+    ).rejects.toThrow('重复')
+    await expect(store.changeStatuses([{ id: 'member-2', version: 1 }], 'activate', '测试')).rejects.toThrow(
       '可以启用',
     )
   })
-  it('rolls back the whole batch and its audit events on storage failure', () => {
+  it('rolls back the whole batch and its audit events on storage failure', async () => {
     const store = useEnterpriseStore(),
       before = store.logs.length
     const mock = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('storage')
     })
-    expect(() => store.changeStatuses([{ id: 'member-2', version: 1 }], 'suspend', '测试')).toThrow('未保存')
+    await expect(store.changeStatuses([{ id: 'member-2', version: 1 }], 'suspend', '测试')).rejects.toThrow('未保存')
     expect(store.members[1]?.status).toBe('active')
     expect(store.logs).toHaveLength(before)
     mock.mockRestore()

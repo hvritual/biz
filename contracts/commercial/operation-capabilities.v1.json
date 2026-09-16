@@ -1,8 +1,35 @@
 {
   "schema_version": 1,
-  "mapping_version": "17",
+  "mapping_version": "18",
   "retired_capability_codes": [],
   "operations": [
+    {
+      "operation_id": "access.audit.export",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "access.audit.get",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "access.audit.list",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": []
+    },
     {
       "operation_id": "commercial.entitlement.explain",
       "classification": "platform_management",

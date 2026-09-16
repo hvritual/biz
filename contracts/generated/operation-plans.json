@@ -2,6 +2,106 @@
   "schemaVersion": 2,
   "operations": [
     {
+      "operationId": "access.audit.export",
+      "domain": "access",
+      "application": "tenant_audit_management",
+      "useCase": "export_tenant_audit_records",
+      "requestType": "access.v1.ExportTenantAuditRecordsRequest",
+      "responseType": "access.v1.ExportTenantAuditRecordsResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.audit.export"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantAuditManagementApplication/ExportTenantAuditRecords",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/audit-logs/exports",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "access.audit.get",
+      "domain": "access",
+      "application": "tenant_audit_management",
+      "useCase": "get_tenant_audit_record",
+      "requestType": "access.v1.GetTenantAuditRecordRequest",
+      "responseType": "access.v1.TenantAuditRecordDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.audit.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantAuditManagementApplication/GetTenantAuditRecord",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/audit-logs/{audit_id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "access.audit.list",
+      "domain": "access",
+      "application": "tenant_audit_management",
+      "useCase": "list_tenant_audit_records",
+      "requestType": "access.v1.ListTenantAuditRecordsRequest",
+      "responseType": "access.v1.ListTenantAuditRecordsResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.audit.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantAuditManagementApplication/ListTenantAuditRecords",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/audit-logs"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "commercial.entitlement.explain",
       "domain": "commercial",
       "application": "entitlement_management",

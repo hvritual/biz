@@ -3,6 +3,16 @@
   "identity": "root",
   "applications": [
     {
+      "id": "access/tenant_audit_management",
+      "domain": "access",
+      "name": "tenant_audit_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_audit_management"
+      }
+    },
+    {
       "id": "access/tenant_delegation_management",
       "domain": "access",
       "name": "tenant_delegation_management",
@@ -672,6 +682,99 @@
     }
   ],
   "operations": [
+    {
+      "id": "access.audit.export",
+      "application": "access/tenant_audit_management",
+      "bindings": [
+        {
+          "operationId": "access.audit.export",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/access.audit.export/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "access.audit.export",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/access.audit.export/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/access.audit.export"
+      }
+    },
+    {
+      "id": "access.audit.get",
+      "application": "access/tenant_audit_management",
+      "bindings": [
+        {
+          "operationId": "access.audit.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/access.audit.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "access.audit.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/access.audit.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/access.audit.get"
+      }
+    },
+    {
+      "id": "access.audit.list",
+      "application": "access/tenant_audit_management",
+      "bindings": [
+        {
+          "operationId": "access.audit.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/access.audit.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "access.audit.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/access.audit.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/access.audit.list"
+      }
+    },
     {
       "id": "commercial.entitlement.explain",
       "application": "commercial/entitlement_management",
@@ -3991,6 +4094,7 @@
     {
       "name": "root",
       "applications": [
+        "access/tenant_audit_management",
         "access/tenant_delegation_management",
         "access/tenant_department_management",
         "access/tenant_lifecycle",
@@ -4013,6 +4117,9 @@
         "deviceops"
       ],
       "externalOperations": [
+        "access.audit.export",
+        "access.audit.get",
+        "access.audit.list",
         "commercial.entitlement.explain",
         "commercial.entitlement.get_my",
         "commercial.entitlement.override.create",

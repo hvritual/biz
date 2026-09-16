@@ -112,7 +112,8 @@ async function mockPlanServer(page: Page, options: Options = {}): Promise<Captur
 
 async function openRealPlan(page: Page) {
   await page.goto('/#/enterprise/plan')
-  await expect(page.locator('[data-enterprise-plan-source="server"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-page="plan"]')).toBeVisible()
+  await expect(page.locator('[data-enterprise-source="api"]')).toBeVisible()
 }
 
 test('real plan page renders authoritative subscription, entitlement and usage facts across CoffeeLink viewports', async ({ page }) => {
@@ -121,9 +122,9 @@ test('real plan page renders authoritative subscription, entitlement and usage f
   for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1536, height: 1024 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport)
     await openRealPlan(page)
-    await expect(page.getByText('rental-growth-2026', { exact: true })).toBeVisible()
-    await expect(page.getByText('Tenant Commercial API')).toBeVisible()
-    await expect(page.getByText('已接入用量 1 项')).toBeVisible()
+    await expect(page.locator('.current-plan h2')).toContainText('rental-growth-2026')
+    await expect(page.getByText('tenant.members', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('monthly.reports', { exact: true }).first()).toBeVisible()
     await expect(page.getByText('标准版', { exact: true })).toHaveCount(0)
     await expect(page.getByText('500 GB', { exact: true })).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
@@ -151,11 +152,11 @@ test('tenant plan and usage reads never send arbitrary tenant ids and bind to tr
 test('finite member quota uses authoritative usage while unsupported quotas stay unknown instead of zero', async ({ page }) => {
   await mockPlanServer(page, { memberUsed: 3 })
   await openRealPlan(page)
-  await page.getByRole('button', { name: '额度用量' }).click()
+  await page.getByRole('button', { name: '使用额度' }).click()
 
   const memberRow = page.getByRole('row').filter({ hasText: 'tenant.members' })
   await expect(memberRow).toContainText('3')
-  await expect(memberRow).toContainText('0')
+  await expect(memberRow).toContainText('100.0%')
   await expect(memberRow).toContainText('额度已用尽')
 
   const unknownRow = page.getByRole('row').filter({ hasText: 'monthly.reports' })
@@ -163,24 +164,24 @@ test('finite member quota uses authoritative usage while unsupported quotas stay
   await expect(unknownRow).toContainText('未知')
   await expect(unknownRow).toContainText('用量未知')
   await expect(unknownRow).not.toContainText('0 / 100')
-  await expect(page.getByText(/%/)).toHaveCount(0)
 })
 
 test('member quota below limit renders authoritative remaining capacity', async ({ page }) => {
   await mockPlanServer(page, { memberUsed: 2 })
   await openRealPlan(page)
-  await page.getByRole('button', { name: '额度用量' }).click()
+  await page.getByRole('button', { name: '使用额度' }).click()
   const memberRow = page.getByRole('row').filter({ hasText: 'tenant.members' })
   await expect(memberRow).toContainText('2')
-  await expect(memberRow).toContainText('1')
-  await expect(memberRow).toContainText('额度可用')
+  await expect(memberRow).toContainText('3')
+  await expect(memberRow).toContainText('66.7%')
+  await expect(memberRow).toContainText('正常')
 })
 
 test('usage authority 5xx keeps quota limits visible but explicitly degrades usage to unknown', async ({ page }) => {
   await mockPlanServer(page, { usageStatus: 500 })
   await openRealPlan(page)
+  await page.getByRole('button', { name: '使用额度' }).click()
   await expect(page.getByText(/用量服务暂不可用/)).toBeVisible()
-  await page.getByRole('button', { name: '额度用量' }).click()
   const memberRow = page.getByRole('row').filter({ hasText: 'tenant.members' })
   await expect(memberRow).toContainText('3')
   await expect(memberRow).toContainText('未知')
@@ -190,26 +191,26 @@ test('usage authority 5xx keeps quota limits visible but explicitly degrades usa
 test('401 and 403 are explicit and never fall back to demo plan data', async ({ page }) => {
   await mockPlanServer(page, { unauthenticated: true })
   await openRealPlan(page)
-  await expect(page.getByRole('alert')).toContainText('登录会话已失效')
+  await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('登录会话已失效')
   await expect(page.getByText('标准版', { exact: true })).toHaveCount(0)
 
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockPlanServer(page, { subscriptionStatus: 403 })
   await page.reload()
-  await expect(page.getByRole('alert')).toContainText('没有查看套餐与权益的权限')
+  await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('没有查看套餐与权益的权限')
   await expect(page.getByText('标准版', { exact: true })).toHaveCount(0)
 
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockPlanServer(page, { usageStatus: 403 })
   await page.reload()
-  await expect(page.getByRole('alert')).toContainText('没有查看套餐与权益的权限')
+  await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('没有查看套餐与权益的权限')
   await expect(page.getByText('标准版', { exact: true })).toHaveCount(0)
 })
 
 test('entitlement authority failure stays visible instead of substituting preview quotas', async ({ page }) => {
   await mockPlanServer(page, { entitlementStatus: 500 })
   await openRealPlan(page)
-  await expect(page.getByRole('alert')).toContainText('entitlements denied')
+  await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('entitlements denied')
   await expect(page.getByText('成员账号', { exact: true })).toHaveCount(0)
   await expect(page.getByText('500 GB', { exact: true })).toHaveCount(0)
 })

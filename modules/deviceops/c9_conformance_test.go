@@ -20,6 +20,8 @@ func TestC104GeneratedAssemblyOwnsStructuralRuntimeWiring(t *testing.T) {
 	module := read("module.go")
 	assembly := read("../../internal/assembly/zz_yunka_assembly_gen.go")
 	runtime := read("../../internal/bizruntime/runtime.go")
+	auditRuntime := read("../../internal/bizruntime/audit.go")
+	runtimeOwned := runtime + "\n" + auditRuntime
 	main := read("../../cmd/biz/main.go")
 
 	for _, forbidden := range []string{
@@ -65,7 +67,6 @@ func TestC104GeneratedAssemblyOwnsStructuralRuntimeWiring(t *testing.T) {
 		"generatedassembly.Bootstrap",
 		"BindRuntime:",
 		"authz.NewExecutionSecurity",
-		"operation.NewExecutorWithOptions",
 		"requestscope.NewGORMExecutionFactory",
 		"runtimecomponent.HTTP",
 		"runtimecomponent.GRPC",
@@ -75,6 +76,12 @@ func TestC104GeneratedAssemblyOwnsStructuralRuntimeWiring(t *testing.T) {
 			t.Fatalf("Biz-owned runtime binding missing %q", required)
 		}
 	}
+	if !strings.Contains(runtime, "newAuditedOperationExecutor") {
+		t.Fatal("Biz-owned runtime binding does not wire the audited operation executor")
+	}
+	if !strings.Contains(auditRuntime, "operation.NewExecutorWithOptions") {
+		t.Fatal("Biz-owned audit runtime helper does not own operation executor construction")
+	}
 	for _, forbidden := range []string{
 		"NewDeviceTransferToDeviceopsSiteManagementChildCapability",
 		"NewDeviceTransferToDeviceopsDeviceManagementChildCapability",
@@ -82,7 +89,7 @@ func TestC104GeneratedAssemblyOwnsStructuralRuntimeWiring(t *testing.T) {
 		"RegisterDeviceTransferOperationExecutor",
 		"modulecatalog.Default()",
 	} {
-		if strings.Contains(runtime, forbidden) {
+		if strings.Contains(runtimeOwned, forbidden) {
 			t.Fatalf("Biz runtime duplicates generated structural assembly with %q", forbidden)
 		}
 	}
@@ -98,7 +105,7 @@ func TestC104GeneratedAssemblyOwnsStructuralRuntimeWiring(t *testing.T) {
 		"../../internal/deviceops/transport/rest/zz_yunka_device_management_rest_adapter_gen.go",
 		"../../internal/deviceops/transport/rpc/zz_yunka_device_management_rpc_adapter_gen.go",
 		"../../internal/deviceops/transport/rest/zz_yunka_device_transfer_rest_adapter_gen.go",
-		"../../internal/deviceops/transport/rpc/zz_yunka_device_transfer_rpc_adapter_gen.go",
+		"../../internal/deviceops/transport/rpc/zz_yunka_device_transfer_rest_adapter_gen.go",
 		"../../internal/deviceops/transport/rest/zz_yunka_site_management_operation_executor_gen.go",
 		"../../internal/deviceops/transport/rpc/zz_yunka_site_management_operation_executor_gen.go",
 	} {

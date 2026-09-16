@@ -100,6 +100,24 @@ export interface Access_V1_EnableTenantRoleRequest {
   version?: string;
 }
 
+export interface Access_V1_ExportTenantAuditRecordsRequest {
+  query?: string;
+  operationId?: string;
+  result?: string;
+  risk?: string;
+  maxRows?: number;
+}
+
+export interface Access_V1_ExportTenantAuditRecordsResponse {
+  exportId?: string;
+  generatedAt?: string;
+  records?: readonly Access_V1_TenantAuditRecordDTO[];
+}
+
+export interface Access_V1_GetTenantAuditRecordRequest {
+  auditId?: string;
+}
+
 export interface Access_V1_GetTenantDelegationRequest {
   id?: string;
 }
@@ -132,6 +150,22 @@ export interface Access_V1_GrantTenantDeviceDelegationRequest {
 
 export interface Access_V1_InviteTenantMemberRequest {
   email?: string;
+}
+
+export interface Access_V1_ListTenantAuditRecordsRequest {
+  query?: string;
+  operationId?: string;
+  result?: string;
+  risk?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface Access_V1_ListTenantAuditRecordsResponse {
+  records?: readonly Access_V1_TenantAuditRecordDTO[];
+  total?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface Access_V1_ListTenantDelegationsRequest {
@@ -208,6 +242,26 @@ export interface Access_V1_SuspendTenantMemberRequest {
 export interface Access_V1_SuspendTenantRequest {
   id?: string;
   version?: string;
+}
+
+export interface Access_V1_TenantAuditRecordDTO {
+  auditId?: string;
+  occurredAt?: string;
+  actorSubject?: string;
+  actorUserId?: string;
+  authMethod?: string;
+  authChannel?: string;
+  sessionRef?: string;
+  requestId?: string;
+  idempotencyRef?: string;
+  operationId?: string;
+  module?: string;
+  target?: string;
+  result?: string;
+  risk?: string;
+  receiptRef?: string;
+  reason?: string;
+  requestDigest?: string;
 }
 
 export interface Access_V1_TenantDTO {
@@ -1001,6 +1055,33 @@ export interface Deviceops_V1_UpdateDeviceRequest {
 }
 
 export const operations = {
+  "access.v1.TenantAuditManagementApplication.ExportTenantAuditRecords": {
+    fullName: "access.v1.TenantAuditManagementApplication.ExportTenantAuditRecords",
+    rpcPath: "/access.v1.TenantAuditManagementApplication/ExportTenantAuditRecords",
+    requestType: "access.v1.ExportTenantAuditRecordsRequest",
+    responseType: "access.v1.ExportTenantAuditRecordsResponse",
+    http: [
+      { method: "POST", path: "/v1/tenant/audit-logs/exports", body: "*" },
+    ]
+  },
+  "access.v1.TenantAuditManagementApplication.GetTenantAuditRecord": {
+    fullName: "access.v1.TenantAuditManagementApplication.GetTenantAuditRecord",
+    rpcPath: "/access.v1.TenantAuditManagementApplication/GetTenantAuditRecord",
+    requestType: "access.v1.GetTenantAuditRecordRequest",
+    responseType: "access.v1.TenantAuditRecordDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/audit-logs/{audit_id}" },
+    ]
+  },
+  "access.v1.TenantAuditManagementApplication.ListTenantAuditRecords": {
+    fullName: "access.v1.TenantAuditManagementApplication.ListTenantAuditRecords",
+    rpcPath: "/access.v1.TenantAuditManagementApplication/ListTenantAuditRecords",
+    requestType: "access.v1.ListTenantAuditRecordsRequest",
+    responseType: "access.v1.ListTenantAuditRecordsResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/audit-logs" },
+    ]
+  },
   "access.v1.TenantDelegationApplication.GetTenantDelegation": {
     fullName: "access.v1.TenantDelegationApplication.GetTenantDelegation",
     rpcPath: "/access.v1.TenantDelegationApplication/GetTenantDelegation",
@@ -1749,6 +1830,23 @@ export const operations = {
     ]
   },
 } as const satisfies Record<string, RpcOperation>;
+
+export class Access_V1_TenantAuditManagementApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  exportTenantAuditRecords(request: Access_V1_ExportTenantAuditRecordsRequest): Promise<Access_V1_ExportTenantAuditRecordsResponse> {
+    return this.transport.call<Access_V1_ExportTenantAuditRecordsRequest, Access_V1_ExportTenantAuditRecordsResponse>(operations["access.v1.TenantAuditManagementApplication.ExportTenantAuditRecords"], request);
+  }
+
+  getTenantAuditRecord(request: Access_V1_GetTenantAuditRecordRequest): Promise<Access_V1_TenantAuditRecordDTO> {
+    return this.transport.call<Access_V1_GetTenantAuditRecordRequest, Access_V1_TenantAuditRecordDTO>(operations["access.v1.TenantAuditManagementApplication.GetTenantAuditRecord"], request);
+  }
+
+  listTenantAuditRecords(request: Access_V1_ListTenantAuditRecordsRequest): Promise<Access_V1_ListTenantAuditRecordsResponse> {
+    return this.transport.call<Access_V1_ListTenantAuditRecordsRequest, Access_V1_ListTenantAuditRecordsResponse>(operations["access.v1.TenantAuditManagementApplication.ListTenantAuditRecords"], request);
+  }
+
+}
 
 export class Access_V1_TenantDelegationApplicationClient {
   constructor(private readonly transport: RpcTransport) {}
