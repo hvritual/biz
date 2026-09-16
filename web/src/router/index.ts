@@ -138,7 +138,7 @@ export const router = createRouter({
     {
       path: '/enterprise/logs',
       component: () => import('@/features/enterprise/pages/AuditLogsView.vue'),
-      meta: { title: '操作日志', module: 'enterprise', surface: 'tenant' },
+      meta: { title: '操作日志', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage' },
     },
     {
       path: '/system/:section(general|notifications|security|integrations|dictionary)',

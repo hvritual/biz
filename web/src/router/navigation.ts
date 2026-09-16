@@ -6,6 +6,7 @@ export interface NavigationItem {
   matches?: string[]
   selectorId?: string
   group?: string
+  groupId?: string
 }
 
 export function isPrimaryNavigationActive(item: NavigationItem, currentModule: unknown): boolean {
