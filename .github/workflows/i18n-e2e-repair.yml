@@ -27,7 +27,10 @@ jobs:
           replacements = {
             'web/e2e/i18n.spec.ts': [
               ("const locale = page.getByLabel('Language')", "const locale = page.getByRole('combobox', { name: /语言|Language/ })"),
-              ("await page.getByLabel('Language').selectOption('en-US')", "await page.getByRole('combobox', { name: /语言|Language/ }).selectOption('en-US')"),
+              ("await locale.selectOption('en-US')", "await locale.click()\n  await page.getByRole('option', { name: 'English', exact: true }).click()"),
+              ("await locale.selectOption('zh-CN')", "await locale.click()\n  await page.getByRole('option', { name: '中文', exact: true }).click()"),
+              ("await page.getByLabel('Language').selectOption('en-US')", "await page.getByRole('combobox', { name: /语言|Language/ }).click()\n  await page.getByRole('option', { name: 'English', exact: true }).click()"),
+              ("await page.getByLabel('Language').selectOption('zh-CN')", "await page.getByRole('combobox', { name: /语言|Language/ }).click()\n  await page.getByRole('option', { name: '中文', exact: true }).click()"),
             ],
             'web/e2e/console.spec.ts': [("getByText('启用', { exact: true })", "getByText('正常', { exact: true })")],
             'web/e2e/members-layout.spec.ts': [
@@ -42,6 +45,7 @@ jobs:
               ('data-menu-group="计费与结算"', 'data-menu-group="billing-settlement"'),
               ('data-menu-group="履约与服务"', 'data-menu-group="fulfillment-service"'),
               ('data-menu-group="设备配置"', 'data-menu-group="device-configuration"'),
+              ("getByTitle('饮品配置尚未接入')", "getByRole('button', { name: /饮品配置/ })"),
             ],
           }
           for filename, pairs in replacements.items():
@@ -81,7 +85,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add I18N-E2E-DIAGNOSTICS.txt
-          git commit -m 'chore(i18n): capture E2E repair diagnostics'
+          git commit -m 'chore(i18n): refresh E2E repair diagnostics'
           git push origin HEAD:refs/heads/feat/design-i18n
           exit 1
       - name: Run full E2E and commit repaired contracts
@@ -96,7 +100,8 @@ jobs:
           cd ..
           test "$(git ls-remote origin refs/heads/feat/design-i18n | cut -f1)" = "$SOURCE_SHA"
           git add web/e2e/i18n.spec.ts web/e2e/console.spec.ts web/e2e/members-layout.spec.ts web/e2e/navigation-ia.spec.ts
+          git rm .github/workflows/i18n-e2e-repair.yml I18N-E2E-DIAGNOSTICS.txt
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'test(i18n): align E2E with localized labels and stable IDs'
+          git commit -m 'test(i18n): align E2E with localized controls and stable navigation IDs'
           git push origin HEAD:refs/heads/feat/design-i18n
