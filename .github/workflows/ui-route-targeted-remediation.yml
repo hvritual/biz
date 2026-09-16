@@ -30,20 +30,8 @@ jobs:
 
           member = Path('web/src/features/enterprise/components/members/MemberActionDialog.vue')
           text = member.read_text()
-          marker = '''        ><label class="option-line"
-          ><UiInput v-model="confirmed" type="checkbox" />我已确认成员身份，并了解此处不会发送真实邮件</label
-        >'''
-          replacement = '''        ><label class="field"
-          ><span class="required">操作原因</span
-          ><UiTextarea
-            v-model="reason"
-            class="textarea"
-            maxlength="300"
-            placeholder="请记录发起密码重置请求的原因，用于审计追踪"
-          /></label
-        ><label class="option-line"
-          ><UiInput v-model="confirmed" type="checkbox" />我已确认成员身份，并了解此处不会发送真实邮件</label
-        >'''
+          marker = '        ><label class="option-line"\n          ><UiInput v-model="confirmed" type="checkbox" />我已确认成员身份，并了解此处不会发送真实邮件</label\n        >'
+          replacement = '        ><label class="field"\n          ><span class="required">操作原因</span\n          ><UiTextarea\n            v-model="reason"\n            class="textarea"\n            maxlength="300"\n            placeholder="请记录发起密码重置请求的原因，用于审计追踪"\n          /></label\n        ><label class="option-line"\n          ><UiInput v-model="confirmed" type="checkbox" />我已确认成员身份，并了解此处不会发送真实邮件</label\n        >'
           assert marker in text, 'password reset confirmation marker not found'
           member.write_text(text.replace(marker, replacement, 1))
 
@@ -56,11 +44,8 @@ jobs:
 
           spec = Path('web/e2e/console.spec.ts')
           text = spec.read_text()
-          marker = '''  await d.getByRole('checkbox').check()
-  await d.getByRole('button', { name: '记录重置请求', exact: true }).click()'''
-          replacement = '''  await d.getByRole('checkbox').check()
-  await d.getByLabel('操作原因', { exact: true }).fill('成员身份已核验，发起密码重置预览请求')
-  await d.getByRole('button', { name: '记录重置请求', exact: true }).click()'''
+          marker = "  await d.getByRole('checkbox').check()\n  await d.getByRole('button', { name: '记录重置请求', exact: true }).click()"
+          replacement = "  await d.getByRole('checkbox').check()\n  await d.getByLabel('操作原因', { exact: true }).fill('成员身份已核验，发起密码重置预览请求')\n  await d.getByRole('button', { name: '记录重置请求', exact: true }).click()"
           assert marker in text, 'password reset E2E marker not found'
           spec.write_text(text.replace(marker, replacement, 1))
           PY
