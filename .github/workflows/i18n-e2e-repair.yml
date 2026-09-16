@@ -64,27 +64,13 @@ jobs:
         id: e2e
         continue-on-error: true
         working-directory: web
+        shell: bash
         run: |
           set +e
-          npx playwright test e2e/console.spec.ts e2e/i18n.spec.ts e2e/members-layout.spec.ts e2e/navigation-ia.spec.ts --reporter=json > ../I18N-E2E-DIAGNOSTICS.json
-          code=$?
+          npx playwright test e2e/console.spec.ts e2e/i18n.spec.ts e2e/members-layout.spec.ts e2e/navigation-ia.spec.ts --reporter=line 2>&1 | tee ../I18N-E2E-DIAGNOSTICS.txt
+          code=${PIPESTATUS[0]}
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
-          node - <<'NODE'
-          const fs = require('fs')
-          const report = JSON.parse(fs.readFileSync('../I18N-E2E-DIAGNOSTICS.json', 'utf8'))
-          const failed = []
-          function visit(suite, path = []) {
-            for (const spec of suite.specs ?? []) for (const test of spec.tests ?? []) {
-              if (test.status && test.status !== 'expected' && test.status !== 'skipped') {
-                failed.push({ title: [...path, spec.title].join(' > '), status: test.status, errors: (test.results ?? []).flatMap(r => r.errors ?? []).map(e => e.message).filter(Boolean) })
-              }
-            }
-            for (const child of suite.suites ?? []) visit(child, [...path, child.title].filter(Boolean))
-          }
-          for (const suite of report.suites ?? []) visit(suite, [suite.title].filter(Boolean))
-          fs.writeFileSync('../I18N-E2E-DIAGNOSTICS.txt', JSON.stringify({ stats: report.stats, failed }, null, 2) + '\n')
-          console.log(fs.readFileSync('../I18N-E2E-DIAGNOSTICS.txt', 'utf8'))
-NODE
+          exit $code
       - name: Persist failure diagnostics
         if: steps.e2e.outputs.exit_code != '0'
         env:
