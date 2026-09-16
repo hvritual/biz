@@ -9,18 +9,20 @@ import {
   sessionContext,
   type TrustedSession,
 } from '@/services/runtime/api'
-import { uiThemePresets, type UiThemePresetName } from '@/ui/base/theme'
+
+export const enterpriseTenantBrandingPresets = ['blue', 'emerald', 'violet', 'amber'] as const
+export type EnterpriseTenantBrandingPreset = (typeof enterpriseTenantBrandingPresets)[number]
 
 export type EnterpriseTenantBranding = Readonly<{
   tenantId: string
-  preset: UiThemePresetName | 'custom'
+  preset: EnterpriseTenantBrandingPreset | 'custom'
   primary: string
   version: string | number
   canManage: boolean
 }>
 
 export type EnterpriseTenantBrandingDraft = Readonly<{
-  preset: UiThemePresetName | 'custom'
+  preset: EnterpriseTenantBrandingPreset | 'custom'
   primary: string
 }>
 
@@ -43,10 +45,12 @@ function requireTenantSession(session: TrustedSession) {
   if (!session.active_tenant_id) throw new Error('请选择可访问的租户。')
 }
 
+function isPreset(value: unknown): value is EnterpriseTenantBrandingPreset {
+  return typeof value === 'string' && enterpriseTenantBrandingPresets.includes(value as EnterpriseTenantBrandingPreset)
+}
+
 function brandingSnapshot(value: Partial<EnterpriseTenantBranding>): EnterpriseTenantBranding {
-  const preset = value.preset === 'custom' || (typeof value.preset === 'string' && value.preset in uiThemePresets)
-    ? value.preset as EnterpriseTenantBranding['preset']
-    : 'blue'
+  const preset = value.preset === 'custom' || isPreset(value.preset) ? value.preset : 'blue'
   return Object.freeze({
     tenantId: value.tenantId ?? '',
     preset,
