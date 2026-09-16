@@ -283,8 +283,18 @@ func ensureTenant(tenants accessv1.TenantLifecycleApplicationClient, call func(s
 }
 
 func ensureModule(ctx context.Context, catalog commercialv1.ModuleCatalogApplicationClient, call func(string) context.Context, code, name string) error {
-	module, err := catalog.GetModule(call("local-module-get-"+code), &commercialv1.GetModuleRequest{ModuleCode: code})
-	if status.Code(err) == codes.NotFound {
+	listed, err := catalog.ListModules(call("local-module-list-"+code), &commercialv1.ListModulesRequest{})
+	if err != nil {
+		return err
+	}
+	var module *commercialv1.ModuleDTO
+	for _, candidate := range listed.GetModules() {
+		if candidate.GetModuleCode() == code {
+			module = candidate
+			break
+		}
+	}
+	if module == nil {
 		module, err = catalog.CreateModule(call("local-module-create-"+code), &commercialv1.CreateModuleRequest{RequestId: "local-module-create-" + code, ModuleCode: code, Name: name, Reason: "local console setup"})
 	}
 	if err != nil {
