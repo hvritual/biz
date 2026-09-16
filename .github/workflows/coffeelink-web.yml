@@ -74,6 +74,8 @@ jobs:
               f'ec_ri_02={len(member_required)} ec_ri_03={len(role_required)}'
           )
           PY
+          mkdir -p screenshots/api-mode-results
+          cp test-results/results.json screenshots/api-mode-results/results.json
           npm run build
       - run: npm run test:e2e
         working-directory: web
@@ -172,6 +174,10 @@ jobs:
           )
           PY
           sha256sum screenshots/*.png test-results/screenshots/*.png | sort > test-results/screenshot-sha256.txt
+      - name: Record tested source provenance
+        if: always()
+        working-directory: web
+        run: node scripts/collect-ui-evidence.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
