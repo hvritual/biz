@@ -134,7 +134,7 @@ test('role create and permission update use independent idempotency keys and con
   await page.getByRole('button', { name: '新建角色', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '新建角色' })
   await dialog.getByLabel('角色名称').fill('华东运营')
-  await dialog.getByLabel('查看成员', { exact: true }).check()
+  await dialog.getByLabel('企业成员 查看成员', { exact: true }).check()
   await selectUiOption(dialog.getByLabel('数据范围'), 'custom')
   await dialog.getByRole('button', { name: '保存角色' }).click()
   await expect(page.getByRole('status')).toContainText('服务端确认')
