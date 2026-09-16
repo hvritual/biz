@@ -45,6 +45,24 @@ message UpdateTenantProfileRequest {
   uint64 version = 12;
 }
 
+// Only brand configuration is exposed here; ordinary members do not receive company contacts.
+message TenantBrandingDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string tenant_id = 1;
+  string preset = 2;
+  string primary = 3;
+  uint64 version = 4;
+  bool can_manage = 5;
+}
+
+message GetTenantBrandingRequest {}
+
+message UpdateTenantBrandingRequest {
+  string preset = 1;
+  string primary = 2;
+  uint64 version = 3;
+}
+
 service TenantProfileManagementApplication {
   option (yunka.dsl.v1.application) = { name: "tenant_profile_management" };
 
@@ -67,6 +85,32 @@ service TenantProfileManagementApplication {
     option (yunka.dsl.v1.operation) = {
       id: "tenant.profile.update"
       use_case: "update_tenant_profile"
+      permissions: "tenant.organization.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc GetTenantBranding(GetTenantBrandingRequest) returns (TenantBrandingDTO) {
+    option (google.api.http) = { get: "/v1/tenant/branding" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.branding.get"
+      use_case: "get_tenant_branding"
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc UpdateTenantBranding(UpdateTenantBrandingRequest) returns (TenantBrandingDTO) {
+    option (google.api.http) = { patch: "/v1/tenant/branding" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.branding.update"
+      use_case: "update_tenant_branding"
       permissions: "tenant.organization.manage"
       permission_mode: PERMISSION_ALL
       tenant_required: true
