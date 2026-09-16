@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "baseline": "cd7d3ebd0d50a79a202bf2e031d9564264663f42",
+  "forbidden_page_suffixes": ["EntryView.vue", "RealView.vue", "DemoView.vue", "PreviewView.vue"],
+  "forbidden_page_tokens": ["VITE_DATA_MODE", "RuntimeConsoleView.vue"],
+  "runtime_console_allowed_surfaces": ["runtime"],
+  "canonical_routes": [
+    {
+      "path": "/enterprise/members",
+      "component": "@/features/enterprise/pages/MembersView.vue",
+      "surface": "tenant",
+      "template": "ListPage"
+    },
+    {
+      "path": "/enterprise/roles",
+      "component": "@/features/enterprise/pages/RolesView.vue",
+      "surface": "tenant",
+      "template": "ListPage"
+    },
+    {
+      "path": "/enterprise/organization",
+      "component": "@/features/enterprise/pages/OrganizationView.vue",
+      "surface": "tenant",
+      "template": "WorkbenchPage"
+    },
+    {
+      "path": "/enterprise/plan",
+      "component": "@/features/enterprise/pages/PlansView.vue",
+      "surface": "tenant",
+      "template": "WorkbenchPage"
+    },
+    {
+      "path": "/enterprise/company",
+      "component": "@/features/enterprise/pages/CompanyView.vue",
+      "surface": "tenant",
+      "template": "FormPage"
+    }
+  ],
+  "required_checks": [
+    "no-entry-pages",
+    "no-parallel-real-demo-pages",
+    "no-page-level-data-mode-switch",
+    "canonical-enterprise-route-mapping",
+    "runtime-console-surface-boundary",
+    "api-no-demo-fallback"
+  ],
+  "visual_viewports": [
+    { "width": 1366, "height": 768 },
+    { "width": 1440, "height": 900 },
+    { "width": 1536, "height": 1024 },
+    { "width": 390, "height": 844 }
+  ]
+}

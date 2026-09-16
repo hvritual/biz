@@ -48,11 +48,11 @@ const scopeDescription = computed(
         />
       </dd>
       <dt>加入时间</dt>
-      <dd class="numeric">{{ member.joinedAt }}</dd>
+      <dd class="numeric">{{ member.joinedAt || (store.previewMode ? '未记录' : '服务端未提供') }}</dd>
       <dt>最后登录</dt>
       <dd class="numeric">{{ member.lastLogin || '尚未登录' }}</dd>
       <dt>备注</dt>
-      <dd>{{ member.note || '暂无备注' }}</dd>
+      <dd>{{ member.note || (store.previewMode ? '暂无备注' : '服务端未提供') }}</dd>
     </dl>
   </section>
   <section class="detail-section">
@@ -98,7 +98,7 @@ const scopeDescription = computed(
         ><strong>{{ log.action }}</strong
         ><small>{{ log.actor }} · {{ log.reason || '界面预览操作' }}</small>
       </li>
-      <li>
+      <li v-if="store.previewMode">
         <span>{{ member.joinedAt }}</span
         ><strong>加入当前企业</strong><small>成员关系记录 · 示例数据</small>
       </li>
