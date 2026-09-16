@@ -8,10 +8,14 @@ const viewports = [
   { width: 390, height: 844 },
 ]
 
+async function chooseLocale(page: import('@playwright/test').Page, option: '中文' | 'English') {
+  await page.getByRole('combobox', { name: /语言|Language/ }).click()
+  await page.getByRole('option', { name: option, exact: true }).click()
+}
+
 test('locale changes presentation but not route identity, member selection or product actions', async ({ page }) => {
   await page.goto('/#/enterprise/members')
-  const locale = page.getByLabel('Language')
-  await locale.selectOption('en-US')
+  await chooseLocale(page, 'English')
   await expect(page).toHaveURL(/#\/enterprise\/members/)
   await expect(page.getByRole('heading', { name: 'Members', level: 1 })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Add member' })).toBeVisible()
@@ -27,18 +31,18 @@ test('locale changes presentation but not route identity, member selection or pr
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'Add member' })).toBeVisible()
   await expect(page.getByLabel('Email')).toBeVisible()
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click()
-  await locale.selectOption('zh-CN')
+  await chooseLocale(page, '中文')
   await expect(page).toHaveURL(/#\/enterprise\/members/)
   await expect(page.getByRole('heading', { name: '成员管理', level: 1 })).toBeVisible()
 })
 
 test('platform tenant route keeps trusted identity behavior while labels switch language', async ({ page }) => {
   await page.goto('/#/platform/tenants')
-  await page.getByLabel('Language').selectOption('en-US')
+  await chooseLocale(page, 'English')
   await expect(page.getByRole('heading', { name: 'Tenant Management', level: 1 })).toBeVisible()
   await expect(page.getByText('No trusted platform session')).toBeVisible()
   await expect(page).toHaveURL(/#\/platform\/tenants/)
-  await page.getByLabel('Language').selectOption('zh-CN')
+  await chooseLocale(page, '中文')
   await expect(page.getByRole('heading', { name: '租户管理', level: 1 })).toBeVisible()
 })
 
