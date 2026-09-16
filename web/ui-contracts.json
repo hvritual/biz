@@ -192,6 +192,156 @@
       "surface": "tenant",
       "template": "FormPage",
       "required_regions": []
+    },
+    {
+      "path": "/platform/commercial/features",
+      "component": "@/features/platform/pages/LifecycleManagementView.vue",
+      "surface": "platform",
+      "template": "WorkbenchPage",
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
+    },
+    {
+      "path": "/platform/commercial/subscriptions",
+      "component": "@/features/platform/pages/LifecycleManagementView.vue",
+      "surface": "platform",
+      "template": "WorkbenchPage",
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
+    },
+    {
+      "path": "/platform/commercial/authorization",
+      "component": "@/features/platform/pages/LifecycleManagementView.vue",
+      "surface": "platform",
+      "template": "WorkbenchPage",
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
+    },
+    {
+      "path": "/platform/commercial/quotas",
+      "component": "@/features/platform/pages/LifecycleManagementView.vue",
+      "surface": "platform",
+      "template": "WorkbenchPage",
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
+    },
+    {
+      "path": "/platform/commercial/usage-billing",
+      "component": "@/features/platform/pages/LifecycleManagementView.vue",
+      "surface": "platform",
+      "template": "WorkbenchPage",
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
+    },
+    {
+      "path": "/platform/commercial/changes",
+      "component": "@/features/platform/pages/LifecycleManagementView.vue",
+      "surface": "platform",
+      "template": "WorkbenchPage",
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
+    },
+    {
+      "path": "/platform/commercial/add-ons",
+      "component": "@/features/platform/pages/LifecycleManagementView.vue",
+      "surface": "platform",
+      "template": "WorkbenchPage",
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
+    },
+    {
+      "path": "/platform/commercial/overrides",
+      "component": "@/features/platform/pages/LifecycleManagementView.vue",
+      "surface": "platform",
+      "template": "WorkbenchPage",
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
+    },
+    {
+      "path": "/platform/commercial/expiry",
+      "component": "@/features/platform/pages/LifecycleManagementView.vue",
+      "surface": "platform",
+      "template": "WorkbenchPage",
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
+    },
+    {
+      "path": "/platform/commercial/audit",
+      "component": "@/features/platform/pages/LifecycleManagementView.vue",
+      "surface": "platform",
+      "template": "WorkbenchPage",
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
     }
   ]
 }

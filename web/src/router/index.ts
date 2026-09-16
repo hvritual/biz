@@ -61,6 +61,56 @@ export const router = createRouter({
       meta: { title: '租户权益', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage' },
     },
     {
+      path: '/platform/commercial/features',
+      component: () => import('@/features/platform/pages/LifecycleManagementView.vue'),
+      meta: { title: '商业功能', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', lifecycleKey: 'features' },
+    },
+    {
+      path: '/platform/commercial/add-ons',
+      component: () => import('@/features/platform/pages/LifecycleManagementView.vue'),
+      meta: { title: '增购项', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', lifecycleKey: 'add-ons' },
+    },
+    {
+      path: '/platform/commercial/subscriptions',
+      component: () => import('@/features/platform/pages/LifecycleManagementView.vue'),
+      meta: { title: '租户订阅', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', lifecycleKey: 'subscriptions' },
+    },
+    {
+      path: '/platform/commercial/changes',
+      component: () => import('@/features/platform/pages/LifecycleManagementView.vue'),
+      meta: { title: '套餐变更', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', lifecycleKey: 'changes' },
+    },
+    {
+      path: '/platform/commercial/expiry',
+      component: () => import('@/features/platform/pages/LifecycleManagementView.vue'),
+      meta: { title: '到期与宽限', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', lifecycleKey: 'expiry' },
+    },
+    {
+      path: '/platform/commercial/authorization',
+      component: () => import('@/features/platform/pages/LifecycleManagementView.vue'),
+      meta: { title: '授权诊断', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', lifecycleKey: 'authorization' },
+    },
+    {
+      path: '/platform/commercial/quotas',
+      component: () => import('@/features/platform/pages/LifecycleManagementView.vue'),
+      meta: { title: '额度管理', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', lifecycleKey: 'quotas' },
+    },
+    {
+      path: '/platform/commercial/overrides',
+      component: () => import('@/features/platform/pages/LifecycleManagementView.vue'),
+      meta: { title: '专项授权', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', lifecycleKey: 'overrides' },
+    },
+    {
+      path: '/platform/commercial/usage-billing',
+      component: () => import('@/features/platform/pages/LifecycleManagementView.vue'),
+      meta: { title: '用量计费', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', lifecycleKey: 'usage-billing' },
+    },
+    {
+      path: '/platform/commercial/audit',
+      component: () => import('@/features/platform/pages/LifecycleManagementView.vue'),
+      meta: { title: '商业审计', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', lifecycleKey: 'audit' },
+    },
+    {
       path: '/enterprise/members',
       component: () => import('@/features/enterprise/pages/MembersView.vue'),
       meta: { title: '成员管理', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage' },

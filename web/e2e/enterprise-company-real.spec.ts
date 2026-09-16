@@ -150,7 +150,7 @@ test('successful PATCH without GET readback is not presented as canonical succes
   await openRealCompany(page)
   await page.getByLabel('企业简称').fill('未确认资料')
   await page.getByRole('button', { name: '保存修改', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('tenant profile readback failed')
+  await expect(page.locator('.form-error[role="alert"]')).toContainText('tenant profile readback failed')
   await expect(page.getByText('企业资料已由服务端确认并回读。', { exact: true })).toHaveCount(0)
 })
 
@@ -158,13 +158,13 @@ test('401 and 403 remain explicit and never fall back to demo company data', asy
   await mockTenantProfileServer(page, { unauthenticated: true })
   await openRealCompany(page)
   await expect(page.getByText('需要登录业务账号', { exact: true })).toBeVisible()
-  await expect(page.getByText('unauthenticated', { exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('登录会话已失效')
   await expect(page.getByText('上海云迹科技有限公司', { exact: true })).toHaveCount(0)
 
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockTenantProfileServer(page, { readStatus: 403 })
   await page.reload()
-  await expect(page.getByText('tenant profile denied', { exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('当前账号没有维护企业资料的权限')
   await expect(page.getByText('上海云迹科技有限公司', { exact: true })).toHaveCount(0)
 })
 

@@ -326,13 +326,13 @@ test('canonical role change is idempotent, scope remains server-derived and read
 test('401 and 403 remain explicit and never replace API members with preview data', async ({ page }) => {
   await mockMemberServer(page, { unauthenticated: true })
   await openCanonicalMembers(page)
-  await expect(page.getByText('unauthenticated', { exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('登录会话已失效')
   await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
 
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockMemberServer(page, { listStatus: 403 })
   await page.reload()
-  await expect(page.getByText('list denied', { exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('当前账号没有管理企业成员的权限')
   await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
 })
 
