@@ -17,8 +17,11 @@
     "check:architecture": "node scripts/check-architecture.mjs",
     "check:ui-contracts": "node scripts/check-ui-contracts.mjs",
     "check:route-convergence": "node scripts/check-route-convergence.mjs",
-    "check": "npm run type-check && npm run lint && npm run check:architecture && npm run check:ui-contracts && npm run check:route-convergence && npm run test:unit && npm run test:design && npm run build",
-    "test:design": "node --test scripts/tests/*.test.mjs"
+    "check": "npm run type-check && npm run lint && npm run check:architecture && npm run check:ui-contracts && npm run check:route-convergence && npm run test:unit && npm run test:design && npm run check:design-index && npm run build",
+    "test:design": "node --test scripts/tests/*.test.mjs",
+    "design:index": "node scripts/design-cli.mjs build",
+    "design:find": "node scripts/design-cli.mjs find",
+    "check:design-index": "node scripts/design-cli.mjs check"
   },
   "dependencies": {
     "@lucide/vue": "^1.46.0",
