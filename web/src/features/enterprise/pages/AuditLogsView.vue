@@ -65,8 +65,8 @@ function pretty(value: string) {
 }
 </script>
 <template>
-  <div class="page-stack">
-    <PageHeading title="操作日志" description="记录成员、权限与配置变更，让每一次操作可检索、可追溯" />
+  <div class="page-stack" data-ui-template="ListPage">
+    <PageHeading data-ui-region="page-heading" title="操作日志" description="记录成员、权限与配置变更，让每一次操作可检索、可追溯" />
     <div class="metric-grid">
       <MetricCard
         label="操作记录"

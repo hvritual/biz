@@ -2,22 +2,10 @@
   "schema_version": 1,
   "design_system": "CoffeeLink V1.2",
   "visual_viewports": [
-    {
-      "width": 1366,
-      "height": 768
-    },
-    {
-      "width": 1440,
-      "height": 900
-    },
-    {
-      "width": 1536,
-      "height": 1024
-    },
-    {
-      "width": 390,
-      "height": 844
-    }
+    { "width": 1366, "height": 768 },
+    { "width": 1440, "height": 900 },
+    { "width": 1536, "height": 1024 },
+    { "width": 390, "height": 844 }
   ],
   "rules": {
     "platform_surface_forbids_runtime_console": true,
@@ -31,57 +19,30 @@
     "product_shell_forbids_data_mode_ui_branch": true
   },
   "navigation": {
-    "primary_domains": [
-      "工作台",
-      "客户经营",
-      "租赁运营",
-      "设备运营",
-      "经营管理",
-      "企业中心",
-      "平台管理",
-      "系统设置"
-    ],
-    "required_section_groups": [
-      "客户管理",
-      "客户协同",
-      "客户成功",
-      "投放与资产",
-      "计费与结算",
-      "履约与服务",
-      "设备资产",
-      "设备配置",
-      "远程运维",
-      "服务维护",
-      "交易管理",
-      "经营分析"
-    ],
-    "forbidden_entity_path_tokens": [
-      "CUS-",
-      "CS-",
-      "SH-"
-    ],
+    "primary_domains": ["工作台", "客户经营", "租赁运营", "设备运营", "经营管理", "企业中心", "平台管理", "系统设置"],
+    "required_section_groups": ["客户管理", "客户协同", "客户成功", "投放与资产", "计费与结算", "履约与服务", "设备资产", "设备配置", "远程运维", "服务维护", "交易管理", "经营分析"],
+    "forbidden_entity_path_tokens": ["CUS-", "CS-", "SH-"],
     "rental_work_collections": [
-      {
-        "label": "投放交付",
-        "path": "/rental/delivery",
-        "kind": "delivery"
-      },
-      {
-        "label": "服务恢复验证",
-        "path": "/rental/service",
-        "kind": "service"
-      },
-      {
-        "label": "回款跟进",
-        "path": "/rental/payment",
-        "kind": "payment"
-      },
-      {
-        "label": "退租回收",
-        "path": "/rental/returns",
-        "kind": "return"
-      }
-    ]
+      { "label": "投放交付", "path": "/rental/delivery", "kind": "delivery", "id": "delivery" },
+      { "label": "服务恢复验证", "path": "/rental/service", "kind": "service", "id": "service" },
+      { "label": "回款跟进", "path": "/rental/payment", "kind": "payment", "id": "payment" },
+      { "label": "退租回收", "path": "/rental/returns", "kind": "return", "id": "return" }
+    ],
+    "primary_domain_ids": ["dashboard", "customer-operations", "rental-operations", "device-operations", "business-operations", "enterprise", "platform-commercial", "system"],
+    "section_groups": {
+      "customer-management": "客户管理",
+      "customer-collaboration": "客户协同",
+      "customer-success": "客户成功",
+      "deployment-assets": "投放与资产",
+      "billing-settlement": "计费与结算",
+      "fulfillment-service": "履约与服务",
+      "device-assets": "设备资产",
+      "device-configuration": "设备配置",
+      "remote-operations": "远程运维",
+      "service-maintenance": "服务维护",
+      "transaction-management": "交易管理",
+      "business-analytics": "经营分析"
+    }
   },
   "routes": [
     {
@@ -89,24 +50,14 @@
       "component": "@/features/platform/pages/PlatformOverviewView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": [
-        "page-heading",
-        "management-domains",
-        "governance"
-      ]
+      "required_regions": ["page-heading", "management-domains", "governance"]
     },
     {
       "path": "/platform/tenants",
       "component": "@/features/platform/pages/PlatformTenantsView.vue",
       "surface": "platform",
       "template": "ListPage",
-      "required_regions": [
-        "page-heading",
-        "metrics",
-        "query",
-        "data",
-        "pagination"
-      ]
+      "required_regions": ["page-heading", "metrics", "query", "data", "pagination"]
     },
     {
       "path": "/system/:section(general|notifications|security|integrations|dictionary)",
@@ -120,43 +71,21 @@
       "component": "@/features/platform/pages/CommercialModulesView.vue",
       "surface": "platform",
       "template": "ListPage",
-      "required_regions": [
-        "page-heading",
-        "metrics",
-        "query",
-        "data"
-      ]
+      "required_regions": ["page-heading", "metrics", "query", "data"]
     },
     {
       "path": "/platform/commercial/plans",
       "component": "@/features/platform/pages/CommercialPlansView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": [
-        "page-heading",
-        "authority",
-        "query",
-        "metrics",
-        "workspace",
-        "history",
-        "detail"
-      ]
+      "required_regions": ["page-heading", "authority", "query", "metrics", "workspace", "history", "detail"]
     },
     {
       "path": "/platform/commercial/tenant-entitlements",
       "component": "@/features/platform/pages/CommercialTenantEntitlementsView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": [
-        "page-heading",
-        "authority",
-        "context",
-        "metrics",
-        "subscription",
-        "change-workspace",
-        "decisions",
-        "overrides"
-      ]
+      "required_regions": ["page-heading", "authority", "context", "metrics", "subscription", "change-workspace", "decisions", "overrides"]
     },
     {
       "path": "/enterprise/members",
@@ -198,150 +127,77 @@
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": [
-        "page-heading",
-        "preview",
-        "metrics",
-        "lifecycle",
-        "query",
-        "data",
-        "detail"
-      ]
+      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
     },
     {
       "path": "/platform/commercial/subscriptions",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": [
-        "page-heading",
-        "preview",
-        "metrics",
-        "lifecycle",
-        "query",
-        "data",
-        "detail"
-      ]
+      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
     },
     {
       "path": "/platform/commercial/authorization",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": [
-        "page-heading",
-        "preview",
-        "metrics",
-        "lifecycle",
-        "query",
-        "data",
-        "detail"
-      ]
+      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
     },
     {
       "path": "/platform/commercial/quotas",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": [
-        "page-heading",
-        "preview",
-        "metrics",
-        "lifecycle",
-        "query",
-        "data",
-        "detail"
-      ]
+      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
     },
     {
       "path": "/platform/commercial/usage-billing",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": [
-        "page-heading",
-        "preview",
-        "metrics",
-        "lifecycle",
-        "query",
-        "data",
-        "detail"
-      ]
+      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
     },
     {
       "path": "/platform/commercial/changes",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": [
-        "page-heading",
-        "preview",
-        "metrics",
-        "lifecycle",
-        "query",
-        "data",
-        "detail"
-      ]
+      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
     },
     {
       "path": "/platform/commercial/add-ons",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": [
-        "page-heading",
-        "preview",
-        "metrics",
-        "lifecycle",
-        "query",
-        "data",
-        "detail"
-      ]
+      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
     },
     {
       "path": "/platform/commercial/overrides",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": [
-        "page-heading",
-        "preview",
-        "metrics",
-        "lifecycle",
-        "query",
-        "data",
-        "detail"
-      ]
+      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
     },
     {
       "path": "/platform/commercial/expiry",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": [
-        "page-heading",
-        "preview",
-        "metrics",
-        "lifecycle",
-        "query",
-        "data",
-        "detail"
-      ]
+      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
     },
     {
       "path": "/platform/commercial/audit",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": [
-        "page-heading",
-        "preview",
-        "metrics",
-        "lifecycle",
-        "query",
-        "data",
-        "detail"
-      ]
+      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
+    },
+    {
+      "path": "/enterprise/logs",
+      "component": "@/features/enterprise/pages/AuditLogsView.vue",
+      "surface": "tenant",
+      "template": "ListPage",
+      "required_regions": ["page-heading"]
     }
   ]
 }
