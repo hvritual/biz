@@ -2466,6 +2466,68 @@
       }
     },
     {
+      "id": "tenant.branding.get",
+      "application": "access/tenant_profile_management",
+      "bindings": [
+        {
+          "operationId": "tenant.branding.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.branding.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.branding.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.branding.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.branding.get"
+      }
+    },
+    {
+      "id": "tenant.branding.update",
+      "application": "access/tenant_profile_management",
+      "bindings": [
+        {
+          "operationId": "tenant.branding.update",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.branding.update/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.branding.update",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.branding.update/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.branding.update"
+      }
+    },
+    {
       "id": "tenant.close",
       "application": "access/tenant_lifecycle",
       "bindings": [
@@ -4169,6 +4231,8 @@
         "device.transfer",
         "device.update",
         "tenant.activate",
+        "tenant.branding.get",
+        "tenant.branding.update",
         "tenant.close",
         "tenant.create",
         "tenant.delegation.get",

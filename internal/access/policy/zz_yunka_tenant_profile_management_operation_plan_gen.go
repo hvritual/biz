@@ -4,8 +4,16 @@ package policy
 
 import "yunka.io/pkg/operationplan"
 
+func OperationPlanTenantProfileManagementGetTenantBranding() operationplan.Plan {
+	return operationplan.Plan{OperationID: "tenant.branding.get", Domain: "access", Application: "tenant_profile_management", UseCase: "get_tenant_branding", RequestType: "access.v1.GetTenantBrandingRequest", ResponseType: "access.v1.TenantBrandingDTO", Execution: operationplan.Execution{Transaction: "read_only", Idempotency: "none"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key", "web-session"}, Permissions: []string{"tenant.branding.read"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "/access.v1.TenantProfileManagementApplication/GetTenantBranding", HTTP: []operationplan.HTTPBinding{{Method: "GET", Path: "/v1/tenant/branding", Body: "", ResponseBody: ""}}}}
+}
+
 func OperationPlanTenantProfileManagementGetTenantProfile() operationplan.Plan {
 	return operationplan.Plan{OperationID: "tenant.profile.get", Domain: "access", Application: "tenant_profile_management", UseCase: "get_tenant_profile", RequestType: "access.v1.GetTenantProfileRequest", ResponseType: "access.v1.TenantProfileDTO", Execution: operationplan.Execution{Transaction: "read_only", Idempotency: "none"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key", "web-session"}, Permissions: []string{"tenant.organization.read"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "/access.v1.TenantProfileManagementApplication/GetTenantProfile", HTTP: []operationplan.HTTPBinding{{Method: "GET", Path: "/v1/tenant/profile", Body: "", ResponseBody: ""}}}}
+}
+
+func OperationPlanTenantProfileManagementUpdateTenantBranding() operationplan.Plan {
+	return operationplan.Plan{OperationID: "tenant.branding.update", Domain: "access", Application: "tenant_profile_management", UseCase: "update_tenant_branding", RequestType: "access.v1.UpdateTenantBrandingRequest", ResponseType: "access.v1.TenantBrandingDTO", Execution: operationplan.Execution{Transaction: "local", Idempotency: "required"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key", "web-session"}, Permissions: []string{"tenant.organization.manage"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "/access.v1.TenantProfileManagementApplication/UpdateTenantBranding", HTTP: []operationplan.HTTPBinding{{Method: "PATCH", Path: "/v1/tenant/branding", Body: "*", ResponseBody: ""}}}}
 }
 
 func OperationPlanTenantProfileManagementUpdateTenantProfile() operationplan.Plan {
