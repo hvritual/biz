@@ -2638,6 +2638,73 @@
       "bindings": {}
     },
     {
+      "operationId": "tenant.branding.get",
+      "domain": "access",
+      "application": "tenant_profile_management",
+      "useCase": "get_tenant_branding",
+      "requestType": "access.v1.GetTenantBrandingRequest",
+      "responseType": "access.v1.TenantBrandingDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.branding.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantProfileManagementApplication/GetTenantBranding",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/branding"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.branding.update",
+      "domain": "access",
+      "application": "tenant_profile_management",
+      "useCase": "update_tenant_branding",
+      "requestType": "access.v1.UpdateTenantBrandingRequest",
+      "responseType": "access.v1.TenantBrandingDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.organization.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantProfileManagementApplication/UpdateTenantBranding",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/tenant/branding",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "tenant.close",
       "domain": "access",
       "application": "tenant_lifecycle",

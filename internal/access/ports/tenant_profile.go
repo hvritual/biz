@@ -17,6 +17,13 @@ type TenantProfileRepository interface {
 	UpdateProfile(context.Context, *domain.TenantProfile, uint64) error
 }
 
+type TenantBrandingRepository interface {
+	GetBranding(context.Context, string) (domain.TenantBranding, error)
+	CanManageBranding(context.Context, string, string) (bool, error)
+	UpdateBranding(context.Context, *domain.TenantBranding, uint64) error
+}
+
 type TenantProfileRepositories struct {
-	Profile TenantProfileRepository
+	Profile  TenantProfileRepository
+	Branding TenantBrandingRepository
 }

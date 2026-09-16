@@ -4,11 +4,13 @@ package policy
 
 import "yunka.io/gateway/authz"
 
+const OperationTenantProfileManagementGetTenantBranding authz.OperationID = "tenant.branding.get"
 const OperationTenantProfileManagementGetTenantProfile authz.OperationID = "tenant.profile.get"
+const OperationTenantProfileManagementUpdateTenantBranding authz.OperationID = "tenant.branding.update"
 const OperationTenantProfileManagementUpdateTenantProfile authz.OperationID = "tenant.profile.update"
 
 func TenantProfileManagementPermissions() []authz.PermissionKey {
-	return []authz.PermissionKey{"tenant.organization.manage", "tenant.organization.read"}
+	return []authz.PermissionKey{"tenant.branding.read", "tenant.organization.manage", "tenant.organization.read"}
 }
 
 func TenantProfileManagementResolver() authz.StaticResolver {
@@ -17,7 +19,9 @@ func TenantProfileManagementResolver() authz.StaticResolver {
 
 func tenantProfileManagementPolicies() map[string]authz.Policy {
 	return map[string]authz.Policy{
-		"/access.v1.TenantProfileManagementApplication/GetTenantProfile":    {Operation: OperationTenantProfileManagementGetTenantProfile, Permissions: []authz.PermissionKey{"tenant.organization.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
-		"/access.v1.TenantProfileManagementApplication/UpdateTenantProfile": {Operation: OperationTenantProfileManagementUpdateTenantProfile, Permissions: []authz.PermissionKey{"tenant.organization.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/access.v1.TenantProfileManagementApplication/GetTenantBranding":    {Operation: OperationTenantProfileManagementGetTenantBranding, Permissions: []authz.PermissionKey{"tenant.branding.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/access.v1.TenantProfileManagementApplication/GetTenantProfile":     {Operation: OperationTenantProfileManagementGetTenantProfile, Permissions: []authz.PermissionKey{"tenant.organization.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/access.v1.TenantProfileManagementApplication/UpdateTenantBranding": {Operation: OperationTenantProfileManagementUpdateTenantBranding, Permissions: []authz.PermissionKey{"tenant.organization.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/access.v1.TenantProfileManagementApplication/UpdateTenantProfile":  {Operation: OperationTenantProfileManagementUpdateTenantProfile, Permissions: []authz.PermissionKey{"tenant.organization.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 	}
 }

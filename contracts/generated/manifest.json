@@ -696,6 +696,14 @@
       }
     },
     {
+      "name": "GetTenantBrandingRequest",
+      "fullName": "access.v1.GetTenantBrandingRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "GetTenantDelegationRequest",
       "fullName": "access.v1.GetTenantDelegationRequest",
       "fields": [
@@ -1372,6 +1380,50 @@
       }
     },
     {
+      "name": "TenantBrandingDTO",
+      "fullName": "access.v1.TenantBrandingDTO",
+      "fields": [
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "preset",
+          "jsonName": "preset",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "primary",
+          "jsonName": "primary",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "can_manage",
+          "jsonName": "canManage",
+          "number": 5,
+          "kind": "scalar",
+          "type": "bool"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "TenantDTO",
       "fullName": "access.v1.TenantDTO",
       "fields": [
@@ -1813,6 +1865,36 @@
       ],
       "dto": {
         "kind": "output"
+      }
+    },
+    {
+      "name": "UpdateTenantBrandingRequest",
+      "fullName": "access.v1.UpdateTenantBrandingRequest",
+      "fields": [
+        {
+          "name": "preset",
+          "jsonName": "preset",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "primary",
+          "jsonName": "primary",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
       }
     },
     {
@@ -8027,6 +8109,47 @@
       },
       "methods": [
         {
+          "name": "GetTenantBranding",
+          "fullName": "access.v1.TenantProfileManagementApplication.GetTenantBranding",
+          "request": "access.v1.GetTenantBrandingRequest",
+          "response": "access.v1.TenantBrandingDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/branding"
+            }
+          ],
+          "operation": {
+            "id": "tenant.branding.get",
+            "useCase": "get_tenant_branding",
+            "permissions": [
+              "tenant.branding.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.branding.get",
+            "permissions": [
+              "tenant.branding.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "GetTenantProfile",
           "fullName": "access.v1.TenantProfileManagementApplication.GetTenantProfile",
           "request": "access.v1.GetTenantProfileRequest",
@@ -8058,6 +8181,48 @@
             "operationId": "tenant.profile.get",
             "permissions": [
               "tenant.organization.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "UpdateTenantBranding",
+          "fullName": "access.v1.TenantProfileManagementApplication.UpdateTenantBranding",
+          "request": "access.v1.UpdateTenantBrandingRequest",
+          "response": "access.v1.TenantBrandingDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/tenant/branding",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.branding.update",
+            "useCase": "update_tenant_branding",
+            "permissions": [
+              "tenant.organization.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.branding.update",
+            "permissions": [
+              "tenant.organization.manage"
             ],
             "permissionMode": "all",
             "tenantRequired": true,
