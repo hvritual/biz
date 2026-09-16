@@ -33,6 +33,7 @@ const {
     :data-enterprise-audit-source="apiMode ? 'server' : 'demo'"
   >
     <PageHeading
+      data-ui-region="page-heading"
       title="操作日志"
       :description="apiMode
         ? '服务端审计记录按可信租户隔离；查询、详情和导出均以 Access 审计读模型为准。'
