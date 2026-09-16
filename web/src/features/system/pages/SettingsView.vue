@@ -33,8 +33,8 @@ const component = computed(
       description="配置当前企业的运行偏好；平台级租户、套餐、模块与权益由独立的平台管理系统维护。"
     />
     <div class="split-layout">
-      <section class="card panel-pad settings-main"><component :is="component" :key="section" /></section>
-      <aside class="side-summary">
+      <section class="card panel-pad settings-main" data-ui-region="form-workspace"><component :is="component" :key="section" /></section>
+      <aside class="side-summary" data-ui-region="scope">
         <section class="card panel-pad">
           <h2>配置范围</h2>
           <div class="scope-symbol"><AppIcon name="shield" :size="33" /></div>

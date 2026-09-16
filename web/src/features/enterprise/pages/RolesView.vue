@@ -84,8 +84,8 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
         caption="按成员去重统计"
       />
     </div>
-    <section class="card data-panel">
-      <div class="query-bar">
+    <section class="card data-panel" data-ui-region="data">
+      <div class="query-bar" data-ui-region="query">
         <SearchField v-model="query" placeholder="搜索角色名称、说明…" /><UiSelect
           v-model="kind"
           class="select"
