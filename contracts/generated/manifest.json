@@ -12,6 +12,16 @@
       }
     },
     {
+      "name": "contracts/proto/access/v1/tenant_audit.proto",
+      "package": "access.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/access/v1;accessv1",
+      "domain": {
+        "name": "access",
+        "version": "v1"
+      }
+    },
+    {
       "name": "contracts/proto/access/v1/tenant_delegation.proto",
       "package": "access.v1",
       "syntax": "proto3",
@@ -595,6 +605,97 @@
       }
     },
     {
+      "name": "ExportTenantAuditRecordsRequest",
+      "fullName": "access.v1.ExportTenantAuditRecordsRequest",
+      "fields": [
+        {
+          "name": "query",
+          "jsonName": "query",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "operation_id",
+          "jsonName": "operationId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "result",
+          "jsonName": "result",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "risk",
+          "jsonName": "risk",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "max_rows",
+          "jsonName": "maxRows",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ExportTenantAuditRecordsResponse",
+      "fullName": "access.v1.ExportTenantAuditRecordsResponse",
+      "fields": [
+        {
+          "name": "export_id",
+          "jsonName": "exportId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "generated_at",
+          "jsonName": "generatedAt",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "records",
+          "jsonName": "records",
+          "number": 3,
+          "kind": "message",
+          "type": "access.v1.TenantAuditRecordDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "GetTenantAuditRecordRequest",
+      "fullName": "access.v1.GetTenantAuditRecordRequest",
+      "fields": [
+        {
+          "name": "audit_id",
+          "jsonName": "auditId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "GetTenantDelegationRequest",
       "fullName": "access.v1.GetTenantDelegationRequest",
       "fields": [
@@ -734,6 +835,95 @@
       ],
       "dto": {
         "kind": "input"
+      }
+    },
+    {
+      "name": "ListTenantAuditRecordsRequest",
+      "fullName": "access.v1.ListTenantAuditRecordsRequest",
+      "fields": [
+        {
+          "name": "query",
+          "jsonName": "query",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "operation_id",
+          "jsonName": "operationId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "result",
+          "jsonName": "result",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "risk",
+          "jsonName": "risk",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListTenantAuditRecordsResponse",
+      "fullName": "access.v1.ListTenantAuditRecordsResponse",
+      "fields": [
+        {
+          "name": "records",
+          "jsonName": "records",
+          "number": 1,
+          "kind": "message",
+          "type": "access.v1.TenantAuditRecordDTO",
+          "repeated": true
+        },
+        {
+          "name": "total",
+          "jsonName": "total",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "output"
       }
     },
     {
@@ -1051,6 +1241,134 @@
       ],
       "dto": {
         "kind": "input"
+      }
+    },
+    {
+      "name": "TenantAuditRecordDTO",
+      "fullName": "access.v1.TenantAuditRecordDTO",
+      "fields": [
+        {
+          "name": "audit_id",
+          "jsonName": "auditId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "occurred_at",
+          "jsonName": "occurredAt",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_subject",
+          "jsonName": "actorSubject",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "actor_user_id",
+          "jsonName": "actorUserId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "auth_method",
+          "jsonName": "authMethod",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "auth_channel",
+          "jsonName": "authChannel",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "session_ref",
+          "jsonName": "sessionRef",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "idempotency_ref",
+          "jsonName": "idempotencyRef",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "operation_id",
+          "jsonName": "operationId",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module",
+          "jsonName": "module",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "target",
+          "jsonName": "target",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "result",
+          "jsonName": "result",
+          "number": 13,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "risk",
+          "jsonName": "risk",
+          "number": 14,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "receipt_ref",
+          "jsonName": "receiptRef",
+          "number": 15,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 16,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "request_digest",
+          "jsonName": "requestDigest",
+          "number": 17,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
       }
     },
     {
@@ -6425,6 +6743,140 @@
     }
   ],
   "services": [
+    {
+      "name": "TenantAuditManagementApplication",
+      "fullName": "access.v1.TenantAuditManagementApplication",
+      "domain": "access",
+      "application": {
+        "name": "tenant_audit_management"
+      },
+      "methods": [
+        {
+          "name": "ExportTenantAuditRecords",
+          "fullName": "access.v1.TenantAuditManagementApplication.ExportTenantAuditRecords",
+          "request": "access.v1.ExportTenantAuditRecordsRequest",
+          "response": "access.v1.ExportTenantAuditRecordsResponse",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/audit-logs/exports",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "access.audit.export",
+            "useCase": "export_tenant_audit_records",
+            "permissions": [
+              "tenant.audit.export"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "access.audit.export",
+            "permissions": [
+              "tenant.audit.export"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "GetTenantAuditRecord",
+          "fullName": "access.v1.TenantAuditManagementApplication.GetTenantAuditRecord",
+          "request": "access.v1.GetTenantAuditRecordRequest",
+          "response": "access.v1.TenantAuditRecordDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/audit-logs/{audit_id}"
+            }
+          ],
+          "operation": {
+            "id": "access.audit.get",
+            "useCase": "get_tenant_audit_record",
+            "permissions": [
+              "tenant.audit.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "access.audit.get",
+            "permissions": [
+              "tenant.audit.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListTenantAuditRecords",
+          "fullName": "access.v1.TenantAuditManagementApplication.ListTenantAuditRecords",
+          "request": "access.v1.ListTenantAuditRecordsRequest",
+          "response": "access.v1.ListTenantAuditRecordsResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/audit-logs"
+            }
+          ],
+          "operation": {
+            "id": "access.audit.list",
+            "useCase": "list_tenant_audit_records",
+            "permissions": [
+              "tenant.audit.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "access.audit.list",
+            "permissions": [
+              "tenant.audit.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        }
+      ]
+    },
     {
       "name": "TenantDelegationApplication",
       "fullName": "access.v1.TenantDelegationApplication",
