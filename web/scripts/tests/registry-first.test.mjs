@@ -33,14 +33,14 @@ test('Registry search finds canonical pilot pages and shared pagination', () => 
   assert.ok(searchDesignIndex(index, { query: 'members', kind: 'page', limit: 20 }).some((entry) => entry.name === 'MembersView'))
 })
 
-test('tenant pilot consumes selected Registry capability while members remains canonical without duplicate regions', () => {
+test('tenant pilot consumes selected Registry capability while members keeps the canonical PageHeading composition', () => {
   const tenants = read('src/features/platform/pages/PlatformTenantsView.vue')
   const members = read('src/features/enterprise/pages/MembersView.vue')
   const contract = JSON.parse(read('ui-contracts.json'))
   assert.match(tenants, /import AppPagination from ['"]@\/ui\/common\/AppPagination\.vue['"]/)
   assert.match(tenants, /<AppPagination[^>]+data-ui-region="pagination"/)
   assert.doesNotMatch(tenants, /<div class="pagination"/)
-  assert.equal((members.match(/data-ui-region="page-heading"/g) ?? []).length, 1)
+  assert.equal((members.match(/<PageHeading\b/g) ?? []).length, 1)
   assert.match(members, /<AppPagination/)
   for (const [path, component] of [
     ['/platform/tenants', '@/features/platform/pages/PlatformTenantsView.vue'],
@@ -50,6 +50,7 @@ test('tenant pilot consumes selected Registry capability while members remains c
     assert.ok(page, `${path} contract missing`)
     assert.equal(page.component, component)
     assert.equal(page.template, 'ListPage')
+    assert.ok(page.required_regions.includes('page-heading'), `${path} page-heading contract missing`)
     assert.doesNotMatch(page.component, /RuntimeConsole/)
   }
 })
