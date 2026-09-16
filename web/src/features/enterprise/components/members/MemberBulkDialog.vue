@@ -1,106 +1,15 @@
 <script setup lang="ts">
 import { UiButton, UiInput, UiTextarea } from '@/ui/base'
-
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import { prepareMemberStatusBatch } from '@/services/memberPolicy'
 import UiDialog from '@/ui/common/UiDialog.vue'
-const props = defineProps<{
-  open: boolean
-  action: 'activate' | 'suspend'
-  targets: { id: string; version: number }[]
-}>()
-const emit = defineEmits<{ close: []; saved: [] }>()
-const store = useEnterpriseStore(),
-  ui = useUiStore()
-const reason = ref(''),
-  confirmed = ref(false),
-  error = ref('')
-const label = computed(() => (props.action === 'activate' ? '批量启用' : '批量停用'))
-const policyError = computed(() => {
-  if (!props.open) return ''
-  try {
-    prepareMemberStatusBatch(store.members, store.roles, props.targets, props.action)
-    return ''
-  } catch (e) {
-    return (e as Error).message
-  }
-})
-watch(
-  () => props.open,
-  () => {
-    reason.value = ''
-    confirmed.value = false
-    error.value = ''
-  },
-)
-async function submit() {
-  if (policyError.value) return
-  if (!reason.value.trim()) {
-    error.value = '请填写操作原因。'
-    return
-  }
-  if (!confirmed.value) {
-    error.value = '请确认已核对成员及影响范围。'
-    return
-  }
-  try {
-    await store.changeStatuses(props.targets, props.action, reason.value.trim())
-    ui.toast(store.previewMode ? `已${label.value} ${props.targets.length} 位成员（本地预览），未修改真实账号。` : `已${label.value} ${props.targets.length} 位成员，并完成服务端回读。`)
-    emit('saved')
-  } catch (e) {
-    error.value = (e as Error).message
-  }
-}
+const props=defineProps<{open:boolean;action:'activate'|'suspend';targets:{id:string;version:number}[]}>(),emit=defineEmits<{close:[];saved:[]}>(),store=useEnterpriseStore(),ui=useUiStore(),{t}=useI18n(),reason=ref(''),confirmed=ref(false),error=ref('')
+const label=computed(()=>t(`members.bulk.${props.action}`)); const policyError=computed(()=>{if(!props.open)return'';try{prepareMemberStatusBatch(store.members,store.roles,props.targets,props.action);return''}catch(e){return(e as Error).message}})
+watch(()=>props.open,()=>{reason.value='';confirmed.value=false;error.value=''})
+async function submit(){if(policyError.value)return;if(!reason.value.trim()){error.value=t('members.bulk.reasonRequired');return}if(!confirmed.value){error.value=t('members.bulk.confirmRequired');return}try{await store.changeStatuses(props.targets,props.action,reason.value.trim());ui.toast(store.previewMode?t('members.bulk.previewToast',{action:label.value,count:props.targets.length}):t('members.bulk.serverToast',{action:label.value,count:props.targets.length}));emit('saved')}catch(e){error.value=(e as Error).message}}
 </script>
-<template>
-  <UiDialog :open="open" :title="label + '成员'" width="500px" @close="emit('close')">
-    <div class="notice-box">
-      将{{ label }}当前页所选的 {{ targets.length }} 位成员。停用仅影响当前企业访问，不会删除历史数据。
-    </div>
-    <p class="selected-names">
-      {{ targets.map((t) => store.members.find((m) => m.id === t.id)?.name).join('、') }}
-    </p>
-    <form id="member-batch-form" class="page-stack" @submit.prevent="submit">
-      <label class="field"
-        ><span class="required">操作原因</span
-        ><UiTextarea
-          v-model="reason"
-          class="textarea"
-          aria-label="操作原因"
-          maxlength="200"
-          placeholder="请说明本次操作的原因"
-        />
-      </label>
-      <label class="confirm-check"
-        ><UiInput v-model="confirmed" type="checkbox" />我已核对所选成员及操作影响范围</label
-      >
-      <p v-if="policyError || error" class="form-error" role="alert">{{ policyError || error }}</p>
-    </form>
-    <template #footer
-      ><UiButton class="btn" @click="emit('close')">取消</UiButton><UiButton
-        class="btn"
-        :class="action === 'suspend' ? 'btn-danger' : 'btn-primary'"
-        :disabled="Boolean(policyError)"
-        type="submit"
-        form="member-batch-form"
-      >
-        确认{{ label }}
-      </UiButton></template
-    >
-  </UiDialog>
-</template>
-<style scoped>
-.selected-names {
-  padding: 16px 0;
-  font-size: 13px;
-  color: var(--color-text-secondary);
-}
-.confirm-check {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-</style>
+<template><UiDialog :open="open" :title="t('members.bulk.title',{action:label})" width="500px" @close="emit('close')"><div class="notice-box">{{ t('members.bulk.description',{action:label,count:targets.length}) }}</div><p class="selected-names">{{ targets.map(x=>store.members.find(m=>m.id===x.id)?.name).join(' · ') }}</p><form id="member-batch-form" class="page-stack" @submit.prevent="submit"><label class="field"><span class="required">{{ t('members.bulk.reason') }}</span><UiTextarea v-model="reason" class="textarea" :aria-label="t('members.bulk.reason')" maxlength="200" :placeholder="t('members.bulk.reasonPlaceholder')"/></label><label class="confirm-check"><UiInput v-model="confirmed" type="checkbox"/>{{ t('members.bulk.confirm') }}</label><p v-if="policyError||error" class="form-error" role="alert">{{ policyError||error }}</p></form><template #footer><UiButton class="btn" @click="emit('close')">{{ t('common.cancel') }}</UiButton><UiButton class="btn" :class="action==='suspend'?'btn-danger':'btn-primary'" :disabled="Boolean(policyError)" type="submit" form="member-batch-form">{{ t('members.bulk.confirmAction',{action:label}) }}</UiButton></template></UiDialog></template>
+<style scoped>.selected-names{padding:16px 0;font-size:13px;color:var(--color-text-secondary)}.confirm-check{display:flex;align-items:center;gap:8px;font-size:12px}</style>
