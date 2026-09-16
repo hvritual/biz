@@ -14,7 +14,7 @@ const props = defineProps<{
 const route = useRoute()
 const isPlatform = computed(() => route.meta.surface === 'platform')
 const effectiveBreadcrumb = computed(() => props.breadcrumb || (isPlatform.value ? '平台管理' : '企业中心'))
-const showBanner = computed(() => props.banner ?? isPlatform.value)
+const showBanner = computed(() => isPlatform.value || props.banner)
 const effectiveBannerTitle = computed(() =>
   props.bannerTitle || (isPlatform.value ? '让租户能力配置更清晰、更可控' : '优秀的团队，成就更好的咖啡体验'),
 )
