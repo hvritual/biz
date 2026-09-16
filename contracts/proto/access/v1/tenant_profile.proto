@@ -99,6 +99,8 @@ service TenantProfileManagementApplication {
     option (yunka.dsl.v1.operation) = {
       id: "tenant.branding.get"
       use_case: "get_tenant_branding"
+      permissions: "tenant.branding.read"
+      permission_mode: PERMISSION_ALL
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
       authentication: AUTHENTICATION_WEB_SESSION

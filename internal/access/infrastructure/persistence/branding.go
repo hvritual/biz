@@ -7,6 +7,7 @@ import (
 	"github.com/hvritual/biz/internal/access/domain"
 	"github.com/hvritual/biz/internal/access/ports"
 	"gorm.io/gorm"
+	"yunka.io/gateway/authz"
 )
 
 func (repository *TenantRepository) GetBranding(ctx context.Context, tenantID string) (domain.TenantBranding, error) {
@@ -56,3 +57,31 @@ func (repository *TenantRepository) UpdateBranding(ctx context.Context, value *d
 }
 
 var _ ports.TenantBrandingRepository = (*TenantRepository)(nil)
+
+// Brand presentation is a read-only right of an active, persisted tenant membership.
+// This projection participates in the existing IAM resolver; it grants neither company
+// contact access nor organization.manage and is never used on another operation.
+func (store *Store) resolveBrandingReadGrant(ctx context.Context, request authz.GrantRequest) ([]authz.Grant, error) {
+	principal := request.Principal
+	if !request.TenantBound || request.Operation != "tenant.branding.get" || !principal.Authenticated || principal.TenantID == "" || principal.UserID == "" {
+		return nil, nil
+	}
+	requested := false
+	for _, permission := range request.Permissions {
+		if permission == "tenant.branding.read" {
+			requested = true
+		}
+	}
+	if !requested {
+		return nil, nil
+	}
+	var count int64
+	err := store.database.WithContext(ctx).Table("biz_memberships AS m").
+		Joins("JOIN biz_tenants AS t ON t.id = m.tenant_id AND t.status = ?", domain.TenantStatusActive).
+		Joins("JOIN biz_users AS u ON u.id = m.user_id AND u.status = ?", "active").
+		Where("m.tenant_id = ? AND m.user_id = ? AND m.status = ?", principal.TenantID, principal.UserID, domain.TenantMemberStatusActive).Count(&count).Error
+	if err != nil || count != 1 {
+		return nil, err
+	}
+	return []authz.Grant{{Permission: "tenant.branding.read", RoleID: "membership:" + principal.TenantID + ":" + principal.UserID, Scope: "all"}}, nil
+}
