@@ -191,6 +191,6 @@ func NewTenantProfileRepositoryFactory(database *gorm.DB) (requestscope.Reposito
 		if err != nil {
 			return ports.TenantProfileRepositories{}, err
 		}
-		return ports.TenantProfileRepositories{Profile: repository}, nil
+		return ports.TenantProfileRepositories{Profile: repository, Branding: repository}, nil
 	}), nil
 }
