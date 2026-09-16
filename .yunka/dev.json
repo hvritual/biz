@@ -17,6 +17,7 @@
         "./cmd/biz"
       ],
       "graphNodes": [
+        "application:access/tenant_audit_management",
         "application:access/tenant_delegation_management",
         "application:access/tenant_department_management",
         "application:access/tenant_lifecycle",
