@@ -15,6 +15,7 @@ export interface Member {
   joinedAt: string
   lastLogin: string | null
   version: number
+  runtimeVersion?: string | number
   mfa: boolean
   note: string
 }
@@ -27,6 +28,7 @@ export interface Role {
   scope: DataScope
   permissions: string[]
   updatedAt: string
+  runtimeVersion?: string | number
 }
 export interface Department {
   id: string
@@ -36,6 +38,10 @@ export interface Department {
   code: string
   description: string
   enabled: boolean
+  email?: string
+  phone?: string
+  sort?: number
+  runtimeVersion?: string | number
 }
 export interface Company {
   name: string
@@ -48,6 +54,8 @@ export interface Company {
   timezone: string
   description: string
   address: string
+  logoAssetRef?: string
+  runtimeVersion?: string | number
 }
 export interface AuditRecord {
   id: string

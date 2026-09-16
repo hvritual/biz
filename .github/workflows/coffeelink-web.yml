@@ -48,20 +48,21 @@ jobs:
           assert stats.get('unexpected', 0) == 0, stats
           serialized = json.dumps(results, ensure_ascii=False)
           member_required = [
-              'real member page renders authoritative profile, role and scope fields across CoffeeLink viewports',
-              'profile PATCH carries authoritative version and confirms only after member readback',
-              'role binding is a single idempotent operation and is confirmed from member readback',
-              '401 and 403 are surfaced and never replaced with preview members',
-              'profile 409 preserves the same idempotency key for retry',
-              'a successful write without readback is not presented as confirmed success',
+              'canonical member page renders authoritative member, role, department and scope across CoffeeLink viewports',
+              'canonical invite uses loaded role and department, trusted headers and authoritative readback',
+              'canonical profile edit exposes only supported fields and sends authoritative version',
+              'canonical role change is idempotent, scope remains server-derived and readback confirms membership',
+              '401 and 403 remain explicit and never replace API members with preview data',
+              'canonical profile 409 preserves draft and reuses the same idempotency key',
+              'successful member write without GET readback is never presented as canonical success',
           ]
           role_required = [
               'real role page renders authoritative grants and member counts across CoffeeLink viewports',
               'role create and permission update use independent idempotency keys and confirm from role readback',
-              'role member assignment is confirmed from member readback',
+              'canonical roles page exposes authoritative member counts while membership changes stay on Members flow',
               '401 and 403 are surfaced and never replaced with preview roles',
               'role 409 preserves the same idempotency key and editor draft for retry',
-              'owner invariant conflict is surfaced and never presented as confirmed success',
+              'protected owner role is read-only in the canonical role editor',
               'a successful role write without readback is not presented as confirmed success',
           ]
           for title in member_required:
@@ -73,6 +74,8 @@ jobs:
               f'ec_ri_02={len(member_required)} ec_ri_03={len(role_required)}'
           )
           PY
+          mkdir -p screenshots/api-mode-results
+          cp test-results/results.json screenshots/api-mode-results/results.json
           npm run build
       - run: npm run test:e2e
         working-directory: web
@@ -171,6 +174,10 @@ jobs:
           )
           PY
           sha256sum screenshots/*.png test-results/screenshots/*.png | sort > test-results/screenshot-sha256.txt
+      - name: Record tested source provenance
+        if: always()
+        working-directory: web
+        run: node scripts/collect-ui-evidence.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

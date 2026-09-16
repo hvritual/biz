@@ -29,6 +29,10 @@ async function openLifecycle(page: Page, key: string, title: string) {
   await expect(page.locator('[data-ui-region="metrics"] > *')).toHaveCount(4)
   await expect(page.locator('[data-ui-region="lifecycle"]')).toBeVisible()
   await expect(page.locator('[data-ui-region="data"] tbody tr').first()).toBeVisible()
+  const viewport = page.viewportSize()
+  if (viewport && viewport.width > 850) {
+    await expect(page.getByText('让租户能力配置更清晰、更可控', { exact: true })).toBeVisible()
+  }
 }
 
 test('platform lifecycle pages expose independent management routes and CoffeeLink interaction structure', async ({ page }) => {
@@ -39,7 +43,7 @@ test('platform lifecycle pages expose independent management routes and CoffeeLi
     await page.getByRole('button', { name: '重置', exact: true }).click()
     await expect(page.locator('[data-ui-region="data"] tbody tr').first()).toBeVisible()
     await page.getByRole('button', { name: '查看', exact: true }).first().click()
-    await expect(page.locator('[data-ui-region="detail"]')).toContainText('Authority / Evidence')
+    await expect(page.locator('[data-ui-region="detail"]')).toContainText('依据与边界')
   }
 })
 

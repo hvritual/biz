@@ -5,22 +5,23 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useEnterpriseStore } from '@/stores/enterprise'
-import { routeContentEnabled } from '@/router/dataMode'
 import AppHeader from './AppHeader.vue'
 import PrimaryNavigation from './PrimaryNavigation.vue'
 import ModulePanel from './ModulePanel.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
-const ui = useUiStore(),
-  store = useEnterpriseStore(),
-  route = useRoute()
-const frame = ref<HTMLElement>(),
-  isMobile = ref(false)
+
+const ui = useUiStore()
+const store = useEnterpriseStore()
+const route = useRoute()
+const frame = ref<HTMLElement>()
 const expanded = computed(() => Boolean(ui.module))
-const contentEnabled = computed(() => routeContentEnabled(store.previewMode, route.meta.surface))
+const platformSurface = computed(() => route.meta.surface === 'platform')
+const routeKey = computed(() => `${store.tenantId || 'no-tenant'}:${route.path}`)
+
 function viewport() {
-  isMobile.value = window.innerWidth < 768
-  if (isMobile.value) ui.collapsed = true
+  if (window.innerWidth < 768) ui.collapsed = true
 }
+
 function keydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && (ui.module || ui.mobileOpen)) {
     e.preventDefault()
@@ -33,8 +34,8 @@ function keydown(e: KeyboardEvent) {
   if (e.key === 'Tab' && ui.module) {
     const items = frame.value?.querySelectorAll<HTMLElement>('button:not(:disabled),a[href]')
     if (!items?.length) return
-    const first = items[0]!,
-      last = items[items.length - 1]!
+    const first = items[0]!
+    const last = items[items.length - 1]!
     if (e.shiftKey && document.activeElement === first) {
       e.preventDefault()
       last.focus()
@@ -44,6 +45,7 @@ function keydown(e: KeyboardEvent) {
     }
   }
 }
+
 watch(
   () => ui.module,
   async (value, old) => {
@@ -55,20 +57,28 @@ watch(
     }
   },
 )
+
 onMounted(() => {
   viewport()
   window.addEventListener('resize', viewport)
   document.addEventListener('keydown', keydown)
 })
+
 onBeforeUnmount(() => {
   window.removeEventListener('resize', viewport)
   document.removeEventListener('keydown', keydown)
 })
 </script>
+
 <template>
   <div
     class="app-shell"
-    :class="{ collapsed: ui.collapsed, 'module-open': expanded, 'mobile-nav-open': ui.mobileOpen }"
+    :class="{
+      collapsed: ui.collapsed,
+      'module-open': expanded,
+      'mobile-nav-open': ui.mobileOpen,
+      'platform-surface': platformSurface,
+    }"
     data-business-ui
   >
     <AppHeader />
@@ -84,7 +94,7 @@ onBeforeUnmount(() => {
       <ModulePanel v-if="ui.module" />
     </aside>
     <main class="main-content" :inert="expanded || ui.mobileOpen" data-testid="main-content">
-      <RouterView v-if="contentEnabled" :key="store.previewMode ? store.tenantId : route.fullPath" />
+      <RouterView :key="routeKey" />
     </main>
     <Teleport to="body">
       <div v-if="ui.notice" role="status" :class="['toast', ui.noticeTone]">
@@ -97,6 +107,7 @@ onBeforeUnmount(() => {
     </Teleport>
   </div>
 </template>
+
 <style scoped>
 .app-shell {
   --current-rail: var(--rail-width);
@@ -137,6 +148,30 @@ onBeforeUnmount(() => {
   min-width: 0;
   min-height: 100vh;
 }
+.platform-surface .main-content {
+  background: var(--color-canvas);
+  border-radius: 0;
+}
+.platform-surface .main-content :deep(.page-stack) {
+  gap: 14px;
+}
+.platform-surface .main-content :deep(.card) {
+  border-color: var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+.platform-surface .main-content :deep([data-ui-region='data'].card),
+.platform-surface .main-content :deep([data-ui-region='history'].card),
+.platform-surface .main-content :deep(.tenant-data-panel),
+.platform-surface .main-content :deep(.versions-card) {
+  box-shadow: var(--shadow-panel);
+}
+.platform-surface .main-content :deep([data-ui-region='metrics'] .card) {
+  min-height: 96px;
+}
+.platform-surface .main-content :deep([data-ui-region='query'].card) {
+  background: var(--color-surface);
+}
 .navigation-scrim {
   position: fixed;
   inset: var(--header-height) 0 0 calc(var(--current-rail) + 8px);
@@ -161,9 +196,15 @@ onBeforeUnmount(() => {
   box-shadow: var(--shadow-menu);
   font-size: var(--text-sm);
 }
-.toast.success > .icon { color: var(--color-success); }
-.toast.error > .icon { color: var(--color-danger); }
-.toast.info > .icon { color: var(--color-primary); }
+.toast.success > .icon {
+  color: var(--color-success);
+}
+.toast.error > .icon {
+  color: var(--color-danger);
+}
+.toast.info > .icon {
+  color: var(--color-primary);
+}
 @media (max-width: 767px) {
   .main-content {
     margin-left: 0;
@@ -177,12 +218,28 @@ onBeforeUnmount(() => {
     border-radius: 0;
   }
   .mobile-nav-open .side-frame,
-  .module-open .side-frame { display: flex; }
-  .side-frame.joined { width: 100vw; }
-  .side-frame :deep(.primary-nav) { width: var(--rail-collapsed-width); flex-basis: var(--rail-collapsed-width); border-radius: 0 !important; }
-  .navigation-scrim { left: 0; }
-  .side-frame :deep(.module-panel) { border-radius: 0; }
-  .toast { top: 74px; }
-  .app-shell { --current-rail: var(--rail-collapsed-width); }
+  .module-open .side-frame {
+    display: flex;
+  }
+  .side-frame.joined {
+    width: 100vw;
+  }
+  .side-frame :deep(.primary-nav) {
+    width: var(--rail-collapsed-width);
+    flex-basis: var(--rail-collapsed-width);
+    border-radius: 0 !important;
+  }
+  .navigation-scrim {
+    left: 0;
+  }
+  .side-frame :deep(.module-panel) {
+    border-radius: 0;
+  }
+  .toast {
+    top: 74px;
+  }
+  .app-shell {
+    --current-rail: var(--rail-collapsed-width);
+  }
 }
 </style>

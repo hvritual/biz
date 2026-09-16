@@ -1,0 +1,74 @@
+name: UI Route Convergence Verify
+
+on:
+  push:
+    branches:
+      - refactor/ui-route-convergence
+
+permissions:
+  contents: read
+
+jobs:
+  web-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+      - name: Run full static and unit gate
+        working-directory: web
+        run: npm run check
+
+  api-e2e:
+    needs: web-check
+    runs-on: ubuntu-latest
+    env:
+      VITE_DATA_MODE: api
+      ENTERPRISE_MEMBER_REAL_E2E: '1'
+      ENTERPRISE_ROLE_REAL_E2E: '1'
+      ENTERPRISE_ORGANIZATION_REAL_E2E: '1'
+      ENTERPRISE_COMPANY_REAL_E2E: '1'
+      ENTERPRISE_PLAN_REAL_E2E: '1'
+      ENTERPRISE_PLAN_CHANGE_E2E: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+      - name: Build canonical API-mode UI
+        working-directory: web
+        run: npm run build
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: Run canonical enterprise API-mode E2E
+        working-directory: web
+        run: >-
+          npx playwright test
+          e2e/enterprise-members-real.spec.ts
+          e2e/enterprise-roles-real.spec.ts
+          e2e/enterprise-organization-real.spec.ts
+          e2e/enterprise-company-real.spec.ts
+          e2e/enterprise-plan-real.spec.ts
+          e2e/enterprise-plan-change-real.spec.ts
+      - name: Upload API-mode evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-route-convergence-api-evidence
+          path: |
+            web/screenshots
+            web/test-results
+            web/playwright-report
+          if-no-files-found: ignore
