@@ -1,162 +1,130 @@
-# UI 路线收敛修复进度与证据
+# UI 路线收敛进度与证据
 
-> 分支：`refactor/ui-route-convergence`
-> 基线：`main` @ `cd7d3ebd0d50a79a202bf2e031d9564264663f42`
+> 当前状态：**MERGED / GUARDED**  
+> 路线收敛合并：PR #110 `refactor(web): converge canonical UI routes and restore full regression`  
+> 后续平台视觉刷新：PR #113 `style(web): refresh platform lifecycle pages to CoffeeLink V1.1`  
+> 当前复核基线：`main@d9ad0e068a89ac37bbb02ba4fdf59f371f80c267`  
 > 更新日期：2026-09-16
 
-## 1. 已完成结构收敛
+## 1. 已进入 main 的结构结果
 
-- 企业中心 Members / Roles / Organization / Plans / Company 已改为正式路由直接进入唯一 canonical page。
-- 已删除 5 个 EntryView、5 个 RealView，以及仅服务旧 RealView 的 `enterprise/components/server/*`。
-- 已删除 `router/dataMode.ts`，页面、Router、AppHeader、AppShell 不再通过 `VITE_DATA_MODE` 切换产品 UI 树。
-- `check-route-convergence.mjs` 已纳入 `npm run check`。
-- `ui-contracts.json` 已登记企业中心五条 canonical route。
-- Enterprise Store 已改为 application facade；Demo/API 只在 `services/enterprise/dataSource.ts` 选择。
-- Member / Role / Department / Company API 命令继续保留 trusted session、active tenant、idempotency、CAS/version 与 server readback。
-- 套餐使用统一 `enterprisePlan` projection，真实 subscription / entitlement / usage 与 PlanChangeLifecycle 保留。
+- 企业中心 Members / Roles / Organization / Plans / Company 正式路由直接进入唯一 canonical page。
+- 旧的 EntryView / RealView 平行页面路线已经移除。
+- Router、AppHeader、AppShell 不再通过 `VITE_DATA_MODE` 切换产品 UI 树。
+- `check-route-convergence.mjs` 已作为机器门禁存在。
+- `web/ui-contracts.json` 已登记企业中心、平台管理、系统设置和平台生命周期核心 route contract。
+- Enterprise Store / application facade 负责领域加载，Demo/API 只在数据源边界选择。
+- Runtime Console 只保留在明确的 `surface: runtime` 工作区。
 
-## 2. 已完成验证
+## 2. Canonical route 当前事实
 
-在领域加载优化前，最新完整静态链已经通过：
+| 路由 | Component | Surface | Template |
+|---|---|---|---|
+| `/enterprise/members` | `MembersView.vue` | tenant | ListPage |
+| `/enterprise/roles` | `RolesView.vue` | tenant | ListPage |
+| `/enterprise/organization` | `OrganizationView.vue` | tenant | WorkbenchPage |
+| `/enterprise/plan` | `PlansView.vue` | tenant | WorkbenchPage |
+| `/enterprise/company` | `CompanyView.vue` | tenant | FormPage |
+| `/platform/tenants` | `PlatformTenantsView.vue` | platform | ListPage |
 
-- TypeScript
-- ESLint
-- Architecture gate
-- UI Contract gate
-- Route Convergence gate
-- 201 unit tests
-- production build
+API-mode 与 demo-mode 只能改变数据来源，不得改变这些 route 的页面组件和 Product Shell。
 
-首轮 canonical API E2E 共执行 38 条。失败首先暴露为旧 RealView 专属根节点 selector 已不存在，这证明测试合同仍绑定被删除的平行 UI，而不是 canonical route。
+## 3. 领域按需加载修复
 
-## 3. 新发现并已修复：跨领域 eager load
+路线收敛过程中曾发现统一 Enterprise Store eager load 会把多个领域 API 绑定在一起，导致 Company/Plan 等页面被无关 API 错误污染。
 
-首轮 API E2E 同时发现一个新的 P0 结构风险：统一 Enterprise Store 初始化时曾一次性请求 members / roles / departments / profile。结果是访问 Company 页面也会请求 Members/Organization API；访问 Plan 页面也可能被无关 Enterprise API 失败污染。
-
-这违反“页面唯一但领域边界仍需隔离”的原则。
-
-已改为：
+当前原则保持为：
 
 ```text
 Canonical Page
   -> store.ensureDomains([...])
       -> Enterprise Data Source
-          -> session
           -> only requested domain APIs
 ```
 
-当前领域需求：
+典型需求：
 
-- Members: members + roles + departments
-- Roles: roles + members
-- Organization: departments + members
-- Company: company
-- Plans: 独立 plan projection；Enterprise Store 仅提供 session/tenant shell 状态
+- Members：members + roles + departments
+- Roles：roles + members
+- Organization：departments + members
+- Company：company
+- Plans：独立 plan projection
 
-切换租户时只重载当前 canonical page 已声明的 domains，并清除上一租户的旧快照，避免跨租户脏数据。
+切换租户必须清除旧租户快照并按当前页面所需领域重新读取。
 
-## 4. 测试合同迁移
+## 4. API 能力收敛保留的可信语义
 
-API E2E 不再等待：
+已完成的企业中心真实能力不允许因 UI 重构丢失：
+
+- trusted session；
+- active tenant boundary；
+- CSRF；
+- idempotency；
+- version/CAS；
+- successful write 后 server readback；
+- 401 / 403 / 409 / readback failure 显式失败；
+- 不回退 demo 数据制造成功。
+
+页面未被后端支持的字段必须只读、隐藏或明确 unsupported，不能为了视觉完整制造本地可写成功。
+
+## 5. 测试合同已从“RealView 身份”迁移到“Canonical Page + Source”
+
+旧测试曾依赖：
 
 ```text
 [data-enterprise-*-source="server"]
 ```
 
-因为这类 selector 本质上属于已经删除的 RealView。
+这类 selector 与旧 RealView 实现耦合。
 
-新的两层合同为：
+现在应区分两层合同：
 
 1. 页面身份：`data-enterprise-page="members|roles|organization|plan|company"`，demo/API 恒定；
-2. 数据源状态：`data-enterprise-source="api"`，只表示当前 adapter 状态，不改变页面树。
+2. 数据源状态：`data-enterprise-source="api"`，只表达 adapter 状态，不改变页面树。
 
-因此 API-mode 与 demo-mode 可以证明使用的是同一个产品页面，同时仍可验证真实数据源已经启用。
+因此测试能同时证明“产品页唯一”和“真实 API 已启用”。
 
-## 5. Company canonical API 独立验收
+## 6. 历史独立资格证据
 
-Company 已完成第一项独立 API 页面收敛，提交：
+路线收敛阶段，Company 与 Members 曾分别完成 API canonical page 独立资格验证，包含：
 
-```text
-9254f1e83efca84d374ded8da6d84cbe6a903fdc
-fix(enterprise): converge company canonical API contract
-```
+- `npm run check`；
+- TypeScript / ESLint / Architecture / UI Contract / Route Convergence；
+- production build 与 API-mode build；
+- canonical API E2E；
+- 1366×768 / 1440×900 / 1536×1024 / 390×844 视觉证据；
+- trusted session / CSRF / idempotency / CAS / readback 语义；
+- API unsupported fields 不伪装成可写能力。
 
-本轮不是通过恢复 RealView 或降低断言来通过测试，而是将真实服务能力收敛到 canonical `CompanyView`：
+这些证据解释“为什么可以合并路线收敛”，但不应被误读为未来每个新业务功能自动获得生产资格。
 
-- 页面保持 `data-enterprise-page="company"`，API 仅通过 `data-enterprise-source="api"` 表示数据来源；
-- Company 只加载 `company` domain，不再被 Members / Roles / Departments 接口失败污染；
-- API 模式不再暴露浏览器本地 Logo 文件选择器，不生成 DataURL，也不制造“Logo 已上传”的伪成功；
-- API 模式改为展示服务端 `logoAssetRef`，明确 Logo 由资产服务管理；
-- 同一租户、同一 Company 草稿发生 409/重试时复用同一个 idempotency key；草稿内容变化或租户变化后才生成新的逻辑请求键；
-- PATCH 成功后必须完成 Company GET readback，只有回读成功才清理逻辑请求状态并允许 UI 显示“企业资料已由服务端确认并回读”；
-- 401 / 403 / readback failure 均保持显式失败，不回退 demo Company 数据。
+## 7. PR #110 合并后的继续演进
 
-一次性资格验证 `Company API Convergence Once` 已通过并自清理临时脚本/workflow。验证结果：
+路线收敛完成后，main 又继续发生 UI 演进：
 
-- `npm run check`: PASS；
-- Architecture / UI Contract / Route Convergence: PASS；
-- unit tests: `201 passed / 201`；
-- default production build: PASS；
-- `VITE_DATA_MODE=api` production build: PASS；
-- `enterprise-company-real.spec.ts`: `6 passed / 6`；
-- Company 四视口：1366×768 / 1440×900 / 1536×1024 / 390×844；
-- browser DataURL Logo success path: 不存在；
-- trusted session / CSRF / idempotency / server readback 合同：PASS。
+- 平台管理生命周期页面继续统一 CoffeeLink 视觉层级；
+- platform surface 采用 `#F5F7FA` 画布和更明确的数据卡片层级；
+- `PageHeading` 在 platform surface 桌面端默认展示 CoffeeLink 插画；
+- 生命周期页形成“接入边界说明 → 指标+控制链 → 查询 → 数据+详情”的共享 Workbench；
+- 平台管理导航已经扩展为 5 个分组、15 个入口。
 
-本轮最初一次资格任务因把 `VITE_DATA_MODE=api` 错设为 job 全局变量而使 demo unit tests 在 API 模式执行，被 `npm run check` 正确阻断且未提交半成品。验证配置修正为：静态/unit gate 使用默认 demo 语义，仅 API build 与 Company Playwright 注入 `VITE_DATA_MODE=api`，随后完整通过。
+因此旧版“尚未完成 Roles / Organization / Plans 收敛、尚未合并 main”的描述已经失效，本文件不再保留这些假阻塞项。
 
-## 6. Members canonical API 独立验收
+## 8. 当前持续门槛
 
-Members 已完成第二项独立 API 页面收敛，提交：
+后续 UI PR 仍必须持续验证：
 
-```text
-7291c92aa04294638616d3aafaf5732e273329f9
-fix(enterprise): converge members canonical API contract
-```
+- `npm run check`；
+- route convergence 与 UI contract 不退化；
+- API-mode 不出现 demo fallback / 伪成功；
+- 新写操作保留 trusted session / idempotency / CAS / readback（适用时）；
+- 1366×768 / 1440×900 / 1536×1024 / 390×844 视觉证据；
+- 连接式导航不推挤正文；
+- PREVIEW 页面不被写成生产事实；
+- 设计规范、机器合同与真实实现同步更新。
 
-本轮将真实成员服务能力收敛到 canonical `MembersView`，没有恢复 RealView，也没有通过删除安全断言来换取绿灯：
+## 9. 当前设计文档入口
 
-- Members 页面明确声明并按需加载 `members + roles + departments`，满足成员列表、角色标签、部门名称和编辑器的真实展示依赖；
-- 新增/邀请成员不再使用 `operations`、`role-2` 等 demo 固定 ID，默认部门和角色从当前服务端目录中的可用项派生；
-- API 模式下已有成员邮箱改为只读，避免把身份服务控制的登录邮箱伪装成可写字段；
-- API 模式下加入日期改为“服务端未提供”，不再允许本地写入；
-- API 模式下成员级数据范围改为只读，明确由角色权限服务派生；
-- API 模式下备注编辑入口移除并明确标识当前成员资料 API 未提供该写入字段；
-- 成员详情中的加入日期、备注、数据权限来源不再把 demo 合成字段呈现成服务端事实；
-- 同一租户、同一成员草稿发生 409 后再次提交时复用同一逻辑请求的 idempotency key；草稿、动作、目标版本或租户变化后才生成新的逻辑请求状态；
-- Invite / Create / Edit / Role Change 只有完成成员 GET readback 与当前页面 domains 刷新后才清理幂等状态并允许 UI 报告服务端确认；
-- Profile PATCH 不发送 `email / scope / joinedAt / note` 等当前接口不支持的字段；
-- 401 / 403 / readback failure 显式失败，不回退本地 demo 成员数据。
+当前视觉与交互事实不再由本进度文档维护，请读取：
 
-一次性资格验证 `Members API Convergence Once` 已通过并自清理临时脚本/workflow。验证结果：
-
-- `npm run check`: PASS；
-- TypeScript / ESLint / Architecture / UI Contract / Route Convergence: PASS；
-- unit tests: `201 passed / 201`；
-- default production build: PASS；
-- `VITE_DATA_MODE=api` production build: PASS；
-- `enterprise-members-real.spec.ts`: `7 passed / 7`；
-- Members 四视口：1366×768 / 1440×900 / 1536×1024 / 390×844；
-- canonical invite authoritative role/department dependency: PASS；
-- trusted session / CSRF / idempotency / CAS/version / server readback 合同：PASS；
-- 409 草稿保留 + 相同 idempotency key 重试：PASS；
-- successful write without GET readback 不展示成功：PASS；
-- API unsupported fields 不再出现可写伪能力：PASS。
-
-第一次 one-shot 在应用补丁阶段因 detail notice 文件定位错误被立即阻断，未修改/提交业务文件。修正补丁目标后，第二次资格任务完整通过再提交，临时脚本和 workflow 随正式提交一并删除。
-
-## 7. 尚未完成的合并门槛
-
-以下任何一项未通过都不得合并 `main`：
-
-- Roles canonical API 合同收敛；
-- Organization canonical API 合同收敛；
-- Plans / PlanChange canonical API 合同收敛；
-- 六组 canonical API-mode E2E 全绿；
-- API 模式不出现 demo fallback / 伪成功；
-- API 未接入字段必须只读或明确 unsupported；
-- 1366×768 / 1440×900 / 1536×1024 / 390×844 全量视觉证据；
-- demo/full CoffeeLink Playwright 回归；
-- 同步最新 main 后重新跑关键门禁；
-- PR 全绿；
-- merge 后 main push CI 全绿。
+`docs/design/COFFEELINK-BUSINESS-UI-V1.2.md`

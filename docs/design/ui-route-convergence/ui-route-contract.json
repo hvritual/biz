@@ -1,6 +1,8 @@
 {
   "schema_version": 1,
-  "baseline": "cd7d3ebd0d50a79a202bf2e031d9564264663f42",
+  "baseline": "d9ad0e068a89ac37bbb02ba4fdf59f371f80c267",
+  "status": "enforced",
+  "reviewed_at": "2026-09-16",
   "forbidden_page_suffixes": ["EntryView.vue", "RealView.vue", "DemoView.vue", "PreviewView.vue"],
   "forbidden_page_tokens": ["VITE_DATA_MODE", "RuntimeConsoleView.vue"],
   "runtime_console_allowed_surfaces": ["runtime"],
