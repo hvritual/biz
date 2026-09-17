@@ -1,0 +1,81 @@
+name: enterprise-169-dev-mysql
+on:
+  push:
+    branches:
+      - feat/enterprise-169-consent-gate
+    paths:
+      - .github/workflows/enterprise-169-dev-mysql.yml
+permissions:
+  contents: write
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      YUNKA_TEST_RESET_FIXTURES: "1"
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_enterprise169_dev?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_enterprise169_dev
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/enterprise-169-consent-gate
+          path: biz
+          fetch-depth: 0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 9ee6640f5e19777b4c04d9e4937a93e2035eacda
+          path: yunka.io
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache: false
+      - name: Format and Go qualification
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          gofmt -w             internal/access/infrastructure/persistence/privacy_consent.go             internal/access/infrastructure/persistence/first_party_idp.go             internal/access/infrastructure/persistence/first_party_idp_security.go             internal/bizruntime/config.go internal/bizruntime/first_party_idp.go             internal/bizruntime/first_party_idp_hardening_test.go internal/bizruntime/privacy_consent_config_test.go             cmd/biz-idp/main.go integration/enterprise_169_privacy_consent_mysql_test.go integration/ce12_browser_seed_test.go
+          go test ./internal/access/infrastructure/persistence ./internal/bizruntime ./cmd/biz-idp
+          go vet ./internal/access/infrastructure/persistence ./internal/bizruntime ./cmd/biz-idp
+          go test -count=1 -tags=integration ./integration -run '^TestEnterprise169'
+          bash -n scripts/local-apps.sh
+          node --check scripts/accept-local-login.mjs
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: biz/web/package-lock.json
+      - name: Parse browser acceptance suite
+        working-directory: biz/web
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npx playwright test --config playwright.ce12.config.ts --list
+      - name: Commit formatting and remove temporary workflow
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/enterprise-169-dev-mysql.yml
+          git config user.name hvritual
+          git config user.email 460657446@qq.com
+          git add -A
+          git diff --cached --check
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: qualify #169 privacy consent flow"
+            git push origin HEAD:feat/enterprise-169-consent-gate
+          fi
