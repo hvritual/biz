@@ -1,0 +1,57 @@
+# 企业中心一期决策账本
+
+状态定义：
+
+- `ACCEPTED`：当前产品/兼容决策已明确，可进入实现。
+- `CURRENT_FACT`：代码现状，仅用于兼容，不自动等价为产品批准。
+- `PENDING_HUMAN`：必须由 Human/产品/安全明确决定；不得用建议值进入生产默认。
+- `MISSING_INPUT`：依赖文档/外部渠道/配置未取得。
+
+## 已接受的跨文档兼容决策
+
+| ID | Status | Decision |
+| --- | --- | --- |
+| C-001 | ACCEPTED | `tenant_id` 是目标租户主键。 |
+| C-002 | ACCEPTED | Access 唯一拥有 Account、Membership、Profile、Department、Role、Action Catalog、动态 Grant、当前 Data Policy、Session。 |
+| C-003 | ACCEPTED | Gateway 每个受保护请求读取 Access 当前一致授权事实；不维护独立 allow index。 |
+| C-004 | ACCEPTED | 不创建全局 Authorization Version。 |
+| C-005 | ACCEPTED | 浏览器继续采用可信 OIDC/PKCE/BFF 会话，不把业务 token/API key 放入浏览器持久化。 |
+
+## Q-001 ～ Q-020
+
+| Q | Status | 当前事实 / 必须决定 | 阻塞范围 |
+| --- | --- | --- | --- |
+| Q-001 账号锁定 | PENDING_HUMAN | 当前代码默认 5 次失败、15 分钟窗口、锁定 15 分钟；这是 CURRENT_FACT，不自动成为产品批准。还需决定管理员解锁。 | #172 相关锁定策略 |
+| Q-002 验证码 | PENDING_HUMAN | 需确定 TTL、单日上限、错误尝试上限；PRD 只明确 60 秒重发限制。 | #170 #172 #173 |
+| Q-003 会话期限 | PENDING_HUMAN | 需确定 session TTL、临期刷新及不同安全事件撤销粒度。 | #171 #172 |
+| Q-004 多企业账号 | PENDING_HUMAN | 需确定 username 是否全局唯一、账号路径是否保证唯一企业直入；手机/邮箱多企业不得默认选择第一个。 | #168 #172 |
+| Q-005 隐私版本 | PENDING_HUMAN | 协议升级是否强制重新同意。 | #169 |
+| Q-006 隐私撤回 | PENDING_HUMAN | 撤回可选处理同意后的具体行为；不能与必要身份处理混为一个开关。 | #169 #182 #183 |
+| Q-007 初始凭据 | PENDING_HUMAN | 一次性初始密码 vs 激活链接；租户管理员不得直接重置跨企业全局 Account 密码。 | #173 #176 |
+| Q-008 删除恢复 | PENDING_HUMAN | 是否提供回收站、恢复权限以及恢复角色/范围关系的规则。 | #177 |
+| Q-009 范围绑定 | PENDING_HUMAN | 一期采用业务分组、部门策略、设备清单中的哪种已确认合同。 | #180 |
+| Q-010 默认角色 | PENDING_HUMAN | 默认/超级管理员不可变角色集合及稳定标识。 | #178 #179 |
+| Q-011 数据策略 | PENDING_HUMAN | 是否允许多策略并存及冲突/组合语义。 | #180 |
+| Q-012 权限生效 | PENDING_HUMAN | 是否主动踢出在线用户；无论选择何种策略，Grant 收缩提交后的新敏感请求不得继续依旧权限放行。 | #171 #179 |
+| Q-013 消息渠道 | PENDING_HUMAN | 一期站内/短信/邮件最终渠道；必要安全消息与可选偏好的关系。 | #184 #185 |
+| Q-014 消息联系人 | PENDING_HUMAN | 第一/第二联系人是否必填及候选来源。 | #184 |
+| Q-015 消息已读 | ACCEPTED | 一期严格只有“全部已读”；单条已读为非目标。 | #186 |
+| Q-016 消息重试 | PENDING_HUMAN | 外部渠道最大重试次数、退避、最终失败处理。 | #185 |
+| Q-017 API 兼容 | PENDING_HUMAN | 是否存在 `/v1/account` `/v1/org` `/v1/message` 真实客户端及迁移期限；无证据不创建永久兼容层。 | #187 |
+| Q-018 Query Token | PENDING_HUMAN | 是否存在旧客户端、下线窗口和截止日；新实现禁止 Query Token。 | #187 |
+| Q-019 SSO | ACCEPTED | 一期非目标：企业 SSO/LDAP/SAML 不实施；已有 OIDC 基础不等于新增企业 SSO 产品。 | 路线边界 |
+| Q-020 验收责任 | PENDING_HUMAN | 身份、安全、隐私、消息四类实际签字人/角色。 | #192 |
+
+## 冲突与处置
+
+| 冲突 | 当前事实 | 处置 |
+| --- | --- | --- |
+| PRD 要求“未注册手机号/邮箱返回可区分错误” vs 当前登录防枚举 | 当前 first-party login 使用 generic invalid credentials | #167 不默认放宽防枚举；由安全/产品共同决定，#172 按接受结果实现 |
+| PRD 恢复角色关系 vs 历史 Grant 已撤销 | 撤销事实必须优先于“恢复旧快照” | #177 恢复前重新校验当前有效角色/Grant，未知默认不恢复 |
+| “注销账号清联系方式” vs 同 Account 仍被其他租户使用 | Account 是全局身份，Membership/Profile 是租户关系 | #182 仅清当前 tenant 的可清理资料；不能破坏其他 tenant 或全局登录事实 |
+| “管理员重置成员密码” vs 全局 Account | 当前底层 RotateUserPassword 会影响全局凭据 | #173 在 Q-007 决定前保持管理员重置路径 BLOCKED，不直接暴露底层 rotate |
+| 旧 Gateway 授权索引/版本正文 vs 兼容决策 | 首段决策 supersede 旧正文 | #174/#179 验收 request-time current Access facts，不实现 allow index/global auth version |
+
+## 缺失输入
+
+以下均为 `MISSING_INPUT`，需在实际依赖任务开工前取得精确版本/摘要和 Human 接受证据：运行 PRD 4.0-review、三模块接口 3.0-review、企业合同 1.0-review、Plan05 successor、真实短信/邮件渠道配置、生产密钥托管方案。
