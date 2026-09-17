@@ -1,0 +1,53 @@
+name: enterprise-169-latest-head
+on:
+  push:
+    branches:
+      - feat/enterprise-169-consent-gate
+    paths:
+      - .github/workflows/enterprise-169-dev2.yml
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      YUNKA_TEST_RESET_FIXTURES: "1"
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_enterprise169_dev2?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_enterprise169_dev2
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/enterprise-169-consent-gate
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 9ee6640f5e19777b4c04d9e4937a93e2035eacda
+          path: yunka.io
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache: false
+      - name: Qualify
+        working-directory: biz
+        run: |
+          go test ./internal/access/infrastructure/persistence ./internal/bizruntime ./cmd/biz-idp
+          go vet ./internal/access/infrastructure/persistence ./internal/bizruntime ./cmd/biz-idp
+          go test -count=1 -tags=integration ./integration -run '^TestEnterprise169'
+          bash -n scripts/local-apps.sh
+          node --check scripts/accept-local-login.mjs
