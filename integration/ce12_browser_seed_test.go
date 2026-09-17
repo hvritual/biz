@@ -24,6 +24,8 @@ type ce12BrowserFixture struct {
 	DiscoveryURL            string `json:"discovery_url"`
 	Email                   string `json:"email"`
 	Password                string `json:"password"`
+	PrivacyEmail            string `json:"privacy_email"`
+	PrivacyPassword         string `json:"privacy_password"`
 	AllowedTenant           string `json:"allowed_tenant"`
 	IAMDeniedTenant         string `json:"iam_denied_tenant"`
 	EntitlementDeniedTenant string `json:"entitlement_denied_tenant"`
@@ -102,6 +104,9 @@ func TestCE12BrowserSeed(t *testing.T) {
 	userID := "ce12-browser-user"
 	email := "ce12.browser@example.invalid"
 	password := "Correct-Horse-Battery-Staple-2026!"
+	privacyUserID := "ce12-privacy-user"
+	privacyEmail := "ce12.privacy@example.invalid"
+	privacyPassword := "CE12-Privacy-Consent-2026!"
 	allowed := ce12CreateActiveTenant(t, tenants, platformToken, "CE12 Allowed", userID, email)
 	iamDenied := ce12CreateActiveTenant(t, tenants, platformToken, "CE12 IAM Denied", "ce12-iam-owner", "ce12.iam.owner@example.invalid")
 	entitlementDenied := ce12CreateActiveTenant(t, tenants, platformToken, "CE12 Entitlement Denied", "ce12-entitlement-owner", "ce12.entitlement.owner@example.invalid")
@@ -124,6 +129,14 @@ func TestCE12BrowserSeed(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := store.SetUserPassword(ctx, userID, password); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
+		TenantID: allowed, TenantName: "CE12 Allowed", UserID: privacyUserID, Email: privacyEmail, Token: "ce12-privacy-bootstrap",
+	}, browserReadPermissions); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SetUserPassword(ctx, privacyUserID, privacyPassword); err != nil {
 		t.Fatal(err)
 	}
 
@@ -199,6 +212,8 @@ func TestCE12BrowserSeed(t *testing.T) {
 		DiscoveryURL:            "http://127.0.0.1:18081/idp/.well-known/openid-configuration",
 		Email:                   email,
 		Password:                password,
+		PrivacyEmail:            privacyEmail,
+		PrivacyPassword:         privacyPassword,
 		AllowedTenant:           allowed,
 		IAMDeniedTenant:         iamDenied,
 		EntitlementDeniedTenant: entitlementDenied,
