@@ -57,8 +57,13 @@ func (store *Store) EnsureFirstPartyIDPSecuritySchema(ctx context.Context) error
 }
 
 func (store *Store) AuthenticateFirstPartyLogin(ctx context.Context, email, password, remoteAddr string, policy FirstPartyLoginPolicy) (LocalUserIdentity, error) {
+	identity, _, err := store.AuthenticateFirstPartyLoginWithAudit(ctx, email, password, remoteAddr, policy)
+	return identity, err
+}
+
+func (store *Store) AuthenticateFirstPartyLoginWithAudit(ctx context.Context, email, password, remoteAddr string, policy FirstPartyLoginPolicy) (LocalUserIdentity, uint64, error) {
 	if err := policy.Validate(); err != nil {
-		return LocalUserIdentity{}, err
+		return LocalUserIdentity{}, 0, err
 	}
 	email = strings.TrimSpace(email)
 	identityHash := TokenHash(strings.ToLower(email))
@@ -77,26 +82,26 @@ func (store *Store) AuthenticateFirstPartyLogin(ctx context.Context, email, pass
 	})
 	if err != nil {
 		if !errors.Is(err, ErrInvalidUserCredentials) {
-			return LocalUserIdentity{}, err
+			return LocalUserIdentity{}, 0, err
 		}
 		consumeDummyPasswordWork(password)
 		_ = store.recordFirstPartyLoginAudit(ctx, now, "throttled", "", identityHash, sourceHash)
-		return LocalUserIdentity{}, ErrInvalidUserCredentials
+		return LocalUserIdentity{}, 0, ErrInvalidUserCredentials
 	}
 
 	identity, authErr := store.AuthenticateUserPassword(ctx, email, password)
 	if authErr != nil {
 		if err := store.recordFirstPartyLoginFailure(ctx, identityHash, sourceHash, now, policy); err != nil {
-			return LocalUserIdentity{}, err
+			return LocalUserIdentity{}, 0, err
 		}
-		return LocalUserIdentity{}, ErrInvalidUserCredentials
+		return LocalUserIdentity{}, 0, ErrInvalidUserCredentials
 	}
-	if err := store.recordFirstPartyLoginSuccess(ctx, identityHash, sourceHash, identity.UserID, now); err != nil {
-		return LocalUserIdentity{}, err
+	auditID, err := store.recordFirstPartyLoginSuccess(ctx, identityHash, sourceHash, identity.UserID, now)
+	if err != nil {
+		return LocalUserIdentity{}, 0, err
 	}
-	return identity, nil
+	return identity, auditID, nil
 }
-
 func (store *Store) recordFirstPartyLoginFailure(ctx context.Context, identityHash, sourceHash string, now time.Time, policy FirstPartyLoginPolicy) error {
 	return store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var row firstPartyLoginThrottleRecord
@@ -127,15 +132,20 @@ func (store *Store) recordFirstPartyLoginFailure(ctx context.Context, identityHa
 	})
 }
 
-func (store *Store) recordFirstPartyLoginSuccess(ctx context.Context, identityHash, sourceHash, userID string, now time.Time) error {
-	return store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+func (store *Store) recordFirstPartyLoginSuccess(ctx context.Context, identityHash, sourceHash, userID string, now time.Time) (uint64, error) {
+	var audit firstPartyLoginAuditRecord
+	err := store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("identity_hash = ?", identityHash).Delete(&firstPartyLoginThrottleRecord{}).Error; err != nil {
 			return err
 		}
-		return tx.Create(&firstPartyLoginAuditRecord{OccurredAt: now, Outcome: "success", UserID: userID, EmailHash: identityHash, SourceHash: sourceHash}).Error
+		audit = firstPartyLoginAuditRecord{OccurredAt: now, Outcome: "success", UserID: userID, EmailHash: identityHash, SourceHash: sourceHash}
+		return tx.Create(&audit).Error
 	})
+	if err != nil {
+		return 0, err
+	}
+	return audit.ID, nil
 }
-
 func (store *Store) recordFirstPartyLoginAudit(ctx context.Context, at time.Time, outcome, userID, emailHash, sourceHash string) error {
 	return store.database.WithContext(ctx).Create(&firstPartyLoginAuditRecord{OccurredAt: at, Outcome: outcome, UserID: userID, EmailHash: emailHash, SourceHash: sourceHash}).Error
 }
