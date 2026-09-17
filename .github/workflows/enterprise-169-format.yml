@@ -1,0 +1,34 @@
+name: enterprise-169-format
+on:
+  push:
+    branches:
+      - feat/enterprise-169-consent-gate
+    paths:
+      - .github/workflows/enterprise-169-format.yml
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/enterprise-169-consent-gate
+          fetch-depth: 0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache: false
+      - name: Format
+        run: |
+          gofmt -w internal/access/infrastructure/persistence/privacy_consent.go internal/access/infrastructure/persistence/first_party_idp.go internal/access/infrastructure/persistence/first_party_idp_security.go
+          gofmt -w internal/bizruntime/config.go internal/bizruntime/first_party_idp.go internal/bizruntime/first_party_idp_hardening_test.go internal/bizruntime/privacy_consent_config_test.go
+          gofmt -w cmd/biz-idp/main.go integration/enterprise_169_privacy_consent_mysql_test.go integration/ce12_browser_seed_test.go
+      - name: Commit
+        run: |
+          rm .github/workflows/enterprise-169-format.yml
+          git config user.name hvritual
+          git config user.email 460657446@qq.com
+          git add -A
+          git diff --cached --check
+          if ! git diff --cached --quiet; then git commit -m 'chore: format #169 privacy consent changes'; git push origin HEAD:feat/enterprise-169-consent-gate; fi
