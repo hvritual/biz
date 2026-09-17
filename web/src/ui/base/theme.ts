@@ -180,7 +180,7 @@ export function applyUiTheme(theme: UiThemePresetName | UiThemePalette, root?: H
 }
 
 // Brand persistence is intentionally not a browser authority. #107 server branding wins on tenant lifecycle.
-export function setUiTheme(theme: UiThemePresetName | UiThemePalette, _persist = false, root?: HTMLElement) {
+export function setUiTheme(theme: UiThemePresetName | UiThemePalette, _persist?: boolean, root?: HTMLElement) {
   return applyUiTheme(theme, root)
 }
 
