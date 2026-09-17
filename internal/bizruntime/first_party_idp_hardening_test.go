@@ -94,6 +94,12 @@ func testFirstPartyIdPConfig(active string, previous []FirstPartyIdPVerification
 		LoginTTL:            5 * time.Minute,
 		CodeTTL:             time.Minute,
 		TokenTTL:            5 * time.Minute,
+		PrivacyConsent: FirstPartyPrivacyConsentConfig{
+			AgreementVersion: "test-v1",
+			PrivacyPolicyURL: "https://example.invalid/privacy",
+			TermsURL:         "https://example.invalid/terms",
+			ReconsentPolicy:  PrivacyReconsentCurrentVersion,
+		},
 	}
 }
 
