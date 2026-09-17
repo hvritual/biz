@@ -405,38 +405,42 @@ func (idp *runtimeFirstPartyIdP) signIDToken(grant accesspersistence.FirstPartyA
 }
 
 func (idp *runtimeFirstPartyIdP) renderLogin(writer http.ResponseWriter, status int, requestID, csrf, email, message string) {
+	idp.setLoginSecurityHeaders(writer)
+	writer.WriteHeader(status)
+	_ = firstPartyLoginTemplate.Execute(writer, map[string]string{
+		"RequestID": requestID, "CSRF": csrf, "Email": email, "Message": message,
+		"PrivacyPolicyURL": idp.config.PrivacyConsent.PrivacyPolicyURL, "TermsURL": idp.config.PrivacyConsent.TermsURL,
+	})
+}
+
+func (idp *runtimeFirstPartyIdP) renderConsent(writer http.ResponseWriter, status int, requestID, csrf, message string) {
+	idp.setLoginSecurityHeaders(writer)
+	writer.WriteHeader(status)
+	_ = firstPartyConsentTemplate.Execute(writer, map[string]string{
+		"RequestID": requestID, "CSRF": csrf, "Message": message,
+		"AgreementVersion": idp.config.PrivacyConsent.AgreementVersion,
+		"PrivacyPolicyURL": idp.config.PrivacyConsent.PrivacyPolicyURL, "TermsURL": idp.config.PrivacyConsent.TermsURL,
+	})
+}
+
+func (idp *runtimeFirstPartyIdP) setLoginSecurityHeaders(writer http.ResponseWriter) {
 	writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 	writer.Header().Set("Cache-Control", "no-store")
 	formActions := []string{"'self'"}
 	seenOrigins := map[string]struct{}{}
 	for _, raw := range []string{idp.config.PublicURL, idp.config.RedirectURL} {
 		parsed, err := url.Parse(strings.TrimSpace(raw))
-		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
-			continue
-		}
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" { continue }
 		origin := parsed.Scheme + "://" + parsed.Host
-		if _, duplicate := seenOrigins[origin]; duplicate {
-			continue
-		}
+		if _, duplicate := seenOrigins[origin]; duplicate { continue }
 		seenOrigins[origin] = struct{}{}
 		formActions = append(formActions, origin)
 	}
 	writer.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; form-action "+strings.Join(formActions, " ")+"; base-uri 'none'; frame-ancestors 'none'")
-	// A navigate-mode HTML form POST needs a non-null Origin so the IdP
-	// transaction cookie remains same-site. `origin` still strips the OIDC
-	// authorization path/query from Referer, avoiding state/nonce leakage.
 	writer.Header().Set("Referrer-Policy", "origin")
 	writer.Header().Set("X-Content-Type-Options", "nosniff")
 	writer.Header().Set("X-Frame-Options", "DENY")
-	writer.WriteHeader(status)
-	_ = firstPartyLoginTemplate.Execute(writer, map[string]string{
-		"RequestID": requestID,
-		"CSRF":      csrf,
-		"Email":     email,
-		"Message":   message,
-	})
 }
-
 func (idp *runtimeFirstPartyIdP) authCookieName() string {
 	if idp.config.CookieSecure {
 		return secureIDPAuthCookie
