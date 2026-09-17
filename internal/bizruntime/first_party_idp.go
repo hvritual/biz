@@ -125,6 +125,7 @@ func (idp *runtimeFirstPartyIdP) register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /idp/jwks", idp.handleJWKS)
 	mux.HandleFunc("GET /idp/authorize", idp.handleAuthorize)
 	mux.HandleFunc("POST /idp/login", idp.handleLogin)
+	mux.HandleFunc("POST /idp/consent", idp.handleConsent)
 	mux.HandleFunc("POST /idp/token", idp.handleToken)
 	mux.HandleFunc("GET /idp/logout", idp.handleProviderLogout)
 }
@@ -220,7 +221,7 @@ func (idp *runtimeFirstPartyIdP) handleLogin(writer http.ResponseWriter, request
 		http.Error(writer, "invalid login request", http.StatusUnauthorized)
 		return
 	}
-	identity, err := store.AuthenticateFirstPartyLogin(request.Context(), email, password, request.RemoteAddr, accesspersistence.DefaultFirstPartyLoginPolicy())
+	identity, loginAuditID, err := store.AuthenticateFirstPartyLoginWithAudit(request.Context(), email, password, request.RemoteAddr, accesspersistence.DefaultFirstPartyLoginPolicy())
 	if err != nil {
 		if errors.Is(err, accesspersistence.ErrInvalidUserCredentials) {
 			idp.renderLogin(writer, http.StatusUnauthorized, requestID, csrf, email, "邮箱或密码错误")
@@ -229,11 +230,80 @@ func (idp *runtimeFirstPartyIdP) handleLogin(writer http.ResponseWriter, request
 		http.Error(writer, "identity provider unavailable", http.StatusServiceUnavailable)
 		return
 	}
+	satisfied, err := store.PrivacyConsentSatisfies(request.Context(), identity.UserID, idp.config.PrivacyConsent.AgreementVersion, idp.config.PrivacyConsent.RequireCurrentVersion())
+	if err != nil {
+		http.Error(writer, "identity provider unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	if !satisfied {
+		if err := store.BindFirstPartyAuthorizationIdentity(request.Context(), requestID, cookie.Value, csrf, identity.UserID, loginAuditID); err != nil {
+			http.Error(writer, "login transaction expired", http.StatusUnauthorized)
+			return
+		}
+		idp.renderConsent(writer, http.StatusOK, requestID, csrf, "")
+		return
+	}
 	code, authorization, err := store.IssueFirstPartyAuthorizationCode(request.Context(), requestID, cookie.Value, csrf, identity.UserID, idp.config.CodeTTL)
 	if err != nil {
 		http.Error(writer, "login transaction expired", http.StatusUnauthorized)
 		return
 	}
+	idp.finishAuthorization(writer, request, code, authorization)
+}
+
+func (idp *runtimeFirstPartyIdP) handleConsent(writer http.ResponseWriter, request *http.Request) {
+	store := idp.currentStore()
+	if store == nil {
+		http.Error(writer, "identity provider unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	request.Body = http.MaxBytesReader(writer, request.Body, 16<<10)
+	if err := request.ParseForm(); err != nil {
+		http.Error(writer, "invalid consent request", http.StatusBadRequest)
+		return
+	}
+	requestID := strings.TrimSpace(request.Form.Get("request_id"))
+	csrf := strings.TrimSpace(request.Form.Get("csrf_token"))
+	action := strings.TrimSpace(request.Form.Get("action"))
+	submittedVersion := strings.TrimSpace(request.Form.Get("agreement_version"))
+	cookie, err := request.Cookie(idp.authCookieName())
+	if err != nil || requestID == "" || csrf == "" || strings.TrimSpace(cookie.Value) == "" {
+		http.Error(writer, "invalid consent request", http.StatusUnauthorized)
+		return
+	}
+	if action == "reject" {
+		if err := store.ClearFirstPartyAuthorizationIdentity(request.Context(), requestID, cookie.Value, csrf); err != nil {
+			http.Error(writer, "login transaction expired", http.StatusUnauthorized)
+			return
+		}
+		idp.renderLogin(writer, http.StatusOK, requestID, csrf, "", "已拒绝当前协议，登录未继续。")
+		return
+	}
+	if action != "accept" || request.Form.Get("agreement_accepted") != "true" {
+		idp.renderConsent(writer, http.StatusUnprocessableEntity, requestID, csrf, "请先阅读并勾选同意当前协议。")
+		return
+	}
+	if submittedVersion != idp.config.PrivacyConsent.AgreementVersion {
+		idp.renderConsent(writer, http.StatusConflict, requestID, csrf, "协议版本已更新，请重新确认。")
+		return
+	}
+	code, authorization, _, err := store.AcceptPrivacyConsentAndIssueAuthorizationCode(request.Context(), accesspersistence.AcceptPrivacyConsentInput{
+		RequestID: requestID, BrowserSecret: cookie.Value, CSRF: csrf,
+		SubmittedVersion: submittedVersion, ExpectedVersion: idp.config.PrivacyConsent.AgreementVersion,
+		Source: accesspersistence.PrivacyConsentLoginSource, CodeTTL: idp.config.CodeTTL,
+	})
+	if err != nil {
+		if errors.Is(err, accesspersistence.ErrPrivacyConsentVersionMismatch) {
+			idp.renderConsent(writer, http.StatusConflict, requestID, csrf, "协议版本已更新，请重新确认。")
+			return
+		}
+		http.Error(writer, "login transaction expired", http.StatusUnauthorized)
+		return
+	}
+	idp.finishAuthorization(writer, request, code, authorization)
+}
+
+func (idp *runtimeFirstPartyIdP) finishAuthorization(writer http.ResponseWriter, request *http.Request, code string, authorization accesspersistence.FirstPartyAuthorizationRequest) {
 	idp.clearAuthCookie(writer)
 	redirect, _ := url.Parse(authorization.RedirectURI)
 	values := redirect.Query()
@@ -242,7 +312,6 @@ func (idp *runtimeFirstPartyIdP) handleLogin(writer http.ResponseWriter, request
 	redirect.RawQuery = values.Encode()
 	http.Redirect(writer, request, redirect.String(), http.StatusFound)
 }
-
 func (idp *runtimeFirstPartyIdP) handleToken(writer http.ResponseWriter, request *http.Request) {
 	store := idp.currentStore()
 	if store == nil {
