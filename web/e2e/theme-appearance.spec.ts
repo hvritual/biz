@@ -31,7 +31,8 @@ test('appearance toggles preserve member draft state, compact rows and teleporte
   const rowAfter = await firstRow.boundingBox()
   expect(rowAfter?.height ?? 0).toBeLessThan(rowBefore?.height ?? 0)
 
-  await page.getByRole('button', { name: '帮助', exact: true }).click()
+  // Open the canonical member action dialog rather than a responsive header link.
+  await page.locator('.member-tools .btn-primary').click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
   expect(await dialog.evaluate((node) => getComputedStyle(node).colorScheme)).toContain('dark')
