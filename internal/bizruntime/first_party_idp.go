@@ -539,7 +539,7 @@ var firstPartyLoginTemplate = template.Must(template.New("first-party-idp-login"
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CoffeeLink 登录</title>
 <style>
-:root{font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;color:#172033;background:#f5f7fb}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at top,#fff 0,#f5f7fb 54%,#eef2f7 100%)}main{width:min(420px,calc(100vw - 32px));background:#fff;border:1px solid #e7eaf0;border-radius:16px;padding:32px;box-shadow:0 20px 60px rgba(22,34,51,.10)}.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}.mark{width:32px;height:32px;border-radius:10px;background:#fc610e;display:grid;place-items:center;color:white}h1{font-size:24px;margin:28px 0 8px}p{margin:0 0 24px;color:#6b7280;font-size:14px}.field{display:grid;gap:8px;margin:16px 0}label{font-size:13px;font-weight:600}input{width:100%;border:1px solid #d9dee8;border-radius:8px;padding:11px 12px;font:inherit;outline:none}input:focus{border-color:#fc610e;box-shadow:0 0 0 3px rgba(252,97,14,.12)}button{width:100%;margin-top:20px;border:0;border-radius:8px;background:#fc610e;color:#fff;padding:12px;font:inherit;font-weight:700;cursor:pointer}.error{padding:10px 12px;border-radius:8px;background:#fff1eb;color:#b53c00;font-size:13px;margin-bottom:12px}
+:root{font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;color:#172033;background:#f5f7fb}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at top,#fff 0,#f5f7fb 54%,#eef2f7 100%)}main{width:min(420px,calc(100vw - 32px));background:#fff;border:1px solid #e7eaf0;border-radius:16px;padding:32px;box-shadow:0 20px 60px rgba(22,34,51,.10)}.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}.mark{width:32px;height:32px;border-radius:10px;background:#fc610e;display:grid;place-items:center;color:white}h1{font-size:24px;margin:28px 0 8px}p{margin:0 0 24px;color:#6b7280;font-size:14px}.field{display:grid;gap:8px;margin:16px 0}label{font-size:13px;font-weight:600}input{width:100%;border:1px solid #d9dee8;border-radius:8px;padding:11px 12px;font:inherit;outline:none}input:focus{border-color:#fc610e;box-shadow:0 0 0 3px rgba(252,97,14,.12)}button{width:100%;margin-top:20px;border:0;border-radius:8px;background:#fc610e;color:#fff;padding:12px;font:inherit;font-weight:700;cursor:pointer}.error{padding:10px 12px;border-radius:8px;background:#fff1eb;color:#b53c00;font-size:13px;margin-bottom:12px}.notice{margin:20px 0 0;padding:12px;border-radius:10px;background:#f7f8fb;color:#596273;font-size:12px;line-height:1.6}.links{margin-top:12px;font-size:12px}.links a{color:#b8470a;text-decoration:none}.links a+a{margin-left:12px}
 </style>
 </head>
 <body>
@@ -554,6 +554,44 @@ var firstPartyLoginTemplate = template.Must(template.New("first-party-idp-login"
 <div class="field"><label for="email">邮箱</label><input id="email" name="email" type="email" value="{{.Email}}" autocomplete="username" required></div>
 <div class="field"><label for="password">密码</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
 <button type="submit">登录</button>
+</form>
+<div class="notice" role="note"><strong>Cookie 提示</strong><br>登录流程使用必要 Cookie 保存安全认证事务；Cookie 本身不作为业务授权事实。</div>
+<div class="links"><a href="{{.PrivacyPolicyURL}}" target="_blank" rel="noopener noreferrer">隐私政策</a><a href="{{.TermsURL}}" target="_blank" rel="noopener noreferrer">服务条款</a></div>
+</main>
+</body>
+</html>`))
+
+var firstPartyConsentTemplate = template.Must(template.New("first-party-idp-consent").Parse(`<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CoffeeLink 协议确认</title>
+<style>
+:root{font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;color:#172033;background:#f5f7fb}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at top,#fff 0,#f5f7fb 54%,#eef2f7 100%)}main{width:min(480px,calc(100vw - 32px));background:#fff;border:1px solid #e7eaf0;border-radius:16px;padding:32px;box-shadow:0 20px 60px rgba(22,34,51,.10)}.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}.mark{width:32px;height:32px;border-radius:10px;background:#fc610e;display:grid;place-items:center;color:white}h1{font-size:24px;margin:28px 0 8px}p{color:#6b7280;font-size:14px;line-height:1.7}.version{display:inline-flex;padding:4px 8px;border-radius:999px;background:#f3f4f6;color:#596273;font-size:12px}.agreement{display:flex;gap:10px;align-items:flex-start;margin:22px 0 0;padding:14px;border:1px solid #e7eaf0;border-radius:10px}.agreement input{margin-top:3px}.agreement label{font-size:13px;line-height:1.6}.agreement a{color:#b8470a}.primary{width:100%;margin-top:18px;border:0;border-radius:8px;background:#fc610e;color:#fff;padding:12px;font:inherit;font-weight:700;cursor:pointer}.secondary{width:100%;margin-top:10px;border:1px solid #d9dee8;border-radius:8px;background:#fff;color:#596273;padding:11px;font:inherit;font-weight:600;cursor:pointer}.error{padding:10px 12px;border-radius:8px;background:#fff1eb;color:#b53c00;font-size:13px;margin:16px 0}
+</style>
+</head>
+<body>
+<main>
+<div class="brand"><div class="mark">C</div><span>CoffeeLink</span></div>
+<h1>确认隐私与服务协议</h1>
+<p>身份验证已完成。只有在当前登录事务中确认协议后，系统才会把同意证据绑定到已验证账号。</p>
+<span class="version">协议版本 {{.AgreementVersion}}</span>
+{{if .Message}}<div class="error" role="alert">{{.Message}}</div>{{end}}
+<form method="post" action="/idp/consent">
+<input type="hidden" name="request_id" value="{{.RequestID}}">
+<input type="hidden" name="csrf_token" value="{{.CSRF}}">
+<input type="hidden" name="agreement_version" value="{{.AgreementVersion}}">
+<input type="hidden" name="action" value="accept">
+<div class="agreement"><input id="agreement-accepted" name="agreement_accepted" type="checkbox" value="true" required><label for="agreement-accepted">我已阅读并同意 <a href="{{.PrivacyPolicyURL}}" target="_blank" rel="noopener noreferrer">隐私政策</a> 与 <a href="{{.TermsURL}}" target="_blank" rel="noopener noreferrer">服务条款</a>。</label></div>
+<button class="primary" type="submit">同意并继续</button>
+</form>
+<form method="post" action="/idp/consent">
+<input type="hidden" name="request_id" value="{{.RequestID}}">
+<input type="hidden" name="csrf_token" value="{{.CSRF}}">
+<input type="hidden" name="agreement_version" value="{{.AgreementVersion}}">
+<input type="hidden" name="action" value="reject">
+<button class="secondary" type="submit">拒绝并返回登录</button>
 </form>
 </main>
 </body>
