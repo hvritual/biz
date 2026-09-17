@@ -125,6 +125,7 @@ func (idp *runtimeFirstPartyIdP) register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /idp/jwks", idp.handleJWKS)
 	mux.HandleFunc("GET /idp/authorize", idp.handleAuthorize)
 	mux.HandleFunc("POST /idp/login", idp.handleLogin)
+	mux.HandleFunc("GET /idp/consent", idp.handleConsentPage)
 	mux.HandleFunc("POST /idp/consent", idp.handleConsent)
 	mux.HandleFunc("POST /idp/token", idp.handleToken)
 	mux.HandleFunc("GET /idp/logout", idp.handleProviderLogout)
@@ -240,7 +241,8 @@ func (idp *runtimeFirstPartyIdP) handleLogin(writer http.ResponseWriter, request
 			http.Error(writer, "login transaction expired", http.StatusUnauthorized)
 			return
 		}
-		idp.renderConsent(writer, http.StatusOK, requestID, csrf, "")
+		location := "/idp/consent?request_id=" + url.QueryEscape(requestID)
+		http.Redirect(writer, request, location, http.StatusSeeOther)
 		return
 	}
 	code, authorization, err := store.IssueFirstPartyAuthorizationCode(request.Context(), requestID, cookie.Value, csrf, identity.UserID, idp.config.CodeTTL)
@@ -251,6 +253,25 @@ func (idp *runtimeFirstPartyIdP) handleLogin(writer http.ResponseWriter, request
 	idp.finishAuthorization(writer, request, code, authorization)
 }
 
+func (idp *runtimeFirstPartyIdP) handleConsentPage(writer http.ResponseWriter, request *http.Request) {
+	store := idp.currentStore()
+	if store == nil {
+		http.Error(writer, "identity provider unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	requestID := strings.TrimSpace(request.URL.Query().Get("request_id"))
+	cookie, err := request.Cookie(idp.authCookieName())
+	if err != nil || requestID == "" || strings.TrimSpace(cookie.Value) == "" {
+		http.Error(writer, "invalid consent request", http.StatusUnauthorized)
+		return
+	}
+	csrf, err := store.RefreshFirstPartyConsentCSRF(request.Context(), requestID, cookie.Value)
+	if err != nil {
+		http.Error(writer, "login transaction expired", http.StatusUnauthorized)
+		return
+	}
+	idp.renderConsent(writer, http.StatusOK, requestID, csrf, "")
+}
 func (idp *runtimeFirstPartyIdP) handleConsent(writer http.ResponseWriter, request *http.Request) {
 	store := idp.currentStore()
 	if store == nil {
