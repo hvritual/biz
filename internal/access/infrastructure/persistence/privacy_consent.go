@@ -119,6 +119,31 @@ func (store *Store) BindFirstPartyAuthorizationIdentity(ctx context.Context, req
 	})
 }
 
+func (store *Store) RefreshFirstPartyConsentCSRF(ctx context.Context, requestID, browserSecret string) (string, error) {
+	requestID = strings.TrimSpace(requestID)
+	browserSecret = strings.TrimSpace(browserSecret)
+	if store == nil || store.database == nil || requestID == "" || browserSecret == "" {
+		return "", ErrFirstPartyIDPFlow
+	}
+	csrf, err := randomWebSecret(32)
+	if err != nil {
+		return "", err
+	}
+	err = store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var row firstPartyAuthorizationRequestRecord
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("request_hash = ? AND browser_hash = ?", TokenHash(requestID), TokenHash(browserSecret)).First(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) { return ErrFirstPartyIDPFlow }
+			return err
+		}
+		if !row.ExpiresAt.After(time.Now().UTC()) || strings.TrimSpace(row.AuthenticatedUserID) == "" || row.LoginAuditID == 0 || row.AuthenticatedAt == nil {
+			return ErrFirstPartyIDPFlow
+		}
+		return tx.Model(&firstPartyAuthorizationRequestRecord{}).Where("request_hash = ?", row.RequestHash).Update("csrf_hash", TokenHash(csrf)).Error
+	})
+	if err != nil { return "", err }
+	return csrf, nil
+}
 func (store *Store) ClearFirstPartyAuthorizationIdentity(ctx context.Context, requestID, browserSecret, csrf string) error {
 	if store == nil || store.database == nil {
 		return ErrFirstPartyIDPFlow
