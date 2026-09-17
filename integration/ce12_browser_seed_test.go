@@ -15,6 +15,7 @@ import (
 	devicepolicy "github.com/hvritual/biz/internal/deviceops/policy"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"gorm.io/gorm"
 	"yunka.io/gateway/authz"
 )
 
@@ -109,6 +110,12 @@ func TestCE12BrowserSeed(t *testing.T) {
 	}).Error; err != nil {
 		t.Fatal(err)
 	}
+	// Branding is an access-management tenant business capability. The CE-12 base
+	// subscription intentionally focuses on device operations, so grant the real
+	// tenant.lifecycle entitlement through the platform override authority instead
+	// of bypassing Commercial Guard in the browser fixture.
+	ce12GrantCapability(t, db, entitlements, platformToken, allowed, "access-management", "tenant.lifecycle", "ce12-brand-a-lifecycle")
+	ce12GrantCapability(t, db, entitlements, platformToken, iamDenied, "access-management", "tenant.lifecycle", "ce12-brand-b-lifecycle")
 
 	var sourceVersion uint64
 	if err := db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", entitlementDenied).Scan(&sourceVersion).Error; err != nil {
@@ -151,6 +158,31 @@ func TestCE12BrowserSeed(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(path, payload, 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func ce12GrantCapability(t *testing.T, db *gorm.DB, client commercialv1.EntitlementManagementApplicationClient, token, tenantID, moduleCode, capabilityCode, requestID string) {
+	t.Helper()
+	var sourceVersion uint64
+	if err := db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", tenantID).Scan(&sourceVersion).Error; err != nil {
+		t.Fatal(err)
+	}
+	if sourceVersion == 0 {
+		t.Fatalf("tenant %s has no subscription-derived source version", tenantID)
+	}
+	_, err := client.CreateEntitlementOverride(ce04Context(token, requestID), &commercialv1.CreateEntitlementOverrideRequest{
+		RequestId:       requestID,
+		TenantId:        tenantID,
+		ExpectedVersion: sourceVersion,
+		ModuleCode:      moduleCode,
+		Target:          commercialv1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY,
+		Key:             capabilityCode,
+		Effect:          commercialv1.EntitlementEffect_ENTITLEMENT_EFFECT_GRANT,
+		EffectiveAt:     time.Now().UTC().Add(-time.Minute).Format(time.RFC3339),
+		Reason:          "CE12 browser E2E grants the real capability required by the exercised tenant surface",
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
 }
