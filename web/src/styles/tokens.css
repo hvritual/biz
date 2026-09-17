@@ -86,6 +86,36 @@
   --z-toast: 80;
 }
 
+:root[data-ui-mode='dark'] {
+  color-scheme: dark;
+  --color-text: #f1f5f9;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #94a3b8;
+  --color-canvas: #0b1120;
+  --color-workbench: #111c2f;
+  --color-surface: #111827;
+  --color-surface-soft: #172033;
+  --color-border: #2b3a50;
+  --color-border-strong: #475569;
+  --color-success: #34d399;
+  --color-success-soft: #0f2d25;
+  --color-danger: #f87171;
+  --color-danger-soft: #3a171c;
+  --color-warning: #fbbf24;
+  --color-warning-soft: #392b0e;
+  --color-violet: #a78bfa;
+  --color-violet-soft: #2f2350;
+  --color-overlay: rgb(2 6 23 / 62%);
+  --color-shadow: rgb(0 0 0 / 42%);
+  --shadow-panel: 0 4px 24px rgb(0 0 0 / 24%);
+}
+
+:root[data-ui-density='compact'] {
+  --content-padding: 18px;
+  --control-height: 32px;
+  --table-row-height: 52px;
+}
+
 /* fixed colors centralized by three-layer migration */
 :root {
   --color-fixed-a93dc7bf: #4b9a68;
@@ -103,4 +133,22 @@
   --color-fixed-77a43b18: rgb(8 123 255 / 12%);
   --color-fixed-99fdea0b: rgba(15, 23, 42, .36);
   --color-fixed-5acf4123: rgba(180, 35, 24, .08);
+}
+
+:root[data-ui-mode='dark'] {
+  --color-fixed-a93dc7bf: #4ade80;
+  --color-fixed-fdb6b83b: #fb7185;
+  --color-fixed-ecee5ee9: #f87171;
+  --color-fixed-b79dd458: #fbbf24;
+  --color-fixed-cbd707e4: rgb(2 6 23 / 62%);
+  --color-fixed-91215eab: rgb(71 85 105 / 62%);
+  --color-fixed-08d5b1db: rgb(17 24 39 / 92%);
+  --color-fixed-53fa2381: rgb(0 0 0 / 22%);
+  --color-fixed-5b4ddd4f: rgb(96 165 250 / 22%);
+  --color-fixed-b0d29828: rgb(96 165 250 / 30%);
+  --color-fixed-849eef7a: rgb(148 163 184 / 8%);
+  --color-fixed-777fc1a0: rgb(96 165 250 / 18%);
+  --color-fixed-77a43b18: rgb(96 165 250 / 22%);
+  --color-fixed-99fdea0b: rgba(2, 6, 23, .62);
+  --color-fixed-5acf4123: rgba(248, 113, 113, .12);
 }
