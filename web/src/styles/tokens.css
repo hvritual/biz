@@ -113,7 +113,7 @@
 :root[data-ui-density='compact'] {
   --content-padding: 18px;
   --control-height: 32px;
-  --table-row-height: 52px;
+  --table-row-height: 42px;
 }
 
 /* fixed colors centralized by three-layer migration */
