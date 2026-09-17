@@ -62,6 +62,12 @@ func run() error {
 		CodeTTL:               envDuration("YUNKA_BIZ_IDP_CODE_TTL", 90*time.Second),
 		TokenTTL:              envDuration("YUNKA_BIZ_IDP_TOKEN_TTL", 5*time.Minute),
 		CookieSecure:          envBool("YUNKA_BIZ_IDP_COOKIE_SECURE", true),
+		PrivacyConsent: bizruntime.FirstPartyPrivacyConsentConfig{
+			AgreementVersion: strings.TrimSpace(os.Getenv("YUNKA_BIZ_PRIVACY_AGREEMENT_VERSION")),
+			PrivacyPolicyURL: strings.TrimSpace(os.Getenv("YUNKA_BIZ_PRIVACY_POLICY_URL")),
+			TermsURL:         strings.TrimSpace(os.Getenv("YUNKA_BIZ_TERMS_URL")),
+			ReconsentPolicy:  bizruntime.PrivacyReconsentPolicy(strings.TrimSpace(os.Getenv("YUNKA_BIZ_PRIVACY_RECONSENT_POLICY"))),
+		},
 	}
 	if err := config.Validate(); err != nil {
 		return err
