@@ -36,9 +36,9 @@ describe('primary navigation information architecture', () => {
     ])
   })
 
-  it('keeps enterprise center aligned with the approved six functional entries and terminology', () => {
-    expect(enterpriseNavigation.map((item) => item.id)).toEqual(['members', 'roles', 'organization', 'plan', 'company', 'logs'])
-    expect(enterpriseNavigation.map((item) => item.label)).toContain('套餐额度')
+  it('keeps enterprise center aligned with the approved functional entries and terminology', () => {
+    expect(enterpriseNavigation.map((item) => item.id)).toEqual(['members', 'roles', 'organization', 'plan', 'company', 'branding', 'logs'])
+    expect(enterpriseNavigation.map((item) => item.label)).toEqual(['成员管理', '角色权限', '组织架构', '套餐额度', '企业信息', '品牌与主题', '操作日志'])
   })
 
   it('groups customer operations by management, collaboration and success instead of flattening pages', () => {

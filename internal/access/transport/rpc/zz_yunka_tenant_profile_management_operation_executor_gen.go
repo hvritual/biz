@@ -35,6 +35,19 @@ func RegisterTenantProfileManagementOperationExecutor(registrar grpc.ServiceRegi
 	return nil
 }
 
+func (server *TenantProfileManagementOperationServer) GetTenantBranding(ctx context.Context, request *accessv1.GetTenantBrandingRequest) (*accessv1.TenantBrandingDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantProfileManagementGetTenantBranding(), request, server.application.GetTenantBranding)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *TenantProfileManagementOperationServer) GetTenantProfile(ctx context.Context, request *accessv1.GetTenantProfileRequest) (*accessv1.TenantProfileDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
@@ -42,6 +55,19 @@ func (server *TenantProfileManagementOperationServer) GetTenantProfile(ctx conte
 		}
 	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantProfileManagementGetTenantProfile(), request, server.application.GetTenantProfile)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *TenantProfileManagementOperationServer) UpdateTenantBranding(ctx context.Context, request *accessv1.UpdateTenantBrandingRequest) (*accessv1.TenantBrandingDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantProfileManagementUpdateTenantBranding(), request, server.application.UpdateTenantBranding)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}

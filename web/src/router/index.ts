@@ -136,6 +136,11 @@ export const router = createRouter({
       meta: { title: '企业信息', module: 'enterprise', surface: 'tenant', pageTemplate: 'FormPage' },
     },
     {
+      path: '/enterprise/branding',
+      component: () => import('@/features/enterprise/pages/BrandingView.vue'),
+      meta: { title: '品牌与主题', module: 'enterprise', surface: 'tenant', pageTemplate: 'FormPage' },
+    },
+    {
       path: '/enterprise/logs',
       component: () => import('@/features/enterprise/pages/AuditLogsView.vue'),
       meta: { title: '操作日志', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage' },

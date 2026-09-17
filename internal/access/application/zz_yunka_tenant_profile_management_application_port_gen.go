@@ -9,6 +9,8 @@ import (
 
 // TenantProfileManagementApplication is generated from PB and contains no business implementation.
 type TenantProfileManagementApplication interface {
+	GetTenantBranding(context.Context, *accessv1.GetTenantBrandingRequest) (*accessv1.TenantBrandingDTO, error)
 	GetTenantProfile(context.Context, *accessv1.GetTenantProfileRequest) (*accessv1.TenantProfileDTO, error)
+	UpdateTenantBranding(context.Context, *accessv1.UpdateTenantBrandingRequest) (*accessv1.TenantBrandingDTO, error)
 	UpdateTenantProfile(context.Context, *accessv1.UpdateTenantProfileRequest) (*accessv1.TenantProfileDTO, error)
 }

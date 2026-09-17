@@ -34,7 +34,13 @@ func RegisterTenantProfileManagementOperationExecutor(mux *http.ServeMux, applic
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &TenantProfileManagementOperationHandler{application: application, executor: executor}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenant/branding", handler.handleOperationGetTenantBranding); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "GET", "/v1/tenant/profile", handler.handleOperationGetTenantProfile); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "PATCH", "/v1/tenant/branding", handler.handleOperationUpdateTenantBranding); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "PATCH", "/v1/tenant/profile", handler.handleOperationUpdateTenantProfile); err != nil {
@@ -72,10 +78,55 @@ func writeTenantProfileManagementOperationError(writer http.ResponseWriter, err 
 	http.Error(writer, "application request failed", http.StatusBadRequest)
 }
 
+func (handler *TenantProfileManagementOperationHandler) handleOperationGetTenantBranding(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.GetTenantBrandingRequest{}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantProfileManagementGetTenantBranding(), wire, handler.application.GetTenantBranding)
+	if err != nil {
+		writeTenantProfileManagementOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
 func (handler *TenantProfileManagementOperationHandler) handleOperationGetTenantProfile(writer http.ResponseWriter, request *http.Request) {
 	wire := &accessv1.GetTenantProfileRequest{}
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantProfileManagementGetTenantProfile(), wire, handler.application.GetTenantProfile)
+	if err != nil {
+		writeTenantProfileManagementOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *TenantProfileManagementOperationHandler) handleOperationUpdateTenantBranding(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.UpdateTenantBrandingRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantProfileManagementUpdateTenantBranding(), wire, handler.application.UpdateTenantBranding)
 	if err != nil {
 		writeTenantProfileManagementOperationError(writer, err)
 		return

@@ -71,7 +71,7 @@ test('switching viewed member refreshes the details and resets the active tab', 
     'aria-selected',
     'true',
   )
-  await drawer.getByRole('button', { name: '编辑成员资料', exact: true }).click()
+  await drawer.getByRole('button', { name: '编辑 王五', exact: true }).click()
   await expect(page.getByRole('dialog', { name: '修改成员信息', exact: true })).toBeVisible()
   await expect(drawer).toHaveCount(0)
 })
@@ -97,7 +97,7 @@ test('batch disable and enable preserve reason validation and current-page scope
   await d.getByLabel('操作原因', { exact: true }).fill('身份复核完成')
   await d.getByRole('checkbox').check()
   await d.getByRole('button', { name: '确认批量启用', exact: true }).click()
-  await expect(page.locator('[data-member-id="member-2"]')).toContainText('启用')
+  await expect(page.locator('[data-member-id="member-2"]')).toContainText('正常')
   await expect(page.locator('.selection-label')).toContainText('0')
 })
 test('detail state is isolated on tenant switch and navigation flyout stays an overlay', async ({ page }) => {

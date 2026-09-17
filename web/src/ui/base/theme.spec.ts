@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   applyUiTheme,
+  createUiThemePalette,
   initializeUiTheme,
   resetUiTheme,
+  resolveTenantUiTheme,
   setUiTheme,
   setUiThemePreset,
   type UiThemePalette,
@@ -36,6 +38,22 @@ describe('global UI theme', () => {
     expect(root().style.getPropertyValue('--color-primary')).toBe(palette.primary)
     expect(root().style.getPropertyValue('--color-gradient-end')).toBe(palette.gradientEnd)
     expect(root().dataset.uiTheme).toBe('custom')
+  })
+
+  it('derives all custom theme tokens from one tenant brand color', () => {
+    const palette = createUiThemePalette('#125A75')
+    expect(palette.primary).toBe('#125a75')
+    expect(palette.primaryHover).toMatch(/^#[0-9a-f]{6}$/)
+    expect(palette.primarySoft).toMatch(/^#[0-9a-f]{6}$/)
+    expect(palette.gradientEnd).toMatch(/^#[0-9a-f]{6}$/)
+    expect(['#ffffff', '#111827']).toContain(palette.onPrimary)
+    expect(resolveTenantUiTheme({ preset: 'custom', primary: '#125a75' })).toEqual(palette)
+    expect(resolveTenantUiTheme({ preset: 'violet' })).toBe('violet')
+  })
+
+  it('rejects invalid custom tenant brand colors at the theme authority', () => {
+    expect(() => createUiThemePalette('#fff')).toThrow(/six-digit hex/)
+    expect(() => resolveTenantUiTheme({ preset: 'custom' })).toThrow(/primary color/)
   })
 
   it('persists named presets and restores the preset identity on application startup', () => {

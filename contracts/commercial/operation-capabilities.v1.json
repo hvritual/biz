@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "18",
+  "mapping_version": "19",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -790,6 +790,24 @@
       "module_code": "device-operations",
       "capability_codes": [
         "device.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.branding.get",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.branding.update",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
       ],
       "children": []
     },

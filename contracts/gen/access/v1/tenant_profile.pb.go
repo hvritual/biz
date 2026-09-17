@@ -331,6 +331,179 @@ func (x *UpdateTenantProfileRequest) GetVersion() uint64 {
 	return 0
 }
 
+// Only brand configuration is exposed here; ordinary members do not receive company contacts.
+type TenantBrandingDTO struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	Preset        string                 `protobuf:"bytes,2,opt,name=preset,proto3" json:"preset,omitempty"`
+	Primary       string                 `protobuf:"bytes,3,opt,name=primary,proto3" json:"primary,omitempty"`
+	Version       uint64                 `protobuf:"varint,4,opt,name=version,proto3" json:"version,omitempty"`
+	CanManage     bool                   `protobuf:"varint,5,opt,name=can_manage,json=canManage,proto3" json:"can_manage,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TenantBrandingDTO) Reset() {
+	*x = TenantBrandingDTO{}
+	mi := &file_access_v1_tenant_profile_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TenantBrandingDTO) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TenantBrandingDTO) ProtoMessage() {}
+
+func (x *TenantBrandingDTO) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_profile_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TenantBrandingDTO.ProtoReflect.Descriptor instead.
+func (*TenantBrandingDTO) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_profile_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *TenantBrandingDTO) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *TenantBrandingDTO) GetPreset() string {
+	if x != nil {
+		return x.Preset
+	}
+	return ""
+}
+
+func (x *TenantBrandingDTO) GetPrimary() string {
+	if x != nil {
+		return x.Primary
+	}
+	return ""
+}
+
+func (x *TenantBrandingDTO) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *TenantBrandingDTO) GetCanManage() bool {
+	if x != nil {
+		return x.CanManage
+	}
+	return false
+}
+
+type GetTenantBrandingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTenantBrandingRequest) Reset() {
+	*x = GetTenantBrandingRequest{}
+	mi := &file_access_v1_tenant_profile_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTenantBrandingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTenantBrandingRequest) ProtoMessage() {}
+
+func (x *GetTenantBrandingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_profile_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTenantBrandingRequest.ProtoReflect.Descriptor instead.
+func (*GetTenantBrandingRequest) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_profile_proto_rawDescGZIP(), []int{4}
+}
+
+type UpdateTenantBrandingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Preset        string                 `protobuf:"bytes,1,opt,name=preset,proto3" json:"preset,omitempty"`
+	Primary       string                 `protobuf:"bytes,2,opt,name=primary,proto3" json:"primary,omitempty"`
+	Version       uint64                 `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateTenantBrandingRequest) Reset() {
+	*x = UpdateTenantBrandingRequest{}
+	mi := &file_access_v1_tenant_profile_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateTenantBrandingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateTenantBrandingRequest) ProtoMessage() {}
+
+func (x *UpdateTenantBrandingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_profile_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateTenantBrandingRequest.ProtoReflect.Descriptor instead.
+func (*UpdateTenantBrandingRequest) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_profile_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *UpdateTenantBrandingRequest) GetPreset() string {
+	if x != nil {
+		return x.Preset
+	}
+	return ""
+}
+
+func (x *UpdateTenantBrandingRequest) GetPrimary() string {
+	if x != nil {
+		return x.Primary
+	}
+	return ""
+}
+
+func (x *UpdateTenantBrandingRequest) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
 var File_access_v1_tenant_profile_proto protoreflect.FileDescriptor
 
 const file_access_v1_tenant_profile_proto_rawDesc = "" +
@@ -367,12 +540,28 @@ const file_access_v1_tenant_profile_proto_rawDesc = "" +
 	"\vdescription\x18\n" +
 	" \x01(\tR\vdescription\x12$\n" +
 	"\x0elogo_asset_ref\x18\v \x01(\tR\flogoAssetRef\x12\x18\n" +
-	"\aversion\x18\f \x01(\x04R\aversion2\xde\x03\n" +
+	"\aversion\x18\f \x01(\x04R\aversion\"\xa3\x01\n" +
+	"\x11TenantBrandingDTO\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x16\n" +
+	"\x06preset\x18\x02 \x01(\tR\x06preset\x12\x18\n" +
+	"\aprimary\x18\x03 \x01(\tR\aprimary\x12\x18\n" +
+	"\aversion\x18\x04 \x01(\x04R\aversion\x12\x1d\n" +
+	"\n" +
+	"can_manage\x18\x05 \x01(\bR\tcanManage:\x06\xd2\xf3\x18\x02\b\x02\"\x1a\n" +
+	"\x18GetTenantBrandingRequest\"i\n" +
+	"\x1bUpdateTenantBrandingRequest\x12\x16\n" +
+	"\x06preset\x18\x01 \x01(\tR\x06preset\x12\x18\n" +
+	"\aprimary\x18\x02 \x01(\tR\aprimary\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\x04R\aversion2\xff\x06\n" +
 	"\"TenantProfileManagementApplication\x12\xc1\x01\n" +
 	"\x10GetTenantProfile\x12\".access.v1.GetTenantProfileRequest\x1a\x1b.access.v1.TenantProfileDTO\"l\xe2\xf3\x18N\n" +
 	"\x12tenant.profile.get\x12\x12get_tenant_profile\x1a\x18tenant.organization.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/tenant/profile\x12\xd2\x01\n" +
 	"\x13UpdateTenantProfile\x12%.access.v1.UpdateTenantProfileRequest\x1a\x1b.access.v1.TenantProfileDTO\"w\xe2\xf3\x18V\n" +
-	"\x15tenant.profile.update\x12\x15update_tenant_profile\x1a\x1atenant.organization.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x17:\x01*2\x12/v1/tenant/profile\x1a\x1f\xda\xf3\x18\x1b\n" +
+	"\x15tenant.profile.update\x12\x15update_tenant_profile\x1a\x1atenant.organization.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x17:\x01*2\x12/v1/tenant/profile\x12\xc3\x01\n" +
+	"\x11GetTenantBranding\x12#.access.v1.GetTenantBrandingRequest\x1a\x1c.access.v1.TenantBrandingDTO\"k\xe2\xf3\x18L\n" +
+	"\x13tenant.branding.get\x12\x13get_tenant_branding\x1a\x14tenant.branding.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\x15\x12\x13/v1/tenant/branding\x12\xd8\x01\n" +
+	"\x14UpdateTenantBranding\x12&.access.v1.UpdateTenantBrandingRequest\x1a\x1c.access.v1.TenantBrandingDTO\"z\xe2\xf3\x18X\n" +
+	"\x16tenant.branding.update\x12\x16update_tenant_branding\x1a\x1atenant.organization.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x18:\x01*2\x13/v1/tenant/branding\x1a\x1f\xda\xf3\x18\x1b\n" +
 	"\x19tenant_profile_managementBJ\xca\xf3\x18\f\n" +
 	"\x06access\x12\x02v1Z8github.com/hvritual/biz/contracts/gen/access/v1;accessv1b\x06proto3"
 
@@ -388,19 +577,26 @@ func file_access_v1_tenant_profile_proto_rawDescGZIP() []byte {
 	return file_access_v1_tenant_profile_proto_rawDescData
 }
 
-var file_access_v1_tenant_profile_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_access_v1_tenant_profile_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_access_v1_tenant_profile_proto_goTypes = []any{
-	(*TenantProfileDTO)(nil),           // 0: access.v1.TenantProfileDTO
-	(*GetTenantProfileRequest)(nil),    // 1: access.v1.GetTenantProfileRequest
-	(*UpdateTenantProfileRequest)(nil), // 2: access.v1.UpdateTenantProfileRequest
+	(*TenantProfileDTO)(nil),            // 0: access.v1.TenantProfileDTO
+	(*GetTenantProfileRequest)(nil),     // 1: access.v1.GetTenantProfileRequest
+	(*UpdateTenantProfileRequest)(nil),  // 2: access.v1.UpdateTenantProfileRequest
+	(*TenantBrandingDTO)(nil),           // 3: access.v1.TenantBrandingDTO
+	(*GetTenantBrandingRequest)(nil),    // 4: access.v1.GetTenantBrandingRequest
+	(*UpdateTenantBrandingRequest)(nil), // 5: access.v1.UpdateTenantBrandingRequest
 }
 var file_access_v1_tenant_profile_proto_depIdxs = []int32{
 	1, // 0: access.v1.TenantProfileManagementApplication.GetTenantProfile:input_type -> access.v1.GetTenantProfileRequest
 	2, // 1: access.v1.TenantProfileManagementApplication.UpdateTenantProfile:input_type -> access.v1.UpdateTenantProfileRequest
-	0, // 2: access.v1.TenantProfileManagementApplication.GetTenantProfile:output_type -> access.v1.TenantProfileDTO
-	0, // 3: access.v1.TenantProfileManagementApplication.UpdateTenantProfile:output_type -> access.v1.TenantProfileDTO
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
+	4, // 2: access.v1.TenantProfileManagementApplication.GetTenantBranding:input_type -> access.v1.GetTenantBrandingRequest
+	5, // 3: access.v1.TenantProfileManagementApplication.UpdateTenantBranding:input_type -> access.v1.UpdateTenantBrandingRequest
+	0, // 4: access.v1.TenantProfileManagementApplication.GetTenantProfile:output_type -> access.v1.TenantProfileDTO
+	0, // 5: access.v1.TenantProfileManagementApplication.UpdateTenantProfile:output_type -> access.v1.TenantProfileDTO
+	3, // 6: access.v1.TenantProfileManagementApplication.GetTenantBranding:output_type -> access.v1.TenantBrandingDTO
+	3, // 7: access.v1.TenantProfileManagementApplication.UpdateTenantBranding:output_type -> access.v1.TenantBrandingDTO
+	4, // [4:8] is the sub-list for method output_type
+	0, // [0:4] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -417,7 +613,7 @@ func file_access_v1_tenant_profile_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_access_v1_tenant_profile_proto_rawDesc), len(file_access_v1_tenant_profile_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

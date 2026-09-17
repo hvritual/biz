@@ -46,7 +46,7 @@ if (primaryNavigationSource.includes('width: 64px') || appShellSource.includes('
 if (!appShellSource.includes('width: var(--current-rail)') || !appShellSource.includes('width: calc(var(--current-rail) + var(--module-width))')) failures.push('app shell rail/flyout geometry must be token-driven')
 const desktopRailContract = /\.side-frame\s+:deep\(\.primary-nav\)\s*\{[^}]*width:\s*var\(--current-rail\);[^}]*flex:\s*0\s+0\s+var\(--current-rail\);[^}]*\}/s
 if (!desktopRailContract.test(appShellSource)) failures.push('desktop primary navigation must pin width and flex-basis to --current-rail inside the joined flyout shell')
-if (!modulePanelSource.includes('padding: 20px') || !modulePanelSource.includes('gap: 12px') || !modulePanelSource.includes('var(--radius-xl)')) failures.push('module panel must preserve CoffeeLink V1.1 20px padding, 12px columns and 18px outer radius')
+if (!/padding:\s*20px\b/.test(modulePanelSource) || !/gap:\s*12px\b/.test(modulePanelSource) || !modulePanelSource.includes('var(--radius-xl)')) failures.push('module panel must preserve CoffeeLink V1.1 20px padding, 12px columns and 18px outer radius')
 
 const manifestFile = resolve(root, 'features/component-scopes.json')
 if (!existsSync(manifestFile)) failures.push('features/component-scopes.json is required')

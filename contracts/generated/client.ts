@@ -118,6 +118,9 @@ export interface Access_V1_GetTenantAuditRecordRequest {
   auditId?: string;
 }
 
+export interface Access_V1_GetTenantBrandingRequest {
+}
+
 export interface Access_V1_GetTenantDelegationRequest {
   id?: string;
 }
@@ -264,6 +267,14 @@ export interface Access_V1_TenantAuditRecordDTO {
   requestDigest?: string;
 }
 
+export interface Access_V1_TenantBrandingDTO {
+  tenantId?: string;
+  preset?: string;
+  primary?: string;
+  version?: string;
+  canManage?: boolean;
+}
+
 export interface Access_V1_TenantDTO {
   id?: string;
   name?: string;
@@ -336,6 +347,12 @@ export interface Access_V1_TenantRoleDTO {
   name?: string;
   status?: Access_V1_TenantRoleStatus;
   permissions?: readonly Access_V1_PermissionGrantDTO[];
+  version?: string;
+}
+
+export interface Access_V1_UpdateTenantBrandingRequest {
+  preset?: string;
+  primary?: string;
   version?: string;
 }
 
@@ -1298,6 +1315,15 @@ export const operations = {
       { method: "PATCH", path: "/v1/tenant/members/{user_id}/profile", body: "*" },
     ]
   },
+  "access.v1.TenantProfileManagementApplication.GetTenantBranding": {
+    fullName: "access.v1.TenantProfileManagementApplication.GetTenantBranding",
+    rpcPath: "/access.v1.TenantProfileManagementApplication/GetTenantBranding",
+    requestType: "access.v1.GetTenantBrandingRequest",
+    responseType: "access.v1.TenantBrandingDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/branding" },
+    ]
+  },
   "access.v1.TenantProfileManagementApplication.GetTenantProfile": {
     fullName: "access.v1.TenantProfileManagementApplication.GetTenantProfile",
     rpcPath: "/access.v1.TenantProfileManagementApplication/GetTenantProfile",
@@ -1305,6 +1331,15 @@ export const operations = {
     responseType: "access.v1.TenantProfileDTO",
     http: [
       { method: "GET", path: "/v1/tenant/profile" },
+    ]
+  },
+  "access.v1.TenantProfileManagementApplication.UpdateTenantBranding": {
+    fullName: "access.v1.TenantProfileManagementApplication.UpdateTenantBranding",
+    rpcPath: "/access.v1.TenantProfileManagementApplication/UpdateTenantBranding",
+    requestType: "access.v1.UpdateTenantBrandingRequest",
+    responseType: "access.v1.TenantBrandingDTO",
+    http: [
+      { method: "PATCH", path: "/v1/tenant/branding", body: "*" },
     ]
   },
   "access.v1.TenantProfileManagementApplication.UpdateTenantProfile": {
@@ -1967,8 +2002,16 @@ export class Access_V1_TenantMemberLifecycleApplicationClient {
 export class Access_V1_TenantProfileManagementApplicationClient {
   constructor(private readonly transport: RpcTransport) {}
 
+  getTenantBranding(request: Access_V1_GetTenantBrandingRequest): Promise<Access_V1_TenantBrandingDTO> {
+    return this.transport.call<Access_V1_GetTenantBrandingRequest, Access_V1_TenantBrandingDTO>(operations["access.v1.TenantProfileManagementApplication.GetTenantBranding"], request);
+  }
+
   getTenantProfile(request: Access_V1_GetTenantProfileRequest): Promise<Access_V1_TenantProfileDTO> {
     return this.transport.call<Access_V1_GetTenantProfileRequest, Access_V1_TenantProfileDTO>(operations["access.v1.TenantProfileManagementApplication.GetTenantProfile"], request);
+  }
+
+  updateTenantBranding(request: Access_V1_UpdateTenantBrandingRequest): Promise<Access_V1_TenantBrandingDTO> {
+    return this.transport.call<Access_V1_UpdateTenantBrandingRequest, Access_V1_TenantBrandingDTO>(operations["access.v1.TenantProfileManagementApplication.UpdateTenantBranding"], request);
   }
 
   updateTenantProfile(request: Access_V1_UpdateTenantProfileRequest): Promise<Access_V1_TenantProfileDTO> {

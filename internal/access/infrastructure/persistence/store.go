@@ -31,6 +31,8 @@ type tenantRecord struct {
 	Address      string    `gorm:"column:address;size:500;not null;default:''"`
 	Description  string    `gorm:"column:description;size:1000;not null;default:''"`
 	LogoAssetRef string    `gorm:"column:logo_asset_ref;size:512;not null;default:''"`
+	BrandPreset  string    `gorm:"column:brand_preset;size:16;not null;default:'blue'"`
+	BrandPrimary string    `gorm:"column:brand_primary;size:7;not null;default:''"`
 	Status       string    `gorm:"column:status;size:32;not null;index"`
 	Version      uint64    `gorm:"column:version;not null;default:1"`
 	CreatedAt    time.Time `gorm:"column:created_at;not null"`

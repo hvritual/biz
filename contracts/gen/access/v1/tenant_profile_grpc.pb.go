@@ -19,8 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TenantProfileManagementApplication_GetTenantProfile_FullMethodName    = "/access.v1.TenantProfileManagementApplication/GetTenantProfile"
-	TenantProfileManagementApplication_UpdateTenantProfile_FullMethodName = "/access.v1.TenantProfileManagementApplication/UpdateTenantProfile"
+	TenantProfileManagementApplication_GetTenantProfile_FullMethodName     = "/access.v1.TenantProfileManagementApplication/GetTenantProfile"
+	TenantProfileManagementApplication_UpdateTenantProfile_FullMethodName  = "/access.v1.TenantProfileManagementApplication/UpdateTenantProfile"
+	TenantProfileManagementApplication_GetTenantBranding_FullMethodName    = "/access.v1.TenantProfileManagementApplication/GetTenantBranding"
+	TenantProfileManagementApplication_UpdateTenantBranding_FullMethodName = "/access.v1.TenantProfileManagementApplication/UpdateTenantBranding"
 )
 
 // TenantProfileManagementApplicationClient is the client API for TenantProfileManagementApplication service.
@@ -29,6 +31,8 @@ const (
 type TenantProfileManagementApplicationClient interface {
 	GetTenantProfile(ctx context.Context, in *GetTenantProfileRequest, opts ...grpc.CallOption) (*TenantProfileDTO, error)
 	UpdateTenantProfile(ctx context.Context, in *UpdateTenantProfileRequest, opts ...grpc.CallOption) (*TenantProfileDTO, error)
+	GetTenantBranding(ctx context.Context, in *GetTenantBrandingRequest, opts ...grpc.CallOption) (*TenantBrandingDTO, error)
+	UpdateTenantBranding(ctx context.Context, in *UpdateTenantBrandingRequest, opts ...grpc.CallOption) (*TenantBrandingDTO, error)
 }
 
 type tenantProfileManagementApplicationClient struct {
@@ -59,12 +63,34 @@ func (c *tenantProfileManagementApplicationClient) UpdateTenantProfile(ctx conte
 	return out, nil
 }
 
+func (c *tenantProfileManagementApplicationClient) GetTenantBranding(ctx context.Context, in *GetTenantBrandingRequest, opts ...grpc.CallOption) (*TenantBrandingDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TenantBrandingDTO)
+	err := c.cc.Invoke(ctx, TenantProfileManagementApplication_GetTenantBranding_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantProfileManagementApplicationClient) UpdateTenantBranding(ctx context.Context, in *UpdateTenantBrandingRequest, opts ...grpc.CallOption) (*TenantBrandingDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TenantBrandingDTO)
+	err := c.cc.Invoke(ctx, TenantProfileManagementApplication_UpdateTenantBranding_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TenantProfileManagementApplicationServer is the server API for TenantProfileManagementApplication service.
 // All implementations should embed UnimplementedTenantProfileManagementApplicationServer
 // for forward compatibility.
 type TenantProfileManagementApplicationServer interface {
 	GetTenantProfile(context.Context, *GetTenantProfileRequest) (*TenantProfileDTO, error)
 	UpdateTenantProfile(context.Context, *UpdateTenantProfileRequest) (*TenantProfileDTO, error)
+	GetTenantBranding(context.Context, *GetTenantBrandingRequest) (*TenantBrandingDTO, error)
+	UpdateTenantBranding(context.Context, *UpdateTenantBrandingRequest) (*TenantBrandingDTO, error)
 }
 
 // UnimplementedTenantProfileManagementApplicationServer should be embedded to have
@@ -79,6 +105,12 @@ func (UnimplementedTenantProfileManagementApplicationServer) GetTenantProfile(co
 }
 func (UnimplementedTenantProfileManagementApplicationServer) UpdateTenantProfile(context.Context, *UpdateTenantProfileRequest) (*TenantProfileDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateTenantProfile not implemented")
+}
+func (UnimplementedTenantProfileManagementApplicationServer) GetTenantBranding(context.Context, *GetTenantBrandingRequest) (*TenantBrandingDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTenantBranding not implemented")
+}
+func (UnimplementedTenantProfileManagementApplicationServer) UpdateTenantBranding(context.Context, *UpdateTenantBrandingRequest) (*TenantBrandingDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateTenantBranding not implemented")
 }
 func (UnimplementedTenantProfileManagementApplicationServer) testEmbeddedByValue() {}
 
@@ -136,6 +168,42 @@ func _TenantProfileManagementApplication_UpdateTenantProfile_Handler(srv interfa
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TenantProfileManagementApplication_GetTenantBranding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTenantBrandingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantProfileManagementApplicationServer).GetTenantBranding(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantProfileManagementApplication_GetTenantBranding_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantProfileManagementApplicationServer).GetTenantBranding(ctx, req.(*GetTenantBrandingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantProfileManagementApplication_UpdateTenantBranding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateTenantBrandingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantProfileManagementApplicationServer).UpdateTenantBranding(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantProfileManagementApplication_UpdateTenantBranding_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantProfileManagementApplicationServer).UpdateTenantBranding(ctx, req.(*UpdateTenantBrandingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TenantProfileManagementApplication_ServiceDesc is the grpc.ServiceDesc for TenantProfileManagementApplication service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -150,6 +218,14 @@ var TenantProfileManagementApplication_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateTenantProfile",
 			Handler:    _TenantProfileManagementApplication_UpdateTenantProfile_Handler,
+		},
+		{
+			MethodName: "GetTenantBranding",
+			Handler:    _TenantProfileManagementApplication_GetTenantBranding_Handler,
+		},
+		{
+			MethodName: "UpdateTenantBranding",
+			Handler:    _TenantProfileManagementApplication_UpdateTenantBranding_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

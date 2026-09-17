@@ -226,6 +226,11 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.GetTenantAuditRecordRequest"
       },
+      "access_v1_GetTenantBrandingRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.GetTenantBrandingRequest"
+      },
       "access_v1_GetTenantDelegationRequest": {
         "properties": {
           "id": {
@@ -613,6 +618,29 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.TenantAuditRecordDTO"
       },
+      "access_v1_TenantBrandingDTO": {
+        "properties": {
+          "canManage": {
+            "type": "boolean"
+          },
+          "preset": {
+            "type": "string"
+          },
+          "primary": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.TenantBrandingDTO"
+      },
       "access_v1_TenantDTO": {
         "properties": {
           "id": {
@@ -889,6 +917,23 @@
         ],
         "type": "string",
         "x-yunka-proto-full-name": "access.v1.TenantStatus"
+      },
+      "access_v1_UpdateTenantBrandingRequest": {
+        "properties": {
+          "preset": {
+            "type": "string"
+          },
+          "primary": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.UpdateTenantBrandingRequest"
       },
       "access_v1_UpdateTenantDepartmentRequest": {
         "properties": {
@@ -4786,6 +4831,56 @@
           "access.v1.TenantAuditManagementApplication"
         ],
         "x-yunka-rpc": "/access.v1.TenantAuditManagementApplication/GetTenantAuditRecord"
+      }
+    },
+    "/v1/tenant/branding": {
+      "get": {
+        "operationId": "access.v1.TenantProfileManagementApplication.GetTenantBranding",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantBrandingDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantProfileManagementApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantProfileManagementApplication/GetTenantBranding"
+      },
+      "patch": {
+        "operationId": "access.v1.TenantProfileManagementApplication.UpdateTenantBranding",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_UpdateTenantBrandingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantBrandingDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantProfileManagementApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantProfileManagementApplication/UpdateTenantBranding"
       }
     },
     "/v1/tenant/delegations": {

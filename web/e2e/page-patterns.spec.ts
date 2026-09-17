@@ -11,6 +11,7 @@ const examples = [
   { path: '/enterprise/organization', pattern: 'WorkbenchPage', regions: ['page-heading', 'workspace', 'organization-tree', 'department-detail'] },
   { path: '/enterprise/plan', pattern: 'WorkbenchPage', regions: ['page-heading', 'subscription', 'quota-summary', 'workspace'] },
   { path: '/enterprise/company', pattern: 'FormPage', regions: ['page-heading', 'form-workspace', 'form-actions', 'scope'] },
+  { path: '/enterprise/branding', pattern: 'FormPage', regions: ['page-heading', 'form-workspace', 'form-actions', 'scope'] },
   { path: '/enterprise/logs', pattern: 'ListPage', regions: ['page-heading', 'query', 'data'] },
   { path: '/system/general', pattern: 'FormPage', regions: ['page-heading', 'form-workspace', 'scope'] },
 ]

@@ -9,6 +9,7 @@ import AppHeader from './AppHeader.vue'
 import PrimaryNavigation from './PrimaryNavigation.vue'
 import ModulePanel from './ModulePanel.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
+import { applyUiTheme, resolveTenantUiTheme } from '@/ui/base/theme'
 
 const ui = useUiStore()
 const store = useEnterpriseStore()
@@ -56,6 +57,22 @@ watch(
       frame.value?.querySelector<HTMLElement>(`[data-module-id="${old}"]`)?.focus()
     }
   },
+)
+
+watch(
+  [() => store.tenantId, () => store.branding] as const,
+  ([tenantId, branding]) => {
+    if (!branding || branding.tenantId !== tenantId) {
+      applyUiTheme('blue')
+      return
+    }
+    try {
+      applyUiTheme(resolveTenantUiTheme({ preset: branding.preset, primary: branding.primary || undefined }))
+    } catch {
+      applyUiTheme('blue')
+    }
+  },
+  { immediate: true },
 )
 
 onMounted(() => {

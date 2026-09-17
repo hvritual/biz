@@ -34,3 +34,9 @@ Read README.md before editing. Work only under `web/` unless the user explicitly
 - Review CoffeeLink acceptance screenshots at 1366x768, 1440x900, 1536x1024, and 390x844. Build success does not replace visual review.
 - Never weaken `check-architecture.mjs` or `check-ui-contracts.mjs` to make a change pass. Fix the implementation or the test if the test is coupled to obsolete DOM structure.
 - Commit conventional source files and lockfile only; do not commit `node_modules`, `dist`, screenshots, test traces, diagnostic logs, or temporary migration workflows/scripts.
+
+## Registry-first application workflow
+
+- For UI application work, follow [`../docs/design/REGISTRY-FIRST-WORKFLOW.md`](../docs/design/REGISTRY-FIRST-WORKFLOW.md): read the requirement and constraints, query the generated design index, inspect the selected real source/API, make the smallest Page Contract delta, compose Vue, then run checks and browser/API evidence.
+- Record only bounded search terms, candidate IDs and selection/rejection reasons in the task/PR evidence. Do not create a second editable Props, token, route, permission or business-state catalog.
+- Application work consumes existing Token/Shell/Pattern/public components. A real gap that requires a new shared primitive, Token or Pattern is a design-system maintenance change and must be reviewed as such; do not weaken a checker or rewrite expected screenshots to manufacture success.
