@@ -26,6 +26,10 @@ type ce12BrowserFixture struct {
 	AllowedTenant           string `json:"allowed_tenant"`
 	IAMDeniedTenant         string `json:"iam_denied_tenant"`
 	EntitlementDeniedTenant string `json:"entitlement_denied_tenant"`
+	BrandTenantA            string `json:"brand_tenant_a"`
+	BrandTenantB            string `json:"brand_tenant_b"`
+	BrandTenantAName        string `json:"brand_tenant_a_name"`
+	BrandTenantBName        string `json:"brand_tenant_b_name"`
 }
 
 func TestCE12BrowserSeed(t *testing.T) {
@@ -90,6 +94,21 @@ func TestCE12BrowserSeed(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// #147 reuses the real CE-12 tenant/session authority to prove that browser
+	// appearance preferences remain orthogonal to #107 server-authoritative branding.
+	if err := db.Table("biz_tenants").Where("id = ?", allowed).Updates(map[string]any{
+		"brand_preset":  "violet",
+		"brand_primary": "",
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("biz_tenants").Where("id = ?", iamDenied).Updates(map[string]any{
+		"brand_preset":  "emerald",
+		"brand_primary": "",
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+
 	var sourceVersion uint64
 	if err := db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", entitlementDenied).Scan(&sourceVersion).Error; err != nil {
 		t.Fatal(err)
@@ -120,6 +139,10 @@ func TestCE12BrowserSeed(t *testing.T) {
 		AllowedTenant:           allowed,
 		IAMDeniedTenant:         iamDenied,
 		EntitlementDeniedTenant: entitlementDenied,
+		BrandTenantA:            allowed,
+		BrandTenantB:            iamDenied,
+		BrandTenantAName:        "CE12 Allowed",
+		BrandTenantBName:        "CE12 IAM Denied",
 	}
 	payload, err := json.MarshalIndent(fixture, "", "  ")
 	if err != nil {
