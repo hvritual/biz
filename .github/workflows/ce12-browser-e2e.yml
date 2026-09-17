@@ -139,6 +139,10 @@ jobs:
           export YUNKA_BIZ_IDP_SIGNING_KEY_FILE="$RUNNER_TEMP/ce12-idp-signing.pem"
           export YUNKA_BIZ_IDP_PREVIOUS_SIGNING_KEY_FILES="$RUNNER_TEMP/ce12-idp-previous.pem"
           export YUNKA_BIZ_IDP_COOKIE_SECURE="false"
+          export YUNKA_BIZ_PRIVACY_AGREEMENT_VERSION="ce12-v1"
+          export YUNKA_BIZ_PRIVACY_POLICY_URL="https://example.invalid/privacy"
+          export YUNKA_BIZ_TERMS_URL="https://example.invalid/terms"
+          export YUNKA_BIZ_PRIVACY_RECONSENT_POLICY="current_version_required"
           export YUNKA_BIZ_IDP_LISTEN="127.0.0.1:18081"
           export YUNKA_BIZ_IDP_AUTO_MIGRATE="true"
           nohup go -C biz run ./cmd/biz-idp >"$RUNNER_TEMP/ce12-idp.log" 2>&1 &
