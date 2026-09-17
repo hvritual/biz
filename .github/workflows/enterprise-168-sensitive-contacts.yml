@@ -12,6 +12,7 @@ on:
       - internal/access/**
       - internal/bizruntime/**
       - integration/enterprise_168_sensitive_contacts_mysql_test.go
+      - integration/enterprise_168_migration_backfill_mysql_test.go
       - go.mod
       - go.sum
   workflow_dispatch:
@@ -86,7 +87,8 @@ jobs:
           set -euo pipefail
           go -C biz test ./internal/access/infrastructure/persistence ./internal/access/application ./internal/bizruntime
           go -C biz vet ./internal/access/infrastructure/persistence ./internal/bizruntime ./cmd/biz ./cmd/biz-idp
-          test -z "$(grep -R -nE 'fmt\.(Print|Printf|Println).*?(password|token|otp|email|phone)|log\.(Print|Printf|Println).*?(password|token|otp|email|phone)' biz/internal/access biz/internal/bizruntime biz/cmd/biz biz/cmd/biz-idp || true)"
+          leaks="$(grep -R -nEi '(fmt|log)\.(Print|Printf|Println).*\b(password|token|otp|email|phone)\b' biz/internal/access biz/internal/bizruntime biz/cmd/biz biz/cmd/biz-idp || true)"
+          test -z "$leaks" || { printf '%s\n' "$leaks"; exit 1; }
       - name: Real MySQL protected-contact qualification
         shell: bash
         run: |
