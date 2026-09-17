@@ -9,6 +9,7 @@ import { setUiLocale, type UiLocale } from '@/i18n'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import AvatarMark from '@/ui/common/AvatarMark.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
+import AppearanceControls from '@/ui/common/AppearanceControls.vue'
 import brand from '@/assets/brand-mark.png'
 
 const ui = useUiStore()
@@ -77,6 +78,7 @@ function globalSearch() {
     </form>
 
     <div class="header-actions">
+      <AppearanceControls />
       <UiSelect class="locale-select" :value="locale" :aria-label="t('common.locale')" @change="changeLocale">
         <UiOption value="zh-CN">{{ t('common.chinese') }}</UiOption>
         <UiOption value="en-US">{{ t('common.english') }}</UiOption>
@@ -128,6 +130,7 @@ function globalSearch() {
 .app-header { height: var(--header-height); position: fixed; inset: 0 0 auto; z-index: var(--z-header); display: flex; align-items: center; gap: 20px; padding: 0 24px 0 20px; backdrop-filter: blur(10px); }
 .brand { display: flex; align-items: center; gap: 7px; width: 176px; flex-shrink: 0; color: var(--color-text); }
 .brand img { width: 38px; height: 43px; object-fit: contain; mix-blend-mode: multiply; }
+:global(:root[data-ui-mode='dark']) .brand img { mix-blend-mode: normal; }
 .brand strong { display: block; font-size: 21px; line-height: 1.2; letter-spacing: -0.6px; font-weight: 750; }
 .brand small { display: block; font-size: 11px; margin-top: 2px; }
 .header-company { display: flex; align-items: center; gap: 9px; white-space: nowrap; }
@@ -138,7 +141,7 @@ function globalSearch() {
 .global-search input { border: 0; background: none; outline: 0; min-width: 0; flex: 1; font-size: 12px; }
 .global-search input::placeholder { color: var(--color-text-muted); }
 .global-search > span { font-size: 11px; white-space: nowrap; }
-.header-actions { display: flex; align-items: center; gap: 12px; }
+.header-actions { display: flex; align-items: center; gap: 8px; }
 .locale-select { width: 96px; min-width: 96px; font-size: 11px; }
 .header-link { display: flex; align-items: center; gap: 6px; white-space: nowrap; padding: 0; font-size: 12px; }
 .notification { position: relative; }
@@ -146,7 +149,7 @@ function globalSearch() {
 .profile { display: flex; align-items: center; gap: 10px; text-align: left; padding: 0 0 0 12px; border-left: 1px solid var(--color-border); font-size: 13px; }
 .profile small { display: block; color: var(--color-text-muted); font-size: 11px; }
 .mobile-toggle { display: none; }
-@media (max-width: 1250px) { .header-link { display: none; } .header-company select { max-width: 155px; } .header-actions { gap: 8px; } .app-header { gap: 14px; } .edition { display: none; } }
-@media (max-width: 900px) { .locale-select { width: 88px; min-width: 88px; } }
-@media (max-width: 767px) { .app-header { padding: 0 14px; gap: 8px; } .brand { width: auto; flex: 1; } .brand strong { font-size: 19px; } .brand img { height: 37px; width: 31px; } .brand small { font-size: 10px; } .header-company, .global-search, .profile > span:not(.avatar-mark), .profile > .icon { display: none; } .profile { padding-left: 5px; border: 0; } .mobile-toggle { display: flex; order: -1; } .header-actions { gap: 2px; } .locale-select { width: 82px; min-width: 82px; } }
+@media (max-width: 1250px) { .header-link { display: none; } .header-company select { max-width: 155px; } .header-actions { gap: 6px; } .app-header { gap: 14px; } .edition { display: none; } }
+@media (max-width: 900px) { .locale-select { display: none; } }
+@media (max-width: 767px) { .app-header { padding: 0 14px; gap: 8px; } .brand { width: auto; flex: 1; } .brand strong { font-size: 19px; } .brand img { height: 37px; width: 31px; } .brand small { font-size: 10px; } .header-company, .global-search, .profile > span:not(.avatar-mark), .profile > .icon { display: none; } .profile { padding-left: 5px; border: 0; } .mobile-toggle { display: flex; order: -1; } .header-actions { gap: 2px; } }
 </style>

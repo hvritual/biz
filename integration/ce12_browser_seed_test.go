@@ -20,12 +20,17 @@ import (
 
 type ce12BrowserFixture struct {
 	BaseURL                 string `json:"base_url"`
+	UIBaseURL               string `json:"ui_base_url"`
 	DiscoveryURL            string `json:"discovery_url"`
 	Email                   string `json:"email"`
 	Password                string `json:"password"`
 	AllowedTenant           string `json:"allowed_tenant"`
 	IAMDeniedTenant         string `json:"iam_denied_tenant"`
 	EntitlementDeniedTenant string `json:"entitlement_denied_tenant"`
+	BrandTenantA            string `json:"brand_tenant_a"`
+	BrandTenantB            string `json:"brand_tenant_b"`
+	BrandTenantAName        string `json:"brand_tenant_a_name"`
+	BrandTenantBName        string `json:"brand_tenant_b_name"`
 }
 
 func TestCE12BrowserSeed(t *testing.T) {
@@ -49,6 +54,7 @@ func TestCE12BrowserSeed(t *testing.T) {
 		Token:   platformToken,
 		Permissions: []authz.PermissionKey{
 			"platform.entitlement.manage", "platform.entitlement.read", "platform.tenant.read", "commercial.catalog.read",
+			"platform.module.manage", "platform.module.read", "platform.module.technical.manage",
 		},
 	}); err != nil {
 		t.Fatal(err)
@@ -61,6 +67,37 @@ func TestCE12BrowserSeed(t *testing.T) {
 	defer conn.Close()
 	tenants := accessv1.NewTenantLifecycleApplicationClient(conn)
 	entitlements := commercialv1.NewEntitlementManagementApplicationClient(conn)
+	catalog := commercialv1.NewModuleCatalogApplicationClient(conn)
+
+	// Reuse the CE-04/CE-02 platform Module Catalog authority. Branding is mapped
+	// to access-management/tenant.lifecycle, so the module must exist in the live
+	// commercial catalog before the real entitlement override can be accepted.
+	accessModule, err := catalog.GetModule(ce04Context(platformToken, ""), &commercialv1.GetModuleRequest{ModuleCode: "access-management"})
+	if err != nil {
+		key := "ce12-access-module-" + ce04Random(t)
+		accessModule, err = catalog.CreateModule(ce04Context(platformToken, key), &commercialv1.CreateModuleRequest{
+			RequestId:  key,
+			ModuleCode: "access-management",
+			Name:       "access-management",
+			Reason:     "CE12 real branding qualification catalog",
+		})
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	if accessModule.TechnicalStatus != commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_READY {
+		key := "ce12-access-ready-" + ce04Random(t)
+		accessModule, err = catalog.SetModuleTechnicalStatus(ce04Context(platformToken, key), &commercialv1.SetModuleTechnicalStatusRequest{
+			RequestId:       key,
+			ModuleCode:      "access-management",
+			TechnicalStatus: commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_READY,
+			Version:         accessModule.Version,
+			Reason:          "CE12 restore real access-management qualification fixture",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	userID := "ce12-browser-user"
 	email := "ce12.browser@example.invalid"
@@ -70,7 +107,7 @@ func TestCE12BrowserSeed(t *testing.T) {
 	entitlementDenied := ce12CreateActiveTenant(t, tenants, platformToken, "CE12 Entitlement Denied", "ce12-entitlement-owner", "ce12.entitlement.owner@example.invalid")
 
 	browserReadPermissions := append([]authz.PermissionKey{}, devicepolicy.Permissions()...)
-	browserReadPermissions = append(browserReadPermissions, "tenant.entitlement.read", "commercial.catalog.read")
+	browserReadPermissions = append(browserReadPermissions, "tenant.entitlement.read", "commercial.catalog.read", "tenant.branding.read")
 	if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
 		TenantID: allowed, TenantName: "CE12 Allowed", UserID: userID, Email: email, Token: "ce12-setup-allowed",
 	}, browserReadPermissions); err != nil {
@@ -78,7 +115,7 @@ func TestCE12BrowserSeed(t *testing.T) {
 	}
 	if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
 		TenantID: iamDenied, TenantName: "CE12 IAM Denied", UserID: userID, Email: email, Token: "ce12-setup-iam-denied",
-	}, []authz.PermissionKey{"tenant.entitlement.read", "commercial.catalog.read"}); err != nil {
+	}, []authz.PermissionKey{"tenant.entitlement.read", "commercial.catalog.read", "tenant.branding.read"}); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
@@ -88,6 +125,50 @@ func TestCE12BrowserSeed(t *testing.T) {
 	}
 	if err := store.SetUserPassword(ctx, userID, password); err != nil {
 		t.Fatal(err)
+	}
+
+	// #147 reuses the real CE-12 tenant/session authority to prove that browser
+	// appearance preferences remain orthogonal to #107 server-authoritative branding.
+	if err := db.Table("biz_tenants").Where("id = ?", allowed).Updates(map[string]any{
+		"brand_preset":  "violet",
+		"brand_primary": "",
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("biz_tenants").Where("id = ?", iamDenied).Updates(map[string]any{
+		"brand_preset":  "emerald",
+		"brand_primary": "",
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	// Use the real CE-04 entitlement authority. The fixture grants the capability
+	// required by the live catalog rather than bypassing Commercial Guard.
+	for _, grant := range []struct {
+		tenant string
+		id     string
+	}{{allowed, "ce12-brand-a-lifecycle"}, {iamDenied, "ce12-brand-b-lifecycle"}} {
+		var version uint64
+		if err := db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", grant.tenant).Scan(&version).Error; err != nil {
+			t.Fatal(err)
+		}
+		if version == 0 {
+			t.Fatalf("branding tenant %s has no subscription-derived source version", grant.tenant)
+		}
+		_, err = entitlements.CreateEntitlementOverride(ce04Context(platformToken, grant.id), &commercialv1.CreateEntitlementOverrideRequest{
+			RequestId:       grant.id,
+			TenantId:        grant.tenant,
+			ExpectedVersion: version,
+			ModuleCode:      "access-management",
+			Target:          commercialv1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY,
+			Key:             "tenant.lifecycle",
+			Effect:          commercialv1.EntitlementEffect_ENTITLEMENT_EFFECT_GRANT,
+			EffectiveAt:     time.Now().UTC().Add(-time.Minute).Format(time.RFC3339),
+			Reason:          "CE12 browser E2E grants real access-management capability for branding proof",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	var sourceVersion uint64
@@ -114,12 +195,17 @@ func TestCE12BrowserSeed(t *testing.T) {
 
 	fixture := ce12BrowserFixture{
 		BaseURL:                 "http://127.0.0.1:18080",
+		UIBaseURL:               "http://127.0.0.1:15173",
 		DiscoveryURL:            "http://127.0.0.1:18081/idp/.well-known/openid-configuration",
 		Email:                   email,
 		Password:                password,
 		AllowedTenant:           allowed,
 		IAMDeniedTenant:         iamDenied,
 		EntitlementDeniedTenant: entitlementDenied,
+		BrandTenantA:            allowed,
+		BrandTenantB:            iamDenied,
+		BrandTenantAName:        "CE12 Allowed",
+		BrandTenantBName:        "CE12 IAM Denied",
 	}
 	payload, err := json.MarshalIndent(fixture, "", "  ")
 	if err != nil {
