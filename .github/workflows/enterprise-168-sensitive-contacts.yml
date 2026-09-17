@@ -1,0 +1,99 @@
+name: Enterprise 168 sensitive contact qualification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/enterprise-168-sensitive-contacts.yml
+      - cmd/biz/**
+      - cmd/biz-idp/**
+      - docs/enterprise-center/sensitive-identity.md
+      - internal/access/**
+      - internal/bizruntime/**
+      - integration/enterprise_168_sensitive_contacts_mysql_test.go
+      - go.mod
+      - go.sum
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sensitive-contacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      YUNKA_TEST_RESET_FIXTURES: "1"
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_enterprise168?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_enterprise168
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Read consumer lock
+        id: consumer_source
+        shell: bash
+        run: |
+          set -euo pipefail
+          source biz/.yunka/source.env
+          echo "sha=$YUNKA_COMMIT" >> "$GITHUB_OUTPUT"
+      - name: Checkout exact Yunka baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ steps.consumer_source.outputs.sha }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Load locked Go
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+      - name: Setup locked Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+      - name: Verify exact sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "${{ steps.consumer_source.outputs.sha }}"
+      - name: Unit and static security qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test ./internal/access/infrastructure/persistence ./internal/access/application ./internal/bizruntime
+          go -C biz vet ./internal/access/infrastructure/persistence ./internal/bizruntime ./cmd/biz ./cmd/biz-idp
+          test -z "$(grep -R -nE 'fmt\.(Print|Printf|Println).*?(password|token|otp|email|phone)|log\.(Print|Printf|Println).*?(password|token|otp|email|phone)' biz/internal/access biz/internal/bizruntime biz/cmd/biz biz/cmd/biz-idp || true)"
+      - name: Real MySQL protected-contact qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestEnterprise168'
+      - name: Verify candidate remains clean
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git -C biz status --porcelain)"
