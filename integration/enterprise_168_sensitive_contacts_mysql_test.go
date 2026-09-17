@@ -181,6 +181,9 @@ func TestEnterprise168LegacyBackfillIsBoundedIdempotentAndKeepsLogin(t *testing.
 	if err := legacyStore.AutoMigrate(ctx); err != nil {
 		t.Fatal(err)
 	}
+	if err := legacyStore.EnsureFirstPartyIDPSchema(ctx); err != nil {
+		t.Fatal(err)
+	}
 	legacyEmail := "legacy-168@example.invalid"
 	if err := legacyStore.Bootstrap(ctx, accesspersistence.Bootstrap{
 		TenantID: "legacy-tenant", TenantName: "Legacy Tenant", UserID: "legacy-user", Email: legacyEmail, Token: "legacy-token",
@@ -257,14 +260,25 @@ func TestEnterprise168VersionedMigrationAddsProtectedColumnsAndClearsOIDCEmail(t
 		"biz_memberships": {"email", "email_ciphertext", "email_lookup_hash", "email_key_version", "phone_ciphertext", "phone_lookup_hash", "phone_key_version"},
 	} {
 		for _, column := range columns {
-			if !db.Migrator().HasColumn(table, column) {
+			var count int64
+			if err := db.Raw(`SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`, table, column).Scan(&count).Error; err != nil {
+				t.Fatal(err)
+			}
+			if count != 1 {
 				t.Fatalf("migration did not add %s.%s", table, column)
 			}
 		}
 	}
-	for _, index := range []string{"uniq_biz_users_email_lookup_hash", "uniq_biz_memberships_email_lookup", "uniq_biz_memberships_phone_lookup"} {
-		found := db.Migrator().HasIndex("biz_users", index) || db.Migrator().HasIndex("biz_memberships", index)
-		if !found {
+	for index, table := range map[string]string{
+		"uniq_biz_users_email_lookup_hash":  "biz_users",
+		"uniq_biz_memberships_email_lookup": "biz_memberships",
+		"uniq_biz_memberships_phone_lookup": "biz_memberships",
+	} {
+		var count int64
+		if err := db.Raw(`SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?`, table, index).Scan(&count).Error; err != nil {
+			t.Fatal(err)
+		}
+		if count == 0 {
 			t.Fatalf("migration did not create %s", index)
 		}
 	}
