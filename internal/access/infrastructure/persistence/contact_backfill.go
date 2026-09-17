@@ -25,7 +25,9 @@ func (store *Store) BackfillLegacyContacts(ctx context.Context, limit int) (Cont
 	var result ContactBackfillResult
 	err := store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var users []userRecord
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("email_ciphertext = '' AND email <> '' AND email NOT LIKE ?", protectedEmailPrefix+"%").Order("id ASC").Limit(limit).Find(&users).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("(email_ciphertext IS NULL OR email_ciphertext = '') AND email <> '' AND email NOT LIKE ?", protectedEmailPrefix+"%").
+			Order("id ASC").Limit(limit).Find(&users).Error; err != nil {
 			return err
 		}
 		for index := range users {
@@ -40,7 +42,9 @@ func (store *Store) BackfillLegacyContacts(ctx context.Context, limit int) (Cont
 		}
 
 		var memberships []membershipRecord
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("email_ciphertext = '' OR (phone_ciphertext = '' AND phone <> '')").Order("tenant_id ASC, user_id ASC").Limit(limit).Find(&memberships).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("(email_ciphertext IS NULL OR email_ciphertext = '') OR ((phone_ciphertext IS NULL OR phone_ciphertext = '') AND phone <> '')").
+			Order("tenant_id ASC, user_id ASC").Limit(limit).Find(&memberships).Error; err != nil {
 			return err
 		}
 		for _, member := range memberships {
