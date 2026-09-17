@@ -430,9 +430,13 @@ func (idp *runtimeFirstPartyIdP) setLoginSecurityHeaders(writer http.ResponseWri
 	seenOrigins := map[string]struct{}{}
 	for _, raw := range []string{idp.config.PublicURL, idp.config.RedirectURL} {
 		parsed, err := url.Parse(strings.TrimSpace(raw))
-		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" { continue }
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+			continue
+		}
 		origin := parsed.Scheme + "://" + parsed.Host
-		if _, duplicate := seenOrigins[origin]; duplicate { continue }
+		if _, duplicate := seenOrigins[origin]; duplicate {
+			continue
+		}
 		seenOrigins[origin] = struct{}{}
 		formActions = append(formActions, origin)
 	}

@@ -119,7 +119,7 @@ type FirstPartyPrivacyConsentConfig struct {
 	AgreementVersion string
 	PrivacyPolicyURL string
 	TermsURL         string
-	ReconsentPolicy PrivacyReconsentPolicy
+	ReconsentPolicy  PrivacyReconsentPolicy
 }
 
 func (config FirstPartyPrivacyConsentConfig) Validate() error {
@@ -146,6 +146,7 @@ func (config FirstPartyPrivacyConsentConfig) Validate() error {
 func (config FirstPartyPrivacyConsentConfig) RequireCurrentVersion() bool {
 	return config.ReconsentPolicy == PrivacyReconsentCurrentVersion
 }
+
 type FirstPartyIdPConfig struct {
 	PublicURL             string
 	ClientID              string
