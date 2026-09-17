@@ -49,12 +49,21 @@ async function browserRequest(
   )
 }
 
+async function acceptPrivacyConsentIfRequired(page: Page) {
+  const heading = page.getByRole('heading', { name: '确认隐私与服务协议' })
+  if (await heading.isVisible()) {
+    await page.getByLabel(/我已阅读并同意/).check()
+    await page.getByRole('button', { name: '同意并继续' }).click()
+  }
+}
+
 async function login(page: Page, data: Fixture) {
   await page.goto(data.base_url + '/auth/login?return_to=/auth/session')
   await expect(page.getByRole('heading', { name: 'CoffeeLink 登录' })).toBeVisible()
   await page.getByLabel('邮箱').fill(data.email)
   await page.getByLabel('密码').fill(data.password)
   await page.getByRole('button', { name: '登录' }).click()
+  await acceptPrivacyConsentIfRequired(page)
   await expect(page).toHaveURL(data.base_url + '/auth/session')
 }
 
