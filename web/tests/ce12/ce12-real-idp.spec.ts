@@ -61,6 +61,14 @@ async function browserRequest(
   );
 }
 
+async function acceptPrivacyConsentIfRequired(page: Page) {
+  const heading = page.getByRole("heading", { name: "确认隐私与服务协议" });
+  if (await heading.isVisible()) {
+    await page.getByLabel(/我已阅读并同意/).check();
+    await page.getByRole("button", { name: "同意并继续" }).click();
+  }
+}
+
 function sessionFrom(result: BrowserResult): SessionView {
   expect(result.status).toBe(200);
   return result.json as SessionView;
@@ -102,6 +110,7 @@ test("TestCE12BrowserRealIdPToSessionTenantIAMEntitlement", async ({ page, reque
   await page.getByLabel("邮箱").fill(data.email);
   await page.getByLabel("密码").fill(data.password);
   await page.getByRole("button", { name: "登录" }).click();
+  await acceptPrivacyConsentIfRequired(page);
 
   await expect(page).toHaveURL(data.base_url + "/auth/session");
   const initial = sessionFrom(await browserRequest(page, data.base_url, "/auth/session"));
