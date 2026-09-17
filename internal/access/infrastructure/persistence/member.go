@@ -15,7 +15,10 @@ import (
 	"yunka.io/framework/requestscope"
 )
 
-type TenantMemberRepository struct{ database *gorm.DB }
+type TenantMemberRepository struct {
+	database          *gorm.DB
+	contactProtection *ContactProtection
+}
 
 func NewTenantMemberRepository(database *gorm.DB) (*TenantMemberRepository, error) {
 	if database == nil {
@@ -24,30 +27,72 @@ func NewTenantMemberRepository(database *gorm.DB) (*TenantMemberRepository, erro
 	return &TenantMemberRepository{database: database}, nil
 }
 
+func NewTenantMemberRepositoryWithContactProtection(database *gorm.DB, protection *ContactProtection) (*TenantMemberRepository, error) {
+	if database == nil {
+		return nil, errors.New("access persistence: tenant member database is required")
+	}
+	if protection == nil {
+		return nil, ErrSensitiveDataKeyUnavailable
+	}
+	return &TenantMemberRepository{database: database, contactProtection: protection}, nil
+}
+
+func (repository *TenantMemberRepository) accountStore() *Store {
+	return &Store{database: repository.database, contactProtection: repository.contactProtection}
+}
+
+func (repository *TenantMemberRepository) newMembershipRecord(member domain.Membership, contactEmail string) (membershipRecord, error) {
+	row := membershipRecord{TenantID: member.TenantID, UserID: member.UserID, Status: member.Status, Version: member.Version, CreatedAt: member.CreatedAt, UpdatedAt: member.UpdatedAt}
+	contactEmail = strings.TrimSpace(contactEmail)
+	if contactEmail == "" {
+		return row, nil
+	}
+	normalized, err := NormalizeEmail(contactEmail)
+	if err != nil {
+		return membershipRecord{}, err
+	}
+	if repository.contactProtection == nil {
+		row.Email = normalized
+		return row, nil
+	}
+	ciphertext, lookup, version, err := repository.contactProtection.ProtectEmail(normalized)
+	if err != nil {
+		return membershipRecord{}, err
+	}
+	row.EmailCiphertext = ciphertext
+	row.EmailLookupHash = &lookup
+	row.EmailKeyVersion = version
+	return row, nil
+}
+
 func (repository *TenantMemberRepository) Invite(ctx context.Context, tenantID, proposedUserID, email string, now time.Time) (domain.Membership, error) {
 	if repository == nil || repository.database == nil {
 		return domain.Membership{}, errors.New("access persistence: tenant member repository unavailable")
 	}
-	tenantID, proposedUserID, email = strings.TrimSpace(tenantID), strings.TrimSpace(proposedUserID), strings.TrimSpace(email)
-	if tenantID == "" || proposedUserID == "" || email == "" {
-		return domain.Membership{}, errors.New("access persistence: invite requires tenant, user and email")
+	tenantID, proposedUserID = strings.TrimSpace(tenantID), strings.TrimSpace(proposedUserID)
+	normalizedEmail, err := NormalizeEmail(email)
+	if tenantID == "" || proposedUserID == "" || err != nil {
+		return domain.Membership{}, errors.New("access persistence: invite requires tenant, user and valid email")
 	}
 	db := repository.database.WithContext(ctx)
-	var user userRecord
-	err := db.Where("email = ?", email).First(&user).Error
+	store := repository.accountStore()
+	user, _, err := store.findUserByEmail(ctx, db, normalizedEmail, false)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return domain.Membership{}, err
 		}
-		user = userRecord{ID: proposedUserID, Email: email, Status: "active", CreatedAt: now}
+		user, err = store.newUserRecord(proposedUserID, normalizedEmail, now)
+		if err != nil {
+			return domain.Membership{}, err
+		}
 		if createErr := db.Create(&user).Error; createErr != nil {
 			var mysqlErr *mysql.MySQLError
 			if !errors.As(createErr, &mysqlErr) || mysqlErr.Number != 1062 {
 				return domain.Membership{}, createErr
 			}
-			user = userRecord{}
-			if lookupErr := db.Clauses(clause.Locking{Strength: "UPDATE"}).Where("email = ?", email).First(&user).Error; lookupErr != nil {
-				return domain.Membership{}, lookupErr
+			user, _, err = store.findUserByEmail(ctx, db.Clauses(clause.Locking{Strength: "UPDATE"}), normalizedEmail, false)
+			if err != nil {
+				return domain.Membership{}, err
 			}
 		}
 	}
@@ -57,8 +102,15 @@ func (repository *TenantMemberRepository) Invite(ctx context.Context, tenantID, 
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return domain.Membership{}, err
 	}
-	member := domain.NewInvitedMembership(tenantID, user.ID, user.Email, now)
-	row := membershipRecord{TenantID: member.TenantID, UserID: member.UserID, Status: member.Status, Version: member.Version, CreatedAt: member.CreatedAt, UpdatedAt: member.UpdatedAt}
+	displayEmail, err := store.displayUserEmail(user)
+	if err != nil {
+		return domain.Membership{}, err
+	}
+	member := domain.NewInvitedMembership(tenantID, user.ID, displayEmail, now)
+	row, err := repository.newMembershipRecord(member, normalizedEmail)
+	if err != nil {
+		return domain.Membership{}, err
+	}
 	if err := db.Create(&row).Error; err != nil {
 		return domain.Membership{}, err
 	}
@@ -69,22 +121,30 @@ func (repository *TenantMemberRepository) Bootstrap(ctx context.Context, tenantI
 	if repository == nil || repository.database == nil {
 		return domain.Membership{}, errors.New("access persistence: tenant member repository unavailable")
 	}
-	tenantID, userID, email = strings.TrimSpace(tenantID), strings.TrimSpace(userID), strings.TrimSpace(email)
-	if tenantID == "" || userID == "" || email == "" {
-		return domain.Membership{}, errors.New("access persistence: bootstrap requires tenant, user and email")
+	tenantID, userID = strings.TrimSpace(tenantID), strings.TrimSpace(userID)
+	normalizedEmail, err := NormalizeEmail(email)
+	if tenantID == "" || userID == "" || err != nil {
+		return domain.Membership{}, errors.New("access persistence: bootstrap requires tenant, user and valid email")
 	}
 	db := repository.database.WithContext(ctx)
+	store := repository.accountStore()
 	var user userRecord
 	if err := db.Where("id = ?", userID).First(&user).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return domain.Membership{}, err
 		}
-		user = userRecord{ID: userID, Email: email, Status: "active", CreatedAt: now}
+		user, err = store.newUserRecord(userID, normalizedEmail, now)
+		if err != nil {
+			return domain.Membership{}, err
+		}
 		if err := db.Create(&user).Error; err != nil {
 			return domain.Membership{}, err
 		}
-	} else if user.Email != email {
-		return domain.Membership{}, ports.ErrTenantMemberConflict
+	} else {
+		existingEmail, emailErr := store.userEmail(user)
+		if emailErr != nil || !strings.EqualFold(existingEmail, normalizedEmail) {
+			return domain.Membership{}, ports.ErrTenantMemberConflict
+		}
 	}
 	var existing membershipRecord
 	if err := db.Where("tenant_id = ? AND user_id = ?", tenantID, userID).First(&existing).Error; err == nil {
@@ -95,8 +155,15 @@ func (repository *TenantMemberRepository) Bootstrap(ctx context.Context, tenantI
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return domain.Membership{}, err
 	}
-	member := domain.NewActiveMembership(tenantID, userID, email, now)
-	row := membershipRecord{TenantID: member.TenantID, UserID: member.UserID, Status: member.Status, Version: member.Version, CreatedAt: member.CreatedAt, UpdatedAt: member.UpdatedAt}
+	displayEmail, err := store.displayUserEmail(user)
+	if err != nil {
+		return domain.Membership{}, err
+	}
+	member := domain.NewActiveMembership(tenantID, userID, displayEmail, now)
+	row, err := repository.newMembershipRecord(member, normalizedEmail)
+	if err != nil {
+		return domain.Membership{}, err
+	}
 	if err := db.Create(&row).Error; err != nil {
 		return domain.Membership{}, err
 	}
@@ -122,20 +189,33 @@ func (repository *TenantMemberRepository) List(ctx context.Context, tenantID str
 		return nil, errors.New("access persistence: tenant member repository unavailable")
 	}
 	type row struct {
-		TenantID, UserID, Email, Status, Name, Phone, EmployeeID, Position, DepartmentID string
-		Version                                                                          uint64
-		CreatedAt, UpdatedAt                                                             time.Time
+		TenantID, UserID, AccountEmail, AccountEmailCiphertext, AccountEmailKeyVersion, Status, Name                         string
+		AccountEmailLookupHash                                                                                               *string
+		Email, EmailCiphertext, EmailKeyVersion, Phone, PhoneCiphertext, PhoneKeyVersion, EmployeeID, Position, DepartmentID string
+		EmailLookupHash, PhoneLookupHash                                                                                     *string
+		Version                                                                                                              uint64
+		CreatedAt, UpdatedAt                                                                                                 time.Time
 	}
 	var rows []row
 	if err := repository.database.WithContext(ctx).Table("biz_memberships m").
-		Select("m.tenant_id, m.user_id, u.email, m.status, m.name, m.phone, m.employee_id, m.position, m.department_id, m.version, m.created_at, m.updated_at").
+		Select("m.tenant_id, m.user_id, u.email AS account_email, u.email_ciphertext AS account_email_ciphertext, u.email_lookup_hash AS account_email_lookup_hash, u.email_key_version AS account_email_key_version, m.status, m.name, m.email, m.email_ciphertext, m.email_lookup_hash, m.email_key_version, m.phone, m.phone_ciphertext, m.phone_lookup_hash, m.phone_key_version, m.employee_id, m.position, m.department_id, m.version, m.created_at, m.updated_at").
 		Joins("JOIN biz_users u ON u.id = m.user_id").Where("m.tenant_id = ?", tenantID).
 		Order("m.created_at ASC, m.user_id ASC").Scan(&rows).Error; err != nil {
 		return nil, err
 	}
 	members := make([]domain.Membership, 0, len(rows))
 	for _, value := range rows {
-		members = append(members, domain.Membership{TenantID: value.TenantID, UserID: value.UserID, Email: value.Email, Status: value.Status, Name: value.Name, Phone: value.Phone, EmployeeID: value.EmployeeID, Position: value.Position, DepartmentID: value.DepartmentID, Version: value.Version, DerivedDataScope: domain.DataScopeNone, CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt})
+		membershipRow := membershipRecord{TenantID: value.TenantID, UserID: value.UserID, Status: value.Status, Name: value.Name, Email: value.Email, EmailCiphertext: value.EmailCiphertext, EmailLookupHash: value.EmailLookupHash, EmailKeyVersion: value.EmailKeyVersion, Phone: value.Phone, PhoneCiphertext: value.PhoneCiphertext, PhoneLookupHash: value.PhoneLookupHash, PhoneKeyVersion: value.PhoneKeyVersion, EmployeeID: value.EmployeeID, Position: value.Position, DepartmentID: value.DepartmentID, Version: value.Version, CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt}
+		accountRow := userRecord{ID: value.UserID, Email: value.AccountEmail, EmailCiphertext: value.AccountEmailCiphertext, EmailLookupHash: value.AccountEmailLookupHash, EmailKeyVersion: value.AccountEmailKeyVersion}
+		email, err := repository.displayMemberEmail(membershipRow, accountRow)
+		if err != nil {
+			return nil, err
+		}
+		phone, err := repository.displayPhone(membershipRow)
+		if err != nil {
+			return nil, err
+		}
+		members = append(members, domain.Membership{TenantID: value.TenantID, UserID: value.UserID, Email: email, Status: value.Status, Name: value.Name, Phone: phone, EmployeeID: value.EmployeeID, Position: value.Position, DepartmentID: value.DepartmentID, Version: value.Version, DerivedDataScope: domain.DataScopeNone, CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt})
 	}
 	if err := repository.enrichMemberAccess(ctx, members); err != nil {
 		return nil, err
@@ -147,9 +227,30 @@ func (repository *TenantMemberRepository) Update(ctx context.Context, member *do
 	if repository == nil || repository.database == nil || member == nil || expectedVersion == 0 {
 		return errors.New("access persistence: member update requires repository, value and version")
 	}
+	updates := map[string]any{"status": member.Status, "name": member.Name, "employee_id": member.EmployeeID, "position": member.Position, "department_id": member.DepartmentID, "updated_at": member.UpdatedAt, "version": gorm.Expr("version + 1")}
+	if repository.contactProtection == nil {
+		updates["phone"] = member.Phone
+	} else if !IsMaskedContact(member.Phone) {
+		if strings.TrimSpace(member.Phone) == "" {
+			updates["phone"] = ""
+			updates["phone_ciphertext"] = ""
+			updates["phone_lookup_hash"] = nil
+			updates["phone_key_version"] = ""
+		} else {
+			ciphertext, lookup, version, err := repository.contactProtection.ProtectPhone(member.Phone)
+			if err != nil {
+				return err
+			}
+			updates["phone"] = ""
+			updates["phone_ciphertext"] = ciphertext
+			updates["phone_lookup_hash"] = lookup
+			updates["phone_key_version"] = version
+			member.Phone = MaskPhone(member.Phone)
+		}
+	}
 	result := repository.database.WithContext(ctx).Model(&membershipRecord{}).
 		Where("tenant_id = ? AND user_id = ? AND version = ?", member.TenantID, member.UserID, expectedVersion).
-		Updates(map[string]any{"status": member.Status, "name": member.Name, "phone": member.Phone, "employee_id": member.EmployeeID, "position": member.Position, "department_id": member.DepartmentID, "updated_at": member.UpdatedAt, "version": gorm.Expr("version + 1")})
+		Updates(updates)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -172,11 +273,60 @@ func (repository *TenantMemberRepository) memberFromRecord(ctx context.Context, 
 	if err := repository.database.WithContext(ctx).Where("id = ?", row.UserID).First(&user).Error; err != nil {
 		return domain.Membership{}, err
 	}
-	members := []domain.Membership{{TenantID: row.TenantID, UserID: row.UserID, Email: user.Email, Status: row.Status, Name: row.Name, Phone: row.Phone, EmployeeID: row.EmployeeID, Position: row.Position, DepartmentID: row.DepartmentID, Version: row.Version, DerivedDataScope: domain.DataScopeNone, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}}
+	email, err := repository.displayMemberEmail(row, user)
+	if err != nil {
+		return domain.Membership{}, err
+	}
+	phone, err := repository.displayPhone(row)
+	if err != nil {
+		return domain.Membership{}, err
+	}
+	members := []domain.Membership{{TenantID: row.TenantID, UserID: row.UserID, Email: email, Status: row.Status, Name: row.Name, Phone: phone, EmployeeID: row.EmployeeID, Position: row.Position, DepartmentID: row.DepartmentID, Version: row.Version, DerivedDataScope: domain.DataScopeNone, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}}
 	if err := repository.enrichMemberAccess(ctx, members); err != nil {
 		return domain.Membership{}, err
 	}
 	return members[0], nil
+}
+
+func (repository *TenantMemberRepository) displayMemberEmail(row membershipRecord, account userRecord) (string, error) {
+	if strings.TrimSpace(row.EmailCiphertext) != "" || strings.TrimSpace(row.EmailKeyVersion) != "" || row.EmailLookupHash != nil {
+		if repository.contactProtection == nil {
+			return "", ErrSensitiveDataKeyUnavailable
+		}
+		plain, err := repository.contactProtection.DecryptEmail(row.EmailCiphertext, row.EmailKeyVersion)
+		if err != nil {
+			return "", err
+		}
+		return MaskEmail(plain), nil
+	}
+	if strings.TrimSpace(row.Email) != "" {
+		normalized, err := NormalizeEmail(row.Email)
+		if err != nil {
+			return "", err
+		}
+		if repository.contactProtection != nil {
+			return MaskEmail(normalized), nil
+		}
+		return normalized, nil
+	}
+	return repository.accountStore().displayUserEmail(account)
+}
+
+func (repository *TenantMemberRepository) displayPhone(row membershipRecord) (string, error) {
+	if strings.TrimSpace(row.PhoneCiphertext) != "" || strings.TrimSpace(row.PhoneKeyVersion) != "" || row.PhoneLookupHash != nil {
+		if repository.contactProtection == nil {
+			return "", ErrSensitiveDataKeyUnavailable
+		}
+		plain, err := repository.contactProtection.DecryptPhone(row.PhoneCiphertext, row.PhoneKeyVersion)
+		if err != nil {
+			return "", err
+		}
+		return MaskPhone(plain), nil
+	}
+	if repository.contactProtection != nil && strings.TrimSpace(row.Phone) != "" {
+		return MaskPhone(row.Phone), nil
+	}
+	return row.Phone, nil
 }
 
 func (repository *TenantMemberRepository) enrichMemberAccess(ctx context.Context, members []domain.Membership) error {
@@ -244,11 +394,21 @@ func scopeRank(scope domain.DataScope) int {
 }
 
 func NewTenantMemberRepositoryFactory(database *gorm.DB) (requestscope.RepositoryFactory[ports.TenantMemberRepositories], error) {
+	return NewTenantMemberRepositoryFactoryWithContactProtection(database, nil)
+}
+
+func NewTenantMemberRepositoryFactoryWithContactProtection(database *gorm.DB, protection *ContactProtection) (requestscope.RepositoryFactory[ports.TenantMemberRepositories], error) {
 	if database == nil {
 		return nil, errors.New("access persistence: database is required")
 	}
 	return requestscope.GORMRepositories(func(_ context.Context, transaction *gorm.DB) (ports.TenantMemberRepositories, error) {
-		member, err := NewTenantMemberRepository(transaction)
+		var member *TenantMemberRepository
+		var err error
+		if protection == nil {
+			member, err = NewTenantMemberRepository(transaction)
+		} else {
+			member, err = NewTenantMemberRepositoryWithContactProtection(transaction, protection)
+		}
 		if err != nil {
 			return ports.TenantMemberRepositories{}, err
 		}

@@ -160,9 +160,9 @@ func (store *Store) AuthenticateUserPassword(ctx context.Context, email, passwor
 		consumeDummyPasswordWork(password)
 		return LocalUserIdentity{}, ErrInvalidUserCredentials
 	}
-	var user userRecord
-	if err := store.database.WithContext(ctx).Where("LOWER(email) = LOWER(?) AND status = ?", email, "active").First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	user, authoritativeEmail, err := store.findUserByEmail(ctx, store.database, email, true)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, ErrInvalidContact) {
 			consumeDummyPasswordWork(password)
 			return LocalUserIdentity{}, ErrInvalidUserCredentials
 		}
@@ -191,7 +191,7 @@ func (store *Store) AuthenticateUserPassword(ctx context.Context, email, passwor
 	if subtle.ConstantTimeCompare(actual, expected) != 1 {
 		return LocalUserIdentity{}, ErrInvalidUserCredentials
 	}
-	return LocalUserIdentity{UserID: user.ID, Email: user.Email}, nil
+	return LocalUserIdentity{UserID: user.ID, Email: authoritativeEmail}, nil
 }
 
 func consumeDummyPasswordWork(password string) {
@@ -309,10 +309,14 @@ func (store *Store) ConsumeFirstPartyAuthorizationCode(ctx context.Context, code
 		if err := tx.Where("id = ? AND status = ?", row.UserID, "active").First(&user).Error; err != nil {
 			return ErrFirstPartyIDPFlow
 		}
+		email, err := store.userEmail(user)
+		if err != nil {
+			return err
+		}
 		if err := tx.Delete(&row).Error; err != nil {
 			return err
 		}
-		grant = FirstPartyAuthorizationGrant{UserID: user.ID, Email: user.Email, Nonce: row.Nonce, Scope: row.Scope}
+		grant = FirstPartyAuthorizationGrant{UserID: user.ID, Email: email, Nonce: row.Nonce, Scope: row.Scope}
 		return nil
 	})
 	return grant, err

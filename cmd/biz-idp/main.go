@@ -66,11 +66,24 @@ func run() error {
 	if err := config.Validate(); err != nil {
 		return err
 	}
+	contactProtection, err := bizruntime.BuildContactProtection(
+		os.Getenv("YUNKA_BIZ_PII_ACTIVE_KEY_VERSION"),
+		os.Getenv("YUNKA_BIZ_PII_KEYS_JSON"),
+		os.Getenv("YUNKA_BIZ_PII_LOOKUP_KEY_B64"),
+	)
+	if err != nil {
+		return err
+	}
 	database, err := gorm.Open(gormmysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return fmt.Errorf("open IdP database: %w", err)
 	}
-	store, err := accesspersistence.New(database)
+	var store *accesspersistence.Store
+	if contactProtection == nil {
+		store, err = accesspersistence.New(database)
+	} else {
+		store, err = accesspersistence.NewWithContactProtection(database, contactProtection)
+	}
 	if err != nil {
 		return err
 	}
