@@ -134,7 +134,7 @@ func (store *Store) BindOIDCPlatformIdentity(ctx context.Context, issuer, subjec
 	now := time.Now().UTC()
 	return store.database.WithContext(ctx).Create(&webIdentityRecord{
 		Issuer: issuer, Subject: subject, ActorKind: WebActorPlatform, ActorID: platformSubject,
-		Email: strings.TrimSpace(email), CreatedAt: now, UpdatedAt: now,
+		Email: "", CreatedAt: now, UpdatedAt: now,
 	}).Error
 }
 
@@ -159,20 +159,15 @@ func (store *Store) ResolveOrBindOIDCIdentity(ctx context.Context, issuer, subje
 	if !emailVerified || email == "" {
 		return WebIdentity{}, ErrWebIdentityUnbound
 	}
-	var users []userRecord
-	if err := store.database.WithContext(ctx).
-		Where("LOWER(email) = LOWER(?) AND status = ?", email, "active").
-		Limit(2).Find(&users).Error; err != nil {
+	user, _, err := store.findUserByEmail(ctx, store.database, email, true)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, ErrInvalidContact) {
+			return WebIdentity{}, ErrWebIdentityUnbound
+		}
 		return WebIdentity{}, err
 	}
-	if len(users) != 1 {
-		return WebIdentity{}, ErrWebIdentityUnbound
-	}
 	now := time.Now().UTC()
-	candidate := webIdentityRecord{
-		Issuer: issuer, Subject: subject, ActorKind: WebActorUser, ActorID: users[0].ID,
-		Email: email, CreatedAt: now, UpdatedAt: now,
-	}
+	candidate := webIdentityRecord{Issuer: issuer, Subject: subject, ActorKind: WebActorUser, ActorID: user.ID, Email: "", CreatedAt: now, UpdatedAt: now}
 	if err := store.database.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&candidate).Error; err != nil {
 		return WebIdentity{}, err
 	}
@@ -206,7 +201,7 @@ func (store *Store) validateWebIdentityAuthority(ctx context.Context, link webId
 }
 
 func webIdentityFromRecord(record webIdentityRecord) WebIdentity {
-	return WebIdentity{Issuer: record.Issuer, Subject: record.Subject, ActorKind: record.ActorKind, ActorID: record.ActorID, Email: record.Email}
+	return WebIdentity{Issuer: record.Issuer, Subject: record.Subject, ActorKind: record.ActorKind, ActorID: record.ActorID}
 }
 
 func (store *Store) CreateWebSession(ctx context.Context, webIdentity WebIdentity, ttl time.Duration) (string, WebSessionAuthentication, error) {

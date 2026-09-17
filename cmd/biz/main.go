@@ -76,6 +76,15 @@ func run() error {
 		}
 	}
 
+	contactProtection, err := bizruntime.BuildContactProtection(
+		os.Getenv("YUNKA_BIZ_PII_ACTIVE_KEY_VERSION"),
+		os.Getenv("YUNKA_BIZ_PII_KEYS_JSON"),
+		os.Getenv("YUNKA_BIZ_PII_LOOKUP_KEY_B64"),
+	)
+	if err != nil {
+		return err
+	}
+
 	provider, err := platform.New(platform.Options{
 		Config:   bizruntime.ConfigProvider{DeviceOps: config},
 		Logger:   logExt.NewBaseLogger(),
@@ -99,14 +108,18 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	started, err := bizruntime.BootstrapWithOptions(ctx, provider, bizruntime.Options{
+	runtimeOptions := bizruntime.Options{
 		DeviceOps:           config,
 		CommercialLifecycle: lifecycle,
-		ProvisioningWorker: bizruntime.ProvisioningWorkerOptions{
-			Token: workerToken, Automatic: workerToken != "",
-		},
-		WebAuth: webAuth,
-	})
+		ProvisioningWorker:  bizruntime.ProvisioningWorkerOptions{Token: workerToken, Automatic: workerToken != ""},
+		WebAuth:             webAuth,
+	}
+	var started *bizruntime.Started
+	if contactProtection == nil {
+		started, err = bizruntime.BootstrapWithOptions(ctx, provider, runtimeOptions)
+	} else {
+		started, err = bizruntime.BootstrapWithOptionsAndContactProtection(ctx, provider, runtimeOptions, contactProtection)
+	}
 	if err != nil {
 		return err
 	}

@@ -69,6 +69,17 @@ func Bootstrap(ctx context.Context, provider *platform.Provider, config deviceop
 }
 
 func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, options Options) (*Started, error) {
+	return bootstrapWithOptions(ctx, provider, options, nil)
+}
+
+func BootstrapWithOptionsAndContactProtection(ctx context.Context, provider *platform.Provider, options Options, protection *accesspersistence.ContactProtection) (*Started, error) {
+	if protection == nil {
+		return nil, accesspersistence.ErrSensitiveDataKeyUnavailable
+	}
+	return bootstrapWithOptions(ctx, provider, options, protection)
+}
+
+func bootstrapWithOptions(ctx context.Context, provider *platform.Provider, options Options, protection *accesspersistence.ContactProtection) (*Started, error) {
 	if provider == nil {
 		return nil, errors.New("biz runtime: platform provider is required")
 	}
@@ -130,7 +141,7 @@ func BootstrapWithOptions(ctx context.Context, provider *platform.Provider, opti
 	result, err := generatedassembly.Bootstrap(ctx, generatedassembly.BootstrapOptions{
 		Platform: provider,
 		BindRuntime: func(bindCtx context.Context, prepared *platform.Provider) (generatedassembly.RuntimeBindings, error) {
-			return bindRuntime(bindCtx, prepared, options, authenticator, webAuth, worker)
+			return bindRuntimeWithContactProtection(bindCtx, prepared, options, authenticator, webAuth, protection, worker)
 		},
 		Transports:        generatedassembly.TransportBindings{HTTP: apiMux, RPC: grpcServer},
 		RuntimeComponents: components,
@@ -210,6 +221,10 @@ func (factory applicationFactories) BuildDeviceopsDeviceTransfer(dependencies ge
 }
 
 func bindRuntime(ctx context.Context, provider *platform.Provider, options Options, authenticator *runtimeAuthenticator, webAuth *runtimeWebAuth, workers ...*provisioningRunner) (generatedassembly.RuntimeBindings, error) {
+	return bindRuntimeWithContactProtection(ctx, provider, options, authenticator, webAuth, nil, workers...)
+}
+
+func bindRuntimeWithContactProtection(ctx context.Context, provider *platform.Provider, options Options, authenticator *runtimeAuthenticator, webAuth *runtimeWebAuth, protection *accesspersistence.ContactProtection, workers ...*provisioningRunner) (generatedassembly.RuntimeBindings, error) {
 	config := options.DeviceOps
 	deviceContext, err := provider.ForModule(deviceops.GeneratedDescriptor())
 	if err != nil {
@@ -229,7 +244,12 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 		return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: access primary database: %w", err)
 	}
 
-	accessStore, err := accesspersistence.New(accessDatabase)
+	var accessStore *accesspersistence.Store
+	if protection == nil {
+		accessStore, err = accesspersistence.New(accessDatabase)
+	} else {
+		accessStore, err = accesspersistence.NewWithContactProtection(accessDatabase, protection)
+	}
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
@@ -401,7 +421,12 @@ func bindRuntime(ctx context.Context, provider *platform.Provider, options Optio
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
-	memberRepositories, err := accesspersistence.NewTenantMemberRepositoryFactory(accessDatabase)
+	var memberRepositories requestscope.RepositoryFactory[accessports.TenantMemberRepositories]
+	if protection == nil {
+		memberRepositories, err = accesspersistence.NewTenantMemberRepositoryFactory(accessDatabase)
+	} else {
+		memberRepositories, err = accesspersistence.NewTenantMemberRepositoryFactoryWithContactProtection(accessDatabase, protection)
+	}
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
