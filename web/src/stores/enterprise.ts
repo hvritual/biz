@@ -55,6 +55,15 @@ import {
   tenantProfileRuntimeError,
   updateEnterpriseTenantProfile,
 } from '@/services/enterprise/tenantProfileRuntime'
+import {
+  getEnterpriseTenantBranding,
+  readEnterpriseTenantBrandingSession,
+  tenantBrandingRequestId,
+  tenantBrandingRuntimeError,
+  updateEnterpriseTenantBranding,
+  type EnterpriseTenantBranding,
+  type EnterpriseTenantBrandingDraft,
+} from '@/services/enterprise/tenantBrandingRuntime'
 import { loginUrl, type PermissionGrant, type TrustedSession } from '@/services/runtime/api'
 
 function serverMemberStatus(status: Member['status']) {
@@ -90,6 +99,15 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   const settings = computed(() => snapshot.value.settings)
   const previewMode = dataSource.kind === 'demo'
   const sourceKind = dataSource.kind
+  const demoBrandingByTenant = new Map<string, EnterpriseTenantBranding>([
+    ['shanghai', { tenantId: 'shanghai', preset: 'blue', primary: '', version: 1, canManage: true }],
+    ['hangzhou', { tenantId: 'hangzhou', preset: 'emerald', primary: '', version: 1, canManage: true }],
+  ])
+  const branding = ref<EnterpriseTenantBranding | null>(previewMode ? { ...demoBrandingByTenant.get(initial.tenantId)! } : null)
+  const brandingLoading = ref(false)
+  const brandingReady = ref(previewMode)
+  const brandingError = ref('')
+  const canManageBranding = computed(() => Boolean(branding.value?.canManage))
   const authenticated = computed(() => previewMode || Boolean(session.value?.authenticated))
   const tenantOptions = computed(() =>
     previewMode
@@ -109,6 +127,92 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   let memberMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let roleMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let departmentMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
+  let brandingMutation: { tenantId: string; signature: string; key: string } | null = null
+
+  async function refreshBranding() {
+    const targetTenant = tenantId.value
+    brandingLoading.value = true
+    brandingError.value = ''
+    try {
+      if (previewMode) {
+        const current = demoBrandingByTenant.get(targetTenant) ?? { tenantId: targetTenant, preset: 'blue', primary: '', version: 1, canManage: true }
+        demoBrandingByTenant.set(targetTenant, current)
+        branding.value = { ...current }
+        brandingReady.value = true
+        return true
+      }
+      const trusted = session.value
+      if (!trusted?.authenticated || !trusted.active_tenant_id || trusted.active_tenant_id !== targetTenant) {
+        branding.value = null
+        brandingReady.value = true
+        return false
+      }
+      const current = await getEnterpriseTenantBranding(trusted)
+      if (tenantId.value !== targetTenant) return false
+      branding.value = current
+      brandingReady.value = true
+      return true
+    } catch (error) {
+      if (tenantId.value === targetTenant) {
+        branding.value = null
+        brandingError.value = tenantBrandingRuntimeError(error)
+        brandingReady.value = true
+      }
+      return false
+    } finally {
+      if (tenantId.value === targetTenant) brandingLoading.value = false
+    }
+  }
+
+  async function stableBrandingSession() {
+    const expected = session.value
+    if (!expected?.authenticated || !expected.active_tenant_id) throw new Error('请先登录并选择可访问租户。')
+    const current = await readEnterpriseTenantBrandingSession()
+    if (!sameTrustedSession(expected, current)) {
+      branding.value = null
+      brandingMutation = null
+      throw new Error('会话或当前租户已变化，请刷新后重新操作。')
+    }
+    return current
+  }
+
+  async function saveBranding(draft: EnterpriseTenantBrandingDraft) {
+    const normalized: EnterpriseTenantBrandingDraft = {
+      preset: draft.preset,
+      primary: draft.preset === 'custom' ? draft.primary.trim().toLowerCase() : '',
+    }
+    if (previewMode) {
+      const current = branding.value ?? { tenantId: tenantId.value, preset: 'blue', primary: '', version: 0, canManage: true }
+      const next: EnterpriseTenantBranding = { ...current, ...normalized, tenantId: tenantId.value, version: Number(current.version) + 1, canManage: true }
+      demoBrandingByTenant.set(tenantId.value, next)
+      branding.value = { ...next }
+      brandingReady.value = true
+      return next
+    }
+    const current = branding.value
+    if (!current) throw new Error('企业品牌主题尚未从服务端加载。')
+    if (!current.canManage) throw new Error('当前账号没有维护企业品牌主题的权限。')
+    const signature = JSON.stringify({ tenantId: tenantId.value, version: current.version, ...normalized })
+    if (!brandingMutation || brandingMutation.tenantId !== tenantId.value || brandingMutation.signature !== signature) {
+      brandingMutation = { tenantId: tenantId.value, signature, key: tenantBrandingRequestId(tenantId.value) }
+    }
+    try {
+      const trusted = await stableBrandingSession()
+      const updated = await updateEnterpriseTenantBranding(trusted, current, normalized, brandingMutation.key)
+      if (updated.tenantId && updated.tenantId !== tenantId.value) throw new Error('企业品牌主题回读不属于当前租户。')
+      branding.value = updated
+      brandingError.value = ''
+      brandingReady.value = true
+      brandingMutation = null
+      return updated
+    } catch (error) {
+      throw new Error(tenantBrandingRuntimeError(error))
+    }
+  }
+
+  function resetBranding() {
+    return saveBranding({ preset: 'blue', primary: '' })
+  }
 
   function memberMutationSignature(draft: Member, action: MemberAction, expectedVersion: number) {
     return JSON.stringify({
@@ -207,8 +311,15 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     loading.value = true
     sourceError.value = ''
     try {
+      const previousTenant = tenantId.value
       const state = await dataSource.load(tenantId.value || undefined, activeDomains)
       applySourceState(state, activeDomains)
+      if (state.tenantId !== previousTenant) {
+        branding.value = null
+        brandingReady.value = false
+        brandingMutation = null
+        await refreshBranding()
+      }
       ready.value = true
     } catch (error) {
       sourceError.value = errorMessage(error, activeDomains)
@@ -236,6 +347,11 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       memberMutation = null
       roleMutation = null
       departmentMutation = null
+      branding.value = null
+      brandingError.value = ''
+      brandingReady.value = false
+      brandingMutation = null
+      await refreshBranding()
       ready.value = true
     } catch (error) {
       sourceError.value = errorMessage(error)
@@ -808,6 +924,11 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     company,
     logs,
     settings,
+    branding,
+    brandingLoading,
+    brandingReady,
+    brandingError,
+    canManageBranding,
     previewMode,
     sourceKind,
     sourceError,
@@ -829,6 +950,9 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     saveRole,
     saveCompany,
     saveDepartment,
+    refreshBranding,
+    saveBranding,
+    resetBranding,
     requestPasswordReset,
     saveSettings,
   }

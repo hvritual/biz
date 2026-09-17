@@ -31,9 +31,35 @@
     "product_shell_forbids_data_mode_ui_branch": true
   },
   "navigation": {
-    "primary_domains": ["工作台", "客户经营", "租赁运营", "设备运营", "经营管理", "企业中心", "平台管理", "系统设置"],
-    "required_section_groups": ["客户管理", "客户协同", "客户成功", "投放与资产", "计费与结算", "履约与服务", "设备资产", "设备配置", "远程运维", "服务维护", "交易管理", "经营分析"],
-    "forbidden_entity_path_tokens": ["CUS-", "CS-", "SH-"],
+    "primary_domains": [
+      "工作台",
+      "客户经营",
+      "租赁运营",
+      "设备运营",
+      "经营管理",
+      "企业中心",
+      "平台管理",
+      "系统设置"
+    ],
+    "required_section_groups": [
+      "客户管理",
+      "客户协同",
+      "客户成功",
+      "投放与资产",
+      "计费与结算",
+      "履约与服务",
+      "设备资产",
+      "设备配置",
+      "远程运维",
+      "服务维护",
+      "交易管理",
+      "经营分析"
+    ],
+    "forbidden_entity_path_tokens": [
+      "CUS-",
+      "CS-",
+      "SH-"
+    ],
     "rental_work_collections": [
       {
         "label": "投放交付",
@@ -60,7 +86,16 @@
         "id": "return"
       }
     ],
-    "primary_domain_ids": ["dashboard", "customer-operations", "rental-operations", "device-operations", "business-operations", "enterprise", "platform-commercial", "system"],
+    "primary_domain_ids": [
+      "dashboard",
+      "customer-operations",
+      "rental-operations",
+      "device-operations",
+      "business-operations",
+      "enterprise",
+      "platform-commercial",
+      "system"
+    ],
     "section_groups": {
       "customer-management": "客户管理",
       "customer-collaboration": "客户协同",
@@ -82,154 +117,311 @@
       "component": "@/features/platform/pages/PlatformOverviewView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "management-domains", "governance"]
+      "required_regions": [
+        "page-heading",
+        "management-domains",
+        "governance"
+      ]
     },
     {
       "path": "/platform/tenants",
       "component": "@/features/platform/pages/PlatformTenantsView.vue",
       "surface": "platform",
       "template": "ListPage",
-      "required_regions": ["page-heading", "metrics", "query", "data", "pagination"]
+      "required_regions": [
+        "page-heading",
+        "metrics",
+        "query",
+        "data",
+        "pagination"
+      ]
     },
     {
       "path": "/system/:section(general|notifications|security|integrations|dictionary)",
       "component": "@/features/system/pages/SettingsView.vue",
       "surface": "tenant",
       "template": "FormPage",
-      "required_regions": ["page-heading", "form-workspace", "scope"]
+      "required_regions": [
+        "page-heading",
+        "form-workspace",
+        "scope"
+      ]
     },
     {
       "path": "/platform/commercial/modules",
       "component": "@/features/platform/pages/CommercialModulesView.vue",
       "surface": "platform",
       "template": "ListPage",
-      "required_regions": ["page-heading", "metrics", "query", "data"]
+      "required_regions": [
+        "page-heading",
+        "metrics",
+        "query",
+        "data"
+      ]
     },
     {
       "path": "/platform/commercial/plans",
       "component": "@/features/platform/pages/CommercialPlansView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "authority", "query", "metrics", "workspace", "history", "detail"]
+      "required_regions": [
+        "page-heading",
+        "authority",
+        "query",
+        "metrics",
+        "workspace",
+        "history",
+        "detail"
+      ]
     },
     {
       "path": "/platform/commercial/tenant-entitlements",
       "component": "@/features/platform/pages/CommercialTenantEntitlementsView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "authority", "context", "metrics", "subscription", "change-workspace", "decisions", "overrides"]
+      "required_regions": [
+        "page-heading",
+        "authority",
+        "context",
+        "metrics",
+        "subscription",
+        "change-workspace",
+        "decisions",
+        "overrides"
+      ]
     },
     {
       "path": "/enterprise/members",
       "component": "@/features/enterprise/pages/MembersView.vue",
       "surface": "tenant",
       "template": "ListPage",
-      "required_regions": ["page-heading", "query", "data", "toolbar", "pagination"]
+      "required_regions": [
+        "page-heading",
+        "query",
+        "data",
+        "toolbar",
+        "pagination"
+      ]
     },
     {
       "path": "/enterprise/roles",
       "component": "@/features/enterprise/pages/RolesView.vue",
       "surface": "tenant",
       "template": "ListPage",
-      "required_regions": ["page-heading", "query", "data"]
+      "required_regions": [
+        "page-heading",
+        "query",
+        "data"
+      ]
     },
     {
       "path": "/enterprise/organization",
       "component": "@/features/enterprise/pages/OrganizationView.vue",
       "surface": "tenant",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "workspace", "organization-tree", "department-detail"]
+      "required_regions": [
+        "page-heading",
+        "workspace",
+        "organization-tree",
+        "department-detail"
+      ]
     },
     {
       "path": "/enterprise/plan",
       "component": "@/features/enterprise/pages/PlansView.vue",
       "surface": "tenant",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "subscription", "quota-summary", "workspace"]
+      "required_regions": [
+        "page-heading",
+        "subscription",
+        "quota-summary",
+        "workspace"
+      ]
     },
     {
       "path": "/enterprise/company",
       "component": "@/features/enterprise/pages/CompanyView.vue",
       "surface": "tenant",
       "template": "FormPage",
-      "required_regions": ["page-heading", "form-workspace", "form-actions", "scope"]
+      "required_regions": [
+        "page-heading",
+        "form-workspace",
+        "form-actions",
+        "scope"
+      ]
+    },
+    {
+      "path": "/enterprise/branding",
+      "component": "@/features/enterprise/pages/BrandingView.vue",
+      "surface": "tenant",
+      "template": "FormPage",
+      "required_regions": [
+        "page-heading",
+        "form-workspace",
+        "form-actions",
+        "scope"
+      ]
     },
     {
       "path": "/platform/commercial/features",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
     },
     {
       "path": "/platform/commercial/subscriptions",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
     },
     {
       "path": "/platform/commercial/authorization",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
     },
     {
       "path": "/platform/commercial/quotas",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
     },
     {
       "path": "/platform/commercial/usage-billing",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
     },
     {
       "path": "/platform/commercial/changes",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
     },
     {
       "path": "/platform/commercial/add-ons",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
     },
     {
       "path": "/platform/commercial/overrides",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
     },
     {
       "path": "/platform/commercial/expiry",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
     },
     {
       "path": "/platform/commercial/audit",
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "required_regions": ["page-heading", "preview", "metrics", "lifecycle", "query", "data", "detail"]
+      "required_regions": [
+        "page-heading",
+        "preview",
+        "metrics",
+        "lifecycle",
+        "query",
+        "data",
+        "detail"
+      ]
     },
     {
       "path": "/enterprise/logs",
       "component": "@/features/enterprise/pages/AuditLogsView.vue",
       "surface": "tenant",
       "template": "ListPage",
-      "required_regions": ["page-heading", "query", "data"]
+      "required_regions": [
+        "page-heading",
+        "query",
+        "data"
+      ]
     }
   ],
   "patterns": {
@@ -237,36 +429,113 @@
       "status": "implemented",
       "use_when": "浏览同一对象集合并筛选、查看或批量选择；查询与选择必须有独立状态。",
       "avoid_when": "多阶段配置、复杂对象关系或流程处置不应强迫放入表格加抽屉。",
-      "required_regions": ["page-heading", "query", "data"],
-      "optional_regions": ["metrics", "toolbar", "pagination", "detail"],
-      "states": ["loading", "empty", "no-results", "error", "unsupported", "feature-locked", "no-permission"],
-      "examples": ["/platform/tenants", "/enterprise/members", "/enterprise/roles", "/enterprise/logs"]
+      "required_regions": [
+        "page-heading",
+        "query",
+        "data"
+      ],
+      "optional_regions": [
+        "metrics",
+        "toolbar",
+        "pagination",
+        "detail"
+      ],
+      "states": [
+        "loading",
+        "empty",
+        "no-results",
+        "error",
+        "unsupported",
+        "feature-locked",
+        "no-permission"
+      ],
+      "examples": [
+        "/platform/tenants",
+        "/enterprise/members",
+        "/enterprise/roles",
+        "/enterprise/logs"
+      ]
     },
     "WorkbenchPage": {
       "status": "implemented",
       "use_when": "需要多个相关区域协作、对象上下文或配置影响比较；每页补充其实际工作区合同。",
       "avoid_when": "简单对象列表或单一资料表单不需要包装成万能工作台。",
-      "required_regions": ["page-heading"],
-      "optional_regions": ["authority", "context", "metrics", "workspace", "history", "detail"],
-      "states": ["loading", "empty", "error", "unsupported", "feature-locked", "no-permission"],
-      "examples": ["/platform/overview", "/enterprise/organization", "/enterprise/plan"]
+      "required_regions": [
+        "page-heading"
+      ],
+      "optional_regions": [
+        "authority",
+        "context",
+        "metrics",
+        "workspace",
+        "history",
+        "detail"
+      ],
+      "states": [
+        "loading",
+        "empty",
+        "error",
+        "unsupported",
+        "feature-locked",
+        "no-permission"
+      ],
+      "examples": [
+        "/platform/overview",
+        "/enterprise/organization",
+        "/enterprise/plan"
+      ]
     },
     "FormPage": {
       "status": "implemented",
       "use_when": "编辑有明确作用域的配置；分组、校验、未保存草稿、取消与服务端读回分别表达。",
       "avoid_when": "批量对象处理、授权诊断与远程任务不能因存在输入控件就视作普通表单。",
-      "required_regions": ["page-heading", "form-workspace", "scope"],
-      "optional_regions": ["form-actions", "history"],
-      "states": ["loading", "error", "unsupported", "feature-locked", "no-permission", "dirty", "submitting", "conflict", "readback-failed"],
-      "examples": ["/enterprise/company", "/system/:section(general|notifications|security|integrations|dictionary)"]
+      "required_regions": [
+        "page-heading",
+        "form-workspace",
+        "scope"
+      ],
+      "optional_regions": [
+        "form-actions",
+        "history"
+      ],
+      "states": [
+        "loading",
+        "error",
+        "unsupported",
+        "feature-locked",
+        "no-permission",
+        "dirty",
+        "submitting",
+        "conflict",
+        "readback-failed"
+      ],
+      "examples": [
+        "/enterprise/company",
+        "/system/:section(general|notifications|security|integrations|dictionary)"
+      ]
     },
     "MetricsPage": {
       "status": "reserved",
       "use_when": "有已接入的经营指标来源，并明确范围、时间窗口、单位、统计口径与新鲜度。",
       "avoid_when": "不能用零值填充未知数据；没有真实指标消费者时不预建页面。",
-      "required_regions": ["page-heading", "scope", "time-range", "metrics", "methodology"],
-      "optional_regions": ["drilldown"],
-      "states": ["loading", "empty", "error", "stale", "unknown", "no-permission"],
+      "required_regions": [
+        "page-heading",
+        "scope",
+        "time-range",
+        "metrics",
+        "methodology"
+      ],
+      "optional_regions": [
+        "drilldown"
+      ],
+      "states": [
+        "loading",
+        "empty",
+        "error",
+        "stale",
+        "unknown",
+        "no-permission"
+      ],
       "examples": []
     }
   }

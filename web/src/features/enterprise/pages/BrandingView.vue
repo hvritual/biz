@@ -148,7 +148,7 @@ onBeforeUnmount(restoreAuthoritative)
           <AppIcon name="lock" :size="16" />{{ t('branding.readOnly') }}
         </div>
 
-        <div class="preset-grid" :aria-label="t('branding.presetSection')">
+        <div v-if="canEdit" class="preset-grid" :aria-label="t('branding.presetSection')">
           <UiButton
             v-for="preset in presets"
             :key="preset"
@@ -167,7 +167,7 @@ onBeforeUnmount(restoreAuthoritative)
           </UiButton>
         </div>
 
-        <section class="custom-section">
+        <section v-if="canEdit" class="custom-section">
           <div class="section-copy">
             <h2>{{ t('branding.customSection') }}</h2>
             <p>{{ t('branding.customDescription') }}</p>
@@ -228,16 +228,13 @@ onBeforeUnmount(restoreAuthoritative)
         <p v-if="error" class="form-error" role="alert">{{ error }}</p>
 
         <div class="form-footer" data-ui-region="form-actions">
-          <span v-if="dirty" class="muted flex-1">{{ t('branding.dirty') }}</span>
-          <UiButton type="button" class="btn" :disabled="!canEdit || saving" @click="resetDefault">
-            {{ t('branding.resetDefault') }}
-          </UiButton>
-          <UiButton type="button" class="btn" :disabled="!dirty || saving" @click="cancel">
-            {{ t('branding.cancel') }}
-          </UiButton>
-          <UiButton class="btn btn-primary" type="submit" :disabled="!canEdit || !dirty || !customValid || saving">
-            <AppIcon name="check" :size="15" />{{ saving ? t('branding.saving') : t('branding.save') }}
-          </UiButton>
+          <template v-if="canEdit">
+            <span v-if="dirty" class="muted flex-1">{{ t('branding.dirty') }}</span>
+            <UiButton type="button" class="btn" :disabled="saving" @click="resetDefault">{{ t('branding.resetDefault') }}</UiButton>
+            <UiButton type="button" class="btn" :disabled="!dirty || saving" @click="cancel">{{ t('branding.cancel') }}</UiButton>
+            <UiButton class="btn btn-primary" type="submit" :disabled="!dirty || !customValid || saving"><AppIcon name="check" :size="15" />{{ saving ? t('branding.saving') : t('branding.save') }}</UiButton>
+          </template>
+          <span v-else class="muted flex-1">{{ t('branding.readOnly') }}</span>
         </div>
       </form>
 

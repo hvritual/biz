@@ -147,11 +147,13 @@ function contrast(first: string, second: string) {
 export function createUiThemePalette(primary: string): UiThemePalette {
   const normalized = normalizeHex(primary)
   const white = '#ffffff', dark = '#111827'
+  const onPrimary = contrast(normalized, white) >= contrast(normalized, dark) ? white : dark
+  if (contrast(normalized, onPrimary) < 4.5) throw new Error('Brand primary does not provide readable foreground contrast.')
   return {
     primary: normalized,
     primaryHover: mix(normalized, '#000000', 0.16),
     primarySoft: mix(normalized, white, 0.92),
-    onPrimary: contrast(normalized, white) >= contrast(normalized, dark) ? white : dark,
+    onPrimary,
     gradientEnd: mix(normalized, white, 0.58),
   }
 }
