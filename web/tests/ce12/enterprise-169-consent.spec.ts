@@ -42,8 +42,7 @@ test("TestEnterprise169BrowserPrivacyConsentGate", async ({ page, browser }) => 
 
   const attackerContext = await browser.newContext();
   try {
-    const attacker = await attackerContext.newPage();
-    const response = await attacker.request.get("http://127.0.0.1:18081/idp/consent?request_id=" + encodeURIComponent(requestId));
+    const response = await attackerContext.request.get("http://127.0.0.1:18081/idp/consent?request_id=" + encodeURIComponent(requestId));
     expect(response.status()).toBe(401);
   } finally {
     await attackerContext.close();
