@@ -31,8 +31,23 @@ test("TestEnterprise169BrowserPrivacyConsentGate", async ({ page, browser }) => 
 
   await authenticateToConsent(page, data);
 
+  const requestIdBeforeRefresh = await page.locator('input[name="request_id"]').first().inputValue();
+  const csrfBeforeRefresh = await page.locator('input[name="csrf_token"]').first().inputValue();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "确认隐私与服务协议" })).toBeVisible();
   const requestId = await page.locator('input[name="request_id"]').first().inputValue();
   const csrf = await page.locator('input[name="csrf_token"]').first().inputValue();
+  expect(requestId).toBe(requestIdBeforeRefresh);
+  expect(csrf).not.toBe(csrfBeforeRefresh);
+
+  const attackerContext = await browser.newContext();
+  try {
+    const attacker = await attackerContext.newPage();
+    const response = await attacker.request.get("http://127.0.0.1:18081/idp/consent?request_id=" + encodeURIComponent(requestId));
+    expect(response.status()).toBe(401);
+  } finally {
+    await attackerContext.close();
+  }
 
   const missingCheckbox = await page.evaluate(async ({ requestId, csrf }) => {
     const body = new URLSearchParams({
