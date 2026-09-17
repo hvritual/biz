@@ -15,7 +15,6 @@ import (
 	devicepolicy "github.com/hvritual/biz/internal/deviceops/policy"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"gorm.io/gorm"
 	"yunka.io/gateway/authz"
 )
 
@@ -55,6 +54,7 @@ func TestCE12BrowserSeed(t *testing.T) {
 		Token:   platformToken,
 		Permissions: []authz.PermissionKey{
 			"platform.entitlement.manage", "platform.entitlement.read", "platform.tenant.read", "commercial.catalog.read",
+			"platform.module.manage", "platform.module.read", "platform.module.technical.manage",
 		},
 	}); err != nil {
 		t.Fatal(err)
@@ -67,6 +67,37 @@ func TestCE12BrowserSeed(t *testing.T) {
 	defer conn.Close()
 	tenants := accessv1.NewTenantLifecycleApplicationClient(conn)
 	entitlements := commercialv1.NewEntitlementManagementApplicationClient(conn)
+	catalog := commercialv1.NewModuleCatalogApplicationClient(conn)
+
+	// Reuse the CE-04/CE-02 platform Module Catalog authority. Branding is mapped
+	// to access-management/tenant.lifecycle, so the module must exist in the live
+	// commercial catalog before the real entitlement override can be accepted.
+	accessModule, err := catalog.GetModule(ce04Context(platformToken, ""), &commercialv1.GetModuleRequest{ModuleCode: "access-management"})
+	if err != nil {
+		key := "ce12-access-module-" + ce04Random(t)
+		accessModule, err = catalog.CreateModule(ce04Context(platformToken, key), &commercialv1.CreateModuleRequest{
+			RequestId:  key,
+			ModuleCode: "access-management",
+			Name:       "access-management",
+			Reason:     "CE12 real branding qualification catalog",
+		})
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	if accessModule.TechnicalStatus != commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_READY {
+		key := "ce12-access-ready-" + ce04Random(t)
+		accessModule, err = catalog.SetModuleTechnicalStatus(ce04Context(platformToken, key), &commercialv1.SetModuleTechnicalStatusRequest{
+			RequestId:       key,
+			ModuleCode:      "access-management",
+			TechnicalStatus: commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_READY,
+			Version:         accessModule.Version,
+			Reason:          "CE12 restore real access-management qualification fixture",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	userID := "ce12-browser-user"
 	email := "ce12.browser@example.invalid"
@@ -110,12 +141,35 @@ func TestCE12BrowserSeed(t *testing.T) {
 	}).Error; err != nil {
 		t.Fatal(err)
 	}
-	// Branding is an access-management tenant business capability. The CE-12 base
-	// subscription intentionally focuses on device operations, so grant the real
-	// tenant.lifecycle entitlement through the platform override authority instead
-	// of bypassing Commercial Guard in the browser fixture.
-	ce12GrantCapability(t, db, entitlements, platformToken, allowed, "access-management", "tenant.lifecycle", "ce12-brand-a-lifecycle")
-	ce12GrantCapability(t, db, entitlements, platformToken, iamDenied, "access-management", "tenant.lifecycle", "ce12-brand-b-lifecycle")
+
+	// Use the real CE-04 entitlement authority. The fixture grants the capability
+	// required by the live catalog rather than bypassing Commercial Guard.
+	for _, grant := range []struct {
+		tenant string
+		id     string
+	}{{allowed, "ce12-brand-a-lifecycle"}, {iamDenied, "ce12-brand-b-lifecycle"}} {
+		var version uint64
+		if err := db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", grant.tenant).Scan(&version).Error; err != nil {
+			t.Fatal(err)
+		}
+		if version == 0 {
+			t.Fatalf("branding tenant %s has no subscription-derived source version", grant.tenant)
+		}
+		_, err = entitlements.CreateEntitlementOverride(ce04Context(platformToken, grant.id), &commercialv1.CreateEntitlementOverrideRequest{
+			RequestId:       grant.id,
+			TenantId:        grant.tenant,
+			ExpectedVersion: version,
+			ModuleCode:      "access-management",
+			Target:          commercialv1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY,
+			Key:             "tenant.lifecycle",
+			Effect:          commercialv1.EntitlementEffect_ENTITLEMENT_EFFECT_GRANT,
+			EffectiveAt:     time.Now().UTC().Add(-time.Minute).Format(time.RFC3339),
+			Reason:          "CE12 browser E2E grants real access-management capability for branding proof",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	var sourceVersion uint64
 	if err := db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", entitlementDenied).Scan(&sourceVersion).Error; err != nil {
@@ -158,31 +212,6 @@ func TestCE12BrowserSeed(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(path, payload, 0o600); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func ce12GrantCapability(t *testing.T, db *gorm.DB, client commercialv1.EntitlementManagementApplicationClient, token, tenantID, moduleCode, capabilityCode, requestID string) {
-	t.Helper()
-	var sourceVersion uint64
-	if err := db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", tenantID).Scan(&sourceVersion).Error; err != nil {
-		t.Fatal(err)
-	}
-	if sourceVersion == 0 {
-		t.Fatalf("tenant %s has no subscription-derived source version", tenantID)
-	}
-	_, err := client.CreateEntitlementOverride(ce04Context(token, requestID), &commercialv1.CreateEntitlementOverrideRequest{
-		RequestId:       requestID,
-		TenantId:        tenantID,
-		ExpectedVersion: sourceVersion,
-		ModuleCode:      moduleCode,
-		Target:          commercialv1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY,
-		Key:             capabilityCode,
-		Effect:          commercialv1.EntitlementEffect_ENTITLEMENT_EFFECT_GRANT,
-		EffectiveAt:     time.Now().UTC().Add(-time.Minute).Format(time.RFC3339),
-		Reason:          "CE12 browser E2E grants the real capability required by the exercised tenant surface",
-	})
-	if err != nil {
 		t.Fatal(err)
 	}
 }
