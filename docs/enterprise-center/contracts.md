@@ -1,0 +1,98 @@
+# 企业中心身份、权限与消息一期合同边界
+
+状态：`CONTRACT_BASELINE`。本文件只冻结一期实现边界；未决产品策略见 `decisions.md`。
+
+## 1. Authority map
+
+| 事实 | 唯一权威 | 约束 |
+| --- | --- | --- |
+| Account | Access | 全局身份；租户资料操作不能破坏其他租户使用同一 Account 的事实 |
+| Membership | Access | `tenant_id + user_id` 的企业关系与状态 |
+| Profile | Access | 租户范围的个人资料、联系方式、头像、隐私同意 |
+| Department | Access | 当前租户组织目录；不等价于授权本身 |
+| Role / Grant | Access | 动态角色授权；Grant 是权限事实 |
+| Action Catalog | Access 发布 | 必须能追踪到真实 Operation/API，不允许前端维护第二份可编辑权限目录 |
+| Data Policy | Access | 当前有效策略引用与版本；具体业务数据执行仍由对应资源域执行 |
+| Session | Access | 会话、tenant 选择、撤销与有效性事实 |
+| Gateway authorization | Gateway | 每次受保护请求读取 Access 当前一致事实；禁止独立 allow index 放行 |
+| Notification | Notification | 消息类型、配置、接收人、站内记录、投递任务 |
+| Preference | Preference/受控边界 | tenant + user + channel 的个人偏好 |
+
+## 2. 明确 superseded 的旧合同
+
+产品文档首段兼容决策覆盖正文中的旧草稿：
+
+- `org_uuid` 统一解释为目标 `tenant_id`，新接口不得再建设第二租户主键。
+- FR-128 “同步 Gateway 授权索引”不得实现为独立 allow-index；替代验收为：Access Grant 事务提交后，Gateway 下一次受保护请求基于当前一致事实拒绝被撤销动作。
+- FR-132 “全局授权版本”不得实现为全局 Authorization Version；资源 CAS、Data Policy 自身版本及 principal-specific 事实摘要可以存在，但都不是授权放行缓存。
+- 旧“部门策略由其他服务拥有”的文字不再作为目标实现依据；Access 拥有当前有效 Data Policy 引用。
+
+## 3. Account / Membership / Profile
+
+- Account 是全局登录身份；Membership 是租户关系；Profile 是当前租户的成员资料。
+- A、B 两个租户可共享同一 Account。A 修改或删除其 Membership/Profile 不得改变 B 的 Membership/Profile 或全局登录凭据，除非发生由 Account 本人完成的全局安全动作。
+- 普通租户管理员不能直接调用底层全局密码 rotate 来接管跨企业 Account。管理员重置必须采用 #167 决策确认的受控恢复/激活模型。
+- 联系方式的登录标识、全局绑定值与租户 Profile 联系字段必须显式区分；未定稿前禁止用同一数据库列同时承担所有语义。
+
+## 4. Session / tenant context
+
+- 浏览器沿用当前 OIDC Authorization Code + PKCE + BFF HttpOnly session。
+- 受保护业务调用的 tenant 从可信 session/principal 固化；业务请求体中的 tenant id 不能覆盖认证上下文。
+- `GET /auth/session` 的未认证 `authenticated:false` 是探测合同；受保护业务 API 仍以 401 表示未认证/过期/撤销。
+- tenant switch 必须验证当前 Account 对目标 tenant 的有效 Membership；切换后缓存、权限、品牌、时区与业务数据都必须按新 tenant 隔离。
+
+## 5. Authorization execution
+
+```text
+PB/Operation contract
+  -> Access Action Catalog
+  -> Role/Grant + current Data Policy
+  -> trusted Principal / tenant
+  -> Gateway request-time authorization
+  -> one canonical Executor / root ExecutionScope
+  -> typed child Operations
+```
+
+禁止：
+
+- 前端路由或按钮可见性替代 API 鉴权；
+- Gateway 基于过期 role/session claims 独立放行；
+- Application 内再实现第二套授权器；
+- 通过跨 Application Repository 直连绕过声明的 child Operation；
+- 用 `PermissionVersion` 作为 allow token。
+
+## 6. Route compatibility
+
+一期实现优先复用当前真实路由，不为“路径长得像 PRD”重建一套网络服务。
+
+| 产品责任 | 当前/目标映射 |
+| --- | --- |
+| 登录/企业选择/切换/退出 | 现有 `/idp/*` + `/auth/*`；新增用例可扩展，但保持同一 BFF/Access authority |
+| 成员 | 现有 `/v1/tenant/members*` 增量扩展 |
+| 角色 | 现有 `/v1/tenant/roles*` 增量扩展 |
+| 个人资料 | 在 Access 下建立 self-only 公共合同；不把 Tenant Profile 当个人 Profile |
+| 聚合权限 | Access 公开当前用户/tenant/module/button 的只读聚合；组件仍从本地 canonical route registry 映射 |
+| 消息 | 新增明确 Notification 域；不得由前端浏览器生成生产通知事实 |
+
+PRD 中 `/api/business/v1/identity/*` 是责任族，不要求在已有 `/auth`、`/idp`、`/v1/tenant` 已验证合同之上机械复制第二套接口。
+
+## 7. Error semantics
+
+- 401：缺失/无效/过期/撤销会话或停用身份。
+- 403：身份有效但缺少当前 tenant/资源/operation 权限。
+- 409：唯一性、CAS 或并发冲突。
+- 429：登录、OTP、恢复申请等频率限制。
+- 5xx：系统/依赖失败；真实模式不允许回退成 Demo 成功。
+
+所有写操作沿用稳定 Idempotency-Key、CAS/expected version、receipt + authoritative readback；“请求已受理”“通知任务已创建”“外部渠道已送达”必须分开表达。
+
+## 8. Missing successor contracts
+
+以下后继套件在 #167 固定基线中未取得完整且有 Human 接受证据的版本，因此标记 `MISSING/BLOCKED`，不得自行补写产品规则：
+
+- 租户业务运行系统一期 PRD 4.0-review 的精确接受摘要；
+- 三模块产品接口 3.0-review；
+- 企业领域/API 合同 1.0-review；
+- 三模块 Plan05 successor。
+
+它们只阻塞依赖其具体策略内容的动作；不阻塞已由当前源码与本 PRD 明确定义的无关增量任务。
