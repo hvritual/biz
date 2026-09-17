@@ -31,6 +31,7 @@ export const enterpriseNavigation: NavigationItem[] = [
   { id: 'organization', label: '组织架构', icon: 'organization', path: '/enterprise/organization' },
   { id: 'plan', label: '套餐额度', icon: 'crown', path: '/enterprise/plan' },
   { id: 'company', label: '企业信息', icon: 'company', path: '/enterprise/company' },
+  { id: 'branding', label: '品牌与主题', icon: 'settings', path: '/enterprise/branding' },
   { id: 'logs', label: '操作日志', icon: 'file', path: '/enterprise/logs' },
 ]
 

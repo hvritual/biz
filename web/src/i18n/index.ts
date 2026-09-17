@@ -2,13 +2,14 @@ import { createI18n } from 'vue-i18n'
 import { messages } from './messages'
 import { memberDetailMessages } from './member-detail-messages'
 import { memberScopeMessages } from './scope-messages'
+import { brandingMessages } from './branding-messages'
 
 export const supportedLocales = ['zh-CN', 'en-US'] as const
 export type UiLocale = (typeof supportedLocales)[number]
 const storageKey = 'coffeelink.locale'
 const localeMessages = {
-  'zh-CN': { ...messages['zh-CN'], members: { ...messages['zh-CN'].members, scopes: memberScopeMessages['zh-CN'], profile: memberDetailMessages['zh-CN'] } },
-  'en-US': { ...messages['en-US'], members: { ...messages['en-US'].members, scopes: memberScopeMessages['en-US'], profile: memberDetailMessages['en-US'] } },
+  'zh-CN': { ...messages['zh-CN'], navigation: { ...messages['zh-CN'].navigation, enterprise: { ...messages['zh-CN'].navigation.enterprise, branding: brandingMessages['zh-CN'].navigation } }, branding: brandingMessages['zh-CN'], members: { ...messages['zh-CN'].members, scopes: memberScopeMessages['zh-CN'], profile: memberDetailMessages['zh-CN'] } },
+  'en-US': { ...messages['en-US'], navigation: { ...messages['en-US'].navigation, enterprise: { ...messages['en-US'].navigation.enterprise, branding: brandingMessages['en-US'].navigation } }, branding: brandingMessages['en-US'], members: { ...messages['en-US'].members, scopes: memberScopeMessages['en-US'], profile: memberDetailMessages['en-US'] } },
 }
 function supported(value: unknown): value is UiLocale { return typeof value === 'string' && supportedLocales.includes(value as UiLocale) }
 function initialLocale(): UiLocale { if (typeof window !== 'undefined') { const saved=window.localStorage.getItem(storageKey); if(supported(saved))return saved; if(window.navigator.language?.toLowerCase().startsWith('zh'))return'zh-CN' } return'en-US' }

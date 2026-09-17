@@ -44,6 +44,10 @@ export type ActiveUiTheme = {
   name: UiThemePresetName | 'custom'
   palette: UiThemePalette
 }
+export type TenantUiTheme = Readonly<{
+  preset: UiThemePresetName | 'custom'
+  primary?: string
+}>
 
 const storageKey = 'coffeelink.ui-theme'
 const themeProperties: Record<keyof UiThemePalette, string> = {
@@ -105,6 +109,59 @@ function parseStoredTheme(raw: string): UiThemePresetName | UiThemePalette | nul
     return null
   }
   return null
+}
+
+function normalizeHex(value: string) {
+  const trimmed = value.trim().toLowerCase()
+  if (!/^#[0-9a-f]{6}$/.test(trimmed)) throw new Error('Brand primary must be a six-digit hex color.')
+  return trimmed
+}
+
+function rgb(hex: string) {
+  const value = Number.parseInt(hex.slice(1), 16)
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255] as const
+}
+
+function hex(parts: readonly number[]) {
+  return `#${parts.map((value) => Math.round(Math.max(0, Math.min(255, value))).toString(16).padStart(2, '0')).join('')}`
+}
+
+function mix(source: string, target: string, ratio: number) {
+  const from = rgb(source), to = rgb(target)
+  return hex(from.map((value, index) => value + (to[index]! - value) * ratio))
+}
+
+function luminance(hexColor: string) {
+  const channels = rgb(hexColor).map((value) => {
+    const normalized = value / 255
+    return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * channels[0]! + 0.7152 * channels[1]! + 0.0722 * channels[2]!
+}
+
+function contrast(first: string, second: string) {
+  const a = luminance(first), b = luminance(second)
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+}
+
+export function createUiThemePalette(primary: string): UiThemePalette {
+  const normalized = normalizeHex(primary)
+  const white = '#ffffff', dark = '#111827'
+  const onPrimary = contrast(normalized, white) >= contrast(normalized, dark) ? white : dark
+  if (contrast(normalized, onPrimary) < 4.5) throw new Error('Brand primary does not provide readable foreground contrast.')
+  return {
+    primary: normalized,
+    primaryHover: mix(normalized, '#000000', 0.16),
+    primarySoft: mix(normalized, white, 0.92),
+    onPrimary,
+    gradientEnd: mix(normalized, white, 0.58),
+  }
+}
+
+export function resolveTenantUiTheme(value: TenantUiTheme): UiThemePresetName | UiThemePalette {
+  if (value.preset !== 'custom') return value.preset
+  if (!value.primary) throw new Error('Custom tenant branding requires a primary color.')
+  return createUiThemePalette(value.primary)
 }
 
 export function applyUiTheme(theme: UiThemePresetName | UiThemePalette, root?: HTMLElement) {
