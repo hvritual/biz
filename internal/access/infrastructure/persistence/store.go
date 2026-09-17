@@ -42,26 +42,33 @@ type tenantRecord struct {
 func (tenantRecord) TableName() string { return "biz_tenants" }
 
 type userRecord struct {
-	ID        string    `gorm:"column:id;primaryKey;size:64"`
-	Email     string    `gorm:"column:email;size:320;not null;uniqueIndex"`
-	Status    string    `gorm:"column:status;size:32;not null;index"`
-	CreatedAt time.Time `gorm:"column:created_at;not null"`
+	ID              string    `gorm:"column:id;primaryKey;size:64"`
+	Username        *string   `gorm:"column:username;size:64;uniqueIndex"`
+	Email           string    `gorm:"column:email;size:320;not null;uniqueIndex"`
+	EmailCiphertext string    `gorm:"column:email_ciphertext;type:text"`
+	EmailLookupHash *string   `gorm:"column:email_lookup_hash;size:64;uniqueIndex"`
+	EmailKeyVersion string    `gorm:"column:email_key_version;size:64;not null;default:''"`
+	Status          string    `gorm:"column:status;size:32;not null;index"`
+	CreatedAt       time.Time `gorm:"column:created_at;not null"`
 }
 
 func (userRecord) TableName() string { return "biz_users" }
 
 type membershipRecord struct {
-	TenantID     string    `gorm:"column:tenant_id;primaryKey;size:64"`
-	UserID       string    `gorm:"column:user_id;primaryKey;size:64"`
-	Status       string    `gorm:"column:status;size:32;not null;index"`
-	Name         string    `gorm:"column:name;size:100;not null;default:''"`
-	Phone        string    `gorm:"column:phone;size:40;not null;default:''"`
-	EmployeeID   string    `gorm:"column:employee_id;size:64;not null;default:''"`
-	Position     string    `gorm:"column:position;size:100;not null;default:''"`
-	DepartmentID string    `gorm:"column:department_id;size:64;not null;default:'';index"`
-	Version      uint64    `gorm:"column:version;not null;default:1"`
-	CreatedAt    time.Time `gorm:"column:created_at;not null"`
-	UpdatedAt    time.Time `gorm:"column:updated_at;not null"`
+	TenantID           string    `gorm:"column:tenant_id;primaryKey;size:64;uniqueIndex:uniq_member_phone_lookup,priority:1"`
+	UserID             string    `gorm:"column:user_id;primaryKey;size:64"`
+	Status             string    `gorm:"column:status;size:32;not null;index"`
+	Name               string    `gorm:"column:name;size:100;not null;default:''"`
+	Phone              string    `gorm:"column:phone;size:40;not null;default:''"`
+	PhoneCiphertext    string    `gorm:"column:phone_ciphertext;type:text"`
+	PhoneLookupHash    *string   `gorm:"column:phone_lookup_hash;size:64;uniqueIndex:uniq_member_phone_lookup,priority:2"`
+	PhoneKeyVersion    string    `gorm:"column:phone_key_version;size:64;not null;default:''"`
+	EmployeeID         string    `gorm:"column:employee_id;size:64;not null;default:''"`
+	Position           string    `gorm:"column:position;size:100;not null;default:''"`
+	DepartmentID       string    `gorm:"column:department_id;size:64;not null;default:'';index"`
+	Version            uint64    `gorm:"column:version;not null;default:1"`
+	CreatedAt          time.Time `gorm:"column:created_at;not null"`
+	UpdatedAt          time.Time `gorm:"column:updated_at;not null"`
 }
 
 func (membershipRecord) TableName() string { return "biz_memberships" }
@@ -112,13 +119,26 @@ type apiTokenRecord struct {
 
 func (apiTokenRecord) TableName() string { return "biz_api_tokens" }
 
-type Store struct{ database *gorm.DB }
+type Store struct {
+	database          *gorm.DB
+	contactProtection *ContactProtection
+}
 
 func New(database *gorm.DB) (*Store, error) {
 	if database == nil {
 		return nil, errors.New("access: database is required")
 	}
 	return &Store{database: database}, nil
+}
+
+func NewWithContactProtection(database *gorm.DB, protection *ContactProtection) (*Store, error) {
+	if database == nil {
+		return nil, errors.New("access: database is required")
+	}
+	if protection == nil {
+		return nil, ErrSensitiveDataKeyUnavailable
+	}
+	return &Store{database: database, contactProtection: protection}, nil
 }
 
 func (store *Store) AutoMigrate(ctx context.Context) error {
@@ -228,7 +248,7 @@ func (store *Store) ResolveMemberSites(ctx context.Context, tenantID, userID str
 type Bootstrap struct{ TenantID, TenantName, UserID, Email, Token string }
 
 // BootstrapGlobalUser creates the one global account required by the local
-// first-party IdP.  It deliberately does not create a tenant, membership or
+// first-party IdP. It deliberately does not create a tenant, membership or
 // role. Re-running with the same identity is safe; any different existing
 // identity is an operator error rather than an invitation to overwrite data.
 type GlobalUserBootstrap struct{ ID, Email string }
@@ -238,15 +258,16 @@ func (store *Store) BootstrapGlobalUser(ctx context.Context, bootstrap GlobalUse
 		return errors.New("access: global user bootstrap store unavailable")
 	}
 	id := strings.TrimSpace(bootstrap.ID)
-	email := strings.TrimSpace(bootstrap.Email)
-	if id == "" || email == "" {
-		return errors.New("access: global user bootstrap requires id and email")
+	email, err := NormalizeEmail(bootstrap.Email)
+	if id == "" || err != nil {
+		return errors.New("access: global user bootstrap requires id and valid email")
 	}
 	db := store.database.WithContext(ctx)
 	var byID userRecord
-	err := db.Where("id = ?", id).First(&byID).Error
+	err = db.Where("id = ?", id).First(&byID).Error
 	if err == nil {
-		if !strings.EqualFold(byID.Email, email) || byID.Status != "active" {
+		existingEmail, emailErr := store.userEmail(byID)
+		if emailErr != nil || !strings.EqualFold(existingEmail, email) || byID.Status != "active" {
 			return errors.New("access: global user bootstrap conflicts with existing user id")
 		}
 		return nil
@@ -254,15 +275,16 @@ func (store *Store) BootstrapGlobalUser(ctx context.Context, bootstrap GlobalUse
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
-	var byEmail userRecord
-	err = db.Where("LOWER(email) = LOWER(?)", email).First(&byEmail).Error
-	if err == nil {
+	if _, _, err := store.findUserByEmail(ctx, db, email, false); err == nil {
 		return errors.New("access: global user bootstrap conflicts with existing email")
-	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
-	return db.Create(&userRecord{ID: id, Email: email, Status: "active", CreatedAt: time.Now().UTC()}).Error
+	row, err := store.newUserRecord(id, email, time.Now().UTC())
+	if err != nil {
+		return err
+	}
+	return db.Create(&row).Error
 }
 
 func (store *Store) Bootstrap(ctx context.Context, config Bootstrap, permissions []authz.PermissionKey) error {
@@ -271,9 +293,13 @@ func (store *Store) Bootstrap(ctx context.Context, config Bootstrap, permissions
 	}
 	roleID := config.TenantID + ":owner"
 	now := time.Now().UTC()
+	user, err := store.newUserRecord(config.UserID, config.Email, now)
+	if err != nil {
+		return err
+	}
 	values := []any{
 		&tenantRecord{ID: config.TenantID, Name: config.TenantName, Status: accessdomain.TenantStatusActive, Version: 1, CreatedAt: now, UpdatedAt: now},
-		&userRecord{ID: config.UserID, Email: config.Email, Status: "active", CreatedAt: now},
+		&user,
 		&membershipRecord{TenantID: config.TenantID, UserID: config.UserID, Status: accessdomain.TenantMemberStatusActive, Version: 1, CreatedAt: now, UpdatedAt: now},
 		&roleRecord{ID: roleID, TenantID: config.TenantID, Name: accessdomain.TenantOwnerRoleName, Status: accessdomain.TenantRoleStatusActive, Version: 1},
 		&memberRoleRecord{TenantID: config.TenantID, UserID: config.UserID, RoleID: roleID},
