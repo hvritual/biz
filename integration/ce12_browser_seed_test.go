@@ -20,6 +20,7 @@ import (
 
 type ce12BrowserFixture struct {
 	BaseURL                 string `json:"base_url"`
+	UIBaseURL               string `json:"ui_base_url"`
 	DiscoveryURL            string `json:"discovery_url"`
 	Email                   string `json:"email"`
 	Password                string `json:"password"`
@@ -74,7 +75,7 @@ func TestCE12BrowserSeed(t *testing.T) {
 	entitlementDenied := ce12CreateActiveTenant(t, tenants, platformToken, "CE12 Entitlement Denied", "ce12-entitlement-owner", "ce12.entitlement.owner@example.invalid")
 
 	browserReadPermissions := append([]authz.PermissionKey{}, devicepolicy.Permissions()...)
-	browserReadPermissions = append(browserReadPermissions, "tenant.entitlement.read", "commercial.catalog.read")
+	browserReadPermissions = append(browserReadPermissions, "tenant.entitlement.read", "commercial.catalog.read", "tenant.branding.read")
 	if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
 		TenantID: allowed, TenantName: "CE12 Allowed", UserID: userID, Email: email, Token: "ce12-setup-allowed",
 	}, browserReadPermissions); err != nil {
@@ -82,7 +83,7 @@ func TestCE12BrowserSeed(t *testing.T) {
 	}
 	if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
 		TenantID: iamDenied, TenantName: "CE12 IAM Denied", UserID: userID, Email: email, Token: "ce12-setup-iam-denied",
-	}, []authz.PermissionKey{"tenant.entitlement.read", "commercial.catalog.read"}); err != nil {
+	}, []authz.PermissionKey{"tenant.entitlement.read", "commercial.catalog.read", "tenant.branding.read"}); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
@@ -133,6 +134,7 @@ func TestCE12BrowserSeed(t *testing.T) {
 
 	fixture := ce12BrowserFixture{
 		BaseURL:                 "http://127.0.0.1:18080",
+		UIBaseURL:               "http://127.0.0.1:15173",
 		DiscoveryURL:            "http://127.0.0.1:18081/idp/.well-known/openid-configuration",
 		Email:                   email,
 		Password:                password,
