@@ -108,7 +108,10 @@ func TestTenantBrandingCookieCSRFAndLiveMembership(t *testing.T) {
 		t.Logf("branding cookie %s status=%d body=%s", method, res.StatusCode, body)
 		return res.StatusCode
 	}
-	expected, _ := json.Marshal(map[string]string{"actor_kind": string(auth.Session.ActorKind), "platform_subject": "", "user_id": user, "active_tenant_id": tenant})
+	expected, _ := json.Marshal(map[string]any{
+		"actor_kind": string(auth.Session.ActorKind), "platform_subject": "", "user_id": user,
+		"active_tenant_id": tenant, "context_version": auth.Session.ContextVersion,
+	})
 	if code := send("GET", "", "", string(expected)); code != 200 {
 		t.Fatalf("cookie GET %d", code)
 	}

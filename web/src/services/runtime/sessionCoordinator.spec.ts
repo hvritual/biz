@@ -1,7 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { parseSessionContextSignalForTest } from './sessionCoordinator'
+import {
+  acceptSessionContextSignalForTest,
+  parseSessionContextSignalForTest,
+  resetSessionContextSignalsForTest,
+} from './sessionCoordinator'
 
 describe('enterprise 171 session context signal', () => {
+  it('deduplicates the same wake-up signal across BroadcastChannel and storage fallback', () => {
+    resetSessionContextSignalsForTest()
+    const signal = {
+      type: 'session-context-changed',
+      contextVersion: 9,
+      nonce: 'same-signal-through-two-transports',
+    }
+    expect(acceptSessionContextSignalForTest(signal)).toBe(true)
+    expect(acceptSessionContextSignalForTest(signal)).toBe(false)
+    expect(acceptSessionContextSignalForTest({ ...signal, nonce: 'next-signal' })).toBe(true)
+  })
+
   it('accepts only non-authoritative wake-up signals with a monotonic-compatible version value', () => {
     expect(parseSessionContextSignalForTest({
       type: 'session-context-changed',

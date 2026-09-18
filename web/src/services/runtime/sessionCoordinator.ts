@@ -10,8 +10,22 @@ const storageKey = '__coffeelink_session_context_signal_v1'
 type Listener = (signal: SessionContextSignal) => void
 
 const listeners = new Set<Listener>()
+const seenNonces = new Set<string>()
+const seenNonceOrder: string[] = []
+const maxSeenSignals = 128
 let channel: BroadcastChannel | null = null
 let initialized = false
+
+function rememberSignal(signal: SessionContextSignal) {
+  if (seenNonces.has(signal.nonce)) return false
+  seenNonces.add(signal.nonce)
+  seenNonceOrder.push(signal.nonce)
+  if (seenNonceOrder.length > maxSeenSignals) {
+    const oldest = seenNonceOrder.shift()
+    if (oldest) seenNonces.delete(oldest)
+  }
+  return true
+}
 
 function randomNonce() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID()
@@ -30,7 +44,7 @@ function parseSignal(value: unknown): SessionContextSignal | null {
 
 function dispatch(value: unknown) {
   const signal = parseSignal(value)
-  if (!signal) return
+  if (!signal || !rememberSignal(signal)) return
   for (const listener of [...listeners]) listener(signal)
 }
 
@@ -76,4 +90,14 @@ export function publishSessionContextChange(contextVersion = 0) {
 
 export function parseSessionContextSignalForTest(value: unknown) {
   return parseSignal(value)
+}
+
+export function acceptSessionContextSignalForTest(value: unknown) {
+  const signal = parseSignal(value)
+  return Boolean(signal && rememberSignal(signal))
+}
+
+export function resetSessionContextSignalsForTest() {
+  seenNonces.clear()
+  seenNonceOrder.splice(0, seenNonceOrder.length)
 }
