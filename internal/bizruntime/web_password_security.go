@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
+	"yunka.io/gateway/authz"
 )
 
 func (auth *runtimeWebAuth) handlePasswordChange(writer http.ResponseWriter, request *http.Request) {
@@ -44,4 +46,57 @@ func (auth *runtimeWebAuth) handlePasswordChange(writer http.ResponseWriter, req
 	default:
 		http.Error(writer, "password change unavailable", http.StatusServiceUnavailable)
 	}
+}
+
+
+const (
+	tenantMemberPasswordRecoveryPermission = authz.PermissionKey("tenant.member.password_recovery.request")
+	legacyTenantMemberResetPermission       = authz.PermissionKey("org.basic.user.reset")
+)
+
+func (auth *runtimeWebAuth) handleTenantMemberPasswordRecovery(writer http.ResponseWriter, request *http.Request) {
+	authentication, _, err := auth.authenticateSession(request)
+	if err != nil || authentication.Session.ActorKind != accesspersistence.WebActorUser || authentication.Session.ActiveTenantID == "" {
+		http.Error(writer, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	store := auth.currentStore()
+	if store == nil || !store.ValidateWebSessionCSRF(authentication, request.Header.Get("X-CSRF-Token")) {
+		http.Error(writer, "Forbidden", http.StatusForbidden)
+		return
+	}
+	grants, err := store.ResolveGrants(
+		request.Context(),
+		authentication.Session.ActiveTenantID,
+		authentication.Principal.Roles,
+		[]authz.PermissionKey{tenantMemberPasswordRecoveryPermission, legacyTenantMemberResetPermission},
+	)
+	if err != nil {
+		http.Error(writer, "authorization unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	if len(grants) == 0 {
+		http.Error(writer, "Forbidden", http.StatusForbidden)
+		return
+	}
+	targetUserID := strings.TrimSpace(request.PathValue("user_id"))
+	if targetUserID == "" {
+		http.Error(writer, "target member required", http.StatusBadRequest)
+		return
+	}
+	exists, err := store.TenantMemberAccountExists(request.Context(), authentication.Session.ActiveTenantID, targetUserID)
+	if err != nil {
+		http.Error(writer, "recovery target unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	if !exists {
+		http.Error(writer, "Not Found", http.StatusNotFound)
+		return
+	}
+	writeJSON(writer, http.StatusConflict, map[string]any{
+		"status":     "POLICY_PENDING",
+		"policy":     "Q-007",
+		"permission": string(tenantMemberPasswordRecoveryPermission),
+		"message":    "管理员直接重置全局 Account 凭据未获批准；请由 Account 本人使用找回密码流程完成身份自证。",
+	})
 }
