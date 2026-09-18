@@ -38,8 +38,9 @@ type runtimeFirstPartyIdP struct {
 	kid              string
 	verificationKeys []firstPartyVerificationKey
 	mu               sync.RWMutex
-	store            *accesspersistence.Store
-	verification     firstPartyLoginVerification
+	store                  *accesspersistence.Store
+	verification           firstPartyLoginVerification
+	verificationProtection *accesspersistence.VerificationProtection
 }
 
 func newRuntimeFirstPartyIdP(config FirstPartyIdPConfig) (*runtimeFirstPartyIdP, error) {
@@ -128,6 +129,9 @@ func (idp *runtimeFirstPartyIdP) register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /idp/login", idp.handleLogin)
 	mux.HandleFunc("POST /idp/login/otp/request", idp.handleOTPRequest)
 	mux.HandleFunc("POST /idp/login/otp/verify", idp.handleOTPVerify)
+	mux.HandleFunc("GET /idp/password/recovery", idp.handlePasswordRecoveryPage)
+	mux.HandleFunc("POST /idp/password/recovery/request", idp.handlePasswordRecoveryRequest)
+	mux.HandleFunc("POST /idp/password/recovery/complete", idp.handlePasswordRecoveryComplete)
 	mux.HandleFunc("GET /idp/consent", idp.handleConsentPage)
 	mux.HandleFunc("POST /idp/consent", idp.handleConsent)
 	mux.HandleFunc("POST /idp/token", idp.handleToken)
