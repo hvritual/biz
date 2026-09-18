@@ -20,8 +20,8 @@ func TestEnterprise173PasswordRecoveryReplayExpiryAndConcurrentConsumption(t *te
 
 	t.Run("success and replay", func(t *testing.T) {
 		const (
-			userID = "enterprise-173-recovery-user"
-			email = "enterprise173.recovery@example.invalid"
+			userID      = "enterprise-173-recovery-user"
+			email       = "enterprise173.recovery@example.invalid"
 			oldPassword = "LegacyRecover9A"
 		)
 		sessionA, sessionB := fixture.bootstrapAccount(t, userID, "tenant-173-recovery", email, oldPassword)
@@ -71,7 +71,7 @@ func TestEnterprise173PasswordRecoveryReplayExpiryAndConcurrentConsumption(t *te
 	t.Run("expired", func(t *testing.T) {
 		const (
 			userID = "enterprise-173-expired-user"
-			email = "enterprise173.expired@example.invalid"
+			email  = "enterprise173.expired@example.invalid"
 		)
 		fixture.bootstrapAccount(t, userID, "tenant-173-expired", email, "ExpiredOld9A")
 		challenge, code := fixture.sendRecoveryOTP(t, "enterprise173/recovery/expired", "recovery-flow-expired", userID, email)
@@ -89,7 +89,7 @@ func TestEnterprise173PasswordRecoveryReplayExpiryAndConcurrentConsumption(t *te
 	t.Run("concurrent single consumption", func(t *testing.T) {
 		const (
 			userID = "enterprise-173-concurrent-user"
-			email = "enterprise173.concurrent@example.invalid"
+			email  = "enterprise173.concurrent@example.invalid"
 		)
 		fixture.bootstrapAccount(t, userID, "tenant-173-concurrent", email, "ConcurrentOld9A")
 		challenge, code := fixture.sendRecoveryOTP(t, "enterprise173/recovery/concurrent", "recovery-flow-concurrent", userID, email)

@@ -19,39 +19,39 @@ import (
 )
 
 type ce12BrowserFixture struct {
-	BaseURL                 string `json:"base_url"`
-	UIBaseURL               string `json:"ui_base_url"`
-	DiscoveryURL            string `json:"discovery_url"`
-	Email                   string `json:"email"`
-	Password                string `json:"password"`
-	Username                string `json:"username"`
-	Phone                   string `json:"phone"`
-	SingleEmail             string `json:"single_email"`
-	SinglePassword          string `json:"single_password"`
-	SingleUsername          string `json:"single_username"`
-	SinglePhone             string `json:"single_phone"`
-	EmptyEmail              string `json:"empty_email"`
-	EmptyPassword           string `json:"empty_password"`
-	EmptyUsername           string `json:"empty_username"`
-	PrivacyEmail            string `json:"privacy_email"`
-	PrivacyPassword         string `json:"privacy_password"`
-	SecurityChangeEmail     string `json:"security_change_email"`
-	SecurityChangePassword  string `json:"security_change_password"`
-	SecurityRecoveryEmail   string `json:"security_recovery_email"`
+	BaseURL                  string `json:"base_url"`
+	UIBaseURL                string `json:"ui_base_url"`
+	DiscoveryURL             string `json:"discovery_url"`
+	Email                    string `json:"email"`
+	Password                 string `json:"password"`
+	Username                 string `json:"username"`
+	Phone                    string `json:"phone"`
+	SingleEmail              string `json:"single_email"`
+	SinglePassword           string `json:"single_password"`
+	SingleUsername           string `json:"single_username"`
+	SinglePhone              string `json:"single_phone"`
+	EmptyEmail               string `json:"empty_email"`
+	EmptyPassword            string `json:"empty_password"`
+	EmptyUsername            string `json:"empty_username"`
+	PrivacyEmail             string `json:"privacy_email"`
+	PrivacyPassword          string `json:"privacy_password"`
+	SecurityChangeEmail      string `json:"security_change_email"`
+	SecurityChangePassword   string `json:"security_change_password"`
+	SecurityRecoveryEmail    string `json:"security_recovery_email"`
 	SecurityRecoveryPassword string `json:"security_recovery_password"`
-	SecurityAdminEmail      string `json:"security_admin_email"`
-	SecurityAdminPassword   string `json:"security_admin_password"`
-	SecurityViewerEmail     string `json:"security_viewer_email"`
-	SecurityViewerPassword  string `json:"security_viewer_password"`
-	SharedTargetUserID      string `json:"shared_target_user_id"`
-	CrossTenantTargetUserID string `json:"cross_tenant_target_user_id"`
-	AllowedTenant           string `json:"allowed_tenant"`
-	IAMDeniedTenant         string `json:"iam_denied_tenant"`
-	EntitlementDeniedTenant string `json:"entitlement_denied_tenant"`
-	BrandTenantA            string `json:"brand_tenant_a"`
-	BrandTenantB            string `json:"brand_tenant_b"`
-	BrandTenantAName        string `json:"brand_tenant_a_name"`
-	BrandTenantBName        string `json:"brand_tenant_b_name"`
+	SecurityAdminEmail       string `json:"security_admin_email"`
+	SecurityAdminPassword    string `json:"security_admin_password"`
+	SecurityViewerEmail      string `json:"security_viewer_email"`
+	SecurityViewerPassword   string `json:"security_viewer_password"`
+	SharedTargetUserID       string `json:"shared_target_user_id"`
+	CrossTenantTargetUserID  string `json:"cross_tenant_target_user_id"`
+	AllowedTenant            string `json:"allowed_tenant"`
+	IAMDeniedTenant          string `json:"iam_denied_tenant"`
+	EntitlementDeniedTenant  string `json:"entitlement_denied_tenant"`
+	BrandTenantA             string `json:"brand_tenant_a"`
+	BrandTenantB             string `json:"brand_tenant_b"`
+	BrandTenantAName         string `json:"brand_tenant_a_name"`
+	BrandTenantBName         string `json:"brand_tenant_b_name"`
 }
 
 func TestCE12BrowserSeed(t *testing.T) {
@@ -314,20 +314,20 @@ func TestCE12BrowserSeed(t *testing.T) {
 	}
 
 	fixture := ce12BrowserFixture{
-		BaseURL:                 "http://127.0.0.1:18080",
-		UIBaseURL:               "http://127.0.0.1:15173",
-		DiscoveryURL:            "http://127.0.0.1:18081/idp/.well-known/openid-configuration",
-		Email:                   email,
-		Password:                password,
-		Username:                username,
-		Phone:                   phone,
-		SingleEmail:             singleEmail,
-		SinglePassword:          singlePassword,
-		SingleUsername:          singleUsername,
-		SinglePhone:             singlePhone,
-		EmptyEmail:              emptyEmail,
-		EmptyPassword:           emptyPassword,
-		EmptyUsername:           emptyUsername,
+		BaseURL:                  "http://127.0.0.1:18080",
+		UIBaseURL:                "http://127.0.0.1:15173",
+		DiscoveryURL:             "http://127.0.0.1:18081/idp/.well-known/openid-configuration",
+		Email:                    email,
+		Password:                 password,
+		Username:                 username,
+		Phone:                    phone,
+		SingleEmail:              singleEmail,
+		SinglePassword:           singlePassword,
+		SingleUsername:           singleUsername,
+		SinglePhone:              singlePhone,
+		EmptyEmail:               emptyEmail,
+		EmptyPassword:            emptyPassword,
+		EmptyUsername:            emptyUsername,
 		PrivacyEmail:             privacyEmail,
 		PrivacyPassword:          privacyPassword,
 		SecurityChangeEmail:      securityChangeEmail,
@@ -338,15 +338,15 @@ func TestCE12BrowserSeed(t *testing.T) {
 		SecurityAdminPassword:    securityAdminPassword,
 		SecurityViewerEmail:      securityViewerEmail,
 		SecurityViewerPassword:   securityViewerPassword,
-		SharedTargetUserID:        userID,
+		SharedTargetUserID:       userID,
 		CrossTenantTargetUserID:  "ce12-iam-owner",
-		AllowedTenant:           allowed,
-		IAMDeniedTenant:         iamDenied,
-		EntitlementDeniedTenant: entitlementDenied,
-		BrandTenantA:            allowed,
-		BrandTenantB:            iamDenied,
-		BrandTenantAName:        "CE12 Allowed",
-		BrandTenantBName:        "CE12 IAM Denied",
+		AllowedTenant:            allowed,
+		IAMDeniedTenant:          iamDenied,
+		EntitlementDeniedTenant:  entitlementDenied,
+		BrandTenantA:             allowed,
+		BrandTenantB:             iamDenied,
+		BrandTenantAName:         "CE12 Allowed",
+		BrandTenantBName:         "CE12 IAM Denied",
 	}
 	payload, err := json.MarshalIndent(fixture, "", "  ")
 	if err != nil {

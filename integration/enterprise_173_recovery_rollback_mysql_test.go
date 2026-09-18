@@ -17,8 +17,8 @@ func TestEnterprise173RecoveryRollbackKeepsCredentialAndChallengeReusable(t *tes
 	fixture := newEnterprise173Fixture(t)
 	ctx := context.Background()
 	const (
-		userID = "enterprise-173-rollback-user"
-		email = "enterprise173.rollback@example.invalid"
+		userID      = "enterprise-173-rollback-user"
+		email       = "enterprise173.rollback@example.invalid"
 		oldPassword = "RollbackOld9A"
 		newPassword = "RollbackNew9A"
 	)
