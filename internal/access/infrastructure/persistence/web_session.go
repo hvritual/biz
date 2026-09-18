@@ -424,7 +424,7 @@ func (store *Store) RefreshWebSession(ctx context.Context, rawToken string, refr
 		record.ExpiresAt = now.Add(ttl)
 		record.UpdatedAt = now
 		refreshed = true
-		return tx.WithContext(ctx).Model(&webSessionRecord{}).Where("token_hash = ? AND revoked_at IS NULL").
+		return tx.WithContext(ctx).Model(&webSessionRecord{}).Where("token_hash = ? AND revoked_at IS NULL", record.TokenHash).
 			Updates(map[string]any{"expires_at": record.ExpiresAt, "updated_at": now}).Error
 	})
 	if err != nil {
