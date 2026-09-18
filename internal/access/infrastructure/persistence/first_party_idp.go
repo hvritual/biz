@@ -158,22 +158,22 @@ func setUserPassword(ctx context.Context, database *gorm.DB, userID, password st
 	}).Create(&record).Error
 }
 
-func (store *Store) AuthenticateUserPassword(ctx context.Context, email, password string) (LocalUserIdentity, error) {
-	email = strings.TrimSpace(email)
-	if store == nil || store.database == nil || email == "" || password == "" {
+func (store *Store) AuthenticateUserPassword(ctx context.Context, identifier, password string) (LocalUserIdentity, error) {
+	identifier = strings.TrimSpace(identifier)
+	if store == nil || store.database == nil || identifier == "" || password == "" {
 		consumeDummyPasswordWork(password)
 		return LocalUserIdentity{}, ErrInvalidUserCredentials
 	}
-	user, authoritativeEmail, err := store.findUserByEmail(ctx, store.database, email, true)
+	resolved, err := store.ResolveLoginIdentifier(ctx, identifier)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, ErrInvalidContact) {
+		if errors.Is(err, ErrInvalidUserCredentials) || errors.Is(err, ErrInvalidLoginIdentifier) || errors.Is(err, ErrInvalidContact) || errors.Is(err, gorm.ErrRecordNotFound) {
 			consumeDummyPasswordWork(password)
 			return LocalUserIdentity{}, ErrInvalidUserCredentials
 		}
 		return LocalUserIdentity{}, err
 	}
 	var credential userPasswordCredentialRecord
-	if err := store.database.WithContext(ctx).Where("user_id = ? AND disabled = ?", user.ID, false).First(&credential).Error; err != nil {
+	if err := store.database.WithContext(ctx).Where("user_id = ? AND disabled = ?", resolved.Identity.UserID, false).First(&credential).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			consumeDummyPasswordWork(password)
 			return LocalUserIdentity{}, ErrInvalidUserCredentials
@@ -195,7 +195,7 @@ func (store *Store) AuthenticateUserPassword(ctx context.Context, email, passwor
 	if subtle.ConstantTimeCompare(actual, expected) != 1 {
 		return LocalUserIdentity{}, ErrInvalidUserCredentials
 	}
-	return LocalUserIdentity{UserID: user.ID, Email: authoritativeEmail}, nil
+	return resolved.Identity, nil
 }
 
 func consumeDummyPasswordWork(password string) {
