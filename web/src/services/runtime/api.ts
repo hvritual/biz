@@ -5,6 +5,9 @@ export interface TrustedSession {
   platform_subject?: string
   user_id?: string
   active_tenant_id?: string
+  context_version?: number
+  expires_at?: string
+  csrf_token?: string
   tenants?: Array<{ id: string; name: string }>
 }
 export const readSession = () => read<TrustedSession>('/auth/session')
@@ -56,6 +59,7 @@ export function sessionContext(s: TrustedSession) {
     platform_subject: s.platform_subject ?? '',
     user_id: s.user_id ?? '',
     active_tenant_id: s.active_tenant_id ?? '',
+    context_version: s.context_version ?? 0,
   })
 }
 export function createRuntimeApi(requestId: string, expectedSession?: TrustedSession) {
