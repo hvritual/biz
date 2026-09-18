@@ -108,7 +108,7 @@ test("TestCE12BrowserRealIdPToSessionTenantIAMEntitlement", async ({ page, reque
   await expect(page.getByRole("heading", { name: "CoffeeLink 登录" })).toBeVisible();
   await page.screenshot({ path: "test-results/ce12-idp-login.png", fullPage: true });
 
-  await page.getByLabel("邮箱").fill(data.email);
+  await page.getByLabel("账号 / 手机号 / 邮箱").fill(data.email);
   await page.getByLabel("密码").fill(data.password);
   await page.getByRole("button", { name: "登录" }).click();
   await acceptPrivacyConsentIfRequired(page);

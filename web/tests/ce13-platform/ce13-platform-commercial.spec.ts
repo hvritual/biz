@@ -87,7 +87,7 @@ async function login(
   const page = await context.newPage();
   await page.goto(data.web_base_url + "/auth/login?return_to=" + encodeURIComponent("/auth/session"));
   await expect(page).toHaveURL(/\/idp\/authorize/);
-  await page.getByLabel("邮箱").fill(email);
+  await page.getByLabel("账号 / 手机号 / 邮箱").fill(email);
   await page.getByLabel("密码").fill(password);
   await page.getByRole("button", { name: "登录" }).click();
   await acceptPrivacyConsentIfRequired(page);
@@ -318,7 +318,7 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
 
   await page.goto(`${data.web_base_url}/auth/login?return_to=${encodeURIComponent('/#/platform/commercial/plans')}`);
   await expect(page).toHaveURL(/\/idp\/authorize/);
-  await page.getByLabel("邮箱").fill(data.allowed_email);
+  await page.getByLabel("账号 / 手机号 / 邮箱").fill(data.allowed_email);
   await page.getByLabel("密码").fill(data.allowed_password);
   await page.getByRole("button", { name: "登录" }).click();
   await acceptPrivacyConsentIfRequired(page);
