@@ -96,3 +96,23 @@ func (fixture enterprise173Fixture) bootstrapAccount(t *testing.T, userID, tenan
 	}
 	return sessionA, sessionB
 }
+
+func (fixture enterprise173Fixture) sendRecoveryOTP(t *testing.T, businessEventID, flowID, userID, email string) (domain.VerificationChallengeReceipt, string) {
+	t.Helper()
+	challenge, delivery, err := fixture.Service.SendVerificationCode(context.Background(), domain.VerificationChallengeRequest{
+		BusinessEventID: businessEventID,
+		FlowID:          flowID,
+		Purpose:         domain.VerificationPurposePasswordRecovery,
+		UserID:          userID,
+		Channel:         domain.SecurityNotificationEmail,
+		Destination:     email,
+	})
+	if err != nil || delivery.State != domain.NotificationStateDelivered {
+		t.Fatalf("recovery OTP delivery failed: %+v %v", delivery, err)
+	}
+	message, ok := fixture.Sender.Message(challenge.NotificationEventID)
+	if !ok || message.Secret == "" {
+		t.Fatal("recovery OTP evidence missing")
+	}
+	return challenge, message.Secret
+}
