@@ -264,6 +264,11 @@ func (repository *TenantMemberRepository) Update(ctx context.Context, member *do
 		}
 		return ports.ErrTenantMemberConflict
 	}
+	if member.Status == domain.TenantMemberStatusSuspended || member.Status == domain.TenantMemberStatusRemoved {
+		if err := revokeWebSessionsForTenantMember(ctx, repository.database, member.UserID, member.TenantID, "membership_"+strings.ToLower(member.Status)); err != nil {
+			return err
+		}
+	}
 	member.Version = expectedVersion + 1
 	return nil
 }
