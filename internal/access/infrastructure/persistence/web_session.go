@@ -479,16 +479,6 @@ WHERE i.actor_kind = ? AND i.actor_id = ? AND s.active_tenant_id = ? AND s.revok
 		now, strings.TrimSpace(reason), scope, now, WebActorUser, userID, tenantID).Error
 }
 
-func (store *Store) RevokeWebSession(ctx context.Context, rawToken string) error {
-	if store == nil || store.database == nil || strings.TrimSpace(rawToken) == "" {
-		return nil
-	}
-	now := time.Now().UTC()
-	return store.database.WithContext(ctx).Model(&webSessionRecord{}).
-		Where("token_hash = ? AND revoked_at IS NULL", TokenHash(rawToken)).
-		Updates(map[string]any{"revoked_at": now, "updated_at": now}).Error
-}
-
 func (store *Store) ValidateWebSessionCSRF(authentication WebSessionAuthentication, provided string) bool {
 	expected := authentication.Session.CSRFToken
 	if expected == "" || provided == "" || len(expected) != len(provided) {
