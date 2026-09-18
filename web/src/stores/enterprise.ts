@@ -383,7 +383,6 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       const state = await dataSource.switchTenant(id, previousDomains)
       if (epoch !== sessionEpoch) return
       applySourceState(state, previousDomains, true)
-      publishSessionContextChange(state.session?.context_version ?? 0)
       await refreshBranding(epoch)
       ready.value = true
     } catch (error) {
