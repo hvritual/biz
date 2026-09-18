@@ -86,7 +86,7 @@ async function passwordLogin(
 ) {
   const context = await browser.newContext()
   const page = await startLogin(context, data)
-  await page.getByLabel('账号 / 手机号 / 邮箱').fill(identifier)
+  await page.getByLabel('账号 / 手机号 / 邮箱', { exact: true }).fill(identifier)
   await page.getByLabel('密码').fill(password)
   if (remember) await page.getByLabel(/记住登录账号/).first().check()
   await page.getByRole('button', { name: '登录', exact: true }).click()
@@ -206,7 +206,7 @@ test('TestEnterprise172ClientValidationAntiEnumerationAndRememberIdentifier', as
     page.on('request', (request) => {
       if (request.method() === 'POST' && request.url().endsWith('/idp/login')) loginPosts++
     })
-    await page.getByLabel('账号 / 手机号 / 邮箱').fill('12345')
+    await page.getByLabel('账号 / 手机号 / 邮箱', { exact: true }).fill('12345')
     await page.getByLabel('密码').fill('not-sent')
     await page.getByRole('button', { name: '登录', exact: true }).click()
     await expect(page.getByRole('alert')).toContainText('请输入有效账号')
@@ -242,7 +242,7 @@ test('TestEnterprise172ClientValidationAntiEnumerationAndRememberIdentifier', as
     expect(logout.status()).toBe(204)
 
     await remembered.page.goto(data.base_url + '/auth/login?return_to=/auth/session')
-    await expect(remembered.page.getByLabel('账号 / 手机号 / 邮箱')).toHaveValue(data.single_username)
+    await expect(remembered.page.getByLabel('账号 / 手机号 / 邮箱', { exact: true })).toHaveValue(data.single_username)
     const storage = await remembered.page.evaluate(() => ({ ...localStorage }))
     expect(JSON.stringify(storage)).not.toContain(data.single_password)
     expect(JSON.stringify(storage).toLowerCase()).not.toContain('token')
