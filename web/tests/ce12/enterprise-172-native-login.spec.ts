@@ -126,11 +126,11 @@ async function otpLogin(
   if (!notification) throw new Error('qualification OTP evidence missing')
   if (wrongFirst) {
     const wrong = notification.secret === '000000' ? '111111' : '000000'
-    await page.getByLabel('验证码').fill(wrong)
+    await page.getByLabel('验证码', { exact: true }).fill(wrong)
     await page.getByRole('button', { name: '验证码登录' }).click()
     await expect(page.getByRole('alert')).toContainText('账号或验证码错误')
   }
-  await page.getByLabel('验证码').fill(notification.secret)
+  await page.getByLabel('验证码', { exact: true }).fill(notification.secret)
   await page.getByRole('button', { name: '验证码登录' }).click()
   await acceptPrivacyConsentIfRequired(page)
   await expect(page).toHaveURL(data.base_url + '/auth/session')
