@@ -258,6 +258,9 @@ jobs:
               'TestCE12BrowserRealTenantBrandAppearanceAndStaleReadback',
               'TestEnterprise171CrossTabTenantIsolationBackNavigationAndStaleContext',
               'TestEnterprise172UsernamePhoneEmailPasswordOTPMatrix',
+              'TestEnterprise173PasswordRecoveryRevokesSessionsAndChangesCredential',
+              'TestEnterprise173SelfPasswordChangeUIRevokesCurrentSession',
+              'TestEnterprise173AdminRecoveryIsPermissionedScopedAndPolicyBlocked',
           ]
           for title in required:
               assert title in serialized, f'CE-12 browser acceptance evidence missing: {title}'
