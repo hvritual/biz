@@ -24,6 +24,15 @@ type ce12BrowserFixture struct {
 	DiscoveryURL            string `json:"discovery_url"`
 	Email                   string `json:"email"`
 	Password                string `json:"password"`
+	Username                string `json:"username"`
+	Phone                   string `json:"phone"`
+	SingleEmail             string `json:"single_email"`
+	SinglePassword          string `json:"single_password"`
+	SingleUsername          string `json:"single_username"`
+	SinglePhone             string `json:"single_phone"`
+	EmptyEmail              string `json:"empty_email"`
+	EmptyPassword           string `json:"empty_password"`
+	EmptyUsername           string `json:"empty_username"`
 	PrivacyEmail            string `json:"privacy_email"`
 	PrivacyPassword         string `json:"privacy_password"`
 	AllowedTenant           string `json:"allowed_tenant"`
@@ -104,6 +113,17 @@ func TestCE12BrowserSeed(t *testing.T) {
 	userID := "ce12-browser-user"
 	email := "ce12.browser@example.invalid"
 	password := "Correct-Horse-Battery-Staple-2026!"
+	username := "ce12multi"
+	phone := "+491701234567"
+	singleUserID := "ce12-native-single"
+	singleEmail := "ce12.native.single@example.invalid"
+	singlePassword := "CE12-Native-Single-2026!"
+	singleUsername := "ce12single"
+	singlePhone := "+491701234568"
+	emptyUserID := "ce12-native-empty"
+	emptyEmail := "ce12.native.empty@example.invalid"
+	emptyPassword := "CE12-Native-Empty-2026!"
+	emptyUsername := "ce12empty"
 	privacyUserID := "ce12-privacy-user"
 	privacyEmail := "ce12.privacy@example.invalid"
 	privacyPassword := "CE12-Privacy-Consent-2026!"
@@ -129,6 +149,35 @@ func TestCE12BrowserSeed(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := store.SetUserPassword(ctx, userID, password); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SetUserUsername(ctx, userID, username); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("biz_memberships").Where("tenant_id = ? AND user_id = ?", allowed, userID).Update("phone", phone).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
+		TenantID: allowed, TenantName: "CE12 Allowed", UserID: singleUserID, Email: singleEmail, Token: "ce12-native-single-bootstrap",
+	}, browserReadPermissions); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SetUserPassword(ctx, singleUserID, singlePassword); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SetUserUsername(ctx, singleUserID, singleUsername); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("biz_memberships").Where("tenant_id = ? AND user_id = ?", allowed, singleUserID).Update("phone", singlePhone).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := store.BootstrapGlobalUser(ctx, accesspersistence.GlobalUserBootstrap{ID: emptyUserID, Email: emptyEmail}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SetUserPassword(ctx, emptyUserID, emptyPassword); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SetUserUsername(ctx, emptyUserID, emptyUsername); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
@@ -212,6 +261,15 @@ func TestCE12BrowserSeed(t *testing.T) {
 		DiscoveryURL:            "http://127.0.0.1:18081/idp/.well-known/openid-configuration",
 		Email:                   email,
 		Password:                password,
+		Username:                username,
+		Phone:                   phone,
+		SingleEmail:             singleEmail,
+		SinglePassword:          singlePassword,
+		SingleUsername:          singleUsername,
+		SinglePhone:             singlePhone,
+		EmptyEmail:              emptyEmail,
+		EmptyPassword:           emptyPassword,
+		EmptyUsername:           emptyUsername,
 		PrivacyEmail:            privacyEmail,
 		PrivacyPassword:         privacyPassword,
 		AllowedTenant:           allowed,
