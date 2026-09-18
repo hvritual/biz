@@ -248,26 +248,32 @@ func (repository *TenantMemberRepository) Update(ctx context.Context, member *do
 			member.Phone = MaskPhone(member.Phone)
 		}
 	}
-	result := repository.database.WithContext(ctx).Model(&membershipRecord{}).
-		Where("tenant_id = ? AND user_id = ? AND version = ?", member.TenantID, member.UserID, expectedVersion).
-		Updates(updates)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected != 1 {
-		var count int64
-		if err := repository.database.WithContext(ctx).Model(&membershipRecord{}).Where("tenant_id = ? AND user_id = ?", member.TenantID, member.UserID).Count(&count).Error; err != nil {
-			return err
+	err := repository.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&membershipRecord{}).
+			Where("tenant_id = ? AND user_id = ? AND version = ?", member.TenantID, member.UserID, expectedVersion).
+			Updates(updates)
+		if result.Error != nil {
+			return result.Error
 		}
-		if count == 0 {
-			return ports.ErrTenantMemberNotFound
+		if result.RowsAffected != 1 {
+			var count int64
+			if err := tx.Model(&membershipRecord{}).Where("tenant_id = ? AND user_id = ?", member.TenantID, member.UserID).Count(&count).Error; err != nil {
+				return err
+			}
+			if count == 0 {
+				return ports.ErrTenantMemberNotFound
+			}
+			return ports.ErrTenantMemberConflict
 		}
-		return ports.ErrTenantMemberConflict
-	}
-	if member.Status == domain.TenantMemberStatusSuspended || member.Status == domain.TenantMemberStatusRemoved {
-		if err := revokeWebSessionsForTenantMember(ctx, repository.database, member.UserID, member.TenantID, "membership_"+strings.ToLower(member.Status)); err != nil {
-			return err
+		if member.Status == domain.TenantMemberStatusSuspended || member.Status == domain.TenantMemberStatusRemoved {
+			if err := revokeWebSessionsForTenantMember(ctx, tx, member.UserID, member.TenantID, "membership_"+strings.ToLower(member.Status)); err != nil {
+				return err
+			}
 		}
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 	member.Version = expectedVersion + 1
 	return nil
