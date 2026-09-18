@@ -136,8 +136,7 @@ func (repository *VerificationRepository) CreateVerificationChallenge(ctx contex
 			return err
 		}
 		if found {
-			expectedBinding := repository.notificationBinding(existing, request.Secret)
-			if !constantVerificationEqual(existing.BindingHash, expectedBinding) {
+			if !constantVerificationEqual(existing.BindingHash, bindingHash) {
 				return domain.ErrVerificationConflict
 			}
 			receipt, err = challengeReceipt(ctx, tx, existing)
@@ -449,7 +448,8 @@ func (repository *VerificationRepository) EnqueueSecurityNotification(ctx contex
 			if err := tx.WithContext(ctx).Where("business_event_id = ?", record.BusinessEventID).First(&existing).Error; err != nil {
 				return err
 			}
-			if !constantVerificationEqual(existing.BindingHash, bindingHash) {
+			expectedBinding := repository.notificationBinding(existing, request.Secret)
+			if !constantVerificationEqual(existing.BindingHash, expectedBinding) {
 				return domain.ErrVerificationConflict
 			}
 			receipt = notificationReceipt(existing)
