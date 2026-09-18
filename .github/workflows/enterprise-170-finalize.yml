@@ -1,5 +1,6 @@
 name: enterprise-170-finalize
 # rerun after MySQL precision canonicalization
+# rerun after persisted-record binding canonicalization
 on:
   push:
     branches:
