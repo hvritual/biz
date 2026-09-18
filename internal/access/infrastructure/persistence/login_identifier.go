@@ -174,7 +174,7 @@ func (store *Store) ResolveLoginIdentifier(ctx context.Context, identifier strin
 }
 
 func (store *Store) resolveUserIDByPhone(ctx context.Context, normalized string) (string, error) {
-	query := store.database.WithContext(ctx).Model(&membershipRecord{})
+	query := store.database.WithContext(ctx).Model(&membershipRecord{}).Where("status = ?", domain.TenantMemberStatusActive)
 	if store.contactProtection != nil {
 		lookup, err := store.contactProtection.LookupPhone(normalized)
 		if err != nil {
