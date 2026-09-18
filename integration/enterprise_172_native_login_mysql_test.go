@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	accessdomain "github.com/hvritual/biz/internal/access/domain"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 )
 
@@ -24,22 +23,6 @@ func enterprise172Protection(t *testing.T) *accesspersistence.ContactProtection 
 		t.Fatal(err)
 	}
 	return protection
-}
-
-func enterprise172SetPhone(t *testing.T, ctx context.Context, dbStore *accesspersistence.Store, protection *accesspersistence.ContactProtection, tenantID, userID, phone string) {
-	t.Helper()
-	repository, err := accesspersistence.NewTenantMemberRepositoryWithContactProtection(dbStore.DatabaseForTest(), protection)
-	if err != nil {
-		t.Fatal(err)
-	}
-	member, err := repository.Get(ctx, tenantID, userID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	member.Phone = phone
-	if err := repository.Update(ctx, &member, member.Version); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestEnterprise172ProtectedIdentifierResolutionAndAmbiguity(t *testing.T) {
@@ -235,5 +218,3 @@ func TestEnterprise172NoActiveTenantStillAuthenticatesGlobalAccount(t *testing.T
 		t.Fatalf("global account without active memberships guessed tenant: %+v", authentication.Session)
 	}
 }
-
-var _ = accessdomain.VerificationPurposeLogin
