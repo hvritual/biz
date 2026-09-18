@@ -57,7 +57,7 @@ func (store *Store) EnsureFirstPartyIDPSecuritySchema(ctx context.Context) error
 }
 
 func (store *Store) AuthenticateFirstPartyLogin(ctx context.Context, identifier, password, remoteAddr string, policy FirstPartyLoginPolicy) (LocalUserIdentity, error) {
-	identity, _, err := store.AuthenticateFirstPartyLoginWithAudit(ctx, email, password, remoteAddr, policy)
+	identity, _, err := store.AuthenticateFirstPartyLoginWithAudit(ctx, identifier, password, remoteAddr, policy)
 	return identity, err
 }
 
