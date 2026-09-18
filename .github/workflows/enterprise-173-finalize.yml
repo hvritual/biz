@@ -1,4 +1,5 @@
 name: enterprise-173-finalize
+# rerun after Playwright list pipe fix
 # rerun after web lint fix
 # rerun after nullable rollback evidence fix
 on:
@@ -67,7 +68,8 @@ jobs:
           set -euo pipefail
           npm ci
           npm run check
-          npx playwright test --config playwright.ce12.config.ts --list | grep -q 'TestEnterprise173'
+          npx playwright test --config playwright.ce12.config.ts --list > "$RUNNER_TEMP/enterprise-173-playwright-list.txt"
+          grep -q 'TestEnterprise173' "$RUNNER_TEMP/enterprise-173-playwright-list.txt"
       - name: Static boundaries
         working-directory: biz
         run: |
