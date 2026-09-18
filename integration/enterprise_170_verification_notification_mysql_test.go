@@ -288,7 +288,7 @@ func TestEnterprise170LimitsFailureIdempotencyRollbackAndExpiry(t *testing.T) {
 	}
 
 	expiryPolicy := policy
-	expiryPolicy.CodeTTL = 80 * time.Millisecond
+	expiryPolicy.CodeTTL = time.Minute
 	expiryRequest := domain.VerificationChallengeRequest{
 		BusinessEventID: "enterprise170-expired", FlowID: "expiry-flow",
 		Purpose: domain.VerificationPurposeAccountDeletion, UserID: "expiry-user",
@@ -299,7 +299,9 @@ func TestEnterprise170LimitsFailureIdempotencyRollbackAndExpiry(t *testing.T) {
 		t.Fatalf("expiry fixture delivery failed: %+v %v", expiryDelivery, err)
 	}
 	expiryMessage, _ := sender.Message(expiryChallenge.NotificationEventID)
-	time.Sleep(120 * time.Millisecond)
+	if err := db.Exec("UPDATE biz_verification_challenges SET expires_at=DATE_SUB(UTC_TIMESTAMP(6), INTERVAL 1 SECOND) WHERE challenge_id=?", expiryChallenge.ChallengeID).Error; err != nil {
+		t.Fatal(err)
+	}
 	if _, err := service.VerifyCode(ctx, domain.VerifyChallengeRequest{
 		ChallengeID: expiryChallenge.ChallengeID, FlowID: expiryRequest.FlowID, Purpose: expiryRequest.Purpose,
 		UserID: expiryRequest.UserID, Channel: expiryRequest.Channel, Destination: expiryRequest.Destination, Code: expiryMessage.Secret,
