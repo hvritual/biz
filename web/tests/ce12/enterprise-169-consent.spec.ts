@@ -48,40 +48,30 @@ test("TestEnterprise169BrowserPrivacyConsentGate", async ({ page, browser }) => 
     await attackerContext.close();
   }
 
-  const missingCheckbox = await page.evaluate(async ({ requestId, csrf }) => {
-    const body = new URLSearchParams({
+  const missingCheckboxResponse = await page.context().request.post("http://127.0.0.1:18081/idp/consent", {
+    form: {
       request_id: requestId,
       csrf_token: csrf,
       agreement_version: "ce12-v1",
       action: "accept",
-    });
-    const response = await fetch("/idp/consent", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      credentials: "include",
-      body,
-    });
-    return { status: response.status, text: await response.text() };
-  }, { requestId, csrf });
+    },
+    maxRedirects: 0,
+  });
+  const missingCheckbox = { status: missingCheckboxResponse.status(), text: await missingCheckboxResponse.text() };
   expect(missingCheckbox.status).toBe(422);
   expect(missingCheckbox.text).toContain("请先阅读并勾选同意当前协议");
 
-  const tamperedVersion = await page.evaluate(async ({ requestId, csrf }) => {
-    const body = new URLSearchParams({
+  const tamperedVersionResponse = await page.context().request.post("http://127.0.0.1:18081/idp/consent", {
+    form: {
       request_id: requestId,
       csrf_token: csrf,
       agreement_version: "tampered-v0",
       agreement_accepted: "true",
       action: "accept",
-    });
-    const response = await fetch("/idp/consent", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      credentials: "include",
-      body,
-    });
-    return { status: response.status, text: await response.text() };
-  }, { requestId, csrf });
+    },
+    maxRedirects: 0,
+  });
+  const tamperedVersion = { status: tamperedVersionResponse.status(), text: await tamperedVersionResponse.text() };
   expect(tamperedVersion.status).toBe(409);
   expect(tamperedVersion.text).toContain("协议版本已更新");
 
