@@ -634,7 +634,7 @@ var firstPartyLoginTemplate = template.Must(template.New("first-party-idp-login"
 {{end}}
 </section>
 <div class="notice" role="note"><strong>Cookie 提示</strong><br>登录流程只使用必要 Cookie 保存安全认证事务；业务 Token 不写入浏览器持久化。</div>
-<div class="links"><a href="{{.PrivacyPolicyURL}}" target="_blank" rel="noopener noreferrer">隐私政策</a><a href="{{.TermsURL}}" target="_blank" rel="noopener noreferrer">服务条款</a></div>
+<div class="links"><a href="/idp/password/recovery">忘记密码</a><a href="{{.PrivacyPolicyURL}}" target="_blank" rel="noopener noreferrer">隐私政策</a><a href="{{.TermsURL}}" target="_blank" rel="noopener noreferrer">服务条款</a></div>
 </main>
 <script nonce="{{.ScriptNonce}}">
 (() => {
