@@ -152,17 +152,17 @@ func (store *Store) RecoverPasswordWithCode(
 		consumedAt := now
 		authorization := oneTimeAuthorizationRecord{
 			AuthorizationHash: protection.HashAuthorization(rawAuthorization),
-			ChallengeID: challenge.ChallengeID,
-			BindingHash: challenge.BindingHash,
-			Purpose: challenge.Purpose,
-			UserID: challenge.UserID,
-			TenantID: challenge.TenantID,
-			FlowID: challenge.FlowID,
-			Channel: challenge.Channel,
-			DestinationHash: challenge.DestinationHash,
-			ExpiresAt: canonicalVerificationTime(now.Add(authorizationTTL)),
-			ConsumedAt: &consumedAt,
-			CreatedAt: canonicalVerificationTime(now),
+			ChallengeID:       challenge.ChallengeID,
+			BindingHash:       challenge.BindingHash,
+			Purpose:           challenge.Purpose,
+			UserID:            challenge.UserID,
+			TenantID:          challenge.TenantID,
+			FlowID:            challenge.FlowID,
+			Channel:           challenge.Channel,
+			DestinationHash:   challenge.DestinationHash,
+			ExpiresAt:         canonicalVerificationTime(now.Add(authorizationTTL)),
+			ConsumedAt:        &consumedAt,
+			CreatedAt:         canonicalVerificationTime(now),
 		}
 		if err := tx.Create(&authorization).Error; err != nil {
 			return err
@@ -185,11 +185,11 @@ func (store *Store) RecoverPasswordWithCode(
 		if err := tx.Model(&securityNotificationOutboxRecord{}).
 			Where("challenge_id = ? AND state IN ?", challenge.ChallengeID, []string{domain.NotificationStatePending, domain.NotificationStateFailed}).
 			Updates(map[string]any{
-				"state": domain.NotificationStateCancelled,
+				"state":                  domain.NotificationStateCancelled,
 				"destination_ciphertext": "",
-				"secret_ciphertext": "",
-				"failure_code": "RECOVERY_CONSUMED",
-				"updated_at": now,
+				"secret_ciphertext":      "",
+				"failure_code":           "RECOVERY_CONSUMED",
+				"updated_at":             now,
 			}).Error; err != nil {
 			return err
 		}

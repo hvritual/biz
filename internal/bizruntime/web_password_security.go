@@ -48,10 +48,9 @@ func (auth *runtimeWebAuth) handlePasswordChange(writer http.ResponseWriter, req
 	}
 }
 
-
 const (
 	tenantMemberPasswordRecoveryPermission = authz.PermissionKey("tenant.member.password_recovery.request")
-	legacyTenantMemberResetPermission       = authz.PermissionKey("org.basic.user.reset")
+	legacyTenantMemberResetPermission      = authz.PermissionKey("org.basic.user.reset")
 )
 
 func (auth *runtimeWebAuth) handleTenantMemberPasswordRecovery(writer http.ResponseWriter, request *http.Request) {

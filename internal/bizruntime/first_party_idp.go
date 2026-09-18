@@ -33,11 +33,11 @@ type firstPartyVerificationKey struct {
 }
 
 type runtimeFirstPartyIdP struct {
-	config           FirstPartyIdPConfig
-	key              *rsa.PrivateKey
-	kid              string
-	verificationKeys []firstPartyVerificationKey
-	mu               sync.RWMutex
+	config                 FirstPartyIdPConfig
+	key                    *rsa.PrivateKey
+	kid                    string
+	verificationKeys       []firstPartyVerificationKey
+	mu                     sync.RWMutex
 	store                  *accesspersistence.Store
 	verification           firstPartyLoginVerification
 	verificationProtection *accesspersistence.VerificationProtection
