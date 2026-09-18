@@ -114,8 +114,8 @@ jobs:
           go test ./internal/access/infrastructure/persistence ./internal/bizruntime ./cmd/biz-idp
           go test -tags=qualification ./cmd/biz-idp
           go vet ./internal/access/infrastructure/persistence ./internal/bizruntime ./cmd/biz-idp
-          go build ./cmd/biz-idp
-          go build -tags=qualification ./cmd/biz-idp
+          go build -o "$RUNNER_TEMP/biz-idp-production" ./cmd/biz-idp
+          go build -tags=qualification -o "$RUNNER_TEMP/biz-idp-qualification" ./cmd/biz-idp
 
       - name: Real MySQL login identifier and persistent lock qualification
         working-directory: biz
