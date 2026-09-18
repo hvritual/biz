@@ -12,6 +12,7 @@ import (
 	"io"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/hvritual/biz/internal/access/domain"
 )
@@ -98,7 +99,7 @@ func (protection *VerificationProtection) BindingHash(purpose domain.Verificatio
 	return protection.mac("binding", value)
 }
 
-func (protection *VerificationProtection) NotificationBindingHash(kind domain.SecurityNotificationKind, purpose domain.VerificationPurpose, userID, tenantID, flowID string, channel domain.SecurityNotificationChannel, destinationHash, secret string) string {
+func (protection *VerificationProtection) NotificationBindingHash(kind domain.SecurityNotificationKind, purpose domain.VerificationPurpose, userID, tenantID, flowID string, channel domain.SecurityNotificationChannel, destinationHash, secret string, expiresAt time.Time) string {
 	value := strings.Join([]string{
 		string(kind),
 		string(purpose),
@@ -108,6 +109,7 @@ func (protection *VerificationProtection) NotificationBindingHash(kind domain.Se
 		string(channel),
 		strings.TrimSpace(destinationHash),
 		strings.TrimSpace(secret),
+		expiresAt.UTC().Format(time.RFC3339Nano),
 	}, "\x00")
 	return protection.mac("notification-binding", value)
 }
