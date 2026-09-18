@@ -27,9 +27,9 @@ type verificationChallengeRecord struct {
 	CodeHash          string     `gorm:"column:code_hash;size:64;not null"`
 	Attempts          uint32     `gorm:"column:attempts;not null;default:0"`
 	MaxAttempts       uint32     `gorm:"column:max_attempts;not null"`
-	ExpiresAt         time.Time  `gorm:"column:expires_at;not null;index"`
-	ConsumedAt        *time.Time `gorm:"column:consumed_at;index"`
-	CreatedAt         time.Time  `gorm:"column:created_at;not null;index:idx_verification_target_time,priority:4"`
+	ExpiresAt         time.Time  `gorm:"column:expires_at;type:datetime(6);not null;index"`
+	ConsumedAt        *time.Time `gorm:"column:consumed_at;type:datetime(6);index"`
+	CreatedAt         time.Time  `gorm:"column:created_at;type:datetime(6);not null;index:idx_verification_target_time,priority:4"`
 }
 
 func (verificationChallengeRecord) TableName() string { return "biz_verification_challenges" }
@@ -44,9 +44,9 @@ type oneTimeAuthorizationRecord struct {
 	FlowID            string     `gorm:"column:flow_id;size:160;not null;index"`
 	Channel           string     `gorm:"column:channel;size:16;not null"`
 	DestinationHash   string     `gorm:"column:destination_hash;size:64;not null"`
-	ExpiresAt         time.Time  `gorm:"column:expires_at;not null;index"`
-	ConsumedAt        *time.Time `gorm:"column:consumed_at;index"`
-	CreatedAt         time.Time  `gorm:"column:created_at;not null"`
+	ExpiresAt         time.Time  `gorm:"column:expires_at;type:datetime(6);not null;index"`
+	ConsumedAt        *time.Time `gorm:"column:consumed_at;type:datetime(6);index"`
+	CreatedAt         time.Time  `gorm:"column:created_at;type:datetime(6);not null"`
 }
 
 func (oneTimeAuthorizationRecord) TableName() string { return "biz_one_time_authorizations" }
@@ -71,10 +71,10 @@ type securityNotificationOutboxRecord struct {
 	Attempts              uint32     `gorm:"column:attempts;not null;default:0"`
 	ProviderReceipt       string     `gorm:"column:provider_receipt;size:200;not null;default:''"`
 	FailureCode           string     `gorm:"column:failure_code;size:64;not null;default:''"`
-	ExpiresAt             time.Time  `gorm:"column:expires_at;not null;index"`
-	DeliveredAt           *time.Time `gorm:"column:delivered_at"`
-	CreatedAt             time.Time  `gorm:"column:created_at;not null"`
-	UpdatedAt             time.Time  `gorm:"column:updated_at;not null"`
+	ExpiresAt             time.Time  `gorm:"column:expires_at;type:datetime(6);not null;index"`
+	DeliveredAt           *time.Time `gorm:"column:delivered_at;type:datetime(6)"`
+	CreatedAt             time.Time  `gorm:"column:created_at;type:datetime(6);not null"`
+	UpdatedAt             time.Time  `gorm:"column:updated_at;type:datetime(6);not null"`
 }
 
 func (securityNotificationOutboxRecord) TableName() string {
