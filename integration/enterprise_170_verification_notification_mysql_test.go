@@ -203,6 +203,33 @@ func TestEnterprise170VerificationHappyPathReplayTamperAndAtomicConsumption(t *t
 	if _, err := service.ConsumeAuthorization(ctx, consume); !errors.Is(err, domain.ErrVerificationConsumed) {
 		t.Fatalf("authorization replay accepted: %v", err)
 	}
+
+	expiryRequest := domain.VerificationChallengeRequest{
+		BusinessEventID: "enterprise170-auth-expiry", FlowID: "auth-expiry-flow",
+		Purpose: domain.VerificationPurposeContactChange, UserID: "auth-expiry-user",
+		Channel: domain.SecurityNotificationEmail, Destination: "auth.expiry@example.invalid",
+	}
+	expiryChallenge, expiryDelivery, err := service.SendVerificationCode(ctx, expiryRequest)
+	if err != nil || expiryDelivery.State != domain.NotificationStateDelivered {
+		t.Fatalf("authorization expiry fixture delivery failed: %+v %v", expiryDelivery, err)
+	}
+	expiryMessage, _ := sender.Message(expiryChallenge.NotificationEventID)
+	expiringAuthorization, err := service.VerifyCode(ctx, domain.VerifyChallengeRequest{
+		ChallengeID: expiryChallenge.ChallengeID, FlowID: expiryRequest.FlowID, Purpose: expiryRequest.Purpose,
+		UserID: expiryRequest.UserID, Channel: expiryRequest.Channel, Destination: expiryRequest.Destination, Code: expiryMessage.Secret,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("UPDATE biz_one_time_authorizations SET expires_at=DATE_SUB(UTC_TIMESTAMP(6), INTERVAL 1 SECOND) WHERE challenge_id=?", expiryChallenge.ChallengeID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.ConsumeAuthorization(ctx, domain.ConsumeAuthorizationRequest{
+		Code: expiringAuthorization.Code, FlowID: expiryRequest.FlowID, Purpose: expiryRequest.Purpose,
+		UserID: expiryRequest.UserID, Channel: expiryRequest.Channel, Destination: expiryRequest.Destination,
+	}); !errors.Is(err, domain.ErrVerificationExpired) {
+		t.Fatalf("expired one-time authorization accepted: %v", err)
+	}
 }
 
 func TestEnterprise170LimitsFailureIdempotencyRollbackAndExpiry(t *testing.T) {
@@ -355,6 +382,23 @@ func TestEnterprise170LimitsFailureIdempotencyRollbackAndExpiry(t *testing.T) {
 	}
 	if rollbackCount != 0 || sender.Count() != countBefore {
 		t.Fatalf("rollback produced executable side effect: rows=%d sender=%d/%d", rollbackCount, sender.Count(), countBefore)
+	}
+
+	tamperNotification := domain.SecurityNotificationRequest{
+		BusinessEventID: "enterprise170-tampered-outbox", Kind: domain.SecurityNotificationLoginLock,
+		Purpose: domain.VerificationPurposeLogin, UserID: "tamper-user", FlowID: "tamper-flow",
+		Channel: domain.SecurityNotificationEmail, Destination: "tamper@example.invalid",
+		ExpiresAt: time.Now().UTC().Add(time.Hour),
+	}
+	tamperReceipt, err := service.QueueSecurityNotification(ctx, tamperNotification)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("UPDATE biz_security_notification_outbox SET purpose=? WHERE event_id=?", string(domain.VerificationPurposeAccountDeletion), tamperReceipt.EventID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.DeliverSecurityNotification(ctx, tamperReceipt.EventID); !errors.Is(err, accesspersistence.ErrVerificationCipherCorrupt) {
+		t.Fatalf("tampered outbox facts were delivered: %v", err)
 	}
 
 	generic := domain.SecurityNotificationRequest{
