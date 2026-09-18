@@ -48,9 +48,12 @@ type webSessionRecord struct {
 	Issuer         string     `gorm:"column:issuer;size:512;not null;index:idx_web_session_identity,priority:1"`
 	Subject        string     `gorm:"column:subject;size:255;not null;index:idx_web_session_identity,priority:2"`
 	ActiveTenantID string     `gorm:"column:active_tenant_id;size:64;index"`
+	ContextVersion uint64     `gorm:"column:context_version;not null;default:1;index"`
 	CSRFToken      string     `gorm:"column:csrf_token;size:128;not null"`
 	ExpiresAt      time.Time  `gorm:"column:expires_at;not null;index"`
 	RevokedAt      *time.Time `gorm:"column:revoked_at;index"`
+	RevokedReason  string     `gorm:"column:revoked_reason;size:64;not null;default:''"`
+	RevokedScope   string     `gorm:"column:revoked_scope;size:160;not null;default:''"`
 	CreatedAt      time.Time  `gorm:"column:created_at;not null"`
 	UpdatedAt      time.Time  `gorm:"column:updated_at;not null"`
 }
@@ -87,6 +90,7 @@ type WebSessionContext struct {
 	UserID          string
 	PlatformSubject string
 	ActiveTenantID  string
+	ContextVersion  uint64
 	Tenants         []WebTenant
 	ExpiresAt       time.Time
 	CSRFToken       string
@@ -233,7 +237,7 @@ func (store *Store) CreateWebSession(ctx context.Context, webIdentity WebIdentit
 	}
 	record := webSessionRecord{
 		TokenHash: TokenHash(token), Issuer: authoritative.Issuer, Subject: authoritative.Subject,
-		ActiveTenantID: activeTenant, CSRFToken: csrf, ExpiresAt: now.Add(ttl), CreatedAt: now, UpdatedAt: now,
+		ActiveTenantID: activeTenant, ContextVersion: 1, CSRFToken: csrf, ExpiresAt: now.Add(ttl), CreatedAt: now, UpdatedAt: now,
 	}
 	if err := store.database.WithContext(ctx).Create(&record).Error; err != nil {
 		return "", WebSessionAuthentication{}, err
@@ -273,7 +277,7 @@ func (store *Store) authenticateWebSessionRecord(ctx context.Context, record web
 	if err := store.validateWebIdentityAuthority(ctx, link); err != nil {
 		return WebSessionAuthentication{}, err
 	}
-	result := WebSessionAuthentication{Session: WebSessionContext{ActorKind: link.ActorKind, ExpiresAt: record.ExpiresAt, CSRFToken: record.CSRFToken}}
+	result := WebSessionAuthentication{Session: WebSessionContext{ActorKind: link.ActorKind, ContextVersion: record.ContextVersion, ExpiresAt: record.ExpiresAt, CSRFToken: record.CSRFToken}}
 	switch link.ActorKind {
 	case WebActorPlatform:
 		principal, err := store.AuthenticatePlatformSubject(ctx, link.ActorID, AuthMethodWeb)
@@ -295,7 +299,10 @@ func (store *Store) authenticateWebSessionRecord(ctx context.Context, record web
 		principal, err := store.resolveWebUserPrincipal(ctx, link.ActorID, record.ActiveTenantID)
 		if err != nil {
 			if errors.Is(err, ErrUnauthorized) {
-				return result, nil
+				if revokeErr := revokeWebSessionByHash(ctx, store.database, record.TokenHash, "tenant_authority_invalid", "tenant:"+record.ActiveTenantID); revokeErr != nil {
+					return WebSessionAuthentication{}, revokeErr
+				}
+				return WebSessionAuthentication{}, ErrWebSessionInvalid
 			}
 			return WebSessionAuthentication{}, err
 		}
@@ -371,10 +378,19 @@ func (store *Store) SwitchWebSessionTenant(ctx context.Context, rawToken, tenant
 	if _, err := store.resolveWebUserPrincipal(ctx, authentication.Session.UserID, tenantID); err != nil {
 		return WebSessionAuthentication{}, ErrWebTenantDenied
 	}
+	csrf, err := randomWebSecret(32)
+	if err != nil {
+		return WebSessionAuthentication{}, err
+	}
 	now := time.Now().UTC()
 	result := store.database.WithContext(ctx).Model(&webSessionRecord{}).
 		Where("token_hash = ? AND revoked_at IS NULL AND expires_at > ?", TokenHash(rawToken), now).
-		Updates(map[string]any{"active_tenant_id": tenantID, "updated_at": now})
+		Updates(map[string]any{
+			"active_tenant_id": tenantID,
+			"context_version":  gorm.Expr("context_version + 1"),
+			"csrf_token":       csrf,
+			"updated_at":       now,
+		})
 	if result.Error != nil {
 		return WebSessionAuthentication{}, result.Error
 	}
@@ -382,6 +398,85 @@ func (store *Store) SwitchWebSessionTenant(ctx context.Context, rawToken, tenant
 		return WebSessionAuthentication{}, ErrWebSessionInvalid
 	}
 	return store.AuthenticateWebSession(ctx, rawToken)
+}
+
+func (store *Store) RefreshWebSession(ctx context.Context, rawToken string, refreshWindow, ttl time.Duration) (WebSessionAuthentication, bool, error) {
+	if store == nil || store.database == nil || strings.TrimSpace(rawToken) == "" || refreshWindow <= 0 || ttl <= 0 || refreshWindow >= ttl {
+		return WebSessionAuthentication{}, false, ErrWebSessionInvalid
+	}
+	var refreshed bool
+	var record webSessionRecord
+	err := store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("token_hash = ?", TokenHash(rawToken)).First(&record).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrWebSessionInvalid
+			}
+			return err
+		}
+		now := time.Now().UTC()
+		if record.RevokedAt != nil || !record.ExpiresAt.After(now) {
+			return ErrWebSessionInvalid
+		}
+		if record.ExpiresAt.Sub(now) > refreshWindow {
+			return nil
+		}
+		record.ExpiresAt = now.Add(ttl)
+		record.UpdatedAt = now
+		refreshed = true
+		return tx.WithContext(ctx).Model(&webSessionRecord{}).Where("token_hash = ? AND revoked_at IS NULL").
+			Updates(map[string]any{"expires_at": record.ExpiresAt, "updated_at": now}).Error
+	})
+	if err != nil {
+		return WebSessionAuthentication{}, false, err
+	}
+	authentication, err := store.authenticateWebSessionRecord(ctx, record)
+	if err != nil {
+		return WebSessionAuthentication{}, false, err
+	}
+	return authentication, refreshed, nil
+}
+
+func (store *Store) RevokeWebSession(ctx context.Context, rawToken string) error {
+	if store == nil || store.database == nil || strings.TrimSpace(rawToken) == "" {
+		return nil
+	}
+	return revokeWebSessionByHash(ctx, store.database, TokenHash(rawToken), "logout", "session")
+}
+
+func revokeWebSessionByHash(ctx context.Context, database *gorm.DB, tokenHash, reason, scope string) error {
+	if database == nil || strings.TrimSpace(tokenHash) == "" {
+		return nil
+	}
+	now := time.Now().UTC()
+	return database.WithContext(ctx).Model(&webSessionRecord{}).
+		Where("token_hash = ? AND revoked_at IS NULL", tokenHash).
+		Updates(map[string]any{
+			"revoked_at":      now,
+			"revoked_reason":  strings.TrimSpace(reason),
+			"revoked_scope":   strings.TrimSpace(scope),
+			"context_version": gorm.Expr("context_version + 1"),
+			"updated_at":      now,
+		}).Error
+}
+
+func revokeWebSessionsForTenantMember(ctx context.Context, database *gorm.DB, userID, tenantID, reason string) error {
+	userID = strings.TrimSpace(userID)
+	tenantID = strings.TrimSpace(tenantID)
+	if database == nil || userID == "" || tenantID == "" {
+		return nil
+	}
+	if !database.Migrator().HasTable(&webSessionRecord{}) || !database.Migrator().HasTable(&webIdentityRecord{}) {
+		return nil
+	}
+	now := time.Now().UTC()
+	scope := "tenant:" + tenantID
+	return database.WithContext(ctx).Exec(`
+UPDATE biz_web_sessions s
+JOIN biz_web_identities i ON i.issuer = s.issuer AND i.subject = s.subject
+SET s.revoked_at = ?, s.revoked_reason = ?, s.revoked_scope = ?, s.context_version = s.context_version + 1, s.updated_at = ?
+WHERE i.actor_kind = ? AND i.actor_id = ? AND s.active_tenant_id = ? AND s.revoked_at IS NULL`,
+		now, strings.TrimSpace(reason), scope, now, WebActorUser, userID, tenantID).Error
 }
 
 func (store *Store) RevokeWebSession(ctx context.Context, rawToken string) error {
