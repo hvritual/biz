@@ -8,8 +8,11 @@ import (
 	"strings"
 	"time"
 
+	accessapp "github.com/hvritual/biz/internal/access/application"
 	"github.com/hvritual/biz/internal/access/domain"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
+	"github.com/hvritual/biz/internal/access/ports"
+	"gorm.io/gorm"
 )
 
 type VerificationSecurityConfig struct {
@@ -124,4 +127,21 @@ func isLoopbackHost(host string) bool {
 	default:
 		return false
 	}
+}
+
+func BuildVerificationService(database *gorm.DB, config VerificationSecurityConfig, protection *accesspersistence.VerificationProtection, sender ports.SecurityNotificationSender) (*accessapp.VerificationService, error) {
+	if !config.Enabled() {
+		return nil, nil
+	}
+	if err := config.Validate(); err != nil {
+		return nil, err
+	}
+	if protection == nil {
+		return nil, accesspersistence.ErrVerificationKeyUnavailable
+	}
+	repository, err := accesspersistence.NewVerificationRepository(database, protection)
+	if err != nil {
+		return nil, err
+	}
+	return accessapp.NewVerificationService(repository, sender, config.Policy())
 }
