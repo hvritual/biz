@@ -157,6 +157,36 @@ func TestEnterprise171TenantSelectionContextVersionAndScopedRevocation(t *testin
 		}
 	}
 
+	rawRemoved, removedSession, err := store.CreateWebSession(ctx, identity, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	removedSession, err = store.SwitchWebSessionTenant(ctx, rawRemoved, "enterprise-171-a")
+	if err != nil || removedSession.Session.ActiveTenantID != "enterprise-171-a" {
+		t.Fatalf("remove fixture cannot enter tenant A: %+v %v", removedSession.Session, err)
+	}
+	memberA, err = memberRepository.Get(ctx, "enterprise-171-a", userID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := memberA.Remove(time.Now().UTC()); err != nil {
+		t.Fatal(err)
+	}
+	if err := memberRepository.Update(ctx, &memberA, memberA.Version); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.AuthenticateWebSession(ctx, rawRemoved); !errors.Is(err, accesspersistence.ErrWebSessionInvalid) {
+		t.Fatalf("removed member session remained reusable: %v", err)
+	}
+	var removedEvidence struct{ Reason, Scope string }
+	if err := db.Table("biz_web_sessions").Select("revoked_reason AS reason, revoked_scope AS scope").
+		Where("token_hash = ?", accesspersistence.TokenHash(rawRemoved)).Scan(&removedEvidence).Error; err != nil {
+		t.Fatal(err)
+	}
+	if removedEvidence.Reason != "membership_removed" || removedEvidence.Scope != "tenant:enterprise-171-a" {
+		t.Fatalf("remove revocation evidence=%+v", removedEvidence)
+	}
+
 	rawLogout, _, err := store.CreateWebSession(ctx, identity, time.Hour)
 	if err != nil {
 		t.Fatal(err)
@@ -213,6 +243,20 @@ func TestEnterprise171ZeroSingleTenantAndRefreshBoundaries(t *testing.T) {
 	}
 	if refreshed.Session.ContextVersion != 1 {
 		t.Fatalf("TTL refresh changed tenant context version: %d", refreshed.Session.ContextVersion)
+	}
+
+	rawExpired, _, err := store.CreateWebSession(ctx, singleIdentity, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("UPDATE biz_web_sessions SET expires_at=DATE_SUB(UTC_TIMESTAMP(6), INTERVAL 1 SECOND) WHERE token_hash=?", accesspersistence.TokenHash(rawExpired)).Error; err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.AuthenticateWebSession(ctx, rawExpired); !errors.Is(err, accesspersistence.ErrWebSessionInvalid) {
+		t.Fatalf("expired web session was accepted: %v", err)
+	}
+	if _, _, err := store.RefreshWebSession(ctx, rawExpired, 30*time.Second, time.Hour); !errors.Is(err, accesspersistence.ErrWebSessionInvalid) {
+		t.Fatalf("expired web session was refreshed: %v", err)
 	}
 
 	if err := db.Table("biz_memberships").
