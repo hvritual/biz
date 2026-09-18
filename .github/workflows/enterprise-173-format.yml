@@ -1,0 +1,36 @@
+name: enterprise-173-format
+on:
+  push:
+    branches:
+      - feat/enterprise-173-password-recovery
+    paths:
+      - .github/workflows/enterprise-173-format.yml
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/enterprise-173-password-recovery
+          fetch-depth: 0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache: false
+      - name: Format
+        run: |
+          gofmt -w             internal/access/infrastructure/persistence/credential_security.go             internal/bizruntime/config.go             internal/bizruntime/first_party_idp.go             internal/bizruntime/web_password_security.go
+      - name: Commit
+        run: |
+          set -euo pipefail
+          rm .github/workflows/enterprise-173-format.yml
+          git config user.name hvritual
+          git config user.email 460657446@qq.com
+          git add -A
+          git diff --cached --check
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: format #173 password security changes"
+            git push origin HEAD:feat/enterprise-173-password-recovery
+          fi
