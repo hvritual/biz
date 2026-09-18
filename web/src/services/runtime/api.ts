@@ -1,4 +1,5 @@
 import { request as read, mutate } from '@/services/commercial/platformCommercial'
+import { publishSessionContextChange } from '@/services/runtime/sessionCoordinator'
 export interface TrustedSession {
   authenticated: boolean
   actor_kind?: string
@@ -11,8 +12,11 @@ export interface TrustedSession {
   tenants?: Array<{ id: string; name: string }>
 }
 export const readSession = () => read<TrustedSession>('/auth/session')
-export const selectSessionTenant = (tenantId: string) =>
-  mutate<TrustedSession>('/auth/session/tenant', 'POST', { tenant_id: tenantId })
+export async function selectSessionTenant(tenantId: string) {
+  const session = await mutate<TrustedSession>('/auth/session/tenant', 'POST', { tenant_id: tenantId })
+  publishSessionContextChange(session.context_version ?? 0)
+  return session
+}
 export const logoutSession = () => mutate<void>('/auth/logout', 'POST', {})
 export function loginUrl() {
   return `${(import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')}/auth/login?return_to=${encodeURIComponent(window.location.pathname + window.location.hash)}`
