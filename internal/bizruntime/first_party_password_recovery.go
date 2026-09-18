@@ -31,6 +31,7 @@ func (idp *runtimeFirstPartyIdP) handlePasswordRecoveryPage(writer http.Response
 		http.Error(writer, "identity provider unavailable", http.StatusServiceUnavailable)
 		return
 	}
+	idp.setRecoveryCookie(writer, flowID)
 	idp.renderPasswordRecovery(writer, http.StatusOK, firstPartyRecoveryPage{Stage: "request", FlowID: flowID})
 }
 
@@ -49,7 +50,7 @@ func (idp *runtimeFirstPartyIdP) handlePasswordRecoveryRequest(writer http.Respo
 	identifier := strings.TrimSpace(request.Form.Get("identifier"))
 	flowID := strings.TrimSpace(request.Form.Get("flow_id"))
 	requestNonce := strings.TrimSpace(request.Form.Get("request_nonce"))
-	if identifier == "" || flowID == "" || requestNonce == "" {
+	if identifier == "" || flowID == "" || requestNonce == "" || !idp.validRecoveryCookie(request, flowID) {
 		idp.renderPasswordRecovery(writer, http.StatusBadRequest, firstPartyRecoveryPage{
 			Stage: "request", FlowID: flowID, Identifier: identifier, Message: "请输入有效账号、手机号或邮箱。",
 		})
@@ -108,6 +109,10 @@ func (idp *runtimeFirstPartyIdP) handlePasswordRecoveryComplete(writer http.Resp
 	newPassword := request.Form.Get("new_password")
 	confirmation := request.Form.Get("confirm_password")
 	page := firstPartyRecoveryPage{Stage: "complete", FlowID: flowID, Identifier: identifier, ChallengeID: challengeID}
+	if !idp.validRecoveryCookie(request, flowID) {
+		http.Error(writer, "invalid recovery flow", http.StatusUnauthorized)
+		return
+	}
 	if newPassword != confirmation {
 		page.Message = "两次输入的新密码不一致。"
 		idp.renderPasswordRecovery(writer, http.StatusUnprocessableEntity, page)
@@ -160,9 +165,41 @@ func (idp *runtimeFirstPartyIdP) handlePasswordRecoveryComplete(writer http.Resp
 	if queueErr == nil && event.EventID != "" {
 		_, _ = verification.DeliverSecurityNotification(request.Context(), event.EventID)
 	}
+	idp.clearRecoveryCookie(writer)
 	idp.renderPasswordRecovery(writer, http.StatusOK, firstPartyRecoveryPage{
 		Stage: "done", Success: true, Message: "密码已更新，请使用新密码重新登录。",
 	})
+}
+
+func (idp *runtimeFirstPartyIdP) recoveryCookieName() string {
+	if idp.config.CookieSecure {
+		return "__Host-biz-idp-recovery"
+	}
+	return "biz_idp_recovery"
+}
+
+func (idp *runtimeFirstPartyIdP) setRecoveryCookie(writer http.ResponseWriter, flowID string) {
+	http.SetCookie(writer, &http.Cookie{
+		Name: idp.recoveryCookieName(), Value: flowID, Path: "/idp/password/recovery",
+		HttpOnly: true, Secure: idp.config.CookieSecure, SameSite: http.SameSiteStrictMode,
+		MaxAge: int((10 * time.Minute).Seconds()), Expires: time.Now().UTC().Add(10 * time.Minute),
+	})
+}
+
+func (idp *runtimeFirstPartyIdP) clearRecoveryCookie(writer http.ResponseWriter) {
+	http.SetCookie(writer, &http.Cookie{
+		Name: idp.recoveryCookieName(), Value: "", Path: "/idp/password/recovery",
+		HttpOnly: true, Secure: idp.config.CookieSecure, SameSite: http.SameSiteStrictMode,
+		MaxAge: -1, Expires: time.Unix(1, 0).UTC(),
+	})
+}
+
+func (idp *runtimeFirstPartyIdP) validRecoveryCookie(request *http.Request, flowID string) bool {
+	cookie, err := request.Cookie(idp.recoveryCookieName())
+	if err != nil || strings.TrimSpace(flowID) == "" {
+		return false
+	}
+	return constantTimeEqual(cookie.Value, flowID)
 }
 
 func (idp *runtimeFirstPartyIdP) renderPasswordRecovery(writer http.ResponseWriter, status int, page firstPartyRecoveryPage) {
