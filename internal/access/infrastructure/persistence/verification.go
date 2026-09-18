@@ -192,7 +192,7 @@ func (repository *VerificationRepository) CreateVerificationChallenge(ctx contex
 			Purpose: string(request.Purpose), UserID: strings.TrimSpace(request.UserID), TenantID: strings.TrimSpace(request.TenantID),
 			FlowID: strings.TrimSpace(request.FlowID), Channel: string(request.Channel), DestinationHash: destinationHash,
 			MaskedDestination: masked, CodeHash: repository.protection.HashCode(challengeID, code),
-			MaxAttempts: uint32(policy.MaxVerificationTries), ExpiresAt: now.Add(policy.CodeTTL), CreatedAt: now,
+			MaxAttempts: uint32(policy.MaxVerificationTries), ExpiresAt: canonicalVerificationTime(now.Add(policy.CodeTTL)), CreatedAt: canonicalVerificationTime(now),
 		}
 		result := tx.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&challenge)
 		if result.Error != nil {
@@ -299,7 +299,7 @@ func (repository *VerificationRepository) VerifyChallenge(ctx context.Context, r
 			AuthorizationHash: repository.protection.HashAuthorization(rawAuthorization), ChallengeID: challenge.ChallengeID,
 			BindingHash: challenge.BindingHash, Purpose: challenge.Purpose, UserID: challenge.UserID, TenantID: challenge.TenantID,
 			FlowID: challenge.FlowID, Channel: challenge.Channel, DestinationHash: challenge.DestinationHash,
-			ExpiresAt: now.Add(policy.AuthorizationTTL), CreatedAt: now,
+			ExpiresAt: canonicalVerificationTime(now.Add(policy.AuthorizationTTL)), CreatedAt: canonicalVerificationTime(now),
 		}
 		if err := tx.WithContext(ctx).Create(&record).Error; err != nil {
 			return err
@@ -437,7 +437,7 @@ func (repository *VerificationRepository) EnqueueSecurityNotification(ctx contex
 			Kind: string(request.Kind), Purpose: string(request.Purpose), UserID: strings.TrimSpace(request.UserID), TenantID: strings.TrimSpace(request.TenantID),
 			FlowID: strings.TrimSpace(request.FlowID), Channel: string(request.Channel), DestinationHash: destinationHash, MaskedDestination: masked,
 			DestinationCiphertext: destinationCiphertext, SecretCiphertext: secretCiphertext, KeyVersion: keyVersion,
-			State: domain.NotificationStatePending, ExpiresAt: request.ExpiresAt.UTC(), CreatedAt: now, UpdatedAt: now,
+			State: domain.NotificationStatePending, ExpiresAt: canonicalVerificationTime(request.ExpiresAt), CreatedAt: canonicalVerificationTime(now), UpdatedAt: canonicalVerificationTime(now),
 		}
 		record.BindingHash = repository.notificationBinding(record, request.Secret)
 		result := tx.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&record)
@@ -653,6 +653,13 @@ func notificationReceipt(record securityNotificationOutboxRecord) domain.Notific
 		EventID: record.EventID, State: record.State, ProviderReceipt: record.ProviderReceipt,
 		FailureCode: record.FailureCode, Attempt: record.Attempts, DeliveredAt: record.DeliveredAt,
 	}
+}
+
+func canonicalVerificationTime(value time.Time) time.Time {
+	if value.IsZero() {
+		return time.Time{}
+	}
+	return time.UnixMicro(value.UTC().UnixMicro()).UTC()
 }
 
 func verificationDatabaseNow(ctx context.Context, database *gorm.DB) (time.Time, error) {
