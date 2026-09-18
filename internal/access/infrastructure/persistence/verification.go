@@ -136,7 +136,8 @@ func (repository *VerificationRepository) CreateVerificationChallenge(ctx contex
 			return err
 		}
 		if found {
-			if !constantVerificationEqual(existing.BindingHash, bindingHash) {
+			expectedBinding := repository.notificationBinding(existing, request.Secret)
+			if !constantVerificationEqual(existing.BindingHash, expectedBinding) {
 				return domain.ErrVerificationConflict
 			}
 			receipt, err = challengeReceipt(ctx, tx, existing)
@@ -209,18 +210,15 @@ func (repository *VerificationRepository) CreateVerificationChallenge(ctx contex
 			receipt, err = challengeReceipt(ctx, tx, existing)
 			return err
 		}
-		notificationBinding := repository.protection.NotificationBindingHash(
-			domain.SecurityNotificationVerificationCode, request.Purpose, request.UserID, request.TenantID, request.FlowID,
-			request.Channel, destinationHash, code, challenge.ExpiresAt,
-		)
 		outbox := securityNotificationOutboxRecord{
 			EventID: eventID, BusinessEventID: strings.TrimSpace(request.BusinessEventID), ChallengeID: challengeID,
-			BindingHash: notificationBinding, Kind: string(domain.SecurityNotificationVerificationCode), Purpose: string(request.Purpose),
+			Kind: string(domain.SecurityNotificationVerificationCode), Purpose: string(request.Purpose),
 			UserID: strings.TrimSpace(request.UserID), TenantID: strings.TrimSpace(request.TenantID), FlowID: strings.TrimSpace(request.FlowID),
 			Channel: string(request.Channel), DestinationHash: destinationHash, MaskedDestination: masked,
 			DestinationCiphertext: destinationCiphertext, SecretCiphertext: secretCiphertext, KeyVersion: keyVersion,
 			State: domain.NotificationStatePending, ExpiresAt: challenge.ExpiresAt, CreatedAt: now, UpdatedAt: now,
 		}
+		outbox.BindingHash = repository.notificationBinding(outbox, code)
 		if err := tx.WithContext(ctx).Create(&outbox).Error; err != nil {
 			return err
 		}
@@ -400,7 +398,6 @@ func (repository *VerificationRepository) EnqueueSecurityNotification(ctx contex
 	if err != nil {
 		return domain.NotificationDeliveryReceipt{}, err
 	}
-	bindingHash := repository.protection.NotificationBindingHash(request.Kind, request.Purpose, request.UserID, request.TenantID, request.FlowID, request.Channel, destinationHash, request.Secret, request.ExpiresAt)
 	eventID := stableSecurityEventID(request.BusinessEventID)
 	destinationCiphertext, keyVersion, err := repository.protection.ProtectNotification(eventID, "destination", normalizedDestination)
 	if err != nil {
@@ -426,7 +423,8 @@ func (repository *VerificationRepository) EnqueueSecurityNotification(ctx contex
 		var existing securityNotificationOutboxRecord
 		err = tx.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Where("business_event_id = ?", strings.TrimSpace(request.BusinessEventID)).First(&existing).Error
 		if err == nil {
-			if !constantVerificationEqual(existing.BindingHash, bindingHash) {
+			expectedBinding := repository.notificationBinding(existing, request.Secret)
+			if !constantVerificationEqual(existing.BindingHash, expectedBinding) {
 				return domain.ErrVerificationConflict
 			}
 			receipt = notificationReceipt(existing)
@@ -436,12 +434,13 @@ func (repository *VerificationRepository) EnqueueSecurityNotification(ctx contex
 			return err
 		}
 		record := securityNotificationOutboxRecord{
-			EventID: eventID, BusinessEventID: strings.TrimSpace(request.BusinessEventID), BindingHash: bindingHash,
+			EventID: eventID, BusinessEventID: strings.TrimSpace(request.BusinessEventID),
 			Kind: string(request.Kind), Purpose: string(request.Purpose), UserID: strings.TrimSpace(request.UserID), TenantID: strings.TrimSpace(request.TenantID),
 			FlowID: strings.TrimSpace(request.FlowID), Channel: string(request.Channel), DestinationHash: destinationHash, MaskedDestination: masked,
 			DestinationCiphertext: destinationCiphertext, SecretCiphertext: secretCiphertext, KeyVersion: keyVersion,
 			State: domain.NotificationStatePending, ExpiresAt: request.ExpiresAt.UTC(), CreatedAt: now, UpdatedAt: now,
 		}
+		record.BindingHash = repository.notificationBinding(record, request.Secret)
 		result := tx.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&record)
 		if result.Error != nil {
 			return result.Error
@@ -523,11 +522,7 @@ func (repository *VerificationRepository) ClaimSecurityNotification(ctx context.
 				return err
 			}
 		}
-		expectedBinding := repository.protection.NotificationBindingHash(
-			domain.SecurityNotificationKind(record.Kind), domain.VerificationPurpose(record.Purpose),
-			record.UserID, record.TenantID, record.FlowID, domain.SecurityNotificationChannel(record.Channel),
-			record.DestinationHash, secret, record.ExpiresAt,
-		)
+		expectedBinding := repository.notificationBinding(record, secret)
 		if !constantVerificationEqual(record.BindingHash, expectedBinding) {
 			return ErrVerificationCipherCorrupt
 		}
@@ -643,6 +638,14 @@ func findChallengeByBusinessEvent(ctx context.Context, tx *gorm.DB, businessEven
 		return verificationChallengeRecord{}, false, err
 	}
 	return challenge, true, nil
+}
+
+func (repository *VerificationRepository) notificationBinding(record securityNotificationOutboxRecord, secret string) string {
+	return repository.protection.NotificationBindingHash(
+		domain.SecurityNotificationKind(record.Kind), domain.VerificationPurpose(record.Purpose),
+		record.UserID, record.TenantID, record.FlowID, domain.SecurityNotificationChannel(record.Channel),
+		record.DestinationHash, secret, record.ExpiresAt,
+	)
 }
 
 func notificationReceipt(record securityNotificationOutboxRecord) domain.NotificationDeliveryReceipt {
