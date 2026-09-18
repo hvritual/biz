@@ -17,6 +17,7 @@ interface SessionView {
   user_id?: string;
   active_tenant_id?: string;
   csrf_token?: string;
+  context_version?: number;
   tenants?: Array<{ id: string; name: string }>;
 }
 
@@ -119,6 +120,7 @@ test("TestCE12BrowserRealIdPToSessionTenantIAMEntitlement", async ({ page, reque
   expect(initial.user_id).toBeTruthy();
   expect(initial.active_tenant_id ?? "").toBe("");
   expect(initial.csrf_token).toBeTruthy();
+  expect(initial.context_version).toBe(1);
   expect(initial.tenants?.map((tenant) => tenant.id).sort()).toEqual(
     [data.allowed_tenant, data.iam_denied_tenant, data.entitlement_denied_tenant].sort(),
   );
@@ -130,7 +132,8 @@ test("TestCE12BrowserRealIdPToSessionTenantIAMEntitlement", async ({ page, reque
   });
   expect(spoofed.status, spoofed.text).toBe(401);
 
-  const csrf = initial.csrf_token!;
+  let csrf = initial.csrf_token!;
+  let contextVersion = initial.context_version ?? 0;
 
   // Tenant selection succeeds because membership is valid, but IAM fails first:
   // this tenant deliberately does not grant device.read to the user's role.
@@ -140,6 +143,13 @@ test("TestCE12BrowserRealIdPToSessionTenantIAMEntitlement", async ({ page, reque
     body: { tenant_id: data.iam_denied_tenant },
   });
   expect(iamSwitch.status, iamSwitch.text).toBe(200);
+  const iamSession = sessionFrom(iamSwitch);
+  expect(iamSession.active_tenant_id).toBe(data.iam_denied_tenant);
+  expect(iamSession.context_version).toBe(contextVersion + 1);
+  expect(iamSession.csrf_token).toBeTruthy();
+  expect(iamSession.csrf_token).not.toBe(csrf);
+  csrf = iamSession.csrf_token!;
+  contextVersion = iamSession.context_version ?? contextVersion + 1;
   const iamDenied = await browserRequest(page, data.base_url, "/v1/devices");
   expect(iamDenied.status, iamDenied.text).toBe(403);
 
@@ -151,6 +161,13 @@ test("TestCE12BrowserRealIdPToSessionTenantIAMEntitlement", async ({ page, reque
     body: { tenant_id: data.entitlement_denied_tenant },
   });
   expect(entitlementSwitch.status, entitlementSwitch.text).toBe(200);
+  const entitlementSession = sessionFrom(entitlementSwitch);
+  expect(entitlementSession.active_tenant_id).toBe(data.entitlement_denied_tenant);
+  expect(entitlementSession.context_version).toBe(contextVersion + 1);
+  expect(entitlementSession.csrf_token).toBeTruthy();
+  expect(entitlementSession.csrf_token).not.toBe(csrf);
+  csrf = entitlementSession.csrf_token!;
+  contextVersion = entitlementSession.context_version ?? contextVersion + 1;
   const deniedView = await browserRequest(page, data.base_url, "/v1/tenant/entitlements", {
     method: "POST",
     headers: { "X-CSRF-Token": csrf },
@@ -170,6 +187,13 @@ test("TestCE12BrowserRealIdPToSessionTenantIAMEntitlement", async ({ page, reque
     body: { tenant_id: data.allowed_tenant },
   });
   expect(allowedSwitch.status, allowedSwitch.text).toBe(200);
+  const allowedSession = sessionFrom(allowedSwitch);
+  expect(allowedSession.active_tenant_id).toBe(data.allowed_tenant);
+  expect(allowedSession.context_version).toBe(contextVersion + 1);
+  expect(allowedSession.csrf_token).toBeTruthy();
+  expect(allowedSession.csrf_token).not.toBe(csrf);
+  csrf = allowedSession.csrf_token!;
+  contextVersion = allowedSession.context_version ?? contextVersion + 1;
   const allowedView = await browserRequest(page, data.base_url, "/v1/tenant/entitlements", {
     method: "POST",
     headers: { "X-CSRF-Token": csrf },
@@ -186,6 +210,8 @@ test("TestCE12BrowserRealIdPToSessionTenantIAMEntitlement", async ({ page, reque
 
   const finalSession = sessionFrom(await browserRequest(page, data.base_url, "/auth/session"));
   expect(finalSession.active_tenant_id).toBe(data.allowed_tenant);
+  expect(finalSession.context_version).toBe(contextVersion);
+  expect(finalSession.csrf_token).toBe(csrf);
   await page.screenshot({ path: "test-results/ce12-session-established.png", fullPage: true });
 
   const logout = await browserRequest(page, data.base_url, "/auth/logout", {
