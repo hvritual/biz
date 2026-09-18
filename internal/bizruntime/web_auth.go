@@ -162,10 +162,26 @@ func (auth *runtimeWebAuth) handleCallback(writer http.ResponseWriter, request *
 }
 
 func (auth *runtimeWebAuth) handleSession(writer http.ResponseWriter, request *http.Request) {
-	authentication, _, err := auth.authenticateSession(request)
+	authentication, rawSession, err := auth.authenticateSession(request)
 	if err != nil {
 		writeJSON(writer, http.StatusOK, map[string]any{"authenticated": false})
 		return
+	}
+	if auth.config.SessionRefreshWindow > 0 {
+		store := auth.currentStore()
+		if store == nil {
+			writeJSON(writer, http.StatusOK, map[string]any{"authenticated": false})
+			return
+		}
+		refreshed, changed, refreshErr := store.RefreshWebSession(request.Context(), rawSession, auth.config.SessionRefreshWindow, auth.config.SessionTTL)
+		if refreshErr != nil {
+			writeJSON(writer, http.StatusOK, map[string]any{"authenticated": false})
+			return
+		}
+		authentication = refreshed
+		if changed {
+			auth.setCookie(writer, auth.sessionCookieName(), rawSession, auth.config.SessionTTL)
+		}
 	}
 	writeJSON(writer, http.StatusOK, sessionResponse(authentication))
 }
@@ -271,6 +287,7 @@ func sessionResponse(authentication accesspersistence.WebSessionAuthentication) 
 		"authenticated":    true,
 		"actor_kind":       authentication.Session.ActorKind,
 		"active_tenant_id": authentication.Session.ActiveTenantID,
+		"context_version":  authentication.Session.ContextVersion,
 		"tenants":          authentication.Session.Tenants,
 		"expires_at":       authentication.Session.ExpiresAt.UTC().Format(time.RFC3339),
 		"csrf_token":       authentication.Session.CSRFToken,
