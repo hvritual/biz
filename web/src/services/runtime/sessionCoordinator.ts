@@ -65,10 +65,12 @@ export function publishSessionContextChange(contextVersion = 0) {
     nonce: randomNonce(),
   }
   channel?.postMessage(signal)
-  try {
-    window.localStorage.setItem(storageKey, JSON.stringify(signal))
-  } catch {
-    // BroadcastChannel remains the primary path. Storage is only a compatibility wake-up signal.
+  if (typeof window !== 'undefined') {
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(signal))
+    } catch {
+      // BroadcastChannel remains the primary path. Storage is only a compatibility wake-up signal.
+    }
   }
 }
 
