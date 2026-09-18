@@ -645,7 +645,7 @@ var firstPartyLoginTemplate = template.Must(template.New("first-party-idp-login"
     const timer = window.setInterval(() => {
       left -= 1;
       if (left <= 0) { window.clearInterval(timer); send.disabled = false; send.textContent = "重新发送验证码"; return; }
-      send.textContent = `${left} 秒后可重新发送`;
+      send.textContent = String(left) + " 秒后可重新发送";
     }, 1000);
   }
   if (root) selectMode(root.dataset.loginMode || "password");
