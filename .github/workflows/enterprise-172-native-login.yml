@@ -1,0 +1,129 @@
+name: Enterprise 172 native login qualification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/enterprise-172-native-login.yml
+      - .github/workflows/ce12-browser-e2e.yml
+      - cmd/biz-idp/**
+      - docs/enterprise-center/native-login.md
+      - internal/access/infrastructure/persistence/first_party_idp*.go
+      - internal/access/infrastructure/persistence/login_identifier*.go
+      - internal/access/infrastructure/persistence/verification*.go
+      - internal/bizruntime/first_party_idp*.go
+      - internal/bizruntime/first_party_native_login*.go
+      - internal/bizruntime/config.go
+      - integration/enterprise_172_native_login_mysql_test.go
+      - integration/ce12_browser_seed_test.go
+      - web/tests/ce12/**
+      - scripts/accept-local-login.mjs
+      - go.mod
+      - go.sum
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-login:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      YUNKA_TEST_RESET_FIXTURES: "1"
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_enterprise172?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_enterprise172
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Read consumer lock
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          source biz/.yunka/source.env
+          echo "sha=$YUNKA_COMMIT" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout exact Yunka baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ steps.source.outputs.sha }}
+          path: yunka.io
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Load locked Go
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Static native login security boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          bad="$(gofmt -l             biz/internal/access/infrastructure/persistence/login_identifier.go             biz/internal/access/infrastructure/persistence/login_identifier_test.go             biz/internal/access/infrastructure/persistence/first_party_idp.go             biz/internal/access/infrastructure/persistence/first_party_idp_security.go             biz/internal/bizruntime/first_party_native_login.go             biz/internal/bizruntime/first_party_native_login_test.go             biz/internal/bizruntime/first_party_idp.go             biz/internal/bizruntime/first_party_idp_server.go             biz/internal/bizruntime/config.go             biz/cmd/biz-idp/main.go             biz/cmd/biz-idp/notification_sender.go             biz/cmd/biz-idp/notification_sender_qualification.go             biz/integration/enterprise_172_native_login_mysql_test.go             biz/integration/ce12_browser_seed_test.go)"
+          test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
+          grep -q 'length < 5 || length > 20' biz/internal/access/infrastructure/persistence/login_identifier.go
+          grep -q 'if allDigits' biz/internal/access/infrastructure/persistence/login_identifier.go
+          grep -q 'Limit(2)' biz/internal/access/infrastructure/persistence/login_identifier.go
+          grep -q 'status = ?' biz/internal/access/infrastructure/persistence/login_identifier.go
+          grep -q 'vch-fake-' biz/internal/bizruntime/first_party_native_login.go
+          grep -q '若账号可用且渠道正常' biz/internal/bizruntime/first_party_native_login.go
+          ! grep -q 'localStorage' biz/internal/bizruntime/first_party_idp.go biz/internal/bizruntime/first_party_native_login.go
+          ! grep -q 'name="user_id"' biz/internal/bizruntime/first_party_idp.go
+          ! grep -q 'username.*uniqueIndex' biz/internal/access/infrastructure/persistence/store.go
+          grep -q '//go:build !qualification' biz/cmd/biz-idp/notification_sender.go
+          grep -q '//go:build qualification' biz/cmd/biz-idp/notification_sender_qualification.go
+          leaks="$(grep -R -nEi '(fmt|log)\.(Print|Printf|Println).*\b(password|otp|code|secret|phone|email|identifier)\b'             biz/internal/access/infrastructure/persistence/login_identifier.go             biz/internal/bizruntime/first_party_native_login.go             biz/cmd/biz-idp || true)"
+          test -z "$leaks" || { printf '%s\n' "$leaks"; exit 1; }
+
+      - name: Unit vet and production/qualification builds
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test ./internal/access/infrastructure/persistence ./internal/bizruntime ./cmd/biz-idp
+          go test -tags=qualification ./cmd/biz-idp
+          go vet ./internal/access/infrastructure/persistence ./internal/bizruntime ./cmd/biz-idp
+          go build ./cmd/biz-idp
+          go build -tags=qualification ./cmd/biz-idp
+
+      - name: Real MySQL login identifier and persistent lock qualification
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test -count=1 -tags=integration ./integration -run '^TestEnterprise172'
+
+      - name: Verify candidate clean
+        shell: bash
+        run: test -z "$(git -C biz status --porcelain)"
