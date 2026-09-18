@@ -77,6 +77,7 @@ func (auth *runtimeWebAuth) register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /auth/session/tenants", auth.handleTenants)
 	mux.HandleFunc("POST /auth/session/tenant", auth.handleSwitchTenant)
 	mux.HandleFunc("POST /auth/password/change", auth.handlePasswordChange)
+	mux.HandleFunc("POST /auth/tenant/members/{user_id}/password-recovery", auth.handleTenantMemberPasswordRecovery)
 	mux.HandleFunc("POST /auth/logout", auth.handleLogout)
 }
 
