@@ -219,6 +219,10 @@ func (auth *runtimeWebAuth) handleSwitchTenant(writer http.ResponseWriter, reque
 		return
 	}
 	updated, err := store.SwitchWebSessionTenant(request.Context(), rawSession, input.TenantID)
+	if errors.Is(err, accesspersistence.ErrWebSessionChanged) {
+		http.Error(writer, "session context changed", http.StatusConflict)
+		return
+	}
 	if err != nil {
 		http.Error(writer, "tenant selection denied", http.StatusForbidden)
 		return
