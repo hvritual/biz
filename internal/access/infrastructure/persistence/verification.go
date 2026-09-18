@@ -211,7 +211,7 @@ func (repository *VerificationRepository) CreateVerificationChallenge(ctx contex
 		}
 		notificationBinding := repository.protection.NotificationBindingHash(
 			domain.SecurityNotificationVerificationCode, request.Purpose, request.UserID, request.TenantID, request.FlowID,
-			request.Channel, destinationHash, code,
+			request.Channel, destinationHash, code, challenge.ExpiresAt,
 		)
 		outbox := securityNotificationOutboxRecord{
 			EventID: eventID, BusinessEventID: strings.TrimSpace(request.BusinessEventID), ChallengeID: challengeID,
@@ -400,7 +400,7 @@ func (repository *VerificationRepository) EnqueueSecurityNotification(ctx contex
 	if err != nil {
 		return domain.NotificationDeliveryReceipt{}, err
 	}
-	bindingHash := repository.protection.NotificationBindingHash(request.Kind, request.Purpose, request.UserID, request.TenantID, request.FlowID, request.Channel, destinationHash, request.Secret)
+	bindingHash := repository.protection.NotificationBindingHash(request.Kind, request.Purpose, request.UserID, request.TenantID, request.FlowID, request.Channel, destinationHash, request.Secret, request.ExpiresAt)
 	eventID := stableSecurityEventID(request.BusinessEventID)
 	destinationCiphertext, keyVersion, err := repository.protection.ProtectNotification(eventID, "destination", normalizedDestination)
 	if err != nil {
@@ -419,6 +419,9 @@ func (repository *VerificationRepository) EnqueueSecurityNotification(ctx contex
 		now, err := verificationDatabaseNow(ctx, tx)
 		if err != nil {
 			return err
+		}
+		if !request.ExpiresAt.After(now) {
+			return domain.ErrVerificationExpired
 		}
 		var existing securityNotificationOutboxRecord
 		err = tx.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Where("business_event_id = ?", strings.TrimSpace(request.BusinessEventID)).First(&existing).Error
@@ -519,6 +522,14 @@ func (repository *VerificationRepository) ClaimSecurityNotification(ctx context.
 			if err != nil {
 				return err
 			}
+		}
+		expectedBinding := repository.protection.NotificationBindingHash(
+			domain.SecurityNotificationKind(record.Kind), domain.VerificationPurpose(record.Purpose),
+			record.UserID, record.TenantID, record.FlowID, domain.SecurityNotificationChannel(record.Channel),
+			record.DestinationHash, secret, record.ExpiresAt,
+		)
+		if !constantVerificationEqual(record.BindingHash, expectedBinding) {
+			return ErrVerificationCipherCorrupt
 		}
 		record.Attempts++
 		record.State = domain.NotificationStateSending
