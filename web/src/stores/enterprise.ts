@@ -132,9 +132,11 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   let departmentMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let brandingMutation: { tenantId: string; signature: string; key: string } | null = null
   let sessionEpoch = 0
+  let refreshGeneration = 0
 
   function clearRuntimeTenantState(clearSession = false) {
     cancelTrustedSessionRequests()
+    refreshGeneration++
     snapshot.value = emptyEnterpriseSnapshot()
     if (clearSession) {
       session.value = null
@@ -329,14 +331,14 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
 
   async function refresh(domains: EnterpriseDomain[] = activeDomains) {
     activeDomains = [...new Set(domains)]
-    const epoch = ++sessionEpoch
-    cancelTrustedSessionRequests()
+    const epoch = sessionEpoch
+    const generation = ++refreshGeneration
     loading.value = true
     sourceError.value = ''
     try {
       const previousTenant = tenantId.value
       const state = await dataSource.load(tenantId.value || undefined, activeDomains)
-      if (epoch !== sessionEpoch) return false
+      if (epoch !== sessionEpoch || generation !== refreshGeneration) return false
       applySourceState(state, activeDomains)
       if (state.tenantId !== previousTenant) {
         branding.value = null
@@ -347,12 +349,12 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       ready.value = true
       return true
     } catch (error) {
-      if (epoch !== sessionEpoch) return false
+      if (epoch !== sessionEpoch || generation !== refreshGeneration) return false
       sourceError.value = errorMessage(error, activeDomains)
       ready.value = true
       throw error
     } finally {
-      if (epoch === sessionEpoch) loading.value = false
+      if (epoch === sessionEpoch && generation === refreshGeneration) loading.value = false
     }
   }
 
