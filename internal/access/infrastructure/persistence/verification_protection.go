@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"strconv"
 	"strings"
 	"time"
 
@@ -109,7 +110,7 @@ func (protection *VerificationProtection) NotificationBindingHash(kind domain.Se
 		string(channel),
 		strings.TrimSpace(destinationHash),
 		strings.TrimSpace(secret),
-		expiresAt.UTC().Format(time.RFC3339Nano),
+		strconv.FormatInt(expiresAt.UTC().UnixMicro(), 10),
 	}, "\x00")
 	return protection.mac("notification-binding", value)
 }
