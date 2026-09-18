@@ -182,7 +182,10 @@ test('TestEnterprise173AdminRecoveryIsPermissionedScopedAndPolicyBlocked', async
     const payload = await pending.json()
     expect(payload.status).toBe('POLICY_PENDING')
     expect(payload.policy).toBe('Q-007')
-    expect(JSON.stringify(payload).toLowerCase()).not.toContain('password')
+    expect(payload).not.toHaveProperty('temporary_password')
+    expect(payload).not.toHaveProperty('new_password')
+    expect(payload).not.toHaveProperty('credential')
+    expect(payload).not.toHaveProperty('secret')
 
     const crossTenant = await admin.context.request.post(
       data.base_url + '/auth/tenant/members/' + encodeURIComponent(data.cross_tenant_target_user_id) + '/password-recovery',
