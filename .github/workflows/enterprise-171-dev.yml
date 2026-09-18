@@ -1,0 +1,83 @@
+name: enterprise-171-dev
+on:
+  push:
+    branches:
+      - feat/enterprise-171-session-isolation
+    paths:
+      - .github/workflows/enterprise-171-dev.yml
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      YUNKA_TEST_RESET_FIXTURES: "1"
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_enterprise171_latest?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_enterprise171_latest
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/enterprise-171-session-isolation
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 9ee6640f5e19777b4c04d9e4937a93e2035eacda
+          path: yunka.io
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.25.13'
+          cache: false
+      - name: Go format unit vet build
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          bad="$(gofmt -l             internal/access/infrastructure/persistence/web_session.go             internal/access/infrastructure/persistence/first_party_idp_security.go             internal/access/infrastructure/persistence/member.go             internal/bizruntime/config.go internal/bizruntime/web_auth.go             internal/bizruntime/web_session_precondition.go internal/bizruntime/web_session_precondition_test.go             cmd/biz/main.go integration/ce12_web_session_mysql_test.go             integration/enterprise_171_session_isolation_mysql_test.go)"
+          test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
+          go test ./internal/access/infrastructure/persistence ./internal/bizruntime
+          go vet ./internal/access/infrastructure/persistence ./internal/bizruntime ./cmd/biz
+          go build ./cmd/biz ./cmd/biz-idp
+      - name: Real MySQL CE12 and 171
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test -count=1 -tags=integration ./integration -run '^(TestCE12WebSession|TestCE12OIDCBinding|TestCE12PlatformWebAuthority|TestEnterprise171)'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: biz/web/package-lock.json
+      - name: Web unit type architecture and browser discovery
+        working-directory: biz/web
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run type-check
+          npm run lint
+          npm run check:architecture
+          npm run check:ui-contracts
+          npm run check:route-convergence
+          npm run check:i18n
+          npm run test:unit
+          npx playwright test --config playwright.ce12.config.ts --list
+      - name: Clean
+        shell: bash
+        run: test -z "$(git -C biz status --porcelain)"
