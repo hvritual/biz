@@ -78,6 +78,133 @@ func (store *Store) ChangeOwnPassword(ctx context.Context, userID, currentPasswo
 	})
 }
 
+func (store *Store) RecoverPasswordWithCode(
+	ctx context.Context,
+	protection *VerificationProtection,
+	request domain.VerifyChallengeRequest,
+	authorizationTTL time.Duration,
+	newPassword, confirmation string,
+) (domain.AuthorizationConsumptionReceipt, error) {
+	if store == nil || store.database == nil || protection == nil || authorizationTTL <= 0 || strings.TrimSpace(request.Code) == "" {
+		return domain.AuthorizationConsumptionReceipt{}, domain.ErrVerificationInvalid
+	}
+	if request.Purpose != domain.VerificationPurposePasswordRecovery {
+		return domain.AuthorizationConsumptionReceipt{}, domain.ErrVerificationInvalid
+	}
+	if newPassword != confirmation {
+		return domain.AuthorizationConsumptionReceipt{}, ErrPasswordMismatch
+	}
+	if err := ValidateUserChosenPassword(newPassword); err != nil {
+		return domain.AuthorizationConsumptionReceipt{}, err
+	}
+	destinationHash, _, err := protection.DestinationHash(request.Channel, request.Destination)
+	if err != nil {
+		return domain.AuthorizationConsumptionReceipt{}, err
+	}
+	expectedBinding := protection.BindingHash(request.Purpose, request.UserID, request.TenantID, request.FlowID, request.Channel, destinationHash)
+	var receipt domain.AuthorizationConsumptionReceipt
+	var outcome error
+	err = store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		now, err := verificationDatabaseNow(ctx, tx)
+		if err != nil {
+			return err
+		}
+		var challenge verificationChallengeRecord
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("challenge_id = ?", strings.TrimSpace(request.ChallengeID)).First(&challenge).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				outcome = domain.ErrVerificationInvalid
+				return nil
+			}
+			return err
+		}
+		if !constantVerificationEqual(challenge.BindingHash, expectedBinding) {
+			outcome = domain.ErrVerificationInvalid
+			return nil
+		}
+		if challenge.ConsumedAt != nil {
+			outcome = domain.ErrVerificationConsumed
+			return nil
+		}
+		if !challenge.ExpiresAt.After(now) {
+			outcome = domain.ErrVerificationExpired
+			return nil
+		}
+		if challenge.Attempts >= challenge.MaxAttempts {
+			outcome = domain.RateLimitError{Reason: "attempt_limit"}
+			return nil
+		}
+		if !constantVerificationEqual(challenge.CodeHash, protection.HashCode(challenge.ChallengeID, request.Code)) {
+			challenge.Attempts++
+			if err := tx.Model(&verificationChallengeRecord{}).Where("challenge_id = ?", challenge.ChallengeID).Update("attempts", challenge.Attempts).Error; err != nil {
+				return err
+			}
+			if challenge.Attempts >= challenge.MaxAttempts {
+				outcome = domain.RateLimitError{Reason: "attempt_limit"}
+			} else {
+				outcome = domain.ErrVerificationInvalid
+			}
+			return nil
+		}
+		rawAuthorization, err := randomVerificationSecret(32)
+		if err != nil {
+			return err
+		}
+		consumedAt := now
+		authorization := oneTimeAuthorizationRecord{
+			AuthorizationHash: protection.HashAuthorization(rawAuthorization),
+			ChallengeID: challenge.ChallengeID,
+			BindingHash: challenge.BindingHash,
+			Purpose: challenge.Purpose,
+			UserID: challenge.UserID,
+			TenantID: challenge.TenantID,
+			FlowID: challenge.FlowID,
+			Channel: challenge.Channel,
+			DestinationHash: challenge.DestinationHash,
+			ExpiresAt: canonicalVerificationTime(now.Add(authorizationTTL)),
+			ConsumedAt: &consumedAt,
+			CreatedAt: canonicalVerificationTime(now),
+		}
+		if err := tx.Create(&authorization).Error; err != nil {
+			return err
+		}
+		if err := setUserPassword(ctx, tx, request.UserID, newPassword); err != nil {
+			return err
+		}
+		if err := revokeWebSessionsForUser(ctx, tx, request.UserID); err != nil {
+			return err
+		}
+		result := tx.Model(&verificationChallengeRecord{}).
+			Where("challenge_id = ? AND consumed_at IS NULL", challenge.ChallengeID).
+			Update("consumed_at", consumedAt)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return domain.ErrVerificationConsumed
+		}
+		if err := tx.Model(&securityNotificationOutboxRecord{}).
+			Where("challenge_id = ? AND state IN ?", challenge.ChallengeID, []string{domain.NotificationStatePending, domain.NotificationStateFailed}).
+			Updates(map[string]any{
+				"state": domain.NotificationStateCancelled,
+				"destination_ciphertext": "",
+				"secret_ciphertext": "",
+				"failure_code": "RECOVERY_CONSUMED",
+				"updated_at": now,
+			}).Error; err != nil {
+			return err
+		}
+		receipt = domain.AuthorizationConsumptionReceipt{ChallengeID: challenge.ChallengeID, ConsumedAt: consumedAt}
+		return nil
+	})
+	if err != nil {
+		return domain.AuthorizationConsumptionReceipt{}, err
+	}
+	if outcome != nil {
+		return domain.AuthorizationConsumptionReceipt{}, outcome
+	}
+	return receipt, nil
+}
+
 func (store *Store) ResetPasswordWithAuthorization(
 	ctx context.Context,
 	protection *VerificationProtection,
