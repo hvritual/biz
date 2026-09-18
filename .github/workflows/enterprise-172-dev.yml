@@ -1,5 +1,4 @@
 name: enterprise-172-dev
-# rerun after template delimiter fix
 on:
   push:
     branches:
@@ -18,6 +17,13 @@ jobs:
           ref: feat/enterprise-172-native-login
           path: biz
           fetch-depth: 0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: 9ee6640f5e19777b4c04d9e4937a93e2035eacda
+          path: yunka.io
+          fetch-depth: 1
+          persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
           go-version: '1.25.13'
@@ -41,5 +47,7 @@ jobs:
           git config user.email 460657446@qq.com
           git add -A
           git diff --cached --check
-          git commit -m "chore: qualify #172 native login foundation"
-          git push origin HEAD:feat/enterprise-172-native-login
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: qualify #172 native login foundation"
+            git push origin HEAD:feat/enterprise-172-native-login
+          fi
