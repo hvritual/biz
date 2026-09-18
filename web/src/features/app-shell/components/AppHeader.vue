@@ -32,9 +32,9 @@ async function changeTenant(event: Event) {
   ui.closeMenu()
   search.value = ''
   panel.value = ''
-  await router.replace({ path: route.path, query: {} })
   try {
     await store.switchTenant(tenantId)
+    await router.replace({ path: route.path, query: {} })
     ui.toast(store.sourceKind === 'api' ? t('header.tenantSwitchedApi') : t('header.tenantSwitchedPreview'), 'info')
   } catch (error) {
     ui.toast(error instanceof Error ? error.message : t('header.tenantSwitchFailed'), 'error')
@@ -45,6 +45,16 @@ function globalSearch() {
   if (search.value.trim()) {
     void router.push({ path: '/enterprise/members', query: { q: search.value.trim() } })
     ui.closeMenu()
+  }
+}
+
+async function logout() {
+  panel.value = ''
+  try {
+    await store.logout()
+    window.location.assign(store.loginHref())
+  } catch (error) {
+    ui.toast(error instanceof Error ? error.message : t('common.logout'), 'error')
   }
 }
 </script>
@@ -121,6 +131,7 @@ function globalSearch() {
       <template v-else>
         <p v-if="store.sourceKind === 'api'">{{ store.session?.user_id || 'Unknown user' }} · {{ store.tenantId || 'No tenant selected' }}</p>
         <p v-else>Preview identity · enterprise owner</p>
+        <UiButton v-if="store.sourceKind === 'api'" class="btn" @click="logout">{{ t('common.logout') }}</UiButton>
       </template>
     </div>
   </UiDialog>
