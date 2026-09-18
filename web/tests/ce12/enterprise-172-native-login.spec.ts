@@ -105,7 +105,7 @@ async function otpLogin(
   const context = await browser.newContext()
   const page = await startLogin(context, data)
   await page.getByRole('tab', { name: '验证码登录' }).click()
-  await page.getByLabel('账号 / 手机号 / 邮箱').fill(identifier)
+  await page.getByLabel('验证码账号 / 手机号 / 邮箱').fill(identifier)
   const before = qualificationNotifications().length
   await page.getByRole('button', { name: '发送验证码' }).click()
   await expect(page.getByRole('alert')).toContainText('验证码请求已受理')
@@ -219,7 +219,7 @@ test('TestEnterprise172ClientValidationAntiEnumerationAndRememberIdentifier', as
   try {
     const page = await startLogin(missingContext, data)
     await page.getByRole('tab', { name: '验证码登录' }).click()
-    await page.getByLabel('账号 / 手机号 / 邮箱').fill('ghostuser')
+    await page.getByLabel('验证码账号 / 手机号 / 邮箱').fill('ghostuser')
     await page.getByRole('button', { name: '发送验证码' }).click()
     await expect(page.getByRole('alert')).toHaveText('验证码请求已受理；若账号可用且渠道正常，将发送验证码。')
     await expect(page.locator('input[name="challenge_id"]')).toHaveValue(/vch-fake-/)
