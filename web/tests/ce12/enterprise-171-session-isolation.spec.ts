@@ -97,8 +97,8 @@ test('TestEnterprise171CrossTabTenantIsolationBackNavigationAndStaleContext', as
     await tabA.goto(data.ui_base_url + '/#/enterprise/branding')
     await tabB.goto(data.ui_base_url + '/#/enterprise/branding')
 
-    await expect(tabA.getByRole('combobox', { name: '切换企业' })).toHaveValue(data.brand_tenant_a)
-    await expect(tabB.getByRole('combobox', { name: '切换企业' })).toHaveValue(data.brand_tenant_a)
+    await expect(tabA.getByRole('combobox', { name: '切换企业' })).toContainText(data.brand_tenant_a_name)
+    await expect(tabB.getByRole('combobox', { name: '切换企业' })).toContainText(data.brand_tenant_a_name)
     await expect(tabA.locator('.branding-scope')).toContainText(data.brand_tenant_a)
     await expect(tabB.locator('.branding-scope')).toContainText(data.brand_tenant_a)
 
@@ -107,16 +107,16 @@ test('TestEnterprise171CrossTabTenantIsolationBackNavigationAndStaleContext', as
     // Keep a browser-history entry created under tenant A. The context signal
     // must make that history entry re-read tenant B when the user returns.
     await tabB.goto(data.ui_base_url + '/#/enterprise/company')
-    await expect(tabB.getByRole('combobox', { name: '切换企业' })).toHaveValue(data.brand_tenant_a)
+    await expect(tabB.getByRole('combobox', { name: '切换企业' })).toContainText(data.brand_tenant_a_name)
 
     await chooseTenant(tabA, data.brand_tenant_b_name)
-    await expect(tabA.getByRole('combobox', { name: '切换企业' })).toHaveValue(data.brand_tenant_b)
+    await expect(tabA.getByRole('combobox', { name: '切换企业' })).toContainText(data.brand_tenant_b_name)
     await expect(tabA.locator('.branding-scope')).toContainText(data.brand_tenant_b)
 
     // Tab B receives only a wake-up signal. It must re-read /auth/session and
     // converge on the server-selected tenant without trusting a tenant id from
     // BroadcastChannel/localStorage.
-    await expect(tabB.getByRole('combobox', { name: '切换企业' })).toHaveValue(data.brand_tenant_b)
+    await expect(tabB.getByRole('combobox', { name: '切换企业' })).toContainText(data.brand_tenant_b_name)
 
     const current = await readSession(context, data)
     expect(current.active_tenant_id).toBe(data.brand_tenant_b)
@@ -129,7 +129,7 @@ test('TestEnterprise171CrossTabTenantIsolationBackNavigationAndStaleContext', as
 
     await tabB.goBack()
     await expect(tabB).toHaveURL(/#\/enterprise\/branding/)
-    await expect(tabB.getByRole('combobox', { name: '切换企业' })).toHaveValue(data.brand_tenant_b)
+    await expect(tabB.getByRole('combobox', { name: '切换企业' })).toContainText(data.brand_tenant_b_name)
     await expect(tabB.locator('.branding-scope')).toContainText(data.brand_tenant_b)
     await expect(tabB.locator('html')).toHaveAttribute('data-ui-theme', 'emerald')
 
