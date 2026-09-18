@@ -22,16 +22,16 @@ type firstPartyLoginVerification interface {
 }
 
 type firstPartyLoginPage struct {
-	RequestID        string
-	CSRF             string
-	Identifier       string
-	Message          string
-	PrivacyPolicyURL string
-	TermsURL         string
-	OTPRequestNonce  string
-	OTPChallengeID   string
-	OTPSelected      bool
-	OTPRequested     bool
+	RequestID          string
+	CSRF               string
+	Identifier         string
+	Message            string
+	PrivacyPolicyURL   string
+	TermsURL           string
+	OTPRequestNonce    string
+	OTPChallengeID     string
+	OTPSelected        bool
+	OTPRequested       bool
 	OTPEnabled         bool
 	RememberIdentifier bool
 	CodeDigits         int
@@ -126,7 +126,7 @@ func (idp *runtimeFirstPartyIdP) handleOTPRequest(writer http.ResponseWriter, re
 		idp.renderLoginState(writer, http.StatusOK, firstPartyLoginPage{
 			RequestID: requestID, CSRF: csrf, Identifier: identifier, OTPSelected: true, OTPRequested: true, RememberIdentifier: remember,
 			OTPChallengeID: "vch-fake-" + fake,
-			Message: "验证码请求已受理；若账号可用且渠道正常，将发送验证码。",
+			Message:        "验证码请求已受理；若账号可用且渠道正常，将发送验证码。",
 		})
 		return
 	}

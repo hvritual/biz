@@ -125,7 +125,7 @@ func (store *Store) ResolveLoginIdentifier(ctx context.Context, identifier strin
 		}
 		return LoginIdentifierResolution{
 			Identity: LocalUserIdentity{UserID: user.ID, Email: authoritativeEmail},
-			Kind: kind, Normalized: normalized,
+			Kind:     kind, Normalized: normalized,
 			OTPChannel: domain.SecurityNotificationEmail, OTPDestination: authoritativeEmail,
 		}, nil
 	case LoginIdentifierUsername:
@@ -144,7 +144,7 @@ func (store *Store) ResolveLoginIdentifier(ctx context.Context, identifier strin
 		}
 		return LoginIdentifierResolution{
 			Identity: LocalUserIdentity{UserID: users[0].ID, Email: email},
-			Kind: kind, Normalized: normalized,
+			Kind:     kind, Normalized: normalized,
 			OTPChannel: domain.SecurityNotificationEmail, OTPDestination: email,
 		}, nil
 	case LoginIdentifierPhone:
@@ -165,7 +165,7 @@ func (store *Store) ResolveLoginIdentifier(ctx context.Context, identifier strin
 		}
 		return LoginIdentifierResolution{
 			Identity: LocalUserIdentity{UserID: user.ID, Email: email},
-			Kind: kind, Normalized: normalized,
+			Kind:     kind, Normalized: normalized,
 			OTPChannel: domain.SecurityNotificationSMS, OTPDestination: normalized,
 		}, nil
 	default:

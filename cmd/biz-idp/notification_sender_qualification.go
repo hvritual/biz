@@ -41,13 +41,13 @@ func (sender *qualificationFileSender) SendSecurityNotification(_ context.Contex
 	}
 	defer file.Close()
 	payload := map[string]any{
-		"event_id": claim.EventID,
-		"kind": claim.Kind,
-		"purpose": claim.Purpose,
-		"channel": claim.Channel,
+		"event_id":    claim.EventID,
+		"kind":        claim.Kind,
+		"purpose":     claim.Purpose,
+		"channel":     claim.Channel,
 		"destination": claim.Destination,
-		"secret": claim.Secret,
-		"attempt": claim.Attempt,
+		"secret":      claim.Secret,
+		"attempt":     claim.Attempt,
 	}
 	if err := json.NewEncoder(file).Encode(payload); err != nil {
 		return "", err
