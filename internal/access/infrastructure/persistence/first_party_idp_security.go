@@ -192,12 +192,16 @@ func revokeWebSessionsForUser(ctx context.Context, database *gorm.DB, userID str
 	if database == nil {
 		return errors.New("access: web session revoke store unavailable")
 	}
+	if !database.Migrator().HasTable(&webSessionRecord{}) || !database.Migrator().HasTable(&webIdentityRecord{}) {
+		return nil
+	}
 	now := time.Now().UTC()
 	return database.WithContext(ctx).Exec(`
 UPDATE biz_web_sessions s
 JOIN biz_web_identities i ON i.issuer = s.issuer AND i.subject = s.subject
-SET s.revoked_at = ?, s.updated_at = ?
-WHERE i.actor_kind = ? AND i.actor_id = ? AND s.revoked_at IS NULL`, now, now, WebActorUser, userID).Error
+SET s.revoked_at = ?, s.revoked_reason = ?, s.revoked_scope = ?, s.context_version = s.context_version + 1, s.updated_at = ?
+WHERE i.actor_kind = ? AND i.actor_id = ? AND s.revoked_at IS NULL`,
+		now, "account_security", "account", now, WebActorUser, userID).Error
 }
 
 func normalizeRemoteHost(remoteAddr string) string {

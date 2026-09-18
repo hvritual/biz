@@ -53,7 +53,8 @@ export function sameTrustedSession(a: TrustedSession, b: TrustedSession) {
     a.authenticated === b.authenticated &&
     (a.actor_kind ?? '') === (b.actor_kind ?? '') &&
     (a.user_id ?? '') === (b.user_id ?? '') &&
-    (a.active_tenant_id ?? '') === (b.active_tenant_id ?? '')
+    (a.active_tenant_id ?? '') === (b.active_tenant_id ?? '') &&
+    (a.context_version ?? 0) === (b.context_version ?? 0)
   )
 }
 

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import {
   createEnterpriseDataSource,
+  emptyEnterpriseSnapshot,
   type EnterpriseDomain,
   type EnterpriseSourceState,
 } from '@/services/enterprise/dataSource'
@@ -64,7 +65,9 @@ import {
   type EnterpriseTenantBranding,
   type EnterpriseTenantBrandingDraft,
 } from '@/services/enterprise/tenantBrandingRuntime'
-import { loginUrl, type PermissionGrant, type TrustedSession } from '@/services/runtime/api'
+import { loginUrl, logoutSession, type PermissionGrant, type TrustedSession } from '@/services/runtime/api'
+import { cancelTrustedSessionRequests } from '@/services/commercial/platformCommercial'
+import { publishSessionContextChange, subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
 
 function serverMemberStatus(status: Member['status']) {
   switch (status) {
@@ -128,8 +131,28 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   let roleMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let departmentMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let brandingMutation: { tenantId: string; signature: string; key: string } | null = null
+  let sessionEpoch = 0
+  let refreshGeneration = 0
 
-  async function refreshBranding() {
+  function clearRuntimeTenantState(clearSession = false) {
+    cancelTrustedSessionRequests()
+    refreshGeneration++
+    snapshot.value = emptyEnterpriseSnapshot()
+    if (clearSession) {
+      session.value = null
+      tenantId.value = ''
+    }
+    companyMutation = null
+    memberMutation = null
+    roleMutation = null
+    departmentMutation = null
+    branding.value = null
+    brandingError.value = ''
+    brandingReady.value = false
+    brandingMutation = null
+  }
+
+  async function refreshBranding(expectedEpoch = sessionEpoch) {
     const targetTenant = tenantId.value
     brandingLoading.value = true
     brandingError.value = ''
@@ -148,19 +171,19 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
         return false
       }
       const current = await getEnterpriseTenantBranding(trusted)
-      if (tenantId.value !== targetTenant) return false
+      if (expectedEpoch !== sessionEpoch || tenantId.value !== targetTenant) return false
       branding.value = current
       brandingReady.value = true
       return true
     } catch (error) {
-      if (tenantId.value === targetTenant) {
+      if (expectedEpoch === sessionEpoch && tenantId.value === targetTenant) {
         branding.value = null
         brandingError.value = tenantBrandingRuntimeError(error)
         brandingReady.value = true
       }
       return false
     } finally {
-      if (tenantId.value === targetTenant) brandingLoading.value = false
+      if (expectedEpoch === sessionEpoch && tenantId.value === targetTenant) brandingLoading.value = false
     }
   }
 
@@ -308,25 +331,30 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
 
   async function refresh(domains: EnterpriseDomain[] = activeDomains) {
     activeDomains = [...new Set(domains)]
+    const epoch = sessionEpoch
+    const generation = ++refreshGeneration
     loading.value = true
     sourceError.value = ''
     try {
       const previousTenant = tenantId.value
       const state = await dataSource.load(tenantId.value || undefined, activeDomains)
+      if (epoch !== sessionEpoch || generation !== refreshGeneration) return false
       applySourceState(state, activeDomains)
       if (state.tenantId !== previousTenant) {
         branding.value = null
         brandingReady.value = false
         brandingMutation = null
-        await refreshBranding()
+        await refreshBranding(epoch)
       }
       ready.value = true
+      return true
     } catch (error) {
+      if (epoch !== sessionEpoch || generation !== refreshGeneration) return false
       sourceError.value = errorMessage(error, activeDomains)
       ready.value = true
       throw error
     } finally {
-      loading.value = false
+      if (epoch === sessionEpoch && generation === refreshGeneration) loading.value = false
     }
   }
 
@@ -338,26 +366,86 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   async function switchTenant(id: string) {
     if (!id || id === tenantId.value) return
     if (previewMode && !tenantOptions.value.some((tenant) => tenant.id === id)) return
+    if (previewMode) {
+      const state = await dataSource.switchTenant(id, activeDomains)
+      applySourceState(state, activeDomains, true)
+      clearRuntimeTenantState(false)
+      applySourceState(state, activeDomains, true)
+      await refreshBranding(sessionEpoch)
+      ready.value = true
+      return
+    }
+
+    const epoch = ++sessionEpoch
+    const previousDomains = [...activeDomains]
+    clearRuntimeTenantState(true)
     loading.value = true
     sourceError.value = ''
     try {
-      const state = await dataSource.switchTenant(id, activeDomains)
-      applySourceState(state, activeDomains, true)
-      companyMutation = null
-      memberMutation = null
-      roleMutation = null
-      departmentMutation = null
-      branding.value = null
-      brandingError.value = ''
-      brandingReady.value = false
-      brandingMutation = null
-      await refreshBranding()
+      const state = await dataSource.switchTenant(id, previousDomains)
+      if (epoch !== sessionEpoch) return
+      applySourceState(state, previousDomains, true)
+      await refreshBranding(epoch)
       ready.value = true
     } catch (error) {
-      sourceError.value = errorMessage(error)
+      if (epoch === sessionEpoch) {
+        sourceError.value = errorMessage(error)
+        try {
+          const state = await dataSource.load(undefined, previousDomains)
+          if (epoch === sessionEpoch) {
+            applySourceState(state, previousDomains, true)
+            await refreshBranding(epoch)
+            ready.value = true
+          }
+        } catch {
+          session.value = null
+          tenantId.value = ''
+          ready.value = true
+        }
+      }
       throw error
     } finally {
-      loading.value = false
+      if (epoch === sessionEpoch) loading.value = false
+    }
+  }
+
+  async function synchronizeExternalSession() {
+    if (previewMode) return
+    const epoch = ++sessionEpoch
+    const domains = [...activeDomains]
+    clearRuntimeTenantState(true)
+    loading.value = true
+    sourceError.value = ''
+    try {
+      const state = await dataSource.load(undefined, domains)
+      if (epoch !== sessionEpoch) return
+      applySourceState(state, domains, true)
+      await refreshBranding(epoch)
+      ready.value = true
+    } catch (error) {
+      if (epoch !== sessionEpoch) return
+      sourceError.value = errorMessage(error, domains)
+      ready.value = true
+    } finally {
+      if (epoch === sessionEpoch) loading.value = false
+    }
+  }
+
+  async function logout() {
+    if (previewMode) return
+    const epoch = ++sessionEpoch
+    clearRuntimeTenantState(true)
+    loading.value = true
+    try {
+      await logoutSession()
+    } finally {
+      if (epoch === sessionEpoch) {
+        session.value = { authenticated: false, context_version: 0 }
+        tenantId.value = ''
+        ready.value = true
+        loading.value = false
+        publishSessionContextChange(0)
+      }
     }
   }
 
@@ -914,6 +1002,14 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     return loginUrl()
   }
 
+  const unsubscribeSessionContext = previewMode
+    ? null
+    : subscribeSessionContextChange(() => {
+        void synchronizeExternalSession()
+      })
+  if (import.meta.hot && unsubscribeSessionContext) {
+    import.meta.hot.dispose(() => unsubscribeSessionContext())
+  }
   if (!previewMode) void refresh([]).catch(() => undefined)
 
   return {
@@ -943,6 +1039,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     refresh,
     ensureDomains,
     switchTenant,
+    synchronizeExternalSession,
+    logout,
     audit,
     saveMember,
     changeStatus,
