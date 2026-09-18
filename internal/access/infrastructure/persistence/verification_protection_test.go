@@ -71,13 +71,13 @@ func TestEnterprise170VerificationProtectionRoundTripAndPurposeSeparation(t *tes
 
 func TestEnterprise170VerificationPolicyRequiresExplicitLimits(t *testing.T) {
 	valid := domain.VerificationPolicy{
-		CodeTTL: 5 * 60 * 1000000000,
-		AuthorizationTTL: 5 * 60 * 1000000000,
-		ResendInterval: 60 * 1000000000,
-		SendLimitWindow: 24 * 60 * 60 * 1000000000,
-		MaxSendsPerWindow: 5,
+		CodeTTL:              5 * 60 * 1000000000,
+		AuthorizationTTL:     5 * 60 * 1000000000,
+		ResendInterval:       60 * 1000000000,
+		SendLimitWindow:      24 * 60 * 60 * 1000000000,
+		MaxSendsPerWindow:    5,
 		MaxVerificationTries: 5,
-		CodeDigits: 6,
+		CodeDigits:           6,
 	}
 	if err := valid.Validate(); err != nil {
 		t.Fatalf("valid policy rejected: %v", err)

@@ -22,13 +22,13 @@ import (
 
 func enterprise170Policy() domain.VerificationPolicy {
 	return domain.VerificationPolicy{
-		CodeTTL: 5 * time.Minute,
-		AuthorizationTTL: 5 * time.Minute,
-		ResendInterval: time.Minute,
-		SendLimitWindow: 24 * time.Hour,
-		MaxSendsPerWindow: 5,
+		CodeTTL:              5 * time.Minute,
+		AuthorizationTTL:     5 * time.Minute,
+		ResendInterval:       time.Minute,
+		SendLimitWindow:      24 * time.Hour,
+		MaxSendsPerWindow:    5,
 		MaxVerificationTries: 3,
-		CodeDigits: 6,
+		CodeDigits:           6,
 	}
 }
 
@@ -45,8 +45,8 @@ func enterprise170RepositoryWithoutSchema(t *testing.T, db *gorm.DB) *accesspers
 	t.Helper()
 	protection, err := accesspersistence.NewVerificationProtection(accesspersistence.VerificationProtectionConfig{
 		ActiveVersion: "v1",
-		Keys: map[string][]byte{"v1": []byte(strings.Repeat("K", 32))},
-		HMACKey: []byte(strings.Repeat("H", 32)),
+		Keys:          map[string][]byte{"v1": []byte(strings.Repeat("K", 32))},
+		HMACKey:       []byte(strings.Repeat("H", 32)),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -69,12 +69,12 @@ func TestEnterprise170VerificationHappyPathReplayTamperAndAtomicConsumption(t *t
 	ctx := context.Background()
 	request := domain.VerificationChallengeRequest{
 		BusinessEventID: "enterprise170-login-event",
-		FlowID: "login-flow-170",
-		Purpose: domain.VerificationPurposeLogin,
-		UserID: "user-170",
-		TenantID: "tenant-170",
-		Channel: domain.SecurityNotificationEmail,
-		Destination: "User170@Example.Invalid",
+		FlowID:          "login-flow-170",
+		Purpose:         domain.VerificationPurposeLogin,
+		UserID:          "user-170",
+		TenantID:        "tenant-170",
+		Channel:         domain.SecurityNotificationEmail,
+		Destination:     "User170@Example.Invalid",
 	}
 
 	challenge, err := repository.CreateVerificationChallenge(ctx, request, enterprise170Policy())
@@ -86,8 +86,8 @@ func TestEnterprise170VerificationHappyPathReplayTamperAndAtomicConsumption(t *t
 	}
 	var pending struct {
 		DestinationCiphertext string
-		SecretCiphertext string
-		State string
+		SecretCiphertext      string
+		State                 string
 	}
 	if err := db.Table("biz_security_notification_outbox").
 		Select("destination_ciphertext, secret_ciphertext, state").
@@ -151,7 +151,7 @@ func TestEnterprise170VerificationHappyPathReplayTamperAndAtomicConsumption(t *t
 	tampered := domain.VerifyChallengeRequest{
 		ChallengeID: challenge.ChallengeID, FlowID: request.FlowID,
 		Purpose: domain.VerificationPurposePasswordRecovery,
-		UserID: request.UserID, TenantID: request.TenantID, Channel: request.Channel,
+		UserID:  request.UserID, TenantID: request.TenantID, Channel: request.Channel,
 		Destination: request.Destination, Code: message.Secret,
 	}
 	if _, err := service.VerifyCode(ctx, tampered); !errors.Is(err, domain.ErrVerificationInvalid) {
@@ -268,7 +268,7 @@ func TestEnterprise170LimitsFailureIdempotencyRollbackAndExpiry(t *testing.T) {
 	for index := 0; index < 2; index++ {
 		request := domain.VerificationChallengeRequest{
 			BusinessEventID: "enterprise170-window-" + string(rune('a'+index)),
-			FlowID: "window-flow", Purpose: domain.VerificationPurposeContactChange,
+			FlowID:          "window-flow", Purpose: domain.VerificationPurposeContactChange,
 			UserID: "window-user", Channel: domain.SecurityNotificationSMS, Destination: "+491701234567",
 		}
 		receipt, err := repository.CreateVerificationChallenge(ctx, request, windowPolicy)

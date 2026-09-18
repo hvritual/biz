@@ -12,14 +12,14 @@ import (
 
 func TestEnterprise170VerificationRuntimeConfigIsExplicitAndFailClosed(t *testing.T) {
 	config := VerificationSecurityConfig{
-		CodeTTL: 5 * time.Minute,
-		AuthorizationTTL: 5 * time.Minute,
-		ResendInterval: time.Minute,
-		SendLimitWindow: 24 * time.Hour,
-		MaxSendsPerWindow: 5,
+		CodeTTL:              5 * time.Minute,
+		AuthorizationTTL:     5 * time.Minute,
+		ResendInterval:       time.Minute,
+		SendLimitWindow:      24 * time.Hour,
+		MaxSendsPerWindow:    5,
 		MaxVerificationTries: 5,
-		CodeDigits: 6,
-		Notification: SecurityNotificationProviderConfig{Provider: "disabled"},
+		CodeDigits:           6,
+		Notification:         SecurityNotificationProviderConfig{Provider: "disabled"},
 	}
 	if err := config.Validate(); err != nil {
 		t.Fatalf("valid verification config rejected: %v", err)
@@ -39,7 +39,7 @@ func TestEnterprise170VerificationRuntimeConfigIsExplicitAndFailClosed(t *testin
 func TestEnterprise170BuildVerificationProtectionRequiresCompleteKeySet(t *testing.T) {
 	key := base64.StdEncoding.EncodeToString([]byte(strings.Repeat("K", 32)))
 	hmac := base64.StdEncoding.EncodeToString([]byte(strings.Repeat("H", 32)))
-	protection, err := BuildVerificationProtection("v1", `{"v1":"` + key + `"}`, hmac)
+	protection, err := BuildVerificationProtection("v1", `{"v1":"`+key+`"}`, hmac)
 	if err != nil || protection == nil {
 		t.Fatalf("complete verification key set rejected: %v", err)
 	}

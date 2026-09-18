@@ -25,11 +25,11 @@ const (
 type SecurityNotificationKind string
 
 const (
-	SecurityNotificationVerificationCode SecurityNotificationKind = "verification_code"
-	SecurityNotificationLoginLock        SecurityNotificationKind = "login_lock"
+	SecurityNotificationVerificationCode  SecurityNotificationKind = "verification_code"
+	SecurityNotificationLoginLock         SecurityNotificationKind = "login_lock"
 	SecurityNotificationInitialCredential SecurityNotificationKind = "initial_credential"
-	SecurityNotificationPasswordReset    SecurityNotificationKind = "password_reset"
-	SecurityNotificationRecoveryRequest  SecurityNotificationKind = "recovery_request"
+	SecurityNotificationPasswordReset     SecurityNotificationKind = "password_reset"
+	SecurityNotificationRecoveryRequest   SecurityNotificationKind = "recovery_request"
 )
 
 const (
@@ -174,27 +174,27 @@ type SecurityNotificationRequest struct {
 }
 
 type SecurityNotificationClaim struct {
-	EventID        string
+	EventID         string
 	BusinessEventID string
-	Kind           SecurityNotificationKind
-	Purpose        VerificationPurpose
-	UserID         string
-	TenantID       string
-	FlowID         string
-	Channel        SecurityNotificationChannel
-	Destination    string
-	Secret         string
-	ExpiresAt      time.Time
-	Attempt        uint32
+	Kind            SecurityNotificationKind
+	Purpose         VerificationPurpose
+	UserID          string
+	TenantID        string
+	FlowID          string
+	Channel         SecurityNotificationChannel
+	Destination     string
+	Secret          string
+	ExpiresAt       time.Time
+	Attempt         uint32
 }
 
 type NotificationDeliveryReceipt struct {
-	EventID          string
-	State            string
-	ProviderReceipt  string
-	FailureCode      string
-	Attempt          uint32
-	DeliveredAt      *time.Time
+	EventID         string
+	State           string
+	ProviderReceipt string
+	FailureCode     string
+	Attempt         uint32
+	DeliveredAt     *time.Time
 }
 
 type RateLimitError struct {
