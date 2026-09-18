@@ -2,6 +2,7 @@ name: enterprise-170-finalize
 # rerun after MySQL precision canonicalization
 # rerun after persisted-record binding canonicalization
 # rerun after idempotency wiring correction
+# rerun after datetime(6) schema alignment
 on:
   push:
     branches:
