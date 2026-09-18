@@ -34,6 +34,15 @@ func enterprise170Policy() domain.VerificationPolicy {
 
 func enterprise170Repository(t *testing.T, db *gorm.DB) *accesspersistence.VerificationRepository {
 	t.Helper()
+	repository := enterprise170RepositoryWithoutSchema(t, db)
+	if err := repository.EnsureSchema(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	return repository
+}
+
+func enterprise170RepositoryWithoutSchema(t *testing.T, db *gorm.DB) *accesspersistence.VerificationRepository {
+	t.Helper()
 	protection, err := accesspersistence.NewVerificationProtection(accesspersistence.VerificationProtectionConfig{
 		ActiveVersion: "v1",
 		Keys: map[string][]byte{"v1": []byte(strings.Repeat("K", 32))},
@@ -44,9 +53,6 @@ func enterprise170Repository(t *testing.T, db *gorm.DB) *accesspersistence.Verif
 	}
 	repository, err := accesspersistence.NewVerificationRepository(db, protection)
 	if err != nil {
-		t.Fatal(err)
-	}
-	if err := repository.EnsureSchema(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	return repository
@@ -234,10 +240,14 @@ func TestEnterprise170LimitsFailureIdempotencyRollbackAndExpiry(t *testing.T) {
 		t.Fatal(err)
 	}
 	firstMessage, _ := sender.Message(first.NotificationEventID)
+	wrongCode := "000000"
+	if firstMessage.Secret == wrongCode {
+		wrongCode = "111111"
+	}
 	for attempt := 1; attempt <= policy.MaxVerificationTries; attempt++ {
 		_, err := service.VerifyCode(ctx, domain.VerifyChallengeRequest{
 			ChallengeID: first.ChallengeID, FlowID: base.FlowID, Purpose: base.Purpose,
-			UserID: base.UserID, Channel: base.Channel, Destination: base.Destination, Code: "000000",
+			UserID: base.UserID, Channel: base.Channel, Destination: base.Destination, Code: wrongCode,
 		})
 		if attempt < policy.MaxVerificationTries && !errors.Is(err, domain.ErrVerificationInvalid) {
 			t.Fatalf("wrong attempt %d returned %v", attempt, err)
@@ -322,7 +332,7 @@ func TestEnterprise170LimitsFailureIdempotencyRollbackAndExpiry(t *testing.T) {
 
 	countBefore := sender.Count()
 	rollbackErr := db.Transaction(func(tx *gorm.DB) error {
-		txRepository := enterprise170Repository(t, tx)
+		txRepository := enterprise170RepositoryWithoutSchema(t, tx)
 		_, err := txRepository.EnqueueSecurityNotification(ctx, domain.SecurityNotificationRequest{
 			BusinessEventID: "enterprise170-rollback-event", Kind: domain.SecurityNotificationInitialCredential,
 			Purpose: domain.VerificationPurposeLogin, UserID: "rollback-user", FlowID: "rollback-flow",
