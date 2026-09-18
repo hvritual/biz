@@ -108,6 +108,45 @@ type FirstPartyIdPVerificationKey struct {
 	KeyID string
 }
 
+type PrivacyReconsentPolicy string
+
+const (
+	PrivacyReconsentCurrentVersion PrivacyReconsentPolicy = "current_version_required"
+	PrivacyReconsentAnyActive      PrivacyReconsentPolicy = "any_active_acceptance"
+)
+
+type FirstPartyPrivacyConsentConfig struct {
+	AgreementVersion string
+	PrivacyPolicyURL string
+	TermsURL         string
+	ReconsentPolicy  PrivacyReconsentPolicy
+}
+
+func (config FirstPartyPrivacyConsentConfig) Validate() error {
+	if strings.TrimSpace(config.AgreementVersion) == "" {
+		return errors.New("biz runtime: privacy agreement version is required")
+	}
+	if len(strings.TrimSpace(config.AgreementVersion)) > 128 {
+		return errors.New("biz runtime: privacy agreement version is too long")
+	}
+	if err := requireHTTPSOrLoopback(config.PrivacyPolicyURL); err != nil {
+		return fmt.Errorf("biz runtime: privacy policy URL: %w", err)
+	}
+	if err := requireHTTPSOrLoopback(config.TermsURL); err != nil {
+		return fmt.Errorf("biz runtime: terms URL: %w", err)
+	}
+	switch config.ReconsentPolicy {
+	case PrivacyReconsentCurrentVersion, PrivacyReconsentAnyActive:
+		return nil
+	default:
+		return errors.New("biz runtime: privacy re-consent policy must be explicitly configured")
+	}
+}
+
+func (config FirstPartyPrivacyConsentConfig) RequireCurrentVersion() bool {
+	return config.ReconsentPolicy == PrivacyReconsentCurrentVersion
+}
+
 type FirstPartyIdPConfig struct {
 	PublicURL             string
 	ClientID              string
@@ -120,6 +159,7 @@ type FirstPartyIdPConfig struct {
 	CodeTTL               time.Duration
 	TokenTTL              time.Duration
 	CookieSecure          bool
+	PrivacyConsent        FirstPartyPrivacyConsentConfig
 }
 
 func (config FirstPartyIdPConfig) Enabled() bool { return strings.TrimSpace(config.PublicURL) != "" }
@@ -166,6 +206,9 @@ func (config FirstPartyIdPConfig) Validate() error {
 	}
 	if config.LoginTTL <= 0 || config.CodeTTL <= 0 || config.TokenTTL <= 0 {
 		return errors.New("biz runtime: first-party IdP TTLs must be positive")
+	}
+	if err := config.PrivacyConsent.Validate(); err != nil {
+		return err
 	}
 	publicURL, _ := url.Parse(config.PublicURL)
 	if publicURL.Scheme == "https" && !config.CookieSecure {

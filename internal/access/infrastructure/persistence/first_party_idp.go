@@ -36,17 +36,20 @@ type userPasswordCredentialRecord struct {
 func (userPasswordCredentialRecord) TableName() string { return "biz_user_password_credentials" }
 
 type firstPartyAuthorizationRequestRecord struct {
-	RequestHash   string    `gorm:"column:request_hash;primaryKey;size:64"`
-	BrowserHash   string    `gorm:"column:browser_hash;size:64;not null;index"`
-	CSRFHash      string    `gorm:"column:csrf_hash;size:64;not null"`
-	ClientID      string    `gorm:"column:client_id;size:200;not null"`
-	RedirectURI   string    `gorm:"column:redirect_uri;size:1024;not null"`
-	State         string    `gorm:"column:state;size:1024;not null"`
-	Nonce         string    `gorm:"column:nonce;size:512;not null"`
-	CodeChallenge string    `gorm:"column:code_challenge;size:128;not null"`
-	Scope         string    `gorm:"column:scope;size:1024;not null"`
-	ExpiresAt     time.Time `gorm:"column:expires_at;not null;index"`
-	CreatedAt     time.Time `gorm:"column:created_at;not null"`
+	RequestHash         string     `gorm:"column:request_hash;primaryKey;size:64"`
+	BrowserHash         string     `gorm:"column:browser_hash;size:64;not null;index"`
+	CSRFHash            string     `gorm:"column:csrf_hash;size:64;not null"`
+	ClientID            string     `gorm:"column:client_id;size:200;not null"`
+	RedirectURI         string     `gorm:"column:redirect_uri;size:1024;not null"`
+	State               string     `gorm:"column:state;size:1024;not null"`
+	Nonce               string     `gorm:"column:nonce;size:512;not null"`
+	CodeChallenge       string     `gorm:"column:code_challenge;size:128;not null"`
+	Scope               string     `gorm:"column:scope;size:1024;not null"`
+	AuthenticatedUserID string     `gorm:"column:authenticated_user_id;size:64;index"`
+	LoginAuditID        uint64     `gorm:"column:login_audit_id;index"`
+	AuthenticatedAt     *time.Time `gorm:"column:authenticated_at"`
+	ExpiresAt           time.Time  `gorm:"column:expires_at;not null;index"`
+	CreatedAt           time.Time  `gorm:"column:created_at;not null"`
 }
 
 func (firstPartyAuthorizationRequestRecord) TableName() string {
@@ -105,6 +108,7 @@ func (store *Store) EnsureFirstPartyIDPSchema(ctx context.Context) error {
 		&userPasswordCredentialRecord{},
 		&firstPartyAuthorizationRequestRecord{},
 		&firstPartyAuthorizationCodeRecord{},
+		&privacyConsentRecord{},
 	)
 }
 
