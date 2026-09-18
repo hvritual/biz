@@ -2,9 +2,12 @@ package bizruntime
 
 import (
 	"encoding/base64"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/hvritual/biz/internal/access/domain"
 )
 
 func TestEnterprise170VerificationRuntimeConfigIsExplicitAndFailClosed(t *testing.T) {
@@ -42,5 +45,15 @@ func TestEnterprise170BuildVerificationProtectionRequiresCompleteKeySet(t *testi
 	}
 	if _, err := BuildVerificationProtection("v1", "", hmac); err == nil {
 		t.Fatal("partial verification key configuration accepted")
+	}
+}
+
+func TestEnterprise170VerificationRateLimitMapsToHTTP429(t *testing.T) {
+	err := domain.RateLimitError{RetryAfter: 90 * time.Second, Reason: "resend_interval"}
+	if got := verificationHTTPStatus(err); got != http.StatusTooManyRequests {
+		t.Fatalf("status=%d want %d", got, http.StatusTooManyRequests)
+	}
+	if got := verificationRetryAfter(err); got != 90*time.Second {
+		t.Fatalf("retry-after=%s", got)
 	}
 }
