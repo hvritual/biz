@@ -1,5 +1,6 @@
 name: enterprise-170-dev
 # current candidate qualification
+# rerun after database-authoritative expiry fixture
 on:
   push:
     branches:
