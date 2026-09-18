@@ -232,6 +232,7 @@ type Options struct {
 	PlatformBootstrap       PlatformBootstrap
 	WebAuth                 WebAuthConfig
 	FirstPartyIdP           FirstPartyIdPConfig
+	VerificationSecurity    VerificationSecurityConfig
 }
 
 func (options Options) Validate() error {
@@ -251,6 +252,9 @@ func (options Options) Validate() error {
 		return err
 	}
 	if err := options.FirstPartyIdP.Validate(); err != nil {
+		return err
+	}
+	if err := options.VerificationSecurity.Validate(); err != nil {
 		return err
 	}
 	if options.FirstPartyIdP.Enabled() {
