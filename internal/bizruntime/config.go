@@ -161,10 +161,11 @@ type FirstPartyIdPConfig struct {
 	PreviousSigningKeys   []FirstPartyIdPVerificationKey
 	LoginTTL              time.Duration
 	CodeTTL               time.Duration
-	TokenTTL              time.Duration
-	RememberIdentifierTTL time.Duration
-	OTPCodeDigits         int
-	CookieSecure          bool
+	TokenTTL                 time.Duration
+	RememberIdentifierTTL    time.Duration
+	RecoveryAuthorizationTTL time.Duration
+	OTPCodeDigits            int
+	CookieSecure             bool
 	PrivacyConsent        FirstPartyPrivacyConsentConfig
 }
 
