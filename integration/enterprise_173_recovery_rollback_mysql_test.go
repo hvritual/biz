@@ -4,6 +4,7 @@ package integration
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 	"time"
@@ -45,12 +46,12 @@ func TestEnterprise173RecoveryRollbackKeepsCredentialAndChallengeReusable(t *tes
 	if _, err := fixture.Store.AuthenticateUserPassword(ctx, email, newPassword); !errors.Is(err, accesspersistence.ErrInvalidUserCredentials) {
 		t.Fatalf("rollback leaked new credential: %v", err)
 	}
-	var consumedAt *time.Time
+	var consumedAt sql.NullTime
 	if err := fixture.DB.Table("biz_verification_challenges").Select("consumed_at").Where("challenge_id = ?", challenge.ChallengeID).Scan(&consumedAt).Error; err != nil {
 		t.Fatal(err)
 	}
-	if consumedAt != nil {
-		t.Fatalf("rollback consumed challenge: %v", consumedAt)
+	if consumedAt.Valid {
+		t.Fatalf("rollback consumed challenge: %v", consumedAt.Time)
 	}
 	var authorizationCount int64
 	if err := fixture.DB.Table("biz_one_time_authorizations").Where("challenge_id = ?", challenge.ChallengeID).Count(&authorizationCount).Error; err != nil {
