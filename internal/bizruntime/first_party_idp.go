@@ -591,7 +591,7 @@ var firstPartyLoginTemplate = template.Must(template.New("first-party-idp-login"
 <input type="hidden" name="request_id" value="{{.RequestID}}">
 <input type="hidden" name="csrf_token" value="{{.CSRF}}">
 <input type="hidden" name="otp_request_nonce" value="{{.OTPRequestNonce}}">
-<div class="field"><label for="otp-identifier">账号 / 手机号 / 邮箱</label><input id="otp-identifier" name="identifier" type="text" value="{{.Identifier}}" autocomplete="username" maxlength="320" required></div>
+<div class="field"><label for="otp-identifier">验证码账号 / 手机号 / 邮箱</label><input id="otp-identifier" name="identifier" type="text" value="{{.Identifier}}" autocomplete="username" maxlength="320" required></div>
 <label class="remember"><input name="remember_identifier" type="checkbox" value="true" {{if .RememberIdentifier}}checked{{end}}>记住登录账号（仅保存账号标识）</label>
 <button id="otp-send-button" type="submit" {{if .OTPRequested}}disabled data-countdown="60"{{end}}>{{if .OTPRequested}}60 秒后可重新发送{{else}}发送验证码{{end}}</button>
 </form>
