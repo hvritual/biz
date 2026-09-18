@@ -190,6 +190,9 @@ func TestEnterprise172NoActiveTenantStillAuthenticatesGlobalAccount(t *testing.T
 	if err := store.AutoMigrate(ctx); err != nil {
 		t.Fatal(err)
 	}
+	if err := store.EnsureFirstPartyIDPSchema(ctx); err != nil {
+		t.Fatal(err)
+	}
 	if err := store.EnsureWebSessionSchema(ctx); err != nil {
 		t.Fatal(err)
 	}
