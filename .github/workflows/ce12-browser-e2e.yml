@@ -116,7 +116,7 @@ jobs:
           set -euo pipefail
           go -C biz test -count=1 ./internal/access/infrastructure/persistence ./internal/bizruntime
           go -C biz build ./cmd/biz ./cmd/biz-idp ./cmd/biz-idp-credential
-          go -C biz build -tags=qualification ./cmd/biz-idp
+          go -C biz build -tags=qualification -o "$RUNNER_TEMP/ce12-idp-qualification" ./cmd/biz-idp
 
       - name: Seed real member authority and three tenant outcomes
         shell: bash
