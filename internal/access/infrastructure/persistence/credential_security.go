@@ -282,6 +282,21 @@ func (store *Store) ResetPasswordWithAuthorization(
 	return receipt, nil
 }
 
+func (store *Store) TenantMemberAccountExists(ctx context.Context, tenantID, userID string) (bool, error) {
+	tenantID = strings.TrimSpace(tenantID)
+	userID = strings.TrimSpace(userID)
+	if store == nil || store.database == nil || tenantID == "" || userID == "" {
+		return false, nil
+	}
+	var count int64
+	if err := store.database.WithContext(ctx).Model(&membershipRecord{}).
+		Where("tenant_id = ? AND user_id = ? AND status = ?", tenantID, userID, "active").
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count == 1, nil
+}
+
 func verifyUserPasswordByID(ctx context.Context, database *gorm.DB, userID, password string) error {
 	userID = strings.TrimSpace(userID)
 	if database == nil || userID == "" || password == "" {
