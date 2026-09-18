@@ -65,6 +65,7 @@ func run() error {
 			PostLogoutRedirectURL:   strings.TrimSpace(os.Getenv("YUNKA_BIZ_OIDC_POST_LOGOUT_REDIRECT_URL")),
 			Scopes:                  strings.Fields(envOr("YUNKA_BIZ_OIDC_SCOPES", "openid profile email")),
 			SessionTTL:              envDuration("YUNKA_BIZ_OIDC_SESSION_TTL", 8*time.Hour),
+			SessionRefreshWindow:    envDuration("YUNKA_BIZ_OIDC_SESSION_REFRESH_WINDOW", 0),
 			FlowTTL:                 envDuration("YUNKA_BIZ_OIDC_FLOW_TTL", 5*time.Minute),
 			CookieSecure:            envBool("YUNKA_BIZ_OIDC_COOKIE_SECURE", true),
 			PlatformExternalSubject: strings.TrimSpace(os.Getenv("YUNKA_BIZ_OIDC_PLATFORM_EXTERNAL_SUBJECT")),
