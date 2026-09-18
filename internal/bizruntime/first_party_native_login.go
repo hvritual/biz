@@ -32,8 +32,9 @@ type firstPartyLoginPage struct {
 	OTPChallengeID   string
 	OTPSelected      bool
 	OTPRequested     bool
-	OTPEnabled       bool
-	CodeDigits       int
+	OTPEnabled         bool
+	RememberIdentifier bool
+	CodeDigits         int
 }
 
 func (idp *runtimeFirstPartyIdP) setVerification(service firstPartyLoginVerification) {
@@ -101,6 +102,7 @@ func (idp *runtimeFirstPartyIdP) handleOTPRequest(writer http.ResponseWriter, re
 	csrf := strings.TrimSpace(request.Form.Get("csrf_token"))
 	identifier := strings.TrimSpace(request.Form.Get("identifier"))
 	sendNonce := strings.TrimSpace(request.Form.Get("otp_request_nonce"))
+	remember := request.Form.Get("remember_identifier") == "true"
 	cookie, err := request.Cookie(idp.authCookieName())
 	if err != nil || requestID == "" || csrf == "" || sendNonce == "" || strings.TrimSpace(cookie.Value) == "" {
 		http.Error(writer, "invalid login request", http.StatusUnauthorized)
@@ -112,7 +114,7 @@ func (idp *runtimeFirstPartyIdP) handleOTPRequest(writer http.ResponseWriter, re
 	}
 	if verification == nil {
 		idp.renderLoginState(writer, http.StatusServiceUnavailable, firstPartyLoginPage{
-			RequestID: requestID, CSRF: csrf, Identifier: identifier, OTPSelected: true,
+			RequestID: requestID, CSRF: csrf, Identifier: identifier, OTPSelected: true, RememberIdentifier: remember,
 			Message: "验证码登录当前未配置可用发送渠道。",
 		})
 		return
@@ -122,7 +124,7 @@ func (idp *runtimeFirstPartyIdP) handleOTPRequest(writer http.ResponseWriter, re
 	if resolveErr != nil {
 		fake, _ := randomURLSecret(24)
 		idp.renderLoginState(writer, http.StatusOK, firstPartyLoginPage{
-			RequestID: requestID, CSRF: csrf, Identifier: identifier, OTPSelected: true, OTPRequested: true,
+			RequestID: requestID, CSRF: csrf, Identifier: identifier, OTPSelected: true, OTPRequested: true, RememberIdentifier: remember,
 			OTPChallengeID: "vch-fake-" + fake,
 			Message: "验证码请求已受理；若账号可用且渠道正常，将发送验证码。",
 		})
@@ -146,7 +148,7 @@ func (idp *runtimeFirstPartyIdP) handleOTPRequest(writer http.ResponseWriter, re
 		message = "验证码请求过于频繁，请稍后再试。"
 	}
 	idp.renderLoginState(writer, http.StatusOK, firstPartyLoginPage{
-		RequestID: requestID, CSRF: csrf, Identifier: identifier, OTPSelected: true, OTPRequested: true,
+		RequestID: requestID, CSRF: csrf, Identifier: identifier, OTPSelected: true, OTPRequested: true, RememberIdentifier: remember,
 		OTPChallengeID: challenge.ChallengeID, Message: message,
 	})
 }
