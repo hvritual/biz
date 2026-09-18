@@ -99,6 +99,7 @@ func run() error {
 			return errors.New("verification protection keys are required when native OTP login is configured")
 		}
 		config.OTPCodeDigits = verificationConfig.CodeDigits
+		config.RecoveryAuthorizationTTL = verificationConfig.AuthorizationTTL
 	}
 	database, err := gorm.Open(gormmysql.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -138,7 +139,7 @@ func run() error {
 			return err
 		}
 	}
-	handler, err := bizruntime.NewFirstPartyIdPHandlerWithVerification(config, store, verificationService)
+	handler, err := bizruntime.NewFirstPartyIdPHandlerWithSecurity(config, store, verificationService, verificationProtection)
 	if err != nil {
 		return err
 	}
