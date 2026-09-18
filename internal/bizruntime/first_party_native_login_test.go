@@ -43,10 +43,10 @@ func TestEnterprise172LoginLockQueuesSecurityNotificationWithoutLeakingCredentia
 	idp := &runtimeFirstPartyIdP{verification: spy}
 	blockedUntil := time.Now().UTC().Add(15 * time.Minute)
 	idp.maybeNotifyLoginLock(context.Background(), accesspersistence.LoginIdentifierResolution{
-		Identity: accesspersistence.LocalUserIdentity{UserID: "user-172", Email: "user172@example.invalid"},
-		Kind: accesspersistence.LoginIdentifierEmail,
-		Normalized: "user172@example.invalid",
-		OTPChannel: domain.SecurityNotificationEmail,
+		Identity:       accesspersistence.LocalUserIdentity{UserID: "user-172", Email: "user172@example.invalid"},
+		Kind:           accesspersistence.LoginIdentifierEmail,
+		Normalized:     "user172@example.invalid",
+		OTPChannel:     domain.SecurityNotificationEmail,
 		OTPDestination: "user172@example.invalid",
 	}, "request-172", &blockedUntil)
 

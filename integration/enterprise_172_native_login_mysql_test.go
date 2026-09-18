@@ -44,10 +44,10 @@ func TestEnterprise172ProtectedIdentifierResolutionAndAmbiguity(t *testing.T) {
 	}
 
 	const (
-		multiUser = "enterprise172-multi-user"
-		multiMail = "enterprise172.multi@example.invalid"
-		multiPass = "Enterprise172-Multi-Password!"
-		multiName = "multiuser"
+		multiUser  = "enterprise172-multi-user"
+		multiMail  = "enterprise172.multi@example.invalid"
+		multiPass  = "Enterprise172-Multi-Password!"
+		multiName  = "multiuser"
 		multiPhone = "+491701720001"
 	)
 	for _, tenant := range []string{"enterprise172-a", "enterprise172-b"} {
@@ -142,8 +142,8 @@ func TestEnterprise172PasswordLockPersistsAcrossStoreInstances(t *testing.T) {
 	}
 
 	const (
-		userID = "enterprise172-lock-user"
-		email = "enterprise172.lock@example.invalid"
+		userID   = "enterprise172-lock-user"
+		email    = "enterprise172.lock@example.invalid"
 		password = "Enterprise172-Correct-Password!"
 	)
 	if err := store.BootstrapGlobalUser(ctx, accesspersistence.GlobalUserBootstrap{ID: userID, Email: email}); err != nil {
@@ -198,7 +198,7 @@ func TestEnterprise172NoActiveTenantStillAuthenticatesGlobalAccount(t *testing.T
 	}
 	const (
 		userID = "enterprise172-empty-user"
-		email = "enterprise172.empty@example.invalid"
+		email  = "enterprise172.empty@example.invalid"
 	)
 	if err := store.BootstrapGlobalUser(ctx, accesspersistence.GlobalUserBootstrap{ID: userID, Email: email}); err != nil {
 		t.Fatal(err)
