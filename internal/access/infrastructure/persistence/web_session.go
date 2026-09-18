@@ -82,16 +82,18 @@ type WebIdentity struct {
 }
 
 type WebTenant struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Timezone string `json:"timezone"`
 }
 
 type WebSessionContext struct {
 	ActorKind       string
 	UserID          string
 	PlatformSubject string
-	ActiveTenantID  string
-	ContextVersion  uint64
+	ActiveTenantID       string
+	ActiveTenantTimezone string
+	ContextVersion       uint64
 	Tenants         []WebTenant
 	ExpiresAt       time.Time
 	CSRFToken       string
@@ -308,6 +310,12 @@ func (store *Store) authenticateWebSessionRecord(ctx context.Context, record web
 			return WebSessionAuthentication{}, err
 		}
 		result.Session.ActiveTenantID = record.ActiveTenantID
+		for _, tenant := range tenants {
+			if tenant.ID == record.ActiveTenantID {
+				result.Session.ActiveTenantTimezone = tenant.Timezone
+				break
+			}
+		}
 		result.Principal = principal
 	default:
 		return WebSessionAuthentication{}, ErrWebSessionInvalid
@@ -355,7 +363,7 @@ func (store *Store) resolveWebUserPrincipal(ctx context.Context, userID, tenantI
 func (store *Store) listWebTenants(ctx context.Context, userID string) ([]WebTenant, error) {
 	var rows []WebTenant
 	if err := store.database.WithContext(ctx).Table("biz_memberships m").
-		Select("t.id AS id, t.name AS name").
+		Select("t.id AS id, t.name AS name, t.timezone AS timezone").
 		Joins("JOIN biz_tenants t ON t.id = m.tenant_id AND t.status = ?", accessdomain.TenantStatusActive).
 		Where("m.user_id = ? AND m.status = ?", userID, accessdomain.TenantMemberStatusActive).
 		Order("t.name ASC, t.id ASC").Scan(&rows).Error; err != nil {
