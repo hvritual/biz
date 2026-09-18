@@ -47,6 +47,7 @@ type WebAuthConfig struct {
 	PostLogoutRedirectURL string
 	Scopes                []string
 	SessionTTL            time.Duration
+	SessionRefreshWindow  time.Duration
 	FlowTTL               time.Duration
 	CookieSecure          bool
 
@@ -83,6 +84,9 @@ func (config WebAuthConfig) Validate() error {
 	}
 	if config.SessionTTL <= 0 || config.FlowTTL <= 0 {
 		return errors.New("biz runtime: OIDC session and flow TTL must be positive")
+	}
+	if config.SessionRefreshWindow < 0 || config.SessionRefreshWindow >= config.SessionTTL {
+		return errors.New("biz runtime: OIDC session refresh window must be disabled or shorter than the session TTL")
 	}
 	if !containsString(config.Scopes, "openid") {
 		return errors.New("biz runtime: OIDC scopes must include openid")
