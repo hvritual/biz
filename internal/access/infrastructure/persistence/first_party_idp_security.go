@@ -56,17 +56,17 @@ func (store *Store) EnsureFirstPartyIDPSecuritySchema(ctx context.Context) error
 	return store.database.WithContext(ctx).AutoMigrate(&firstPartyLoginThrottleRecord{}, &firstPartyLoginAuditRecord{})
 }
 
-func (store *Store) AuthenticateFirstPartyLogin(ctx context.Context, email, password, remoteAddr string, policy FirstPartyLoginPolicy) (LocalUserIdentity, error) {
-	identity, _, err := store.AuthenticateFirstPartyLoginWithAudit(ctx, email, password, remoteAddr, policy)
+func (store *Store) AuthenticateFirstPartyLogin(ctx context.Context, identifier, password, remoteAddr string, policy FirstPartyLoginPolicy) (LocalUserIdentity, error) {
+	identity, _, err := store.AuthenticateFirstPartyLoginWithAudit(ctx, identifier, password, remoteAddr, policy)
 	return identity, err
 }
 
-func (store *Store) AuthenticateFirstPartyLoginWithAudit(ctx context.Context, email, password, remoteAddr string, policy FirstPartyLoginPolicy) (LocalUserIdentity, uint64, error) {
+func (store *Store) AuthenticateFirstPartyLoginWithAudit(ctx context.Context, identifier, password, remoteAddr string, policy FirstPartyLoginPolicy) (LocalUserIdentity, uint64, error) {
 	if err := policy.Validate(); err != nil {
 		return LocalUserIdentity{}, 0, err
 	}
-	email = strings.TrimSpace(email)
-	identityHash := TokenHash(strings.ToLower(email))
+	identifier = strings.TrimSpace(identifier)
+	identityHash := LoginIdentifierThrottleHash(identifier)
 	sourceHash := TokenHash(normalizeRemoteHost(remoteAddr))
 	now := time.Now().UTC()
 	err := store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -89,7 +89,7 @@ func (store *Store) AuthenticateFirstPartyLoginWithAudit(ctx context.Context, em
 		return LocalUserIdentity{}, 0, ErrInvalidUserCredentials
 	}
 
-	identity, authErr := store.AuthenticateUserPassword(ctx, email, password)
+	identity, authErr := store.AuthenticateUserPassword(ctx, identifier, password)
 	if authErr != nil {
 		if err := store.recordFirstPartyLoginFailure(ctx, identityHash, sourceHash, now, policy); err != nil {
 			return LocalUserIdentity{}, 0, err
@@ -148,6 +148,40 @@ func (store *Store) recordFirstPartyLoginSuccess(ctx context.Context, identityHa
 }
 func (store *Store) recordFirstPartyLoginAudit(ctx context.Context, at time.Time, outcome, userID, emailHash, sourceHash string) error {
 	return store.database.WithContext(ctx).Create(&firstPartyLoginAuditRecord{OccurredAt: at, Outcome: outcome, UserID: userID, EmailHash: emailHash, SourceHash: sourceHash}).Error
+}
+
+func (store *Store) FirstPartyLoginThrottleState(ctx context.Context, identifier string) (bool, *time.Time, error) {
+	if store == nil || store.database == nil {
+		return false, nil, nil
+	}
+	var row firstPartyLoginThrottleRecord
+	err := store.database.WithContext(ctx).Where("identity_hash = ?", LoginIdentifierThrottleHash(identifier)).First(&row).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil, nil
+	}
+	if err != nil {
+		return false, nil, err
+	}
+	if row.BlockedUntil == nil || !row.BlockedUntil.After(time.Now().UTC()) {
+		return false, row.BlockedUntil, nil
+	}
+	value := row.BlockedUntil.UTC()
+	return true, &value, nil
+}
+
+func (store *Store) RecordFirstPartyVerifiedLogin(ctx context.Context, identifier, userID, remoteAddr string) (uint64, error) {
+	identifier = strings.TrimSpace(identifier)
+	userID = strings.TrimSpace(userID)
+	if store == nil || store.database == nil || identifier == "" || userID == "" {
+		return 0, ErrInvalidUserCredentials
+	}
+	return store.recordFirstPartyLoginSuccess(
+		ctx,
+		LoginIdentifierThrottleHash(identifier),
+		TokenHash(normalizeRemoteHost(remoteAddr)),
+		userID,
+		time.Now().UTC(),
+	)
 }
 
 func (store *Store) DisableUserPassword(ctx context.Context, userID string) error {

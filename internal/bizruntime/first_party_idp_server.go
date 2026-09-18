@@ -12,6 +12,10 @@ import (
 // keys out of the Biz resource server while reusing the same member authority
 // database.
 func NewFirstPartyIdPHandler(config FirstPartyIdPConfig, store *accesspersistence.Store) (http.Handler, error) {
+	return NewFirstPartyIdPHandlerWithVerification(config, store, nil)
+}
+
+func NewFirstPartyIdPHandlerWithVerification(config FirstPartyIdPConfig, store *accesspersistence.Store, verification firstPartyLoginVerification) (http.Handler, error) {
 	if !config.Enabled() {
 		return nil, errors.New("biz runtime: first-party IdP config is required")
 	}
@@ -26,6 +30,7 @@ func NewFirstPartyIdPHandler(config FirstPartyIdPConfig, store *accesspersistenc
 		return nil, err
 	}
 	idp.setStore(store)
+	idp.setVerification(verification)
 	mux := http.NewServeMux()
 	idp.register(mux)
 	mux.HandleFunc("GET /healthz", func(writer http.ResponseWriter, _ *http.Request) {

@@ -60,7 +60,7 @@ async function acceptPrivacyConsentIfRequired(page: Page) {
 async function login(page: Page, data: Fixture) {
   await page.goto(data.base_url + '/auth/login?return_to=/auth/session')
   await expect(page.getByRole('heading', { name: 'CoffeeLink 登录' })).toBeVisible()
-  await page.getByLabel('邮箱').fill(data.email)
+  await page.getByLabel('账号 / 手机号 / 邮箱', { exact: true }).fill(data.email)
   await page.getByLabel('密码').fill(data.password)
   await page.getByRole('button', { name: '登录' }).click()
   await acceptPrivacyConsentIfRequired(page)

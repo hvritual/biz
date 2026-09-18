@@ -162,6 +162,8 @@ type FirstPartyIdPConfig struct {
 	LoginTTL              time.Duration
 	CodeTTL               time.Duration
 	TokenTTL              time.Duration
+	RememberIdentifierTTL time.Duration
+	OTPCodeDigits         int
 	CookieSecure          bool
 	PrivacyConsent        FirstPartyPrivacyConsentConfig
 }
@@ -210,6 +212,12 @@ func (config FirstPartyIdPConfig) Validate() error {
 	}
 	if config.LoginTTL <= 0 || config.CodeTTL <= 0 || config.TokenTTL <= 0 {
 		return errors.New("biz runtime: first-party IdP TTLs must be positive")
+	}
+	if config.RememberIdentifierTTL < 0 {
+		return errors.New("biz runtime: remember-identifier TTL must not be negative")
+	}
+	if config.OTPCodeDigits != 0 && (config.OTPCodeDigits < 4 || config.OTPCodeDigits > 10) {
+		return errors.New("biz runtime: OTP code digits must be zero or between 4 and 10")
 	}
 	if err := config.PrivacyConsent.Validate(); err != nil {
 		return err

@@ -19,7 +19,7 @@ async function authenticateToConsent(page: import("@playwright/test").Page, data
   await expect(page.getByRole("note")).toContainText("Cookie 提示");
   await expect(page.getByRole("link", { name: "隐私政策" })).toHaveAttribute("href", "https://example.invalid/privacy");
   await expect(page.getByRole("link", { name: "服务条款" })).toHaveAttribute("href", "https://example.invalid/terms");
-  await page.getByLabel("邮箱").fill(data.privacy_email);
+  await page.getByLabel("账号 / 手机号 / 邮箱", { exact: true }).fill(data.privacy_email);
   await page.getByLabel("密码").fill(data.privacy_password);
   await page.getByRole("button", { name: "登录" }).click();
   await expect(page.getByRole("heading", { name: "确认隐私与服务协议" })).toBeVisible();
@@ -109,7 +109,7 @@ test("TestEnterprise169BrowserPrivacyConsentGate", async ({ page, browser }) => 
   try {
     const repeat = await repeatContext.newPage();
     await repeat.goto(data.base_url + "/auth/login?return_to=/auth/session");
-    await repeat.getByLabel("邮箱").fill(data.privacy_email);
+    await repeat.getByLabel("账号 / 手机号 / 邮箱", { exact: true }).fill(data.privacy_email);
     await repeat.getByLabel("密码").fill(data.privacy_password);
     await repeat.getByRole("button", { name: "登录" }).click();
     await expect(repeat).toHaveURL(data.base_url + "/auth/session");
