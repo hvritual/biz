@@ -88,15 +88,15 @@ type WebTenant struct {
 }
 
 type WebSessionContext struct {
-	ActorKind       string
-	UserID          string
-	PlatformSubject string
+	ActorKind            string
+	UserID               string
+	PlatformSubject      string
 	ActiveTenantID       string
 	ActiveTenantTimezone string
 	ContextVersion       uint64
-	Tenants         []WebTenant
-	ExpiresAt       time.Time
-	CSRFToken       string
+	Tenants              []WebTenant
+	ExpiresAt            time.Time
+	CSRFToken            string
 }
 
 type WebSessionAuthentication struct {

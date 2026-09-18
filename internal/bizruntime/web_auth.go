@@ -288,14 +288,14 @@ func (auth *runtimeWebAuth) authenticateAPI(request *http.Request) (identity.Pri
 
 func sessionResponse(authentication accesspersistence.WebSessionAuthentication) map[string]any {
 	response := map[string]any{
-		"authenticated":    true,
-		"actor_kind":       authentication.Session.ActorKind,
+		"authenticated":          true,
+		"actor_kind":             authentication.Session.ActorKind,
 		"active_tenant_id":       authentication.Session.ActiveTenantID,
 		"active_tenant_timezone": authentication.Session.ActiveTenantTimezone,
 		"context_version":        authentication.Session.ContextVersion,
-		"tenants":          authentication.Session.Tenants,
-		"expires_at":       authentication.Session.ExpiresAt.UTC().Format(time.RFC3339),
-		"csrf_token":       authentication.Session.CSRFToken,
+		"tenants":                authentication.Session.Tenants,
+		"expires_at":             authentication.Session.ExpiresAt.UTC().Format(time.RFC3339),
+		"csrf_token":             authentication.Session.CSRFToken,
 	}
 	if authentication.Session.UserID != "" {
 		response["user_id"] = authentication.Session.UserID
