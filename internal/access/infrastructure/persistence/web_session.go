@@ -27,6 +27,7 @@ const (
 var (
 	ErrWebIdentityUnbound = errors.New("access: web identity is not bound")
 	ErrWebSessionInvalid  = errors.New("access: web session invalid")
+	ErrWebSessionChanged  = errors.New("access: web session context changed")
 	ErrWebTenantDenied    = errors.New("access: web tenant selection denied")
 	ErrWebLoginFlow       = errors.New("access: web login flow invalid")
 )
@@ -384,7 +385,7 @@ func (store *Store) SwitchWebSessionTenant(ctx context.Context, rawToken, tenant
 	}
 	now := time.Now().UTC()
 	result := store.database.WithContext(ctx).Model(&webSessionRecord{}).
-		Where("token_hash = ? AND revoked_at IS NULL AND expires_at > ?", TokenHash(rawToken), now).
+		Where("token_hash = ? AND context_version = ? AND revoked_at IS NULL AND expires_at > ?", TokenHash(rawToken), authentication.Session.ContextVersion, now).
 		Updates(map[string]any{
 			"active_tenant_id": tenantID,
 			"context_version":  gorm.Expr("context_version + 1"),
@@ -395,7 +396,10 @@ func (store *Store) SwitchWebSessionTenant(ctx context.Context, rawToken, tenant
 		return WebSessionAuthentication{}, result.Error
 	}
 	if result.RowsAffected != 1 {
-		return WebSessionAuthentication{}, ErrWebSessionInvalid
+		if _, err := store.AuthenticateWebSession(ctx, rawToken); err != nil {
+			return WebSessionAuthentication{}, err
+		}
+		return WebSessionAuthentication{}, ErrWebSessionChanged
 	}
 	return store.AuthenticateWebSession(ctx, rawToken)
 }
