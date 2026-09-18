@@ -6,10 +6,11 @@ export interface TrustedSession {
   platform_subject?: string
   user_id?: string
   active_tenant_id?: string
+  active_tenant_timezone?: string
   context_version?: number
   expires_at?: string
   csrf_token?: string
-  tenants?: Array<{ id: string; name: string }>
+  tenants?: Array<{ id: string; name: string; timezone?: string }>
 }
 export const readSession = () => read<TrustedSession>('/auth/session')
 export async function selectSessionTenant(tenantId: string) {
