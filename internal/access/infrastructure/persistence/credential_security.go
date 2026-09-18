@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/hvritual/biz/internal/access/domain"
 	"gorm.io/gorm"
@@ -21,7 +22,8 @@ var (
 )
 
 func ValidateUserChosenPassword(password string) error {
-	if len(password) < 8 || len(password) > 16 {
+	length := utf8.RuneCountInString(password)
+	if length < 8 || length > 16 {
 		return ErrWeakUserPassword
 	}
 	var upper, digit bool
