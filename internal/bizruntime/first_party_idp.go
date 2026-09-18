@@ -39,6 +39,7 @@ type runtimeFirstPartyIdP struct {
 	verificationKeys []firstPartyVerificationKey
 	mu               sync.RWMutex
 	store            *accesspersistence.Store
+	verification     firstPartyLoginVerification
 }
 
 func newRuntimeFirstPartyIdP(config FirstPartyIdPConfig) (*runtimeFirstPartyIdP, error) {
@@ -125,6 +126,8 @@ func (idp *runtimeFirstPartyIdP) register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /idp/jwks", idp.handleJWKS)
 	mux.HandleFunc("GET /idp/authorize", idp.handleAuthorize)
 	mux.HandleFunc("POST /idp/login", idp.handleLogin)
+	mux.HandleFunc("POST /idp/login/otp/request", idp.handleOTPRequest)
+	mux.HandleFunc("POST /idp/login/otp/verify", idp.handleOTPVerify)
 	mux.HandleFunc("GET /idp/consent", idp.handleConsentPage)
 	mux.HandleFunc("POST /idp/consent", idp.handleConsent)
 	mux.HandleFunc("POST /idp/token", idp.handleToken)
@@ -195,7 +198,9 @@ func (idp *runtimeFirstPartyIdP) handleAuthorize(writer http.ResponseWriter, req
 		return
 	}
 	idp.setAuthCookie(writer, browserSecret, idp.config.LoginTTL)
-	idp.renderLogin(writer, http.StatusOK, requestID, csrf, "", "")
+	idp.renderLoginState(writer, http.StatusOK, firstPartyLoginPage{
+		RequestID: requestID, CSRF: csrf, Identifier: idp.rememberedIdentifier(request),
+	})
 }
 
 func (idp *runtimeFirstPartyIdP) handleLogin(writer http.ResponseWriter, request *http.Request) {
@@ -211,8 +216,9 @@ func (idp *runtimeFirstPartyIdP) handleLogin(writer http.ResponseWriter, request
 	}
 	requestID := strings.TrimSpace(request.Form.Get("request_id"))
 	csrf := strings.TrimSpace(request.Form.Get("csrf_token"))
-	email := strings.TrimSpace(request.Form.Get("email"))
+	identifier := strings.TrimSpace(request.Form.Get("identifier"))
 	password := request.Form.Get("password")
+	remember := request.Form.Get("remember_identifier") == "true"
 	cookie, err := request.Cookie(idp.authCookieName())
 	if err != nil || requestID == "" || csrf == "" || strings.TrimSpace(cookie.Value) == "" {
 		http.Error(writer, "invalid login request", http.StatusUnauthorized)
@@ -222,35 +228,25 @@ func (idp *runtimeFirstPartyIdP) handleLogin(writer http.ResponseWriter, request
 		http.Error(writer, "invalid login request", http.StatusUnauthorized)
 		return
 	}
-	identity, loginAuditID, err := store.AuthenticateFirstPartyLoginWithAudit(request.Context(), email, password, request.RemoteAddr, accesspersistence.DefaultFirstPartyLoginPolicy())
+	resolved, resolveErr := store.ResolveLoginIdentifier(request.Context(), identifier)
+	identity, loginAuditID, err := store.AuthenticateFirstPartyLoginWithAudit(
+		request.Context(), identifier, password, request.RemoteAddr, accesspersistence.DefaultFirstPartyLoginPolicy(),
+	)
 	if err != nil {
-		if errors.Is(err, accesspersistence.ErrInvalidUserCredentials) {
-			idp.renderLogin(writer, http.StatusUnauthorized, requestID, csrf, email, "邮箱或密码错误")
-			return
+		message := "账号或凭据错误。"
+		blocked, blockedUntil, stateErr := store.FirstPartyLoginThrottleState(request.Context(), identifier)
+		if stateErr == nil && blocked {
+			message = "登录暂时受限，请稍后重试。"
+			if resolveErr == nil {
+				idp.maybeNotifyLoginLock(request.Context(), resolved, requestID, blockedUntil)
+			}
 		}
-		http.Error(writer, "identity provider unavailable", http.StatusServiceUnavailable)
+		idp.renderLoginState(writer, http.StatusUnauthorized, firstPartyLoginPage{
+			RequestID: requestID, CSRF: csrf, Identifier: identifier, Message: message,
+		})
 		return
 	}
-	satisfied, err := store.PrivacyConsentSatisfies(request.Context(), identity.UserID, idp.config.PrivacyConsent.AgreementVersion, idp.config.PrivacyConsent.RequireCurrentVersion())
-	if err != nil {
-		http.Error(writer, "identity provider unavailable", http.StatusServiceUnavailable)
-		return
-	}
-	if !satisfied {
-		if err := store.BindFirstPartyAuthorizationIdentity(request.Context(), requestID, cookie.Value, csrf, identity.UserID, loginAuditID); err != nil {
-			http.Error(writer, "login transaction expired", http.StatusUnauthorized)
-			return
-		}
-		location := "/idp/consent?request_id=" + url.QueryEscape(requestID)
-		http.Redirect(writer, request, location, http.StatusSeeOther)
-		return
-	}
-	code, authorization, err := store.IssueFirstPartyAuthorizationCode(request.Context(), requestID, cookie.Value, csrf, identity.UserID, idp.config.CodeTTL)
-	if err != nil {
-		http.Error(writer, "login transaction expired", http.StatusUnauthorized)
-		return
-	}
-	idp.finishAuthorization(writer, request, code, authorization)
+	idp.continueVerifiedLogin(writer, request, requestID, csrf, cookie.Value, identifier, remember, identity, loginAuditID)
 }
 
 func (idp *runtimeFirstPartyIdP) handleConsentPage(writer http.ResponseWriter, request *http.Request) {
@@ -297,7 +293,7 @@ func (idp *runtimeFirstPartyIdP) handleConsent(writer http.ResponseWriter, reque
 			http.Error(writer, "login transaction expired", http.StatusUnauthorized)
 			return
 		}
-		idp.renderLogin(writer, http.StatusOK, requestID, csrf, "", "已拒绝当前协议，登录未继续。")
+		idp.renderLoginState(writer, http.StatusOK, firstPartyLoginPage{RequestID: requestID, CSRF: csrf, Message: "已拒绝当前协议，登录未继续。"})
 		return
 	}
 	if action != "accept" || request.Form.Get("agreement_accepted") != "true" {
@@ -425,17 +421,14 @@ func (idp *runtimeFirstPartyIdP) signIDToken(grant accesspersistence.FirstPartyA
 	return unsigned + "." + base64.RawURLEncoding.EncodeToString(signature), nil
 }
 
-func (idp *runtimeFirstPartyIdP) renderLogin(writer http.ResponseWriter, status int, requestID, csrf, email, message string) {
-	idp.setLoginSecurityHeaders(writer)
-	writer.WriteHeader(status)
-	_ = firstPartyLoginTemplate.Execute(writer, map[string]string{
-		"RequestID": requestID, "CSRF": csrf, "Email": email, "Message": message,
-		"PrivacyPolicyURL": idp.config.PrivacyConsent.PrivacyPolicyURL, "TermsURL": idp.config.PrivacyConsent.TermsURL,
+func (idp *runtimeFirstPartyIdP) renderLogin(writer http.ResponseWriter, status int, requestID, csrf, identifier, message string) {
+	idp.renderLoginState(writer, status, firstPartyLoginPage{
+		RequestID: requestID, CSRF: csrf, Identifier: identifier, Message: message,
 	})
 }
 
 func (idp *runtimeFirstPartyIdP) renderConsent(writer http.ResponseWriter, status int, requestID, csrf, message string) {
-	idp.setLoginSecurityHeaders(writer)
+	idp.setLoginSecurityHeaders(writer, "")
 	writer.WriteHeader(status)
 	_ = firstPartyConsentTemplate.Execute(writer, map[string]string{
 		"RequestID": requestID, "CSRF": csrf, "Message": message,
@@ -444,7 +437,7 @@ func (idp *runtimeFirstPartyIdP) renderConsent(writer http.ResponseWriter, statu
 	})
 }
 
-func (idp *runtimeFirstPartyIdP) setLoginSecurityHeaders(writer http.ResponseWriter) {
+func (idp *runtimeFirstPartyIdP) setLoginSecurityHeaders(writer http.ResponseWriter, scriptNonce string) {
 	writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 	writer.Header().Set("Cache-Control", "no-store")
 	formActions := []string{"'self'"}
@@ -461,11 +454,16 @@ func (idp *runtimeFirstPartyIdP) setLoginSecurityHeaders(writer http.ResponseWri
 		seenOrigins[origin] = struct{}{}
 		formActions = append(formActions, origin)
 	}
-	writer.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; form-action "+strings.Join(formActions, " ")+"; base-uri 'none'; frame-ancestors 'none'")
+	policy := "default-src 'none'; style-src 'unsafe-inline'; form-action " + strings.Join(formActions, " ") + "; base-uri 'none'; frame-ancestors 'none'"
+	if strings.TrimSpace(scriptNonce) != "" {
+		policy += "; script-src 'nonce-" + scriptNonce + "'"
+	}
+	writer.Header().Set("Content-Security-Policy", policy)
 	writer.Header().Set("Referrer-Policy", "origin")
 	writer.Header().Set("X-Content-Type-Options", "nosniff")
 	writer.Header().Set("X-Frame-Options", "DENY")
 }
+
 func (idp *runtimeFirstPartyIdP) authCookieName() string {
 	if idp.config.CookieSecure {
 		return secureIDPAuthCookie
