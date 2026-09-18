@@ -9,10 +9,17 @@ import (
 	"strings"
 	"time"
 
-	accessapp "github.com/hvritual/biz/internal/access/application"
 	accessdomain "github.com/hvritual/biz/internal/access/domain"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 )
+
+type firstPartyLoginVerification interface {
+	SendVerificationCode(context.Context, accessdomain.VerificationChallengeRequest) (accessdomain.VerificationChallengeReceipt, accessdomain.NotificationDeliveryReceipt, error)
+	VerifyCode(context.Context, accessdomain.VerifyChallengeRequest) (accessdomain.OneTimeAuthorization, error)
+	ConsumeAuthorization(context.Context, accessdomain.ConsumeAuthorizationRequest) (accessdomain.AuthorizationConsumptionReceipt, error)
+	QueueSecurityNotification(context.Context, accessdomain.SecurityNotificationRequest) (accessdomain.NotificationDeliveryReceipt, error)
+	DeliverSecurityNotification(context.Context, string) (accessdomain.NotificationDeliveryReceipt, error)
+}
 
 type firstPartyLoginPage struct {
 	RequestID        string
@@ -29,7 +36,7 @@ type firstPartyLoginPage struct {
 	CodeDigits       int
 }
 
-func (idp *runtimeFirstPartyIdP) setVerification(service *accessapp.VerificationService) {
+func (idp *runtimeFirstPartyIdP) setVerification(service firstPartyLoginVerification) {
 	if idp == nil {
 		return
 	}
@@ -38,7 +45,7 @@ func (idp *runtimeFirstPartyIdP) setVerification(service *accessapp.Verification
 	idp.mu.Unlock()
 }
 
-func (idp *runtimeFirstPartyIdP) currentVerification() *accessapp.VerificationService {
+func (idp *runtimeFirstPartyIdP) currentVerification() firstPartyLoginVerification {
 	if idp == nil {
 		return nil
 	}
