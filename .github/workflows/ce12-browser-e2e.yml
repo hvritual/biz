@@ -232,6 +232,7 @@ jobs:
           required = [
               'TestCE12BrowserRealIdPToSessionTenantIAMEntitlement',
               'TestCE12BrowserRealTenantBrandAppearanceAndStaleReadback',
+              'TestEnterprise171CrossTabTenantIsolationBackNavigationAndStaleContext',
           ]
           for title in required:
               assert title in serialized, f'CE-12 browser acceptance evidence missing: {title}'
