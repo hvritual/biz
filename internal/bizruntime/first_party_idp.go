@@ -107,6 +107,24 @@ func (idp *runtimeFirstPartyIdP) currentStore() *accesspersistence.Store {
 	return idp.store
 }
 
+func (idp *runtimeFirstPartyIdP) setVerificationProtection(protection *accesspersistence.VerificationProtection) {
+	if idp == nil {
+		return
+	}
+	idp.mu.Lock()
+	idp.verificationProtection = protection
+	idp.mu.Unlock()
+}
+
+func (idp *runtimeFirstPartyIdP) currentVerificationProtection() *accesspersistence.VerificationProtection {
+	if idp == nil {
+		return nil
+	}
+	idp.mu.RLock()
+	defer idp.mu.RUnlock()
+	return idp.verificationProtection
+}
+
 func (idp *runtimeFirstPartyIdP) providerMetadata() oidcProviderMetadata {
 	issuer := idp.config.IssuerURL()
 	return oidcProviderMetadata{
