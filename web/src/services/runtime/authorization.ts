@@ -1,5 +1,5 @@
 import { reactive, readonly } from 'vue'
-import { CommercialApiError } from '@/services/commercial/platformCommercial'
+import { cancelTrustedSessionRequests, CommercialApiError } from '@/services/commercial/platformCommercial'
 import {
   loginUrl,
   readCurrentAuthorization,
@@ -136,6 +136,9 @@ export async function ensureCurrentAuthorization(force = false): Promise<Current
       if (requestGeneration !== generation) return null
       state.snapshot = null
       if (cause instanceof CommercialApiError && cause.status === 401) {
+        cancelTrustedSessionRequests()
+        state.session = null
+        state.contextKey = ''
         state.status = 'unauthenticated'
       } else if (cause instanceof CommercialApiError && cause.status === 403) {
         state.status = 'forbidden'
