@@ -88,3 +88,17 @@ func TestEnterprise174TenantRolePermissionCatalogDerivesFromActions(t *testing.T
 		seen[definition.Permission] = true
 	}
 }
+
+func TestEnterprise174BrandingMembershipPermissionHasSingleOperation(t *testing.T) {
+	var operations []string
+	for _, action := range Catalog() {
+		for _, permission := range action.Permissions {
+			if permission == "tenant.branding.read" {
+				operations = append(operations, action.Code)
+			}
+		}
+	}
+	if len(operations) != 1 || operations[0] != "tenant.branding.get" {
+		t.Fatalf("tenant.branding.read membership grant expanded beyond its frozen operation: %v", operations)
+	}
+}
