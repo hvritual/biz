@@ -12,6 +12,7 @@ import (
 	"time"
 
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
+	accessports "github.com/hvritual/biz/internal/access/ports"
 )
 
 func enterprise168Protection(t *testing.T, active string, keys map[string][]byte) *accesspersistence.ContactProtection {
@@ -152,6 +153,28 @@ func TestEnterprise168ProtectedContactsAreEncryptedMaskedAndTenantScoped(t *test
 	}
 	if _, err := store.AuthenticateUserPassword(ctx, "shared.user@example.invalid", password); err != nil {
 		t.Fatalf("tenant Profile contact change altered global Account login: %v", err)
+	}
+
+	emailPage, err := repository.List(ctx, "tenant-a", accessports.TenantMemberListQuery{Query: contactEmail, Page: 1, PageSize: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if emailPage.Total != 1 || len(emailPage.Members) != 1 || emailPage.Members[0].UserID != memberA.UserID {
+		t.Fatalf("protected tenant email lookup did not find the member: %+v", emailPage)
+	}
+	phonePage, err := repository.List(ctx, "tenant-a", accessports.TenantMemberListQuery{Query: "+49 170 1234567", Page: 1, PageSize: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if phonePage.Total != 1 || len(phonePage.Members) != 1 || phonePage.Members[0].UserID != memberA.UserID {
+		t.Fatalf("protected tenant phone lookup did not find the member: %+v", phonePage)
+	}
+	crossTenantPage, err := repository.List(ctx, "tenant-b", accessports.TenantMemberListQuery{Query: contactEmail, Page: 1, PageSize: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if crossTenantPage.Total != 0 || len(crossTenantPage.Members) != 0 {
+		t.Fatalf("protected contact query crossed tenant boundary: %+v", crossTenantPage)
 	}
 
 	var boundEmail string
