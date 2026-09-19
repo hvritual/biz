@@ -145,6 +145,52 @@ func (store *Store) BindOIDCPlatformIdentity(ctx context.Context, issuer, subjec
 	}).Error
 }
 
+func (store *Store) ResolveOrBindFirstPartyOIDCIdentity(ctx context.Context, issuer, subject string) (WebIdentity, error) {
+	issuer = strings.TrimSpace(issuer)
+	subject = strings.TrimSpace(subject)
+	const prefix = "biz-user:"
+	if store == nil || store.database == nil || issuer == "" || !strings.HasPrefix(subject, prefix) {
+		return WebIdentity{}, ErrWebIdentityUnbound
+	}
+	userID := strings.TrimSpace(strings.TrimPrefix(subject, prefix))
+	if userID == "" {
+		return WebIdentity{}, ErrWebIdentityUnbound
+	}
+	var user userRecord
+	if err := store.database.WithContext(ctx).Where("id = ? AND status = ?", userID, "active").First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return WebIdentity{}, ErrWebIdentityUnbound
+		}
+		return WebIdentity{}, err
+	}
+	var existing webIdentityRecord
+	err := store.database.WithContext(ctx).Where("issuer = ? AND subject = ?", issuer, subject).First(&existing).Error
+	if err == nil {
+		if existing.ActorKind != WebActorUser || existing.ActorID != userID {
+			return WebIdentity{}, errors.New("access: first-party OIDC identity already bound to a different actor")
+		}
+		return webIdentityFromRecord(existing), nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return WebIdentity{}, err
+	}
+	now := time.Now().UTC()
+	candidate := webIdentityRecord{
+		Issuer: issuer, Subject: subject, ActorKind: WebActorUser, ActorID: userID,
+		Email: "", CreatedAt: now, UpdatedAt: now,
+	}
+	if err := store.database.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&candidate).Error; err != nil {
+		return WebIdentity{}, err
+	}
+	if err := store.database.WithContext(ctx).Where("issuer = ? AND subject = ?", issuer, subject).First(&existing).Error; err != nil {
+		return WebIdentity{}, err
+	}
+	if existing.ActorKind != WebActorUser || existing.ActorID != userID {
+		return WebIdentity{}, errors.New("access: first-party OIDC identity binding conflict")
+	}
+	return webIdentityFromRecord(existing), nil
+}
+
 func (store *Store) ResolveOrBindOIDCIdentity(ctx context.Context, issuer, subject, email string, emailVerified bool) (WebIdentity, error) {
 	issuer = strings.TrimSpace(issuer)
 	subject = strings.TrimSpace(subject)
