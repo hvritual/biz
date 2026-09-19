@@ -177,6 +177,46 @@ func TestEnterprise168ProtectedContactsAreEncryptedMaskedAndTenantScoped(t *test
 		t.Fatalf("protected contact query crossed tenant boundary: %+v", crossTenantPage)
 	}
 
+	secondA, err := repository.Invite(ctx, "tenant-a", "user-a-duplicate-contact", "second-a@example.invalid", now.Add(2*time.Second))
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondA, err = repository.Get(ctx, "tenant-a", secondA.UserID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondA.Phone = "+49 170 1234567"
+	if err := repository.Update(ctx, &secondA, secondA.Version); !errors.Is(err, accessports.ErrTenantMemberConflict) {
+		t.Fatalf("duplicate protected phone was not mapped to member conflict: %v", err)
+	}
+	secondARead, err := repository.Get(ctx, "tenant-a", secondA.UserID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if secondARead.Phone != "" {
+		t.Fatalf("duplicate phone conflict left a partial profile write: %+v", secondARead)
+	}
+
+	maskedA, err := repository.Get(ctx, "tenant-a", memberA.UserID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	originalMaskedPhone := maskedA.Phone
+	if !accesspersistence.IsMaskedContact(originalMaskedPhone) {
+		t.Fatalf("expected protected phone readback to be masked, got %q", originalMaskedPhone)
+	}
+	maskedA.Name = "Masked Phone Preserved"
+	if err := repository.Update(ctx, &maskedA, maskedA.Version); err != nil {
+		t.Fatal(err)
+	}
+	maskedRead, err := repository.Get(ctx, "tenant-a", memberA.UserID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if maskedRead.Phone != originalMaskedPhone || maskedRead.Name != "Masked Phone Preserved" {
+		t.Fatalf("masked phone placeholder was not preserved on edit: before=%q after=%q member=%+v", originalMaskedPhone, maskedRead.Phone, maskedRead)
+	}
+
 	var boundEmail string
 	if err := db.Table("biz_web_identities").Select("COALESCE(email,'')").Where("issuer = ? AND subject = ?", "https://issuer.example.invalid", "subject-168").Scan(&boundEmail).Error; err != nil {
 		t.Fatal(err)
