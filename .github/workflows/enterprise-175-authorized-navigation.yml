@@ -1,0 +1,87 @@
+name: Enterprise 175 authorized navigation gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/enterprise-175-authorized-navigation.yml
+      - .github/workflows/ce12-browser-e2e.yml
+      - web/src/router/**
+      - web/src/services/runtime/**
+      - web/src/features/app-shell/**
+      - web/src/features/enterprise/**
+      - web/src/features/system/pages/AuthorizationStateView.vue
+      - web/tests/ce12/enterprise-175-authorization-ui.spec.ts
+      - web/package.json
+      - web/package-lock.json
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/enterprise-175-authorized-navigation.yml
+      - .github/workflows/ce12-browser-e2e.yml
+      - web/src/router/**
+      - web/src/services/runtime/**
+      - web/src/features/app-shell/**
+      - web/src/features/enterprise/**
+      - web/src/features/system/pages/AuthorizationStateView.vue
+      - web/tests/ce12/enterprise-175-authorization-ui.spec.ts
+      - web/package.json
+      - web/package-lock.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: enterprise-175-authorized-navigation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Run canonical Web gate
+        working-directory: web
+        run: npm run check
+
+      - name: Prove #175 real-browser test is registered
+        working-directory: web
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright test --config playwright.ce12.config.ts --list > "$RUNNER_TEMP/enterprise-175-playwright-list.txt"
+          grep -q 'TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed' "$RUNNER_TEMP/enterprise-175-playwright-list.txt"
+
+      - name: Reject duplicate editable permission catalogs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f web/src/services/runtime/authorization.ts
+          grep -q 'readCurrentAuthorization' web/src/services/runtime/authorization.ts
+          grep -q 'authorizationActions' web/src/router/navigation.ts
+          ! grep -R -nE 'const .*permissions.*=.*\[(.*tenant\.|.*commercial\.)' web/src/router web/src/features/app-shell || {
+            echo "::error::navigation must consume server action codes, not define a second permission grant catalog"
+            exit 1
+          }
+
+      - name: Verify candidate worktree remains clean
+        shell: bash
+        run: test -z "$(git status --porcelain)"
