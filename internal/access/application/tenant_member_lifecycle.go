@@ -385,7 +385,27 @@ func (service *TenantMemberLifecycleService) ActivateTenantMember(ctx context.Co
 	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalidTenantMemberRequest
 	}
-	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), nil, func(member *domain.Membership) error { return member.Activate(time.Now().UTC()) })
+	userID := strings.TrimSpace(request.GetUserId())
+	tenantID, err := trustedTenantID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	_, err = requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (domain.Membership, error) {
+		current, getErr := scope.Repositories().Member.Get(scope.Context(), tenantID, userID)
+		if getErr != nil {
+			return domain.Membership{}, getErr
+		}
+		if current.Status == domain.TenantMemberStatusInvited && scope.Repositories().Activation != nil {
+			if guardErr := scope.Repositories().Activation.AssertAdminActivationAllowed(scope.Context(), tenantID, userID); guardErr != nil {
+				return domain.Membership{}, guardErr
+			}
+		}
+		return current, nil
+	})
+	if err != nil {
+		return nil, wrapTenantMemberConflict(err)
+	}
+	return service.mutate(ctx, userID, request.GetVersion(), nil, func(member *domain.Membership) error { return member.Activate(time.Now().UTC()) })
 }
 
 func (service *TenantMemberLifecycleService) SuspendTenantMember(ctx context.Context, request *accessv1.SuspendTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
@@ -542,7 +562,8 @@ func wrapTenantMemberConflict(err error) error {
 		errors.Is(err, ports.ErrTenantMemberExists),
 		errors.Is(err, ports.ErrTenantMemberUsernameConflict),
 		errors.Is(err, ports.ErrTenantMemberContactConflict),
-		errors.Is(err, ports.ErrTenantMemberExistingAccountSMS):
+		errors.Is(err, ports.ErrTenantMemberExistingAccountSMS),
+		errors.Is(err, ports.ErrTenantMemberActivationPending):
 		return &tenantMemberConflictError{cause: err}
 	default:
 		return err
