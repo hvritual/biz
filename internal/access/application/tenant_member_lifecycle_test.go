@@ -39,6 +39,22 @@ func (repository *memoryTenantMemberRepository) Invite(_ context.Context, tenant
 	return member, nil
 }
 
+func (repository *memoryTenantMemberRepository) Create(_ context.Context, tenantID string, input ports.TenantMemberCreateInput, now time.Time) (domain.Membership, bool, error) {
+	repository.mu.Lock()
+	defer repository.mu.Unlock()
+	member := domain.NewInvitedMembership(tenantID, input.UserID, input.Email, now)
+	member.Username = input.Username
+	if err := member.UpdateProfile(input.Name, input.Phone, input.EmployeeID, input.Position, input.DepartmentID, now); err != nil {
+		return domain.Membership{}, false, err
+	}
+	key := memberKey(tenantID, input.UserID)
+	if _, exists := repository.values[key]; exists {
+		return domain.Membership{}, false, ports.ErrTenantMemberExists
+	}
+	repository.values[key] = member
+	return member, true, nil
+}
+
 func (repository *memoryTenantMemberRepository) Bootstrap(_ context.Context, tenantID, userID, email string, now time.Time) (domain.Membership, error) {
 	repository.mu.Lock()
 	defer repository.mu.Unlock()
