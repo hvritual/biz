@@ -13,6 +13,7 @@ import AppIcon from '@/ui/common/AppIcon.vue'
 import { applyUiTheme, resolveTenantUiTheme } from '@/ui/base/theme'
 import {
   authorizationApiMode,
+  currentAuthorizationAllows,
   currentAuthorizationAllowsAny,
   currentAuthorizationState,
   redirectToTrustedLogin,
@@ -92,6 +93,16 @@ watch(
       frame.value?.querySelector<HTMLElement>(`[data-module-id="${old}"]`)?.focus()
     }
   },
+)
+
+watch(
+  [() => currentAuthorizationState.status, () => currentAuthorizationState.snapshot?.tenant_id, () => store.tenantId] as const,
+  ([status, authorizationTenant, tenantId]) => {
+    if (!authorizationApiMode() || status !== 'ready' || !tenantId || authorizationTenant !== tenantId) return
+    if (!currentAuthorizationAllows('tenant.branding.get')) return
+    void store.refreshBranding().catch(() => undefined)
+  },
+  { immediate: true },
 )
 
 watch(
