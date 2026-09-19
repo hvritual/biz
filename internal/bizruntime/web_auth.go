@@ -28,8 +28,9 @@ const (
 type runtimeWebAuth struct {
 	config WebAuthConfig
 	oidc   *oidcClient
-	mu     sync.RWMutex
-	store  *accesspersistence.Store
+	mu           sync.RWMutex
+	store        *accesspersistence.Store
+	entitlements currentAuthorizationEntitlementReader
 }
 
 func newRuntimeWebAuth(ctx context.Context, config WebAuthConfig) (*runtimeWebAuth, error) {
@@ -76,6 +77,8 @@ func (auth *runtimeWebAuth) register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /auth/session", auth.handleSession)
 	mux.HandleFunc("GET /auth/session/tenants", auth.handleTenants)
 	mux.HandleFunc("POST /auth/session/tenant", auth.handleSwitchTenant)
+	mux.HandleFunc("GET /auth/action-catalog", auth.handleActionCatalog)
+	mux.HandleFunc("GET /auth/authorization", auth.handleCurrentAuthorization)
 	mux.HandleFunc("POST /auth/password/change", auth.handlePasswordChange)
 	mux.HandleFunc("POST /auth/tenant/members/{user_id}/password-recovery", auth.handleTenantMemberPasswordRecovery)
 	mux.HandleFunc("POST /auth/logout", auth.handleLogout)
