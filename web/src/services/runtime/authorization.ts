@@ -38,6 +38,10 @@ let generation = 0
 let inFlight: Promise<CurrentAuthorizationResponse | null> | null = null
 let unsubscribe: (() => void) | null = null
 
+function isTenantUserActor(actorKind: string | undefined) {
+  return actorKind === 'user' || actorKind === 'tenant'
+}
+
 function sessionKey(session: TrustedSession) {
   return [
     session.actor_kind ?? '',
@@ -98,7 +102,7 @@ export async function ensureCurrentAuthorization(force = false): Promise<Current
       if (requestGeneration !== generation) return null
       state.session = session
       const key = sessionKey(session)
-      if (!session.authenticated || session.actor_kind !== 'tenant' || !session.active_tenant_id) {
+      if (!session.authenticated || !isTenantUserActor(session.actor_kind) || !session.active_tenant_id) {
         state.status = 'unauthenticated'
         state.snapshot = null
         state.contextKey = key
@@ -113,7 +117,8 @@ export async function ensureCurrentAuthorization(force = false): Promise<Current
       if (requestGeneration !== generation) return null
       if (
         !snapshot.authenticated ||
-        snapshot.actor_kind !== 'tenant' ||
+        !isTenantUserActor(snapshot.actor_kind) ||
+        snapshot.actor_kind !== session.actor_kind ||
         snapshot.tenant_id !== session.active_tenant_id
       ) {
         state.status = 'forbidden'
