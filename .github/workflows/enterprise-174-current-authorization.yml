@@ -68,7 +68,7 @@ jobs:
           test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
           go test -count=1 ./internal/access/authorization ./internal/access/application ./internal/access/infrastructure/persistence ./internal/bizruntime
           go vet ./internal/access/authorization ./internal/access/application ./internal/access/infrastructure/persistence ./internal/bizruntime
-          go build ./cmd/biz
+          go build -o "$RUNNER_TEMP/biz" ./cmd/biz
       - name: Verify candidate clean
         shell: bash
         run: test -z "$(git -C biz status --porcelain)"
