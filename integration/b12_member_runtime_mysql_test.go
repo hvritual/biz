@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -124,6 +125,31 @@ func getB123HTTP(t *testing.T, base, token, userID string) (*accessv1.TenantMemb
 	return &member, response.StatusCode, body
 }
 
+func listB123HTTP(t *testing.T, base, token string, values url.Values) (*accessv1.ListTenantMembersResponse, int, []byte) {
+	t.Helper()
+	endpoint := base + "/v1/tenant/members"
+	if encoded := values.Encode(); encoded != "" {
+		endpoint += "?" + encoded
+	}
+	request, _ := http.NewRequest(http.MethodGet, endpoint, nil)
+	request.Header.Set("Authorization", "Bearer "+token)
+	response, err := (&http.Client{Timeout: 5 * time.Second}).Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	body, _ := io.ReadAll(response.Body)
+	if response.StatusCode != http.StatusOK {
+		return nil, response.StatusCode, body
+	}
+	var result accessv1.ListTenantMembersResponse
+	if err := protojson.Unmarshal(body, &result); err != nil {
+		t.Fatal(err)
+	}
+	return &result, response.StatusCode, body
+}
+
+
 func TestB123TenantMemberLifecycleIsTenantScopedAcrossRESTAndGRPC(t *testing.T) {
 	db := openDB(t)
 	stamp := fmt.Sprint(time.Now().UnixNano())
@@ -228,5 +254,120 @@ func TestB123TenantMemberLifecycleIsTenantScopedAcrossRESTAndGRPC(t *testing.T) 
 	}
 	if observedBAfter.GetStatus() != accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_INVITED || observedBAfter.GetVersion() != 1 {
 		t.Fatalf("tenant B membership changed after A suspension: %+v", observedBAfter)
+	}
+}
+
+
+func TestB123Enterprise176MemberListFiltersPaginationAndTenantIsolation(t *testing.T) {
+	db := openDB(t)
+	stamp := fmt.Sprint(time.Now().UnixNano())
+	started := startB123Runtime(t, db)
+	base := "http://" + started.HTTPAddress()
+
+	tenantA, tenantB := "e176-a-"+stamp, "e176-b-"+stamp
+	tokenA, tokenB := "e176-token-a-"+stamp, "e176-token-b-"+stamp
+	seedB123TenantAdmin(t, db, tenantA, "e176-admin-a-"+stamp, "admin-a-"+stamp+"@example.invalid", tokenA)
+	seedB123TenantAdmin(t, db, tenantB, "e176-admin-b-"+stamp, "admin-b-"+stamp+"@example.invalid", tokenB)
+
+	roleID := tenantA + ":query-role"
+	if err := db.Exec("INSERT INTO biz_roles (id,tenant_id,name,status,version) VALUES (?,?,?,?,?)", roleID, tenantA, "query-role", "active", 1).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	memberIDs := make([]string, 0, 12)
+	emails := make([]string, 0, 12)
+	for index := 0; index < 12; index++ {
+		email := fmt.Sprintf("e176-member-%02d-%s@example.invalid", index, stamp)
+		member, statusCode, body := inviteB123HTTP(t, base, tokenA, email, fmt.Sprintf("e176-invite-%02d:%s", index, stamp))
+		if statusCode != http.StatusOK {
+			t.Fatalf("invite %d status=%d body=%s", index, statusCode, body)
+		}
+		memberIDs = append(memberIDs, member.GetUserId())
+		emails = append(emails, email)
+		name := fmt.Sprintf("Member %02d", index)
+		if index == 0 {
+			name = "Alpha Operator"
+		}
+		phone := fmt.Sprintf("+4917012345%02d", index)
+		departmentID := "dept-other"
+		if index < 4 {
+			departmentID = "dept-a"
+		}
+		if err := db.Table("biz_memberships").
+			Where("tenant_id = ? AND user_id = ?", tenantA, member.GetUserId()).
+			Updates(map[string]any{
+				"name": name, "phone": phone, "employee_id": fmt.Sprintf("EMP-%04d", index), "department_id": departmentID,
+			}).Error; err != nil {
+			t.Fatal(err)
+		}
+		if index%2 == 0 {
+			if err := db.Exec("INSERT INTO biz_member_roles (tenant_id,user_id,role_id) VALUES (?,?,?)", tenantA, member.GetUserId(), roleID).Error; err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if err := db.Table("biz_users").Where("id = ?", memberIDs[1]).Update("username", "account-176-"+stamp).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("biz_memberships").Where("tenant_id = ? AND user_id = ?", tenantA, memberIDs[11]).Update("status", "removed").Error; err != nil {
+		t.Fatal(err)
+	}
+	sharedB, statusCode, body := inviteB123HTTP(t, base, tokenB, "e176-b-only-"+stamp+"@example.invalid", "e176-b-invite:"+stamp)
+	if statusCode != http.StatusOK || sharedB.GetUserId() == "" {
+		t.Fatalf("tenant B fixture status=%d body=%s", statusCode, body)
+	}
+
+	first, statusCode, body := listB123HTTP(t, base, tokenA, url.Values{"page": {"1"}, "page_size": {"5"}})
+	if statusCode != http.StatusOK {
+		t.Fatalf("page 1 status=%d body=%s", statusCode, body)
+	}
+	if first.GetTotal() != 12 || len(first.GetMembers()) != 5 {
+		t.Fatalf("page 1 total=%d members=%d want total=12 members=5", first.GetTotal(), len(first.GetMembers()))
+	}
+	third, statusCode, body := listB123HTTP(t, base, tokenA, url.Values{"page": {"3"}, "page_size": {"5"}})
+	if statusCode != http.StatusOK || third.GetTotal() != 12 || len(third.GetMembers()) != 2 {
+		t.Fatalf("page 3 status=%d total=%d members=%d body=%s", statusCode, third.GetTotal(), len(third.GetMembers()), body)
+	}
+	repeated, statusCode, body := listB123HTTP(t, base, tokenA, url.Values{"page": {"1"}, "page_size": {"5"}})
+	if statusCode != http.StatusOK {
+		t.Fatalf("repeat page status=%d body=%s", statusCode, body)
+	}
+	for index := range first.GetMembers() {
+		if first.GetMembers()[index].GetUserId() != repeated.GetMembers()[index].GetUserId() {
+			t.Fatalf("member list order is not stable: first=%v repeat=%v", first.GetMembers(), repeated.GetMembers())
+		}
+	}
+
+	cases := []struct {
+		name   string
+		values url.Values
+		total  uint64
+	}{
+		{name: "name", values: url.Values{"query": {"Alpha"}, "page": {"1"}, "page_size": {"10"}}, total: 1},
+		{name: "account", values: url.Values{"query": {"account-176-" + stamp}, "page": {"1"}, "page_size": {"10"}}, total: 1},
+		{name: "email", values: url.Values{"query": {emails[2]}, "page": {"1"}, "page_size": {"10"}}, total: 1},
+		{name: "phone", values: url.Values{"query": {"+49 170 1234503"}, "page": {"1"}, "page_size": {"10"}}, total: 1},
+		{name: "department", values: url.Values{"department_id": {"dept-a"}, "page": {"1"}, "page_size": {"10"}}, total: 4},
+		{name: "role and status", values: url.Values{"role_id": {roleID}, "status": {"TENANT_MEMBER_STATUS_INVITED"}, "page": {"1"}, "page_size": {"10"}}, total: 6},
+		{name: "removed stays excluded", values: url.Values{"status": {"TENANT_MEMBER_STATUS_REMOVED"}, "page": {"1"}, "page_size": {"10"}}, total: 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, gotStatus, gotBody := listB123HTTP(t, base, tokenA, tc.values)
+			if gotStatus != http.StatusOK {
+				t.Fatalf("status=%d body=%s", gotStatus, gotBody)
+			}
+			if result.GetTotal() != tc.total || uint64(len(result.GetMembers())) != tc.total {
+				t.Fatalf("total=%d members=%d want=%d", result.GetTotal(), len(result.GetMembers()), tc.total)
+			}
+		})
+	}
+
+	crossTenant, statusCode, body := listB123HTTP(t, base, tokenB, url.Values{"query": {emails[2]}, "page": {"1"}, "page_size": {"10"}})
+	if statusCode != http.StatusOK {
+		t.Fatalf("cross tenant query status=%d body=%s", statusCode, body)
+	}
+	if crossTenant.GetTotal() != 0 || len(crossTenant.GetMembers()) != 0 {
+		t.Fatalf("tenant B observed tenant A member: %+v", crossTenant)
 	}
 }
