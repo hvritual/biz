@@ -486,23 +486,62 @@ func (repository *TenantMemberRepository) Update(ctx context.Context, member *do
 	}
 	updates := map[string]any{"status": member.Status, "name": member.Name, "employee_id": member.EmployeeID, "position": member.Position, "department_id": member.DepartmentID, "updated_at": member.UpdatedAt, "version": gorm.Expr("version + 1")}
 	if repository.contactProtection == nil {
-		updates["phone"] = member.Phone
-	} else if !IsMaskedContact(member.Phone) {
-		if strings.TrimSpace(member.Phone) == "" {
-			updates["phone"] = ""
-			updates["phone_ciphertext"] = ""
-			updates["phone_lookup_hash"] = nil
-			updates["phone_key_version"] = ""
-		} else {
-			ciphertext, lookup, version, err := repository.contactProtection.ProtectPhone(member.Phone)
+		if !IsMaskedContact(member.Email) {
+			if email := strings.TrimSpace(member.Email); email != "" {
+				normalized, err := NormalizeEmail(email)
+				if err != nil {
+					return err
+				}
+				updates["email"] = normalized
+				member.Email = normalized
+			} else {
+				updates["email"] = ""
+			}
+		}
+		if !IsMaskedContact(member.Phone) {
+			normalized, err := NormalizePhone(member.Phone)
 			if err != nil {
 				return err
 			}
-			updates["phone"] = ""
-			updates["phone_ciphertext"] = ciphertext
-			updates["phone_lookup_hash"] = lookup
-			updates["phone_key_version"] = version
-			member.Phone = MaskPhone(member.Phone)
+			updates["phone"] = normalized
+			member.Phone = normalized
+		}
+	} else {
+		if !IsMaskedContact(member.Email) {
+			if strings.TrimSpace(member.Email) == "" {
+				updates["email"] = ""
+				updates["email_ciphertext"] = ""
+				updates["email_lookup_hash"] = nil
+				updates["email_key_version"] = ""
+			} else {
+				ciphertext, lookup, version, err := repository.contactProtection.ProtectEmail(member.Email)
+				if err != nil {
+					return err
+				}
+				updates["email"] = ""
+				updates["email_ciphertext"] = ciphertext
+				updates["email_lookup_hash"] = lookup
+				updates["email_key_version"] = version
+				member.Email = MaskEmail(member.Email)
+			}
+		}
+		if !IsMaskedContact(member.Phone) {
+			if strings.TrimSpace(member.Phone) == "" {
+				updates["phone"] = ""
+				updates["phone_ciphertext"] = ""
+				updates["phone_lookup_hash"] = nil
+				updates["phone_key_version"] = ""
+			} else {
+				ciphertext, lookup, version, err := repository.contactProtection.ProtectPhone(member.Phone)
+				if err != nil {
+					return err
+				}
+				updates["phone"] = ""
+				updates["phone_ciphertext"] = ciphertext
+				updates["phone_lookup_hash"] = lookup
+				updates["phone_key_version"] = version
+				member.Phone = MaskPhone(member.Phone)
+			}
 		}
 	}
 	err := repository.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
