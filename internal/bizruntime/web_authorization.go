@@ -137,43 +137,41 @@ func (auth *runtimeWebAuth) handleCurrentAuthorization(writer http.ResponseWrite
 		grants = append(grants, authz.Grant{Permission: grant.Permission, RoleID: grant.RoleID, Scope: grant.Scope})
 	}
 	accessActions := accessauthorization.AuthorizedActions(grants)
+	capabilityDecisions := map[string]entitlement.Decision{}
 	moduleDecisions := map[string]entitlement.Decision{}
 	for _, decision := range entitlementSnapshot.Decisions {
-		if decision.Kind == entitlement.Module {
+		switch decision.Kind {
+		case entitlement.Module:
 			moduleDecisions[decision.ModuleCode] = decision
+		case entitlement.Capability:
+			capabilityDecisions[decision.Key] = decision
 		}
 	}
-	modules := make([]authorizationModuleView, 0, len(moduleDecisions))
-	moduleActionSet := map[string]bool{}
-	for code, decision := range moduleDecisions {
-		view := authorizationModuleView{Code: code, Allowed: decision.Allowed, Reason: decision.Reason, Actions: []string{}}
-		if decision.Allowed {
-			for _, action := range accessActions {
-				if commercialModuleForAction(action) == code {
-					view.Actions = append(view.Actions, action.Code)
-					moduleActionSet[action.Code] = true
-				}
-			}
-			sort.Strings(view.Actions)
-		}
-		modules = append(modules, view)
-	}
-	sort.Slice(modules, func(i, j int) bool { return modules[i].Code < modules[j].Code })
 
 	effectiveActions := make([]accessauthorization.Action, 0, len(accessActions))
 	buttonCodes := []string{}
+	moduleActions := map[string][]string{}
 	for _, action := range accessActions {
-		moduleCode := commercialModuleForAction(action)
-		if moduleCode != "" {
-			decision, ok := moduleDecisions[moduleCode]
-			if !ok || !decision.Allowed || !moduleActionSet[action.Code] {
-				continue
-			}
+		if !commerciallyAllowsAction(action, capabilityDecisions) {
+			continue
 		}
 		effectiveActions = append(effectiveActions, action)
 		buttonCodes = append(buttonCodes, action.Code)
+		if action.ModuleCode != "" {
+			moduleActions[action.ModuleCode] = append(moduleActions[action.ModuleCode], action.Code)
+		}
 	}
 	sort.Strings(buttonCodes)
+
+	modules := make([]authorizationModuleView, 0, len(moduleDecisions))
+	for code, decision := range moduleDecisions {
+		actions := append([]string(nil), moduleActions[code]...)
+		sort.Strings(actions)
+		modules = append(modules, authorizationModuleView{
+			Code: code, Allowed: decision.Allowed, Reason: decision.Reason, Actions: actions,
+		})
+	}
+	sort.Slice(modules, func(i, j int) bool { return modules[i].Code < modules[j].Code })
 
 	base.TenantID = snapshot.TenantID
 	base.TenantName = snapshot.TenantName
@@ -194,13 +192,18 @@ func (auth *runtimeWebAuth) handleCurrentAuthorization(writer http.ResponseWrite
 	writeJSON(writer, http.StatusOK, base)
 }
 
-func commercialModuleForAction(action accessauthorization.Action) string {
-	switch action.Domain {
-	case "access":
-		return "access-management"
-	case "deviceops":
-		return "device-operations"
-	default:
-		return ""
+func commerciallyAllowsAction(action accessauthorization.Action, decisions map[string]entitlement.Decision) bool {
+	if action.Classification != "tenant_business" {
+		return true
 	}
+	if action.ModuleCode == "" || len(action.CapabilityCodes) == 0 {
+		return false
+	}
+	for _, capability := range action.CapabilityCodes {
+		decision, ok := decisions[capability]
+		if !ok || !decision.Allowed {
+			return false
+		}
+	}
+	return true
 }
