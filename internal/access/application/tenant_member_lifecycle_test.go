@@ -16,8 +16,9 @@ import (
 )
 
 type memoryTenantMemberRepository struct {
-	mu     sync.Mutex
-	values map[string]domain.Membership
+	mu            sync.Mutex
+	values        map[string]domain.Membership
+	lastListQuery ports.TenantMemberListQuery
 }
 
 func newMemoryTenantMemberRepository() *memoryTenantMemberRepository {
@@ -60,16 +61,17 @@ func (repository *memoryTenantMemberRepository) Get(_ context.Context, tenantID,
 	return member, nil
 }
 
-func (repository *memoryTenantMemberRepository) List(_ context.Context, tenantID string) ([]domain.Membership, error) {
+func (repository *memoryTenantMemberRepository) List(_ context.Context, tenantID string, query ports.TenantMemberListQuery) (ports.TenantMemberListPage, error) {
 	repository.mu.Lock()
 	defer repository.mu.Unlock()
+	repository.lastListQuery = query
 	result := make([]domain.Membership, 0)
 	for _, member := range repository.values {
 		if member.TenantID == tenantID {
 			result = append(result, member)
 		}
 	}
-	return result, nil
+	return ports.TenantMemberListPage{Members: result, Total: uint64(len(result))}, nil
 }
 
 func (repository *memoryTenantMemberRepository) Update(_ context.Context, member *domain.Membership, expectedVersion uint64) error {
