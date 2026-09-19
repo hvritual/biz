@@ -67,9 +67,59 @@ func TestEnterprise174GeneratedCatalogMatchesOperationPlans(t *testing.T) {
 			HTTP: httpBindings,
 		})
 	}
-	if !reflect.DeepEqual(Catalog(), expected) {
+	if !reflect.DeepEqual(stripCommercialFacts(Catalog()), expected) {
 		t.Fatal("generated action catalog is stale; regenerate from contracts/generated/operation-plans.json")
 	}
+}
+
+func TestEnterprise174GeneratedCatalogMatchesCommercialCapabilityMapping(t *testing.T) {
+	path := filepath.Join("..", "..", "..", "contracts", "commercial", "operation-capabilities.v1.json")
+	payload, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var source struct {
+		MappingVersion string `json:"mapping_version"`
+		Operations []struct {
+			OperationID string `json:"operation_id"`
+			Classification string `json:"classification"`
+			ModuleCode string `json:"module_code"`
+			CapabilityCodes []string `json:"capability_codes"`
+		} `json:"operations"`
+	}
+	if err := json.Unmarshal(payload, &source); err != nil {
+		t.Fatal(err)
+	}
+	if source.MappingVersion != CommercialCapabilityMappingVersion {
+		t.Fatalf("commercial mapping version mismatch: generated=%s source=%s", CommercialCapabilityMappingVersion, source.MappingVersion)
+	}
+	byCode := map[string]Action{}
+	for _, action := range Catalog() {
+		byCode[action.Code] = action
+	}
+	if len(byCode) != len(source.Operations) {
+		t.Fatalf("commercial operation count mismatch: catalog=%d source=%d", len(byCode), len(source.Operations))
+	}
+	for _, operation := range source.Operations {
+		action, ok := byCode[operation.OperationID]
+		if !ok {
+			t.Fatalf("commercial mapping operation missing from action catalog: %s", operation.OperationID)
+		}
+		if action.Classification != operation.Classification || action.ModuleCode != operation.ModuleCode || !reflect.DeepEqual(action.CapabilityCodes, operation.CapabilityCodes) {
+			t.Fatalf("commercial mapping mismatch for %s: action=%+v source=%+v", operation.OperationID, action, operation)
+		}
+	}
+}
+
+func stripCommercialFacts(actions []Action) []Action {
+	out := make([]Action, len(actions))
+	for index, action := range actions {
+		action.Classification = ""
+		action.ModuleCode = ""
+		action.CapabilityCodes = nil
+		out[index] = action
+	}
+	return out
 }
 
 func TestEnterprise174TenantRolePermissionCatalogDerivesFromActions(t *testing.T) {
