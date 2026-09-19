@@ -42,6 +42,25 @@ async function mockPlanServer(page: Page, options: Options = {}): Promise<Captur
       tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }],
     })
   })
+  await page.route('**/api/auth/authorization', async (route) => {
+    const buttonCodes = ["commercial.subscription.get_my","commercial.subscription.get_my_usage","commercial.entitlement.get_my","commercial.subscription.change.targets_my"]
+    return json(route, 200, {
+      authenticated: true,
+      actor_kind: 'tenant',
+      user_id: 'user-001',
+      tenant_id: 'tenant-001',
+      tenant_name: 'CoffeeLink 测试租户',
+      timezone: 'Asia/Shanghai',
+      roles: ['operator'],
+      grants: [],
+      data_policies: [],
+      site_ids: [],
+      permission_version: 'sha256:e2e',
+      modules: [{ code: 'access-management', allowed: true, reason: 'allowed', actions: buttonCodes }],
+      actions: buttonCodes.map((code) => ({ code, permissions: [], permission_mode: 'all' })),
+      button_codes: buttonCodes,
+    })
+  })
 
   await page.route('**/api/v1/tenant/subscription', async (route) => {
     captured.subscriptionPaths.push(new URL(route.request().url()).pathname)
