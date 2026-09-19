@@ -7,6 +7,7 @@ import {
   primaryNavigation,
   systemNavigation,
   systemQuickActions,
+  quickActions,
 } from './navigation'
 
 function groups(domain: string) {
@@ -58,6 +59,29 @@ describe('primary navigation information architecture', () => {
     expect(enterprise?.authorizationActions).toEqual(expect.arrayContaining(
       enterpriseNavigation.flatMap((item) => item.authorizationActions ?? []),
     ))
+  })
+
+  it('requires complete server action sets for enterprise quick operations', () => {
+    const byPath = new Map(quickActions.map((item) => [item.path, item]))
+    expect(byPath.get('/enterprise/members?action=create')).toMatchObject({
+      authorizationMode: 'all',
+      authorizationActions: [
+        'tenant.member.invite',
+        'tenant.member.profile.update',
+        'tenant.role.assign_member',
+        'tenant.member.activate',
+      ],
+    })
+    expect(byPath.get('/enterprise/roles?action=create')).toMatchObject({
+      authorizationMode: 'all',
+      authorizationActions: [
+        'tenant.role.create',
+        'tenant.role.set_permissions',
+        'tenant.role.enable',
+        'tenant.role.disable',
+      ],
+    })
+    expect(JSON.stringify(quickActions)).not.toContain('tenant.role.update_permissions')
   })
 
   it('groups customer operations by management, collaboration and success instead of flattening pages', () => {
