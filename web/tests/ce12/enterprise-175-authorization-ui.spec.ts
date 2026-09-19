@@ -42,14 +42,18 @@ test('TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed', async
   const data = fixture()
   const active = await loginViewer(browser, data)
   const roleRequests: string[] = []
+  const brandingRequests: string[] = []
   active.page.on('request', (request) => {
-    if (new URL(request.url()).pathname.startsWith('/v1/tenant/roles')) roleRequests.push(request.url())
+    const path = new URL(request.url()).pathname
+    if (path.startsWith('/v1/tenant/roles')) roleRequests.push(request.url())
+    if (path === '/v1/tenant/branding') brandingRequests.push(request.url())
   })
 
   try {
     await active.page.goto(data.ui_base_url + '/#/enterprise/members?action=create')
     await expect(active.page.locator('[data-enterprise-page="members"]')).toBeVisible()
     await expect(active.page.getByRole('dialog')).toHaveCount(0)
+    await expect.poll(() => brandingRequests.length).toBe(0)
 
     for (const moduleId of ['customer-operations', 'rental-operations', 'device-operations', 'business-operations', 'platform-commercial', 'system']) {
       await expect(active.page.locator(`[data-module-id="${moduleId}"]`)).toHaveCount(0)
