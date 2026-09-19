@@ -18,7 +18,10 @@ const hoverOpened = ref<string | null>(null)
 const previewLabel = computed(() => route.meta.surface === 'platform' || route.meta.surface === 'runtime' ? t('shell.trustedRuntime') : t('shell.previewData'))
 const visiblePrimaryNavigation = computed(() =>
   primaryNavigation.filter((item) => {
-    if (!authorizationApiMode() || !item.authorizationActions?.length) return true
+    if (!authorizationApiMode()) return true
+    if (item.id === 'dashboard') return true
+    if (item.id === 'platform-commercial') return currentAuthorizationState.session?.actor_kind === 'platform'
+    if (!item.authorizationActions?.length) return false
     if (currentAuthorizationState.status !== 'ready') return false
     if (item.authorizationModule && !currentAuthorizationModuleAllowed(item.authorizationModule)) return false
     return currentAuthorizationAllowsAny(item.authorizationActions)
