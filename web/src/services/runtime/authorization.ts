@@ -95,7 +95,10 @@ export async function ensureCurrentAuthorization(force = false): Promise<Current
 
   const requestGeneration = generation
   const task = (async () => {
-    state.status = 'loading'
+    const priorSnapshot = state.snapshot
+    const priorContextKey = state.contextKey
+    const priorReady = state.status === 'ready' && Boolean(priorSnapshot)
+    if (!priorReady) state.status = 'loading'
     state.error = ''
     try {
       const session = await readSession()
@@ -108,11 +111,14 @@ export async function ensureCurrentAuthorization(force = false): Promise<Current
         state.contextKey = key
         return null
       }
-      if (!force && state.snapshot && state.contextKey === key) {
+      if (!force && priorSnapshot && priorContextKey === key) {
+        state.snapshot = priorSnapshot
+        state.contextKey = key
         state.status = 'ready'
-        return state.snapshot
+        return priorSnapshot
       }
 
+      state.status = 'loading'
       const snapshot = await readCurrentAuthorization()
       if (requestGeneration !== generation) return null
       if (
