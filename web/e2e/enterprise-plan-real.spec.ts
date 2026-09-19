@@ -207,21 +207,22 @@ test('usage authority 5xx keeps quota limits visible but explicitly degrades usa
   await expect(memberRow).toContainText('用量未知')
 })
 
-test('401 and 403 are explicit and never fall back to demo plan data', async ({ page }) => {
+test('401 exits to trusted login while downstream 403 responses never fall back to demo plan data', async ({ page }) => {
   await mockPlanServer(page, { unauthenticated: true })
-  await openRealPlan(page)
-  await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('登录会话已失效')
+  await page.goto('/#/enterprise/plan')
+  await expect(page).toHaveURL(/\/api\/auth\/login\?return_to=/)
+  await expect(page.locator('[data-enterprise-page="plan"]')).toHaveCount(0)
   await expect(page.getByText('标准版', { exact: true })).toHaveCount(0)
 
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockPlanServer(page, { subscriptionStatus: 403 })
-  await page.reload()
+  await page.goto('/#/enterprise/plan')
   await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('没有查看套餐与权益的权限')
   await expect(page.getByText('标准版', { exact: true })).toHaveCount(0)
 
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockPlanServer(page, { usageStatus: 403 })
-  await page.reload()
+  await page.goto('/#/enterprise/plan')
   await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('没有查看套餐与权益的权限')
   await expect(page.getByText('标准版', { exact: true })).toHaveCount(0)
 })
