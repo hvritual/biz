@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import AppIcon from '@/ui/common/AppIcon.vue'
-const store=useEnterpriseStore(),{t}=useI18n(); const inUse=computed(()=>store.members.filter(m=>m.status!=='removed').length); const quota=500; const percentage=computed(()=>Math.round(inUse.value/quota*100)); const metrics=computed(()=>[
+const store=useEnterpriseStore(),{t}=useI18n(); const inUse=computed(()=>store.previewMode?store.members.filter(m=>m.status!=='removed').length:store.memberTotal); const quota=500; const percentage=computed(()=>Math.round(inUse.value/quota*100)); const metrics=computed(()=>[
   {label:t('members.totalMembers'),value:inUse.value,icon:'users',caption:t('members.currentMembers'),detail:t('members.includesInvited')},
   {label:t('members.departments'),value:store.departments.filter(d=>d.enabled).length,icon:'organization',caption:t('members.organization'),detail:t('members.enabledDepartments')},
   {label:t('members.roles'),value:store.roles.filter(r=>r.enabled).length,icon:'shield',caption:t('members.roleConfig'),detail:t('members.builtinCustom')}
