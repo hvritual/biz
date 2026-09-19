@@ -9,14 +9,17 @@ import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import brand from '@/assets/brand-mark.png'
 import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
+import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
   draft = ref({ ...store.company }),
   error = ref(''),
   logo = ref(brand)
+const canManageCompany = computed(() => store.previewMode || currentAuthorizationAllows('tenant.profile.update'))
 const changed = computed(() => JSON.stringify(draft.value) !== JSON.stringify(store.company))
 async function save() {
   error.value = ''
+  if (!canManageCompany.value) { error.value = '当前账号没有编辑企业信息的权限。'; return }
   if (!draft.value.name.trim()) {
     error.value = '请填写企业名称。'
     return
@@ -60,7 +63,7 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
     <PageHeading title="企业信息" description="维护企业基本资料与联系信息，统一团队的身份与展示" />
     <EnterpriseSourceBanner />
     <div class="split-layout">
-      <form data-ui-region="form-workspace" class="card panel-pad company-form" @submit.prevent="save">
+      <form data-ui-region="form-workspace" class="card panel-pad company-form" :inert="!canManageCompany" @submit.prevent="save">
         <div class="row-between block-title">
           <h2>基本信息</h2>
           <StatusBadge text="企业正常" />
@@ -134,7 +137,7 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
           </div>
         </section>
         <p v-if="error" class="form-error" role="alert">{{ error }}</p>
-        <div class="form-footer" data-ui-region="form-actions">
+        <div v-if="canManageCompany" class="form-footer" data-ui-region="form-actions">
           <span v-if="changed" class="muted flex-1">有尚未保存的修改</span
           ><UiButton
             class="btn"
