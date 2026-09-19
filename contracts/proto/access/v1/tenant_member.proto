@@ -197,6 +197,7 @@ service TenantMemberLifecycleApplication {
       id: "tenant.member.create"
       use_case: "create_tenant_member"
       permissions: "tenant.member.manage"
+      permissions: "tenant.role.manage"
       permission_mode: PERMISSION_ALL
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
@@ -258,6 +259,7 @@ service TenantMemberLifecycleApplication {
       id: "tenant.member.update"
       use_case: "update_tenant_member"
       permissions: "tenant.member.manage"
+      permissions: "tenant.role.manage"
       permission_mode: PERMISSION_ALL
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
