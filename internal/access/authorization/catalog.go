@@ -119,10 +119,18 @@ func actionAllowed(action Action, allowed map[authz.PermissionKey]struct{}) bool
 }
 
 func cloneAction(action Action) Action {
-	action.Authentication = append([]string(nil), action.Authentication...)
-	action.Permissions = append([]authz.PermissionKey(nil), action.Permissions...)
-	action.CapabilityCodes = append([]string(nil), action.CapabilityCodes...)
-	action.HTTP = append([]HTTPBinding(nil), action.HTTP...)
+	if action.Authentication != nil {
+		action.Authentication = append([]string{}, action.Authentication...)
+	}
+	if action.Permissions != nil {
+		action.Permissions = append([]authz.PermissionKey{}, action.Permissions...)
+	}
+	if action.CapabilityCodes != nil {
+		action.CapabilityCodes = append([]string{}, action.CapabilityCodes...)
+	}
+	if action.HTTP != nil {
+		action.HTTP = append([]HTTPBinding{}, action.HTTP...)
+	}
 	return action
 }
 
