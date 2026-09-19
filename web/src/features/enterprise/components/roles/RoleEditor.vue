@@ -24,6 +24,7 @@ const error = ref('')
 const busy = ref(false)
 const catalogBusy = ref(false)
 const catalogReady = ref(false)
+const catalogRevision = ref(0)
 
 const draft = ref<Role>({
   id: '',
@@ -39,6 +40,9 @@ const draft = ref<Role>({
 const readonly = computed(() => Boolean(props.role?.builtin))
 const apiMode = computed(() => store.sourceKind === 'api')
 const permissionGroups = computed(() => {
+  // rolePermissionCatalog is a presentation cache populated from the server.
+  // Track a local revision so Vue invalidates this computed value after refresh.
+  void catalogRevision.value
   if (apiMode.value) {
     return rolePermissionGroups().map((group) => ({
       name: group.name,
@@ -70,9 +74,11 @@ async function loadServerPermissionCatalog() {
   try {
     const catalog = await readActionCatalog()
     replaceRolePermissionCatalog(catalog.permissions ?? [])
+    catalogRevision.value += 1
     catalogReady.value = true
   } catch (cause) {
     clearRolePermissionCatalog()
+    catalogRevision.value += 1
     error.value = cause instanceof Error ? cause.message : '服务端权限目录读取失败。'
   } finally {
     catalogBusy.value = false
