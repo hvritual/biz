@@ -102,6 +102,7 @@ jobs:
           for source in [
               Path('web/src/router/index.ts'),
               Path('web/src/router/navigation.ts'),
+              Path('web/src/router/customerNavigation.ts'),
           ]:
               text = source.read_text()
               for block in re.findall(r'authorizationActions\s*:\s*\[([^\]]*)\]', text, re.S):
