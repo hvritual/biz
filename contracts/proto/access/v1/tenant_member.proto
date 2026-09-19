@@ -52,7 +52,7 @@ message GetTenantMemberRequest {
 
 message ListTenantMembersRequest {
   // Free-text search. Plain name/account/employee-id matching is fuzzy; protected
-  // email/phone matching is exact through the #168 deterministic lookup index.
+  // email/phone matching is exact through the #168 deterministic lookup index; no decrypt-scan fallback is allowed.
   string query = 1;
   string role_id = 2;
   string department_id = 3;
