@@ -111,11 +111,25 @@ jobs:
               Path('web/src/features/enterprise/pages/PlansView.vue'),
               Path('web/src/features/enterprise/pages/AuditLogsView.vue'),
           ]
+          array_call_names = [
+              'currentAuthorizationAllowsAny',
+              'apiAllowsAll',
+              'roleActionsAllowed',
+              'organizationActionsAllowed',
+          ]
+          single_call_names = [
+              'currentAuthorizationAllows',
+              'apiAllows',
+          ]
           for source in sources:
               text = source.read_text()
               for block in re.findall(r'authorizationActions\s*:\s*\[([^\]]*)\]', text, re.S):
                   declared.update(re.findall(r"['\"]([^'\"]+)['\"]", block))
-              declared.update(re.findall(r"['\"]((?:tenant|commercial|access|device)\.[a-z0-9_.]+)['\"]", text))
+              for name in array_call_names:
+                  for block in re.findall(rf'{name}\s*\(\s*\[([^\]]*)\]', text, re.S):
+                      declared.update(re.findall(r"['\"]([^'\"]+)['\"]", block))
+              for name in single_call_names:
+                  declared.update(re.findall(rf'{name}\s*\(\s*[\'\"]([^\'\"]+)[\'\"]', text))
           missing = sorted(code for code in declared if code not in known)
           if missing:
               raise SystemExit(f'frontend authorization action codes missing from generated catalog: {missing}')
