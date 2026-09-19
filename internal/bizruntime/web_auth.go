@@ -151,7 +151,12 @@ func (auth *runtimeWebAuth) handleCallback(writer http.ResponseWriter, request *
 		http.Error(writer, "identity verification failed", http.StatusUnauthorized)
 		return
 	}
-	webIdentity, err := store.ResolveOrBindOIDCIdentity(request.Context(), verified.Issuer, verified.Subject, verified.Email, verified.EmailVerified)
+	var webIdentity accesspersistence.WebIdentity
+	if auth.config.TrustBizUserSubject {
+		webIdentity, err = store.ResolveOrBindFirstPartyOIDCIdentity(request.Context(), verified.Issuer, verified.Subject)
+	} else {
+		webIdentity, err = store.ResolveOrBindOIDCIdentity(request.Context(), verified.Issuer, verified.Subject, verified.Email, verified.EmailVerified)
+	}
 	if err != nil {
 		http.Error(writer, "identity is not provisioned", http.StatusForbidden)
 		return
