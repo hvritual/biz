@@ -265,6 +265,9 @@ export interface Access_V1_TenantAuditRecordDTO {
   receiptRef?: string;
   reason?: string;
   requestDigest?: string;
+  traceId?: string;
+  resourceTenantId?: string;
+  decisionReason?: string;
 }
 
 export interface Access_V1_TenantBrandingDTO {
