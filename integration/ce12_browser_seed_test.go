@@ -315,6 +315,32 @@ func TestCE12BrowserSeed(t *testing.T) {
 		}
 	}
 
+	// #174 resolves the effective menu/button/API actions from both current Access
+	// grants and current Commercial facts. The security viewer has member.read, so
+	// the allowed tenant must also own the member lifecycle capability; otherwise
+	// tenant.member.list is correctly filtered out despite the IAM grant.
+	var memberCapabilityVersion uint64
+	if err := db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", allowed).Scan(&memberCapabilityVersion).Error; err != nil {
+		t.Fatal(err)
+	}
+	if memberCapabilityVersion == 0 {
+		t.Fatal("authorization allowed tenant has no subscription-derived source version")
+	}
+	_, err = entitlements.CreateEntitlementOverride(ce04Context(platformToken, "ce12-access-member-lifecycle"), &commercialv1.CreateEntitlementOverrideRequest{
+		RequestId:       "ce12-access-member-lifecycle",
+		TenantId:        allowed,
+		ExpectedVersion: memberCapabilityVersion,
+		ModuleCode:      "access-management",
+		Target:          commercialv1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY,
+		Key:             "tenant.member.lifecycle",
+		Effect:          commercialv1.EntitlementEffect_ENTITLEMENT_EFFECT_GRANT,
+		EffectiveAt:     time.Now().UTC().Add(-time.Minute).Format(time.RFC3339),
+		Reason:          "CE12 #174 proves member read action requires current IAM and Commercial authorization",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	var sourceVersion uint64
 	if err := db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", entitlementDenied).Scan(&sourceVersion).Error; err != nil {
 		t.Fatal(err)
