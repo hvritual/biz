@@ -63,6 +63,28 @@ async function mockBrandingServer(page: Page, options: Options = {}) {
     })
   })
 
+  await page.route('**/api/auth/authorization', async (route) => {
+    const buttonCodes = options.canManage === false
+      ? ['tenant.branding.get']
+      : ['tenant.branding.get', 'tenant.branding.update']
+    return json(route, 200, {
+      authenticated: true,
+      actor_kind: 'tenant',
+      user_id: 'branding-user',
+      tenant_id: activeTenant,
+      tenant_name: activeTenant === 'tenant-a' ? 'Tenant A' : 'Tenant B',
+      timezone: 'Asia/Shanghai',
+      roles: ['branding'],
+      grants: [],
+      data_policies: [],
+      site_ids: [],
+      permission_version: 'sha256:branding-e2e',
+      modules: [{ code: 'access-management', allowed: true, reason: 'allowed', actions: buttonCodes }],
+      actions: buttonCodes.map((code) => ({ code, permissions: [], permission_mode: 'all' })),
+      button_codes: buttonCodes,
+    })
+  })
+
   await page.route('**/api/v1/tenant/branding', async (route) => {
     const request = route.request()
     if (request.method() === 'GET') {
