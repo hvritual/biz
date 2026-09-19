@@ -737,9 +737,13 @@ func newTenantMemberRepositoryFactory(database *gorm.DB, contactProtection *Cont
 		if err != nil {
 			return ports.TenantMemberRepositories{}, err
 		}
-		activation, err := NewTenantMemberActivationRepository(transaction, verificationProtection)
-		if err != nil {
-			return ports.TenantMemberRepositories{}, err
+		var activation ports.TenantMemberActivationRepository
+		if verificationProtection != nil {
+			value, err := NewTenantMemberActivationRepository(transaction, verificationProtection)
+			if err != nil {
+				return ports.TenantMemberRepositories{}, err
+			}
+			activation = value
 		}
 		return ports.TenantMemberRepositories{Member: member, Activation: activation}, nil
 	}), nil
