@@ -246,6 +246,9 @@ type Options struct {
 	WebAuth                 WebAuthConfig
 	FirstPartyIdP           FirstPartyIdPConfig
 	VerificationSecurity    VerificationSecurityConfig
+	// MemberActivationTTL is explicit runtime policy for #176 activation links
+	// and one-time initial passwords. Zero keeps member creation disabled.
+	MemberActivationTTL time.Duration
 }
 
 func (options Options) Validate() error {
@@ -269,6 +272,9 @@ func (options Options) Validate() error {
 	}
 	if err := options.VerificationSecurity.Validate(); err != nil {
 		return err
+	}
+	if options.MemberActivationTTL < 0 {
+		return errors.New("biz runtime: member activation TTL must not be negative")
 	}
 	if options.FirstPartyIdP.Enabled() {
 		if !options.WebAuth.Enabled() {
