@@ -123,6 +123,7 @@ type MemberRoleSummary struct {
 type Membership struct {
 	TenantID         string
 	UserID           string
+	Username         string
 	Email            string
 	Status           string
 	Version          uint64
