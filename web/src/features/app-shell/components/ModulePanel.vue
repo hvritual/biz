@@ -8,15 +8,37 @@ import { enterpriseNavigation, platformCommercialNavigation, platformCommercialQ
 import AppIcon from '@/ui/common/AppIcon.vue'
 import coffee from '@/assets/coffee-menu.webp'
 import { customerDomains } from '@/router/customerNavigation'
+import {
+  authorizationApiMode,
+  currentAuthorizationAllows,
+  currentAuthorizationAllowsAny,
+  currentAuthorizationState,
+} from '@/services/runtime/authorization'
 const ui=useUiStore(),route=useRoute(),router=useRouter(); const {t}=useI18n(); const closeButton=ref<HTMLButtonElement|null>(null)
 onMounted(()=>{void nextTick(()=>closeButton.value?.focus())})
 const primaryTitle=computed(()=>{const item=primaryNavigation.find(p=>p.id===ui.module);return item?t(`navigation.primary.${item.id}`):t('navigation.primary.enterprise')})
 const links=computed(()=>ui.module==='enterprise'?enterpriseNavigation:ui.module==='platform-commercial'?platformCommercialNavigation:ui.module==='system'?systemNavigation:(customerDomains[ui.module??'']?.links??[]))
+const visibleLinks=computed(()=>links.value.filter((item)=>{
+  if(!authorizationApiMode())return true
+  if(ui.module==='platform-commercial')return true
+  if(!item.authorizationActions?.length)return false
+  return currentAuthorizationState.status==='ready'&&currentAuthorizationAllowsAny(item.authorizationActions)
+}))
 const linkLabel=(item:NavigationItem)=>ui.module==='enterprise'?t(`navigation.enterprise.${item.id}`):ui.module==='platform-commercial'?t(`navigation.platform.${item.id}`):ui.module==='system'?t(`navigation.system.${item.id}`):item.label
 const translatedPlatformGroups=new Set(['overview','lifecycle','product','entitlement','governance'])
 const groupLabel=(id:string,raw:string)=>translatedPlatformGroups.has(id)?t(`navigation.groups.${id}`):raw
-const linkGroups=computed(()=>{const groups:Array<{label:string;raw:string;items:NavigationItem[]}>=[];for(const item of links.value){const id=item.groupId??item.group??'';let group=groups.find(g=>g.raw===id);if(!group){group={raw:id,label:groupLabel(id,item.group??''),items:[]};groups.push(group)}group.items.push(item)}return groups})
+const linkGroups=computed(()=>{const groups:Array<{label:string;raw:string;items:NavigationItem[]}>=[];for(const item of visibleLinks.value){const id=item.groupId??item.group??'';let group=groups.find(g=>g.raw===id);if(!group){group={raw:id,label:groupLabel(id,item.group??''),items:[]};groups.push(group)}group.items.push(item)}return groups})
 const actions=computed(()=>ui.module==='enterprise'?quickActions:ui.module==='platform-commercial'?platformCommercialQuickActions:ui.module==='system'?systemQuickActions:(customerDomains[ui.module??'']?.actions??[]))
+const visibleActions=computed(()=>actions.value.filter((action)=>{
+  const required='authorizationActions' in action&&Array.isArray(action.authorizationActions)?action.authorizationActions:[]
+  if(!authorizationApiMode())return true
+  if(ui.module==='platform-commercial')return true
+  if(!required.length)return false
+  if(currentAuthorizationState.status!=='ready')return false
+  return 'authorizationMode' in action&&action.authorizationMode==='all'
+    ? required.every(currentAuthorizationAllows)
+    : currentAuthorizationAllowsAny(required)
+}))
 const quickKey=(path:string)=>({
   '/enterprise/members?action=create':'addMember','/enterprise/members?action=invite':'inviteMember','/enterprise/roles?action=create':'createRole','/enterprise/plan?action=upgrade':'adjustPlan','/enterprise/company':'editCompany','/enterprise/logs':'viewLogs','/platform/tenants':'openTenants','/platform/commercial/plans':'publishPlan','/platform/commercial/tenant-entitlements':'adjustEntitlements','/platform/commercial/usage-billing':'viewUsage','/system/general':'openGeneral','/system/security':'openSecurity','/system/notifications':'openNotifications','/system/integrations':'openIntegrations'
 } as Record<string,string>)[path]
@@ -28,9 +50,9 @@ function isLinkActive(item:NavigationItem){return Boolean(item.path&&route.path=
 <template>
   <section id="module-drawer" class="module-panel" role="dialog" aria-modal="true" :aria-label="t('shell.moduleNavigation',{title:primaryTitle})">
     <header class="module-heading"><div><h2>{{ primaryTitle }}</h2><p>{{ description }}</p></div><UiButton ref="closeButton" class="icon-button" :aria-label="t('shell.closeModule')" @click="ui.closeMenu()"><AppIcon name="close" :size="18"/></UiButton></header>
-    <div v-if="links.length" :class="['module-columns',{single:!actions.length}]">
+    <div v-if="visibleLinks.length" :class="['module-columns',{single:!visibleActions.length}]">
       <nav class="sub-navigation" :aria-label="t('shell.functionMenu')"><h3>{{ t('shell.functionMenu') }}</h3><section v-for="group in linkGroups" :key="group.raw||'default'" class="sub-group" :data-menu-group="group.raw||undefined"><h4 v-if="group.raw">{{ group.label }}</h4><UiButton v-for="item in group.items" :key="item.id" :class="['sub-link',{active:isLinkActive(item),unavailable:!item.path}]" :aria-current="isLinkActive(item)?'page':undefined" :disabled="!item.path" :title="item.path?linkLabel(item):`${linkLabel(item)} · ${t('common.unavailable')}`" @click="navigate(item.path)"><AppIcon :name="item.icon" :size="20"/><span>{{ linkLabel(item) }}</span><small v-if="!item.path">{{ t('common.unavailable') }}</small></UiButton></section></nav>
-      <nav v-if="actions.length" class="quick-navigation" :aria-label="t('shell.quickActions')"><h3>{{ t('shell.quickActions') }}</h3><UiButton v-for="action in actions" :key="action.path" class="quick-link" @click="navigate(action.path)"><span :class="['quick-icon',{orange:action.icon==='crown'}]"><AppIcon :name="action.icon" :size="19"/></span><span>{{ actionLabel(action) }}</span></UiButton></nav>
+      <nav v-if="visibleActions.length" class="quick-navigation" :aria-label="t('shell.quickActions')"><h3>{{ t('shell.quickActions') }}</h3><UiButton v-for="action in visibleActions" :key="action.path" class="quick-link" @click="navigate(action.path)"><span :class="['quick-icon',{orange:action.icon==='crown'}]"><AppIcon :name="action.icon" :size="19"/></span><span>{{ actionLabel(action) }}</span></UiButton></nav>
     </div>
     <div v-else class="module-unavailable"><AppIcon name="lock" :size="32"/><h3>{{ t('shell.unavailableTitle') }}</h3><p>{{ t('shell.unavailableDescription') }}</p><UiButton class="btn" @click="ui.module='enterprise'">{{ t('shell.enterEnterprise') }}</UiButton></div>
     <footer class="menu-art"><div><h3>{{ t('shell.artTitle') }}</h3><p>{{ t('shell.artDescription') }}</p></div><img :src="coffee" alt="CoffeeLink"/></footer>

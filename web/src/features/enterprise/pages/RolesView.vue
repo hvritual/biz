@@ -14,6 +14,7 @@ import StatusBadge from '@/ui/common/StatusBadge.vue'
 import EmptyState from '@/ui/common/EmptyState.vue'
 import RoleEditor from '@/features/enterprise/components/roles/RoleEditor.vue'
 import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
+import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 const store = useEnterpriseStore(),
   route = useRoute(),
   router = useRouter()
@@ -21,6 +22,19 @@ const query = ref(''),
   kind = ref(''),
   editorOpen = ref(false),
   target = ref<Role | null>(null)
+const roleActionsAllowed=(codes:string[])=>store.previewMode||codes.every(currentAuthorizationAllows)
+const canCreateRole = computed(() => roleActionsAllowed([
+  'tenant.role.create',
+  'tenant.role.set_permissions',
+  'tenant.role.enable',
+  'tenant.role.disable',
+]))
+const canEditRole = computed(() => roleActionsAllowed([
+  'tenant.role.update',
+  'tenant.role.set_permissions',
+  'tenant.role.enable',
+  'tenant.role.disable',
+]))
 const filtered = computed(() =>
   store.roles.filter(
     (r) =>
@@ -31,10 +45,13 @@ const filtered = computed(() =>
 const memberCount = (id: string) =>
   store.members.filter((m) => m.roleIds.includes(id) && m.status !== 'removed').length
 function edit(role: Role | null) {
+  if (!store.previewMode && !canEditRole.value && role) return
+  if (!store.previewMode && !canCreateRole.value && !role) return
   target.value = role
   editorOpen.value = true
 }
 function copy(role: Role) {
+  if (!canCreateRole.value) return
   target.value = {
     ...JSON.parse(JSON.stringify(role)),
     id: crypto.randomUUID(),
@@ -47,12 +64,13 @@ watch(
   () => route.query.action,
   (a) => {
     if (a === 'create') {
-      edit(null)
+      if (canCreateRole.value) edit(null)
       void router.replace({ path: route.path, query: {} })
     }
   },
   { immediate: true },
 )
+watch(canEditRole,(allowed)=>{if(!allowed&&target.value&&!target.value.builtin)editorOpen.value=false})
 onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undefined))
 </script>
 <template>
@@ -93,7 +111,7 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
         >
           <UiOption value="">全部类型</UiOption>
           <UiOption value="builtin">内置角色</UiOption>
-          <UiOption value="custom">自定义角色</UiOption></UiSelect><UiButton class="btn btn-primary" @click="edit(null)">
+          <UiOption value="custom">自定义角色</UiOption></UiSelect><UiButton v-if="canCreateRole" class="btn btn-primary" @click="edit(null)">
           <AppIcon name="plus" :size="16" />新建角色
         </UiButton>
       </div>
@@ -118,7 +136,7 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
                     ><AppIcon :name="r.id === 'owner' ? 'crown' : 'shield'" :size="18"
                   /></span>
                   <div>
-                    <UiButton class="role-name" @click="edit(r)">{{ r.name }}</UiButton><small class="muted role-description">{{ r.description }}</small>
+                    <UiButton v-if="canEditRole || r.builtin" class="role-name" @click="edit(r)">{{ r.name }}</UiButton><strong v-else class="role-name">{{ r.name }}</strong><small class="muted role-description">{{ r.description }}</small>
                   </div>
                 </div>
               </td>
@@ -133,7 +151,7 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
               <td class="muted numeric">{{ r.updatedAt }}</td>
               <td>
                 <div class="table-actions">
-                  <UiButton class="btn-link" @click="edit(r)">{{ r.builtin ? '查看' : '编辑' }}</UiButton><UiButton class="btn-link" :aria-label="'复制 ' + r.name" @click="copy(r)">复制</UiButton>
+                  <UiButton v-if="r.builtin || canEditRole" class="btn-link" @click="edit(r)">{{ r.builtin ? '查看' : '编辑' }}</UiButton><UiButton v-if="canCreateRole && !r.builtin" class="btn-link" :aria-label="'复制 ' + r.name" @click="copy(r)">复制</UiButton>
                 </div>
               </td>
             </tr>

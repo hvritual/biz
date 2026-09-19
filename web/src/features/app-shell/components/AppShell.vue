@@ -2,7 +2,8 @@
 import { UiButton } from '@/ui/base'
 
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useUiStore } from '@/stores/ui'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import AppHeader from './AppHeader.vue'
@@ -10,14 +11,49 @@ import PrimaryNavigation from './PrimaryNavigation.vue'
 import ModulePanel from './ModulePanel.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import { applyUiTheme, resolveTenantUiTheme } from '@/ui/base/theme'
+import {
+  authorizationApiMode,
+  currentAuthorizationAllows,
+  currentAuthorizationAllowsAny,
+  currentAuthorizationState,
+  redirectToTrustedLogin,
+} from '@/services/runtime/authorization'
 
 const ui = useUiStore()
 const store = useEnterpriseStore()
 const route = useRoute()
+const router = useRouter()
+const { t } = useI18n()
 const frame = ref<HTMLElement>()
 const expanded = computed(() => Boolean(ui.module))
 const platformSurface = computed(() => route.meta.surface === 'platform')
 const routeKey = computed(() => `${store.tenantId || 'no-tenant'}:${route.path}`)
+const protectedActions = computed(() =>
+  Array.isArray(route.meta.authorizationActions)
+    ? route.meta.authorizationActions.filter((value): value is string => typeof value === 'string' && value.length > 0)
+    : [],
+)
+const protectedRoute = computed(() => authorizationApiMode() && protectedActions.value.length > 0)
+const authorizationRenderable = computed(() => !protectedRoute.value || currentAuthorizationState.status === 'ready')
+
+watch(
+  [() => currentAuthorizationState.status, protectedActions] as const,
+  ([status, required]) => {
+    if (!authorizationApiMode() || !required.length) return
+    if (status === 'unauthenticated') {
+      redirectToTrustedLogin()
+      return
+    }
+    if (status === 'error') {
+      void router.replace({ path: '/authorization-state', query: { reason: 'unavailable', from: route.fullPath } })
+      return
+    }
+    if (status === 'forbidden' || (status === 'ready' && !currentAuthorizationAllowsAny(required))) {
+      void router.replace({ path: '/authorization-state', query: { reason: 'forbidden', from: route.fullPath } })
+    }
+  },
+  { immediate: true },
+)
 
 function viewport() {
   if (window.innerWidth < 768) ui.collapsed = true
@@ -57,6 +93,16 @@ watch(
       frame.value?.querySelector<HTMLElement>(`[data-module-id="${old}"]`)?.focus()
     }
   },
+)
+
+watch(
+  [() => currentAuthorizationState.status, () => currentAuthorizationState.snapshot?.tenant_id, () => store.tenantId] as const,
+  ([status, authorizationTenant, tenantId]) => {
+    if (!authorizationApiMode() || status !== 'ready' || !tenantId || authorizationTenant !== tenantId) return
+    if (!currentAuthorizationAllows('tenant.branding.get')) return
+    void store.refreshBranding().catch(() => undefined)
+  },
+  { immediate: true },
 )
 
 watch(
@@ -111,7 +157,8 @@ onBeforeUnmount(() => {
       <ModulePanel v-if="ui.module" />
     </aside>
     <main class="main-content" :inert="expanded || ui.mobileOpen" data-testid="main-content">
-      <RouterView :key="routeKey" />
+      <RouterView v-if="authorizationRenderable" :key="routeKey" />
+      <div v-else class="authorization-loading" role="status">{{ t('shell.authorizationChecking') }}</div>
     </main>
     <Teleport to="body">
       <div v-if="ui.notice" role="status" :class="['toast', ui.noticeTone]">
@@ -164,6 +211,13 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-sm) 0 0 0;
   min-width: 0;
   min-height: 100vh;
+}
+.authorization-loading {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
 }
 .platform-surface .main-content {
   background: var(--color-canvas);

@@ -7,6 +7,7 @@ import {
   primaryNavigation,
   systemNavigation,
   systemQuickActions,
+  quickActions,
 } from './navigation'
 
 function groups(domain: string) {
@@ -39,6 +40,48 @@ describe('primary navigation information architecture', () => {
   it('keeps enterprise center aligned with the approved functional entries and terminology', () => {
     expect(enterpriseNavigation.map((item) => item.id)).toEqual(['members', 'roles', 'organization', 'plan', 'company', 'branding', 'logs'])
     expect(enterpriseNavigation.map((item) => item.label)).toEqual(['成员管理', '角色权限', '组织架构', '套餐额度', '企业信息', '品牌与主题', '操作日志'])
+  })
+
+
+  it('binds every enterprise route and quick action to stable server action codes', () => {
+    expect(enterpriseNavigation.every((item) => item.authorizationActions?.length === 1)).toBe(true)
+    expect(enterpriseNavigation.map((item) => [item.id, item.authorizationActions?.[0]])).toEqual([
+      ['members', 'tenant.member.list'],
+      ['roles', 'tenant.role.list'],
+      ['organization', 'tenant.department.list'],
+      ['plan', 'commercial.subscription.get_my'],
+      ['company', 'tenant.profile.get'],
+      ['branding', 'tenant.branding.get'],
+      ['logs', 'access.audit.list'],
+    ])
+    const enterprise = primaryNavigation.find((item) => item.id === 'enterprise')
+    expect(enterprise?.authorizationModule).toBe('access-management')
+    expect(enterprise?.authorizationActions).toEqual(expect.arrayContaining(
+      enterpriseNavigation.flatMap((item) => item.authorizationActions ?? []),
+    ))
+  })
+
+  it('requires complete server action sets for enterprise quick operations', () => {
+    const byPath = new Map(quickActions.map((item) => [item.path, item]))
+    expect(byPath.get('/enterprise/members?action=create')).toMatchObject({
+      authorizationMode: 'all',
+      authorizationActions: [
+        'tenant.member.invite',
+        'tenant.member.profile.update',
+        'tenant.role.assign_member',
+        'tenant.member.activate',
+      ],
+    })
+    expect(byPath.get('/enterprise/roles?action=create')).toMatchObject({
+      authorizationMode: 'all',
+      authorizationActions: [
+        'tenant.role.create',
+        'tenant.role.set_permissions',
+        'tenant.role.enable',
+        'tenant.role.disable',
+      ],
+    })
+    expect(JSON.stringify(quickActions)).not.toContain('tenant.role.update_permissions')
   })
 
   it('groups customer operations by management, collaboration and success instead of flattening pages', () => {

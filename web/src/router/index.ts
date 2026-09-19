@@ -2,6 +2,13 @@ import { siteRentalRoutes } from './siteRentalRoutes'
 import { customerRoutes } from './customerRoutes'
 import { rentalWorkRoutes } from './rentalWorkRoutes'
 import { createRouter, createWebHashHistory } from 'vue-router'
+import {
+  authorizationApiMode,
+  currentAuthorizationAllowsAny,
+  currentAuthorizationState,
+  ensureCurrentAuthorization,
+  redirectToTrustedLogin,
+} from '@/services/runtime/authorization'
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -32,12 +39,12 @@ export const router = createRouter({
     {
       path: '/workspace/:resource(devices)',
       component: () => import('@/features/runtime/pages/RuntimeConsoleView.vue'),
-      meta: { title: '业务设备', module: 'device-operations', surface: 'runtime' },
+      meta: { title: '业务设备', module: 'device-operations', surface: 'runtime', authorizationActions: ['device.list'] },
     },
     {
       path: '/workspace/:resource(members|roles)',
       component: () => import('@/features/runtime/pages/RuntimeConsoleView.vue'),
-      meta: { title: '业务工作区', module: 'enterprise', surface: 'runtime' },
+      meta: { title: '业务工作区', module: 'enterprise', surface: 'runtime', authorizationActions: ['tenant.member.list', 'tenant.role.list'] },
     },
     { path: '/', redirect: '/enterprise/members' },
     {
@@ -113,42 +120,47 @@ export const router = createRouter({
     {
       path: '/enterprise/members',
       component: () => import('@/features/enterprise/pages/MembersView.vue'),
-      meta: { title: '成员管理', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage' },
+      meta: { title: '成员管理', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage', authorizationActions: ['tenant.member.list'] },
     },
     {
       path: '/enterprise/roles',
       component: () => import('@/features/enterprise/pages/RolesView.vue'),
-      meta: { title: '角色权限', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage' },
+      meta: { title: '角色权限', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage', authorizationActions: ['tenant.role.list'] },
     },
     {
       path: '/enterprise/organization',
       component: () => import('@/features/enterprise/pages/OrganizationView.vue'),
-      meta: { title: '组织架构', module: 'enterprise', surface: 'tenant', pageTemplate: 'WorkbenchPage' },
+      meta: { title: '组织架构', module: 'enterprise', surface: 'tenant', pageTemplate: 'WorkbenchPage', authorizationActions: ['tenant.department.list'] },
     },
     {
       path: '/enterprise/plan',
       component: () => import('@/features/enterprise/pages/PlansView.vue'),
-      meta: { title: '套餐额度', module: 'enterprise', surface: 'tenant', pageTemplate: 'WorkbenchPage' },
+      meta: { title: '套餐额度', module: 'enterprise', surface: 'tenant', pageTemplate: 'WorkbenchPage', authorizationActions: ['commercial.subscription.get_my'] },
     },
     {
       path: '/enterprise/company',
       component: () => import('@/features/enterprise/pages/CompanyView.vue'),
-      meta: { title: '企业信息', module: 'enterprise', surface: 'tenant', pageTemplate: 'FormPage' },
+      meta: { title: '企业信息', module: 'enterprise', surface: 'tenant', pageTemplate: 'FormPage', authorizationActions: ['tenant.profile.get'] },
     },
     {
       path: '/enterprise/branding',
       component: () => import('@/features/enterprise/pages/BrandingView.vue'),
-      meta: { title: '品牌与主题', module: 'enterprise', surface: 'tenant', pageTemplate: 'FormPage' },
+      meta: { title: '品牌与主题', module: 'enterprise', surface: 'tenant', pageTemplate: 'FormPage', authorizationActions: ['tenant.branding.get'] },
     },
     {
       path: '/enterprise/logs',
       component: () => import('@/features/enterprise/pages/AuditLogsView.vue'),
-      meta: { title: '操作日志', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage' },
+      meta: { title: '操作日志', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage', authorizationActions: ['access.audit.list'] },
     },
     {
       path: '/system/:section(general|notifications|security|integrations|dictionary)',
       component: () => import('@/features/system/pages/SettingsView.vue'),
       meta: { title: '系统设置', module: 'system', surface: 'tenant', pageTemplate: 'FormPage' },
+    },
+    {
+      path: '/authorization-state',
+      component: () => import('@/features/system/pages/AuthorizationStateView.vue'),
+      meta: { title: '访问授权', authorizationPublic: true },
     },
     {
       path: '/:pathMatch(.*)*',
@@ -157,6 +169,33 @@ export const router = createRouter({
     },
   ],
   scrollBehavior: () => ({ top: 0 }),
+})
+
+router.beforeEach(async (to) => {
+  const accountSecurityRoute = to.meta.module === 'system' && to.params.section === 'security'
+  if (!authorizationApiMode() || to.meta.authorizationPublic || accountSecurityRoute) return true
+  const required = Array.isArray(to.meta.authorizationActions)
+    ? to.meta.authorizationActions.filter((value): value is string => typeof value === 'string' && value.length > 0)
+    : []
+  const moduleCode = typeof to.meta.module === 'string' ? to.meta.module : ''
+  const tenantModules = new Set(['customers', 'success', 'sites', 'rental', 'device-operations', 'enterprise', 'system'])
+  if (!required.length && tenantModules.has(moduleCode)) {
+    return { path: '/authorization-state', query: { reason: 'forbidden', from: to.fullPath } }
+  }
+  if (!required.length) return true
+
+  await ensureCurrentAuthorization()
+  if (currentAuthorizationState.status === 'unauthenticated') {
+    redirectToTrustedLogin()
+    return false
+  }
+  if (currentAuthorizationState.status === 'error') {
+    return { path: '/authorization-state', query: { reason: 'unavailable', from: to.fullPath } }
+  }
+  if (currentAuthorizationState.status !== 'ready' || !currentAuthorizationAllowsAny(required)) {
+    return { path: '/authorization-state', query: { reason: 'forbidden', from: to.fullPath } }
+  }
+  return true
 })
 
 router.afterEach((to) => {

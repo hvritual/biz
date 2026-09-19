@@ -68,6 +68,13 @@ import {
 import { loginUrl, logoutSession, type PermissionGrant, type TrustedSession } from '@/services/runtime/api'
 import { cancelTrustedSessionRequests } from '@/services/commercial/platformCommercial'
 import { publishSessionContextChange, subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
+import {
+  authorizationApiMode,
+  currentAuthorizationAllows,
+  currentAuthorizationState,
+  ensureCurrentAuthorization,
+  invalidateCurrentAuthorization,
+} from '@/services/runtime/authorization'
 
 function serverMemberStatus(status: Member['status']) {
   switch (status) {
@@ -168,6 +175,18 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       if (!trusted?.authenticated || !trusted.active_tenant_id || trusted.active_tenant_id !== targetTenant) {
         branding.value = null
         brandingReady.value = true
+        return false
+      }
+      if (
+        authorizationApiMode() &&
+        (
+          currentAuthorizationState.status !== 'ready' ||
+          currentAuthorizationState.snapshot?.tenant_id !== targetTenant ||
+          !currentAuthorizationAllows('tenant.branding.get')
+        )
+      ) {
+        branding.value = null
+        brandingReady.value = false
         return false
       }
       const current = await getEnterpriseTenantBranding(trusted)
@@ -379,12 +398,15 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     const epoch = ++sessionEpoch
     const previousDomains = [...activeDomains]
     clearRuntimeTenantState(true)
+    invalidateCurrentAuthorization()
     loading.value = true
     sourceError.value = ''
     try {
       const state = await dataSource.switchTenant(id, previousDomains)
       if (epoch !== sessionEpoch) return
       applySourceState(state, previousDomains, true)
+      await ensureCurrentAuthorization(true)
+      if (epoch !== sessionEpoch) return
       await refreshBranding(epoch)
       ready.value = true
     } catch (error) {
@@ -394,6 +416,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
           const state = await dataSource.load(undefined, previousDomains)
           if (epoch === sessionEpoch) {
             applySourceState(state, previousDomains, true)
+            await ensureCurrentAuthorization(true)
+            if (epoch !== sessionEpoch) return
             await refreshBranding(epoch)
             ready.value = true
           }

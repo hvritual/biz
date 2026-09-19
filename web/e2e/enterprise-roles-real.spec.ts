@@ -9,7 +9,7 @@ type Role = { id: string; name: string; status: string; version: number; permiss
 type RoleSummary = { roleId: string; roleName: string; roleStatus: string }
 type Member = { userId: string; email: string; status: string; version: number; name: string; phone: string; employeeId: string; position: string; departmentId: string; roles: RoleSummary[]; derivedDataScope: string }
 type Write = { path: string; method: string; headers: Record<string, string>; body: unknown }
-type Options = { unauthenticated?: boolean; listStatus?: number; mutationStatus?: number; readbackStatus?: number; ownerConflict?: boolean }
+type Options = { unauthenticated?: boolean; listStatus?: number; mutationStatus?: number; readbackStatus?: number; ownerConflict?: boolean; authorizationStatus?: number }
 
 const active = 'TENANT_ROLE_STATUS_ACTIVE'
 const disabled = 'TENANT_ROLE_STATUS_DISABLED'
@@ -50,6 +50,34 @@ async function mockRoleServer(page: Page, options: Options = {}) {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     return json(route, 200, { authenticated: true, actor_kind: 'tenant', user_id: 'user-001', active_tenant_id: 'tenant-001', csrf_token: 'csrf-real-role', tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }] })
   })
+  await page.route('**/api/auth/authorization', async (route) => {
+    if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
+    if (options.authorizationStatus) return json(route, options.authorizationStatus, { message: 'authorization denied' })
+    const buttonCodes = [
+      'tenant.role.list',
+      'tenant.role.create',
+      'tenant.role.update',
+      'tenant.role.set_permissions',
+      'tenant.role.enable',
+      'tenant.role.disable',
+    ]
+    return json(route, 200, {
+      authenticated: true,
+      actor_kind: 'tenant',
+      user_id: 'user-001',
+      tenant_id: 'tenant-001',
+      tenant_name: 'CoffeeLink 测试租户',
+      timezone: 'Asia/Shanghai',
+      roles: ['owner'],
+      grants: [{ permission: 'tenant.role.manage', role_id: 'tenant-001:owner', role_name: 'owner', scope: 'all' }],
+      data_policies: [],
+      site_ids: [],
+      permission_version: 'sha256:role-e2e',
+      modules: [{ code: 'access-management', allowed: true, reason: 'allowed', actions: buttonCodes }],
+      actions: buttonCodes.map((code) => ({ code, permissions: [], permission_mode: 'all' })),
+      button_codes: buttonCodes,
+    })
+  })
   await page.route('**/api/auth/action-catalog', async (route) => json(route, 200, {
     schema_version: 'v1',
     actions: [],
@@ -57,7 +85,7 @@ async function mockRoleServer(page: Page, options: Options = {}) {
       { permission: 'tenant.member.read', groups: ['access/tenant_member_lifecycle'], actions: ['tenant.member.get', 'tenant.member.list'] },
       { permission: 'tenant.member.manage', groups: ['access/tenant_member_lifecycle'], actions: ['tenant.member.invite', 'tenant.member.profile.update'] },
       { permission: 'tenant.role.read', groups: ['access/tenant_role_permission'], actions: ['tenant.role.get', 'tenant.role.list'] },
-      { permission: 'tenant.role.manage', groups: ['access/tenant_role_permission'], actions: ['tenant.role.create', 'tenant.role.update_permissions'] },
+      { permission: 'tenant.role.manage', groups: ['access/tenant_role_permission'], actions: ['tenant.role.create', 'tenant.role.set_permissions'] },
     ],
   }))
   await page.route('**/api/v1/tenant/members', async (route) => json(route, 200, { members }))
@@ -168,15 +196,19 @@ test('canonical roles page exposes authoritative member counts while membership 
   expect(server.getWrites()).toHaveLength(0)
 })
 
-test('401 and 403 are surfaced and never replaced with preview roles', async ({ page }) => {
+test('401 redirects to trusted login and 403 blocks roles before protected data loads', async ({ page }) => {
   await mockRoleServer(page, { unauthenticated: true })
-  await openRealRoles(page)
-  await expect(page.getByRole('alert')).toContainText('登录会话已失效')
+  await page.goto('/#/enterprise/roles')
+  await expect(page).toHaveURL(/\/api\/auth\/login\?return_to=/)
+  await expect(page.locator('[data-enterprise-page="roles"]')).toHaveCount(0)
   await expect(page.getByText('超级管理员', { exact: true })).toHaveCount(0)
+
   await page.unrouteAll({ behavior: 'ignoreErrors' })
-  await mockRoleServer(page, { listStatus: 403 })
-  await page.reload()
-  await expect(page.getByRole('alert')).toContainText('没有管理企业角色与权限的权限')
+  await mockRoleServer(page, { authorizationStatus: 403 })
+  await page.goto('/#/enterprise/roles')
+  await expect(page.locator('[data-authorization-state]')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '没有访问权限' })).toBeVisible()
+  await expect(page.locator('[data-enterprise-page="roles"]')).toHaveCount(0)
   await expect(page.getByText('超级管理员', { exact: true })).toHaveCount(0)
 })
 

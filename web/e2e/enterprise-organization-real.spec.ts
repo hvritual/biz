@@ -75,6 +75,25 @@ async function mockOrganizationServer(page: Page, options: Options = {}) {
       tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }],
     })
   })
+  await page.route('**/api/auth/authorization', async (route) => {
+    const buttonCodes = ["tenant.department.list","tenant.department.get","tenant.department.create","tenant.department.update","tenant.department.enable","tenant.department.disable","tenant.member.list","tenant.role.list"]
+    return json(route, 200, {
+      authenticated: true,
+      actor_kind: 'tenant',
+      user_id: 'user-001',
+      tenant_id: 'tenant-001',
+      tenant_name: 'CoffeeLink 测试租户',
+      timezone: 'Asia/Shanghai',
+      roles: ['operator'],
+      grants: [],
+      data_policies: [],
+      site_ids: [],
+      permission_version: 'sha256:e2e',
+      modules: [{ code: 'access-management', allowed: true, reason: 'allowed', actions: buttonCodes }],
+      actions: buttonCodes.map((code) => ({ code, permissions: [], permission_mode: 'all' })),
+      button_codes: buttonCodes,
+    })
+  })
   await page.route('**/api/v1/tenant/members', async (route) => json(route, 200, { members }))
   await page.route('**/api/v1/tenant/roles', async (route) => json(route, 200, { roles: [
     { id: 'owner', name: 'owner', status: 'TENANT_ROLE_STATUS_ACTIVE', version: 1, permissions: [] },
@@ -205,14 +224,16 @@ test('department 409 preserves editor draft and the same idempotency key for ret
   await expect(page.getByRole('status')).toHaveCount(0)
 })
 
-test('401 and 403 are surfaced without demo organization fallback', async ({ page }) => {
+test('401 exits to trusted login while downstream 403 never falls back to demo organization data', async ({ page }) => {
   await mockOrganizationServer(page, { unauthenticated: true })
-  await openRealOrganization(page)
-  await expect(page.getByRole('alert')).toContainText('登录会话已失效')
+  await page.goto('/#/enterprise/organization')
+  await expect(page).toHaveURL(/\/api\/auth\/login\?return_to=/)
+  await expect(page.locator('[data-enterprise-page="organization"]')).toHaveCount(0)
   await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
+
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockOrganizationServer(page, { listStatus: 403 })
-  await page.reload()
+  await page.goto('/#/enterprise/organization')
   await expect(page.getByRole('alert')).toContainText('没有管理企业组织架构的权限')
   await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
 })

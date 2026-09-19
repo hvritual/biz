@@ -261,6 +261,7 @@ jobs:
               'TestEnterprise173PasswordRecoveryRevokesSessionsAndChangesCredential',
               'TestEnterprise173SelfPasswordChangeUIRevokesCurrentSession',
               'TestEnterprise173AdminRecoveryIsPermissionedScopedAndPolicyBlocked',
+              'TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed',
           ]
           for title in required:
               assert title in serialized, f'CE-12 browser acceptance evidence missing: {title}'
