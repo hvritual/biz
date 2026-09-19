@@ -113,7 +113,7 @@ export const customerDomains: Record<string, Domain> = {
   'device-operations': {
     description: '统一承载设备资产、设备配置、远程运维与故障处理入口',
     links: [
-      { id: 'devices', label: '设备管理', icon: 'device', path: '/workspace/devices', group: '设备资产', groupId: 'device-assets' },
+      { id: 'devices', label: '设备管理', icon: 'device', path: '/workspace/devices', group: '设备资产', groupId: 'device-assets', authorizationActions: ['device.list'] },
       { id: 'drinks', label: '饮品配置', icon: 'coffee', group: '设备配置', groupId: 'device-configuration' },
       { id: 'remote', label: '远程运维', icon: 'operations', group: '远程运维', groupId: 'remote-operations' },
       { id: 'tickets', label: '故障工单', icon: 'ticket', group: '服务维护', groupId: 'service-maintenance' },

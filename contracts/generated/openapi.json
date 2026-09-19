@@ -578,6 +578,9 @@
           "authMethod": {
             "type": "string"
           },
+          "decisionReason": {
+            "type": "string"
+          },
           "idempotencyRef": {
             "type": "string"
           },
@@ -602,6 +605,9 @@
           "requestId": {
             "type": "string"
           },
+          "resourceTenantId": {
+            "type": "string"
+          },
           "result": {
             "type": "string"
           },
@@ -612,6 +618,9 @@
             "type": "string"
           },
           "target": {
+            "type": "string"
+          },
+          "traceId": {
             "type": "string"
           }
         },

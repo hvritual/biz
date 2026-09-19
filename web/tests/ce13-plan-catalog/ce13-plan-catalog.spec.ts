@@ -65,6 +65,14 @@ async function browserRequest(page: Page, baseURL: string, path: string): Promis
   );
 }
 
+async function acceptPrivacyConsentIfRequired(page: Page) {
+  const heading = page.getByRole("heading", { name: "确认隐私与服务协议" });
+  if (await heading.isVisible()) {
+    await page.getByLabel(/我已阅读并同意/).check();
+    await page.getByRole("button", { name: "同意并继续" }).click();
+  }
+}
+
 async function login(
   browser: Browser,
   data: Fixture,
@@ -75,9 +83,10 @@ async function login(
   const page = await context.newPage();
   await page.goto(data.base_url + "/auth/login?return_to=/auth/session");
   await expect(page).toHaveURL(/\/idp\/authorize/);
-  await page.getByLabel("邮箱").fill(email);
+  await page.getByLabel("账号 / 手机号 / 邮箱", { exact: true }).fill(email);
   await page.getByLabel("密码").fill(password);
   await page.getByRole("button", { name: "登录" }).click();
+  await acceptPrivacyConsentIfRequired(page);
   await expect(page).toHaveURL(data.base_url + "/auth/session");
   const result = await browserRequest(page, data.base_url, "/auth/session");
   expect(result.status, result.text).toBe(200);

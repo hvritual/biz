@@ -40,6 +40,9 @@ export const uiThemePresets = {
 } as const satisfies Record<string, UiThemePalette>
 
 export type UiThemePresetName = keyof typeof uiThemePresets
+export type UiColorMode = 'light' | 'dark'
+export type UiDensity = 'default' | 'compact'
+export type UiAppearance = Readonly<{ mode: UiColorMode; density: UiDensity }>
 export type ActiveUiTheme = {
   name: UiThemePresetName | 'custom'
   palette: UiThemePalette
@@ -49,7 +52,8 @@ export type TenantUiTheme = Readonly<{
   primary?: string
 }>
 
-const storageKey = 'coffeelink.ui-theme'
+const legacyBrandStorageKey = 'coffeelink.ui-theme'
+const appearanceStorageKey = 'coffeelink.ui-appearance'
 const themeProperties: Record<keyof UiThemePalette, string> = {
   primary: '--color-primary',
   primaryHover: '--color-primary-hover',
@@ -58,6 +62,8 @@ const themeProperties: Record<keyof UiThemePalette, string> = {
   gradientEnd: '--color-gradient-end',
 }
 const activeTheme = ref<ActiveUiTheme>({ name: 'blue', palette: { ...uiThemePresets.blue } })
+const colorMode = ref<UiColorMode>('light')
+const density = ref<UiDensity>('default')
 
 function resolveRoot(root?: HTMLElement) {
   if (root) return root
@@ -67,48 +73,6 @@ function resolveRoot(root?: HTMLElement) {
 function resolveTheme(theme: UiThemePresetName | UiThemePalette): ActiveUiTheme {
   if (typeof theme === 'string') return { name: theme, palette: { ...uiThemePresets[theme] } }
   return { name: 'custom', palette: { ...theme } }
-}
-
-function storeTheme(theme: ActiveUiTheme) {
-  if (typeof window === 'undefined') return
-  const stored = theme.name === 'custom' ? { name: 'custom', ...theme.palette } : { name: theme.name }
-  window.localStorage.setItem(storageKey, JSON.stringify(stored))
-}
-
-function matchesPreset(value: Partial<UiThemePalette>, name: UiThemePresetName) {
-  const preset = uiThemePresets[name]
-  return (
-    value.primary === preset.primary &&
-    value.primaryHover === preset.primaryHover &&
-    value.primarySoft === preset.primarySoft &&
-    (value.onPrimary == null || value.onPrimary === preset.onPrimary) &&
-    (value.gradientEnd == null || value.gradientEnd === preset.gradientEnd)
-  )
-}
-
-function parseStoredTheme(raw: string): UiThemePresetName | UiThemePalette | null {
-  try {
-    const value = JSON.parse(raw) as Partial<UiThemePalette> & { name?: string }
-    if (value.name && value.name in uiThemePresets) {
-      const name = value.name as UiThemePresetName
-      if (!value.primary || matchesPreset(value, name)) return name
-    }
-    if (value.primary && value.primaryHover && value.primarySoft) {
-      const preset = value.name && value.name in uiThemePresets
-        ? uiThemePresets[value.name as UiThemePresetName]
-        : uiThemePresets.blue
-      return {
-        primary: value.primary,
-        primaryHover: value.primaryHover,
-        primarySoft: value.primarySoft,
-        onPrimary: value.onPrimary ?? '#ffffff',
-        gradientEnd: value.gradientEnd ?? preset.gradientEnd,
-      }
-    }
-  } catch {
-    return null
-  }
-  return null
 }
 
 function normalizeHex(value: string) {
@@ -144,6 +108,48 @@ function contrast(first: string, second: string) {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
 }
 
+function runtimePalette(base: UiThemePalette, mode: UiColorMode): UiThemePalette {
+  if (mode === 'light') return { ...base }
+  return {
+    primary: base.primary,
+    primaryHover: mix(base.primary, '#ffffff', 0.12),
+    primarySoft: mix(base.primary, '#111827', 0.78),
+    onPrimary: base.onPrimary,
+    gradientEnd: mix(base.primary, '#0b1120', 0.54),
+  }
+}
+
+function applyBrandTokens(target: HTMLElement) {
+  const palette = runtimePalette(activeTheme.value.palette, colorMode.value)
+  for (const key of Object.keys(themeProperties) as Array<keyof UiThemePalette>) {
+    target.style.setProperty(themeProperties[key], palette[key])
+  }
+}
+
+function validMode(value: unknown): value is UiColorMode {
+  return value === 'light' || value === 'dark'
+}
+
+function validDensity(value: unknown): value is UiDensity {
+  return value === 'default' || value === 'compact'
+}
+
+function parseAppearance(raw: string | null): UiAppearance | null {
+  if (!raw) return null
+  try {
+    const value = JSON.parse(raw) as Partial<UiAppearance>
+    if (validMode(value.mode) && validDensity(value.density)) return { mode: value.mode, density: value.density }
+  } catch {
+    return null
+  }
+  return null
+}
+
+function persistAppearance() {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(appearanceStorageKey, JSON.stringify({ mode: colorMode.value, density: density.value }))
+}
+
 export function createUiThemePalette(primary: string): UiThemePalette {
   const normalized = normalizeHex(primary)
   const white = '#ffffff', dark = '#111827'
@@ -167,56 +173,80 @@ export function resolveTenantUiTheme(value: TenantUiTheme): UiThemePresetName | 
 export function applyUiTheme(theme: UiThemePresetName | UiThemePalette, root?: HTMLElement) {
   const target = resolveRoot(root)
   if (!target) return false
-  const resolved = resolveTheme(theme)
-  for (const key of Object.keys(themeProperties) as Array<keyof UiThemePalette>) {
-    target.style.setProperty(themeProperties[key], resolved.palette[key])
-  }
-  target.dataset.uiTheme = resolved.name
-  activeTheme.value = resolved
+  activeTheme.value = resolveTheme(theme)
+  target.dataset.uiTheme = activeTheme.value.name
+  applyBrandTokens(target)
   return true
 }
 
-export function setUiTheme(
-  theme: UiThemePresetName | UiThemePalette,
-  persist = true,
-  root?: HTMLElement,
-) {
-  const applied = applyUiTheme(theme, root)
-  if (applied && persist) storeTheme(resolveTheme(theme))
-  return applied
+// Brand persistence is intentionally not a browser authority. #107 server branding wins on tenant lifecycle.
+export function setUiTheme(theme: UiThemePresetName | UiThemePalette, _persist?: boolean, root?: HTMLElement) {
+  return applyUiTheme(theme, root)
 }
 
-export function setUiThemePreset(name: UiThemePresetName, persist = true, root?: HTMLElement) {
+export function setUiThemePreset(name: UiThemePresetName, persist = false, root?: HTMLElement) {
   return setUiTheme(name, persist, root)
 }
 
+export function applyUiAppearance(value: UiAppearance, root?: HTMLElement) {
+  const target = resolveRoot(root)
+  if (!target || !validMode(value.mode) || !validDensity(value.density)) return false
+  colorMode.value = value.mode
+  density.value = value.density
+  target.dataset.uiMode = value.mode
+  target.dataset.uiDensity = value.density
+  target.style.colorScheme = value.mode
+  applyBrandTokens(target)
+  return true
+}
+
+export function setUiColorMode(mode: UiColorMode, persist = true, root?: HTMLElement) {
+  const applied = applyUiAppearance({ mode, density: density.value }, root)
+  if (applied && persist) persistAppearance()
+  return applied
+}
+
+export function setUiDensity(nextDensity: UiDensity, persist = true, root?: HTMLElement) {
+  const applied = applyUiAppearance({ mode: colorMode.value, density: nextDensity }, root)
+  if (applied && persist) persistAppearance()
+  return applied
+}
+
 export function initializeUiTheme(root?: HTMLElement) {
-  if (typeof window === 'undefined') return applyUiTheme('blue', root)
-  const saved = window.localStorage.getItem(storageKey)
-  if (saved) {
-    const theme = parseStoredTheme(saved)
-    if (theme) return applyUiTheme(theme, root)
-    window.localStorage.removeItem(storageKey)
-  }
-  return applyUiTheme('blue', root)
+  const target = resolveRoot(root)
+  if (!target) return false
+  // Legacy local brand state can leak between tenants, so it is retired rather than restored.
+  if (typeof window !== 'undefined') window.localStorage.removeItem(legacyBrandStorageKey)
+  applyUiTheme('blue', target)
+  const stored = typeof window === 'undefined' ? null : parseAppearance(window.localStorage.getItem(appearanceStorageKey))
+  return applyUiAppearance(stored ?? { mode: 'light', density: 'default' }, target)
 }
 
 export function resetUiTheme(root?: HTMLElement, clearPersisted = true) {
   const target = resolveRoot(root)
   if (!target) return false
-  for (const property of Object.values(themeProperties)) target.style.removeProperty(property)
-  delete target.dataset.uiTheme
-  activeTheme.value = { name: 'blue', palette: { ...uiThemePresets.blue } }
-  if (clearPersisted && typeof window !== 'undefined') window.localStorage.removeItem(storageKey)
-  return true
+  if (clearPersisted && typeof window !== 'undefined') window.localStorage.removeItem(legacyBrandStorageKey)
+  return applyUiTheme('blue', target)
+}
+
+export function resetUiAppearance(root?: HTMLElement, clearPersisted = true) {
+  const target = resolveRoot(root)
+  if (!target) return false
+  if (clearPersisted && typeof window !== 'undefined') window.localStorage.removeItem(appearanceStorageKey)
+  return applyUiAppearance({ mode: 'light', density: 'default' }, target)
 }
 
 export function useUiTheme() {
   return {
     activeTheme: readonly(activeTheme),
+    colorMode: readonly(colorMode),
+    density: readonly(density),
     presets: uiThemePresets,
     setTheme: setUiTheme,
     setPreset: setUiThemePreset,
+    setColorMode: setUiColorMode,
+    setDensity: setUiDensity,
     resetTheme: resetUiTheme,
+    resetAppearance: resetUiAppearance,
   }
 }

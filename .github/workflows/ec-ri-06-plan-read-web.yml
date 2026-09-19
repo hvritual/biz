@@ -75,7 +75,7 @@ jobs:
               'finite member quota uses authoritative usage while unsupported quotas stay unknown instead of zero',
               'member quota below limit renders authoritative remaining capacity',
               'usage authority 5xx keeps quota limits visible but explicitly degrades usage to unknown',
-              '401 and 403 are explicit and never fall back to demo plan data',
+              '401 exits to trusted login while downstream 403 responses never fall back to demo plan data',
               'entitlement authority failure stays visible instead of substituting preview quotas',
           ]
           for title in required_titles:

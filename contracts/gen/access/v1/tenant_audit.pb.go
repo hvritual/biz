@@ -24,26 +24,29 @@ const (
 )
 
 type TenantAuditRecordDTO struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	AuditId        string                 `protobuf:"bytes,1,opt,name=audit_id,json=auditId,proto3" json:"audit_id,omitempty"`
-	OccurredAt     string                 `protobuf:"bytes,2,opt,name=occurred_at,json=occurredAt,proto3" json:"occurred_at,omitempty"`
-	ActorSubject   string                 `protobuf:"bytes,3,opt,name=actor_subject,json=actorSubject,proto3" json:"actor_subject,omitempty"`
-	ActorUserId    string                 `protobuf:"bytes,4,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
-	AuthMethod     string                 `protobuf:"bytes,5,opt,name=auth_method,json=authMethod,proto3" json:"auth_method,omitempty"`
-	AuthChannel    string                 `protobuf:"bytes,6,opt,name=auth_channel,json=authChannel,proto3" json:"auth_channel,omitempty"`
-	SessionRef     string                 `protobuf:"bytes,7,opt,name=session_ref,json=sessionRef,proto3" json:"session_ref,omitempty"`
-	RequestId      string                 `protobuf:"bytes,8,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	IdempotencyRef string                 `protobuf:"bytes,9,opt,name=idempotency_ref,json=idempotencyRef,proto3" json:"idempotency_ref,omitempty"`
-	OperationId    string                 `protobuf:"bytes,10,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
-	Module         string                 `protobuf:"bytes,11,opt,name=module,proto3" json:"module,omitempty"`
-	Target         string                 `protobuf:"bytes,12,opt,name=target,proto3" json:"target,omitempty"`
-	Result         string                 `protobuf:"bytes,13,opt,name=result,proto3" json:"result,omitempty"`
-	Risk           string                 `protobuf:"bytes,14,opt,name=risk,proto3" json:"risk,omitempty"`
-	ReceiptRef     string                 `protobuf:"bytes,15,opt,name=receipt_ref,json=receiptRef,proto3" json:"receipt_ref,omitempty"`
-	Reason         string                 `protobuf:"bytes,16,opt,name=reason,proto3" json:"reason,omitempty"`
-	RequestDigest  string                 `protobuf:"bytes,17,opt,name=request_digest,json=requestDigest,proto3" json:"request_digest,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	AuditId          string                 `protobuf:"bytes,1,opt,name=audit_id,json=auditId,proto3" json:"audit_id,omitempty"`
+	OccurredAt       string                 `protobuf:"bytes,2,opt,name=occurred_at,json=occurredAt,proto3" json:"occurred_at,omitempty"`
+	ActorSubject     string                 `protobuf:"bytes,3,opt,name=actor_subject,json=actorSubject,proto3" json:"actor_subject,omitempty"`
+	ActorUserId      string                 `protobuf:"bytes,4,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	AuthMethod       string                 `protobuf:"bytes,5,opt,name=auth_method,json=authMethod,proto3" json:"auth_method,omitempty"`
+	AuthChannel      string                 `protobuf:"bytes,6,opt,name=auth_channel,json=authChannel,proto3" json:"auth_channel,omitempty"`
+	SessionRef       string                 `protobuf:"bytes,7,opt,name=session_ref,json=sessionRef,proto3" json:"session_ref,omitempty"`
+	RequestId        string                 `protobuf:"bytes,8,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	IdempotencyRef   string                 `protobuf:"bytes,9,opt,name=idempotency_ref,json=idempotencyRef,proto3" json:"idempotency_ref,omitempty"`
+	OperationId      string                 `protobuf:"bytes,10,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
+	Module           string                 `protobuf:"bytes,11,opt,name=module,proto3" json:"module,omitempty"`
+	Target           string                 `protobuf:"bytes,12,opt,name=target,proto3" json:"target,omitempty"`
+	Result           string                 `protobuf:"bytes,13,opt,name=result,proto3" json:"result,omitempty"`
+	Risk             string                 `protobuf:"bytes,14,opt,name=risk,proto3" json:"risk,omitempty"`
+	ReceiptRef       string                 `protobuf:"bytes,15,opt,name=receipt_ref,json=receiptRef,proto3" json:"receipt_ref,omitempty"`
+	Reason           string                 `protobuf:"bytes,16,opt,name=reason,proto3" json:"reason,omitempty"`
+	RequestDigest    string                 `protobuf:"bytes,17,opt,name=request_digest,json=requestDigest,proto3" json:"request_digest,omitempty"`
+	TraceId          string                 `protobuf:"bytes,18,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	ResourceTenantId string                 `protobuf:"bytes,19,opt,name=resource_tenant_id,json=resourceTenantId,proto3" json:"resource_tenant_id,omitempty"`
+	DecisionReason   string                 `protobuf:"bytes,20,opt,name=decision_reason,json=decisionReason,proto3" json:"decision_reason,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *TenantAuditRecordDTO) Reset() {
@@ -191,6 +194,27 @@ func (x *TenantAuditRecordDTO) GetReason() string {
 func (x *TenantAuditRecordDTO) GetRequestDigest() string {
 	if x != nil {
 		return x.RequestDigest
+	}
+	return ""
+}
+
+func (x *TenantAuditRecordDTO) GetTraceId() string {
+	if x != nil {
+		return x.TraceId
+	}
+	return ""
+}
+
+func (x *TenantAuditRecordDTO) GetResourceTenantId() string {
+	if x != nil {
+		return x.ResourceTenantId
+	}
+	return ""
+}
+
+func (x *TenantAuditRecordDTO) GetDecisionReason() string {
+	if x != nil {
+		return x.DecisionReason
 	}
 	return ""
 }
@@ -531,7 +555,7 @@ var File_access_v1_tenant_audit_proto protoreflect.FileDescriptor
 
 const file_access_v1_tenant_audit_proto_rawDesc = "" +
 	"\n" +
-	"\x1caccess/v1/tenant_audit.proto\x12\taccess.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1ayunka/dsl/v1/options.proto\"\xaf\x04\n" +
+	"\x1caccess/v1/tenant_audit.proto\x12\taccess.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1ayunka/dsl/v1/options.proto\"\xa1\x05\n" +
 	"\x14TenantAuditRecordDTO\x12\x19\n" +
 	"\baudit_id\x18\x01 \x01(\tR\aauditId\x12\x1f\n" +
 	"\voccurred_at\x18\x02 \x01(\tR\n" +
@@ -555,7 +579,10 @@ const file_access_v1_tenant_audit_proto_rawDesc = "" +
 	"\vreceipt_ref\x18\x0f \x01(\tR\n" +
 	"receiptRef\x12\x16\n" +
 	"\x06reason\x18\x10 \x01(\tR\x06reason\x12%\n" +
-	"\x0erequest_digest\x18\x11 \x01(\tR\rrequestDigest:\x06\xd2\xf3\x18\x02\b\x02\"\xb5\x01\n" +
+	"\x0erequest_digest\x18\x11 \x01(\tR\rrequestDigest\x12\x19\n" +
+	"\btrace_id\x18\x12 \x01(\tR\atraceId\x12,\n" +
+	"\x12resource_tenant_id\x18\x13 \x01(\tR\x10resourceTenantId\x12'\n" +
+	"\x0fdecision_reason\x18\x14 \x01(\tR\x0edecisionReason:\x06\xd2\xf3\x18\x02\b\x02\"\xb5\x01\n" +
 	"\x1dListTenantAuditRecordsRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12!\n" +
 	"\foperation_id\x18\x02 \x01(\tR\voperationId\x12\x16\n" +

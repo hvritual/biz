@@ -47,6 +47,7 @@ type WebAuthConfig struct {
 	PostLogoutRedirectURL string
 	Scopes                []string
 	SessionTTL            time.Duration
+	SessionRefreshWindow  time.Duration
 	FlowTTL               time.Duration
 	CookieSecure          bool
 
@@ -84,6 +85,9 @@ func (config WebAuthConfig) Validate() error {
 	if config.SessionTTL <= 0 || config.FlowTTL <= 0 {
 		return errors.New("biz runtime: OIDC session and flow TTL must be positive")
 	}
+	if config.SessionRefreshWindow < 0 || config.SessionRefreshWindow >= config.SessionTTL {
+		return errors.New("biz runtime: OIDC session refresh window must be disabled or shorter than the session TTL")
+	}
 	if !containsString(config.Scopes, "openid") {
 		return errors.New("biz runtime: OIDC scopes must include openid")
 	}
@@ -108,18 +112,61 @@ type FirstPartyIdPVerificationKey struct {
 	KeyID string
 }
 
+type PrivacyReconsentPolicy string
+
+const (
+	PrivacyReconsentCurrentVersion PrivacyReconsentPolicy = "current_version_required"
+	PrivacyReconsentAnyActive      PrivacyReconsentPolicy = "any_active_acceptance"
+)
+
+type FirstPartyPrivacyConsentConfig struct {
+	AgreementVersion string
+	PrivacyPolicyURL string
+	TermsURL         string
+	ReconsentPolicy  PrivacyReconsentPolicy
+}
+
+func (config FirstPartyPrivacyConsentConfig) Validate() error {
+	if strings.TrimSpace(config.AgreementVersion) == "" {
+		return errors.New("biz runtime: privacy agreement version is required")
+	}
+	if len(strings.TrimSpace(config.AgreementVersion)) > 128 {
+		return errors.New("biz runtime: privacy agreement version is too long")
+	}
+	if err := requireHTTPSOrLoopback(config.PrivacyPolicyURL); err != nil {
+		return fmt.Errorf("biz runtime: privacy policy URL: %w", err)
+	}
+	if err := requireHTTPSOrLoopback(config.TermsURL); err != nil {
+		return fmt.Errorf("biz runtime: terms URL: %w", err)
+	}
+	switch config.ReconsentPolicy {
+	case PrivacyReconsentCurrentVersion, PrivacyReconsentAnyActive:
+		return nil
+	default:
+		return errors.New("biz runtime: privacy re-consent policy must be explicitly configured")
+	}
+}
+
+func (config FirstPartyPrivacyConsentConfig) RequireCurrentVersion() bool {
+	return config.ReconsentPolicy == PrivacyReconsentCurrentVersion
+}
+
 type FirstPartyIdPConfig struct {
-	PublicURL             string
-	ClientID              string
-	RedirectURL           string
-	PostLogoutRedirectURL string
-	SigningKeyPEM         string
-	SigningKeyID          string
-	PreviousSigningKeys   []FirstPartyIdPVerificationKey
-	LoginTTL              time.Duration
-	CodeTTL               time.Duration
-	TokenTTL              time.Duration
-	CookieSecure          bool
+	PublicURL                string
+	ClientID                 string
+	RedirectURL              string
+	PostLogoutRedirectURL    string
+	SigningKeyPEM            string
+	SigningKeyID             string
+	PreviousSigningKeys      []FirstPartyIdPVerificationKey
+	LoginTTL                 time.Duration
+	CodeTTL                  time.Duration
+	TokenTTL                 time.Duration
+	RememberIdentifierTTL    time.Duration
+	RecoveryAuthorizationTTL time.Duration
+	OTPCodeDigits            int
+	CookieSecure             bool
+	PrivacyConsent           FirstPartyPrivacyConsentConfig
 }
 
 func (config FirstPartyIdPConfig) Enabled() bool { return strings.TrimSpace(config.PublicURL) != "" }
@@ -167,6 +214,15 @@ func (config FirstPartyIdPConfig) Validate() error {
 	if config.LoginTTL <= 0 || config.CodeTTL <= 0 || config.TokenTTL <= 0 {
 		return errors.New("biz runtime: first-party IdP TTLs must be positive")
 	}
+	if config.RememberIdentifierTTL < 0 {
+		return errors.New("biz runtime: remember-identifier TTL must not be negative")
+	}
+	if config.OTPCodeDigits != 0 && (config.OTPCodeDigits < 4 || config.OTPCodeDigits > 10) {
+		return errors.New("biz runtime: OTP code digits must be zero or between 4 and 10")
+	}
+	if err := config.PrivacyConsent.Validate(); err != nil {
+		return err
+	}
 	publicURL, _ := url.Parse(config.PublicURL)
 	if publicURL.Scheme == "https" && !config.CookieSecure {
 		return errors.New("biz runtime: secure first-party IdP URL requires Secure cookies")
@@ -189,6 +245,7 @@ type Options struct {
 	PlatformBootstrap       PlatformBootstrap
 	WebAuth                 WebAuthConfig
 	FirstPartyIdP           FirstPartyIdPConfig
+	VerificationSecurity    VerificationSecurityConfig
 }
 
 func (options Options) Validate() error {
@@ -208,6 +265,9 @@ func (options Options) Validate() error {
 		return err
 	}
 	if err := options.FirstPartyIdP.Validate(); err != nil {
+		return err
+	}
+	if err := options.VerificationSecurity.Validate(); err != nil {
 		return err
 	}
 	if options.FirstPartyIdP.Enabled() {

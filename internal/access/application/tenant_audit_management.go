@@ -162,6 +162,7 @@ func auditDTO(record domain.AuditRecord) *accessv1.TenantAuditRecordDTO {
 		ActorUserId: record.ActorUserID, AuthMethod: record.AuthMethod, AuthChannel: record.AuthChannel, SessionRef: record.SessionRef,
 		RequestId: record.RequestID, IdempotencyRef: record.IdempotencyRef, OperationId: record.OperationID, Module: record.Module,
 		Target: record.Target, Result: record.Result, Risk: record.Risk, ReceiptRef: record.ReceiptRef, Reason: record.Reason,
-		RequestDigest: record.RequestDigest,
+		RequestDigest: record.RequestDigest, TraceId: record.TraceID, ResourceTenantId: record.ResourceTenantID,
+		DecisionReason: record.DecisionReason,
 	}
 }

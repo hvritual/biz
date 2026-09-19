@@ -59,6 +59,25 @@ async function mockTenantProfileServer(page: Page, options: Options = {}) {
       tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }],
     })
   })
+  await page.route('**/api/auth/authorization', async (route) => {
+    const buttonCodes = ["tenant.profile.get","tenant.profile.update"]
+    return json(route, 200, {
+      authenticated: true,
+      actor_kind: 'tenant',
+      user_id: 'user-001',
+      tenant_id: 'tenant-001',
+      tenant_name: 'CoffeeLink 测试租户',
+      timezone: 'Asia/Shanghai',
+      roles: ['operator'],
+      grants: [],
+      data_policies: [],
+      site_ids: [],
+      permission_version: 'sha256:e2e',
+      modules: [{ code: 'access-management', allowed: true, reason: 'allowed', actions: buttonCodes }],
+      actions: buttonCodes.map((code) => ({ code, permissions: [], permission_mode: 'all' })),
+      button_codes: buttonCodes,
+    })
+  })
 
   await page.route('**/api/v1/tenant/profile', async (route) => {
     const request = route.request()
@@ -154,16 +173,16 @@ test('successful PATCH without GET readback is not presented as canonical succes
   await expect(page.getByText('企业资料已由服务端确认并回读。', { exact: true })).toHaveCount(0)
 })
 
-test('401 and 403 remain explicit and never fall back to demo company data', async ({ page }) => {
+test('401 exits to trusted login while downstream 403 never falls back to demo company data', async ({ page }) => {
   await mockTenantProfileServer(page, { unauthenticated: true })
-  await openRealCompany(page)
-  await expect(page.getByText('需要登录业务账号', { exact: true })).toBeVisible()
-  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('登录会话已失效')
+  await page.goto('/#/enterprise/company')
+  await expect(page).toHaveURL(/\/api\/auth\/login\?return_to=/)
+  await expect(page.locator('[data-enterprise-page="company"]')).toHaveCount(0)
   await expect(page.getByText('上海云迹科技有限公司', { exact: true })).toHaveCount(0)
 
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockTenantProfileServer(page, { readStatus: 403 })
-  await page.reload()
+  await page.goto('/#/enterprise/company')
   await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('当前账号没有维护企业资料的权限')
   await expect(page.getByText('上海云迹科技有限公司', { exact: true })).toHaveCount(0)
 })

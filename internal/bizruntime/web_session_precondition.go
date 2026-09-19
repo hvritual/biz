@@ -21,8 +21,9 @@ func validateExpectedWebSession(raw string, actual accesspersistence.WebSessionC
 		PlatformSubject string `json:"platform_subject"`
 		UserID          string `json:"user_id"`
 		ActiveTenantID  string `json:"active_tenant_id"`
+		ContextVersion  uint64 `json:"context_version"`
 	}
-	if json.Unmarshal([]byte(raw), &expected) != nil || expected.ActorKind != actual.ActorKind || expected.PlatformSubject != actual.PlatformSubject || expected.UserID != actual.UserID || expected.ActiveTenantID != actual.ActiveTenantID {
+	if json.Unmarshal([]byte(raw), &expected) != nil || expected.ActorKind != actual.ActorKind || expected.PlatformSubject != actual.PlatformSubject || expected.UserID != actual.UserID || expected.ActiveTenantID != actual.ActiveTenantID || expected.ContextVersion != actual.ContextVersion {
 		return errWebSessionContextChanged
 	}
 	return nil

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+import { computed } from 'vue'
+import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 import PageHeading from '@/ui/common/PageHeading.vue'
 import MetricCard from '@/ui/common/MetricCard.vue'
 import SearchField from '@/ui/common/SearchField.vue'
@@ -23,6 +25,7 @@ const {
   refreshServer, applyServerFilters, resetServerFilters,
   changeServerTenant, logoutServer, loginServer, openServerDetail, exportServerLogs,
 } = useAuditLogs()
+const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('access.audit.export'))
 </script>
 
 <template>
@@ -104,7 +107,7 @@ const {
             </UiSelect>
             <UiButton class="btn btn-primary" :disabled="serverBusy" @click="applyServerFilters">查询</UiButton>
             <UiButton class="btn" :disabled="serverBusy" @click="resetServerFilters">重置</UiButton>
-            <UiButton class="btn" :disabled="serverBusy || exportBusy" @click="exportServerLogs">
+            <UiButton v-if="canExportServer" class="btn" :disabled="serverBusy || exportBusy" @click="exportServerLogs">
               <AppIcon name="download" :size="16" />{{ exportBusy ? '导出中…' : exportRetry ? '重试导出' : '导出日志' }}
             </UiButton>
           </div>

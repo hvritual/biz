@@ -14,6 +14,7 @@ import {
   type UiThemePresetName,
 } from '@/ui/base/theme'
 import type { EnterpriseTenantBrandingDraft } from '@/services/enterprise/tenantBrandingRuntime'
+import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 
 const store = useEnterpriseStore()
 const ui = useUiStore()
@@ -30,7 +31,7 @@ const authoritativeDraft = computed<EnterpriseTenantBrandingDraft>(() => ({
 }))
 const dirty = computed(() => JSON.stringify(draft.value) !== JSON.stringify(authoritativeDraft.value))
 const customValid = computed(() => draft.value.preset !== 'custom' || /^#[0-9a-fA-F]{6}$/.test(draft.value.primary.trim()))
-const canEdit = computed(() => Boolean(store.branding?.canManage))
+const canEdit = computed(() => Boolean(store.branding?.canManage) && (store.previewMode || currentAuthorizationAllows('tenant.branding.update')))
 
 function applyDraft(value: EnterpriseTenantBrandingDraft) {
   error.value = ''

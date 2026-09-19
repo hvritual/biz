@@ -25,6 +25,7 @@ type MockOptions = {
   listStatus?: number
   mutationStatus?: number
   readbackStatus?: number
+  authorizationStatus?: number
   unauthenticated?: boolean
 }
 
@@ -105,6 +106,39 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
       active_tenant_id: 'tenant-001',
       csrf_token: 'csrf-real-member',
       tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }],
+    })
+  })
+
+  await page.route('**/api/auth/authorization', async (route) => {
+    if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
+    if (options.authorizationStatus) return json(route, options.authorizationStatus, { message: 'authorization denied' })
+    const buttonCodes = [
+      'tenant.member.list',
+      'tenant.member.invite',
+      'tenant.member.profile.update',
+      'tenant.member.activate',
+      'tenant.member.suspend',
+      'tenant.member.remove',
+      'tenant.role.list',
+      'tenant.department.list',
+      'tenant.role.assign_member',
+      'tenant.role.revoke_member',
+    ]
+    return json(route, 200, {
+      authenticated: true,
+      actor_kind: 'tenant',
+      user_id: 'user-001',
+      tenant_id: 'tenant-001',
+      tenant_name: 'CoffeeLink 测试租户',
+      timezone: 'Asia/Shanghai',
+      roles: ['operator'],
+      grants: [{ permission: 'tenant.member.manage', role_id: 'role-ops', role_name: 'operator', scope: 'all' }],
+      data_policies: [],
+      site_ids: [],
+      permission_version: 'sha256:member-e2e',
+      modules: [{ code: 'access-management', allowed: true, reason: 'allowed', actions: buttonCodes }],
+      actions: buttonCodes.map((code) => ({ code, permissions: [], permission_mode: 'all' })),
+      button_codes: buttonCodes,
     })
   })
 
@@ -323,16 +357,19 @@ test('canonical role change is idempotent, scope remains server-derived and read
   expect(write.headers['x-csrf-token']).toBe('csrf-real-member')
 })
 
-test('401 and 403 remain explicit and never replace API members with preview data', async ({ page }) => {
+test('401 redirects to trusted login and 403 blocks members before protected data loads', async ({ page }) => {
   await mockMemberServer(page, { unauthenticated: true })
-  await openCanonicalMembers(page)
-  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('登录会话已失效')
+  await page.goto('/#/enterprise/members')
+  await expect(page).toHaveURL(/\/api\/auth\/login\?return_to=/)
+  await expect(page.locator('[data-enterprise-page="members"]')).toHaveCount(0)
   await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
 
   await page.unrouteAll({ behavior: 'ignoreErrors' })
-  await mockMemberServer(page, { listStatus: 403 })
-  await page.reload()
-  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('当前账号没有管理企业成员的权限')
+  await mockMemberServer(page, { authorizationStatus: 403 })
+  await page.goto('/#/enterprise/members')
+  await expect(page.locator('[data-authorization-state]')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '没有访问权限' })).toBeVisible()
+  await expect(page.locator('[data-enterprise-page="members"]')).toHaveCount(0)
   await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
 })
 

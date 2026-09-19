@@ -173,6 +173,25 @@ async function mockServer(page: Page, options: Options = {}): Promise<Captured> 
     csrf_token: 'csrf-plan-change',
     tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }],
   }))
+  await page.route('**/api/auth/authorization', async (route) => {
+    const buttonCodes = ["commercial.subscription.get_my","commercial.subscription.get_my_usage","commercial.entitlement.get_my","commercial.subscription.change.targets_my","commercial.subscription.change.preview_my","commercial.subscription.change.preview_my.get","commercial.subscription.change.confirm_my","commercial.subscription.change.get_my"]
+    return json(route, 200, {
+      authenticated: true,
+      actor_kind: 'tenant',
+      user_id: 'user-001',
+      tenant_id: 'tenant-001',
+      tenant_name: 'CoffeeLink 测试租户',
+      timezone: 'Asia/Shanghai',
+      roles: ['operator'],
+      grants: [],
+      data_policies: [],
+      site_ids: [],
+      permission_version: 'sha256:e2e',
+      modules: [{ code: 'access-management', allowed: true, reason: 'allowed', actions: buttonCodes }],
+      actions: buttonCodes.map((code) => ({ code, permissions: [], permission_mode: 'all' })),
+      button_codes: buttonCodes,
+    })
+  })
   await page.route('**/api/v1/tenant/subscription', (route) => {
     const pending = confirmed && status !== 'APPLIED' ? 'chg-tenant-preview-001' : ''
     return json(route, 200, subscription(pending, confirmed && status === 'APPLIED'))

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   CommercialApiError,
+  cancelTrustedSessionRequests,
   confirmSubscriptionChange,
   createEntitlementOverride,
   createPlanDraft,
@@ -9,6 +10,7 @@ import {
   listPlanVersions,
   listPlatformModules,
   previewSubscriptionChange,
+  request,
   revokeEntitlementOverride,
   type CreatePlanDraftInput,
 } from './platformCommercial'
@@ -32,6 +34,21 @@ describe('CE-13 platform commercial service', () => {
     expect(String(url)).toContain('/v1/platform/modules')
     expect(init?.credentials).toBe('include')
     expect(new Headers(init?.headers).has('Authorization')).toBe(false)
+  })
+
+  it('aborts in-flight trusted requests when the server session context changes', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => new Promise<Response>((_resolve, reject) => {
+      const signal = init?.signal
+      if (signal?.aborted) {
+        reject(new DOMException('aborted', 'AbortError'))
+        return
+      }
+      signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), { once: true })
+    }))
+
+    const pending = request('/v1/tenant/members')
+    cancelTrustedSessionRequests()
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
   })
 
   it('keeps a forbidden trusted session distinguishable from an empty response', async () => {

@@ -11,6 +11,7 @@ import StatusBadge from '@/ui/common/StatusBadge.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
 import PlanChangeLifecycle from '@/features/enterprise/components/PlanChangeLifecycle.vue'
+import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 
 const store = useEnterpriseStore()
 const plan = useEnterprisePlanStore()
@@ -24,6 +25,7 @@ const targetPlan = ref('企业版')
 const note = ref('')
 const tab = ref('套餐概览')
 
+const canChangePlan = computed(() => store.previewMode || currentAuthorizationAllows('commercial.subscription.change.targets_my'))
 const enabledCount = computed(() => plan.features.filter((feature) => feature.enabled).length)
 const quotaCards = computed(() => plan.quotas.slice(0, 4))
 
@@ -31,6 +33,7 @@ watch(
   () => route.query.action,
   (action) => {
     if (action === 'upgrade') {
+      if (!canChangePlan.value) { void router.replace({ path: route.path, query: {} }); return }
       if (plan.isServerBacked) lifecycleOpen.value = true
       else requestOpen.value = true
       void router.replace({ path: route.path, query: {} })
@@ -61,6 +64,7 @@ function quotaPercent(used: number | null, total: number | null) {
 }
 
 function openChange() {
+  if (!canChangePlan.value) return
   if (plan.isServerBacked) lifecycleOpen.value = true
   else requestOpen.value = true
 }
@@ -106,7 +110,7 @@ function submitDemoChange() {
             <div><span>到期日期</span><strong>{{ formatDate(plan.periodEnd) }}</strong></div>
             <div><span>订阅周期</span><strong>{{ plan.cycle }}</strong></div>
           </div>
-          <div class="row">
+          <div v-if="canChangePlan" class="row">
             <UiButton class="btn btn-primary" @click="openChange">
               <AppIcon name="crown" :size="16" />{{ plan.serverChangeContext ? '管理套餐变更' : '申请升级套餐' }}
             </UiButton>

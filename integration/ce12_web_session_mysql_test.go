@@ -94,23 +94,31 @@ func TestCE12WebSessionTenantSelectionAndLiveAuthority(t *testing.T) {
 		Update("status", accessdomain.TenantMemberStatusSuspended).Error; err != nil {
 		t.Fatal(err)
 	}
-	authentication, err = store.AuthenticateWebSession(ctx, rawSession)
-	if err != nil {
-		t.Fatalf("identity session should survive loss of only the active tenant: %v", err)
+	if _, err = store.AuthenticateWebSession(ctx, rawSession); !errors.Is(err, accesspersistence.ErrWebSessionInvalid) {
+		t.Fatalf("active-tenant membership loss must revoke the session, got %v", err)
 	}
-	if authentication.Session.ActiveTenantID != "" || authentication.Principal.Authenticated {
-		t.Fatalf("invalid active tenant must be removed from effective session context: %+v", authentication)
+	if err := db.Table("biz_memberships").
+		Where("tenant_id = ? AND user_id = ?", "ce12-tenant-a", userID).
+		Update("status", accessdomain.TenantMemberStatusActive).Error; err != nil {
+		t.Fatal(err)
 	}
-	if len(authentication.Session.Tenants) != 1 || authentication.Session.Tenants[0].ID != "ce12-tenant-b" {
-		t.Fatalf("remaining valid tenant projection = %+v, want only tenant-b", authentication.Session.Tenants)
+	if _, err := store.AuthenticateWebSession(ctx, rawSession); !errors.Is(err, accesspersistence.ErrWebSessionInvalid) {
+		t.Fatalf("restoring membership must not revive a revoked session, got %v", err)
 	}
 
+	rawSession, authentication, err = store.CreateWebSession(ctx, webIdentity, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if authentication.Session.ActiveTenantID != "" {
+		t.Fatalf("multi-tenant re-login must require explicit tenant selection: %+v", authentication.Session)
+	}
 	authentication, err = store.SwitchWebSessionTenant(ctx, rawSession, "ce12-tenant-b")
 	if err != nil {
-		t.Fatalf("switch from invalidated tenant A to valid tenant B: %v", err)
+		t.Fatalf("fresh session cannot switch to tenant B: %v", err)
 	}
 	if authentication.Principal.TenantID != "ce12-tenant-b" {
-		t.Fatalf("principal tenant after recovery switch = %q, want tenant-b", authentication.Principal.TenantID)
+		t.Fatalf("principal tenant after fresh login = %q, want tenant-b", authentication.Principal.TenantID)
 	}
 	if err := store.RevokeWebSession(ctx, rawSession); err != nil {
 		t.Fatal(err)

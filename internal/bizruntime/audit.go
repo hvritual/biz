@@ -64,6 +64,7 @@ func (security auditedSecurity) Prepare(ctx context.Context, plan operationplan.
 		outcome.EventID = state.event.AuditID + "-o"
 		outcome.EventType = domain.AuditEventOutcome
 		outcome.Outcome = domain.AuditResultFailure
+		outcome.DecisionReason = authorizationDecisionReason(err)
 		outcome.OccurredAt = time.Now().UTC()
 		if auditErr := security.sink.AppendAuditEvent(ctx, outcome); auditErr != nil {
 			return nil, errors.Join(err, fmt.Errorf("biz audit: persist denied outcome: %w", auditErr))
@@ -120,6 +121,7 @@ func buildAuditState(ctx context.Context, plan operationplan.Plan, input any, pr
 	sum := sha256.Sum256([]byte(seed))
 	auditID := "audit-" + hex.EncodeToString(sum[:16])
 	target, reason := auditTargetAndReason(input, principal.TenantID)
+	resourceTenantID := auditResourceTenant(input, principal.TenantID)
 	requestDigest := digestRequest(input)
 	receiptRef := ""
 	if idempotencyRef != "" {
@@ -132,8 +134,9 @@ func buildAuditState(ctx context.Context, plan operationplan.Plan, input any, pr
 		EventID: auditID + "-a", AuditID: auditID, EventType: domain.AuditEventAttempt,
 		TenantID: principal.TenantID, ActorSubject: principal.Subject, ActorUserID: principal.UserID,
 		AuthMethod: principal.AuthMethod, AuthChannel: attributes["auth_channel"], SessionRef: attributes["session_ref"],
-		RequestID: transport.RequestID, IdempotencyRef: idempotencyRef, OperationID: plan.OperationID,
-		Module: plan.Domain, Target: target, RequestDigest: requestDigest, ReceiptRef: receiptRef, Reason: reason,
+		RequestID: transport.RequestID, TraceID: transport.RequestID, IdempotencyRef: idempotencyRef, OperationID: plan.OperationID,
+		Module: plan.Domain, Target: target, ResourceTenantID: resourceTenantID, RequestDigest: requestDigest,
+		ReceiptRef: receiptRef, Reason: reason,
 		Risk: auditRisk(plan.OperationID), Outcome: domain.AuditResultPending, OccurredAt: time.Now().UTC(),
 	}}
 }
@@ -238,6 +241,36 @@ func auditTargetAndReason(input any, tenantID string) (string, string) {
 		}
 	}
 	return "tenant:" + tenantID, auditReason(reflection, fields)
+}
+
+func auditResourceTenant(input any, trustedTenantID string) string {
+	message, ok := input.(proto.Message)
+	if !ok || message == nil {
+		return trustedTenantID
+	}
+	reflection := message.ProtoReflect()
+	field := reflection.Descriptor().Fields().ByName("tenant_id")
+	if field == nil || field.Kind() != protoreflect.StringKind || !reflection.Has(field) {
+		return trustedTenantID
+	}
+	value := strings.TrimSpace(reflection.Get(field).String())
+	if value == "" {
+		return trustedTenantID
+	}
+	return value
+}
+
+func authorizationDecisionReason(err error) string {
+	switch {
+	case err == nil:
+		return ""
+	case errors.Is(err, operation.ErrSecurityUnavailable):
+		return "SECURITY_UNAVAILABLE"
+	case errors.Is(err, operation.ErrSecurityNilContext):
+		return "SECURITY_INVALID_CONTEXT"
+	default:
+		return "AUTHORIZATION_DENIED"
+	}
 }
 
 func auditReason(message protoreflect.Message, fields protoreflect.FieldDescriptors) string {

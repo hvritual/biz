@@ -36,17 +36,20 @@ type userPasswordCredentialRecord struct {
 func (userPasswordCredentialRecord) TableName() string { return "biz_user_password_credentials" }
 
 type firstPartyAuthorizationRequestRecord struct {
-	RequestHash   string    `gorm:"column:request_hash;primaryKey;size:64"`
-	BrowserHash   string    `gorm:"column:browser_hash;size:64;not null;index"`
-	CSRFHash      string    `gorm:"column:csrf_hash;size:64;not null"`
-	ClientID      string    `gorm:"column:client_id;size:200;not null"`
-	RedirectURI   string    `gorm:"column:redirect_uri;size:1024;not null"`
-	State         string    `gorm:"column:state;size:1024;not null"`
-	Nonce         string    `gorm:"column:nonce;size:512;not null"`
-	CodeChallenge string    `gorm:"column:code_challenge;size:128;not null"`
-	Scope         string    `gorm:"column:scope;size:1024;not null"`
-	ExpiresAt     time.Time `gorm:"column:expires_at;not null;index"`
-	CreatedAt     time.Time `gorm:"column:created_at;not null"`
+	RequestHash         string     `gorm:"column:request_hash;primaryKey;size:64"`
+	BrowserHash         string     `gorm:"column:browser_hash;size:64;not null;index"`
+	CSRFHash            string     `gorm:"column:csrf_hash;size:64;not null"`
+	ClientID            string     `gorm:"column:client_id;size:200;not null"`
+	RedirectURI         string     `gorm:"column:redirect_uri;size:1024;not null"`
+	State               string     `gorm:"column:state;size:1024;not null"`
+	Nonce               string     `gorm:"column:nonce;size:512;not null"`
+	CodeChallenge       string     `gorm:"column:code_challenge;size:128;not null"`
+	Scope               string     `gorm:"column:scope;size:1024;not null"`
+	AuthenticatedUserID string     `gorm:"column:authenticated_user_id;size:64;index"`
+	LoginAuditID        uint64     `gorm:"column:login_audit_id;index"`
+	AuthenticatedAt     *time.Time `gorm:"column:authenticated_at"`
+	ExpiresAt           time.Time  `gorm:"column:expires_at;not null;index"`
+	CreatedAt           time.Time  `gorm:"column:created_at;not null"`
 }
 
 func (firstPartyAuthorizationRequestRecord) TableName() string {
@@ -105,6 +108,7 @@ func (store *Store) EnsureFirstPartyIDPSchema(ctx context.Context) error {
 		&userPasswordCredentialRecord{},
 		&firstPartyAuthorizationRequestRecord{},
 		&firstPartyAuthorizationCodeRecord{},
+		&privacyConsentRecord{},
 	)
 }
 
@@ -123,8 +127,8 @@ func setUserPassword(ctx context.Context, database *gorm.DB, userID, password st
 	if database == nil || userID == "" {
 		return ErrInvalidUserCredentials
 	}
-	if len(password) < 12 || len(password) > 1024 {
-		return errors.New("access: password must contain between 12 and 1024 bytes")
+	if len(password) < 8 || len(password) > 1024 {
+		return errors.New("access: stored password must contain between 8 and 1024 bytes")
 	}
 	var user userRecord
 	if err := database.WithContext(ctx).Where("id = ? AND status = ?", userID, "active").First(&user).Error; err != nil {
@@ -154,22 +158,22 @@ func setUserPassword(ctx context.Context, database *gorm.DB, userID, password st
 	}).Create(&record).Error
 }
 
-func (store *Store) AuthenticateUserPassword(ctx context.Context, email, password string) (LocalUserIdentity, error) {
-	email = strings.TrimSpace(email)
-	if store == nil || store.database == nil || email == "" || password == "" {
+func (store *Store) AuthenticateUserPassword(ctx context.Context, identifier, password string) (LocalUserIdentity, error) {
+	identifier = strings.TrimSpace(identifier)
+	if store == nil || store.database == nil || identifier == "" || password == "" {
 		consumeDummyPasswordWork(password)
 		return LocalUserIdentity{}, ErrInvalidUserCredentials
 	}
-	var user userRecord
-	if err := store.database.WithContext(ctx).Where("LOWER(email) = LOWER(?) AND status = ?", email, "active").First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	resolved, err := store.ResolveLoginIdentifier(ctx, identifier)
+	if err != nil {
+		if errors.Is(err, ErrInvalidUserCredentials) || errors.Is(err, ErrInvalidLoginIdentifier) || errors.Is(err, ErrInvalidContact) || errors.Is(err, gorm.ErrRecordNotFound) {
 			consumeDummyPasswordWork(password)
 			return LocalUserIdentity{}, ErrInvalidUserCredentials
 		}
 		return LocalUserIdentity{}, err
 	}
 	var credential userPasswordCredentialRecord
-	if err := store.database.WithContext(ctx).Where("user_id = ? AND disabled = ?", user.ID, false).First(&credential).Error; err != nil {
+	if err := store.database.WithContext(ctx).Where("user_id = ? AND disabled = ?", resolved.Identity.UserID, false).First(&credential).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			consumeDummyPasswordWork(password)
 			return LocalUserIdentity{}, ErrInvalidUserCredentials
@@ -191,7 +195,7 @@ func (store *Store) AuthenticateUserPassword(ctx context.Context, email, passwor
 	if subtle.ConstantTimeCompare(actual, expected) != 1 {
 		return LocalUserIdentity{}, ErrInvalidUserCredentials
 	}
-	return LocalUserIdentity{UserID: user.ID, Email: user.Email}, nil
+	return resolved.Identity, nil
 }
 
 func consumeDummyPasswordWork(password string) {
@@ -309,10 +313,14 @@ func (store *Store) ConsumeFirstPartyAuthorizationCode(ctx context.Context, code
 		if err := tx.Where("id = ? AND status = ?", row.UserID, "active").First(&user).Error; err != nil {
 			return ErrFirstPartyIDPFlow
 		}
+		email, err := store.userEmail(user)
+		if err != nil {
+			return err
+		}
 		if err := tx.Delete(&row).Error; err != nil {
 			return err
 		}
-		grant = FirstPartyAuthorizationGrant{UserID: user.ID, Email: user.Email, Nonce: row.Nonce, Scope: row.Scope}
+		grant = FirstPartyAuthorizationGrant{UserID: user.ID, Email: email, Nonce: row.Nonce, Scope: row.Scope}
 		return nil
 	})
 	return grant, err

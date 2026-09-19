@@ -153,6 +153,7 @@ async function loadApiState(session?: TrustedSession, domains: EnterpriseDomain[
   const current = session ?? (await readEnterpriseMemberSession())
   const tenantId = current.active_tenant_id ?? ''
   const snapshot = emptyEnterpriseSnapshot()
+  if (current.active_tenant_timezone) snapshot.company.timezone = current.active_tenant_timezone
   if (!current.authenticated || !tenantId) return { tenantId, snapshot, session: current, loadedDomains: [] }
 
   await Promise.all(domains.map(async (domain) => {

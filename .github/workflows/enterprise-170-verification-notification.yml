@@ -1,0 +1,119 @@
+name: Enterprise 170 verification notification qualification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/enterprise-170-verification-notification.yml
+      - internal/access/domain/verification.go
+      - internal/access/ports/verification.go
+      - internal/access/application/verification.go
+      - internal/access/infrastructure/notification/**
+      - internal/access/infrastructure/persistence/verification*.go
+      - internal/access/infrastructure/persistence/migrations/0009_enterprise_verification_notification.sql
+      - internal/bizruntime/verification_*.go
+      - internal/bizruntime/config.go
+      - integration/enterprise_170_verification_notification_mysql_test.go
+      - docs/enterprise-center/verification-notification.md
+      - go.mod
+      - go.sum
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verification-notification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      YUNKA_TEST_RESET_FIXTURES: "1"
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_enterprise170?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_enterprise170
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Read consumer lock
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          source biz/.yunka/source.env
+          echo "sha=$YUNKA_COMMIT" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout exact Yunka baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ steps.source.outputs.sha }}
+          path: yunka.io
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Load locked Go
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Static security boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          bad="$(gofmt -l             biz/internal/access/domain/verification.go             biz/internal/access/ports/verification.go             biz/internal/access/application/verification.go             biz/internal/access/infrastructure/notification/memory.go             biz/internal/access/infrastructure/persistence/verification_protection.go             biz/internal/access/infrastructure/persistence/verification.go             biz/internal/access/infrastructure/persistence/verification_protection_test.go             biz/internal/bizruntime/verification_security.go             biz/internal/bizruntime/verification_security_test.go             biz/internal/bizruntime/verification_http.go             biz/integration/enterprise_170_verification_notification_mysql_test.go)"
+          test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
+          ! grep -R -n 'internal/commercial'             biz/internal/access/domain/verification.go             biz/internal/access/ports/verification.go             biz/internal/access/application/verification.go             biz/internal/access/infrastructure/persistence/verification.go
+          ! grep -R -n 'firstPartyAuthorizationCode'             biz/internal/access/domain/verification.go             biz/internal/access/application/verification.go             biz/internal/access/infrastructure/persistence/verification.go
+          grep -q 'ResendInterval < time.Minute' biz/internal/access/domain/verification.go
+          grep -q 'StatusTooManyRequests' biz/internal/bizruntime/verification_http.go
+          grep -q 'secret_ciphertext' biz/internal/access/infrastructure/persistence/migrations/0009_enterprise_verification_notification.sql
+          ! grep -qE '(^|[^_])secret[[:space:]]+TEXT|destination[[:space:]]+VARCHAR' biz/internal/access/infrastructure/persistence/migrations/0009_enterprise_verification_notification.sql
+          leaks="$(grep -R -nEi '(fmt|log)\.(Print|Printf|Println).*\b(code|otp|secret|password|destination)\b'             biz/internal/access/application/verification.go             biz/internal/access/infrastructure/persistence/verification*.go             biz/internal/bizruntime/verification_*.go || true)"
+          test -z "$leaks" || { printf '%s\n' "$leaks"; exit 1; }
+
+      - name: Unit vet and production build
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test ./internal/access/domain ./internal/access/ports ./internal/access/application ./internal/access/infrastructure/notification ./internal/access/infrastructure/persistence ./internal/bizruntime
+          go vet ./internal/access/domain ./internal/access/ports ./internal/access/application ./internal/access/infrastructure/notification ./internal/access/infrastructure/persistence ./internal/bizruntime
+          go build ./cmd/biz ./cmd/biz-idp
+
+      - name: Real MySQL concurrency rollback and replay qualification
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test -count=1 -tags=integration ./integration -run '^TestEnterprise170'
+
+      - name: Verify candidate clean
+        shell: bash
+        run: test -z "$(git -C biz status --porcelain)"

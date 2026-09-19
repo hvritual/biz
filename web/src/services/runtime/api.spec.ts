@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createRuntimeApi, logoutSession } from './api'
+import { createRuntimeApi, logoutSession, sessionContext } from './api'
 function response(body: unknown, status = 200) {
   return new Response(status === 204 ? null : JSON.stringify(body), {
     status,
@@ -64,6 +64,34 @@ describe('trusted runtime API', () => {
       ),
     ).rejects.toMatchObject({ status: 403, message: 'last owner protected' })
   })
+  it('binds trusted requests to server context_version so stale tabs receive conflict instead of cross-tenant data', async () => {
+    const requests: Array<{ url: string; init: RequestInit }> = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init: RequestInit) => {
+        requests.push({ url, init })
+        return response({ members: [] })
+      }),
+    )
+    const expected = {
+      authenticated: true,
+      actor_kind: 'user',
+      user_id: 'u-171',
+      active_tenant_id: 'tenant-b',
+      context_version: 7,
+    }
+    await createRuntimeApi('ctx-171', expected).tenantApi.listMembers()
+    const headers = new Headers(requests[0]?.init.headers)
+    expect(JSON.parse(String(headers.get('X-Biz-Session-Context')))).toEqual({
+      actor_kind: 'user',
+      platform_subject: '',
+      user_id: 'u-171',
+      active_tenant_id: 'tenant-b',
+      context_version: 7,
+    })
+    expect(sessionContext(expected)).toContain('"context_version":7')
+  })
+
   it('accepts empty 204 logout responses', async () => {
     vi.stubGlobal(
       'fetch',

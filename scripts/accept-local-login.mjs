@@ -45,9 +45,14 @@ async function login(browser, email, password) {
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.goto(`${webBase}/auth/login?return_to=${encodeURIComponent("/auth/session")}`, { waitUntil: "domcontentloaded" });
-  await page.getByLabel("邮箱").fill(email);
+  await page.getByLabel("账号 / 手机号 / 邮箱", { exact: true }).fill(email);
   await page.getByLabel("密码").fill(password);
   await page.getByRole("button", { name: "登录" }).click();
+  const consent = page.getByRole("heading", { name: "确认隐私与服务协议" });
+  if (await consent.isVisible()) {
+    await page.getByLabel(/我已阅读并同意/).check();
+    await page.getByRole("button", { name: "同意并继续" }).click();
+  }
   await page.waitForURL(/\/auth\/session/);
   const session = (await api(page, "/auth/session")).json;
   return { context, page, session };

@@ -30,6 +30,9 @@ message TenantAuditRecordDTO {
   string receipt_ref = 15;
   string reason = 16;
   string request_digest = 17;
+  string trace_id = 18;
+  string resource_tenant_id = 19;
+  string decision_reason = 20;
 }
 
 message ListTenantAuditRecordsRequest {

@@ -56,12 +56,17 @@ func (store *Store) EnsureFirstPartyIDPSecuritySchema(ctx context.Context) error
 	return store.database.WithContext(ctx).AutoMigrate(&firstPartyLoginThrottleRecord{}, &firstPartyLoginAuditRecord{})
 }
 
-func (store *Store) AuthenticateFirstPartyLogin(ctx context.Context, email, password, remoteAddr string, policy FirstPartyLoginPolicy) (LocalUserIdentity, error) {
+func (store *Store) AuthenticateFirstPartyLogin(ctx context.Context, identifier, password, remoteAddr string, policy FirstPartyLoginPolicy) (LocalUserIdentity, error) {
+	identity, _, err := store.AuthenticateFirstPartyLoginWithAudit(ctx, identifier, password, remoteAddr, policy)
+	return identity, err
+}
+
+func (store *Store) AuthenticateFirstPartyLoginWithAudit(ctx context.Context, identifier, password, remoteAddr string, policy FirstPartyLoginPolicy) (LocalUserIdentity, uint64, error) {
 	if err := policy.Validate(); err != nil {
-		return LocalUserIdentity{}, err
+		return LocalUserIdentity{}, 0, err
 	}
-	email = strings.TrimSpace(email)
-	identityHash := TokenHash(strings.ToLower(email))
+	identifier = strings.TrimSpace(identifier)
+	identityHash := LoginIdentifierThrottleHash(identifier)
 	sourceHash := TokenHash(normalizeRemoteHost(remoteAddr))
 	now := time.Now().UTC()
 	err := store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -77,26 +82,26 @@ func (store *Store) AuthenticateFirstPartyLogin(ctx context.Context, email, pass
 	})
 	if err != nil {
 		if !errors.Is(err, ErrInvalidUserCredentials) {
-			return LocalUserIdentity{}, err
+			return LocalUserIdentity{}, 0, err
 		}
 		consumeDummyPasswordWork(password)
 		_ = store.recordFirstPartyLoginAudit(ctx, now, "throttled", "", identityHash, sourceHash)
-		return LocalUserIdentity{}, ErrInvalidUserCredentials
+		return LocalUserIdentity{}, 0, ErrInvalidUserCredentials
 	}
 
-	identity, authErr := store.AuthenticateUserPassword(ctx, email, password)
+	identity, authErr := store.AuthenticateUserPassword(ctx, identifier, password)
 	if authErr != nil {
 		if err := store.recordFirstPartyLoginFailure(ctx, identityHash, sourceHash, now, policy); err != nil {
-			return LocalUserIdentity{}, err
+			return LocalUserIdentity{}, 0, err
 		}
-		return LocalUserIdentity{}, ErrInvalidUserCredentials
+		return LocalUserIdentity{}, 0, ErrInvalidUserCredentials
 	}
-	if err := store.recordFirstPartyLoginSuccess(ctx, identityHash, sourceHash, identity.UserID, now); err != nil {
-		return LocalUserIdentity{}, err
+	auditID, err := store.recordFirstPartyLoginSuccess(ctx, identityHash, sourceHash, identity.UserID, now)
+	if err != nil {
+		return LocalUserIdentity{}, 0, err
 	}
-	return identity, nil
+	return identity, auditID, nil
 }
-
 func (store *Store) recordFirstPartyLoginFailure(ctx context.Context, identityHash, sourceHash string, now time.Time, policy FirstPartyLoginPolicy) error {
 	return store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var row firstPartyLoginThrottleRecord
@@ -127,17 +132,56 @@ func (store *Store) recordFirstPartyLoginFailure(ctx context.Context, identityHa
 	})
 }
 
-func (store *Store) recordFirstPartyLoginSuccess(ctx context.Context, identityHash, sourceHash, userID string, now time.Time) error {
-	return store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+func (store *Store) recordFirstPartyLoginSuccess(ctx context.Context, identityHash, sourceHash, userID string, now time.Time) (uint64, error) {
+	var audit firstPartyLoginAuditRecord
+	err := store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("identity_hash = ?", identityHash).Delete(&firstPartyLoginThrottleRecord{}).Error; err != nil {
 			return err
 		}
-		return tx.Create(&firstPartyLoginAuditRecord{OccurredAt: now, Outcome: "success", UserID: userID, EmailHash: identityHash, SourceHash: sourceHash}).Error
+		audit = firstPartyLoginAuditRecord{OccurredAt: now, Outcome: "success", UserID: userID, EmailHash: identityHash, SourceHash: sourceHash}
+		return tx.Create(&audit).Error
 	})
+	if err != nil {
+		return 0, err
+	}
+	return audit.ID, nil
 }
-
 func (store *Store) recordFirstPartyLoginAudit(ctx context.Context, at time.Time, outcome, userID, emailHash, sourceHash string) error {
 	return store.database.WithContext(ctx).Create(&firstPartyLoginAuditRecord{OccurredAt: at, Outcome: outcome, UserID: userID, EmailHash: emailHash, SourceHash: sourceHash}).Error
+}
+
+func (store *Store) FirstPartyLoginThrottleState(ctx context.Context, identifier string) (bool, *time.Time, error) {
+	if store == nil || store.database == nil {
+		return false, nil, nil
+	}
+	var row firstPartyLoginThrottleRecord
+	err := store.database.WithContext(ctx).Where("identity_hash = ?", LoginIdentifierThrottleHash(identifier)).First(&row).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil, nil
+	}
+	if err != nil {
+		return false, nil, err
+	}
+	if row.BlockedUntil == nil || !row.BlockedUntil.After(time.Now().UTC()) {
+		return false, row.BlockedUntil, nil
+	}
+	value := row.BlockedUntil.UTC()
+	return true, &value, nil
+}
+
+func (store *Store) RecordFirstPartyVerifiedLogin(ctx context.Context, identifier, userID, remoteAddr string) (uint64, error) {
+	identifier = strings.TrimSpace(identifier)
+	userID = strings.TrimSpace(userID)
+	if store == nil || store.database == nil || identifier == "" || userID == "" {
+		return 0, ErrInvalidUserCredentials
+	}
+	return store.recordFirstPartyLoginSuccess(
+		ctx,
+		LoginIdentifierThrottleHash(identifier),
+		TokenHash(normalizeRemoteHost(remoteAddr)),
+		userID,
+		time.Now().UTC(),
+	)
 }
 
 func (store *Store) DisableUserPassword(ctx context.Context, userID string) error {
@@ -182,12 +226,16 @@ func revokeWebSessionsForUser(ctx context.Context, database *gorm.DB, userID str
 	if database == nil {
 		return errors.New("access: web session revoke store unavailable")
 	}
+	if !database.Migrator().HasTable(&webSessionRecord{}) || !database.Migrator().HasTable(&webIdentityRecord{}) {
+		return nil
+	}
 	now := time.Now().UTC()
 	return database.WithContext(ctx).Exec(`
 UPDATE biz_web_sessions s
 JOIN biz_web_identities i ON i.issuer = s.issuer AND i.subject = s.subject
-SET s.revoked_at = ?, s.updated_at = ?
-WHERE i.actor_kind = ? AND i.actor_id = ? AND s.revoked_at IS NULL`, now, now, WebActorUser, userID).Error
+SET s.revoked_at = ?, s.revoked_reason = ?, s.revoked_scope = ?, s.context_version = s.context_version + 1, s.updated_at = ?
+WHERE i.actor_kind = ? AND i.actor_id = ? AND s.revoked_at IS NULL`,
+		now, "account_security", "account", now, WebActorUser, userID).Error
 }
 
 func normalizeRemoteHost(remoteAddr string) string {

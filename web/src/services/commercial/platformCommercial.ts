@@ -355,6 +355,13 @@ export class CommercialApiError extends Error {
 
 const configuredBase = import.meta.env.VITE_API_BASE_URL ?? '/api'
 const baseUrl = configuredBase.endsWith('/') ? configuredBase.slice(0, -1) : configuredBase
+const inFlightRequests = new Set<AbortController>()
+
+export function cancelTrustedSessionRequests() {
+  for (const controller of [...inFlightRequests]) controller.abort()
+  inFlightRequests.clear()
+}
+
 
 function encoded(value: string | number) {
   return encodeURIComponent(String(value).trim())
@@ -390,12 +397,23 @@ async function parseResponse<T>(response: Response): Promise<T> {
 export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers)
   headers.set('Accept', 'application/json')
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...init,
-    credentials: 'include',
-    headers,
-  })
-  return parseResponse<T>(response)
+  const controller = new AbortController()
+  if (init.signal) {
+    if (init.signal.aborted) controller.abort()
+    else init.signal.addEventListener('abort', () => controller.abort(), { once: true })
+  }
+  inFlightRequests.add(controller)
+  try {
+    const response = await fetch(`${baseUrl}${path}`, {
+      ...init,
+      credentials: 'include',
+      headers,
+      signal: controller.signal,
+    })
+    return await parseResponse<T>(response)
+  } finally {
+    inFlightRequests.delete(controller)
+  }
 }
 
 async function trustedCsrfToken(): Promise<string> {

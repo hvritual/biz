@@ -93,15 +93,20 @@ jobs:
           bad="$(gofmt -l \
             biz/internal/access/infrastructure/persistence/first_party_idp.go \
             biz/internal/access/infrastructure/persistence/first_party_idp_security.go \
+            biz/internal/access/infrastructure/persistence/login_identifier.go \
+            biz/internal/access/infrastructure/persistence/login_identifier_test.go \
             biz/internal/access/infrastructure/persistence/web_session.go \
             biz/internal/bizruntime/config.go \
             biz/internal/bizruntime/first_party_idp.go \
             biz/internal/bizruntime/first_party_idp_hardening_test.go \
             biz/internal/bizruntime/first_party_idp_server.go \
+            biz/internal/bizruntime/first_party_native_login.go \
             biz/internal/bizruntime/oidc_static.go \
             biz/internal/bizruntime/web_auth.go \
             biz/integration/ce12_browser_seed_test.go \
             biz/cmd/biz-idp/main.go \
+            biz/cmd/biz-idp/notification_sender.go \
+            biz/cmd/biz-idp/notification_sender_qualification.go \
             biz/cmd/biz-idp-credential/main.go)"
           test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
 
@@ -111,6 +116,7 @@ jobs:
           set -euo pipefail
           go -C biz test -count=1 ./internal/access/infrastructure/persistence ./internal/bizruntime
           go -C biz build ./cmd/biz ./cmd/biz-idp ./cmd/biz-idp-credential
+          go -C biz build -tags=qualification -o "$RUNNER_TEMP/ce12-idp-qualification" ./cmd/biz-idp
 
       - name: Seed real member authority and three tenant outcomes
         shell: bash
@@ -139,9 +145,31 @@ jobs:
           export YUNKA_BIZ_IDP_SIGNING_KEY_FILE="$RUNNER_TEMP/ce12-idp-signing.pem"
           export YUNKA_BIZ_IDP_PREVIOUS_SIGNING_KEY_FILES="$RUNNER_TEMP/ce12-idp-previous.pem"
           export YUNKA_BIZ_IDP_COOKIE_SECURE="false"
+          export YUNKA_BIZ_PRIVACY_AGREEMENT_VERSION="ce12-v1"
+          export YUNKA_BIZ_PRIVACY_POLICY_URL="https://example.invalid/privacy"
+          export YUNKA_BIZ_TERMS_URL="https://example.invalid/terms"
+          export YUNKA_BIZ_PRIVACY_RECONSENT_POLICY="current_version_required"
           export YUNKA_BIZ_IDP_LISTEN="127.0.0.1:18081"
           export YUNKA_BIZ_IDP_AUTO_MIGRATE="true"
-          nohup go -C biz run ./cmd/biz-idp >"$RUNNER_TEMP/ce12-idp.log" 2>&1 &
+          export YUNKA_BIZ_IDP_REMEMBER_IDENTIFIER_TTL="24h"
+          export YUNKA_BIZ_VERIFICATION_CODE_TTL="5m"
+          export YUNKA_BIZ_VERIFICATION_AUTHORIZATION_TTL="2m"
+          export YUNKA_BIZ_VERIFICATION_RESEND_INTERVAL="60s"
+          export YUNKA_BIZ_VERIFICATION_SEND_LIMIT_WINDOW="1h"
+          export YUNKA_BIZ_VERIFICATION_MAX_SENDS_PER_WINDOW="5"
+          export YUNKA_BIZ_VERIFICATION_MAX_TRIES="5"
+          export YUNKA_BIZ_VERIFICATION_CODE_DIGITS="6"
+          export YUNKA_BIZ_SECURITY_NOTIFICATION_PROVIDER="disabled"
+          verification_key="$(printf 'KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK' | base64 -w0)"
+          verification_hmac="$(printf 'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH' | base64 -w0)"
+          export YUNKA_BIZ_VERIFICATION_ACTIVE_KEY_VERSION="v1"
+          export YUNKA_BIZ_VERIFICATION_KEYS_JSON="{\"v1\":\"$verification_key\"}"
+          export YUNKA_BIZ_VERIFICATION_HMAC_KEY_B64="$verification_hmac"
+          export YUNKA_BIZ_IDP_QUALIFICATION_NOTIFICATION_FILE="$RUNNER_TEMP/ce12-otp.jsonl"
+          : > "$YUNKA_BIZ_IDP_QUALIFICATION_NOTIFICATION_FILE"
+          chmod 600 "$YUNKA_BIZ_IDP_QUALIFICATION_NOTIFICATION_FILE"
+          echo "CE12_OTP_FILE=$YUNKA_BIZ_IDP_QUALIFICATION_NOTIFICATION_FILE" >> "$GITHUB_ENV"
+          nohup go -C biz run -tags=qualification ./cmd/biz-idp >"$RUNNER_TEMP/ce12-idp.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/ce12-idp.pid"
           for attempt in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:18081/healthz >/dev/null; then break; fi
@@ -199,6 +227,19 @@ jobs:
           npx playwright install --with-deps chromium
           sudo apt-get install -y fonts-noto-cjk
 
+      - name: Start CoffeeLink API-mode UI
+        working-directory: biz/web
+        shell: bash
+        run: |
+          set -euo pipefail
+          nohup env VITE_DATA_MODE=api BIZ_DEV_API_TARGET="$CE12_BIZ_BASE_URL" npm run dev -- --host 127.0.0.1 --port 15173 >"$RUNNER_TEMP/ce12-web.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/ce12-web.pid"
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:15173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:15173/ >/dev/null
+
       - name: Run complete browser trust chain
         working-directory: biz/web
         shell: bash
@@ -211,9 +252,22 @@ jobs:
           result = json.loads(Path('test-results/ce12-results.json').read_text())
           stats = result['stats']
           assert stats.get('unexpected', 0) == 0, stats
-          assert stats.get('expected', 0) >= 1, stats
-          assert 'TestCE12BrowserRealIdPToSessionTenantIAMEntitlement' in json.dumps(result), 'CE-12 browser acceptance identity missing'
+          serialized = json.dumps(result)
+          required = [
+              'TestCE12BrowserRealIdPToSessionTenantIAMEntitlement',
+              'TestCE12BrowserRealTenantBrandAppearanceAndStaleReadback',
+              'TestEnterprise171CrossTabTenantIsolationBackNavigationAndStaleContext',
+              'TestEnterprise172UsernamePhoneEmailPasswordOTPMatrix',
+              'TestEnterprise173PasswordRecoveryRevokesSessionsAndChangesCredential',
+              'TestEnterprise173SelfPasswordChangeUIRevokesCurrentSession',
+              'TestEnterprise173AdminRecoveryIsPermissionedScopedAndPolicyBlocked',
+              'TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed',
+          ]
+          for title in required:
+              assert title in serialized, f'CE-12 browser acceptance evidence missing: {title}'
+          assert stats.get('expected', 0) >= len(required), stats
           print('CE12_BROWSER_AUTHORITY_CHAIN=PASS')
+          print('CE12_THEME_APPEARANCE_AUTHORITY=PASS')
           PY
 
       - name: Capture qualification evidence
@@ -224,8 +278,11 @@ jobs:
           mkdir -p biz/web/test-results
           cp "$RUNNER_TEMP/ce12-idp.log" biz/web/test-results/ce12-idp.log 2>/dev/null
           cp "$RUNNER_TEMP/ce12-biz.log" biz/web/test-results/ce12-biz.log 2>/dev/null
+          cp "$RUNNER_TEMP/ce12-web.log" biz/web/test-results/ce12-web.log 2>/dev/null
           cp "$RUNNER_TEMP/ce12-discovery.json" biz/web/test-results/ce12-discovery.json 2>/dev/null
           cp "$RUNNER_TEMP/ce12-jwks.json" biz/web/test-results/ce12-jwks.json 2>/dev/null
+          # OTP qualification secrets stay runner-local and are never uploaded as artifacts.
+          rm -f "$RUNNER_TEMP/ce12-otp.jsonl"
           find biz/web/test-results -maxdepth 1 -type f ! -name ce12-evidence-sha256.txt -print0 | sort -z | xargs -0 -r sha256sum > biz/web/test-results/ce12-evidence-sha256.txt
 
       - name: Stop CE-12 servers
@@ -233,6 +290,7 @@ jobs:
         shell: bash
         run: |
           set +e
+          test ! -f "$RUNNER_TEMP/ce12-web.pid" || kill "$(cat "$RUNNER_TEMP/ce12-web.pid")" 2>/dev/null
           test ! -f "$RUNNER_TEMP/ce12-biz.pid" || kill "$(cat "$RUNNER_TEMP/ce12-biz.pid")" 2>/dev/null
           test ! -f "$RUNNER_TEMP/ce12-idp.pid" || kill "$(cat "$RUNNER_TEMP/ce12-idp.pid")" 2>/dev/null
 

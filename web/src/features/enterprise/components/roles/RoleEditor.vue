@@ -5,7 +5,12 @@ import { computed, ref, watch } from 'vue'
 import type { Role, DataScope } from '@/types/enterprise'
 import { scopeLabels } from '@/types/enterprise'
 import { permissionCatalog as demoPermissionCatalog } from '@/services/demo/seed'
-import { rolePermissionGroups } from '@/services/enterprise/rolePermissionCatalog'
+import {
+  clearRolePermissionCatalog,
+  replaceRolePermissionCatalog,
+  rolePermissionGroups,
+} from '@/services/enterprise/rolePermissionCatalog'
+import { readActionCatalog } from '@/services/runtime/api'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import UiDialog from '@/ui/common/UiDialog.vue'
@@ -17,6 +22,9 @@ const store = useEnterpriseStore()
 const ui = useUiStore()
 const error = ref('')
 const busy = ref(false)
+const catalogBusy = ref(false)
+const catalogReady = ref(false)
+const catalogRevision = ref(0)
 
 const draft = ref<Role>({
   id: '',
@@ -32,6 +40,9 @@ const draft = ref<Role>({
 const readonly = computed(() => Boolean(props.role?.builtin))
 const apiMode = computed(() => store.sourceKind === 'api')
 const permissionGroups = computed(() => {
+  // rolePermissionCatalog is a presentation cache populated from the server.
+  // Track a local revision so Vue invalidates this computed value after refresh.
+  void catalogRevision.value
   if (apiMode.value) {
     return rolePermissionGroups().map((group) => ({
       name: group.name,
@@ -52,6 +63,28 @@ const permissionGroups = computed(() => {
   }))
 })
 
+async function loadServerPermissionCatalog() {
+  if (!apiMode.value || !props.open) {
+    catalogReady.value = !apiMode.value
+    if (!apiMode.value) clearRolePermissionCatalog()
+    return
+  }
+  catalogBusy.value = true
+  catalogReady.value = false
+  try {
+    const catalog = await readActionCatalog()
+    replaceRolePermissionCatalog(catalog.permissions ?? [])
+    catalogRevision.value += 1
+    catalogReady.value = true
+  } catch (cause) {
+    clearRolePermissionCatalog()
+    catalogRevision.value += 1
+    error.value = cause instanceof Error ? cause.message : '服务端权限目录读取失败。'
+  } finally {
+    catalogBusy.value = false
+  }
+}
+
 watch(
   () => [props.open, props.role, store.sourceKind] as const,
   () => {
@@ -68,6 +101,7 @@ watch(
           permissions: [],
           updatedAt: '',
         }
+    void loadServerPermissionCatalog()
   },
   { immediate: true },
 )
@@ -111,8 +145,9 @@ async function save() {
         <AppIcon name="shield" />内置角色只读。企业所有者拥有受保护的管理能力，不能通过此页面修改或禁用。
       </div>
       <div v-if="apiMode" class="notice-box">
-        <AppIcon name="help" />真实模式只展示服务端合同声明的 permission keys。数据范围会映射到服务端 grant scope；角色说明当前不写入服务端。
+        <AppIcon name="help" />真实模式的 permission keys 与 operation/API 映射来自服务端 Action Catalog；前端不维护第二份授权目录。
       </div>
+      <div v-if="apiMode && catalogBusy" class="notice-box">正在读取当前 Action Catalog…</div>
 
       <div class="form-grid">
         <label class="field">
@@ -184,7 +219,7 @@ async function save() {
 
     <template #footer>
       <UiButton class="btn" @click="emit('close')">{{ readonly ? '关闭' : '取消' }}</UiButton>
-      <UiButton v-if="!readonly" class="btn btn-primary" :disabled="busy" @click="save">
+      <UiButton v-if="!readonly" class="btn btn-primary" :disabled="busy || (apiMode && !catalogReady)" @click="save">
         {{ busy ? '正在保存…' : '保存角色' }}
       </UiButton>
     </template>

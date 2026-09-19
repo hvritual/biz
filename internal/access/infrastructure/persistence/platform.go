@@ -129,12 +129,7 @@ func (resolver *PrincipalGrantResolver) ResolveGrants(ctx context.Context, reque
 		return nil, errors.New("access: principal grant resolver unavailable")
 	}
 	if request.TenantBound {
-		grants, err := resolver.store.ResolveGrants(ctx, request.Principal.TenantID, request.Principal.Roles, request.Permissions)
-		if err != nil {
-			return nil, err
-		}
-		branding, err := resolver.store.resolveBrandingReadGrant(ctx, request)
-		return append(grants, branding...), err
+		return resolver.store.ResolveCurrentGrants(ctx, request.Principal.TenantID, request.Principal.UserID, request.Permissions)
 	}
 	subject := strings.TrimSpace(request.Principal.Subject)
 	if subject == "" || len(request.Permissions) == 0 {

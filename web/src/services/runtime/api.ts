@@ -1,16 +1,96 @@
 import { request as read, mutate } from '@/services/commercial/platformCommercial'
+import { publishSessionContextChange } from '@/services/runtime/sessionCoordinator'
 export interface TrustedSession {
   authenticated: boolean
   actor_kind?: string
   platform_subject?: string
   user_id?: string
   active_tenant_id?: string
-  tenants?: Array<{ id: string; name: string }>
+  active_tenant_timezone?: string
+  context_version?: number
+  expires_at?: string
+  csrf_token?: string
+  tenants?: Array<{ id: string; name: string; timezone?: string }>
 }
 export const readSession = () => read<TrustedSession>('/auth/session')
-export const selectSessionTenant = (tenantId: string) =>
-  mutate<TrustedSession>('/auth/session/tenant', 'POST', { tenant_id: tenantId })
+export async function selectSessionTenant(tenantId: string) {
+  const session = await mutate<TrustedSession>('/auth/session/tenant', 'POST', { tenant_id: tenantId })
+  publishSessionContextChange(session.context_version ?? 0)
+  return session
+}
 export const logoutSession = () => mutate<void>('/auth/logout', 'POST', {})
+export type ActionCatalogPermission = {
+  permission: string
+  groups: string[]
+  actions: string[]
+}
+
+export type ActionCatalogAction = {
+  code: string
+  domain: string
+  application: string
+  use_case: string
+  tenant_required: boolean
+  authentication: string[]
+  permissions: string[]
+  permission_mode: string
+  rpc?: string
+  http?: Array<{ method: string; path: string }>
+}
+
+export type ActionCatalogResponse = {
+  schema_version: string
+  actions: ActionCatalogAction[]
+  permissions: ActionCatalogPermission[]
+}
+
+export const readActionCatalog = () => read<ActionCatalogResponse>('/auth/action-catalog')
+
+export type CurrentAuthorizationGrant = {
+  permission: string
+  role_id: string
+  role_name: string
+  scope: string
+}
+
+export type CurrentAuthorizationDataPolicy = {
+  permission: string
+  scope: string
+  site_ids?: string[]
+}
+
+export type CurrentAuthorizationModule = {
+  code: string
+  allowed: boolean
+  reason: string
+  actions: string[]
+}
+
+export type CurrentAuthorizationResponse = {
+  authenticated: boolean
+  actor_kind: string
+  user_id?: string
+  platform_subject?: string
+  tenant_id?: string
+  tenant_name?: string
+  timezone?: string
+  roles: string[]
+  grants: CurrentAuthorizationGrant[]
+  data_policies: CurrentAuthorizationDataPolicy[]
+  site_ids: string[]
+  permission_version?: string
+  modules: CurrentAuthorizationModule[]
+  actions: ActionCatalogAction[]
+  button_codes: string[]
+  entitlement?: {
+    version: number
+    source_version: number
+    catalog_revision: number
+  }
+}
+
+export const readCurrentAuthorization = () => read<CurrentAuthorizationResponse>('/auth/authorization')
+
 export function loginUrl() {
   return `${(import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')}/auth/login?return_to=${encodeURIComponent(window.location.pathname + window.location.hash)}`
 }
@@ -56,6 +136,7 @@ export function sessionContext(s: TrustedSession) {
     platform_subject: s.platform_subject ?? '',
     user_id: s.user_id ?? '',
     active_tenant_id: s.active_tenant_id ?? '',
+    context_version: s.context_version ?? 0,
   })
 }
 export function createRuntimeApi(requestId: string, expectedSession?: TrustedSession) {

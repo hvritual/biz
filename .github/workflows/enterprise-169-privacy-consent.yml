@@ -1,0 +1,105 @@
+name: Enterprise 169 privacy consent qualification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/enterprise-169-privacy-consent.yml
+      - cmd/biz-idp/**
+      - docs/enterprise-center/privacy-consent.md
+      - internal/access/**
+      - internal/bizruntime/**
+      - integration/enterprise_169_privacy_consent_mysql_test.go
+      - integration/ce12_browser_seed_test.go
+      - web/tests/ce12/**
+      - .github/workflows/ce12-browser-e2e.yml
+      - go.mod
+      - go.sum
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  privacy-consent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      YUNKA_TEST_RESET_FIXTURES: "1"
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_enterprise169?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_enterprise169
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Read consumer lock
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          source biz/.yunka/source.env
+          echo "sha=$YUNKA_COMMIT" >> "$GITHUB_OUTPUT"
+      - name: Checkout exact Yunka baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ steps.source.outputs.sha }}
+          path: yunka.io
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Load locked Go
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+      - name: Static consent authority qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          bad="$(gofmt -l             biz/internal/access/infrastructure/persistence/privacy_consent.go             biz/internal/access/infrastructure/persistence/first_party_idp.go             biz/internal/access/infrastructure/persistence/first_party_idp_security.go             biz/internal/bizruntime/config.go             biz/internal/bizruntime/first_party_idp.go             biz/internal/bizruntime/privacy_consent_config_test.go             biz/cmd/biz-idp/main.go             biz/integration/enterprise_169_privacy_consent_mysql_test.go             biz/integration/ce12_browser_seed_test.go)"
+          test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
+          ! grep -q 'name="user_id"' biz/internal/bizruntime/first_party_idp.go
+          grep -q 'agreement_accepted' biz/internal/bizruntime/first_party_idp.go
+          grep -q 'PrivacyReconsentCurrentVersion' biz/internal/bizruntime/config.go
+          grep -q 'PrivacyReconsentAnyActive' biz/internal/bizruntime/config.go
+          leaks="$(grep -R -nEi '(fmt|log)\.(Print|Printf|Println).*\b(password|token|otp|email|phone)\b' biz/internal/access biz/internal/bizruntime biz/cmd/biz-idp || true)"
+          test -z "$leaks" || { printf '%s\n' "$leaks"; exit 1; }
+      - name: Unit and vet
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test ./internal/access/infrastructure/persistence ./internal/bizruntime ./cmd/biz-idp
+          go -C biz vet ./internal/access/infrastructure/persistence ./internal/bizruntime ./cmd/biz-idp
+      - name: Real MySQL privacy consent qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestEnterprise169'
+      - name: Verify candidate remains clean
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git -C biz status --porcelain)"

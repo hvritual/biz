@@ -87,6 +87,9 @@ chmod 700 "$state_dir" "$bin_dir"
 set -a
 source "$root/.env.local"
 set +a
+for required in YUNKA_BIZ_PRIVACY_AGREEMENT_VERSION YUNKA_BIZ_PRIVACY_POLICY_URL YUNKA_BIZ_TERMS_URL YUNKA_BIZ_PRIVACY_RECONSENT_POLICY; do
+  [[ -n "${!required:-}" ]] || die "$required is required in .env.local for the first-party IdP"
+done
 worker_token=$(jq -r '.worker_token' "$credentials_file")
 [[ -n "$worker_token" && "$worker_token" != null ]] || die "credential file is incomplete"
 [[ ! -e "$state_dir/biz.pid" && ! -e "$state_dir/idp.pid" && ! -e "$state_dir/web.pid" ]] || die "a pid file exists; run scripts/local-apps.sh stop first"

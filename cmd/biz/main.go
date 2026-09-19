@@ -65,6 +65,7 @@ func run() error {
 			PostLogoutRedirectURL:   strings.TrimSpace(os.Getenv("YUNKA_BIZ_OIDC_POST_LOGOUT_REDIRECT_URL")),
 			Scopes:                  strings.Fields(envOr("YUNKA_BIZ_OIDC_SCOPES", "openid profile email")),
 			SessionTTL:              envDuration("YUNKA_BIZ_OIDC_SESSION_TTL", 8*time.Hour),
+			SessionRefreshWindow:    envDuration("YUNKA_BIZ_OIDC_SESSION_REFRESH_WINDOW", 0),
 			FlowTTL:                 envDuration("YUNKA_BIZ_OIDC_FLOW_TTL", 5*time.Minute),
 			CookieSecure:            envBool("YUNKA_BIZ_OIDC_COOKIE_SECURE", true),
 			PlatformExternalSubject: strings.TrimSpace(os.Getenv("YUNKA_BIZ_OIDC_PLATFORM_EXTERNAL_SUBJECT")),
@@ -74,6 +75,15 @@ func run() error {
 		if err := webAuth.Validate(); err != nil {
 			return err
 		}
+	}
+
+	contactProtection, err := bizruntime.BuildContactProtection(
+		os.Getenv("YUNKA_BIZ_PII_ACTIVE_KEY_VERSION"),
+		os.Getenv("YUNKA_BIZ_PII_KEYS_JSON"),
+		os.Getenv("YUNKA_BIZ_PII_LOOKUP_KEY_B64"),
+	)
+	if err != nil {
+		return err
 	}
 
 	provider, err := platform.New(platform.Options{
@@ -99,14 +109,18 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	started, err := bizruntime.BootstrapWithOptions(ctx, provider, bizruntime.Options{
+	runtimeOptions := bizruntime.Options{
 		DeviceOps:           config,
 		CommercialLifecycle: lifecycle,
-		ProvisioningWorker: bizruntime.ProvisioningWorkerOptions{
-			Token: workerToken, Automatic: workerToken != "",
-		},
-		WebAuth: webAuth,
-	})
+		ProvisioningWorker:  bizruntime.ProvisioningWorkerOptions{Token: workerToken, Automatic: workerToken != ""},
+		WebAuth:             webAuth,
+	}
+	var started *bizruntime.Started
+	if contactProtection == nil {
+		started, err = bizruntime.BootstrapWithOptions(ctx, provider, runtimeOptions)
+	} else {
+		started, err = bizruntime.BootstrapWithOptionsAndContactProtection(ctx, provider, runtimeOptions, contactProtection)
+	}
 	if err != nil {
 		return err
 	}

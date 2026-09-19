@@ -52,7 +52,7 @@ jobs:
               'canonical invite uses loaded role and department, trusted headers and authoritative readback',
               'canonical profile edit exposes only supported fields and sends authoritative version',
               'canonical role change is idempotent, scope remains server-derived and readback confirms membership',
-              '401 and 403 remain explicit and never replace API members with preview data',
+              '401 redirects to trusted login and 403 blocks members before protected data loads',
               'canonical profile 409 preserves draft and reuses the same idempotency key',
               'successful member write without GET readback is never presented as canonical success',
           ]
@@ -60,7 +60,7 @@ jobs:
               'real role page renders authoritative grants and member counts across CoffeeLink viewports',
               'role create and permission update use independent idempotency keys and confirm from role readback',
               'canonical roles page exposes authoritative member counts while membership changes stay on Members flow',
-              '401 and 403 are surfaced and never replaced with preview roles',
+              '401 redirects to trusted login and 403 blocks roles before protected data loads',
               'role 409 preserves the same idempotency key and editor draft for retry',
               'protected owner role is read-only in the canonical role editor',
               'a successful role write without readback is not presented as confirmed success',

@@ -42,6 +42,25 @@ async function mockPlanServer(page: Page, options: Options = {}): Promise<Captur
       tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }],
     })
   })
+  await page.route('**/api/auth/authorization', async (route) => {
+    const buttonCodes = ["commercial.subscription.get_my","commercial.subscription.get_my_usage","commercial.entitlement.get_my","commercial.subscription.change.targets_my"]
+    return json(route, 200, {
+      authenticated: true,
+      actor_kind: 'tenant',
+      user_id: 'user-001',
+      tenant_id: 'tenant-001',
+      tenant_name: 'CoffeeLink 测试租户',
+      timezone: 'Asia/Shanghai',
+      roles: ['operator'],
+      grants: [],
+      data_policies: [],
+      site_ids: [],
+      permission_version: 'sha256:e2e',
+      modules: [{ code: 'access-management', allowed: true, reason: 'allowed', actions: buttonCodes }],
+      actions: buttonCodes.map((code) => ({ code, permissions: [], permission_mode: 'all' })),
+      button_codes: buttonCodes,
+    })
+  })
 
   await page.route('**/api/v1/tenant/subscription', async (route) => {
     captured.subscriptionPaths.push(new URL(route.request().url()).pathname)
@@ -188,21 +207,22 @@ test('usage authority 5xx keeps quota limits visible but explicitly degrades usa
   await expect(memberRow).toContainText('用量未知')
 })
 
-test('401 and 403 are explicit and never fall back to demo plan data', async ({ page }) => {
+test('401 exits to trusted login while downstream 403 responses never fall back to demo plan data', async ({ page }) => {
   await mockPlanServer(page, { unauthenticated: true })
-  await openRealPlan(page)
-  await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('登录会话已失效')
+  await page.goto('/#/enterprise/plan')
+  await expect(page).toHaveURL(/\/api\/auth\/login\?return_to=/)
+  await expect(page.locator('[data-enterprise-page="plan"]')).toHaveCount(0)
   await expect(page.getByText('标准版', { exact: true })).toHaveCount(0)
 
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockPlanServer(page, { subscriptionStatus: 403 })
-  await page.reload()
+  await page.goto('/#/enterprise/plan')
   await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('没有查看套餐与权益的权限')
   await expect(page.getByText('标准版', { exact: true })).toHaveCount(0)
 
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockPlanServer(page, { usageStatus: 403 })
-  await page.reload()
+  await page.goto('/#/enterprise/plan')
   await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('没有查看套餐与权益的权限')
   await expect(page.getByText('标准版', { exact: true })).toHaveCount(0)
 })
