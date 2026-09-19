@@ -40,6 +40,20 @@ export type EnterpriseMemberProfileInput = {
   departmentId: string
 }
 
+export type EnterpriseMemberListQuery = {
+  query?: string
+  roleId?: string
+  departmentId?: string
+  status?: string
+  page: number
+  pageSize: number
+}
+
+export type EnterpriseMemberListPage = {
+  members: EnterpriseTenantMember[]
+  total: number
+}
+
 export function memberRequestId(action: MemberMutation) {
   return commercialRequestId(`enterprise-member-${action}`)
 }
@@ -134,13 +148,43 @@ export async function switchEnterpriseMemberTenant(tenantId: string) {
   return selectSessionTenant(tenantId)
 }
 
-export async function listEnterpriseMembers(session: TrustedSession) {
+export async function queryEnterpriseMembers(
+  session: TrustedSession,
+  input: EnterpriseMemberListQuery,
+): Promise<EnterpriseMemberListPage> {
   requireTenantSession(session)
-  const result = await request<{ members?: Array<TenantMember & Partial<EnterpriseTenantMember>> }>(
-    '/v1/tenant/members',
-    { headers: readHeaders(session) },
-  )
-  return Array.isArray(result.members) ? result.members.map(memberSnapshot) : []
+  const params = new URLSearchParams()
+  const query = input.query?.trim() ?? ''
+  const roleId = input.roleId?.trim() ?? ''
+  const departmentId = input.departmentId?.trim() ?? ''
+  const status = input.status?.trim() ?? ''
+  if (query) params.set('query', query)
+  if (roleId) params.set('role_id', roleId)
+  if (departmentId) params.set('department_id', departmentId)
+  if (status) params.set('status', status)
+  params.set('page', String(Math.max(1, Math.trunc(input.page))))
+  params.set('page_size', String(Math.max(1, Math.min(100, Math.trunc(input.pageSize)))))
+  const result = await request<{
+    members?: Array<TenantMember & Partial<EnterpriseTenantMember>>
+    total?: string | number
+  }>(`/v1/tenant/members?${params.toString()}`, { headers: readHeaders(session) })
+  const total = Number(result.total ?? 0)
+  return {
+    members: Array.isArray(result.members) ? result.members.map(memberSnapshot) : [],
+    total: Number.isFinite(total) && total >= 0 ? total : 0,
+  }
+}
+
+export async function listEnterpriseMembers(session: TrustedSession) {
+  const members: EnterpriseTenantMember[] = []
+  let page = 1
+  const pageSize = 100
+  for (;;) {
+    const result = await queryEnterpriseMembers(session, { page, pageSize })
+    members.push(...result.members)
+    if (members.length >= result.total || result.members.length === 0) return members
+    page += 1
+  }
 }
 
 export async function getEnterpriseMember(session: TrustedSession, userId: string) {
