@@ -13,6 +13,7 @@ const (
 	VerificationPurposePasswordRecovery VerificationPurpose = "password_recovery"
 	VerificationPurposeContactChange    VerificationPurpose = "contact_change"
 	VerificationPurposeAccountDeletion  VerificationPurpose = "account_deletion"
+	VerificationPurposeMemberActivation VerificationPurpose = "member_activation"
 )
 
 type SecurityNotificationChannel string
@@ -81,7 +82,7 @@ func (policy VerificationPolicy) Validate() error {
 
 func (purpose VerificationPurpose) Valid() bool {
 	switch purpose {
-	case VerificationPurposeLogin, VerificationPurposePasswordRecovery, VerificationPurposeContactChange, VerificationPurposeAccountDeletion:
+	case VerificationPurposeLogin, VerificationPurposePasswordRecovery, VerificationPurposeContactChange, VerificationPurposeAccountDeletion, VerificationPurposeMemberActivation:
 		return true
 	default:
 		return false
