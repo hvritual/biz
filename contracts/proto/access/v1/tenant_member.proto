@@ -50,10 +50,20 @@ message GetTenantMemberRequest {
   string user_id = 1;
 }
 
-message ListTenantMembersRequest {}
+message ListTenantMembersRequest {
+  // Free-text search. Plain name/account/employee-id matching is fuzzy; protected
+  // email/phone matching is exact through the #168 deterministic lookup index.
+  string query = 1;
+  string role_id = 2;
+  string department_id = 3;
+  TenantMemberStatus status = 4;
+  uint32 page = 5;
+  uint32 page_size = 6;
+}
 
 message ListTenantMembersResponse {
   repeated TenantMemberDTO members = 1;
+  uint64 total = 2;
 }
 
 // Internal quota meter used by Commercial composition. No tenant id is accepted:
