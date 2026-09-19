@@ -27,10 +27,13 @@ type AuditEvent struct {
 	AuthChannel    string
 	SessionRef     string
 	RequestID      string
+	TraceID        string
 	IdempotencyRef string
 	OperationID    string
 	Module         string
 	Target         string
+	ResourceTenantID string
+	DecisionReason string
 	RequestDigest  string
 	ReceiptRef     string
 	Reason         string
