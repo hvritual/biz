@@ -13,7 +13,7 @@ import {
   type TrustedSession,
 } from '@/services/runtime/api'
 
-export type MemberMutation = 'invite' | 'activate' | 'suspend' | 'remove' | 'profile' | 'roles'
+export type MemberMutation = 'create' | 'update' | 'invite' | 'activate' | 'suspend' | 'remove' | 'profile' | 'roles'
 export type MemberRoleMutation = 'assign' | 'revoke'
 
 export type EnterpriseMemberRole = {
@@ -23,6 +23,7 @@ export type EnterpriseMemberRole = {
 }
 
 export type EnterpriseTenantMember = TenantMember & {
+  username: string
   name: string
   phone: string
   employeeId: string
@@ -38,6 +39,28 @@ export type EnterpriseMemberProfileInput = {
   employeeId: string
   position: string
   departmentId: string
+}
+
+export type EnterpriseMemberActivationMode = 'activation_link' | 'sms_initial_password'
+
+export type EnterpriseMemberCreateInput = EnterpriseMemberProfileInput & {
+  username: string
+  email: string
+  roleIds: string[]
+  activationMode: EnterpriseMemberActivationMode
+}
+
+export type EnterpriseMemberUpdateInput = EnterpriseMemberProfileInput & {
+  email: string
+  roleIds: string[]
+}
+
+export type EnterpriseMemberCreationReceipt = {
+  member: EnterpriseTenantMember
+  activationMode: string
+  notificationEventId: string
+  deliveryState: string
+  maskedDestination: string
 }
 
 export type EnterpriseMemberListQuery = {
@@ -121,6 +144,7 @@ function memberSnapshot(member: TenantMember & Partial<EnterpriseTenantMember>):
     : []
   return Object.freeze({
     ...member,
+    username: member.username ?? '',
     name: member.name ?? '',
     phone: member.phone ?? '',
     employeeId: member.employeeId ?? '',
@@ -217,6 +241,72 @@ async function memberMutate(
     sessionContext: sessionContext(session),
   })
   return memberSnapshot(member)
+}
+
+function activationModeWire(mode: EnterpriseMemberActivationMode) {
+  return mode === 'sms_initial_password'
+    ? 'TENANT_MEMBER_ACTIVATION_MODE_SMS_INITIAL_PASSWORD'
+    : 'TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK'
+}
+
+export async function createEnterpriseMember(
+  session: TrustedSession,
+  input: EnterpriseMemberCreateInput,
+  idempotencyKey: string,
+): Promise<EnterpriseMemberCreationReceipt> {
+  requireTenantSession(session)
+  const result = await mutate<{
+    member: TenantMember & Partial<EnterpriseTenantMember>
+    activationMode?: string
+    notificationEventId?: string
+    deliveryState?: string
+    maskedDestination?: string
+  }>('/v1/tenant/members/create', 'POST', {
+    username: input.username.trim().toLowerCase(),
+    email: input.email.trim(),
+    phone: input.phone.trim(),
+    name: input.name.trim(),
+    employeeId: input.employeeId.trim(),
+    position: input.position.trim(),
+    departmentId: input.departmentId.trim(),
+    roleIds: [...input.roleIds],
+    activationMode: activationModeWire(input.activationMode),
+  }, {
+    idempotencyKey,
+    sessionContext: sessionContext(session),
+  })
+  return {
+    member: memberSnapshot(result.member),
+    activationMode: result.activationMode ?? '',
+    notificationEventId: result.notificationEventId ?? '',
+    deliveryState: result.deliveryState ?? '',
+    maskedDestination: result.maskedDestination ?? '',
+  }
+}
+
+export function updateEnterpriseMember(
+  session: TrustedSession,
+  member: EnterpriseTenantMember,
+  input: EnterpriseMemberUpdateInput,
+  idempotencyKey: string,
+) {
+  return memberMutate(
+    session,
+    `/v1/tenant/members/${encodeURIComponent(member.userId)}`,
+    'PATCH',
+    {
+      userId: member.userId,
+      email: input.email.trim(),
+      phone: input.phone.trim(),
+      name: input.name.trim(),
+      employeeId: input.employeeId.trim(),
+      position: input.position.trim(),
+      departmentId: input.departmentId.trim(),
+      roleIds: [...input.roleIds],
+      version: member.version,
+    },
+    idempotencyKey,
+  )
 }
 
 export function inviteEnterpriseMember(session: TrustedSession, email: string, idempotencyKey: string) {
