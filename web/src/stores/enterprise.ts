@@ -13,19 +13,16 @@ import { timestamp } from '@/utils/format'
 import type { Member, MemberAction, Role, AuditRecord, Company, Department, DataScope } from '@/types/enterprise'
 import {
   activateEnterpriseMember,
-  assignEnterpriseMemberRole,
+  createEnterpriseMember,
   getEnterpriseMember,
-  inviteEnterpriseMember,
   memberRequestId,
   queryEnterpriseMembers,
-  memberRoleRequestId,
   memberRuntimeError,
   readEnterpriseMemberSession,
   removeEnterpriseMember,
-  revokeEnterpriseMemberRole,
   sameTrustedSession,
   suspendEnterpriseMember,
-  updateEnterpriseMemberProfile,
+  updateEnterpriseMember,
   type EnterpriseMemberListQuery,
   type EnterpriseTenantMember,
 } from '@/services/enterprise/memberRuntime'
@@ -270,6 +267,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       action,
       expectedVersion,
       id: draft.id,
+      username: (draft.username ?? '').trim().toLowerCase(),
+      activationMode: draft.activationMode ?? '',
       email: draft.email.trim().toLowerCase(),
       name: draft.name.trim(),
       phone: draft.phone.trim(),
@@ -599,6 +598,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   function asServerMember(member: Member): EnterpriseTenantMember {
     return {
       userId: member.id,
+      username: member.username ?? '',
       email: member.email,
       status: serverMemberStatus(member.status),
       version: member.runtimeVersion ?? member.version,
@@ -626,14 +626,23 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     if (departments.value.length && !departments.value.some((department) => department.id === draft.departmentId && department.enabled)) {
       throw new Error('请选择有效且启用的所属部门。')
     }
-    if (!draft.name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim())) {
-      throw new Error('请填写姓名和有效邮箱。')
+    if (!draft.name.trim()) throw new Error('请填写成员姓名。')
+    const email = draft.email.trim()
+    const phone = draft.phone.trim()
+    if (!email && !phone) throw new Error('手机号和邮箱至少填写一项。')
+    if (email && !email.includes('*') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new Error('请填写有效邮箱。')
     }
-    if (
-      members.value.some(
-        (member) => member.id !== draft.id && member.email.toLowerCase() === draft.email.toLowerCase() && member.status !== 'removed',
-      )
-    ) throw new Error('当前企业已存在该邮箱的成员。')
+    if (!current) {
+      const username = (draft.username ?? '').trim().toLowerCase()
+      if (username.length < 5 || username.length > 20 || /^\d+$/.test(username) || /\s/.test(username)) {
+        throw new Error('账号需为 5～20 位且不能为纯数字。')
+      }
+      if (!draft.activationMode) throw new Error('请选择成员激活方式。')
+      if (draft.activationMode === 'sms_initial_password' && !phone) {
+        throw new Error('短信发送账号密码需要填写手机号。')
+      }
+    }
     if (!current && previewMode && members.value.filter((member) => member.status !== 'removed').length >= 500) {
       throw new Error('成员额度已用完，请先申请扩容。')
     }
@@ -641,21 +650,23 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
 
   async function saveMember(draft: Member, action: MemberAction, expectedVersion: number) {
     const current = members.value.find((member) => member.id === draft.id)
-    if (!previewMode && current && action === 'edit' && draft.email.trim().toLowerCase() !== current.email.trim().toLowerCase()) {
-      throw new Error('登录邮箱由成员关系与身份服务管理，当前成员资料接口不支持修改。')
-    }
     if (current && current.version !== expectedVersion) throw new Error('成员资料已被其他操作修改，请重新打开后重试。')
     if (current) {
       const error = memberActionError(action, current, members.value, roles.value, draft.roleIds)
       if (error) throw new Error(error)
+      if ((draft.username ?? '').trim().toLowerCase() !== (current.username ?? '').trim().toLowerCase()) {
+        throw new Error('账号为全局唯一登录标识，创建后不可修改。')
+      }
     }
-    validateMemberDraft({ ...draft, email: draft.email.trim() }, current)
+    validateMemberDraft(draft, current)
 
     if (previewMode) {
       const updated = {
         ...draft,
+        username: (draft.username ?? '').trim().toLowerCase(),
         name: draft.name.trim(),
         email: draft.email.trim(),
+        status: current?.status ?? 'invited' as const,
         version: expectedVersion + 1,
       }
       if (current) snapshot.value.members = snapshot.value.members.map((member) => member.id === draft.id ? updated : member)
@@ -685,85 +696,51 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
 
     try {
       const trusted = await stableMemberSession()
-      if (action === 'role') {
-        if (!current) throw new Error('成员不存在。')
-        if (draft.scope !== current.scope) {
-          throw new Error('真实服务的数据范围由角色权限派生，当前不支持按成员单独覆盖数据范围。')
-        }
-        const add = draft.roleIds.filter((roleId) => !current.roleIds.includes(roleId))
-        const remove = current.roleIds.filter((roleId) => !draft.roleIds.includes(roleId))
-        for (const roleId of add) {
-          await assignEnterpriseMemberRole(
-            trusted,
-            current.id,
-            roleId,
-            key(`role-assign-${roleId}`, () => memberRoleRequestId('assign')),
-          )
-        }
-        for (const roleId of remove) {
-          await revokeEnterpriseMemberRole(
-            trusted,
-            current.id,
-            roleId,
-            key(`role-revoke-${roleId}`, () => memberRoleRequestId('revoke')),
-          )
-        }
-        await getEnterpriseMember(trusted, current.id)
-        await refreshMemberQuery()
-        memberMutation = null
-        return
-      }
-
       if (action === 'create' || action === 'invite') {
-        let receipt = await inviteEnterpriseMember(trusted, draft.email, key('invite', () => memberRequestId('invite')))
-        receipt = await updateEnterpriseMemberProfile(
+        const receipt = await createEnterpriseMember(
           trusted,
-          receipt,
           {
-            name: draft.name,
+            username: (draft.username ?? '').trim(),
+            email: draft.email,
             phone: draft.phone,
+            name: draft.name,
             employeeId: draft.employeeId,
             position: draft.position,
             departmentId: draft.departmentId,
+            roleIds: draft.roleIds,
+            activationMode: draft.activationMode === 'sms_initial_password' ? 'sms_initial_password' : 'activation_link',
           },
-          key('profile', () => memberRequestId('profile')),
+          key('create', () => memberRequestId('create')),
         )
-        for (const roleId of draft.roleIds) {
-          await assignEnterpriseMemberRole(
-            trusted,
-            receipt.userId,
-            roleId,
-            key(`role-assign-${roleId}`, () => memberRoleRequestId('assign')),
-          )
-        }
-        if (action === 'create') {
-          const invited = await getEnterpriseMember(trusted, receipt.userId)
-          await activateEnterpriseMember(trusted, invited, key('activate', () => memberRequestId('activate')))
-        }
-        await getEnterpriseMember(trusted, receipt.userId)
+        await getEnterpriseMember(trusted, receipt.member.userId)
         await refreshMemberQuery()
         memberMutation = null
-        return
+        return receipt
       }
 
-      if (action === 'edit') {
+      if (action === 'edit' || action === 'role') {
         if (!current) throw new Error('成员不存在。')
-        const receipt = await updateEnterpriseMemberProfile(
+        if (action === 'role' && draft.scope !== current.scope) {
+          throw new Error('真实服务的数据范围由角色权限派生，当前不支持按成员单独覆盖数据范围。')
+        }
+        const receipt = await updateEnterpriseMember(
           trusted,
           asServerMember(current),
           {
-            name: draft.name,
+            email: draft.email,
             phone: draft.phone,
+            name: draft.name,
             employeeId: draft.employeeId,
             position: draft.position,
             departmentId: draft.departmentId,
+            roleIds: draft.roleIds,
           },
-          key('profile', () => memberRequestId('profile')),
+          key('update', () => memberRequestId('update')),
         )
         await getEnterpriseMember(trusted, receipt.userId)
         await refreshMemberQuery()
         memberMutation = null
-        return
+        return receipt
       }
 
       throw new Error('该成员操作不应通过资料保存入口执行。')
