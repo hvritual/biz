@@ -39,12 +39,12 @@ export const router = createRouter({
     {
       path: '/workspace/:resource(devices)',
       component: () => import('@/features/runtime/pages/RuntimeConsoleView.vue'),
-      meta: { title: '业务设备', module: 'device-operations', surface: 'runtime' },
+      meta: { title: '业务设备', module: 'device-operations', surface: 'runtime', authorizationActions: ['device.list'] },
     },
     {
       path: '/workspace/:resource(members|roles)',
       component: () => import('@/features/runtime/pages/RuntimeConsoleView.vue'),
-      meta: { title: '业务工作区', module: 'enterprise', surface: 'runtime' },
+      meta: { title: '业务工作区', module: 'enterprise', surface: 'runtime', authorizationActions: ['tenant.member.list', 'tenant.role.list'] },
     },
     { path: '/', redirect: '/enterprise/members' },
     {
@@ -176,6 +176,11 @@ router.beforeEach(async (to) => {
   const required = Array.isArray(to.meta.authorizationActions)
     ? to.meta.authorizationActions.filter((value): value is string => typeof value === 'string' && value.length > 0)
     : []
+  const moduleCode = typeof to.meta.module === 'string' ? to.meta.module : ''
+  const tenantModules = new Set(['customers', 'success', 'sites', 'rental', 'device-operations', 'enterprise', 'system'])
+  if (!required.length && tenantModules.has(moduleCode)) {
+    return { path: '/authorization-state', query: { reason: 'forbidden', from: to.fullPath } }
+  }
   if (!required.length) return true
 
   await ensureCurrentAuthorization()
