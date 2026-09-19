@@ -103,4 +103,6 @@ jobs:
           git -C biz config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git -C biz add -A
           git -C biz commit -m "chore(access): regenerate #176 contract outputs"
+          git -C biz fetch origin feat/enterprise-176-member-query-atomic-create
+          git -C biz rebase origin/feat/enterprise-176-member-query-atomic-create
           git -C biz push origin HEAD:feat/enterprise-176-member-query-atomic-create
