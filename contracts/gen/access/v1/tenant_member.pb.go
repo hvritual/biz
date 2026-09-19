@@ -355,7 +355,7 @@ func (x *GetTenantMemberRequest) GetUserId() string {
 type ListTenantMembersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Free-text search. Plain name/account/employee-id matching is fuzzy; protected
-	// email/phone matching is exact through the #168 deterministic lookup index.
+	// email/phone matching is exact through the #168 deterministic lookup index; no decrypt-scan fallback is allowed.
 	Query        string             `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
 	RoleId       string             `protobuf:"bytes,2,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
 	DepartmentId string             `protobuf:"bytes,3,opt,name=department_id,json=departmentId,proto3" json:"department_id,omitempty"`
@@ -915,8 +915,17 @@ const file_access_v1_tenant_member_proto_rawDesc = "" +
 	"\x19InviteTenantMemberRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\"1\n" +
 	"\x16GetTenantMemberRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xd6\x01\n\x18ListTenantMembersRequest\x12\x14\n\x05query\x18\x01 \x01(\tR\x05query\x12\x17\n\arole_id\x18\x02 \x01(\tR\x06roleId\x12#\n\rdepartment_id\x18\x03 \x01(\tR\fdepartmentId\x125\n\x06status\x18\x04 \x01(\x0e2\x1d.access.v1.TenantMemberStatusR\x06status\x12\x12\n\x04page\x18\x05 \x01(\rR\x04page\x12\x1b\n\tpage_size\x18\x06 \x01(\rR\bpageSize\"g\n\x19ListTenantMembersResponse\x124\n\amembers\x18\x01 \x03(\v2\x1a.access.v1.TenantMemberDTOR\amembers\x12\x14\n\x05total\x18\x02 \x01(\x04R\x05total" +
-	"\" \n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xd6\x01\n" +
+	"\x18ListTenantMembersRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x12\x17\n" +
+	"\arole_id\x18\x02 \x01(\tR\x06roleId\x12#\n" +
+	"\rdepartment_id\x18\x03 \x01(\tR\fdepartmentId\x125\n" +
+	"\x06status\x18\x04 \x01(\x0e2\x1d.access.v1.TenantMemberStatusR\x06status\x12\x12\n" +
+	"\x04page\x18\x05 \x01(\rR\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x06 \x01(\rR\bpageSize\"g\n" +
+	"\x19ListTenantMembersResponse\x124\n" +
+	"\amembers\x18\x01 \x03(\v2\x1a.access.v1.TenantMemberDTOR\amembers\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x04R\x05total\" \n" +
 	"\x1eCountTenantQuotaMembersRequest\"Q\n" +
 	"\x1fCountTenantQuotaMembersResponse\x12\x12\n" +
 	"\x04used\x18\x01 \x01(\x04R\x04used\x12\x1a\n" +
