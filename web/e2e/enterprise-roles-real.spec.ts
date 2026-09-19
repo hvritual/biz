@@ -9,7 +9,7 @@ type Role = { id: string; name: string; status: string; version: number; permiss
 type RoleSummary = { roleId: string; roleName: string; roleStatus: string }
 type Member = { userId: string; email: string; status: string; version: number; name: string; phone: string; employeeId: string; position: string; departmentId: string; roles: RoleSummary[]; derivedDataScope: string }
 type Write = { path: string; method: string; headers: Record<string, string>; body: unknown }
-type Options = { unauthenticated?: boolean; listStatus?: number; mutationStatus?: number; readbackStatus?: number; ownerConflict?: boolean }
+type Options = { unauthenticated?: boolean; listStatus?: number; mutationStatus?: number; readbackStatus?: number; ownerConflict?: boolean; authorizationStatus?: number }
 
 const active = 'TENANT_ROLE_STATUS_ACTIVE'
 const disabled = 'TENANT_ROLE_STATUS_DISABLED'
@@ -52,6 +52,7 @@ async function mockRoleServer(page: Page, options: Options = {}) {
   })
   await page.route('**/api/auth/authorization', async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
+    if (options.authorizationStatus) return json(route, options.authorizationStatus, { message: 'authorization denied' })
     const buttonCodes = [
       'tenant.role.list',
       'tenant.role.create',
@@ -195,15 +196,19 @@ test('canonical roles page exposes authoritative member counts while membership 
   expect(server.getWrites()).toHaveLength(0)
 })
 
-test('401 and 403 are surfaced and never replaced with preview roles', async ({ page }) => {
+test('401 redirects to trusted login and 403 blocks roles before protected data loads', async ({ page }) => {
   await mockRoleServer(page, { unauthenticated: true })
-  await openRealRoles(page)
-  await expect(page.getByRole('alert')).toContainText('登录会话已失效')
+  await page.goto('/#/enterprise/roles')
+  await expect(page).toHaveURL(/\/api\/auth\/login\?return_to=/)
+  await expect(page.locator('[data-enterprise-page="roles"]')).toHaveCount(0)
   await expect(page.getByText('超级管理员', { exact: true })).toHaveCount(0)
+
   await page.unrouteAll({ behavior: 'ignoreErrors' })
-  await mockRoleServer(page, { listStatus: 403 })
-  await page.reload()
-  await expect(page.getByRole('alert')).toContainText('没有管理企业角色与权限的权限')
+  await mockRoleServer(page, { authorizationStatus: 403 })
+  await page.goto('/#/enterprise/roles')
+  await expect(page.locator('[data-authorization-state]')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '没有访问权限' })).toBeVisible()
+  await expect(page.locator('[data-enterprise-page="roles"]')).toHaveCount(0)
   await expect(page.getByText('超级管理员', { exact: true })).toHaveCount(0)
 })
 
