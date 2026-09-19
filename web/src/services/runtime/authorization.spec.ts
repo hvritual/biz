@@ -69,6 +69,28 @@ describe('current authorization runtime', () => {
     mocks.subscribe.mockClear()
   })
 
+  it('accepts the real server tenant-user actor kind only when session and aggregate match', async () => {
+    mocks.readSession.mockResolvedValue({ ...session, actor_kind: 'user' })
+    mocks.readCurrentAuthorization.mockResolvedValue(snapshot({ actor_kind: 'user' }))
+    const auth = await runtime()
+
+    await auth.ensureCurrentAuthorization()
+
+    expect(auth.currentAuthorizationState.status).toBe('ready')
+    expect(auth.currentAuthorizationAllows('tenant.member.list')).toBe(true)
+  })
+
+  it('rejects mismatched actor kinds even when tenant id matches', async () => {
+    mocks.readSession.mockResolvedValue({ ...session, actor_kind: 'user' })
+    mocks.readCurrentAuthorization.mockResolvedValue(snapshot({ actor_kind: 'tenant' }))
+    const auth = await runtime()
+
+    await auth.ensureCurrentAuthorization()
+
+    expect(auth.currentAuthorizationState.status).toBe('forbidden')
+    expect(auth.currentAuthorizationAllows('tenant.member.list')).toBe(false)
+  })
+
   it('allows only action codes returned by the current server aggregate', async () => {
     mocks.readSession.mockResolvedValue(session)
     mocks.readCurrentAuthorization.mockResolvedValue(snapshot())
