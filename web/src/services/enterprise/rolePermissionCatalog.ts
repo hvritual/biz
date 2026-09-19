@@ -2,6 +2,12 @@ import type { PermissionGrant } from '@/services/runtime/api'
 
 export type RoleGrantScope = 'none' | 'self' | 'sites' | 'all'
 
+export type ServerPermissionDefinition = {
+  permission: string
+  groups: string[]
+  actions: string[]
+}
+
 export type RolePermissionDefinition = {
   permission: string
   group: string
@@ -9,25 +15,80 @@ export type RolePermissionDefinition = {
   description: string
 }
 
-// API mode must only expose permission keys that are declared by the current
-// server contracts. This list is intentionally separate from demo/seed data.
-export const rolePermissionCatalog: RolePermissionDefinition[] = [
-  { permission: 'tenant.member.read', group: '企业成员', label: '查看成员', description: '读取当前租户成员与成员档案。' },
-  { permission: 'tenant.member.manage', group: '企业成员', label: '管理成员', description: '邀请、启停、移除及维护成员档案。' },
-  { permission: 'tenant.organization.read', group: '组织架构', label: '查看组织', description: '读取当前租户部门层级、负责人和成员归属。' },
-  { permission: 'tenant.organization.manage', group: '组织架构', label: '管理组织', description: '创建、修改、启停部门并维护组织关系。' },
-  { permission: 'tenant.role.read', group: '角色权限', label: '查看角色', description: '读取当前租户角色与权限授权。' },
-  { permission: 'tenant.role.manage', group: '角色权限', label: '管理角色', description: '创建、修改、启停角色并维护授权关系。' },
-  { permission: 'tenant.delegation.read', group: '租户授权', label: '查看授权', description: '读取租户间资源授权记录。' },
-  { permission: 'tenant.delegation.manage', group: '租户授权', label: '管理授权', description: '创建和撤销租户间资源授权。' },
-  { permission: 'device.read', group: '设备运营', label: '查看设备', description: '读取租户设备资产。' },
-  { permission: 'device.create', group: '设备运营', label: '创建设备', description: '创建设备资产。' },
-  { permission: 'device.update', group: '设备运营', label: '更新设备', description: '修改或转移设备资产。' },
-  { permission: 'device.delete', group: '设备运营', label: '删除设备', description: '删除设备资产。' },
-  { permission: 'site.read', group: '设备运营', label: '查看点位', description: '读取设备操作依赖的点位信息。' },
-  { permission: 'tenant.entitlement.read', group: '企业权益', label: '查看企业权益', description: '读取当前租户套餐权益决策。' },
-  { permission: 'commercial.catalog.read', group: '企业权益', label: '读取商业目录', description: '读取权益解析依赖的商业目录。' },
-]
+let liveRolePermissionCatalog: RolePermissionDefinition[] = []
+
+
+function permissionPresentation(permission: string, groups: string[]) {
+  const group =
+    permission.startsWith('tenant.member.') ? '企业成员'
+      : permission.startsWith('tenant.organization.') ? '组织架构'
+        : permission.startsWith('tenant.role.') ? '角色权限'
+          : permission.startsWith('tenant.delegation.') ? '租户授权'
+            : permission.startsWith('tenant.audit.') ? '操作日志'
+              : permission.startsWith('tenant.profile.') || permission.startsWith('tenant.branding.') ? '企业信息'
+                : permission.startsWith('device.') || permission.startsWith('site.') ? '设备运营'
+                  : permission.startsWith('tenant.entitlement.') || permission.startsWith('commercial.') ? '企业权益'
+                    : (groups[0] ?? '未分类')
+
+  const labels: Record<string, string> = {
+    'tenant.member.read': '查看成员',
+    'tenant.member.manage': '管理成员',
+    'tenant.organization.read': '查看组织',
+    'tenant.organization.manage': '管理组织',
+    'tenant.role.read': '查看角色',
+    'tenant.role.manage': '管理角色',
+    'tenant.delegation.read': '查看授权',
+    'tenant.delegation.manage': '管理授权',
+    'tenant.audit.read': '查看日志',
+    'tenant.audit.export': '导出日志',
+    'tenant.profile.read': '查看企业信息',
+    'tenant.profile.manage': '管理企业信息',
+    'tenant.branding.read': '查看品牌',
+    'tenant.branding.manage': '管理品牌',
+    'device.read': '查看设备',
+    'device.create': '创建设备',
+    'device.update': '更新设备',
+    'device.delete': '删除设备',
+    'site.read': '查看点位',
+    'tenant.entitlement.read': '查看企业权益',
+    'commercial.catalog.read': '读取商业目录',
+  }
+
+  return {
+    group,
+    label: labels[permission] ?? permission,
+  }
+}
+
+export function replaceRolePermissionCatalog(definitions: ServerPermissionDefinition[]) {
+  const seen = new Set<string>()
+  liveRolePermissionCatalog = definitions
+    .filter((item) => {
+      const permission = item.permission.trim()
+      if (!permission || seen.has(permission)) return false
+      seen.add(permission)
+      return true
+    })
+    .map((item) => {
+      const groups = [...new Set(item.groups.map((value) => value.trim()).filter(Boolean))].sort()
+      const actions = [...new Set(item.actions.map((value) => value.trim()).filter(Boolean))].sort()
+      const permission = item.permission.trim()
+      const presentation = permissionPresentation(permission, groups)
+      return {
+        permission,
+        group: presentation.group,
+        label: presentation.label,
+        // Presentation metadata never grants authority: action codes and permission
+        // membership still come exclusively from the server Action Catalog.
+        description: actions.length ? actions.join(' · ') : permission,
+      }
+    })
+    .sort((left, right) => left.permission.localeCompare(right.permission))
+}
+
+export function clearRolePermissionCatalog() {
+  liveRolePermissionCatalog = []
+}
 
 export const roleGrantScopeOptions: Array<{ value: RoleGrantScope; label: string }> = [
   { value: 'none', label: '无数据' },
@@ -41,12 +102,12 @@ export function roleGrantScopeLabel(scope: string) {
 }
 
 export function rolePermissionLabel(permission: string) {
-  return rolePermissionCatalog.find((item) => item.permission === permission)?.label ?? permission
+  return liveRolePermissionCatalog.find((item) => item.permission === permission)?.label ?? permission
 }
 
 export function rolePermissionGroups() {
   const groups = new Map<string, RolePermissionDefinition[]>()
-  for (const item of rolePermissionCatalog) {
+  for (const item of liveRolePermissionCatalog) {
     const values = groups.get(item.group) ?? []
     values.push(item)
     groups.set(item.group, values)

@@ -1373,6 +1373,27 @@
           "number": 17,
           "kind": "scalar",
           "type": "string"
+        },
+        {
+          "name": "trace_id",
+          "jsonName": "traceId",
+          "number": 18,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "resource_tenant_id",
+          "jsonName": "resourceTenantId",
+          "number": 19,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "decision_reason",
+          "jsonName": "decisionReason",
+          "number": 20,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {

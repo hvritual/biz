@@ -230,6 +230,30 @@ func TestCE12BrowserSeed(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+
+	// Bootstrap is an infrastructure convenience that binds users to the tenant
+	// owner role. The #174 viewer fixture must prove principal-specific current
+	// grants, so replace only this test user's owner binding with a dedicated
+	// read-only role instead of relying on stale token/role summaries.
+	securityViewerRoleID := allowed + ":security-viewer"
+	if err := db.Exec("DELETE FROM biz_member_roles WHERE tenant_id = ? AND user_id = ?", allowed, securityViewerUserID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("biz_roles").Create(map[string]any{
+		"id": securityViewerRoleID, "tenant_id": allowed, "name": "Security Viewer", "status": "active", "version": 1,
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("biz_member_roles").Create(map[string]any{
+		"tenant_id": allowed, "user_id": securityViewerUserID, "role_id": securityViewerRoleID,
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("biz_permission_grants").Create(map[string]any{
+		"tenant_id": allowed, "role_id": securityViewerRoleID, "permission": "tenant.member.read", "scope": "all",
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
 	adminRoleID := allowed + ":password-recovery-admin"
 	if err := db.Table("biz_roles").Create(map[string]any{
 		"id": adminRoleID, "tenant_id": allowed, "name": "Password Recovery Admin", "status": "active", "version": 1,
@@ -289,6 +313,32 @@ func TestCE12BrowserSeed(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+	}
+
+	// #174 resolves the effective menu/button/API actions from both current Access
+	// grants and current Commercial facts. The security viewer has member.read, so
+	// the allowed tenant must also own the member lifecycle capability; otherwise
+	// tenant.member.list is correctly filtered out despite the IAM grant.
+	var memberCapabilityVersion uint64
+	if err := db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", allowed).Scan(&memberCapabilityVersion).Error; err != nil {
+		t.Fatal(err)
+	}
+	if memberCapabilityVersion == 0 {
+		t.Fatal("authorization allowed tenant has no subscription-derived source version")
+	}
+	_, err = entitlements.CreateEntitlementOverride(ce04Context(platformToken, "ce12-access-member-lifecycle"), &commercialv1.CreateEntitlementOverrideRequest{
+		RequestId:       "ce12-access-member-lifecycle",
+		TenantId:        allowed,
+		ExpectedVersion: memberCapabilityVersion,
+		ModuleCode:      "access-management",
+		Target:          commercialv1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY,
+		Key:             "tenant.member.lifecycle",
+		Effect:          commercialv1.EntitlementEffect_ENTITLEMENT_EFFECT_GRANT,
+		EffectiveAt:     time.Now().UTC().Add(-time.Minute).Format(time.RFC3339),
+		Reason:          "CE12 #174 proves member read action requires current IAM and Commercial authorization",
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	var sourceVersion uint64

@@ -50,6 +50,16 @@ async function mockRoleServer(page: Page, options: Options = {}) {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     return json(route, 200, { authenticated: true, actor_kind: 'tenant', user_id: 'user-001', active_tenant_id: 'tenant-001', csrf_token: 'csrf-real-role', tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }] })
   })
+  await page.route('**/api/auth/action-catalog', async (route) => json(route, 200, {
+    schema_version: 'v1',
+    actions: [],
+    permissions: [
+      { permission: 'tenant.member.read', groups: ['access/tenant_member_lifecycle'], actions: ['tenant.member.get', 'tenant.member.list'] },
+      { permission: 'tenant.member.manage', groups: ['access/tenant_member_lifecycle'], actions: ['tenant.member.invite', 'tenant.member.profile.update'] },
+      { permission: 'tenant.role.read', groups: ['access/tenant_role_permission'], actions: ['tenant.role.get', 'tenant.role.list'] },
+      { permission: 'tenant.role.manage', groups: ['access/tenant_role_permission'], actions: ['tenant.role.create', 'tenant.role.update_permissions'] },
+    ],
+  }))
   await page.route('**/api/v1/tenant/members', async (route) => json(route, 200, { members }))
   await page.route(/\/api\/v1\/tenant\/roles(?:\/.*)?$/, async (route) => {
     const request = route.request()
