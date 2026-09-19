@@ -64,6 +64,25 @@ async function mockAuditServer(page: Page, options: { readStatus?: number; expor
     csrf_token: 'csrf-audit-real',
     tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }],
   }))
+  await page.route('**/api/auth/authorization', async (route) => {
+    const buttonCodes = ["access.audit.list","access.audit.get","access.audit.export"]
+    return json(route, 200, {
+      authenticated: true,
+      actor_kind: 'tenant_user',
+      user_id: 'user-001',
+      tenant_id: 'tenant-001',
+      tenant_name: 'CoffeeLink 测试租户',
+      timezone: 'Asia/Shanghai',
+      roles: ['operator'],
+      grants: [],
+      data_policies: [],
+      site_ids: [],
+      permission_version: 'sha256:e2e',
+      modules: [{ code: 'access-management', allowed: true, reason: 'allowed', actions: buttonCodes }],
+      actions: buttonCodes.map((code) => ({ code, permissions: [], permission_mode: 'all' })),
+      button_codes: buttonCodes,
+    })
+  })
 
   await page.route('**/api/v1/tenant/audit-logs/exports', async (route) => {
     const request = route.request()
