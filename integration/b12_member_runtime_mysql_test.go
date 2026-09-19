@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -56,6 +57,49 @@ func startB123Runtime(t *testing.T, db *gorm.DB) *bizruntime.Started {
 		_ = started.App.Shutdown(shutdown)
 	})
 	return started
+}
+
+func startB123Enterprise176Runtime(t *testing.T, db *gorm.DB) (*bizruntime.Started, *accesspersistence.VerificationProtection) {
+	t.Helper()
+	config := deviceops.DefaultConfig()
+	config.HTTPListenAddress = "127.0.0.1:0"
+	config.GRPCListenAddress = "127.0.0.1:0"
+	config.AutoMigrate = true
+	protection, err := accesspersistence.NewVerificationProtection(accesspersistence.VerificationProtectionConfig{
+		ActiveVersion: "v1",
+		Keys:          map[string][]byte{"v1": []byte(strings.Repeat("K", 32))},
+		HMACKey:       []byte(strings.Repeat("H", 32)),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	provider, err := platform.New(platform.Options{
+		Config: bizruntime.ConfigProvider{DeviceOps: config},
+		Logger: logExt.NewBaseLogger(),
+		Databases: map[string]platform.DatabaseFactory{
+			"primary": platform.DatabaseFactoryFunc(func(context.Context, string) (platform.DatabaseResource, error) {
+				return platform.BorrowedDatabase(db), nil
+			}),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	started, err := bizruntime.BootstrapWithOptionsAndSecurity(ctx, provider, bizruntime.Options{
+		DeviceOps: config, MemberActivationTTL: 15 * time.Minute,
+	}, nil, protection)
+	if err != nil {
+		cancel()
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		cancel()
+		shutdown, done := context.WithTimeout(context.Background(), 5*time.Second)
+		defer done()
+		_ = started.App.Shutdown(shutdown)
+	})
+	return started, protection
 }
 
 func seedB123TenantAdmin(t *testing.T, db *gorm.DB, tenantID, userID, email, rawToken string) {
@@ -371,3 +415,182 @@ func TestB123Enterprise176MemberListFiltersPaginationAndTenantIsolation(t *testi
 		t.Fatalf("tenant B observed tenant A member: %+v", crossTenant)
 	}
 }
+
+func createB123MemberHTTP(t *testing.T, base, token, key string, input *accessv1.CreateTenantMemberRequest) (*accessv1.TenantMemberCreationReceipt, int, []byte) {
+	t.Helper()
+	payload, err := protojson.Marshal(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request, _ := http.NewRequest(http.MethodPost, base+"/v1/tenant/members/create", bytes.NewReader(payload))
+	request.Header.Set("Authorization", "Bearer "+token)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Idempotency-Key", key)
+	response, err := (&http.Client{Timeout: 5 * time.Second}).Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	body, _ := io.ReadAll(response.Body)
+	if response.StatusCode != http.StatusOK {
+		return nil, response.StatusCode, body
+	}
+	var receipt accessv1.TenantMemberCreationReceipt
+	if err := protojson.Unmarshal(body, &receipt); err != nil {
+		t.Fatal(err)
+	}
+	return &receipt, response.StatusCode, body
+}
+
+func activateB123MemberHTTP(t *testing.T, base, token, key, userID string, version uint64) (int, []byte) {
+	t.Helper()
+	payload, err := protojson.Marshal(&accessv1.ActivateTenantMemberRequest{UserId: userID, Version: version})
+	if err != nil {
+		t.Fatal(err)
+	}
+	request, _ := http.NewRequest(http.MethodPost, base+"/v1/tenant/members/"+userID+"/activate", bytes.NewReader(payload))
+	request.Header.Set("Authorization", "Bearer "+token)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Idempotency-Key", key)
+	response, err := (&http.Client{Timeout: 5 * time.Second}).Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	body, _ := io.ReadAll(response.Body)
+	return response.StatusCode, body
+}
+
+func TestB123Enterprise176AtomicMemberCreateRollsBackAndRequiresActivation(t *testing.T) {
+	db := openDB(t)
+	stamp := fmt.Sprint(time.Now().UnixNano())
+	started, _ := startB123Enterprise176Runtime(t, db)
+	base := "http://" + started.HTTPAddress()
+
+	tenantA, tenantB := "e176-create-a-"+stamp, "e176-create-b-"+stamp
+	tokenA, tokenB := "e176-create-token-a-"+stamp, "e176-create-token-b-"+stamp
+	seedB123TenantAdmin(t, db, tenantA, "e176-admin-a-"+stamp, "e176-admin-a-"+stamp+"@example.invalid", tokenA)
+	seedB123TenantAdmin(t, db, tenantB, "e176-admin-b-"+stamp, "e176-admin-b-"+stamp+"@example.invalid", tokenB)
+	for _, tenantID := range []string{tenantA, tenantB} {
+		adminRoleID := tenantID + ":member-admin"
+		if err := db.Exec("INSERT INTO biz_permission_grants (tenant_id,role_id,permission,scope) VALUES (?,?,?,?)", tenantID, adminRoleID, "tenant.role.manage", "all").Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	roleA, roleB := tenantA+":operator", tenantB+":operator"
+	if err := db.Exec("INSERT INTO biz_roles (id,tenant_id,name,status,version) VALUES (?,?,?,?,?)", roleA, tenantA, "operator", "active", 1).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("INSERT INTO biz_roles (id,tenant_id,name,status,version) VALUES (?,?,?,?,?)", roleB, tenantB, "operator", "active", 1).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	suffix := stamp
+	if len(suffix) > 8 {
+		suffix = suffix[len(suffix)-8:]
+	}
+	username := "user176" + suffix
+	email := "member-create-" + stamp + "@example.invalid"
+	phone := "+49170176" + suffix
+	receipt, statusCode, body := createB123MemberHTTP(t, base, tokenA, "e176-create:"+stamp, &accessv1.CreateTenantMemberRequest{
+		Username: username,
+		Email: email,
+		Phone: phone,
+		Name: "Atomic Member",
+		EmployeeId: "EMP-176",
+		Position: "Operator",
+		RoleIds: []string{roleA},
+		ActivationMode: accessv1.TenantMemberActivationMode_TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK,
+	})
+	if statusCode != http.StatusOK {
+		t.Fatalf("atomic create status=%d body=%s", statusCode, body)
+	}
+	member := receipt.GetMember()
+	if member == nil || member.GetUserId() == "" || member.GetUsername() != username || member.GetStatus() != accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_INVITED {
+		t.Fatalf("unexpected creation receipt: %+v", receipt)
+	}
+	if receipt.GetNotificationEventId() == "" || receipt.GetDeliveryState() != "PENDING" || receipt.GetMaskedDestination() == "" {
+		t.Fatalf("activation receipt does not expose honest queued state: %+v", receipt)
+	}
+	if strings.Contains(string(body), "password") || strings.Contains(string(body), "token=") {
+		t.Fatalf("creation API leaked activation secret: %s", body)
+	}
+	var roleCount int64
+	if err := db.Table("biz_member_roles").Where("tenant_id = ? AND user_id = ? AND role_id = ?", tenantA, member.GetUserId(), roleA).Count(&roleCount).Error; err != nil {
+		t.Fatal(err)
+	}
+	if roleCount != 1 {
+		t.Fatalf("initial role was not atomically bound: count=%d", roleCount)
+	}
+	var activation struct{ State, SecretHash, NotificationEventID string }
+	if err := db.Table("biz_member_activations").Select("state, secret_hash, notification_event_id").
+		Where("tenant_id = ? AND user_id = ?", tenantA, member.GetUserId()).Scan(&activation).Error; err != nil {
+		t.Fatal(err)
+	}
+	if activation.State != "PENDING" || activation.SecretHash == "" || activation.NotificationEventID != receipt.GetNotificationEventId() {
+		t.Fatalf("activation persistence mismatch: %+v", activation)
+	}
+	var notification struct{ State, DestinationCiphertext, SecretCiphertext string }
+	if err := db.Table("biz_security_notification_outbox").Select("state, destination_ciphertext, secret_ciphertext").
+		Where("event_id = ?", receipt.GetNotificationEventId()).Scan(&notification).Error; err != nil {
+		t.Fatal(err)
+	}
+	if notification.State != "PENDING" || notification.DestinationCiphertext == "" || notification.SecretCiphertext == "" {
+		t.Fatalf("secure activation notification not staged: %+v", notification)
+	}
+
+	statusCode, body = activateB123MemberHTTP(t, base, tokenA, "e176-admin-activate:"+stamp, member.GetUserId(), member.GetVersion())
+	if statusCode != http.StatusConflict {
+		t.Fatalf("admin bypassed pending activation: status=%d body=%s", statusCode, body)
+	}
+
+	badUsername := "bad176" + suffix
+	_, statusCode, _ = createB123MemberHTTP(t, base, tokenA, "e176-bad-role:"+stamp, &accessv1.CreateTenantMemberRequest{
+		Username: badUsername,
+		Email: "bad-role-"+stamp+"@example.invalid",
+		Name: "Rollback Member",
+		RoleIds: []string{tenantA + ":missing-role"},
+		ActivationMode: accessv1.TenantMemberActivationMode_TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK,
+	})
+	if statusCode == http.StatusOK {
+		t.Fatal("create with missing role unexpectedly succeeded")
+	}
+	var leakedUsers int64
+	if err := db.Table("biz_users").Where("username = ?", badUsername).Count(&leakedUsers).Error; err != nil {
+		t.Fatal(err)
+	}
+	if leakedUsers != 0 {
+		t.Fatalf("failed atomic create leaked account rows: %d", leakedUsers)
+	}
+
+	_, statusCode, _ = createB123MemberHTTP(t, base, tokenA, "e176-duplicate-username:"+stamp, &accessv1.CreateTenantMemberRequest{
+		Username: username,
+		Email: "different-"+stamp+"@example.invalid",
+		Name: "Duplicate Username",
+		RoleIds: []string{roleA},
+		ActivationMode: accessv1.TenantMemberActivationMode_TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK,
+	})
+	if statusCode != http.StatusConflict {
+		t.Fatalf("duplicate global username status=%d want=%d", statusCode, http.StatusConflict)
+	}
+
+	_, statusCode, body = createB123MemberHTTP(t, base, tokenB, "e176-existing-account-sms:"+stamp, &accessv1.CreateTenantMemberRequest{
+		Username: username,
+		Email: email,
+		Phone: phone,
+		Name: "Shared Account Tenant B",
+		RoleIds: []string{roleB},
+		ActivationMode: accessv1.TenantMemberActivationMode_TENANT_MEMBER_ACTIVATION_MODE_SMS_INITIAL_PASSWORD,
+	})
+	if statusCode != http.StatusConflict {
+		t.Fatalf("existing shared account SMS status=%d want=%d body=%s", statusCode, http.StatusConflict, body)
+	}
+	var tenantBMembership int64
+	if err := db.Table("biz_memberships").Where("tenant_id = ? AND user_id = ?", tenantB, member.GetUserId()).Count(&tenantBMembership).Error; err != nil {
+		t.Fatal(err)
+	}
+	if tenantBMembership != 0 {
+		t.Fatalf("rejected existing-account SMS left partial tenant membership: %d", tenantBMembership)
+	}
+}
+
