@@ -1,0 +1,116 @@
+name: Enterprise 174 current authorization qualification
+
+on:
+  push:
+    branches:
+      - feat/enterprise-174-current-authorization
+    paths:
+      - .github/workflows/enterprise-174-current-authorization.yml
+      - contracts/proto/access/v1/tenant_audit.proto
+      - internal/access/application/tenant_audit_management.go
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate-development-artifacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Read consumer lock
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          source biz/.yunka/source.env
+          echo "sha=$YUNKA_COMMIT" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout exact Yunka baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ steps.source.outputs.sha }}
+          path: yunka.io
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Load locked toolchain
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "protoc_release=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "protoc_sha256=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Install locked protoc
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/protoc.zip"
+          install_root="$RUNNER_TEMP/protoc"
+          curl --fail --silent --show-error --location --retry 3             "https://github.com/protocolbuffers/protobuf/releases/download/v${{ steps.lock.outputs.protoc_release }}/protoc-${{ steps.lock.outputs.protoc_release }}-linux-x86_64.zip"             -o "$archive"
+          echo "${{ steps.lock.outputs.protoc_sha256 }}  $archive" | sha256sum -c -
+          mkdir -p "$install_root"
+          unzip -q "$archive" -d "$install_root"
+          echo "$install_root/bin" >> "$GITHUB_PATH"
+
+      - name: Run canonical make generate
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          make generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
+
+      - name: Run canonical make check against generated worktree
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          make check YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
+
+      - name: Capture generated worktree
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd biz
+          mkdir -p "$RUNNER_TEMP/enterprise-174-generated/files"
+          git status --porcelain=v1 > "$RUNNER_TEMP/enterprise-174-generated/status.txt"
+          git diff --binary > "$RUNNER_TEMP/enterprise-174-generated/generated.patch"
+          while IFS= read -r line; do
+            path="${line:3}"
+            case "$path" in
+              *" -> "*) path="${path##* -> }" ;;
+            esac
+            if [ -f "$path" ]; then
+              mkdir -p "$RUNNER_TEMP/enterprise-174-generated/files/$(dirname "$path")"
+              cp "$path" "$RUNNER_TEMP/enterprise-174-generated/files/$path"
+            fi
+          done < "$RUNNER_TEMP/enterprise-174-generated/status.txt"
+          printf 'candidate=%s\n' "$(git rev-parse HEAD)" > "$RUNNER_TEMP/enterprise-174-generated/provenance.txt"
+          printf 'framework=%s\n' "${{ steps.source.outputs.sha }}" >> "$RUNNER_TEMP/enterprise-174-generated/provenance.txt"
+
+      - name: Upload generated worktree
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: enterprise-174-generated-worktree
+          path: ${{ runner.temp }}/enterprise-174-generated
+          if-no-files-found: error
+          retention-days: 1
