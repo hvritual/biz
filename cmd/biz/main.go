@@ -86,6 +86,19 @@ func run() error {
 		return err
 	}
 
+	verificationProtection, err := bizruntime.BuildVerificationProtection(
+		os.Getenv("YUNKA_BIZ_VERIFICATION_ACTIVE_KEY_VERSION"),
+		os.Getenv("YUNKA_BIZ_VERIFICATION_KEYS_JSON"),
+		os.Getenv("YUNKA_BIZ_VERIFICATION_HMAC_KEY_B64"),
+	)
+	if err != nil {
+		return err
+	}
+	memberActivationTTL := envDuration("YUNKA_BIZ_MEMBER_ACTIVATION_TTL", 0)
+	if memberActivationTTL > 0 && verificationProtection == nil {
+		return errors.New("YUNKA_BIZ_MEMBER_ACTIVATION_TTL requires verification protection keys")
+	}
+
 	provider, err := platform.New(platform.Options{
 		Config:   bizruntime.ConfigProvider{DeviceOps: config},
 		Logger:   logExt.NewBaseLogger(),
@@ -114,9 +127,12 @@ func run() error {
 		CommercialLifecycle: lifecycle,
 		ProvisioningWorker:  bizruntime.ProvisioningWorkerOptions{Token: workerToken, Automatic: workerToken != ""},
 		WebAuth:             webAuth,
+		MemberActivationTTL: memberActivationTTL,
 	}
 	var started *bizruntime.Started
-	if contactProtection == nil {
+	if verificationProtection != nil {
+		started, err = bizruntime.BootstrapWithOptionsAndSecurity(ctx, provider, runtimeOptions, contactProtection, verificationProtection)
+	} else if contactProtection == nil {
 		started, err = bizruntime.BootstrapWithOptions(ctx, provider, runtimeOptions)
 	} else {
 		started, err = bizruntime.BootstrapWithOptionsAndContactProtection(ctx, provider, runtimeOptions, contactProtection)
