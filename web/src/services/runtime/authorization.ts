@@ -162,6 +162,7 @@ export function startAuthorizationSynchronization() {
     invalidateCurrentAuthorization()
     void ensureCurrentAuthorization().catch(() => undefined)
   })
+  void ensureCurrentAuthorization().catch(() => undefined)
 }
 
 export function stopAuthorizationSynchronization() {
