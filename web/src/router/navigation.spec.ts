@@ -41,6 +41,25 @@ describe('primary navigation information architecture', () => {
     expect(enterpriseNavigation.map((item) => item.label)).toEqual(['成员管理', '角色权限', '组织架构', '套餐额度', '企业信息', '品牌与主题', '操作日志'])
   })
 
+
+  it('binds every enterprise route and quick action to stable server action codes', () => {
+    expect(enterpriseNavigation.every((item) => item.authorizationActions?.length === 1)).toBe(true)
+    expect(enterpriseNavigation.map((item) => [item.id, item.authorizationActions?.[0]])).toEqual([
+      ['members', 'tenant.member.list'],
+      ['roles', 'tenant.role.list'],
+      ['organization', 'tenant.department.list'],
+      ['plan', 'commercial.subscription.get_my'],
+      ['company', 'tenant.profile.get'],
+      ['branding', 'tenant.branding.get'],
+      ['logs', 'access.audit.list'],
+    ])
+    const enterprise = primaryNavigation.find((item) => item.id === 'enterprise')
+    expect(enterprise?.authorizationModule).toBe('access-management')
+    expect(enterprise?.authorizationActions).toEqual(expect.arrayContaining(
+      enterpriseNavigation.flatMap((item) => item.authorizationActions ?? []),
+    ))
+  })
+
   it('groups customer operations by management, collaboration and success instead of flattening pages', () => {
     expect(groups('customer-operations')).toEqual(['客户管理', '客户协同', '客户成功'])
     expect(customerDomains['customer-operations']?.links.map((item) => item.label)).not.toContain('客户工作区')
