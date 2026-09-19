@@ -36,6 +36,22 @@ type memberActivationRecord struct {
 
 func (memberActivationRecord) TableName() string { return "biz_member_activations" }
 
+var (
+	ErrMemberActivationInvalid  = errors.New("access: member activation invalid")
+	ErrMemberActivationExpired  = errors.New("access: member activation expired")
+	ErrMemberActivationConsumed = errors.New("access: member activation consumed")
+)
+
+type MemberActivationView struct {
+	TenantID        string
+	UserID          string
+	Mode            string
+	NewAccount      bool
+	RequiresPassword bool
+	ExpiresAt       time.Time
+}
+
+
 type TenantMemberActivationRepository struct {
 	database     *gorm.DB
 	verification *VerificationRepository
@@ -150,4 +166,183 @@ func maskActivationDestination(channel domain.SecurityNotificationChannel, desti
 		return MaskPhone(destination)
 	}
 	return MaskEmail(destination)
+}
+
+func (store *Store) InspectMemberActivation(ctx context.Context, token string) (MemberActivationView, error) {
+	if store == nil || store.database == nil || strings.TrimSpace(token) == "" {
+		return MemberActivationView{}, ErrMemberActivationInvalid
+	}
+	var record memberActivationRecord
+	if err := store.database.WithContext(ctx).
+		Where("secret_hash = ? AND mode = ?", TokenHash(strings.TrimSpace(token)), memberActivationModeLink).
+		First(&record).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return MemberActivationView{}, ErrMemberActivationInvalid
+		}
+		return MemberActivationView{}, err
+	}
+	if record.State == memberActivationStateConsumed || record.ConsumedAt != nil {
+		return MemberActivationView{}, ErrMemberActivationConsumed
+	}
+	if !record.ExpiresAt.After(time.Now().UTC()) {
+		return MemberActivationView{}, ErrMemberActivationExpired
+	}
+	return MemberActivationView{
+		TenantID: record.TenantID,
+		UserID: record.UserID,
+		Mode: record.Mode,
+		NewAccount: record.NewAccount,
+		RequiresPassword: record.NewAccount,
+		ExpiresAt: record.ExpiresAt,
+	}, nil
+}
+
+func (store *Store) CompleteMemberActivationLink(ctx context.Context, token, newPassword, confirmation string) (MemberActivationView, error) {
+	if store == nil || store.database == nil || strings.TrimSpace(token) == "" {
+		return MemberActivationView{}, ErrMemberActivationInvalid
+	}
+	var view MemberActivationView
+	err := store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var record memberActivationRecord
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("secret_hash = ? AND mode = ?", TokenHash(strings.TrimSpace(token)), memberActivationModeLink).
+			First(&record).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrMemberActivationInvalid
+			}
+			return err
+		}
+		if record.State == memberActivationStateConsumed || record.ConsumedAt != nil {
+			return ErrMemberActivationConsumed
+		}
+		now := time.Now().UTC()
+		if !record.ExpiresAt.After(now) {
+			return ErrMemberActivationExpired
+		}
+		if record.NewAccount {
+			if newPassword != confirmation {
+				return ErrPasswordMismatch
+			}
+			if err := ValidateUserChosenPassword(newPassword); err != nil {
+				return err
+			}
+			if err := setUserPassword(ctx, tx, record.UserID, newPassword); err != nil {
+				return err
+			}
+		}
+		if err := completeMemberActivation(ctx, tx, &record, now); err != nil {
+			return err
+		}
+		view = MemberActivationView{
+			TenantID: record.TenantID, UserID: record.UserID, Mode: record.Mode,
+			NewAccount: record.NewAccount, RequiresPassword: record.NewAccount, ExpiresAt: record.ExpiresAt,
+		}
+		return nil
+	})
+	return view, err
+}
+
+func (store *Store) CompleteInitialPasswordActivationForLogin(
+	ctx context.Context,
+	requestID, browserSecret, csrf, newPassword, confirmation string,
+) (LocalUserIdentity, uint64, error) {
+	if store == nil || store.database == nil || strings.TrimSpace(requestID) == "" || strings.TrimSpace(browserSecret) == "" || strings.TrimSpace(csrf) == "" {
+		return LocalUserIdentity{}, 0, ErrMemberActivationInvalid
+	}
+	if newPassword != confirmation {
+		return LocalUserIdentity{}, 0, ErrPasswordMismatch
+	}
+	if err := ValidateUserChosenPassword(newPassword); err != nil {
+		return LocalUserIdentity{}, 0, err
+	}
+	var identity LocalUserIdentity
+	var loginAuditID uint64
+	err := store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var request firstPartyAuthorizationRequestRecord
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("request_hash = ? AND browser_hash = ?", TokenHash(requestID), TokenHash(browserSecret)).
+			First(&request).Error; err != nil {
+			return ErrMemberActivationInvalid
+		}
+		if !request.ExpiresAt.After(time.Now().UTC()) || !constantTimeTokenHashEqual(request.CSRFHash, TokenHash(csrf)) || strings.TrimSpace(request.AuthenticatedUserID) == "" {
+			return ErrMemberActivationInvalid
+		}
+		var records []memberActivationRecord
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("user_id = ? AND mode = ? AND state = ?", request.AuthenticatedUserID, memberActivationModeSMS, memberActivationStatePending).
+			Order("created_at ASC").Limit(2).Find(&records).Error; err != nil {
+			return err
+		}
+		if len(records) != 1 {
+			return ErrMemberActivationInvalid
+		}
+		record := records[0]
+		now := time.Now().UTC()
+		if !record.ExpiresAt.After(now) {
+			return ErrMemberActivationExpired
+		}
+		if err := setUserPassword(ctx, tx, record.UserID, newPassword); err != nil {
+			return err
+		}
+		if err := completeMemberActivation(ctx, tx, &record, now); err != nil {
+			return err
+		}
+		var user userRecord
+		if err := tx.Where("id = ? AND status = ?", record.UserID, "active").First(&user).Error; err != nil {
+			return err
+		}
+		email, err := store.userEmail(user)
+		if err != nil {
+			return err
+		}
+		identity = LocalUserIdentity{UserID: user.ID, Email: email}
+		loginAuditID = request.LoginAuditID
+		return nil
+	})
+	return identity, loginAuditID, err
+}
+
+func completeMemberActivation(ctx context.Context, tx *gorm.DB, record *memberActivationRecord, now time.Time) error {
+	result := tx.WithContext(ctx).Model(&membershipRecord{}).
+		Where("tenant_id = ? AND user_id = ? AND status = ?", record.TenantID, record.UserID, domain.TenantMemberStatusInvited).
+		Updates(map[string]any{
+			"status": domain.TenantMemberStatusActive,
+			"version": gorm.Expr("version + 1"),
+			"updated_at": now,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected != 1 {
+		return ErrMemberActivationInvalid
+	}
+	record.State = memberActivationStateConsumed
+	record.ConsumedAt = &now
+	record.UpdatedAt = now
+	if err := tx.WithContext(ctx).Model(&memberActivationRecord{}).
+		Where("tenant_id = ? AND user_id = ? AND state = ?", record.TenantID, record.UserID, memberActivationStatePending).
+		Updates(map[string]any{"state": record.State, "consumed_at": now, "updated_at": now}).Error; err != nil {
+		return err
+	}
+	if record.NotificationEventID != "" {
+		if err := tx.WithContext(ctx).Model(&securityNotificationOutboxRecord{}).
+			Where("event_id = ? AND state IN ?", record.NotificationEventID, []string{domain.NotificationStatePending, domain.NotificationStateFailed}).
+			Updates(map[string]any{
+				"state": domain.NotificationStateCancelled,
+				"destination_ciphertext": "",
+				"secret_ciphertext": "",
+				"failure_code": "MEMBER_ACTIVATED",
+				"updated_at": now,
+			}).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (store *Store) EnsureMemberActivationSchema(ctx context.Context) error {
+	if store == nil || store.database == nil {
+		return errors.New("access: member activation schema store unavailable")
+	}
+	return store.database.WithContext(ctx).AutoMigrate(&memberActivationRecord{}, &userPasswordCredentialRecord{})
 }
