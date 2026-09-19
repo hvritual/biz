@@ -118,11 +118,11 @@ func (service *TenantMemberLifecycleService) CreateTenantMember(ctx context.Cont
 	}
 
 	userID := newMemberUserID()
-	member, accountCreated, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (struct {
+	created, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (struct {
 		Member         domain.Membership
 		AccountCreated bool
 	}, error) {
-		created, isNew, createErr := scope.Repositories().Member.Create(scope.Context(), tenantID, ports.TenantMemberCreateInput{
+		member, isNew, createErr := scope.Repositories().Member.Create(scope.Context(), tenantID, ports.TenantMemberCreateInput{
 			UserID:       userID,
 			Username:     username,
 			Email:        email,
@@ -135,7 +135,7 @@ func (service *TenantMemberLifecycleService) CreateTenantMember(ctx context.Cont
 		return struct {
 			Member         domain.Membership
 			AccountCreated bool
-		}{Member: created, AccountCreated: isNew}, createErr
+		}{Member: member, AccountCreated: isNew}, createErr
 	})
 	if err != nil {
 		return nil, wrapTenantMemberConflict(err)
@@ -144,7 +144,7 @@ func (service *TenantMemberLifecycleService) CreateTenantMember(ctx context.Cont
 	for _, roleID := range roleIDs {
 		if _, err := service.capabilities.AccessTenantRolePermission().AssignTenantRoleMember(ctx, &accessv1.AssignTenantRoleMemberRequest{
 			RoleId: roleID,
-			UserId: member.Member.UserID,
+			UserId: created.Member.UserID,
 		}); err != nil {
 			return nil, err
 		}
@@ -160,14 +160,14 @@ func (service *TenantMemberLifecycleService) CreateTenantMember(ctx context.Cont
 	activation, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (ports.TenantMemberActivationReceipt, error) {
 		return scope.Repositories().Activation.Stage(scope.Context(), ports.TenantMemberActivationInput{
 			TenantID:           tenantID,
-			UserID:             member.Member.UserID,
+			UserID:             created.Member.UserID,
 			Username:           username,
 			Email:              email,
 			Phone:              phone,
 			Mode:               mode,
 			Secret:             secret,
 			NotificationSecret: notificationSecret,
-			NewAccount:         member.AccountCreated,
+			NewAccount:         created.AccountCreated,
 			ExpiresAt:          expiresAt,
 		})
 	})
@@ -176,7 +176,7 @@ func (service *TenantMemberLifecycleService) CreateTenantMember(ctx context.Cont
 	}
 
 	readback, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (domain.Membership, error) {
-		return scope.Repositories().Member.Get(scope.Context(), tenantID, member.Member.UserID)
+		return scope.Repositories().Member.Get(scope.Context(), tenantID, created.Member.UserID)
 	})
 	if err != nil {
 		return nil, err
