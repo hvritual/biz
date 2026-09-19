@@ -17,53 +17,53 @@ const (
 )
 
 type AuditEvent struct {
-	EventID        string
-	AuditID        string
-	EventType      string
-	TenantID       string
-	ActorSubject   string
-	ActorUserID    string
-	AuthMethod     string
-	AuthChannel    string
-	SessionRef     string
-	RequestID      string
-	TraceID        string
-	IdempotencyRef string
-	OperationID    string
-	Module         string
-	Target         string
+	EventID          string
+	AuditID          string
+	EventType        string
+	TenantID         string
+	ActorSubject     string
+	ActorUserID      string
+	AuthMethod       string
+	AuthChannel      string
+	SessionRef       string
+	RequestID        string
+	TraceID          string
+	IdempotencyRef   string
+	OperationID      string
+	Module           string
+	Target           string
 	ResourceTenantID string
-	DecisionReason string
-	RequestDigest  string
-	ReceiptRef     string
-	Reason         string
-	Risk           string
-	Outcome        string
-	OccurredAt     time.Time
+	DecisionReason   string
+	RequestDigest    string
+	ReceiptRef       string
+	Reason           string
+	Risk             string
+	Outcome          string
+	OccurredAt       time.Time
 }
 
 type AuditRecord struct {
-	AuditID        string
-	TenantID       string
-	ActorSubject   string
-	ActorUserID    string
-	AuthMethod     string
-	AuthChannel    string
-	SessionRef     string
-	RequestID      string
-	TraceID        string
-	IdempotencyRef string
-	OperationID    string
-	Module         string
-	Target         string
+	AuditID          string
+	TenantID         string
+	ActorSubject     string
+	ActorUserID      string
+	AuthMethod       string
+	AuthChannel      string
+	SessionRef       string
+	RequestID        string
+	TraceID          string
+	IdempotencyRef   string
+	OperationID      string
+	Module           string
+	Target           string
 	ResourceTenantID string
-	DecisionReason string
-	RequestDigest  string
-	ReceiptRef     string
-	Reason         string
-	Risk           string
-	Result         string
-	OccurredAt     time.Time
+	DecisionReason   string
+	RequestDigest    string
+	ReceiptRef       string
+	Reason           string
+	Risk             string
+	Result           string
+	OccurredAt       time.Time
 }
 
 type AuditFilter struct {

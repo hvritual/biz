@@ -26,8 +26,8 @@ const (
 )
 
 type runtimeWebAuth struct {
-	config WebAuthConfig
-	oidc   *oidcClient
+	config       WebAuthConfig
+	oidc         *oidcClient
 	mu           sync.RWMutex
 	store        *accesspersistence.Store
 	entitlements currentAuthorizationEntitlementReader

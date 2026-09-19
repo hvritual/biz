@@ -14,29 +14,29 @@ import (
 )
 
 type auditEventRecord struct {
-	EventID        string    `gorm:"column:event_id;primaryKey;size:64"`
-	AuditID        string    `gorm:"column:audit_id;size:64;not null;uniqueIndex:uniq_audit_event_kind,priority:1;index:idx_audit_tenant_time,priority:2"`
-	EventType      string    `gorm:"column:event_type;size:16;not null;uniqueIndex:uniq_audit_event_kind,priority:2"`
-	TenantID       string    `gorm:"column:tenant_id;size:64;not null;index:idx_audit_tenant_time,priority:1;index:idx_audit_tenant_operation,priority:1"`
-	ActorSubject   string    `gorm:"column:actor_subject;size:200;not null"`
-	ActorUserID    string    `gorm:"column:actor_user_id;size:64;not null;default:''"`
-	AuthMethod     string    `gorm:"column:auth_method;size:32;not null;default:''"`
-	AuthChannel    string    `gorm:"column:auth_channel;size:32;not null;default:''"`
-	SessionRef     string    `gorm:"column:session_ref;size:80;not null;default:''"`
-	RequestID          string    `gorm:"column:request_id;size:128;not null;default:''"`
-	TraceID            string    `gorm:"column:trace_id;size:128;not null;default:''"`
-	IdempotencyRef     string    `gorm:"column:idempotency_ref;size:80;not null;default:''"`
-	OperationID        string    `gorm:"column:operation_id;size:160;not null;index:idx_audit_tenant_operation,priority:2"`
-	Module             string    `gorm:"column:module;size:80;not null;default:''"`
-	Target             string    `gorm:"column:target;size:320;not null;default:''"`
-	ResourceTenantID   string    `gorm:"column:resource_tenant_id;size:64;not null;default:''"`
-	DecisionReason     string    `gorm:"column:decision_reason;size:64;not null;default:''"`
-	RequestDigest      string    `gorm:"column:request_digest;size:64;not null;default:''"`
-	ReceiptRef     string    `gorm:"column:receipt_ref;size:128;not null;default:''"`
-	Reason         string    `gorm:"column:reason;size:500;not null;default:''"`
-	Risk           string    `gorm:"column:risk;size:16;not null"`
-	Outcome        string    `gorm:"column:outcome;size:16;not null"`
-	OccurredAt     time.Time `gorm:"column:occurred_at;not null;index:idx_audit_tenant_time,priority:3"`
+	EventID          string    `gorm:"column:event_id;primaryKey;size:64"`
+	AuditID          string    `gorm:"column:audit_id;size:64;not null;uniqueIndex:uniq_audit_event_kind,priority:1;index:idx_audit_tenant_time,priority:2"`
+	EventType        string    `gorm:"column:event_type;size:16;not null;uniqueIndex:uniq_audit_event_kind,priority:2"`
+	TenantID         string    `gorm:"column:tenant_id;size:64;not null;index:idx_audit_tenant_time,priority:1;index:idx_audit_tenant_operation,priority:1"`
+	ActorSubject     string    `gorm:"column:actor_subject;size:200;not null"`
+	ActorUserID      string    `gorm:"column:actor_user_id;size:64;not null;default:''"`
+	AuthMethod       string    `gorm:"column:auth_method;size:32;not null;default:''"`
+	AuthChannel      string    `gorm:"column:auth_channel;size:32;not null;default:''"`
+	SessionRef       string    `gorm:"column:session_ref;size:80;not null;default:''"`
+	RequestID        string    `gorm:"column:request_id;size:128;not null;default:''"`
+	TraceID          string    `gorm:"column:trace_id;size:128;not null;default:''"`
+	IdempotencyRef   string    `gorm:"column:idempotency_ref;size:80;not null;default:''"`
+	OperationID      string    `gorm:"column:operation_id;size:160;not null;index:idx_audit_tenant_operation,priority:2"`
+	Module           string    `gorm:"column:module;size:80;not null;default:''"`
+	Target           string    `gorm:"column:target;size:320;not null;default:''"`
+	ResourceTenantID string    `gorm:"column:resource_tenant_id;size:64;not null;default:''"`
+	DecisionReason   string    `gorm:"column:decision_reason;size:64;not null;default:''"`
+	RequestDigest    string    `gorm:"column:request_digest;size:64;not null;default:''"`
+	ReceiptRef       string    `gorm:"column:receipt_ref;size:128;not null;default:''"`
+	Reason           string    `gorm:"column:reason;size:500;not null;default:''"`
+	Risk             string    `gorm:"column:risk;size:16;not null"`
+	Outcome          string    `gorm:"column:outcome;size:16;not null"`
+	OccurredAt       time.Time `gorm:"column:occurred_at;not null;index:idx_audit_tenant_time,priority:3"`
 }
 
 func (auditEventRecord) TableName() string { return "biz_audit_events" }
@@ -66,27 +66,27 @@ func (repository *AuditRepository) AppendAuditEvent(ctx context.Context, event d
 }
 
 type foldedAuditRow struct {
-	AuditID        string    `gorm:"column:audit_id"`
-	TenantID       string    `gorm:"column:tenant_id"`
-	ActorSubject   string    `gorm:"column:actor_subject"`
-	ActorUserID    string    `gorm:"column:actor_user_id"`
-	AuthMethod     string    `gorm:"column:auth_method"`
-	AuthChannel    string    `gorm:"column:auth_channel"`
-	SessionRef     string    `gorm:"column:session_ref"`
-	RequestID          string    `gorm:"column:request_id"`
-	TraceID            string    `gorm:"column:trace_id"`
-	IdempotencyRef     string    `gorm:"column:idempotency_ref"`
-	OperationID        string    `gorm:"column:operation_id"`
-	Module             string    `gorm:"column:module"`
-	Target             string    `gorm:"column:target"`
-	ResourceTenantID   string    `gorm:"column:resource_tenant_id"`
-	DecisionReason     string    `gorm:"column:decision_reason"`
-	RequestDigest      string    `gorm:"column:request_digest"`
-	ReceiptRef     string    `gorm:"column:receipt_ref"`
-	Reason         string    `gorm:"column:reason"`
-	Risk           string    `gorm:"column:risk"`
-	Result         string    `gorm:"column:result"`
-	OccurredAt     time.Time `gorm:"column:occurred_at"`
+	AuditID          string    `gorm:"column:audit_id"`
+	TenantID         string    `gorm:"column:tenant_id"`
+	ActorSubject     string    `gorm:"column:actor_subject"`
+	ActorUserID      string    `gorm:"column:actor_user_id"`
+	AuthMethod       string    `gorm:"column:auth_method"`
+	AuthChannel      string    `gorm:"column:auth_channel"`
+	SessionRef       string    `gorm:"column:session_ref"`
+	RequestID        string    `gorm:"column:request_id"`
+	TraceID          string    `gorm:"column:trace_id"`
+	IdempotencyRef   string    `gorm:"column:idempotency_ref"`
+	OperationID      string    `gorm:"column:operation_id"`
+	Module           string    `gorm:"column:module"`
+	Target           string    `gorm:"column:target"`
+	ResourceTenantID string    `gorm:"column:resource_tenant_id"`
+	DecisionReason   string    `gorm:"column:decision_reason"`
+	RequestDigest    string    `gorm:"column:request_digest"`
+	ReceiptRef       string    `gorm:"column:receipt_ref"`
+	Reason           string    `gorm:"column:reason"`
+	Risk             string    `gorm:"column:risk"`
+	Result           string    `gorm:"column:result"`
+	OccurredAt       time.Time `gorm:"column:occurred_at"`
 }
 
 func (repository *AuditRepository) folded(tenantID string, filter domain.AuditFilter) *gorm.DB {

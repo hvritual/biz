@@ -19,20 +19,20 @@ func TestEnterprise174GeneratedCatalogMatchesOperationPlans(t *testing.T) {
 	var source struct {
 		Operations []struct {
 			OperationID string `json:"operationId"`
-			Domain string `json:"domain"`
+			Domain      string `json:"domain"`
 			Application string `json:"application"`
-			UseCase string `json:"useCase"`
-			Security struct {
-				TenantRequired bool `json:"tenantRequired"`
+			UseCase     string `json:"useCase"`
+			Security    struct {
+				TenantRequired bool     `json:"tenantRequired"`
 				Authentication []string `json:"authentication"`
-				Permissions []string `json:"permissions"`
-				PermissionMode string `json:"permissionMode"`
+				Permissions    []string `json:"permissions"`
+				PermissionMode string   `json:"permissionMode"`
 			} `json:"security"`
 			Bindings struct {
-				RPC string `json:"rpc"`
+				RPC  string `json:"rpc"`
 				HTTP []struct {
 					Method string `json:"method"`
-					Path string `json:"path"`
+					Path   string `json:"path"`
 				} `json:"http"`
 			} `json:"bindings"`
 		} `json:"operations"`
@@ -55,16 +55,16 @@ func TestEnterprise174GeneratedCatalogMatchesOperationPlans(t *testing.T) {
 			mode = "all"
 		}
 		expected = append(expected, Action{
-			Code: operation.OperationID,
-			Domain: operation.Domain,
-			Application: operation.Application,
-			UseCase: operation.UseCase,
+			Code:           operation.OperationID,
+			Domain:         operation.Domain,
+			Application:    operation.Application,
+			UseCase:        operation.UseCase,
 			TenantRequired: operation.Security.TenantRequired,
 			Authentication: append([]string(nil), operation.Security.Authentication...),
-			Permissions: permissions,
+			Permissions:    permissions,
 			PermissionMode: mode,
-			RPC: operation.Bindings.RPC,
-			HTTP: httpBindings,
+			RPC:            operation.Bindings.RPC,
+			HTTP:           httpBindings,
 		})
 	}
 	if !reflect.DeepEqual(stripCommercialFacts(Catalog()), expected) {
@@ -80,10 +80,10 @@ func TestEnterprise174GeneratedCatalogMatchesCommercialCapabilityMapping(t *test
 	}
 	var source struct {
 		MappingVersion string `json:"mapping_version"`
-		Operations []struct {
-			OperationID string `json:"operation_id"`
-			Classification string `json:"classification"`
-			ModuleCode string `json:"module_code"`
+		Operations     []struct {
+			OperationID     string   `json:"operation_id"`
+			Classification  string   `json:"classification"`
+			ModuleCode      string   `json:"module_code"`
 			CapabilityCodes []string `json:"capability_codes"`
 		} `json:"operations"`
 	}

@@ -25,22 +25,22 @@ type authorizationModuleView struct {
 }
 
 type currentAuthorizationView struct {
-	Authenticated     bool                                     `json:"authenticated"`
-	ActorKind         string                                   `json:"actor_kind"`
-	UserID            string                                   `json:"user_id,omitempty"`
-	PlatformSubject   string                                   `json:"platform_subject,omitempty"`
-	TenantID          string                                   `json:"tenant_id,omitempty"`
-	TenantName        string                                   `json:"tenant_name,omitempty"`
-	Timezone          string                                   `json:"timezone,omitempty"`
-	Roles             []string                                 `json:"roles"`
-	Grants            []accesspersistence.CurrentGrantFact     `json:"grants"`
-	DataPolicies      []accesspersistence.CurrentDataPolicy    `json:"data_policies"`
-	SiteIDs           []string                                 `json:"site_ids"`
-	PermissionVersion string                                   `json:"permission_version,omitempty"`
-	Modules           []authorizationModuleView                `json:"modules"`
-	Actions           []accessauthorization.Action             `json:"actions"`
-	ButtonCodes       []string                                 `json:"button_codes"`
-	Entitlement       *authorizationEntitlementVersionSummary  `json:"entitlement,omitempty"`
+	Authenticated     bool                                    `json:"authenticated"`
+	ActorKind         string                                  `json:"actor_kind"`
+	UserID            string                                  `json:"user_id,omitempty"`
+	PlatformSubject   string                                  `json:"platform_subject,omitempty"`
+	TenantID          string                                  `json:"tenant_id,omitempty"`
+	TenantName        string                                  `json:"tenant_name,omitempty"`
+	Timezone          string                                  `json:"timezone,omitempty"`
+	Roles             []string                                `json:"roles"`
+	Grants            []accesspersistence.CurrentGrantFact    `json:"grants"`
+	DataPolicies      []accesspersistence.CurrentDataPolicy   `json:"data_policies"`
+	SiteIDs           []string                                `json:"site_ids"`
+	PermissionVersion string                                  `json:"permission_version,omitempty"`
+	Modules           []authorizationModuleView               `json:"modules"`
+	Actions           []accessauthorization.Action            `json:"actions"`
+	ButtonCodes       []string                                `json:"button_codes"`
+	Entitlement       *authorizationEntitlementVersionSummary `json:"entitlement,omitempty"`
 }
 
 type authorizationEntitlementVersionSummary struct {
@@ -95,17 +95,17 @@ func (auth *runtimeWebAuth) handleCurrentAuthorization(writer http.ResponseWrite
 		return
 	}
 	base := currentAuthorizationView{
-		Authenticated: true,
-		ActorKind: authentication.Session.ActorKind,
-		UserID: authentication.Session.UserID,
+		Authenticated:   true,
+		ActorKind:       authentication.Session.ActorKind,
+		UserID:          authentication.Session.UserID,
 		PlatformSubject: authentication.Session.PlatformSubject,
-		Roles: []string{},
-		Grants: []accesspersistence.CurrentGrantFact{},
-		DataPolicies: []accesspersistence.CurrentDataPolicy{},
-		SiteIDs: []string{},
-		Modules: []authorizationModuleView{},
-		Actions: []accessauthorization.Action{},
-		ButtonCodes: []string{},
+		Roles:           []string{},
+		Grants:          []accesspersistence.CurrentGrantFact{},
+		DataPolicies:    []accesspersistence.CurrentDataPolicy{},
+		SiteIDs:         []string{},
+		Modules:         []authorizationModuleView{},
+		Actions:         []accessauthorization.Action{},
+		ButtonCodes:     []string{},
 	}
 	if authentication.Session.ActorKind != accesspersistence.WebActorUser || strings.TrimSpace(authentication.Session.ActiveTenantID) == "" {
 		writeJSON(writer, http.StatusOK, base)
@@ -185,8 +185,8 @@ func (auth *runtimeWebAuth) handleCurrentAuthorization(writer http.ResponseWrite
 	base.Actions = effectiveActions
 	base.ButtonCodes = buttonCodes
 	base.Entitlement = &authorizationEntitlementVersionSummary{
-		Version: entitlementSnapshot.EntitlementVersion,
-		SourceVersion: entitlementSnapshot.SourceVersion,
+		Version:         entitlementSnapshot.EntitlementVersion,
+		SourceVersion:   entitlementSnapshot.SourceVersion,
 		CatalogRevision: entitlementSnapshot.CatalogRevision,
 	}
 	writeJSON(writer, http.StatusOK, base)

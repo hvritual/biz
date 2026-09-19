@@ -185,7 +185,7 @@ func enterprise174QualifyResolver(ctx context.Context, resolver enterprise174Gra
 
 func TestEnterprise174QualificationRejectsAlwaysAllowResolver(t *testing.T) {
 	allowed := authz.GrantRequest{
-		Principal: identity.Principal{TenantID: "tenant-a", UserID: "user-a", Authenticated: true},
+		Principal:   identity.Principal{TenantID: "tenant-a", UserID: "user-a", Authenticated: true},
 		TenantBound: true,
 		Permissions: []authz.PermissionKey{"tenant.member.read"},
 	}

@@ -80,20 +80,20 @@ func (store *Store) ResolveCurrentGrants(ctx context.Context, tenantID, userID s
 	for _, value := range rows {
 		result = append(result, authz.Grant{
 			Permission: authz.PermissionKey(value.Permission),
-			RoleID: value.RoleID,
-			Scope: string(value.Scope),
+			RoleID:     value.RoleID,
+			Scope:      string(value.Scope),
 		})
 	}
 	if currentGrantRequestsPermission(permissions, "tenant.branding.read") {
 		implicit, err := store.resolveBrandingReadGrant(ctx, authz.GrantRequest{
 			Principal: identity.Principal{
-				Subject: "user:" + userID,
-				TenantID: tenantID,
-				UserID: userID,
+				Subject:       "user:" + userID,
+				TenantID:      tenantID,
+				UserID:        userID,
 				Authenticated: true,
 			},
 			TenantBound: true,
-			Operation: "tenant.branding.get",
+			Operation:   "tenant.branding.get",
 			Permissions: []authz.PermissionKey{"tenant.branding.read"},
 		})
 		if err != nil {
@@ -177,9 +177,9 @@ func (store *Store) CurrentAuthorization(ctx context.Context, principal identity
 	for _, grant := range grants {
 		grantFacts = append(grantFacts, CurrentGrantFact{
 			Permission: grant.Permission,
-			RoleID: grant.RoleID,
-			RoleName: roleNamesByID[grant.RoleID],
-			Scope: grant.Scope,
+			RoleID:     grant.RoleID,
+			RoleName:   roleNamesByID[grant.RoleID],
+			Scope:      grant.Scope,
 		})
 	}
 	sites, err := store.ResolveMemberSites(ctx, tenantID, userID)
@@ -188,11 +188,11 @@ func (store *Store) CurrentAuthorization(ctx context.Context, principal identity
 	}
 	policies := effectiveDataPolicies(grants, sites)
 	trusted := identity.WithPrincipal(ctx, identity.Principal{
-		Subject: principal.Subject,
-		TenantID: tenantID,
-		UserID: userID,
-		Roles: roleNames,
-		AuthMethod: principal.AuthMethod,
+		Subject:       principal.Subject,
+		TenantID:      tenantID,
+		UserID:        userID,
+		Roles:         roleNames,
+		AuthMethod:    principal.AuthMethod,
 		Authenticated: true,
 	})
 	version, err := store.PermissionVersion(trusted)
@@ -200,15 +200,15 @@ func (store *Store) CurrentAuthorization(ctx context.Context, principal identity
 		return CurrentAuthorizationSnapshot{}, err
 	}
 	return CurrentAuthorizationSnapshot{
-		UserID: userID,
-		UserName: identityValue.UserName,
-		TenantID: tenantID,
-		TenantName: identityValue.TenantName,
-		Timezone: identityValue.Timezone,
-		Roles: roleNames,
-		Grants: grantFacts,
-		DataPolicies: policies,
-		SiteIDs: sites,
+		UserID:            userID,
+		UserName:          identityValue.UserName,
+		TenantID:          tenantID,
+		TenantName:        identityValue.TenantName,
+		Timezone:          identityValue.Timezone,
+		Roles:             roleNames,
+		Grants:            grantFacts,
+		DataPolicies:      policies,
+		SiteIDs:           sites,
 		PermissionVersion: version,
 	}, nil
 }
