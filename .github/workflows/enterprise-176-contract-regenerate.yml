@@ -7,6 +7,12 @@ on:
     paths:
       - .github/workflows/enterprise-176-contract-regenerate.yml
       - contracts/proto/access/v1/tenant_member.proto
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/enterprise-176-contract-regenerate.yml
+      - contracts/proto/access/v1/tenant_member.proto
 
 permissions:
   contents: write
@@ -19,7 +25,7 @@ jobs:
       - name: Checkout exact candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           path: biz
           fetch-depth: 0
 
