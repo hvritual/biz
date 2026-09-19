@@ -147,6 +147,9 @@ func (idp *runtimeFirstPartyIdP) register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /idp/login", idp.handleLogin)
 	mux.HandleFunc("POST /idp/login/otp/request", idp.handleOTPRequest)
 	mux.HandleFunc("POST /idp/login/otp/verify", idp.handleOTPVerify)
+	mux.HandleFunc("GET /idp/member/activate", idp.handleMemberActivationPage)
+	mux.HandleFunc("POST /idp/member/activate", idp.handleMemberActivationComplete)
+	mux.HandleFunc("POST /idp/initial-password/change", idp.handleInitialPasswordChange)
 	mux.HandleFunc("GET /idp/password/recovery", idp.handlePasswordRecoveryPage)
 	mux.HandleFunc("POST /idp/password/recovery/request", idp.handlePasswordRecoveryRequest)
 	mux.HandleFunc("POST /idp/password/recovery/complete", idp.handlePasswordRecoveryComplete)
@@ -264,6 +267,16 @@ func (idp *runtimeFirstPartyIdP) handleLogin(writer http.ResponseWriter, request
 		}
 		idp.renderLoginState(writer, http.StatusUnauthorized, firstPartyLoginPage{
 			RequestID: requestID, CSRF: csrf, Identifier: identifier, Message: message,
+		})
+		return
+	}
+	if identity.PasswordChangeRequired {
+		if err := store.BindFirstPartyAuthorizationIdentity(request.Context(), requestID, cookie.Value, csrf, identity.UserID, loginAuditID); err != nil {
+			http.Error(writer, "login transaction expired", http.StatusUnauthorized)
+			return
+		}
+		idp.renderInitialPasswordChange(writer, http.StatusOK, firstPartyInitialPasswordPage{
+			RequestID: requestID, CSRF: csrf, Identifier: identifier, Remember: remember,
 		})
 		return
 	}
