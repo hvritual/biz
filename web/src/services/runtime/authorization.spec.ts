@@ -106,6 +106,26 @@ describe('current authorization runtime', () => {
     expect(auth.currentAuthorizationAllows('tenant.member.list')).toBe(false)
   })
 
+  it('discards a late authorization response after tenant context invalidation', async () => {
+    let resolveAuthorization!: (value: ReturnType<typeof snapshot>) => void
+    const delayed = new Promise<ReturnType<typeof snapshot>>((resolve) => {
+      resolveAuthorization = resolve
+    })
+    mocks.readSession.mockResolvedValue(session)
+    mocks.readCurrentAuthorization.mockReturnValue(delayed)
+    const auth = await runtime()
+
+    const pending = auth.ensureCurrentAuthorization()
+    await Promise.resolve()
+    auth.invalidateCurrentAuthorization()
+    resolveAuthorization(snapshot())
+    await pending
+
+    expect(auth.currentAuthorizationState.status).toBe('idle')
+    expect(auth.currentAuthorizationState.snapshot).toBeNull()
+    expect(auth.currentAuthorizationAllows('tenant.member.list')).toBe(false)
+  })
+
   it('does not turn authorization read failure into demo or cached allow', async () => {
     mocks.readSession.mockResolvedValue(session)
     mocks.readCurrentAuthorization.mockRejectedValue(new Error('authorization unavailable'))
