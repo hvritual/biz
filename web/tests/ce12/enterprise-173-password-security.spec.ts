@@ -79,7 +79,7 @@ async function expectPasswordRejected(browser: Browser, data: Fixture, identifie
     await page.getByLabel('账号 / 手机号 / 邮箱', { exact: true }).fill(identifier)
     await page.getByLabel('密码').fill(password)
     await page.getByRole('button', { name: '登录', exact: true }).click()
-    await expect(page.getByRole('alert')).toContainText('账号或密码错误')
+    await expect(page.getByRole('alert')).toContainText('账号或凭据错误')
   } finally {
     await context.close()
   }
