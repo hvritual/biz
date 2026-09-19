@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate-development-artifacts:
@@ -24,7 +24,7 @@ jobs:
           ref: ${{ github.sha }}
           path: biz
           fetch-depth: 0
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Read consumer lock
         id: source
@@ -87,6 +87,28 @@ jobs:
         run: |
           set -euo pipefail
           make check YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
+
+      - name: Commit canonical generated artifacts
+        working-directory: biz
+        shell: bash
+        run: |
+          set -euo pipefail
+          generated=(
+            contracts/commercial/generated/catalog.json
+            contracts/gen/access/v1/tenant_audit.pb.go
+            contracts/generated/client.ts
+            contracts/generated/manifest.json
+            contracts/generated/openapi.json
+          )
+          git add -- "${generated[@]}"
+          if git diff --cached --quiet; then
+            echo "canonical generated artifacts already synchronized"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(access): regenerate #174 contracts"
+          git push origin HEAD:feat/enterprise-174-current-authorization
 
       - name: Capture generated worktree
         if: always()
