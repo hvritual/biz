@@ -101,22 +101,74 @@ func (service *TenantMemberLifecycleService) GetTenantMember(ctx context.Context
 	return tenantMemberDTO(member), nil
 }
 
-func (service *TenantMemberLifecycleService) ListTenantMembers(ctx context.Context, _ *accessv1.ListTenantMembersRequest) (*accessv1.ListTenantMembersResponse, error) {
+func (service *TenantMemberLifecycleService) ListTenantMembers(ctx context.Context, request *accessv1.ListTenantMembersRequest) (*accessv1.ListTenantMembersResponse, error) {
 	tenantID, err := trustedTenantID(ctx)
 	if err != nil {
 		return nil, err
 	}
-	members, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) ([]domain.Membership, error) {
-		return scope.Repositories().Member.List(scope.Context(), tenantID)
+	query, err := tenantMemberListQuery(request)
+	if err != nil {
+		return nil, err
+	}
+	page, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (ports.TenantMemberListPage, error) {
+		return scope.Repositories().Member.List(scope.Context(), tenantID, query)
 	})
 	if err != nil {
 		return nil, err
 	}
-	response := &accessv1.ListTenantMembersResponse{Members: make([]*accessv1.TenantMemberDTO, 0, len(members))}
-	for _, member := range members {
+	response := &accessv1.ListTenantMembersResponse{
+		Members: make([]*accessv1.TenantMemberDTO, 0, len(page.Members)),
+		Total:   page.Total,
+	}
+	for _, member := range page.Members {
 		response.Members = append(response.Members, tenantMemberDTO(member))
 	}
 	return response, nil
+}
+
+func tenantMemberListQuery(request *accessv1.ListTenantMembersRequest) (ports.TenantMemberListQuery, error) {
+	if request == nil {
+		request = &accessv1.ListTenantMembersRequest{}
+	}
+	query := strings.TrimSpace(request.GetQuery())
+	roleID := strings.TrimSpace(request.GetRoleId())
+	departmentID := strings.TrimSpace(request.GetDepartmentId())
+	if len([]rune(query)) > 320 || len([]rune(roleID)) > 160 || len([]rune(departmentID)) > 64 {
+		return ports.TenantMemberListQuery{}, ErrInvalidTenantMemberRequest
+	}
+	page := request.GetPage()
+	if page == 0 {
+		page = 1
+	}
+	pageSize := request.GetPageSize()
+	if pageSize == 0 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		return ports.TenantMemberListQuery{}, ErrInvalidTenantMemberRequest
+	}
+	statusFilter := ""
+	switch request.GetStatus() {
+	case accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_UNSPECIFIED:
+	case accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_INVITED:
+		statusFilter = domain.TenantMemberStatusInvited
+	case accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_ACTIVE:
+		statusFilter = domain.TenantMemberStatusActive
+	case accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_SUSPENDED:
+		statusFilter = domain.TenantMemberStatusSuspended
+	case accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_REMOVED:
+		statusFilter = domain.TenantMemberStatusRemoved
+	default:
+		return ports.TenantMemberListQuery{}, ErrInvalidTenantMemberRequest
+	}
+	return ports.TenantMemberListQuery{
+		Query:        query,
+		RoleID:       roleID,
+		DepartmentID: departmentID,
+		Status:       statusFilter,
+		Page:         page,
+		PageSize:     pageSize,
+	}, nil
 }
 
 func (service *TenantMemberLifecycleService) UpdateTenantMemberProfile(ctx context.Context, request *accessv1.UpdateTenantMemberProfileRequest) (*accessv1.TenantMemberDTO, error) {
