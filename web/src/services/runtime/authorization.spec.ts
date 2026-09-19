@@ -118,6 +118,29 @@ describe('current authorization runtime', () => {
     expect(auth.currentAuthorizationAllows('tenant.member.list')).toBe(false)
   })
 
+  it('keeps an already-valid same-context authorization rendered while rechecking session freshness', async () => {
+    mocks.readSession.mockResolvedValue(session)
+    mocks.readCurrentAuthorization.mockResolvedValue(snapshot())
+    const auth = await runtime()
+    await auth.ensureCurrentAuthorization()
+    expect(auth.currentAuthorizationState.status).toBe('ready')
+
+    let resolveSession!: (value: typeof session) => void
+    mocks.readSession.mockReturnValue(new Promise<typeof session>((resolve) => {
+      resolveSession = resolve
+    }))
+    const pending = auth.ensureCurrentAuthorization()
+    await Promise.resolve()
+
+    expect(auth.currentAuthorizationState.status).toBe('ready')
+    expect(auth.currentAuthorizationAllows('tenant.member.list')).toBe(true)
+
+    resolveSession(session)
+    await pending
+    expect(auth.currentAuthorizationState.status).toBe('ready')
+    expect(mocks.readCurrentAuthorization).toHaveBeenCalledTimes(1)
+  })
+
   it('drops prior allow state when the trusted context changes', async () => {
     mocks.readSession.mockResolvedValue(session)
     mocks.readCurrentAuthorization.mockResolvedValue(snapshot())
