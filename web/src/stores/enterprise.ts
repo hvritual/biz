@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import {
   createEnterpriseDataSource,
   emptyEnterpriseSnapshot,
+  projectMember,
   type EnterpriseDomain,
   type EnterpriseSourceState,
 } from '@/services/enterprise/dataSource'
@@ -16,6 +17,7 @@ import {
   getEnterpriseMember,
   inviteEnterpriseMember,
   memberRequestId,
+  queryEnterpriseMembers,
   memberRoleRequestId,
   memberRuntimeError,
   readEnterpriseMemberSession,
@@ -24,6 +26,7 @@ import {
   sameTrustedSession,
   suspendEnterpriseMember,
   updateEnterpriseMemberProfile,
+  type EnterpriseMemberListQuery,
   type EnterpriseTenantMember,
 } from '@/services/enterprise/memberRuntime'
 import {
@@ -108,6 +111,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   const logs = computed(() => snapshot.value.logs)
   const settings = computed(() => snapshot.value.settings)
   const previewMode = dataSource.kind === 'demo'
+  const memberTotal = ref(previewMode ? members.value.filter((member) => member.status !== 'removed').length : 0)
   const sourceKind = dataSource.kind
   const demoBrandingByTenant = new Map<string, EnterpriseTenantBranding>([
     ['shanghai', { tenantId: 'shanghai', preset: 'blue', primary: '', version: 1, canManage: true }],
@@ -135,6 +139,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   let activeDomains: EnterpriseDomain[] = []
   let companyMutation: { tenantId: string; signature: string; key: string } | null = null
   let memberMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
+  let memberListQuery: EnterpriseMemberListQuery | null = null
+  let memberListGeneration = 0
   let roleMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let departmentMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let brandingMutation: { tenantId: string; signature: string; key: string } | null = null
@@ -151,6 +157,9 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     }
     companyMutation = null
     memberMutation = null
+    memberListQuery = null
+    memberListGeneration++
+    memberTotal.value = 0
     roleMutation = null
     departmentMutation = null
     branding.value = null
@@ -335,6 +344,9 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
         departments: domains.includes('departments') ? state.snapshot.departments : current.departments,
         company: domains.includes('company') ? state.snapshot.company : current.company,
       }
+    }
+    if (previewMode || domains.includes('members')) {
+      memberTotal.value = snapshot.value.members.filter((member) => member.status !== 'removed').length
     }
     lastPersisted = JSON.stringify(snapshot.value)
   }
@@ -523,6 +535,62 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     return current
   }
 
+
+  async function applyMemberPage(trusted: TrustedSession, query: EnterpriseMemberListQuery) {
+    const targetTenant = tenantId.value
+    const generation = ++memberListGeneration
+    const result = await queryEnterpriseMembers(trusted, query)
+    if (generation !== memberListGeneration || tenantId.value !== targetTenant) return false
+    snapshot.value = {
+      ...snapshot.value,
+      members: result.members.map(projectMember),
+    }
+    memberTotal.value = result.total
+    memberListQuery = { ...query }
+    return true
+  }
+
+  async function queryMembers(input: {
+    query: string
+    roleId: string
+    departmentId: string
+    status: Member['status'] | ''
+    page: number
+    pageSize: number
+  }) {
+    if (previewMode) {
+      memberTotal.value = members.value.filter((member) => member.status !== 'removed').length
+      return true
+    }
+    const trusted = await stableMemberSession()
+    const query: EnterpriseMemberListQuery = {
+      query: input.query.trim(),
+      roleId: input.roleId,
+      departmentId: input.departmentId,
+      status: input.status ? serverMemberStatus(input.status) : '',
+      page: Math.max(1, Math.trunc(input.page)),
+      pageSize: Math.max(1, Math.min(100, Math.trunc(input.pageSize))),
+    }
+    try {
+      return await applyMemberPage(trusted, query)
+    } catch (error) {
+      throw new Error(memberRuntimeError(error))
+    }
+  }
+
+  async function refreshMemberQuery() {
+    if (previewMode || !memberListQuery) {
+      await refresh()
+      return
+    }
+    const trusted = await stableMemberSession()
+    try {
+      await applyMemberPage(trusted, memberListQuery)
+    } catch (error) {
+      throw new Error(memberRuntimeError(error))
+    }
+  }
+
   function asServerMember(member: Member): EnterpriseTenantMember {
     return {
       userId: member.id,
@@ -636,7 +704,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
           )
         }
         await getEnterpriseMember(trusted, current.id)
-        await refresh(['members', 'roles', 'departments'])
+        await refreshMemberQuery()
         memberMutation = null
         return
       }
@@ -668,7 +736,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
           await activateEnterpriseMember(trusted, invited, key('activate', () => memberRequestId('activate')))
         }
         await getEnterpriseMember(trusted, receipt.userId)
-        await refresh(['members', 'roles', 'departments'])
+        await refreshMemberQuery()
         memberMutation = null
         return
       }
@@ -688,7 +756,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
           key('profile', () => memberRequestId('profile')),
         )
         await getEnterpriseMember(trusted, receipt.userId)
-        await refresh(['members', 'roles', 'departments'])
+        await refreshMemberQuery()
         memberMutation = null
         return
       }
@@ -736,7 +804,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
         ? await suspendEnterpriseMember(trusted, server, key)
         : await removeEnterpriseMember(trusted, server, key)
     await getEnterpriseMember(trusted, receipt.userId)
-    await refresh()
+    await refreshMemberQuery()
   }
 
   async function changeStatuses(
@@ -786,7 +854,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     } catch (error) {
       failure = error
     }
-    await refresh()
+    await refreshMemberQuery()
     if (failure) throw failure
   }
 
@@ -1039,6 +1107,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   return {
     tenantId,
     members,
+    memberTotal,
     roles,
     departments,
     company,
@@ -1066,6 +1135,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     synchronizeExternalSession,
     logout,
     audit,
+    queryMembers,
     saveMember,
     changeStatus,
     changeStatuses,
