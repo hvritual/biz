@@ -32,7 +32,10 @@ async function loginViewer(browser: Browser, data: Fixture) {
   await page.getByRole('button', { name: '登录', exact: true }).click()
   await acceptConsent(page)
   await expect(page).toHaveURL(data.base_url + '/auth/session')
-  return { context, page }
+  const sessionResponse = await context.request.get(data.base_url + '/auth/session')
+  const session = await sessionResponse.json() as { authenticated: boolean; csrf_token?: string }
+  expect(session.authenticated).toBe(true)
+  return { context, page, session }
 }
 
 test('TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed', async ({ browser }) => {
@@ -63,6 +66,7 @@ test('TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed', async
     const denied = await active.context.request.post(data.base_url + '/v1/tenant/roles', {
       headers: {
         'Content-Type': 'application/json',
+        'X-CSRF-Token': active.session.csrf_token ?? '',
         'Idempotency-Key': 'enterprise-175-direct-role-create',
       },
       data: { name: 'must-not-create' },
