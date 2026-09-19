@@ -1,7 +1,10 @@
 export type MemberStatus = 'active' | 'invited' | 'suspended' | 'removed'
 export type DataScope = 'all' | 'department' | 'department_tree' | 'self' | 'custom'
+export type MemberActivationMode = '' | 'activation_link' | 'sms_initial_password'
 export interface Member {
   id: string
+  username?: string
+  activationMode?: MemberActivationMode
   name: string
   email: string
   phone: string
