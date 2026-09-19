@@ -20,6 +20,9 @@ type Action struct {
 	Authentication  []string              `json:"authentication"`
 	Permissions     []authz.PermissionKey `json:"permissions"`
 	PermissionMode  string                `json:"permission_mode"`
+	Classification  string                `json:"classification"`
+	ModuleCode      string                `json:"module_code,omitempty"`
+	CapabilityCodes []string              `json:"capability_codes,omitempty"`
 	RPC             string                `json:"rpc,omitempty"`
 	HTTP            []HTTPBinding         `json:"http,omitempty"`
 }
@@ -118,6 +121,7 @@ func actionAllowed(action Action, allowed map[authz.PermissionKey]struct{}) bool
 func cloneAction(action Action) Action {
 	action.Authentication = append([]string(nil), action.Authentication...)
 	action.Permissions = append([]authz.PermissionKey(nil), action.Permissions...)
+	action.CapabilityCodes = append([]string(nil), action.CapabilityCodes...)
 	action.HTTP = append([]HTTPBinding(nil), action.HTTP...)
 	return action
 }
