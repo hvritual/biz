@@ -19,7 +19,9 @@ onMounted(()=>{void nextTick(()=>closeButton.value?.focus())})
 const primaryTitle=computed(()=>{const item=primaryNavigation.find(p=>p.id===ui.module);return item?t(`navigation.primary.${item.id}`):t('navigation.primary.enterprise')})
 const links=computed(()=>ui.module==='enterprise'?enterpriseNavigation:ui.module==='platform-commercial'?platformCommercialNavigation:ui.module==='system'?systemNavigation:(customerDomains[ui.module??'']?.links??[]))
 const visibleLinks=computed(()=>links.value.filter((item)=>{
-  if(!authorizationApiMode()||!item.authorizationActions?.length)return true
+  if(!authorizationApiMode())return true
+  if(ui.module==='platform-commercial')return true
+  if(!item.authorizationActions?.length)return false
   return currentAuthorizationState.status==='ready'&&currentAuthorizationAllowsAny(item.authorizationActions)
 }))
 const linkLabel=(item:NavigationItem)=>ui.module==='enterprise'?t(`navigation.enterprise.${item.id}`):ui.module==='platform-commercial'?t(`navigation.platform.${item.id}`):ui.module==='system'?t(`navigation.system.${item.id}`):item.label
@@ -29,7 +31,9 @@ const linkGroups=computed(()=>{const groups:Array<{label:string;raw:string;items
 const actions=computed(()=>ui.module==='enterprise'?quickActions:ui.module==='platform-commercial'?platformCommercialQuickActions:ui.module==='system'?systemQuickActions:(customerDomains[ui.module??'']?.actions??[]))
 const visibleActions=computed(()=>actions.value.filter((action)=>{
   const required='authorizationActions' in action&&Array.isArray(action.authorizationActions)?action.authorizationActions:[]
-  if(!authorizationApiMode()||!required.length)return true
+  if(!authorizationApiMode())return true
+  if(ui.module==='platform-commercial')return true
+  if(!required.length)return false
   if(currentAuthorizationState.status!=='ready')return false
   return 'authorizationMode' in action&&action.authorizationMode==='all'
     ? required.every(currentAuthorizationAllows)
