@@ -1,142 +1,144 @@
-name: Enterprise 174 current authorization qualification
+name: Enterprise 174 current authorization development qualification
 
 on:
   push:
     branches:
       - feat/enterprise-174-current-authorization
-    paths:
-      - .github/workflows/enterprise-174-current-authorization.yml
-      - contracts/proto/access/v1/tenant_audit.proto
-      - internal/access/application/tenant_audit_management.go
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  generate-development-artifacts:
+  go-development:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 30
     steps:
-      - name: Checkout exact Biz candidate
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.sha }}
-          path: biz
           fetch-depth: 0
-          persist-credentials: true
-
+          persist-credentials: false
       - name: Read consumer lock
         id: source
         shell: bash
         run: |
           set -euo pipefail
-          source biz/.yunka/source.env
+          source .yunka/source.env
           echo "sha=$YUNKA_COMMIT" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout exact Yunka baseline
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: hvritual/yunka.io
           ref: ${{ steps.source.outputs.sha }}
-          path: yunka.io
+          path: ../yunka.io
           fetch-depth: 1
           persist-credentials: false
-
-      - name: Load locked toolchain
+      - name: Load locked Go
         id: lock
         shell: bash
         run: |
           set -euo pipefail
-          source yunka.io/tools/toolchain.env
+          source ../yunka.io/tools/toolchain.env
           echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
-          echo "protoc_release=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
-          echo "protoc_sha256=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
-
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
           go-version: ${{ steps.lock.outputs.go_version }}
           cache: false
-
-      - name: Install locked protoc and Go plugins
+      - name: Go compile unit vet
         shell: bash
         run: |
           set -euo pipefail
-          source yunka.io/tools/toolchain.env
-          archive="$RUNNER_TEMP/protoc.zip"
-          install_root="$RUNNER_TEMP/protoc"
-          curl --fail --silent --show-error --location --retry 3 "https://github.com/protocolbuffers/protobuf/releases/download/v${{ steps.lock.outputs.protoc_release }}/protoc-${{ steps.lock.outputs.protoc_release }}-linux-x86_64.zip" -o "$archive"
-          echo "${{ steps.lock.outputs.protoc_sha256 }}  $archive" | sha256sum -c -
-          mkdir -p "$install_root"
-          unzip -q "$archive" -d "$install_root"
-          go install "google.golang.org/protobuf/cmd/protoc-gen-go@${PROTOC_GEN_GO_VERSION}"
-          go install "google.golang.org/grpc/cmd/protoc-gen-go-grpc@${PROTOC_GEN_GO_GRPC_VERSION}"
-          echo "$install_root/bin" >> "$GITHUB_PATH"
-          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-
-      - name: Run canonical make generate
-        working-directory: biz
+          bad="$(gofmt -l internal/access/authorization internal/access/application internal/access/domain internal/access/infrastructure/persistence internal/bizruntime integration/enterprise_174_current_authorization_mysql_test.go)"
+          test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
+          go test -count=1 ./internal/access/authorization ./internal/access/application ./internal/access/infrastructure/persistence ./internal/bizruntime
+          go vet ./internal/access/authorization ./internal/access/application ./internal/access/infrastructure/persistence ./internal/bizruntime
+          go build ./cmd/biz
+      - name: Verify candidate clean
         shell: bash
-        run: |
-          set -euo pipefail
-          make generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
+        run: test -z "$(git status --porcelain)"
 
-      - name: Run canonical make check against generated worktree
-        working-directory: biz
-        shell: bash
-        run: |
-          set -euo pipefail
-          make check YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
-
-      - name: Commit canonical generated artifacts
-        working-directory: biz
-        shell: bash
-        run: |
-          set -euo pipefail
-          generated=(
-            contracts/commercial/generated/catalog.json
-            contracts/gen/access/v1/tenant_audit.pb.go
-            contracts/generated/client.ts
-            contracts/generated/manifest.json
-            contracts/generated/openapi.json
-          )
-          git add -- "${generated[@]}"
-          if git diff --cached --quiet; then
-            echo "canonical generated artifacts already synchronized"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore(access): regenerate #174 contracts"
-          git push origin HEAD:feat/enterprise-174-current-authorization
-
-      - name: Capture generated worktree
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd biz
-          mkdir -p "$RUNNER_TEMP/enterprise-174-generated/files"
-          git status --porcelain=v1 > "$RUNNER_TEMP/enterprise-174-generated/status.txt"
-          git diff --binary > "$RUNNER_TEMP/enterprise-174-generated/generated.patch"
-          while IFS= read -r line; do
-            path="${line:3}"
-            case "$path" in
-              *" -> "*) path="${path##* -> }" ;;
-            esac
-            if [ -f "$path" ]; then
-              mkdir -p "$RUNNER_TEMP/enterprise-174-generated/files/$(dirname "$path")"
-              cp "$path" "$RUNNER_TEMP/enterprise-174-generated/files/$path"
-            fi
-          done < "$RUNNER_TEMP/enterprise-174-generated/status.txt"
-          printf 'candidate=%s\n' "$(git rev-parse HEAD)" > "$RUNNER_TEMP/enterprise-174-generated/provenance.txt"
-          printf 'framework=%s\n' "${{ steps.source.outputs.sha }}" >> "$RUNNER_TEMP/enterprise-174-generated/provenance.txt"
-
-      - name: Upload generated worktree
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+  mysql-development:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      YUNKA_TEST_RESET_FIXTURES: "1"
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_enterprise174?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_enterprise174
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          name: enterprise-174-generated-worktree
-          path: ${{ runner.temp }}/enterprise-174-generated
-          if-no-files-found: error
-          retention-days: 1
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Read consumer lock
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          source .yunka/source.env
+          echo "sha=$YUNKA_COMMIT" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ steps.source.outputs.sha }}
+          path: ../yunka.io
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Load locked Go
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source ../yunka.io/tools/toolchain.env
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+      - name: Real MySQL #174 qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test -count=1 -tags=integration ./integration -run '^TestEnterprise174'
+      - name: Verify candidate clean
+        shell: bash
+        run: test -z "$(git status --porcelain)"
+
+  web-development:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Web static unit build qualification
+        working-directory: web
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run check
+          npx playwright test --config playwright.ce12.config.ts --list > "$RUNNER_TEMP/enterprise-174-playwright-list.txt"
+          grep -q 'TestEnterprise174CurrentAuthorizationAndActionCatalogAreSameSource' "$RUNNER_TEMP/enterprise-174-playwright-list.txt"
+      - name: Verify candidate clean
+        shell: bash
+        run: test -z "$(git status --porcelain)"
