@@ -119,6 +119,8 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
       'tenant.member.activate',
       'tenant.member.suspend',
       'tenant.member.remove',
+      'tenant.role.list',
+      'tenant.department.list',
       'tenant.role.assign_member',
       'tenant.role.revoke_member',
     ]
