@@ -72,6 +72,8 @@ import {
   authorizationApiMode,
   currentAuthorizationAllows,
   currentAuthorizationState,
+  ensureCurrentAuthorization,
+  invalidateCurrentAuthorization,
 } from '@/services/runtime/authorization'
 
 function serverMemberStatus(status: Member['status']) {
@@ -396,12 +398,15 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     const epoch = ++sessionEpoch
     const previousDomains = [...activeDomains]
     clearRuntimeTenantState(true)
+    invalidateCurrentAuthorization()
     loading.value = true
     sourceError.value = ''
     try {
       const state = await dataSource.switchTenant(id, previousDomains)
       if (epoch !== sessionEpoch) return
       applySourceState(state, previousDomains, true)
+      await ensureCurrentAuthorization(true)
+      if (epoch !== sessionEpoch) return
       await refreshBranding(epoch)
       ready.value = true
     } catch (error) {
@@ -411,6 +416,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
           const state = await dataSource.load(undefined, previousDomains)
           if (epoch === sessionEpoch) {
             applySourceState(state, previousDomains, true)
+            await ensureCurrentAuthorization(true)
+            if (epoch !== sessionEpoch) return
             await refreshBranding(epoch)
             ready.value = true
           }
