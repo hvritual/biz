@@ -27,6 +27,7 @@ type MockOptions = {
   readbackStatus?: number
   authorizationStatus?: number
   unauthenticated?: boolean
+  memberCount?: number
 }
 
 type WriteRecord = { path: string; method: string; headers: Record<string, string>; body: unknown }
@@ -85,7 +86,24 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
       derivedDataScope: 'none',
     },
   ]
+  const requestedCount = Math.max(members.length, options.memberCount ?? members.length)
+  for (let index = members.length; index < requestedCount; index += 1) {
+    members.push({
+      userId: `user-extra-${String(index + 1).padStart(2, '0')}`,
+      email: `member-${index + 1}@coffeelink.test`,
+      status: index % 2 === 0 ? 'TENANT_MEMBER_STATUS_ACTIVE' : 'TENANT_MEMBER_STATUS_INVITED',
+      version: 1,
+      name: `Member ${String(index + 1).padStart(2, '0')}`,
+      phone: '',
+      employeeId: `EMP-${2000 + index}`,
+      position: '',
+      departmentId: index % 2 === 0 ? 'dept-success' : 'dept-rental',
+      roles: [roleSummary(index % 2 === 0 ? roleCatalog[0]! : roleCatalog[1]!)],
+      derivedDataScope: index % 2 === 0 ? 'sites' : 'self',
+    })
+  }
   const writes: WriteRecord[] = []
+  const listReads: string[] = []
 
   const recordWrite = (route: Route) => {
     const request = route.request()
@@ -179,7 +197,24 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     const request = route.request()
     if (request.method() === 'GET') {
       if (options.listStatus) return json(route, options.listStatus, { message: 'list denied' })
-      return json(route, 200, { members })
+      const url = new URL(request.url())
+      listReads.push(url.toString())
+      const keyword = (url.searchParams.get('query') ?? '').trim().toLowerCase()
+      const roleId = url.searchParams.get('role_id') ?? ''
+      const departmentId = url.searchParams.get('department_id') ?? ''
+      const status = url.searchParams.get('status') ?? ''
+      const pageNumber = Math.max(1, Number(url.searchParams.get('page') ?? '1'))
+      const pageSize = Math.max(1, Number(url.searchParams.get('page_size') ?? '20'))
+      const filtered = members.filter((member) => {
+        if (member.status === 'TENANT_MEMBER_STATUS_REMOVED') return false
+        if (keyword && !`${member.name} ${member.email} ${member.phone} ${member.employeeId}`.toLowerCase().includes(keyword)) return false
+        if (roleId && !member.roles.some((role) => role.roleId === roleId)) return false
+        if (departmentId && member.departmentId !== departmentId) return false
+        if (status && member.status !== status) return false
+        return true
+      })
+      const offset = (pageNumber - 1) * pageSize
+      return json(route, 200, { members: filtered.slice(offset, offset + pageSize), total: filtered.length })
     }
     recordWrite(route)
     if (options.mutationStatus) return json(route, options.mutationStatus, { message: 'mutation conflict' })
@@ -254,6 +289,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
   return {
     getMembers: () => members,
     getWrites: () => writes,
+    getListReads: () => listReads,
   }
 }
 
@@ -284,6 +320,24 @@ test('canonical member page renders authoritative member, role, department and s
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
     await page.screenshot({ path: `screenshots/enterprise-members-real-${viewport.width}.png` })
   }
+})
+
+test('canonical members use server-side filters, pagination and authoritative total', async ({ page }) => {
+  const server = await mockMemberServer(page, { memberCount: 12 })
+  await openCanonicalMembers(page)
+  await expect(page.getByText(/12/).first()).toBeVisible()
+  expect(server.getListReads().at(-1)).toContain('page=1')
+  expect(server.getListReads().at(-1)).toContain('page_size=10')
+
+  await page.getByRole('button', { name: '下一页' }).click()
+  await expect.poll(() => server.getListReads().at(-1) ?? '').toContain('page=2')
+  await expect(page.locator('[data-member-id="user-extra-11"]')).toBeVisible()
+
+  await page.getByRole('textbox', { name: '搜索成员' }).fill('Alice')
+  await page.getByRole('button', { name: '查询', exact: true }).click()
+  await expect.poll(() => server.getListReads().at(-1) ?? '').toContain('query=Alice')
+  await expect(page.locator('[data-member-id="user-001"]')).toBeVisible()
+  await expect(page.locator('[data-member-id^="user-extra-"]')).toHaveCount(0)
 })
 
 test('canonical invite uses loaded role and department, trusted headers and authoritative readback', async ({ page }) => {
