@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   readSession: vi.fn(),
   readCurrentAuthorization: vi.fn(),
   subscribe: vi.fn(() => vi.fn()),
+  cancelTrusted: vi.fn(),
 }))
 
 vi.mock('@/services/runtime/api', () => ({
@@ -17,6 +18,7 @@ vi.mock('@/services/runtime/sessionCoordinator', () => ({
 }))
 
 vi.mock('@/services/commercial/platformCommercial', () => ({
+  cancelTrustedSessionRequests: mocks.cancelTrusted,
   CommercialApiError: class CommercialApiError extends Error {
     constructor(
       message: string,
@@ -67,6 +69,7 @@ describe('current authorization runtime', () => {
     mocks.readSession.mockReset()
     mocks.readCurrentAuthorization.mockReset()
     mocks.subscribe.mockClear()
+    mocks.cancelTrusted.mockClear()
   })
 
   it('accepts the real server tenant-user actor kind only when session and aggregate match', async () => {
@@ -146,6 +149,24 @@ describe('current authorization runtime', () => {
     expect(auth.currentAuthorizationState.status).toBe('idle')
     expect(auth.currentAuthorizationState.snapshot).toBeNull()
     expect(auth.currentAuthorizationAllows('tenant.member.list')).toBe(false)
+  })
+
+  it('clears trusted authorization context and in-flight requests on 401', async () => {
+    mocks.readSession.mockResolvedValue(session)
+    mocks.readCurrentAuthorization.mockResolvedValue(snapshot())
+    const auth = await runtime()
+    await auth.ensureCurrentAuthorization()
+    expect(auth.currentAuthorizationState.session?.active_tenant_id).toBe('tenant-a')
+
+    const { CommercialApiError } = await import('@/services/commercial/platformCommercial')
+    mocks.readSession.mockRejectedValue(new CommercialApiError('expired', 401, 'unauthenticated'))
+    await auth.ensureCurrentAuthorization(true)
+
+    expect(auth.currentAuthorizationState.status).toBe('unauthenticated')
+    expect(auth.currentAuthorizationState.snapshot).toBeNull()
+    expect(auth.currentAuthorizationState.session).toBeNull()
+    expect(auth.currentAuthorizationState.contextKey).toBe('')
+    expect(mocks.cancelTrusted).toHaveBeenCalledTimes(1)
   })
 
   it('does not turn authorization read failure into demo or cached allow', async () => {
