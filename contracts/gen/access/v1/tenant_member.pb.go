@@ -353,7 +353,15 @@ func (x *GetTenantMemberRequest) GetUserId() string {
 }
 
 type ListTenantMembersRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Free-text search. Plain name/account/employee-id matching is fuzzy; protected
+	// email/phone matching is exact through the #168 deterministic lookup index.
+	Query        string             `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	RoleId       string             `protobuf:"bytes,2,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
+	DepartmentId string             `protobuf:"bytes,3,opt,name=department_id,json=departmentId,proto3" json:"department_id,omitempty"`
+	Status       TenantMemberStatus `protobuf:"varint,4,opt,name=status,proto3,enum=access.v1.TenantMemberStatus" json:"status,omitempty"`
+	Page         uint32             `protobuf:"varint,5,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize     uint32             `protobuf:"varint,6,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -388,9 +396,52 @@ func (*ListTenantMembersRequest) Descriptor() ([]byte, []int) {
 	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{4}
 }
 
+func (x *ListTenantMembersRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *ListTenantMembersRequest) GetRoleId() string {
+	if x != nil {
+		return x.RoleId
+	}
+	return ""
+}
+
+func (x *ListTenantMembersRequest) GetDepartmentId() string {
+	if x != nil {
+		return x.DepartmentId
+	}
+	return ""
+}
+
+func (x *ListTenantMembersRequest) GetStatus() TenantMemberStatus {
+	if x != nil {
+		return x.Status
+	}
+	return TenantMemberStatus_TENANT_MEMBER_STATUS_UNSPECIFIED
+}
+
+func (x *ListTenantMembersRequest) GetPage() uint32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListTenantMembersRequest) GetPageSize() uint32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
 type ListTenantMembersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Members       []*TenantMemberDTO     `protobuf:"bytes,1,rep,name=members,proto3" json:"members,omitempty"`
+	Total         uint64                 `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -430,6 +481,13 @@ func (x *ListTenantMembersResponse) GetMembers() []*TenantMemberDTO {
 		return x.Members
 	}
 	return nil
+}
+
+func (x *ListTenantMembersResponse) GetTotal() uint64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 // Internal quota meter used by Commercial composition. No tenant id is accepted:
@@ -857,10 +915,8 @@ const file_access_v1_tenant_member_proto_rawDesc = "" +
 	"\x19InviteTenantMemberRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\"1\n" +
 	"\x16GetTenantMemberRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"\x1a\n" +
-	"\x18ListTenantMembersRequest\"Q\n" +
-	"\x19ListTenantMembersResponse\x124\n" +
-	"\amembers\x18\x01 \x03(\v2\x1a.access.v1.TenantMemberDTOR\amembers\" \n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xd6\x01\n\x18ListTenantMembersRequest\x12\x14\n\x05query\x18\x01 \x01(\tR\x05query\x12\x17\n\arole_id\x18\x02 \x01(\tR\x06roleId\x12#\n\rdepartment_id\x18\x03 \x01(\tR\fdepartmentId\x125\n\x06status\x18\x04 \x01(\x0e2\x1d.access.v1.TenantMemberStatusR\x06status\x12\x12\n\x04page\x18\x05 \x01(\rR\x04page\x12\x1b\n\tpage_size\x18\x06 \x01(\rR\bpageSize\"g\n\x19ListTenantMembersResponse\x124\n\amembers\x18\x01 \x03(\v2\x1a.access.v1.TenantMemberDTOR\amembers\x12\x14\n\x05total\x18\x02 \x01(\x04R\x05total" +
+	"\" \n" +
 	"\x1eCountTenantQuotaMembersRequest\"Q\n" +
 	"\x1fCountTenantQuotaMembersResponse\x12\x12\n" +
 	"\x04used\x18\x01 \x01(\x04R\x04used\x12\x1a\n" +
@@ -946,26 +1002,27 @@ var file_access_v1_tenant_member_proto_goTypes = []any{
 var file_access_v1_tenant_member_proto_depIdxs = []int32{
 	0,  // 0: access.v1.TenantMemberDTO.status:type_name -> access.v1.TenantMemberStatus
 	1,  // 1: access.v1.TenantMemberDTO.roles:type_name -> access.v1.TenantMemberRoleDTO
-	2,  // 2: access.v1.ListTenantMembersResponse.members:type_name -> access.v1.TenantMemberDTO
-	3,  // 3: access.v1.TenantMemberLifecycleApplication.InviteTenantMember:input_type -> access.v1.InviteTenantMemberRequest
-	4,  // 4: access.v1.TenantMemberLifecycleApplication.GetTenantMember:input_type -> access.v1.GetTenantMemberRequest
-	5,  // 5: access.v1.TenantMemberLifecycleApplication.ListTenantMembers:input_type -> access.v1.ListTenantMembersRequest
-	9,  // 6: access.v1.TenantMemberLifecycleApplication.UpdateTenantMemberProfile:input_type -> access.v1.UpdateTenantMemberProfileRequest
-	10, // 7: access.v1.TenantMemberLifecycleApplication.ActivateTenantMember:input_type -> access.v1.ActivateTenantMemberRequest
-	11, // 8: access.v1.TenantMemberLifecycleApplication.SuspendTenantMember:input_type -> access.v1.SuspendTenantMemberRequest
-	12, // 9: access.v1.TenantMemberLifecycleApplication.RemoveTenantMember:input_type -> access.v1.RemoveTenantMemberRequest
-	2,  // 10: access.v1.TenantMemberLifecycleApplication.InviteTenantMember:output_type -> access.v1.TenantMemberDTO
-	2,  // 11: access.v1.TenantMemberLifecycleApplication.GetTenantMember:output_type -> access.v1.TenantMemberDTO
-	6,  // 12: access.v1.TenantMemberLifecycleApplication.ListTenantMembers:output_type -> access.v1.ListTenantMembersResponse
-	2,  // 13: access.v1.TenantMemberLifecycleApplication.UpdateTenantMemberProfile:output_type -> access.v1.TenantMemberDTO
-	2,  // 14: access.v1.TenantMemberLifecycleApplication.ActivateTenantMember:output_type -> access.v1.TenantMemberDTO
-	2,  // 15: access.v1.TenantMemberLifecycleApplication.SuspendTenantMember:output_type -> access.v1.TenantMemberDTO
-	2,  // 16: access.v1.TenantMemberLifecycleApplication.RemoveTenantMember:output_type -> access.v1.TenantMemberDTO
-	10, // [10:17] is the sub-list for method output_type
-	3,  // [3:10] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	0,  // 2: access.v1.ListTenantMembersRequest.status:type_name -> access.v1.TenantMemberStatus
+	2,  // 3: access.v1.ListTenantMembersResponse.members:type_name -> access.v1.TenantMemberDTO
+	3,  // 4: access.v1.TenantMemberLifecycleApplication.InviteTenantMember:input_type -> access.v1.InviteTenantMemberRequest
+	4,  // 5: access.v1.TenantMemberLifecycleApplication.GetTenantMember:input_type -> access.v1.GetTenantMemberRequest
+	5,  // 6: access.v1.TenantMemberLifecycleApplication.ListTenantMembers:input_type -> access.v1.ListTenantMembersRequest
+	9,  // 7: access.v1.TenantMemberLifecycleApplication.UpdateTenantMemberProfile:input_type -> access.v1.UpdateTenantMemberProfileRequest
+	10, // 8: access.v1.TenantMemberLifecycleApplication.ActivateTenantMember:input_type -> access.v1.ActivateTenantMemberRequest
+	11, // 9: access.v1.TenantMemberLifecycleApplication.SuspendTenantMember:input_type -> access.v1.SuspendTenantMemberRequest
+	12, // 10: access.v1.TenantMemberLifecycleApplication.RemoveTenantMember:input_type -> access.v1.RemoveTenantMemberRequest
+	2,  // 11: access.v1.TenantMemberLifecycleApplication.InviteTenantMember:output_type -> access.v1.TenantMemberDTO
+	2,  // 12: access.v1.TenantMemberLifecycleApplication.GetTenantMember:output_type -> access.v1.TenantMemberDTO
+	6,  // 13: access.v1.TenantMemberLifecycleApplication.ListTenantMembers:output_type -> access.v1.ListTenantMembersResponse
+	2,  // 14: access.v1.TenantMemberLifecycleApplication.UpdateTenantMemberProfile:output_type -> access.v1.TenantMemberDTO
+	2,  // 15: access.v1.TenantMemberLifecycleApplication.ActivateTenantMember:output_type -> access.v1.TenantMemberDTO
+	2,  // 16: access.v1.TenantMemberLifecycleApplication.SuspendTenantMember:output_type -> access.v1.TenantMemberDTO
+	2,  // 17: access.v1.TenantMemberLifecycleApplication.RemoveTenantMember:output_type -> access.v1.TenantMemberDTO
+	11, // [11:18] is the sub-list for method output_type
+	4,  // [4:11] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_access_v1_tenant_member_proto_init() }
