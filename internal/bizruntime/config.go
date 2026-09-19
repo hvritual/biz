@@ -50,6 +50,9 @@ type WebAuthConfig struct {
 	SessionRefreshWindow  time.Duration
 	FlowTTL               time.Duration
 	CookieSecure          bool
+	// TrustBizUserSubject allows this BFF to bind the verified first-party
+	// subject form biz-user:<user_id>. Keep false for external OIDC issuers.
+	TrustBizUserSubject bool
 
 	// Optional explicit mapping for a tenantless platform operator. The OIDC
 	// external subject is bound to an existing platform IAM subject; it never
