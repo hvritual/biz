@@ -73,6 +73,22 @@ func NewTenantMemberActivationRepository(database *gorm.DB, protection *Verifica
 	return &TenantMemberActivationRepository{database: database, verification: verification}, nil
 }
 
+func (repository *TenantMemberActivationRepository) AssertAdminActivationAllowed(ctx context.Context, tenantID, userID string) error {
+	if repository == nil || repository.database == nil {
+		return nil
+	}
+	var count int64
+	if err := repository.database.WithContext(ctx).Model(&memberActivationRecord{}).
+		Where("tenant_id = ? AND user_id = ? AND state = ? AND consumed_at IS NULL AND expires_at > ?", strings.TrimSpace(tenantID), strings.TrimSpace(userID), memberActivationStatePending, time.Now().UTC()).
+		Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return ports.ErrTenantMemberActivationPending
+	}
+	return nil
+}
+
 func (repository *TenantMemberActivationRepository) Stage(ctx context.Context, input ports.TenantMemberActivationInput) (ports.TenantMemberActivationReceipt, error) {
 	if repository == nil || repository.database == nil || repository.verification == nil {
 		return ports.TenantMemberActivationReceipt{}, ports.ErrTenantMemberActivationUnavailable
