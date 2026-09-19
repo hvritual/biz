@@ -99,14 +99,23 @@ jobs:
           catalog = Path('internal/access/authorization/catalog_gen.go').read_text()
           known = set(re.findall(r'Code:\s*"([^"]+)"', catalog))
           declared = set()
-          for source in [
+          sources = [
               Path('web/src/router/index.ts'),
               Path('web/src/router/navigation.ts'),
               Path('web/src/router/customerNavigation.ts'),
-          ]:
+              Path('web/src/features/enterprise/pages/MembersView.vue'),
+              Path('web/src/features/enterprise/pages/RolesView.vue'),
+              Path('web/src/features/enterprise/pages/OrganizationView.vue'),
+              Path('web/src/features/enterprise/pages/CompanyView.vue'),
+              Path('web/src/features/enterprise/pages/BrandingView.vue'),
+              Path('web/src/features/enterprise/pages/PlansView.vue'),
+              Path('web/src/features/enterprise/pages/AuditLogsView.vue'),
+          ]
+          for source in sources:
               text = source.read_text()
               for block in re.findall(r'authorizationActions\s*:\s*\[([^\]]*)\]', text, re.S):
                   declared.update(re.findall(r"['\"]([^'\"]+)['\"]", block))
+              declared.update(re.findall(r"['\"]((?:tenant|commercial|access|device)\.[a-z0-9_.]+)['\"]", text))
           missing = sorted(code for code in declared if code not in known)
           if missing:
               raise SystemExit(f'frontend authorization action codes missing from generated catalog: {missing}')
