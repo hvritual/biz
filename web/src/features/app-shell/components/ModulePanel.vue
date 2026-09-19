@@ -10,6 +10,7 @@ import coffee from '@/assets/coffee-menu.webp'
 import { customerDomains } from '@/router/customerNavigation'
 import {
   authorizationApiMode,
+  currentAuthorizationAllows,
   currentAuthorizationAllowsAny,
   currentAuthorizationState,
 } from '@/services/runtime/authorization'
@@ -29,7 +30,10 @@ const actions=computed(()=>ui.module==='enterprise'?quickActions:ui.module==='pl
 const visibleActions=computed(()=>actions.value.filter((action)=>{
   const required='authorizationActions' in action&&Array.isArray(action.authorizationActions)?action.authorizationActions:[]
   if(!authorizationApiMode()||!required.length)return true
-  return currentAuthorizationState.status==='ready'&&currentAuthorizationAllowsAny(required)
+  if(currentAuthorizationState.status!=='ready')return false
+  return 'authorizationMode' in action&&action.authorizationMode==='all'
+    ? required.every(currentAuthorizationAllows)
+    : currentAuthorizationAllowsAny(required)
 }))
 const quickKey=(path:string)=>({
   '/enterprise/members?action=create':'addMember','/enterprise/members?action=invite':'inviteMember','/enterprise/roles?action=create':'createRole','/enterprise/plan?action=upgrade':'adjustPlan','/enterprise/company':'editCompany','/enterprise/logs':'viewLogs','/platform/tenants':'openTenants','/platform/commercial/plans':'publishPlan','/platform/commercial/tenant-entitlements':'adjustEntitlements','/platform/commercial/usage-billing':'viewUsage','/system/general':'openGeneral','/system/security':'openSecurity','/system/notifications':'openNotifications','/system/integrations':'openIntegrations'
