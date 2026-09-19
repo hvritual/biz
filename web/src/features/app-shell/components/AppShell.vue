@@ -3,6 +3,7 @@ import { UiButton } from '@/ui/base'
 
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useUiStore } from '@/stores/ui'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import AppHeader from './AppHeader.vue'
@@ -21,6 +22,7 @@ const ui = useUiStore()
 const store = useEnterpriseStore()
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const frame = ref<HTMLElement>()
 const expanded = computed(() => Boolean(ui.module))
 const platformSurface = computed(() => route.meta.surface === 'platform')
@@ -145,7 +147,7 @@ onBeforeUnmount(() => {
     </aside>
     <main class="main-content" :inert="expanded || ui.mobileOpen" data-testid="main-content">
       <RouterView v-if="authorizationRenderable" :key="routeKey" />
-      <div v-else class="authorization-loading" role="status">正在确认当前租户授权…</div>
+      <div v-else class="authorization-loading" role="status">{{ t('shell.authorizationChecking') }}</div>
     </main>
     <Teleport to="body">
       <div v-if="ui.notice" role="status" :class="['toast', ui.noticeTone]">
