@@ -153,12 +153,7 @@ export const router = createRouter({
       meta: { title: '操作日志', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage', authorizationActions: ['access.audit.list'] },
     },
     {
-      path: '/system/:section(security)',
-      component: () => import('@/features/system/pages/SettingsView.vue'),
-      meta: { title: '系统设置', module: 'system', surface: 'account', pageTemplate: 'FormPage', authorizationIndependent: true },
-    },
-    {
-      path: '/system/:section(general|notifications|integrations|dictionary)',
+      path: '/system/:section(general|notifications|security|integrations|dictionary)',
       component: () => import('@/features/system/pages/SettingsView.vue'),
       meta: { title: '系统设置', module: 'system', surface: 'tenant', pageTemplate: 'FormPage' },
     },
@@ -177,7 +172,8 @@ export const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  if (!authorizationApiMode() || to.meta.authorizationPublic || to.meta.authorizationIndependent) return true
+  const accountSecurityRoute = to.meta.module === 'system' && to.params.section === 'security'
+  if (!authorizationApiMode() || to.meta.authorizationPublic || accountSecurityRoute) return true
   const required = Array.isArray(to.meta.authorizationActions)
     ? to.meta.authorizationActions.filter((value): value is string => typeof value === 'string' && value.length > 0)
     : []
