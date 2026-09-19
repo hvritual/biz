@@ -1,4 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
+
+test.describe.configure({ retries: 0 })
 import { existsSync, readFileSync } from 'node:fs'
 
 interface Fixture {
@@ -118,6 +120,7 @@ test('TestEnterprise173PasswordRecoveryRevokesSessionsAndChangesCredential', asy
     await page.getByRole('button', { name: '确认修改密码' }).click()
     await expect(page.getByRole('alert')).toContainText('8–16')
 
+    await page.getByLabel('找回密码验证码').fill(code)
     await page.getByLabel('找回密码新密码').fill('RecoverNew9A')
     await page.getByLabel('找回密码确认新密码').fill('RecoverNew9A')
     await page.getByRole('button', { name: '确认修改密码' }).click()
@@ -145,7 +148,7 @@ test('TestEnterprise173SelfPasswordChangeUIRevokesCurrentSession', async ({ brow
     await active.page.getByLabel('新密码', { exact: true }).fill('ChangeNew9A')
     await active.page.getByLabel('确认新密码').fill('ChangeNew9A')
     await active.page.getByRole('button', { name: '修改密码' }).click()
-    await expect(active.page.getByRole('status')).toContainText('旧会话已全部撤销')
+    await expect(active.page.getByRole('status').filter({ hasText: '旧会话已全部撤销' })).toContainText('旧会话已全部撤销')
 
     const sessionResponse = await active.context.request.get(data.base_url + '/auth/session')
     expect(((await sessionResponse.json()) as SessionView).authenticated).toBe(false)
