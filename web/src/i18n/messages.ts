@@ -11,7 +11,7 @@ export const messages = {
     },
     navigation: {
       primary: { dashboard: '工作台', 'customer-operations': '客户经营', 'rental-operations': '租赁运营', 'device-operations': '设备运营', 'business-operations': '经营管理', enterprise: '企业中心', 'platform-commercial': '平台管理', system: '系统设置' },
-      enterprise: { members: '成员管理', roles: '角色权限', organization: '组织架构', plan: '套餐额度', company: '企业信息', logs: '操作日志' },
+      enterprise: { members: '成员管理', roles: '角色权限', organization: '组织架构', plan: '套餐额度', company: '企业信息', branding: '品牌与主题', logs: '操作日志' },
       platform: { overview: '平台总览', tenants: '租户管理', subscriptions: '租户订阅', changes: '套餐变更', expiry: '到期与宽限', modules: '模块目录', features: '商业功能', plans: '套餐版本', 'add-ons': '增购项', 'tenant-entitlements': '租户权益', authorization: '授权诊断', quotas: '额度管理', overrides: '专项授权', 'usage-billing': '用量计费', audit: '商业审计' },
       system: { general: '基础设置', security: '安全设置', notifications: '通知设置', integrations: '接口与集成', dictionary: '数据字典' },
       groups: { overview: '总览', lifecycle: '租户生命周期', product: '产品与定价', entitlement: '权益与授权', governance: '计量与治理' },
@@ -39,7 +39,7 @@ export const messages = {
     },
     navigation: {
       primary: { dashboard: 'Dashboard', 'customer-operations': 'Customer Operations', 'rental-operations': 'Rental Operations', 'device-operations': 'Device Operations', 'business-operations': 'Business Operations', enterprise: 'Enterprise Center', 'platform-commercial': 'Platform Admin', system: 'System Settings' },
-      enterprise: { members: 'Members', roles: 'Roles & Permissions', organization: 'Organization', plan: 'Plan & Quotas', company: 'Company Profile', logs: 'Audit Logs' },
+      enterprise: { members: 'Members', roles: 'Roles & Permissions', organization: 'Organization', plan: 'Plan & Quotas', company: 'Company Profile', branding: 'Brand & Theme', logs: 'Audit Logs' },
       platform: { overview: 'Platform Overview', tenants: 'Tenant Management', subscriptions: 'Tenant Subscriptions', changes: 'Plan Changes', expiry: 'Expiry & Grace', modules: 'Module Catalog', features: 'Commercial Features', plans: 'Plan Versions', 'add-ons': 'Add-ons', 'tenant-entitlements': 'Tenant Entitlements', authorization: 'Authorization Diagnostics', quotas: 'Quota Management', overrides: 'Special Overrides', 'usage-billing': 'Usage Billing', audit: 'Commercial Audit' },
       system: { general: 'General', security: 'Security', notifications: 'Notifications', integrations: 'APIs & Integrations', dictionary: 'Data Dictionary' },
       groups: { overview: 'Overview', lifecycle: 'Tenant Lifecycle', product: 'Product & Pricing', entitlement: 'Entitlements & Authorization', governance: 'Metering & Governance' },
