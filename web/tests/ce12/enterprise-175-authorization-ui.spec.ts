@@ -51,12 +51,20 @@ test('TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed', async
     await expect(active.page.locator('[data-enterprise-page="members"]')).toBeVisible()
     await expect(active.page.getByRole('dialog')).toHaveCount(0)
 
+    for (const moduleId of ['customer-operations', 'rental-operations', 'device-operations', 'business-operations', 'platform-commercial', 'system']) {
+      await expect(active.page.locator(`[data-module-id="${moduleId}"]`)).toHaveCount(0)
+    }
+
     await active.page.locator('[data-module-id="enterprise"]').click()
     const drawer = active.page.locator('#module-drawer')
     await expect(drawer).toBeVisible()
     await expect(drawer.getByText('成员管理', { exact: true })).toBeVisible()
     await expect(drawer.getByText('角色权限', { exact: true })).toHaveCount(0)
     await expect(drawer.getByText('新建角色', { exact: true })).toHaveCount(0)
+
+    await active.page.goto(data.ui_base_url + '/#/customers')
+    await expect(active.page.locator('[data-authorization-state]')).toBeVisible()
+    await expect(active.page.locator('[data-customer-page]')).toHaveCount(0)
 
     await active.page.goto(data.ui_base_url + '/#/enterprise/roles')
     await expect(active.page.locator('[data-authorization-state]')).toBeVisible()
