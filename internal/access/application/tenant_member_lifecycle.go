@@ -7,6 +7,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	"github.com/hvritual/biz/internal/access/domain"
@@ -39,18 +41,26 @@ func (err *tenantMemberConflictError) GRPCStatus() *status.Status {
 }
 
 type TenantMemberLifecycleService struct {
-	repositories requestscope.RepositoryFactory[ports.TenantMemberRepositories]
-	capabilities TenantMemberLifecycleCapabilities
+	repositories  requestscope.RepositoryFactory[ports.TenantMemberRepositories]
+	capabilities  TenantMemberLifecycleCapabilities
+	activationTTL time.Duration
 }
 
-func NewTenantMemberLifecycleService(repositories requestscope.RepositoryFactory[ports.TenantMemberRepositories], capabilities TenantMemberLifecycleCapabilities) (*TenantMemberLifecycleService, error) {
+func NewTenantMemberLifecycleService(repositories requestscope.RepositoryFactory[ports.TenantMemberRepositories], capabilities TenantMemberLifecycleCapabilities, activationTTL ...time.Duration) (*TenantMemberLifecycleService, error) {
 	if repositories == nil {
 		return nil, errors.New("access: tenant member repository factory is required")
 	}
 	if capabilities == nil || capabilities.AccessTenantRolePermission() == nil || capabilities.AccessTenantDepartmentManagement() == nil {
 		return nil, errors.New("access: tenant member role and department capabilities are required")
 	}
-	return &TenantMemberLifecycleService{repositories: repositories, capabilities: capabilities}, nil
+	var ttl time.Duration
+	if len(activationTTL) > 0 {
+		ttl = activationTTL[0]
+	}
+	if ttl < 0 {
+		return nil, errors.New("access: tenant member activation TTL must not be negative")
+	}
+	return &TenantMemberLifecycleService{repositories: repositories, capabilities: capabilities, activationTTL: ttl}, nil
 }
 
 func (service *TenantMemberLifecycleService) InviteTenantMember(ctx context.Context, request *accessv1.InviteTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
@@ -69,6 +79,115 @@ func (service *TenantMemberLifecycleService) InviteTenantMember(ctx context.Cont
 		return nil, err
 	}
 	return tenantMemberDTO(member), nil
+}
+
+
+func (service *TenantMemberLifecycleService) CreateTenantMember(ctx context.Context, request *accessv1.CreateTenantMemberRequest) (*accessv1.TenantMemberCreationReceipt, error) {
+	if request == nil || service.activationTTL <= 0 {
+		return nil, ports.ErrTenantMemberActivationUnavailable
+	}
+	username, err := normalizeTenantMemberUsername(request.GetUsername())
+	if err != nil {
+		return nil, err
+	}
+	email := strings.TrimSpace(request.GetEmail())
+	phone := strings.TrimSpace(request.GetPhone())
+	if email == "" && phone == "" {
+		return nil, ErrInvalidTenantMemberRequest
+	}
+	roleIDs, err := normalizeTenantMemberRoleIDs(request.GetRoleIds())
+	if err != nil {
+		return nil, err
+	}
+	mode, err := tenantMemberActivationMode(request.GetActivationMode())
+	if err != nil {
+		return nil, err
+	}
+	if mode == "sms_initial_password" && phone == "" {
+		return nil, ErrInvalidTenantMemberRequest
+	}
+	tenantID, err := trustedTenantID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := service.capabilities.AccessTenantDepartmentManagement().AssertTenantMemberDepartmentAssignmentAllowed(ctx, &accessv1.AssertTenantMemberDepartmentAssignmentAllowedRequest{
+		DepartmentId: strings.TrimSpace(request.GetDepartmentId()),
+	}); err != nil {
+		return nil, err
+	}
+
+	userID := newMemberUserID()
+	member, accountCreated, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (struct {
+		Member         domain.Membership
+		AccountCreated bool
+	}, error) {
+		created, isNew, createErr := scope.Repositories().Member.Create(scope.Context(), tenantID, ports.TenantMemberCreateInput{
+			UserID:       userID,
+			Username:     username,
+			Email:        email,
+			Phone:        phone,
+			Name:         request.GetName(),
+			EmployeeID:   request.GetEmployeeId(),
+			Position:     request.GetPosition(),
+			DepartmentID: request.GetDepartmentId(),
+		}, time.Now().UTC())
+		return struct {
+			Member         domain.Membership
+			AccountCreated bool
+		}{Member: created, AccountCreated: isNew}, createErr
+	})
+	if err != nil {
+		return nil, wrapTenantMemberConflict(err)
+	}
+
+	for _, roleID := range roleIDs {
+		if _, err := service.capabilities.AccessTenantRolePermission().AssignTenantRoleMember(ctx, &accessv1.AssignTenantRoleMemberRequest{
+			RoleId: roleID,
+			UserId: member.Member.UserID,
+		}); err != nil {
+			return nil, err
+		}
+	}
+
+	secret := newMemberActivationSecret()
+	notificationSecret := "/idp/member/activate?token=" + secret
+	if mode == "sms_initial_password" {
+		secret = newMemberInitialPassword()
+		notificationSecret = "username=" + username + "\npassword=" + secret
+	}
+	expiresAt := time.Now().UTC().Add(service.activationTTL)
+	activation, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (ports.TenantMemberActivationReceipt, error) {
+		return scope.Repositories().Activation.Stage(scope.Context(), ports.TenantMemberActivationInput{
+			TenantID:           tenantID,
+			UserID:             member.Member.UserID,
+			Username:           username,
+			Email:              email,
+			Phone:              phone,
+			Mode:               mode,
+			Secret:             secret,
+			NotificationSecret: notificationSecret,
+			NewAccount:         member.AccountCreated,
+			ExpiresAt:          expiresAt,
+		})
+	})
+	if err != nil {
+		return nil, wrapTenantMemberConflict(err)
+	}
+
+	readback, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (domain.Membership, error) {
+		return scope.Repositories().Member.Get(scope.Context(), tenantID, member.Member.UserID)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &accessv1.TenantMemberCreationReceipt{
+		Member:              tenantMemberDTO(readback),
+		ActivationMode:      request.GetActivationMode(),
+		NotificationEventId: activation.NotificationEventID,
+		DeliveryState:       activation.DeliveryState,
+		MaskedDestination:   activation.MaskedDestination,
+	}, nil
 }
 
 func (service *TenantMemberLifecycleService) BootstrapTenantOwnerMember(ctx context.Context, request *accessv1.BootstrapTenantOwnerMemberRequest) (*accessv1.TenantMemberDTO, error) {
@@ -171,6 +290,81 @@ func tenantMemberListQuery(request *accessv1.ListTenantMembersRequest) (ports.Te
 	}, nil
 }
 
+
+func (service *TenantMemberLifecycleService) UpdateTenantMember(ctx context.Context, request *accessv1.UpdateTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
+	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
+		return nil, ErrInvalidTenantMemberRequest
+	}
+	roleIDs, err := normalizeTenantMemberRoleIDs(request.GetRoleIds())
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(request.GetEmail()) == "" && strings.TrimSpace(request.GetPhone()) == "" {
+		return nil, ErrInvalidTenantMemberRequest
+	}
+	tenantID, err := trustedTenantID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	userID := strings.TrimSpace(request.GetUserId())
+	if _, err := service.capabilities.AccessTenantDepartmentManagement().AssertTenantMemberDepartmentAssignmentAllowed(ctx, &accessv1.AssertTenantMemberDepartmentAssignmentAllowedRequest{
+		DepartmentId: strings.TrimSpace(request.GetDepartmentId()),
+	}); err != nil {
+		return nil, err
+	}
+
+	current, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (domain.Membership, error) {
+		value, getErr := scope.Repositories().Member.Get(scope.Context(), tenantID, userID)
+		if getErr != nil {
+			return domain.Membership{}, getErr
+		}
+		if value.Version != request.GetVersion() {
+			return domain.Membership{}, ports.ErrTenantMemberConflict
+		}
+		value.Email = strings.TrimSpace(request.GetEmail())
+		if err := value.UpdateProfile(request.GetName(), request.GetPhone(), request.GetEmployeeId(), request.GetPosition(), request.GetDepartmentId(), time.Now().UTC()); err != nil {
+			return domain.Membership{}, err
+		}
+		if err := scope.Repositories().Member.Update(scope.Context(), &value, request.GetVersion()); err != nil {
+			return domain.Membership{}, err
+		}
+		return value, nil
+	})
+	if err != nil {
+		return nil, wrapTenantMemberConflict(err)
+	}
+
+	existingRoles := make(map[string]struct{}, len(current.Roles))
+	for _, role := range current.Roles {
+		existingRoles[role.ID] = struct{}{}
+	}
+	targetRoles := make(map[string]struct{}, len(roleIDs))
+	for _, roleID := range roleIDs {
+		targetRoles[roleID] = struct{}{}
+		if _, exists := existingRoles[roleID]; !exists {
+			if _, err := service.capabilities.AccessTenantRolePermission().AssignTenantRoleMember(ctx, &accessv1.AssignTenantRoleMemberRequest{RoleId: roleID, UserId: userID}); err != nil {
+				return nil, err
+			}
+		}
+	}
+	for roleID := range existingRoles {
+		if _, keep := targetRoles[roleID]; keep {
+			continue
+		}
+		if _, err := service.capabilities.AccessTenantRolePermission().RevokeTenantRoleMember(ctx, &accessv1.RevokeTenantRoleMemberRequest{RoleId: roleID, UserId: userID}); err != nil {
+			return nil, err
+		}
+	}
+
+	readback, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (domain.Membership, error) {
+		return scope.Repositories().Member.Get(scope.Context(), tenantID, userID)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return tenantMemberDTO(readback), nil
+}
+
 func (service *TenantMemberLifecycleService) UpdateTenantMemberProfile(ctx context.Context, request *accessv1.UpdateTenantMemberProfileRequest) (*accessv1.TenantMemberDTO, error) {
 	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalidTenantMemberRequest
@@ -264,7 +458,7 @@ func tenantMemberDTO(member domain.Membership) *accessv1.TenantMemberDTO {
 	for _, role := range member.Roles {
 		roles = append(roles, &accessv1.TenantMemberRoleDTO{RoleId: role.ID, RoleName: role.Name, RoleStatus: role.Status})
 	}
-	return &accessv1.TenantMemberDTO{UserId: member.UserID, Email: member.Email, Status: tenantMemberStatusDTO(member.Status), Version: member.Version, Name: member.Name, Phone: member.Phone, EmployeeId: member.EmployeeID, Position: member.Position, DepartmentId: member.DepartmentID, Roles: roles, DerivedDataScope: string(member.DerivedDataScope)}
+	return &accessv1.TenantMemberDTO{UserId: member.UserID, Email: member.Email, Status: tenantMemberStatusDTO(member.Status), Version: member.Version, Name: member.Name, Phone: member.Phone, EmployeeId: member.EmployeeID, Position: member.Position, DepartmentId: member.DepartmentID, Roles: roles, DerivedDataScope: string(member.DerivedDataScope), Username: member.Username}
 }
 
 func tenantMemberStatusDTO(status string) accessv1.TenantMemberStatus {
@@ -288,4 +482,91 @@ func newMemberUserID() string {
 		panic(err)
 	}
 	return hex.EncodeToString(value[:])
+}
+
+func normalizeTenantMemberUsername(value string) (string, error) {
+	value = strings.ToLower(strings.TrimSpace(value))
+	length := utf8.RuneCountInString(value)
+	if length < 5 || length > 20 {
+		return "", ErrInvalidTenantMemberRequest
+	}
+	allDigits := true
+	for _, r := range value {
+		if unicode.IsSpace(r) || unicode.IsControl(r) {
+			return "", ErrInvalidTenantMemberRequest
+		}
+		if !unicode.IsDigit(r) {
+			allDigits = false
+		}
+	}
+	if allDigits {
+		return "", ErrInvalidTenantMemberRequest
+	}
+	return value, nil
+}
+
+func normalizeTenantMemberRoleIDs(values []string) ([]string, error) {
+	if len(values) == 0 {
+		return nil, ErrInvalidTenantMemberRequest
+	}
+	seen := make(map[string]struct{}, len(values))
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			return nil, ErrInvalidTenantMemberRequest
+		}
+		if _, duplicate := seen[value]; duplicate {
+			return nil, ErrInvalidTenantMemberRequest
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+func tenantMemberActivationMode(mode accessv1.TenantMemberActivationMode) (string, error) {
+	switch mode {
+	case accessv1.TenantMemberActivationMode_TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK:
+		return "activation_link", nil
+	case accessv1.TenantMemberActivationMode_TENANT_MEMBER_ACTIVATION_MODE_SMS_INITIAL_PASSWORD:
+		return "sms_initial_password", nil
+	default:
+		return "", ErrInvalidTenantMemberRequest
+	}
+}
+
+func wrapTenantMemberConflict(err error) error {
+	switch {
+	case errors.Is(err, ports.ErrTenantMemberConflict),
+		errors.Is(err, ports.ErrTenantMemberExists),
+		errors.Is(err, ports.ErrTenantMemberUsernameConflict),
+		errors.Is(err, ports.ErrTenantMemberContactConflict),
+		errors.Is(err, ports.ErrTenantMemberExistingAccountSMS):
+		return &tenantMemberConflictError{cause: err}
+	default:
+		return err
+	}
+}
+
+func newMemberActivationSecret() string {
+	var value [32]byte
+	if _, err := rand.Read(value[:]); err != nil {
+		panic(err)
+	}
+	return hex.EncodeToString(value[:])
+}
+
+func newMemberInitialPassword() string {
+	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
+	var raw [10]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		panic(err)
+	}
+	out := make([]byte, 12)
+	out[0], out[1] = 'A', '7'
+	for i := 0; i < len(raw); i++ {
+		out[i+2] = alphabet[int(raw[i])%len(alphabet)]
+	}
+	return string(out)
 }
