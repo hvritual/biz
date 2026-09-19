@@ -16,6 +16,7 @@ var (
 	ErrTenantMemberContactConflict      = errors.New("access: tenant member contact conflicts with another account")
 	ErrTenantMemberActivationUnavailable = errors.New("access: tenant member activation is unavailable")
 	ErrTenantMemberExistingAccountSMS   = errors.New("access: existing account must not receive a new initial password")
+	ErrTenantMemberActivationPending    = errors.New("access: member must complete pending activation")
 )
 
 type TenantMemberCreateInput struct {
@@ -74,6 +75,7 @@ type TenantMemberRepository interface {
 
 type TenantMemberActivationRepository interface {
 	Stage(context.Context, TenantMemberActivationInput) (TenantMemberActivationReceipt, error)
+	AssertAdminActivationAllowed(context.Context, string, string) error
 }
 
 type TenantMemberRepositories struct {
