@@ -371,6 +371,9 @@ func bindRuntimeWithContactProtection(ctx context.Context, provider *platform.Pr
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
+	if options.WebAuth.Enabled() {
+		webAuth.setAuthorizationEntitlements(snapshots)
+	}
 	decisionReader, err := entitlementmanagement.BuildDecisionReader(snapshots)
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
