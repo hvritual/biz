@@ -1,15 +1,32 @@
 <script setup lang="ts">
 import { UiButton } from '@/ui/base'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { isPrimaryNavigationActive, primaryNavigation } from '@/router/navigation'
 import AppIcon from '@/ui/common/AppIcon.vue'
+import {
+  authorizationApiMode,
+  currentAuthorizationAllowsAny,
+  currentAuthorizationModuleAllowed,
+  currentAuthorizationState,
+} from '@/services/runtime/authorization'
 const ui = useUiStore(), route = useRoute(), router = useRouter()
 const { t } = useI18n()
 const hoverOpened = ref<string | null>(null)
 const previewLabel = computed(() => route.meta.surface === 'platform' || route.meta.surface === 'runtime' ? t('shell.trustedRuntime') : t('shell.previewData'))
+const visiblePrimaryNavigation = computed(() =>
+  primaryNavigation.filter((item) => {
+    if (!authorizationApiMode() || !item.authorizationActions?.length) return true
+    if (currentAuthorizationState.status !== 'ready') return false
+    if (item.authorizationModule && !currentAuthorizationModuleAllowed(item.authorizationModule)) return false
+    return currentAuthorizationAllowsAny(item.authorizationActions)
+  }),
+)
+watch(visiblePrimaryNavigation, (items) => {
+  if (ui.module && !items.some((item) => item.id === ui.module)) ui.closeMenu()
+})
 const label = (item: (typeof primaryNavigation)[number]) => t(`navigation.primary.${item.id}`)
 function activate(item: (typeof primaryNavigation)[number]) {
   if (item.path) { hoverOpened.value = null; ui.closeMenu(); void router.push(item.path); return }
@@ -27,7 +44,7 @@ function toggleCollapsed() { hoverOpened.value = null; ui.closeMenu(); ui.collap
 <template>
   <nav class="primary-nav" :aria-label="t('shell.primaryNav')" :class="{ collapsed: ui.collapsed }">
     <div class="nav-items">
-      <UiButton v-for="item in primaryNavigation" :key="item.id" :class="['primary-item',{active:isPrimaryNavigationActive(item,route.meta.module),expanded:ui.module===item.id&&!isPrimaryNavigationActive(item,route.meta.module)}]" :title="label(item)" :aria-label="label(item)" :aria-expanded="item.path?undefined:ui.module===item.id" :aria-controls="item.path?undefined:'module-drawer'" :data-module="item.selectorId??item.id" :data-module-id="item.id" @click="activate(item)" @mouseenter="previewModule(item)">
+      <UiButton v-for="item in visiblePrimaryNavigation" :key="item.id" :class="['primary-item',{active:isPrimaryNavigationActive(item,route.meta.module),expanded:ui.module===item.id&&!isPrimaryNavigationActive(item,route.meta.module)}]" :title="label(item)" :aria-label="label(item)" :aria-expanded="item.path?undefined:ui.module===item.id" :aria-controls="item.path?undefined:'module-drawer'" :data-module="item.selectorId??item.id" :data-module-id="item.id" @click="activate(item)" @mouseenter="previewModule(item)">
         <AppIcon :name="item.icon" :size="20"/><span>{{ label(item) }}</span>
       </UiButton>
     </div>
