@@ -7,6 +7,7 @@ test.skip(!process.env.ENTERPRISE_MEMBER_REAL_E2E, 'runs only against the VITE_D
 type RemoteRoleSummary = { roleId: string; roleName: string; roleStatus: string }
 type RemoteMember = {
   userId: string
+  username: string
   email: string
   status: string
   version: number
@@ -61,6 +62,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
   let members: RemoteMember[] = [
     {
       userId: 'user-001',
+      username: 'alice.owner',
       email: 'owner@coffeelink.test',
       status: 'TENANT_MEMBER_STATUS_ACTIVE',
       version: 3,
@@ -74,6 +76,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     },
     {
       userId: 'user-002',
+      username: 'new.member',
       email: 'new@coffeelink.test',
       status: 'TENANT_MEMBER_STATUS_INVITED',
       version: 1,
@@ -132,6 +135,8 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     if (options.authorizationStatus) return json(route, options.authorizationStatus, { message: 'authorization denied' })
     const buttonCodes = [
       'tenant.member.list',
+      'tenant.member.create',
+      'tenant.member.update',
       'tenant.member.invite',
       'tenant.member.profile.update',
       'tenant.member.activate',
@@ -193,6 +198,49 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     return json(route, 200, role)
   })
 
+  await page.route('**/api/v1/tenant/members/create', async (route) => {
+    recordWrite(route)
+    if (options.mutationStatus) return json(route, options.mutationStatus, { message: 'mutation conflict' })
+    const body = route.request().postDataJSON() as {
+      username: string
+      email: string
+      phone: string
+      name: string
+      employeeId: string
+      position: string
+      departmentId: string
+      roleIds: string[]
+      activationMode: string
+    }
+    const roles = body.roleIds
+      .map((roleId) => roleCatalog.find((role) => role.id === roleId))
+      .filter((role): role is RemoteRole => Boolean(role))
+      .map(roleSummary)
+    const created: RemoteMember = {
+      userId: 'user-003',
+      username: body.username,
+      email: body.email,
+      status: 'TENANT_MEMBER_STATUS_INVITED',
+      version: 1,
+      name: body.name,
+      phone: body.phone,
+      employeeId: body.employeeId,
+      position: body.position,
+      departmentId: body.departmentId,
+      roles,
+      derivedDataScope: 'none',
+    }
+    created.derivedDataScope = deriveScope(created)
+    members = [...members, created]
+    return json(route, 200, {
+      member: created,
+      activationMode: body.activationMode,
+      notificationEventId: 'activation-event-003',
+      deliveryState: 'PENDING',
+      maskedDestination: body.email ? 'i***@coffeelink.test' : '+886****0003',
+    })
+  })
+
   await page.route('**/api/v1/tenant/members', async (route) => {
     const request = route.request()
     if (request.method() === 'GET') {
@@ -221,6 +269,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     const body = request.postDataJSON() as { email: string }
     const created: RemoteMember = {
       userId: 'user-003',
+      username: 'legacy.invite',
       email: body.email,
       status: 'TENANT_MEMBER_STATUS_INVITED',
       version: 1,
@@ -275,6 +324,27 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
 
     recordWrite(route)
     if (options.mutationStatus) return json(route, options.mutationStatus, { message: 'mutation conflict' })
+    if (request.method() === 'PATCH') {
+      const body = request.postDataJSON() as Partial<RemoteMember> & { roleIds?: string[] }
+      const roles = (body.roleIds ?? current.roles.map((role) => role.roleId))
+        .map((roleId) => roleCatalog.find((role) => role.id === roleId))
+        .filter((role): role is RemoteRole => Boolean(role))
+        .map(roleSummary)
+      const updated: RemoteMember = {
+        ...current,
+        email: String(body.email ?? current.email).trim(),
+        phone: String(body.phone ?? current.phone).trim(),
+        name: String(body.name ?? current.name).trim(),
+        employeeId: String(body.employeeId ?? current.employeeId).trim(),
+        position: String(body.position ?? current.position).trim(),
+        departmentId: String(body.departmentId ?? current.departmentId).trim(),
+        roles,
+        version: current.version + 1,
+      }
+      updated.derivedDataScope = deriveScope(updated)
+      members = members.map((member) => member.userId === userId ? updated : member)
+      return json(route, 200, updated)
+    }
     const nextStatus =
       action === 'activate'
         ? 'TENANT_MEMBER_STATUS_ACTIVE'
