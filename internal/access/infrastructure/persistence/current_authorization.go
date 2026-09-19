@@ -76,7 +76,7 @@ func (store *Store) ResolveCurrentGrants(ctx context.Context, tenantID, userID s
 	if err := query.Order("pg.permission ASC, r.id ASC").Scan(&rows).Error; err != nil {
 		return nil, err
 	}
-	result := make([]authz.Grant, 0, len(rows))
+	result := make([]authz.Grant, 0, len(rows)+1)
 	for _, value := range rows {
 		result = append(result, authz.Grant{
 			Permission: authz.PermissionKey(value.Permission),
@@ -84,7 +84,42 @@ func (store *Store) ResolveCurrentGrants(ctx context.Context, tenantID, userID s
 			Scope: string(value.Scope),
 		})
 	}
+	if currentGrantRequestsPermission(permissions, "tenant.branding.read") {
+		implicit, err := store.resolveBrandingReadGrant(ctx, authz.GrantRequest{
+			Principal: identity.Principal{
+				Subject: "user:" + userID,
+				TenantID: tenantID,
+				UserID: userID,
+				Authenticated: true,
+			},
+			TenantBound: true,
+			Operation: "tenant.branding.get",
+			Permissions: []authz.PermissionKey{"tenant.branding.read"},
+		})
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, implicit...)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Permission == result[j].Permission {
+			return result[i].RoleID < result[j].RoleID
+		}
+		return result[i].Permission < result[j].Permission
+	})
 	return result, nil
+}
+
+func currentGrantRequestsPermission(permissions []authz.PermissionKey, expected authz.PermissionKey) bool {
+	if len(permissions) == 0 {
+		return true
+	}
+	for _, permission := range permissions {
+		if permission == expected {
+			return true
+		}
+	}
+	return false
 }
 
 func (store *Store) CurrentAuthorization(ctx context.Context, principal identity.Principal) (CurrentAuthorizationSnapshot, error) {
