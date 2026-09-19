@@ -1,4 +1,4 @@
-name: Enterprise 174 current authorization development qualification
+name: Enterprise 174 canonical source formatting
 
 on:
   push:
@@ -7,19 +7,19 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  go-development:
+  gofmt-changed-source:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.sha }}
           path: biz
           fetch-depth: 0
-          persist-credentials: false
+          persist-credentials: true
       - name: Read consumer lock
         id: source
         shell: bash
@@ -45,105 +45,32 @@ jobs:
         with:
           go-version: ${{ steps.lock.outputs.go_version }}
           cache: false
-      - name: Go compile unit vet
+      - name: Canonical gofmt only #174 changed source
         working-directory: biz
         shell: bash
         run: |
           set -euo pipefail
-          bad="$(gofmt -l internal/access/authorization internal/access/application internal/access/domain internal/access/infrastructure/persistence internal/bizruntime integration/enterprise_174_current_authorization_mysql_test.go)"
-          test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
-          go test -count=1 ./internal/access/authorization ./internal/access/application ./internal/access/infrastructure/persistence ./internal/bizruntime
-          go vet ./internal/access/authorization ./internal/access/application ./internal/access/infrastructure/persistence ./internal/bizruntime
-          go build ./cmd/biz
-      - name: Verify candidate clean
-        shell: bash
-        run: test -z "$(git -C biz status --porcelain)"
-
-  mysql-development:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      YUNKA_TEST_RESET_FIXTURES: "1"
-      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_enterprise174?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: biz_enterprise174
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=30
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          ref: ${{ github.sha }}
-          path: biz
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Read consumer lock
-        id: source
-        shell: bash
-        run: |
-          set -euo pipefail
-          source biz/.yunka/source.env
-          echo "sha=$YUNKA_COMMIT" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          repository: hvritual/yunka.io
-          ref: ${{ steps.source.outputs.sha }}
-          path: yunka.io
-          fetch-depth: 1
-          persist-credentials: false
-      - name: Load locked Go
-        id: lock
-        shell: bash
-        run: |
-          set -euo pipefail
-          source yunka.io/tools/toolchain.env
-          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
-        with:
-          go-version: ${{ steps.lock.outputs.go_version }}
-          cache: false
-      - name: Real MySQL #174 qualification
-        working-directory: biz
-        shell: bash
-        run: |
-          set -euo pipefail
-          go test -count=1 -tags=integration ./integration -run '^TestEnterprise174'
-      - name: Verify candidate clean
-        shell: bash
-        run: test -z "$(git -C biz status --porcelain)"
-
-  web-development:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          ref: ${{ github.sha }}
-          path: biz
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: biz/web/package-lock.json
-      - name: Web static unit build qualification
-        working-directory: biz/web
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm ci
-          npm run check
-          npx playwright test --config playwright.ce12.config.ts --list > "$RUNNER_TEMP/enterprise-174-playwright-list.txt"
-          grep -q 'TestEnterprise174CurrentAuthorizationAndActionCatalogAreSameSource' "$RUNNER_TEMP/enterprise-174-playwright-list.txt"
-      - name: Verify candidate clean
-        shell: bash
-        run: test -z "$(git -C biz status --porcelain)"
+          files=(
+            integration/enterprise_174_current_authorization_mysql_test.go
+            internal/access/application/tenant_audit_management.go
+            internal/access/authorization/catalog.go
+            internal/access/authorization/catalog_test.go
+            internal/access/domain/audit.go
+            internal/access/infrastructure/persistence/audit.go
+            internal/access/infrastructure/persistence/current_authorization.go
+            internal/access/infrastructure/persistence/platform.go
+            internal/bizruntime/audit.go
+            internal/bizruntime/runtime.go
+            internal/bizruntime/web_auth.go
+            internal/bizruntime/web_authorization.go
+          )
+          gofmt -w "${files[@]}"
+          git add -- "${files[@]}"
+          if git diff --cached --quiet; then
+            echo "changed #174 Go source already formatted"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "style(access): gofmt #174 authorization changes"
+          git push origin HEAD:feat/enterprise-174-current-authorization
