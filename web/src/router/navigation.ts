@@ -7,6 +7,8 @@ export interface NavigationItem {
   selectorId?: string
   group?: string
   groupId?: string
+  authorizationActions?: string[]
+  authorizationModule?: string
 }
 
 export function isPrimaryNavigationActive(item: NavigationItem, currentModule: unknown): boolean {
@@ -20,19 +22,33 @@ export const primaryNavigation: NavigationItem[] = [
   { id: 'rental-operations', selectorId: 'sites', label: '租赁运营', icon: 'file', matches: ['sites', 'rental'] },
   { id: 'device-operations', selectorId: 'devices', label: '设备运营', icon: 'device' },
   { id: 'business-operations', selectorId: 'orders', label: '经营管理', icon: 'chart', matches: ['orders', 'analytics'] },
-  { id: 'enterprise', label: '企业中心', icon: 'company' },
+  {
+    id: 'enterprise',
+    label: '企业中心',
+    icon: 'company',
+    authorizationModule: 'access-management',
+    authorizationActions: [
+      'tenant.member.list',
+      'tenant.role.list',
+      'tenant.department.list',
+      'commercial.subscription.get_my',
+      'tenant.profile.get',
+      'tenant.branding.get',
+      'access.audit.list',
+    ],
+  },
   { id: 'platform-commercial', label: '平台管理', icon: 'crown' },
   { id: 'system', label: '系统设置', icon: 'settings' },
 ]
 
 export const enterpriseNavigation: NavigationItem[] = [
-  { id: 'members', label: '成员管理', icon: 'users', path: '/enterprise/members' },
-  { id: 'roles', label: '角色权限', icon: 'shield', path: '/enterprise/roles' },
-  { id: 'organization', label: '组织架构', icon: 'organization', path: '/enterprise/organization' },
-  { id: 'plan', label: '套餐额度', icon: 'crown', path: '/enterprise/plan' },
-  { id: 'company', label: '企业信息', icon: 'company', path: '/enterprise/company' },
-  { id: 'branding', label: '品牌与主题', icon: 'settings', path: '/enterprise/branding' },
-  { id: 'logs', label: '操作日志', icon: 'file', path: '/enterprise/logs' },
+  { id: 'members', label: '成员管理', icon: 'users', path: '/enterprise/members', authorizationActions: ['tenant.member.list'] },
+  { id: 'roles', label: '角色权限', icon: 'shield', path: '/enterprise/roles', authorizationActions: ['tenant.role.list'] },
+  { id: 'organization', label: '组织架构', icon: 'organization', path: '/enterprise/organization', authorizationActions: ['tenant.department.list'] },
+  { id: 'plan', label: '套餐额度', icon: 'crown', path: '/enterprise/plan', authorizationActions: ['commercial.subscription.get_my'] },
+  { id: 'company', label: '企业信息', icon: 'company', path: '/enterprise/company', authorizationActions: ['tenant.profile.get'] },
+  { id: 'branding', label: '品牌与主题', icon: 'settings', path: '/enterprise/branding', authorizationActions: ['tenant.branding.get'] },
+  { id: 'logs', label: '操作日志', icon: 'file', path: '/enterprise/logs', authorizationActions: ['access.audit.list'] },
 ]
 
 export const platformCommercialNavigation: NavigationItem[] = [
@@ -76,10 +92,10 @@ export const systemQuickActions = [
 ]
 
 export const quickActions = [
-  { label: '新增成员', icon: 'plus', path: '/enterprise/members?action=create' },
-  { label: '邀请成员', icon: 'invite', path: '/enterprise/members?action=invite' },
-  { label: '新建角色', icon: 'shield', path: '/enterprise/roles?action=create' },
-  { label: '调整套餐', icon: 'crown', path: '/enterprise/plan?action=upgrade' },
-  { label: '编辑企业信息', icon: 'edit', path: '/enterprise/company' },
-  { label: '查看操作日志', icon: 'file', path: '/enterprise/logs' },
+  { label: '新增成员', icon: 'plus', path: '/enterprise/members?action=create', authorizationActions: ['tenant.member.invite'] },
+  { label: '邀请成员', icon: 'invite', path: '/enterprise/members?action=invite', authorizationActions: ['tenant.member.invite'] },
+  { label: '新建角色', icon: 'shield', path: '/enterprise/roles?action=create', authorizationActions: ['tenant.role.create'] },
+  { label: '调整套餐', icon: 'crown', path: '/enterprise/plan?action=upgrade', authorizationActions: ['commercial.subscription.change.targets_my'] },
+  { label: '编辑企业信息', icon: 'edit', path: '/enterprise/company', authorizationActions: ['tenant.profile.update'] },
+  { label: '查看操作日志', icon: 'file', path: '/enterprise/logs', authorizationActions: ['access.audit.list'] },
 ]
