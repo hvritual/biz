@@ -45,7 +45,7 @@ func (factory applicationFactories) BuildAccessTenantMemberLifecycle(dependencie
 	inner, err := accessapp.NewTenantMemberLifecycleService(factory.memberRepositories, tenantMemberLifecycleCapabilities{
 		departments: dependencies.AccessTenantDepartmentManagement,
 		roles:       dependencies.AccessTenantRolePermission,
-	})
+	}, factory.memberActivationTTL)
 	if err != nil {
 		return nil, err
 	}
