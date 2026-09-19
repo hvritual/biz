@@ -50,6 +50,33 @@ async function mockRoleServer(page: Page, options: Options = {}) {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     return json(route, 200, { authenticated: true, actor_kind: 'tenant', user_id: 'user-001', active_tenant_id: 'tenant-001', csrf_token: 'csrf-real-role', tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }] })
   })
+  await page.route('**/api/auth/authorization', async (route) => {
+    if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
+    const buttonCodes = [
+      'tenant.role.list',
+      'tenant.role.create',
+      'tenant.role.update',
+      'tenant.role.update_permissions',
+      'tenant.role.enable',
+      'tenant.role.disable',
+    ]
+    return json(route, 200, {
+      authenticated: true,
+      actor_kind: 'tenant',
+      user_id: 'user-001',
+      tenant_id: 'tenant-001',
+      tenant_name: 'CoffeeLink 测试租户',
+      timezone: 'Asia/Shanghai',
+      roles: ['owner'],
+      grants: [{ permission: 'tenant.role.manage', role_id: 'tenant-001:owner', role_name: 'owner', scope: 'all' }],
+      data_policies: [],
+      site_ids: [],
+      permission_version: 'sha256:role-e2e',
+      modules: [{ code: 'access-management', allowed: true, reason: 'allowed', actions: buttonCodes }],
+      actions: buttonCodes.map((code) => ({ code, permissions: [], permission_mode: 'all' })),
+      button_codes: buttonCodes,
+    })
+  })
   await page.route('**/api/auth/action-catalog', async (route) => json(route, 200, {
     schema_version: 'v1',
     actions: [],
