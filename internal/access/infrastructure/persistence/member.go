@@ -666,24 +666,42 @@ func scopeRank(scope domain.DataScope) int {
 }
 
 func NewTenantMemberRepositoryFactory(database *gorm.DB) (requestscope.RepositoryFactory[ports.TenantMemberRepositories], error) {
-	return NewTenantMemberRepositoryFactoryWithContactProtection(database, nil)
+	return newTenantMemberRepositoryFactory(database, nil, nil)
 }
 
 func NewTenantMemberRepositoryFactoryWithContactProtection(database *gorm.DB, protection *ContactProtection) (requestscope.RepositoryFactory[ports.TenantMemberRepositories], error) {
+	if protection == nil {
+		return nil, ErrSensitiveDataKeyUnavailable
+	}
+	return newTenantMemberRepositoryFactory(database, protection, nil)
+}
+
+func NewTenantMemberRepositoryFactoryWithSecurity(database *gorm.DB, contactProtection *ContactProtection, verificationProtection *VerificationProtection) (requestscope.RepositoryFactory[ports.TenantMemberRepositories], error) {
+	if verificationProtection == nil {
+		return nil, ErrVerificationKeyUnavailable
+	}
+	return newTenantMemberRepositoryFactory(database, contactProtection, verificationProtection)
+}
+
+func newTenantMemberRepositoryFactory(database *gorm.DB, contactProtection *ContactProtection, verificationProtection *VerificationProtection) (requestscope.RepositoryFactory[ports.TenantMemberRepositories], error) {
 	if database == nil {
 		return nil, errors.New("access persistence: database is required")
 	}
 	return requestscope.GORMRepositories(func(_ context.Context, transaction *gorm.DB) (ports.TenantMemberRepositories, error) {
 		var member *TenantMemberRepository
 		var err error
-		if protection == nil {
+		if contactProtection == nil {
 			member, err = NewTenantMemberRepository(transaction)
 		} else {
-			member, err = NewTenantMemberRepositoryWithContactProtection(transaction, protection)
+			member, err = NewTenantMemberRepositoryWithContactProtection(transaction, contactProtection)
 		}
 		if err != nil {
 			return ports.TenantMemberRepositories{}, err
 		}
-		return ports.TenantMemberRepositories{Member: member}, nil
+		activation, err := NewTenantMemberActivationRepository(transaction, verificationProtection)
+		if err != nil {
+			return ports.TenantMemberRepositories{}, err
+		}
+		return ports.TenantMemberRepositories{Member: member, Activation: activation}, nil
 	}), nil
 }
