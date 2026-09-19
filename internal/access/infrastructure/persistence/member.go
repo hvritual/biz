@@ -337,6 +337,10 @@ func (repository *TenantMemberRepository) Update(ctx context.Context, member *do
 			Where("tenant_id = ? AND user_id = ? AND version = ?", member.TenantID, member.UserID, expectedVersion).
 			Updates(updates)
 		if result.Error != nil {
+			var mysqlErr *mysql.MySQLError
+			if errors.As(result.Error, &mysqlErr) && mysqlErr.Number == 1062 {
+				return ports.ErrTenantMemberConflict
+			}
 			return result.Error
 		}
 		if result.RowsAffected != 1 {
