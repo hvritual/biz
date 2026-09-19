@@ -108,6 +108,36 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     })
   })
 
+  await page.route('**/api/auth/authorization', async (route) => {
+    if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
+    const buttonCodes = [
+      'tenant.member.list',
+      'tenant.member.invite',
+      'tenant.member.profile.update',
+      'tenant.member.activate',
+      'tenant.member.suspend',
+      'tenant.member.remove',
+      'tenant.role.assign_member',
+      'tenant.role.revoke_member',
+    ]
+    return json(route, 200, {
+      authenticated: true,
+      actor_kind: 'tenant',
+      user_id: 'user-001',
+      tenant_id: 'tenant-001',
+      tenant_name: 'CoffeeLink 测试租户',
+      timezone: 'Asia/Shanghai',
+      roles: ['operator'],
+      grants: [{ permission: 'tenant.member.manage', role_id: 'role-ops', role_name: 'operator', scope: 'all' }],
+      data_policies: [],
+      site_ids: [],
+      permission_version: 'sha256:member-e2e',
+      modules: [{ code: 'access-management', allowed: true, reason: 'allowed', actions: buttonCodes }],
+      actions: buttonCodes.map((code) => ({ code, permissions: [], permission_mode: 'all' })),
+      button_codes: buttonCodes,
+    })
+  })
+
   await page.route('**/api/v1/tenant/roles', async (route) => {
     return json(route, 200, { roles: roleCatalog })
   })
