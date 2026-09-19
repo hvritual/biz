@@ -153,7 +153,7 @@ export const router = createRouter({
       meta: { title: '操作日志', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage', authorizationActions: ['access.audit.list'] },
     },
     {
-      path: '/system/security',
+      path: '/system/:section(security)',
       component: () => import('@/features/system/pages/SettingsView.vue'),
       meta: { title: '系统设置', module: 'system', surface: 'account', pageTemplate: 'FormPage', authorizationIndependent: true },
     },
