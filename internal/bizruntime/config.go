@@ -152,20 +152,21 @@ func (config FirstPartyPrivacyConsentConfig) RequireCurrentVersion() bool {
 }
 
 type FirstPartyIdPConfig struct {
-	PublicURL             string
-	ClientID              string
-	RedirectURL           string
-	PostLogoutRedirectURL string
-	SigningKeyPEM         string
-	SigningKeyID          string
-	PreviousSigningKeys   []FirstPartyIdPVerificationKey
-	LoginTTL              time.Duration
-	CodeTTL               time.Duration
-	TokenTTL              time.Duration
-	RememberIdentifierTTL time.Duration
-	OTPCodeDigits         int
-	CookieSecure          bool
-	PrivacyConsent        FirstPartyPrivacyConsentConfig
+	PublicURL                string
+	ClientID                 string
+	RedirectURL              string
+	PostLogoutRedirectURL    string
+	SigningKeyPEM            string
+	SigningKeyID             string
+	PreviousSigningKeys      []FirstPartyIdPVerificationKey
+	LoginTTL                 time.Duration
+	CodeTTL                  time.Duration
+	TokenTTL                 time.Duration
+	RememberIdentifierTTL    time.Duration
+	RecoveryAuthorizationTTL time.Duration
+	OTPCodeDigits            int
+	CookieSecure             bool
+	PrivacyConsent           FirstPartyPrivacyConsentConfig
 }
 
 func (config FirstPartyIdPConfig) Enabled() bool { return strings.TrimSpace(config.PublicURL) != "" }

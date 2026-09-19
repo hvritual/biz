@@ -127,8 +127,8 @@ func setUserPassword(ctx context.Context, database *gorm.DB, userID, password st
 	if database == nil || userID == "" {
 		return ErrInvalidUserCredentials
 	}
-	if len(password) < 12 || len(password) > 1024 {
-		return errors.New("access: password must contain between 12 and 1024 bytes")
+	if len(password) < 8 || len(password) > 1024 {
+		return errors.New("access: stored password must contain between 8 and 1024 bytes")
 	}
 	var user userRecord
 	if err := database.WithContext(ctx).Where("id = ? AND status = ?", userID, "active").First(&user).Error; err != nil {

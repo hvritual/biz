@@ -33,13 +33,14 @@ type firstPartyVerificationKey struct {
 }
 
 type runtimeFirstPartyIdP struct {
-	config           FirstPartyIdPConfig
-	key              *rsa.PrivateKey
-	kid              string
-	verificationKeys []firstPartyVerificationKey
-	mu               sync.RWMutex
-	store            *accesspersistence.Store
-	verification     firstPartyLoginVerification
+	config                 FirstPartyIdPConfig
+	key                    *rsa.PrivateKey
+	kid                    string
+	verificationKeys       []firstPartyVerificationKey
+	mu                     sync.RWMutex
+	store                  *accesspersistence.Store
+	verification           firstPartyLoginVerification
+	verificationProtection *accesspersistence.VerificationProtection
 }
 
 func newRuntimeFirstPartyIdP(config FirstPartyIdPConfig) (*runtimeFirstPartyIdP, error) {
@@ -106,6 +107,24 @@ func (idp *runtimeFirstPartyIdP) currentStore() *accesspersistence.Store {
 	return idp.store
 }
 
+func (idp *runtimeFirstPartyIdP) setVerificationProtection(protection *accesspersistence.VerificationProtection) {
+	if idp == nil {
+		return
+	}
+	idp.mu.Lock()
+	idp.verificationProtection = protection
+	idp.mu.Unlock()
+}
+
+func (idp *runtimeFirstPartyIdP) currentVerificationProtection() *accesspersistence.VerificationProtection {
+	if idp == nil {
+		return nil
+	}
+	idp.mu.RLock()
+	defer idp.mu.RUnlock()
+	return idp.verificationProtection
+}
+
 func (idp *runtimeFirstPartyIdP) providerMetadata() oidcProviderMetadata {
 	issuer := idp.config.IssuerURL()
 	return oidcProviderMetadata{
@@ -128,6 +147,9 @@ func (idp *runtimeFirstPartyIdP) register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /idp/login", idp.handleLogin)
 	mux.HandleFunc("POST /idp/login/otp/request", idp.handleOTPRequest)
 	mux.HandleFunc("POST /idp/login/otp/verify", idp.handleOTPVerify)
+	mux.HandleFunc("GET /idp/password/recovery", idp.handlePasswordRecoveryPage)
+	mux.HandleFunc("POST /idp/password/recovery/request", idp.handlePasswordRecoveryRequest)
+	mux.HandleFunc("POST /idp/password/recovery/complete", idp.handlePasswordRecoveryComplete)
 	mux.HandleFunc("GET /idp/consent", idp.handleConsentPage)
 	mux.HandleFunc("POST /idp/consent", idp.handleConsent)
 	mux.HandleFunc("POST /idp/token", idp.handleToken)
@@ -612,7 +634,7 @@ var firstPartyLoginTemplate = template.Must(template.New("first-party-idp-login"
 {{end}}
 </section>
 <div class="notice" role="note"><strong>Cookie 提示</strong><br>登录流程只使用必要 Cookie 保存安全认证事务；业务 Token 不写入浏览器持久化。</div>
-<div class="links"><a href="{{.PrivacyPolicyURL}}" target="_blank" rel="noopener noreferrer">隐私政策</a><a href="{{.TermsURL}}" target="_blank" rel="noopener noreferrer">服务条款</a></div>
+<div class="links"><a href="/idp/password/recovery">忘记密码</a><a href="{{.PrivacyPolicyURL}}" target="_blank" rel="noopener noreferrer">隐私政策</a><a href="{{.TermsURL}}" target="_blank" rel="noopener noreferrer">服务条款</a></div>
 </main>
 <script nonce="{{.ScriptNonce}}">
 (() => {
