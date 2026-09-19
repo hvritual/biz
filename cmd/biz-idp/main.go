@@ -121,6 +121,9 @@ func run() error {
 		if err := store.EnsureFirstPartyIDPSecuritySchema(context.Background()); err != nil {
 			return fmt.Errorf("migrate IdP security schema: %w", err)
 		}
+		if err := store.EnsureMemberActivationSchema(context.Background()); err != nil {
+			return fmt.Errorf("migrate member activation schema: %w", err)
+		}
 		if verificationProtection != nil {
 			repository, err := accesspersistence.NewVerificationRepository(database, verificationProtection)
 			if err != nil {
