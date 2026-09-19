@@ -19,6 +19,33 @@ export async function selectSessionTenant(tenantId: string) {
   return session
 }
 export const logoutSession = () => mutate<void>('/auth/logout', 'POST', {})
+export type ActionCatalogPermission = {
+  permission: string
+  groups: string[]
+  actions: string[]
+}
+
+export type ActionCatalogAction = {
+  code: string
+  domain: string
+  application: string
+  use_case: string
+  tenant_required: boolean
+  authentication: string[]
+  permissions: string[]
+  permission_mode: string
+  rpc?: string
+  http?: Array<{ method: string; path: string }>
+}
+
+export type ActionCatalogResponse = {
+  schema_version: string
+  actions: ActionCatalogAction[]
+  permissions: ActionCatalogPermission[]
+}
+
+export const readActionCatalog = () => read<ActionCatalogResponse>('/auth/action-catalog')
+
 export function loginUrl() {
   return `${(import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')}/auth/login?return_to=${encodeURIComponent(window.location.pathname + window.location.hash)}`
 }
