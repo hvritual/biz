@@ -9,6 +9,7 @@ import (
 	"github.com/hvritual/biz/internal/access/domain"
 	"github.com/hvritual/biz/internal/access/ports"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
