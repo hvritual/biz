@@ -224,14 +224,16 @@ test('department 409 preserves editor draft and the same idempotency key for ret
   await expect(page.getByRole('status')).toHaveCount(0)
 })
 
-test('401 and 403 are surfaced without demo organization fallback', async ({ page }) => {
+test('401 exits to trusted login while downstream 403 never falls back to demo organization data', async ({ page }) => {
   await mockOrganizationServer(page, { unauthenticated: true })
-  await openRealOrganization(page)
-  await expect(page.getByRole('alert')).toContainText('登录会话已失效')
+  await page.goto('/#/enterprise/organization')
+  await expect(page).toHaveURL(/\/api\/auth\/login\?return_to=/)
+  await expect(page.locator('[data-enterprise-page="organization"]')).toHaveCount(0)
   await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
+
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockOrganizationServer(page, { listStatus: 403 })
-  await page.reload()
+  await page.goto('/#/enterprise/organization')
   await expect(page.getByRole('alert')).toContainText('没有管理企业组织架构的权限')
   await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
 })
