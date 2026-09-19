@@ -16,7 +16,7 @@ import DepartmentTree from '@/features/enterprise/components/organization/Depart
 import UiDialog from '@/ui/common/UiDialog.vue'
 import AppPagination from '@/ui/common/AppPagination.vue'
 import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
-import { currentAuthorizationAllowsAny } from '@/services/runtime/authorization'
+import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
   router = useRouter()
@@ -34,8 +34,13 @@ const draft = ref<Department>({
   description: '',
   enabled: true,
 })
-const canManageOrganization = computed(() => store.previewMode || currentAuthorizationAllowsAny([
+const organizationActionsAllowed=(codes:string[])=>store.previewMode||codes.every(currentAuthorizationAllows)
+const canCreateDepartment = computed(() => organizationActionsAllowed([
   'tenant.department.create',
+  'tenant.department.enable',
+  'tenant.department.disable',
+]))
+const canEditDepartment = computed(() => organizationActionsAllowed([
   'tenant.department.update',
   'tenant.department.enable',
   'tenant.department.disable',
@@ -52,7 +57,7 @@ const paged = computed(() =>
   members.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value),
 )
 function openEditor(edit: boolean) {
-  if (!canManageOrganization.value) return
+  if (edit ? !canEditDepartment.value : !canCreateDepartment.value) return
   error.value = ''
   draft.value =
     edit && department.value
@@ -69,7 +74,8 @@ function openEditor(edit: boolean) {
   editOpen.value = true
 }
 async function save() {
-  if (!canManageOrganization.value) return
+  const existing = store.departments.some((department) => department.id === draft.value.id)
+  if (existing ? !canEditDepartment.value : !canCreateDepartment.value) return
   try {
     if (!departmentMoveAllowed(store.departments, draft.value.id, draft.value.parentId))
       throw new Error('部门不能移动到自身或其下级部门。')
@@ -143,8 +149,8 @@ onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).ca
             <p class="department-description">{{ department?.description || '当前企业的全部组织与成员' }}</p>
           </div>
           <div class="row">
-            <UiButton v-if="department && canManageOrganization" class="btn" @click="openEditor(true)">
-              <AppIcon name="edit" :size="15" />编辑部门</UiButton><UiButton v-if="canManageOrganization" class="btn btn-primary" @click="openEditor(false)">
+            <UiButton v-if="department && canEditDepartment" class="btn" @click="openEditor(true)">
+              <AppIcon name="edit" :size="15" />编辑部门</UiButton><UiButton v-if="canCreateDepartment" class="btn btn-primary" @click="openEditor(false)">
               <AppIcon name="plus" :size="16" />新建部门
             </UiButton>
           </div>
