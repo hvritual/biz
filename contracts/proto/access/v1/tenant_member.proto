@@ -112,6 +112,18 @@ message UpdateTenantMemberProfileRequest {
   uint64 version = 7;
 }
 
+message UpdateTenantMemberRequest {
+  string user_id = 1;
+  string email = 2;
+  string phone = 3;
+  string name = 4;
+  string employee_id = 5;
+  string position = 6;
+  string department_id = 7;
+  repeated string role_ids = 8;
+  uint64 version = 9;
+}
+
 message ActivateTenantMemberRequest {
   string user_id = 1;
   uint64 version = 2;
@@ -235,6 +247,24 @@ service TenantMemberLifecycleApplication {
       authentication: AUTHENTICATION_API_KEY
       authentication: AUTHENTICATION_WEB_SESSION
       requires_operations: "tenant.department.assert_member_assignment_allowed"
+      composition: COMPOSITION_LOCAL
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc UpdateTenantMember(UpdateTenantMemberRequest) returns (TenantMemberDTO) {
+    option (google.api.http) = { patch: "/v1/tenant/members/{user_id}" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.update"
+      use_case: "update_tenant_member"
+      permissions: "tenant.member.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      requires_operations: "tenant.department.assert_member_assignment_allowed"
+      requires_operations: "tenant.role.assign_member"
+      requires_operations: "tenant.role.revoke_member"
       composition: COMPOSITION_LOCAL
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };
