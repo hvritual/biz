@@ -184,10 +184,23 @@ func (repository *TenantMemberRepository) Get(ctx context.Context, tenantID, use
 	return repository.memberFromRecord(ctx, row)
 }
 
-func (repository *TenantMemberRepository) List(ctx context.Context, tenantID string) ([]domain.Membership, error) {
+func (repository *TenantMemberRepository) List(ctx context.Context, tenantID string, filter ports.TenantMemberListQuery) (ports.TenantMemberListPage, error) {
 	if repository == nil || repository.database == nil {
-		return nil, errors.New("access persistence: tenant member repository unavailable")
+		return ports.TenantMemberListPage{}, errors.New("access persistence: tenant member repository unavailable")
 	}
+	tenantID = strings.TrimSpace(tenantID)
+	if tenantID == "" || filter.Page == 0 || filter.PageSize == 0 || filter.PageSize > 100 {
+		return ports.TenantMemberListPage{}, errors.New("access persistence: invalid tenant member list query")
+	}
+	countQuery, err := repository.memberListBaseQuery(ctx, tenantID, filter)
+	if err != nil {
+		return ports.TenantMemberListPage{}, err
+	}
+	var total int64
+	if err := countQuery.Count(&total).Error; err != nil {
+		return ports.TenantMemberListPage{}, err
+	}
+
 	type row struct {
 		TenantID, UserID, AccountEmail, AccountEmailCiphertext, AccountEmailKeyVersion, Status, Name                         string
 		AccountEmailLookupHash                                                                                               *string
@@ -197,11 +210,18 @@ func (repository *TenantMemberRepository) List(ctx context.Context, tenantID str
 		CreatedAt, UpdatedAt                                                                                                 time.Time
 	}
 	var rows []row
-	if err := repository.database.WithContext(ctx).Table("biz_memberships m").
+	listQuery, err := repository.memberListBaseQuery(ctx, tenantID, filter)
+	if err != nil {
+		return ports.TenantMemberListPage{}, err
+	}
+	offset := int((uint64(filter.Page) - 1) * uint64(filter.PageSize))
+	if err := listQuery.
 		Select("m.tenant_id, m.user_id, u.email AS account_email, u.email_ciphertext AS account_email_ciphertext, u.email_lookup_hash AS account_email_lookup_hash, u.email_key_version AS account_email_key_version, m.status, m.name, m.email, m.email_ciphertext, m.email_lookup_hash, m.email_key_version, m.phone, m.phone_ciphertext, m.phone_lookup_hash, m.phone_key_version, m.employee_id, m.position, m.department_id, m.version, m.created_at, m.updated_at").
-		Joins("JOIN biz_users u ON u.id = m.user_id").Where("m.tenant_id = ?", tenantID).
-		Order("m.created_at ASC, m.user_id ASC").Scan(&rows).Error; err != nil {
-		return nil, err
+		Order("m.created_at ASC, m.user_id ASC").
+		Limit(int(filter.PageSize)).
+		Offset(offset).
+		Scan(&rows).Error; err != nil {
+		return ports.TenantMemberListPage{}, err
 	}
 	members := make([]domain.Membership, 0, len(rows))
 	for _, value := range rows {
@@ -209,18 +229,82 @@ func (repository *TenantMemberRepository) List(ctx context.Context, tenantID str
 		accountRow := userRecord{ID: value.UserID, Email: value.AccountEmail, EmailCiphertext: value.AccountEmailCiphertext, EmailLookupHash: value.AccountEmailLookupHash, EmailKeyVersion: value.AccountEmailKeyVersion}
 		email, err := repository.displayMemberEmail(membershipRow, accountRow)
 		if err != nil {
-			return nil, err
+			return ports.TenantMemberListPage{}, err
 		}
 		phone, err := repository.displayPhone(membershipRow)
 		if err != nil {
-			return nil, err
+			return ports.TenantMemberListPage{}, err
 		}
 		members = append(members, domain.Membership{TenantID: value.TenantID, UserID: value.UserID, Email: email, Status: value.Status, Name: value.Name, Phone: phone, EmployeeID: value.EmployeeID, Position: value.Position, DepartmentID: value.DepartmentID, Version: value.Version, DerivedDataScope: domain.DataScopeNone, CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt})
 	}
 	if err := repository.enrichMemberAccess(ctx, members); err != nil {
-		return nil, err
+		return ports.TenantMemberListPage{}, err
 	}
-	return members, nil
+	return ports.TenantMemberListPage{Members: members, Total: uint64(total)}, nil
+}
+
+func (repository *TenantMemberRepository) memberListBaseQuery(ctx context.Context, tenantID string, filter ports.TenantMemberListQuery) (*gorm.DB, error) {
+	query := repository.database.WithContext(ctx).
+		Table("biz_memberships m").
+		Joins("JOIN biz_users u ON u.id = m.user_id").
+		Where("m.tenant_id = ? AND m.status <> ?", tenantID, domain.TenantMemberStatusRemoved)
+
+	if filter.Status != "" {
+		if filter.Status == domain.TenantMemberStatusRemoved {
+			query = query.Where("1 = 0")
+		} else {
+			query = query.Where("m.status = ?", filter.Status)
+		}
+	}
+	if departmentID := strings.TrimSpace(filter.DepartmentID); departmentID != "" {
+		query = query.Where("m.department_id = ?", departmentID)
+	}
+	if roleID := strings.TrimSpace(filter.RoleID); roleID != "" {
+		query = query.Where(
+			"EXISTS (SELECT 1 FROM biz_member_roles mr WHERE mr.tenant_id = m.tenant_id AND mr.user_id = m.user_id AND mr.role_id = ?)",
+			roleID,
+		)
+	}
+	keyword := strings.TrimSpace(filter.Query)
+	if keyword == "" {
+		return query, nil
+	}
+	if strings.Contains(keyword, "@") {
+		normalized, err := NormalizeEmail(keyword)
+		if err != nil {
+			return query.Where("1 = 0"), nil
+		}
+		if repository.contactProtection != nil {
+			lookup, err := repository.contactProtection.LookupEmail(normalized)
+			if err != nil {
+				return nil, err
+			}
+			return query.Where(
+				"(m.email_lookup_hash = ? OR u.email_lookup_hash = ? OR LOWER(m.email) = ? OR LOWER(u.email) = ?)",
+				lookup, lookup, normalized, normalized,
+			), nil
+		}
+		return query.Where("(LOWER(m.email) = ? OR LOWER(u.email) = ?)", normalized, normalized), nil
+	}
+	if looksLikePhoneIdentifier(keyword) {
+		normalized, err := NormalizePhone(keyword)
+		if err != nil || normalized == "" {
+			return query.Where("1 = 0"), nil
+		}
+		if repository.contactProtection != nil {
+			lookup, err := repository.contactProtection.LookupPhone(normalized)
+			if err != nil {
+				return nil, err
+			}
+			return query.Where("(m.phone_lookup_hash = ? OR m.phone = ?)", lookup, normalized), nil
+		}
+		return query.Where("m.phone = ?", normalized), nil
+	}
+	pattern := "%" + strings.ToLower(keyword) + "%"
+	return query.Where(
+		"(LOWER(m.name) LIKE ? OR LOWER(COALESCE(u.username, '')) LIKE ? OR LOWER(m.employee_id) LIKE ?)",
+		pattern, pattern, pattern,
+	), nil
 }
 
 func (repository *TenantMemberRepository) Update(ctx context.Context, member *domain.Membership, expectedVersion uint64) error {
