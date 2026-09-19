@@ -562,7 +562,6 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       memberTotal.value = members.value.filter((member) => member.status !== 'removed').length
       return true
     }
-    const trusted = await stableMemberSession()
     const query: EnterpriseMemberListQuery = {
       query: input.query.trim(),
       roleId: input.roleId,
@@ -571,10 +570,16 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       page: Math.max(1, Math.trunc(input.page)),
       pageSize: Math.max(1, Math.min(100, Math.trunc(input.pageSize))),
     }
+    loading.value = true
+    sourceError.value = ''
     try {
+      const trusted = await stableMemberSession()
       return await applyMemberPage(trusted, query)
     } catch (error) {
-      throw new Error(memberRuntimeError(error))
+      sourceError.value = memberRuntimeError(error)
+      throw new Error(sourceError.value)
+    } finally {
+      loading.value = false
     }
   }
 
