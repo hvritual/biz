@@ -230,6 +230,30 @@ func TestCE12BrowserSeed(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+
+	// Bootstrap is an infrastructure convenience that binds users to the tenant
+	// owner role. The #174 viewer fixture must prove principal-specific current
+	// grants, so replace only this test user's owner binding with a dedicated
+	// read-only role instead of relying on stale token/role summaries.
+	securityViewerRoleID := allowed + ":security-viewer"
+	if err := db.Exec("DELETE FROM biz_member_roles WHERE tenant_id = ? AND user_id = ?", allowed, securityViewerUserID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("biz_roles").Create(map[string]any{
+		"id": securityViewerRoleID, "tenant_id": allowed, "name": "Security Viewer", "status": "active", "version": 1,
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("biz_member_roles").Create(map[string]any{
+		"tenant_id": allowed, "user_id": securityViewerUserID, "role_id": securityViewerRoleID,
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("biz_permission_grants").Create(map[string]any{
+		"tenant_id": allowed, "role_id": securityViewerRoleID, "permission": "tenant.member.read", "scope": "all",
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
 	adminRoleID := allowed + ":password-recovery-admin"
 	if err := db.Table("biz_roles").Create(map[string]any{
 		"id": adminRoleID, "tenant_id": allowed, "name": "Password Recovery Admin", "status": "active", "version": 1,
