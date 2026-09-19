@@ -57,7 +57,7 @@ async function mockRoleServer(page: Page, options: Options = {}) {
       'tenant.role.list',
       'tenant.role.create',
       'tenant.role.update',
-      'tenant.role.update_permissions',
+      'tenant.role.set_permissions',
       'tenant.role.enable',
       'tenant.role.disable',
     ]
@@ -85,7 +85,7 @@ async function mockRoleServer(page: Page, options: Options = {}) {
       { permission: 'tenant.member.read', groups: ['access/tenant_member_lifecycle'], actions: ['tenant.member.get', 'tenant.member.list'] },
       { permission: 'tenant.member.manage', groups: ['access/tenant_member_lifecycle'], actions: ['tenant.member.invite', 'tenant.member.profile.update'] },
       { permission: 'tenant.role.read', groups: ['access/tenant_role_permission'], actions: ['tenant.role.get', 'tenant.role.list'] },
-      { permission: 'tenant.role.manage', groups: ['access/tenant_role_permission'], actions: ['tenant.role.create', 'tenant.role.update_permissions'] },
+      { permission: 'tenant.role.manage', groups: ['access/tenant_role_permission'], actions: ['tenant.role.create', 'tenant.role.set_permissions'] },
     ],
   }))
   await page.route('**/api/v1/tenant/members', async (route) => json(route, 200, { members }))
