@@ -191,7 +191,7 @@ func (repository *TenantRoleRepository) Delete(ctx context.Context, tenantID, ro
 	if locked.Version != expectedVersion {
 		return domain.Role{}, ports.ErrTenantRoleConflict
 	}
-	if locked.SystemRole {
+	if locked.SystemRole || isOwnerRoleRecord(locked) {
 		return domain.Role{}, ports.ErrTenantRoleProtected
 	}
 	count, err := repository.memberCount(ctx, tenantID, roleID)
