@@ -37,6 +37,16 @@ const form = reactive({
 })
 
 const selectedModule = computed(() => props.modules.find((item) => item.moduleCode === form.moduleCode))
+
+function entitlementKeyLabel(key: string, index: number) {
+  const labels: Record<string, string> = {
+    'device.lifecycle': '设备生命周期',
+    'customer.view': '客户查看',
+    'customer.count': '客户额度',
+    'member.count': '成员额度',
+  }
+  return labels[key] ?? `配置项 ${index + 1}`
+}
 const availableKeys = computed(() => {
   if (!selectedModule.value) return []
   if (form.target === 'ENTITLEMENT_TARGET_CAPABILITY') return selectedModule.value.capabilityCodes ?? []
@@ -110,7 +120,7 @@ function submit() {
     return
   }
   if (form.target !== 'ENTITLEMENT_TARGET_MODULE' && !form.key) {
-    formError.value = '请选择目标 key。'
+    formError.value = '请选择具体授权项目。'
     return
   }
   if (!form.reason.trim()) {
@@ -118,13 +128,13 @@ function submit() {
     return
   }
   if (form.effect === 'ENTITLEMENT_EFFECT_SAFETY_MASK' && form.fieldAction === 'write') {
-    formError.value = '安全脱敏只允许 read/export，不能用于 write。'
+    formError.value = '安全脱敏仅适用于查看或导出，不能用于修改。'
     return
   }
   if (form.target === 'ENTITLEMENT_TARGET_QUOTA' && form.effect === 'ENTITLEMENT_EFFECT_QUOTA_ADD') {
     const value = Number(form.value)
     if (form.unlimited || !Number.isFinite(value) || value <= 0) {
-      formError.value = 'quota_add 必须是有限正数。'
+      formError.value = '追加额度必须填写大于 0 的数值。'
       return
     }
   }
@@ -160,16 +170,16 @@ function submit() {
       </header>
 
       <div class="dialog-body">
-        <div class="field"><label for="override-module">模块</label><UiSelect id="override-module" v-model="form.moduleCode" class="input"><UiOption v-for="item in modules" :key="item.moduleCode" :value="item.moduleCode">{{ item.name || item.moduleCode }} · {{ item.moduleCode }}</UiOption></UiSelect></div>
-        <div class="field"><label for="override-target">目标类型</label><UiSelect id="override-target" v-model="form.target" class="input"><UiOption value="ENTITLEMENT_TARGET_MODULE">模块</UiOption><UiOption value="ENTITLEMENT_TARGET_CAPABILITY">能力</UiOption><UiOption value="ENTITLEMENT_TARGET_QUOTA">额度</UiOption><UiOption value="ENTITLEMENT_TARGET_FIELD">字段动作</UiOption></UiSelect></div>
-        <div v-if="form.target !== 'ENTITLEMENT_TARGET_MODULE'" class="field"><label for="override-key">目标 key</label><UiSelect id="override-key" v-model="form.key" class="input"><UiOption value="">请选择</UiOption><UiOption v-for="key in availableKeys" :key="key" :value="key">{{ key }}</UiOption></UiSelect></div>
-        <div v-if="form.target === 'ENTITLEMENT_TARGET_FIELD'" class="field"><label for="override-field-action">字段动作</label><UiSelect id="override-field-action" v-model="form.fieldAction" class="input"><UiOption value="read">read</UiOption><UiOption value="write">write</UiOption><UiOption value="export">export</UiOption></UiSelect></div>
-        <div class="field"><label for="override-effect">效果</label><UiSelect id="override-effect" v-model="form.effect" class="input"><UiOption v-for="item in effects" :key="item.value" :value="item.value">{{ item.label }}</UiOption></UiSelect></div>
+        <div class="field"><label for="override-module">模块</label><UiSelect id="override-module" v-model="form.moduleCode" class="input"><UiOption v-for="item in modules" :key="item.moduleCode" :value="item.moduleCode">{{ item.name || '未命名模块' }}</UiOption></UiSelect></div>
+        <div class="field"><label for="override-target">授权范围</label><UiSelect id="override-target" v-model="form.target" class="input"><UiOption value="ENTITLEMENT_TARGET_MODULE">整个模块</UiOption><UiOption value="ENTITLEMENT_TARGET_CAPABILITY">功能能力</UiOption><UiOption value="ENTITLEMENT_TARGET_QUOTA">使用额度</UiOption><UiOption value="ENTITLEMENT_TARGET_FIELD">数据字段</UiOption></UiSelect></div>
+        <div v-if="form.target !== 'ENTITLEMENT_TARGET_MODULE'" class="field"><label for="override-key">具体项目</label><UiSelect id="override-key" v-model="form.key" class="input"><UiOption value="">请选择</UiOption><UiOption v-for="(key, index) in availableKeys" :key="key" :value="key">{{ entitlementKeyLabel(key, index) }}</UiOption></UiSelect></div>
+        <div v-if="form.target === 'ENTITLEMENT_TARGET_FIELD'" class="field"><label for="override-field-action">允许操作</label><UiSelect id="override-field-action" v-model="form.fieldAction" class="input"><UiOption value="read">查看</UiOption><UiOption value="write">修改</UiOption><UiOption value="export">导出</UiOption></UiSelect></div>
+        <div class="field"><label for="override-effect">授权结果</label><UiSelect id="override-effect" v-model="form.effect" class="input"><UiOption v-for="item in effects" :key="item.value" :value="item.value">{{ item.label }}</UiOption></UiSelect></div>
 
         <div v-if="form.target === 'ENTITLEMENT_TARGET_QUOTA'" class="quota-box">
           <label class="checkbox" for="override-unlimited"><UiInput id="override-unlimited" v-model="form.unlimited" type="checkbox" />无限额度</label>
           <div v-if="!form.unlimited" class="field"><label for="override-limit">额度值</label><UiInput id="override-limit" v-model="form.value" class="input" type="number" min="0" step="1" /></div>
-          <p>0 与 unlimited 语义不同；quota_add 必须是有限正数。</p>
+          <p>不限额度与 0 额度含义不同；追加额度需填写大于 0 的数值。</p>
         </div>
 
         <div class="two-column">
@@ -183,7 +193,7 @@ function submit() {
 
       <footer class="dialog-footer">
         <UiButton class="btn" type="button" @click="emit('close')">取消</UiButton>
-        <UiButton class="btn primary" type="button" :disabled="pending" @click="submit">{{ pending ? '提交中…' : '创建专项来源' }}</UiButton>
+        <UiButton class="btn primary" type="button" :disabled="pending" @click="submit">{{ pending ? '提交中…' : '创建专项权益' }}</UiButton>
       </footer>
     </section>
   </div>
