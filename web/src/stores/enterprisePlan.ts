@@ -45,8 +45,49 @@ function demoFeatures(): EnterprisePlanFeature[] {
   ]
 }
 
+function planLabel(code: string) {
+  const labels: Record<string, string> = {
+    'rental-growth-2026': '租赁成长版',
+    'office-pro': '办公专业版',
+    'office-basic': '办公基础版',
+    'office-ultimate': '办公旗舰版',
+  }
+  return labels[code] ?? '当前套餐'
+}
+
+function entitlementLabel(value: string) {
+  const labels: Record<string, string> = {
+    'access-management': '成员与权限',
+    'device-operations': '设备管理',
+    'advanced-reporting': '高级报表',
+    'tenant.members': '成员额度',
+    'tenant.devices': '设备额度',
+    'monthly.reports': '月度报表额度',
+    'tenant.member.lifecycle': '成员生命周期',
+  }
+  return labels[value] ?? '套餐权益'
+}
+
 function decisionLabel(decision: EntitlementDecisionDTO) {
-  return decision.key || decision.moduleCode || '未命名权益'
+  return entitlementLabel(decision.key || decision.moduleCode)
+}
+
+function decisionDescription(decision: EntitlementDecisionDTO) {
+  return decision.allowed ? '当前套餐已包含该能力。' : '当前套餐未包含该能力。'
+}
+
+function subscriptionStateLabel(value: string) {
+  const labels: Record<string, string> = {
+    active: '使用中',
+    ACTIVE: '使用中',
+    trial: '试用中',
+    TRIAL: '试用中',
+    suspended: '已暂停',
+    SUSPENDED: '已暂停',
+    expired: '已到期',
+    EXPIRED: '已到期',
+  }
+  return labels[value] ?? '待确认'
 }
 
 export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
@@ -57,11 +98,11 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
   const demoRequestCount = ref(0)
 
   const isServerBacked = computed(() => enterprise.sourceKind === 'api')
-  const currentPlan = computed(() => model.value?.subscription.planCode || '标准版')
+  const currentPlan = computed(() => model.value ? planLabel(model.value.subscription.planCode) : '标准版')
   const periodStart = computed(() => model.value?.subscription.periodStart || model.value?.subscription.createdAt || '2026-09-08')
   const periodEnd = computed(() => model.value?.subscription.periodEnd || '2027-09-07')
-  const cycle = computed(() => model.value ? '按服务端订阅周期' : '按年')
-  const subscriptionState = computed(() => model.value?.subscription.state || '使用中')
+  const cycle = computed(() => model.value ? '按订阅有效期' : '按年')
+  const subscriptionState = computed(() => model.value ? subscriptionStateLabel(model.value.subscription.state) : '使用中')
   const serverChangeContext = computed(() => model.value ? { session: model.value.session, subscription: model.value.subscription } : null)
 
   const features = computed<EnterprisePlanFeature[]>(() => {
@@ -69,8 +110,8 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
     const rows = model.value.entitlements.decisions.filter((decision) => decision.kind === 'module')
     return rows.map((decision) => ({
       key: `${decision.moduleCode}:${decision.key}`,
-      label: decision.moduleCode || decisionLabel(decision),
-      description: decision.reason || decisionLabel(decision),
+      label: entitlementLabel(decision.moduleCode) || decisionLabel(decision),
+      description: decisionDescription(decision),
       icon: 'shield',
       enabled: Boolean(decision.allowed),
     }))
@@ -130,7 +171,7 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
     error.value = ''
     try {
       model.value = await loadEnterprisePlanReadModel()
-      if (model.value.usageError) error.value = `用量服务暂不可用：${model.value.usageError}`
+      if (model.value.usageError) error.value = '额度使用信息暂不可用，请稍后重试。'
     } catch (cause) {
       model.value = null
       error.value = enterprisePlanRuntimeError(cause)
@@ -145,11 +186,11 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
   }
 
   function recordDemoChange(targetPlan: string, note: string) {
-    if (isServerBacked.value) throw new Error('真实套餐变更必须使用服务端 preview / confirm / receipt 生命周期。')
+    if (isServerBacked.value) throw new Error('套餐变更请通过正式的套餐变更流程完成。')
     demoRequestCount.value += 1
     enterprise.audit(
       '套餐信息',
-      '创建套餐调整申请（预览）',
+      '创建套餐调整申请（演示）',
       targetPlan,
       currentPlan.value,
       '待商务确认',
