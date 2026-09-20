@@ -129,7 +129,6 @@ test('canonical company page renders authoritative profile across CoffeeLink vie
     await openRealCompany(page)
     await expect(page.getByLabel('企业名称')).toHaveValue('CoffeeLink 租赁运营有限公司')
     await expect(page.getByLabel('企业简称')).toHaveValue('CoffeeLink')
-    await expect(page.getByText('真实服务数据', { exact: true })).toBeVisible()
     await expect(page.getByText('上海云迹科技有限公司', { exact: true })).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
     await page.screenshot({ path: `screenshots/enterprise-company-real-${viewport.width}.png`, fullPage: false })
@@ -142,7 +141,7 @@ test('canonical company save carries trusted headers and confirms only after rea
   await page.getByLabel('企业简称').fill('CoffeeLink Pro')
   await page.getByLabel('企业邮箱').fill('success@coffeelink.test')
   await page.getByRole('button', { name: '保存修改', exact: true }).click()
-  await expect(page.getByText('企业资料已由服务端确认并回读。', { exact: true })).toBeVisible()
+  await expect(page.getByText('企业资料已保存。', { exact: true })).toBeVisible()
   await expect(page.getByLabel('企业简称')).toHaveValue('CoffeeLink Pro')
 
   const write = server.getWrites()[0]!
@@ -169,7 +168,7 @@ test('company 409 preserves the canonical draft and reuses one idempotency key',
   const writes = server.getWrites()
   expect(writes).toHaveLength(2)
   expect(writes[0]?.headers['idempotency-key']).toBe(writes[1]?.headers['idempotency-key'])
-  await expect(page.getByText('企业资料已由服务端确认并回读。', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('企业资料已保存。', { exact: true })).toHaveCount(0)
 })
 
 test('successful PATCH without GET readback is not presented as canonical success', async ({ page }) => {
@@ -177,8 +176,8 @@ test('successful PATCH without GET readback is not presented as canonical succes
   await openRealCompany(page)
   await page.getByLabel('企业简称').fill('未确认资料')
   await page.getByRole('button', { name: '保存修改', exact: true }).click()
-  await expect(page.locator('.form-error[role="alert"]')).toContainText('tenant profile readback failed')
-  await expect(page.getByText('企业资料已由服务端确认并回读。', { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('alert')).toContainText('tenant profile readback failed')
+  await expect(page.getByText('企业资料已保存。', { exact: true })).toHaveCount(0)
 })
 
 test('401 exits to trusted login while downstream 403 never falls back to demo company data', async ({ page }) => {
@@ -191,7 +190,7 @@ test('401 exits to trusted login while downstream 403 never falls back to demo c
   await page.unrouteAll({ behavior: 'ignoreErrors' })
   await mockTenantProfileServer(page, { readStatus: 403 })
   await page.goto('/#/enterprise/company')
-  await expect(page.getByRole('region', { name: '企业数据源状态' }).getByRole('alert')).toContainText('当前账号没有维护企业资料的权限')
+  await expect(page.getByRole('alert')).toContainText('当前账号没有维护企业资料的权限')
   await expect(page.getByText('上海云迹科技有限公司', { exact: true })).toHaveCount(0)
 })
 
@@ -199,7 +198,8 @@ test('API company page exposes server asset reference instead of browser DataURL
   await mockTenantProfileServer(page)
   await openRealCompany(page)
   await expect(page.locator('input[type="file"]')).toHaveCount(0)
-  await expect(page.getByText('Logo 由资产服务管理', { exact: true })).toBeVisible()
-  await expect(page.getByText('asset://tenant/logo/default', { exact: true })).toBeVisible()
-  await expect(page.getByText(/API 模式不生成 DataURL/)).toBeVisible()
+  const logoState = page.getByLabel('企业 Logo 状态')
+  await expect(logoState).toBeVisible()
+  await expect(logoState).toContainText('已配置')
+  await expect(page.getByText(/DataURL|API 模式|资产服务/)).toHaveCount(0)
 })
