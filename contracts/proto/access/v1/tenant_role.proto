@@ -43,17 +43,25 @@ message TenantRoleDTO {
   TenantRoleStatus status = 3;
   repeated PermissionGrantDTO permissions = 4;
   uint64 version = 5;
+  string description = 6;
+  string role_code = 7;
+  bool system_role = 8;
+  uint64 member_count = 9;
 }
 
 message CreateTenantRoleRequest {
   string name = 1;
+  string description = 2;
 }
 
 message GetTenantRoleRequest {
   string role_id = 1;
 }
 
-message ListTenantRolesRequest {}
+message ListTenantRolesRequest {
+  string query = 1;
+  TenantRoleStatus status = 2;
+}
 
 message ListTenantRolesResponse {
   repeated TenantRoleDTO roles = 1;
@@ -63,6 +71,12 @@ message UpdateTenantRoleRequest {
   string role_id = 1;
   string name = 2;
   uint64 version = 3;
+  string description = 4;
+}
+
+message DeleteTenantRoleRequest {
+  string role_id = 1;
+  uint64 version = 2;
 }
 
 message DisableTenantRoleRequest {
@@ -207,6 +221,20 @@ service TenantRolePermissionApplication {
     option (yunka.dsl.v1.operation) = {
       id: "tenant.role.enable"
       use_case: "enable_tenant_role"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc DeleteTenantRole(DeleteTenantRoleRequest) returns (TenantRoleDTO) {
+    option (google.api.http) = { delete: "/v1/tenant/roles/{role_id}" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.role.delete"
+      use_case: "delete_tenant_role"
       permissions: "tenant.role.manage"
       permission_mode: PERMISSION_ALL
       tenant_required: true
