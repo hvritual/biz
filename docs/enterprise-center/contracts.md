@@ -91,6 +91,13 @@ PRD 中 `/api/business/v1/identity/*` 是责任族，不要求在已有 `/auth`�
 
 所有写操作沿用稳定 Idempotency-Key、CAS/expected version、receipt + authoritative readback；“请求已受理”“通知任务已创建”“外部渠道已送达”必须分开表达。
 
+## #176 qualification candidate
+
+- Canonical generated baseline: `ee33d55a5d5d715b674ebb135d867503841b9780`.
+- This documentation-only commit is the human-authored qualification trigger above the generated baseline; it changes no PB, generated contract, commercial mapping, runtime behavior or framework lock.
+- Final acceptance still requires the protected MySQL, Web, C9/CE-03 and regression workflows to execute successfully on the resulting PR head.
+- Commercial quota reservation/commit/release remains owned by #116 as recorded above; #176 does not claim that capability.
+
 ## 8. Missing successor contracts
 
 以下后继套件在 #167 固定基线中未取得完整且有 Human 接受证据的版本，因此标记 `MISSING/BLOCKED`，不得自行补写产品规则：
