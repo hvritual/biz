@@ -127,14 +127,14 @@ func (capability *tenantMemberRoleCapabilityStub) AssignTenantRoleMember(_ conte
 	if capability.err != nil {
 		return nil, capability.err
 	}
-	return &accessv1.TenantRoleDTO{RoleId: request.GetRoleId()}, nil
+	return &accessv1.TenantRoleDTO{Id: request.GetRoleId()}, nil
 }
 
 func (capability *tenantMemberRoleCapabilityStub) RevokeTenantRoleMember(_ context.Context, request *accessv1.RevokeTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error) {
 	if capability.err != nil {
 		return nil, capability.err
 	}
-	return &accessv1.TenantRoleDTO{RoleId: request.GetRoleId()}, nil
+	return &accessv1.TenantRoleDTO{Id: request.GetRoleId()}, nil
 }
 
 func (capability *tenantMemberRoleCapabilityStub) callCount() int {
