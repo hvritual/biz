@@ -34,7 +34,7 @@ const (
 	TenantRoleStatusActive   = "active"
 	TenantRoleStatusDisabled = "disabled"
 	TenantOwnerRoleName      = "owner"
-	TenantAdminRoleName      = "admin"
+	TenantAdminRoleName      = "tenant_admin"
 	TenantOwnerRoleCode      = "tenant_owner"
 	TenantAdminRoleCode      = "tenant_admin"
 )
