@@ -5,8 +5,52 @@ import type { EntitlementDecisionDTO } from '@/services/commercial/platformComme
 defineProps<{ decisions: EntitlementDecisionDTO[] }>()
 
 function targetLabel(item: EntitlementDecisionDTO) {
-  const parts = [item.moduleCode, item.key, item.fieldAction].filter(Boolean)
-  return parts.join(' / ') || '—'
+  const labels: Record<string, string> = {
+    'device.lifecycle': '设备生命周期',
+    'customer.view': '客户查看',
+    'customer.count': '客户额度',
+    'member.count': '成员额度',
+  }
+  const actionLabels: Record<string, string> = { read: '查看', write: '修改', export: '导出' }
+  const target = labels[item.key] ?? (item.key ? '配置项目' : '整个模块')
+  return item.fieldAction ? `${target} · ${actionLabels[item.fieldAction] ?? '业务操作'}` : target
+}
+
+function kindLabel(value: string) {
+  if (value === 'capability') return '功能能力'
+  if (value === 'quota') return '使用额度'
+  if (value === 'field') return '数据字段'
+  if (value === 'module') return '模块权益'
+  return '权益结果'
+}
+
+function sourceKindLabel(value: string) {
+  if (value === 'plan') return '套餐权益'
+  if (value === 'override') return '专项权益'
+  if (value === 'addon') return '增购权益'
+  if (value === 'subscription') return '订阅权益'
+  return '权益来源'
+}
+
+function sourceEffectLabel(value: string) {
+  if (/DENY/i.test(value)) return '拒绝'
+  if (/GRANT|ALLOW/i.test(value)) return '允许'
+  if (/MASK/i.test(value)) return '脱敏'
+  return '已应用'
+}
+
+function sourceStateLabel(value: string) {
+  if (/ACTIVE/i.test(value)) return '生效中'
+  if (/REVOKED/i.test(value)) return '已撤销'
+  if (/EXPIRED/i.test(value)) return '已过期'
+  if (/PENDING|SCHEDULED/i.test(value)) return '待生效'
+  return '当前有效'
+}
+
+function dispositionLabel(value: string) {
+  if (/ignored|skipped/i.test(value)) return '未应用'
+  if (/applied|effective|used/i.test(value)) return '已应用'
+  return '已纳入判断'
 }
 
 function decisionLabel(item: EntitlementDecisionDTO) {
@@ -23,7 +67,7 @@ function decisionTone(item: EntitlementDecisionDTO): 'success' | 'warning' | 'ne
 
 function limitLabel(item: EntitlementDecisionDTO) {
   if (!item.limit) return '—'
-  return item.limit.unlimited ? 'unlimited' : String(item.limit.value ?? 0)
+  return item.limit.unlimited ? '不限' : String(item.limit.value ?? 0)
 }
 </script>
 
@@ -39,20 +83,20 @@ function limitLabel(item: EntitlementDecisionDTO) {
       <article v-for="(item, index) in decisions" :key="`${item.kind}-${item.moduleCode}-${item.key}-${item.fieldAction}-${index}`" class="decision-row">
         <div class="decision-main">
           <div class="decision-title">
-            <strong>{{ item.kind || 'decision' }}</strong>
+            <strong>{{ kindLabel(item.kind) }}</strong>
             <StatusBadge :text="decisionLabel(item)" :tone="decisionTone(item)" />
           </div>
           <p class="target">{{ targetLabel(item) }}</p>
-          <div class="decision-meta"><span>reason: {{ item.reason || '—' }}</span><span>limit: {{ limitLabel(item) }}</span></div>
+          <div class="decision-meta"><span>判断说明：{{ item.reason || '—' }}</span><span>额度：{{ limitLabel(item) }}</span></div>
         </div>
 
         <div class="sources">
           <strong>来源链</strong>
           <p v-if="!item.sources?.length" class="muted">无来源解释</p>
           <div v-for="source in item.sources ?? []" :key="`${source.id}-${source.sourceKind}-${source.effect}`" class="source-row">
-            <div><b>{{ source.sourceKind || 'unknown' }}</b><span>{{ source.effect || '—' }}</span><span>{{ source.state || '—' }}</span></div>
-            <p>{{ source.disposition || '—' }}<template v-if="source.reason"> · {{ source.reason }}</template></p>
-            <small>source {{ source.id || '—' }}<template v-if="source.actorId"> · actor {{ source.actorId }}</template></small>
+            <div><b>{{ sourceKindLabel(source.sourceKind) }}</b><span>{{ sourceEffectLabel(source.effect) }}</span><span>{{ sourceStateLabel(source.state) }}</span></div>
+            <p>{{ dispositionLabel(source.disposition) }}<template v-if="source.reason"> · {{ source.reason }}</template></p>
+            <small>记录 {{ source.id || '—' }}<template v-if="source.actorId"> · 操作人 {{ source.actorId }}</template></small>
           </div>
         </div>
       </article>
