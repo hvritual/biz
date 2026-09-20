@@ -92,7 +92,7 @@ describe('member selection operations', () => {
       ),
     ).rejects.toThrow('重复')
     await expect(store.changeStatuses([{ id: 'member-2', version: 1 }], 'activate', '测试')).rejects.toThrow(
-      '可以启用',
+      '重新启用',
     )
   })
   it('rolls back the whole batch and its audit events on storage failure', async () => {

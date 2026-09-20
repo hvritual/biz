@@ -42,10 +42,10 @@ func (factory applicationFactories) BuildAccessTenantMemberLifecycle(dependencie
 	if dependencies.AccessTenantRolePermission == nil || dependencies.AccessTenantDepartmentManagement == nil {
 		return nil, errors.New("biz access pressure: tenant member lifecycle role and department dependencies are required")
 	}
-	inner, err := accessapp.NewTenantMemberLifecycleService(factory.memberRepositories, tenantMemberLifecycleCapabilities{
+	inner, err := accessapp.NewTenantMemberLifecycleServiceWithActivation(factory.memberRepositories, tenantMemberLifecycleCapabilities{
 		departments: dependencies.AccessTenantDepartmentManagement,
 		roles:       dependencies.AccessTenantRolePermission,
-	})
+	}, factory.memberActivationTTL, factory.memberActivationURL)
 	if err != nil {
 		return nil, err
 	}

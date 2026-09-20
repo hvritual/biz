@@ -12,10 +12,12 @@ type TenantMemberLifecycleApplication interface {
 	ActivateTenantMember(context.Context, *accessv1.ActivateTenantMemberRequest) (*accessv1.TenantMemberDTO, error)
 	BootstrapTenantOwnerMember(context.Context, *accessv1.BootstrapTenantOwnerMemberRequest) (*accessv1.TenantMemberDTO, error)
 	CountTenantQuotaMembers(context.Context, *accessv1.CountTenantQuotaMembersRequest) (*accessv1.CountTenantQuotaMembersResponse, error)
+	CreateTenantMember(context.Context, *accessv1.CreateTenantMemberRequest) (*accessv1.TenantMemberCreationReceipt, error)
 	GetTenantMember(context.Context, *accessv1.GetTenantMemberRequest) (*accessv1.TenantMemberDTO, error)
 	InviteTenantMember(context.Context, *accessv1.InviteTenantMemberRequest) (*accessv1.TenantMemberDTO, error)
 	ListTenantMembers(context.Context, *accessv1.ListTenantMembersRequest) (*accessv1.ListTenantMembersResponse, error)
 	RemoveTenantMember(context.Context, *accessv1.RemoveTenantMemberRequest) (*accessv1.TenantMemberDTO, error)
 	SuspendTenantMember(context.Context, *accessv1.SuspendTenantMemberRequest) (*accessv1.TenantMemberDTO, error)
+	UpdateTenantMember(context.Context, *accessv1.UpdateTenantMemberRequest) (*accessv1.TenantMemberDTO, error)
 	UpdateTenantMemberProfile(context.Context, *accessv1.UpdateTenantMemberProfileRequest) (*accessv1.TenantMemberDTO, error)
 }

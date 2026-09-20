@@ -3345,6 +3345,55 @@
       "bindings": {}
     },
     {
+      "operationId": "tenant.member.create",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "create_tenant_member",
+      "requestType": "access.v1.CreateTenantMemberRequest",
+      "responseType": "access.v1.TenantMemberCreationReceipt",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.member.manage",
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "tenant.department.assert_member_assignment_allowed",
+          "tenant.role.assign_member"
+        ],
+        "permissionClosure": [
+          "tenant.member.manage",
+          "tenant.role.manage"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_department_management",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/CreateTenantMember",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/members/create",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "tenant.member.get",
       "domain": "access",
       "application": "tenant_member_lifecycle",
@@ -3589,6 +3638,56 @@
           {
             "method": "POST",
             "path": "/v1/tenant/members/{user_id}/suspend",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.member.update",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "update_tenant_member",
+      "requestType": "access.v1.UpdateTenantMemberRequest",
+      "responseType": "access.v1.TenantMemberDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.member.manage",
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "tenant.department.assert_member_assignment_allowed",
+          "tenant.role.assign_member",
+          "tenant.role.revoke_member"
+        ],
+        "permissionClosure": [
+          "tenant.member.manage",
+          "tenant.role.manage"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_department_management",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/UpdateTenantMember",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/tenant/members/{user_id}",
             "body": "*"
           }
         ]

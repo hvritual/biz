@@ -16,8 +16,9 @@ import (
 )
 
 type memoryTenantMemberRepository struct {
-	mu     sync.Mutex
-	values map[string]domain.Membership
+	mu            sync.Mutex
+	values        map[string]domain.Membership
+	lastListQuery ports.TenantMemberListQuery
 }
 
 func newMemoryTenantMemberRepository() *memoryTenantMemberRepository {
@@ -36,6 +37,22 @@ func (repository *memoryTenantMemberRepository) Invite(_ context.Context, tenant
 	}
 	repository.values[key] = member
 	return member, nil
+}
+
+func (repository *memoryTenantMemberRepository) Create(_ context.Context, tenantID string, input ports.TenantMemberCreateInput, now time.Time) (domain.Membership, bool, error) {
+	repository.mu.Lock()
+	defer repository.mu.Unlock()
+	member := domain.NewInvitedMembership(tenantID, input.UserID, input.Email, now)
+	member.Username = input.Username
+	if err := member.UpdateProfile(input.Name, input.Phone, input.EmployeeID, input.Position, input.DepartmentID, now); err != nil {
+		return domain.Membership{}, false, err
+	}
+	key := memberKey(tenantID, input.UserID)
+	if _, exists := repository.values[key]; exists {
+		return domain.Membership{}, false, ports.ErrTenantMemberExists
+	}
+	repository.values[key] = member
+	return member, true, nil
 }
 
 func (repository *memoryTenantMemberRepository) Bootstrap(_ context.Context, tenantID, userID, email string, now time.Time) (domain.Membership, error) {
@@ -60,16 +77,17 @@ func (repository *memoryTenantMemberRepository) Get(_ context.Context, tenantID,
 	return member, nil
 }
 
-func (repository *memoryTenantMemberRepository) List(_ context.Context, tenantID string) ([]domain.Membership, error) {
+func (repository *memoryTenantMemberRepository) List(_ context.Context, tenantID string, query ports.TenantMemberListQuery) (ports.TenantMemberListPage, error) {
 	repository.mu.Lock()
 	defer repository.mu.Unlock()
+	repository.lastListQuery = query
 	result := make([]domain.Membership, 0)
 	for _, member := range repository.values {
 		if member.TenantID == tenantID {
 			result = append(result, member)
 		}
 	}
-	return result, nil
+	return ports.TenantMemberListPage{Members: result, Total: uint64(len(result))}, nil
 }
 
 func (repository *memoryTenantMemberRepository) Update(_ context.Context, member *domain.Membership, expectedVersion uint64) error {
@@ -103,6 +121,20 @@ func (capability *tenantMemberRoleCapabilityStub) AssertTenantMemberDeactivation
 		return nil, err
 	}
 	return &accessv1.AssertTenantMemberDeactivationAllowedResponse{}, nil
+}
+
+func (capability *tenantMemberRoleCapabilityStub) AssignTenantRoleMember(_ context.Context, request *accessv1.AssignTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error) {
+	if capability.err != nil {
+		return nil, capability.err
+	}
+	return &accessv1.TenantRoleDTO{Id: request.GetRoleId()}, nil
+}
+
+func (capability *tenantMemberRoleCapabilityStub) RevokeTenantRoleMember(_ context.Context, request *accessv1.RevokeTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error) {
+	if capability.err != nil {
+		return nil, capability.err
+	}
+	return &accessv1.TenantRoleDTO{Id: request.GetRoleId()}, nil
 }
 
 func (capability *tenantMemberRoleCapabilityStub) callCount() int {
@@ -225,8 +257,8 @@ func TestTenantMemberLifecycleUsesPrincipalTenantAndJoinedRootUoW(t *testing.T) 
 	if !errors.Is(err, domain.ErrInvalidTenantMemberTransition) {
 		t.Fatalf("removed activate err=%v", err)
 	}
-	if factoryCalls != 6 {
-		t.Fatalf("repository factory calls=%d want=6", factoryCalls)
+	if factoryCalls != 8 {
+		t.Fatalf("repository factory calls=%d want=8 (activation guard + mutation each join the same root UoW)", factoryCalls)
 	}
 }
 

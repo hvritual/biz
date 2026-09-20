@@ -49,9 +49,10 @@ jobs:
           serialized = json.dumps(results, ensure_ascii=False)
           member_required = [
               'canonical member page renders authoritative member, role, department and scope across CoffeeLink viewports',
-              'canonical invite uses loaded role and department, trusted headers and authoritative readback',
-              'canonical profile edit exposes only supported fields and sends authoritative version',
-              'canonical role change is idempotent, scope remains server-derived and readback confirms membership',
+              'canonical members use server-side filters, pagination and authoritative total',
+              'canonical invite uses one atomic create write with activation choice and authoritative readback',
+              'canonical member edit is one atomic update and preserves immutable username',
+              'canonical role change is one atomic member update and scope remains server-derived',
               '401 redirects to trusted login and 403 blocks members before protected data loads',
               'canonical profile 409 preserves draft and reuses the same idempotency key',
               'successful member write without GET readback is never presented as canonical success',

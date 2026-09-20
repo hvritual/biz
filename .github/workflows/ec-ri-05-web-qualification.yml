@@ -1,5 +1,9 @@
 name: ec-ri-05-web-qualification
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -64,7 +68,7 @@ jobs:
               'canonical company save carries trusted headers and confirms only after readback',
               'company 409 preserves the canonical draft and reuses one idempotency key',
               'successful PATCH without GET readback is not presented as canonical success',
-              '401 and 403 remain explicit and never fall back to demo company data',
+              '401 exits to trusted login while downstream 403 never falls back to demo company data',
               'API company page exposes server asset reference instead of browser DataURL upload',
           ]
           for title in required_titles:

@@ -7,6 +7,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/hvritual/biz/internal/access/domain"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -20,7 +21,10 @@ const (
 	LoginIdentifierPhone    LoginIdentifierKind = "phone"
 )
 
-var ErrInvalidLoginIdentifier = errors.New("access: invalid login identifier")
+var (
+	ErrInvalidLoginIdentifier  = errors.New("access: invalid login identifier")
+	ErrLoginIdentifierConflict = errors.New("access: login identifier already exists")
+)
 
 type LoginIdentifierResolution struct {
 	Identity       LocalUserIdentity
@@ -98,6 +102,10 @@ func (store *Store) SetUserUsername(ctx context.Context, userID, username string
 		Where("id = ?", strings.TrimSpace(userID)).
 		Update("username", normalized)
 	if result.Error != nil {
+		var mysqlErr *mysql.MySQLError
+		if errors.As(result.Error, &mysqlErr) && mysqlErr.Number == 1062 {
+			return ErrLoginIdentifierConflict
+		}
 		return result.Error
 	}
 	if result.RowsAffected != 1 {

@@ -19,6 +19,12 @@ enum TenantMemberStatus {
   TENANT_MEMBER_STATUS_REMOVED = 4;
 }
 
+enum TenantMemberActivationMode {
+  TENANT_MEMBER_ACTIVATION_MODE_UNSPECIFIED = 0;
+  TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK = 1;
+  TENANT_MEMBER_ACTIVATION_MODE_SMS_INITIAL_PASSWORD = 2;
+}
+
 message TenantMemberRoleDTO {
   string role_id = 1;
   string role_name = 2;
@@ -40,20 +46,51 @@ message TenantMemberDTO {
   // UI/read-model summary only. Authorization continues to evaluate each
   // permission grant independently. Values: none, self, sites, all.
   string derived_data_scope = 11;
+  string username = 12;
 }
 
 message InviteTenantMemberRequest {
   string email = 1;
 }
 
+message CreateTenantMemberRequest {
+  string username = 1;
+  string email = 2;
+  string phone = 3;
+  string name = 4;
+  string employee_id = 5;
+  string position = 6;
+  string department_id = 7;
+  repeated string role_ids = 8;
+  TenantMemberActivationMode activation_mode = 9;
+}
+
+message TenantMemberCreationReceipt {
+  TenantMemberDTO member = 1;
+  TenantMemberActivationMode activation_mode = 2;
+  string notification_event_id = 3;
+  string delivery_state = 4;
+  string masked_destination = 5;
+}
+
 message GetTenantMemberRequest {
   string user_id = 1;
 }
 
-message ListTenantMembersRequest {}
+message ListTenantMembersRequest {
+  // Free-text search. Plain name/account/employee-id matching is fuzzy; protected
+  // email/phone matching is exact through the #168 deterministic lookup index; no decrypt-scan fallback is allowed.
+  string query = 1;
+  string role_id = 2;
+  string department_id = 3;
+  TenantMemberStatus status = 4;
+  uint32 page = 5;
+  uint32 page_size = 6;
+}
 
 message ListTenantMembersResponse {
   repeated TenantMemberDTO members = 1;
+  uint64 total = 2;
 }
 
 // Internal quota meter used by Commercial composition. No tenant id is accepted:
@@ -73,6 +110,18 @@ message UpdateTenantMemberProfileRequest {
   string position = 5;
   string department_id = 6;
   uint64 version = 7;
+}
+
+message UpdateTenantMemberRequest {
+  string user_id = 1;
+  string email = 2;
+  string phone = 3;
+  string name = 4;
+  string employee_id = 5;
+  string position = 6;
+  string department_id = 7;
+  repeated string role_ids = 8;
+  uint64 version = 9;
 }
 
 message ActivateTenantMemberRequest {
@@ -142,6 +191,24 @@ service TenantMemberLifecycleApplication {
     };
   }
 
+  rpc CreateTenantMember(CreateTenantMemberRequest) returns (TenantMemberCreationReceipt) {
+    option (google.api.http) = { post: "/v1/tenant/members/create" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.create"
+      use_case: "create_tenant_member"
+      permissions: "tenant.member.manage"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      requires_operations: "tenant.department.assert_member_assignment_allowed"
+      requires_operations: "tenant.role.assign_member"
+      composition: COMPOSITION_LOCAL
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
   rpc GetTenantMember(GetTenantMemberRequest) returns (TenantMemberDTO) {
     option (google.api.http) = { get: "/v1/tenant/members/{user_id}" };
     option (yunka.dsl.v1.operation) = {
@@ -181,6 +248,25 @@ service TenantMemberLifecycleApplication {
       authentication: AUTHENTICATION_API_KEY
       authentication: AUTHENTICATION_WEB_SESSION
       requires_operations: "tenant.department.assert_member_assignment_allowed"
+      composition: COMPOSITION_LOCAL
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc UpdateTenantMember(UpdateTenantMemberRequest) returns (TenantMemberDTO) {
+    option (google.api.http) = { patch: "/v1/tenant/members/{user_id}" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.update"
+      use_case: "update_tenant_member"
+      permissions: "tenant.member.manage"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      requires_operations: "tenant.department.assert_member_assignment_allowed"
+      requires_operations: "tenant.role.assign_member"
+      requires_operations: "tenant.role.revoke_member"
       composition: COMPOSITION_LOCAL
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };

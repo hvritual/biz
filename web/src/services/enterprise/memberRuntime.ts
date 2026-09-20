@@ -13,7 +13,7 @@ import {
   type TrustedSession,
 } from '@/services/runtime/api'
 
-export type MemberMutation = 'invite' | 'activate' | 'suspend' | 'remove' | 'profile' | 'roles'
+export type MemberMutation = 'create' | 'update' | 'invite' | 'activate' | 'suspend' | 'remove' | 'profile' | 'roles'
 export type MemberRoleMutation = 'assign' | 'revoke'
 
 export type EnterpriseMemberRole = {
@@ -23,6 +23,7 @@ export type EnterpriseMemberRole = {
 }
 
 export type EnterpriseTenantMember = TenantMember & {
+  username: string
   name: string
   phone: string
   employeeId: string
@@ -38,6 +39,42 @@ export type EnterpriseMemberProfileInput = {
   employeeId: string
   position: string
   departmentId: string
+}
+
+export type EnterpriseMemberActivationMode = 'activation_link' | 'sms_initial_password'
+
+export type EnterpriseMemberCreateInput = EnterpriseMemberProfileInput & {
+  username: string
+  email: string
+  roleIds: string[]
+  activationMode: EnterpriseMemberActivationMode
+}
+
+export type EnterpriseMemberUpdateInput = EnterpriseMemberProfileInput & {
+  email: string
+  roleIds: string[]
+}
+
+export type EnterpriseMemberCreationReceipt = {
+  member: EnterpriseTenantMember
+  activationMode: string
+  notificationEventId: string
+  deliveryState: string
+  maskedDestination: string
+}
+
+export type EnterpriseMemberListQuery = {
+  query?: string
+  roleId?: string
+  departmentId?: string
+  status?: string
+  page: number
+  pageSize: number
+}
+
+export type EnterpriseMemberListPage = {
+  members: EnterpriseTenantMember[]
+  total: number
 }
 
 export function memberRequestId(action: MemberMutation) {
@@ -84,7 +121,13 @@ export function memberRuntimeError(error: unknown) {
   if (error instanceof CommercialApiError) {
     if (error.code === 'unauthenticated') return '登录会话已失效，请重新登录。'
     if (error.code === 'forbidden') return '当前账号没有管理企业成员的权限。'
-    if (error.code === 'conflict') return '成员状态或请求版本已发生变化，请刷新后重试。'
+    if (error.code === 'conflict') {
+      const message = error.message.toLowerCase()
+      if (message.includes('username')) return '该登录账号已被其他 Account 使用，请更换账号。'
+      if (message.includes('contact')) return '该手机号或邮箱已被其他成员使用，请核对联系方式。'
+      if (message.includes('activation')) return '该成员仍有待完成的激活流程，不能由管理员直接启用。'
+      return '成员状态或请求版本已发生变化，请刷新后重试。'
+    }
     return error.message
   }
   return error instanceof Error ? error.message : '成员服务请求失败。'
@@ -107,6 +150,7 @@ function memberSnapshot(member: TenantMember & Partial<EnterpriseTenantMember>):
     : []
   return Object.freeze({
     ...member,
+    username: member.username ?? '',
     name: member.name ?? '',
     phone: member.phone ?? '',
     employeeId: member.employeeId ?? '',
@@ -134,13 +178,43 @@ export async function switchEnterpriseMemberTenant(tenantId: string) {
   return selectSessionTenant(tenantId)
 }
 
-export async function listEnterpriseMembers(session: TrustedSession) {
+export async function queryEnterpriseMembers(
+  session: TrustedSession,
+  input: EnterpriseMemberListQuery,
+): Promise<EnterpriseMemberListPage> {
   requireTenantSession(session)
-  const result = await request<{ members?: Array<TenantMember & Partial<EnterpriseTenantMember>> }>(
-    '/v1/tenant/members',
-    { headers: readHeaders(session) },
-  )
-  return Array.isArray(result.members) ? result.members.map(memberSnapshot) : []
+  const params = new URLSearchParams()
+  const query = input.query?.trim() ?? ''
+  const roleId = input.roleId?.trim() ?? ''
+  const departmentId = input.departmentId?.trim() ?? ''
+  const status = input.status?.trim() ?? ''
+  if (query) params.set('query', query)
+  if (roleId) params.set('role_id', roleId)
+  if (departmentId) params.set('department_id', departmentId)
+  if (status) params.set('status', status)
+  params.set('page', String(Math.max(1, Math.trunc(input.page))))
+  params.set('page_size', String(Math.max(1, Math.min(100, Math.trunc(input.pageSize)))))
+  const result = await request<{
+    members?: Array<TenantMember & Partial<EnterpriseTenantMember>>
+    total?: string | number
+  }>(`/v1/tenant/members?${params.toString()}`, { headers: readHeaders(session) })
+  const total = Number(result.total ?? 0)
+  return {
+    members: Array.isArray(result.members) ? result.members.map(memberSnapshot) : [],
+    total: Number.isFinite(total) && total >= 0 ? total : 0,
+  }
+}
+
+export async function listEnterpriseMembers(session: TrustedSession) {
+  const members: EnterpriseTenantMember[] = []
+  let page = 1
+  const pageSize = 100
+  for (;;) {
+    const result = await queryEnterpriseMembers(session, { page, pageSize })
+    members.push(...result.members)
+    if (members.length >= result.total || result.members.length === 0) return members
+    page += 1
+  }
 }
 
 export async function getEnterpriseMember(session: TrustedSession, userId: string) {
@@ -173,6 +247,72 @@ async function memberMutate(
     sessionContext: sessionContext(session),
   })
   return memberSnapshot(member)
+}
+
+function activationModeWire(mode: EnterpriseMemberActivationMode) {
+  return mode === 'sms_initial_password'
+    ? 'TENANT_MEMBER_ACTIVATION_MODE_SMS_INITIAL_PASSWORD'
+    : 'TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK'
+}
+
+export async function createEnterpriseMember(
+  session: TrustedSession,
+  input: EnterpriseMemberCreateInput,
+  idempotencyKey: string,
+): Promise<EnterpriseMemberCreationReceipt> {
+  requireTenantSession(session)
+  const result = await mutate<{
+    member: TenantMember & Partial<EnterpriseTenantMember>
+    activationMode?: string
+    notificationEventId?: string
+    deliveryState?: string
+    maskedDestination?: string
+  }>('/v1/tenant/members/create', 'POST', {
+    username: input.username.trim().toLowerCase(),
+    email: input.email.trim(),
+    phone: input.phone.trim(),
+    name: input.name.trim(),
+    employeeId: input.employeeId.trim(),
+    position: input.position.trim(),
+    departmentId: input.departmentId.trim(),
+    roleIds: [...input.roleIds],
+    activationMode: activationModeWire(input.activationMode),
+  }, {
+    idempotencyKey,
+    sessionContext: sessionContext(session),
+  })
+  return {
+    member: memberSnapshot(result.member),
+    activationMode: result.activationMode ?? '',
+    notificationEventId: result.notificationEventId ?? '',
+    deliveryState: result.deliveryState ?? '',
+    maskedDestination: result.maskedDestination ?? '',
+  }
+}
+
+export function updateEnterpriseMember(
+  session: TrustedSession,
+  member: EnterpriseTenantMember,
+  input: EnterpriseMemberUpdateInput,
+  idempotencyKey: string,
+) {
+  return memberMutate(
+    session,
+    `/v1/tenant/members/${encodeURIComponent(member.userId)}`,
+    'PATCH',
+    {
+      userId: member.userId,
+      email: input.email.trim(),
+      phone: input.phone.trim(),
+      name: input.name.trim(),
+      employeeId: input.employeeId.trim(),
+      position: input.position.trim(),
+      departmentId: input.departmentId.trim(),
+      roleIds: [...input.roleIds],
+      version: member.version,
+    },
+    idempotencyKey,
+  )
 }
 
 export function inviteEnterpriseMember(session: TrustedSession, email: string, idempotencyKey: string) {

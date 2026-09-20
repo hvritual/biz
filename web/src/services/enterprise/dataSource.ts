@@ -83,7 +83,9 @@ function strongestRoleScope(role: EnterpriseTenantRole): DataScope {
 export function projectMember(value: EnterpriseTenantMember): Member {
   return {
     id: value.userId,
-    name: value.name || value.email,
+    username: value.username,
+    activationMode: '',
+    name: value.name || value.username || value.email,
     email: value.email,
     phone: value.phone,
     employeeId: value.employeeId,

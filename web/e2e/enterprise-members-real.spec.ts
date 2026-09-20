@@ -7,6 +7,7 @@ test.skip(!process.env.ENTERPRISE_MEMBER_REAL_E2E, 'runs only against the VITE_D
 type RemoteRoleSummary = { roleId: string; roleName: string; roleStatus: string }
 type RemoteMember = {
   userId: string
+  username: string
   email: string
   status: string
   version: number
@@ -27,6 +28,7 @@ type MockOptions = {
   readbackStatus?: number
   authorizationStatus?: number
   unauthenticated?: boolean
+  memberCount?: number
 }
 
 type WriteRecord = { path: string; method: string; headers: Record<string, string>; body: unknown }
@@ -60,6 +62,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
   let members: RemoteMember[] = [
     {
       userId: 'user-001',
+      username: 'alice.owner',
       email: 'owner@coffeelink.test',
       status: 'TENANT_MEMBER_STATUS_ACTIVE',
       version: 3,
@@ -73,6 +76,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     },
     {
       userId: 'user-002',
+      username: 'new.member',
       email: 'new@coffeelink.test',
       status: 'TENANT_MEMBER_STATUS_INVITED',
       version: 1,
@@ -85,19 +89,46 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
       derivedDataScope: 'none',
     },
   ]
+  const requestedCount = Math.max(members.length, options.memberCount ?? members.length)
+  for (let index = members.length; index < requestedCount; index += 1) {
+    members.push({
+      userId: `user-extra-${String(index + 1).padStart(2, '0')}`,
+      username: `member.${String(index + 1).padStart(2, '0')}`,
+      email: `member-${index + 1}@coffeelink.test`,
+      status: index % 2 === 0 ? 'TENANT_MEMBER_STATUS_ACTIVE' : 'TENANT_MEMBER_STATUS_INVITED',
+      version: 1,
+      name: `Member ${String(index + 1).padStart(2, '0')}`,
+      phone: '',
+      employeeId: `EMP-${2000 + index}`,
+      position: '',
+      departmentId: index % 2 === 0 ? 'dept-success' : 'dept-rental',
+      roles: [roleSummary(index % 2 === 0 ? roleCatalog[0]! : roleCatalog[1]!)],
+      derivedDataScope: index % 2 === 0 ? 'sites' : 'self',
+    })
+  }
   const writes: WriteRecord[] = []
+  const listReads: string[] = []
 
   const recordWrite = (route: Route) => {
     const request = route.request()
     writes.push({
-      path: new URL(request.url()).pathname,
+      path: new URL(request.url()).pathname.replace(/^\/api(?=\/)/, ''),
       method: request.method(),
       headers: request.headers(),
       body: request.postDataJSON(),
     })
   }
 
-  await page.route('**/api/auth/session', async (route) => {
+  await page.route(/\/(?:api\/)?(?:auth|v1)\//, async (route) => {
+    const request = route.request()
+    throw new Error(`Unhandled API request: ${request.method()} ${new URL(request.url()).pathname}`)
+  })
+
+  await page.route(/\/(?:api\/)?auth\/login(?:\?.*)?$/, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Login</title>' })
+  })
+
+  await page.route(/\/(?:api\/)?auth\/session(?:\?.*)?$/, async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     return json(route, 200, {
       authenticated: true,
@@ -109,11 +140,13 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     })
   })
 
-  await page.route('**/api/auth/authorization', async (route) => {
+  await page.route(/\/(?:api\/)?auth\/authorization(?:\?.*)?$/, async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     if (options.authorizationStatus) return json(route, options.authorizationStatus, { message: 'authorization denied' })
     const buttonCodes = [
       'tenant.member.list',
+      'tenant.member.create',
+      'tenant.member.update',
       'tenant.member.invite',
       'tenant.member.profile.update',
       'tenant.member.activate',
@@ -142,15 +175,15 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     })
   })
 
-  await page.route('**/api/v1/tenant/roles', async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/roles(?:\?.*)?$/, async (route) => {
     return json(route, 200, { roles: roleCatalog })
   })
 
-  await page.route('**/api/v1/tenant/departments', async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/departments(?:\?.*)?$/, async (route) => {
     return json(route, 200, { departments: departmentCatalog })
   })
 
-  await page.route(/\/api\/v1\/tenant\/roles\/[^/]+\/members(?:\/[^/]+\/revoke)?$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/roles\/[^/]+\/members(?:\/[^/]+\/revoke)?$/, async (route) => {
     recordWrite(route)
     if (options.mutationStatus) return json(route, options.mutationStatus, { message: 'mutation conflict' })
     const request = route.request()
@@ -175,17 +208,78 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     return json(route, 200, role)
   })
 
-  await page.route('**/api/v1/tenant/members', async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/members\/create$/, async (route) => {
+    recordWrite(route)
+    if (options.mutationStatus) return json(route, options.mutationStatus, { message: 'mutation conflict' })
+    const body = route.request().postDataJSON() as {
+      username: string
+      email: string
+      phone: string
+      name: string
+      employeeId: string
+      position: string
+      departmentId: string
+      roleIds: string[]
+      activationMode: string
+    }
+    const roles = body.roleIds
+      .map((roleId) => roleCatalog.find((role) => role.id === roleId))
+      .filter((role): role is RemoteRole => Boolean(role))
+      .map(roleSummary)
+    const created: RemoteMember = {
+      userId: 'user-003',
+      username: body.username,
+      email: body.email,
+      status: 'TENANT_MEMBER_STATUS_INVITED',
+      version: 1,
+      name: body.name,
+      phone: body.phone,
+      employeeId: body.employeeId,
+      position: body.position,
+      departmentId: body.departmentId,
+      roles,
+      derivedDataScope: 'none',
+    }
+    created.derivedDataScope = deriveScope(created)
+    members = [...members, created]
+    return json(route, 200, {
+      member: created,
+      activationMode: body.activationMode,
+      notificationEventId: 'activation-event-003',
+      deliveryState: 'PENDING',
+      maskedDestination: body.email ? 'i***@coffeelink.test' : '+886****0003',
+    })
+  })
+
+  await page.route(/\/(?:api\/)?v1\/tenant\/members(?:\?.*)?$/, async (route) => {
     const request = route.request()
     if (request.method() === 'GET') {
       if (options.listStatus) return json(route, options.listStatus, { message: 'list denied' })
-      return json(route, 200, { members })
+      const url = new URL(request.url())
+      listReads.push(url.toString())
+      const keyword = (url.searchParams.get('query') ?? '').trim().toLowerCase()
+      const roleId = url.searchParams.get('role_id') ?? ''
+      const departmentId = url.searchParams.get('department_id') ?? ''
+      const status = url.searchParams.get('status') ?? ''
+      const pageNumber = Math.max(1, Number(url.searchParams.get('page') ?? '1'))
+      const pageSize = Math.max(1, Number(url.searchParams.get('page_size') ?? '20'))
+      const filtered = members.filter((member) => {
+        if (member.status === 'TENANT_MEMBER_STATUS_REMOVED') return false
+        if (keyword && !`${member.name} ${member.email} ${member.phone} ${member.employeeId}`.toLowerCase().includes(keyword)) return false
+        if (roleId && !member.roles.some((role) => role.roleId === roleId)) return false
+        if (departmentId && member.departmentId !== departmentId) return false
+        if (status && member.status !== status) return false
+        return true
+      })
+      const offset = (pageNumber - 1) * pageSize
+      return json(route, 200, { members: filtered.slice(offset, offset + pageSize), total: filtered.length })
     }
     recordWrite(route)
     if (options.mutationStatus) return json(route, options.mutationStatus, { message: 'mutation conflict' })
     const body = request.postDataJSON() as { email: string }
     const created: RemoteMember = {
       userId: 'user-003',
+      username: 'legacy.invite',
       email: body.email,
       status: 'TENANT_MEMBER_STATUS_INVITED',
       version: 1,
@@ -201,7 +295,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     return json(route, 200, created)
   })
 
-  await page.route(/\/api\/v1\/tenant\/members\/[^/]+\/profile$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/members\/[^/]+\/profile$/, async (route) => {
     const request = route.request()
     const url = new URL(request.url())
     const parts = url.pathname.split('/')
@@ -224,7 +318,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     return json(route, 200, updated)
   })
 
-  await page.route(/\/api\/v1\/tenant\/members\/[^/]+(?:\/(?:activate|suspend|remove))?$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/members\/(?!create(?:\/|$))[^/]+(?:\/(?:activate|suspend|remove))?$/, async (route) => {
     const request = route.request()
     const url = new URL(request.url())
     const parts = url.pathname.split('/')
@@ -240,6 +334,27 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
 
     recordWrite(route)
     if (options.mutationStatus) return json(route, options.mutationStatus, { message: 'mutation conflict' })
+    if (request.method() === 'PATCH') {
+      const body = request.postDataJSON() as Partial<RemoteMember> & { roleIds?: string[] }
+      const roles = (body.roleIds ?? current.roles.map((role) => role.roleId))
+        .map((roleId) => roleCatalog.find((role) => role.id === roleId))
+        .filter((role): role is RemoteRole => Boolean(role))
+        .map(roleSummary)
+      const updated: RemoteMember = {
+        ...current,
+        email: String(body.email ?? current.email).trim(),
+        phone: String(body.phone ?? current.phone).trim(),
+        name: String(body.name ?? current.name).trim(),
+        employeeId: String(body.employeeId ?? current.employeeId).trim(),
+        position: String(body.position ?? current.position).trim(),
+        departmentId: String(body.departmentId ?? current.departmentId).trim(),
+        roles,
+        version: current.version + 1,
+      }
+      updated.derivedDataScope = deriveScope(updated)
+      members = members.map((member) => member.userId === userId ? updated : member)
+      return json(route, 200, updated)
+    }
     const nextStatus =
       action === 'activate'
         ? 'TENANT_MEMBER_STATUS_ACTIVE'
@@ -254,6 +369,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
   return {
     getMembers: () => members,
     getWrites: () => writes,
+    getListReads: () => listReads,
   }
 }
 
@@ -286,35 +402,70 @@ test('canonical member page renders authoritative member, role, department and s
   }
 })
 
-test('canonical invite uses loaded role and department, trusted headers and authoritative readback', async ({ page }) => {
+test('canonical members use server-side filters, pagination and authoritative total', async ({ page }) => {
+  const server = await mockMemberServer(page, { memberCount: 12 })
+  await openCanonicalMembers(page)
+  await expect(page.getByText(/12/).first()).toBeVisible()
+  expect(server.getListReads().at(-1)).toContain('page=1')
+  expect(server.getListReads().at(-1)).toContain('page_size=10')
+
+  await page.getByRole('button', { name: '下一页' }).click()
+  await expect.poll(() => server.getListReads().at(-1) ?? '').toContain('page=2')
+  await expect(page.locator('[data-member-id="user-extra-11"]')).toBeVisible()
+
+  await page.getByTestId('main-content').getByRole('textbox', { name: '搜索成员', exact: true }).fill('Alice')
+  await page.getByRole('button', { name: '查询', exact: true }).click()
+  await expect.poll(() => server.getListReads().at(-1) ?? '').toContain('query=Alice')
+  await expect(page.locator('[data-member-id="user-001"]')).toBeVisible()
+  await expect(page.locator('[data-member-id^="user-extra-"]')).toHaveCount(0)
+})
+
+test('canonical invite uses one atomic create write with activation choice and authoritative readback', async ({ page }) => {
   const server = await mockMemberServer(page)
   await openCanonicalMembers(page)
   await page.getByRole('button', { name: '邀请成员', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '邀请成员' })
+  await dialog.getByLabel('登录账号').fill('invitee.user')
   await dialog.getByLabel('姓名').fill('Invitee User')
-  await dialog.getByLabel('邮箱').fill('invitee@coffeelink.test')
+  await dialog.getByLabel('邮箱', { exact: true }).fill('invitee@coffeelink.test')
+  await selectUiOption(dialog.getByLabel('激活方式'), 'activation_link')
   await expect(dialog.getByLabel('所属部门')).toContainText('客户成功部')
   await expect(dialog.getByLabel('数据范围')).toHaveValue('保存后由角色权限服务派生')
   await expect(dialog.getByLabel('运营负责人')).toBeChecked()
   await dialog.getByRole('button', { name: '创建邀请', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('服务端确认')
   await expect(page.locator('[data-member-id="user-003"]')).toContainText('Invitee User')
-  const invite = server.getWrites().find((item) => item.path === '/api/v1/tenant/members' && item.method === 'POST')!
-  expect(invite.headers['x-csrf-token']).toBe('csrf-real-member')
-  expect(invite.headers['idempotency-key']).toMatch(/^enterprise-member-invite-/)
-  expect(invite.headers['x-biz-session-context']).toContain('tenant-001')
+  await expect(page.locator('[data-member-id="user-003"]')).toContainText('@invitee.user')
+
+  const writes = server.getWrites()
+  const create = writes.find((item) => item.path === '/v1/tenant/members/create' && item.method === 'POST')!
+  expect(create).toBeTruthy()
+  expect(writes.filter((item) => item.path.startsWith('/v1/tenant/members'))).toHaveLength(1)
+  expect(create.headers['x-csrf-token']).toBe('csrf-real-member')
+  expect(create.headers['idempotency-key']).toMatch(/^enterprise-member-create-/)
+  expect(create.headers['x-biz-session-context']).toContain('tenant-001')
+  expect(create.body).toMatchObject({
+    username: 'invitee.user',
+    email: 'invitee@coffeelink.test',
+    departmentId: 'dept-success',
+    roleIds: ['role-ops'],
+    activationMode: 'TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK',
+  })
   expect(server.getMembers().find((member) => member.userId === 'user-003')).toMatchObject({
+    username: 'invitee.user',
     name: 'Invitee User',
     departmentId: 'dept-success',
+    status: 'TENANT_MEMBER_STATUS_INVITED',
   })
 })
 
-test('canonical profile edit exposes only supported fields and sends authoritative version', async ({ page }) => {
+test('canonical member edit is one atomic update and preserves immutable username', async ({ page }) => {
   const server = await mockMemberServer(page)
   await openCanonicalMembers(page)
   await page.getByRole('button', { name: '编辑 Alice Chen', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '修改成员信息' })
-  await expect(dialog.getByLabel('邮箱')).toHaveAttribute('readonly', '')
+  await expect(dialog.getByLabel('登录账号')).toHaveValue('alice.owner')
+  await expect(dialog.getByLabel('登录账号')).toHaveAttribute('readonly', '')
   await expect(dialog.getByLabel('加入日期')).toHaveValue('服务端未提供')
   await expect(dialog.getByLabel('数据范围')).toHaveValue('指定数据')
   await expect(dialog.getByText(/成员资料 API 未提供备注写入字段/)).toBeVisible()
@@ -328,19 +479,29 @@ test('canonical profile edit exposes only supported fields and sends authoritati
   const row = page.locator('[data-member-id="user-001"]')
   await expect(row).toContainText('Alice Updated')
   await expect(row).toContainText('租赁运营部')
-  const write = server.getWrites().find((item) => item.path.endsWith('/profile'))!
+
+  const writes = server.getWrites().filter((item) => item.path === '/v1/tenant/members/user-001')
+  expect(writes).toHaveLength(1)
+  const write = writes[0]!
   expect(write.method).toBe('PATCH')
   expect(write.headers['x-csrf-token']).toBe('csrf-real-member')
-  expect(write.headers['idempotency-key']).toMatch(/^enterprise-member-profile-/)
+  expect(write.headers['idempotency-key']).toMatch(/^enterprise-member-update-/)
   expect(write.headers['x-biz-session-context']).toContain('tenant-001')
-  expect(write.body).toMatchObject({ userId: 'user-001', version: 3, departmentId: 'dept-rental', employeeId: 'EMP-2009' })
-  expect(write.body).not.toHaveProperty('email')
+  expect(write.body).toMatchObject({
+    userId: 'user-001',
+    version: 3,
+    departmentId: 'dept-rental',
+    employeeId: 'EMP-2009',
+    email: 'owner@coffeelink.test',
+    roleIds: ['role-ops'],
+  })
+  expect(write.body).not.toHaveProperty('username')
   expect(write.body).not.toHaveProperty('scope')
   expect(write.body).not.toHaveProperty('joinedAt')
   expect(write.body).not.toHaveProperty('note')
 })
 
-test('canonical role change is idempotent, scope remains server-derived and readback confirms membership', async ({ page }) => {
+test('canonical role change is one atomic member update and scope remains server-derived', async ({ page }) => {
   const server = await mockMemberServer(page)
   await openCanonicalMembers(page)
   await page.getByRole('button', { name: 'Alice Chen 更多操作', exact: true }).click()
@@ -351,10 +512,13 @@ test('canonical role change is idempotent, scope remains server-derived and read
   await dialog.getByRole('button', { name: '保存变更', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('服务端确认')
   await expect(page.locator('[data-member-id="user-001"]')).toContainText('经营查看者')
-  const write = server.getWrites().find((item) => item.path.endsWith('/roles/role-viewer/members'))!
-  expect(write.method).toBe('POST')
-  expect(write.headers['idempotency-key']).toMatch(/^enterprise-member-role-assign-/)
-  expect(write.headers['x-csrf-token']).toBe('csrf-real-member')
+
+  const writes = server.getWrites().filter((item) => item.path === '/v1/tenant/members/user-001')
+  expect(writes).toHaveLength(1)
+  expect(writes[0]?.method).toBe('PATCH')
+  expect(writes[0]?.headers['idempotency-key']).toMatch(/^enterprise-member-update-/)
+  expect(writes[0]?.headers['x-csrf-token']).toBe('csrf-real-member')
+  expect(writes[0]?.body).toMatchObject({ roleIds: ['role-ops', 'role-viewer'], version: 3 })
 })
 
 test('401 redirects to trusted login and 403 blocks members before protected data loads', async ({ page }) => {
@@ -385,7 +549,7 @@ test('canonical profile 409 preserves draft and reuses the same idempotency key'
   await expect(dialog.getByLabel('姓名')).toHaveValue('conflicting change')
   await save.click()
   await expect(dialog.getByRole('alert')).toContainText('成员状态或请求版本已发生变化')
-  const writes = server.getWrites().filter((item) => item.path.endsWith('/profile'))
+  const writes = server.getWrites().filter((item) => item.path === '/v1/tenant/members/user-001')
   expect(writes).toHaveLength(2)
   expect(writes[0]?.headers['idempotency-key']).toBe(writes[1]?.headers['idempotency-key'])
   await expect(page.getByText(/变更已由服务端确认并完成权威回读/)).toHaveCount(0)

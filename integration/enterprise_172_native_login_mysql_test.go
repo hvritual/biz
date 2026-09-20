@@ -100,11 +100,12 @@ func TestEnterprise172ProtectedIdentifierResolutionAndAmbiguity(t *testing.T) {
 	if err := store.SetUserPassword(ctx, duplicateUser, "Enterprise172-Duplicate-Password!"); err != nil {
 		t.Fatal(err)
 	}
-	if err := store.SetUserUsername(ctx, duplicateUser, multiName); err != nil {
-		t.Fatal(err)
+	if err := store.SetUserUsername(ctx, duplicateUser, multiName); !errors.Is(err, accesspersistence.ErrLoginIdentifierConflict) {
+		t.Fatalf("duplicate global username err=%v want=%v", err, accesspersistence.ErrLoginIdentifierConflict)
 	}
-	if _, err := store.ResolveLoginIdentifier(ctx, multiName); !errors.Is(err, accesspersistence.ErrInvalidUserCredentials) {
-		t.Fatalf("duplicate username was not rejected generically: %v", err)
+	resolvedUsername, err := store.ResolveLoginIdentifier(ctx, multiName)
+	if err != nil || resolvedUsername.Identity.UserID != multiUser {
+		t.Fatalf("global username owner changed after rejected duplicate: %+v %v", resolvedUsername, err)
 	}
 
 	duplicateMember, err := memberRepo.Get(ctx, "enterprise172-c", duplicateUser)

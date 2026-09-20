@@ -24,13 +24,15 @@ var (
 )
 
 type userPasswordCredentialRecord struct {
-	UserID            string    `gorm:"column:user_id;primaryKey;size:64"`
-	Salt              string    `gorm:"column:salt;size:128;not null"`
-	PasswordHash      string    `gorm:"column:password_hash;size:128;not null"`
-	Iterations        int       `gorm:"column:iterations;not null"`
-	Disabled          bool      `gorm:"column:disabled;not null;default:false"`
-	PasswordChangedAt time.Time `gorm:"column:password_changed_at;not null"`
-	UpdatedAt         time.Time `gorm:"column:updated_at;not null"`
+	UserID             string     `gorm:"column:user_id;primaryKey;size:64"`
+	Salt               string     `gorm:"column:salt;size:128;not null"`
+	PasswordHash       string     `gorm:"column:password_hash;size:128;not null"`
+	Iterations         int        `gorm:"column:iterations;not null"`
+	Disabled           bool       `gorm:"column:disabled;not null;default:false"`
+	MustChange         bool       `gorm:"column:must_change;not null;default:false"`
+	TemporaryExpiresAt *time.Time `gorm:"column:temporary_expires_at;type:datetime(6)"`
+	PasswordChangedAt  time.Time  `gorm:"column:password_changed_at;not null"`
+	UpdatedAt          time.Time  `gorm:"column:updated_at;not null"`
 }
 
 func (userPasswordCredentialRecord) TableName() string { return "biz_user_password_credentials" }
@@ -71,8 +73,9 @@ type firstPartyAuthorizationCodeRecord struct {
 func (firstPartyAuthorizationCodeRecord) TableName() string { return "biz_idp_authorization_codes" }
 
 type LocalUserIdentity struct {
-	UserID string
-	Email  string
+	UserID                 string
+	Email                  string
+	PasswordChangeRequired bool
 }
 
 type FirstPartyAuthorizationRequestInput struct {
@@ -123,6 +126,18 @@ func (store *Store) SetUserPassword(ctx context.Context, userID, password string
 }
 
 func setUserPassword(ctx context.Context, database *gorm.DB, userID, password string) error {
+	return setStoredUserPassword(ctx, database, userID, password, false, nil)
+}
+
+func setInitialUserPassword(ctx context.Context, database *gorm.DB, userID, password string, expiresAt time.Time) error {
+	if expiresAt.IsZero() || !expiresAt.After(time.Now().UTC()) {
+		return errors.New("access: initial password expiry is required")
+	}
+	expiry := expiresAt.UTC()
+	return setStoredUserPassword(ctx, database, userID, password, true, &expiry)
+}
+
+func setStoredUserPassword(ctx context.Context, database *gorm.DB, userID, password string, mustChange bool, temporaryExpiresAt *time.Time) error {
 	userID = strings.TrimSpace(userID)
 	if database == nil || userID == "" {
 		return ErrInvalidUserCredentials
@@ -144,17 +159,19 @@ func setUserPassword(ctx context.Context, database *gorm.DB, userID, password st
 	hash := pbkdf2SHA256([]byte(password), salt, defaultPBKDF2Iterations, 32)
 	now := time.Now().UTC()
 	record := userPasswordCredentialRecord{
-		UserID:            userID,
-		Salt:              base64.RawStdEncoding.EncodeToString(salt),
-		PasswordHash:      base64.RawStdEncoding.EncodeToString(hash),
-		Iterations:        defaultPBKDF2Iterations,
-		Disabled:          false,
-		PasswordChangedAt: now,
-		UpdatedAt:         now,
+		UserID:             userID,
+		Salt:               base64.RawStdEncoding.EncodeToString(salt),
+		PasswordHash:       base64.RawStdEncoding.EncodeToString(hash),
+		Iterations:         defaultPBKDF2Iterations,
+		Disabled:           false,
+		MustChange:         mustChange,
+		TemporaryExpiresAt: temporaryExpiresAt,
+		PasswordChangedAt:  now,
+		UpdatedAt:          now,
 	}
 	return database.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "user_id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"salt", "password_hash", "iterations", "disabled", "password_changed_at", "updated_at"}),
+		DoUpdates: clause.AssignmentColumns([]string{"salt", "password_hash", "iterations", "disabled", "must_change", "temporary_expires_at", "password_changed_at", "updated_at"}),
 	}).Create(&record).Error
 }
 
@@ -194,6 +211,12 @@ func (store *Store) AuthenticateUserPassword(ctx context.Context, identifier, pa
 	actual := pbkdf2SHA256([]byte(password), salt, credential.Iterations, len(expected))
 	if subtle.ConstantTimeCompare(actual, expected) != 1 {
 		return LocalUserIdentity{}, ErrInvalidUserCredentials
+	}
+	if credential.MustChange {
+		if credential.TemporaryExpiresAt == nil || !credential.TemporaryExpiresAt.After(time.Now().UTC()) {
+			return LocalUserIdentity{}, ErrInvalidUserCredentials
+		}
+		resolved.Identity.PasswordChangeRequired = true
 	}
 	return resolved.Identity, nil
 }

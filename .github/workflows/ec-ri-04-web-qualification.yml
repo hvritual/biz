@@ -1,5 +1,9 @@
 name: ec-ri-04-web-qualification
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -64,7 +68,7 @@ jobs:
               'real organization page renders authoritative hierarchy across CoffeeLink viewports',
               'department create uses CSRF and idempotency then confirms from server readback',
               'department 409 preserves editor draft and the same idempotency key for retry',
-              '401 and 403 are surfaced without demo organization fallback',
+              '401 exits to trusted login while downstream 403 never falls back to demo organization data',
               'successful department write without readback is never shown as confirmed success',
           ]
           for title in required_titles:

@@ -37,14 +37,14 @@ describe('preview enterprise state', () => {
   })
   it('does not create a roleless or nonexistent-department member', async () => {
     const s = useEnterpriseStore(),
-      m = { ...s.members[1]!, id: 'new', email: 'new@example.com', version: 0 }
+      m = { ...s.members[1]!, id: 'new', username: 'new.member', activationMode: 'activation_link' as const, email: 'new@example.com', phone: '', version: 0 }
     await expect(s.saveMember({ ...m, roleIds: [] }, 'create', 0)).rejects.toThrow('有效角色')
     await expect(s.saveMember({ ...m, departmentId: 'invalid' }, 'create', 0)).rejects.toThrow('有效且启用')
   })
   it('invites a pending member and records audit', async () => {
     const s = useEnterpriseStore()
     await s.saveMember(
-      { ...s.members[1]!, id: 'new', email: 'new@example.com', status: 'invited', version: 0 },
+      { ...s.members[1]!, id: 'new', username: 'invite.user', activationMode: 'activation_link' as const, email: 'new@example.com', phone: '', status: 'invited', version: 0 },
       'invite',
       0,
     )

@@ -13,8 +13,10 @@ export function memberActionError(
     (['suspend', 'remove'].includes(action) || (action === 'role' && !targetRoles?.includes('owner')))
   )
     return '不能停用、移除或降权最后一位企业所有者。请先完成所有者交接。'
-  if (action === 'activate' && member.status !== 'suspended' && member.status !== 'invited')
-    return '仅待激活或已禁用成员可以启用。已移除成员需要重新邀请。'
+  if (action === 'activate' && member.status !== 'suspended')
+    return member.status === 'invited'
+      ? '待激活成员必须完成激活链接或首次改密流程，不能由管理员直接启用。'
+      : '仅已禁用成员可以重新启用。已移除成员需要重新邀请。'
   if (
     action === 'activate' &&
     (!member.roleIds.length || member.roleIds.some((id) => !roles.some((r) => r.id === id && r.enabled)))

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "19",
+  "mapping_version": "20",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -534,13 +534,6 @@
       "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory."
     },
     {
-      "operation_id": "commercial.subscription.change.preview.get",
-      "classification": "platform_management",
-      "capability_codes": [],
-      "children": [],
-      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory."
-    },
-    {
       "operation_id": "commercial.subscription.change.preview_my",
       "classification": "recovery",
       "capability_codes": [],
@@ -570,6 +563,13 @@
       "capability_codes": [],
       "children": [],
       "exemption_reason": "EC-RI-06 actor-and-tenant-bound readback of an expiring self-service preview artifact; it performs no commercial mutation."
+    },
+    {
+      "operation_id": "commercial.subscription.change.preview.get",
+      "classification": "platform_management",
+      "capability_codes": [],
+      "children": [],
+      "exemption_reason": "CE-09 trusted platform subscription change control. Existing IAM and explicit commercial-confirm permission remain mandatory."
     },
     {
       "operation_id": "commercial.subscription.change.targets_my",
@@ -1008,6 +1008,26 @@
       "exemption_reason": "EC-RI-06 transport-private authoritative quota meter joined to commercial.subscription.get_my_usage; it accepts no tenant id and grants no independent tenant action."
     },
     {
+      "operation_id": "tenant.member.create",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [
+        {
+          "operation_id": "tenant.department.assert_member_assignment_allowed",
+          "mode": "always",
+          "source": "internal/access/application/tenant_member_lifecycle.go#CreateTenantMember"
+        },
+        {
+          "operation_id": "tenant.role.assign_member",
+          "mode": "always",
+          "source": "internal/access/application/tenant_member_lifecycle.go#CreateTenantMember"
+        }
+      ]
+    },
+    {
       "operation_id": "tenant.member.get",
       "classification": "tenant_business",
       "module_code": "access-management",
@@ -1076,6 +1096,33 @@
           "operation_id": "tenant.role.assert_member_deactivation_allowed",
           "mode": "always",
           "source": "internal/access/application/tenant_member_lifecycle.go#SuspendTenantMember"
+        }
+      ]
+    },
+    {
+      "operation_id": "tenant.member.update",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [
+        {
+          "operation_id": "tenant.department.assert_member_assignment_allowed",
+          "mode": "always",
+          "source": "internal/access/application/tenant_member_lifecycle.go#UpdateTenantMember"
+        },
+        {
+          "operation_id": "tenant.role.assign_member",
+          "mode": "conditional",
+          "condition": "target role set contains at least one active role not currently assigned",
+          "source": "internal/access/application/tenant_member_lifecycle.go#UpdateTenantMember"
+        },
+        {
+          "operation_id": "tenant.role.revoke_member",
+          "mode": "conditional",
+          "condition": "current role set contains at least one role absent from the target role set",
+          "source": "internal/access/application/tenant_member_lifecycle.go#UpdateTenantMember"
         }
       ]
     },
