@@ -194,6 +194,15 @@ func (membership *Membership) Remove(now time.Time) error {
 	return nil
 }
 
+func (membership *Membership) Restore(now time.Time) error {
+	if membership == nil || membership.Status != TenantMemberStatusRemoved {
+		return ErrInvalidTenantMemberTransition
+	}
+	membership.Status = TenantMemberStatusActive
+	membership.UpdatedAt = now
+	return nil
+}
+
 type Role struct {
 	ID          string
 	TenantID    string
