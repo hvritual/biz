@@ -161,6 +161,17 @@ func TestEnterprise177RemoveRestoreIsTenantScopedAtomicAndKeepsOldSessionRevoked
 	if restored.GetStatus() != accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_ACTIVE || restored.GetVersion() != 3 {
 		t.Fatalf("unexpected restored member: %+v", restored)
 	}
+	retryStatus, retryBody := enterprise177Post(t, base, adminToken, "e177-restore:"+stamp,
+		"/v1/tenant/members/"+url.PathEscape(targetUser)+"/restore",
+		&accessv1.RestoreTenantMemberRequest{UserId: targetUser, Version: 2, Reason: "approved return"},
+	)
+	if retryStatus != http.StatusOK {
+		t.Fatalf("idempotent restore retry status=%d body=%s", retryStatus, retryBody)
+	}
+	replayed := enterprise177DecodeMember(t, retryBody)
+	if replayed.GetStatus() != accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_ACTIVE || replayed.GetVersion() != 3 {
+		t.Fatalf("idempotent restore replay changed receipt: %+v", replayed)
+	}
 	var activeRoleCount, disabledRoleCount int64
 	if err := db.Table("biz_member_roles").Where("tenant_id = ? AND user_id = ? AND role_id = ?", tenantA, targetUser, activeRole).Count(&activeRoleCount).Error; err != nil {
 		t.Fatal(err)
@@ -221,6 +232,206 @@ func TestEnterprise177RemoveRestoreIsTenantScopedAtomicAndKeepsOldSessionRevoked
 	}
 	if !strings.Contains(claim.Secret, "employee left tenant A") {
 		t.Fatalf("lifecycle notification lost server-side reason: %q", claim.Secret)
+	}
+	failedDelivery, err := verification.CompleteSecurityNotification(ctx, claim, "", "PROVIDER_DOWN", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if failedDelivery.State != accessdomain.NotificationStateFailed || failedDelivery.FailureCode != "PROVIDER_DOWN" {
+		t.Fatalf("lifecycle delivery failure not observable: %+v", failedDelivery)
+	}
+	var statusAfterDeliveryFailure string
+	if err := db.Table("biz_memberships").Select("status").
+		Where("tenant_id = ? AND user_id = ?", tenantA, targetUser).Scan(&statusAfterDeliveryFailure).Error; err != nil {
+		t.Fatal(err)
+	}
+	if statusAfterDeliveryFailure != accessdomain.TenantMemberStatusActive {
+		t.Fatalf("notification delivery failure mutated restored membership: %s", statusAfterDeliveryFailure)
+	}
+}
+
+func TestEnterprise177RestoreRollsBackWhenNotificationCannotBeStaged(t *testing.T) {
+	db := openDB(t)
+	stamp := fmt.Sprint(time.Now().UnixNano())
+	started, _ := startB123Enterprise176Runtime(t, db)
+	base := "http://" + started.HTTPAddress()
+	tenant := "e177-rollback-" + stamp
+	admin := "e177-rollback-admin-" + stamp
+	token := "e177-rollback-token-" + stamp
+	seedB123TenantAdmin(t, db, tenant, admin, admin+"@example.invalid", token)
+	adminRoleID := tenant + ":member-admin"
+	if err := db.Exec("INSERT INTO biz_permission_grants (tenant_id,role_id,permission,scope) VALUES (?,?,?,?)",
+		tenant, adminRoleID, "tenant.role.manage", "all").Error; err != nil {
+		t.Fatal(err)
+	}
+
+	target := "e177-rollback-target-" + stamp
+	absentEmail := "absent:" + target
+	if err := db.Exec("INSERT INTO biz_users (id,email,status,created_at) VALUES (?,?,?,NOW(6))",
+		target, absentEmail, "active").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("INSERT INTO biz_memberships (tenant_id,user_id,status,version,created_at,updated_at) VALUES (?,?,?,?,NOW(6),NOW(6))",
+		tenant, target, accessdomain.TenantMemberStatusRemoved, 2).Error; err != nil {
+		t.Fatal(err)
+	}
+	roleID := tenant + ":operator"
+	if err := db.Exec("INSERT INTO biz_roles (id,tenant_id,name,status,version) VALUES (?,?,?,?,1)",
+		roleID, tenant, "operator", accessdomain.TenantRoleStatusActive).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("INSERT INTO biz_member_removed_role_snapshots (tenant_id,user_id,role_id,removed_version,captured_at) VALUES (?,?,?,?,NOW(6))",
+		tenant, target, roleID, 2).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	key := "e177-rollback-restore:" + stamp
+	path := "/v1/tenant/members/" + url.PathEscape(target) + "/restore"
+	request := &accessv1.RestoreTenantMemberRequest{UserId: target, Version: 2, Reason: "restore must be all or nothing"}
+	statusCode, body := enterprise177Post(t, base, token, key, path, request)
+	if statusCode == http.StatusOK {
+		t.Fatalf("restore without notification destination unexpectedly succeeded: %s", body)
+	}
+	var state struct {
+		Status  string
+		Version uint64
+	}
+	if err := db.Table("biz_memberships").Select("status, version").
+		Where("tenant_id = ? AND user_id = ?", tenant, target).Scan(&state).Error; err != nil {
+		t.Fatal(err)
+	}
+	if state.Status != accessdomain.TenantMemberStatusRemoved || state.Version != 2 {
+		t.Fatalf("failed restore left partial membership state: %+v", state)
+	}
+	var roleCount int64
+	if err := db.Table("biz_member_roles").Where("tenant_id = ? AND user_id = ?", tenant, target).Count(&roleCount).Error; err != nil {
+		t.Fatal(err)
+	}
+	if roleCount != 0 {
+		t.Fatalf("failed restore left role assignment: %d", roleCount)
+	}
+	var eventCount int64
+	if err := db.Table("biz_security_notification_outbox").
+		Where("tenant_id = ? AND user_id = ? AND kind = ?", tenant, target, string(accessdomain.SecurityNotificationMemberLifecycle)).
+		Count(&eventCount).Error; err != nil {
+		t.Fatal(err)
+	}
+	if eventCount != 0 {
+		t.Fatalf("failed restore left lifecycle outbox rows: %d", eventCount)
+	}
+
+	if err := db.Table("biz_memberships").Where("tenant_id = ? AND user_id = ?", tenant, target).
+		Update("email", target+"@example.invalid").Error; err != nil {
+		t.Fatal(err)
+	}
+	statusCode, body = enterprise177Post(t, base, token, key, path, request)
+	if statusCode != http.StatusOK {
+		t.Fatalf("retry after rollback status=%d body=%s", statusCode, body)
+	}
+	restored := enterprise177DecodeMember(t, body)
+	if restored.GetStatus() != accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_ACTIVE || restored.GetVersion() != 3 {
+		t.Fatalf("retry after rollback did not restore member: %+v", restored)
+	}
+	if err := db.Table("biz_member_roles").Where("tenant_id = ? AND user_id = ? AND role_id = ?", tenant, target, roleID).Count(&roleCount).Error; err != nil {
+		t.Fatal(err)
+	}
+	if roleCount != 1 {
+		t.Fatalf("retry after rollback did not restore active role: %d", roleCount)
+	}
+}
+
+func TestEnterprise177ConcurrentRemoveRestoreSerializesWithoutPartialState(t *testing.T) {
+	db := openDB(t)
+	stamp := fmt.Sprint(time.Now().UnixNano())
+	started, _ := startB123Enterprise176Runtime(t, db)
+	base := "http://" + started.HTTPAddress()
+	tenant := "e177-race-" + stamp
+	admin := "e177-race-admin-" + stamp
+	token := "e177-race-token-" + stamp
+	seedB123TenantAdmin(t, db, tenant, admin, admin+"@example.invalid", token)
+	adminRoleID := tenant + ":member-admin"
+	if err := db.Exec("INSERT INTO biz_permission_grants (tenant_id,role_id,permission,scope) VALUES (?,?,?,?)",
+		tenant, adminRoleID, "tenant.role.manage", "all").Error; err != nil {
+		t.Fatal(err)
+	}
+	target := "e177-race-target-" + stamp
+	email := target + "@example.invalid"
+	if err := db.Exec("INSERT INTO biz_users (id,email,status,created_at) VALUES (?,?,?,NOW(6))", target, email, "active").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("INSERT INTO biz_memberships (tenant_id,user_id,status,email,version,created_at,updated_at) VALUES (?,?,?,?,1,NOW(6),NOW(6))",
+		tenant, target, accessdomain.TenantMemberStatusActive, email).Error; err != nil {
+		t.Fatal(err)
+	}
+	roleID := tenant + ":operator"
+	if err := db.Exec("INSERT INTO biz_roles (id,tenant_id,name,status,version) VALUES (?,?,?,?,1)",
+		roleID, tenant, "operator", accessdomain.TenantRoleStatusActive).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("INSERT INTO biz_member_roles (tenant_id,user_id,role_id) VALUES (?,?,?)", tenant, target, roleID).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	type result struct {
+		action string
+		status int
+		body   []byte
+		err    error
+	}
+	start := make(chan struct{})
+	results := make(chan result, 2)
+	go func() {
+		<-start
+		status, body, err := enterprise177PostRaw(base, token, "e177-race-remove:"+stamp,
+			"/v1/tenant/members/"+url.PathEscape(target)+"/remove",
+			&accessv1.RemoveTenantMemberRequest{UserId: target, Version: 1, Reason: "concurrent remove"})
+		results <- result{action: "remove", status: status, body: body, err: err}
+	}()
+	go func() {
+		<-start
+		status, body, err := enterprise177PostRaw(base, token, "e177-race-restore:"+stamp,
+			"/v1/tenant/members/"+url.PathEscape(target)+"/restore",
+			&accessv1.RestoreTenantMemberRequest{UserId: target, Version: 2, Reason: "concurrent restore"})
+		results <- result{action: "restore", status: status, body: body, err: err}
+	}()
+	close(start)
+
+	outcomes := map[string]result{}
+	for range 2 {
+		value := <-results
+		if value.err != nil {
+			t.Fatal(value.err)
+		}
+		outcomes[value.action] = value
+	}
+	if outcomes["remove"].status != http.StatusOK {
+		t.Fatalf("concurrent remove status=%d body=%s", outcomes["remove"].status, outcomes["remove"].body)
+	}
+	if outcomes["restore"].status != http.StatusOK && outcomes["restore"].status != http.StatusConflict {
+		t.Fatalf("concurrent restore status=%d body=%s", outcomes["restore"].status, outcomes["restore"].body)
+	}
+
+	var state struct {
+		Status  string
+		Version uint64
+	}
+	if err := db.Table("biz_memberships").Select("status, version").
+		Where("tenant_id = ? AND user_id = ?", tenant, target).Scan(&state).Error; err != nil {
+		t.Fatal(err)
+	}
+	var roleCount int64
+	if err := db.Table("biz_member_roles").Where("tenant_id = ? AND user_id = ? AND role_id = ?", tenant, target, roleID).Count(&roleCount).Error; err != nil {
+		t.Fatal(err)
+	}
+	switch outcomes["restore"].status {
+	case http.StatusOK:
+		if state.Status != accessdomain.TenantMemberStatusActive || state.Version != 3 || roleCount != 1 {
+			t.Fatalf("serialized remove->restore left invalid state=%+v roleCount=%d", state, roleCount)
+		}
+	case http.StatusConflict:
+		if state.Status != accessdomain.TenantMemberStatusRemoved || state.Version != 2 || roleCount != 0 {
+			t.Fatalf("remove with rejected concurrent restore left invalid state=%+v roleCount=%d", state, roleCount)
+		}
 	}
 }
 
@@ -365,6 +576,9 @@ func TestEnterprise177AppealIsSelfOnlyRateLimitedAndNotificationFailureDoesNotGr
 	if err != nil {
 		t.Fatal(err)
 	}
+	if claim.UserID != owner || claim.TenantID != tenantA {
+		t.Fatalf("appeal notification targeted wrong tenant owner: %+v", claim)
+	}
 	if !strings.Contains(claim.Secret, target) || !strings.Contains(claim.Secret, "suspended by mistake") {
 		t.Fatalf("owner notification lost appeal evidence: %q", claim.Secret)
 	}
@@ -389,21 +603,35 @@ func TestEnterprise177AppealIsSelfOnlyRateLimitedAndNotificationFailureDoesNotGr
 
 func enterprise177Post(t *testing.T, base, token, key, path string, message proto.Message) (int, []byte) {
 	t.Helper()
-	payload, err := protojson.Marshal(message)
+	status, body, err := enterprise177PostRaw(base, token, key, path, message)
 	if err != nil {
 		t.Fatal(err)
 	}
-	request, _ := http.NewRequest(http.MethodPost, base+path, bytes.NewReader(payload))
+	return status, body
+}
+
+func enterprise177PostRaw(base, token, key, path string, message proto.Message) (int, []byte, error) {
+	payload, err := protojson.Marshal(message)
+	if err != nil {
+		return 0, nil, err
+	}
+	request, err := http.NewRequest(http.MethodPost, base+path, bytes.NewReader(payload))
+	if err != nil {
+		return 0, nil, err
+	}
 	request.Header.Set("Authorization", "Bearer "+token)
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Idempotency-Key", key)
 	response, err := (&http.Client{Timeout: 8 * time.Second}).Do(request)
 	if err != nil {
-		t.Fatal(err)
+		return 0, nil, err
 	}
 	defer response.Body.Close()
-	body, _ := io.ReadAll(response.Body)
-	return response.StatusCode, body
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return response.StatusCode, nil, err
+	}
+	return response.StatusCode, body, nil
 }
 
 func enterprise177DecodeMember(t *testing.T, body []byte) *accessv1.TenantMemberDTO {
