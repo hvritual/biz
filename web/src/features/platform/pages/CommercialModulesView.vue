@@ -119,7 +119,7 @@ async function loadModules() {
 
 async function handleMutationError(error: unknown) {
   if (error instanceof CommercialApiError && error.code === 'conflict') {
-    actionError.value = '模块版本已变化，已重新读取服务端最新状态；请核对后重新提交。'
+    actionError.value = '模块信息已变化，已重新加载最新状态；请核对后重新提交。'
     await loadModules()
     const fresh = selected.value
     if (fresh) openDetail(fresh)
@@ -154,7 +154,7 @@ async function saveMetadata() {
       reason: reason.value,
     })
     replaceModule(updated)
-    actionMessage.value = '模块基础配置已由服务端确认更新。'
+    actionMessage.value = '模块基础配置已更新。'
   } catch (error) {
     await handleMutationError(error)
   } finally {
@@ -201,7 +201,7 @@ async function applyTechnicalStatus() {
   try {
     const updated = await setPlatformModuleTechnicalStatus(current, technicalDraft.value, reason.value)
     replaceModule(updated)
-    actionMessage.value = '技术状态已由服务端确认更新；销售状态保持独立。'
+    actionMessage.value = '技术状态已更新；销售状态保持独立。'
   } catch (error) {
     await handleMutationError(error)
   } finally {
