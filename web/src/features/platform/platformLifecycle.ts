@@ -132,10 +132,10 @@ export const platformLifecyclePages: Record<string, LifecyclePageConfig> = {
     stages: ['用量事件', '计量项', '汇总', '费率计算', '账单记录'],
     columns: ['计量项', '本期用量', '费率', '计费金额'],
     rows: [
-      { id: 'meter-marketing-sh', name: '上海咖啡科技有限公司', status: '计量中', tone: 'primary', cells: ['marketing.cup', '234,500 杯', '¥0.10 / 杯', '¥23,450'], summary: '营销渠道出杯按固定单价累计，月末进入正式账单。', evidence: ['来源：营销渠道', '重复事件已去重', '按固定单价计费'] },
-      { id: 'meter-marketing-hz', name: '杭州智饮运营', status: '计量中', tone: 'primary', cells: ['marketing.cup', '128,060 杯', '¥0.10 / 杯', '¥12,806'], summary: '当前聚合无异常。', evidence: ['计量状态正常', '按日汇总', '等待出账'] },
-      { id: 'meter-api', name: '开放 API 使用量', status: '观察', tone: 'warning', cells: ['api.request', '2.8M 次', '套餐内含', '¥0'], summary: '当前仅计量用于容量规划，不产生额外费用。', evidence: ['仅用于容量统计', '不产生额外费用', '保留 180 天'] },
-      { id: 'meter-anomaly', name: '南京租赁服务', status: '异常', tone: 'danger', cells: ['marketing.cup', '18,420 杯', '¥0.10 / 杯', '待核验'], summary: '发现重复事件比例异常，暂缓出账。', evidence: ['重复事件比例 3.8%', '当前暂停出账', '需要人工核验'] },
+      { id: 'usage-marketing-sh', name: '上海咖啡科技有限公司', status: '计量中', tone: 'primary', cells: ['marketing.cup', '234,500 杯', '¥0.10 / 杯', '¥23,450'], summary: '营销渠道出杯按固定单价累计，月末进入正式账单。', evidence: ['来源：营销渠道', '重复事件已去重', '按固定单价计费'] },
+      { id: 'usage-marketing-hz', name: '杭州智饮运营', status: '计量中', tone: 'primary', cells: ['marketing.cup', '128,060 杯', '¥0.10 / 杯', '¥12,806'], summary: '当前聚合无异常。', evidence: ['计量状态正常', '按日汇总', '等待出账'] },
+      { id: 'usage-api', name: '开放 API 使用量', status: '观察', tone: 'warning', cells: ['api.request', '2.8M 次', '套餐内含', '¥0'], summary: '当前仅计量用于容量规划，不产生额外费用。', evidence: ['仅用于容量统计', '不产生额外费用', '保留 180 天'] },
+      { id: 'usage-anomaly', name: '南京租赁服务', status: '异常', tone: 'danger', cells: ['marketing.cup', '18,420 杯', '¥0.10 / 杯', '待核验'], summary: '发现重复事件比例异常，暂缓出账。', evidence: ['重复事件比例 3.8%', '当前暂停出账', '需要人工核验'] },
     ],
   },
   changes: {
@@ -176,7 +176,7 @@ export const platformLifecyclePages: Record<string, LifecyclePageConfig> = {
     rows: [
       { id: 'addon-customer100', name: '客户额度 +100', status: '在售', tone: 'success', cells: ['额度包', '¥600 / 年', '客户额度 +100', '在售'], summary: '适用于客户额度不足的租赁经销商。', evidence: ['客户额度增加 100', '与当前订阅周期一致', '支持续购'] },
       { id: 'addon-member10', name: '成员额度 +10', status: '在售', tone: 'success', cells: ['额度包', '¥240 / 年', '成员额度 +10', '在售'], summary: '为租户追加成员席位。', evidence: ['成员额度增加 10', '仅当前企业可用', '释放后额度可再次使用'] },
-      { id: 'addon-marketing', name: '营销功能包', status: '在售', tone: 'success', cells: ['功能包', '¥500 开通 + 按量', '开通营销能力', '在售'], summary: '开通营销能力，并启用营销出杯 Meter。', evidence: ['包含营销功能', '营销出杯按量计费', '需要绑定客户'] },
+      { id: 'addon-marketing', name: '营销功能包', status: '在售', tone: 'success', cells: ['功能包', '¥500 开通 + 按量', '开通营销能力', '在售'], summary: '开通营销能力，并启用营销出杯计量。', evidence: ['包含营销功能', '营销出杯按量计费', '需要绑定客户'] },
       { id: 'addon-api', name: '开放 API', status: '停售', tone: 'neutral', cells: ['功能包', '¥500 / 月', '开放接口能力', '停售'], summary: '历史租户继续使用，不接受新购买。', evidence: ['历史授权继续保留', '停止新购', '等待替代方案'] },
     ],
   },
