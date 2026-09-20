@@ -121,7 +121,13 @@ export function memberRuntimeError(error: unknown) {
   if (error instanceof CommercialApiError) {
     if (error.code === 'unauthenticated') return '登录会话已失效，请重新登录。'
     if (error.code === 'forbidden') return '当前账号没有管理企业成员的权限。'
-    if (error.code === 'conflict') return '成员状态或请求版本已发生变化，请刷新后重试。'
+    if (error.code === 'conflict') {
+      const message = error.message.toLowerCase()
+      if (message.includes('username')) return '该登录账号已被其他 Account 使用，请更换账号。'
+      if (message.includes('contact')) return '该手机号或邮箱已被其他成员使用，请核对联系方式。'
+      if (message.includes('activation')) return '该成员仍有待完成的激活流程，不能由管理员直接启用。'
+      return '成员状态或请求版本已发生变化，请刷新后重试。'
+    }
     return error.message
   }
   return error instanceof Error ? error.message : '成员服务请求失败。'
