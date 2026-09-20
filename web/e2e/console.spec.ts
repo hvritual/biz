@@ -93,7 +93,7 @@ test('invite creates pending local record without external mail requests', async
   await dialog.getByLabel('登录账号', { exact: true }).fill('invite.test')
   await dialog.getByLabel('姓名', { exact: true }).fill('邀请测试')
   await dialog.getByLabel('邮箱', { exact: true }).fill('invited@example.com')
-  await selectUiOption(dialog.getByLabel('激活方式', { exact: true }), 'activation_link')
+  await selectUiOption(dialog.getByLabel('激活方式'), 'activation_link')
   await dialog.getByRole('button', { name: '创建邀请', exact: true }).click()
   await expect(page.locator('.member-table tbody tr').filter({ hasText: '邀请测试' })).toContainText('待激活')
   await expect(page.getByRole('status')).toContainText('未实际发送邀请邮件')
