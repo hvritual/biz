@@ -39,7 +39,9 @@ function productLanguageFailures(root) {
   const files = [
     ...sourceFilesUnder(featuresRoot).filter((file) => {
       const normalized = file.replaceAll('\\', '/')
-      return (file.endsWith('.vue') || file.endsWith('.ts')) && !normalized.includes('/features/runtime/')
+      return (file.endsWith('.vue') || file.endsWith('.ts'))
+        && !normalized.includes('/features/runtime/')
+        && !/\.(?:spec|test)\.ts$/.test(normalized)
     }),
     ...sourceFilesUnder(i18nRoot).filter((file) => file.endsWith('.ts')),
   ]
