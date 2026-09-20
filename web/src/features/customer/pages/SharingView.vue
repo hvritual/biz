@@ -126,8 +126,8 @@ const store = useCustomerStore(),
           <p>服务方核验业务来源 → 事项成功结束</p>
         </div>
         <CustomerAlert
-          title="本地预览不是公开授权链接"
-          description="生产登录、邀请发送与服务端字段投影尚未接入；这里验证界面及本地范围规则。"
+          title="客户共享功能暂未开放"
+          description="当前可查看共享范围与协作流程，但暂不提供对外分享和邀请发送。"
           style="margin-top: 20px"
       /></CustomerSection>
     </div>
