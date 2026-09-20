@@ -424,7 +424,7 @@ func (service *TenantMemberLifecycleService) UpdateTenantMemberProfile(ctx conte
 	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalidTenantMemberRequest
 	}
-	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), func(callCtx context.Context, current *domain.Membership) error {
+	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), "", false, func(callCtx context.Context, current *domain.Membership) error {
 		targetDepartmentID := strings.TrimSpace(request.GetDepartmentId())
 		if targetDepartmentID == strings.TrimSpace(current.DepartmentID) {
 			return nil
@@ -464,7 +464,7 @@ func (service *TenantMemberLifecycleService) ActivateTenantMember(ctx context.Co
 	if err != nil {
 		return nil, wrapTenantMemberConflict(err)
 	}
-	return service.mutate(ctx, userID, request.GetVersion(), reason, nil, func(member *domain.Membership) error {
+	return service.mutate(ctx, userID, request.GetVersion(), reason, true, nil, func(member *domain.Membership) error {
 		return member.Activate(time.Now().UTC())
 	})
 }
@@ -478,7 +478,7 @@ func (service *TenantMemberLifecycleService) SuspendTenantMember(ctx context.Con
 		return nil, err
 	}
 	userID := strings.TrimSpace(request.GetUserId())
-	return service.mutate(ctx, userID, request.GetVersion(), reason, func(callCtx context.Context, member *domain.Membership) error {
+	return service.mutate(ctx, userID, request.GetVersion(), reason, true, func(callCtx context.Context, member *domain.Membership) error {
 		if err := assertTenantMemberDeactivationActor(callCtx, member); err != nil {
 			return err
 		}
@@ -522,8 +522,10 @@ func (service *TenantMemberLifecycleService) RemoveTenantMember(ctx context.Cont
 		if err := scope.Repositories().Member.Remove(scope.Context(), &current, request.GetVersion()); err != nil {
 			return domain.Membership{}, err
 		}
-		if err := notifyTenantMemberLifecycle(scope.Context(), scope.Repositories(), current, reason); err != nil {
-			return domain.Membership{}, err
+		if lifecycleEvent {
+			if err := notifyTenantMemberLifecycle(scope.Context(), scope.Repositories(), current, reason); err != nil {
+				return domain.Membership{}, err
+			}
 		}
 		return current, nil
 	})
@@ -617,6 +619,7 @@ func (service *TenantMemberLifecycleService) mutate(
 	userID string,
 	expectedVersion uint64,
 	reason string,
+	lifecycleEvent bool,
 	beforeApply func(context.Context, *domain.Membership) error,
 	apply func(*domain.Membership) error,
 ) (*accessv1.TenantMemberDTO, error) {
