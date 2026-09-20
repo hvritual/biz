@@ -15,11 +15,13 @@ import {
   activateEnterpriseMember,
   createEnterpriseMember,
   getEnterpriseMember,
+  listRemovedEnterpriseMembers,
   memberRequestId,
   queryEnterpriseMembers,
   memberRuntimeError,
   readEnterpriseMemberSession,
   removeEnterpriseMember,
+  restoreEnterpriseMember,
   sameTrustedSession,
   suspendEnterpriseMember,
   updateEnterpriseMember,
@@ -109,6 +111,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   const settings = computed(() => snapshot.value.settings)
   const previewMode = dataSource.kind === 'demo'
   const memberTotal = ref(previewMode ? members.value.filter((member) => member.status !== 'removed').length : 0)
+  const removedMembers = ref<Member[]>([])
+  const removedMemberTotal = ref(0)
   const sourceKind = dataSource.kind
   const demoBrandingByTenant = new Map<string, EnterpriseTenantBranding>([
     ['shanghai', { tenantId: 'shanghai', preset: 'blue', primary: '', version: 1, canManage: true }],
@@ -157,6 +161,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     memberListQuery = null
     memberListGeneration++
     memberTotal.value = 0
+    removedMembers.value = []
+    removedMemberTotal.value = 0
     roleMutation = null
     departmentMutation = null
     branding.value = null
@@ -582,6 +588,48 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     }
   }
 
+  async function queryRemovedMembers(page = 1, pageSize = 50) {
+    if (previewMode) {
+      removedMembers.value = members.value.filter((member) => member.status === 'removed')
+      removedMemberTotal.value = removedMembers.value.length
+      return true
+    }
+    const trusted = await stableMemberSession()
+    const result = await listRemovedEnterpriseMembers(trusted, page, pageSize)
+    removedMembers.value = result.members.map(projectMember)
+    removedMemberTotal.value = result.total
+    return true
+  }
+
+  async function restoreMember(id: string, version: number, reason: string) {
+    if (!reason.trim()) throw new Error('请填写恢复原因。')
+    const member = removedMembers.value.find((value) => value.id === id)
+    if (!member || member.status !== 'removed') throw new Error('该成员不在回收站中。')
+    if (member.version !== version) throw new Error('成员状态已变化，请刷新回收站后重试。')
+    if (previewMode) {
+      const restored = { ...member, status: 'active' as const, version: version + 1, online: false }
+      snapshot.value.members = snapshot.value.members.map((value) => value.id === id ? restored : value)
+      removedMembers.value = removedMembers.value.filter((value) => value.id !== id)
+      removedMemberTotal.value = removedMembers.value.length
+      audit('成员管理', '恢复成员', member.name, 'removed', 'active', reason, 'high')
+      return
+    }
+    try {
+      const trusted = await stableMemberSession()
+      const receipt = await restoreEnterpriseMember(
+        trusted,
+        asServerMember(member),
+        memberRequestId('restore'),
+        reason,
+      )
+      await getEnterpriseMember(trusted, receipt.userId)
+      await Promise.all([refreshMemberQuery(), queryRemovedMembers()])
+      return receipt
+    } catch (error) {
+      throw new Error(memberRuntimeError(error))
+    }
+  }
+
   async function refreshMemberQuery() {
     if (previewMode || !memberListQuery) {
       await refresh()
@@ -802,10 +850,10 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     const server = asServerMember(member)
     const key = memberRequestId(action)
     const receipt = action === 'activate'
-      ? await activateEnterpriseMember(trusted, server, key)
+      ? await activateEnterpriseMember(trusted, server, key, reason)
       : action === 'suspend'
-        ? await suspendEnterpriseMember(trusted, server, key)
-        : await removeEnterpriseMember(trusted, server, key)
+        ? await suspendEnterpriseMember(trusted, server, key, reason)
+        : await removeEnterpriseMember(trusted, server, key, reason)
     await getEnterpriseMember(trusted, receipt.userId)
     await refreshMemberQuery()
   }
@@ -851,8 +899,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
         const member = members.value.find((value) => value.id === target.id)
         if (!member) throw new Error('批量操作中存在已不存在的成员，请刷新后重试。')
         const server = asServerMember(member)
-        if (action === 'activate') await activateEnterpriseMember(trusted, server, memberRequestId('activate'))
-        else await suspendEnterpriseMember(trusted, server, memberRequestId('suspend'))
+        if (action === 'activate') await activateEnterpriseMember(trusted, server, memberRequestId('activate'), reason)
+        else await suspendEnterpriseMember(trusted, server, memberRequestId('suspend'), reason)
       }
     } catch (error) {
       failure = error
@@ -1111,6 +1159,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     tenantId,
     members,
     memberTotal,
+    removedMembers,
+    removedMemberTotal,
     roles,
     departments,
     company,
@@ -1139,6 +1189,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     logout,
     audit,
     queryMembers,
+    queryRemovedMembers,
+    restoreMember,
     saveMember,
     changeStatus,
     changeStatuses,
