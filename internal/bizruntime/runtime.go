@@ -525,6 +525,7 @@ func bindRuntimeWithSecurity(
 			tenantProfileRepositories:   tenantProfileRepositories,
 			memberRepositories:          memberRepositories,
 			memberActivationTTL:         options.MemberActivationTTL,
+			memberActivationURL:         options.MemberActivationURL,
 			departmentRepositories:      departmentRepositories,
 			roleRepositories:            roleRepositories,
 			delegatedDeviceRepositories: delegatedDeviceRepositories,
