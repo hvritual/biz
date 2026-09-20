@@ -152,7 +152,7 @@ function saveDraft() {
   try {
     store.saveDraft(`${props.action}:${props.id}`, values.value)
     initial.value = JSON.stringify(values.value)
-    ui.toast('草稿已保存在当前租户的本地预览中')
+    ui.toast('草稿已保存。')
     emit('close')
   } catch (e) {
     error.value = (e as Error).message
