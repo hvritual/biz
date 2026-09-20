@@ -383,13 +383,13 @@ onMounted(loadModules)
     <div v-if="eligibilityOpen" class="eligibility-backdrop" role="presentation" @click.self="eligibilityOpen = false">
       <section class="eligibility-dialog card" role="dialog" aria-modal="true" aria-labelledby="eligibility-title">
         <header class="section-header">
-          <div><h2 id="eligibility-title">适用资格预检</h2><p>{{ selectedVersion?.planCode }} v{{ selectedVersion?.version }}；结果不是订阅回执或免检许可。</p></div>
+          <div><h2 id="eligibility-title">适用资格检查</h2><p>{{ selectedVersion?.planCode }} v{{ selectedVersion?.version }}；本次结果仅用于判断当前套餐是否适用。</p></div>
           <UiButton class="btn" type="button" @click="eligibilityOpen = false">关闭</UiButton>
         </header>
         <div class="eligibility-body">
-          <label><span>sales_scope</span><UiInput v-model="eligibilityScope" class="input" placeholder="例如 default（不能填 *）" /></label>
-          <UiButton class="btn primary full" type="button" :disabled="!eligibilityScope.trim() || eligibilityScope.trim() === '*' || actionPending" @click="runEligibility">执行真实资格检查</UiButton>
-          <div v-if="eligibilityResult" class="eligibility-result" :class="eligibilityResult.eligible ? 'allowed' : 'denied'"><strong>{{ eligibilityResult.eligible ? '可适用' : '不可适用' }}</strong><p>{{ eligibilityResult.reason || '服务端未提供额外说明' }}</p></div>
+          <label><span>适用范围</span><UiInput v-model="eligibilityScope" class="input" placeholder="例如 default（不能填 *）" /></label>
+          <UiButton class="btn primary full" type="button" :disabled="!eligibilityScope.trim() || eligibilityScope.trim() === '*' || actionPending" @click="runEligibility">检查适用资格</UiButton>
+          <div v-if="eligibilityResult" class="eligibility-result" :class="eligibilityResult.eligible ? 'allowed' : 'denied'"><strong>{{ eligibilityResult.eligible ? '可适用' : '不可适用' }}</strong><p>{{ eligibilityResult.reason || '暂无额外说明' }}</p></div>
         </div>
       </section>
     </div>
