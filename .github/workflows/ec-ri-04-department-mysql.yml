@@ -5,26 +5,10 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  workflow_call:
   push:
     branches:
       - feat/enterprise-organization-department-real-integration
-    paths:
-      - .github/workflows/ec-ri-04-department-mysql.yml
-      - contracts/**
-      - internal/access/**
-      - internal/assembly/**
-      - internal/bizruntime/**
-      - integration/ec_ri_04_department_mysql_test.go
-      - integration/ec_ri_04_department_capability_test.go
-      - integration/ec_ri_02_member_profile_mysql_test.go
-      - integration/b12_member_runtime_mysql_test.go
-      - integration/b12_tenant_lifecycle_mysql_test.go
-      - modules/access/**
-      - go.mod
-      - go.sum
-  pull_request:
-    branches:
-      - main
     paths:
       - .github/workflows/ec-ri-04-department-mysql.yml
       - contracts/**
