@@ -3,6 +3,7 @@ import { UiButton } from '@/ui/base'
 
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import type { EntitlementOverrideDTO } from '@/services/commercial/platformCommercial'
+import { backendTermLabel } from '@/i18n/backend-terms'
 
 defineProps<{
   sources: EntitlementOverrideDTO[]
@@ -16,44 +17,28 @@ const emit = defineEmits<{
 }>()
 
 function sourceState(source: EntitlementOverrideDTO) {
-  if (source.revokedAt) return { text: '已撤销', tone: 'neutral' as const }
+  if (source.revokedAt) return { text: backendTermLabel('sourceState', 'REVOKED'), tone: 'neutral' as const }
   const now = Date.now()
   const starts = source.effectiveAt ? new Date(source.effectiveAt).valueOf() : Number.NEGATIVE_INFINITY
   const ends = source.expiresAt ? new Date(source.expiresAt).valueOf() : Number.POSITIVE_INFINITY
-  if (Number.isFinite(starts) && starts > now) return { text: '待生效', tone: 'warning' as const }
-  if (Number.isFinite(ends) && ends <= now) return { text: '已到期', tone: 'neutral' as const }
-  return { text: '生效中', tone: 'success' as const }
+  if (Number.isFinite(starts) && starts > now) return { text: backendTermLabel('sourceState', 'PENDING'), tone: 'warning' as const }
+  if (Number.isFinite(ends) && ends <= now) return { text: backendTermLabel('sourceState', 'EXPIRED'), tone: 'neutral' as const }
+  return { text: backendTermLabel('sourceState', 'ACTIVE'), tone: 'success' as const }
 }
 
 function targetLabel(source: EntitlementOverrideDTO) {
-  const labels: Record<string, string> = {
-    'device.lifecycle': '设备生命周期',
-    'customer.view': '客户查看',
-    'customer.count': '客户额度',
-    'member.count': '成员额度',
-  }
-  const actionLabels: Record<string, string> = { read: '查看', write: '修改', export: '导出' }
-  const target = labels[source.key] ?? (source.key ? '配置项目' : '整个模块')
-  return source.fieldAction ? `${target} · ${actionLabels[source.fieldAction] ?? '业务操作'}` : target
+  const target = source.key
+    ? backendTermLabel('entitlementKey', source.key)
+    : backendTermLabel('entitlementTarget', 'ENTITLEMENT_TARGET_MODULE')
+  return source.fieldAction ? `${target} · ${backendTermLabel('fieldAction', source.fieldAction)}` : target
 }
 
 function sourceKindLabel(value: string) {
-  if (value === 'override') return '专项授权'
-  if (value === 'plan') return '套餐权益'
-  if (value === 'addon') return '增购权益'
-  return '专项权益'
+  return backendTermLabel('sourceKind', value)
 }
 
 function effectLabel(effect: string) {
-  const labels: Record<string, string> = {
-    ENTITLEMENT_EFFECT_GRANT: '授权',
-    ENTITLEMENT_EFFECT_DENY: '拒绝',
-    ENTITLEMENT_EFFECT_QUOTA_ADD: '额度追加',
-    ENTITLEMENT_EFFECT_QUOTA_REPLACE: '额度替换',
-    ENTITLEMENT_EFFECT_SAFETY_DENY: '安全拒绝',
-    ENTITLEMENT_EFFECT_SAFETY_MASK: '安全脱敏',
-  }
-  return labels[effect] || effect || '—'
+  return backendTermLabel('entitlementEffect', effect)
 }
 
 function limitLabel(source: EntitlementOverrideDTO) {

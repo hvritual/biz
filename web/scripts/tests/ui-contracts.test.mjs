@@ -14,6 +14,8 @@ function fixture(t) {
   t.after(() => rmSync(root, { recursive: true, force: true }))
   cpSync(join(webRoot, 'src'), join(root, 'src'), { recursive: true })
   cpSync(join(webRoot, 'ui-contracts.json'), join(root, 'ui-contracts.json'))
+  cpSync(join(webRoot, 'e2e'), join(root, 'e2e'), { recursive: true })
+  cpSync(join(webRoot, 'tests'), join(root, 'tests'), { recursive: true })
   return root
 }
 function edit(root, path, transform) {
@@ -70,6 +72,38 @@ test('feature TypeScript cannot bypass product language guard', (t) => {
     source.replace('export function useAuditLogs() {', "const leakedProductCopy = '服务端回读'\nexport function useAuditLogs() {"),
   )
   assert.ok(checkUiModel(root).failures.some((error) => error.includes('product UI exposes engineering language')))
+})
+
+test('declared backend-term consumers must use the centralized translator', (t) => {
+  const root = fixture(t)
+  edit(root, 'src/features/platform/components/EntitlementDecisionTable.vue', (source) =>
+    source.replaceAll('backendTermLabel', 'localTermLabel'),
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('backend-returned terms must use backendTermLabel')))
+})
+
+test('declared backend-error consumers must not expose raw backend messages', (t) => {
+  const root = fixture(t)
+  edit(root, 'src/services/enterprise/tenantProfileRuntime.ts', (source) =>
+    source.replaceAll('backendErrorFallback', 'localErrorFallback'),
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('backend errors must use backendErrorFallback')))
+})
+
+test('E2E cannot bind success behavior to engineering copy', (t) => {
+  const root = fixture(t)
+  edit(root, 'e2e/enterprise-members-real.spec.ts', (source) =>
+    source + "\ntest('forbidden copy binding', async ({ page }) => { await expect(page.getByText('服务端确认')).toBeVisible() })\n",
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('E2E binds product behavior to engineering copy')))
+})
+
+test('negative E2E assertions may prove engineering copy is absent', (t) => {
+  const root = fixture(t)
+  edit(root, 'e2e/enterprise-members-real.spec.ts', (source) =>
+    source + "\ntest('absence contract', async ({ page }) => { await expect(page.getByText('服务端确认')).toHaveCount(0) })\n",
+  )
+  assert.ok(!checkUiModel(root).failures.some((error) => error.includes('E2E binds product behavior to engineering copy')))
 })
 
 test('EnterpriseSourceBanner cannot be reintroduced', (t) => {

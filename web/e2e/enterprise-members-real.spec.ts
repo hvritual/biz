@@ -655,7 +655,7 @@ test('canonical profile 409 preserves draft and reuses the same idempotency key'
   const writes = server.getWrites().filter((item) => item.path === '/v1/tenant/members/user-001')
   expect(writes).toHaveLength(2)
   expect(writes[0]?.headers['idempotency-key']).toBe(writes[1]?.headers['idempotency-key'])
-  await expect(page.getByText(/变更已由服务端确认并完成权威回读/)).toHaveCount(0)
+  await expect(page.getByText('变更已保存并更新。', { exact: true })).toHaveCount(0)
 })
 
 test('successful member write without GET readback is never presented as canonical success', async ({ page }) => {
@@ -665,8 +665,8 @@ test('successful member write without GET readback is never presented as canonic
   const dialog = page.getByRole('dialog', { name: '修改成员信息' })
   await dialog.getByLabel('姓名').fill('unconfirmed change')
   await dialog.getByRole('button', { name: '保存变更', exact: true }).click()
-  await expect(dialog.getByRole('alert')).toContainText('readback failed')
-  await expect(page.getByText(/变更已由服务端确认并完成权威回读/)).toHaveCount(0)
+  await expect(dialog.getByRole('alert')).toContainText('成员信息暂不可用，请稍后重试。')
+  await expect(page.getByText('变更已保存并更新。', { exact: true })).toHaveCount(0)
 })
 
 

@@ -3,6 +3,8 @@ import { UiButton, UiInput, UiTextarea } from '@/ui/base'
 
 import AuthorityPicker from '@/features/platform/components/AuthorityPicker.vue'
 import { computed, onMounted, ref } from 'vue'
+import { backendBusinessText, backendTermLabel } from '@/i18n/backend-terms'
+import { currentUiLocale } from '@/i18n'
 import PageHeading from '@/ui/common/PageHeading.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import EntitlementDecisionTable from '@/features/platform/components/EntitlementDecisionTable.vue'
@@ -64,16 +66,7 @@ function capabilityCodes() {
 function formatTime(value: string) {
   if (!value) return '—'
   const parsed = new Date(value)
-  return Number.isNaN(parsed.valueOf()) ? value : parsed.toLocaleString('zh-CN', { hour12: false })
-}
-
-function subscriptionStateLabel(value: string) {
-  if (value === 'ACTIVE') return '有效'
-  if (value === 'TRIAL') return '试用'
-  if (value === 'GRACE_PERIOD') return '宽限期'
-  if (value === 'SUSPENDED') return '已暂停'
-  if (value === 'EXPIRED') return '已过期'
-  return '待确认'
+  return Number.isNaN(parsed.valueOf()) ? value : parsed.toLocaleString(currentUiLocale(), { hour12: false })
 }
 
 async function loadModules() {
@@ -256,14 +249,14 @@ onMounted(loadModules)
       </section>
 
       <section class="card subscription-card" data-ui-region="subscription">
-        <div class="section-header"><div><h2>当前订阅</h2><p>订阅是权益来源之一，最终可用权益以当前结果为准。</p></div><StatusBadge v-if="subscription" :text="subscriptionStateLabel(subscription.state)" :tone="subscription.state === 'ACTIVE' ? 'success' : 'neutral'" /></div>
+        <div class="section-header"><div><h2>当前订阅</h2><p>订阅是权益来源之一，最终可用权益以当前结果为准。</p></div><StatusBadge v-if="subscription" :text="backendTermLabel('subscriptionState', subscription.state)" :tone="subscription.state === 'ACTIVE' ? 'success' : 'neutral'" /></div>
         <div v-if="subscription" class="subscription-grid">
-          <div><span>套餐</span><strong>{{ subscription.planCode }} v{{ subscription.planVersion }}</strong></div>
-          <div><span>销售范围</span><strong>{{ subscription.salesScope || '—' }}</strong></div>
+          <div><span>套餐</span><strong>{{ backendTermLabel('plan', subscription.planCode) }} v{{ subscription.planVersion }}</strong></div>
+          <div><span>销售范围</span><strong>{{ backendTermLabel('salesScope', subscription.salesScope) }}</strong></div>
           <div><span>期间</span><strong>{{ formatTime(subscription.periodStart) }} → {{ formatTime(subscription.periodEnd) }}</strong></div>
           <div><span>权益来源版本</span><strong>{{ subscription.entitlementSourceVersion }}</strong></div>
           <div><span>待处理变更</span><strong>{{ subscription.pendingChangeId ? '有待处理变更' : '无' }}</strong></div>
-          <div><span>匹配说明</span><strong>{{ subscription.matchExplanation || '—' }}</strong></div>
+          <div><span>匹配说明</span><strong>{{ backendBusinessText(subscription.matchExplanation) }}</strong></div>
         </div>
         <p v-else class="empty-text">当前没有可读取的租户订阅记录。</p>
       </section>

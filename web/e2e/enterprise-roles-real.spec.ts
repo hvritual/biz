@@ -256,6 +256,6 @@ test('a successful role write without readback is not presented as confirmed suc
   const dialog = page.getByRole('dialog', { name: '编辑角色权限' })
   await dialog.getByLabel('角色名称').fill('未确认角色名')
   await dialog.getByRole('button', { name: '保存角色' }).click()
-  await expect(dialog.getByRole('alert')).toContainText('role readback failed')
-  await expect(page.getByText(/角色配置已由服务端确认/)).toHaveCount(0)
+  await expect(dialog.getByRole('alert')).toContainText('角色权限暂不可用，请稍后重试。')
+  await expect(page.getByText('角色配置已保存并更新。', { exact: true })).toHaveCount(0)
 })

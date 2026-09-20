@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { backendTermLabel } from '@/i18n/backend-terms'
+import { currentUiLocale } from '@/i18n'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import { UiButton, UiInput } from '@/ui/base'
@@ -37,11 +39,7 @@ const receipt = ref<SubscriptionChangeReceiptDTO | null>(null)
 const working = ref(false)
 const errorMessage = ref('')
 
-const actionLabel = computed(() => ({
-  SWITCH: '切换套餐',
-  RENEW: '续订当前套餐',
-  STOP_RENEWAL: '停止自动续费',
-}[action.value]))
+const actionLabel = computed(() => backendTermLabel('changeAction', action.value))
 const stage = computed(() => receipt.value ? 'receipt' : preview.value ? 'preview' : 'select')
 const requiresTarget = computed(() => action.value === 'SWITCH')
 const approvalRequired = computed(() => needsExternalCommercialApproval(preview.value))
@@ -50,8 +48,8 @@ const canPreview = computed(() => {
   if (requiresTarget.value && !selectedTarget.value) return false
   return true
 })
-const currentPlanKey = computed(() => `${props.subscription.planCode}@${props.subscription.planVersion}`)
-const previewTargetName = computed(() => preview.value?.target?.name || preview.value?.target?.planCode || '当前套餐')
+const currentPlanKey = computed(() => `${backendTermLabel('plan', props.subscription.planCode)} v${props.subscription.planVersion}`)
+const previewTargetName = computed(() => preview.value?.target?.name || backendTermLabel('plan', preview.value?.target?.planCode))
 const receiptTone = computed(() => {
   if (receipt.value?.status === 'APPLIED') return 'success'
   if (receipt.value?.status === 'SCHEDULED' || receipt.value?.status === 'PROVISIONING') return 'warning'
@@ -72,32 +70,22 @@ function priceLabel(target: PlanVersionDTO) {
 }
 
 function classificationLabel(value?: string) {
-  if (value === 'UPGRADE') return '升级'
-  if (value === 'DOWNGRADE') return '降级'
-  if (value === 'RENEWAL') return '续订'
-  if (value === 'STOP_RENEWAL') return '停止续费'
-  return '套餐变更'
+  return backendTermLabel('changeClassification', value)
 }
 
 function effectiveModeLabel(value?: string) {
-  if (value === 'IMMEDIATE') return '立即生效'
-  if (value === 'SCHEDULED') return '预约生效'
-  if (value === 'PROVISIONING') return '准备完成后生效'
-  return '按规则生效'
+  return backendTermLabel('effectiveMode', value)
 }
 
 function receiptStatusLabel(value?: string) {
-  if (value === 'APPLIED') return '已生效'
-  if (value === 'SCHEDULED') return '已预约'
-  if (value === 'PROVISIONING') return '处理中'
-  return '处理中'
+  return backendTermLabel('receiptStatus', value)
 }
 
 function formatDate(value?: string) {
   if (!value) return '—'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+  return new Intl.DateTimeFormat(currentUiLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(date)
 }
 
 function effectiveAtIso() {
@@ -218,8 +206,8 @@ async function confirmPreview() {
               :class="['target-card', { selected: selectedTarget?.planCode === target.planCode && selectedTarget?.version === target.version }]"
               @click="selectedTarget = target"
             >
-              <span class="row-between"><strong>{{ target.name || target.planCode }}</strong><span>v{{ target.version }}</span></span>
-              <small>{{ target.planCode }}</small>
+              <span class="row-between"><strong>{{ target.name || backendTermLabel('plan', target.planCode) }}</strong><span>v{{ target.version }}</span></span>
+              <small>{{ backendTermLabel('plan', target.planCode) }}</small>
               <span class="target-meta">{{ target.terms?.modules?.length ?? 0 }} 个模块 · {{ priceLabel(target) }}</span>
             </UiButton>
             <div v-if="targets.length === 0" class="empty-target">当前销售范围没有其他可切换的已发布套餐。</div>
@@ -249,7 +237,7 @@ async function confirmPreview() {
         <div class="preview-hero">
           <div>
             <span class="field-label">{{ actionLabel }}</span>
-            <h3>{{ subscription.planCode }} → {{ previewTargetName }}</h3>
+            <h3>{{ backendTermLabel('plan', subscription.planCode) }} → {{ previewTargetName }}</h3>
             <p>{{ classificationLabel(preview.classification) }} · {{ effectiveModeLabel(preview.mode) }} · 请于 {{ formatDate(preview.expiresAt) }} 前确认</p>
           </div>
           <StatusBadge :text="classificationLabel(preview.classification)" :dot="false" />
@@ -272,7 +260,7 @@ async function confirmPreview() {
             <h4>额度影响</h4>
             <div v-if="preview.quotaImpacts?.length" class="impact-list">
               <div v-for="(item, index) in preview.quotaImpacts" :key="`${item.moduleCode}:${item.key}`">
-                <span>额度项 {{ index + 1 }}</span>
+                <span>{{ backendTermLabel('entitlementKey', item.key) }} · {{ index + 1 }}</span>
                 <strong>{{ item.usageKnown ? `已用 ${item.used}` : '用量未知' }}</strong>
                 <small>{{ item.overLimit ? '超过目标额度' : item.policy || '通过当前校验' }}</small>
               </div>

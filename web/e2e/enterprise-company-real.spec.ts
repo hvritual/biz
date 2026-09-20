@@ -176,7 +176,7 @@ test('successful PATCH without GET readback is not presented as canonical succes
   await openRealCompany(page)
   await page.getByLabel('企业简称').fill('未确认资料')
   await page.getByRole('button', { name: '保存修改', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('tenant profile readback failed')
+  await expect(page.getByRole('alert')).toContainText('企业资料暂不可用，请稍后重试。')
   await expect(page.getByText('企业资料已保存。', { exact: true })).toHaveCount(0)
 })
 

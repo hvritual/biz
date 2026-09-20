@@ -132,7 +132,7 @@ test('authoritative branding renders and captures all CoffeeLink viewports', asy
     await page.setViewportSize(viewport)
     await openBranding(page)
     await expect(page.locator('html')).toHaveAttribute('data-ui-theme', 'violet')
-    await expect(page.getByText('服务端已确认', { exact: true })).toBeVisible()
+    await expect(page.getByText('已保存', { exact: true })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width)
     await page.screenshot({ path: `screenshots/enterprise-branding-real-${viewport.width}.png`, fullPage: false, animations: 'disabled' })
   }
@@ -147,7 +147,7 @@ test('custom preview saves with CAS trusted headers and survives reload only aft
   await expect(page.locator('html')).toHaveAttribute('data-ui-theme', 'custom')
   expect(await page.evaluate(() => document.documentElement.style.getPropertyValue('--color-primary'))).toBe('#125a75')
   await page.getByRole('button', { name: '保存主题', exact: true }).click()
-  await expect(page.getByText('企业品牌主题已由服务端确认并重新读取。', { exact: true })).toBeVisible()
+  await expect(page.getByText('企业品牌主题已保存。', { exact: true })).toBeVisible()
 
   expect(server.writes).toHaveLength(1)
   const write = server.writes[0]!
@@ -213,7 +213,7 @@ test('409 preserves draft and retries the same idempotency key', async ({ page }
   await save.click()
   await expect.poll(() => server.writes.length).toBe(2)
   expect(server.writes[0]?.headers['idempotency-key']).toBe(server.writes[1]?.headers['idempotency-key'])
-  await expect(page.getByText('企业品牌主题已由服务端确认并重新读取。', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('企业品牌主题已保存。', { exact: true })).toHaveCount(0)
 })
 
 test('successful write without branding readback is never presented as confirmed success', async ({ page }) => {
@@ -221,6 +221,6 @@ test('successful write without branding readback is never presented as confirmed
   await openBranding(page)
   await page.getByRole('button', { name: 'Amber', exact: false }).click()
   await page.getByRole('button', { name: '保存主题', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('branding readback failed')
-  await expect(page.getByText('企业品牌主题已由服务端确认并重新读取。', { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('alert')).toContainText('企业品牌主题暂不可用，请稍后重试。')
+  await expect(page.getByText('企业品牌主题已保存。', { exact: true })).toHaveCount(0)
 })

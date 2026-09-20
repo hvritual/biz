@@ -2,6 +2,7 @@
 import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
 
 import { computed, onMounted, ref } from 'vue'
+import { backendTermLabel } from '@/i18n/backend-terms'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import PageHeading from '@/ui/common/PageHeading.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
@@ -57,20 +58,11 @@ const summary = computed(() => ({
 }))
 
 function technicalLabel(status: ModuleTechnicalStatus) {
-  return {
-    MODULE_TECHNICAL_STATUS_READY: '技术就绪',
-    MODULE_TECHNICAL_STATUS_NOT_READY: '未就绪',
-    MODULE_TECHNICAL_STATUS_DISABLED: '技术停用',
-    MODULE_TECHNICAL_STATUS_UNSPECIFIED: '未声明',
-  }[status]
+  return backendTermLabel('technicalStatus', status)
 }
 
 function salesLabel(status: ModuleSalesStatus) {
-  return {
-    MODULE_SALES_STATUS_SELLABLE: '可销售',
-    MODULE_SALES_STATUS_RETIRED: '已停售',
-    MODULE_SALES_STATUS_UNSPECIFIED: '未声明',
-  }[status]
+  return backendTermLabel('salesStatus', status)
 }
 
 function salesScopeValues() {
@@ -296,7 +288,7 @@ onMounted(loadModules)
                 <td colspan="6" class="empty-row">没有符合当前筛选条件的模块。</td>
               </tr>
               <tr v-for="item in filteredModules" :key="item.moduleCode">
-                <td><strong>{{ item.name || item.moduleCode }}</strong><small class="module-code">{{ item.moduleCode }} · v{{ item.version }}</small></td>
+                <td><strong>{{ item.name || backendTermLabel('module', item.moduleCode) }}</strong><small class="module-code">版本 v{{ item.version }}</small></td>
                 <td>{{ item.category || '—' }}</td>
                 <td><StatusBadge :text="technicalLabel(item.technicalStatus)" :tone="item.technicalStatus === 'MODULE_TECHNICAL_STATUS_READY' ? 'success' : 'warning'" /></td>
                 <td><StatusBadge :text="salesLabel(item.salesStatus)" :tone="item.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? 'success' : 'neutral'" /></td>
@@ -309,10 +301,10 @@ onMounted(loadModules)
       </section>
     </template>
 
-    <UiDialog :open="detailOpen" :title="selected ? `模块详情 · ${selected.name || selected.moduleCode}` : '模块详情'" @close="detailOpen = false">
+    <UiDialog :open="detailOpen" :title="selected ? `模块详情 · ${selected.name || backendTermLabel('module', selected.moduleCode)}` : '模块详情'" @close="detailOpen = false">
       <div v-if="selected" class="detail-stack">
         <div class="detail-summary">
-          <div><span>模块代码</span><strong class="mono">{{ selected.moduleCode }}</strong></div>
+          <div><span>模块标识</span><strong>{{ backendTermLabel('module', selected.moduleCode) }}</strong></div>
           <div><span>当前版本</span><strong>{{ selected.version }}</strong></div>
           <div><span>技术状态</span><StatusBadge :text="technicalLabel(selected.technicalStatus)" /></div>
           <div><span>销售状态</span><StatusBadge :text="salesLabel(selected.salesStatus)" /></div>
@@ -323,7 +315,7 @@ onMounted(loadModules)
           <div class="form-grid">
             <label class="field"><span>模块名称</span><UiInput v-model="editName" class="input" /></label>
             <label class="field"><span>分类</span><UiInput v-model="editCategory" class="input" /></label>
-            <label class="field full"><span>销售范围</span><UiInput v-model="editSalesScope" class="input" placeholder="default, enterprise" /></label>
+            <label class="field full"><span>销售范围</span><UiInput v-model="editSalesScope" class="input" placeholder="填写适用的销售范围" /></label>
           </div>
         </section>
 
@@ -332,9 +324,9 @@ onMounted(loadModules)
           <div class="status-controls">
             <label class="field"><span>技术状态</span>
               <UiSelect v-model="technicalDraft" class="select">
-                <UiOption value="MODULE_TECHNICAL_STATUS_NOT_READY">未就绪</UiOption>
-                <UiOption value="MODULE_TECHNICAL_STATUS_READY">技术就绪</UiOption>
-                <UiOption value="MODULE_TECHNICAL_STATUS_DISABLED">技术停用</UiOption>
+                <UiOption value="MODULE_TECHNICAL_STATUS_NOT_READY">{{ backendTermLabel('technicalStatus', 'MODULE_TECHNICAL_STATUS_NOT_READY') }}</UiOption>
+                <UiOption value="MODULE_TECHNICAL_STATUS_READY">{{ backendTermLabel('technicalStatus', 'MODULE_TECHNICAL_STATUS_READY') }}</UiOption>
+                <UiOption value="MODULE_TECHNICAL_STATUS_DISABLED">{{ backendTermLabel('technicalStatus', 'MODULE_TECHNICAL_STATUS_DISABLED') }}</UiOption>
               </UiSelect>
             </label>
             <div class="field"><span>销售状态</span><strong>{{ salesLabel(selected.salesStatus) }}</strong></div>

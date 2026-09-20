@@ -68,6 +68,65 @@ function productLanguageFailures(root) {
   return failures
 }
 
+function contractSourceFile(root, reference) {
+  if (reference.startsWith('@/')) return resolve(root, 'src', reference.slice(2))
+  return resolve(root, reference)
+}
+
+function backendProjectionFailures(root, contract) {
+  const failures = []
+  const termProjection = contract.presentation.backend_term_projection
+  for (const [kind, reference] of [['catalog', termProjection.catalog], ['messages', termProjection.messages]]) {
+    const file = contractSourceFile(root, reference)
+    if (!existsSync(file)) failures.push(`Backend term ${kind} is missing: ${reference}`)
+  }
+  for (const consumer of termProjection.required_consumers) {
+    const file = resolve(root, consumer)
+    if (!existsSync(file)) {
+      failures.push(`Backend term projection consumer is missing: ${consumer}`)
+      continue
+    }
+    if (!readFileSync(file, 'utf8').includes('backendTermLabel')) {
+      failures.push(`${consumer}: backend-returned terms must use backendTermLabel()`)
+    }
+  }
+  for (const consumer of contract.presentation.backend_error_projection.required_consumers) {
+    const file = resolve(root, consumer)
+    if (!existsSync(file)) {
+      failures.push(`Backend error projection consumer is missing: ${consumer}`)
+      continue
+    }
+    if (!readFileSync(file, 'utf8').includes('backendErrorFallback')) {
+      failures.push(`${consumer}: backend errors must use backendErrorFallback()`)
+    }
+  }
+  return failures
+}
+
+function e2eEngineeringCopyFailures(root) {
+  const failures = []
+  const roots = ['e2e', 'tests'].map((directory) => resolve(root, directory)).filter(existsSync)
+  for (const directory of roots) {
+    for (const file of sourceFilesUnder(directory).filter((entry) => /\.(?:ts|tsx|js|mjs)$/.test(entry))) {
+      const lines = readFileSync(file, 'utf8').split('\n')
+      lines.forEach((line, index) => {
+        if (!line.includes('expect(')) return
+        const window = lines.slice(index, index + 3).join(' ')
+        if (!/(?:toBeVisible|toContainText|toHaveText|toHaveValue)\s*\(/.test(window)) return
+        if (/(?:toHaveCount\s*\(\s*0\s*\)|\.not\.)/.test(window)) return
+        for (const [label, pattern] of engineeringLanguagePatterns) {
+          pattern.lastIndex = 0
+          if (pattern.test(window)) {
+            failures.push(`${relative(root, file)}:${index + 1}: E2E binds product behavior to engineering copy (${label})`)
+            break
+          }
+        }
+      })
+    }
+  }
+  return failures
+}
+
 export function checkUiModel(root) {
   const contract = validateUiContract(readStrictJson(resolve(root, 'ui-contracts.json')))
   validatePatternBindings(contract)
@@ -138,5 +197,7 @@ export function checkUiModel(root) {
     failures.push(...verifyPageSource(reader, page, componentFile(route.component)))
   }
   failures.push(...productLanguageFailures(root))
+  failures.push(...backendProjectionFailures(root, contract))
+  failures.push(...e2eEngineeringCopyFailures(root))
   return { failures: [...new Set(failures)], contract, routes, sourceCount: reader.modules.size }
 }

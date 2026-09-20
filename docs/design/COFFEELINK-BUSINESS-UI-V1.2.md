@@ -324,7 +324,42 @@ Route
 
 ---
 
-## 12. 文档同步规则
+## 12. 后台术语投影与 Candidate Qualification（IMPLEMENTED）
+
+后台返回的 enum、code、状态和值域不是产品文案。产品 Surface 必须经过统一的国际化投影：
+
+```text
+Backend DTO / Enum / Code
+→ backendTermLabel(kind, raw)
+→ vue-i18n backendTerms.*
+→ Business UI
+```
+
+硬规则：
+
+- 禁止 Vue、store、composable 各自维护 `ENTITLEMENT_* / TENANT_* / MODULE_*` 的中文映射表；
+- `web/src/i18n/backend-terms.ts` 是后台术语语义注册表，`backend-term-messages.ts` 提供 zh-CN / en-US；
+- 未识别后台值必须使用业务兜底，禁止 `raw ?? label`、`label || raw` 把未知 code 直接暴露给用户；
+- 后台返回的人类业务说明可保留；看起来像 enum、snake_case、dot-code、runtime/readback 等工程文本时必须降级为业务兜底；
+- E2E 可以断言工程术语“不存在”，但不能用“服务端确认、回读、API 模式”等工程文案作为成功条件；
+- `web/ui-contracts.json.presentation.backend_term_projection.required_consumers` 声明必须接入统一投影的消费者，静态门禁负责检查。
+
+PR 级验证采用固定 Candidate SHA：
+
+```text
+Candidate SHA
+→ required workflows 全部完成
+→ failure signature 去重
+→ HEAD 漂移检查
+→ Candidate Qualification
+→ PASS 后进入 Merge Gate
+```
+
+Candidate 运行期间不得通过零散提交逐个追红灯；应等待一轮结束后统一收集 root cause，再生成下一 Candidate。
+
+---
+
+## 13. 文档同步规则
 
 以后任何 PR 只要改变以下任一事实，就必须同步本规范或在 PR 中明确声明“无规范变化”并给出原因：
 

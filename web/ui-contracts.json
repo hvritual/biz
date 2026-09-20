@@ -29,7 +29,11 @@
     "navigation_rental_work_collections_required": true,
     "enterprise_canonical_routes_required": true,
     "product_shell_forbids_data_mode_ui_branch": true,
-    "product_surface_forbids_engineering_language": true
+    "product_surface_forbids_engineering_language": true,
+    "product_surface_requires_backend_term_i18n_projection": true,
+    "unknown_backend_terms_must_not_fallback_to_raw": true,
+    "backend_error_messages_must_use_business_fallback": true,
+    "e2e_forbids_engineering_copy_assertions": true
   },
   "navigation": {
     "primary_domains": [
@@ -538,6 +542,38 @@
         "no-permission"
       ],
       "examples": []
+    }
+  },
+  "presentation": {
+    "backend_term_projection": {
+      "catalog": "@/i18n/backend-terms.ts",
+      "messages": "@/i18n/backend-term-messages.ts",
+      "unknown_value_policy": "business_fallback",
+      "required_consumers": [
+        "src/stores/enterprisePlan.ts",
+        "src/services/enterprise/memberRuntime.ts",
+        "src/services/enterprise/roleRuntime.ts",
+        "src/services/enterprise/departmentRuntime.ts",
+        "src/features/platform/components/EntitlementOverrideDialog.vue",
+        "src/features/platform/components/EntitlementOverrideTable.vue",
+        "src/features/platform/components/EntitlementDecisionTable.vue",
+        "src/features/platform/components/SubscriptionChangeWorkspace.vue",
+        "src/features/enterprise/components/PlanChangeLifecycle.vue",
+        "src/features/platform/pages/CommercialTenantEntitlementsView.vue",
+        "src/features/platform/pages/CommercialModulesView.vue"
+      ]
+    },
+    "backend_error_projection": {
+      "required_consumers": [
+        "src/services/enterprise/tenantProfileRuntime.ts",
+        "src/services/enterprise/tenantBrandingRuntime.ts",
+        "src/services/enterprise/memberRuntime.ts",
+        "src/services/enterprise/roleRuntime.ts",
+        "src/services/enterprise/departmentRuntime.ts",
+        "src/services/enterprise/auditRuntime.ts",
+        "src/services/enterprise/planChangeRuntime.ts",
+        "src/services/enterprise/planRuntime.ts"
+      ]
     }
   }
 }

@@ -2,6 +2,7 @@
 import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
 
 import { computed, reactive, ref, watch } from 'vue'
+import { backendTermKnown, backendTermLabel } from '@/i18n/backend-terms'
 import type {
   CreateEntitlementOverrideInput,
   EntitlementEffect,
@@ -39,13 +40,8 @@ const form = reactive({
 const selectedModule = computed(() => props.modules.find((item) => item.moduleCode === form.moduleCode))
 
 function entitlementKeyLabel(key: string, index: number) {
-  const labels: Record<string, string> = {
-    'device.lifecycle': '设备生命周期',
-    'customer.view': '客户查看',
-    'customer.count': '客户额度',
-    'member.count': '成员额度',
-  }
-  return labels[key] ?? `配置项 ${index + 1}`
+  const label = backendTermLabel('entitlementKey', key)
+  return backendTermKnown('entitlementKey', key) ? label : `${label} ${index + 1}`
 }
 const availableKeys = computed(() => {
   if (!selectedModule.value) return []
@@ -58,22 +54,22 @@ const availableKeys = computed(() => {
 const effects = computed<Array<{ value: EntitlementEffect; label: string }>>(() => {
   if (form.target === 'ENTITLEMENT_TARGET_QUOTA') {
     return [
-      { value: 'ENTITLEMENT_EFFECT_QUOTA_ADD', label: '额度追加' },
-      { value: 'ENTITLEMENT_EFFECT_QUOTA_REPLACE', label: '额度替换' },
+      { value: 'ENTITLEMENT_EFFECT_QUOTA_ADD', label: backendTermLabel('entitlementEffect', 'ENTITLEMENT_EFFECT_QUOTA_ADD') },
+      { value: 'ENTITLEMENT_EFFECT_QUOTA_REPLACE', label: backendTermLabel('entitlementEffect', 'ENTITLEMENT_EFFECT_QUOTA_REPLACE') },
     ]
   }
   if (form.target === 'ENTITLEMENT_TARGET_FIELD') {
     return [
-      { value: 'ENTITLEMENT_EFFECT_GRANT', label: '允许' },
-      { value: 'ENTITLEMENT_EFFECT_DENY', label: '拒绝' },
-      { value: 'ENTITLEMENT_EFFECT_SAFETY_DENY', label: '安全拒绝' },
-      { value: 'ENTITLEMENT_EFFECT_SAFETY_MASK', label: '安全脱敏' },
+      { value: 'ENTITLEMENT_EFFECT_GRANT', label: backendTermLabel('entitlementEffect', 'ENTITLEMENT_EFFECT_GRANT') },
+      { value: 'ENTITLEMENT_EFFECT_DENY', label: backendTermLabel('entitlementEffect', 'ENTITLEMENT_EFFECT_DENY') },
+      { value: 'ENTITLEMENT_EFFECT_SAFETY_DENY', label: backendTermLabel('entitlementEffect', 'ENTITLEMENT_EFFECT_SAFETY_DENY') },
+      { value: 'ENTITLEMENT_EFFECT_SAFETY_MASK', label: backendTermLabel('entitlementEffect', 'ENTITLEMENT_EFFECT_SAFETY_MASK') },
     ]
   }
   return [
-    { value: 'ENTITLEMENT_EFFECT_GRANT', label: '授权' },
-    { value: 'ENTITLEMENT_EFFECT_DENY', label: '拒绝' },
-    { value: 'ENTITLEMENT_EFFECT_SAFETY_DENY', label: '安全拒绝' },
+    { value: 'ENTITLEMENT_EFFECT_GRANT', label: backendTermLabel('entitlementEffect', 'ENTITLEMENT_EFFECT_GRANT') },
+    { value: 'ENTITLEMENT_EFFECT_DENY', label: backendTermLabel('entitlementEffect', 'ENTITLEMENT_EFFECT_DENY') },
+    { value: 'ENTITLEMENT_EFFECT_SAFETY_DENY', label: backendTermLabel('entitlementEffect', 'ENTITLEMENT_EFFECT_SAFETY_DENY') },
   ]
 })
 
@@ -170,10 +166,10 @@ function submit() {
       </header>
 
       <div class="dialog-body">
-        <div class="field"><label for="override-module">模块</label><UiSelect id="override-module" v-model="form.moduleCode" class="input"><UiOption v-for="item in modules" :key="item.moduleCode" :value="item.moduleCode">{{ item.name || '未命名模块' }}</UiOption></UiSelect></div>
-        <div class="field"><label for="override-target">授权范围</label><UiSelect id="override-target" v-model="form.target" class="input"><UiOption value="ENTITLEMENT_TARGET_MODULE">整个模块</UiOption><UiOption value="ENTITLEMENT_TARGET_CAPABILITY">功能能力</UiOption><UiOption value="ENTITLEMENT_TARGET_QUOTA">使用额度</UiOption><UiOption value="ENTITLEMENT_TARGET_FIELD">数据字段</UiOption></UiSelect></div>
+        <div class="field"><label for="override-module">模块</label><UiSelect id="override-module" v-model="form.moduleCode" class="input"><UiOption v-for="item in modules" :key="item.moduleCode" :value="item.moduleCode">{{ item.name || backendTermLabel('module', item.moduleCode) }}</UiOption></UiSelect></div>
+        <div class="field"><label for="override-target">授权范围</label><UiSelect id="override-target" v-model="form.target" class="input"><UiOption value="ENTITLEMENT_TARGET_MODULE">{{ backendTermLabel('entitlementTarget', 'ENTITLEMENT_TARGET_MODULE') }}</UiOption><UiOption value="ENTITLEMENT_TARGET_CAPABILITY">{{ backendTermLabel('entitlementTarget', 'ENTITLEMENT_TARGET_CAPABILITY') }}</UiOption><UiOption value="ENTITLEMENT_TARGET_QUOTA">{{ backendTermLabel('entitlementTarget', 'ENTITLEMENT_TARGET_QUOTA') }}</UiOption><UiOption value="ENTITLEMENT_TARGET_FIELD">{{ backendTermLabel('entitlementTarget', 'ENTITLEMENT_TARGET_FIELD') }}</UiOption></UiSelect></div>
         <div v-if="form.target !== 'ENTITLEMENT_TARGET_MODULE'" class="field"><label for="override-key">具体项目</label><UiSelect id="override-key" v-model="form.key" class="input"><UiOption value="">请选择</UiOption><UiOption v-for="(key, index) in availableKeys" :key="key" :value="key">{{ entitlementKeyLabel(key, index) }}</UiOption></UiSelect></div>
-        <div v-if="form.target === 'ENTITLEMENT_TARGET_FIELD'" class="field"><label for="override-field-action">允许操作</label><UiSelect id="override-field-action" v-model="form.fieldAction" class="input"><UiOption value="read">查看</UiOption><UiOption value="write">修改</UiOption><UiOption value="export">导出</UiOption></UiSelect></div>
+        <div v-if="form.target === 'ENTITLEMENT_TARGET_FIELD'" class="field"><label for="override-field-action">允许操作</label><UiSelect id="override-field-action" v-model="form.fieldAction" class="input"><UiOption value="read">{{ backendTermLabel('fieldAction', 'read') }}</UiOption><UiOption value="write">{{ backendTermLabel('fieldAction', 'write') }}</UiOption><UiOption value="export">{{ backendTermLabel('fieldAction', 'export') }}</UiOption></UiSelect></div>
         <div class="field"><label for="override-effect">授权结果</label><UiSelect id="override-effect" v-model="form.effect" class="input"><UiOption v-for="item in effects" :key="item.value" :value="item.value">{{ item.label }}</UiOption></UiSelect></div>
 
         <div v-if="form.target === 'ENTITLEMENT_TARGET_QUOTA'" class="quota-box">

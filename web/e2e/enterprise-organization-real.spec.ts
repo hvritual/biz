@@ -254,6 +254,6 @@ test('successful department write without readback is never shown as confirmed s
   const dialog = page.getByRole('dialog', { name: '部门信息' })
   await dialog.getByLabel('部门名称').fill('未确认部门')
   await dialog.getByRole('button', { name: '保存部门' }).click()
-  await expect(dialog.getByRole('alert')).toContainText('department readback failed')
+  await expect(dialog.getByRole('alert')).toContainText('组织架构暂不可用，请稍后重试。')
   await expect(page.getByRole('status')).toHaveCount(0)
 })

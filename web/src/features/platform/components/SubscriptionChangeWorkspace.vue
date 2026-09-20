@@ -2,6 +2,8 @@
 import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
 
 import { computed, ref, watch } from 'vue'
+import { backendBusinessText, backendTermLabel } from '@/i18n/backend-terms'
+import { currentUiLocale } from '@/i18n'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import {
   CommercialApiError,
@@ -33,29 +35,18 @@ const manualApproval = ref(false)
 const pending = ref(false)
 const errorMessage = ref('')
 
-const actionLabel = computed(() => ({ SWITCH: '切换套餐', RENEW: '续期', STOP_RENEWAL: '停止续期' })[action.value])
+const actionLabel = computed(() => backendTermLabel('changeAction', action.value))
 
 function classificationLabel(value?: string) {
-  if (value === 'UPGRADE') return '升级'
-  if (value === 'DOWNGRADE') return '降级'
-  if (value === 'RENEWAL') return '续期'
-  if (value === 'STOP_RENEWAL') return '停止续期'
-  return '套餐变更'
+  return backendTermLabel('changeClassification', value)
 }
 
 function effectiveModeLabel(value?: string) {
-  if (value === 'IMMEDIATE') return '立即生效'
-  if (value === 'SCHEDULED') return '预约生效'
-  if (value === 'PROVISIONING') return '准备完成后生效'
-  return '按规则生效'
+  return backendTermLabel('effectiveMode', value)
 }
 
 function receiptStatusLabel(value?: string) {
-  if (value === 'APPLIED') return '已生效'
-  if (value === 'SCHEDULED') return '已预约'
-  if (value === 'PROVISIONING') return '处理中'
-  if (value === 'FAILED') return '处理失败'
-  return '待处理'
+  return backendTermLabel('receiptStatus', value)
 }
 const previewExpired = computed(() => {
   if (!preview.value?.expiresAt) return false
@@ -98,12 +89,18 @@ function toRfc3339(value: string) {
 function formatTime(value?: string) {
   if (!value) return '—'
   const parsed = new Date(value)
-  return Number.isNaN(parsed.valueOf()) ? value : parsed.toLocaleString('zh-CN', { hour12: false })
+  return Number.isNaN(parsed.valueOf()) ? value : parsed.toLocaleString(currentUiLocale(), { hour12: false })
 }
 
-function planLabel(subscription?: TenantSubscriptionDTO) {
-  if (!subscription) return '—'
-  return `${subscription.planCode || '—'} v${subscription.planVersion || '—'}`
+function planLabel(value?: { planCode?: string; planVersion?: string | number; version?: string | number; name?: string }) {
+  if (!value) return '—'
+  const name = value.name || backendTermLabel('plan', value.planCode)
+  const version = value.planVersion ?? value.version
+  return version === undefined || version === '' ? name : `${name} v${version}`
+}
+
+function moduleListLabel(values?: string[]) {
+  return values?.map((value) => backendTermLabel('module', value)).join('、') || '无依赖'
 }
 
 function limitLabel(limit?: { unlimited: boolean; value: string | number }) {
@@ -214,7 +211,7 @@ function describeError(error: unknown, fallback: string) {
     <template v-else>
       <div class="form-grid">
         <label class="field" for="subscription-action"><span>操作</span><UiSelect id="subscription-action" v-model="action" class="input"><UiOption value="SWITCH">切换套餐</UiOption><UiOption value="RENEW">续期</UiOption><UiOption value="STOP_RENEWAL">停止续期</UiOption></UiSelect></label>
-        <label class="field" for="change-target-code"><span>目标套餐编号</span><UiInput id="change-target-code" v-model="targetPlanCode" class="input" :disabled="action !== 'SWITCH'" :placeholder="action === 'SWITCH' ? '例如 office-pro' : subscription.planCode" /></label>
+        <label class="field" for="change-target-code"><span>目标套餐编号</span><UiInput id="change-target-code" v-model="targetPlanCode" class="input" :disabled="action !== 'SWITCH'" :placeholder="action === 'SWITCH' ? '输入套餐编号' : backendTermLabel('plan', subscription.planCode)" /></label>
         <label class="field" for="change-target-version"><span>目标版本</span><UiInput id="change-target-version" v-model="targetPlanVersion" class="input" :disabled="action !== 'SWITCH'" :placeholder="action === 'SWITCH' ? '例如 2' : String(subscription.planVersion)" /></label>
         <label class="field" for="change-effective-at"><span>指定未来生效时间（可空）</span><UiInput id="change-effective-at" v-model="effectiveAt" class="input" type="datetime-local" /></label>
         <label class="field wide" for="change-preview-reason"><span>变更原因</span><UiTextarea id="change-preview-reason" v-model="previewReason" class="input" rows="2" :placeholder="`${actionLabel}的业务原因`" /></label>
@@ -234,7 +231,7 @@ function describeError(error: unknown, fallback: string) {
 
         <div class="facts-grid">
           <div><span>源订阅</span><strong>{{ planLabel(preview.before) }}</strong></div>
-          <div><span>目标</span><strong>{{ preview.target ? `${preview.target.planCode} v${preview.target.version}` : '—' }}</strong></div>
+          <div><span>目标</span><strong>{{ planLabel(preview.target) }}</strong></div>
           <div><span>预计生效</span><strong>{{ formatTime(preview.effectiveAt) }}</strong></div>
           <div><span>方案有效期</span><strong :class="{ expired: previewExpired }">{{ formatTime(preview.expiresAt) }}</strong></div>
           <div><span>权益来源版本</span><strong>{{ preview.sourceVersion }}</strong></div>
@@ -243,14 +240,14 @@ function describeError(error: unknown, fallback: string) {
           <div><span>费用处理</span><strong>{{ preview.pricingBasis ? '按当前套餐价格规则确认' : '暂无额外费用信息' }}</strong></div>
         </div>
 
-        <div v-if="preview.impacts?.length" class="impact-block"><h3>影响摘要</h3><ul><li v-for="impact in preview.impacts" :key="impact">{{ impact }}</li></ul></div>
+        <div v-if="preview.impacts?.length" class="impact-block"><h3>影响摘要</h3><ul><li v-for="impact in preview.impacts" :key="impact">{{ backendBusinessText(impact) }}</li></ul></div>
 
-        <div v-if="preview.dependencies?.length" class="impact-block"><h3>依赖变化</h3><ul><li v-for="item in preview.dependencies" :key="item.moduleCode"><code>{{ item.moduleCode }}</code> → {{ item.requiresModules?.join('、') || '无依赖' }}</li></ul></div>
+        <div v-if="preview.dependencies?.length" class="impact-block"><h3>依赖变化</h3><ul><li v-for="item in preview.dependencies" :key="item.moduleCode"><strong>{{ backendTermLabel('module', item.moduleCode) }}</strong> → {{ moduleListLabel(item.requiresModules) }}</li></ul></div>
 
         <div v-if="preview.quotaImpacts?.length" class="table-scroll">
           <table class="data-table">
             <thead><tr><th>额度</th><th>切换前</th><th>切换后</th><th>使用量</th><th>策略</th></tr></thead>
-            <tbody><tr v-for="item in preview.quotaImpacts" :key="`${item.moduleCode}:${item.key}`"><td><strong>{{ item.moduleCode }}</strong><small>{{ item.key }}</small></td><td>{{ limitLabel(item.beforeLimit) }}</td><td>{{ limitLabel(item.afterLimit) }}</td><td>{{ item.usageKnown ? item.used : '未知' }}<small v-if="item.overLimit" class="danger-text">超额</small></td><td>{{ item.overLimit ? '超出目标额度' : item.usageKnown ? '符合当前额度' : '待确认' }}</td></tr></tbody>
+            <tbody><tr v-for="item in preview.quotaImpacts" :key="`${item.moduleCode}:${item.key}`"><td><strong>{{ backendTermLabel('entitlementKey', item.key) }}</strong><small>{{ backendTermLabel('module', item.moduleCode) }}</small></td><td>{{ limitLabel(item.beforeLimit) }}</td><td>{{ limitLabel(item.afterLimit) }}</td><td>{{ item.usageKnown ? item.used : '未知' }}<small v-if="item.overLimit" class="danger-text">超额</small></td><td>{{ item.overLimit ? '超出目标额度' : item.usageKnown ? '符合当前额度' : '待确认' }}</td></tr></tbody>
           </table>
         </div>
 
