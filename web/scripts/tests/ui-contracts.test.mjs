@@ -56,6 +56,14 @@ test('product surfaces reject implementation terminology', (t) => {
   assert.ok(checkUiModel(root).failures.some((error) => error.includes('product UI exposes engineering language')))
 })
 
+test('feature TypeScript cannot bypass product language guard', (t) => {
+  const root = fixture(t)
+  edit(root, 'src/features/enterprise/composables/useAuditLogs.ts', (source) =>
+    source.replace('export function useAuditLogs() {', "const leakedProductCopy = '服务端回读'\nexport function useAuditLogs() {"),
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('product UI exposes engineering language')))
+})
+
 test('EnterpriseSourceBanner cannot be reintroduced', (t) => {
   const root = fixture(t)
   writeFileSync(
