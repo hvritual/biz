@@ -93,6 +93,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
   for (let index = members.length; index < requestedCount; index += 1) {
     members.push({
       userId: `user-extra-${String(index + 1).padStart(2, '0')}`,
+      username: `member.${String(index + 1).padStart(2, '0')}`,
       email: `member-${index + 1}@coffeelink.test`,
       status: index % 2 === 0 ? 'TENANT_MEMBER_STATUS_ACTIVE' : 'TENANT_MEMBER_STATUS_INVITED',
       version: 1,
@@ -410,35 +411,52 @@ test('canonical members use server-side filters, pagination and authoritative to
   await expect(page.locator('[data-member-id^="user-extra-"]')).toHaveCount(0)
 })
 
-test('canonical invite uses loaded role and department, trusted headers and authoritative readback', async ({ page }) => {
+test('canonical invite uses one atomic create write with activation choice and authoritative readback', async ({ page }) => {
   const server = await mockMemberServer(page)
   await openCanonicalMembers(page)
   await page.getByRole('button', { name: '邀请成员', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '邀请成员' })
+  await dialog.getByLabel('登录账号').fill('invitee.user')
   await dialog.getByLabel('姓名').fill('Invitee User')
   await dialog.getByLabel('邮箱').fill('invitee@coffeelink.test')
+  await selectUiOption(dialog.getByLabel('激活方式'), 'activation_link')
   await expect(dialog.getByLabel('所属部门')).toContainText('客户成功部')
   await expect(dialog.getByLabel('数据范围')).toHaveValue('保存后由角色权限服务派生')
   await expect(dialog.getByLabel('运营负责人')).toBeChecked()
   await dialog.getByRole('button', { name: '创建邀请', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('服务端确认')
   await expect(page.locator('[data-member-id="user-003"]')).toContainText('Invitee User')
-  const invite = server.getWrites().find((item) => item.path === '/api/v1/tenant/members' && item.method === 'POST')!
-  expect(invite.headers['x-csrf-token']).toBe('csrf-real-member')
-  expect(invite.headers['idempotency-key']).toMatch(/^enterprise-member-invite-/)
-  expect(invite.headers['x-biz-session-context']).toContain('tenant-001')
+  await expect(page.locator('[data-member-id="user-003"]')).toContainText('@invitee.user')
+
+  const writes = server.getWrites()
+  const create = writes.find((item) => item.path === '/api/v1/tenant/members/create' && item.method === 'POST')!
+  expect(create).toBeTruthy()
+  expect(writes.filter((item) => item.path.startsWith('/api/v1/tenant/members'))).toHaveLength(1)
+  expect(create.headers['x-csrf-token']).toBe('csrf-real-member')
+  expect(create.headers['idempotency-key']).toMatch(/^enterprise-member-create-/)
+  expect(create.headers['x-biz-session-context']).toContain('tenant-001')
+  expect(create.body).toMatchObject({
+    username: 'invitee.user',
+    email: 'invitee@coffeelink.test',
+    departmentId: 'dept-success',
+    roleIds: ['role-ops'],
+    activationMode: 'TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK',
+  })
   expect(server.getMembers().find((member) => member.userId === 'user-003')).toMatchObject({
+    username: 'invitee.user',
     name: 'Invitee User',
     departmentId: 'dept-success',
+    status: 'TENANT_MEMBER_STATUS_INVITED',
   })
 })
 
-test('canonical profile edit exposes only supported fields and sends authoritative version', async ({ page }) => {
+test('canonical member edit is one atomic update and preserves immutable username', async ({ page }) => {
   const server = await mockMemberServer(page)
   await openCanonicalMembers(page)
   await page.getByRole('button', { name: '编辑 Alice Chen', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '修改成员信息' })
-  await expect(dialog.getByLabel('邮箱')).toHaveAttribute('readonly', '')
+  await expect(dialog.getByLabel('登录账号')).toHaveValue('alice.owner')
+  await expect(dialog.getByLabel('登录账号')).toHaveAttribute('readonly', '')
   await expect(dialog.getByLabel('加入日期')).toHaveValue('服务端未提供')
   await expect(dialog.getByLabel('数据范围')).toHaveValue('指定数据')
   await expect(dialog.getByText(/成员资料 API 未提供备注写入字段/)).toBeVisible()
@@ -452,19 +470,29 @@ test('canonical profile edit exposes only supported fields and sends authoritati
   const row = page.locator('[data-member-id="user-001"]')
   await expect(row).toContainText('Alice Updated')
   await expect(row).toContainText('租赁运营部')
-  const write = server.getWrites().find((item) => item.path.endsWith('/profile'))!
+
+  const writes = server.getWrites().filter((item) => item.path === '/api/v1/tenant/members/user-001')
+  expect(writes).toHaveLength(1)
+  const write = writes[0]!
   expect(write.method).toBe('PATCH')
   expect(write.headers['x-csrf-token']).toBe('csrf-real-member')
-  expect(write.headers['idempotency-key']).toMatch(/^enterprise-member-profile-/)
+  expect(write.headers['idempotency-key']).toMatch(/^enterprise-member-update-/)
   expect(write.headers['x-biz-session-context']).toContain('tenant-001')
-  expect(write.body).toMatchObject({ userId: 'user-001', version: 3, departmentId: 'dept-rental', employeeId: 'EMP-2009' })
-  expect(write.body).not.toHaveProperty('email')
+  expect(write.body).toMatchObject({
+    userId: 'user-001',
+    version: 3,
+    departmentId: 'dept-rental',
+    employeeId: 'EMP-2009',
+    email: 'owner@coffeelink.test',
+    roleIds: ['role-ops'],
+  })
+  expect(write.body).not.toHaveProperty('username')
   expect(write.body).not.toHaveProperty('scope')
   expect(write.body).not.toHaveProperty('joinedAt')
   expect(write.body).not.toHaveProperty('note')
 })
 
-test('canonical role change is idempotent, scope remains server-derived and readback confirms membership', async ({ page }) => {
+test('canonical role change is one atomic member update and scope remains server-derived', async ({ page }) => {
   const server = await mockMemberServer(page)
   await openCanonicalMembers(page)
   await page.getByRole('button', { name: 'Alice Chen 更多操作', exact: true }).click()
@@ -475,10 +503,13 @@ test('canonical role change is idempotent, scope remains server-derived and read
   await dialog.getByRole('button', { name: '保存变更', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('服务端确认')
   await expect(page.locator('[data-member-id="user-001"]')).toContainText('经营查看者')
-  const write = server.getWrites().find((item) => item.path.endsWith('/roles/role-viewer/members'))!
-  expect(write.method).toBe('POST')
-  expect(write.headers['idempotency-key']).toMatch(/^enterprise-member-role-assign-/)
-  expect(write.headers['x-csrf-token']).toBe('csrf-real-member')
+
+  const writes = server.getWrites().filter((item) => item.path === '/api/v1/tenant/members/user-001')
+  expect(writes).toHaveLength(1)
+  expect(writes[0]?.method).toBe('PATCH')
+  expect(writes[0]?.headers['idempotency-key']).toMatch(/^enterprise-member-update-/)
+  expect(writes[0]?.headers['x-csrf-token']).toBe('csrf-real-member')
+  expect(writes[0]?.body).toMatchObject({ roleIds: ['role-ops', 'role-viewer'], version: 3 })
 })
 
 test('401 redirects to trusted login and 403 blocks members before protected data loads', async ({ page }) => {
@@ -509,7 +540,7 @@ test('canonical profile 409 preserves draft and reuses the same idempotency key'
   await expect(dialog.getByLabel('姓名')).toHaveValue('conflicting change')
   await save.click()
   await expect(dialog.getByRole('alert')).toContainText('成员状态或请求版本已发生变化')
-  const writes = server.getWrites().filter((item) => item.path.endsWith('/profile'))
+  const writes = server.getWrites().filter((item) => item.path === '/api/v1/tenant/members/user-001')
   expect(writes).toHaveLength(2)
   expect(writes[0]?.headers['idempotency-key']).toBe(writes[1]?.headers['idempotency-key'])
   await expect(page.getByText(/变更已由服务端确认并完成权威回读/)).toHaveCount(0)
