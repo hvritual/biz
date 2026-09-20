@@ -106,6 +106,20 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
       derivedDataScope: index % 2 === 0 ? 'sites' : 'self',
     })
   }
+  let removedMembers: RemoteMember[] = [{
+    userId: 'user-removed-001',
+    username: 'former.member',
+    email: 'former@coffeelink.test',
+    status: 'TENANT_MEMBER_STATUS_REMOVED',
+    version: 5,
+    name: 'Former Member',
+    phone: '',
+    employeeId: 'EMP-OLD',
+    position: 'Former Operator',
+    departmentId: 'dept-success',
+    roles: [],
+    derivedDataScope: 'none',
+  }]
   const writes: WriteRecord[] = []
   const listReads: string[] = []
 
@@ -152,6 +166,8 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
       'tenant.member.activate',
       'tenant.member.suspend',
       'tenant.member.remove',
+      'tenant.member.list_removed',
+      'tenant.member.restore',
       'tenant.role.list',
       'tenant.department.list',
       'tenant.role.assign_member',
@@ -206,6 +222,11 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
       return { ...next, derivedDataScope: deriveScope(next) }
     })
     return json(route, 200, role)
+  })
+
+  await page.route(/\/(?:api\/)?v1\/tenant\/members\/removed(?:\?.*)?$/, async (route) => {
+    if (route.request().method() !== 'GET') return json(route, 405, { message: 'method not allowed' })
+    return json(route, 200, { members: removedMembers, total: removedMembers.length })
   })
 
   await page.route(/\/(?:api\/)?v1\/tenant\/members\/create$/, async (route) => {
@@ -318,13 +339,13 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     return json(route, 200, updated)
   })
 
-  await page.route(/\/(?:api\/)?v1\/tenant\/members\/(?!create(?:\/|$))[^/]+(?:\/(?:activate|suspend|remove))?$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/members\/(?!create(?:\/|$)|removed(?:\/|$))[^/]+(?:\/(?:activate|suspend|remove|restore))?$/, async (route) => {
     const request = route.request()
     const url = new URL(request.url())
     const parts = url.pathname.split('/')
     const userId = decodeURIComponent(parts[parts.indexOf('members') + 1] || '')
     const action = parts.at(-1)
-    const current = members.find((member) => member.userId === userId)
+    const current = members.find((member) => member.userId === userId) ?? removedMembers.find((member) => member.userId === userId)
     if (!current) return json(route, 404, { message: 'not found' })
 
     if (request.method() === 'GET') {
@@ -356,13 +377,21 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
       return json(route, 200, updated)
     }
     const nextStatus =
-      action === 'activate'
+      action === 'activate' || action === 'restore'
         ? 'TENANT_MEMBER_STATUS_ACTIVE'
         : action === 'suspend'
           ? 'TENANT_MEMBER_STATUS_SUSPENDED'
           : 'TENANT_MEMBER_STATUS_REMOVED'
     const updated = { ...current, status: nextStatus, version: current.version + 1 }
-    members = members.map((member) => (member.userId === userId ? updated : member))
+    if (action === 'restore') {
+      removedMembers = removedMembers.filter((member) => member.userId !== userId)
+      members = [...members.filter((member) => member.userId !== userId), updated]
+    } else if (action === 'remove') {
+      members = members.filter((member) => member.userId !== userId)
+      removedMembers = [...removedMembers.filter((member) => member.userId !== userId), updated]
+    } else {
+      members = members.map((member) => (member.userId === userId ? updated : member))
+    }
     return json(route, 200, updated)
   })
 
@@ -370,6 +399,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     getMembers: () => members,
     getWrites: () => writes,
     getListReads: () => listReads,
+    getRemovedMembers: () => removedMembers,
   }
 }
 
@@ -535,6 +565,32 @@ test('401 redirects to trusted login and 403 blocks members before protected dat
   await expect(page.getByRole('heading', { name: '没有访问权限' })).toBeVisible()
   await expect(page.locator('[data-enterprise-page="members"]')).toHaveCount(0)
   await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
+})
+
+test('canonical recycle bin restores removed member with one authoritative write and readback', async ({ page }) => {
+  const server = await mockMemberServer(page)
+  await openCanonicalMembers(page)
+  await page.getByRole('button', { name: '成员回收站', exact: true }).click()
+  const recycle = page.getByRole('dialog', { name: '成员回收站' })
+  await expect(recycle.getByText('Former Member', { exact: true })).toBeVisible()
+  await recycle.getByRole('button', { name: '恢复成员', exact: true }).click()
+  const restore = page.getByRole('dialog', { name: '恢复 Former Member' })
+  await restore.getByLabel('恢复原因').fill('employment restored')
+  await restore.getByRole('button', { name: '确认恢复', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('成员已恢复')
+  await expect(page.locator('[data-member-id="user-removed-001"]')).toContainText('Former Member')
+  expect(server.getRemovedMembers()).toHaveLength(0)
+
+  const writes = server.getWrites().filter((item) => item.path === '/v1/tenant/members/user-removed-001/restore')
+  expect(writes).toHaveLength(1)
+  expect(writes[0]?.method).toBe('POST')
+  expect(writes[0]?.headers['x-csrf-token']).toBe('csrf-real-member')
+  expect(writes[0]?.headers['idempotency-key']).toMatch(/^enterprise-member-restore-/)
+  expect(writes[0]?.body).toMatchObject({
+    userId: 'user-removed-001',
+    version: 5,
+    reason: 'employment restored',
+  })
 })
 
 test('canonical profile 409 preserves draft and reuses the same idempotency key', async ({ page }) => {
