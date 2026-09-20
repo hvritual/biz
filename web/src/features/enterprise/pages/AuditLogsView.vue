@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+import { UiButton, UiOption, UiSelect } from '@/ui/base'
 import { computed } from 'vue'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 import PageHeading from '@/ui/common/PageHeading.vue'
@@ -19,7 +19,7 @@ const {
   demoFiltered, demoPaged, demoModules, demoRiskLabels, exportDemoLogs, pretty,
   serverSession, serverRecords, serverTotal, serverPage, serverPageSize,
   serverBusy, detailBusy, exportBusy, serverError, serverNotice, selectedServer,
-  queryDraft, operationDraft, resultDraft, riskDraft, exportRetry,
+  queryDraft, resultDraft, riskDraft, exportRetry,
   canReadServer, pageHighRisk, pageFailures, pageExports, serverRiskLabels, resultLabels,
   actorLabel, formatTime, resultTone, riskTone,
   refreshServer, applyServerFilters, resetServerFilters,
