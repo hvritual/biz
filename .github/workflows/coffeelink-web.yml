@@ -1,9 +1,8 @@
 name: CoffeeLink Vue console
 on:
+  workflow_call:
   push:
     branches: [main, feat/coffeelink-vue-console]
-    paths: ['web/**', '.github/workflows/coffeelink-web.yml']
-  pull_request:
     paths: ['web/**', '.github/workflows/coffeelink-web.yml']
 concurrency:
   group: coffeelink-web-${{ github.event.pull_request.number || github.ref }}
