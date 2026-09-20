@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { UiButton } from '@/ui/base'
 import { CommercialApiError } from '@/services/commercial/platformCommercial'
+import { redirectToTrustedLogin } from '@/services/runtime/authorization'
 import {
   listMemberAppeals,
   submitMemberAppeal,
@@ -81,7 +82,7 @@ onMounted(load)
         <UiButton class="btn" :disabled="loading" @click="load">{{ t('common.refresh') }}</UiButton>
       </header>
 
-      <p v-if="error" class="appeal-alert" role="alert">{{ error }}</p>
+      <div v-if="error" class="appeal-alert" role="alert"><span>{{ error }}</span><UiButton v-if="error === t('members.appeal.loginRequired')" class="btn" @click="redirectToTrustedLogin">{{ t('common.login') }}</UiButton></div>
       <p v-if="loading" class="appeal-muted">{{ t('common.loading') }}</p>
 
       <div v-else-if="!items.length" class="appeal-empty">
