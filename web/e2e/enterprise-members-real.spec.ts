@@ -587,7 +587,7 @@ test('canonical role change is one atomic member update and scope remains server
   await expect(dialog.getByLabel('目标数据范围')).toHaveValue('保存后根据角色权限自动确定')
   await dialog.getByLabel('经营查看者').check()
   await dialog.getByRole('button', { name: '保存变更', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('服务端确认')
+  await expect(page.getByRole('status')).toContainText('变更已保存并更新。')
   await expect(page.locator('[data-member-id="user-001"]')).toContainText('经营查看者')
 
   const writes = server.getWrites().filter((item) => item.path === '/v1/tenant/members/user-001')
