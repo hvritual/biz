@@ -636,10 +636,10 @@ func TestB123Enterprise176AtomicMemberCreateRollsBackAndRequiresActivation(t *te
 	smsUsername := "sms176" + suffix
 	smsPhone := "+49176176" + suffix
 	smsReceipt, statusCode, body := createB123MemberHTTP(t, base, tokenB, "e176-sms-new:"+stamp, &accessv1.CreateTenantMemberRequest{
-		Username: smsUsername,
-		Phone: smsPhone,
-		Name: "SMS Member",
-		RoleIds: []string{roleB},
+		Username:       smsUsername,
+		Phone:          smsPhone,
+		Name:           "SMS Member",
+		RoleIds:        []string{roleB},
 		ActivationMode: accessv1.TenantMemberActivationMode_TENANT_MEMBER_ACTIVATION_MODE_SMS_INITIAL_PASSWORD,
 	})
 	if statusCode != http.StatusOK {
@@ -670,12 +670,12 @@ func TestB123Enterprise176AtomicMemberCreateRollsBackAndRequiresActivation(t *te
 	}
 
 	requestID, browserSecret, csrf, err := memberStore.CreateFirstPartyAuthorizationRequest(context.Background(), accesspersistence.FirstPartyAuthorizationRequestInput{
-		ClientID: "biz-web",
-		RedirectURI: "http://127.0.0.1:18080/auth/callback",
-		State: "sms-state-" + stamp,
-		Nonce: "sms-nonce-" + stamp,
+		ClientID:      "biz-web",
+		RedirectURI:   "http://127.0.0.1:18080/auth/callback",
+		State:         "sms-state-" + stamp,
+		Nonce:         "sms-nonce-" + stamp,
 		CodeChallenge: "sms-code-challenge-" + stamp,
-		Scope: "openid profile",
+		Scope:         "openid profile",
 	}, 5*time.Minute)
 	if err != nil {
 		t.Fatal(err)

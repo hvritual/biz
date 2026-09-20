@@ -42,10 +42,10 @@ func (err *tenantMemberConflictError) GRPCStatus() *status.Status {
 }
 
 type TenantMemberLifecycleService struct {
-	repositories       requestscope.RepositoryFactory[ports.TenantMemberRepositories]
-	capabilities       TenantMemberLifecycleCapabilities
-	activationTTL      time.Duration
-	activationURL      string
+	repositories  requestscope.RepositoryFactory[ports.TenantMemberRepositories]
+	capabilities  TenantMemberLifecycleCapabilities
+	activationTTL time.Duration
+	activationURL string
 }
 
 func NewTenantMemberLifecycleService(repositories requestscope.RepositoryFactory[ports.TenantMemberRepositories], capabilities TenantMemberLifecycleCapabilities) (*TenantMemberLifecycleService, error) {
@@ -81,8 +81,8 @@ func newTenantMemberLifecycleService(
 		return nil, errors.New("access: tenant member activation URL is required")
 	}
 	return &TenantMemberLifecycleService{
-		repositories: repositories,
-		capabilities: capabilities,
+		repositories:  repositories,
+		capabilities:  capabilities,
 		activationTTL: activationTTL,
 		activationURL: activationURL,
 	}, nil
