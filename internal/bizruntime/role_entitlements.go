@@ -31,6 +31,8 @@ func roleExecutionError(ctx context.Context, operation string, err error) error 
 		return nil
 	}
 	if errors.Is(err, accessports.ErrTenantRoleConflict) ||
+		errors.Is(err, accessports.ErrTenantRoleProtected) ||
+		errors.Is(err, accessports.ErrTenantRoleInUse) ||
 		errors.Is(err, accessports.ErrLastTenantOwner) ||
 		errors.Is(err, domain.ErrProtectedOwnerRole) ||
 		errors.Is(err, domain.ErrInvalidTenantRoleTransition) {
@@ -67,6 +69,14 @@ func (w checkedRoles) UpdateTenantRole(ctx context.Context, r *accessv1.UpdateTe
 	v, err := w.inner.UpdateTenantRole(ctx, r)
 	return v, roleExecutionError(ctx, "tenant.role.update", err)
 }
+func (w checkedRoles) DeleteTenantRole(ctx context.Context, r *accessv1.DeleteTenantRoleRequest) (*accessv1.TenantRoleDTO, error) {
+	if err := enforcement.RequireExecuted(ctx, "tenant.role.delete"); err != nil {
+		return nil, err
+	}
+	v, err := w.inner.DeleteTenantRole(ctx, r)
+	return v, roleExecutionError(ctx, "tenant.role.delete", err)
+}
+
 func (w checkedRoles) DisableTenantRole(ctx context.Context, r *accessv1.DisableTenantRoleRequest) (*accessv1.TenantRoleDTO, error) {
 	if err := enforcement.RequireExecuted(ctx, "tenant.role.disable"); err != nil {
 		return nil, err
