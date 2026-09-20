@@ -208,7 +208,7 @@ onMounted(loadModules)
     <div data-ui-region="page-heading">
       <PageHeading
         title="租户权益"
-        description="以租户上下文查看订阅、服务端权益决策、专项来源与变更工作区；浏览器不自行合并权益"
+        description="查看当前租户的订阅、权益结果、专项权益与变更记录"
       />
     </div>
 
@@ -233,21 +233,21 @@ onMounted(loadModules)
     <section v-if="actionMessage" class="notice success" role="status">{{ actionMessage }}</section>
     <section v-if="actionError && !overrideDialogOpen" class="notice danger" role="alert">{{ actionError }}</section>
 
-    <section v-if="loadState === 'idle'" class="card state-card"><strong>选择或输入 tenant_id 开始</strong><p>读取订阅、专项来源和权益解释都由服务端平台权限决定。</p></section>
-    <section v-else-if="loadState === 'loading'" class="card state-card" aria-live="polite"><strong>正在读取 {{ activeTenantId }} 的商业事实</strong><p>并行读取当前订阅、override 来源和服务端权益解释。</p></section>
+    <section v-if="loadState === 'idle'" class="card state-card"><strong>选择或输入租户编号开始</strong><p>可查看内容取决于当前平台账号的权限范围。</p></section>
+    <section v-else-if="loadState === 'loading'" class="card state-card" aria-live="polite"><strong>正在读取 {{ activeTenantId }} 的权益信息</strong><p>正在获取当前订阅、专项权益和权益结果。</p></section>
     <section v-else-if="loadState === 'blocked'" class="card state-card warning" role="alert"><strong>当前平台会话无权限读取该租户权益</strong><p>{{ errorMessage }}</p><UiButton class="btn" type="button" @click="loadWorkspace">重新检查</UiButton></section>
     <section v-else-if="loadState === 'error'" class="card state-card danger" role="alert"><strong>租户权益读取失败</strong><p>{{ errorMessage }}</p><UiButton class="btn" type="button" @click="loadWorkspace">重试</UiButton></section>
 
     <template v-else-if="loadState === 'ready' && entitlement">
       <section class="metric-grid" data-ui-region="metrics">
         <article class="card metric"><span>source_version</span><strong>{{ summary.sourceVersion }}</strong><small>专项来源聚合版本</small></article>
-        <article class="card metric"><span>entitlement_version</span><strong>{{ summary.entitlementVersion }}</strong><small>服务端派生版本</small></article>
+        <article class="card metric"><span>权益版本</span><strong>{{ summary.entitlementVersion }}</strong><small>当前计算版本</small></article>
         <article class="card metric"><span>权益决策</span><strong>{{ summary.decisions }}</strong><small>{{ capabilityCodes().length ? '已过滤' : '全部' }}</small></article>
         <article class="card metric"><span>下一时间边界</span><strong class="time-value">{{ formatTime(String(summary.nextTransition)) }}</strong><small>next_transition_at</small></article>
       </section>
 
       <section class="card subscription-card" data-ui-region="subscription">
-        <div class="section-header"><div><h2>当前订阅</h2><p>订阅是权益来源之一，不等同于最终服务端决策。</p></div><StatusBadge v-if="subscription" :text="subscription.state || 'unknown'" :tone="subscription.state === 'ACTIVE' ? 'success' : 'neutral'" /></div>
+        <div class="section-header"><div><h2>当前订阅</h2><p>订阅是权益来源之一，最终可用权益以当前结果为准。</p></div><StatusBadge v-if="subscription" :text="subscription.state || 'unknown'" :tone="subscription.state === 'ACTIVE' ? 'success' : 'neutral'" /></div>
         <div v-if="subscription" class="subscription-grid">
           <div><span>套餐</span><strong>{{ subscription.planCode }} v{{ subscription.planVersion }}</strong></div>
           <div><span>销售范围</span><strong>{{ subscription.salesScope || '—' }}</strong></div>
