@@ -149,6 +149,7 @@ func (store *Store) AutoMigrate(ctx context.Context) error {
 	return store.database.WithContext(ctx).AutoMigrate(
 		&tenantCreationRecord{}, &tenantRecord{}, &userRecord{}, &membershipRecord{}, &roleRecord{},
 		&memberRoleRecord{}, &permissionGrantRecord{}, &memberSiteRecord{}, &apiTokenRecord{}, &auditEventRecord{},
+		&memberRemovedRoleSnapshotRecord{}, &memberRemovedSiteSnapshotRecord{}, &memberStatusAppealRecord{},
 	)
 }
 
