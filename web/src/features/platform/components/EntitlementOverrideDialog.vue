@@ -155,7 +155,7 @@ function submit() {
   <div v-if="open" class="dialog-backdrop" @click.self="emit('close')">
     <section class="dialog card" role="dialog" aria-modal="true" aria-labelledby="override-title">
       <header class="dialog-header">
-        <div><h2 id="override-title">新增专项权益来源</h2><p>source_version {{ sourceVersion }} · 服务端 source_kind 固定为 override</p></div>
+        <div><h2 id="override-title">新增专项权益</h2><p>为当前租户增加独立于套餐的专项权益配置。</p></div>
         <UiButton class="btn" type="button" @click="emit('close')">关闭</UiButton>
       </header>
 
