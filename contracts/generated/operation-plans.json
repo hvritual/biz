@@ -3961,6 +3961,39 @@
       }
     },
     {
+      "operationId": "tenant.role.delete",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "delete_tenant_role",
+      "requestType": "access.v1.DeleteTenantRoleRequest",
+      "responseType": "access.v1.TenantRoleDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/DeleteTenantRole",
+        "http": [
+          {
+            "method": "DELETE",
+            "path": "/v1/tenant/roles/{role_id}"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "tenant.role.disable",
       "domain": "access",
       "application": "tenant_role_permission",

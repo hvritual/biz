@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	ErrTenantRoleNotFound = errors.New("access: tenant role not found")
-	ErrTenantRoleConflict = errors.New("access: tenant role version conflict")
-	ErrTenantRoleExists   = errors.New("access: tenant role already exists")
+	ErrTenantRoleNotFound  = errors.New("access: tenant role not found")
+	ErrTenantRoleConflict  = errors.New("access: tenant role version conflict")
+	ErrTenantRoleExists    = errors.New("access: tenant role already exists")
 	ErrTenantRoleMember    = errors.New("access: role target must be an invited or active tenant member")
 	ErrTenantRoleProtected = errors.New("access: system role is protected")
 	ErrTenantRoleInUse     = errors.New("access: role still has assigned members")

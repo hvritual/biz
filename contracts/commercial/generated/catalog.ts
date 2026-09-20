@@ -108,6 +108,7 @@ export const operationIds = [
   "tenant.role.assign_member",
   "tenant.role.bootstrap_owner",
   "tenant.role.create",
+  "tenant.role.delete",
   "tenant.role.disable",
   "tenant.role.enable",
   "tenant.role.get",

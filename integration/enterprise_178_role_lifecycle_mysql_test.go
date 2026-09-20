@@ -85,7 +85,7 @@ func TestEnterprise178RoleMetadataQueryProtectionAndDelete(t *testing.T) {
 	}
 
 	_, status, body = roleHTTPB124(t, http.MethodPost, base+"/v1/tenant/roles/"+created.GetId()+"/disable", token, "enterprise-178-disable-in-use:"+stamp, &accessv1.DisableTenantRoleRequest{
-		RoleId: created.GetId(),
+		RoleId:  created.GetId(),
 		Version: assigned.GetVersion(),
 	})
 	if status == http.StatusOK {
@@ -136,10 +136,10 @@ func TestEnterprise178RoleMetadataQueryProtectionAndDelete(t *testing.T) {
 			t.Fatalf("reserved role read status=%d role=%+v body=%s", status, role, body)
 		}
 		_, status, body = roleHTTPB124(t, http.MethodPatch, base+"/v1/tenant/roles/"+reserved.id, token, "enterprise-178-update-system:"+reserved.code+":"+stamp, &accessv1.UpdateTenantRoleRequest{
-			RoleId: reserved.id,
-			Name: "renamed",
+			RoleId:      reserved.id,
+			Name:        "renamed",
 			Description: "changed",
-			Version: role.GetVersion(),
+			Version:     role.GetVersion(),
 		})
 		if status == http.StatusOK {
 			t.Fatalf("system role update unexpectedly succeeded role=%s body=%s", reserved.code, body)

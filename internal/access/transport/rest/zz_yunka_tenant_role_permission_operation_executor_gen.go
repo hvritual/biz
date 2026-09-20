@@ -12,6 +12,7 @@ import (
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	io "io"
 	"net/http"
+	strconv "strconv"
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
@@ -38,6 +39,9 @@ func RegisterTenantRolePermissionOperationExecutor(mux *http.ServeMux, applicati
 		return err
 	}
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/roles", handler.handleOperationCreateTenantRole); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "DELETE", "/v1/tenant/roles/{role_id}", handler.handleOperationDeleteTenantRole); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/roles/{role_id}/disable", handler.handleOperationDisableTenantRole); err != nil {
@@ -150,6 +154,32 @@ func (handler *TenantRolePermissionOperationHandler) handleOperationCreateTenant
 	_, _ = writer.Write(payload)
 }
 
+func (handler *TenantRolePermissionOperationHandler) handleOperationDeleteTenantRole(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.DeleteTenantRoleRequest{}
+	if raw := request.URL.Query().Get("version"); raw != "" {
+		parsed, err := strconv.ParseUint(raw, 10, 64)
+		if err != nil {
+			http.Error(writer, "invalid request parameter", http.StatusBadRequest)
+			return
+		}
+		wire.Version = uint64(parsed)
+	}
+	wire.RoleId = request.PathValue("role_id")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantRolePermissionDeleteTenantRole(), wire, handler.application.DeleteTenantRole)
+	if err != nil {
+		writeTenantRolePermissionOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
 func (handler *TenantRolePermissionOperationHandler) handleOperationDisableTenantRole(writer http.ResponseWriter, request *http.Request) {
 	wire := &accessv1.DisableTenantRoleRequest{}
 	body, err := io.ReadAll(request.Body)
@@ -228,6 +258,9 @@ func (handler *TenantRolePermissionOperationHandler) handleOperationGetTenantRol
 
 func (handler *TenantRolePermissionOperationHandler) handleOperationListTenantRoles(writer http.ResponseWriter, request *http.Request) {
 	wire := &accessv1.ListTenantRolesRequest{}
+	if raw := request.URL.Query().Get("query"); raw != "" {
+		wire.Query = raw
+	}
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantRolePermissionListTenantRoles(), wire, handler.application.ListTenantRoles)
 	if err != nil {
