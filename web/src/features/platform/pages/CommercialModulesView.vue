@@ -217,7 +217,7 @@ onMounted(loadModules)
     <div data-ui-region="page-heading">
       <PageHeading
         title="模块目录"
-        description="治理平台可售模块、技术状态与能力边界；所有状态均来自服务端商业事实"
+        description="治理平台可售模块、启用状态与能力边界，保持模块定义与销售配置一致"
       />
     </div>
 
@@ -243,7 +243,7 @@ onMounted(loadModules)
 
     <template v-else>
       <section class="metric-grid" aria-label="模块目录摘要" data-ui-region="metrics">
-        <article class="card metric"><span>模块总数</span><strong>{{ summary.total }}</strong><small>来自服务端目录</small></article>
+        <article class="card metric"><span>模块总数</span><strong>{{ summary.total }}</strong><small>当前模块目录</small></article>
         <article class="card metric"><span>技术就绪</span><strong>{{ summary.ready }}</strong><small>READY</small></article>
         <article class="card metric"><span>可销售</span><strong>{{ summary.sellable }}</strong><small>SELLABLE</small></article>
       </section>
@@ -268,19 +268,19 @@ onMounted(loadModules)
           </label>
           <UiButton class="btn query-reset" type="button" @click="keyword = ''; technicalFilter = ''; salesFilter = ''">重置</UiButton>
         </div>
-        <p class="query-summary">当前显示 {{ filteredModules.length }} / {{ modules.length }} 个模块；筛选只影响当前服务端目录的展示结果。</p>
+        <p class="query-summary">当前显示 {{ filteredModules.length }} / {{ modules.length }} 个模块；筛选只影响当前列表的展示结果。</p>
       </section>
 
       <section v-if="loadState === 'empty'" class="card state-card">
         <span class="state-icon"><AppIcon name="database" :size="20" /></span>
-        <div><strong>模块目录为空</strong><p>服务端返回成功，但当前没有平台模块记录。</p></div>
+        <div><strong>模块目录为空</strong><p>当前没有平台模块记录。</p></div>
       </section>
 
       <section v-else class="card catalog-card" data-ui-region="data">
         <div class="catalog-header">
           <div>
             <h2>模块目录</h2>
-            <p>技术状态与销售状态独立管理；模块能力、额度模板、字段策略与依赖由服务端代码注册表声明。</p>
+            <p>启用状态与销售状态独立管理；模块能力、额度规则和依赖关系统一维护。</p>
           </div>
           <UiButton class="btn" type="button" @click="loadModules"><AppIcon name="refresh" :size="15" />刷新</UiButton>
         </div>
