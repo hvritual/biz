@@ -28,7 +28,8 @@
     "navigation_drink_configuration_domain": "device-operations",
     "navigation_rental_work_collections_required": true,
     "enterprise_canonical_routes_required": true,
-    "product_shell_forbids_data_mode_ui_branch": true
+    "product_shell_forbids_data_mode_ui_branch": true,
+    "product_surface_forbids_engineering_language": true
   },
   "navigation": {
     "primary_domains": [
