@@ -633,6 +633,27 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     if (email && !email.includes('*') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       throw new Error('请填写有效邮箱。')
     }
+    if (previewMode) {
+      const normalizedEmail = email.toLowerCase()
+      if (
+        normalizedEmail &&
+        members.value.some(
+          (member) =>
+            member.id !== draft.id &&
+            member.status !== 'removed' &&
+            member.email.trim().toLowerCase() === normalizedEmail,
+        )
+      ) throw new Error('当前企业已存在该邮箱的成员。')
+      if (
+        phone &&
+        members.value.some(
+          (member) =>
+            member.id !== draft.id &&
+            member.status !== 'removed' &&
+            member.phone.trim() === phone,
+        )
+      ) throw new Error('当前企业已存在该手机号的成员。')
+    }
     if (!current) {
       const username = (draft.username ?? '').trim().toLowerCase()
       if (username.length < 5 || username.length > 20 || /^\d+$/.test(username) || /\s/.test(username)) {
