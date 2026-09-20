@@ -144,11 +144,12 @@ test('detail is read from the server and exposes trace references without invent
   await mockAuditServer(page)
   await openAudit(page)
   await page.getByRole('button', { name: '查看操作日志 audit-001' }).click()
-  await expect(page.getByText('audit-001', { exact: true })).toBeVisible()
-  await expect(page.getByText('权限与成员', { exact: true })).toBeVisible()
-  await expect(page.getByText(/禁用成员/)).toBeVisible()
-  await expect(page.getByText('成员 user-002', { exact: true })).toBeVisible()
-  await expect(page.getByText(/sha256:session-ref|digest-001|request:req-001/)).toHaveCount(0)
+  const detail = page.getByRole('dialog', { name: '日志详情' })
+  await expect(detail.getByText('audit-001', { exact: true })).toBeVisible()
+  await expect(detail.getByText('权限与成员', { exact: true }).first()).toBeVisible()
+  await expect(detail.getByText(/禁用成员/).first()).toBeVisible()
+  await expect(detail.getByText('成员 user-002', { exact: true })).toBeVisible()
+  await expect(detail.getByText(/sha256:session-ref|digest-001|request:req-001/)).toHaveCount(0)
 })
 
 test('audit export uses trusted session, CSRF and idempotency and reports only server-confirmed success', async ({ page }) => {
