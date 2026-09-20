@@ -1,4 +1,5 @@
 name: Enterprise 176 contract regenerate
+# Closed-PR regeneration lane for #176.
 
 on:
   push:
