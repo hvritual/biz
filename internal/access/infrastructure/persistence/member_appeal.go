@@ -46,21 +46,21 @@ type memberStatusAppealRecord struct {
 func (memberStatusAppealRecord) TableName() string { return "biz_member_status_appeals" }
 
 type MemberAppealEligibility struct {
-	TenantID       string
-	TenantName     string
-	Status         string
-	AppealID       string
-	AppealState    string
-	LastSubmitted  *time.Time
+	TenantID      string     `json:"tenant_id"`
+	TenantName    string     `json:"tenant_name"`
+	Status        string     `json:"status"`
+	AppealID      string     `json:"appeal_id,omitempty"`
+	AppealState   string     `json:"appeal_state,omitempty"`
+	LastSubmitted *time.Time `json:"last_submitted,omitempty"`
 }
 
 type MemberAppealReceipt struct {
-	AppealID             string
-	TenantID             string
-	Status               string
-	State                string
-	SubmittedAt          time.Time
-	NotificationEventIDs []string
+	AppealID             string    `json:"appeal_id"`
+	TenantID             string    `json:"tenant_id"`
+	Status               string    `json:"membership_status"`
+	State                string    `json:"state"`
+	SubmittedAt          time.Time `json:"submitted_at"`
+	NotificationEventIDs []string  `json:"notification_event_ids"`
 }
 
 type MemberAppealService struct {
@@ -156,17 +156,18 @@ func (service *MemberAppealService) Submit(
 		}
 
 		var existing memberStatusAppealRecord
-		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+		existingErr := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("tenant_id = ? AND user_id = ?", tenantID, userID).First(&existing).Error
+		existingFound := existingErr == nil
 		switch {
-		case err == nil:
+		case existingFound:
 			nextAllowed := existing.SubmittedAt.Add(memberAppealInterval)
 			if nextAllowed.After(now) {
 				return MemberAppealRateLimitError{RetryAfter: nextAllowed.Sub(now)}
 			}
-		case errors.Is(err, gorm.ErrRecordNotFound):
+		case errors.Is(existingErr, gorm.ErrRecordNotFound):
 		default:
-			return err
+			return existingErr
 		}
 
 		secret, err := randomVerificationSecret(18)
@@ -223,7 +224,7 @@ func (service *MemberAppealService) Submit(
 			MembershipStatus: membership.Status, State: MemberAppealStatePending, Reason: reason,
 			NotificationEventJSON: string(encoded), SubmittedAt: now, UpdatedAt: now,
 		}
-		if err == nil && existing.TenantID != "" {
+		if existingFound {
 			result := tx.Model(&memberStatusAppealRecord{}).
 				Where("tenant_id = ? AND user_id = ?", tenantID, userID).
 				Updates(map[string]any{
