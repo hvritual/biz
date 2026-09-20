@@ -5,6 +5,7 @@ const flags = [
   'screenshots_are_acceptance_evidence', 'navigation_section_groups_required',
   'navigation_forbids_entity_bound_paths', 'navigation_rental_work_collections_required',
   'enterprise_canonical_routes_required', 'product_shell_forbids_data_mode_ui_branch',
+  'product_surface_forbids_engineering_language',
 ]
 
 function object(value, path, keys) {
