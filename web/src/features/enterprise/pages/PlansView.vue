@@ -200,13 +200,13 @@ function submitDemoChange() {
           <div class="timeline plan-timeline">
             <template v-if="plan.isServerBacked && plan.model">
               <div class="timeline-item">
-                <strong>当前订阅修订 r{{ plan.model.subscription.revision }}</strong>
-                <p>{{ plan.model.subscription.planCode }} · {{ plan.model.subscription.state }}</p>
+                <strong>当前套餐信息</strong>
+                <p>{{ plan.currentPlan }} · {{ plan.subscriptionState }}</p>
                 <small>{{ plan.model.subscription.updatedAt || plan.model.subscription.createdAt || '最近更新' }}</small>
               </div>
               <div v-if="plan.model.subscription.pendingChangeId" class="timeline-item">
                 <strong>存在待处理套餐变更</strong>
-                <p>{{ plan.model.subscription.pendingChangeId }}</p>
+                <p>已有一项套餐变更正在处理中。</p>
               </div>
             </template>
             <template v-else>
@@ -224,7 +224,7 @@ function submitDemoChange() {
 
     <UiDialog :open="requestOpen" title="申请套餐调整" @close="requestOpen = false">
       <div class="page-stack">
-        <div class="notice-box"><AppIcon name="help" />此操作仅用于 demo 演示，不会购买服务、变更实际订阅或扣费。</div>
+        <div class="notice-box"><AppIcon name="help" />此操作仅用于演示申请流程，不会购买服务、变更实际订阅或扣费。</div>
         <label class="field"><span>意向套餐</span><UiSelect v-model="targetPlan" class="select"><UiOption>企业版</UiOption><UiOption>标准版扩容</UiOption><UiOption>联系商务定制</UiOption></UiSelect></label>
         <label class="field"><span>需求说明</span><UiTextarea v-model="note" class="textarea" maxlength="500" placeholder="描述所需成员、点位、设备或功能额度" /></label>
       </div>
