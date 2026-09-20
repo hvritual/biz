@@ -6,6 +6,7 @@ on:
       - feat/enterprise-177-member-lifecycle-appeal
     paths:
       - .github/workflows/enterprise-177-member-lifecycle.yml
+      - .github/workflows/enterprise-177-contract-regenerate.yml
       - contracts/proto/access/v1/tenant_member.proto
       - contracts/commercial/operation-capabilities.v1.json
       - internal/access/**
@@ -26,6 +27,7 @@ on:
       - main
     paths:
       - .github/workflows/enterprise-177-member-lifecycle.yml
+      - .github/workflows/enterprise-177-contract-regenerate.yml
       - contracts/proto/access/v1/tenant_member.proto
       - contracts/commercial/operation-capabilities.v1.json
       - internal/access/**
