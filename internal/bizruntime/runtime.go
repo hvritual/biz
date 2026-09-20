@@ -194,6 +194,7 @@ type applicationFactories struct {
 	tenantProfileRepositories   requestscope.RepositoryFactory[accessports.TenantProfileRepositories]
 	memberRepositories          requestscope.RepositoryFactory[accessports.TenantMemberRepositories]
 	memberActivationTTL         time.Duration
+	memberActivationURL         string
 	departmentRepositories      requestscope.RepositoryFactory[accessports.TenantDepartmentRepositories]
 	roleRepositories            requestscope.RepositoryFactory[accessports.TenantRoleRepositories]
 	delegatedDeviceRepositories requestscope.RepositoryFactory[deviceports.DelegatedRepositories]
