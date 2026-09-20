@@ -554,7 +554,7 @@ func (repository *TenantMemberRepository) Update(ctx context.Context, member *do
 		if result.Error != nil {
 			var mysqlErr *mysql.MySQLError
 			if errors.As(result.Error, &mysqlErr) && mysqlErr.Number == 1062 {
-				return ports.ErrTenantMemberConflict
+				return ports.ErrTenantMemberContactConflict
 			}
 			return result.Error
 		}
