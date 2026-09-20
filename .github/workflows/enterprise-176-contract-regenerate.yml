@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/enterprise-176-contract-regenerate.yml
       - contracts/proto/access/v1/tenant_member.proto
+      - contracts/commercial/operation-capabilities.v1.json
   pull_request:
     branches:
       - main
@@ -90,6 +91,18 @@ jobs:
           set -euo pipefail
           make -C biz generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
           git -C biz diff -- contracts/gen/access/v1/tenant_member.pb.go
+
+      - name: Format changed Go sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C biz fetch origin main
+          mapfile -t files < <(git -C biz diff --name-only origin/main...HEAD -- '*.go')
+          if ((${#files[@]})); then
+            for file in "${files[@]}"; do
+              gofmt -w "biz/$file"
+            done
+          fi
 
       - name: Commit generated outputs
         shell: bash
