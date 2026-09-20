@@ -5,6 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  workflow_call:
   push:
     branches:
       - agent/c9-biz-pressure-conformance
@@ -12,8 +13,6 @@ on:
       - agent/c9-8-cross-application-conformance
       - agent/c9-9-conformance-closure
       - agent/c10-4-consumer-upgrade
-  pull_request:
-
 permissions:
   contents: read
 
