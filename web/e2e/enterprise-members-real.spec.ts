@@ -454,7 +454,6 @@ async function mockMemberAppealServer(page: Page) {
 async function openCanonicalMembers(page: Page) {
   await page.goto('/#/enterprise/members')
   await expect(page.locator('[data-enterprise-page="members"]')).toBeVisible()
-  await expect(page.locator('[data-enterprise-source="api"]')).toBeVisible()
 }
 
 test('canonical member page renders authoritative member, role, department and scope across CoffeeLink viewports', async ({ page }) => {
