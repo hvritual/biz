@@ -86,7 +86,7 @@ async function save() {
     await store.saveDepartment(draft.value)
     selected.value = draft.value.id
     editOpen.value = false
-    ui.toast(store.sourceKind === 'api' ? '组织调整已由服务端确认并回读。' : '组织调整已保存到当前企业预览。')
+    ui.toast('组织调整已保存。')
   } catch (e) {
     error.value = e instanceof Error ? e.message : '保存失败。'
   }
@@ -222,7 +222,7 @@ onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).ca
           ><span class="required">部门名称</span
           ><UiInput v-model="draft.name" class="input" maxlength="40" /></label
         ><label class="field"
-          ><span>部门编号</span><UiInput v-model="draft.code" class="input" maxlength="30" :readonly="store.sourceKind === 'api'" :placeholder="store.sourceKind === 'api' ? '服务端合同暂未提供部门编号' : ''" /></label
+          ><span>部门编号</span><UiInput v-model="draft.code" class="input" maxlength="30" :readonly="store.sourceKind === 'api'" :placeholder="store.sourceKind === 'api' ? '当前暂不支持编辑部门编号' : ''" /></label
         ><label class="field"
           ><span>上级部门</span
           ><UiSelect v-model="draft.parentId" class="select">
@@ -246,11 +246,11 @@ onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).ca
           </UiSelect></label
         ><label class="field full-width"
           ><span>部门职责</span
-          ><UiTextarea v-model="draft.description" class="textarea" maxlength="300" :readonly="store.sourceKind === 'api'" :placeholder="store.sourceKind === 'api' ? '服务端合同暂未提供部门职责字段' : ''" /></label
+          ><UiTextarea v-model="draft.description" class="textarea" maxlength="300" :readonly="store.sourceKind === 'api'" :placeholder="store.sourceKind === 'api' ? '当前暂不支持编辑部门职责' : ''" /></label
         ><label class="option-line"><UiInput v-model="draft.enabled" type="checkbox" />启用部门</label>
       </div>
       <div class="notice-box department-notice">
-        <AppIcon name="help" />组织调整会影响“所属部门及下级”的数据范围。真实授权变更必须由服务端重新计算。
+        <AppIcon name="help" />组织调整可能影响“所属部门及下级”的数据范围，请在保存前确认相关成员权限。
       </div>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
       <template #footer
