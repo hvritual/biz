@@ -25,7 +25,7 @@ async function openLifecycle(page: Page, key: string, title: string) {
   await page.goto(`/#/platform/commercial/${key}`)
   await expect(page.getByRole('heading', { name: title, exact: true, level: 1 })).toBeVisible()
   await expect(page.locator(`[data-lifecycle-page="${key}"]`)).toBeVisible()
-  await expect(page.getByText('服务端契约待接入', { exact: true })).toBeVisible()
+  await expect(page.getByText('部分能力待开放', { exact: true })).toBeVisible()
   await expect(page.locator('[data-ui-region="metrics"] > *')).toHaveCount(4)
   await expect(page.locator('[data-ui-region="lifecycle"]')).toBeVisible()
   await expect(page.locator('[data-ui-region="data"] tbody tr').first()).toBeVisible()
