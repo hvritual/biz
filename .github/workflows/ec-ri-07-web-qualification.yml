@@ -5,15 +5,10 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  workflow_call:
   push:
     branches:
       - feat/ec-ri-07-server-audit-trail
-    paths:
-      - .github/workflows/ec-ri-07-web-qualification.yml
-      - web/**
-  pull_request:
-    branches:
-      - main
     paths:
       - .github/workflows/ec-ri-07-web-qualification.yml
       - web/**
