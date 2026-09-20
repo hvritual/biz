@@ -81,7 +81,6 @@ func (service *TenantMemberLifecycleService) InviteTenantMember(ctx context.Cont
 	return tenantMemberDTO(member), nil
 }
 
-
 func (service *TenantMemberLifecycleService) CreateTenantMember(ctx context.Context, request *accessv1.CreateTenantMemberRequest) (*accessv1.TenantMemberCreationReceipt, error) {
 	if request == nil || service.activationTTL <= 0 {
 		return nil, ports.ErrTenantMemberActivationUnavailable
@@ -289,7 +288,6 @@ func tenantMemberListQuery(request *accessv1.ListTenantMembersRequest) (ports.Te
 		PageSize:     pageSize,
 	}, nil
 }
-
 
 func (service *TenantMemberLifecycleService) UpdateTenantMember(ctx context.Context, request *accessv1.UpdateTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
 	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {

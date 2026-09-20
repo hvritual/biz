@@ -65,7 +65,6 @@ func (repository *TenantMemberRepository) newMembershipRecord(member domain.Memb
 	return row, nil
 }
 
-
 func (repository *TenantMemberRepository) newMembershipRecordWithProfile(member domain.Membership, email, phone string) (membershipRecord, error) {
 	row, err := repository.newMembershipRecord(member, email)
 	if err != nil {
@@ -155,7 +154,6 @@ func (repository *TenantMemberRepository) Invite(ctx context.Context, tenantID, 
 	}
 	return member, nil
 }
-
 
 func (repository *TenantMemberRepository) Create(ctx context.Context, tenantID string, input ports.TenantMemberCreateInput, now time.Time) (domain.Membership, bool, error) {
 	if repository == nil || repository.database == nil {

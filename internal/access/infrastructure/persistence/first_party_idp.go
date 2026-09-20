@@ -159,18 +159,18 @@ func setStoredUserPassword(ctx context.Context, database *gorm.DB, userID, passw
 	hash := pbkdf2SHA256([]byte(password), salt, defaultPBKDF2Iterations, 32)
 	now := time.Now().UTC()
 	record := userPasswordCredentialRecord{
-		UserID: userID,
-		Salt: base64.RawStdEncoding.EncodeToString(salt),
-		PasswordHash: base64.RawStdEncoding.EncodeToString(hash),
-		Iterations: defaultPBKDF2Iterations,
-		Disabled: false,
-		MustChange: mustChange,
+		UserID:             userID,
+		Salt:               base64.RawStdEncoding.EncodeToString(salt),
+		PasswordHash:       base64.RawStdEncoding.EncodeToString(hash),
+		Iterations:         defaultPBKDF2Iterations,
+		Disabled:           false,
+		MustChange:         mustChange,
 		TemporaryExpiresAt: temporaryExpiresAt,
-		PasswordChangedAt: now,
-		UpdatedAt: now,
+		PasswordChangedAt:  now,
+		UpdatedAt:          now,
 	}
 	return database.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns: []clause.Column{{Name: "user_id"}},
+		Columns:   []clause.Column{{Name: "user_id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"salt", "password_hash", "iterations", "disabled", "must_change", "temporary_expires_at", "password_changed_at", "updated_at"}),
 	}).Create(&record).Error
 }

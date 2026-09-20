@@ -44,14 +44,13 @@ var (
 )
 
 type MemberActivationView struct {
-	TenantID        string
-	UserID          string
-	Mode            string
-	NewAccount      bool
+	TenantID         string
+	UserID           string
+	Mode             string
+	NewAccount       bool
 	RequiresPassword bool
-	ExpiresAt       time.Time
+	ExpiresAt        time.Time
 }
-
 
 type TenantMemberActivationRepository struct {
 	database     *gorm.DB
@@ -205,12 +204,12 @@ func (store *Store) InspectMemberActivation(ctx context.Context, token string) (
 		return MemberActivationView{}, ErrMemberActivationExpired
 	}
 	return MemberActivationView{
-		TenantID: record.TenantID,
-		UserID: record.UserID,
-		Mode: record.Mode,
-		NewAccount: record.NewAccount,
+		TenantID:         record.TenantID,
+		UserID:           record.UserID,
+		Mode:             record.Mode,
+		NewAccount:       record.NewAccount,
 		RequiresPassword: record.NewAccount,
-		ExpiresAt: record.ExpiresAt,
+		ExpiresAt:        record.ExpiresAt,
 	}, nil
 }
 
@@ -323,8 +322,8 @@ func completeMemberActivation(ctx context.Context, tx *gorm.DB, record *memberAc
 	result := tx.WithContext(ctx).Model(&membershipRecord{}).
 		Where("tenant_id = ? AND user_id = ? AND status = ?", record.TenantID, record.UserID, domain.TenantMemberStatusInvited).
 		Updates(map[string]any{
-			"status": domain.TenantMemberStatusActive,
-			"version": gorm.Expr("version + 1"),
+			"status":     domain.TenantMemberStatusActive,
+			"version":    gorm.Expr("version + 1"),
 			"updated_at": now,
 		})
 	if result.Error != nil {
@@ -345,11 +344,11 @@ func completeMemberActivation(ctx context.Context, tx *gorm.DB, record *memberAc
 		if err := tx.WithContext(ctx).Model(&securityNotificationOutboxRecord{}).
 			Where("event_id = ? AND state IN ?", record.NotificationEventID, []string{domain.NotificationStatePending, domain.NotificationStateFailed}).
 			Updates(map[string]any{
-				"state": domain.NotificationStateCancelled,
+				"state":                  domain.NotificationStateCancelled,
 				"destination_ciphertext": "",
-				"secret_ciphertext": "",
-				"failure_code": "MEMBER_ACTIVATED",
-				"updated_at": now,
+				"secret_ciphertext":      "",
+				"failure_code":           "MEMBER_ACTIVATED",
+				"updated_at":             now,
 			}).Error; err != nil {
 			return err
 		}

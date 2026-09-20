@@ -193,7 +193,6 @@ func listB123HTTP(t *testing.T, base, token string, values url.Values) (*accessv
 	return &result, response.StatusCode, body
 }
 
-
 func TestB123TenantMemberLifecycleIsTenantScopedAcrossRESTAndGRPC(t *testing.T) {
 	db := openDB(t)
 	stamp := fmt.Sprint(time.Now().UnixNano())
@@ -300,7 +299,6 @@ func TestB123TenantMemberLifecycleIsTenantScopedAcrossRESTAndGRPC(t *testing.T) 
 		t.Fatalf("tenant B membership changed after A suspension: %+v", observedBAfter)
 	}
 }
-
 
 func TestB123Enterprise176MemberListFiltersPaginationAndTenantIsolation(t *testing.T) {
 	db := openDB(t)
@@ -493,13 +491,13 @@ func TestB123Enterprise176AtomicMemberCreateRollsBackAndRequiresActivation(t *te
 	email := "member-create-" + stamp + "@example.invalid"
 	phone := "+49170176" + suffix
 	receipt, statusCode, body := createB123MemberHTTP(t, base, tokenA, "e176-create:"+stamp, &accessv1.CreateTenantMemberRequest{
-		Username: username,
-		Email: email,
-		Phone: phone,
-		Name: "Atomic Member",
-		EmployeeId: "EMP-176",
-		Position: "Operator",
-		RoleIds: []string{roleA},
+		Username:       username,
+		Email:          email,
+		Phone:          phone,
+		Name:           "Atomic Member",
+		EmployeeId:     "EMP-176",
+		Position:       "Operator",
+		RoleIds:        []string{roleA},
 		ActivationMode: accessv1.TenantMemberActivationMode_TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK,
 	})
 	if statusCode != http.StatusOK {
@@ -546,10 +544,10 @@ func TestB123Enterprise176AtomicMemberCreateRollsBackAndRequiresActivation(t *te
 
 	badUsername := "bad176" + suffix
 	_, statusCode, _ = createB123MemberHTTP(t, base, tokenA, "e176-bad-role:"+stamp, &accessv1.CreateTenantMemberRequest{
-		Username: badUsername,
-		Email: "bad-role-"+stamp+"@example.invalid",
-		Name: "Rollback Member",
-		RoleIds: []string{tenantA + ":missing-role"},
+		Username:       badUsername,
+		Email:          "bad-role-" + stamp + "@example.invalid",
+		Name:           "Rollback Member",
+		RoleIds:        []string{tenantA + ":missing-role"},
 		ActivationMode: accessv1.TenantMemberActivationMode_TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK,
 	})
 	if statusCode == http.StatusOK {
@@ -564,10 +562,10 @@ func TestB123Enterprise176AtomicMemberCreateRollsBackAndRequiresActivation(t *te
 	}
 
 	_, statusCode, _ = createB123MemberHTTP(t, base, tokenA, "e176-duplicate-username:"+stamp, &accessv1.CreateTenantMemberRequest{
-		Username: username,
-		Email: "different-"+stamp+"@example.invalid",
-		Name: "Duplicate Username",
-		RoleIds: []string{roleA},
+		Username:       username,
+		Email:          "different-" + stamp + "@example.invalid",
+		Name:           "Duplicate Username",
+		RoleIds:        []string{roleA},
 		ActivationMode: accessv1.TenantMemberActivationMode_TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK,
 	})
 	if statusCode != http.StatusConflict {
@@ -575,11 +573,11 @@ func TestB123Enterprise176AtomicMemberCreateRollsBackAndRequiresActivation(t *te
 	}
 
 	_, statusCode, body = createB123MemberHTTP(t, base, tokenB, "e176-existing-account-sms:"+stamp, &accessv1.CreateTenantMemberRequest{
-		Username: username,
-		Email: email,
-		Phone: phone,
-		Name: "Shared Account Tenant B",
-		RoleIds: []string{roleB},
+		Username:       username,
+		Email:          email,
+		Phone:          phone,
+		Name:           "Shared Account Tenant B",
+		RoleIds:        []string{roleB},
 		ActivationMode: accessv1.TenantMemberActivationMode_TENANT_MEMBER_ACTIVATION_MODE_SMS_INITIAL_PASSWORD,
 	})
 	if statusCode != http.StatusConflict {
@@ -593,4 +591,3 @@ func TestB123Enterprise176AtomicMemberCreateRollsBackAndRequiresActivation(t *te
 		t.Fatalf("rejected existing-account SMS left partial tenant membership: %d", tenantBMembership)
 	}
 }
-

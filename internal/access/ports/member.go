@@ -9,38 +9,38 @@ import (
 )
 
 var (
-	ErrTenantMemberNotFound             = errors.New("access: tenant member not found")
-	ErrTenantMemberConflict             = errors.New("access: tenant member version conflict")
-	ErrTenantMemberExists               = errors.New("access: tenant member already exists")
-	ErrTenantMemberUsernameConflict     = errors.New("access: tenant member username conflicts with another account")
-	ErrTenantMemberContactConflict      = errors.New("access: tenant member contact conflicts with another account")
+	ErrTenantMemberNotFound              = errors.New("access: tenant member not found")
+	ErrTenantMemberConflict              = errors.New("access: tenant member version conflict")
+	ErrTenantMemberExists                = errors.New("access: tenant member already exists")
+	ErrTenantMemberUsernameConflict      = errors.New("access: tenant member username conflicts with another account")
+	ErrTenantMemberContactConflict       = errors.New("access: tenant member contact conflicts with another account")
 	ErrTenantMemberActivationUnavailable = errors.New("access: tenant member activation is unavailable")
-	ErrTenantMemberExistingAccountSMS   = errors.New("access: existing account must not receive a new initial password")
-	ErrTenantMemberActivationPending    = errors.New("access: member must complete pending activation")
+	ErrTenantMemberExistingAccountSMS    = errors.New("access: existing account must not receive a new initial password")
+	ErrTenantMemberActivationPending     = errors.New("access: member must complete pending activation")
 )
 
 type TenantMemberCreateInput struct {
-	UserID         string
-	Username       string
-	Email          string
-	Phone          string
-	Name           string
-	EmployeeID     string
-	Position       string
-	DepartmentID   string
+	UserID       string
+	Username     string
+	Email        string
+	Phone        string
+	Name         string
+	EmployeeID   string
+	Position     string
+	DepartmentID string
 }
 
 type TenantMemberActivationInput struct {
-	TenantID        string
-	UserID          string
-	Username        string
-	Email           string
-	Phone           string
-	Mode            string
-	Secret          string
+	TenantID           string
+	UserID             string
+	Username           string
+	Email              string
+	Phone              string
+	Mode               string
+	Secret             string
 	NotificationSecret string
-	NewAccount      bool
-	ExpiresAt       time.Time
+	NewAccount         bool
+	ExpiresAt          time.Time
 }
 
 type TenantMemberActivationReceipt struct {

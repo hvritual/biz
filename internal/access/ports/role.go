@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	ErrTenantRoleNotFound    = errors.New("access: tenant role not found")
-	ErrTenantRoleConflict    = errors.New("access: tenant role version conflict")
-	ErrTenantRoleExists      = errors.New("access: tenant role already exists")
-	ErrTenantRoleMember      = errors.New("access: role target must be an invited or active tenant member")
-	ErrLastTenantOwner       = errors.New("access: last active tenant owner cannot be revoked")
+	ErrTenantRoleNotFound = errors.New("access: tenant role not found")
+	ErrTenantRoleConflict = errors.New("access: tenant role version conflict")
+	ErrTenantRoleExists   = errors.New("access: tenant role already exists")
+	ErrTenantRoleMember   = errors.New("access: role target must be an invited or active tenant member")
+	ErrLastTenantOwner    = errors.New("access: last active tenant owner cannot be revoked")
 )
 
 type TenantRoleRepository interface {

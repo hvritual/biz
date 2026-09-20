@@ -68,7 +68,7 @@ func run() error {
 			SessionRefreshWindow:    envDuration("YUNKA_BIZ_OIDC_SESSION_REFRESH_WINDOW", 0),
 			FlowTTL:                 envDuration("YUNKA_BIZ_OIDC_FLOW_TTL", 5*time.Minute),
 			CookieSecure:            envBool("YUNKA_BIZ_OIDC_COOKIE_SECURE", true),
-			TrustBizUserSubject:      envBool("YUNKA_BIZ_OIDC_TRUST_BIZ_USER_SUBJECT", false),
+			TrustBizUserSubject:     envBool("YUNKA_BIZ_OIDC_TRUST_BIZ_USER_SUBJECT", false),
 			PlatformExternalSubject: strings.TrimSpace(os.Getenv("YUNKA_BIZ_OIDC_PLATFORM_EXTERNAL_SUBJECT")),
 			PlatformSubject:         strings.TrimSpace(os.Getenv("YUNKA_BIZ_OIDC_PLATFORM_SUBJECT")),
 			PlatformEmail:           strings.TrimSpace(os.Getenv("YUNKA_BIZ_OIDC_PLATFORM_EMAIL")),
