@@ -118,8 +118,8 @@ func TestEnterprise177RemoveRestoreIsTenantScopedAtomicAndKeepsOldSessionRevoked
 	}
 	var roleCount, siteCount, roleSnapshotCount, siteSnapshotCount int64
 	for table, out := range map[string]*int64{
-		"biz_member_roles": &roleCount,
-		"biz_member_sites": &siteCount,
+		"biz_member_roles":                  &roleCount,
+		"biz_member_sites":                  &siteCount,
 		"biz_member_removed_role_snapshots": &roleSnapshotCount,
 		"biz_member_removed_site_snapshots": &siteSnapshotCount,
 	} {
@@ -313,7 +313,7 @@ func TestEnterprise177AppealIsSelfOnlyRateLimitedAndNotificationFailureDoesNotGr
 	tenantA := "e177-appeal-a-" + stamp
 	owner := "e177-appeal-owner-" + stamp
 	if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
-		TenantID: tenantA, TenantName: "Appeal Tenant A", UserID: owner, Email: owner+"@example.invalid", Token: "owner-token-" + stamp,
+		TenantID: tenantA, TenantName: "Appeal Tenant A", UserID: owner, Email: owner + "@example.invalid", Token: "owner-token-" + stamp,
 	}, nil); err != nil {
 		t.Fatal(err)
 	}

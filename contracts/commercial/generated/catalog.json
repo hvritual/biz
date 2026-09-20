@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "mapping_version": "20",
+  "mapping_version": "21",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "5278b6ab235e9322733782f91d40f5d6cebd9777fd3058620520bd92dc72ba32",
+    "contracts/commercial/operation-capabilities.v1.json": "761249463fc1043c3630f963c1f179f91942dc393aa46743044a8e0bf6ebf0c5",
     "contracts/generated/manifest.json": "40b31ed8d5a14821baaa863ed023ef9282ce39fdc9e98293d626fc908a6ffc6e",
     "contracts/generated/operation-plans.json": "64f06029573b55723f4a4b6b52036e24ecf4fa86169c36471363d7e9cfbd83f0",
     "internal/access/application/tenant_delegation.go": "b43e6709e61b7867395bc04a901a19c2a54cf4ec9565e875b354b1622e636589",
