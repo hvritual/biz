@@ -34,6 +34,7 @@ on:
       - internal/access/**
       - internal/bizruntime/**
       - integration/enterprise_177_member_lifecycle_mysql_test.go
+      - integration/b12_member_owner_invariant_mysql_test.go
       - web/src/features/enterprise/**
       - web/src/features/system/pages/AuthorizationStateView.vue
       - web/src/services/enterprise/memberRuntime.ts
@@ -116,7 +117,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 20             "https://github.com/protocolbuffers/protobuf/releases/download/v${RELEASE}/protoc-${RELEASE}-linux-x86_64.zip"             -o "$RUNNER_TEMP/protoc.zip"
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 20 \
+            "https://github.com/protocolbuffers/protobuf/releases/download/v${RELEASE}/protoc-${RELEASE}-linux-x86_64.zip" \
+            -o "$RUNNER_TEMP/protoc.zip"
           echo "$CHECKSUM  $RUNNER_TEMP/protoc.zip" | sha256sum -c -
           unzip -q "$RUNNER_TEMP/protoc.zip" -d "$RUNNER_TEMP/protoc"
           echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
@@ -139,35 +142,7 @@ jobs:
         run: |
           set -euo pipefail
           go -C biz test -count=1 -tags=integration ./integration -run '^TestEnterprise177'
-          go -C biz test -count=1 -tags=integration ./integration -run '^TestB123MemberDeactivationPreservesLastActiveOwner
-
-  web:
-    runs-on: ubuntu-latest
-    timeout-minutes: 18
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - run: npm ci
-        working-directory: web
-      - run: npm run check
-        working-directory: web
-      - name: Install Chromium
-        working-directory: web
-        run: npx playwright install --with-deps chromium
-      - name: Run member lifecycle and appeal E2E
-        working-directory: web
-        shell: bash
-        run: |
-          set -euo pipefail
-          VITE_DATA_MODE=api npm run build
-          ENTERPRISE_MEMBER_REAL_E2E=1 npx playwright test e2e/enterprise-members-real.spec.ts
-
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestB123MemberDeactivationPreservesLastActiveOwner$'
           test -z "$(git -C biz status --porcelain)"
 
   web:
