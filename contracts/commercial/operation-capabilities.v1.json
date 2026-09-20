@@ -1217,6 +1217,15 @@
       "children": []
     },
     {
+      "operation_id": "tenant.role.delete",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": []
+    },
+    {
       "operation_id": "tenant.role.enable",
       "classification": "tenant_business",
       "module_code": "access-management",
