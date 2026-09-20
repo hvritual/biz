@@ -33,6 +33,14 @@ func (w checkedMembers) CountTenantQuotaMembers(ctx context.Context, r *accessv1
 	v, err := w.inner.CountTenantQuotaMembers(ctx, r)
 	return v, enforcement.ExecutionError(ctx, "tenant.member.count_quota_usage", err)
 }
+
+func (w checkedMembers) CreateTenantMember(ctx context.Context, r *accessv1.CreateTenantMemberRequest) (*accessv1.TenantMemberCreationReceipt, error) {
+	if err := enforcement.RequireExecuted(ctx, "tenant.member.create"); err != nil {
+		return nil, err
+	}
+	v, err := w.inner.CreateTenantMember(ctx, r)
+	return v, enforcement.ExecutionError(ctx, "tenant.member.create", err)
+}
 func (w checkedMembers) GetTenantMember(ctx context.Context, r *accessv1.GetTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
 	if err := enforcement.RequireExecuted(ctx, "tenant.member.get"); err != nil {
 		return nil, err
@@ -54,6 +62,22 @@ func (w checkedMembers) ListTenantMembers(ctx context.Context, r *accessv1.ListT
 	v, err := w.inner.ListTenantMembers(ctx, r)
 	return v, enforcement.ExecutionError(ctx, "tenant.member.list", err)
 }
+func (w checkedMembers) ListRemovedTenantMembers(ctx context.Context, r *accessv1.ListRemovedTenantMembersRequest) (*accessv1.ListTenantMembersResponse, error) {
+	if err := enforcement.RequireExecuted(ctx, "tenant.member.list_removed"); err != nil {
+		return nil, err
+	}
+	v, err := w.inner.ListRemovedTenantMembers(ctx, r)
+	return v, enforcement.ExecutionError(ctx, "tenant.member.list_removed", err)
+}
+
+func (w checkedMembers) RestoreTenantMember(ctx context.Context, r *accessv1.RestoreTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
+	if err := enforcement.RequireExecuted(ctx, "tenant.member.restore"); err != nil {
+		return nil, err
+	}
+	v, err := w.inner.RestoreTenantMember(ctx, r)
+	return v, enforcement.ExecutionError(ctx, "tenant.member.restore", err)
+}
+
 func (w checkedMembers) RemoveTenantMember(ctx context.Context, r *accessv1.RemoveTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
 	if err := enforcement.RequireExecuted(ctx, "tenant.member.remove"); err != nil {
 		return nil, err
@@ -68,6 +92,14 @@ func (w checkedMembers) SuspendTenantMember(ctx context.Context, r *accessv1.Sus
 	v, err := w.inner.SuspendTenantMember(ctx, r)
 	return v, enforcement.ExecutionError(ctx, "tenant.member.suspend", err)
 }
+func (w checkedMembers) UpdateTenantMember(ctx context.Context, r *accessv1.UpdateTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
+	if err := enforcement.RequireExecuted(ctx, "tenant.member.update"); err != nil {
+		return nil, err
+	}
+	v, err := w.inner.UpdateTenantMember(ctx, r)
+	return v, enforcement.ExecutionError(ctx, "tenant.member.update", err)
+}
+
 func (w checkedMembers) UpdateTenantMemberProfile(ctx context.Context, r *accessv1.UpdateTenantMemberProfileRequest) (*accessv1.TenantMemberDTO, error) {
 	if err := enforcement.RequireExecuted(ctx, "tenant.member.profile.update"); err != nil {
 		return nil, err

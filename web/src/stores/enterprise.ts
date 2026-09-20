@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import {
   createEnterpriseDataSource,
   emptyEnterpriseSnapshot,
+  projectMember,
   type EnterpriseDomain,
   type EnterpriseSourceState,
 } from '@/services/enterprise/dataSource'
@@ -12,18 +13,19 @@ import { timestamp } from '@/utils/format'
 import type { Member, MemberAction, Role, AuditRecord, Company, Department, DataScope } from '@/types/enterprise'
 import {
   activateEnterpriseMember,
-  assignEnterpriseMemberRole,
+  createEnterpriseMember,
   getEnterpriseMember,
-  inviteEnterpriseMember,
+  listRemovedEnterpriseMembers,
   memberRequestId,
-  memberRoleRequestId,
+  queryEnterpriseMembers,
   memberRuntimeError,
   readEnterpriseMemberSession,
   removeEnterpriseMember,
-  revokeEnterpriseMemberRole,
+  restoreEnterpriseMember,
   sameTrustedSession,
   suspendEnterpriseMember,
-  updateEnterpriseMemberProfile,
+  updateEnterpriseMember,
+  type EnterpriseMemberListQuery,
   type EnterpriseTenantMember,
 } from '@/services/enterprise/memberRuntime'
 import {
@@ -108,6 +110,9 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   const logs = computed(() => snapshot.value.logs)
   const settings = computed(() => snapshot.value.settings)
   const previewMode = dataSource.kind === 'demo'
+  const memberTotal = ref(previewMode ? members.value.filter((member) => member.status !== 'removed').length : 0)
+  const removedMembers = ref<Member[]>([])
+  const removedMemberTotal = ref(0)
   const sourceKind = dataSource.kind
   const demoBrandingByTenant = new Map<string, EnterpriseTenantBranding>([
     ['shanghai', { tenantId: 'shanghai', preset: 'blue', primary: '', version: 1, canManage: true }],
@@ -135,6 +140,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   let activeDomains: EnterpriseDomain[] = []
   let companyMutation: { tenantId: string; signature: string; key: string } | null = null
   let memberMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
+  let memberListQuery: EnterpriseMemberListQuery | null = null
+  let memberListGeneration = 0
   let roleMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let departmentMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let brandingMutation: { tenantId: string; signature: string; key: string } | null = null
@@ -151,6 +158,11 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     }
     companyMutation = null
     memberMutation = null
+    memberListQuery = null
+    memberListGeneration++
+    memberTotal.value = 0
+    removedMembers.value = []
+    removedMemberTotal.value = 0
     roleMutation = null
     departmentMutation = null
     branding.value = null
@@ -261,6 +273,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       action,
       expectedVersion,
       id: draft.id,
+      username: (draft.username ?? '').trim().toLowerCase(),
+      activationMode: draft.activationMode ?? '',
       email: draft.email.trim().toLowerCase(),
       name: draft.name.trim(),
       phone: draft.phone.trim(),
@@ -335,6 +349,9 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
         departments: domains.includes('departments') ? state.snapshot.departments : current.departments,
         company: domains.includes('company') ? state.snapshot.company : current.company,
       }
+    }
+    if (previewMode || domains.includes('members')) {
+      memberTotal.value = snapshot.value.members.filter((member) => member.status !== 'removed').length
     }
     lastPersisted = JSON.stringify(snapshot.value)
   }
@@ -523,9 +540,113 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     return current
   }
 
+
+  async function applyMemberPage(trusted: TrustedSession, query: EnterpriseMemberListQuery) {
+    const targetTenant = tenantId.value
+    const generation = ++memberListGeneration
+    const result = await queryEnterpriseMembers(trusted, query)
+    if (generation !== memberListGeneration || tenantId.value !== targetTenant) return false
+    snapshot.value = {
+      ...snapshot.value,
+      members: result.members.map(projectMember),
+    }
+    memberTotal.value = result.total
+    memberListQuery = { ...query }
+    return true
+  }
+
+  async function queryMembers(input: {
+    query: string
+    roleId: string
+    departmentId: string
+    status: Member['status'] | ''
+    page: number
+    pageSize: number
+  }) {
+    if (previewMode) {
+      memberTotal.value = members.value.filter((member) => member.status !== 'removed').length
+      return true
+    }
+    const query: EnterpriseMemberListQuery = {
+      query: input.query.trim(),
+      roleId: input.roleId,
+      departmentId: input.departmentId,
+      status: input.status ? serverMemberStatus(input.status) : '',
+      page: Math.max(1, Math.trunc(input.page)),
+      pageSize: Math.max(1, Math.min(100, Math.trunc(input.pageSize))),
+    }
+    loading.value = true
+    sourceError.value = ''
+    try {
+      const trusted = await stableMemberSession()
+      return await applyMemberPage(trusted, query)
+    } catch (error) {
+      sourceError.value = memberRuntimeError(error)
+      throw new Error(sourceError.value)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function queryRemovedMembers(page = 1, pageSize = 50) {
+    if (previewMode) {
+      removedMembers.value = members.value.filter((member) => member.status === 'removed')
+      removedMemberTotal.value = removedMembers.value.length
+      return true
+    }
+    const trusted = await stableMemberSession()
+    const result = await listRemovedEnterpriseMembers(trusted, page, pageSize)
+    removedMembers.value = result.members.map(projectMember)
+    removedMemberTotal.value = result.total
+    return true
+  }
+
+  async function restoreMember(id: string, version: number, reason: string) {
+    if (!reason.trim()) throw new Error('请填写恢复原因。')
+    const member = removedMembers.value.find((value) => value.id === id)
+    if (!member || member.status !== 'removed') throw new Error('该成员不在回收站中。')
+    if (member.version !== version) throw new Error('成员状态已变化，请刷新回收站后重试。')
+    if (previewMode) {
+      const restored = { ...member, status: 'active' as const, version: version + 1, online: false }
+      snapshot.value.members = snapshot.value.members.map((value) => value.id === id ? restored : value)
+      removedMembers.value = removedMembers.value.filter((value) => value.id !== id)
+      removedMemberTotal.value = removedMembers.value.length
+      audit('成员管理', '恢复成员', member.name, 'removed', 'active', reason, 'high')
+      return
+    }
+    try {
+      const trusted = await stableMemberSession()
+      const receipt = await restoreEnterpriseMember(
+        trusted,
+        asServerMember(member),
+        memberRequestId('restore'),
+        reason,
+      )
+      await getEnterpriseMember(trusted, receipt.userId)
+      await Promise.all([refreshMemberQuery(), queryRemovedMembers()])
+      return receipt
+    } catch (error) {
+      throw new Error(memberRuntimeError(error))
+    }
+  }
+
+  async function refreshMemberQuery() {
+    if (previewMode || !memberListQuery) {
+      await refresh()
+      return
+    }
+    const trusted = await stableMemberSession()
+    try {
+      await applyMemberPage(trusted, memberListQuery)
+    } catch (error) {
+      throw new Error(memberRuntimeError(error))
+    }
+  }
+
   function asServerMember(member: Member): EnterpriseTenantMember {
     return {
       userId: member.id,
+      username: member.username ?? '',
       email: member.email,
       status: serverMemberStatus(member.status),
       version: member.runtimeVersion ?? member.version,
@@ -553,14 +674,44 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     if (departments.value.length && !departments.value.some((department) => department.id === draft.departmentId && department.enabled)) {
       throw new Error('请选择有效且启用的所属部门。')
     }
-    if (!draft.name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim())) {
-      throw new Error('请填写姓名和有效邮箱。')
+    if (!draft.name.trim()) throw new Error('请填写成员姓名。')
+    const email = draft.email.trim()
+    const phone = draft.phone.trim()
+    if (!email && !phone) throw new Error('手机号和邮箱至少填写一项。')
+    if (email && !email.includes('*') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new Error('请填写有效邮箱。')
     }
-    if (
-      members.value.some(
-        (member) => member.id !== draft.id && member.email.toLowerCase() === draft.email.toLowerCase() && member.status !== 'removed',
-      )
-    ) throw new Error('当前企业已存在该邮箱的成员。')
+    if (previewMode) {
+      const normalizedEmail = email.toLowerCase()
+      if (
+        normalizedEmail &&
+        members.value.some(
+          (member) =>
+            member.id !== draft.id &&
+            member.status !== 'removed' &&
+            member.email.trim().toLowerCase() === normalizedEmail,
+        )
+      ) throw new Error('当前企业已存在该邮箱的成员。')
+      if (
+        phone &&
+        members.value.some(
+          (member) =>
+            member.id !== draft.id &&
+            member.status !== 'removed' &&
+            member.phone.trim() === phone,
+        )
+      ) throw new Error('当前企业已存在该手机号的成员。')
+    }
+    if (!current) {
+      const username = (draft.username ?? '').trim().toLowerCase()
+      if (username.length < 5 || username.length > 20 || /^\d+$/.test(username) || /\s/.test(username)) {
+        throw new Error('账号需为 5～20 位且不能为纯数字。')
+      }
+      if (!draft.activationMode) throw new Error('请选择成员激活方式。')
+      if (draft.activationMode === 'sms_initial_password' && !phone) {
+        throw new Error('短信发送账号密码需要填写手机号。')
+      }
+    }
     if (!current && previewMode && members.value.filter((member) => member.status !== 'removed').length >= 500) {
       throw new Error('成员额度已用完，请先申请扩容。')
     }
@@ -568,21 +719,23 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
 
   async function saveMember(draft: Member, action: MemberAction, expectedVersion: number) {
     const current = members.value.find((member) => member.id === draft.id)
-    if (!previewMode && current && action === 'edit' && draft.email.trim().toLowerCase() !== current.email.trim().toLowerCase()) {
-      throw new Error('登录邮箱由成员关系与身份服务管理，当前成员资料接口不支持修改。')
-    }
     if (current && current.version !== expectedVersion) throw new Error('成员资料已被其他操作修改，请重新打开后重试。')
     if (current) {
       const error = memberActionError(action, current, members.value, roles.value, draft.roleIds)
       if (error) throw new Error(error)
+      if ((draft.username ?? '').trim().toLowerCase() !== (current.username ?? '').trim().toLowerCase()) {
+        throw new Error('账号为全局唯一登录标识，创建后不可修改。')
+      }
     }
-    validateMemberDraft({ ...draft, email: draft.email.trim() }, current)
+    validateMemberDraft(draft, current)
 
     if (previewMode) {
       const updated = {
         ...draft,
+        username: (draft.username ?? '').trim().toLowerCase(),
         name: draft.name.trim(),
         email: draft.email.trim(),
+        status: current?.status ?? 'invited' as const,
         version: expectedVersion + 1,
       }
       if (current) snapshot.value.members = snapshot.value.members.map((member) => member.id === draft.id ? updated : member)
@@ -612,85 +765,51 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
 
     try {
       const trusted = await stableMemberSession()
-      if (action === 'role') {
-        if (!current) throw new Error('成员不存在。')
-        if (draft.scope !== current.scope) {
-          throw new Error('真实服务的数据范围由角色权限派生，当前不支持按成员单独覆盖数据范围。')
-        }
-        const add = draft.roleIds.filter((roleId) => !current.roleIds.includes(roleId))
-        const remove = current.roleIds.filter((roleId) => !draft.roleIds.includes(roleId))
-        for (const roleId of add) {
-          await assignEnterpriseMemberRole(
-            trusted,
-            current.id,
-            roleId,
-            key(`role-assign-${roleId}`, () => memberRoleRequestId('assign')),
-          )
-        }
-        for (const roleId of remove) {
-          await revokeEnterpriseMemberRole(
-            trusted,
-            current.id,
-            roleId,
-            key(`role-revoke-${roleId}`, () => memberRoleRequestId('revoke')),
-          )
-        }
-        await getEnterpriseMember(trusted, current.id)
-        await refresh(['members', 'roles', 'departments'])
-        memberMutation = null
-        return
-      }
-
       if (action === 'create' || action === 'invite') {
-        let receipt = await inviteEnterpriseMember(trusted, draft.email, key('invite', () => memberRequestId('invite')))
-        receipt = await updateEnterpriseMemberProfile(
+        const receipt = await createEnterpriseMember(
           trusted,
-          receipt,
           {
-            name: draft.name,
+            username: (draft.username ?? '').trim(),
+            email: draft.email,
             phone: draft.phone,
+            name: draft.name,
             employeeId: draft.employeeId,
             position: draft.position,
             departmentId: draft.departmentId,
+            roleIds: draft.roleIds,
+            activationMode: draft.activationMode === 'sms_initial_password' ? 'sms_initial_password' : 'activation_link',
           },
-          key('profile', () => memberRequestId('profile')),
+          key('create', () => memberRequestId('create')),
         )
-        for (const roleId of draft.roleIds) {
-          await assignEnterpriseMemberRole(
-            trusted,
-            receipt.userId,
-            roleId,
-            key(`role-assign-${roleId}`, () => memberRoleRequestId('assign')),
-          )
-        }
-        if (action === 'create') {
-          const invited = await getEnterpriseMember(trusted, receipt.userId)
-          await activateEnterpriseMember(trusted, invited, key('activate', () => memberRequestId('activate')))
-        }
-        await getEnterpriseMember(trusted, receipt.userId)
-        await refresh(['members', 'roles', 'departments'])
+        await getEnterpriseMember(trusted, receipt.member.userId)
+        await refreshMemberQuery()
         memberMutation = null
-        return
+        return receipt
       }
 
-      if (action === 'edit') {
+      if (action === 'edit' || action === 'role') {
         if (!current) throw new Error('成员不存在。')
-        const receipt = await updateEnterpriseMemberProfile(
+        if (action === 'role' && draft.scope !== current.scope) {
+          throw new Error('真实服务的数据范围由角色权限派生，当前不支持按成员单独覆盖数据范围。')
+        }
+        const receipt = await updateEnterpriseMember(
           trusted,
           asServerMember(current),
           {
-            name: draft.name,
+            email: draft.email,
             phone: draft.phone,
+            name: draft.name,
             employeeId: draft.employeeId,
             position: draft.position,
             departmentId: draft.departmentId,
+            roleIds: draft.roleIds,
           },
-          key('profile', () => memberRequestId('profile')),
+          key('update', () => memberRequestId('update')),
         )
         await getEnterpriseMember(trusted, receipt.userId)
-        await refresh(['members', 'roles', 'departments'])
+        await refreshMemberQuery()
         memberMutation = null
-        return
+        return receipt
       }
 
       throw new Error('该成员操作不应通过资料保存入口执行。')
@@ -731,12 +850,12 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     const server = asServerMember(member)
     const key = memberRequestId(action)
     const receipt = action === 'activate'
-      ? await activateEnterpriseMember(trusted, server, key)
+      ? await activateEnterpriseMember(trusted, server, key, reason)
       : action === 'suspend'
-        ? await suspendEnterpriseMember(trusted, server, key)
-        : await removeEnterpriseMember(trusted, server, key)
+        ? await suspendEnterpriseMember(trusted, server, key, reason)
+        : await removeEnterpriseMember(trusted, server, key, reason)
     await getEnterpriseMember(trusted, receipt.userId)
-    await refresh()
+    await refreshMemberQuery()
   }
 
   async function changeStatuses(
@@ -780,13 +899,13 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
         const member = members.value.find((value) => value.id === target.id)
         if (!member) throw new Error('批量操作中存在已不存在的成员，请刷新后重试。')
         const server = asServerMember(member)
-        if (action === 'activate') await activateEnterpriseMember(trusted, server, memberRequestId('activate'))
-        else await suspendEnterpriseMember(trusted, server, memberRequestId('suspend'))
+        if (action === 'activate') await activateEnterpriseMember(trusted, server, memberRequestId('activate'), reason)
+        else await suspendEnterpriseMember(trusted, server, memberRequestId('suspend'), reason)
       }
     } catch (error) {
       failure = error
     }
-    await refresh()
+    await refreshMemberQuery()
     if (failure) throw failure
   }
 
@@ -1039,6 +1158,9 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   return {
     tenantId,
     members,
+    memberTotal,
+    removedMembers,
+    removedMemberTotal,
     roles,
     departments,
     company,
@@ -1066,6 +1188,9 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     synchronizeExternalSession,
     logout,
     audit,
+    queryMembers,
+    queryRemovedMembers,
+    restoreMember,
     saveMember,
     changeStatus,
     changeStatuses,

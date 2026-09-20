@@ -38,7 +38,7 @@ async function mockRoleServer(page: Page, options: Options = {}) {
   const writes: Write[] = []
   const record = (route: Route) => {
     const request = route.request()
-    writes.push({ path: new URL(request.url()).pathname, method: request.method(), headers: request.headers(), body: request.postDataJSON() })
+    writes.push({ path: new URL(request.url()).pathname.replace(/^\/api(?=\/)/, ''), method: request.method(), headers: request.headers(), body: request.postDataJSON() })
   }
   const replaceRole = (next: Role) => {
     roles = roles.map((role) => role.id === next.id ? next : role)
@@ -46,11 +46,20 @@ async function mockRoleServer(page: Page, options: Options = {}) {
     return next
   }
 
-  await page.route('**/api/auth/session', async (route) => {
+  await page.route(/\/(?:api\/)?(?:auth|v1)\//, async (route) => {
+    const request = route.request()
+    throw new Error(`Unhandled API request: ${request.method()} ${new URL(request.url()).pathname}`)
+  })
+
+  await page.route(/\/(?:api\/)?auth\/login(?:\?.*)?$/, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Login</title>' })
+  })
+
+  await page.route(/\/(?:api\/)?auth\/session(?:\?.*)?$/, async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     return json(route, 200, { authenticated: true, actor_kind: 'tenant', user_id: 'user-001', active_tenant_id: 'tenant-001', csrf_token: 'csrf-real-role', tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }] })
   })
-  await page.route('**/api/auth/authorization', async (route) => {
+  await page.route(/\/(?:api\/)?auth\/authorization(?:\?.*)?$/, async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     if (options.authorizationStatus) return json(route, options.authorizationStatus, { message: 'authorization denied' })
     const buttonCodes = [
@@ -78,7 +87,7 @@ async function mockRoleServer(page: Page, options: Options = {}) {
       button_codes: buttonCodes,
     })
   })
-  await page.route('**/api/auth/action-catalog', async (route) => json(route, 200, {
+  await page.route(/\/(?:api\/)?auth\/action-catalog(?:\?.*)?$/, async (route) => json(route, 200, {
     schema_version: 'v1',
     actions: [],
     permissions: [
@@ -88,8 +97,8 @@ async function mockRoleServer(page: Page, options: Options = {}) {
       { permission: 'tenant.role.manage', groups: ['access/tenant_role_permission'], actions: ['tenant.role.create', 'tenant.role.set_permissions'] },
     ],
   }))
-  await page.route('**/api/v1/tenant/members', async (route) => json(route, 200, { members }))
-  await page.route(/\/api\/v1\/tenant\/roles(?:\/.*)?$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/members(?:\?.*)?$/, async (route) => json(route, 200, { members }))
+  await page.route(/\/(?:api\/)?v1\/tenant\/roles(?:\/.*)?(?:\?.*)?$/, async (route) => {
     const request = route.request()
     const parts = new URL(request.url()).pathname.split('/').filter(Boolean)
     const index = parts.indexOf('roles')
@@ -177,7 +186,7 @@ test('role create and permission update use independent idempotency keys and con
   await dialog.getByRole('button', { name: '保存角色' }).click()
   await expect(page.getByRole('status')).toContainText('服务端确认')
   await expect(page.getByText('华东运营', { exact: true })).toBeVisible()
-  const create = server.getWrites().find((item) => item.path === '/api/v1/tenant/roles')!
+  const create = server.getWrites().find((item) => item.path === '/v1/tenant/roles')!
   const permissions = server.getWrites().find((item) => item.path.endsWith('/role-new/permissions'))!
   expect(create.headers['idempotency-key']).toMatch(/^enterprise-role-create-/)
   expect(permissions.headers['idempotency-key']).toMatch(/^enterprise-role-permissions-/)

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
+	accessports "github.com/hvritual/biz/internal/access/ports"
 )
 
 func enterprise168Protection(t *testing.T, active string, keys map[string][]byte) *accesspersistence.ContactProtection {
@@ -152,6 +153,68 @@ func TestEnterprise168ProtectedContactsAreEncryptedMaskedAndTenantScoped(t *test
 	}
 	if _, err := store.AuthenticateUserPassword(ctx, "shared.user@example.invalid", password); err != nil {
 		t.Fatalf("tenant Profile contact change altered global Account login: %v", err)
+	}
+
+	emailPage, err := repository.List(ctx, "tenant-a", accessports.TenantMemberListQuery{Query: contactEmail, Page: 1, PageSize: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if emailPage.Total != 1 || len(emailPage.Members) != 1 || emailPage.Members[0].UserID != memberA.UserID {
+		t.Fatalf("protected tenant email lookup did not find the member: %+v", emailPage)
+	}
+	phonePage, err := repository.List(ctx, "tenant-a", accessports.TenantMemberListQuery{Query: "+49 170 1234567", Page: 1, PageSize: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if phonePage.Total != 1 || len(phonePage.Members) != 1 || phonePage.Members[0].UserID != memberA.UserID {
+		t.Fatalf("protected tenant phone lookup did not find the member: %+v", phonePage)
+	}
+	crossTenantPage, err := repository.List(ctx, "tenant-b", accessports.TenantMemberListQuery{Query: contactEmail, Page: 1, PageSize: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if crossTenantPage.Total != 0 || len(crossTenantPage.Members) != 0 {
+		t.Fatalf("protected contact query crossed tenant boundary: %+v", crossTenantPage)
+	}
+
+	secondA, err := repository.Invite(ctx, "tenant-a", "user-a-duplicate-contact", "second-a@example.invalid", now.Add(2*time.Second))
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondA, err = repository.Get(ctx, "tenant-a", secondA.UserID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondA.Phone = "+49 170 1234567"
+	if err := repository.Update(ctx, &secondA, secondA.Version); !errors.Is(err, accessports.ErrTenantMemberConflict) {
+		t.Fatalf("duplicate protected phone was not mapped to member conflict: %v", err)
+	}
+	secondARead, err := repository.Get(ctx, "tenant-a", secondA.UserID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if secondARead.Phone != "" {
+		t.Fatalf("duplicate phone conflict left a partial profile write: %+v", secondARead)
+	}
+
+	maskedA, err := repository.Get(ctx, "tenant-a", memberA.UserID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	originalMaskedPhone := maskedA.Phone
+	if !accesspersistence.IsMaskedContact(originalMaskedPhone) {
+		t.Fatalf("expected protected phone readback to be masked, got %q", originalMaskedPhone)
+	}
+	maskedA.Name = "Masked Phone Preserved"
+	if err := repository.Update(ctx, &maskedA, maskedA.Version); err != nil {
+		t.Fatal(err)
+	}
+	maskedRead, err := repository.Get(ctx, "tenant-a", memberA.UserID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if maskedRead.Phone != originalMaskedPhone || maskedRead.Name != "Masked Phone Preserved" {
+		t.Fatalf("masked phone placeholder was not preserved on edit: before=%q after=%q member=%+v", originalMaskedPhone, maskedRead.Phone, maskedRead)
 	}
 
 	var boundEmail string

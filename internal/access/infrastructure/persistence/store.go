@@ -43,7 +43,7 @@ func (tenantRecord) TableName() string { return "biz_tenants" }
 
 type userRecord struct {
 	ID              string    `gorm:"column:id;primaryKey;size:64"`
-	Username        *string   `gorm:"column:username;size:64;index"`
+	Username        *string   `gorm:"column:username;size:64;uniqueIndex:uniq_biz_users_username"`
 	Email           string    `gorm:"column:email;size:320;not null;uniqueIndex"`
 	EmailCiphertext string    `gorm:"column:email_ciphertext;type:text"`
 	EmailLookupHash *string   `gorm:"column:email_lookup_hash;size:64;uniqueIndex"`
@@ -149,6 +149,7 @@ func (store *Store) AutoMigrate(ctx context.Context) error {
 	return store.database.WithContext(ctx).AutoMigrate(
 		&tenantCreationRecord{}, &tenantRecord{}, &userRecord{}, &membershipRecord{}, &roleRecord{},
 		&memberRoleRecord{}, &permissionGrantRecord{}, &memberSiteRecord{}, &apiTokenRecord{}, &auditEventRecord{},
+		&memberRemovedRoleSnapshotRecord{}, &memberRemovedSiteSnapshotRecord{}, &memberStatusAppealRecord{},
 	)
 }
 

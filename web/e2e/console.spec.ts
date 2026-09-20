@@ -90,10 +90,12 @@ test('invite creates pending local record without external mail requests', async
   await ready(page)
   await page.getByRole('button', { name: '邀请成员', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '邀请成员', exact: true })
+  await dialog.getByLabel('登录账号', { exact: true }).fill('invite.test')
   await dialog.getByLabel('姓名', { exact: true }).fill('邀请测试')
   await dialog.getByLabel('邮箱', { exact: true }).fill('invited@example.com')
+  await selectUiOption(dialog.getByLabel('激活方式'), 'activation_link')
   await dialog.getByRole('button', { name: '创建邀请', exact: true }).click()
-  await expect(page.locator('.member-table tbody tr').first()).toContainText('待激活')
+  await expect(page.locator('.member-table tbody tr').filter({ hasText: '邀请测试' })).toContainText('待激活')
   await expect(page.getByRole('status')).toContainText('未实际发送邀请邮件')
 })
 test('role changes show before-after preview and persist', async ({ page }) => {

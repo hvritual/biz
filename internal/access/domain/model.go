@@ -123,6 +123,7 @@ type MemberRoleSummary struct {
 type Membership struct {
 	TenantID         string
 	UserID           string
+	Username         string
 	Email            string
 	Status           string
 	Version          uint64
@@ -189,6 +190,15 @@ func (membership *Membership) Remove(now time.Time) error {
 		return ErrInvalidTenantMemberTransition
 	}
 	membership.Status = TenantMemberStatusRemoved
+	membership.UpdatedAt = now
+	return nil
+}
+
+func (membership *Membership) Restore(now time.Time) error {
+	if membership == nil || membership.Status != TenantMemberStatusRemoved {
+		return ErrInvalidTenantMemberTransition
+	}
+	membership.Status = TenantMemberStatusActive
 	membership.UpdatedAt = now
 	return nil
 }

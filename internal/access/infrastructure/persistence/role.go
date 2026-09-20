@@ -175,7 +175,7 @@ func (repository *TenantRoleRepository) AssignMember(ctx context.Context, tenant
 		return domain.Role{}, err
 	}
 	var member membershipRecord
-	if err := db.Where("tenant_id = ? AND user_id = ? AND status = ?", tenantID, userID, domain.TenantMemberStatusActive).First(&member).Error; err != nil {
+	if err := db.Where("tenant_id = ? AND user_id = ? AND status IN ?", tenantID, userID, []string{domain.TenantMemberStatusInvited, domain.TenantMemberStatusActive}).First(&member).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return domain.Role{}, ports.ErrTenantRoleMember
 		}

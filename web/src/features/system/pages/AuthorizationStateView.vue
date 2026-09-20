@@ -19,6 +19,7 @@ const unavailable = computed(() => reason.value === 'unavailable')
     <div class="row">
       <UiButton v-if="reason === 'unauthenticated'" class="btn btn-primary" @click="redirectToTrustedLogin">重新登录</UiButton>
       <RouterLink v-else class="btn" to="/dashboard">返回工作台</RouterLink>
+      <RouterLink class="btn" to="/member-appeal">访问恢复申诉</RouterLink>
     </div>
   </section>
 </template>

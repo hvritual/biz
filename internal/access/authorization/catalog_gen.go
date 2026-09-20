@@ -4,7 +4,7 @@ package authorization
 
 import "yunka.io/gateway/authz"
 
-const CommercialCapabilityMappingVersion = "19"
+const CommercialCapabilityMappingVersion = "21"
 
 var generatedActions = []Action{
 	{
@@ -645,6 +645,13 @@ var generatedActions = []Action{
 		RPC: "", HTTP: []HTTPBinding{},
 	},
 	{
+		Code: "tenant.member.create", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "create_tenant_member",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage"), authz.PermissionKey("tenant.role.manage")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
+		RPC: "/access.v1.TenantMemberLifecycleApplication/CreateTenantMember", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/tenant/members/create"}},
+	},
+	{
 		Code: "tenant.member.get", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "get_tenant_member",
 		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
 		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.read")}, PermissionMode: "all",
@@ -666,6 +673,13 @@ var generatedActions = []Action{
 		RPC: "/access.v1.TenantMemberLifecycleApplication/ListTenantMembers", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/members"}},
 	},
 	{
+		Code: "tenant.member.list_removed", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "list_removed_tenant_members",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
+		RPC: "/access.v1.TenantMemberLifecycleApplication/ListRemovedTenantMembers", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/members/removed"}},
+	},
+	{
 		Code: "tenant.member.profile.update", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "update_tenant_member_profile",
 		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
 		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage")}, PermissionMode: "all",
@@ -680,11 +694,25 @@ var generatedActions = []Action{
 		RPC: "/access.v1.TenantMemberLifecycleApplication/RemoveTenantMember", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/tenant/members/{user_id}/remove"}},
 	},
 	{
+		Code: "tenant.member.restore", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "restore_tenant_member",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage"), authz.PermissionKey("tenant.role.manage")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
+		RPC: "/access.v1.TenantMemberLifecycleApplication/RestoreTenantMember", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/tenant/members/{user_id}/restore"}},
+	},
+	{
 		Code: "tenant.member.suspend", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "suspend_tenant_member",
 		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
 		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage")}, PermissionMode: "all",
 		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
 		RPC: "/access.v1.TenantMemberLifecycleApplication/SuspendTenantMember", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/tenant/members/{user_id}/suspend"}},
+	},
+	{
+		Code: "tenant.member.update", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "update_tenant_member",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage"), authz.PermissionKey("tenant.role.manage")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
+		RPC: "/access.v1.TenantMemberLifecycleApplication/UpdateTenantMember", HTTP: []HTTPBinding{{Method: "PATCH", Path: "/v1/tenant/members/{user_id}"}},
 	},
 	{
 		Code: "tenant.profile.get", Domain: "access", Application: "tenant_profile_management", UseCase: "get_tenant_profile",

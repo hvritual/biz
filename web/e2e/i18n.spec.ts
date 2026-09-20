@@ -29,7 +29,7 @@ test('locale changes presentation but not route identity, member selection or pr
   await expect(firstView).toBeFocused()
   await page.getByRole('button', { name: 'Add member' }).click()
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'Add member' })).toBeVisible()
-  await expect(page.getByLabel('Email')).toBeVisible()
+  await expect(page.getByLabel('Email', { exact: true })).toBeVisible()
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click()
   await chooseLocale(page, '中文')
   await expect(page).toHaveURL(/#\/enterprise\/members/)

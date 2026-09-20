@@ -82,18 +82,18 @@ func TestB123MemberDeactivationPreservesLastActiveOwner(t *testing.T) {
 	defer connection.Close()
 	client := accessv1.NewTenantMemberLifecycleApplicationClient(connection)
 
-	callContext := func(key string) context.Context {
-		return metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer "+token, "idempotency-key", key)
+	callContext := func(rawToken, key string) context.Context {
+		return metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer "+rawToken, "idempotency-key", key)
 	}
 
-	if _, err := client.SuspendTenantMember(callContext("sole-owner-suspend:"+stamp), &accessv1.SuspendTenantMemberRequest{UserId: ownerID, Version: 1}); err == nil {
+	if _, err := client.SuspendTenantMember(callContext(token, "sole-owner-suspend:"+stamp), &accessv1.SuspendTenantMemberRequest{UserId: ownerID, Version: 1}); err == nil {
 		t.Fatal("sole active owner suspension unexpectedly succeeded")
 	}
 	if status, version := b123MembershipState(t, db, tenantID, ownerID); status != accessdomain.TenantMemberStatusActive || version != 1 {
 		t.Fatalf("sole owner mutated after rejected suspend: status=%s version=%d", status, version)
 	}
 
-	if _, err := client.RemoveTenantMember(callContext("sole-owner-remove:"+stamp), &accessv1.RemoveTenantMemberRequest{UserId: ownerID, Version: 1}); err == nil {
+	if _, err := client.RemoveTenantMember(callContext(token, "sole-owner-remove:"+stamp), &accessv1.RemoveTenantMemberRequest{UserId: ownerID, Version: 1}); err == nil {
 		t.Fatal("sole active owner removal unexpectedly succeeded")
 	}
 	if status, version := b123MembershipState(t, db, tenantID, ownerID); status != accessdomain.TenantMemberStatusActive || version != 1 {
@@ -102,10 +102,24 @@ func TestB123MemberDeactivationPreservesLastActiveOwner(t *testing.T) {
 
 	ownerB := "owner-b-" + stamp
 	seedB123AdditionalOwner(t, db, tenantID, roleID, ownerB, ownerB+"@example.invalid")
+	ownerBToken := "b123-owner-b-token-" + stamp
+	if err := db.Exec(
+		"INSERT INTO biz_api_tokens (token_hash,tenant_id,user_id,disabled,created_at) VALUES (?,?,?,?,NOW(3))",
+		accesspersistence.TokenHash(ownerBToken), tenantID, ownerB, false,
+	).Error; err != nil {
+		t.Fatal(err)
+	}
 
-	suspended, err := client.SuspendTenantMember(callContext("two-owner-suspend:"+stamp), &accessv1.SuspendTenantMemberRequest{UserId: ownerID, Version: 1})
+	if _, err := client.SuspendTenantMember(callContext(token, "two-owner-self-suspend:"+stamp), &accessv1.SuspendTenantMemberRequest{UserId: ownerID, Version: 1}); err == nil {
+		t.Fatal("owner self-suspension unexpectedly succeeded with second active owner")
+	}
+	if status, version := b123MembershipState(t, db, tenantID, ownerID); status != accessdomain.TenantMemberStatusActive || version != 1 {
+		t.Fatalf("owner mutated after rejected self-suspend: status=%s version=%d", status, version)
+	}
+
+	suspended, err := client.SuspendTenantMember(callContext(ownerBToken, "two-owner-suspend:"+stamp), &accessv1.SuspendTenantMemberRequest{UserId: ownerID, Version: 1})
 	if err != nil {
-		t.Fatalf("owner suspension with second active owner failed: %v", err)
+		t.Fatalf("owner suspension by second active owner failed: %v", err)
 	}
 	if suspended.GetStatus() != accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_SUSPENDED || suspended.GetVersion() != 2 {
 		t.Fatalf("suspended owner=%+v", suspended)

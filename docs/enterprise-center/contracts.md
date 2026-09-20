@@ -31,8 +31,12 @@
 
 - Account 是全局登录身份；Membership 是租户关系；Profile 是当前租户的成员资料。
 - A、B 两个租户可共享同一 Account。A 修改或删除其 Membership/Profile 不得改变 B 的 Membership/Profile 或全局登录凭据，除非发生由 Account 本人完成的全局安全动作。
-- 普通租户管理员不能直接调用底层全局密码 rotate 来接管跨企业 Account。管理员重置必须采用 #167 决策确认的受控恢复/激活模型。
-- 联系方式的登录标识、全局绑定值与租户 Profile 联系字段必须显式区分；未定稿前禁止用同一数据库列同时承担所有语义。
+- `username` 属于全局 Account，并在 Account 维度全局唯一；一个 Account 可以同时拥有多个有效 Tenant Membership。
+- username / phone / email 认证成功后若匹配多个有效 Tenant Membership，身份层只确认 Account，不自动选 Tenant；必须展示企业清单，由用户显式选择 active tenant，再签发/更新 tenant context。
+- 普通租户管理员不能直接调用底层全局密码 rotate 来接管跨企业 Account。新成员初始化仅允许两种受控方式：激活链接自助设密，或短信发送 username + 一次性初始密码并要求首次使用后设置最终密码。
+- 一次性初始密码和激活 secret 只允许出现在受保护投递材料中，不进入业务页面、日志、审计、普通 API 回执或持久化明文。
+- 联系方式的登录标识、全局绑定值与租户 Profile 联系字段必须显式区分；不得用同一数据库列同时承担所有语义。
+- 成员额度沿用 Commercial 的权威口径：invited/active/suspended 占用、removed 释放。#176 只消费现有 member meter，不建设 Access 内第二套额度账本。#116 的 reserve/commit/release 与并发容量写合同仍为待实施；在其完成前，#176 不宣称成员创建已具备并发额度预占/扣减能力，也不以陈旧 count-before-insert 伪装原子额度控制。
 
 ## 4. Session / tenant context
 
@@ -40,6 +44,7 @@
 - 受保护业务调用的 tenant 从可信 session/principal 固化；业务请求体中的 tenant id 不能覆盖认证上下文。
 - `GET /auth/session` 的未认证 `authenticated:false` 是探测合同；受保护业务 API 仍以 401 表示未认证/过期/撤销。
 - tenant switch 必须验证当前 Account 对目标 tenant 的有效 Membership；切换后缓存、权限、品牌、时区与业务数据都必须按新 tenant 隔离。
+- 多租户 Account 登录时，企业选择是显式用户动作；后端不得根据 username、最近访问或结果顺序隐式挑选 Tenant。
 
 ## 5. Authorization execution
 
@@ -85,6 +90,13 @@ PRD 中 `/api/business/v1/identity/*` 是责任族，不要求在已有 `/auth`�
 - 5xx：系统/依赖失败；真实模式不允许回退成 Demo 成功。
 
 所有写操作沿用稳定 Idempotency-Key、CAS/expected version、receipt + authoritative readback；“请求已受理”“通知任务已创建”“外部渠道已送达”必须分开表达。
+
+## #176 qualification candidate
+
+- Canonical generated baseline: `ee33d55a5d5d715b674ebb135d867503841b9780`.
+- This documentation-only commit is the human-authored qualification trigger above the generated baseline; it changes no PB, generated contract, commercial mapping, runtime behavior or framework lock.
+- Final acceptance still requires the protected MySQL, Web, C9/CE-03 and regression workflows to execute successfully on the resulting PR head.
+- Commercial quota reservation/commit/release remains owned by #116 as recorded above; #176 does not claim that capability.
 
 ## 8. Missing successor contracts
 

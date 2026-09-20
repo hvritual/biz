@@ -9,14 +9,32 @@ import (
 	"gorm.io/gorm"
 )
 
-const protectedEmailPrefix = "protected:"
+const (
+	protectedEmailPrefix = "protected:"
+	absentEmailPrefix    = "absent:"
+)
 
 func (store *Store) newUserRecord(id, email string, now time.Time) (userRecord, error) {
+	if strings.TrimSpace(email) == "" {
+		return userRecord{}, ErrInvalidContact
+	}
+	return store.newUserRecordWithOptionalEmail(id, email, now)
+}
+
+func (store *Store) newUserRecordWithOptionalEmail(id, email string, now time.Time) (userRecord, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return userRecord{}, ErrInvalidContact
+	}
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return userRecord{ID: id, Email: absentEmailPrefix + id, Status: "active", CreatedAt: now}, nil
+	}
 	normalized, err := NormalizeEmail(email)
 	if err != nil {
 		return userRecord{}, err
 	}
-	row := userRecord{ID: strings.TrimSpace(id), Email: normalized, Status: "active", CreatedAt: now}
+	row := userRecord{ID: id, Email: normalized, Status: "active", CreatedAt: now}
 	if store == nil || store.contactProtection == nil {
 		return row, nil
 	}
@@ -32,6 +50,9 @@ func (store *Store) newUserRecord(id, email string, now time.Time) (userRecord, 
 }
 
 func (store *Store) userEmail(row userRecord) (string, error) {
+	if strings.HasPrefix(strings.TrimSpace(row.Email), absentEmailPrefix) {
+		return "", nil
+	}
 	if strings.TrimSpace(row.EmailCiphertext) != "" || strings.TrimSpace(row.EmailKeyVersion) != "" || row.EmailLookupHash != nil {
 		if store == nil || store.contactProtection == nil {
 			return "", ErrSensitiveDataKeyUnavailable
@@ -45,6 +66,9 @@ func (store *Store) displayUserEmail(row userRecord) (string, error) {
 	email, err := store.userEmail(row)
 	if err != nil {
 		return "", err
+	}
+	if email == "" {
+		return "", nil
 	}
 	if store != nil && store.contactProtection != nil {
 		return MaskEmail(email), nil

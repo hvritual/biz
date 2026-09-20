@@ -35,6 +35,8 @@ func (capability *c9TenantMemberLifecycleToAccessTenantDepartmentManagementChild
 
 type TenantMemberLifecycleToAccessTenantRolePermissionChildCapability interface {
 	AssertTenantMemberDeactivationAllowed(context.Context, *accessv1.AssertTenantMemberDeactivationAllowedRequest) (*accessv1.AssertTenantMemberDeactivationAllowedResponse, error)
+	AssignTenantRoleMember(context.Context, *accessv1.AssignTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error)
+	RevokeTenantRoleMember(context.Context, *accessv1.RevokeTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error)
 }
 
 type c9TenantMemberLifecycleToAccessTenantRolePermissionChildCapability struct {
@@ -54,6 +56,14 @@ func NewTenantMemberLifecycleToAccessTenantRolePermissionChildCapability(applica
 
 func (capability *c9TenantMemberLifecycleToAccessTenantRolePermissionChildCapability) AssertTenantMemberDeactivationAllowed(ctx context.Context, request *accessv1.AssertTenantMemberDeactivationAllowedRequest) (*accessv1.AssertTenantMemberDeactivationAllowedResponse, error) {
 	return operation.ExecuteChildTyped(ctx, capability.executor, accesspolicy.OperationPlanTenantRolePermissionAssertTenantMemberDeactivationAllowed(), request, capability.application.AssertTenantMemberDeactivationAllowed)
+}
+
+func (capability *c9TenantMemberLifecycleToAccessTenantRolePermissionChildCapability) AssignTenantRoleMember(ctx context.Context, request *accessv1.AssignTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error) {
+	return operation.ExecuteChildTyped(ctx, capability.executor, accesspolicy.OperationPlanTenantRolePermissionAssignTenantRoleMember(), request, capability.application.AssignTenantRoleMember)
+}
+
+func (capability *c9TenantMemberLifecycleToAccessTenantRolePermissionChildCapability) RevokeTenantRoleMember(ctx context.Context, request *accessv1.RevokeTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error) {
+	return operation.ExecuteChildTyped(ctx, capability.executor, accesspolicy.OperationPlanTenantRolePermissionRevokeTenantRoleMember(), request, capability.application.RevokeTenantRoleMember)
 }
 
 // TenantMemberLifecycleCapabilities exposes edge-owned C9 child-Operation wrappers for declared operation dependencies.

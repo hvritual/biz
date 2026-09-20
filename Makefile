@@ -3,7 +3,7 @@ YUNKA_APP := $(YUNKA_ROOT)/app
 PROTOC ?= protoc
 COMMERCIAL_BASELINE ?=
 
-.PHONY: init generate check test verify pressure run workspace-check yunka-source-check consumer-certify
+.PHONY: init generate check test verify pressure run workspace-check yunka-source-check consumer-certify authorization-generate authorization-check
 
 init:
 	@cd $(YUNKA_APP) && go run ./cmd init --root $(CURDIR) --db-prefix biz
@@ -12,10 +12,12 @@ generate: toolchain-check
 	@cd $(YUNKA_APP) && go run ./cmd generate --root $(CURDIR) --protoc $(PROTOC)
 	@go mod tidy
 	@$(MAKE) commercial-generate
+	@$(MAKE) authorization-generate
 
 check: toolchain-check
 	@cd $(YUNKA_APP) && go run ./cmd check --root $(CURDIR) --protoc $(PROTOC)
 	@$(MAKE) commercial-check
+	@$(MAKE) authorization-check
 
 workspace-check:
 	@./scripts/consumer-resolution-check.sh
@@ -57,6 +59,14 @@ commercial-generate:
 
 commercial-check:
 	@go run ./cmd/commercial-catalog --root $(CURDIR) --baseline "$(COMMERCIAL_BASELINE)"
+
+
+.PHONY: authorization-generate authorization-check
+authorization-generate:
+	@go run ./cmd/access-action-catalog --root $(CURDIR) --write
+
+authorization-check:
+	@go run ./cmd/access-action-catalog --root $(CURDIR)
 
 .PHONY: toolchain-check
 toolchain-check:

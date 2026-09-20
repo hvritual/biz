@@ -24,10 +24,10 @@
 | Q-001 账号锁定 | PENDING_HUMAN | 当前代码默认 5 次失败、15 分钟窗口、锁定 15 分钟；这是 CURRENT_FACT，不自动成为产品批准。还需决定管理员解锁。 | #172 相关锁定策略 |
 | Q-002 验证码 | PENDING_HUMAN | 需确定 TTL、单日上限、错误尝试上限；PRD 只明确 60 秒重发限制。 | #170 #172 #173 |
 | Q-003 会话期限 | PENDING_HUMAN | 需确定 session TTL、临期刷新及不同安全事件撤销粒度。 | #171 #172 |
-| Q-004 多企业账号 | PENDING_HUMAN | 需确定 username 是否全局唯一、账号路径是否保证唯一企业直入；手机/邮箱多企业不得默认选择第一个。 | #168 #172 |
+| Q-004 多企业账号 | ACCEPTED | `username` 在 Account 维度全局唯一；同一 Account 可属于多个 Tenant。账号/手机/邮箱认证完成后，如存在多个有效 Tenant Membership，必须返回/展示企业清单，由用户显式选择当前企业；不得按 username、手机号、邮箱或排序结果自动选择第一个 Tenant。 | #168 #172 #176 |
 | Q-005 隐私版本 | PENDING_HUMAN | 协议升级是否强制重新同意。 | #169 |
 | Q-006 隐私撤回 | PENDING_HUMAN | 撤回可选处理同意后的具体行为；不能与必要身份处理混为一个开关。 | #169 #182 #183 |
-| Q-007 初始凭据 | PENDING_HUMAN | 一次性初始密码 vs 激活链接；租户管理员不得直接重置跨企业全局 Account 密码。 | #173 #176 |
+| Q-007 初始凭据 | ACCEPTED | 新成员创建时由创建人二选一：① `ACTIVATION_LINK`：发送激活链接，由成员自助设置最终密码；② `SMS_INITIAL_PASSWORD`：短信发送全局唯一 username + 一次性初始密码。一次性初始密码不得进入页面/日志/审计/普通 API 回执，首次使用后必须由成员设置最终密码。两种方式都不能允许租户管理员直接 rotate 共享 Account 的最终全局密码。 | #170 #173 #176 |
 | Q-008 删除恢复 | PENDING_HUMAN | 是否提供回收站、恢复权限以及恢复角色/范围关系的规则。 | #177 |
 | Q-009 范围绑定 | PENDING_HUMAN | 一期采用业务分组、部门策略、设备清单中的哪种已确认合同。 | #180 |
 | Q-010 默认角色 | PENDING_HUMAN | 默认/超级管理员不可变角色集合及稳定标识。 | #178 #179 |
@@ -49,7 +49,7 @@
 | PRD 要求“未注册手机号/邮箱返回可区分错误” vs 当前登录防枚举 | 当前 first-party login 使用 generic invalid credentials | #167 不默认放宽防枚举；由安全/产品共同决定，#172 按接受结果实现 |
 | PRD 恢复角色关系 vs 历史 Grant 已撤销 | 撤销事实必须优先于“恢复旧快照” | #177 恢复前重新校验当前有效角色/Grant，未知默认不恢复 |
 | “注销账号清联系方式” vs 同 Account 仍被其他租户使用 | Account 是全局身份，Membership/Profile 是租户关系 | #182 仅清当前 tenant 的可清理资料；不能破坏其他 tenant 或全局登录事实 |
-| “管理员重置成员密码” vs 全局 Account | 当前底层 RotateUserPassword 会影响全局凭据 | #173 在 Q-007 决定前保持管理员重置路径 BLOCKED，不直接暴露底层 rotate |
+| “管理员重置成员密码” vs 全局 Account | 当前底层 RotateUserPassword 会影响全局凭据 | Q-007 仅批准**新成员初始化**的激活链接/短信一次性初始密码；管理员后续重置仍不得直接 rotate 共享 Account 最终密码，应走受控自助恢复。 |
 | 旧 Gateway 授权索引/版本正文 vs 兼容决策 | 首段决策 supersede 旧正文 | #174/#179 验收 request-time current Access facts，不实现 allow index/global auth version |
 
 ## 缺失输入

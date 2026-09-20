@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { UiButton, UiOption, UiSelect } from '@/ui/base'
-import { reactive, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import SearchField from '@/ui/common/SearchField.vue'
 export interface MemberFilterValue { query:string; department:string; role:string; status:string }
 const props=defineProps<{value:MemberFilterValue}>(),emit=defineEmits<{apply:[value:MemberFilterValue];reset:[]}>(),store=useEnterpriseStore(),{t}=useI18n(),draft=reactive({...props.value})
 watch(()=>props.value,value=>Object.assign(draft,value),{deep:true})
-const statuses=['active','invited','suspended','removed'] as const
+const statuses=computed(()=>store.previewMode?(['active','invited','suspended','removed'] as const):(['active','invited','suspended'] as const))
 </script>
 <template>
   <form class="card member-filters" :aria-label="t('members.searchAria')" @submit.prevent="emit('apply',{...draft})">

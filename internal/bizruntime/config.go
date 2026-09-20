@@ -50,6 +50,9 @@ type WebAuthConfig struct {
 	SessionRefreshWindow  time.Duration
 	FlowTTL               time.Duration
 	CookieSecure          bool
+	// TrustBizUserSubject allows this BFF to bind the verified first-party
+	// subject form biz-user:<user_id>. Keep false for external OIDC issuers.
+	TrustBizUserSubject bool
 
 	// Optional explicit mapping for a tenantless platform operator. The OIDC
 	// external subject is bound to an existing platform IAM subject; it never
@@ -246,6 +249,10 @@ type Options struct {
 	WebAuth                 WebAuthConfig
 	FirstPartyIdP           FirstPartyIdPConfig
 	VerificationSecurity    VerificationSecurityConfig
+	// MemberActivationTTL is explicit runtime policy for #176 activation links
+	// and one-time initial passwords. Zero keeps member creation disabled.
+	MemberActivationTTL time.Duration
+	MemberActivationURL string
 }
 
 func (options Options) Validate() error {
@@ -269,6 +276,17 @@ func (options Options) Validate() error {
 	}
 	if err := options.VerificationSecurity.Validate(); err != nil {
 		return err
+	}
+	if options.MemberActivationTTL < 0 {
+		return errors.New("biz runtime: member activation TTL must not be negative")
+	}
+	if options.MemberActivationTTL > 0 {
+		if strings.TrimSpace(options.MemberActivationURL) == "" {
+			return errors.New("biz runtime: member activation URL is required when member activation is enabled")
+		}
+		if err := requireHTTPSOrLoopback(options.MemberActivationURL); err != nil {
+			return fmt.Errorf("biz runtime: member activation URL: %w", err)
+		}
 	}
 	if options.FirstPartyIdP.Enabled() {
 		if !options.WebAuth.Enabled() {
