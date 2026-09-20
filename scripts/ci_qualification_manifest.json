@@ -1,0 +1,308 @@
+{
+  "version": 1,
+  "purpose": "PR qualification routing for #205. These workflows are reusable qualification units and must not self-trigger on pull_request.",
+  "workflows": [
+    {
+      "file": "b12-3-tenant-member-mysql.yml",
+      "domains": [
+        "access"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "b12-4-tenant-role-mysql.yml",
+      "domains": [
+        "access"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "b12-5-tenant-bootstrap-mysql.yml",
+      "domains": [
+        "access"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "b12-6-concurrency-mysql.yml",
+      "domains": [
+        "access",
+        "commercial"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "b12-7-runtime-qualification.yml",
+      "domains": [
+        "core",
+        "access"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "b12-8-framework-pressure-disposition.yml",
+      "domains": [
+        "core"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "b12-multitenant-access-pressure.yml",
+      "domains": [
+        "access"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "c9-pressure.yml",
+      "domains": [
+        "core"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ce01-qualification.yml",
+      "domains": [
+        "commercial"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ce02-bootstrap.yml",
+      "domains": [
+        "commercial"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ce03-qualification.yml",
+      "domains": [
+        "commercial"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ce04-qualification.yml",
+      "domains": [
+        "commercial"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ce05-qualification.yml",
+      "domains": [
+        "commercial"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ce06-qualification.yml",
+      "domains": [
+        "commercial"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ce07-qualification.yml",
+      "domains": [
+        "commercial"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ce08-qualification.yml",
+      "domains": [
+        "commercial"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ce09-qualification.yml",
+      "domains": [
+        "commercial"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ce10-qualification.yml",
+      "domains": [
+        "commercial"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ce12-browser-e2e.yml",
+      "domains": [
+        "access",
+        "web"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ce12-qualification.yml",
+      "domains": [
+        "access"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ce13-plan-catalog-qualification.yml",
+      "domains": [
+        "commercial"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ce13-platform-web-session.yml",
+      "domains": [
+        "commercial",
+        "access",
+        "web"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "coffeelink-web.yml",
+      "domains": [
+        "web"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ec-ri-04-department-mysql.yml",
+      "domains": [
+        "access"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ec-ri-04-web-qualification.yml",
+      "domains": [
+        "access",
+        "web"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ec-ri-05-tenant-profile-mysql.yml",
+      "domains": [
+        "access"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ec-ri-05-web-qualification.yml",
+      "domains": [
+        "access",
+        "web"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ec-ri-06-plan-change-web.yml",
+      "domains": [
+        "commercial",
+        "web"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ec-ri-06-plan-read-web.yml",
+      "domains": [
+        "commercial",
+        "web"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ec-ri-06-tenant-usage-mysql.yml",
+      "domains": [
+        "commercial"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ec-ri-07-audit-mysql.yml",
+      "domains": [
+        "access"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "ec-ri-07-web-qualification.yml",
+      "domains": [
+        "access",
+        "web"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "enterprise-168-sensitive-contacts.yml",
+      "domains": [
+        "access"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "enterprise-169-privacy-consent.yml",
+      "domains": [
+        "access",
+        "web"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "enterprise-170-verification-notification.yml",
+      "domains": [
+        "access"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "enterprise-171-session-isolation.yml",
+      "domains": [
+        "access",
+        "web"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "enterprise-173-password-security.yml",
+      "domains": [
+        "access",
+        "web"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "enterprise-174-current-authorization.yml",
+      "domains": [
+        "access"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "enterprise-175-authorized-navigation.yml",
+      "domains": [
+        "access",
+        "web"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "enterprise-177-member-lifecycle.yml",
+      "domains": [
+        "access",
+        "web"
+      ],
+      "heavy": true
+    },
+    {
+      "file": "evolution-qualification.yml",
+      "domains": [
+        "core"
+      ],
+      "heavy": true
+    }
+  ]
+}
