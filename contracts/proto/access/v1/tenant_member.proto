@@ -127,16 +127,30 @@ message UpdateTenantMemberRequest {
 message ActivateTenantMemberRequest {
   string user_id = 1;
   uint64 version = 2;
+  string reason = 3;
 }
 
 message SuspendTenantMemberRequest {
   string user_id = 1;
   uint64 version = 2;
+  string reason = 3;
 }
 
 message RemoveTenantMemberRequest {
   string user_id = 1;
   uint64 version = 2;
+  string reason = 3;
+}
+
+message ListRemovedTenantMembersRequest {
+  uint32 page = 1;
+  uint32 page_size = 2;
+}
+
+message RestoreTenantMemberRequest {
+  string user_id = 1;
+  uint64 version = 2;
+  string reason = 3;
 }
 
 message BootstrapTenantOwnerMemberRequest {
@@ -237,6 +251,20 @@ service TenantMemberLifecycleApplication {
     };
   }
 
+  rpc ListRemovedTenantMembers(ListRemovedTenantMembersRequest) returns (ListTenantMembersResponse) {
+    option (google.api.http) = { get: "/v1/tenant/members/removed" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.list_removed"
+      use_case: "list_removed_tenant_members"
+      permissions: "tenant.member.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
   rpc UpdateTenantMemberProfile(UpdateTenantMemberProfileRequest) returns (TenantMemberDTO) {
     option (google.api.http) = { patch: "/v1/tenant/members/{user_id}/profile" body: "*" };
     option (yunka.dsl.v1.operation) = {
@@ -282,6 +310,23 @@ service TenantMemberLifecycleApplication {
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
       authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc RestoreTenantMember(RestoreTenantMemberRequest) returns (TenantMemberDTO) {
+    option (google.api.http) = { post: "/v1/tenant/members/{user_id}/restore" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.restore"
+      use_case: "restore_tenant_member"
+      permissions: "tenant.member.manage"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      requires_operations: "tenant.role.assign_member"
+      composition: COMPOSITION_LOCAL
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };
   }

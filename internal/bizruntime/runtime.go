@@ -291,6 +291,13 @@ func bindRuntimeWithSecurity(
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
+	var memberAppeals *accesspersistence.MemberAppealService
+	if verificationProtection != nil {
+		memberAppeals, err = accesspersistence.NewMemberAppealService(accessDatabase, protection, verificationProtection)
+		if err != nil {
+			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: member appeal service: %w", err)
+		}
+	}
 	if config.AutoMigrate {
 		if err := accessStore.AutoMigrate(ctx); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: access migrate: %w", err)
@@ -322,6 +329,11 @@ func bindRuntimeWithSecurity(
 			}
 			if err := verificationRepository.EnsureSchema(ctx); err != nil {
 				return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: verification migrate: %w", err)
+			}
+			if memberAppeals != nil {
+				if err := memberAppeals.EnsureSchema(ctx); err != nil {
+					return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: member appeal migrate: %w", err)
+				}
 			}
 		}
 		if err := commercialStore.Migrate(ctx); err != nil {
@@ -377,6 +389,7 @@ func bindRuntimeWithSecurity(
 	}
 	if options.WebAuth.Enabled() {
 		webAuth.setStore(accessStore)
+		webAuth.setMemberAppeals(memberAppeals)
 		if err := webAuth.bootstrapPlatformIdentity(ctx); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: OIDC platform identity bootstrap: %w", err)
 		}

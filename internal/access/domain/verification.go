@@ -14,6 +14,8 @@ const (
 	VerificationPurposeContactChange    VerificationPurpose = "contact_change"
 	VerificationPurposeAccountDeletion  VerificationPurpose = "account_deletion"
 	VerificationPurposeMemberActivation VerificationPurpose = "member_activation"
+	VerificationPurposeMemberLifecycle  VerificationPurpose = "member_lifecycle"
+	VerificationPurposeMemberAppeal     VerificationPurpose = "member_appeal"
 )
 
 type SecurityNotificationChannel string
@@ -31,6 +33,8 @@ const (
 	SecurityNotificationInitialCredential SecurityNotificationKind = "initial_credential"
 	SecurityNotificationPasswordReset     SecurityNotificationKind = "password_reset"
 	SecurityNotificationRecoveryRequest   SecurityNotificationKind = "recovery_request"
+	SecurityNotificationMemberLifecycle   SecurityNotificationKind = "member_lifecycle"
+	SecurityNotificationMemberAppeal      SecurityNotificationKind = "member_appeal"
 )
 
 const (
@@ -82,7 +86,7 @@ func (policy VerificationPolicy) Validate() error {
 
 func (purpose VerificationPurpose) Valid() bool {
 	switch purpose {
-	case VerificationPurposeLogin, VerificationPurposePasswordRecovery, VerificationPurposeContactChange, VerificationPurposeAccountDeletion, VerificationPurposeMemberActivation:
+	case VerificationPurposeLogin, VerificationPurposePasswordRecovery, VerificationPurposeContactChange, VerificationPurposeAccountDeletion, VerificationPurposeMemberActivation, VerificationPurposeMemberLifecycle, VerificationPurposeMemberAppeal:
 		return true
 	default:
 		return false
@@ -95,7 +99,7 @@ func (channel SecurityNotificationChannel) Valid() bool {
 
 func (kind SecurityNotificationKind) Valid() bool {
 	switch kind {
-	case SecurityNotificationVerificationCode, SecurityNotificationLoginLock, SecurityNotificationInitialCredential, SecurityNotificationPasswordReset, SecurityNotificationRecoveryRequest:
+	case SecurityNotificationVerificationCode, SecurityNotificationLoginLock, SecurityNotificationInitialCredential, SecurityNotificationPasswordReset, SecurityNotificationRecoveryRequest, SecurityNotificationMemberLifecycle, SecurityNotificationMemberAppeal:
 		return true
 	default:
 		return false

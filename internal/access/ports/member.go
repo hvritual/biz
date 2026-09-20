@@ -22,6 +22,9 @@ var (
 	ErrTenantMemberActivationUnavailable = errors.New("access: tenant member activation is unavailable")
 	ErrTenantMemberExistingAccountSMS    = errors.New("access: existing account must not receive a new initial password")
 	ErrTenantMemberActivationPending     = errors.New("access: member must complete pending activation")
+	ErrTenantMemberSelfDeactivation      = errors.New("access: member must not deactivate own membership")
+	ErrTenantMemberProtectedOwner        = errors.New("access: protected owner requires owner actor")
+	ErrTenantMemberRestoreUnavailable    = errors.New("access: removed member cannot be restored safely")
 )
 
 type tenantMemberListStatusQueryKey struct{}
@@ -68,6 +71,14 @@ type TenantMemberActivationReceipt struct {
 	MaskedDestination   string
 }
 
+type TenantMemberLifecycleNotificationInput struct {
+	TenantID string
+	UserID   string
+	Status   string
+	Reason   string
+	Version  uint64
+}
+
 type TenantMemberListQuery struct {
 	Query        string
 	RoleID       string
@@ -88,8 +99,15 @@ type TenantMemberRepository interface {
 	Bootstrap(context.Context, string, string, string, time.Time) (domain.Membership, error)
 	Get(context.Context, string, string) (domain.Membership, error)
 	List(context.Context, string, TenantMemberListQuery) (TenantMemberListPage, error)
+	ListRemoved(context.Context, string, uint32, uint32) (TenantMemberListPage, error)
 	CountQuotaMembers(context.Context, string) (uint64, error)
 	Update(context.Context, *domain.Membership, uint64) error
+	Remove(context.Context, *domain.Membership, uint64) error
+	Restore(context.Context, *domain.Membership, uint64) ([]string, error)
+}
+
+type TenantMemberLifecycleNotificationRepository interface {
+	Notify(context.Context, TenantMemberLifecycleNotificationInput) (domain.NotificationDeliveryReceipt, error)
 }
 
 type TenantMemberActivationRepository interface {
@@ -100,4 +118,5 @@ type TenantMemberActivationRepository interface {
 type TenantMemberRepositories struct {
 	Member     TenantMemberRepository
 	Activation TenantMemberActivationRepository
+	Lifecycle  TenantMemberLifecycleNotificationRepository
 }

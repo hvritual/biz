@@ -13,7 +13,7 @@ import {
   type TrustedSession,
 } from '@/services/runtime/api'
 
-export type MemberMutation = 'create' | 'update' | 'invite' | 'activate' | 'suspend' | 'remove' | 'profile' | 'roles'
+export type MemberMutation = 'create' | 'update' | 'invite' | 'activate' | 'suspend' | 'remove' | 'restore' | 'profile' | 'roles'
 export type MemberRoleMutation = 'assign' | 'revoke'
 
 export type EnterpriseMemberRole = {
@@ -205,6 +205,27 @@ export async function queryEnterpriseMembers(
   }
 }
 
+export async function listRemovedEnterpriseMembers(
+  session: TrustedSession,
+  page = 1,
+  pageSize = 50,
+): Promise<EnterpriseMemberListPage> {
+  requireTenantSession(session)
+  const params = new URLSearchParams({
+    page: String(Math.max(1, Math.trunc(page))),
+    page_size: String(Math.max(1, Math.min(100, Math.trunc(pageSize)))),
+  })
+  const result = await request<{
+    members?: Array<TenantMember & Partial<EnterpriseTenantMember>>
+    total?: string | number
+  }>(`/v1/tenant/members/removed?${params.toString()}`, { headers: readHeaders(session) })
+  const total = Number(result.total ?? 0)
+  return {
+    members: Array.isArray(result.members) ? result.members.map(memberSnapshot) : [],
+    total: Number.isFinite(total) && total >= 0 ? total : 0,
+  }
+}
+
 export async function listEnterpriseMembers(session: TrustedSession) {
   const members: EnterpriseTenantMember[] = []
   let page = 1
@@ -346,12 +367,13 @@ export function activateEnterpriseMember(
   session: TrustedSession,
   member: EnterpriseTenantMember,
   idempotencyKey: string,
+  reason = '',
 ) {
   return memberMutate(
     session,
     `/v1/tenant/members/${encodeURIComponent(member.userId)}/activate`,
     'POST',
-    { userId: member.userId, version: member.version },
+    { userId: member.userId, version: member.version, reason: reason.trim() },
     idempotencyKey,
   )
 }
@@ -360,12 +382,13 @@ export function suspendEnterpriseMember(
   session: TrustedSession,
   member: EnterpriseTenantMember,
   idempotencyKey: string,
+  reason = '',
 ) {
   return memberMutate(
     session,
     `/v1/tenant/members/${encodeURIComponent(member.userId)}/suspend`,
     'POST',
-    { userId: member.userId, version: member.version },
+    { userId: member.userId, version: member.version, reason: reason.trim() },
     idempotencyKey,
   )
 }
@@ -374,12 +397,28 @@ export function removeEnterpriseMember(
   session: TrustedSession,
   member: EnterpriseTenantMember,
   idempotencyKey: string,
+  reason = '',
 ) {
   return memberMutate(
     session,
     `/v1/tenant/members/${encodeURIComponent(member.userId)}/remove`,
     'POST',
-    { userId: member.userId, version: member.version },
+    { userId: member.userId, version: member.version, reason: reason.trim() },
+    idempotencyKey,
+  )
+}
+
+export function restoreEnterpriseMember(
+  session: TrustedSession,
+  member: EnterpriseTenantMember,
+  idempotencyKey: string,
+  reason: string,
+) {
+  return memberMutate(
+    session,
+    `/v1/tenant/members/${encodeURIComponent(member.userId)}/restore`,
+    'POST',
+    { userId: member.userId, version: member.version, reason: reason.trim() },
     idempotencyKey,
   )
 }

@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"errors"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -88,6 +89,63 @@ func (repository *memoryTenantMemberRepository) List(_ context.Context, tenantID
 		}
 	}
 	return ports.TenantMemberListPage{Members: result, Total: uint64(len(result))}, nil
+}
+
+func (repository *memoryTenantMemberRepository) ListRemoved(_ context.Context, tenantID string, page, pageSize uint32) (ports.TenantMemberListPage, error) {
+	repository.mu.Lock()
+	defer repository.mu.Unlock()
+	if page == 0 || pageSize == 0 {
+		return ports.TenantMemberListPage{}, errors.New("invalid removed member pagination")
+	}
+	result := make([]domain.Membership, 0)
+	for _, member := range repository.values {
+		if member.TenantID == tenantID && member.Status == domain.TenantMemberStatusRemoved {
+			result = append(result, member)
+		}
+	}
+	sort.Slice(result, func(i, j int) bool { return result[i].UserID < result[j].UserID })
+	total := uint64(len(result))
+	start := int((uint64(page) - 1) * uint64(pageSize))
+	if start >= len(result) {
+		return ports.TenantMemberListPage{Members: nil, Total: total}, nil
+	}
+	end := start + int(pageSize)
+	if end > len(result) {
+		end = len(result)
+	}
+	return ports.TenantMemberListPage{Members: append([]domain.Membership(nil), result[start:end]...), Total: total}, nil
+}
+
+func (repository *memoryTenantMemberRepository) Remove(_ context.Context, member *domain.Membership, expectedVersion uint64) error {
+	repository.mu.Lock()
+	defer repository.mu.Unlock()
+	key := memberKey(member.TenantID, member.UserID)
+	current, ok := repository.values[key]
+	if !ok {
+		return ports.ErrTenantMemberNotFound
+	}
+	if current.Version != expectedVersion {
+		return ports.ErrTenantMemberConflict
+	}
+	member.Version = expectedVersion + 1
+	repository.values[key] = *member
+	return nil
+}
+
+func (repository *memoryTenantMemberRepository) Restore(_ context.Context, member *domain.Membership, expectedVersion uint64) ([]string, error) {
+	repository.mu.Lock()
+	defer repository.mu.Unlock()
+	key := memberKey(member.TenantID, member.UserID)
+	current, ok := repository.values[key]
+	if !ok {
+		return nil, ports.ErrTenantMemberNotFound
+	}
+	if current.Version != expectedVersion || current.Status != domain.TenantMemberStatusRemoved {
+		return nil, ports.ErrTenantMemberConflict
+	}
+	member.Version = expectedVersion + 1
+	repository.values[key] = *member
+	return nil, nil
 }
 
 func (repository *memoryTenantMemberRepository) Update(_ context.Context, member *domain.Membership, expectedVersion uint64) error {

@@ -16,7 +16,7 @@ export function memberActionError(
   if (action === 'activate' && member.status !== 'suspended')
     return member.status === 'invited'
       ? '待激活成员必须完成激活链接或首次改密流程，不能由管理员直接启用。'
-      : '仅已禁用成员可以重新启用。已移除成员需要重新邀请。'
+      : '仅已禁用成员可以重新启用。已移除成员请从成员回收站恢复。'
   if (
     action === 'activate' &&
     (!member.roleIds.length || member.roleIds.some((id) => !roles.some((r) => r.id === id && r.enabled)))

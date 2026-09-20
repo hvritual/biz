@@ -26,11 +26,12 @@ const (
 )
 
 type runtimeWebAuth struct {
-	config       WebAuthConfig
-	oidc         *oidcClient
-	mu           sync.RWMutex
-	store        *accesspersistence.Store
-	entitlements currentAuthorizationEntitlementReader
+	config        WebAuthConfig
+	oidc          *oidcClient
+	mu            sync.RWMutex
+	store         *accesspersistence.Store
+	memberAppeals *accesspersistence.MemberAppealService
+	entitlements  currentAuthorizationEntitlementReader
 }
 
 func newRuntimeWebAuth(ctx context.Context, config WebAuthConfig) (*runtimeWebAuth, error) {
@@ -59,6 +60,24 @@ func (auth *runtimeWebAuth) setStore(store *accesspersistence.Store) {
 	auth.mu.Unlock()
 }
 
+func (auth *runtimeWebAuth) setMemberAppeals(service *accesspersistence.MemberAppealService) {
+	if auth == nil {
+		return
+	}
+	auth.mu.Lock()
+	auth.memberAppeals = service
+	auth.mu.Unlock()
+}
+
+func (auth *runtimeWebAuth) currentMemberAppeals() *accesspersistence.MemberAppealService {
+	if auth == nil {
+		return nil
+	}
+	auth.mu.RLock()
+	defer auth.mu.RUnlock()
+	return auth.memberAppeals
+}
+
 func (auth *runtimeWebAuth) currentStore() *accesspersistence.Store {
 	if auth == nil {
 		return nil
@@ -81,6 +100,8 @@ func (auth *runtimeWebAuth) register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /auth/authorization", auth.handleCurrentAuthorization)
 	mux.HandleFunc("POST /auth/password/change", auth.handlePasswordChange)
 	mux.HandleFunc("POST /auth/tenant/members/{user_id}/password-recovery", auth.handleTenantMemberPasswordRecovery)
+	mux.HandleFunc("GET /auth/member-appeals", auth.handleMemberAppealEligibility)
+	mux.HandleFunc("POST /auth/member-appeals", auth.handleMemberAppealSubmit)
 	mux.HandleFunc("POST /auth/logout", auth.handleLogout)
 }
 

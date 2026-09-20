@@ -170,6 +170,13 @@
           "number": 2,
           "kind": "scalar",
           "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
@@ -919,6 +926,29 @@
       }
     },
     {
+      "name": "ListRemovedTenantMembersRequest",
+      "fullName": "access.v1.ListRemovedTenantMembersRequest",
+      "fields": [
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 1,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "ListTenantAuditRecordsRequest",
       "fullName": "access.v1.ListTenantAuditRecordsRequest",
       "fields": [
@@ -1245,6 +1275,43 @@
           "number": 2,
           "kind": "scalar",
           "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "RestoreTenantMemberRequest",
+      "fullName": "access.v1.RestoreTenantMemberRequest",
+      "fields": [
+        {
+          "name": "user_id",
+          "jsonName": "userId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
@@ -1345,6 +1412,13 @@
           "number": 2,
           "kind": "scalar",
           "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
@@ -8255,6 +8329,47 @@
           }
         },
         {
+          "name": "ListRemovedTenantMembers",
+          "fullName": "access.v1.TenantMemberLifecycleApplication.ListRemovedTenantMembers",
+          "request": "access.v1.ListRemovedTenantMembersRequest",
+          "response": "access.v1.ListTenantMembersResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/members/removed"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.list_removed",
+            "useCase": "list_removed_tenant_members",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.list_removed",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "ListTenantMembers",
           "fullName": "access.v1.TenantMemberLifecycleApplication.ListTenantMembers",
           "request": "access.v1.ListTenantMembersRequest",
@@ -8332,6 +8447,54 @@
             "operationId": "tenant.member.remove",
             "permissions": [
               "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "RestoreTenantMember",
+          "fullName": "access.v1.TenantMemberLifecycleApplication.RestoreTenantMember",
+          "request": "access.v1.RestoreTenantMemberRequest",
+          "response": "access.v1.TenantMemberDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/members/{user_id}/restore",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.restore",
+            "useCase": "restore_tenant_member",
+            "permissions": [
+              "tenant.member.manage",
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "tenant.role.assign_member"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.restore",
+            "permissions": [
+              "tenant.member.manage",
+              "tenant.role.manage"
             ],
             "permissionMode": "all",
             "tenantRequired": true,

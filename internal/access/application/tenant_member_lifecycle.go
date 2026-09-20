@@ -269,6 +269,38 @@ func (service *TenantMemberLifecycleService) ListTenantMembers(ctx context.Conte
 	return response, nil
 }
 
+func (service *TenantMemberLifecycleService) ListRemovedTenantMembers(ctx context.Context, request *accessv1.ListRemovedTenantMembersRequest) (*accessv1.ListTenantMembersResponse, error) {
+	if request == nil {
+		request = &accessv1.ListRemovedTenantMembersRequest{}
+	}
+	page := request.GetPage()
+	if page == 0 {
+		page = 1
+	}
+	pageSize := request.GetPageSize()
+	if pageSize == 0 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		return nil, ErrInvalidTenantMemberRequest
+	}
+	tenantID, err := trustedTenantID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (ports.TenantMemberListPage, error) {
+		return scope.Repositories().Member.ListRemoved(scope.Context(), tenantID, page, pageSize)
+	})
+	if err != nil {
+		return nil, err
+	}
+	response := &accessv1.ListTenantMembersResponse{Members: make([]*accessv1.TenantMemberDTO, 0, len(result.Members)), Total: result.Total}
+	for _, member := range result.Members {
+		response.Members = append(response.Members, tenantMemberDTO(member))
+	}
+	return response, nil
+}
+
 func tenantMemberListQuery(request *accessv1.ListTenantMembersRequest) (ports.TenantMemberListQuery, error) {
 	if request == nil {
 		request = &accessv1.ListTenantMembersRequest{}
@@ -392,7 +424,7 @@ func (service *TenantMemberLifecycleService) UpdateTenantMemberProfile(ctx conte
 	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalidTenantMemberRequest
 	}
-	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), func(callCtx context.Context, current *domain.Membership) error {
+	return service.mutate(ctx, strings.TrimSpace(request.GetUserId()), request.GetVersion(), "", false, func(callCtx context.Context, current *domain.Membership) error {
 		targetDepartmentID := strings.TrimSpace(request.GetDepartmentId())
 		if targetDepartmentID == strings.TrimSpace(current.DepartmentID) {
 			return nil
@@ -407,6 +439,10 @@ func (service *TenantMemberLifecycleService) UpdateTenantMemberProfile(ctx conte
 func (service *TenantMemberLifecycleService) ActivateTenantMember(ctx context.Context, request *accessv1.ActivateTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
 	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalidTenantMemberRequest
+	}
+	reason, err := normalizeMemberLifecycleReason(request.GetReason())
+	if err != nil {
+		return nil, err
 	}
 	userID := strings.TrimSpace(request.GetUserId())
 	tenantID, err := trustedTenantID(ctx)
@@ -428,32 +464,163 @@ func (service *TenantMemberLifecycleService) ActivateTenantMember(ctx context.Co
 	if err != nil {
 		return nil, wrapTenantMemberConflict(err)
 	}
-	return service.mutate(ctx, userID, request.GetVersion(), nil, func(member *domain.Membership) error { return member.Activate(time.Now().UTC()) })
+	return service.mutate(ctx, userID, request.GetVersion(), reason, true, nil, func(member *domain.Membership) error {
+		return member.Activate(time.Now().UTC())
+	})
 }
 
 func (service *TenantMemberLifecycleService) SuspendTenantMember(ctx context.Context, request *accessv1.SuspendTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
 	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalidTenantMemberRequest
 	}
+	reason, err := normalizeMemberLifecycleReason(request.GetReason())
+	if err != nil {
+		return nil, err
+	}
 	userID := strings.TrimSpace(request.GetUserId())
-	return service.mutate(ctx, userID, request.GetVersion(), func(callCtx context.Context, _ *domain.Membership) error {
+	return service.mutate(ctx, userID, request.GetVersion(), reason, true, func(callCtx context.Context, member *domain.Membership) error {
+		if err := assertTenantMemberDeactivationActor(callCtx, member); err != nil {
+			return err
+		}
 		_, err := service.capabilities.AccessTenantRolePermission().AssertTenantMemberDeactivationAllowed(callCtx, &accessv1.AssertTenantMemberDeactivationAllowedRequest{UserId: userID})
 		return err
-	}, func(member *domain.Membership) error { return member.Suspend(time.Now().UTC()) })
+	}, func(member *domain.Membership) error {
+		return member.Suspend(time.Now().UTC())
+	})
 }
 
 func (service *TenantMemberLifecycleService) RemoveTenantMember(ctx context.Context, request *accessv1.RemoveTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
 	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
 		return nil, ErrInvalidTenantMemberRequest
 	}
+	reason, err := normalizeMemberLifecycleReason(request.GetReason())
+	if err != nil {
+		return nil, err
+	}
+	tenantID, err := trustedTenantID(ctx)
+	if err != nil {
+		return nil, err
+	}
 	userID := strings.TrimSpace(request.GetUserId())
-	return service.mutate(ctx, userID, request.GetVersion(), func(callCtx context.Context, _ *domain.Membership) error {
-		_, err := service.capabilities.AccessTenantRolePermission().AssertTenantMemberDeactivationAllowed(callCtx, &accessv1.AssertTenantMemberDeactivationAllowedRequest{UserId: userID})
-		return err
-	}, func(member *domain.Membership) error { return member.Remove(time.Now().UTC()) })
+	member, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (domain.Membership, error) {
+		current, getErr := scope.Repositories().Member.Get(scope.Context(), tenantID, userID)
+		if getErr != nil {
+			return domain.Membership{}, getErr
+		}
+		if current.Version != request.GetVersion() {
+			return domain.Membership{}, ports.ErrTenantMemberConflict
+		}
+		if err := assertTenantMemberDeactivationActor(scope.Context(), &current); err != nil {
+			return domain.Membership{}, err
+		}
+		if _, err := service.capabilities.AccessTenantRolePermission().AssertTenantMemberDeactivationAllowed(scope.Context(), &accessv1.AssertTenantMemberDeactivationAllowedRequest{UserId: userID}); err != nil {
+			return domain.Membership{}, err
+		}
+		if err := current.Remove(time.Now().UTC()); err != nil {
+			return domain.Membership{}, err
+		}
+		if err := scope.Repositories().Member.Remove(scope.Context(), &current, request.GetVersion()); err != nil {
+			return domain.Membership{}, err
+		}
+		if err := notifyTenantMemberLifecycle(scope.Context(), scope.Repositories(), current, reason); err != nil {
+			return domain.Membership{}, err
+		}
+		return current, nil
+	})
+	if err != nil {
+		if errors.Is(err, ports.ErrTenantMemberConflict) {
+			return nil, &tenantMemberConflictError{cause: err}
+		}
+		return nil, err
+	}
+	return tenantMemberDTO(member), nil
 }
 
-func (service *TenantMemberLifecycleService) mutate(ctx context.Context, userID string, expectedVersion uint64, beforeApply func(context.Context, *domain.Membership) error, apply func(*domain.Membership) error) (*accessv1.TenantMemberDTO, error) {
+func (service *TenantMemberLifecycleService) RestoreTenantMember(ctx context.Context, request *accessv1.RestoreTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
+	if request == nil || strings.TrimSpace(request.GetUserId()) == "" || request.GetVersion() == 0 {
+		return nil, ErrInvalidTenantMemberRequest
+	}
+	reason, err := normalizeMemberLifecycleReason(request.GetReason())
+	if err != nil {
+		return nil, err
+	}
+	tenantID, err := trustedTenantID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	userID := strings.TrimSpace(request.GetUserId())
+	restored, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (struct {
+		Member  domain.Membership
+		RoleIDs []string
+	}, error) {
+		current, getErr := scope.Repositories().Member.Get(scope.Context(), tenantID, userID)
+		if getErr != nil {
+			return struct {
+				Member  domain.Membership
+				RoleIDs []string
+			}{}, getErr
+		}
+		if current.Version != request.GetVersion() || current.Status != domain.TenantMemberStatusRemoved {
+			return struct {
+				Member  domain.Membership
+				RoleIDs []string
+			}{}, ports.ErrTenantMemberConflict
+		}
+		if err := current.Restore(time.Now().UTC()); err != nil {
+			return struct {
+				Member  domain.Membership
+				RoleIDs []string
+			}{}, err
+		}
+		roleIDs, restoreErr := scope.Repositories().Member.Restore(scope.Context(), &current, request.GetVersion())
+		return struct {
+			Member  domain.Membership
+			RoleIDs []string
+		}{Member: current, RoleIDs: roleIDs}, restoreErr
+	})
+	if err != nil {
+		if errors.Is(err, ports.ErrTenantMemberConflict) {
+			return nil, &tenantMemberConflictError{cause: err}
+		}
+		return nil, err
+	}
+	for _, roleID := range restored.RoleIDs {
+		if _, err := service.capabilities.AccessTenantRolePermission().AssignTenantRoleMember(ctx, &accessv1.AssignTenantRoleMemberRequest{
+			RoleId: roleID,
+			UserId: userID,
+		}); err != nil {
+			return nil, err
+		}
+	}
+	if _, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (domain.NotificationDeliveryReceipt, error) {
+		if scope.Repositories().Lifecycle == nil {
+			return domain.NotificationDeliveryReceipt{}, nil
+		}
+		return scope.Repositories().Lifecycle.Notify(scope.Context(), ports.TenantMemberLifecycleNotificationInput{
+			TenantID: tenantID, UserID: userID, Status: domain.TenantMemberStatusActive,
+			Reason: reason, Version: restored.Member.Version,
+		})
+	}); err != nil {
+		return nil, err
+	}
+	readback, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (domain.Membership, error) {
+		return scope.Repositories().Member.Get(scope.Context(), tenantID, userID)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return tenantMemberDTO(readback), nil
+}
+
+func (service *TenantMemberLifecycleService) mutate(
+	ctx context.Context,
+	userID string,
+	expectedVersion uint64,
+	reason string,
+	lifecycleEvent bool,
+	beforeApply func(context.Context, *domain.Membership) error,
+	apply func(*domain.Membership) error,
+) (*accessv1.TenantMemberDTO, error) {
 	tenantID, err := trustedTenantID(ctx)
 	if err != nil {
 		return nil, err
@@ -477,6 +644,9 @@ func (service *TenantMemberLifecycleService) mutate(ctx context.Context, userID 
 		if err := scope.Repositories().Member.Update(scope.Context(), &current, expectedVersion); err != nil {
 			return domain.Membership{}, err
 		}
+		if err := notifyTenantMemberLifecycle(scope.Context(), scope.Repositories(), current, reason); err != nil {
+			return domain.Membership{}, err
+		}
 		return current, nil
 	})
 	if err != nil {
@@ -486,6 +656,59 @@ func (service *TenantMemberLifecycleService) mutate(ctx context.Context, userID 
 		return nil, err
 	}
 	return tenantMemberDTO(member), nil
+}
+
+func notifyTenantMemberLifecycle(
+	ctx context.Context,
+	repositories ports.TenantMemberRepositories,
+	member domain.Membership,
+	reason string,
+) error {
+	if repositories.Lifecycle == nil {
+		return nil
+	}
+	_, err := repositories.Lifecycle.Notify(ctx, ports.TenantMemberLifecycleNotificationInput{
+		TenantID: member.TenantID, UserID: member.UserID, Status: member.Status,
+		Reason: reason, Version: member.Version,
+	})
+	return err
+}
+
+func normalizeMemberLifecycleReason(value string) (string, error) {
+	value = strings.TrimSpace(value)
+	if len([]rune(value)) > 500 {
+		return "", ErrInvalidTenantMemberRequest
+	}
+	return value, nil
+}
+
+func assertTenantMemberDeactivationActor(ctx context.Context, member *domain.Membership) error {
+	if member == nil {
+		return ErrInvalidTenantMemberRequest
+	}
+	principal, ok := identity.FromContext(ctx)
+	if !ok || !principal.Authenticated {
+		return ErrTenantContextRequired
+	}
+	if principal.UserID != "" && principal.UserID == member.UserID {
+		return ports.ErrTenantMemberSelfDeactivation
+	}
+	targetOwner := false
+	for _, role := range member.Roles {
+		if role.Name == domain.TenantOwnerRoleName && role.Status == domain.TenantRoleStatusActive {
+			targetOwner = true
+			break
+		}
+	}
+	if !targetOwner {
+		return nil
+	}
+	for _, role := range principal.Roles {
+		if role == domain.TenantOwnerRoleName {
+			return nil
+		}
+	}
+	return ports.ErrTenantMemberProtectedOwner
 }
 
 func trustedTenantID(ctx context.Context) (string, error) {

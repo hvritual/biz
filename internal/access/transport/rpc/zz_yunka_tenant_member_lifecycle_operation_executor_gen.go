@@ -87,6 +87,19 @@ func (server *TenantMemberLifecycleOperationServer) InviteTenantMember(ctx conte
 	return response, nil
 }
 
+func (server *TenantMemberLifecycleOperationServer) ListRemovedTenantMembers(ctx context.Context, request *accessv1.ListRemovedTenantMembersRequest) (*accessv1.ListTenantMembersResponse, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleListRemovedTenantMembers(), request, server.application.ListRemovedTenantMembers)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *TenantMemberLifecycleOperationServer) ListTenantMembers(ctx context.Context, request *accessv1.ListTenantMembersRequest) (*accessv1.ListTenantMembersResponse, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
@@ -107,6 +120,19 @@ func (server *TenantMemberLifecycleOperationServer) RemoveTenantMember(ctx conte
 		}
 	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleRemoveTenantMember(), request, server.application.RemoveTenantMember)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *TenantMemberLifecycleOperationServer) RestoreTenantMember(ctx context.Context, request *accessv1.RestoreTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleRestoreTenantMember(), request, server.application.RestoreTenantMember)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}

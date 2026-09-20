@@ -106,6 +106,20 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
       derivedDataScope: index % 2 === 0 ? 'sites' : 'self',
     })
   }
+  let removedMembers: RemoteMember[] = [{
+    userId: 'user-removed-001',
+    username: 'former.member',
+    email: 'former@coffeelink.test',
+    status: 'TENANT_MEMBER_STATUS_REMOVED',
+    version: 5,
+    name: 'Former Member',
+    phone: '',
+    employeeId: 'EMP-OLD',
+    position: 'Former Operator',
+    departmentId: 'dept-success',
+    roles: [],
+    derivedDataScope: 'none',
+  }]
   const writes: WriteRecord[] = []
   const listReads: string[] = []
 
@@ -152,6 +166,8 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
       'tenant.member.activate',
       'tenant.member.suspend',
       'tenant.member.remove',
+      'tenant.member.list_removed',
+      'tenant.member.restore',
       'tenant.role.list',
       'tenant.department.list',
       'tenant.role.assign_member',
@@ -206,6 +222,11 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
       return { ...next, derivedDataScope: deriveScope(next) }
     })
     return json(route, 200, role)
+  })
+
+  await page.route(/\/(?:api\/)?v1\/tenant\/members\/removed(?:\?.*)?$/, async (route) => {
+    if (route.request().method() !== 'GET') return json(route, 405, { message: 'method not allowed' })
+    return json(route, 200, { members: removedMembers, total: removedMembers.length })
   })
 
   await page.route(/\/(?:api\/)?v1\/tenant\/members\/create$/, async (route) => {
@@ -318,13 +339,13 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     return json(route, 200, updated)
   })
 
-  await page.route(/\/(?:api\/)?v1\/tenant\/members\/(?!create(?:\/|$))[^/]+(?:\/(?:activate|suspend|remove))?$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/members\/(?!create(?:[/?]|$)|removed(?:[/?]|$))[^/?]+(?:\/(?:activate|suspend|remove|restore))?(?:\?.*)?$/, async (route) => {
     const request = route.request()
     const url = new URL(request.url())
     const parts = url.pathname.split('/')
     const userId = decodeURIComponent(parts[parts.indexOf('members') + 1] || '')
     const action = parts.at(-1)
-    const current = members.find((member) => member.userId === userId)
+    const current = members.find((member) => member.userId === userId) ?? removedMembers.find((member) => member.userId === userId)
     if (!current) return json(route, 404, { message: 'not found' })
 
     if (request.method() === 'GET') {
@@ -356,13 +377,21 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
       return json(route, 200, updated)
     }
     const nextStatus =
-      action === 'activate'
+      action === 'activate' || action === 'restore'
         ? 'TENANT_MEMBER_STATUS_ACTIVE'
         : action === 'suspend'
           ? 'TENANT_MEMBER_STATUS_SUSPENDED'
           : 'TENANT_MEMBER_STATUS_REMOVED'
     const updated = { ...current, status: nextStatus, version: current.version + 1 }
-    members = members.map((member) => (member.userId === userId ? updated : member))
+    if (action === 'restore') {
+      removedMembers = removedMembers.filter((member) => member.userId !== userId)
+      members = [...members.filter((member) => member.userId !== userId), updated]
+    } else if (action === 'remove') {
+      members = members.filter((member) => member.userId !== userId)
+      removedMembers = [...removedMembers.filter((member) => member.userId !== userId), updated]
+    } else {
+      members = members.map((member) => (member.userId === userId ? updated : member))
+    }
     return json(route, 200, updated)
   })
 
@@ -370,7 +399,56 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     getMembers: () => members,
     getWrites: () => writes,
     getListReads: () => listReads,
+    getRemovedMembers: () => removedMembers,
   }
+}
+
+async function mockMemberAppealServer(page: Page) {
+  const writes: WriteRecord[] = []
+  await page.route(/\/(?:api\/)?(?:auth|v1)\//, async (route) => {
+    const request = route.request()
+    throw new Error(`Unhandled restricted-appeal request: ${request.method()} ${new URL(request.url()).pathname}`)
+  })
+  await page.route(/\/(?:api\/)?auth\/session(?:\?.*)?$/, async (route) => {
+    return json(route, 200, {
+      authenticated: true,
+      actor_kind: 'user',
+      user_id: 'user-suspended-001',
+      csrf_token: 'csrf-member-appeal',
+      active_tenant_id: '',
+      tenants: [],
+    })
+  })
+  await page.route(/\/(?:api\/)?auth\/member-appeals(?:\?.*)?$/, async (route) => {
+    const request = route.request()
+    if (request.method() === 'GET') {
+      return json(route, 200, {
+        eligible: [{
+          tenant_id: 'tenant-suspended-001',
+          tenant_name: 'Suspended Coffee Tenant',
+          status: 'suspended',
+          appeal_id: '',
+          appeal_state: '',
+        }],
+      })
+    }
+    writes.push({
+      path: new URL(request.url()).pathname.replace(/^\/api(?=\/)/, ''),
+      method: request.method(),
+      headers: request.headers(),
+      body: request.postDataJSON(),
+    })
+    return json(route, 202, {
+      accepted: true,
+      appeal_id: 'map-e2e-001',
+      tenant_id: 'tenant-suspended-001',
+      membership_status: 'suspended',
+      state: 'PENDING',
+      submitted_at: '2026-09-20T10:00:00Z',
+      notification_event_ids: ['appeal-event-owner-001'],
+    })
+  })
+  return { getWrites: () => writes }
 }
 
 async function openCanonicalMembers(page: Page) {
@@ -537,6 +615,32 @@ test('401 redirects to trusted login and 403 blocks members before protected dat
   await expect(page.getByText('张三', { exact: true })).toHaveCount(0)
 })
 
+test('canonical recycle bin restores removed member with one authoritative write and readback', async ({ page }) => {
+  const server = await mockMemberServer(page)
+  await openCanonicalMembers(page)
+  await page.getByRole('button', { name: '成员回收站', exact: true }).click()
+  const recycle = page.getByRole('dialog', { name: '成员回收站' })
+  await expect(recycle.getByText('Former Member', { exact: true })).toBeVisible()
+  await recycle.getByRole('button', { name: '恢复成员', exact: true }).click()
+  const restore = page.getByRole('dialog', { name: '恢复 Former Member' })
+  await restore.getByLabel('恢复原因').fill('employment restored')
+  await restore.getByRole('button', { name: '确认恢复', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('成员已恢复')
+  await expect(page.locator('[data-member-id="user-removed-001"]')).toContainText('Former Member')
+  expect(server.getRemovedMembers()).toHaveLength(0)
+
+  const writes = server.getWrites().filter((item) => item.path === '/v1/tenant/members/user-removed-001/restore')
+  expect(writes).toHaveLength(1)
+  expect(writes[0]?.method).toBe('POST')
+  expect(writes[0]?.headers['x-csrf-token']).toBe('csrf-real-member')
+  expect(writes[0]?.headers['idempotency-key']).toMatch(/^enterprise-member-restore-/)
+  expect(writes[0]?.body).toMatchObject({
+    userId: 'user-removed-001',
+    version: 5,
+    reason: 'employment restored',
+  })
+})
+
 test('canonical profile 409 preserves draft and reuses the same idempotency key', async ({ page }) => {
   const server = await mockMemberServer(page, { mutationStatus: 409 })
   await openCanonicalMembers(page)
@@ -564,4 +668,27 @@ test('successful member write without GET readback is never presented as canonic
   await dialog.getByRole('button', { name: '保存变更', exact: true }).click()
   await expect(dialog.getByRole('alert')).toContainText('readback failed')
   await expect(page.getByText(/变更已由服务端确认并完成权威回读/)).toHaveCount(0)
+})
+
+
+test('restricted member appeal never requests tenant business APIs and exposes accepted receipt', async ({ page }) => {
+  const server = await mockMemberAppealServer(page)
+  await page.goto('/#/member-appeal')
+  await expect(page.locator('[data-member-appeal-page]')).toBeVisible()
+  await expect(page.getByText('Suspended Coffee Tenant', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: '提交恢复申诉', exact: true }).click()
+  await page.getByLabel('申诉说明').fill('please review my suspended access')
+  await page.getByRole('button', { name: '提交申诉', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('申诉已受理')
+  await expect(page.getByRole('status')).toContainText('map-e2e-001')
+
+  const writes = server.getWrites()
+  expect(writes).toHaveLength(1)
+  expect(writes[0]?.path).toBe('/auth/member-appeals')
+  expect(writes[0]?.method).toBe('POST')
+  expect(writes[0]?.headers['x-csrf-token']).toBe('csrf-member-appeal')
+  expect(writes[0]?.body).toEqual({
+    tenant_id: 'tenant-suspended-001',
+    reason: 'please review my suspended access',
+  })
 })

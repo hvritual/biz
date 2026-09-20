@@ -3506,6 +3506,43 @@
       }
     },
     {
+      "operationId": "tenant.member.list_removed",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "list_removed_tenant_members",
+      "requestType": "access.v1.ListRemovedTenantMembersRequest",
+      "responseType": "access.v1.ListTenantMembersResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.member.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_department_management",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/ListRemovedTenantMembers",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/members/removed"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "tenant.member.profile.update",
       "domain": "access",
       "application": "tenant_member_lifecycle",
@@ -3592,6 +3629,53 @@
           {
             "method": "POST",
             "path": "/v1/tenant/members/{user_id}/remove",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.member.restore",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "restore_tenant_member",
+      "requestType": "access.v1.RestoreTenantMemberRequest",
+      "responseType": "access.v1.TenantMemberDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.member.manage",
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "tenant.role.assign_member"
+        ],
+        "permissionClosure": [
+          "tenant.role.manage"
+        ]
+      },
+      "applicationRequires": [
+        "access/tenant_department_management",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/RestoreTenantMember",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/members/{user_id}/restore",
             "body": "*"
           }
         ]

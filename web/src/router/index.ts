@@ -158,6 +158,11 @@ export const router = createRouter({
       meta: { title: '系统设置', module: 'system', surface: 'tenant', pageTemplate: 'FormPage' },
     },
     {
+      path: '/member-appeal',
+      component: () => import('@/features/enterprise/pages/MemberAppealView.vue'),
+      meta: { title: '成员访问申诉', authorizationPublic: true },
+    },
+    {
       path: '/authorization-state',
       component: () => import('@/features/system/pages/AuthorizationStateView.vue'),
       meta: { title: '访问授权', authorizationPublic: true },

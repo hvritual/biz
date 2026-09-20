@@ -8,8 +8,10 @@ const OperationTenantMemberLifecycleActivateTenantMember authz.OperationID = "te
 const OperationTenantMemberLifecycleCreateTenantMember authz.OperationID = "tenant.member.create"
 const OperationTenantMemberLifecycleGetTenantMember authz.OperationID = "tenant.member.get"
 const OperationTenantMemberLifecycleInviteTenantMember authz.OperationID = "tenant.member.invite"
+const OperationTenantMemberLifecycleListRemovedTenantMembers authz.OperationID = "tenant.member.list_removed"
 const OperationTenantMemberLifecycleListTenantMembers authz.OperationID = "tenant.member.list"
 const OperationTenantMemberLifecycleRemoveTenantMember authz.OperationID = "tenant.member.remove"
+const OperationTenantMemberLifecycleRestoreTenantMember authz.OperationID = "tenant.member.restore"
 const OperationTenantMemberLifecycleSuspendTenantMember authz.OperationID = "tenant.member.suspend"
 const OperationTenantMemberLifecycleUpdateTenantMember authz.OperationID = "tenant.member.update"
 const OperationTenantMemberLifecycleUpdateTenantMemberProfile authz.OperationID = "tenant.member.profile.update"
@@ -28,8 +30,10 @@ func tenantMemberLifecyclePolicies() map[string]authz.Policy {
 		"/access.v1.TenantMemberLifecycleApplication/CreateTenantMember":        {Operation: OperationTenantMemberLifecycleCreateTenantMember, Permissions: []authz.PermissionKey{"tenant.member.manage", "tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantMemberLifecycleApplication/GetTenantMember":           {Operation: OperationTenantMemberLifecycleGetTenantMember, Permissions: []authz.PermissionKey{"tenant.member.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantMemberLifecycleApplication/InviteTenantMember":        {Operation: OperationTenantMemberLifecycleInviteTenantMember, Permissions: []authz.PermissionKey{"tenant.member.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/access.v1.TenantMemberLifecycleApplication/ListRemovedTenantMembers":  {Operation: OperationTenantMemberLifecycleListRemovedTenantMembers, Permissions: []authz.PermissionKey{"tenant.member.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantMemberLifecycleApplication/ListTenantMembers":         {Operation: OperationTenantMemberLifecycleListTenantMembers, Permissions: []authz.PermissionKey{"tenant.member.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantMemberLifecycleApplication/RemoveTenantMember":        {Operation: OperationTenantMemberLifecycleRemoveTenantMember, Permissions: []authz.PermissionKey{"tenant.member.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/access.v1.TenantMemberLifecycleApplication/RestoreTenantMember":       {Operation: OperationTenantMemberLifecycleRestoreTenantMember, Permissions: []authz.PermissionKey{"tenant.member.manage", "tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantMemberLifecycleApplication/SuspendTenantMember":       {Operation: OperationTenantMemberLifecycleSuspendTenantMember, Permissions: []authz.PermissionKey{"tenant.member.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantMemberLifecycleApplication/UpdateTenantMember":        {Operation: OperationTenantMemberLifecycleUpdateTenantMember, Permissions: []authz.PermissionKey{"tenant.member.manage", "tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantMemberLifecycleApplication/UpdateTenantMemberProfile": {Operation: OperationTenantMemberLifecycleUpdateTenantMemberProfile, Permissions: []authz.PermissionKey{"tenant.member.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
