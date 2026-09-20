@@ -522,10 +522,8 @@ func (service *TenantMemberLifecycleService) RemoveTenantMember(ctx context.Cont
 		if err := scope.Repositories().Member.Remove(scope.Context(), &current, request.GetVersion()); err != nil {
 			return domain.Membership{}, err
 		}
-		if lifecycleEvent {
-			if err := notifyTenantMemberLifecycle(scope.Context(), scope.Repositories(), current, reason); err != nil {
-				return domain.Membership{}, err
-			}
+		if err := notifyTenantMemberLifecycle(scope.Context(), scope.Repositories(), current, reason); err != nil {
+			return domain.Membership{}, err
 		}
 		return current, nil
 	})
