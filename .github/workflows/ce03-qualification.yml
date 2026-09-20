@@ -5,6 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  workflow_call:
   push:
     branches: [main, feat/ce-03-capability-mapping]
     paths:
@@ -21,8 +22,6 @@ on:
       - Makefile
       - go.mod
       - go.sum
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
