@@ -165,12 +165,19 @@ func TestEnterprise177RemoveRestoreIsTenantScopedAtomicAndKeepsOldSessionRevoked
 		"/v1/tenant/members/"+url.PathEscape(targetUser)+"/restore",
 		&accessv1.RestoreTenantMemberRequest{UserId: targetUser, Version: 2, Reason: "approved return"},
 	)
-	if retryStatus != http.StatusOK {
-		t.Fatalf("idempotent restore retry status=%d body=%s", retryStatus, retryBody)
+	if retryStatus != http.StatusConflict {
+		t.Fatalf("completed idempotency replay status=%d want=%d body=%s", retryStatus, http.StatusConflict, retryBody)
 	}
-	replayed := enterprise177DecodeMember(t, retryBody)
-	if replayed.GetStatus() != accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_ACTIVE || replayed.GetVersion() != 3 {
-		t.Fatalf("idempotent restore replay changed receipt: %+v", replayed)
+	var replayState struct {
+		Status  string
+		Version uint64
+	}
+	if err := db.Table("biz_memberships").Select("status, version").
+		Where("tenant_id = ? AND user_id = ?", tenantA, targetUser).Scan(&replayState).Error; err != nil {
+		t.Fatal(err)
+	}
+	if replayState.Status != accessdomain.TenantMemberStatusActive || replayState.Version != 3 {
+		t.Fatalf("completed idempotency replay mutated membership: %+v", replayState)
 	}
 	var activeRoleCount, disabledRoleCount int64
 	if err := db.Table("biz_member_roles").Where("tenant_id = ? AND user_id = ? AND role_id = ?", tenantA, targetUser, activeRole).Count(&activeRoleCount).Error; err != nil {
