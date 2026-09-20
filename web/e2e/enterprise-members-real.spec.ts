@@ -403,6 +403,54 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
   }
 }
 
+async function mockMemberAppealServer(page: Page) {
+  const writes: WriteRecord[] = []
+  await page.route(/\/(?:api\/)?(?:auth|v1)\//, async (route) => {
+    const request = route.request()
+    throw new Error(`Unhandled restricted-appeal request: ${request.method()} ${new URL(request.url()).pathname}`)
+  })
+  await page.route(/\/(?:api\/)?auth\/session(?:\?.*)?$/, async (route) => {
+    return json(route, 200, {
+      authenticated: true,
+      actor_kind: 'user',
+      user_id: 'user-suspended-001',
+      csrf_token: 'csrf-member-appeal',
+      active_tenant_id: '',
+      tenants: [],
+    })
+  })
+  await page.route(/\/(?:api\/)?auth\/member-appeals(?:\?.*)?$/, async (route) => {
+    const request = route.request()
+    if (request.method() === 'GET') {
+      return json(route, 200, {
+        eligible: [{
+          tenant_id: 'tenant-suspended-001',
+          tenant_name: 'Suspended Coffee Tenant',
+          status: 'suspended',
+          appeal_id: '',
+          appeal_state: '',
+        }],
+      })
+    }
+    writes.push({
+      path: new URL(request.url()).pathname.replace(/^\/api(?=\/)/, ''),
+      method: request.method(),
+      headers: request.headers(),
+      body: request.postDataJSON(),
+    })
+    return json(route, 202, {
+      accepted: true,
+      appeal_id: 'map-e2e-001',
+      tenant_id: 'tenant-suspended-001',
+      membership_status: 'suspended',
+      state: 'PENDING',
+      submitted_at: '2026-09-20T10:00:00Z',
+      notification_event_ids: ['appeal-event-owner-001'],
+    })
+  })
+  return { getWrites: () => writes }
+}
+
 async function openCanonicalMembers(page: Page) {
   await page.goto('/#/enterprise/members')
   await expect(page.locator('[data-enterprise-page="members"]')).toBeVisible()
@@ -620,4 +668,27 @@ test('successful member write without GET readback is never presented as canonic
   await dialog.getByRole('button', { name: '保存变更', exact: true }).click()
   await expect(dialog.getByRole('alert')).toContainText('readback failed')
   await expect(page.getByText(/变更已由服务端确认并完成权威回读/)).toHaveCount(0)
+})
+
+
+test('restricted member appeal never requests tenant business APIs and exposes accepted receipt', async ({ page }) => {
+  const server = await mockMemberAppealServer(page)
+  await page.goto('/#/member-appeal')
+  await expect(page.locator('[data-member-appeal-page]')).toBeVisible()
+  await expect(page.getByText('Suspended Coffee Tenant', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: '提交恢复申诉', exact: true }).click()
+  await page.getByLabel('申诉说明').fill('please review my suspended access')
+  await page.getByRole('button', { name: '提交申诉', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('申诉已受理')
+  await expect(page.getByRole('status')).toContainText('map-e2e-001')
+
+  const writes = server.getWrites()
+  expect(writes).toHaveLength(1)
+  expect(writes[0]?.path).toBe('/auth/member-appeals')
+  expect(writes[0]?.method).toBe('POST')
+  expect(writes[0]?.headers['x-csrf-token']).toBe('csrf-member-appeal')
+  expect(writes[0]?.body).toEqual({
+    tenant_id: 'tenant-suspended-001',
+    reason: 'please review my suspended access',
+  })
 })
