@@ -77,7 +77,7 @@ const guardrails = [
       <div class="governance-heading">
         <div>
           <h2>平台治理边界</h2>
-          <p>把“能看到页面”与“有权执行操作”分开，所有真实写操作都需要服务端回执与回读。</p>
+          <p>页面可见不代表具备操作权限；所有变更只有在结果确认后才视为完成。</p>
         </div>
         <RouterLink class="btn" to="/platform/commercial/tenant-entitlements"><AppIcon name="shield" :size="15" />查看租户权益</RouterLink>
       </div>
