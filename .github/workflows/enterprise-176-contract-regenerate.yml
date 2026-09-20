@@ -1,4 +1,5 @@
 name: Enterprise 176 contract regenerate
+# Regenerate action catalog through canonical make generate.
 # Closed-PR regeneration lane for #176.
 # Final #176 canonical regeneration before PR qualification.
 # Source frozen after #176 activation/UI/quota-boundary review.
