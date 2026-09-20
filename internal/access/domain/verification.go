@@ -33,8 +33,8 @@ const (
 	SecurityNotificationInitialCredential SecurityNotificationKind = "initial_credential"
 	SecurityNotificationPasswordReset     SecurityNotificationKind = "password_reset"
 	SecurityNotificationRecoveryRequest   SecurityNotificationKind = "recovery_request"
-	SecurityNotificationMemberLifecycle    SecurityNotificationKind = "member_lifecycle"
-	SecurityNotificationMemberAppeal       SecurityNotificationKind = "member_appeal"
+	SecurityNotificationMemberLifecycle   SecurityNotificationKind = "member_lifecycle"
+	SecurityNotificationMemberAppeal      SecurityNotificationKind = "member_appeal"
 )
 
 const (

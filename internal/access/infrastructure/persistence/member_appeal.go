@@ -32,8 +32,8 @@ func (err MemberAppealRateLimitError) Error() string {
 }
 
 type memberStatusAppealRecord struct {
-	TenantID             string    `gorm:"column:tenant_id;primaryKey;size:64"`
-	UserID               string    `gorm:"column:user_id;primaryKey;size:64"`
+	TenantID              string    `gorm:"column:tenant_id;primaryKey;size:64"`
+	UserID                string    `gorm:"column:user_id;primaryKey;size:64"`
 	AppealID              string    `gorm:"column:appeal_id;size:64;not null;uniqueIndex"`
 	MembershipStatus      string    `gorm:"column:membership_status;size:32;not null"`
 	State                 string    `gorm:"column:state;size:24;not null;index"`

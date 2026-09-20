@@ -44,6 +44,7 @@ export type Commercial_V1_ModuleTechnicalStatus = "MODULE_TECHNICAL_STATUS_UNSPE
 export interface Access_V1_ActivateTenantMemberRequest {
   userId?: string;
   version?: string;
+  reason?: string;
 }
 
 export interface Access_V1_ActivateTenantRequest {
@@ -169,6 +170,11 @@ export interface Access_V1_InviteTenantMemberRequest {
   email?: string;
 }
 
+export interface Access_V1_ListRemovedTenantMembersRequest {
+  page?: number;
+  pageSize?: number;
+}
+
 export interface Access_V1_ListTenantAuditRecordsRequest {
   query?: string;
   operationId?: string;
@@ -240,6 +246,13 @@ export interface Access_V1_PermissionGrantInput {
 export interface Access_V1_RemoveTenantMemberRequest {
   userId?: string;
   version?: string;
+  reason?: string;
+}
+
+export interface Access_V1_RestoreTenantMemberRequest {
+  userId?: string;
+  version?: string;
+  reason?: string;
 }
 
 export interface Access_V1_RevokeTenantDelegationRequest {
@@ -261,6 +274,7 @@ export interface Access_V1_SetTenantRolePermissionsRequest {
 export interface Access_V1_SuspendTenantMemberRequest {
   userId?: string;
   version?: string;
+  reason?: string;
 }
 
 export interface Access_V1_SuspendTenantRequest {
@@ -1333,6 +1347,15 @@ export const operations = {
       { method: "POST", path: "/v1/tenant/members", body: "*" },
     ]
   },
+  "access.v1.TenantMemberLifecycleApplication.ListRemovedTenantMembers": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.ListRemovedTenantMembers",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/ListRemovedTenantMembers",
+    requestType: "access.v1.ListRemovedTenantMembersRequest",
+    responseType: "access.v1.ListTenantMembersResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/members/removed" },
+    ]
+  },
   "access.v1.TenantMemberLifecycleApplication.ListTenantMembers": {
     fullName: "access.v1.TenantMemberLifecycleApplication.ListTenantMembers",
     rpcPath: "/access.v1.TenantMemberLifecycleApplication/ListTenantMembers",
@@ -1349,6 +1372,15 @@ export const operations = {
     responseType: "access.v1.TenantMemberDTO",
     http: [
       { method: "POST", path: "/v1/tenant/members/{user_id}/remove", body: "*" },
+    ]
+  },
+  "access.v1.TenantMemberLifecycleApplication.RestoreTenantMember": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.RestoreTenantMember",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/RestoreTenantMember",
+    requestType: "access.v1.RestoreTenantMemberRequest",
+    responseType: "access.v1.TenantMemberDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/members/{user_id}/restore", body: "*" },
     ]
   },
   "access.v1.TenantMemberLifecycleApplication.SuspendTenantMember": {
@@ -2048,12 +2080,20 @@ export class Access_V1_TenantMemberLifecycleApplicationClient {
     return this.transport.call<Access_V1_InviteTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.InviteTenantMember"], request);
   }
 
+  listRemovedTenantMembers(request: Access_V1_ListRemovedTenantMembersRequest): Promise<Access_V1_ListTenantMembersResponse> {
+    return this.transport.call<Access_V1_ListRemovedTenantMembersRequest, Access_V1_ListTenantMembersResponse>(operations["access.v1.TenantMemberLifecycleApplication.ListRemovedTenantMembers"], request);
+  }
+
   listTenantMembers(request: Access_V1_ListTenantMembersRequest): Promise<Access_V1_ListTenantMembersResponse> {
     return this.transport.call<Access_V1_ListTenantMembersRequest, Access_V1_ListTenantMembersResponse>(operations["access.v1.TenantMemberLifecycleApplication.ListTenantMembers"], request);
   }
 
   removeTenantMember(request: Access_V1_RemoveTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
     return this.transport.call<Access_V1_RemoveTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.RemoveTenantMember"], request);
+  }
+
+  restoreTenantMember(request: Access_V1_RestoreTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
+    return this.transport.call<Access_V1_RestoreTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.RestoreTenantMember"], request);
   }
 
   suspendTenantMember(request: Access_V1_SuspendTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {

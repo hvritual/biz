@@ -3,6 +3,9 @@
     "schemas": {
       "access_v1_ActivateTenantMemberRequest": {
         "properties": {
+          "reason": {
+            "type": "string"
+          },
           "userId": {
             "type": "string"
           },
@@ -349,6 +352,20 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.InviteTenantMemberRequest"
       },
+      "access_v1_ListRemovedTenantMembersRequest": {
+        "properties": {
+          "page": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "pageSize": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListRemovedTenantMembersRequest"
+      },
       "access_v1_ListTenantAuditRecordsRequest": {
         "properties": {
           "operationId": {
@@ -537,6 +554,9 @@
       },
       "access_v1_RemoveTenantMemberRequest": {
         "properties": {
+          "reason": {
+            "type": "string"
+          },
           "userId": {
             "type": "string"
           },
@@ -548,6 +568,23 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.RemoveTenantMemberRequest"
+      },
+      "access_v1_RestoreTenantMemberRequest": {
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.RestoreTenantMemberRequest"
       },
       "access_v1_RevokeTenantDelegationRequest": {
         "properties": {
@@ -597,6 +634,9 @@
       },
       "access_v1_SuspendTenantMemberRequest": {
         "properties": {
+          "reason": {
+            "type": "string"
+          },
           "userId": {
             "type": "string"
           },
@@ -5515,6 +5555,47 @@
         "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/CreateTenantMember"
       }
     },
+    "/v1/tenant/members/removed": {
+      "get": {
+        "operationId": "access.v1.TenantMemberLifecycleApplication.ListRemovedTenantMembers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_ListTenantMembersResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/ListRemovedTenantMembers"
+      }
+    },
     "/v1/tenant/members/{user_id}": {
       "get": {
         "operationId": "access.v1.TenantMemberLifecycleApplication.GetTenantMember",
@@ -5706,6 +5787,47 @@
           "access.v1.TenantMemberLifecycleApplication"
         ],
         "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/RemoveTenantMember"
+      }
+    },
+    "/v1/tenant/members/{user_id}/restore": {
+      "post": {
+        "operationId": "access.v1.TenantMemberLifecycleApplication.RestoreTenantMember",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_RestoreTenantMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantMemberDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/RestoreTenantMember"
       }
     },
     "/v1/tenant/members/{user_id}/suspend": {

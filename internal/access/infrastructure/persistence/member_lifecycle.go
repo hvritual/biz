@@ -252,8 +252,8 @@ func (repository *TenantMemberRepository) Remove(
 		result := tx.Model(&membershipRecord{}).
 			Where("tenant_id = ? AND user_id = ? AND version = ?", member.TenantID, member.UserID, expectedVersion).
 			Updates(map[string]any{
-				"status": domain.TenantMemberStatusRemoved,
-				"version": gorm.Expr("version + 1"),
+				"status":     domain.TenantMemberStatusRemoved,
+				"version":    gorm.Expr("version + 1"),
 				"updated_at": member.UpdatedAt,
 			})
 		if result.Error != nil {
@@ -306,8 +306,8 @@ func (repository *TenantMemberRepository) Restore(
 		result := tx.Model(&membershipRecord{}).
 			Where("tenant_id = ? AND user_id = ? AND version = ? AND status = ?", member.TenantID, member.UserID, expectedVersion, domain.TenantMemberStatusRemoved).
 			Updates(map[string]any{
-				"status": domain.TenantMemberStatusActive,
-				"version": gorm.Expr("version + 1"),
+				"status":     domain.TenantMemberStatusActive,
+				"version":    gorm.Expr("version + 1"),
 				"updated_at": member.UpdatedAt,
 			})
 		if result.Error != nil {

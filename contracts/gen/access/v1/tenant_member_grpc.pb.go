@@ -23,9 +23,11 @@ const (
 	TenantMemberLifecycleApplication_CreateTenantMember_FullMethodName        = "/access.v1.TenantMemberLifecycleApplication/CreateTenantMember"
 	TenantMemberLifecycleApplication_GetTenantMember_FullMethodName           = "/access.v1.TenantMemberLifecycleApplication/GetTenantMember"
 	TenantMemberLifecycleApplication_ListTenantMembers_FullMethodName         = "/access.v1.TenantMemberLifecycleApplication/ListTenantMembers"
+	TenantMemberLifecycleApplication_ListRemovedTenantMembers_FullMethodName  = "/access.v1.TenantMemberLifecycleApplication/ListRemovedTenantMembers"
 	TenantMemberLifecycleApplication_UpdateTenantMemberProfile_FullMethodName = "/access.v1.TenantMemberLifecycleApplication/UpdateTenantMemberProfile"
 	TenantMemberLifecycleApplication_UpdateTenantMember_FullMethodName        = "/access.v1.TenantMemberLifecycleApplication/UpdateTenantMember"
 	TenantMemberLifecycleApplication_ActivateTenantMember_FullMethodName      = "/access.v1.TenantMemberLifecycleApplication/ActivateTenantMember"
+	TenantMemberLifecycleApplication_RestoreTenantMember_FullMethodName       = "/access.v1.TenantMemberLifecycleApplication/RestoreTenantMember"
 	TenantMemberLifecycleApplication_SuspendTenantMember_FullMethodName       = "/access.v1.TenantMemberLifecycleApplication/SuspendTenantMember"
 	TenantMemberLifecycleApplication_RemoveTenantMember_FullMethodName        = "/access.v1.TenantMemberLifecycleApplication/RemoveTenantMember"
 )
@@ -38,9 +40,11 @@ type TenantMemberLifecycleApplicationClient interface {
 	CreateTenantMember(ctx context.Context, in *CreateTenantMemberRequest, opts ...grpc.CallOption) (*TenantMemberCreationReceipt, error)
 	GetTenantMember(ctx context.Context, in *GetTenantMemberRequest, opts ...grpc.CallOption) (*TenantMemberDTO, error)
 	ListTenantMembers(ctx context.Context, in *ListTenantMembersRequest, opts ...grpc.CallOption) (*ListTenantMembersResponse, error)
+	ListRemovedTenantMembers(ctx context.Context, in *ListRemovedTenantMembersRequest, opts ...grpc.CallOption) (*ListTenantMembersResponse, error)
 	UpdateTenantMemberProfile(ctx context.Context, in *UpdateTenantMemberProfileRequest, opts ...grpc.CallOption) (*TenantMemberDTO, error)
 	UpdateTenantMember(ctx context.Context, in *UpdateTenantMemberRequest, opts ...grpc.CallOption) (*TenantMemberDTO, error)
 	ActivateTenantMember(ctx context.Context, in *ActivateTenantMemberRequest, opts ...grpc.CallOption) (*TenantMemberDTO, error)
+	RestoreTenantMember(ctx context.Context, in *RestoreTenantMemberRequest, opts ...grpc.CallOption) (*TenantMemberDTO, error)
 	SuspendTenantMember(ctx context.Context, in *SuspendTenantMemberRequest, opts ...grpc.CallOption) (*TenantMemberDTO, error)
 	RemoveTenantMember(ctx context.Context, in *RemoveTenantMemberRequest, opts ...grpc.CallOption) (*TenantMemberDTO, error)
 }
@@ -93,6 +97,16 @@ func (c *tenantMemberLifecycleApplicationClient) ListTenantMembers(ctx context.C
 	return out, nil
 }
 
+func (c *tenantMemberLifecycleApplicationClient) ListRemovedTenantMembers(ctx context.Context, in *ListRemovedTenantMembersRequest, opts ...grpc.CallOption) (*ListTenantMembersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTenantMembersResponse)
+	err := c.cc.Invoke(ctx, TenantMemberLifecycleApplication_ListRemovedTenantMembers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *tenantMemberLifecycleApplicationClient) UpdateTenantMemberProfile(ctx context.Context, in *UpdateTenantMemberProfileRequest, opts ...grpc.CallOption) (*TenantMemberDTO, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TenantMemberDTO)
@@ -117,6 +131,16 @@ func (c *tenantMemberLifecycleApplicationClient) ActivateTenantMember(ctx contex
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TenantMemberDTO)
 	err := c.cc.Invoke(ctx, TenantMemberLifecycleApplication_ActivateTenantMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantMemberLifecycleApplicationClient) RestoreTenantMember(ctx context.Context, in *RestoreTenantMemberRequest, opts ...grpc.CallOption) (*TenantMemberDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TenantMemberDTO)
+	err := c.cc.Invoke(ctx, TenantMemberLifecycleApplication_RestoreTenantMember_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -151,9 +175,11 @@ type TenantMemberLifecycleApplicationServer interface {
 	CreateTenantMember(context.Context, *CreateTenantMemberRequest) (*TenantMemberCreationReceipt, error)
 	GetTenantMember(context.Context, *GetTenantMemberRequest) (*TenantMemberDTO, error)
 	ListTenantMembers(context.Context, *ListTenantMembersRequest) (*ListTenantMembersResponse, error)
+	ListRemovedTenantMembers(context.Context, *ListRemovedTenantMembersRequest) (*ListTenantMembersResponse, error)
 	UpdateTenantMemberProfile(context.Context, *UpdateTenantMemberProfileRequest) (*TenantMemberDTO, error)
 	UpdateTenantMember(context.Context, *UpdateTenantMemberRequest) (*TenantMemberDTO, error)
 	ActivateTenantMember(context.Context, *ActivateTenantMemberRequest) (*TenantMemberDTO, error)
+	RestoreTenantMember(context.Context, *RestoreTenantMemberRequest) (*TenantMemberDTO, error)
 	SuspendTenantMember(context.Context, *SuspendTenantMemberRequest) (*TenantMemberDTO, error)
 	RemoveTenantMember(context.Context, *RemoveTenantMemberRequest) (*TenantMemberDTO, error)
 }
@@ -177,6 +203,9 @@ func (UnimplementedTenantMemberLifecycleApplicationServer) GetTenantMember(conte
 func (UnimplementedTenantMemberLifecycleApplicationServer) ListTenantMembers(context.Context, *ListTenantMembersRequest) (*ListTenantMembersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListTenantMembers not implemented")
 }
+func (UnimplementedTenantMemberLifecycleApplicationServer) ListRemovedTenantMembers(context.Context, *ListRemovedTenantMembersRequest) (*ListTenantMembersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListRemovedTenantMembers not implemented")
+}
 func (UnimplementedTenantMemberLifecycleApplicationServer) UpdateTenantMemberProfile(context.Context, *UpdateTenantMemberProfileRequest) (*TenantMemberDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateTenantMemberProfile not implemented")
 }
@@ -185,6 +214,9 @@ func (UnimplementedTenantMemberLifecycleApplicationServer) UpdateTenantMember(co
 }
 func (UnimplementedTenantMemberLifecycleApplicationServer) ActivateTenantMember(context.Context, *ActivateTenantMemberRequest) (*TenantMemberDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method ActivateTenantMember not implemented")
+}
+func (UnimplementedTenantMemberLifecycleApplicationServer) RestoreTenantMember(context.Context, *RestoreTenantMemberRequest) (*TenantMemberDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method RestoreTenantMember not implemented")
 }
 func (UnimplementedTenantMemberLifecycleApplicationServer) SuspendTenantMember(context.Context, *SuspendTenantMemberRequest) (*TenantMemberDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method SuspendTenantMember not implemented")
@@ -284,6 +316,24 @@ func _TenantMemberLifecycleApplication_ListTenantMembers_Handler(srv interface{}
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TenantMemberLifecycleApplication_ListRemovedTenantMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRemovedTenantMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantMemberLifecycleApplicationServer).ListRemovedTenantMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantMemberLifecycleApplication_ListRemovedTenantMembers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantMemberLifecycleApplicationServer).ListRemovedTenantMembers(ctx, req.(*ListRemovedTenantMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TenantMemberLifecycleApplication_UpdateTenantMemberProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateTenantMemberProfileRequest)
 	if err := dec(in); err != nil {
@@ -334,6 +384,24 @@ func _TenantMemberLifecycleApplication_ActivateTenantMember_Handler(srv interfac
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TenantMemberLifecycleApplicationServer).ActivateTenantMember(ctx, req.(*ActivateTenantMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantMemberLifecycleApplication_RestoreTenantMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreTenantMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantMemberLifecycleApplicationServer).RestoreTenantMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantMemberLifecycleApplication_RestoreTenantMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantMemberLifecycleApplicationServer).RestoreTenantMember(ctx, req.(*RestoreTenantMemberRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -398,6 +466,10 @@ var TenantMemberLifecycleApplication_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _TenantMemberLifecycleApplication_ListTenantMembers_Handler,
 		},
 		{
+			MethodName: "ListRemovedTenantMembers",
+			Handler:    _TenantMemberLifecycleApplication_ListRemovedTenantMembers_Handler,
+		},
+		{
 			MethodName: "UpdateTenantMemberProfile",
 			Handler:    _TenantMemberLifecycleApplication_UpdateTenantMemberProfile_Handler,
 		},
@@ -408,6 +480,10 @@ var TenantMemberLifecycleApplication_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ActivateTenantMember",
 			Handler:    _TenantMemberLifecycleApplication_ActivateTenantMember_Handler,
+		},
+		{
+			MethodName: "RestoreTenantMember",
+			Handler:    _TenantMemberLifecycleApplication_RestoreTenantMember_Handler,
 		},
 		{
 			MethodName: "SuspendTenantMember",
