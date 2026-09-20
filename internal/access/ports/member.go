@@ -8,16 +8,35 @@ import (
 	"github.com/hvritual/biz/internal/access/domain"
 )
 
+type tenantMemberSpecificConflict struct{ message string }
+
+func (err tenantMemberSpecificConflict) Error() string { return err.message }
+func (tenantMemberSpecificConflict) Unwrap() error     { return ErrTenantMemberConflict }
+
 var (
 	ErrTenantMemberNotFound              = errors.New("access: tenant member not found")
 	ErrTenantMemberConflict              = errors.New("access: tenant member version conflict")
 	ErrTenantMemberExists                = errors.New("access: tenant member already exists")
-	ErrTenantMemberUsernameConflict      = errors.New("access: tenant member username conflicts with another account")
-	ErrTenantMemberContactConflict       = errors.New("access: tenant member contact conflicts with another account")
+	ErrTenantMemberUsernameConflict      = tenantMemberSpecificConflict{message: "access: tenant member username conflicts with another account"}
+	ErrTenantMemberContactConflict       = tenantMemberSpecificConflict{message: "access: tenant member contact conflicts with another account"}
 	ErrTenantMemberActivationUnavailable = errors.New("access: tenant member activation is unavailable")
 	ErrTenantMemberExistingAccountSMS    = errors.New("access: existing account must not receive a new initial password")
 	ErrTenantMemberActivationPending     = errors.New("access: member must complete pending activation")
 )
+
+type tenantMemberListStatusQueryKey struct{}
+
+func WithTenantMemberListStatusQuery(ctx context.Context, status string) context.Context {
+	return context.WithValue(ctx, tenantMemberListStatusQueryKey{}, status)
+}
+
+func TenantMemberListStatusQuery(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	value, _ := ctx.Value(tenantMemberListStatusQueryKey{}).(string)
+	return value
+}
 
 type TenantMemberCreateInput struct {
 	UserID       string

@@ -249,7 +249,7 @@ func (service *TenantMemberLifecycleService) ListTenantMembers(ctx context.Conte
 	if err != nil {
 		return nil, err
 	}
-	query, err := tenantMemberListQuery(request)
+	query, err := tenantMemberListQuery(ctx, request)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +269,7 @@ func (service *TenantMemberLifecycleService) ListTenantMembers(ctx context.Conte
 	return response, nil
 }
 
-func tenantMemberListQuery(request *accessv1.ListTenantMembersRequest) (ports.TenantMemberListQuery, error) {
+func tenantMemberListQuery(ctx context.Context, request *accessv1.ListTenantMembersRequest) (ports.TenantMemberListQuery, error) {
 	if request == nil {
 		request = &accessv1.ListTenantMembersRequest{}
 	}
@@ -290,8 +290,18 @@ func tenantMemberListQuery(request *accessv1.ListTenantMembersRequest) (ports.Te
 	if pageSize > 100 {
 		return ports.TenantMemberListQuery{}, ErrInvalidTenantMemberRequest
 	}
+	status := request.GetStatus()
+	if status == accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_UNSPECIFIED {
+		if raw := strings.TrimSpace(ports.TenantMemberListStatusQuery(ctx)); raw != "" {
+			value, ok := accessv1.TenantMemberStatus_value[raw]
+			if !ok {
+				return ports.TenantMemberListQuery{}, ErrInvalidTenantMemberRequest
+			}
+			status = accessv1.TenantMemberStatus(value)
+		}
+	}
 	statusFilter := ""
-	switch request.GetStatus() {
+	switch status {
 	case accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_UNSPECIFIED:
 	case accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_INVITED:
 		statusFilter = domain.TenantMemberStatusInvited

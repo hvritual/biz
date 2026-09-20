@@ -112,14 +112,23 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
   const recordWrite = (route: Route) => {
     const request = route.request()
     writes.push({
-      path: new URL(request.url()).pathname,
+      path: new URL(request.url()).pathname.replace(/^\/api(?=\/)/, ''),
       method: request.method(),
       headers: request.headers(),
       body: request.postDataJSON(),
     })
   }
 
-  await page.route('**/api/auth/session', async (route) => {
+  await page.route(/\/(?:api\/)?(?:auth|v1)\//, async (route) => {
+    const request = route.request()
+    throw new Error(`Unhandled API request: ${request.method()} ${new URL(request.url()).pathname}`)
+  })
+
+  await page.route(/\/(?:api\/)?auth\/login(?:\?.*)?$/, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Login</title>' })
+  })
+
+  await page.route(/\/(?:api\/)?auth\/session$/, async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     return json(route, 200, {
       authenticated: true,
@@ -131,7 +140,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     })
   })
 
-  await page.route('**/api/auth/authorization', async (route) => {
+  await page.route(/\/(?:api\/)?auth\/authorization$/, async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     if (options.authorizationStatus) return json(route, options.authorizationStatus, { message: 'authorization denied' })
     const buttonCodes = [
@@ -166,15 +175,15 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     })
   })
 
-  await page.route('**/api/v1/tenant/roles', async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/roles$/, async (route) => {
     return json(route, 200, { roles: roleCatalog })
   })
 
-  await page.route('**/api/v1/tenant/departments', async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/departments$/, async (route) => {
     return json(route, 200, { departments: departmentCatalog })
   })
 
-  await page.route(/\/api\/v1\/tenant\/roles\/[^/]+\/members(?:\/[^/]+\/revoke)?$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/roles\/[^/]+\/members(?:\/[^/]+\/revoke)?$/, async (route) => {
     recordWrite(route)
     if (options.mutationStatus) return json(route, options.mutationStatus, { message: 'mutation conflict' })
     const request = route.request()
@@ -199,7 +208,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     return json(route, 200, role)
   })
 
-  await page.route('**/api/v1/tenant/members/create', async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/members\/create$/, async (route) => {
     recordWrite(route)
     if (options.mutationStatus) return json(route, options.mutationStatus, { message: 'mutation conflict' })
     const body = route.request().postDataJSON() as {
@@ -242,7 +251,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     })
   })
 
-  await page.route('**/api/v1/tenant/members', async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/members$/, async (route) => {
     const request = route.request()
     if (request.method() === 'GET') {
       if (options.listStatus) return json(route, options.listStatus, { message: 'list denied' })
@@ -286,7 +295,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     return json(route, 200, created)
   })
 
-  await page.route(/\/api\/v1\/tenant\/members\/[^/]+\/profile$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/members\/[^/]+\/profile$/, async (route) => {
     const request = route.request()
     const url = new URL(request.url())
     const parts = url.pathname.split('/')
@@ -309,7 +318,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     return json(route, 200, updated)
   })
 
-  await page.route(/\/api\/v1\/tenant\/members\/(?!create(?:\/|$))[^/]+(?:\/(?:activate|suspend|remove))?$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/members\/(?!create(?:\/|$))[^/]+(?:\/(?:activate|suspend|remove))?$/, async (route) => {
     const request = route.request()
     const url = new URL(request.url())
     const parts = url.pathname.split('/')
@@ -418,7 +427,7 @@ test('canonical invite uses one atomic create write with activation choice and a
   const dialog = page.getByRole('dialog', { name: '邀请成员' })
   await dialog.getByLabel('登录账号').fill('invitee.user')
   await dialog.getByLabel('姓名').fill('Invitee User')
-  await dialog.getByLabel('邮箱').fill('invitee@coffeelink.test')
+  await dialog.getByLabel('邮箱', { exact: true }).fill('invitee@coffeelink.test')
   await selectUiOption(dialog.getByLabel('激活方式'), 'activation_link')
   await expect(dialog.getByLabel('所属部门')).toContainText('客户成功部')
   await expect(dialog.getByLabel('数据范围')).toHaveValue('保存后由角色权限服务派生')
@@ -429,9 +438,9 @@ test('canonical invite uses one atomic create write with activation choice and a
   await expect(page.locator('[data-member-id="user-003"]')).toContainText('@invitee.user')
 
   const writes = server.getWrites()
-  const create = writes.find((item) => item.path === '/api/v1/tenant/members/create' && item.method === 'POST')!
+  const create = writes.find((item) => item.path === '/v1/tenant/members/create' && item.method === 'POST')!
   expect(create).toBeTruthy()
-  expect(writes.filter((item) => item.path.startsWith('/api/v1/tenant/members'))).toHaveLength(1)
+  expect(writes.filter((item) => item.path.startsWith('/v1/tenant/members'))).toHaveLength(1)
   expect(create.headers['x-csrf-token']).toBe('csrf-real-member')
   expect(create.headers['idempotency-key']).toMatch(/^enterprise-member-create-/)
   expect(create.headers['x-biz-session-context']).toContain('tenant-001')
@@ -471,7 +480,7 @@ test('canonical member edit is one atomic update and preserves immutable usernam
   await expect(row).toContainText('Alice Updated')
   await expect(row).toContainText('租赁运营部')
 
-  const writes = server.getWrites().filter((item) => item.path === '/api/v1/tenant/members/user-001')
+  const writes = server.getWrites().filter((item) => item.path === '/v1/tenant/members/user-001')
   expect(writes).toHaveLength(1)
   const write = writes[0]!
   expect(write.method).toBe('PATCH')
@@ -504,7 +513,7 @@ test('canonical role change is one atomic member update and scope remains server
   await expect(page.getByRole('status')).toContainText('服务端确认')
   await expect(page.locator('[data-member-id="user-001"]')).toContainText('经营查看者')
 
-  const writes = server.getWrites().filter((item) => item.path === '/api/v1/tenant/members/user-001')
+  const writes = server.getWrites().filter((item) => item.path === '/v1/tenant/members/user-001')
   expect(writes).toHaveLength(1)
   expect(writes[0]?.method).toBe('PATCH')
   expect(writes[0]?.headers['idempotency-key']).toMatch(/^enterprise-member-update-/)
@@ -540,7 +549,7 @@ test('canonical profile 409 preserves draft and reuses the same idempotency key'
   await expect(dialog.getByLabel('姓名')).toHaveValue('conflicting change')
   await save.click()
   await expect(dialog.getByRole('alert')).toContainText('成员状态或请求版本已发生变化')
-  const writes = server.getWrites().filter((item) => item.path === '/api/v1/tenant/members/user-001')
+  const writes = server.getWrites().filter((item) => item.path === '/v1/tenant/members/user-001')
   expect(writes).toHaveLength(2)
   expect(writes[0]?.headers['idempotency-key']).toBe(writes[1]?.headers['idempotency-key'])
   await expect(page.getByText(/变更已由服务端确认并完成权威回读/)).toHaveCount(0)

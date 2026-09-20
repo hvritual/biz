@@ -57,14 +57,23 @@ async function mockOrganizationServer(page: Page, options: Options = {}) {
   const writes: Write[] = []
   const record = (route: Route) => {
     const request = route.request()
-    writes.push({ path: new URL(request.url()).pathname, method: request.method(), headers: request.headers(), body: request.postDataJSON() })
+    writes.push({ path: new URL(request.url()).pathname.replace(/^\/api(?=\/)/, ''), method: request.method(), headers: request.headers(), body: request.postDataJSON() })
   }
   const replace = (next: Department) => {
     departments = departments.map((item) => item.departmentId === next.departmentId ? next : item)
     return next
   }
 
-  await page.route('**/api/auth/session', async (route) => {
+  await page.route(/\/(?:api\/)?(?:auth|v1)\//, async (route) => {
+    const request = route.request()
+    throw new Error(`Unhandled API request: ${request.method()} ${new URL(request.url()).pathname}`)
+  })
+
+  await page.route(/\/(?:api\/)?auth\/login(?:\?.*)?$/, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Login</title>' })
+  })
+
+  await page.route(/\/(?:api\/)?auth\/session$/, async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     return json(route, 200, {
       authenticated: true,
@@ -75,7 +84,7 @@ async function mockOrganizationServer(page: Page, options: Options = {}) {
       tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }],
     })
   })
-  await page.route('**/api/auth/authorization', async (route) => {
+  await page.route(/\/(?:api\/)?auth\/authorization$/, async (route) => {
     const buttonCodes = ["tenant.department.list","tenant.department.get","tenant.department.create","tenant.department.update","tenant.department.enable","tenant.department.disable","tenant.member.list","tenant.role.list"]
     return json(route, 200, {
       authenticated: true,
@@ -94,12 +103,12 @@ async function mockOrganizationServer(page: Page, options: Options = {}) {
       button_codes: buttonCodes,
     })
   })
-  await page.route('**/api/v1/tenant/members', async (route) => json(route, 200, { members }))
-  await page.route('**/api/v1/tenant/roles', async (route) => json(route, 200, { roles: [
+  await page.route(/\/(?:api\/)?v1\/tenant\/members$/, async (route) => json(route, 200, { members }))
+  await page.route(/\/(?:api\/)?v1\/tenant\/roles$/, async (route) => json(route, 200, { roles: [
     { id: 'owner', name: 'owner', status: 'TENANT_ROLE_STATUS_ACTIVE', version: 1, permissions: [] },
     { id: 'csm', name: '客户成功', status: 'TENANT_ROLE_STATUS_ACTIVE', version: 1, permissions: [] },
   ] }))
-  await page.route(/\/api\/v1\/tenant\/departments(?:\/.*)?$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/departments(?:\/.*)?$/, async (route) => {
     const request = route.request()
     const parts = new URL(request.url()).pathname.split('/').filter(Boolean)
     const index = parts.indexOf('departments')
@@ -199,7 +208,7 @@ test('department create uses CSRF and idempotency then confirms from server read
   await dialog.getByRole('button', { name: '保存部门' }).click()
   await expect(page.getByRole('status')).toContainText('服务端确认')
   await expect(page.getByRole('button', { name: /^市场运营部/ })).toBeVisible()
-  const write = server.getWrites().find((item) => item.path === '/api/v1/tenant/departments')!
+  const write = server.getWrites().find((item) => item.path === '/v1/tenant/departments')!
   expect(write.headers['idempotency-key']).toMatch(/^enterprise-department-create-/)
   expect(write.headers['x-csrf-token']).toBe('csrf-real-organization')
   expect(write.headers['x-biz-session-context']).toContain('tenant-001')

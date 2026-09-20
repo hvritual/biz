@@ -617,6 +617,11 @@ func httpAuthentication(authenticator *runtimeAuthenticator, webAuth *runtimeWeb
 			http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
+		if request.Method == http.MethodGet && request.URL.Path == "/v1/tenant/members" {
+			if rawStatus := strings.TrimSpace(request.URL.Query().Get("status")); rawStatus != "" {
+				request = request.WithContext(accessports.WithTenantMemberListStatusQuery(request.Context(), rawStatus))
+			}
+		}
 		next.ServeHTTP(writer, withAuditHTTPMetadata(request, principal, webAuth))
 	})
 }

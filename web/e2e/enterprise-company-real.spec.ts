@@ -48,7 +48,16 @@ async function mockTenantProfileServer(page: Page, options: Options = {}) {
   }
   const writes: Write[] = []
 
-  await page.route('**/api/auth/session', async (route) => {
+  await page.route(/\/(?:api\/)?(?:auth|v1)\//, async (route) => {
+    const request = route.request()
+    throw new Error(`Unhandled API request: ${request.method()} ${new URL(request.url()).pathname}`)
+  })
+
+  await page.route(/\/(?:api\/)?auth\/login(?:\?.*)?$/, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Login</title>' })
+  })
+
+  await page.route(/\/(?:api\/)?auth\/session$/, async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     return json(route, 200, {
       authenticated: true,
@@ -59,7 +68,7 @@ async function mockTenantProfileServer(page: Page, options: Options = {}) {
       tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }],
     })
   })
-  await page.route('**/api/auth/authorization', async (route) => {
+  await page.route(/\/(?:api\/)?auth\/authorization$/, async (route) => {
     const buttonCodes = ["tenant.profile.get","tenant.profile.update"]
     return json(route, 200, {
       authenticated: true,
@@ -79,7 +88,7 @@ async function mockTenantProfileServer(page: Page, options: Options = {}) {
     })
   })
 
-  await page.route('**/api/v1/tenant/profile', async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/profile$/, async (route) => {
     const request = route.request()
     if (request.method() === 'GET') {
       if (options.readStatus) return json(route, options.readStatus, { message: 'tenant profile denied' })
@@ -88,7 +97,7 @@ async function mockTenantProfileServer(page: Page, options: Options = {}) {
     }
     if (request.method() !== 'PATCH') return json(route, 405, { message: 'method not allowed' })
     const body = request.postDataJSON() as Record<string, unknown>
-    writes.push({ path: new URL(request.url()).pathname, method: request.method(), headers: request.headers(), body })
+    writes.push({ path: new URL(request.url()).pathname.replace(/^\/api(?=\/)/, ''), method: request.method(), headers: request.headers(), body })
     if (options.mutationStatus) return json(route, options.mutationStatus, { message: 'tenant profile conflict' })
     profile = {
       ...profile,
@@ -138,7 +147,7 @@ test('canonical company save carries trusted headers and confirms only after rea
   await expect(page.getByLabel('企业简称')).toHaveValue('CoffeeLink Pro')
 
   const write = server.getWrites()[0]!
-  expect(write.path).toBe('/api/v1/tenant/profile')
+  expect(write.path).toBe('/v1/tenant/profile')
   expect(write.method).toBe('PATCH')
   expect(write.headers['x-csrf-token']).toBe('csrf-real-company')
   expect(write.headers['idempotency-key']).toMatch(/^enterprise-tenant-profile-update-tenant-001-/)

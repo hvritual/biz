@@ -1,5 +1,9 @@
 name: CE-12 qualification
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [feat/ce-12-first-party-idp-e2e, main]
