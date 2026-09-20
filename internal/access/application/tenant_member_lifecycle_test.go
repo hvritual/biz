@@ -116,18 +116,6 @@ func (repository *memoryTenantMemberRepository) ListRemoved(_ context.Context, t
 	return ports.TenantMemberListPage{Members: append([]domain.Membership(nil), result[start:end]...), Total: total}, nil
 }
 
-func (repository *memoryTenantMemberRepository) CountQuotaMembers(_ context.Context, tenantID string) (uint64, error) {
-	repository.mu.Lock()
-	defer repository.mu.Unlock()
-	var count uint64
-	for _, member := range repository.values {
-		if member.TenantID == tenantID && member.Status != domain.TenantMemberStatusRemoved {
-			count++
-		}
-	}
-	return count, nil
-}
-
 func (repository *memoryTenantMemberRepository) Remove(_ context.Context, member *domain.Membership, expectedVersion uint64) error {
 	repository.mu.Lock()
 	defer repository.mu.Unlock()
