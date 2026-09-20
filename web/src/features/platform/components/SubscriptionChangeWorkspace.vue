@@ -234,8 +234,8 @@ function describeError(error: unknown, fallback: string) {
         <div v-if="preview.provisioningRequirements?.length" class="impact-block"><h3>开通要求</h3><ul><li v-for="item in preview.provisioningRequirements" :key="item.code">{{ item.code }} · {{ item.adapter }}@{{ item.version }} · max {{ item.maxAttempts }}</li></ul></div>
 
         <div class="authority-note" :class="{ warning: preview.quotaValidationRequired }">
-          <strong>{{ preview.quotaValidationRequired ? '确认前仍需额度再校验' : '服务端已形成可确认预览' }}</strong>
-          <span>投影权益不是当前授权快照；确认时服务端仍会重新校验订阅、来源、目录和目标资格。</span>
+          <strong>{{ preview.quotaValidationRequired ? '确认前仍需额度再校验' : '当前方案可确认' }}</strong>
+          <span>确认变更前会再次核对当前订阅、权益来源、套餐目录和目标资格。</span>
         </div>
 
         <div class="confirm-box">
