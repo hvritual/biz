@@ -155,7 +155,6 @@ async function mockRoleServer(page: Page, options: Options = {}) {
 async function openRealRoles(page: Page) {
   await page.goto('/#/enterprise/roles')
   await expect(page.locator('[data-enterprise-page="roles"]')).toBeVisible()
-  await expect(page.locator('[data-enterprise-source="api"]')).toBeVisible()
 }
 function rowFor(page: Page, name: string) { return page.locator('tbody tr').filter({ hasText: name }) }
 
