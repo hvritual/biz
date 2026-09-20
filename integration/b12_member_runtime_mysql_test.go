@@ -5,6 +5,7 @@ package integration
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -462,7 +463,7 @@ func activateB123MemberHTTP(t *testing.T, base, token, key, userID string, versi
 func TestB123Enterprise176AtomicMemberCreateRollsBackAndRequiresActivation(t *testing.T) {
 	db := openDB(t)
 	stamp := fmt.Sprint(time.Now().UnixNano())
-	started, _ := startB123Enterprise176Runtime(t, db)
+	started, verificationProtection := startB123Enterprise176Runtime(t, db)
 	base := "http://" + started.HTTPAddress()
 
 	tenantA, tenantB := "e176-create-a-"+stamp, "e176-create-b-"+stamp
@@ -542,6 +543,47 @@ func TestB123Enterprise176AtomicMemberCreateRollsBackAndRequiresActivation(t *te
 		t.Fatalf("admin bypassed pending activation: status=%d body=%s", statusCode, body)
 	}
 
+	verificationRepository, err := accesspersistence.NewVerificationRepository(db, verificationProtection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	linkClaim, _, err := verificationRepository.ClaimSecurityNotification(context.Background(), receipt.GetNotificationEventId())
+	if err != nil {
+		t.Fatal(err)
+	}
+	linkURL, err := url.Parse(linkClaim.Secret)
+	if err != nil || linkURL.Query().Get("token") == "" {
+		t.Fatalf("activation notification did not contain usable absolute link: %q %v", linkClaim.Secret, err)
+	}
+	if linkURL.Scheme != "http" || linkURL.Host == "" || linkURL.Path != "/idp/member/activate" {
+		t.Fatalf("unexpected activation URL: %s", linkURL)
+	}
+	if _, err := verificationRepository.CompleteSecurityNotification(context.Background(), linkClaim, "qualification:"+linkClaim.EventID, "", true); err != nil {
+		t.Fatal(err)
+	}
+	memberStore, err := accesspersistence.New(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	activationView, err := memberStore.CompleteMemberActivationLink(
+		context.Background(), linkURL.Query().Get("token"), "MemberA7x", "MemberA7x",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if activationView.UserID != member.GetUserId() {
+		t.Fatalf("activation completed wrong account: %+v", activationView)
+	}
+	activeMember, statusCode, body := getB123HTTP(t, base, tokenA, member.GetUserId())
+	if statusCode != http.StatusOK || activeMember.GetStatus() != accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_ACTIVE {
+		t.Fatalf("activation link did not activate membership: status=%d body=%s member=%+v", statusCode, body, activeMember)
+	}
+	if _, err := memberStore.CompleteMemberActivationLink(
+		context.Background(), linkURL.Query().Get("token"), "MemberA7x", "MemberA7x",
+	); !errors.Is(err, accesspersistence.ErrMemberActivationConsumed) {
+		t.Fatalf("activation link replay accepted: %v", err)
+	}
+
 	badUsername := "bad176" + suffix
 	_, statusCode, _ = createB123MemberHTTP(t, base, tokenA, "e176-bad-role:"+stamp, &accessv1.CreateTenantMemberRequest{
 		Username:       badUsername,
@@ -589,5 +631,81 @@ func TestB123Enterprise176AtomicMemberCreateRollsBackAndRequiresActivation(t *te
 	}
 	if tenantBMembership != 0 {
 		t.Fatalf("rejected existing-account SMS left partial tenant membership: %d", tenantBMembership)
+	}
+
+	smsUsername := "sms176" + suffix
+	smsPhone := "+49176176" + suffix
+	smsReceipt, statusCode, body := createB123MemberHTTP(t, base, tokenB, "e176-sms-new:"+stamp, &accessv1.CreateTenantMemberRequest{
+		Username: smsUsername,
+		Phone: smsPhone,
+		Name: "SMS Member",
+		RoleIds: []string{roleB},
+		ActivationMode: accessv1.TenantMemberActivationMode_TENANT_MEMBER_ACTIVATION_MODE_SMS_INITIAL_PASSWORD,
+	})
+	if statusCode != http.StatusOK {
+		t.Fatalf("new-account SMS create status=%d body=%s", statusCode, body)
+	}
+	smsClaim, _, err := verificationRepository.ClaimSecurityNotification(context.Background(), smsReceipt.GetNotificationEventId())
+	if err != nil {
+		t.Fatal(err)
+	}
+	parts := strings.Split(smsClaim.Secret, "\n")
+	if len(parts) != 2 || !strings.HasPrefix(parts[0], "username=") || !strings.HasPrefix(parts[1], "password=") {
+		t.Fatalf("unexpected SMS initial credential payload shape: %q", smsClaim.Secret)
+	}
+	initialPassword := strings.TrimPrefix(parts[1], "password=")
+	if strings.TrimPrefix(parts[0], "username=") != smsUsername || initialPassword == "" {
+		t.Fatalf("SMS credential payload does not bind username: %q", smsClaim.Secret)
+	}
+	if _, err := verificationRepository.CompleteSecurityNotification(context.Background(), smsClaim, "qualification:"+smsClaim.EventID, "", true); err != nil {
+		t.Fatal(err)
+	}
+	identity, err := memberStore.AuthenticateUserPassword(context.Background(), smsUsername, initialPassword)
+	if err != nil || !identity.PasswordChangeRequired || identity.UserID != smsReceipt.GetMember().GetUserId() {
+		t.Fatalf("initial password did not require forced change: identity=%+v err=%v", identity, err)
+	}
+	smsBefore, statusCode, body := getB123HTTP(t, base, tokenB, smsReceipt.GetMember().GetUserId())
+	if statusCode != http.StatusOK || smsBefore.GetStatus() != accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_INVITED {
+		t.Fatalf("temporary password activated membership early: status=%d body=%s member=%+v", statusCode, body, smsBefore)
+	}
+
+	requestID, browserSecret, csrf, err := memberStore.CreateFirstPartyAuthorizationRequest(context.Background(), accesspersistence.FirstPartyAuthorizationRequestInput{
+		ClientID: "biz-web",
+		RedirectURI: "http://127.0.0.1:18080/auth/callback",
+		State: "sms-state-" + stamp,
+		Nonce: "sms-nonce-" + stamp,
+		CodeChallenge: "sms-code-challenge-" + stamp,
+		Scope: "openid profile",
+	}, 5*time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verifiedIdentity, auditID, err := memberStore.AuthenticateFirstPartyLoginWithAudit(
+		context.Background(), smsUsername, initialPassword, "127.0.0.1:12345", accesspersistence.DefaultFirstPartyLoginPolicy(),
+	)
+	if err != nil || !verifiedIdentity.PasswordChangeRequired {
+		t.Fatalf("first-party login did not enter forced-change state: identity=%+v audit=%d err=%v", verifiedIdentity, auditID, err)
+	}
+	if err := memberStore.BindFirstPartyAuthorizationIdentity(
+		context.Background(), requestID, browserSecret, csrf, verifiedIdentity.UserID, auditID,
+	); err != nil {
+		t.Fatal(err)
+	}
+	completedIdentity, _, err := memberStore.CompleteInitialPasswordActivationForLogin(
+		context.Background(), requestID, browserSecret, csrf, "FinalA7x9", "FinalA7x9",
+	)
+	if err != nil || completedIdentity.UserID != verifiedIdentity.UserID {
+		t.Fatalf("forced password change failed: identity=%+v err=%v", completedIdentity, err)
+	}
+	if _, err := memberStore.AuthenticateUserPassword(context.Background(), smsUsername, initialPassword); !errors.Is(err, accesspersistence.ErrInvalidUserCredentials) {
+		t.Fatalf("one-time initial password remained valid: %v", err)
+	}
+	finalIdentity, err := memberStore.AuthenticateUserPassword(context.Background(), smsUsername, "FinalA7x9")
+	if err != nil || finalIdentity.PasswordChangeRequired {
+		t.Fatalf("final password not authoritative after forced change: identity=%+v err=%v", finalIdentity, err)
+	}
+	smsAfter, statusCode, body := getB123HTTP(t, base, tokenB, smsReceipt.GetMember().GetUserId())
+	if statusCode != http.StatusOK || smsAfter.GetStatus() != accessv1.TenantMemberStatus_TENANT_MEMBER_STATUS_ACTIVE {
+		t.Fatalf("forced password change did not activate membership: status=%d body=%s member=%+v", statusCode, body, smsAfter)
 	}
 }
