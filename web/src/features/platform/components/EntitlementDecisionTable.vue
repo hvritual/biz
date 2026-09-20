@@ -30,7 +30,7 @@ function limitLabel(item: EntitlementDecisionDTO) {
 <template>
   <section class="card decision-card">
     <div class="section-header">
-      <div><h2>权益决策与来源解释</h2><p>平台解释保留来源 actor / reason；决策由服务端 resolver 产生，前端不自行合并来源。</p></div>
+      <div><h2>权益结果与来源</h2><p>查看当前权益结果、来源与调整原因，便于确认租户实际可用能力。</p></div>
       <span class="count">{{ decisions.length }} 项</span>
     </div>
 
