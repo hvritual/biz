@@ -319,7 +319,7 @@ onMounted(loadModules)
         </div>
 
         <section class="detail-section">
-          <div class="section-heading"><div><h3>基础配置</h3><p>仅维护商业元数据；技术能力代码仍由服务端 Registry 管理。</p></div></div>
+          <div class="section-heading"><div><h3>基础配置</h3><p>仅维护模块的商业配置；模块能力由系统统一管理。</p></div></div>
           <div class="form-grid">
             <label class="field"><span>模块名称</span><UiInput v-model="editName" class="input" /></label>
             <label class="field"><span>分类</span><UiInput v-model="editCategory" class="input" /></label>
