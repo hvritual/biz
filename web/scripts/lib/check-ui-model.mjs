@@ -29,8 +29,8 @@ function sourceFilesUnder(directory, files = []) {
 
 function visibleSource(file) {
   const source = readFileSync(file, 'utf8')
-  if (!file.endsWith('.vue')) return source
-  return source.match(/<template(?:\s[^>]*)?>([\s\S]*?)<\/template>/)?.[1] ?? ''
+  if (file.endsWith('.vue')) return source.match(/<template(?:\s[^>]*)?>([\s\S]*?)<\/template>/)?.[1] ?? ''
+  return source.match(/'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|\`(?:\\.|[^\`\\])*\`/g)?.join('\n') ?? ''
 }
 
 function productLanguageFailures(root) {
