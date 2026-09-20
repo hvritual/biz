@@ -309,6 +309,9 @@ func bindRuntimeWithSecurity(
 			if err := accessStore.EnsureFirstPartyIDPSchema(ctx); err != nil {
 				return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: member credential migrate: %w", err)
 			}
+			if err := accessStore.EnsureFirstPartyIDPSecuritySchema(ctx); err != nil {
+				return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: member login security migrate: %w", err)
+			}
 			if err := accessStore.EnsureMemberActivationSchema(ctx); err != nil {
 				return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: member activation migrate: %w", err)
 			}
