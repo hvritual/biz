@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { UiButton } from '@/ui/base'
+import { UiButton, UiTextarea } from '@/ui/base'
 import { CommercialApiError } from '@/services/commercial/platformCommercial'
 import { redirectToTrustedLogin } from '@/services/runtime/authorization'
 import {
@@ -109,12 +109,7 @@ onMounted(load)
         <p>{{ t('members.appeal.formHint') }}</p>
         <label>
           <span>{{ t('members.appeal.reason') }}</span>
-          <textarea
-            v-model="reason"
-            class="input appeal-reason"
-            maxlength="500"
-            :placeholder="t('members.appeal.reasonPlaceholder')"
-          />
+          <UiTextarea v-model="reason" class="appeal-reason" maxlength="500" :placeholder="t('members.appeal.reasonPlaceholder')" />
         </label>
         <div class="appeal-actions">
           <UiButton class="btn" :disabled="submitting" @click="target=null">{{ t('common.cancel') }}</UiButton>
