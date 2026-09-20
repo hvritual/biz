@@ -79,7 +79,7 @@ async function loadServerPermissionCatalog() {
   } catch (cause) {
     clearRolePermissionCatalog()
     catalogRevision.value += 1
-    error.value = cause instanceof Error ? cause.message : '服务端权限目录读取失败。'
+    error.value = cause instanceof Error ? cause.message : '权限目录读取失败，请稍后重试。'
   } finally {
     catalogBusy.value = false
   }
