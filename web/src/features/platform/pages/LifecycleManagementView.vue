@@ -78,10 +78,10 @@ watch(
       />
     </div>
 
-    <section class="integration-note" data-ui-region="preview" aria-label="服务端接入边界">
+    <section class="integration-note" data-ui-region="preview" aria-label="业务可用性说明">
       <span class="integration-icon"><AppIcon name="shield" :size="19" /></span>
       <div class="integration-copy">
-        <div><strong>平台控制面</strong><StatusBadge text="服务端契约待接入" tone="warning" /></div>
+        <div><strong>平台管理</strong><StatusBadge text="部分能力待开放" tone="warning" /></div>
         <p>{{ config.authority }}</p>
       </div>
       <span class="preview-label">只读设计预览</span>
@@ -102,7 +102,7 @@ watch(
       <div class="lifecycle-rail" data-ui-region="lifecycle">
         <div class="lifecycle-copy">
           <div><span>生命周期</span><strong>{{ config.title }}控制链</strong></div>
-          <small>每个阶段由服务端事实驱动，页面不以展示状态替代真实结果。</small>
+          <small>每个阶段按当前业务状态推进，页面展示不代表操作已经完成。</small>
         </div>
         <div class="flow-track">
           <template v-for="(stage, index) in config.stages" :key="stage">
