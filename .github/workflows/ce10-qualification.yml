@@ -4,11 +4,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 on:
+  workflow_call:
   push:
     branches: [feat/ce-10-durable-provisioning, main]
     paths: ['contracts/**','internal/**','integration/ce10*','scripts/ce10*','docs/commercial-entitlements/**','.github/workflows/ce10-qualification.yml','Makefile','go.mod','go.sum','.yunka/**']
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 permissions: {contents: read}
 env:
