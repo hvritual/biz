@@ -14,15 +14,21 @@ import {
 } from '@/services/runtime/api'
 import type { RoleGrantScope } from './rolePermissionCatalog'
 
-export type RoleMutation = 'create' | 'update' | 'enable' | 'disable' | 'permissions' | 'assign' | 'revoke'
+export type RoleMutation = 'create' | 'update' | 'enable' | 'disable' | 'delete' | 'permissions' | 'assign' | 'revoke'
 
 export type EnterpriseTenantRole = TenantRole & {
   permissions: PermissionGrant[]
+  description: string
+  roleCode: string
+  systemRole: boolean
+  memberCount: number
   protectedOwner: boolean
+  protectedSystem: boolean
 }
 
 export type EnterpriseRoleDraft = {
   name: string
+  description: string
   enabled: boolean
   permissions: PermissionGrant[]
   memberIds: string[]
@@ -92,10 +98,17 @@ function roleSnapshot(role: TenantRole): EnterpriseTenantRole {
         scope: normalizeScope(grant.scope),
       }))
     : []
+  const roleCode = role.roleCode ?? ''
+  const systemRole = Boolean(role.systemRole)
   return Object.freeze({
     ...role,
+    description: role.description ?? '',
+    roleCode,
+    systemRole,
+    memberCount: Number(role.memberCount ?? 0),
     permissions,
-    protectedOwner: role.name === 'owner',
+    protectedOwner: roleCode === 'tenant_owner' || (!roleCode && role.name === 'owner'),
+    protectedSystem: systemRole || roleCode === 'tenant_owner' || roleCode === 'tenant_admin',
   }) as EnterpriseTenantRole
 }
 
@@ -107,9 +120,16 @@ export async function switchEnterpriseRoleTenant(tenantId: string) {
   return selectSessionTenant(tenantId)
 }
 
-export async function listEnterpriseRoles(session: TrustedSession) {
+export async function listEnterpriseRoles(
+  session: TrustedSession,
+  filters: { query?: string; status?: string } = {},
+) {
   requireTenantSession(session)
-  const result = await request<{ roles?: TenantRole[] }>('/v1/tenant/roles', { headers: headers(session) })
+  const params = new URLSearchParams()
+  if (filters.query?.trim()) params.set('query', filters.query.trim())
+  if (filters.status) params.set('status', filters.status)
+  const suffix = params.toString() ? `?${params.toString()}` : ''
+  const result = await request<{ roles?: TenantRole[] }>(`/v1/tenant/roles${suffix}`, { headers: headers(session) })
   return Array.isArray(result.roles) ? result.roles.map(roleSnapshot) : []
 }
 
@@ -124,7 +144,7 @@ export async function getEnterpriseRole(session: TrustedSession, roleId: string)
 async function roleMutate(
   session: TrustedSession,
   path: string,
-  method: 'POST' | 'PATCH' | 'PUT',
+  method: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
   body: unknown,
   idempotencyKey: string,
 ) {
@@ -136,16 +156,32 @@ async function roleMutate(
   return roleSnapshot(role)
 }
 
-export function createEnterpriseRole(session: TrustedSession, name: string, key: string) {
-  return roleMutate(session, '/v1/tenant/roles', 'POST', { name: name.trim() }, key)
+export function createEnterpriseRole(session: TrustedSession, name: string, description: string, key: string) {
+  return roleMutate(session, '/v1/tenant/roles', 'POST', { name: name.trim(), description: description.trim() }, key)
 }
 
-export function updateEnterpriseRole(session: TrustedSession, role: EnterpriseTenantRole, name: string, key: string) {
+export function updateEnterpriseRole(
+  session: TrustedSession,
+  role: EnterpriseTenantRole,
+  name: string,
+  description: string,
+  key: string,
+) {
   return roleMutate(
     session,
     `/v1/tenant/roles/${encodeURIComponent(role.id)}`,
     'PATCH',
-    { roleId: role.id, name: name.trim(), version: role.version },
+    { roleId: role.id, name: name.trim(), description: description.trim(), version: role.version },
+    key,
+  )
+}
+
+export function deleteEnterpriseRole(session: TrustedSession, role: EnterpriseTenantRole, key: string) {
+  return roleMutate(
+    session,
+    `/v1/tenant/roles/${encodeURIComponent(role.id)}?version=${encodeURIComponent(String(role.version))}`,
+    'DELETE',
+    {},
     key,
   )
 }
