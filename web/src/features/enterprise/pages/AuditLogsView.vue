@@ -263,14 +263,13 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
           <div><h2>{{ selectedDemo.action }}</h2><p>{{ selectedDemo.time }}</p></div>
           <StatusBadge :text="demoRiskLabels[selectedDemo.risk]" :tone="selectedDemo.risk === 'high' ? 'danger' : 'warning'" />
         </div>
-        <h3>请求摘要</h3>
+        <h3>操作详情</h3>
         <dl class="detail-list">
           <dt>操作人</dt><dd>{{ selectedDemo.actor }}</dd>
           <dt>所属模块</dt><dd>{{ selectedDemo.module }}</dd>
           <dt>操作对象</dt><dd>{{ selectedDemo.target }}</dd>
           <dt>执行结果</dt><dd><StatusBadge :text="selectedDemo.result === 'success' ? '成功' : '失败'" /></dd>
-          <dt>操作来源</dt><dd>Web 界面预览 · 本地操作</dd>
-          <dt>请求标识</dt><dd class="mono">{{ selectedDemo.requestId }}</dd>
+          <dt>操作来源</dt><dd>网页端</dd>
           <dt>操作原因</dt><dd>{{ selectedDemo.reason || '未填写' }}</dd>
         </dl>
         <div class="divider" />
