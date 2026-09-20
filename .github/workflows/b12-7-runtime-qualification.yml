@@ -5,29 +5,10 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  workflow_call:
   push:
     branches:
       - agent/b12-multitenant-access-pressure
-      - main
-    paths:
-      - .github/workflows/b12-7-runtime-qualification.yml
-      - .yunka/dev.json
-      - scripts/test-runtime-readiness-gate.py
-      - scripts/ce04_runtime_closure.py
-      - scripts/test_ce04_runtime_closure.py
-      - docs/commercial-entitlements/**
-      - cmd/biz/**
-      - contracts/**
-      - docs/pressure/B12-framework-pressure.md
-      - internal/access/**
-      - internal/commercial/**
-      - internal/assembly/**
-      - internal/bizruntime/**
-      - modules/**
-      - go.mod
-      - go.sum
-  pull_request:
-    branches:
       - main
     paths:
       - .github/workflows/b12-7-runtime-qualification.yml
