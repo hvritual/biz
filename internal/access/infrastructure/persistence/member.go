@@ -426,6 +426,21 @@ func (repository *TenantMemberRepository) List(ctx context.Context, tenantID str
 	if repository == nil || repository.database == nil {
 		return ports.TenantMemberListPage{}, errors.New("access persistence: tenant member repository unavailable")
 	}
+	if filter.Status == "" {
+		switch strings.TrimSpace(ports.TenantMemberListStatusQuery(ctx)) {
+		case "":
+		case "TENANT_MEMBER_STATUS_INVITED":
+			filter.Status = domain.TenantMemberStatusInvited
+		case "TENANT_MEMBER_STATUS_ACTIVE":
+			filter.Status = domain.TenantMemberStatusActive
+		case "TENANT_MEMBER_STATUS_SUSPENDED":
+			filter.Status = domain.TenantMemberStatusSuspended
+		case "TENANT_MEMBER_STATUS_REMOVED":
+			filter.Status = domain.TenantMemberStatusRemoved
+		default:
+			return ports.TenantMemberListPage{}, errors.New("access persistence: invalid tenant member status filter")
+		}
+	}
 	tenantID = strings.TrimSpace(tenantID)
 	if tenantID == "" || filter.Page == 0 || filter.PageSize == 0 || filter.PageSize > 100 {
 		return ports.TenantMemberListPage{}, errors.New("access persistence: invalid tenant member list query")
