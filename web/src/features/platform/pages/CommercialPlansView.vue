@@ -290,7 +290,7 @@ onMounted(loadModules)
       <div class="workspace-title">
         <div>
           <h2>套餐代码工作台</h2>
-          <p>可从可信套餐目录选择 plan_code，或直接输入代码读取服务端版本历史；页面不以本地 seed 补齐目录。</p>
+          <p>可从套餐目录选择套餐，或输入套餐编号查看版本历史。</p>
         </div>
         <UiButton class="btn primary" type="button" @click="openCreate">新建套餐</UiButton>
       </div>
