@@ -27,10 +27,20 @@ function sourceFilesUnder(directory, files = []) {
   return files
 }
 
-function visibleSource(file) {
-  if (file.endsWith('.vue')) return readVue(file).descriptor.template?.content ?? ''
-  const source = readFileSync(file, 'utf8')
+function stringLiterals(source = '') {
   return source.match(/'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`/g)?.join('\n') ?? ''
+}
+
+function visibleSource(file) {
+  if (file.endsWith('.vue')) {
+    const { descriptor } = readVue(file)
+    return [
+      descriptor.template?.content ?? '',
+      stringLiterals(descriptor.script?.content),
+      stringLiterals(descriptor.scriptSetup?.content),
+    ].join('\n')
+  }
+  return stringLiterals(readFileSync(file, 'utf8'))
 }
 
 function productLanguageFailures(root) {
