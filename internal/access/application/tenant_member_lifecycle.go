@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"net/url"
 	"strings"
 	"time"
 	"unicode"
@@ -41,26 +42,50 @@ func (err *tenantMemberConflictError) GRPCStatus() *status.Status {
 }
 
 type TenantMemberLifecycleService struct {
-	repositories  requestscope.RepositoryFactory[ports.TenantMemberRepositories]
-	capabilities  TenantMemberLifecycleCapabilities
-	activationTTL time.Duration
+	repositories       requestscope.RepositoryFactory[ports.TenantMemberRepositories]
+	capabilities       TenantMemberLifecycleCapabilities
+	activationTTL      time.Duration
+	activationURL      string
 }
 
-func NewTenantMemberLifecycleService(repositories requestscope.RepositoryFactory[ports.TenantMemberRepositories], capabilities TenantMemberLifecycleCapabilities, activationTTL ...time.Duration) (*TenantMemberLifecycleService, error) {
+func NewTenantMemberLifecycleService(repositories requestscope.RepositoryFactory[ports.TenantMemberRepositories], capabilities TenantMemberLifecycleCapabilities) (*TenantMemberLifecycleService, error) {
+	return newTenantMemberLifecycleService(repositories, capabilities, 0, "")
+}
+
+func NewTenantMemberLifecycleServiceWithActivation(
+	repositories requestscope.RepositoryFactory[ports.TenantMemberRepositories],
+	capabilities TenantMemberLifecycleCapabilities,
+	activationTTL time.Duration,
+	activationURL string,
+) (*TenantMemberLifecycleService, error) {
+	return newTenantMemberLifecycleService(repositories, capabilities, activationTTL, activationURL)
+}
+
+func newTenantMemberLifecycleService(
+	repositories requestscope.RepositoryFactory[ports.TenantMemberRepositories],
+	capabilities TenantMemberLifecycleCapabilities,
+	activationTTL time.Duration,
+	activationURL string,
+) (*TenantMemberLifecycleService, error) {
 	if repositories == nil {
 		return nil, errors.New("access: tenant member repository factory is required")
 	}
 	if capabilities == nil || capabilities.AccessTenantRolePermission() == nil || capabilities.AccessTenantDepartmentManagement() == nil {
 		return nil, errors.New("access: tenant member role and department capabilities are required")
 	}
-	var ttl time.Duration
-	if len(activationTTL) > 0 {
-		ttl = activationTTL[0]
-	}
-	if ttl < 0 {
+	activationURL = strings.TrimSpace(activationURL)
+	if activationTTL < 0 {
 		return nil, errors.New("access: tenant member activation TTL must not be negative")
 	}
-	return &TenantMemberLifecycleService{repositories: repositories, capabilities: capabilities, activationTTL: ttl}, nil
+	if activationTTL > 0 && activationURL == "" {
+		return nil, errors.New("access: tenant member activation URL is required")
+	}
+	return &TenantMemberLifecycleService{
+		repositories: repositories,
+		capabilities: capabilities,
+		activationTTL: activationTTL,
+		activationURL: activationURL,
+	}, nil
 }
 
 func (service *TenantMemberLifecycleService) InviteTenantMember(ctx context.Context, request *accessv1.InviteTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
@@ -150,7 +175,7 @@ func (service *TenantMemberLifecycleService) CreateTenantMember(ctx context.Cont
 	}
 
 	secret := newMemberActivationSecret()
-	notificationSecret := "/idp/member/activate?token=" + secret
+	notificationSecret := service.activationURL + "?token=" + url.QueryEscape(secret)
 	if mode == "sms_initial_password" {
 		secret = newMemberInitialPassword()
 		notificationSecret = "username=" + username + "\npassword=" + secret
