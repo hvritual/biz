@@ -4,11 +4,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 on:
+  workflow_call:
   push:
     branches: [fix/ce-08-complete, main]
     paths: ['contracts/**','internal/**','integration/ce08*','integration/b12_tenant*','scripts/ce08*','docs/commercial-entitlements/**','.github/workflows/ce08-qualification.yml','Makefile','go.mod','go.sum','.yunka/**']
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 permissions: {contents: read}
 env:
