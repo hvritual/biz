@@ -44,7 +44,7 @@ export function enterprisePlanRuntimeError(error: unknown) {
     if (error.code === 'conflict') return '租户上下文已变化，请刷新后重试。'
     return error.message
   }
-  return error instanceof Error ? error.message : '套餐与权益服务请求失败。'
+  return error instanceof Error ? error.message : '套餐与权益信息读取失败。'
 }
 
 export async function readEnterprisePlanSession() {
@@ -90,10 +90,10 @@ export async function loadEnterprisePlanReadModel(): Promise<EnterprisePlanReadM
     getMyTenantEntitlements(session),
   ])
   if (subscription.tenantId && subscription.tenantId !== session.active_tenant_id) {
-    throw new Error('套餐服务返回了不属于当前租户的数据。')
+    throw new Error('套餐信息与当前企业不匹配，请刷新后重试。')
   }
   if (entitlements.tenantId && entitlements.tenantId !== session.active_tenant_id) {
-    throw new Error('权益服务返回了不属于当前租户的数据。')
+    throw new Error('权益信息与当前企业不匹配，请刷新后重试。')
   }
 
   let usage: EnterpriseTenantUsage = { usages: [] }
