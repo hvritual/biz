@@ -8,6 +8,8 @@ on:
       - .github/workflows/enterprise-178-role-lifecycle.yml
       - contracts/proto/access/v1/tenant_role.proto
       - contracts/commercial/operation-capabilities.v1.json
+      - contracts/commercial/generated/**
+      - contracts/generated/**
       - docs/enterprise-center/decisions.md
       - internal/access/**
       - internal/bizruntime/**
@@ -26,6 +28,8 @@ on:
       - .github/workflows/enterprise-178-role-lifecycle.yml
       - contracts/proto/access/v1/tenant_role.proto
       - contracts/commercial/operation-capabilities.v1.json
+      - contracts/commercial/generated/**
+      - contracts/generated/**
       - docs/enterprise-center/decisions.md
       - internal/access/**
       - internal/bizruntime/**
