@@ -113,19 +113,19 @@ watch(
       </div>
     </section>
 
-    <section v-if="showAction" class="card action-preview" aria-label="操作流程预览">
+    <section v-if="showAction" class="card action-preview" aria-label="操作流程说明">
       <div>
         <span class="section-kicker">操作流程</span>
         <h2>{{ config.primaryAction }}</h2>
-        <p>正式提交动作将在服务端契约接入后启用；当前页面只展示流程，不写入商业事实。</p>
+        <p>该操作暂未开放；当前仅展示处理步骤和可能影响。</p>
       </div>
       <div class="action-steps">
         <span>填写业务信息</span><AppIcon name="right" :size="14" />
         <span>校验权限与依赖</span><AppIcon name="right" :size="14" />
-        <span>服务端确认</span><AppIcon name="right" :size="14" />
-        <span>结果读回</span>
+        <span>确认处理</span><AppIcon name="right" :size="14" />
+        <span>确认结果</span>
       </div>
-      <UiButton variant="secondary" @click="showAction = false">关闭预览</UiButton>
+      <UiButton variant="secondary" @click="showAction = false">关闭说明</UiButton>
     </section>
 
     <section class="card query-panel" data-ui-region="query" aria-label="筛选条件">
@@ -152,10 +152,10 @@ watch(
           <div>
             <span class="section-kicker">管理记录</span>
             <h2>{{ config.title }}记录</h2>
-            <p>按当前筛选条件展示管理对象；预览数据不会被解释为生产事实。</p>
+            <p>按当前筛选条件展示管理对象；示例记录不代表真实业务结果。</p>
           </div>
           <div class="toolbar-actions">
-            <StatusBadge text="预览数据" tone="neutral" />
+            <StatusBadge text="示例记录" tone="neutral" />
             <UiButton @click="showAction = !showAction"><AppIcon name="plus" :size="15" />{{ config.primaryAction }}</UiButton>
           </div>
         </div>
