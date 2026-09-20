@@ -144,7 +144,6 @@ func loadJSON[T any](path string) (T, error) {
 		return value, err
 	}
 	decoder := json.NewDecoder(bytes.NewReader(payload))
-	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&value); err != nil {
 		return value, fmt.Errorf("action catalog: decode %s: %w", path, err)
 	}
