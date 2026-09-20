@@ -96,6 +96,7 @@ func run() error {
 		return err
 	}
 	memberActivationTTL := envDuration("YUNKA_BIZ_MEMBER_ACTIVATION_TTL", 0)
+	memberActivationURL := strings.TrimSpace(os.Getenv("YUNKA_BIZ_MEMBER_ACTIVATION_URL"))
 	if memberActivationTTL > 0 && verificationProtection == nil {
 		return errors.New("YUNKA_BIZ_MEMBER_ACTIVATION_TTL requires verification protection keys")
 	}
@@ -129,6 +130,7 @@ func run() error {
 		ProvisioningWorker:  bizruntime.ProvisioningWorkerOptions{Token: workerToken, Automatic: workerToken != ""},
 		WebAuth:             webAuth,
 		MemberActivationTTL: memberActivationTTL,
+		MemberActivationURL: memberActivationURL,
 	}
 	var started *bizruntime.Started
 	if verificationProtection != nil {
