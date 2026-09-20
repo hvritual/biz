@@ -28,8 +28,8 @@ function sourceFilesUnder(directory, files = []) {
 }
 
 function visibleSource(file) {
+  if (file.endsWith('.vue')) return readVue(file).descriptor.template?.content ?? ''
   const source = readFileSync(file, 'utf8')
-  if (file.endsWith('.vue')) return source.match(/<template(?:\s[^>]*)?>([\s\S]*?)<\/template>/)?.[1] ?? ''
   return source.match(/'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`/g)?.join('\n') ?? ''
 }
 
