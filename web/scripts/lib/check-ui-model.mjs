@@ -1,8 +1,57 @@
 import { validatePatternBindings } from './pattern-contracts.mjs'
-import { basename, resolve } from 'node:path'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { basename, relative, resolve } from 'node:path'
 import { StaticSource, componentFile, readStrictJson } from './static-source.mjs'
 import { validateUiContract } from './ui-contract-schema.mjs'
 import { componentSources, readVue, verifyPageSource } from './vue-source.mjs'
+
+const engineeringLanguagePatterns = [
+  ['data mode badge', /实时数据|Live data/gi],
+  ['runtime implementation status', /可信运行会话|Trusted runtime session|Runtime Workspace/gi],
+  ['API mode', /API\s*模式|API mode/gi],
+  ['server implementation', /服务端|from the server|by the server|loading server|server data|server identity|server records?|server rules?|server readback|server contract|server confirmed/gi],
+  ['readback implementation', /回读|readback/gi],
+  ['authority implementation', /权威|authoritative/gi],
+  ['local implementation preview', /本地预览|本地模拟|local preview|local mock/gi],
+  ['data source implementation', /数据源状态|data source status/gi],
+  ['internal lifecycle terminology', /preview\s*\/\s*confirm\s*\/\s*receipt|\bmeter\b/gi],
+  ['internal transport field', /请求\s*ID|幂等|会话引用|回执引用|请求摘要|request\s*ID|idempotency|session reference|receipt reference|request digest/gi],
+]
+
+function sourceFilesUnder(directory, files = []) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = resolve(directory, entry.name)
+    if (entry.isDirectory()) sourceFilesUnder(path, files)
+    else files.push(path)
+  }
+  return files
+}
+
+function visibleSource(file) {
+  const source = readFileSync(file, 'utf8')
+  if (!file.endsWith('.vue')) return source
+  return source.match(/<template(?:\s[^>]*)?>([\s\S]*?)<\/template>/)?.[1] ?? ''
+}
+
+function productLanguageFailures(root) {
+  const featuresRoot = resolve(root, 'src/features')
+  const i18nRoot = resolve(root, 'src/i18n')
+  const files = [
+    ...sourceFilesUnder(featuresRoot).filter((file) => file.endsWith('.vue') && !file.replaceAll('\\\\', '/').includes('/features/runtime/')),
+    ...sourceFilesUnder(i18nRoot).filter((file) => file.endsWith('.ts')),
+  ]
+  const failures = []
+  for (const file of files) {
+    const source = visibleSource(file)
+    for (const [label, pattern] of engineeringLanguagePatterns) {
+      pattern.lastIndex = 0
+      if (pattern.test(source)) failures.push(`${relative(root, file)}: product UI exposes engineering language (${label})`)
+    }
+  }
+  const sourceBanner = resolve(root, 'src/features/enterprise/components/EnterpriseSourceBanner.vue')
+  if (existsSync(sourceBanner)) failures.push('EnterpriseSourceBanner must not exist on product surfaces')
+  return failures
+}
 
 export function checkUiModel(root) {
   const contract = validateUiContract(readStrictJson(resolve(root, 'ui-contracts.json')))
@@ -73,5 +122,6 @@ export function checkUiModel(root) {
     if (route.meta.pageTemplate !== page.template) failures.push(`${page.path}: pageTemplate must be ${page.template}`)
     failures.push(...verifyPageSource(reader, page, componentFile(route.component)))
   }
+  failures.push(...productLanguageFailures(root))
   return { failures: [...new Set(failures)], contract, routes, sourceCount: reader.modules.size }
 }
