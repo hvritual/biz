@@ -104,7 +104,16 @@ onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).ca
 </script>
 <template>
   <div class="page-stack" data-enterprise-page="organization" data-ui-template="WorkbenchPage">
-    <PageHeading title="组织架构" description="管理部门与汇报关系，让组织协作与数据边界保持清晰" /><div class="metric-grid">
+    <PageHeading title="组织架构" description="管理部门与汇报关系，让组织协作与数据边界保持清晰" />
+    <div v-if="store.sourceError" class="notice-box organization-access-state" role="alert">
+      <AppIcon name="warning" :size="18" />
+      <div>
+        <strong>组织架构暂不可用</strong>
+        <p>{{ store.sourceError }}</p>
+      </div>
+    </div>
+    <template v-else>
+    <div class="metric-grid">
       <MetricCard
         label="部门数量"
         :value="store.departments.length"
@@ -257,9 +266,22 @@ onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).ca
         ><UiButton class="btn" @click="editOpen = false">取消</UiButton><UiButton class="btn btn-primary" @click="save">保存部门</UiButton></template
       ></UiDialog
     >
+    </template>
   </div>
 </template>
 <style scoped>
+.organization-access-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.organization-access-state strong,
+.organization-access-state p {
+  display: block;
+}
+.organization-access-state p {
+  margin: 4px 0 0;
+}
 .organization-layout {
   display: grid;
   grid-template-columns: 244px minmax(0, 1fr);
