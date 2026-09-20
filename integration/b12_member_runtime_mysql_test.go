@@ -87,7 +87,7 @@ func startB123Enterprise176Runtime(t *testing.T, db *gorm.DB) (*bizruntime.Start
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	started, err := bizruntime.BootstrapWithOptionsAndSecurity(ctx, provider, bizruntime.Options{
-		DeviceOps: config, MemberActivationTTL: 15 * time.Minute,
+		DeviceOps: config, MemberActivationTTL: 15 * time.Minute, MemberActivationURL: "http://127.0.0.1:18081/idp/member/activate",
 	}, nil, protection)
 	if err != nil {
 		cancel()
