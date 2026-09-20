@@ -339,7 +339,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     return json(route, 200, updated)
   })
 
-  await page.route(/\/(?:api\/)?v1\/tenant\/members\/(?!create(?:\/|$)|removed(?:\/|$))[^/]+(?:\/(?:activate|suspend|remove|restore))?$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/members\/(?!create(?:[/?]|$)|removed(?:[/?]|$))[^/?]+(?:\/(?:activate|suspend|remove|restore))?(?:\?.*)?$/, async (route) => {
     const request = route.request()
     const url = new URL(request.url())
     const parts = url.pathname.split('/')
