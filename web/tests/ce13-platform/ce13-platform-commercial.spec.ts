@@ -335,7 +335,7 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await editor.getByLabel("device.lifecycle").check();
   await editor.getByRole("button", { name: "添加范围" }).click();
   await editor.getByPlaceholder("default").fill("default");
-  await editor.getByRole("button", { name: "提交到服务端" }).click();
+  await editor.getByRole("button", { name: "提交", exact: true }).click();
   await expect(page.getByText("套餐草稿已创建。")).toBeVisible();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "发布", exact: true }).click();
