@@ -103,6 +103,70 @@ func usernameValue(value *string) string {
 	return strings.TrimSpace(*value)
 }
 
+func (repository *TenantMemberRepository) assertMemberContactsAvailable(ctx context.Context, tenantID, userID, email, phone string) error {
+	if repository == nil || repository.database == nil {
+		return errors.New("access persistence: tenant member repository unavailable")
+	}
+	tenantID = strings.TrimSpace(tenantID)
+	userID = strings.TrimSpace(userID)
+	if tenantID == "" {
+		return errors.New("access persistence: tenant member contact check requires tenant")
+	}
+	base := repository.database.WithContext(ctx).Model(&membershipRecord{}).Where("tenant_id = ?", tenantID)
+	if userID != "" {
+		base = base.Where("user_id <> ?", userID)
+	}
+
+	if email = strings.TrimSpace(email); email != "" && !IsMaskedContact(email) {
+		normalized, err := NormalizeEmail(email)
+		if err != nil {
+			return err
+		}
+		query := base
+		if repository.contactProtection != nil {
+			lookup, err := repository.contactProtection.LookupEmail(normalized)
+			if err != nil {
+				return err
+			}
+			query = query.Where("(email_lookup_hash = ? OR LOWER(email) = ?)", lookup, normalized)
+		} else {
+			query = query.Where("LOWER(email) = ?", normalized)
+		}
+		var count int64
+		if err := query.Count(&count).Error; err != nil {
+			return err
+		}
+		if count > 0 {
+			return ports.ErrTenantMemberContactConflict
+		}
+	}
+
+	if phone = strings.TrimSpace(phone); phone != "" && !IsMaskedContact(phone) {
+		normalized, err := NormalizePhone(phone)
+		if err != nil {
+			return err
+		}
+		query := base
+		if repository.contactProtection != nil {
+			lookup, err := repository.contactProtection.LookupPhone(normalized)
+			if err != nil {
+				return err
+			}
+			query = query.Where("(phone_lookup_hash = ? OR phone = ?)", lookup, normalized)
+		} else {
+			query = query.Where("phone = ?", normalized)
+		}
+		var count int64
+		if err := query.Count(&count).Error; err != nil {
+			return err
+		}
+		if count > 0 {
+			return ports.ErrTenantMemberContactConflict
+		}
+	}
+	return nil
+}
+
 func (repository *TenantMemberRepository) Invite(ctx context.Context, tenantID, proposedUserID, email string, now time.Time) (domain.Membership, error) {
 	if repository == nil || repository.database == nil {
 		return domain.Membership{}, errors.New("access persistence: tenant member repository unavailable")
@@ -180,6 +244,9 @@ func (repository *TenantMemberRepository) Create(ctx context.Context, tenantID s
 		}
 	}
 
+	if err := repository.assertMemberContactsAvailable(ctx, tenantID, "", email, phone); err != nil {
+		return domain.Membership{}, false, err
+	}
 	db := repository.database.WithContext(ctx)
 	store := repository.accountStore()
 	var user userRecord
@@ -481,6 +548,9 @@ func (repository *TenantMemberRepository) memberListBaseQuery(ctx context.Contex
 func (repository *TenantMemberRepository) Update(ctx context.Context, member *domain.Membership, expectedVersion uint64) error {
 	if repository == nil || repository.database == nil || member == nil || expectedVersion == 0 {
 		return errors.New("access persistence: member update requires repository, value and version")
+	}
+	if err := repository.assertMemberContactsAvailable(ctx, member.TenantID, member.UserID, member.Email, member.Phone); err != nil {
+		return err
 	}
 	updates := map[string]any{"status": member.Status, "name": member.Name, "employee_id": member.EmployeeID, "position": member.Position, "department_id": member.DepartmentID, "updated_at": member.UpdatedAt, "version": gorm.Expr("version + 1")}
 	if repository.contactProtection == nil {
