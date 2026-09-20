@@ -48,6 +48,23 @@ for (const [name, mutate, error] of [
   })
 }
 
+test('product surfaces reject implementation terminology', (t) => {
+  const root = fixture(t)
+  edit(root, 'src/features/app-shell/components/AppHeader.vue', (source) =>
+    source.replace('</header>', '<span>实时数据</span></header>'),
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('product UI exposes engineering language')))
+})
+
+test('EnterpriseSourceBanner cannot be reintroduced', (t) => {
+  const root = fixture(t)
+  writeFileSync(
+    join(root, 'src/features/enterprise/components/EnterpriseSourceBanner.vue'),
+    '<template><div>business data source</div></template>',
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('EnterpriseSourceBanner must not exist')))
+})
+
 test('removing a page declaration cannot hide an existing business route', (t) => {
   const root = fixture(t)
   edit(root,'ui-contracts.json',(source)=>{
