@@ -8,7 +8,6 @@ import PageHeading from '@/ui/common/PageHeading.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import brand from '@/assets/brand-mark.png'
-import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
@@ -60,9 +59,7 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
 </script>
 <template>
   <div class="page-stack" data-enterprise-page="company" data-ui-template="FormPage">
-    <PageHeading title="企业信息" description="维护企业基本资料与联系信息，统一团队的身份与展示" />
-    <EnterpriseSourceBanner />
-    <div class="split-layout">
+    <PageHeading title="企业信息" description="维护企业基本资料与联系信息，统一团队的身份与展示" /><div class="split-layout">
       <form data-ui-region="form-workspace" class="card panel-pad company-form" :inert="!canManageCompany" @submit.prevent="save">
         <div class="row-between block-title">
           <h2>基本信息</h2>
