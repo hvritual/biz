@@ -36,6 +36,7 @@
 - 普通租户管理员不能直接调用底层全局密码 rotate 来接管跨企业 Account。新成员初始化仅允许两种受控方式：激活链接自助设密，或短信发送 username + 一次性初始密码并要求首次使用后设置最终密码。
 - 一次性初始密码和激活 secret 只允许出现在受保护投递材料中，不进入业务页面、日志、审计、普通 API 回执或持久化明文。
 - 联系方式的登录标识、全局绑定值与租户 Profile 联系字段必须显式区分；不得用同一数据库列同时承担所有语义。
+- 成员额度沿用 Commercial 的权威口径：invited/active/suspended 占用、removed 释放。#176 只消费现有 member meter，不建设 Access 内第二套额度账本。#116 的 reserve/commit/release 与并发容量写合同仍为待实施；在其完成前，#176 不宣称成员创建已具备并发额度预占/扣减能力，也不以陈旧 count-before-insert 伪装原子额度控制。
 
 ## 4. Session / tenant context
 
