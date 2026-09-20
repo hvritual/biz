@@ -1055,6 +1055,15 @@
       "children": []
     },
     {
+      "operation_id": "tenant.member.list_removed",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": []
+    },
+    {
       "operation_id": "tenant.member.profile.update",
       "classification": "tenant_business",
       "module_code": "access-management",
@@ -1081,6 +1090,22 @@
           "operation_id": "tenant.role.assert_member_deactivation_allowed",
           "mode": "always",
           "source": "internal/access/application/tenant_member_lifecycle.go#RemoveTenantMember"
+        }
+      ]
+    },
+    {
+      "operation_id": "tenant.member.restore",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [
+        {
+          "operation_id": "tenant.role.assign_member",
+          "mode": "conditional",
+          "condition": "removal snapshot contains a role that still exists and remains active",
+          "source": "internal/access/application/tenant_member_lifecycle.go#RestoreTenantMember"
         }
       ]
     },
