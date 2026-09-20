@@ -34,6 +34,29 @@ const pending = ref(false)
 const errorMessage = ref('')
 
 const actionLabel = computed(() => ({ SWITCH: '切换套餐', RENEW: '续期', STOP_RENEWAL: '停止续期' })[action.value])
+
+function classificationLabel(value?: string) {
+  if (value === 'UPGRADE') return '升级'
+  if (value === 'DOWNGRADE') return '降级'
+  if (value === 'RENEWAL') return '续期'
+  if (value === 'STOP_RENEWAL') return '停止续期'
+  return '套餐变更'
+}
+
+function effectiveModeLabel(value?: string) {
+  if (value === 'IMMEDIATE') return '立即生效'
+  if (value === 'SCHEDULED') return '预约生效'
+  if (value === 'PROVISIONING') return '准备完成后生效'
+  return '按规则生效'
+}
+
+function receiptStatusLabel(value?: string) {
+  if (value === 'APPLIED') return '已生效'
+  if (value === 'SCHEDULED') return '已预约'
+  if (value === 'PROVISIONING') return '处理中'
+  if (value === 'FAILED') return '处理失败'
+  return '待处理'
+}
 const previewExpired = computed(() => {
   if (!preview.value?.expiresAt) return false
   const expires = new Date(preview.value.expiresAt).valueOf()
@@ -85,7 +108,7 @@ function planLabel(subscription?: TenantSubscriptionDTO) {
 
 function limitLabel(limit?: { unlimited: boolean; value: string | number }) {
   if (!limit) return '—'
-  return limit.unlimited ? 'unlimited' : String(limit.value ?? 0)
+  return limit.unlimited ? '不限' : String(limit.value ?? 0)
 }
 
 async function createPreview() {
@@ -96,11 +119,11 @@ async function createPreview() {
   const targetCode = action.value === 'SWITCH' ? targetPlanCode.value.trim() : props.subscription.planCode
   const targetVersion = action.value === 'SWITCH' ? targetPlanVersion.value.trim() : String(props.subscription.planVersion)
   if (!targetCode || !targetVersion) {
-    errorMessage.value = '切换套餐必须输入真实目标 plan_code 与版本。'
+    errorMessage.value = '切换套餐必须填写目标套餐编号与版本。'
     return
   }
   if (!previewReason.value.trim()) {
-    errorMessage.value = '生成商业变更预览必须记录原因。'
+    errorMessage.value = '请填写本次套餐变更原因。'
     return
   }
 
@@ -134,12 +157,12 @@ async function confirmPreview() {
   if (!preview.value || !props.tenantId) return
   errorMessage.value = ''
   if (previewExpired.value) {
-    errorMessage.value = '该预览已过期，不能确认；请重新生成预览。'
+    errorMessage.value = '该变更方案已过期，请重新生成方案。'
     preview.value = null
     return
   }
   if (!manualApproval.value) {
-    errorMessage.value = '必须明确确认这是平台人工商业批准，而不是支付凭证。'
+    errorMessage.value = '请先确认已核对本次套餐变更影响。'
     return
   }
   if (!confirmReason.value.trim()) {
@@ -170,7 +193,7 @@ async function confirmPreview() {
 
 function describeError(error: unknown, fallback: string) {
   if (error instanceof CommercialApiError && ['unauthenticated', 'forbidden'].includes(error.code)) {
-    return `当前可信平台会话无权执行该操作：${error.message}`
+    return `当前平台账号无权执行该操作：${error.message}`
   }
   return error instanceof Error ? error.message : fallback
 }
@@ -180,10 +203,10 @@ function describeError(error: unknown, fallback: string) {
   <section class="card change-card" data-testid="ce13-subscription-change">
     <header class="section-header">
       <div>
-        <h2>套餐变更 Preview / Confirm</h2>
-        <p>CE-09 平台人工变更链路；预览不改权益，确认也不等于支付凭证。</p>
+        <h2>套餐变更</h2>
+        <p>调整套餐前先查看影响，确认后再跟踪最终处理结果。</p>
       </div>
-      <StatusBadge v-if="receipt" :text="receipt.status || 'RECEIPT'" :tone="receipt.status === 'APPLIED' ? 'success' : 'warning'" />
+      <StatusBadge v-if="receipt" :text="receiptStatusLabel(receipt.status)" :tone="receipt.status === 'APPLIED' ? 'success' : 'warning'" />
     </header>
 
     <div v-if="!subscription" class="empty-state">当前没有可用于变更的基础订阅。</div>
@@ -191,33 +214,33 @@ function describeError(error: unknown, fallback: string) {
     <template v-else>
       <div class="form-grid">
         <label class="field" for="subscription-action"><span>操作</span><UiSelect id="subscription-action" v-model="action" class="input"><UiOption value="SWITCH">切换套餐</UiOption><UiOption value="RENEW">续期</UiOption><UiOption value="STOP_RENEWAL">停止续期</UiOption></UiSelect></label>
-        <label class="field" for="change-target-code"><span>目标 plan_code</span><UiInput id="change-target-code" v-model="targetPlanCode" class="input" :disabled="action !== 'SWITCH'" :placeholder="action === 'SWITCH' ? '例如 office-pro' : subscription.planCode" /></label>
+        <label class="field" for="change-target-code"><span>目标套餐编号</span><UiInput id="change-target-code" v-model="targetPlanCode" class="input" :disabled="action !== 'SWITCH'" :placeholder="action === 'SWITCH' ? '例如 office-pro' : subscription.planCode" /></label>
         <label class="field" for="change-target-version"><span>目标版本</span><UiInput id="change-target-version" v-model="targetPlanVersion" class="input" :disabled="action !== 'SWITCH'" :placeholder="action === 'SWITCH' ? '例如 2' : String(subscription.planVersion)" /></label>
         <label class="field" for="change-effective-at"><span>指定未来生效时间（可空）</span><UiInput id="change-effective-at" v-model="effectiveAt" class="input" type="datetime-local" /></label>
-        <label class="field wide" for="change-preview-reason"><span>预览原因</span><UiTextarea id="change-preview-reason" v-model="previewReason" class="input" rows="2" :placeholder="`${actionLabel}的业务原因`" /></label>
+        <label class="field wide" for="change-preview-reason"><span>变更原因</span><UiTextarea id="change-preview-reason" v-model="previewReason" class="input" rows="2" :placeholder="`${actionLabel}的业务原因`" /></label>
       </div>
       <div class="form-actions">
-        <span>当前：<strong>{{ planLabel(subscription) }}</strong> · revision {{ subscription.revision }} · pending {{ subscription.pendingChangeId || '无' }}</span>
-        <UiButton class="btn primary" type="button" :disabled="pending" @click="createPreview">{{ pending ? '处理中…' : '生成不可变预览' }}</UiButton>
+        <span>当前套餐：<strong>{{ planLabel(subscription) }}</strong><template v-if="subscription.pendingChangeId"> · 已有待处理变更</template></span>
+        <UiButton class="btn primary" type="button" :disabled="pending" @click="createPreview">{{ pending ? '处理中…' : '查看变更方案' }}</UiButton>
       </div>
 
       <p v-if="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
 
       <section v-if="preview" class="preview-panel">
         <div class="preview-head">
-          <div><strong>{{ preview.classification || preview.action }}</strong><span>{{ preview.mode || '—' }}</span></div>
-          <div class="hash">change {{ preview.changeId }} · {{ preview.previewHash }}</div>
+          <div><strong>{{ classificationLabel(preview.classification || preview.action) }}</strong><span>{{ effectiveModeLabel(preview.mode) }}</span></div>
+          <div class="hash">变更编号 {{ preview.changeId }}</div>
         </div>
 
         <div class="facts-grid">
           <div><span>源订阅</span><strong>{{ planLabel(preview.before) }}</strong></div>
           <div><span>目标</span><strong>{{ preview.target ? `${preview.target.planCode} v${preview.target.version}` : '—' }}</strong></div>
           <div><span>预计生效</span><strong>{{ formatTime(preview.effectiveAt) }}</strong></div>
-          <div><span>预览到期</span><strong :class="{ expired: previewExpired }">{{ formatTime(preview.expiresAt) }}</strong></div>
-          <div><span>source_version</span><strong>{{ preview.sourceVersion }}</strong></div>
-          <div><span>entitlement_version</span><strong>{{ preview.entitlementVersion }}</strong></div>
+          <div><span>方案有效期</span><strong :class="{ expired: previewExpired }">{{ formatTime(preview.expiresAt) }}</strong></div>
+          <div><span>权益来源版本</span><strong>{{ preview.sourceVersion }}</strong></div>
+          <div><span>权益版本</span><strong>{{ preview.entitlementVersion }}</strong></div>
           <div><span>目录修订</span><strong>{{ preview.catalogRevision }}</strong></div>
-          <div><span>价格依据</span><strong>{{ preview.pricingBasis || '未配置价格引用；不代表免费' }}</strong></div>
+          <div><span>费用处理</span><strong>{{ preview.pricingBasis ? '按当前套餐价格规则确认' : '暂无额外费用信息' }}</strong></div>
         </div>
 
         <div v-if="preview.impacts?.length" class="impact-block"><h3>影响摘要</h3><ul><li v-for="impact in preview.impacts" :key="impact">{{ impact }}</li></ul></div>
@@ -227,11 +250,11 @@ function describeError(error: unknown, fallback: string) {
         <div v-if="preview.quotaImpacts?.length" class="table-scroll">
           <table class="data-table">
             <thead><tr><th>额度</th><th>切换前</th><th>切换后</th><th>使用量</th><th>策略</th></tr></thead>
-            <tbody><tr v-for="item in preview.quotaImpacts" :key="`${item.moduleCode}:${item.key}`"><td><strong>{{ item.moduleCode }}</strong><small>{{ item.key }}</small></td><td>{{ limitLabel(item.beforeLimit) }}</td><td>{{ limitLabel(item.afterLimit) }}</td><td>{{ item.usageKnown ? item.used : '未知' }}<small v-if="item.overLimit" class="danger-text">超额</small></td><td>{{ item.policy || '—' }}<small>{{ item.evidence || '—' }}</small></td></tr></tbody>
+            <tbody><tr v-for="item in preview.quotaImpacts" :key="`${item.moduleCode}:${item.key}`"><td><strong>{{ item.moduleCode }}</strong><small>{{ item.key }}</small></td><td>{{ limitLabel(item.beforeLimit) }}</td><td>{{ limitLabel(item.afterLimit) }}</td><td>{{ item.usageKnown ? item.used : '未知' }}<small v-if="item.overLimit" class="danger-text">超额</small></td><td>{{ item.overLimit ? '超出目标额度' : item.usageKnown ? '符合当前额度' : '待确认' }}</td></tr></tbody>
           </table>
         </div>
 
-        <div v-if="preview.provisioningRequirements?.length" class="impact-block"><h3>开通要求</h3><ul><li v-for="item in preview.provisioningRequirements" :key="item.code">{{ item.code }} · {{ item.adapter }}@{{ item.version }} · max {{ item.maxAttempts }}</li></ul></div>
+        <div v-if="preview.provisioningRequirements?.length" class="impact-block"><h3>开通准备</h3><p>本次变更需要完成 {{ preview.provisioningRequirements.length }} 项准备工作，完成后继续生效流程。</p></div>
 
         <div class="authority-note" :class="{ warning: preview.quotaValidationRequired }">
           <strong>{{ preview.quotaValidationRequired ? '确认前仍需额度再校验' : '当前方案可确认' }}</strong>
@@ -239,16 +262,16 @@ function describeError(error: unknown, fallback: string) {
         </div>
 
         <div class="confirm-box">
-          <label class="check"><UiInput v-model="manualApproval" type="checkbox" />我确认这是 <strong>PLATFORM_MANUAL_APPROVAL</strong>，不把它当作付款成功证明。</label>
+          <label class="check"><UiInput v-model="manualApproval" type="checkbox" />我已核对本次套餐变更影响，并确认继续。</label>
           <label class="field" for="change-confirm-reason"><span>确认原因</span><UiTextarea id="change-confirm-reason" v-model="confirmReason" class="input" rows="2" placeholder="说明为什么批准本次商业变更" /></label>
-          <UiButton class="btn primary" type="button" :disabled="pending || previewExpired" @click="confirmPreview">确认此 preview_hash</UiButton>
+          <UiButton class="btn primary" type="button" :disabled="pending || previewExpired" @click="confirmPreview">确认变更</UiButton>
         </div>
       </section>
 
       <section v-if="receipt" class="receipt-panel">
-        <header><div><h3>不可变变更回执</h3><p>{{ receipt.changeId }} · {{ receipt.previewHash }}</p></div><StatusBadge :text="receipt.status || 'UNKNOWN'" :tone="receipt.status === 'APPLIED' ? 'success' : 'warning'" /></header>
-        <div class="facts-grid"><div><span>模式</span><strong>{{ receipt.mode || '—' }}</strong></div><div><span>确认时间</span><strong>{{ formatTime(receipt.confirmedAt) }}</strong></div><div><span>实际/预约生效</span><strong>{{ formatTime(receipt.effectiveAt) }}</strong></div><div><span>变更后套餐</span><strong>{{ planLabel(receipt.after) }}</strong></div><div><span>source_version</span><strong>{{ receipt.beforeSourceVersion }} → {{ receipt.afterSourceVersion }}</strong></div><div><span>entitlement_version</span><strong>{{ receipt.beforeEntitlementVersion }} → {{ receipt.afterEntitlementVersion }}</strong></div><div><span>pricing authority</span><strong>{{ receipt.pricingAuthority || '—' }}</strong></div><div><span>provisioning task</span><strong>{{ receipt.provisioningTaskId || '无' }}</strong></div></div>
-        <p v-if="receipt.status === 'SCHEDULED'" class="scheduled-note">SCHEDULED 只表示预约已保存；当前套餐和权益尚未切换，后续执行器必须重新校验后才能应用。</p>
+        <header><div><h3>变更结果</h3><p>变更编号 {{ receipt.changeId }}</p></div><StatusBadge :text="receiptStatusLabel(receipt.status)" :tone="receipt.status === 'APPLIED' ? 'success' : 'warning'" /></header>
+        <div class="facts-grid"><div><span>生效方式</span><strong>{{ effectiveModeLabel(receipt.mode) }}</strong></div><div><span>确认时间</span><strong>{{ formatTime(receipt.confirmedAt) }}</strong></div><div><span>预计生效</span><strong>{{ formatTime(receipt.effectiveAt) }}</strong></div><div><span>变更后套餐</span><strong>{{ planLabel(receipt.after) }}</strong></div><div><span>权益来源版本</span><strong>{{ receipt.beforeSourceVersion }} → {{ receipt.afterSourceVersion }}</strong></div><div><span>权益版本</span><strong>{{ receipt.beforeEntitlementVersion }} → {{ receipt.afterEntitlementVersion }}</strong></div><div><span>费用处理</span><strong>{{ receipt.pricingAuthority ? '已确认' : '无额外费用信息' }}</strong></div><div><span>后续处理</span><strong>{{ receipt.provisioningTaskId ? '需要进一步处理' : '无需额外处理' }}</strong></div></div>
+        <p v-if="receipt.status === 'SCHEDULED'" class="scheduled-note">套餐变更已预约，当前套餐和权益尚未切换；到达生效时间后系统会再次核对条件。</p>
       </section>
     </template>
   </section>
