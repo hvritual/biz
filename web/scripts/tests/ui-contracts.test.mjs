@@ -56,6 +56,14 @@ test('product surfaces reject implementation terminology', (t) => {
   assert.ok(checkUiModel(root).failures.some((error) => error.includes('product UI exposes engineering language')))
 })
 
+test('Vue script copy cannot bypass product language guard', (t) => {
+  const root = fixture(t)
+  edit(root, 'src/features/app-shell/components/AppHeader.vue', (source) =>
+    source.replace('<script setup lang="ts">', '<script setup lang="ts">\nconst leakedRuntimeCopy = \'服务端回读\''),
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('product UI exposes engineering language')))
+})
+
 test('feature TypeScript cannot bypass product language guard', (t) => {
   const root = fixture(t)
   edit(root, 'src/features/enterprise/composables/useAuditLogs.ts', (source) =>
