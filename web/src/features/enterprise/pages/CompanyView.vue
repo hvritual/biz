@@ -59,11 +59,22 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
 </script>
 <template>
   <div class="page-stack" data-enterprise-page="company" data-ui-template="FormPage">
-    <PageHeading title="企业信息" description="维护企业基本资料与联系信息，统一团队的身份与展示" /><div class="split-layout">
+    <PageHeading title="企业信息" description="维护企业基本资料与联系信息，统一团队的身份与展示" />
+    <div v-if="store.sourceError" class="notice-box company-access-state" role="alert">
+      <AppIcon name="warning" :size="18" />
+      <div>
+        <strong>企业信息暂不可用</strong>
+        <p>{{ store.sourceError }}</p>
+      </div>
+    </div>
+    <div v-else class="split-layout">
       <form data-ui-region="form-workspace" class="card panel-pad company-form" :inert="!canManageCompany" @submit.prevent="save">
         <div class="row-between block-title">
           <h2>基本信息</h2>
           <StatusBadge text="企业正常" />
+        </div>
+        <div v-if="!canManageCompany" class="notice-box" role="status">
+          <AppIcon name="shield" :size="16" />你可以查看当前企业资料，但没有编辑权限。
         </div>
         <div class="form-grid">
           <label class="field"
@@ -193,6 +204,18 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
 <style scoped>
 .company-form {
   padding: 28px;
+}
+.company-access-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.company-access-state strong,
+.company-access-state p {
+  display: block;
+}
+.company-access-state p {
+  margin: 4px 0 0;
 }
 .logo-control {
   display: flex;
