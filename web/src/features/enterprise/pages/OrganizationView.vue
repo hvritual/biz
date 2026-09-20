@@ -15,7 +15,6 @@ import AvatarMark from '@/ui/common/AvatarMark.vue'
 import DepartmentTree from '@/features/enterprise/components/organization/DepartmentTree.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import AppPagination from '@/ui/common/AppPagination.vue'
-import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
@@ -105,9 +104,7 @@ onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).ca
 </script>
 <template>
   <div class="page-stack" data-enterprise-page="organization" data-ui-template="WorkbenchPage">
-    <PageHeading title="组织架构" description="管理部门与汇报关系，让组织协作与数据边界保持清晰" />
-    <EnterpriseSourceBanner />
-    <div class="metric-grid">
+    <PageHeading title="组织架构" description="管理部门与汇报关系，让组织协作与数据边界保持清晰" /><div class="metric-grid">
       <MetricCard
         label="部门数量"
         :value="store.departments.length"
