@@ -5,34 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - .github/workflows/enterprise-171-session-isolation.yml
-      - internal/access/infrastructure/persistence/web_session.go
-      - internal/access/infrastructure/persistence/first_party_idp_security.go
-      - internal/access/infrastructure/persistence/member.go
-      - internal/access/infrastructure/persistence/migrations/0010_enterprise_session_isolation.sql
-      - internal/bizruntime/config.go
-      - internal/bizruntime/web_auth.go
-      - internal/bizruntime/web_session_precondition.go
-      - internal/bizruntime/web_session_precondition_test.go
-      - cmd/biz/main.go
-      - integration/ce12_web_session_mysql_test.go
-      - integration/enterprise_171_session_isolation_mysql_test.go
-      - web/src/services/runtime/**
-      - web/src/services/commercial/platformCommercial.ts
-      - web/src/services/commercial/platformCommercial.spec.ts
-      - web/src/services/enterprise/**
-      - web/src/stores/enterprise.ts
-      - web/src/features/app-shell/components/AppHeader.vue
-      - web/tests/ce12/**
-      - docs/enterprise-center/session-isolation.md
-      - web/package.json
-      - web/package-lock.json
-      - go.mod
-      - go.sum
+  workflow_call:
   workflow_dispatch:
 
 permissions:
