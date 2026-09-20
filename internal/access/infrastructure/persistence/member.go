@@ -499,12 +499,17 @@ func (repository *TenantMemberRepository) Update(ctx context.Context, member *do
 			}
 		}
 		if !IsMaskedContact(member.Phone) {
-			normalized, err := NormalizePhone(member.Phone)
-			if err != nil {
-				return err
+			if strings.TrimSpace(member.Phone) == "" {
+				updates["phone"] = ""
+				member.Phone = ""
+			} else {
+				normalized, err := NormalizePhone(member.Phone)
+				if err != nil {
+					return err
+				}
+				updates["phone"] = normalized
+				member.Phone = normalized
 			}
-			updates["phone"] = normalized
-			member.Phone = normalized
 		}
 	} else {
 		if !IsMaskedContact(member.Email) {
