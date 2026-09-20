@@ -5,11 +5,10 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  workflow_call:
   push:
     branches:
       - agent/b12-multitenant-access-pressure
-  pull_request:
-
 permissions:
   contents: read
 
