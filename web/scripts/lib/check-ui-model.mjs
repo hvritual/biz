@@ -37,7 +37,7 @@ function productLanguageFailures(root) {
   const featuresRoot = resolve(root, 'src/features')
   const i18nRoot = resolve(root, 'src/i18n')
   const files = [
-    ...sourceFilesUnder(featuresRoot).filter((file) => file.endsWith('.vue') && !file.replaceAll('\\\\', '/').includes('/features/runtime/')),
+    ...sourceFilesUnder(featuresRoot).filter((file) => file.endsWith('.vue') && !file.replaceAll('\\', '/').includes('/features/runtime/')),
     ...sourceFilesUnder(i18nRoot).filter((file) => file.endsWith('.ts')),
   ]
   const failures = []
