@@ -29,7 +29,7 @@ async function save() {
   }
   try {
     await store.saveCompany(draft.value)
-    ui.toast(store.sourceKind === 'api' ? '企业资料已由服务端确认并回读。' : '企业资料已保存到本地预览。')
+    ui.toast('企业资料已保存。')
   } catch (e) {
     error.value = e instanceof Error ? e.message : '保存失败。'
   }
@@ -102,16 +102,16 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
                   aria-label="选择企业 Logo"
                   @change="upload"
               /></label>
-              <div v-else class="logo-api-state" aria-label="企业 Logo 服务端资产状态">
+              <div v-else class="logo-api-state" aria-label="企业 Logo 状态">
                 <AppIcon name="shield" :size="16" />
                 <div>
-                  <strong>Logo 由资产服务管理</strong>
-                  <small>{{ store.company.logoAssetRef || '尚未配置资产引用' }}</small>
+                  <strong>企业 Logo</strong>
+                  <small>{{ store.company.logoAssetRef ? '已配置' : '尚未配置' }}</small>
                 </div>
               </div>
             </div>
-            <small v-if="store.previewMode">PNG / JPG / WebP，最大 2 MB；当前仅预览。</small>
-            <small v-else>API 模式不生成 DataURL，也不制造尚未接入的上传成功状态。</small>
+            <small v-if="store.previewMode">PNG / JPG / WebP，最大 2 MB。</small>
+            <small v-else>当前暂不支持在此页面更换 Logo。</small>
           </div>
           <label class="field full-width"
             ><span>企业简介</span
@@ -158,16 +158,16 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
             <p>{{ store.company.industry }}</p>
           </div>
           <dl class="detail-list">
-            <dt>租户标识</dt>
+            <dt>企业编号</dt>
             <dd class="mono">{{ store.tenantId }}</dd>
             <dt>当前套餐</dt>
-            <dd>{{ store.sourceKind === 'api' ? '由套餐服务提供' : '标准版（示例）' }}</dd>
+            <dd>{{ store.sourceKind === 'api' ? '请在套餐额度中查看' : '标准版' }}</dd>
             <dt>企业成员</dt>
             <dd>{{ store.members.filter((m) => m.status !== 'removed').length }} 人</dd>
           </dl>
           <div class="divider" />
           <div class="notice-box">
-            <AppIcon name="help" :size="16" />本轮不采集营业执照、法人证件或支付资料，不虚构企业认证结果。
+            <AppIcon name="help" :size="16" />企业认证资料暂不在此页面维护。
           </div>
         </section>
         <section class="card panel-pad">
