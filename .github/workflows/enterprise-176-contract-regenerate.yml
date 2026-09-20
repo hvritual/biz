@@ -1,5 +1,6 @@
 name: Enterprise 176 contract regenerate
 # Closed-PR regeneration lane for #176.
+# Final #176 canonical regeneration before PR qualification.
 
 on:
   push:
