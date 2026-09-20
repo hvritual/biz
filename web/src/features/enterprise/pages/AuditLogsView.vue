@@ -38,20 +38,18 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
     <PageHeading
       data-ui-region="page-heading"
       title="操作日志"
-      :description="apiMode
-        ? '服务端审计记录按可信租户隔离；查询、详情和导出均以 Access 审计读模型为准。'
-        : '记录成员、权限与配置变更，让每一次操作可检索、可追溯'"
+      description="记录成员、权限与配置变更，让每一次操作可检索、可追溯"
     />
 
     <template v-if="apiMode">
-      <section class="card panel-pad audit-authority" aria-label="审计服务端身份上下文">
+      <section class="card panel-pad audit-authority" aria-label="当前账号与企业">
         <template v-if="serverSession.authenticated">
           <div class="authority-main">
-            <strong>服务端身份</strong>
+            <strong>当前账号</strong>
             <span>{{ serverSession.user_id || serverSession.platform_subject || '已认证账号' }}</span>
           </div>
           <label v-if="serverSession.tenants?.length" class="tenant-select">
-            <span>当前租户</span>
+            <span>当前企业</span>
             <UiSelect
               :value="serverSession.active_tenant_id"
               :disabled="serverBusy || exportBusy"
@@ -71,7 +69,7 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
         <template v-else>
           <div class="authority-main">
             <strong>尚未登录</strong>
-            <span>API 模式不会回退到本地预览审计记录。</span>
+            <span>登录后可查看当前企业的操作日志。</span>
           </div>
           <UiButton class="btn btn-primary" @click="loginServer">登录业务账号</UiButton>
         </template>
@@ -82,16 +80,15 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
 
       <template v-if="canReadServer">
         <div class="metric-grid">
-          <MetricCard label="审计记录" :value="serverTotal" icon="file" caption="当前筛选的服务端记录总数" />
+          <MetricCard label="审计记录" :value="serverTotal" icon="file" caption="当前筛选的记录总数" />
           <MetricCard label="当前页高风险" :value="pageHighRisk" icon="shield" tone="orange" caption="仅统计当前分页" />
-          <MetricCard label="当前页失败" :value="pageFailures" icon="file" tone="purple" caption="failure / panic" />
-          <MetricCard label="当前页导出" :value="pageExports" icon="download" tone="green" caption="access.audit.export" />
+          <MetricCard label="当前页失败" :value="pageFailures" icon="file" tone="purple" caption="当前分页中的失败记录" />
+          <MetricCard label="当前页导出" :value="pageExports" icon="download" tone="green" caption="当前分页中的导出操作" />
         </div>
 
         <section class="card data-panel" data-ui-region="data">
           <div class="query-bar audit-query-bar" data-ui-region="query">
-            <SearchField v-model="queryDraft" placeholder="搜索操作、对象、操作人或请求 ID…" />
-            <UiInput v-model="operationDraft" class="input operation-filter" placeholder="操作 ID，例如 access.audit.export" />
+            <SearchField v-model="queryDraft" placeholder="搜索操作、对象或操作人…" />
             <UiSelect v-model="resultDraft" class="select" aria-label="筛选执行结果">
               <UiOption value="">全部结果</UiOption>
               <UiOption value="success">成功</UiOption>
@@ -123,7 +120,7 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
                 <tr v-for="record in serverRecords" :key="record.auditId">
                   <td class="numeric muted">{{ formatTime(record.occurredAt) }}</td>
                   <td><div class="row"><AvatarMark :name="actorLabel(record)" :size="27" /><span>{{ actorLabel(record) }}</span></div></td>
-                  <td><strong>{{ record.operationId }}</strong><small>{{ record.module || '—' }}</small></td>
+                  <td><strong>{{ record.module || '业务操作' }}</strong><small>{{ record.reason || '操作记录' }}</small></td>
                   <td class="mono target-cell">{{ record.target || '—' }}</td>
                   <td><StatusBadge :text="resultLabels[record.result]" :tone="resultTone(record.result)" /></td>
                   <td><StatusBadge :text="serverRiskLabels[record.risk]" :tone="riskTone(record.risk)" :dot="false" /></td>
@@ -140,22 +137,22 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
             </table>
           </div>
           <EmptyState v-else-if="!serverBusy" />
-          <div v-else class="audit-loading" role="status">正在读取服务端审计记录…</div>
+          <div v-else class="audit-loading" role="status">正在读取操作日志…</div>
           <AppPagination v-model:page="serverPage" v-model:page-size="serverPageSize" :total="serverTotal" />
         </section>
 
         <div class="notice-box">
-          <AppIcon name="shield" />日志页只读取不可变审计读模型，不提供修改或删除。CSV 内容来自服务端导出接口，导出动作由服务端以独立高风险审计事件记录。
+          <AppIcon name="shield" />操作日志仅支持查看和导出，不支持修改或删除；导出操作也会记录在日志中。
         </div>
       </template>
       <section v-else-if="serverSession.authenticated" class="card panel-pad">
-        请选择可访问租户。操作日志不会展示 demo 记录作为替代。
+        请选择可访问企业。
       </section>
     </template>
 
     <template v-else>
       <div class="metric-grid">
-        <MetricCard label="操作记录" :value="store.logs.length" icon="file" caption="当前企业预览记录" />
+        <MetricCard label="操作记录" :value="store.logs.length" icon="file" caption="当前企业操作记录" />
         <MetricCard
           label="高风险操作"
           :value="store.logs.filter((log) => log.risk === 'high').length"
@@ -180,7 +177,7 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
       </div>
       <section class="card data-panel" data-ui-region="data">
         <div class="query-bar" data-ui-region="query">
-          <SearchField v-model="demoQuery" placeholder="搜索操作内容、对象名称、请求 ID…" />
+          <SearchField v-model="demoQuery" placeholder="搜索操作内容或对象名称…" />
           <UiSelect v-model="demoModule" class="select" aria-label="筛选日志模块" @change="demoPage = 1">
             <UiOption value="">全部模块</UiOption>
             <UiOption v-for="item in demoModules" :key="item" :value="item">{{ item }}</UiOption>
@@ -219,14 +216,14 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
         <AppPagination v-model:page="demoPage" v-model:page-size="demoPageSize" :total="demoFiltered.length" />
       </section>
       <div class="notice-box">
-        <AppIcon name="shield" />日志页面只提供查询与导出，不提供修改或删除。当前记录存储于本地预览，不等同于生产审计留存或防篡改证明。
+        <AppIcon name="shield" />操作日志仅支持查询和导出，不支持修改或删除。
       </div>
     </template>
 
     <UiDialog
       v-if="apiMode"
       :open="Boolean(selectedServer)"
-      title="审计日志详情"
+      title="日志详情"
       width="620px"
       drawer
       @close="selectedServer = null"
@@ -234,27 +231,20 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
       <div v-if="selectedServer" class="page-stack">
         <div class="log-hero">
           <span><AppIcon name="file" :size="25" /></span>
-          <div><h2>{{ selectedServer.operationId }}</h2><p>{{ formatTime(selectedServer.occurredAt) }}</p></div>
+          <div><h2>{{ selectedServer.module || '业务操作' }}</h2><p>{{ formatTime(selectedServer.occurredAt) }}</p></div>
           <StatusBadge :text="serverRiskLabels[selectedServer.risk]" :tone="riskTone(selectedServer.risk)" />
         </div>
         <dl class="detail-list">
-          <dt>审计 ID</dt><dd class="mono">{{ selectedServer.auditId }}</dd>
-          <dt>操作主体</dt><dd>{{ actorLabel(selectedServer) }}</dd>
-          <dt>用户 ID</dt><dd class="mono">{{ selectedServer.actorUserId || '—' }}</dd>
-          <dt>认证方式</dt><dd>{{ selectedServer.authMethod || '—' }} / {{ selectedServer.authChannel || '—' }}</dd>
-          <dt>会话引用</dt><dd class="mono">{{ selectedServer.sessionRef || '—' }}</dd>
-          <dt>请求 ID</dt><dd class="mono">{{ selectedServer.requestId || '—' }}</dd>
-          <dt>幂等引用</dt><dd class="mono">{{ selectedServer.idempotencyRef || '—' }}</dd>
+          <dt>操作编号</dt><dd class="mono">{{ selectedServer.auditId }}</dd>
+          <dt>操作人</dt><dd>{{ actorLabel(selectedServer) }}</dd>
           <dt>所属模块</dt><dd>{{ selectedServer.module || '—' }}</dd>
-          <dt>操作对象</dt><dd class="mono">{{ selectedServer.target || '—' }}</dd>
+          <dt>操作对象</dt><dd>{{ selectedServer.target || '—' }}</dd>
           <dt>执行结果</dt><dd><StatusBadge :text="resultLabels[selectedServer.result]" :tone="resultTone(selectedServer.result)" /></dd>
           <dt>风险等级</dt><dd>{{ serverRiskLabels[selectedServer.risk] }}</dd>
-          <dt>回执引用</dt><dd class="mono">{{ selectedServer.receiptRef || '—' }}</dd>
-          <dt>请求摘要</dt><dd class="mono digest">{{ selectedServer.requestDigest || '—' }}</dd>
           <dt>操作原因</dt><dd>{{ selectedServer.reason || '未填写' }}</dd>
         </dl>
         <div class="notice-box compact-notice">
-          当前服务端审计契约保存请求摘要与回执引用；未提供 before/after 正文时，页面不会伪造变更前后内容。
+          此处仅展示已记录的操作信息，没有记录的变更详情不会补充展示。
         </div>
       </div>
     </UiDialog>
