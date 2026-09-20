@@ -413,7 +413,7 @@ test('canonical members use server-side filters, pagination and authoritative to
   await expect.poll(() => server.getListReads().at(-1) ?? '').toContain('page=2')
   await expect(page.locator('[data-member-id="user-extra-11"]')).toBeVisible()
 
-  await page.getByRole('textbox', { name: '搜索成员' }).fill('Alice')
+  await page.getByTestId('main-content').getByRole('textbox', { name: '搜索成员', exact: true }).fill('Alice')
   await page.getByRole('button', { name: '查询', exact: true }).click()
   await expect.poll(() => server.getListReads().at(-1) ?? '').toContain('query=Alice')
   await expect(page.locator('[data-member-id="user-001"]')).toBeVisible()
