@@ -123,6 +123,20 @@ func (capability *tenantMemberRoleCapabilityStub) AssertTenantMemberDeactivation
 	return &accessv1.AssertTenantMemberDeactivationAllowedResponse{}, nil
 }
 
+func (capability *tenantMemberRoleCapabilityStub) AssignTenantRoleMember(_ context.Context, request *accessv1.AssignTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error) {
+	if capability.err != nil {
+		return nil, capability.err
+	}
+	return &accessv1.TenantRoleDTO{RoleId: request.GetRoleId()}, nil
+}
+
+func (capability *tenantMemberRoleCapabilityStub) RevokeTenantRoleMember(_ context.Context, request *accessv1.RevokeTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error) {
+	if capability.err != nil {
+		return nil, capability.err
+	}
+	return &accessv1.TenantRoleDTO{RoleId: request.GetRoleId()}, nil
+}
+
 func (capability *tenantMemberRoleCapabilityStub) callCount() int {
 	capability.mu.Lock()
 	defer capability.mu.Unlock()
