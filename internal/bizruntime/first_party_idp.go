@@ -429,14 +429,16 @@ func (idp *runtimeFirstPartyIdP) signIDToken(grant accesspersistence.FirstPartyA
 	now := time.Now().UTC()
 	header := map[string]any{"alg": "RS256", "kid": idp.kid, "typ": "JWT"}
 	claims := map[string]any{
-		"iss":            idp.config.IssuerURL(),
-		"sub":            "biz-user:" + grant.UserID,
-		"aud":            idp.config.ClientID,
-		"exp":            now.Add(idp.config.TokenTTL).Unix(),
-		"iat":            now.Unix(),
-		"nonce":          grant.Nonce,
-		"email":          grant.Email,
-		"email_verified": true,
+		"iss":   idp.config.IssuerURL(),
+		"sub":   "biz-user:" + grant.UserID,
+		"aud":   idp.config.ClientID,
+		"exp":   now.Add(idp.config.TokenTTL).Unix(),
+		"iat":   now.Unix(),
+		"nonce": grant.Nonce,
+	}
+	if strings.TrimSpace(grant.Email) != "" {
+		claims["email"] = grant.Email
+		claims["email_verified"] = true
 	}
 	headerJSON, err := json.Marshal(header)
 	if err != nil {
