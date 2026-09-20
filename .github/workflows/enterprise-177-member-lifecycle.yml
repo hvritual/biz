@@ -14,6 +14,8 @@ on:
       - web/src/features/enterprise/**
       - web/src/features/system/pages/AuthorizationStateView.vue
       - web/src/services/enterprise/memberRuntime.ts
+      - web/src/services/memberPolicy.ts
+      - web/src/services/memberPolicy.spec.ts
       - web/src/services/runtime/memberAppeal.ts
       - web/src/stores/enterprise.ts
       - web/src/i18n/messages.ts
@@ -32,6 +34,8 @@ on:
       - web/src/features/enterprise/**
       - web/src/features/system/pages/AuthorizationStateView.vue
       - web/src/services/enterprise/memberRuntime.ts
+      - web/src/services/memberPolicy.ts
+      - web/src/services/memberPolicy.spec.ts
       - web/src/services/runtime/memberAppeal.ts
       - web/src/stores/enterprise.ts
       - web/src/i18n/messages.ts
