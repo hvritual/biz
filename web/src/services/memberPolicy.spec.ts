@@ -33,7 +33,7 @@ describe('membership policy', () => {
   it('removed membership cannot reactivate', () =>
     expect(
       memberActionError('activate', { ...member, status: 'removed' }, data.members, data.roles),
-    ).toContain('重新邀请'))
+    ).toContain('回收站恢复'))
   it('rejects duplicate removal', () =>
     expect(
       memberActionError('remove', { ...member, status: 'removed' }, data.members, data.roles),
