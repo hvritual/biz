@@ -131,9 +131,10 @@ test('API mode renders authoritative audit data across CoffeeLink viewports with
   ]) {
     await page.setViewportSize(viewport)
     await openAudit(page)
-    await expect(page.getByText('tenant.member.suspend', { exact: true })).toBeVisible()
-    await expect(page.getByText('user_id:user-002', { exact: true })).toBeVisible()
-    await expect(page.getByText('当前记录存储于本地预览')).toHaveCount(0)
+    await expect(page.getByText('权限与成员', { exact: true })).toBeVisible()
+    await expect(page.getByText('禁用成员', { exact: true })).toBeVisible()
+    await expect(page.getByText('成员 user-002', { exact: true })).toBeVisible()
+    await expect(page.getByText(/tenant\.member\.suspend|user_id:/)).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
     await page.screenshot({ path: `screenshots/enterprise-audit-real-${viewport.width}.png`, fullPage: false })
   }
@@ -142,18 +143,19 @@ test('API mode renders authoritative audit data across CoffeeLink viewports with
 test('detail is read from the server and exposes trace references without inventing before/after payloads', async ({ page }) => {
   await mockAuditServer(page)
   await openAudit(page)
-  await page.getByRole('button', { name: '查看审计日志 tenant.member.suspend' }).click()
+  await page.getByRole('button', { name: '查看操作日志 audit-001' }).click()
   await expect(page.getByText('audit-001', { exact: true })).toBeVisible()
-  await expect(page.getByText('sha256:session-ref', { exact: true })).toBeVisible()
-  await expect(page.getByText('digest-001', { exact: true })).toBeVisible()
-  await expect(page.getByText(/未提供 before\/after 正文时/)).toBeVisible()
+  await expect(page.getByText('权限与成员', { exact: true })).toBeVisible()
+  await expect(page.getByText(/禁用成员/)).toBeVisible()
+  await expect(page.getByText('成员 user-002', { exact: true })).toBeVisible()
+  await expect(page.getByText(/sha256:session-ref|digest-001|request:req-001/)).toHaveCount(0)
 })
 
 test('audit export uses trusted session, CSRF and idempotency and reports only server-confirmed success', async ({ page }) => {
   const server = await mockAuditServer(page)
   await openAudit(page)
   await page.getByRole('button', { name: '导出日志' }).click()
-  await expect(page.getByRole('status')).toContainText('服务端导出已完成：1 条')
+  await expect(page.getByRole('status')).toContainText('日志导出完成：1 条')
   expect(server.writes).toHaveLength(1)
   expect(server.writes[0]?.headers['x-csrf-token']).toBe('csrf-audit-real')
   expect(server.writes[0]?.headers['idempotency-key']).toMatch(/^enterprise-audit-export-/)
