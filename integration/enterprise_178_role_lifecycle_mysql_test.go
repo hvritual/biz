@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -59,7 +60,11 @@ func TestEnterprise178RoleMetadataQueryProtectionAndDelete(t *testing.T) {
 		t.Fatalf("filtered role list status=%d", response.StatusCode)
 	}
 	var listed accessv1.ListTenantRolesResponse
-	if err := protojson.UnmarshalOptions{DiscardUnknown: false}.Unmarshal(readAllB123(t, response.Body), &listed); err != nil {
+	payload, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := (protojson.UnmarshalOptions{DiscardUnknown: false}).Unmarshal(payload, &listed); err != nil {
 		t.Fatal(err)
 	}
 	if len(listed.GetRoles()) != 1 || listed.GetRoles()[0].GetId() != created.GetId() {
