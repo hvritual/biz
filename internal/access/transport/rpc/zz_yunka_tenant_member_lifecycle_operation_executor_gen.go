@@ -48,6 +48,19 @@ func (server *TenantMemberLifecycleOperationServer) ActivateTenantMember(ctx con
 	return response, nil
 }
 
+func (server *TenantMemberLifecycleOperationServer) CreateTenantMember(ctx context.Context, request *accessv1.CreateTenantMemberRequest) (*accessv1.TenantMemberCreationReceipt, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleCreateTenantMember(), request, server.application.CreateTenantMember)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *TenantMemberLifecycleOperationServer) GetTenantMember(ctx context.Context, request *accessv1.GetTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
@@ -107,6 +120,19 @@ func (server *TenantMemberLifecycleOperationServer) SuspendTenantMember(ctx cont
 		}
 	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleSuspendTenantMember(), request, server.application.SuspendTenantMember)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *TenantMemberLifecycleOperationServer) UpdateTenantMember(ctx context.Context, request *accessv1.UpdateTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleUpdateTenantMember(), request, server.application.UpdateTenantMember)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}

@@ -80,6 +80,42 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.CreateTenantDepartmentRequest"
       },
+      "access_v1_CreateTenantMemberRequest": {
+        "properties": {
+          "activationMode": {
+            "$ref": "#/components/schemas/access_v1_TenantMemberActivationMode"
+          },
+          "departmentId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "employeeId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "position": {
+            "type": "string"
+          },
+          "roleIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.CreateTenantMemberRequest"
+      },
       "access_v1_CreateTenantRequest": {
         "properties": {
           "name": {
@@ -399,7 +435,28 @@
         "x-yunka-proto-full-name": "access.v1.ListTenantDepartmentsResponse"
       },
       "access_v1_ListTenantMembersRequest": {
-        "properties": {},
+        "properties": {
+          "departmentId": {
+            "type": "string"
+          },
+          "page": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "pageSize": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/access_v1_TenantMemberStatus"
+          }
+        },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.ListTenantMembersRequest"
       },
@@ -410,6 +467,11 @@
               "$ref": "#/components/schemas/access_v1_TenantMemberDTO"
             },
             "type": "array"
+          },
+          "total": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
           }
         },
         "type": "object",
@@ -764,6 +826,36 @@
         "type": "string",
         "x-yunka-proto-full-name": "access.v1.TenantDepartmentStatus"
       },
+      "access_v1_TenantMemberActivationMode": {
+        "enum": [
+          "TENANT_MEMBER_ACTIVATION_MODE_UNSPECIFIED",
+          "TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK",
+          "TENANT_MEMBER_ACTIVATION_MODE_SMS_INITIAL_PASSWORD"
+        ],
+        "type": "string",
+        "x-yunka-proto-full-name": "access.v1.TenantMemberActivationMode"
+      },
+      "access_v1_TenantMemberCreationReceipt": {
+        "properties": {
+          "activationMode": {
+            "$ref": "#/components/schemas/access_v1_TenantMemberActivationMode"
+          },
+          "deliveryState": {
+            "type": "string"
+          },
+          "maskedDestination": {
+            "type": "string"
+          },
+          "member": {
+            "$ref": "#/components/schemas/access_v1_TenantMemberDTO"
+          },
+          "notificationEventId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.TenantMemberCreationReceipt"
+      },
       "access_v1_TenantMemberDTO": {
         "properties": {
           "departmentId": {
@@ -797,6 +889,9 @@
             "$ref": "#/components/schemas/access_v1_TenantMemberStatus"
           },
           "userId": {
+            "type": "string"
+          },
+          "username": {
             "type": "string"
           },
           "version": {
@@ -1005,6 +1100,44 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.UpdateTenantMemberProfileRequest"
+      },
+      "access_v1_UpdateTenantMemberRequest": {
+        "properties": {
+          "departmentId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "employeeId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "position": {
+            "type": "string"
+          },
+          "roleIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.UpdateTenantMemberRequest"
       },
       "access_v1_UpdateTenantProfileRequest": {
         "properties": {
@@ -5252,6 +5385,58 @@
     "/v1/tenant/members": {
       "get": {
         "operationId": "access.v1.TenantMemberLifecycleApplication.ListTenantMembers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "roleId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "departmentId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/access_v1_TenantMemberStatus"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -5299,6 +5484,37 @@
         "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/InviteTenantMember"
       }
     },
+    "/v1/tenant/members/create": {
+      "post": {
+        "operationId": "access.v1.TenantMemberLifecycleApplication.CreateTenantMember",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_CreateTenantMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantMemberCreationReceipt"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/CreateTenantMember"
+      }
+    },
     "/v1/tenant/members/{user_id}": {
       "get": {
         "operationId": "access.v1.TenantMemberLifecycleApplication.GetTenantMember",
@@ -5328,6 +5544,45 @@
           "access.v1.TenantMemberLifecycleApplication"
         ],
         "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/GetTenantMember"
+      },
+      "patch": {
+        "operationId": "access.v1.TenantMemberLifecycleApplication.UpdateTenantMember",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_UpdateTenantMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantMemberDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/UpdateTenantMember"
       }
     },
     "/v1/tenant/members/{user_id}/activate": {

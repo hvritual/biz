@@ -12,6 +12,7 @@ import (
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	io "io"
 	"net/http"
+	strconv "strconv"
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
@@ -37,6 +38,9 @@ func RegisterTenantMemberLifecycleOperationExecutor(mux *http.ServeMux, applicat
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/members/{user_id}/activate", handler.handleOperationActivateTenantMember); err != nil {
 		return err
 	}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenant/members/create", handler.handleOperationCreateTenantMember); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "GET", "/v1/tenant/members/{user_id}", handler.handleOperationGetTenantMember); err != nil {
 		return err
 	}
@@ -50,6 +54,9 @@ func RegisterTenantMemberLifecycleOperationExecutor(mux *http.ServeMux, applicat
 		return err
 	}
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/members/{user_id}/suspend", handler.handleOperationSuspendTenantMember); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "PATCH", "/v1/tenant/members/{user_id}", handler.handleOperationUpdateTenantMember); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "PATCH", "/v1/tenant/members/{user_id}/profile", handler.handleOperationUpdateTenantMemberProfile); err != nil {
@@ -116,6 +123,34 @@ func (handler *TenantMemberLifecycleOperationHandler) handleOperationActivateTen
 	_, _ = writer.Write(payload)
 }
 
+func (handler *TenantMemberLifecycleOperationHandler) handleOperationCreateTenantMember(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.CreateTenantMemberRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleCreateTenantMember(), wire, handler.application.CreateTenantMember)
+	if err != nil {
+		writeTenantMemberLifecycleOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
 func (handler *TenantMemberLifecycleOperationHandler) handleOperationGetTenantMember(writer http.ResponseWriter, request *http.Request) {
 	wire := &accessv1.GetTenantMemberRequest{}
 	wire.UserId = request.PathValue("user_id")
@@ -164,6 +199,31 @@ func (handler *TenantMemberLifecycleOperationHandler) handleOperationInviteTenan
 
 func (handler *TenantMemberLifecycleOperationHandler) handleOperationListTenantMembers(writer http.ResponseWriter, request *http.Request) {
 	wire := &accessv1.ListTenantMembersRequest{}
+	if raw := request.URL.Query().Get("query"); raw != "" {
+		wire.Query = raw
+	}
+	if raw := request.URL.Query().Get("role_id"); raw != "" {
+		wire.RoleId = raw
+	}
+	if raw := request.URL.Query().Get("department_id"); raw != "" {
+		wire.DepartmentId = raw
+	}
+	if raw := request.URL.Query().Get("page"); raw != "" {
+		parsed, err := strconv.ParseUint(raw, 10, 32)
+		if err != nil {
+			http.Error(writer, "invalid request parameter", http.StatusBadRequest)
+			return
+		}
+		wire.Page = uint32(parsed)
+	}
+	if raw := request.URL.Query().Get("page_size"); raw != "" {
+		parsed, err := strconv.ParseUint(raw, 10, 32)
+		if err != nil {
+			http.Error(writer, "invalid request parameter", http.StatusBadRequest)
+			return
+		}
+		wire.PageSize = uint32(parsed)
+	}
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleListTenantMembers(), wire, handler.application.ListTenantMembers)
 	if err != nil {
@@ -224,6 +284,35 @@ func (handler *TenantMemberLifecycleOperationHandler) handleOperationSuspendTena
 	wire.UserId = request.PathValue("user_id")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleSuspendTenantMember(), wire, handler.application.SuspendTenantMember)
+	if err != nil {
+		writeTenantMemberLifecycleOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *TenantMemberLifecycleOperationHandler) handleOperationUpdateTenantMember(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.UpdateTenantMemberRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	wire.UserId = request.PathValue("user_id")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleUpdateTenantMember(), wire, handler.application.UpdateTenantMember)
 	if err != nil {
 		writeTenantMemberLifecycleOperationError(writer, err)
 		return

@@ -453,6 +453,79 @@
       }
     },
     {
+      "name": "CreateTenantMemberRequest",
+      "fullName": "access.v1.CreateTenantMemberRequest",
+      "fields": [
+        {
+          "name": "username",
+          "jsonName": "username",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "email",
+          "jsonName": "email",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "phone",
+          "jsonName": "phone",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "employee_id",
+          "jsonName": "employeeId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "position",
+          "jsonName": "position",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "department_id",
+          "jsonName": "departmentId",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "role_ids",
+          "jsonName": "roleIds",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "activation_mode",
+          "jsonName": "activationMode",
+          "number": 9,
+          "kind": "enum",
+          "type": "access.v1.TenantMemberActivationMode"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "CreateTenantRequest",
       "fullName": "access.v1.CreateTenantRequest",
       "fields": [
@@ -987,7 +1060,50 @@
     {
       "name": "ListTenantMembersRequest",
       "fullName": "access.v1.ListTenantMembersRequest",
-      "fields": null,
+      "fields": [
+        {
+          "name": "query",
+          "jsonName": "query",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "role_id",
+          "jsonName": "roleId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "department_id",
+          "jsonName": "departmentId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "jsonName": "status",
+          "number": 4,
+          "kind": "enum",
+          "type": "access.v1.TenantMemberStatus"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 6,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
       "dto": {
         "kind": "input"
       }
@@ -1003,6 +1119,13 @@
           "kind": "message",
           "type": "access.v1.TenantMemberDTO",
           "repeated": true
+        },
+        {
+          "name": "total",
+          "jsonName": "total",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
         }
       ],
       "dto": {
@@ -1627,6 +1750,50 @@
       }
     },
     {
+      "name": "TenantMemberCreationReceipt",
+      "fullName": "access.v1.TenantMemberCreationReceipt",
+      "fields": [
+        {
+          "name": "member",
+          "jsonName": "member",
+          "number": 1,
+          "kind": "message",
+          "type": "access.v1.TenantMemberDTO"
+        },
+        {
+          "name": "activation_mode",
+          "jsonName": "activationMode",
+          "number": 2,
+          "kind": "enum",
+          "type": "access.v1.TenantMemberActivationMode"
+        },
+        {
+          "name": "notification_event_id",
+          "jsonName": "notificationEventId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "delivery_state",
+          "jsonName": "deliveryState",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "masked_destination",
+          "jsonName": "maskedDestination",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "TenantMemberDTO",
       "fullName": "access.v1.TenantMemberDTO",
       "fields": [
@@ -1705,6 +1872,13 @@
           "name": "derived_data_scope",
           "jsonName": "derivedDataScope",
           "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "username",
+          "jsonName": "username",
+          "number": 12,
           "kind": "scalar",
           "type": "string"
         }
@@ -2033,6 +2207,79 @@
           "name": "version",
           "jsonName": "version",
           "number": 7,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "UpdateTenantMemberRequest",
+      "fullName": "access.v1.UpdateTenantMemberRequest",
+      "fields": [
+        {
+          "name": "user_id",
+          "jsonName": "userId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "email",
+          "jsonName": "email",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "phone",
+          "jsonName": "phone",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "employee_id",
+          "jsonName": "employeeId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "position",
+          "jsonName": "position",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "department_id",
+          "jsonName": "departmentId",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "role_ids",
+          "jsonName": "roleIds",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 9,
           "kind": "scalar",
           "type": "uint64"
         }
@@ -6675,6 +6922,24 @@
       ]
     },
     {
+      "name": "TenantMemberActivationMode",
+      "fullName": "access.v1.TenantMemberActivationMode",
+      "values": [
+        {
+          "name": "TENANT_MEMBER_ACTIVATION_MODE_UNSPECIFIED",
+          "number": 0
+        },
+        {
+          "name": "TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK",
+          "number": 1
+        },
+        {
+          "name": "TENANT_MEMBER_ACTIVATION_MODE_SMS_INITIAL_PASSWORD",
+          "number": 2
+        }
+      ]
+    },
+    {
       "name": "TenantMemberStatus",
       "fullName": "access.v1.TenantMemberStatus",
       "values": [
@@ -7858,6 +8123,55 @@
           }
         },
         {
+          "name": "CreateTenantMember",
+          "fullName": "access.v1.TenantMemberLifecycleApplication.CreateTenantMember",
+          "request": "access.v1.CreateTenantMemberRequest",
+          "response": "access.v1.TenantMemberCreationReceipt",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/members/create",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.create",
+            "useCase": "create_tenant_member",
+            "permissions": [
+              "tenant.member.manage",
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "tenant.department.assert_member_assignment_allowed",
+              "tenant.role.assign_member"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.create",
+            "permissions": [
+              "tenant.member.manage",
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "GetTenantMember",
           "fullName": "access.v1.TenantMemberLifecycleApplication.GetTenantMember",
           "request": "access.v1.GetTenantMemberRequest",
@@ -8064,6 +8378,56 @@
             "operationId": "tenant.member.suspend",
             "permissions": [
               "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "UpdateTenantMember",
+          "fullName": "access.v1.TenantMemberLifecycleApplication.UpdateTenantMember",
+          "request": "access.v1.UpdateTenantMemberRequest",
+          "response": "access.v1.TenantMemberDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/tenant/members/{user_id}",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.update",
+            "useCase": "update_tenant_member",
+            "permissions": [
+              "tenant.member.manage",
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "tenant.department.assert_member_assignment_allowed",
+              "tenant.role.assign_member",
+              "tenant.role.revoke_member"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.update",
+            "permissions": [
+              "tenant.member.manage",
+              "tenant.role.manage"
             ],
             "permissionMode": "all",
             "tenantRequired": true,
