@@ -21,7 +21,7 @@ const {
   serverBusy, detailBusy, exportBusy, serverError, serverNotice, selectedServer,
   queryDraft, resultDraft, riskDraft, exportRetry,
   canReadServer, pageHighRisk, pageFailures, pageExports, serverRiskLabels, resultLabels,
-  actorLabel, formatTime, resultTone, riskTone,
+  actorLabel, moduleLabel, operationLabel, targetLabel, formatTime, resultTone, riskTone,
   refreshServer, applyServerFilters, resetServerFilters,
   changeServerTenant, logoutServer, loginServer, openServerDetail, exportServerLogs,
 } = useAuditLogs()
@@ -120,15 +120,15 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
                 <tr v-for="record in serverRecords" :key="record.auditId">
                   <td class="numeric muted">{{ formatTime(record.occurredAt) }}</td>
                   <td><div class="row"><AvatarMark :name="actorLabel(record)" :size="27" /><span>{{ actorLabel(record) }}</span></div></td>
-                  <td><strong>{{ record.module || '业务操作' }}</strong><small>{{ record.reason || '操作记录' }}</small></td>
-                  <td class="mono target-cell">{{ record.target || '—' }}</td>
+                  <td><strong>{{ moduleLabel(record.module) }}</strong><small>{{ operationLabel(record.operationId) }}</small></td>
+                  <td class="target-cell">{{ targetLabel(record.target) }}</td>
                   <td><StatusBadge :text="resultLabels[record.result]" :tone="resultTone(record.result)" /></td>
                   <td><StatusBadge :text="serverRiskLabels[record.risk]" :tone="riskTone(record.risk)" :dot="false" /></td>
                   <td>
                     <UiButton
                       class="btn-link"
                       :disabled="detailBusy"
-                      :aria-label="`查看审计日志 ${record.operationId}`"
+                      :aria-label="`查看操作日志 ${record.auditId}`"
                       @click="openServerDetail(record)"
                     >查看</UiButton>
                   </td>
@@ -231,14 +231,14 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
       <div v-if="selectedServer" class="page-stack">
         <div class="log-hero">
           <span><AppIcon name="file" :size="25" /></span>
-          <div><h2>{{ selectedServer.module || '业务操作' }}</h2><p>{{ formatTime(selectedServer.occurredAt) }}</p></div>
+          <div><h2>{{ moduleLabel(selectedServer.module) }}</h2><p>{{ operationLabel(selectedServer.operationId) }} · {{ formatTime(selectedServer.occurredAt) }}</p></div>
           <StatusBadge :text="serverRiskLabels[selectedServer.risk]" :tone="riskTone(selectedServer.risk)" />
         </div>
         <dl class="detail-list">
           <dt>操作编号</dt><dd class="mono">{{ selectedServer.auditId }}</dd>
           <dt>操作人</dt><dd>{{ actorLabel(selectedServer) }}</dd>
-          <dt>所属模块</dt><dd>{{ selectedServer.module || '—' }}</dd>
-          <dt>操作对象</dt><dd>{{ selectedServer.target || '—' }}</dd>
+          <dt>所属模块</dt><dd>{{ moduleLabel(selectedServer.module) }}</dd>
+          <dt>操作对象</dt><dd>{{ targetLabel(selectedServer.target) }}</dd>
           <dt>执行结果</dt><dd><StatusBadge :text="resultLabels[selectedServer.result]" :tone="resultTone(selectedServer.result)" /></dd>
           <dt>风险等级</dt><dd>{{ serverRiskLabels[selectedServer.risk] }}</dd>
           <dt>操作原因</dt><dd>{{ selectedServer.reason || '未填写' }}</dd>
