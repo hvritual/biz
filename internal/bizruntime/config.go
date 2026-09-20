@@ -252,6 +252,7 @@ type Options struct {
 	// MemberActivationTTL is explicit runtime policy for #176 activation links
 	// and one-time initial passwords. Zero keeps member creation disabled.
 	MemberActivationTTL time.Duration
+	MemberActivationURL string
 }
 
 func (options Options) Validate() error {
@@ -278,6 +279,14 @@ func (options Options) Validate() error {
 	}
 	if options.MemberActivationTTL < 0 {
 		return errors.New("biz runtime: member activation TTL must not be negative")
+	}
+	if options.MemberActivationTTL > 0 {
+		if strings.TrimSpace(options.MemberActivationURL) == "" {
+			return errors.New("biz runtime: member activation URL is required when member activation is enabled")
+		}
+		if err := requireHTTPSOrLoopback(options.MemberActivationURL); err != nil {
+			return fmt.Errorf("biz runtime: member activation URL: %w", err)
+		}
 	}
 	if options.FirstPartyIdP.Enabled() {
 		if !options.WebAuth.Enabled() {
