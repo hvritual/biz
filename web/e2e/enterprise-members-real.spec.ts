@@ -128,7 +128,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Login</title>' })
   })
 
-  await page.route(/\/(?:api\/)?auth\/session$/, async (route) => {
+  await page.route(/\/(?:api\/)?auth\/session(?:\?.*)?$/, async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     return json(route, 200, {
       authenticated: true,
@@ -140,7 +140,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     })
   })
 
-  await page.route(/\/(?:api\/)?auth\/authorization$/, async (route) => {
+  await page.route(/\/(?:api\/)?auth\/authorization(?:\?.*)?$/, async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     if (options.authorizationStatus) return json(route, options.authorizationStatus, { message: 'authorization denied' })
     const buttonCodes = [
@@ -175,11 +175,11 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     })
   })
 
-  await page.route(/\/(?:api\/)?v1\/tenant\/roles$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/roles(?:\?.*)?$/, async (route) => {
     return json(route, 200, { roles: roleCatalog })
   })
 
-  await page.route(/\/(?:api\/)?v1\/tenant\/departments$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/departments(?:\?.*)?$/, async (route) => {
     return json(route, 200, { departments: departmentCatalog })
   })
 
@@ -251,7 +251,7 @@ async function mockMemberServer(page: Page, options: MockOptions = {}) {
     })
   })
 
-  await page.route(/\/(?:api\/)?v1\/tenant\/members$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/members(?:\?.*)?$/, async (route) => {
     const request = route.request()
     if (request.method() === 'GET') {
       if (options.listStatus) return json(route, options.listStatus, { message: 'list denied' })

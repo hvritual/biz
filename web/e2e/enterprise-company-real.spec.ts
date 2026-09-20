@@ -57,7 +57,7 @@ async function mockTenantProfileServer(page: Page, options: Options = {}) {
     await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Login</title>' })
   })
 
-  await page.route(/\/(?:api\/)?auth\/session$/, async (route) => {
+  await page.route(/\/(?:api\/)?auth\/session(?:\?.*)?$/, async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     return json(route, 200, {
       authenticated: true,
@@ -68,7 +68,7 @@ async function mockTenantProfileServer(page: Page, options: Options = {}) {
       tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }],
     })
   })
-  await page.route(/\/(?:api\/)?auth\/authorization$/, async (route) => {
+  await page.route(/\/(?:api\/)?auth\/authorization(?:\?.*)?$/, async (route) => {
     const buttonCodes = ["tenant.profile.get","tenant.profile.update"]
     return json(route, 200, {
       authenticated: true,
@@ -88,7 +88,7 @@ async function mockTenantProfileServer(page: Page, options: Options = {}) {
     })
   })
 
-  await page.route(/\/(?:api\/)?v1\/tenant\/profile$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/profile(?:\?.*)?$/, async (route) => {
     const request = route.request()
     if (request.method() === 'GET') {
       if (options.readStatus) return json(route, options.readStatus, { message: 'tenant profile denied' })

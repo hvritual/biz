@@ -55,11 +55,11 @@ async function mockRoleServer(page: Page, options: Options = {}) {
     await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Login</title>' })
   })
 
-  await page.route(/\/(?:api\/)?auth\/session$/, async (route) => {
+  await page.route(/\/(?:api\/)?auth\/session(?:\?.*)?$/, async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     return json(route, 200, { authenticated: true, actor_kind: 'tenant', user_id: 'user-001', active_tenant_id: 'tenant-001', csrf_token: 'csrf-real-role', tenants: [{ id: 'tenant-001', name: 'CoffeeLink 测试租户' }] })
   })
-  await page.route(/\/(?:api\/)?auth\/authorization$/, async (route) => {
+  await page.route(/\/(?:api\/)?auth\/authorization(?:\?.*)?$/, async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     if (options.authorizationStatus) return json(route, options.authorizationStatus, { message: 'authorization denied' })
     const buttonCodes = [
@@ -87,7 +87,7 @@ async function mockRoleServer(page: Page, options: Options = {}) {
       button_codes: buttonCodes,
     })
   })
-  await page.route(/\/(?:api\/)?auth\/action-catalog$/, async (route) => json(route, 200, {
+  await page.route(/\/(?:api\/)?auth\/action-catalog(?:\?.*)?$/, async (route) => json(route, 200, {
     schema_version: 'v1',
     actions: [],
     permissions: [
@@ -97,8 +97,8 @@ async function mockRoleServer(page: Page, options: Options = {}) {
       { permission: 'tenant.role.manage', groups: ['access/tenant_role_permission'], actions: ['tenant.role.create', 'tenant.role.set_permissions'] },
     ],
   }))
-  await page.route(/\/(?:api\/)?v1\/tenant\/members$/, async (route) => json(route, 200, { members }))
-  await page.route(/\/(?:api\/)?v1\/tenant\/roles(?:\/.*)?$/, async (route) => {
+  await page.route(/\/(?:api\/)?v1\/tenant\/members(?:\?.*)?$/, async (route) => json(route, 200, { members }))
+  await page.route(/\/(?:api\/)?v1\/tenant\/roles(?:\/.*)?(?:\?.*)?$/, async (route) => {
     const request = route.request()
     const parts = new URL(request.url()).pathname.split('/').filter(Boolean)
     const index = parts.indexOf('roles')
