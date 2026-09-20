@@ -2,6 +2,7 @@ name: Enterprise 176 contract regenerate
 # Closed-PR regeneration lane for #176.
 # Final #176 canonical regeneration before PR qualification.
 # Source frozen after #176 activation/UI/quota-boundary review.
+# Re-run after qualification fixes.
 # Frozen candidate after final conflict and activation-policy review.
 
 on:
