@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "control_plane": {
+    "pull_request_entrypoints": [
+      "pr-qualification.yml",
+      "pr-merge-gate.yml"
+    ],
+    "main_push_entrypoints": [
+      "main-receipt.yml"
+    ],
+    "reusable_gate_allowed_events": [
+      "workflow_call",
+      "workflow_dispatch"
+    ]
+  },
+  "full_merge_gate": {
+    "expected_units": 42,
+    "expected_workflows": [
+      "b12-3-tenant-member-mysql.yml",
+      "b12-4-tenant-role-mysql.yml",
+      "b12-5-tenant-bootstrap-mysql.yml",
+      "b12-6-concurrency-mysql.yml",
+      "b12-7-runtime-qualification.yml",
+      "b12-8-framework-pressure-disposition.yml",
+      "b12-multitenant-access-pressure.yml",
+      "c9-pressure.yml",
+      "ce01-qualification.yml",
+      "ce02-bootstrap.yml",
+      "ce03-qualification.yml",
+      "ce04-qualification.yml",
+      "ce05-qualification.yml",
+      "ce06-qualification.yml",
+      "ce07-qualification.yml",
+      "ce08-qualification.yml",
+      "ce09-qualification.yml",
+      "ce10-qualification.yml",
+      "ce12-browser-e2e.yml",
+      "ce12-qualification.yml",
+      "ce13-plan-catalog-qualification.yml",
+      "ce13-platform-web-session.yml",
+      "coffeelink-web.yml",
+      "ec-ri-04-department-mysql.yml",
+      "ec-ri-04-web-qualification.yml",
+      "ec-ri-05-tenant-profile-mysql.yml",
+      "ec-ri-05-web-qualification.yml",
+      "ec-ri-06-plan-change-web.yml",
+      "ec-ri-06-plan-read-web.yml",
+      "ec-ri-06-tenant-usage-mysql.yml",
+      "ec-ri-07-audit-mysql.yml",
+      "ec-ri-07-web-qualification.yml",
+      "enterprise-168-sensitive-contacts.yml",
+      "enterprise-169-privacy-consent.yml",
+      "enterprise-170-verification-notification.yml",
+      "enterprise-171-session-isolation.yml",
+      "enterprise-173-password-security.yml",
+      "enterprise-174-current-authorization.yml",
+      "enterprise-175-authorized-navigation.yml",
+      "enterprise-177-member-lifecycle.yml",
+      "enterprise-role-qualification.yml",
+      "evolution-qualification.yml"
+    ]
+  },
+  "budgets": {
+    "max_pr_domain_gate_units": 12,
+    "max_full_merge_gate_units": 42,
+    "max_main_push_entrypoint_workflows": 1
+  },
+  "reusable_workflows": [
+    "b12-3-tenant-member-mysql.yml",
+    "b12-4-tenant-role-mysql.yml",
+    "b12-5-tenant-bootstrap-mysql.yml",
+    "b12-6-concurrency-mysql.yml",
+    "b12-7-runtime-qualification.yml",
+    "b12-8-framework-pressure-disposition.yml",
+    "b12-multitenant-access-pressure.yml",
+    "c9-pressure.yml",
+    "candidate-qualification.yml",
+    "ce-round-receipts.yml",
+    "ce01-qualification.yml",
+    "ce02-bootstrap.yml",
+    "ce03-qualification.yml",
+    "ce04-qualification.yml",
+    "ce05-qualification.yml",
+    "ce06-qualification.yml",
+    "ce07-qualification.yml",
+    "ce08-qualification.yml",
+    "ce09-qualification.yml",
+    "ce10-qualification.yml",
+    "ce12-browser-e2e.yml",
+    "ce12-qualification.yml",
+    "ce13-plan-catalog-qualification.yml",
+    "ce13-platform-web-session.yml",
+    "coffeelink-web.yml",
+    "delivery-workspace-isolation.yml",
+    "ec-ri-04-department-mysql.yml",
+    "ec-ri-04-web-qualification.yml",
+    "ec-ri-05-tenant-profile-mysql.yml",
+    "ec-ri-05-web-qualification.yml",
+    "ec-ri-06-plan-change-web.yml",
+    "ec-ri-06-plan-read-web.yml",
+    "ec-ri-06-tenant-usage-mysql.yml",
+    "ec-ri-07-audit-mysql.yml",
+    "ec-ri-07-web-qualification.yml",
+    "enterprise-168-sensitive-contacts.yml",
+    "enterprise-169-privacy-consent.yml",
+    "enterprise-170-verification-notification.yml",
+    "enterprise-171-session-isolation.yml",
+    "enterprise-172-native-login.yml",
+    "enterprise-173-password-security.yml",
+    "enterprise-174-current-authorization.yml",
+    "enterprise-175-authorized-navigation.yml",
+    "enterprise-177-member-lifecycle.yml",
+    "enterprise-role-qualification.yml",
+    "evolution-qualification.yml",
+    "web-e2e-harness.yml"
+  ],
+  "legacy_issue_named_pr_gate_allowlist": [
+    "enterprise-172-native-login.yml"
+  ],
+  "canonical_domain_gates": {
+    "enterprise_role": "enterprise-role-qualification.yml"
+  },
+  "forbidden_workflows": [
+    "enterprise-178-role-lifecycle.yml",
+    "enterprise-179-role-grant-tree.yml"
+  ]
+}
