@@ -23,6 +23,11 @@ class RouteTests(unittest.TestCase):
         self.assertFalse(result["domains"]["deviceops"])
         self.assertFalse(result["domains"]["core"])
 
+    def test_enterprise_178_integration_selects_access(self):
+        result = route(["integration/enterprise_178_role_lifecycle_mysql_test.go"])
+        self.assertTrue(result["domains"]["access"])
+        self.assertFalse(result["domains"]["commercial"])
+
     def test_commercial_contract_selects_commercial(self):
         result = route(["contracts/commercial/operation-capabilities.v1.json"])
         self.assertTrue(result["domains"]["commercial"])
