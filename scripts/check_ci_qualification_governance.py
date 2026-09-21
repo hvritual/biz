@@ -28,6 +28,7 @@ DOMAIN_GATE_UNITS = {
     "evolution-qualification.yml",
     "enterprise-172-native-login.yml",
     "delivery-workspace-isolation.yml",
+    "web-e2e-harness.yml",
 }
 
 REQUIRED_LIFECYCLE_STATES = [
@@ -184,15 +185,20 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
             "enterprise-172-native-login.yml",
             "delivery-workspace-isolation.yml",
             "ce-round-receipts.yml",
+            "web-e2e-harness.yml",
         ):
             if reusable_call(bounded) not in text:
                 errors.append(f"pr-qualification.yml: missing bounded reusable unit {bounded}")
+        if "skip_fast_check: true" not in text:
+            errors.append("pr-qualification.yml: Product Web Domain Gate must reuse Fast Gate result")
 
     merge_path = workflows / "pr-merge-gate.yml"
     if merge_path.exists():
         text = merge_path.read_text(encoding="utf-8")
         if "github.event.pull_request.draft == false" not in text:
             errors.append("pr-merge-gate.yml: Full Merge Gate must be disabled for Draft PRs")
+        if "types: [ready_for_review]" not in text:
+            errors.append("pr-merge-gate.yml: must start only when a PR enters Ready state")
         if "Require matching PR Qualification success" not in text:
             errors.append("pr-merge-gate.yml: must wait for matching-head PR Qualification")
         for name in manifest_names:
