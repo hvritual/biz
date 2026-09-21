@@ -12,6 +12,7 @@ permissions:
 jobs:
   web:
     runs-on: ubuntu-latest
+    timeout-minutes: 4
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -36,8 +37,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          VITE_DATA_MODE=api npm run build
-          ENTERPRISE_MEMBER_REAL_E2E=1 ENTERPRISE_ROLE_REAL_E2E=1 npx playwright test \
+          VITE_DATA_MODE=api npx vite build
+          ENTERPRISE_MEMBER_REAL_E2E=1 ENTERPRISE_ROLE_REAL_E2E=1 npx playwright test --workers=2 \
             e2e/enterprise-members-real.spec.ts \
             e2e/enterprise-roles-real.spec.ts
           python3 - <<'PY'
@@ -78,8 +79,9 @@ jobs:
           PY
           mkdir -p screenshots/api-mode-results
           cp test-results/results.json screenshots/api-mode-results/results.json
-          npm run build
-      - run: npm run test:e2e
+          npx vite build
+      - name: Run parallel CoffeeLink E2E
+        run: npx playwright test --workers=4
         working-directory: web
       - name: Verify visual contract evidence
         working-directory: web
