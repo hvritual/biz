@@ -1,9 +1,5 @@
 name: ec-ri-07-web-qualification
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
   workflow_call:
   push:
