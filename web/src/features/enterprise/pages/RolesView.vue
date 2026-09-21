@@ -12,6 +12,7 @@ import SearchField from '@/ui/common/SearchField.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import EmptyState from '@/ui/common/EmptyState.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
 import RoleEditor from '@/features/enterprise/components/roles/RoleEditor.vue'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 const store = useEnterpriseStore(),
@@ -19,8 +20,12 @@ const store = useEnterpriseStore(),
   router = useRouter()
 const query = ref(''),
   kind = ref(''),
+  status = ref<'' | 'active' | 'disabled'>(''),
   editorOpen = ref(false),
-  target = ref<Role | null>(null)
+  target = ref<Role | null>(null),
+  deleteTarget = ref<Role | null>(null),
+  deleting = ref(false),
+  deleteError = ref('')
 const roleActionsAllowed=(codes:string[])=>store.previewMode||codes.every(currentAuthorizationAllows)
 const canCreateRole = computed(() => roleActionsAllowed([
   'tenant.role.create',
@@ -34,15 +39,19 @@ const canEditRole = computed(() => roleActionsAllowed([
   'tenant.role.enable',
   'tenant.role.disable',
 ]))
+const canDeleteRole = computed(() => roleActionsAllowed(['tenant.role.delete']))
 const filtered = computed(() =>
   store.roles.filter(
     (r) =>
       (r.name + r.description).includes(query.value) &&
-      (!kind.value || (kind.value === 'builtin') === r.builtin),
+      (!kind.value || (kind.value === 'builtin') === r.builtin) &&
+      (!status.value || r.enabled === (status.value === 'active')),
   ),
 )
-const memberCount = (id: string) =>
-  store.members.filter((m) => m.roleIds.includes(id) && m.status !== 'removed').length
+const memberCount = (role: Role) =>
+  store.previewMode
+    ? store.members.filter((m) => m.roleIds.includes(role.id) && m.status !== 'removed').length
+    : (role.memberCount ?? 0)
 function edit(role: Role | null) {
   if (!store.previewMode && !canEditRole.value && role) return
   if (!store.previewMode && !canCreateRole.value && !role) return
@@ -55,9 +64,39 @@ function copy(role: Role) {
     ...JSON.parse(JSON.stringify(role)),
     id: crypto.randomUUID(),
     name: role.name + '（副本）',
+    roleCode: '',
     builtin: false,
+    memberCount: 0,
   }
   editorOpen.value = true
+}
+async function searchRoles() {
+  if (!store.previewMode) await store.queryRoles({ query: query.value, status: status.value })
+}
+async function resetFilters() {
+  query.value = ''
+  kind.value = ''
+  status.value = ''
+  if (!store.previewMode) await store.queryRoles({ query: '', status: '' })
+}
+function requestDelete(role: Role) {
+  if (!canDeleteRole.value || role.builtin) return
+  deleteError.value = ''
+  deleteTarget.value = role
+}
+async function confirmDelete() {
+  const role = deleteTarget.value
+  if (!role) return
+  deleting.value = true
+  deleteError.value = ''
+  try {
+    await store.deleteRole(role)
+    deleteTarget.value = null
+  } catch (cause) {
+    deleteError.value = cause instanceof Error ? cause.message : '删除角色失败。'
+  } finally {
+    deleting.value = false
+  }
 }
 watch(
   () => route.query.action,
@@ -74,7 +113,8 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
 </script>
 <template>
   <div class="page-stack" data-enterprise-page="roles" data-ui-template="ListPage">
-    <PageHeading title="角色权限" description="以最小必要权限分配职责，独立控制功能权限与数据范围" /><div class="metric-grid">
+    <PageHeading title="角色权限" description="以最小必要权限分配职责，独立控制功能权限与数据范围" />
+    <div class="metric-grid">
       <MetricCard
         label="角色总数"
         :value="store.roles.length"
@@ -102,13 +142,22 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
     <section class="card data-panel" data-ui-region="data">
       <div class="query-bar" data-ui-region="query">
         <SearchField v-model="query" placeholder="搜索角色名称、说明…" /><UiSelect
+          v-model="status"
+          class="select"
+          aria-label="角色状态"
+        >
+          <UiOption value="">全部状态</UiOption>
+          <UiOption value="active">已启用</UiOption>
+          <UiOption value="disabled">已停用</UiOption>
+        </UiSelect><UiSelect
           v-model="kind"
           class="select"
           aria-label="角色类型"
         >
           <UiOption value="">全部类型</UiOption>
           <UiOption value="builtin">内置角色</UiOption>
-          <UiOption value="custom">自定义角色</UiOption></UiSelect><UiButton v-if="canCreateRole" class="btn btn-primary" @click="edit(null)">
+          <UiOption value="custom">自定义角色</UiOption>
+        </UiSelect><UiButton class="btn" @click="searchRoles">查询</UiButton><UiButton class="btn" @click="resetFilters">重置</UiButton><UiButton v-if="canCreateRole" class="btn btn-primary" @click="edit(null)">
           <AppIcon name="plus" :size="16" />新建角色
         </UiButton>
       </div>
@@ -140,7 +189,7 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
               <td>
                 <span class="pill">{{ r.builtin ? '内置角色' : '自定义角色' }}</span>
               </td>
-              <td class="numeric">{{ memberCount(r.id) }} 人</td>
+              <td class="numeric">{{ memberCount(r) }} 人</td>
               <td>{{ scopeLabels[r.scope] }}</td>
               <td>
                 <StatusBadge :text="r.enabled ? '启用' : '禁用'" :tone="r.enabled ? 'success' : 'neutral'" />
@@ -148,7 +197,14 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
               <td class="muted numeric">{{ r.updatedAt }}</td>
               <td>
                 <div class="table-actions">
-                  <UiButton v-if="r.builtin || canEditRole" class="btn-link" @click="edit(r)">{{ r.builtin ? '查看' : '编辑' }}</UiButton><UiButton v-if="canCreateRole && !r.builtin" class="btn-link" :aria-label="'复制 ' + r.name" @click="copy(r)">复制</UiButton>
+                  <UiButton v-if="r.builtin || canEditRole" class="btn-link" @click="edit(r)">{{ r.builtin ? '查看' : '编辑' }}</UiButton><UiButton v-if="canCreateRole && !r.builtin" class="btn-link" :aria-label="'复制 ' + r.name" @click="copy(r)">复制</UiButton><UiButton
+                    v-if="canDeleteRole && !r.builtin"
+                    class="btn-link"
+                    :disabled="memberCount(r) > 0"
+                    :title="memberCount(r) > 0 ? '仍有关联成员，请先移除成员绑定' : '删除角色'"
+                    :aria-label="'删除 ' + r.name"
+                    @click="requestDelete(r)"
+                  >删除</UiButton>
                 </div>
               </td>
             </tr>
@@ -159,6 +215,21 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
       <div class="role-footer muted">共 {{ filtered.length }} 个角色 · 角色变更将在操作日志中保留记录</div>
     </section>
     <RoleEditor :open="editorOpen" :role="target" @close="editorOpen = false" />
+    <UiDialog
+      :open="Boolean(deleteTarget)"
+      title="删除角色"
+      width="480px"
+      @close="deleteTarget = null"
+    >
+      <p v-if="deleteTarget">确认删除角色“{{ deleteTarget.name }}”？删除后该角色的授权关系将一并清理；如仍有关联成员，系统会阻止删除。</p>
+      <p v-if="deleteError" class="form-error" role="alert">{{ deleteError }}</p>
+      <template #footer>
+        <UiButton class="btn" :disabled="deleting" @click="deleteTarget = null">取消</UiButton>
+        <UiButton class="btn btn-primary" :disabled="deleting" @click="confirmDelete">
+          {{ deleting ? '正在删除…' : '确认删除' }}
+        </UiButton>
+      </template>
+    </UiDialog>
   </div>
 </template>
 <style scoped>

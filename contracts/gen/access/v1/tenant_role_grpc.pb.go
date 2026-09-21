@@ -25,6 +25,7 @@ const (
 	TenantRolePermissionApplication_UpdateTenantRole_FullMethodName         = "/access.v1.TenantRolePermissionApplication/UpdateTenantRole"
 	TenantRolePermissionApplication_DisableTenantRole_FullMethodName        = "/access.v1.TenantRolePermissionApplication/DisableTenantRole"
 	TenantRolePermissionApplication_EnableTenantRole_FullMethodName         = "/access.v1.TenantRolePermissionApplication/EnableTenantRole"
+	TenantRolePermissionApplication_DeleteTenantRole_FullMethodName         = "/access.v1.TenantRolePermissionApplication/DeleteTenantRole"
 	TenantRolePermissionApplication_SetTenantRolePermissions_FullMethodName = "/access.v1.TenantRolePermissionApplication/SetTenantRolePermissions"
 	TenantRolePermissionApplication_AssignTenantRoleMember_FullMethodName   = "/access.v1.TenantRolePermissionApplication/AssignTenantRoleMember"
 	TenantRolePermissionApplication_RevokeTenantRoleMember_FullMethodName   = "/access.v1.TenantRolePermissionApplication/RevokeTenantRoleMember"
@@ -40,6 +41,7 @@ type TenantRolePermissionApplicationClient interface {
 	UpdateTenantRole(ctx context.Context, in *UpdateTenantRoleRequest, opts ...grpc.CallOption) (*TenantRoleDTO, error)
 	DisableTenantRole(ctx context.Context, in *DisableTenantRoleRequest, opts ...grpc.CallOption) (*TenantRoleDTO, error)
 	EnableTenantRole(ctx context.Context, in *EnableTenantRoleRequest, opts ...grpc.CallOption) (*TenantRoleDTO, error)
+	DeleteTenantRole(ctx context.Context, in *DeleteTenantRoleRequest, opts ...grpc.CallOption) (*TenantRoleDTO, error)
 	SetTenantRolePermissions(ctx context.Context, in *SetTenantRolePermissionsRequest, opts ...grpc.CallOption) (*TenantRoleDTO, error)
 	AssignTenantRoleMember(ctx context.Context, in *AssignTenantRoleMemberRequest, opts ...grpc.CallOption) (*TenantRoleDTO, error)
 	RevokeTenantRoleMember(ctx context.Context, in *RevokeTenantRoleMemberRequest, opts ...grpc.CallOption) (*TenantRoleDTO, error)
@@ -113,6 +115,16 @@ func (c *tenantRolePermissionApplicationClient) EnableTenantRole(ctx context.Con
 	return out, nil
 }
 
+func (c *tenantRolePermissionApplicationClient) DeleteTenantRole(ctx context.Context, in *DeleteTenantRoleRequest, opts ...grpc.CallOption) (*TenantRoleDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TenantRoleDTO)
+	err := c.cc.Invoke(ctx, TenantRolePermissionApplication_DeleteTenantRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *tenantRolePermissionApplicationClient) SetTenantRolePermissions(ctx context.Context, in *SetTenantRolePermissionsRequest, opts ...grpc.CallOption) (*TenantRoleDTO, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TenantRoleDTO)
@@ -153,6 +165,7 @@ type TenantRolePermissionApplicationServer interface {
 	UpdateTenantRole(context.Context, *UpdateTenantRoleRequest) (*TenantRoleDTO, error)
 	DisableTenantRole(context.Context, *DisableTenantRoleRequest) (*TenantRoleDTO, error)
 	EnableTenantRole(context.Context, *EnableTenantRoleRequest) (*TenantRoleDTO, error)
+	DeleteTenantRole(context.Context, *DeleteTenantRoleRequest) (*TenantRoleDTO, error)
 	SetTenantRolePermissions(context.Context, *SetTenantRolePermissionsRequest) (*TenantRoleDTO, error)
 	AssignTenantRoleMember(context.Context, *AssignTenantRoleMemberRequest) (*TenantRoleDTO, error)
 	RevokeTenantRoleMember(context.Context, *RevokeTenantRoleMemberRequest) (*TenantRoleDTO, error)
@@ -182,6 +195,9 @@ func (UnimplementedTenantRolePermissionApplicationServer) DisableTenantRole(cont
 }
 func (UnimplementedTenantRolePermissionApplicationServer) EnableTenantRole(context.Context, *EnableTenantRoleRequest) (*TenantRoleDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method EnableTenantRole not implemented")
+}
+func (UnimplementedTenantRolePermissionApplicationServer) DeleteTenantRole(context.Context, *DeleteTenantRoleRequest) (*TenantRoleDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteTenantRole not implemented")
 }
 func (UnimplementedTenantRolePermissionApplicationServer) SetTenantRolePermissions(context.Context, *SetTenantRolePermissionsRequest) (*TenantRoleDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetTenantRolePermissions not implemented")
@@ -320,6 +336,24 @@ func _TenantRolePermissionApplication_EnableTenantRole_Handler(srv interface{}, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TenantRolePermissionApplication_DeleteTenantRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteTenantRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantRolePermissionApplicationServer).DeleteTenantRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantRolePermissionApplication_DeleteTenantRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantRolePermissionApplicationServer).DeleteTenantRole(ctx, req.(*DeleteTenantRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TenantRolePermissionApplication_SetTenantRolePermissions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetTenantRolePermissionsRequest)
 	if err := dec(in); err != nil {
@@ -404,6 +438,10 @@ var TenantRolePermissionApplication_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "EnableTenantRole",
 			Handler:    _TenantRolePermissionApplication_EnableTenantRole_Handler,
+		},
+		{
+			MethodName: "DeleteTenantRole",
+			Handler:    _TenantRolePermissionApplication_DeleteTenantRole_Handler,
 		},
 		{
 			MethodName: "SetTenantRolePermissions",

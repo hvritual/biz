@@ -181,9 +181,9 @@ async function save() {
             v-model="draft.description"
             class="textarea"
             rows="2"
-            :readonly="readonly || apiMode"
-            maxlength="300"
-            :placeholder="apiMode ? '当前暂不支持编辑角色说明' : '描述该角色的职责和授权边界'"
+            :readonly="readonly"
+            maxlength="120"
+            placeholder="描述该角色的职责和授权边界（最多 120 字）"
           />
         </label>
       </div>

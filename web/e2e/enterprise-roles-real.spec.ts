@@ -5,7 +5,17 @@ import { mkdirSync } from 'node:fs'
 test.skip(!process.env.ENTERPRISE_ROLE_REAL_E2E, 'runs only against the VITE_DATA_MODE=api build')
 
 type Grant = { permission: string; scope: string }
-type Role = { id: string; name: string; status: string; version: number; permissions: Grant[] }
+type Role = {
+  id: string
+  name: string
+  description: string
+  roleCode: string
+  systemRole: boolean
+  memberCount: number
+  status: string
+  version: number
+  permissions: Grant[]
+}
 type RoleSummary = { roleId: string; roleName: string; roleStatus: string }
 type Member = { userId: string; email: string; status: string; version: number; name: string; phone: string; employeeId: string; position: string; departmentId: string; roles: RoleSummary[]; derivedDataScope: string }
 type Write = { path: string; method: string; headers: Record<string, string>; body: unknown }
@@ -22,14 +32,15 @@ function summary(role: Role): RoleSummary { return { roleId: role.id, roleName: 
 
 async function mockRoleServer(page: Page, options: Options = {}) {
   let roles: Role[] = [
-    { id: 'tenant-001:owner', name: 'owner', status: active, version: 1, permissions: [
+    { id: 'tenant-001:owner', name: 'owner', description: '', roleCode: 'tenant_owner', systemRole: true, memberCount: 1, status: active, version: 1, permissions: [
       { permission: 'tenant.member.manage', scope: 'DATA_SCOPE_ALL' },
       { permission: 'tenant.member.read', scope: 'DATA_SCOPE_ALL' },
       { permission: 'tenant.role.manage', scope: 'DATA_SCOPE_ALL' },
       { permission: 'tenant.role.read', scope: 'DATA_SCOPE_ALL' },
     ] },
-    { id: 'role-ops', name: '运营负责人', status: active, version: 2, permissions: [{ permission: 'tenant.member.read', scope: 'DATA_SCOPE_SITES' }] },
-    { id: 'role-disabled', name: '历史查看者', status: disabled, version: 4, permissions: [{ permission: 'tenant.role.read', scope: 'DATA_SCOPE_SELF' }] },
+    { id: 'tenant-001:admin', name: 'tenant_admin', description: '', roleCode: 'tenant_admin', systemRole: true, memberCount: 0, status: active, version: 1, permissions: [] },
+    { id: 'role-ops', name: '运营负责人', description: '负责日常运营', roleCode: '', systemRole: false, memberCount: 1, status: active, version: 2, permissions: [{ permission: 'tenant.member.read', scope: 'DATA_SCOPE_SITES' }] },
+    { id: 'role-disabled', name: '历史查看者', description: '历史只读角色', roleCode: '', systemRole: false, memberCount: 0, status: disabled, version: 4, permissions: [{ permission: 'tenant.role.read', scope: 'DATA_SCOPE_SELF' }] },
   ]
   let members: Member[] = [
     { userId: 'user-001', email: 'owner@coffeelink.test', status: activeMember, version: 3, name: 'Alice Chen', phone: '', employeeId: 'EMP-1001', position: '企业负责人', departmentId: 'dept-owner', roles: [summary(roles[0]!)], derivedDataScope: 'all' },
@@ -69,6 +80,7 @@ async function mockRoleServer(page: Page, options: Options = {}) {
       'tenant.role.set_permissions',
       'tenant.role.enable',
       'tenant.role.disable',
+      'tenant.role.delete',
     ]
     return json(route, 200, {
       authenticated: true,
@@ -109,7 +121,14 @@ async function mockRoleServer(page: Page, options: Options = {}) {
     if (request.method() === 'GET') {
       if (!roleId) {
         if (options.listStatus) return json(route, options.listStatus, { message: 'roles denied' })
-        return json(route, 200, { roles })
+        const url = new URL(request.url())
+        const query = (url.searchParams.get('query') ?? '').trim().toLowerCase()
+        const status = url.searchParams.get('status') ?? ''
+        const filtered = roles.filter((item) =>
+          (!query || (item.name + item.description).toLowerCase().includes(query)) &&
+          (!status || item.status === status),
+        )
+        return json(route, 200, { roles: filtered })
       }
       if (options.readbackStatus && writes.length) return json(route, options.readbackStatus, { message: 'role readback failed' })
       return role ? json(route, 200, role) : json(route, 404, { message: 'role not found' })
@@ -119,33 +138,55 @@ async function mockRoleServer(page: Page, options: Options = {}) {
     if (options.mutationStatus) return json(route, options.mutationStatus, { message: 'role conflict' })
     if (!roleId && request.method() === 'POST') {
       const body = request.postDataJSON() as { name: string }
-      const created: Role = { id: 'role-new', name: body.name, status: active, version: 1, permissions: [] }
+      const created: Role = {
+        id: 'role-new',
+        name: body.name,
+        description: (body as { description?: string }).description ?? '',
+        roleCode: '',
+        systemRole: false,
+        memberCount: 0,
+        status: active,
+        version: 1,
+        permissions: [],
+      }
       roles = [...roles, created]
       return json(route, 200, created)
     }
     if (!role) return json(route, 404, { message: 'role not found' })
     if (request.method() === 'PATCH') {
-      const body = request.postDataJSON() as { name: string }
-      return json(route, 200, replaceRole({ ...role, name: body.name, version: role.version + 1 }))
+      const body = request.postDataJSON() as { name: string; description?: string }
+      if (role.systemRole) return json(route, 409, { message: 'system role protected' })
+      return json(route, 200, replaceRole({ ...role, name: body.name, description: body.description ?? '', version: role.version + 1 }))
     }
     if (request.method() === 'PUT' && action === 'permissions') {
       const body = request.postDataJSON() as { permissions: Grant[] }
       return json(route, 200, replaceRole({ ...role, permissions: body.permissions, version: role.version + 1 }))
     }
     if (request.method() === 'POST' && (action === 'enable' || action === 'disable')) {
-      if (role.name === 'owner' && action === 'disable') return json(route, 409, { message: 'owner protected' })
+      if (role.systemRole) return json(route, 409, { message: 'system role protected' })
+      if (action === 'disable' && role.memberCount > 0) return json(route, 409, { message: 'role still has members' })
       return json(route, 200, replaceRole({ ...role, status: action === 'enable' ? active : disabled, version: role.version + 1 }))
+    }
+    if (request.method() === 'DELETE') {
+      if (role.systemRole) return json(route, 409, { message: 'system role protected' })
+      if (role.memberCount > 0) return json(route, 409, { message: 'role still has members' })
+      roles = roles.filter((item) => item.id !== role.id)
+      return json(route, 200, role)
     }
     if (request.method() === 'POST' && parts.at(-1) === 'revoke') {
       const userId = decodeURIComponent(parts[index + 3] ?? '')
       if (options.ownerConflict && role.name === 'owner') return json(route, 409, { message: 'last owner protected' })
+      const before = members.filter((member) => member.roles.some((item) => item.roleId === role.id)).length
       members = members.map((member) => member.userId === userId ? { ...member, roles: member.roles.filter((item) => item.roleId !== role.id) } : member)
-      return json(route, 200, role)
+      const after = members.filter((member) => member.roles.some((item) => item.roleId === role.id)).length
+      return json(route, 200, replaceRole({ ...role, memberCount: role.memberCount - (before - after) }))
     }
     if (request.method() === 'POST' && action === 'members') {
       const userId = (request.postDataJSON() as { userId: string }).userId
+      const before = members.filter((member) => member.roles.some((item) => item.roleId === role.id)).length
       members = members.map((member) => member.userId === userId && !member.roles.some((item) => item.roleId === role.id) ? { ...member, roles: [...member.roles, summary(role)] } : member)
-      return json(route, 200, role)
+      const after = members.filter((member) => member.roles.some((item) => item.roleId === role.id)).length
+      return json(route, 200, replaceRole({ ...role, memberCount: role.memberCount + (after - before) }))
     }
     return json(route, 400, { message: 'unsupported mutation' })
   })
@@ -165,6 +206,7 @@ test('real role page renders authoritative grants and member counts across Coffe
     await page.setViewportSize(viewport)
     await openRealRoles(page)
     await expect(page.getByText('企业所有者', { exact: true })).toBeVisible()
+    await expect(page.getByText('企业管理员', { exact: true })).toBeVisible()
     await expect(page.getByText('运营负责人', { exact: true }).first()).toBeVisible()
     await expect(rowFor(page, '运营负责人')).toContainText('1 人')
     await expect(rowFor(page, '运营负责人')).toContainText('指定数据')
@@ -180,6 +222,7 @@ test('role create and permission update use independent idempotency keys and con
   await page.getByRole('button', { name: '新建角色', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '新建角色' })
   await dialog.getByLabel('角色名称').fill('华东运营')
+  await dialog.getByLabel('角色说明').fill('负责华东区域日常运营')
   await dialog.getByLabel('企业成员 查看成员', { exact: true }).check()
   await selectUiOption(dialog.getByLabel('数据范围'), 'custom')
   await dialog.getByRole('button', { name: '保存角色' }).click()
@@ -191,6 +234,7 @@ test('role create and permission update use independent idempotency keys and con
   expect(permissions.headers['idempotency-key']).toMatch(/^enterprise-role-permissions-/)
   expect(create.headers['idempotency-key']).not.toBe(permissions.headers['idempotency-key'])
   expect(create.headers['x-csrf-token']).toBe('csrf-real-role')
+  expect(create.body).toMatchObject({ name: '华东运营', description: '负责华东区域日常运营' })
   expect(permissions.body).toMatchObject({ roleId: 'role-new', version: 1 })
 })
 
@@ -259,3 +303,46 @@ test('a successful role write without readback is not presented as confirmed suc
   await expect(dialog.getByRole('alert')).toContainText('角色权限暂不可用，请稍后重试。')
   await expect(page.getByText('角色配置已保存并更新。', { exact: true })).toHaveCount(0)
 })
+
+test('server-side role query and reset preserve canonical role facts', async ({ page }) => {
+  await mockRoleServer(page)
+  await openRealRoles(page)
+  const query = page.getByPlaceholder('搜索角色名称、说明…')
+  await query.fill('历史')
+  await selectUiOption(page.getByLabel('角色状态'), 'disabled')
+  await page.getByRole('button', { name: '查询', exact: true }).click()
+  await expect(page.getByText('历史查看者', { exact: true })).toBeVisible()
+  await expect(page.getByText('运营负责人', { exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: '重置', exact: true }).click()
+  await expect(page.getByText('运营负责人', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('企业管理员', { exact: true })).toBeVisible()
+})
+
+test('system roles are read-only and member-bound custom roles cannot be deleted', async ({ page }) => {
+  const server = await mockRoleServer(page)
+  await openRealRoles(page)
+  const ownerRow = rowFor(page, '企业所有者')
+  const adminRow = rowFor(page, '企业管理员')
+  await expect(ownerRow.getByRole('button', { name: /^删除 / })).toHaveCount(0)
+  await expect(adminRow.getByRole('button', { name: /^删除 / })).toHaveCount(0)
+
+  const opsRow = rowFor(page, '运营负责人')
+  const deleteOps = opsRow.getByRole('button', { name: '删除 运营负责人' })
+  await expect(deleteOps).toBeDisabled()
+  expect(server.getWrites().filter((item) => item.method === 'DELETE')).toHaveLength(0)
+})
+
+test('unbound custom role deletion requires confirmation and server receipt', async ({ page }) => {
+  const server = await mockRoleServer(page)
+  await openRealRoles(page)
+  const row = rowFor(page, '历史查看者')
+  await row.getByRole('button', { name: '删除 历史查看者' }).click()
+  const dialog = page.getByRole('dialog', { name: '删除角色' })
+  await expect(dialog).toContainText('历史查看者')
+  await dialog.getByRole('button', { name: '确认删除' }).click()
+  await expect(page.getByText('历史查看者', { exact: true })).toHaveCount(0)
+  const writes = server.getWrites().filter((item) => item.method === 'DELETE')
+  expect(writes).toHaveLength(1)
+  expect(writes[0]?.headers['idempotency-key']).toMatch(/^enterprise-role-delete-/)
+})
+
