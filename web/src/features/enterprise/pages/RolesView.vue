@@ -221,7 +221,7 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
       width="480px"
       @close="deleteTarget = null"
     >
-      <p v-if="deleteTarget">确认删除角色“{{ deleteTarget.name }}”？删除后该角色的授权关系将一并清理，此操作需要服务端确认。</p>
+      <p v-if="deleteTarget">确认删除角色“{{ deleteTarget.name }}”？删除后该角色的授权关系将一并清理；如仍有关联成员，系统会阻止删除。</p>
       <p v-if="deleteError" class="form-error" role="alert">{{ deleteError }}</p>
       <template #footer>
         <UiButton class="btn" :disabled="deleting" @click="deleteTarget = null">取消</UiButton>
