@@ -3,18 +3,23 @@ package bizruntime
 import (
 	"context"
 	"errors"
+	"strings"
 
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	accessapp "github.com/hvritual/biz/internal/access/application"
+	accessauthorization "github.com/hvritual/biz/internal/access/authorization"
 	"github.com/hvritual/biz/internal/access/domain"
 	accessports "github.com/hvritual/biz/internal/access/ports"
+	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
 	"github.com/hvritual/biz/internal/commercial/enforcement"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"yunka.io/framework/core/identity"
 )
 
 type checkedRoles struct {
-	inner accessapp.TenantRolePermissionApplication
+	inner        accessapp.TenantRolePermissionApplication
+	entitlements currentAuthorizationEntitlementReader
 }
 
 type roleConflictError struct{ cause error }
@@ -33,6 +38,7 @@ func roleExecutionError(ctx context.Context, operation string, err error) error 
 	if errors.Is(err, accessports.ErrTenantRoleConflict) ||
 		errors.Is(err, accessports.ErrTenantRoleProtected) ||
 		errors.Is(err, accessports.ErrTenantRoleInUse) ||
+		errors.Is(err, accessports.ErrTenantRoleGrantUnavailable) ||
 		errors.Is(err, accessports.ErrLastTenantOwner) ||
 		errors.Is(err, domain.ErrProtectedOwnerRole) ||
 		errors.Is(err, domain.ErrInvalidTenantRoleTransition) {
@@ -95,8 +101,67 @@ func (w checkedRoles) SetTenantRolePermissions(ctx context.Context, r *accessv1.
 	if err := enforcement.RequireExecuted(ctx, "tenant.role.set_permissions"); err != nil {
 		return nil, err
 	}
+	if err := w.validatePermissionSelection(ctx, r); err != nil {
+		return nil, roleExecutionError(ctx, "tenant.role.set_permissions", err)
+	}
 	v, err := w.inner.SetTenantRolePermissions(ctx, r)
 	return v, roleExecutionError(ctx, "tenant.role.set_permissions", err)
+}
+
+func (w checkedRoles) validatePermissionSelection(ctx context.Context, request *accessv1.SetTenantRolePermissionsRequest) error {
+	if request == nil {
+		return nil
+	}
+	principal, ok := identity.FromContext(ctx)
+	if !ok || !principal.Authenticated || strings.TrimSpace(principal.TenantID) == "" || w.entitlements == nil {
+		return accessports.ErrTenantRoleGrantUnavailable
+	}
+	actions, _, err := availableTenantRoleActions(ctx, w.entitlements, principal.TenantID)
+	if err != nil {
+		return err
+	}
+	allowed := map[string]struct{}{}
+	for _, definition := range accessauthorization.TenantRolePermissionsForActions(actions) {
+		allowed[string(definition.Permission)] = struct{}{}
+	}
+	for _, grant := range request.GetPermissions() {
+		if grant == nil {
+			return accessports.ErrTenantRoleGrantUnavailable
+		}
+		permission := strings.TrimSpace(grant.GetPermission())
+		if _, ok := allowed[permission]; !ok {
+			return accessports.ErrTenantRoleGrantUnavailable
+		}
+	}
+	return nil
+}
+
+func availableTenantRoleActions(
+	ctx context.Context,
+	reader currentAuthorizationEntitlementReader,
+	tenantID string,
+) ([]accessauthorization.Action, entitlement.Result, error) {
+	if reader == nil || strings.TrimSpace(tenantID) == "" {
+		return nil, entitlement.Result{}, accessports.ErrTenantRoleGrantUnavailable
+	}
+	snapshot, err := reader.ReadSnapshot(ctx, strings.TrimSpace(tenantID), nil)
+	if err != nil {
+		return nil, entitlement.Result{}, err
+	}
+	capabilityDecisions := map[string]entitlement.Decision{}
+	for _, decision := range snapshot.Decisions {
+		if decision.Kind == entitlement.Capability {
+			capabilityDecisions[decision.Key] = decision
+		}
+	}
+	actions := make([]accessauthorization.Action, 0)
+	for _, action := range accessauthorization.Catalog() {
+		if !action.TenantRequired || !commerciallyAllowsAction(action, capabilityDecisions) {
+			continue
+		}
+		actions = append(actions, action)
+	}
+	return actions, snapshot, nil
 }
 func (w checkedRoles) AssignTenantRoleMember(ctx context.Context, r *accessv1.AssignTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error) {
 	if err := enforcement.RequireExecuted(ctx, "tenant.role.assign_member"); err != nil {
