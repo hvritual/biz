@@ -161,8 +161,8 @@ function receiptBody(status: ReceiptStatus) {
   }
 }
 
-async function mockServer(page: Page, options: Options = {
-  await installApiFailFast(page)}): Promise<Captured> {
+async function mockServer(page: Page, options: Options = {}): Promise<Captured> {
+  await installApiFailFast(page)
   const captured: Captured = { previewBodies: [], previewHeaders: [], confirmBodies: [], confirmHeaders: [], targetPaths: [] }
   let confirmed = false
   const status = options.receiptStatus ?? 'APPLIED'
