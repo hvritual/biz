@@ -33,8 +33,8 @@ function json(route: Route, status: number, body: unknown) {
   return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
 }
 
-async function mockAuditServer(page: Page, options: {
-  await installApiFailFast(page) readStatus?: number; exportStatus?: number } = {}) {
+async function mockAuditServer(page: Page, options: { readStatus?: number; exportStatus?: number } = {}) {
+  await installApiFailFast(page)
   const writes: ExportWrite[] = []
   const records: AuditRecord[] = [
     {
