@@ -109,7 +109,7 @@ jobs:
         run: |
           set -euo pipefail
           go -C biz test -count=1 -tags=integration ./integration -run '^TestEnterprise178'
-          go -C biz test -count=1 -tags=integration ./integration -run '^TestEnterprise179'
+          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise179'
           go -C biz test -count=1 -tags=integration ./integration -run '^TestB124TenantRolePermissionsAreTenantScopedAndImmediate$'
           go -C biz test -count=1 -tags=integration ./integration -run '^TestB124OwnerRoleProtectsRequiredPermissionsAndLastAssignment$'
           test -z "$(git -C biz status --porcelain)"
