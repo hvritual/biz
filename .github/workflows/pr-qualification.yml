@@ -28,6 +28,7 @@ jobs:
       ce_receipts: ${{ steps.route.outputs.ce_receipts }}
       web_e2e_harness: ${{ steps.route.outputs.web_e2e_harness }}
       web_product: ${{ steps.route.outputs.web_product }}
+      role_grants: ${{ steps.route.outputs.role_grants }}
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -94,6 +95,13 @@ jobs:
     needs: [route, governance, fast-web]
     if: needs.route.outputs.native_login == 'true'
     uses: ./.github/workflows/enterprise-172-native-login.yml
+
+  access-role-grants:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.role_grants == 'true'
+    uses: ./.github/workflows/enterprise-179-role-grant-tree.yml
+    with:
+      skip_fast_check: true
 
   commercial-map:
     needs: [route, governance, fast-web]
