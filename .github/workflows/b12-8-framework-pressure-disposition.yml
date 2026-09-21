@@ -2,9 +2,6 @@ name: b12-8-framework-pressure-disposition
 
 on:
   workflow_call:
-  push:
-    branches:
-      - agent/b12-multitenant-access-pressure
 permissions:
   contents: read
 
