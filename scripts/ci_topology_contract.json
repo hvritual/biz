@@ -141,6 +141,14 @@
         "ce06-qualification.yml",
         "ce07-qualification.yml"
       ]
+    },
+    "coffeelink_web": {
+      "workflow": "coffeelink-web.yml",
+      "max_job_minutes": 4,
+      "full_gate_skip_fast_check": true,
+      "api_e2e_workers": 2,
+      "default_e2e_workers": 4,
+      "delegated_fast_gate": "PR Qualification / fast-web"
     }
   },
   "resilience_contracts": {
