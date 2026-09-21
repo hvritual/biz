@@ -3,6 +3,7 @@ package persistence
 import (
 	"context"
 	"errors"
+	"sort"
 	"strings"
 	"time"
 
@@ -229,15 +230,62 @@ func (repository *TenantRoleRepository) ReplacePermissions(ctx context.Context, 
 	if locked.Version != expectedVersion {
 		return ports.ErrTenantRoleConflict
 	}
-	if err := db.Where("tenant_id = ? AND role_id = ?", role.TenantID, role.ID).Delete(&permissionGrantRecord{}).Error; err != nil {
+
+	var existingRows []permissionGrantRecord
+	if err := db.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("tenant_id = ? AND role_id = ?", role.TenantID, role.ID).
+		Order("permission ASC").
+		Find(&existingRows).Error; err != nil {
 		return err
 	}
+	existing := make(map[string]permissionGrantRecord, len(existingRows))
+	for _, grant := range existingRows {
+		existing[grant.Permission] = grant
+	}
+	desired := make(map[string]domain.PermissionGrant, len(role.Permissions))
 	for _, grant := range role.Permissions {
-		if err := db.Create(&permissionGrantRecord{TenantID: role.TenantID, RoleID: role.ID, Permission: grant.Permission, Scope: grant.Scope}).Error; err != nil {
+		desired[grant.Permission] = grant
+	}
+
+	removed := make([]string, 0)
+	for permission := range existing {
+		if _, ok := desired[permission]; !ok {
+			removed = append(removed, permission)
+		}
+	}
+	sort.Strings(removed)
+	if len(removed) > 0 {
+		if err := db.Where(
+			"tenant_id = ? AND role_id = ? AND permission IN ?",
+			role.TenantID,
+			role.ID,
+			removed,
+		).Delete(&permissionGrantRecord{}).Error; err != nil {
 			return err
 		}
 	}
-	result := db.Model(&roleRecord{}).Where("tenant_id = ? AND id = ? AND version = ?", role.TenantID, role.ID, expectedVersion).
+
+	for _, grant := range role.Permissions {
+		current, exists := existing[grant.Permission]
+		if !exists {
+			if err := db.Create(&permissionGrantRecord{
+				TenantID: role.TenantID, RoleID: role.ID, Permission: grant.Permission, Scope: grant.Scope,
+			}).Error; err != nil {
+				return err
+			}
+			continue
+		}
+		if current.Scope != grant.Scope {
+			if err := db.Model(&permissionGrantRecord{}).
+				Where("tenant_id = ? AND role_id = ? AND permission = ?", role.TenantID, role.ID, grant.Permission).
+				Update("scope", grant.Scope).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	result := db.Model(&roleRecord{}).
+		Where("tenant_id = ? AND id = ? AND version = ?", role.TenantID, role.ID, expectedVersion).
 		Update("version", gorm.Expr("version + 1"))
 	if result.Error != nil {
 		return result.Error
