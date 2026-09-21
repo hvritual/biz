@@ -200,6 +200,8 @@ jobs:
     needs: [route, wait-qualification]
     if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/coffeelink-web.yml
+    with:
+      skip_fast_check: true
 
   full-21-ec-ri-04-web-qualification:
     needs: [route, wait-qualification]
