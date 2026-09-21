@@ -1,0 +1,42 @@
+name: Main Delivery Receipt
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-delivery-receipt
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact main receipt
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify delivery control plane
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/candidate_lifecycle.py validate-contract
+          python3 scripts/check_ci_qualification_governance.py
+          python3 scripts/test_ci_changed_files_router.py
+          python3 scripts/test_candidate_lifecycle.py
+
+      - name: Verify exact remote main receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin +refs/heads/main:refs/remotes/origin/main
+          python3 scripts/candidate_lifecycle.py verify-main --main-ref HEAD --remote-main-ref origin/main
+          echo "CANDIDATE_LIFECYCLE=MAIN_VERIFIED main=$(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
