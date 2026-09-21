@@ -29,11 +29,11 @@ MAIN_VERIFIED
 ## 硬规则
 
 1. **Fast Gate 先行**：type-check、lint、architecture、UI Contract、unit、generated drift 等确定性检查失败时，不启动 Domain/Full Gate。
-2. **Domain Gate 有界**：Changed-Files Router 只展开 Access / Commercial / DeviceOps / Web / Core 对应资格；未知非文档路径 fail-closed 到 Core。
+2. **Domain Gate 有界**：Changed-Files Router 只展开 Access / Commercial / DeviceOps / Web / Core 对应资格；未知非文档路径 fail-closed 到 Core。Web 再区分 Product Web 与 E2E Harness，纯 `web/e2e/**` 变更不触发完整产品 Web Gate。
 3. **Candidate Freeze 必须新鲜**：进入 Full Merge Gate 前，当前远端 `main` 必须是 Candidate HEAD 的祖先；否则输出 `CANDIDATE_STALE_BASE`，先同步 main。
 4. **Freeze 后只修 Gate Failure**：Candidate 冻结后禁止扩展业务范围。任何代码变更都生成新 Candidate，并使旧 Full Gate 结果失效。
 5. **Qualification 只读**：Workflow 禁止 `contents: write`、禁止 `git push`、禁止 generate 后修改 Candidate。生成只做 drift check。
-6. **Full Gate 每 Candidate 一次**：PR Merge Gate 只在非 Draft Candidate 上运行，并等待同一 HEAD 的 PR Qualification 成功后才展开完整矩阵。
+6. **Full Gate 每 Candidate 一次**：PR Merge Gate 只由 `ready_for_review` 事件启动。Draft 与普通 synchronize 不创建 Full Gate DAG；同一 HEAD 的 PR Qualification 成功后才展开完整矩阵。
 7. **旧 SHA 自动取消**：PR 入口使用 PR 级 `concurrency + cancel-in-progress`，连续 A/B/C 只保留最新 Candidate 的控制面运行。
 8. **合并必须有 main 回执**：main push 后执行轻量 Main Receipt；只有 exact remote main tip 通过治理检查才进入 `MAIN_VERIFIED`。
 9. **产品/API E2E 未 mock 请求 fail-fast**：`/auth/**`、`/api/**`、`/v1/**` 未被显式 mock 时立即失败并输出 method/path，不允许穿透代理形成 30 秒级联超时。
@@ -84,3 +84,23 @@ current-main ancestor
 ```
 
 才完成交付闭环。
+
+## Web qualification split
+
+```text
+Fast Web
+  npm run check
+      ↓
+Router
+  ├─ web_product=true
+  │    → Product Web Gate
+  │    → skip_fast_check=true
+  │    → browser / product E2E / visual evidence
+  │
+  └─ web_e2e_harness=true
+       → Web E2E Harness Gate
+       → API-mode enterprise harness only
+       → no duplicate npm run check
+```
+
+The full CoffeeLink workflow still runs its canonical Fast Gate on direct main/push execution. Only PR Domain invocation may set `skip_fast_check=true`, because PR Qualification has already proven the exact candidate's Fast Gate.
