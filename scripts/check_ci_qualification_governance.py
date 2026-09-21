@@ -14,7 +14,7 @@ BUDGET = ROOT / "scripts" / "ci_qualification_budget.json"
 LIFECYCLE = ROOT / "scripts" / "candidate_lifecycle.json"
 PR_ENTRYPOINTS = {"pr-qualification.yml", "pr-merge-gate.yml"}
 FAST_GATE = "candidate-qualification.yml"
-MAIN_RECEIPT = "main-receipt.yml"
+MAIN_ENTRYPOINT = "main-receipt.yml"
 
 DOMAIN_GATE_UNITS = {
     "b12-4-tenant-role-mysql.yml",
@@ -67,6 +67,53 @@ def has_on_child(text: str, key: str) -> bool:
         if in_on and re.match(rf"^  {re.escape(key)}\s*:", line):
             return True
     return False
+
+
+def push_targets_main(text: str) -> bool:
+    lines = text.splitlines()
+    in_on = False
+    push_index = None
+    for index, line in enumerate(lines):
+        if line == "on:":
+            in_on = True
+            continue
+        if in_on and line and not line.startswith((" ", "\t")):
+            break
+        if in_on and line == "  push:":
+            push_index = index
+            break
+    if push_index is None:
+        return False
+
+    block: list[str] = []
+    for line in lines[push_index + 1:]:
+        if re.match(r"^  [A-Za-z0-9_-]+\s*:", line):
+            break
+        if line and not line.startswith((" ", "\t")):
+            break
+        block.append(line)
+
+    for line in block:
+        inline = re.match(r"^    branches:\s*\[(.*)\]\s*$", line)
+        if inline:
+            branches = [
+                item.strip().strip("'\"")
+                for item in inline.group(1).split(",")
+                if item.strip()
+            ]
+            return "main" in branches
+
+    for index, line in enumerate(block):
+        if line == "    branches:":
+            branches: list[str] = []
+            for child in block[index + 1:]:
+                match = re.match(r"^      -\s+(.+?)\s*$", child)
+                if not match:
+                    break
+                branches.append(match.group(1).strip().strip("'\""))
+            return "main" in branches
+
+    return True
 
 
 def reusable_call(file: str) -> str:
@@ -152,6 +199,24 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
                 f"{path.name}: direct pull_request trigger bypasses the two-entry PR control plane"
             )
 
+    main_push_entrypoints: list[str] = []
+    for path in sorted(workflows.glob("*.yml")):
+        text = path.read_text(encoding="utf-8")
+        if push_targets_main(text):
+            main_push_entrypoints.append(path.name)
+    if main_push_entrypoints != [MAIN_ENTRYPOINT]:
+        errors.append(
+            "main push must have exactly one direct entrypoint "
+            f"{MAIN_ENTRYPOINT}; found {main_push_entrypoints}"
+        )
+
+    expected_main = budget.get("expected_main_push_entrypoint_workflows", [])
+    max_main = int(budget.get("max_main_push_entrypoint_workflows", 0) or 0)
+    if expected_main != ["Main Qualification"]:
+        errors.append("CI budget must declare Main Qualification as the only main push entrypoint")
+    if max_main != 1:
+        errors.append("CI budget must cap main push entrypoint workflows at 1")
+
     for name in PR_ENTRYPOINTS:
         path = workflows / name
         if not path.exists():
@@ -218,19 +283,34 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
                 f"Full Merge Gate fan-out {len(manifest_names)} exceeds budget {max_full}"
             )
 
-    receipt_path = workflows / MAIN_RECEIPT
+    receipt_path = workflows / MAIN_ENTRYPOINT
     if not receipt_path.exists():
-        errors.append(f"missing {MAIN_RECEIPT}")
+        errors.append(f"missing {MAIN_ENTRYPOINT}")
     else:
         text = receipt_path.read_text(encoding="utf-8")
-        if not has_on_child(text, "push"):
-            errors.append(f"{MAIN_RECEIPT}: must receive main push")
-        if "branches: [main]" not in text:
-            errors.append(f"{MAIN_RECEIPT}: must be scoped to main")
+        if "name: Main Qualification" not in text:
+            errors.append(f"{MAIN_ENTRYPOINT}: workflow name must be Main Qualification")
+        if not push_targets_main(text):
+            errors.append(f"{MAIN_ENTRYPOINT}: must be the main push entrypoint")
+        if "main-qualification.mjs" not in text:
+            errors.append(f"{MAIN_ENTRYPOINT}: missing merged-PR proof-chain verifier")
         if "candidate_lifecycle.py verify-main" not in text:
-            errors.append(f"{MAIN_RECEIPT}: missing exact MAIN_VERIFIED receipt")
+            errors.append(f"{MAIN_ENTRYPOINT}: missing exact MAIN_VERIFIED receipt")
+        if "actions: read" not in text or "pull-requests: read" not in text:
+            errors.append(f"{MAIN_ENTRYPOINT}: missing read permissions for PR proof reuse")
         if re.search(r"contents\s*:\s*write", text) or re.search(r"\bgit\s+push\b", text):
-            errors.append(f"{MAIN_RECEIPT}: receipt must be read-only")
+            errors.append(f"{MAIN_ENTRYPOINT}: qualification must be read-only")
+
+        proof_script = root / ".github" / "scripts" / "main-qualification.mjs"
+        proof_test = root / ".github" / "scripts" / "main-qualification.test.mjs"
+        if not proof_script.exists() or not proof_test.exists():
+            errors.append("Main Qualification proof script/tests are missing")
+        else:
+            proof = proof_script.read_text(encoding="utf-8")
+            if "MAIN_UNTRUSTED_DIRECT_PUSH" not in proof:
+                errors.append("Main Qualification must fail closed on direct main push")
+            if "PR Merge Gate" not in proof or "MAIN_MERGE_GATE_PROOF_MISSING" not in proof:
+                errors.append("Main Qualification must require exact Candidate PR Merge Gate proof")
 
     helper_path = root / "web" / "e2e" / "ui.helpers.ts"
     if not helper_path.exists():
