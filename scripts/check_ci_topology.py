@@ -290,6 +290,69 @@ def validate(base_ref: str | None = None) -> list[str]:
             if text.count("if-no-files-found: error") != int(b127_resilience["attempts"]):
                 errors.append(f"{workflow}: every B12.7 upload attempt must fail on missing evidence")
 
+    web_budget = contract.get("performance_budgets", {}).get("coffeelink_web")
+    if web_budget:
+        workflow = web_budget["workflow"]
+        path = workflows.get(workflow)
+        if path is None:
+            errors.append(f"CoffeeLink Web performance workflow missing: {workflow}")
+        else:
+            text = path.read_text(encoding="utf-8")
+            timeouts = [
+                int(value)
+                for value in re.findall(r"^    timeout-minutes:\s*(\d+)\s*$", text, re.MULTILINE)
+            ]
+            max_minutes = int(web_budget["max_job_minutes"])
+            if len(timeouts) != 1:
+                errors.append(
+                    f"{workflow}: expected exactly one timed web qualification job; found {len(timeouts)}"
+                )
+            elif timeouts[0] > max_minutes:
+                errors.append(
+                    f"{workflow}: timeout {timeouts[0]}m exceeds CoffeeLink budget {max_minutes}m"
+                )
+
+            required_markers = [
+                "skip_fast_check:",
+                "default: false",
+                "if: ${{ !inputs.skip_fast_check }}",
+                "VITE_DATA_MODE=api npx vite build",
+                f"npx playwright test --workers={int(web_budget['api_e2e_workers'])}",
+                f"npx playwright test --workers={int(web_budget['default_e2e_workers'])}",
+                "npx playwright install --with-deps chromium",
+                "Verify visual contract evidence",
+            ]
+            for marker in required_markers:
+                if marker not in text:
+                    errors.append(f"{workflow}: CoffeeLink performance/coverage marker missing: {marker}")
+
+            forbidden_direct = [
+                "VITE_DATA_MODE=api npm run build",
+                "- run: npm run test:e2e",
+            ]
+            for marker in forbidden_direct:
+                if marker in text:
+                    errors.append(f"{workflow}: CoffeeLink long-tail regression reintroduced: {marker}")
+
+        merge_text = workflows["pr-merge-gate.yml"].read_text(encoding="utf-8")
+        merge_block_match = re.search(
+            r"(?ms)^  full-20-coffeelink-web:\n(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:|\Z)",
+            merge_text,
+        )
+        if not merge_block_match:
+            errors.append("PR Merge Gate CoffeeLink Web job missing")
+        else:
+            merge_block = merge_block_match.group(0)
+            required_merge = [
+                "needs: [route, wait-qualification]",
+                "needs.wait-qualification.result == 'success'",
+                "uses: ./.github/workflows/coffeelink-web.yml",
+                "skip_fast_check: true",
+            ]
+            for marker in required_merge:
+                if marker not in merge_block:
+                    errors.append(f"PR Merge Gate CoffeeLink proof-reuse marker missing: {marker}")
+
     pull_entrypoints = sorted(
         name for name, path in workflows.items()
         if "pull_request" in on_children(path.read_text(encoding="utf-8"))
