@@ -66,6 +66,43 @@ PB/Operation contract
 - 通过跨 Application Repository 直连绕过声明的 child Operation；
 - 用 `PermissionVersion` 作为 allow token。
 
+### 5.1 #180 Data Policy / business scope phase-one contract
+
+The Human-owned Q-009 and Q-011 decisions are frozen in
+`docs/enterprise-center/enterprise180-policy-contract.v1.json`. The JSON is the
+machine-readable admission authority; this section is the human-readable projection.
+
+- Business scope assignment is explicit. Candidate objects come from the current
+  resource domain's authoritative tenant-bound directory; phase one adapts the
+  existing site membership model rather than creating a second object catalog.
+- Department membership, department manager status, and organization hierarchy are
+  context only. They never create business-data access by themselves.
+- `derived_data_scope` remains a read-model projection and cannot authorize.
+- UI-disabled candidates and direct API injection are governed by the same
+  assignability rule. Cross-tenant, disabled, retired, or otherwise unassignable
+  references are rejected.
+- A Role may reference zero or one current effective Data Policy in phase one.
+  Arbitrary multi-policy composition, precedence, explicit deny rules,
+  inheritance, nesting, and policy/ABAC DSL are non-goals.
+- Action authorization remains based on current Access Grants. Data authorization
+  is a separate condition and must also pass.
+- Effective business scope is the intersection of the applicable Role policy scope,
+  the member's explicit scope, and the current tenant's currently assignable scope.
+  No dimension may widen another dimension.
+- When a data-scoped action requires a policy and no valid policy exists, evaluation
+  fails closed.
+- Policy contraction takes effect on the next sensitive request through current
+  authorization facts. Policy versioning is a resource CAS/version fact, never a
+  global Authorization Version.
+- A successful write requires CAS/idempotency/audit plus authoritative readback;
+  rollback retains audit history and defaults to deny when a policy reference can
+  no longer be explained.
+
+Negative acceptance examples are mandatory: A-object→B-member injection,
+unassignable-object direct API injection, expired/revoked/cross-tenant policy,
+department move without implicit expansion, broader second role unable to bypass
+member scope, and next-request denial after policy contraction.
+
 ## 6. Route compatibility
 
 一期实现优先复用当前真实路由，不为“路径长得像 PRD”重建一套网络服务。
@@ -107,4 +144,4 @@ PRD 中 `/api/business/v1/identity/*` 是责任族，不要求在已有 `/auth`�
 - 企业领域/API 合同 1.0-review；
 - 三模块 Plan05 successor。
 
-它们只阻塞依赖其具体策略内容的动作；不阻塞已由当前源码与本 PRD 明确定义的无关增量任务。
+它们只阻塞依赖其尚未接受的具体策略内容的动作；不阻塞已由当前源码、当前 PRD 或已接受决策明确冻结的增量任务。#180 的 Q-009/Q-011 一期语义已由 `enterprise180-policy-contract.v1.json` 独立冻结；缺失 successor 不得被用来扩展该合同之外的规则。
