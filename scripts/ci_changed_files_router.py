@@ -92,6 +92,36 @@ COMMERCIAL_INTEGRATION_PREFIXES = (
 CORE_INTEGRATION_PREFIXES = ("c9_", "ag02_", "shared_database_")
 DEVICEOPS_INTEGRATION_PREFIXES = ("deviceops_",)
 
+NATIVE_LOGIN_PATH_PREFIXES = (
+    "cmd/biz-idp/",
+    "internal/access/infrastructure/persistence/first_party_idp",
+    "internal/access/infrastructure/persistence/login_identifier",
+    "internal/access/infrastructure/persistence/verification",
+    "internal/bizruntime/first_party_idp",
+    "internal/bizruntime/first_party_native_login",
+    "integration/enterprise_172_",
+    "integration/ce12_browser_seed_test.go",
+    "web/tests/ce12/",
+    "scripts/accept-local-login.mjs",
+)
+NATIVE_LOGIN_FILES = {
+    ".github/workflows/enterprise-172-native-login.yml",
+    "internal/bizruntime/config.go",
+    "go.mod",
+    "go.sum",
+}
+DELIVERY_ISOLATION_FILES = {
+    ".github/workflows/delivery-workspace-isolation.yml",
+    ".yunka/source.env",
+    "go.mod",
+    "go.sum",
+    "go.work",
+    "go.work.sum",
+    "Makefile",
+    "scripts/consumer-resolution-check.sh",
+    "scripts/verify-yunka-source.sh",
+}
+
 
 def clean(path: str) -> str:
     return str(PurePosixPath(path.strip())).lstrip("./")
@@ -139,6 +169,17 @@ def route(paths: list[str]) -> dict[str, object]:
     files = [clean(p) for p in paths if p.strip()]
     docs_only = bool(files) and all(is_docs_only_path(p) for p in files)
 
+    native_login = any(
+        path in NATIVE_LOGIN_FILES or any(path.startswith(prefix) for prefix in NATIVE_LOGIN_PATH_PREFIXES)
+        for path in files
+    )
+    delivery_isolation = any(path in DELIVERY_ISOLATION_FILES for path in files)
+    ce_receipts = any(
+        path == ".github/workflows/ce-round-receipts.yml"
+        or path.startswith("docs/commercial-entitlements/")
+        for path in files
+    )
+
     domains: set[str] = set()
     non_derived_source = False
     for path in files:
@@ -167,6 +208,9 @@ def route(paths: list[str]) -> dict[str, object]:
         "domain_matrix": matrix,
         "domain_count": len(matrix),
         "merge_gate_required": not docs_only,
+        "native_login": native_login,
+        "delivery_isolation": delivery_isolation,
+        "ce_receipts": ce_receipts,
     }
 
 
@@ -177,6 +221,9 @@ def emit_github_output(path: str, result: dict[str, object]) -> None:
         handle.write(f"docs_only={str(result['docs_only']).lower()}\n")
         handle.write(f"merge_gate_required={str(result['merge_gate_required']).lower()}\n")
         handle.write(f"domain_count={result['domain_count']}\n")
+        handle.write(f"native_login={str(result['native_login']).lower()}\n")
+        handle.write(f"delivery_isolation={str(result['delivery_isolation']).lower()}\n")
+        handle.write(f"ce_receipts={str(result['ce_receipts']).lower()}\n")
         handle.write("domain_matrix=" + json.dumps(result["domain_matrix"], separators=(",", ":")) + "\n")
         for domain in DOMAINS:
             handle.write(f"{domain}={str(bool(domains[domain])).lower()}\n")
