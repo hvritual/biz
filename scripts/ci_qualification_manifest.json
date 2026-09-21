@@ -298,6 +298,14 @@
       "heavy": true
     },
     {
+      "file": "enterprise-178-role-lifecycle.yml",
+      "domains": [
+        "access",
+        "web"
+      ],
+      "heavy": true
+    },
+    {
       "file": "evolution-qualification.yml",
       "domains": [
         "core"
