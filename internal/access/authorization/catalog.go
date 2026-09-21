@@ -42,12 +42,22 @@ func Catalog() []Action {
 }
 
 func TenantRolePermissions() []PermissionDefinition {
+	actions := make([]Action, 0, len(generatedActions))
+	for _, action := range generatedActions {
+		if action.TenantRequired {
+			actions = append(actions, action)
+		}
+	}
+	return TenantRolePermissionsForActions(actions)
+}
+
+func TenantRolePermissionsForActions(actions []Action) []PermissionDefinition {
 	type aggregate struct {
 		groups  map[string]struct{}
 		actions map[string]struct{}
 	}
 	values := map[authz.PermissionKey]*aggregate{}
-	for _, action := range generatedActions {
+	for _, action := range actions {
 		if !action.TenantRequired {
 			continue
 		}
