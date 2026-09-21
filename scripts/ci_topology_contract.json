@@ -117,5 +117,11 @@
   "forbidden_workflows": [
     "enterprise-178-role-lifecycle.yml",
     "enterprise-179-role-grant-tree.yml"
-  ]
+  ],
+  "performance_budgets": {
+    "mysql_runtime_qualification": {
+      "workflow": "mysql-runtime-qualification.yml",
+      "max_job_minutes": 2
+    }
+  }
 }
