@@ -2,7 +2,7 @@
 import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
 
 import { computed, onMounted, ref } from 'vue'
-import { backendTermLabel } from '@/i18n/backend-terms'
+import { backendErrorFallback, backendTermLabel } from '@/i18n/backend-terms'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import PageHeading from '@/ui/common/PageHeading.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
@@ -51,19 +51,13 @@ const filteredModules = computed(() => {
 })
 
 const selected = computed(() => modules.value.find((item) => item.moduleCode === selectedCode.value))
+const selectedSalesAction = computed(() => selected.value?.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? '停售销售' : '恢复销售')
 const summary = computed(() => ({
   total: modules.value.length,
   ready: modules.value.filter((item) => item.technicalStatus === 'MODULE_TECHNICAL_STATUS_READY').length,
   sellable: modules.value.filter((item) => item.salesStatus === 'MODULE_SALES_STATUS_SELLABLE').length,
 }))
 
-function technicalLabel(status: ModuleTechnicalStatus) {
-  return backendTermLabel('technicalStatus', status)
-}
-
-function salesLabel(status: ModuleSalesStatus) {
-  return backendTermLabel('salesStatus', status)
-}
 
 function salesScopeValues() {
   return editSalesScope.value
@@ -101,11 +95,11 @@ async function loadModules() {
   } catch (error) {
     if (error instanceof CommercialApiError && ['unauthenticated', 'forbidden'].includes(error.code)) {
       loadState.value = 'blocked'
-      errorMessage.value = error.message
+      errorMessage.value = '当前账号没有管理模块目录的权限。'
       return
     }
     loadState.value = 'error'
-    errorMessage.value = error instanceof Error ? error.message : '无法读取模块目录'
+    errorMessage.value = backendErrorFallback('commercial')
   }
 }
 
@@ -118,10 +112,10 @@ async function handleMutationError(error: unknown) {
     return
   }
   if (error instanceof CommercialApiError && ['unauthenticated', 'forbidden'].includes(error.code)) {
-    actionError.value = `当前平台会话无权执行该操作：${error.message}`
+    actionError.value = '当前账号没有执行该操作的权限。'
     return
   }
-  actionError.value = error instanceof Error ? error.message : '模块操作失败'
+  actionError.value = backendErrorFallback('commercial')
 }
 
 async function saveMetadata() {
@@ -215,14 +209,14 @@ onMounted(loadModules)
 
     <section v-if="loadState === 'loading'" class="card state-card" aria-live="polite">
       <span class="state-icon"><AppIcon name="refresh" :size="20" /></span>
-      <div><strong>正在读取真实模块目录</strong><p>请求 /v1/platform/modules，不加载本地 seed。</p></div>
+      <div><strong>正在读取模块目录</strong><p>正在获取当前账号可管理的模块信息。</p></div>
     </section>
 
     <section v-else-if="loadState === 'blocked'" class="card state-card warning" role="alert">
       <span class="state-icon"><AppIcon name="shield" :size="20" /></span>
       <div class="flex-1">
-        <strong>当前会话无平台商业访问权限</strong>
-        <p>{{ errorMessage || '请使用已授权的平台 Web Session；浏览器不会降级使用平台 API Key。' }}</p>
+        <strong>当前账号无平台商业管理权限</strong>
+        <p>{{ errorMessage || '请使用具有平台商业管理权限的账号。' }}</p>
       </div>
       <UiButton class="btn" type="button" @click="loadModules">重新检查</UiButton>
     </section>
@@ -236,8 +230,8 @@ onMounted(loadModules)
     <template v-else>
       <section class="metric-grid" aria-label="模块目录摘要" data-ui-region="metrics">
         <article class="card metric"><span>模块总数</span><strong>{{ summary.total }}</strong><small>当前模块目录</small></article>
-        <article class="card metric"><span>技术就绪</span><strong>{{ summary.ready }}</strong><small>READY</small></article>
-        <article class="card metric"><span>可销售</span><strong>{{ summary.sellable }}</strong><small>SELLABLE</small></article>
+        <article class="card metric"><span>技术就绪</span><strong>{{ summary.ready }}</strong><small>已达到启用条件</small></article>
+        <article class="card metric"><span>可销售</span><strong>{{ summary.sellable }}</strong><small>当前可用于销售</small></article>
       </section>
 
       <section class="card query-panel" data-ui-region="query" aria-label="模块目录查询">
@@ -289,9 +283,9 @@ onMounted(loadModules)
               </tr>
               <tr v-for="item in filteredModules" :key="item.moduleCode">
                 <td><strong>{{ item.name || backendTermLabel('module', item.moduleCode) }}</strong><small class="module-code">版本 v{{ item.version }}</small></td>
-                <td>{{ item.category || '—' }}</td>
-                <td><StatusBadge :text="technicalLabel(item.technicalStatus)" :tone="item.technicalStatus === 'MODULE_TECHNICAL_STATUS_READY' ? 'success' : 'warning'" /></td>
-                <td><StatusBadge :text="salesLabel(item.salesStatus)" :tone="item.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? 'success' : 'neutral'" /></td>
+                <td>{{ backendTermLabel('moduleCategory', item.category) }}</td>
+                <td><StatusBadge :text="backendTermLabel('technicalStatus', item.technicalStatus)" :tone="item.technicalStatus === 'MODULE_TECHNICAL_STATUS_READY' ? 'success' : 'warning'" /></td>
+                <td><StatusBadge :text="backendTermLabel('salesStatus', item.salesStatus)" :tone="item.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? 'success' : 'neutral'" /></td>
                 <td><strong class="governance-count">{{ item.capabilityCodes?.length ?? 0 }} 项能力</strong><small class="cell-note">{{ item.dependencies?.length ?? 0 }} 项依赖</small></td>
                 <td><UiButton class="btn table-action" type="button" @click="openDetail(item)">查看详情</UiButton></td>
               </tr>
@@ -306,8 +300,8 @@ onMounted(loadModules)
         <div class="detail-summary">
           <div><span>模块标识</span><strong>{{ backendTermLabel('module', selected.moduleCode) }}</strong></div>
           <div><span>当前版本</span><strong>{{ selected.version }}</strong></div>
-          <div><span>技术状态</span><StatusBadge :text="technicalLabel(selected.technicalStatus)" /></div>
-          <div><span>销售状态</span><StatusBadge :text="salesLabel(selected.salesStatus)" /></div>
+          <div><span>技术状态</span><StatusBadge :text="backendTermLabel('technicalStatus', selected.technicalStatus)" /></div>
+          <div><span>销售状态</span><StatusBadge :text="backendTermLabel('salesStatus', selected.salesStatus)" /></div>
         </div>
 
         <section class="detail-section">
@@ -334,10 +328,10 @@ onMounted(loadModules)
         </section>
 
         <section class="detail-section facts-grid">
-          <div><h3>能力代码</h3><p v-if="!selected.capabilityCodes?.length" class="muted">无</p><div v-else class="tag-list"><span v-for="item in selected.capabilityCodes" :key="item" class="fact-tag">{{ item }}</span></div></div>
-          <div><h3>模块依赖</h3><p v-if="!selected.dependencies?.length" class="muted">无</p><div v-else class="tag-list"><span v-for="item in selected.dependencies" :key="item" class="fact-tag">{{ item }}</span></div></div>
-          <div><h3>额度模板</h3><p v-if="!selected.quotaSchemaKeys?.length" class="muted">无</p><div v-else class="tag-list"><span v-for="item in selected.quotaSchemaKeys" :key="item" class="fact-tag">{{ item }}</span></div></div>
-          <div><h3>字段策略</h3><p v-if="!selected.fieldPolicySchemaKeys?.length" class="muted">无</p><div v-else class="tag-list"><span v-for="item in selected.fieldPolicySchemaKeys" :key="item" class="fact-tag">{{ item }}</span></div></div>
+          <div><h3>功能能力</h3><p v-if="!selected.capabilityCodes?.length" class="muted">无</p><div v-else class="tag-list"><span v-for="item in selected.capabilityCodes" :key="item" class="fact-tag">{{ backendTermLabel('entitlementKey', item) }}</span></div></div>
+          <div><h3>模块依赖</h3><p v-if="!selected.dependencies?.length" class="muted">无</p><div v-else class="tag-list"><span v-for="item in selected.dependencies" :key="item" class="fact-tag">{{ backendTermLabel('module', item) }}</span></div></div>
+          <div><h3>使用额度</h3><p v-if="!selected.quotaSchemaKeys?.length" class="muted">无</p><div v-else class="tag-list"><span v-for="item in selected.quotaSchemaKeys" :key="item" class="fact-tag">{{ backendTermLabel('entitlementKey', item) }}</span></div></div>
+          <div><h3>字段权限</h3><p v-if="!selected.fieldPolicySchemaKeys?.length" class="muted">无</p><div v-else class="tag-list"><span v-for="item in selected.fieldPolicySchemaKeys" :key="item" class="fact-tag">{{ backendTermLabel('entitlementKey', item) }}</span></div></div>
         </section>
 
         <label class="field"><span>变更原因</span><UiTextarea v-model="reason" class="textarea" maxlength="500" placeholder="说明本次模块配置或状态调整原因" /></label>
@@ -348,7 +342,7 @@ onMounted(loadModules)
         <UiButton class="btn" type="button" @click="detailOpen = false">关闭</UiButton>
         <UiButton class="btn" type="button" :disabled="actionPending || !selected" @click="applyTechnicalStatus">应用技术状态</UiButton>
         <UiButton class="btn" type="button" :disabled="actionPending || !selected" @click="applySalesStatus">
-          {{ selected?.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? '停售销售' : '恢复销售' }}
+          {{ selectedSalesAction }}
         </UiButton>
         <UiButton class="btn btn-primary" type="button" :disabled="actionPending || !selected" @click="saveMetadata">保存基础配置</UiButton>
       </template>

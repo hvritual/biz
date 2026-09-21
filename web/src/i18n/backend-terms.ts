@@ -13,6 +13,7 @@ export const backendTermCatalog = {
     'device-operations': 'deviceOperations',
     'advanced-reporting': 'advancedReporting',
     'customer-management': 'customerManagement',
+    'customer-operations': 'customerOperations',
     marketing: 'marketing',
     analytics: 'analytics',
   },
@@ -26,6 +27,18 @@ export const backendTermCatalog = {
     'customer.count': 'customerCount',
     'member.count': 'memberCount',
     'marketing.campaign.publish': 'marketingCampaignPublish',
+    'customer.read': 'customerRead',
+    'customer.manage': 'customerManage',
+    'device.telemetry': 'deviceTelemetry',
+    'marketing.campaign': 'marketingCampaign',
+    'device.count': 'deviceCount',
+    'customer.phone': 'customerPhone',
+    'device.serial': 'deviceSerial',
+  },
+  moduleCategory: {
+    operations: 'operations',
+    crm: 'crm',
+    growth: 'growth',
   },
   subscriptionState: {
     ACTIVE: 'active', active: 'active',
@@ -186,6 +199,6 @@ export function backendBusinessText(value: unknown) {
   const raw = rawValue(value)
   if (!raw) return backendTermLabel('reason', raw)
   if (backendTermKnown('reason', raw)) return backendTermLabel('reason', raw)
-  if (/[\u3400-\u9fff]/u.test(raw) && !engineeringText.test(raw)) return raw
+  if (!engineeringText.test(raw) && (/\s/.test(raw) || /[\u3400-\u9fff]/u.test(raw))) return raw
   return backendTermLabel('reason', raw)
 }

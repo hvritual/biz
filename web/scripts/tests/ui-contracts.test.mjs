@@ -90,6 +90,14 @@ test('declared backend-error consumers must not expose raw backend messages', (t
   assert.ok(checkUiModel(root).failures.some((error) => error.includes('backend errors must use backendErrorFallback')))
 })
 
+test('raw backend collections cannot be rendered directly', (t) => {
+  const root = fixture(t)
+  edit(root, 'src/features/platform/pages/CommercialModulesView.vue', (source) =>
+    source.replace("{{ backendTermLabel('entitlementKey', item) }}", '{{ item }}'),
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('raw backend collection value')))
+})
+
 test('raw backend fields cannot be rendered directly by declared product consumers', (t) => {
   const root = fixture(t)
   edit(root, 'src/features/enterprise/components/members/MemberDetailDrawer.vue', (source) =>

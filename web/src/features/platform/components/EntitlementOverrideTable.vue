@@ -3,7 +3,7 @@ import { UiButton } from '@/ui/base'
 
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import type { EntitlementOverrideDTO } from '@/services/commercial/platformCommercial'
-import { backendTermLabel } from '@/i18n/backend-terms'
+import { backendBusinessText, backendTermLabel } from '@/i18n/backend-terms'
 
 defineProps<{
   sources: EntitlementOverrideDTO[]
@@ -33,13 +33,6 @@ function targetLabel(source: EntitlementOverrideDTO) {
   return source.fieldAction ? `${target} · ${backendTermLabel('fieldAction', source.fieldAction)}` : target
 }
 
-function sourceKindLabel(value: string) {
-  return backendTermLabel('sourceKind', value)
-}
-
-function effectLabel(effect: string) {
-  return backendTermLabel('entitlementEffect', effect)
-}
 
 function limitLabel(source: EntitlementOverrideDTO) {
   if (!source.limit) return '—'
@@ -50,7 +43,7 @@ function limitLabel(source: EntitlementOverrideDTO) {
 <template>
   <section class="card source-card">
     <div class="section-header">
-      <div><h2>专项权益</h2><p>当前版本 {{ sourceVersion }}；撤销后不再生效，历史记录仍会保留。</p></div>
+      <div><h2>专项权益</h2><p>撤销后不再生效，历史记录仍会保留。</p></div>
       <UiButton class="btn primary" type="button" :disabled="pending" @click="emit('create')">新增专项权益</UiButton>
     </div>
 
@@ -60,13 +53,13 @@ function limitLabel(source: EntitlementOverrideDTO) {
         <thead><tr><th>权益类型</th><th>授权项目</th><th>授权结果</th><th>额度</th><th>状态</th><th>生效时间</th><th>原因 / 操作人</th><th></th></tr></thead>
         <tbody>
           <tr v-for="source in sources" :key="source.id">
-            <td><strong>{{ sourceKindLabel(source.sourceKind) }}</strong><small>记录 {{ source.id }}</small></td>
+            <td><strong>{{ backendTermLabel('sourceKind', source.sourceKind) }}</strong><small>专项权益记录已保留</small></td>
             <td>{{ targetLabel(source) }}</td>
-            <td>{{ effectLabel(source.effect) }}</td>
+            <td>{{ backendTermLabel('entitlementEffect', source.effect) }}</td>
             <td>{{ limitLabel(source) }}</td>
             <td><StatusBadge :text="sourceState(source).text" :tone="sourceState(source).tone" /></td>
             <td><small>生效：{{ source.effectiveAt || '创建时' }}</small><small>到期：{{ source.expiresAt || '无到期时间' }}</small></td>
-            <td><span>{{ source.reason || '—' }}</span><small>{{ source.actorId ? `账号 ${source.actorId}` : '—' }}</small></td>
+            <td><span>{{ source.reason ? backendBusinessText(source.reason) : '—' }}</span><small>{{ source.actorId ? '操作人已记录' : '—' }}</small></td>
             <td><UiButton v-if="!source.revokedAt" class="btn small danger" type="button" :disabled="pending" @click="emit('revoke', source)">撤销</UiButton></td>
           </tr>
         </tbody>

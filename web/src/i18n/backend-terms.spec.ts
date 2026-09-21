@@ -28,6 +28,13 @@ describe('backend term presentation', () => {
     expect(backendTermLabel('entitlementEffect', raw)).not.toContain(raw)
   })
 
+  it('translates module catalog codes used by backend DTOs', () => {
+    expect(backendTermLabel('moduleCategory', 'operations')).toBe('运营能力')
+    expect(backendTermLabel('entitlementKey', 'device.count')).toBe('设备额度')
+    expect(backendTermLabel('entitlementKey', 'customer.phone')).toBe('客户手机号')
+    expect(backendTermLabel('module', 'customer-operations')).toBe('客户经营')
+  })
+
   it('translates permission codes and safely handles unknown permissions', () => {
     expect(backendTermLabel('permission', 'tenant.member.read')).toBe('查看成员')
     expect(backendTermLabel('permission', 'tenant.future.permission')).toBe('其他权限')

@@ -165,6 +165,19 @@ function e2eEngineeringCopyFailures(root) {
   return failures
 }
 
+function rawBackendCollectionFailures(template, consumer) {
+  const failures = []
+  const collectionPattern = /v-for="(\w+)\s+in\s+[^"]*\b(capabilityCodes|dependencies|quotaSchemaKeys|fieldPolicySchemaKeys)\b"[^>]*>([\s\S]*?)<\/span>/g
+  for (const match of template.matchAll(collectionPattern)) {
+    const item = match[1]
+    const body = match[3]
+    if (new RegExp('\\{\\{\\s*' + item + '\\s*\\}\\}').test(body)) {
+      failures.push(`${consumer}: product template displays a raw backend collection value`)
+    }
+  }
+  return failures
+}
+
 function rawBackendPresentationFailures(root, contract) {
   const failures = []
   for (const consumer of contract.presentation.backend_term_projection.required_consumers.filter((path) => path.endsWith('.vue'))) {
@@ -172,6 +185,7 @@ function rawBackendPresentationFailures(root, contract) {
     if (!existsSync(file)) continue
     const { descriptor } = readVue(file)
     const template = descriptor.template?.content ?? ''
+    failures.push(...rawBackendCollectionFailures(template, consumer))
     for (const match of template.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
       const expression = match[1]
       if (rawBackendPresentationField.test(expression) && !/backendTermLabel|backendBusinessText|planLabel/.test(expression)) {

@@ -574,7 +574,8 @@
         "src/services/enterprise/departmentRuntime.ts",
         "src/services/enterprise/auditRuntime.ts",
         "src/services/enterprise/planChangeRuntime.ts",
-        "src/services/enterprise/planRuntime.ts"
+        "src/services/enterprise/planRuntime.ts",
+        "src/features/platform/pages/CommercialModulesView.vue"
       ]
     }
   }
