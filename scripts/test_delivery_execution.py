@@ -321,5 +321,55 @@ class MainProofTests(unittest.TestCase):
         self.blocked('RECEIPT_BINDING_MISMATCH')
 
 
+class MergedRunBindingTests(unittest.TestCase):
+    def refs(self, pr=PR):
+        sha = 'e' * 40
+        return [{'path': f'hvritual/biz/.github/workflows/role.yml@{sha}',
+                 'ref': f'refs/pull/{pr}/merge', 'sha': sha}]
+
+    def merged_run(self, **overrides):
+        return run(pull_requests=[], referenced_workflows=self.refs(), **overrides)
+
+    def test_merged_run_uses_immutable_pr_ref(self):
+        self.assertEqual(d.latest_success([self.merged_run()], CONTRACT['qualification_workflow'], CANDIDATE, PR)['id'], 10)
+
+    def test_branch_title_and_actor_cannot_replace_pr_proof(self):
+        item = run(pull_requests=[], head_branch='feat/enterprise-179-role-grant-tree',
+                   display_title='#213', actor={'login': 'hvritual'})
+        self.assertFalse(d.run_binds_pr(item, PR))
+
+    def test_wrong_or_mixed_pr_refs_are_rejected(self):
+        for references in [self.refs(PR + 1), self.refs() + self.refs(PR + 1)]:
+            self.assertFalse(d.run_binds_pr(run(pull_requests=[], referenced_workflows=references), PR))
+
+    def test_live_conflicting_pr_cannot_use_fallback(self):
+        self.assertFalse(d.run_binds_pr(run(pull_requests=[{'number': PR+1}], referenced_workflows=self.refs()), PR))
+
+    def test_unpinned_or_mismatched_reference_is_rejected(self):
+        for patch_value in [{'sha': 'main'}, {'path': 'hvritual/biz/workflow.yml@main'}, {'ref': f'refs/pull/{PR}/head'}]:
+            references = self.refs()
+            references[0].update(patch_value)
+            self.assertFalse(d.run_binds_pr(run(pull_requests=[], referenced_workflows=references), PR))
+
+    def test_merged_reference_does_not_relax_head_or_event(self):
+        for fields in [{'head_sha': 'f'*40}, {'event': 'workflow_dispatch'}]:
+            self.assertEqual(d.matching_runs([self.merged_run(**fields)], CONTRACT['qualification_workflow'], CANDIDATE, PR), [])
+
+    def test_newer_merged_failure_is_not_hidden(self):
+        with self.assertRaises(d.Blocked) as caught:
+            d.latest_success([run(), self.merged_run(number=11, conclusion='failure')], CONTRACT['qualification_workflow'], CANDIDATE, PR)
+        self.assertEqual(caught.exception.code, 'LATEST_RUN_NOT_SUCCESS')
+
+    def test_main_proof_accepts_detached_pr_with_exact_receipt(self):
+        receipt = ControlTests().receipt()
+        receipt['repository'] = 'hvritual/biz'
+        api = MainFacts(receipt)
+        for item in api.items:
+            item['pull_requests'] = []
+            item['referenced_workflows'] = self.refs()
+        result = d.verify_main(api, CONTRACT, 'contract', 'hvritual/biz', 'd'*40, ['full-01-one'])
+        self.assertEqual(result['state'], 'MAIN_VERIFIED')
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
