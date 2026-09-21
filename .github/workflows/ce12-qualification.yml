@@ -2,22 +2,6 @@ name: CE-12 qualification
 
 on:
   workflow_call:
-  push:
-    branches: [feat/ce-12-first-party-idp-e2e]
-    paths:
-      - contracts/**
-      - internal/access/**
-      - internal/bizruntime/**
-      - internal/deviceops/**
-      - integration/ce12_*
-      - cmd/biz/**
-      - cmd/biz-idp/**
-      - cmd/biz-idp-credential/**
-      - docs/commercial-entitlements/**
-      - .github/workflows/ce12-qualification.yml
-      - go.mod
-      - go.sum
-      - .yunka/**
   workflow_dispatch:
 
 permissions:
