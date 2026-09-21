@@ -2,12 +2,6 @@ name: ec-ri-07-web-qualification
 
 on:
   workflow_call:
-  push:
-    branches:
-      - feat/ec-ri-07-server-audit-trail
-    paths:
-      - .github/workflows/ec-ri-07-web-qualification.yml
-      - web/**
   workflow_dispatch:
 
 permissions:

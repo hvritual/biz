@@ -7,6 +7,8 @@ import pathlib
 import re
 import sys
 
+from check_ci_topology import validate as validate_topology
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 MANIFEST = ROOT / "scripts" / "ci_qualification_manifest.json"
@@ -19,7 +21,7 @@ MAIN_ENTRYPOINT = "main-receipt.yml"
 DOMAIN_GATE_UNITS = {
     "b12-4-tenant-role-mysql.yml",
     "b12-multitenant-access-pressure.yml",
-    "enterprise-178-role-lifecycle.yml",
+    "enterprise-role-qualification.yml",
     "ce03-qualification.yml",
     "ce10-qualification.yml",
     "coffeelink-web.yml",
@@ -329,8 +331,9 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
                     f"{path.name}: API-mode E2E must fail fast on unmocked auth/api/v1 requests"
                 )
 
-    # Only the governed heavy units and the Fast Gate are forbidden from
-    # self-triggering. Other repository workflows may have independent scopes.
+    # Topology is a stronger repository-level contract layered above individual
+    # workflow governance.
+    errors.extend(validate_topology())
     return errors
 
 

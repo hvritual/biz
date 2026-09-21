@@ -2,12 +2,6 @@ name: ec-ri-05-web-qualification
 
 on:
   workflow_call:
-  push:
-    branches:
-      - feat/enterprise-tenant-profile-real-integration
-    paths:
-      - .github/workflows/ec-ri-05-web-qualification.yml
-      - web/**
   workflow_dispatch:
 
 permissions:

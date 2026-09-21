@@ -139,6 +139,29 @@ func TestEnterprise174TenantRolePermissionCatalogDerivesFromActions(t *testing.T
 	}
 }
 
+func TestEnterprise179RoleAssignableCatalogExcludesInternalChildOperations(t *testing.T) {
+	assignable := RoleAssignableActions(Catalog())
+	if len(assignable) == 0 {
+		t.Fatal("role assignable action catalog is empty")
+	}
+	seen := map[string]bool{}
+	for _, action := range assignable {
+		seen[action.Code] = true
+		if !action.TenantRequired || !containsString(action.Authentication, "web-session") {
+			t.Fatalf("non-tenant/web action leaked into role catalog: %+v", action)
+		}
+		if action.RPC == "" && len(action.HTTP) == 0 {
+			t.Fatalf("internal unbound action leaked into role catalog: %+v", action)
+		}
+	}
+	if !seen["tenant.role.set_permissions"] || !seen["tenant.member.list"] {
+		t.Fatalf("expected public role/member actions missing: %v", seen)
+	}
+	if seen["tenant.department.assert_member_assignment_allowed"] {
+		t.Fatal("internal child operation became role-assignable")
+	}
+}
+
 func TestEnterprise174BrandingMembershipPermissionHasSingleOperation(t *testing.T) {
 	var operations []string
 	for _, action := range Catalog() {

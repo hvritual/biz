@@ -17,6 +17,7 @@ concurrency:
 jobs:
   route:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       docs_only: ${{ steps.route.outputs.docs_only }}
     steps:
@@ -39,6 +40,7 @@ jobs:
     needs: route
     if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       candidate_sha: ${{ steps.lifecycle.outputs.candidate_sha }}
       main_sha: ${{ steps.lifecycle.outputs.main_sha }}
@@ -65,53 +67,38 @@ jobs:
             echo "- candidate: \`$(git rev-parse HEAD)\`"
             echo "- current main: \`$(git rev-parse origin/main)\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
   wait-qualification:
     needs: [route, freeze-candidate]
     if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      qualification_run_id: ${{ steps.control.outputs.qualification_run_id }}
+      qualification_attempt: ${{ steps.control.outputs.qualification_attempt }}
+      frozen_main_sha: ${{ steps.control.outputs.frozen_main_sha }}
     env:
       CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
       GH_TOKEN: ${{ github.token }}
     steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
       - name: Require matching PR Qualification success
-        shell: bash
-        run: |
-          set -euo pipefail
-          node <<'NODE'
-          const repo = process.env.GITHUB_REPOSITORY;
-          const token = process.env.GH_TOKEN;
-          const candidate = process.env.CANDIDATE_SHA;
-          const pr = process.env.PR_NUMBER;
-          const headers = {
-            Accept: 'application/vnd.github+json',
-            Authorization: 'Bearer ' + token,
-            'X-GitHub-Api-Version': '2022-11-28',
-          };
-          const api = async (path) => {
-            const response = await fetch('https://api.github.com' + path, { headers });
-            if (!response.ok) throw new Error('GitHub API ' + response.status + ': ' + path);
-            return response.json();
-          };
-          for (let attempt = 1; attempt <= 180; attempt += 1) {
-            const pull = await api('/repos/' + repo + '/pulls/' + pr);
-            if (pull.head?.sha !== candidate) throw new Error('candidate HEAD changed while waiting for PR Qualification');
-            const payload = await api('/repos/' + repo + '/actions/runs?event=pull_request&head_sha=' + encodeURIComponent(candidate) + '&per_page=100');
-            const runs = (payload.workflow_runs ?? [])
-              .filter((run) => run.name === 'PR Qualification')
-              .sort((a, b) => Number(b.id) - Number(a.id));
-            const current = runs[0];
-            if (current?.status === 'completed') {
-              if (current.conclusion !== 'success') throw new Error('PR Qualification did not succeed: ' + current.conclusion);
-              console.log('PR_QUALIFICATION=PASS run=' + current.id + ' candidate=' + candidate);
-              process.exit(0);
-            }
-            console.log('waiting for PR Qualification candidate=' + candidate + ' attempt=' + attempt);
-            await new Promise((resolve) => setTimeout(resolve, 15000));
-          }
-          throw new Error('timed out waiting for PR Qualification');
-          NODE
+        id: control
+        run: python3 scripts/delivery_execution.py wait-qualification
+      - name: Retain qualification decision even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: delivery-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/delivery-execution.json
+          if-no-files-found: error
+          retention-days: 30
 
   full-01-b12-3-tenant-member-mysql:
     needs: [route, wait-qualification]
@@ -313,10 +300,10 @@ jobs:
     if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/enterprise-177-member-lifecycle.yml
 
-  full-41-enterprise-178-role-lifecycle:
+  full-41-enterprise-role-qualification:
     needs: [route, wait-qualification]
     if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
-    uses: ./.github/workflows/enterprise-178-role-lifecycle.yml
+    uses: ./.github/workflows/enterprise-role-qualification.yml
 
   full-42-evolution-qualification:
     needs: [route, wait-qualification]
@@ -326,6 +313,8 @@ jobs:
   merge-ready:
     needs:
       - route
+      - freeze-candidate
+      - wait-qualification
       - full-01-b12-3-tenant-member-mysql
       - full-02-b12-4-tenant-role-mysql
       - full-03-b12-5-tenant-bootstrap-mysql
@@ -366,10 +355,11 @@ jobs:
       - full-38-enterprise-174-current-authorization
       - full-39-enterprise-175-authorized-navigation
       - full-40-enterprise-177-member-lifecycle
-      - full-41-enterprise-178-role-lifecycle
+      - full-41-enterprise-role-qualification
       - full-42-evolution-qualification
     if: always() && github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       actions: read
@@ -380,20 +370,6 @@ jobs:
       PR_NUMBER: ${{ github.event.pull_request.number }}
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Require complete Full Merge Gate
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import json, os, sys
-          needs = json.loads(os.environ["FULL_RESULTS"])
-          full = {name: value for name, value in needs.items() if name.startswith("full-")}
-          bad = {name: value.get("result") for name, value in full.items() if value.get("result") != "success"}
-          if bad:
-              print("FULL_MERGE_GATE_FAILURE " + json.dumps(bad, sort_keys=True), file=sys.stderr)
-              raise SystemExit(1)
-          print("FULL_MERGE_GATE=PASS jobs=" + str(len(full)))
-          PY
       - name: Checkout exact candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -406,7 +382,17 @@ jobs:
           set -euo pipefail
           git fetch origin +refs/heads/main:refs/remotes/origin/main
           python3 scripts/candidate_lifecycle.py assert-fresh --main-ref origin/main --candidate-ref HEAD
-          echo "CANDIDATE_LIFECYCLE=MERGE_READY candidate=$CANDIDATE_SHA"
+      - name: Enforce Delivery Execution Control Plane
+        if: always()
+        run: python3 scripts/delivery_execution.py merge-ready
+      - name: Retain exact delivery receipt even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: delivery-execution-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/delivery-execution.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Record CI amplification metrics
         env:
           GITHUB_TOKEN: ${{ env.GH_TOKEN }}

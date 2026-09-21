@@ -1,27 +1,13 @@
-name: Enterprise 178 role lifecycle qualification
+name: Enterprise Role Qualification
 
 on:
   workflow_call:
-  push:
-    branches:
-      - feat/enterprise-178-role-lifecycle
-    paths:
-      - .github/workflows/enterprise-178-role-lifecycle.yml
-      - contracts/proto/access/v1/tenant_role.proto
-      - contracts/commercial/operation-capabilities.v1.json
-      - contracts/commercial/generated/**
-      - contracts/generated/**
-      - docs/enterprise-center/decisions.md
-      - internal/access/**
-      - internal/bizruntime/**
-      - integration/b12_role_runtime_mysql_test.go
-      - integration/enterprise_178_role_lifecycle_mysql_test.go
-      - web/src/features/enterprise/**
-      - web/src/services/enterprise/**
-      - web/src/services/runtime/api.ts
-      - web/src/stores/enterprise.ts
-      - web/src/types/enterprise.ts
-      - web/e2e/enterprise-roles-real.spec.ts
+    inputs:
+      skip_fast_check:
+        description: Canonical Fast Gate already passed in PR Qualification
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
 
 permissions:
@@ -30,13 +16,13 @@ permissions:
 jobs:
   backend:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     services:
       mysql:
         image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: biz_enterprise178
+          MYSQL_DATABASE: biz_enterprise_role
         ports:
           - 3306:3306
         options: >-
@@ -45,7 +31,7 @@ jobs:
           --health-timeout=5s
           --health-retries=30
     env:
-      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_enterprise178?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_enterprise_role?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
       YUNKA_TEST_RESET_FIXTURES: "1"
     steps:
       - name: Checkout exact Biz candidate
@@ -102,7 +88,7 @@ jobs:
           make -C yunka.io rpc-tools
           echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
 
-      - name: Verify canonical generation and formatting
+      - name: Verify canonical generation, formatting and unit regression
         shell: bash
         run: |
           set -euo pipefail
@@ -110,20 +96,20 @@ jobs:
           git -C biz diff --exit-code
           mapfile -t changed < <(git -C biz diff --name-only origin/main...HEAD -- '*.go')
           if ((${#changed[@]})); then
-            test -z "$(printf '%s\n' "${changed[@]}" | sed 's#^#biz/#' | xargs gofmt -l)"
+            unformatted="$(printf '%s\n' "${changed[@]}" | sed 's#^#biz/#' | xargs gofmt -l)"
+            if [[ -n "$unformatted" ]]; then
+              printf 'GOFMT_REQUIRED\n%s\n' "$unformatted" >&2
+              exit 1
+            fi
           fi
-
-      - name: Run Access unit and runtime regression
-        shell: bash
-        run: |
-          set -euo pipefail
           go -C biz test ./internal/access/... ./internal/bizruntime
 
-      - name: Run Enterprise 178 MySQL qualification
+      - name: Run Enterprise Role MySQL qualification
         shell: bash
         run: |
           set -euo pipefail
           go -C biz test -count=1 -tags=integration ./integration -run '^TestEnterprise178'
+          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise179'
           go -C biz test -count=1 -tags=integration ./integration -run '^TestB124TenantRolePermissionsAreTenantScopedAndImmediate$'
           go -C biz test -count=1 -tags=integration ./integration -run '^TestB124OwnerRoleProtectsRequiredPermissionsAndLastAssignment$'
           test -z "$(git -C biz status --porcelain)"
@@ -132,22 +118,31 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: web/package-lock.json
+
       - run: npm ci
         working-directory: web
-      - run: npm run check
+
+      - name: Run canonical Web Fast Gate
+        if: ${{ !inputs.skip_fast_check }}
+        run: npm run check
         working-directory: web
+
       - name: Install Chromium
         working-directory: web
         run: npx playwright install --with-deps chromium
-      - name: Run role lifecycle E2E
+
+      - name: Run canonical role lifecycle and grant E2E
         working-directory: web
         shell: bash
         run: |

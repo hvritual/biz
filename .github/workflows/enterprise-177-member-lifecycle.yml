@@ -2,28 +2,6 @@ name: Enterprise 177 member lifecycle qualification
 
 on:
   workflow_call:
-  push:
-    branches:
-      - feat/enterprise-177-member-lifecycle-appeal
-    paths:
-      - .github/workflows/enterprise-177-member-lifecycle.yml
-      - .github/workflows/enterprise-177-contract-regenerate.yml
-      - contracts/proto/access/v1/tenant_member.proto
-      - contracts/commercial/operation-capabilities.v1.json
-      - internal/access/**
-      - internal/bizruntime/**
-      - integration/enterprise_177_member_lifecycle_mysql_test.go
-      - integration/b12_member_owner_invariant_mysql_test.go
-      - web/src/features/enterprise/**
-      - web/src/features/system/pages/AuthorizationStateView.vue
-      - web/src/services/enterprise/memberRuntime.ts
-      - web/src/services/memberPolicy.ts
-      - web/src/services/memberPolicy.spec.ts
-      - web/src/services/runtime/memberAppeal.ts
-      - web/src/stores/enterprise.ts
-      - web/src/i18n/messages.ts
-      - web/src/router/index.ts
-      - web/e2e/enterprise-members-real.spec.ts
   workflow_dispatch:
 
 permissions:

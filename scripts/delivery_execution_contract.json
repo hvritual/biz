@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "lifecycle_authority": "scripts/candidate_lifecycle.json",
+  "topology_authority": "scripts/ci_topology_contract.json",
+  "qualification_workflow": ".github/workflows/pr-qualification.yml",
+  "merge_workflow": ".github/workflows/pr-merge-gate.yml",
+  "limits": {
+    "discovery_seconds": 120,
+    "qualification_seconds": 2700,
+    "no_progress_seconds": 900,
+    "poll_seconds": 15,
+    "request_seconds": 20,
+    "transport_attempts": 3,
+    "max_pages": 20,
+    "max_receipt_bytes": 1048576,
+    "full_runs_per_candidate": 1,
+    "full_attempts_per_candidate": 1
+  }
+}

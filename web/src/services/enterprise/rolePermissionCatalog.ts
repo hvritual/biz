@@ -12,8 +12,10 @@ export type ServerPermissionDefinition = {
 export type RolePermissionDefinition = {
   permission: string
   group: string
+  groupKey: string
   label: string
   description: string
+  actions: string[]
 }
 
 type CachedRolePermissionDefinition = {
@@ -48,8 +50,10 @@ function permissionPresentation(item: CachedRolePermissionDefinition): RolePermi
   return {
     permission: item.permission,
     group: backendTermLabel('permissionGroup', item.groupKey),
+    groupKey: item.groupKey,
     label,
     description,
+    actions: [...item.actions],
   }
 }
 
@@ -98,7 +102,15 @@ export function rolePermissionGroups() {
     values.push(item)
     groups.set(item.group, values)
   }
-  return [...groups.entries()].map(([name, permissions]) => ({ name, permissions }))
+  return [...groups.entries()].map(([name, permissions]) => ({
+    name,
+    key: permissions[0]?.groupKey ?? name,
+    permissions,
+  }))
+}
+
+export function availableRolePermissionKeys() {
+  return new Set(liveRolePermissionCatalog.map((item) => item.permission))
 }
 
 export function cloneGrants(grants: PermissionGrant[] = []): PermissionGrant[] {

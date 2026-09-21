@@ -6,6 +6,7 @@ import type { Role, DataScope } from '@/types/enterprise'
 import { scopeLabels } from '@/types/enterprise'
 import { permissionCatalog as demoPermissionCatalog } from '@/services/demo/seed'
 import {
+  availableRolePermissionKeys,
   clearRolePermissionCatalog,
   replaceRolePermissionCatalog,
   rolePermissionGroups,
@@ -25,6 +26,7 @@ const busy = ref(false)
 const catalogBusy = ref(false)
 const catalogReady = ref(false)
 const catalogRevision = ref(0)
+const groupAnchors = ref<Record<string, HTMLElement | null>>({})
 
 const draft = ref<Role>({
   id: '',
@@ -45,20 +47,24 @@ const permissionGroups = computed(() => {
   void catalogRevision.value
   if (apiMode.value) {
     return rolePermissionGroups().map((group) => ({
+      key: group.key,
       name: group.name,
       items: group.permissions.map((item) => ({
         key: item.permission,
         label: item.label,
         description: item.description,
+        actions: item.actions,
       })),
     }))
   }
   return demoPermissionCatalog.map((module) => ({
+    key: module.id,
     name: module.name,
     items: module.actions.map((action) => ({
       key: `${module.id}.${action}`,
       label: ({ read: '查看', manage: '管理', assign: '分配', export: '导出' } as Record<string, string>)[action] ?? action,
       description: `${module.name} · ${action}`,
+      actions: [] as string[],
     })),
   }))
 })
@@ -113,10 +119,61 @@ function toggle(value: string) {
     : [...draft.value.permissions, value]
 }
 
+function selectedInGroup(group: (typeof permissionGroups.value)[number]) {
+  return group.items.filter((item) => draft.value.permissions.includes(item.key)).length
+}
+
+function groupChecked(group: (typeof permissionGroups.value)[number]) {
+  return group.items.length > 0 && selectedInGroup(group) === group.items.length
+}
+
+function groupMixed(group: (typeof permissionGroups.value)[number]) {
+  const selected = selectedInGroup(group)
+  return selected > 0 && selected < group.items.length
+}
+
+function toggleGroup(group: (typeof permissionGroups.value)[number], event: Event) {
+  if (readonly.value || group.items.length === 0) return
+  const keys = new Set(group.items.map((item) => item.key))
+  const checked = (event.target as HTMLInputElement).checked
+  if (!checked) {
+    draft.value.permissions = draft.value.permissions.filter((permission) => !keys.has(permission))
+    return
+  }
+  draft.value.permissions = [...new Set([
+    ...draft.value.permissions,
+    ...group.items.map((item) => item.key),
+  ])]
+}
+
+function setGroupAnchor(key: string, element: unknown) {
+  groupAnchors.value[key] = element instanceof HTMLElement ? element : null
+}
+
+function focusGroup(key: string) {
+  const element = groupAnchors.value[key]
+  element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  element?.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus()
+}
+
+async function revalidatePermissionSelection() {
+  if (!apiMode.value) return
+  const catalog = await readActionCatalog()
+  replaceRolePermissionCatalog(catalog.permissions ?? [])
+  catalogRevision.value += 1
+  catalogReady.value = true
+  const available = availableRolePermissionKeys()
+  const unavailable = draft.value.permissions.filter((permission) => !available.has(permission))
+  if (unavailable.length === 0) return
+  draft.value.permissions = draft.value.permissions.filter((permission) => available.has(permission))
+  throw new Error('可配置权限已发生变化，已移除不可用项，请重新确认后保存。')
+}
+
 async function save() {
   error.value = ''
   busy.value = true
   try {
+    await revalidatePermissionSelection()
     await store.saveRole(draft.value)
     ui.toast(
       store.previewMode
@@ -192,10 +249,50 @@ async function save() {
         <h3>功能权限</h3>
         <span class="muted">已选 {{ draft.permissions.length }} 项</span>
       </div>
-      <div class="permission-groups">
-        <section v-for="group in permissionGroups" :key="group.name" class="permission-group">
-          <h4>{{ group.name }}</h4>
-          <label v-for="item in group.items" :key="item.key" class="permission-item">
+      <div
+        v-if="permissionGroups.length"
+        class="permission-nav"
+        aria-label="权限分组快捷定位"
+      >
+        <UiButton
+          v-for="group in permissionGroups"
+          :key="`nav-${group.key}`"
+          class="permission-nav-button"
+          type="button"
+          @click="focusGroup(group.key)"
+        >
+          {{ group.name }}
+        </UiButton>
+      </div>
+      <div class="permission-groups" data-role-permission-tree>
+        <section
+          v-for="group in permissionGroups"
+          :key="group.key"
+          :ref="(element) => setGroupAnchor(group.key, element)"
+          class="permission-group"
+          :data-role-permission-group="group.key"
+        >
+          <label class="permission-group-header">
+            <UiInput
+              type="checkbox"
+              :aria-label="`${group.name} 全选`"
+              :checked="groupChecked(group)"
+              :indeterminate="groupMixed(group)"
+              :disabled="readonly || group.items.length === 0"
+              :data-role-group-state="groupMixed(group) ? 'mixed' : groupChecked(group) ? 'checked' : 'unchecked'"
+              @change="toggleGroup(group, $event)"
+            />
+            <span>
+              <strong>{{ group.name }}</strong>
+              <small>{{ selectedInGroup(group) }} / {{ group.items.length }}</small>
+            </span>
+          </label>
+          <label
+            v-for="item in group.items"
+            :key="item.key"
+            class="permission-item"
+            :data-role-permission-leaf="item.key"
+          >
             <UiInput
               type="checkbox"
               :aria-label="`${group.name} ${item.label}`"
@@ -209,6 +306,9 @@ async function save() {
             </span>
           </label>
         </section>
+      </div>
+      <div v-if="apiMode && catalogReady && !permissionGroups.length" class="notice-box">
+        当前企业暂无可配置权限。
       </div>
 
       <label class="option-line">
@@ -227,6 +327,16 @@ async function save() {
 </template>
 
 <style scoped>
+.permission-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.permission-nav-button {
+  width: auto;
+  min-width: max-content;
+}
 .permission-groups {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -239,9 +349,31 @@ async function save() {
   border-radius: 9px;
   padding: 14px;
 }
-.permission-group h4 {
+.permission-group-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+.permission-group-header > [data-slot="input"],
+.permission-item > [data-slot="input"] {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0;
+}
+.permission-group-header strong,
+.permission-group-header small {
+  display: block;
+}
+.permission-group-header strong {
   font-size: 13px;
-  margin-bottom: 10px;
+}
+.permission-group-header small {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: 10px;
 }
 .permission-item {
   display: flex;

@@ -1,8 +1,6 @@
 name: Unified evolution qualification
 on:
   workflow_call:
-  push:
-    branches: [integration/biz-evolution-20260912]
   workflow_dispatch:
 permissions:
   contents: read

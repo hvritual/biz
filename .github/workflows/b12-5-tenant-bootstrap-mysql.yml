@@ -2,20 +2,6 @@ name: b12-5-tenant-bootstrap-mysql
 
 on:
   workflow_call:
-  push:
-    branches:
-      - agent/b12-multitenant-access-pressure
-    paths:
-      - .github/workflows/b12-5-tenant-bootstrap-mysql.yml
-      - contracts/**
-      - docs/pressure/B12-framework-pressure.md
-      - internal/access/**
-      - internal/assembly/**
-      - internal/bizruntime/**
-      - integration/b12_tenant_bootstrap_mysql_test.go
-      - modules/access/**
-      - go.mod
-      - go.sum
   workflow_dispatch:
 
 permissions:

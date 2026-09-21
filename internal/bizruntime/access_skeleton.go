@@ -57,7 +57,10 @@ func (factory applicationFactories) BuildAccessTenantRolePermission(generatedass
 	if err != nil {
 		return nil, err
 	}
-	return checkedRoles{inner: inner}, nil
+	if factory.snapshots == nil {
+		return nil, errors.New("biz access pressure: role entitlement snapshot reader is required")
+	}
+	return checkedRoles{inner: inner, entitlements: factory.snapshots}, nil
 }
 
 func (factory applicationFactories) BuildAccessTenantLifecycle(dependencies generatedassembly.AccessTenantLifecycleDependencies) (accessapp.TenantLifecycleApplication, error) {

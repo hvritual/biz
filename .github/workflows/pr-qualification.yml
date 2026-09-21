@@ -15,6 +15,7 @@ concurrency:
 jobs:
   route:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       access: ${{ steps.route.outputs.access }}
       commercial: ${{ steps.route.outputs.commercial }}
@@ -28,6 +29,7 @@ jobs:
       ce_receipts: ${{ steps.route.outputs.ce_receipts }}
       web_e2e_harness: ${{ steps.route.outputs.web_e2e_harness }}
       web_product: ${{ steps.route.outputs.web_product }}
+      role_grants: ${{ steps.route.outputs.role_grants }}
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -57,13 +59,22 @@ jobs:
     needs: route
     if: needs.route.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
           persist-credentials: false
       - name: CI governance, lifecycle and router tests
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
+          set -euo pipefail
+          git fetch origin "$BASE_SHA" --depth=1
+          python3 scripts/check_ci_topology.py --base-ref "$BASE_SHA"
+          python3 scripts/delivery_execution.py validate-contract
+          python3 scripts/test_delivery_execution.py
           python3 scripts/candidate_lifecycle.py validate-contract
           python3 scripts/check_ci_qualification_governance.py
           python3 scripts/test_ci_changed_files_router.py
@@ -71,7 +82,7 @@ jobs:
           node --test .github/scripts/main-qualification.test.mjs
 
   fast-web:
-    needs: route
+    needs: [route, governance]
     if: needs.route.outputs.docs_only != 'true'
     uses: ./.github/workflows/candidate-qualification.yml
 
@@ -85,15 +96,17 @@ jobs:
     if: needs.route.outputs.access == 'true'
     uses: ./.github/workflows/b12-multitenant-access-pressure.yml
 
-  access-lifecycle:
-    needs: [route, governance, fast-web]
-    if: needs.route.outputs.access == 'true'
-    uses: ./.github/workflows/enterprise-178-role-lifecycle.yml
-
   access-native-login:
     needs: [route, governance, fast-web]
     if: needs.route.outputs.native_login == 'true'
     uses: ./.github/workflows/enterprise-172-native-login.yml
+
+  access-enterprise-role:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.role_grants == 'true'
+    uses: ./.github/workflows/enterprise-role-qualification.yml
+    with:
+      skip_fast_check: true
 
   commercial-map:
     needs: [route, governance, fast-web]

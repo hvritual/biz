@@ -2,13 +2,6 @@ name: c9-biz-pressure
 
 on:
   workflow_call:
-  push:
-    branches:
-      - agent/c9-biz-pressure-conformance
-      - agent/c9-7-biz-conformance
-      - agent/c9-8-cross-application-conformance
-      - agent/c9-9-conformance-closure
-      - agent/c10-4-consumer-upgrade
 permissions:
   contents: read
 

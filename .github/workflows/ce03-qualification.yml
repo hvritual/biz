@@ -2,22 +2,6 @@ name: CE-03 qualification
 
 on:
   workflow_call:
-  push:
-    branches: [feat/ce-03-capability-mapping]
-    paths:
-      - .github/workflows/ce03-qualification.yml
-      - contracts/**
-      - internal/commercial/**
-      - internal/architecture/**
-      - internal/access/application/**
-      - internal/deviceops/application/**
-      - cmd/commercial-catalog/**
-      - scripts/ce03_*.py
-      - scripts/test_ce03_*.py
-      - docs/commercial-entitlements/**
-      - Makefile
-      - go.mod
-      - go.sum
   workflow_dispatch:
 
 permissions:

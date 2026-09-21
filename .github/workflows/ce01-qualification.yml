@@ -2,16 +2,6 @@ name: CE-01 qualification
 
 on:
   workflow_call:
-  push:
-    branches: [feat/ce-01-baseline-contract-probes]
-    paths:
-      - .github/workflows/ce01-qualification.yml
-      - internal/architecture/**
-      - docs/commercial-entitlements/**
-      - contracts/**
-      - go.mod
-      - go.sum
-      - .yunka/source.env
   workflow_dispatch:
 
 permissions:

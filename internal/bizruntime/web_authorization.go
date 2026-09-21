@@ -73,18 +73,42 @@ func (auth *runtimeWebAuth) handleActionCatalog(writer http.ResponseWriter, requ
 		http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	_ = authentication
 	actions := accessauthorization.Catalog()
 	tenantActions := make([]accessauthorization.Action, 0, len(actions))
-	for _, action := range actions {
-		if action.TenantRequired {
-			tenantActions = append(tenantActions, action)
+	var entitlementSummary *authorizationEntitlementVersionSummary
+	if authentication.Session.ActorKind == accesspersistence.WebActorUser && strings.TrimSpace(authentication.Session.ActiveTenantID) != "" {
+		_, entitlements := auth.currentAuthorizationDependencies()
+		if entitlements == nil {
+			http.Error(writer, "authorization unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		filtered, snapshot, readErr := availableTenantRoleActions(
+			request.Context(),
+			entitlements,
+			authentication.Session.ActiveTenantID,
+		)
+		if readErr != nil {
+			http.Error(writer, "authorization unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		tenantActions = filtered
+		entitlementSummary = &authorizationEntitlementVersionSummary{
+			Version:         snapshot.EntitlementVersion,
+			SourceVersion:   snapshot.SourceVersion,
+			CatalogRevision: snapshot.CatalogRevision,
+		}
+	} else {
+		for _, action := range actions {
+			if action.TenantRequired {
+				tenantActions = append(tenantActions, action)
+			}
 		}
 	}
 	writeJSON(writer, http.StatusOK, map[string]any{
 		"schema_version": "v1",
 		"actions":        tenantActions,
-		"permissions":    accessauthorization.TenantRolePermissions(),
+		"permissions":    accessauthorization.TenantRolePermissionsForActions(tenantActions),
+		"entitlement":    entitlementSummary,
 	})
 }
 

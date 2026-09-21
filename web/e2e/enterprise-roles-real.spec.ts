@@ -19,7 +19,15 @@ type Role = {
 type RoleSummary = { roleId: string; roleName: string; roleStatus: string }
 type Member = { userId: string; email: string; status: string; version: number; name: string; phone: string; employeeId: string; position: string; departmentId: string; roles: RoleSummary[]; derivedDataScope: string }
 type Write = { path: string; method: string; headers: Record<string, string>; body: unknown }
-type Options = { unauthenticated?: boolean; listStatus?: number; mutationStatus?: number; readbackStatus?: number; ownerConflict?: boolean; authorizationStatus?: number }
+type Options = {
+  unauthenticated?: boolean
+  listStatus?: number
+  mutationStatus?: number
+  readbackStatus?: number
+  ownerConflict?: boolean
+  authorizationStatus?: number
+  shrinkCatalogAfterFirstRead?: boolean
+}
 
 const active = 'TENANT_ROLE_STATUS_ACTIVE'
 const disabled = 'TENANT_ROLE_STATUS_DISABLED'
@@ -47,6 +55,7 @@ async function mockRoleServer(page: Page, options: Options = {}) {
     { userId: 'user-002', email: 'ops@coffeelink.test', status: activeMember, version: 2, name: 'Bob Lin', phone: '', employeeId: 'EMP-1002', position: '运营负责人', departmentId: 'dept-ops', roles: [summary(roles[1]!)], derivedDataScope: 'sites' },
   ]
   const writes: Write[] = []
+  let actionCatalogReads = 0
   const record = (route: Route) => {
     const request = route.request()
     writes.push({ path: new URL(request.url()).pathname.replace(/^\/api(?=\/)/, ''), method: request.method(), headers: request.headers(), body: request.postDataJSON() })
@@ -99,16 +108,21 @@ async function mockRoleServer(page: Page, options: Options = {}) {
       button_codes: buttonCodes,
     })
   })
-  await page.route(/\/(?:api\/)?auth\/action-catalog(?:\?.*)?$/, async (route) => json(route, 200, {
-    schema_version: 'v1',
-    actions: [],
-    permissions: [
+  await page.route(/\/(?:api\/)?auth\/action-catalog(?:\?.*)?$/, async (route) => {
+    actionCatalogReads += 1
+    const permissions = [
       { permission: 'tenant.member.read', groups: ['access/tenant_member_lifecycle'], actions: ['tenant.member.get', 'tenant.member.list'] },
       { permission: 'tenant.member.manage', groups: ['access/tenant_member_lifecycle'], actions: ['tenant.member.invite', 'tenant.member.profile.update'] },
       { permission: 'tenant.role.read', groups: ['access/tenant_role_permission'], actions: ['tenant.role.get', 'tenant.role.list'] },
       { permission: 'tenant.role.manage', groups: ['access/tenant_role_permission'], actions: ['tenant.role.create', 'tenant.role.set_permissions'] },
-    ],
-  }))
+    ].filter((item) => !(options.shrinkCatalogAfterFirstRead && actionCatalogReads > 1 && item.permission === 'tenant.member.read'))
+    return json(route, 200, {
+      schema_version: 'v1',
+      actions: [],
+      permissions,
+      entitlement: { version: actionCatalogReads, source_version: 1, catalog_revision: 1 },
+    })
+  })
   await page.route(/\/(?:api\/)?v1\/tenant\/members(?:\?.*)?$/, async (route) => json(route, 200, { members }))
   await page.route(/\/(?:api\/)?v1\/tenant\/roles(?:\/.*)?(?:\?.*)?$/, async (route) => {
     const request = route.request()
@@ -190,7 +204,7 @@ async function mockRoleServer(page: Page, options: Options = {}) {
     }
     return json(route, 400, { message: 'unsupported mutation' })
   })
-  return { getWrites: () => writes, getMembers: () => members }
+  return { getWrites: () => writes, getMembers: () => members, getActionCatalogReads: () => actionCatalogReads }
 }
 
 async function openRealRoles(page: Page) {
@@ -236,6 +250,57 @@ test('role create and permission update use independent idempotency keys and con
   expect(create.headers['x-csrf-token']).toBe('csrf-real-role')
   expect(create.body).toMatchObject({ name: '华东运营', description: '负责华东区域日常运营' })
   expect(permissions.body).toMatchObject({ roleId: 'role-new', version: 1 })
+})
+
+test('role permission tree preserves mixed full and none parent states and authoritative reopen', async ({ page }) => {
+  await mockRoleServer(page)
+  await openRealRoles(page)
+  await rowFor(page, '运营负责人').getByRole('button', { name: '编辑' }).click()
+  let dialog = page.getByRole('dialog', { name: '编辑角色权限' })
+  const memberGroup = dialog.locator('[data-role-permission-group="member"]')
+  const parent = memberGroup.getByLabel('企业成员 全选')
+
+  await expect(parent).toHaveAttribute('aria-checked', 'mixed')
+  await parent.check()
+  await expect(parent).toBeChecked()
+  await expect(memberGroup.locator('[data-role-permission-leaf="tenant.member.read"] input')).toBeChecked()
+  await expect(memberGroup.locator('[data-role-permission-leaf="tenant.member.manage"] input')).toBeChecked()
+
+  await dialog.getByRole('button', { name: '保存角色' }).click()
+  await expect(page.getByRole('status')).toContainText('角色配置已保存并更新。')
+
+  await rowFor(page, '运营负责人').getByRole('button', { name: '编辑' }).click()
+  dialog = page.getByRole('dialog', { name: '编辑角色权限' })
+  const reopenedGroup = dialog.locator('[data-role-permission-group="member"]')
+  await expect(reopenedGroup.getByLabel('企业成员 全选')).toBeChecked()
+  await reopenedGroup.locator('[data-role-permission-leaf="tenant.member.manage"] input').uncheck()
+  const reopenedParent = reopenedGroup.getByLabel('企业成员 全选')
+  await expect(reopenedParent).toHaveAttribute('aria-checked', 'mixed')
+  await reopenedParent.focus()
+  await reopenedParent.press('Space')
+  await expect(reopenedParent).toBeChecked()
+  await reopenedParent.press('Space')
+  await expect(reopenedParent).not.toBeChecked()
+  await expect(reopenedGroup.locator('input[type="checkbox"]:checked')).toHaveCount(0)
+
+  await dialog.getByRole('button', { name: '角色权限' }).focus()
+  await dialog.getByRole('button', { name: '企业成员' }).click()
+  await expect(reopenedParent).toBeFocused()
+})
+
+test('role save revalidates current permission catalog and rejects retired selection before write', async ({ page }) => {
+  const server = await mockRoleServer(page, { shrinkCatalogAfterFirstRead: true })
+  await openRealRoles(page)
+  await rowFor(page, '运营负责人').getByRole('button', { name: '编辑' }).click()
+  const dialog = page.getByRole('dialog', { name: '编辑角色权限' })
+  await expect(dialog.locator('[data-role-permission-leaf="tenant.member.read"] input')).toBeChecked()
+  await dialog.getByRole('button', { name: '保存角色' }).click()
+
+  await expect(dialog.getByRole('alert')).toContainText('可配置权限已发生变化')
+  await expect(dialog.locator('[data-role-permission-leaf="tenant.member.read"]')).toHaveCount(0)
+  expect(server.getActionCatalogReads()).toBeGreaterThanOrEqual(2)
+  expect(server.getWrites().filter((item) => item.path.endsWith('/role-ops/permissions'))).toHaveLength(0)
+  await expect(page.getByText('角色配置已保存并更新。', { exact: true })).toHaveCount(0)
 })
 
 test('canonical roles page exposes authoritative member counts while membership changes stay on Members flow', async ({ page }) => {
