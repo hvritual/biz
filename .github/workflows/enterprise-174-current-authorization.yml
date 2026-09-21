@@ -2,23 +2,6 @@ name: Enterprise 174 current authorization gate
 
 on:
   workflow_call:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/enterprise-174-current-authorization.yml
-      - .yunka/source.env
-      - Makefile
-      - contracts/**
-      - internal/access/**
-      - internal/bizruntime/**
-      - integration/enterprise_174_current_authorization_mysql_test.go
-      - web/package.json
-      - web/package-lock.json
-      - web/src/features/enterprise/**
-      - web/src/services/enterprise/**
-      - web/src/services/runtime/**
-      - web/tests/ce12/enterprise-174-authorization.spec.ts
   workflow_dispatch:
 
 permissions:
