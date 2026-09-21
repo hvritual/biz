@@ -2,9 +2,6 @@ name: CE-06 qualification
 
 on:
   workflow_call:
-  push:
-    branches: [main]
-    paths: ['contracts/**','internal/**','integration/ce06*','scripts/ce06*','docs/commercial-entitlements/**','.github/workflows/ce06-qualification.yml','Makefile','go.mod','go.sum','.yunka/**']
   workflow_dispatch:
 permissions:
   contents: read
