@@ -132,10 +132,11 @@ function groupMixed(group: (typeof permissionGroups.value)[number]) {
   return selected > 0 && selected < group.items.length
 }
 
-function toggleGroup(group: (typeof permissionGroups.value)[number]) {
+function toggleGroup(group: (typeof permissionGroups.value)[number], event: Event) {
   if (readonly.value || group.items.length === 0) return
   const keys = new Set(group.items.map((item) => item.key))
-  if (groupChecked(group)) {
+  const checked = (event.target as HTMLInputElement).checked
+  if (!checked) {
     draft.value.permissions = draft.value.permissions.filter((permission) => !keys.has(permission))
     return
   }
@@ -279,7 +280,7 @@ async function save() {
               :indeterminate="groupMixed(group)"
               :disabled="readonly || group.items.length === 0"
               :data-role-group-state="groupMixed(group) ? 'mixed' : groupChecked(group) ? 'checked' : 'unchecked'"
-              @change="toggleGroup(group)"
+              @change="toggleGroup(group, $event)"
             />
             <span>
               <strong>{{ group.name }}</strong>
