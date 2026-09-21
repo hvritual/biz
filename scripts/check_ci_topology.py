@@ -138,7 +138,7 @@ def validate(base_ref: str | None = None) -> list[str]:
             mysql_text = mysql_path.read_text(encoding="utf-8")
             timeouts = [
                 int(value)
-                for value in re.findall(r"^    timeout-minutes:\\s*(\\d+)\\s*$", mysql_text, re.MULTILINE)
+                for value in re.findall(r"^    timeout-minutes:\s*(\d+)\s*$", mysql_text, re.MULTILINE)
             ]
             max_minutes = int(mysql_budget["max_job_minutes"])
             if len(timeouts) != 1:
