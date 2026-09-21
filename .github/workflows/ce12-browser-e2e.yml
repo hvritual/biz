@@ -2,24 +2,6 @@ name: CE-12 browser identity E2E
 
 on:
   workflow_call:
-  push:
-    branches: [feat/ce-12-first-party-idp-e2e]
-    paths:
-      - cmd/biz/**
-      - cmd/biz-idp/**
-      - cmd/biz-idp-credential/**
-      - internal/access/**
-      - internal/bizruntime/**
-      - internal/commercial/**
-      - integration/ce12_*
-      - web/playwright.ce12.config.ts
-      - web/tests/ce12/**
-      - docs/commercial-entitlements/**
-      - .github/workflows/ce12-browser-e2e.yml
-      - go.mod
-      - go.sum
-      - web/package.json
-      - web/package-lock.json
   workflow_dispatch:
 
 permissions:
