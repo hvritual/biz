@@ -2,9 +2,6 @@ name: CE-10 qualification
 
 on:
   workflow_call:
-  push:
-    branches: [feat/ce-10-durable-provisioning]
-    paths: ['contracts/**','internal/**','integration/ce10*','scripts/ce10*','docs/commercial-entitlements/**','.github/workflows/ce10-qualification.yml','Makefile','go.mod','go.sum','.yunka/**']
   workflow_dispatch:
 permissions: {contents: read}
 env:
