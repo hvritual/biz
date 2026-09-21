@@ -62,9 +62,14 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
           persist-credentials: false
       - name: CI governance, lifecycle and router tests
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
+          git fetch origin "$BASE_SHA" --depth=1
+          python3 scripts/check_ci_topology.py --base-ref "$BASE_SHA"
           python3 scripts/candidate_lifecycle.py validate-contract
           python3 scripts/check_ci_qualification_governance.py
           python3 scripts/test_ci_changed_files_router.py
