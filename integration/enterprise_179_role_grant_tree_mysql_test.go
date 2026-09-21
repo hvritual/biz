@@ -72,7 +72,7 @@ func TestEnterprise179RoleGrantTreeRejectsInjectionAndRevokesNextRequest(t *test
 	}
 
 	roleA, err = roles.SetTenantRolePermissions(ctxA("grant-a"), &accessv1.SetTenantRolePermissionsRequest{
-		RoleId: roleA.GetId(),
+		RoleId:  roleA.GetId(),
 		Version: roleA.GetVersion(),
 		Permissions: []*accessv1.PermissionGrantInput{
 			{Permission: "tenant.member.read", Scope: accessv1.DataScope_DATA_SCOPE_ALL},
@@ -118,8 +118,8 @@ func TestEnterprise179RoleGrantTreeRejectsInjectionAndRevokesNextRequest(t *test
 	}
 
 	if _, err := roles.SetTenantRolePermissions(ctxA("cross-tenant"), &accessv1.SetTenantRolePermissionsRequest{
-		RoleId: roleB.GetId(),
-		Version: roleB.GetVersion(),
+		RoleId:      roleB.GetId(),
+		Version:     roleB.GetVersion(),
 		Permissions: []*accessv1.PermissionGrantInput{{Permission: "tenant.role.read", Scope: accessv1.DataScope_DATA_SCOPE_ALL}},
 	}); err == nil {
 		t.Fatal("tenant A changed tenant B role grants")
@@ -127,7 +127,7 @@ func TestEnterprise179RoleGrantTreeRejectsInjectionAndRevokesNextRequest(t *test
 
 	revocationStarted := time.Now()
 	roleA, err = roles.SetTenantRolePermissions(ctxA("revoke-member-read"), &accessv1.SetTenantRolePermissionsRequest{
-		RoleId: roleA.GetId(),
+		RoleId:  roleA.GetId(),
 		Version: roleA.GetVersion(),
 		Permissions: []*accessv1.PermissionGrantInput{
 			{Permission: "tenant.role.read", Scope: accessv1.DataScope_DATA_SCOPE_ALL},
