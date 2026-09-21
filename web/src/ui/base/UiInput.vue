@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useAttrs, watchEffect } from 'vue'
+import { computed, useAttrs } from 'vue'
 import { cn } from '@/lib/utils'
 
 defineOptions({ inheritAttrs: false })
@@ -13,7 +13,13 @@ const props = withDefaults(
     checked?: boolean
     indeterminate?: boolean
   }>(),
-  { modelValue: undefined },
+  {
+    modelValue: undefined,
+    modelModifiers: undefined,
+    value: undefined,
+    checked: undefined,
+    indeterminate: false,
+  },
 )
 const emit = defineEmits<{
   'update:modelValue': [value: InputModelValue]
@@ -21,13 +27,7 @@ const emit = defineEmits<{
   change: [event: Event]
 }>()
 const attrs = useAttrs()
-const inputElement = ref<HTMLInputElement | null>(null)
 const inputType = computed(() => String(attrs.type ?? 'text'))
-watchEffect(() => {
-  if (inputElement.value && inputType.value === 'checkbox') {
-    inputElement.value.indeterminate = Boolean(props.indeterminate)
-  }
-})
 const checkable = computed(() => inputType.value === 'checkbox' || inputType.value === 'radio')
 const displayValue = computed(() => {
   if (inputType.value === 'file') return undefined
@@ -80,12 +80,12 @@ function handleChange(event: Event) {
 </script>
 <template>
   <input
-    ref="inputElement"
     data-slot="input"
     v-bind="$attrs"
     :class="classes"
     :value="displayValue"
     :checked="displayChecked"
+    :indeterminate="inputType === 'checkbox' && Boolean(props.indeterminate)"
     :aria-checked="props.indeterminate ? 'mixed' : undefined"
     @input="handleInput"
     @change="handleChange"
