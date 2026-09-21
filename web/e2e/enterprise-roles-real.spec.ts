@@ -274,14 +274,18 @@ test('role permission tree preserves mixed full and none parent states and autho
   const reopenedGroup = dialog.locator('[data-role-permission-group="member"]')
   await expect(reopenedGroup.getByLabel('企业成员 全选')).toBeChecked()
   await reopenedGroup.locator('[data-role-permission-leaf="tenant.member.manage"] input').uncheck()
-  await expect(reopenedGroup.getByLabel('企业成员 全选')).toHaveAttribute('aria-checked', 'mixed')
-  await reopenedGroup.getByLabel('企业成员 全选').uncheck()
-  await expect(reopenedGroup.getByLabel('企业成员 全选')).not.toBeChecked()
+  const reopenedParent = reopenedGroup.getByLabel('企业成员 全选')
+  await expect(reopenedParent).toHaveAttribute('aria-checked', 'mixed')
+  await reopenedParent.focus()
+  await reopenedParent.press('Space')
+  await expect(reopenedParent).toBeChecked()
+  await reopenedParent.press('Space')
+  await expect(reopenedParent).not.toBeChecked()
   await expect(reopenedGroup.locator('input[type="checkbox"]:checked')).toHaveCount(0)
 
   await dialog.getByRole('button', { name: '角色权限' }).focus()
   await dialog.getByRole('button', { name: '企业成员' }).click()
-  await expect(reopenedGroup.getByLabel('企业成员 全选')).toBeFocused()
+  await expect(reopenedParent).toBeFocused()
 })
 
 test('role save revalidates current permission catalog and rejects retired selection before write', async ({ page }) => {
