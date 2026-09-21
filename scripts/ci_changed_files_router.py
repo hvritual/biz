@@ -128,6 +128,31 @@ WEB_E2E_HARNESS_FILES = {
     ".github/workflows/web-e2e-harness.yml",
 }
 
+ROLE_GRANT_PATH_PREFIXES = (
+    "internal/access/authorization/",
+    "web/src/features/enterprise/components/roles/",
+)
+ROLE_GRANT_FILES = {
+    ".github/workflows/enterprise-179-role-grant-tree.yml",
+    "internal/access/application/tenant_role_permission.go",
+    "internal/access/domain/model.go",
+    "internal/access/ports/role.go",
+    "internal/access/infrastructure/persistence/role.go",
+    "internal/bizruntime/access_skeleton.go",
+    "internal/bizruntime/role_entitlements.go",
+    "internal/bizruntime/role_entitlements_test.go",
+    "internal/bizruntime/web_authorization.go",
+    "integration/b12_role_runtime_mysql_test.go",
+    "integration/enterprise_179_role_grant_tree_mysql_test.go",
+    "web/src/services/enterprise/rolePermissionCatalog.ts",
+    "web/src/services/enterprise/roleRuntime.ts",
+    "web/src/stores/enterprise.ts",
+    "web/src/types/enterprise.ts",
+    "web/src/ui/base/UiInput.vue",
+    "web/src/ui/base/controls.spec.ts",
+    "web/e2e/enterprise-roles-real.spec.ts",
+}
+
 
 def clean(path: str) -> str:
     value = path.strip().replace("\\", "/")
@@ -200,6 +225,11 @@ def route(paths: list[str]) -> dict[str, object]:
         for path in files
     )
 
+    role_grants = any(
+        path in ROLE_GRANT_FILES or any(path.startswith(prefix) for prefix in ROLE_GRANT_PATH_PREFIXES)
+        for path in files
+    )
+
     domains: set[str] = set()
     non_derived_source = False
     for path in files:
@@ -233,6 +263,7 @@ def route(paths: list[str]) -> dict[str, object]:
         "ce_receipts": ce_receipts,
         "web_e2e_harness": web_e2e_harness,
         "web_product": web_product,
+        "role_grants": role_grants,
     }
 
 
@@ -248,6 +279,7 @@ def emit_github_output(path: str, result: dict[str, object]) -> None:
         handle.write(f"ce_receipts={str(result['ce_receipts']).lower()}\n")
         handle.write(f"web_e2e_harness={str(result['web_e2e_harness']).lower()}\n")
         handle.write(f"web_product={str(result['web_product']).lower()}\n")
+        handle.write(f"role_grants={str(result['role_grants']).lower()}\n")
         handle.write("domain_matrix=" + json.dumps(result["domain_matrix"], separators=(",", ":")) + "\n")
         for domain in DOMAINS:
             handle.write(f"{domain}={str(bool(domains[domain])).lower()}\n")
