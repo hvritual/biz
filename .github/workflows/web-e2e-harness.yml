@@ -1,0 +1,88 @@
+name: Web E2E Harness qualification
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-harness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: web
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+
+      - name: Build API-mode console
+        working-directory: web
+        run: VITE_DATA_MODE=api npm run build
+
+      - name: Run enterprise API-mode harness
+        working-directory: web
+        env:
+          ENTERPRISE_AUDIT_REAL_E2E: '1'
+          ENTERPRISE_BRANDING_REAL_E2E: '1'
+          ENTERPRISE_COMPANY_REAL_E2E: '1'
+          ENTERPRISE_MEMBER_REAL_E2E: '1'
+          ENTERPRISE_ORGANIZATION_REAL_E2E: '1'
+          ENTERPRISE_PLAN_CHANGE_E2E: '1'
+          ENTERPRISE_PLAN_REAL_E2E: '1'
+          ENTERPRISE_ROLE_REAL_E2E: '1'
+        run: |
+          npx playwright test \
+            e2e/enterprise-audit-real.spec.ts \
+            e2e/enterprise-branding-real.spec.ts \
+            e2e/enterprise-company-real.spec.ts \
+            e2e/enterprise-members-real.spec.ts \
+            e2e/enterprise-organization-real.spec.ts \
+            e2e/enterprise-plan-change-real.spec.ts \
+            e2e/enterprise-plan-real.spec.ts \
+            e2e/enterprise-roles-real.spec.ts
+
+      - name: Verify harness result
+        working-directory: web
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          results = json.loads(Path('test-results/results.json').read_text())
+          stats = results['stats']
+          assert stats.get('unexpected', 0) == 0, stats
+          expected = stats.get('expected', 0)
+          assert expected >= 8, stats
+          print(f'WEB_E2E_HARNESS=PASS expected={expected}')
+          PY
+
+      - name: Upload harness evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: web-e2e-harness-${{ github.sha }}
+          path: |
+            web/screenshots
+            web/test-results
+          if-no-files-found: warn
+          retention-days: 7
