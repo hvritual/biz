@@ -60,11 +60,30 @@ def full_results(needs, expected):
     return actual
 
 
+def run_binds_pr(run, pr):
+    """Resolve live PR links, or GitHub's immutable reusable-workflow PR refs.
+
+    GitHub may remove pull_requests after merge. Never substitute a branch name,
+    actor, display title, success status, or a caller-supplied PR number as proof.
+    A non-empty conflicting live link is authoritative and cannot use the fallback.
+    """
+    pulls = run.get("pull_requests") or []
+    if pulls:
+        return any(pull.get("number") == pr for pull in pulls)
+    references = run.get("referenced_workflows") or []
+    expected = f"refs/pull/{pr}/merge"
+    return bool(references) and all(
+        isinstance(reference, dict) and reference.get("ref") == expected and
+        re.fullmatch(r"[0-9a-f]{40}", reference.get("sha", "")) is not None and
+        reference.get("path", "").endswith("@" + reference["sha"])
+        for reference in references)
+
+
 def matching_runs(runs, workflow, candidate, pr):
     return sorted((run for run in runs if
         run.get("path", "").split("@")[0] == workflow and
         run.get("head_sha") == candidate and run.get("event") == "pull_request" and
-        any(pull.get("number") == pr for pull in run.get("pull_requests", []))),
+        run_binds_pr(run, pr)),
         key=lambda run: (int(run["id"]), int(run.get("run_attempt", 1))), reverse=True)
 
 
