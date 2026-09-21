@@ -95,13 +95,12 @@ class RouteTests(unittest.TestCase):
         self.assertTrue(result["role_grants"])
         self.assertTrue(result["enterprise180"])
 
-    def test_enterprise_180_admission_files_self_route(self):
+    def test_admission_infrastructure_does_not_impersonate_business_candidate(self):
         result = route([
             "scripts/enterprise_180_admission.py",
             "docs/delivery/ENTERPRISE-180-ADMISSION.md",
         ])
-        self.assertTrue(result["enterprise180"])
-        self.assertTrue(result["role_grants"])
+        self.assertFalse(result["enterprise180"])
 
     def test_unrelated_member_change_does_not_use_role_grant_gate(self):
         result = route(["internal/access/application/tenant_member_lifecycle.go"])
