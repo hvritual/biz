@@ -1,18 +1,6 @@
 name: delivery-workspace-isolation
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/delivery-workspace-isolation.yml
-      - .yunka/source.env
-      - go.mod
-      - go.sum
-      - go.work
-      - go.work.sum
-      - Makefile
-      - scripts/consumer-resolution-check.sh
-      - scripts/verify-yunka-source.sh
   workflow_call:
   workflow_dispatch:
 
