@@ -26,6 +26,8 @@ DOMAIN_GATE_UNITS = {
     "c9-pressure.yml",
     "b12-8-framework-pressure-disposition.yml",
     "evolution-qualification.yml",
+    "enterprise-172-native-login.yml",
+    "delivery-workspace-isolation.yml",
 }
 
 REQUIRED_LIFECYCLE_STATES = [
@@ -140,6 +142,15 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
         if re.search(r"contents\s*:\s*write", text) or re.search(r"\bgit\s+push\b", text):
             errors.append(f"{FAST_GATE}: fast gate must be read-only")
 
+    for path in sorted(workflows.glob("*.yml")):
+        if path.name in PR_ENTRYPOINTS:
+            continue
+        text = path.read_text(encoding="utf-8")
+        if has_on_child(text, "pull_request"):
+            errors.append(
+                f"{path.name}: direct pull_request trigger bypasses the two-entry PR control plane"
+            )
+
     for name in PR_ENTRYPOINTS:
         path = workflows / name
         if not path.exists():
@@ -169,6 +180,13 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
             )
         if "candidate_lifecycle.py validate-contract" not in text or "test_candidate_lifecycle.py" not in text:
             errors.append("pr-qualification.yml: Candidate lifecycle contract/tests are not gated before Domain Gate")
+        for bounded in (
+            "enterprise-172-native-login.yml",
+            "delivery-workspace-isolation.yml",
+            "ce-round-receipts.yml",
+        ):
+            if reusable_call(bounded) not in text:
+                errors.append(f"pr-qualification.yml: missing bounded reusable unit {bounded}")
 
     merge_path = workflows / "pr-merge-gate.yml"
     if merge_path.exists():
