@@ -64,12 +64,8 @@ for shard in shards:
         seen.add(test)
         expected.append(test)
 
-out_dir = Path(os.environ['RUNNER_TEMP']) / 'ce08'
-actual = [
-    line.strip()
-    for line in (out_dir / 'mysql-tests.actual').read_text().splitlines()
-    if line.strip()
-]
+out = Path(os.environ['RUNNER_TEMP']) / 'ce08'
+actual = [line.strip() for line in (out / 'mysql-tests.actual').read_text().splitlines() if line.strip()]
 if sorted(expected) != sorted(actual):
     missing = sorted(set(actual) - set(expected))
     stale = sorted(set(expected) - set(actual))
@@ -79,12 +75,12 @@ race = manifest['race_tests']
 if not race or any(test not in seen for test in race):
     raise SystemExit('CE08_RACE_SET_INVALID')
 
-with (out_dir / 'shards.env').open('w') as out:
+with (out / 'shards.env').open('w') as env:
     for shard in shards:
         pattern = '^(' + '|'.join(shard['tests']) + ')$'
-        out.write(f"CE08_{shard['id'].upper()}_REGEX={shlex.quote(pattern)}\n")
+        env.write(f"CE08_{shard['id'].upper()}_REGEX={shlex.quote(pattern)}\n")
     race_pattern = '^(' + '|'.join(race) + ')$'
-    out.write(f"CE08_RACE_REGEX={shlex.quote(race_pattern)}\n")
+    env.write(f"CE08_RACE_REGEX={shlex.quote(race_pattern)}\n")
 
 print(f"CE08_SHARD_CONTRACT=PASS tests={len(actual)} shards={len(shards)} race={len(race)}")
 PY
@@ -93,8 +89,6 @@ source "$out/shards.env"
 record_timing shard-contract "$started"
 
 : "${MYSQL_CONTAINER_ID:?workflow-owned MySQL required}"
-
-# Fast disposable runtime: three normal shards + focused race tests.
 docker exec "$MYSQL_CONTAINER_ID" mysql -uroot -proot -e "
   CREATE DATABASE IF NOT EXISTS biz_ce08_s1 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
   CREATE DATABASE IF NOT EXISTS biz_ce08_s2 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
@@ -102,15 +96,13 @@ docker exec "$MYSQL_CONTAINER_ID" mysql -uroot -proot -e "
   CREATE DATABASE IF NOT EXISTS biz_ce08_race CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 "
 
-# Durable runtime: restart persistence proof must survive docker restart and therefore
-# must never share the tmpfs-backed service used by the fast shards.
 restart_container="ce08-restart-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}"
 docker rm -f "$restart_container" >/dev/null 2>&1 || true
 docker run \
   --name "$restart_container" \
   -e MYSQL_ROOT_PASSWORD=root \
   -e MYSQL_DATABASE=biz_ce08_restart \
-  -p 3307:3306 \
+  -p 127.0.0.1:3307:3306 \
   -d mysql:8.4 > "$out/restart-container.id"
 
 cleanup_restart_container() {
@@ -133,7 +125,6 @@ trap cleanup_restart_container EXIT
 restart_ready_pid="$!"
 
 mysql_stage_started="$(date +%s)"
-
 declare -a shard_pids=()
 for shard in s1 s2 s3; do
   upper="${shard^^}"
@@ -157,7 +148,16 @@ race_started="$(date +%s)"
 ) &
 race_pid="$!"
 
-# The durable MySQL image can initialize while the shard/race workload is running.
+shard_status=0
+for pid in "${shard_pids[@]}"; do
+  if ! wait "$pid"; then
+    shard_status=1
+  fi
+done
+test "$shard_status" = 0
+cat "$out/mysql-s1.jsonl" "$out/mysql-s2.jsonl" "$out/mysql-s3.jsonl" > "$out/mysql.jsonl"
+record_timing mysql-shards "$mysql_stage_started"
+
 wait "$restart_ready_pid"
 restart_started="$(date +%s)"
 (
@@ -190,15 +190,6 @@ restart_started="$(date +%s)"
 ) &
 restart_pid="$!"
 
-shard_status=0
-for pid in "${shard_pids[@]}"; do
-  if ! wait "$pid"; then
-    shard_status=1
-  fi
-done
-cat "$out/mysql-s1.jsonl" "$out/mysql-s2.jsonl" "$out/mysql-s3.jsonl" > "$out/mysql.jsonl"
-record_timing mysql-shards "$mysql_stage_started"
-
 race_status=0
 if ! wait "$race_pid"; then
   race_status=1
@@ -211,7 +202,6 @@ if ! wait "$restart_pid"; then
 fi
 record_timing restart-proof "$restart_started"
 
-test "$shard_status" = 0
 test "$race_status" = 0
 test "$restart_status" = 0
 record_timing mysql-race-restart-wall "$mysql_stage_started"
