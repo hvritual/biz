@@ -1,0 +1,113 @@
+name: PR Qualification
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-qualification-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  route:
+    runs-on: ubuntu-latest
+    outputs:
+      access: ${{ steps.route.outputs.access }}
+      commercial: ${{ steps.route.outputs.commercial }}
+      deviceops: ${{ steps.route.outputs.deviceops }}
+      web: ${{ steps.route.outputs.web }}
+      core: ${{ steps.route.outputs.core }}
+      docs_only: ${{ steps.route.outputs.docs_only }}
+      domain_count: ${{ steps.route.outputs.domain_count }}
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Route changed files
+        id: route
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$BASE_SHA" --depth=1
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > "$RUNNER_TEMP/changed-files.txt"
+          python3 scripts/ci_changed_files_router.py --github-output "$GITHUB_OUTPUT" < "$RUNNER_TEMP/changed-files.txt"
+          {
+            echo "## PR Qualification route"
+            echo
+            echo "- candidate: \`$HEAD_SHA\`"
+            echo "- domains: \`$(python3 -c 'import json,sys; d=json.load(sys.stdin); print(",".join(x["domain"] for x in d["domain_matrix"]) or "docs-only")' < <(python3 scripts/ci_changed_files_router.py < "$RUNNER_TEMP/changed-files.txt"))\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  governance:
+    needs: route
+    if: needs.route.outputs.docs_only != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: CI governance and router tests
+        run: |
+          python3 scripts/check_ci_qualification_governance.py
+          python3 scripts/test_ci_changed_files_router.py
+
+  fast-web:
+    needs: route
+    if: needs.route.outputs.docs_only != 'true'
+    uses: ./.github/workflows/candidate-qualification.yml
+
+  access-role:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.access == 'true'
+    uses: ./.github/workflows/b12-4-tenant-role-mysql.yml
+
+  access-pressure:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.access == 'true'
+    uses: ./.github/workflows/b12-multitenant-access-pressure.yml
+
+  access-lifecycle:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.access == 'true'
+    uses: ./.github/workflows/enterprise-178-role-lifecycle.yml
+
+  commercial-map:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.commercial == 'true'
+    uses: ./.github/workflows/ce03-qualification.yml
+
+  commercial-runtime:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.commercial == 'true'
+    uses: ./.github/workflows/ce10-qualification.yml
+
+  web-console:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.web == 'true'
+    uses: ./.github/workflows/coffeelink-web.yml
+
+  core-static:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.core == 'true'
+    uses: ./.github/workflows/c9-pressure.yml
+
+  core-framework:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.core == 'true'
+    uses: ./.github/workflows/b12-8-framework-pressure-disposition.yml
+
+  deviceops-regression:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.deviceops == 'true'
+    uses: ./.github/workflows/evolution-qualification.yml
