@@ -80,6 +80,20 @@ class RouteTests(unittest.TestCase):
         self.assertFalse(result["web_e2e_harness"])
         self.assertTrue(result["web_product"])
 
+    def test_role_grant_change_uses_role_grant_gate(self):
+        result = route([
+            "internal/bizruntime/role_entitlements.go",
+            "web/src/features/enterprise/components/roles/RoleEditor.vue",
+        ])
+        self.assertTrue(result["domains"]["access"])
+        self.assertTrue(result["domains"]["web"])
+        self.assertTrue(result["role_grants"])
+
+    def test_unrelated_member_change_does_not_use_role_grant_gate(self):
+        result = route(["internal/access/application/tenant_member_lifecycle.go"])
+        self.assertTrue(result["domains"]["access"])
+        self.assertFalse(result["role_grants"])
+
 
 if __name__ == "__main__":
     unittest.main()
