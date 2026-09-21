@@ -74,4 +74,19 @@ describe('base control compatibility', () => {
     const wrapper = mount(UiSelect, { attrs: { 'aria-label': '切换企业' } })
     expect(wrapper.get('[data-slot="select-trigger"]').attributes('aria-label')).toBe('切换企业')
   })
+
+  it('projects checkbox indeterminate state and mixed accessibility semantics', async () => {
+    const wrapper = mount(UiInput, {
+      props: { checked: false, indeterminate: true },
+      attrs: { type: 'checkbox', 'aria-label': '权限分组' },
+    })
+    const input = wrapper.get('input')
+    expect((input.element as HTMLInputElement).indeterminate).toBe(true)
+    expect(input.attributes('aria-checked')).toBe('mixed')
+
+    await wrapper.setProps({ checked: true, indeterminate: false })
+    expect((input.element as HTMLInputElement).indeterminate).toBe(false)
+    expect((input.element as HTMLInputElement).checked).toBe(true)
+    expect(input.attributes('aria-checked')).toBeUndefined()
+  })
 })
