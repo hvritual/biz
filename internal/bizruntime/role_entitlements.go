@@ -155,8 +155,8 @@ func availableTenantRoleActions(
 		}
 	}
 	actions := make([]accessauthorization.Action, 0)
-	for _, action := range accessauthorization.Catalog() {
-		if !action.TenantRequired || !commerciallyAllowsAction(action, capabilityDecisions) {
+	for _, action := range accessauthorization.RoleAssignableActions(accessauthorization.Catalog()) {
+		if !commerciallyAllowsAction(action, capabilityDecisions) {
 			continue
 		}
 		actions = append(actions, action)
