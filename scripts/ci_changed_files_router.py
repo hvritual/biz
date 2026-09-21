@@ -72,6 +72,7 @@ ACCESS_INTEGRATION_PREFIXES = (
     "enterprise_175_",
     "enterprise_176_",
     "enterprise_177_",
+    "enterprise_178_",
     "ce12_",
     "tenant_branding_",
 )
