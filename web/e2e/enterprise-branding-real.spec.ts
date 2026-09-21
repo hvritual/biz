@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
+import { installApiFailFast } from './ui.helpers'
 import { mkdirSync } from 'node:fs'
 
 test.skip(!process.env.ENTERPRISE_BRANDING_REAL_E2E, 'runs only against the VITE_DATA_MODE=api build')
@@ -26,7 +27,8 @@ async function useZhLocale(page: Page) {
   await page.addInitScript(() => localStorage.setItem('coffeelink.locale', 'zh-CN'))
 }
 
-async function mockBrandingServer(page: Page, options: Options = {}) {
+async function mockBrandingServer(page: Page, options: Options = {
+  await installApiFailFast(page)}) {
   let activeTenant = 'tenant-a'
   const states: Record<string, Branding> = {
     'tenant-a': { tenantId: 'tenant-a', preset: 'violet', primary: '', version: 7, canManage: options.canManage ?? true },
