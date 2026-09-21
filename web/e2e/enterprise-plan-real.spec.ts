@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
+import { installApiFailFast } from './ui.helpers'
 import { mkdirSync } from 'node:fs'
 
 test.skip(!process.env.ENTERPRISE_PLAN_REAL_E2E, 'runs only against the VITE_DATA_MODE=api build')
@@ -23,7 +24,8 @@ function json(route: Route, status: number, body: unknown) {
   return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
 }
 
-async function mockPlanServer(page: Page, options: Options = {}): Promise<Captured> {
+async function mockPlanServer(page: Page, options: Options = {
+  await installApiFailFast(page)}): Promise<Captured> {
   const captured: Captured = {
     subscriptionPaths: [],
     entitlementBodies: [],
