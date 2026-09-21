@@ -33,6 +33,9 @@ async function mockPlanServer(page: Page, options: Options = {}): Promise<Captur
     usagePaths: [],
     usageHeaders: [],
   }
+  await page.route(/\/(?:api\/)?auth\/login(?:\?.*)?$/, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Login</title>' })
+  })
   await page.route('**/api/auth/session', async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     return json(route, 200, {
