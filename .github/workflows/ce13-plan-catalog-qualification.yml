@@ -2,23 +2,6 @@ name: CE-13 plan catalog qualification
 
 on:
   workflow_call:
-  push:
-    branches: [feat/ce13-plan-catalog-discovery]
-    paths:
-      - contracts/proto/commercial/**
-      - contracts/gen/commercial/**
-      - contracts/generated/**
-      - contracts/commercial/**
-      - internal/commercial/**
-      - internal/access/**
-      - internal/bizruntime/**
-      - integration/ce13_plan_catalog_mysql_test.go
-      - integration/ce13_platform_web_session_seed_test.go
-      - web/playwright.ce13-plan-catalog.config.ts
-      - web/tests/ce13-plan-catalog/**
-      - .github/workflows/ce13-plan-catalog-qualification.yml
-      - go.mod
-      - go.sum
   workflow_dispatch:
 
 permissions:
