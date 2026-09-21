@@ -3,7 +3,7 @@ name: CE-03 qualification
 on:
   workflow_call:
   push:
-    branches: [main, feat/ce-03-capability-mapping]
+    branches: [feat/ce-03-capability-mapping]
     paths:
       - .github/workflows/ce03-qualification.yml
       - contracts/**

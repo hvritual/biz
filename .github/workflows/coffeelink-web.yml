@@ -8,7 +8,7 @@ on:
         type: boolean
         default: false
   push:
-    branches: [main, feat/coffeelink-vue-console]
+    branches: [feat/coffeelink-vue-console]
     paths: ['web/**', '.github/workflows/coffeelink-web.yml']
 permissions:
   contents: read

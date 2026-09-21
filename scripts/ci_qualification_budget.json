@@ -6,5 +6,10 @@
     "PR Qualification",
     "PR Merge Gate"
   ],
-  "ordinary_commit_policy": "Fast Gate + changed-domain gates only; Full Merge Gate requires non-draft frozen candidate"
+  "ordinary_commit_policy": "Fast Gate + changed-domain gates only; Full Merge Gate requires non-draft frozen candidate",
+  "max_main_push_entrypoint_workflows": 1,
+  "expected_main_push_entrypoint_workflows": [
+    "Main Qualification"
+  ],
+  "post_merge_policy": "Reuse exact Candidate PR Merge Gate proof; do not rerun full regression on main."
 }

@@ -3,7 +3,7 @@ name: CE-02 qualification
 on:
   workflow_call:
   push:
-    branches: [main, feat/ce-02-module-catalog]
+    branches: [feat/ce-02-module-catalog]
     paths:
       - .github/workflows/ce02-bootstrap.yml
       - contracts/**

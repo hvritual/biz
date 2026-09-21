@@ -3,7 +3,7 @@ name: CE-13 platform commercial web-session qualification
 on:
   workflow_call:
   push:
-    branches: [fix/ce13-platform-commercial-web-session, main]
+    branches: [fix/ce13-platform-commercial-web-session]
     paths:
       - contracts/proto/commercial/**
       - contracts/gen/commercial/**
