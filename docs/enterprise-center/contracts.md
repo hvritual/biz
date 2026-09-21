@@ -101,7 +101,9 @@ machine-readable admission authority; this section is the human-readable project
 Negative acceptance examples are mandatory: A-object→B-member injection,
 unassignable-object direct API injection, expired/revoked/cross-tenant policy,
 department move without implicit expansion, broader second role unable to bypass
-member scope, and next-request denial after policy contraction.
+member scope, and next-request denial after policy contraction. Canonical human
+examples are retained in `enterprise180-policy-negative-examples.md`; their stable
+machine identifiers are frozen in the JSON contract.
 
 ## 6. Route compatibility
 
