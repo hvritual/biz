@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "max_pr_domain_gate_units": 13,
-  "max_full_merge_gate_units": 43,
+  "max_pr_domain_gate_units": 12,
+  "max_full_merge_gate_units": 42,
   "expected_pr_entrypoint_workflows": [
     "PR Qualification",
     "PR Merge Gate"
