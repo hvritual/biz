@@ -1,9 +1,6 @@
 name: CE round receipts
 
 on:
-  push:
-    branches: [main]
-    paths: ['docs/commercial-entitlements/**', '.github/workflows/ce-round-receipts.yml']
   workflow_call:
   workflow_dispatch:
 
