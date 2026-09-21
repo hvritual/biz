@@ -238,7 +238,7 @@ def validate(base_ref: str | None = None) -> list[str]:
                 errors.append("CE08 shard runtime lost tmpfs acceleration")
         restart_markers = [
             'restart_container="ce08-restart-',
-            "-p 3307:3306",
+            "3307:3306",
             'docker restart "$restart_container"',
             "biz_ce08_restart",
         ]
