@@ -306,6 +306,14 @@
       "heavy": true
     },
     {
+      "file": "enterprise-179-role-grant-tree.yml",
+      "domains": [
+        "access",
+        "web"
+      ],
+      "heavy": true
+    },
+    {
       "file": "evolution-qualification.yml",
       "domains": [
         "core"
