@@ -3,7 +3,7 @@ name: CE-01 qualification
 on:
   workflow_call:
   push:
-    branches: [main, feat/ce-01-baseline-contract-probes]
+    branches: [feat/ce-01-baseline-contract-probes]
     paths:
       - .github/workflows/ce01-qualification.yml
       - internal/architecture/**
