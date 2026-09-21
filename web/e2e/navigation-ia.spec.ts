@@ -27,6 +27,21 @@ async function expectBeforeFooter(item: Locator, panel: Locator) {
   expect(itemBox!.y + itemBox!.height).toBeLessThanOrEqual(footerBox!.y)
 }
 
+async function expectScrimFillsRightViewport(page: Page) {
+  const scrim = page.locator('.navigation-scrim')
+  await expect(scrim).toBeVisible()
+  const box = await scrim.boundingBox()
+  const viewport = page.viewportSize()
+  const headerHeight = await page.evaluate(() =>
+    Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')),
+  )
+  expect(box).not.toBeNull()
+  expect(viewport).not.toBeNull()
+  expect(box!.y).toBeCloseTo(headerHeight, 0)
+  expect(box!.height).toBeCloseTo(viewport!.height - headerHeight, 0)
+  expect(box!.y + box!.height).toBeCloseTo(viewport!.height, 0)
+}
+
 test('module panel renders grouped business domains without entity-bound global entries', async ({ page }) => {
   await ready(page)
 
@@ -72,6 +87,20 @@ test('rental operation entries open scoped collection workspaces and preserve re
     await expect(page.getByText(item, { exact: true })).toBeVisible()
     await expect(page.locator('[data-module="sites"]')).toHaveClass(/active/)
     await expect(page.locator('[data-work-scope]')).toHaveAttribute('data-work-scope')
+  }
+})
+
+test('navigation scrim fills the complete right-side viewport below the header', async ({ page }) => {
+  for (const viewport of [
+    { width: 1366, height: 768 },
+    { width: 1440, height: 900 },
+    { width: 1536, height: 1024 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await ready(page)
+    await openDomain(page, 'enterprise', '企业中心')
+    await expectScrimFillsRightViewport(page)
+    await page.keyboard.press('Escape')
   }
 })
 
