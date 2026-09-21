@@ -325,6 +325,7 @@ jobs:
 
   merge-ready:
     needs:
+      - route
       - full-01-b12-3-tenant-member-mysql
       - full-02-b12-4-tenant-role-mysql
       - full-03-b12-5-tenant-bootstrap-mysql
@@ -367,7 +368,7 @@ jobs:
       - full-40-enterprise-177-member-lifecycle
       - full-41-enterprise-178-role-lifecycle
       - full-42-evolution-qualification
-    if: always() && github.event.pull_request.draft == false
+    if: always() && github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -386,11 +387,12 @@ jobs:
           python3 - <<'PY'
           import json, os, sys
           needs = json.loads(os.environ["FULL_RESULTS"])
-          bad = {name: value.get("result") for name, value in needs.items() if value.get("result") != "success"}
+          full = {name: value for name, value in needs.items() if name.startswith("full-")}
+          bad = {name: value.get("result") for name, value in full.items() if value.get("result") != "success"}
           if bad:
               print("FULL_MERGE_GATE_FAILURE " + json.dumps(bad, sort_keys=True), file=sys.stderr)
               raise SystemExit(1)
-          print("FULL_MERGE_GATE=PASS jobs=" + str(len(needs)))
+          print("FULL_MERGE_GATE=PASS jobs=" + str(len(full)))
           PY
       - name: Checkout exact candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
