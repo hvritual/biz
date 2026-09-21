@@ -3,7 +3,7 @@ name: CE-13 plan catalog qualification
 on:
   workflow_call:
   push:
-    branches: [feat/ce13-plan-catalog-discovery, main]
+    branches: [feat/ce13-plan-catalog-discovery]
     paths:
       - contracts/proto/commercial/**
       - contracts/gen/commercial/**
