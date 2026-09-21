@@ -218,6 +218,21 @@ def validate(base_ref: str | None = None) -> list[str]:
                     errors.append(f"CE08 delegated workflow missing from Full Merge Gate: {workflow}")
 
         ce08_script = (ROOT / "scripts" / "ce08_qualify.sh").read_text(encoding="utf-8")
+        if ce08_path is not None:
+            ce08_text = ce08_path.read_text(encoding="utf-8")
+            if "--tmpfs /var/lib/mysql:rw,nosuid,size=1g" not in ce08_text:
+                errors.append("CE08 shard runtime lost tmpfs acceleration")
+        restart_markers = [
+            'restart_container="ce08-restart-',
+            "-p 3307:3306",
+            'docker restart "$restart_container"',
+            "biz_ce08_restart",
+        ]
+        for marker in restart_markers:
+            if marker not in ce08_script:
+                errors.append(f"CE08 restart persistence proof lost isolated durable runtime marker: {marker}")
+        if 'docker restart "$MYSQL_CONTAINER_ID"' in ce08_script:
+            errors.append("CE08 restart proof must not restart the tmpfs shard service")
         forbidden_ce08_duplicates = [
             "^TestCE07MySQL",
             "^TestCE06MySQL",
