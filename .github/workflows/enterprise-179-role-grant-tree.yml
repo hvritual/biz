@@ -1,0 +1,146 @@
+name: Enterprise 179 role grant tree qualification
+
+on:
+  workflow_call:
+    inputs:
+      skip_fast_check:
+        description: Canonical Fast Gate already passed in PR Qualification
+        required: false
+        type: boolean
+        default: false
+  push:
+    branches:
+      - feat/enterprise-179-role-grant-tree
+    paths:
+      - .github/workflows/enterprise-179-role-grant-tree.yml
+      - docs/enterprise-center/**
+      - internal/access/authorization/**
+      - internal/access/application/tenant_role_permission.go
+      - internal/access/domain/model.go
+      - internal/access/ports/role.go
+      - internal/access/infrastructure/persistence/role.go
+      - internal/bizruntime/access_skeleton.go
+      - internal/bizruntime/role_entitlements.go
+      - internal/bizruntime/role_entitlements_test.go
+      - internal/bizruntime/web_authorization.go
+      - integration/b12_role_runtime_mysql_test.go
+      - integration/enterprise_179_role_grant_tree_mysql_test.go
+      - web/src/features/enterprise/components/roles/**
+      - web/src/services/enterprise/rolePermissionCatalog.ts
+      - web/src/services/enterprise/roleRuntime.ts
+      - web/src/stores/enterprise.ts
+      - web/src/types/enterprise.ts
+      - web/src/ui/base/**
+      - web/e2e/enterprise-roles-real.spec.ts
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: biz_enterprise179
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_enterprise179?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+      YUNKA_TEST_RESET_FIXTURES: "1"
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Read consumer framework lock
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          source biz/.yunka/source.env
+          echo "sha=$YUNKA_COMMIT" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout exact Yunka baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ steps.source.outputs.sha }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Read locked Go
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: false
+
+      - name: Verify Go formatting and unit regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t changed < <(git -C biz diff --name-only origin/main...HEAD -- '*.go')
+          if ((${#changed[@]})); then
+            test -z "$(printf '%s\n' "${changed[@]}" | sed 's#^#biz/#' | xargs gofmt -l)"
+          fi
+          go -C biz test ./internal/access/... ./internal/bizruntime
+
+      - name: Run Enterprise 179 MySQL and request-time revocation qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestEnterprise179'
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestB124TenantRolePermissionsAreTenantScopedAndImmediate$'
+          test -z "$(git -C biz status --porcelain)"
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - name: Run canonical Web Fast Gate
+        if: ${{ !inputs.skip_fast_check }}
+        run: npm run check
+        working-directory: web
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: Run role grant tree API-mode E2E
+        working-directory: web
+        shell: bash
+        run: |
+          set -euo pipefail
+          VITE_DATA_MODE=api npm run build
+          ENTERPRISE_ROLE_REAL_E2E=1 npx playwright test e2e/enterprise-roles-real.spec.ts
