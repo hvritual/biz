@@ -24,7 +24,7 @@ The receipt explicitly records `semantics_implemented=false`. The checker is for
 
 An #180 candidate is selected when either:
 
-1. changed files match the explicit Enterprise180 admission/integration paths; or
+1. changed files include the mandatory `integration/enterprise_180_*` qualification evidence; or
 2. the PR body explicitly links #180 with `Closes #180`, `Fixes #180`, `Resolves #180`, or `Refs #180`.
 
 The existing canonical `enterprise-role-qualification.yml` is reused. No issue-specific workflow entrypoint and no 43rd Full Gate unit are added.
