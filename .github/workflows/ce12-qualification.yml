@@ -3,7 +3,7 @@ name: CE-12 qualification
 on:
   workflow_call:
   push:
-    branches: [feat/ce-12-first-party-idp-e2e, main]
+    branches: [feat/ce-12-first-party-idp-e2e]
     paths:
       - contracts/**
       - internal/access/**
