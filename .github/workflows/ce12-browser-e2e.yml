@@ -1,10 +1,7 @@
 name: CE-12 browser identity E2E
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
+  workflow_call:
   push:
     branches: [feat/ce-12-first-party-idp-e2e, main]
     paths:
@@ -23,8 +20,6 @@ on:
       - go.sum
       - web/package.json
       - web/package-lock.json
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

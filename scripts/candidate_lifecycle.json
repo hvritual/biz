@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "states": [
+    "WORKING",
+    "FAST_VERIFIED",
+    "DOMAIN_QUALIFIED",
+    "CANDIDATE_FROZEN",
+    "MERGE_QUALIFYING",
+    "MERGE_READY",
+    "MERGED",
+    "MAIN_VERIFIED"
+  ],
+  "transitions": {
+    "WORKING": ["FAST_VERIFIED"],
+    "FAST_VERIFIED": ["DOMAIN_QUALIFIED", "WORKING"],
+    "DOMAIN_QUALIFIED": ["CANDIDATE_FROZEN", "WORKING"],
+    "CANDIDATE_FROZEN": ["MERGE_QUALIFYING", "WORKING"],
+    "MERGE_QUALIFYING": ["MERGE_READY", "WORKING"],
+    "MERGE_READY": ["MERGED", "WORKING"],
+    "MERGED": ["MAIN_VERIFIED"],
+    "MAIN_VERIFIED": []
+  },
+  "invariants": {
+    "candidate_frozen_requires_current_main_ancestor": true,
+    "head_change_invalidates_frozen_candidate": true,
+    "full_merge_gate_requires_non_draft_pr": true,
+    "qualification_is_read_only": true,
+    "full_merge_gate_runs_once_per_candidate_sha": true,
+    "main_verified_requires_exact_remote_main_tip": true
+  }
+}

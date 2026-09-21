@@ -1,22 +1,9 @@
 name: CE-01 qualification
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
+  workflow_call:
   push:
     branches: [main, feat/ce-01-baseline-contract-probes]
-    paths:
-      - .github/workflows/ce01-qualification.yml
-      - internal/architecture/**
-      - docs/commercial-entitlements/**
-      - contracts/**
-      - go.mod
-      - go.sum
-      - .yunka/source.env
-  pull_request:
-    branches: [main]
     paths:
       - .github/workflows/ce01-qualification.yml
       - internal/architecture/**

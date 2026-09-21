@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
+import { installApiFailFast } from './ui.helpers'
 import { mkdirSync } from 'node:fs'
 
 test.skip(!process.env.ENTERPRISE_PLAN_REAL_E2E, 'runs only against the VITE_DATA_MODE=api build')
@@ -24,6 +25,7 @@ function json(route: Route, status: number, body: unknown) {
 }
 
 async function mockPlanServer(page: Page, options: Options = {}): Promise<Captured> {
+  await installApiFailFast(page)
   const captured: Captured = {
     subscriptionPaths: [],
     entitlementBodies: [],
@@ -31,6 +33,9 @@ async function mockPlanServer(page: Page, options: Options = {}): Promise<Captur
     usagePaths: [],
     usageHeaders: [],
   }
+  await page.route(/\/(?:api\/)?auth\/login(?:\?.*)?$/, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Login</title>' })
+  })
   await page.route('**/api/auth/session', async (route) => {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     return json(route, 200, {

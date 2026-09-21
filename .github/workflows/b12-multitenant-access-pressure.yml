@@ -1,27 +1,10 @@
 name: b12-multitenant-access-pressure
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
+  workflow_call:
   push:
     branches:
       - agent/b12-multitenant-access-pressure
-    paths:
-      - .github/workflows/b12-multitenant-access-pressure.yml
-      - .yunka/project.json
-      - Makefile
-      - contracts/**
-      - docs/pressure/B12-framework-pressure.md
-      - internal/**
-      - integration/**
-      - modules/**
-      - go.mod
-      - go.sum
-  pull_request:
-    branches:
-      - main
     paths:
       - .github/workflows/b12-multitenant-access-pressure.yml
       - .yunka/project.json

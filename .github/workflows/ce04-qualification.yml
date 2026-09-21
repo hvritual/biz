@@ -1,14 +1,10 @@
 name: CE-04 qualification
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 on:
+  workflow_call:
   push:
     branches: [main]
     paths: ['contracts/**','internal/**','integration/ce04*','scripts/ce04*','docs/commercial-entitlements/**','.github/workflows/ce04-qualification.yml','Makefile','go.mod','go.sum','.yunka/**']
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read

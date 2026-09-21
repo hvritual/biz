@@ -1,25 +1,8 @@
 name: ec-ri-06-tenant-usage-mysql
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
+  workflow_call:
   push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/ec-ri-06-tenant-usage-mysql.yml
-      - contracts/**
-      - internal/access/**
-      - internal/commercial/**
-      - internal/assembly/**
-      - internal/bizruntime/**
-      - integration/ec_ri_06_tenant_usage_mysql_test.go
-      - modules/access/**
-      - go.mod
-      - go.sum
-  pull_request:
     branches:
       - main
     paths:

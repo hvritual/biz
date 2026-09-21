@@ -1,10 +1,7 @@
 name: CE-13 plan catalog qualification
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
+  workflow_call:
   push:
     branches: [feat/ce13-plan-catalog-discovery, main]
     paths:
@@ -22,8 +19,6 @@ on:
       - .github/workflows/ce13-plan-catalog-qualification.yml
       - go.mod
       - go.sum
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

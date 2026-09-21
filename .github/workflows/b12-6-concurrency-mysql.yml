@@ -1,29 +1,10 @@
 name: b12-6-concurrency-mysql
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
+  workflow_call:
   push:
     branches:
       - agent/b12-multitenant-access-pressure
-    paths:
-      - .github/workflows/b12-6-concurrency-mysql.yml
-      - contracts/**
-      - docs/pressure/B12-framework-pressure.md
-      - internal/access/**
-      - internal/assembly/**
-      - internal/bizruntime/**
-      - integration/b12_concurrency_mysql_test.go
-      - integration/b12_owner_crosspath_concurrency_mysql_test.go
-      - integration/ag02_owner_snapshot_mysql_test.go
-      - modules/access/**
-      - go.mod
-      - go.sum
-  pull_request:
-    branches:
-      - main
     paths:
       - .github/workflows/b12-6-concurrency-mysql.yml
       - contracts/**

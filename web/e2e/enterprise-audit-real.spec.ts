@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
+import { installApiFailFast } from './ui.helpers'
 import { mkdirSync } from 'node:fs'
 
 test.skip(!process.env.ENTERPRISE_AUDIT_REAL_E2E, 'runs only against the VITE_DATA_MODE=api build')
@@ -33,6 +34,7 @@ function json(route: Route, status: number, body: unknown) {
 }
 
 async function mockAuditServer(page: Page, options: { readStatus?: number; exportStatus?: number } = {}) {
+  await installApiFailFast(page)
   const writes: ExportWrite[] = []
   const records: AuditRecord[] = [
     {

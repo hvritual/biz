@@ -1,10 +1,7 @@
 name: CE-13 platform commercial web-session qualification
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
+  workflow_call:
   push:
     branches: [fix/ce13-platform-commercial-web-session, main]
     paths:
@@ -22,8 +19,6 @@ on:
       - .github/workflows/ce13-platform-web-session.yml
       - go.mod
       - go.sum
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

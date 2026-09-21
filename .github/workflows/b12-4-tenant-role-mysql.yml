@@ -1,28 +1,10 @@
 name: b12-4-tenant-role-mysql
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
+  workflow_call:
   push:
     branches:
       - agent/b12-multitenant-access-pressure
-    paths:
-      - .github/workflows/b12-4-tenant-role-mysql.yml
-      - contracts/**
-      - docs/pressure/B12-framework-pressure.md
-      - internal/access/**
-      - internal/assembly/**
-      - internal/bizruntime/**
-      - integration/b12_role_runtime_mysql_test.go
-      - integration/ec_ri_03_role_permission_mysql_test.go
-      - modules/access/**
-      - go.mod
-      - go.sum
-  pull_request:
-    branches:
-      - main
     paths:
       - .github/workflows/b12-4-tenant-role-mysql.yml
       - contracts/**

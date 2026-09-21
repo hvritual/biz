@@ -1,23 +1,9 @@
 name: CE-02 qualification
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
+  workflow_call:
   push:
     branches: [main, feat/ce-02-module-catalog]
-    paths:
-      - .github/workflows/ce02-bootstrap.yml
-      - contracts/**
-      - internal/commercial/**
-      - internal/bizruntime/**
-      - integration/ce02_**
-      - docs/commercial-entitlements/**
-      - go.mod
-      - go.sum
-  pull_request:
-    branches: [main]
     paths:
       - .github/workflows/ce02-bootstrap.yml
       - contracts/**

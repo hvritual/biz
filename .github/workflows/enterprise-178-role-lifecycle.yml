@@ -1,29 +1,10 @@
 name: Enterprise 178 role lifecycle qualification
 
 on:
+  workflow_call:
   push:
     branches:
       - feat/enterprise-178-role-lifecycle
-    paths:
-      - .github/workflows/enterprise-178-role-lifecycle.yml
-      - contracts/proto/access/v1/tenant_role.proto
-      - contracts/commercial/operation-capabilities.v1.json
-      - contracts/commercial/generated/**
-      - contracts/generated/**
-      - docs/enterprise-center/decisions.md
-      - internal/access/**
-      - internal/bizruntime/**
-      - integration/b12_role_runtime_mysql_test.go
-      - integration/enterprise_178_role_lifecycle_mysql_test.go
-      - web/src/features/enterprise/**
-      - web/src/services/enterprise/**
-      - web/src/services/runtime/api.ts
-      - web/src/stores/enterprise.ts
-      - web/src/types/enterprise.ts
-      - web/e2e/enterprise-roles-real.spec.ts
-  pull_request:
-    branches:
-      - main
     paths:
       - .github/workflows/enterprise-178-role-lifecycle.yml
       - contracts/proto/access/v1/tenant_role.proto
@@ -45,10 +26,6 @@ on:
 
 permissions:
   contents: read
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 jobs:
   backend:

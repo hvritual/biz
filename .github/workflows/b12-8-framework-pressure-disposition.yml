@@ -1,15 +1,10 @@
 name: b12-8-framework-pressure-disposition
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
+  workflow_call:
   push:
     branches:
       - agent/b12-multitenant-access-pressure
-  pull_request:
-
 permissions:
   contents: read
 

@@ -1,15 +1,11 @@
 name: Unified evolution qualification
 on:
+  workflow_call:
   push:
     branches: [integration/biz-evolution-20260912]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  group: evolution-${{ github.ref }}
-  cancel-in-progress: true
 env:
   YUNKA_TEST_RESET_FIXTURES: "1"
 jobs:
