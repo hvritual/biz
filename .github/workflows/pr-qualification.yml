@@ -30,6 +30,7 @@ jobs:
       web_e2e_harness: ${{ steps.route.outputs.web_e2e_harness }}
       web_product: ${{ steps.route.outputs.web_product }}
       role_grants: ${{ steps.route.outputs.role_grants }}
+      enterprise180: ${{ steps.route.outputs.enterprise180 }}
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -78,8 +79,25 @@ jobs:
           python3 scripts/candidate_lifecycle.py validate-contract
           python3 scripts/check_ci_qualification_governance.py
           python3 scripts/test_ci_changed_files_router.py
+          python3 scripts/test_enterprise_180_admission.py
           python3 scripts/test_candidate_lifecycle.py
           node --test .github/scripts/main-qualification.test.mjs
+
+      - name: Enterprise180 Delivery Admission
+        if: needs.route.outputs.enterprise180 == 'true'
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python3 scripts/enterprise_180_admission.py check --required true
+
+      - name: Retain Enterprise180 BLOCKED/ADMITTED receipt
+        if: always() && needs.route.outputs.enterprise180 == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: enterprise180-admission-pr-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/enterprise180-admission.json
+          if-no-files-found: error
+          retention-days: 30
 
   fast-web:
     needs: [route, governance]
@@ -103,10 +121,11 @@ jobs:
 
   access-enterprise-role:
     needs: [route, governance, fast-web]
-    if: needs.route.outputs.role_grants == 'true'
+    if: needs.route.outputs.role_grants == 'true' || needs.route.outputs.enterprise180 == 'true'
     uses: ./.github/workflows/enterprise-role-qualification.yml
     with:
       skip_fast_check: true
+      enforce_enterprise180_admission: ${{ needs.route.outputs.enterprise180 == 'true' }}
 
   commercial-map:
     needs: [route, governance, fast-web]

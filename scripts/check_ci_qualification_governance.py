@@ -260,6 +260,12 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
                 errors.append(f"pr-qualification.yml: missing bounded reusable unit {bounded}")
         if "skip_fast_check: true" not in text:
             errors.append("pr-qualification.yml: Product Web Domain Gate must reuse Fast Gate result")
+        if "enterprise180:" not in text:
+            errors.append("pr-qualification.yml: missing Enterprise180 route output")
+        if "enterprise_180_admission.py check --required true" not in text:
+            errors.append("pr-qualification.yml: missing Enterprise180 pre-Fast admission gate")
+        if "enterprise180-admission-pr-" not in text:
+            errors.append("pr-qualification.yml: missing retained Enterprise180 admission receipt")
 
     merge_path = workflows / "pr-merge-gate.yml"
     if merge_path.exists():
@@ -279,11 +285,29 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
             errors.append("pr-merge-gate.yml: must check current-main freshness at freeze and MERGE_READY")
         if "freeze-candidate:" not in text or "merge-ready:" not in text:
             errors.append("pr-merge-gate.yml: missing CANDIDATE_FROZEN/MERGE_READY lifecycle jobs")
+        if "enterprise180:" not in text or "enforce_enterprise180_admission:" not in text:
+            errors.append("pr-merge-gate.yml: #180 admission is not carried into canonical Full Gate")
         max_full = int(budget.get("max_full_merge_gate_units", 0) or 0)
         if max_full and len(manifest_names) > max_full:
             errors.append(
                 f"Full Merge Gate fan-out {len(manifest_names)} exceeds budget {max_full}"
             )
+
+    role_path = workflows / "enterprise-role-qualification.yml"
+    if not role_path.exists():
+        errors.append("missing canonical Enterprise Role qualification")
+    else:
+        role_text = role_path.read_text(encoding="utf-8")
+        for required in (
+            "enforce_enterprise180_admission:",
+            "enterprise_180_admission.py check",
+            "enterprise180-admission-role-",
+        ):
+            if required not in role_text:
+                errors.append(
+                    "enterprise-role-qualification.yml: missing Enterprise180 admission invariant "
+                    + required
+                )
 
     receipt_path = workflows / MAIN_ENTRYPOINT
     if not receipt_path.exists():
