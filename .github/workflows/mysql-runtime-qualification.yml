@@ -123,7 +123,10 @@ jobs:
             local started
             started="$(date +%s)"
             echo "::group::${label}"
-            YUNKA_TEST_MYSQL_DSN="root:root@tcp(127.0.0.1:3306)/${database}?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true"               "$RUNNER_TEMP/biz-integration.test" -test.count=1 -test.run "${pattern}"
+            (
+              cd biz/integration
+              YUNKA_TEST_MYSQL_DSN="root:root@tcp(127.0.0.1:3306)/${database}?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true" "$RUNNER_TEMP/biz-integration.test" -test.count=1 -test.run "${pattern}"
+            )
             local elapsed="$(( $(date +%s) - started ))"
             echo "${label}: ${elapsed}s" >> "$GITHUB_STEP_SUMMARY"
             echo "::endgroup::"
