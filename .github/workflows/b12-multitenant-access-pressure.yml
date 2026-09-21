@@ -2,20 +2,6 @@ name: b12-multitenant-access-pressure
 
 on:
   workflow_call:
-  push:
-    branches:
-      - agent/b12-multitenant-access-pressure
-    paths:
-      - .github/workflows/b12-multitenant-access-pressure.yml
-      - .yunka/project.json
-      - Makefile
-      - contracts/**
-      - docs/pressure/B12-framework-pressure.md
-      - internal/**
-      - integration/**
-      - modules/**
-      - go.mod
-      - go.sum
   workflow_dispatch:
 
 permissions:
