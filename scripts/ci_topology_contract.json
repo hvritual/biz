@@ -142,5 +142,15 @@
         "ce07-qualification.yml"
       ]
     }
+  },
+  "resilience_contracts": {
+    "b12_7_runtime_evidence_upload": {
+      "workflow": "b12-7-runtime-qualification.yml",
+      "attempts": 2,
+      "first_attempt_continue_on_error": true,
+      "retry_only_after_failure": true,
+      "if_no_files_found": "error",
+      "overwrite_on_retry": true
+    }
   }
 }
