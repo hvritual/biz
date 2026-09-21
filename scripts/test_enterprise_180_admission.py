@@ -17,13 +17,11 @@ def table(q009="PENDING_HUMAN", q011="PENDING_HUMAN"):
 
 
 class Enterprise180AdmissionTests(unittest.TestCase):
-    def test_current_repository_truth_is_blocked(self):
-        state, blockers = gate.evaluate(gate.DECISIONS.read_text(encoding="utf-8"), True)
-        self.assertEqual(state, "BLOCKED")
-        self.assertEqual(
-            [(item["id"], item["status"]) for item in blockers],
-            [("Q-009", "PENDING_HUMAN"), ("Q-011", "PENDING_HUMAN")],
-        )
+    def test_current_repository_truth_is_admitted(self):
+        policy = json.loads(gate.POLICY_CONTRACT.read_text(encoding="utf-8"))
+        state, blockers = gate.evaluate(gate.DECISIONS.read_text(encoding="utf-8"), True, policy)
+        self.assertEqual(state, "ADMITTED")
+        self.assertEqual(blockers, [])
 
     def test_both_accepted_is_admitted(self):
         state, blockers = gate.evaluate(table("ACCEPTED", "ACCEPTED"), True)
@@ -54,20 +52,39 @@ class Enterprise180AdmissionTests(unittest.TestCase):
         self.assertEqual(state, "NOT_APPLICABLE")
         self.assertEqual(blockers, [])
 
-    def test_receipt_explicitly_disclaims_policy_semantics(self):
+    def test_policy_contract_rejects_implicit_department_grant(self):
+        policy = json.loads(gate.POLICY_CONTRACT.read_text(encoding="utf-8"))
+        policy["q009_business_scope_binding"]["organization_relation_grants_access"] = True
+        blockers = gate.validate_policy_contract(policy)
+        self.assertIn("Q009_IMPLICIT_ORG_GRANT_FORBIDDEN", [item["reason"] for item in blockers])
+
+    def test_policy_contract_rejects_union_scope(self):
+        policy = json.loads(gate.POLICY_CONTRACT.read_text(encoding="utf-8"))
+        policy["q011_data_policy_composition"]["effective_scope_operator"] = "union"
+        blockers = gate.validate_policy_contract(policy)
+        self.assertIn("Q011_SCOPE_OPERATOR_INVALID", [item["reason"] for item in blockers])
+
+    def test_policy_contract_rejects_multi_policy_role(self):
+        policy = json.loads(gate.POLICY_CONTRACT.read_text(encoding="utf-8"))
+        policy["q011_data_policy_composition"]["multiple_policies_per_role"] = True
+        blockers = gate.validate_policy_contract(policy)
+        self.assertIn("Q011_MULTI_POLICY_FORBIDDEN", [item["reason"] for item in blockers])
+
+    def test_receipt_admits_contract_but_disclaims_runtime_semantics(self):
         report = gate.receipt(True)
         self.assertFalse(report["semantics_implemented"])
         self.assertEqual(report["issue_number"], 180)
-        self.assertEqual(report["state"], "BLOCKED")
-        self.assertEqual([b["id"] for b in report["blockers"]], ["Q-009", "Q-011"])
+        self.assertEqual(report["state"], "ADMITTED")
+        self.assertEqual(report["blockers"], [])
+        self.assertIn("policy_contract_sha256", report["authority"])
 
-    def test_cli_writes_machine_readable_blocked_receipt(self):
+    def test_cli_writes_machine_readable_admitted_receipt(self):
         with tempfile.TemporaryDirectory() as temp:
             output = pathlib.Path(temp) / "receipt.json"
             with patch("sys.argv", ["enterprise_180_admission.py", "check", "--required", "true", "--output", str(output)]):
-                self.assertEqual(gate.main(), 2)
+                self.assertEqual(gate.main(), 0)
             report = json.loads(output.read_text(encoding="utf-8"))
-            self.assertEqual(report["state"], "BLOCKED")
+            self.assertEqual(report["state"], "ADMITTED")
             self.assertFalse(report["semantics_implemented"])
 
 
