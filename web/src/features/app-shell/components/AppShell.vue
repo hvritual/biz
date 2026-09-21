@@ -246,6 +246,12 @@ onBeforeUnmount(() => {
 .navigation-scrim {
   position: fixed;
   inset: var(--header-height) 0 0 calc(var(--current-rail) + 8px);
+  width: auto;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
   z-index: var(--z-scrim);
   background: var(--color-overlay);
   cursor: default;
