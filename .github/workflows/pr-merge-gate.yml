@@ -35,8 +35,38 @@ jobs:
           git fetch origin "$BASE_SHA" --depth=1
           git diff --name-only "$BASE_SHA" "$HEAD_SHA" | python3 scripts/ci_changed_files_router.py --github-output "$GITHUB_OUTPUT"
 
-  wait-qualification:
+  freeze-candidate:
     needs: route
+    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      candidate_sha: ${{ steps.lifecycle.outputs.candidate_sha }}
+      main_sha: ${{ steps.lifecycle.outputs.main_sha }}
+      state: ${{ steps.lifecycle.outputs.state }}
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze exact candidate against current main
+        id: lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin +refs/heads/main:refs/remotes/origin/main
+          python3 scripts/candidate_lifecycle.py validate-contract
+          python3 scripts/candidate_lifecycle.py assert-fresh --main-ref origin/main --candidate-ref HEAD
+          {
+            echo "## Candidate lifecycle"
+            echo
+            echo "- state: **CANDIDATE_FROZEN**"
+            echo "- candidate: \`$(git rev-parse HEAD)\`"
+            echo "- current main: \`$(git rev-parse origin/main)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+  wait-qualification:
+    needs: [route, freeze-candidate]
     if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -292,3 +322,90 @@ jobs:
     needs: [route, wait-qualification]
     if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/evolution-qualification.yml
+
+  merge-ready:
+    needs:
+      - full-01-b12-3-tenant-member-mysql
+      - full-02-b12-4-tenant-role-mysql
+      - full-03-b12-5-tenant-bootstrap-mysql
+      - full-04-b12-6-concurrency-mysql
+      - full-05-b12-7-runtime-qualification
+      - full-06-b12-8-framework-pressure-disposition
+      - full-07-b12-multitenant-access-pressure
+      - full-08-c9-pressure
+      - full-09-ce01-qualification
+      - full-10-ce02-bootstrap
+      - full-11-ce03-qualification
+      - full-12-ce04-qualification
+      - full-13-ce05-qualification
+      - full-14-ce06-qualification
+      - full-15-ce07-qualification
+      - full-16-ce08-qualification
+      - full-17-ce09-qualification
+      - full-18-ce10-qualification
+      - full-19-ce12-browser-e2e
+      - full-20-ce12-qualification
+      - full-21-ce13-plan-catalog-qualification
+      - full-22-ce13-platform-web-session
+      - full-23-coffeelink-web
+      - full-24-ec-ri-04-department-mysql
+      - full-25-ec-ri-04-web-qualification
+      - full-26-ec-ri-05-tenant-profile-mysql
+      - full-27-ec-ri-05-web-qualification
+      - full-28-ec-ri-06-plan-change-web
+      - full-29-ec-ri-06-plan-read-web
+      - full-30-ec-ri-06-tenant-usage-mysql
+      - full-31-ec-ri-07-audit-mysql
+      - full-32-ec-ri-07-web-qualification
+      - full-33-enterprise-168-sensitive-contacts
+      - full-34-enterprise-169-privacy-consent
+      - full-35-enterprise-170-verification-notification
+      - full-36-enterprise-171-session-isolation
+      - full-37-enterprise-173-password-security
+      - full-38-enterprise-174-current-authorization
+      - full-39-enterprise-175-authorized-navigation
+      - full-40-enterprise-177-member-lifecycle
+      - full-41-enterprise-178-role-lifecycle
+      - full-42-evolution-qualification
+    if: always() && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    env:
+      FULL_RESULTS: ${{ toJSON(needs) }}
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Require complete Full Merge Gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, sys
+          needs = json.loads(os.environ["FULL_RESULTS"])
+          bad = {name: value.get("result") for name, value in needs.items() if value.get("result") != "success"}
+          if bad:
+              print("FULL_MERGE_GATE_FAILURE " + json.dumps(bad, sort_keys=True), file=sys.stderr)
+              raise SystemExit(1)
+          print("FULL_MERGE_GATE=PASS jobs=" + str(len(needs)))
+          PY
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Recheck current main before MERGE_READY
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin +refs/heads/main:refs/remotes/origin/main
+          python3 scripts/candidate_lifecycle.py assert-fresh --main-ref origin/main --candidate-ref HEAD
+          echo "CANDIDATE_LIFECYCLE=MERGE_READY candidate=$CANDIDATE_SHA"
+      - name: Record CI amplification metrics
+        env:
+          GITHUB_TOKEN: ${{ env.GH_TOKEN }}
+        run: node .github/scripts/ci-qualification-metrics.mjs
