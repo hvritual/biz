@@ -23,6 +23,9 @@ jobs:
       core: ${{ steps.route.outputs.core }}
       docs_only: ${{ steps.route.outputs.docs_only }}
       domain_count: ${{ steps.route.outputs.domain_count }}
+      native_login: ${{ steps.route.outputs.native_login }}
+      delivery_isolation: ${{ steps.route.outputs.delivery_isolation }}
+      ce_receipts: ${{ steps.route.outputs.ce_receipts }}
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -84,6 +87,11 @@ jobs:
     if: needs.route.outputs.access == 'true'
     uses: ./.github/workflows/enterprise-178-role-lifecycle.yml
 
+  access-native-login:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.native_login == 'true'
+    uses: ./.github/workflows/enterprise-172-native-login.yml
+
   commercial-map:
     needs: [route, governance, fast-web]
     if: needs.route.outputs.commercial == 'true'
@@ -108,6 +116,16 @@ jobs:
     needs: [route, governance, fast-web]
     if: needs.route.outputs.core == 'true'
     uses: ./.github/workflows/b12-8-framework-pressure-disposition.yml
+
+  core-delivery-isolation:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.delivery_isolation == 'true'
+    uses: ./.github/workflows/delivery-workspace-isolation.yml
+
+  commercial-receipts:
+    needs: route
+    if: needs.route.outputs.ce_receipts == 'true'
+    uses: ./.github/workflows/ce-round-receipts.yml
 
   deviceops-regression:
     needs: [route, governance, fast-web]
