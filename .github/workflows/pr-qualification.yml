@@ -57,10 +57,12 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
-      - name: CI governance and router tests
+      - name: CI governance, lifecycle and router tests
         run: |
+          python3 scripts/candidate_lifecycle.py validate-contract
           python3 scripts/check_ci_qualification_governance.py
           python3 scripts/test_ci_changed_files_router.py
+          python3 scripts/test_candidate_lifecycle.py
 
   fast-web:
     needs: route
