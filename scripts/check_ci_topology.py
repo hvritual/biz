@@ -217,7 +217,21 @@ def validate(base_ref: str | None = None) -> list[str]:
                 if workflow not in expected_full:
                     errors.append(f"CE08 delegated workflow missing from Full Merge Gate: {workflow}")
 
-        ce08_script = (ROOT / "scripts" / "ce08_qualify.sh").read_text(encoding="utf-8")
+        ce08_script_path = ROOT / "scripts" / "ce08_qualify.sh"
+        ce08_script = ce08_script_path.read_text(encoding="utf-8")
+        syntax = subprocess.run(
+            ["bash", "-n", str(ce08_script_path)],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if syntax.returncode != 0:
+            errors.append(
+                "CE08 qualification shell syntax invalid: "
+                + (syntax.stderr.strip() or syntax.stdout.strip())
+            )
         if ce08_path is not None:
             ce08_text = ce08_path.read_text(encoding="utf-8")
             if "--tmpfs /var/lib/mysql:rw,nosuid,size=1g" not in ce08_text:
