@@ -1,0 +1,160 @@
+name: MySQL Runtime Qualification
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  YUNKA_TEST_RESET_FIXTURES: "1"
+
+jobs:
+  mysql-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Checkout exact Biz candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: biz
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Load current consumer framework lock
+        id: consumer_source
+        shell: bash
+        run: |
+          set -euo pipefail
+          source biz/.yunka/source.env
+          echo "YUNKA_SHA=$YUNKA_COMMIT" >> "$GITHUB_ENV"
+          echo "sha=$YUNKA_COMMIT" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout exact Yunka baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: hvritual/yunka.io
+          ref: ${{ steps.consumer_source.outputs.sha }}
+          path: yunka.io
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Load locked Go
+        id: lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          source yunka.io/tools/toolchain.env
+          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup locked Go with cache
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: ${{ steps.lock.outputs.go_version }}
+          cache: true
+          cache-dependency-path: biz/go.sum
+
+      - name: Verify exact sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
+
+      - name: Start MySQL and compile integration suite in parallel
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date +%s)"
+
+          (
+            docker run --name biz-ci-mysql               --tmpfs /var/lib/mysql:rw,nosuid,size=1g               -e MYSQL_ROOT_PASSWORD=root               -p 3306:3306               -d mysql:8.4
+          ) > "$RUNNER_TEMP/mysql.cid" &
+          mysql_start_pid=$!
+
+          (
+            go -C biz test -c -tags=integration ./integration               -o "$RUNNER_TEMP/biz-integration.test"
+          ) &
+          build_pid=$!
+
+          wait "$mysql_start_pid"
+          wait "$build_pid"
+
+          ready=0
+          for _ in $(seq 1 60); do
+            if docker exec biz-ci-mysql               mysqladmin ping -h 127.0.0.1 -uroot -proot --silent >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" = "1"
+
+          elapsed="$(( $(date +%s) - started ))"
+          echo "MYSQL_WARMUP_SECONDS=$elapsed" >> "$GITHUB_ENV"
+          echo "MySQL + integration compile warmup: ${elapsed}s" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Prepare isolated qualification databases
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker exec -i -e MYSQL_PWD=root biz-ci-mysql mysql -uroot <<'SQL'
+          CREATE DATABASE IF NOT EXISTS biz_b123 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+          CREATE DATABASE IF NOT EXISTS biz_b124 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+          CREATE DATABASE IF NOT EXISTS biz_b125 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+          CREATE DATABASE IF NOT EXISTS biz_b126 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+          CREATE DATABASE IF NOT EXISTS biz_ec_ri_04 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+          CREATE DATABASE IF NOT EXISTS biz_ec_ri_05 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+          CREATE DATABASE IF NOT EXISTS biz_ec_ri_06_usage CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+          CREATE DATABASE IF NOT EXISTS biz_ec_ri_07 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+          SQL
+
+          for database in \
+            biz_b123 biz_b124 biz_b125 biz_b126 \
+            biz_ec_ri_04 biz_ec_ri_05 biz_ec_ri_06_usage biz_ec_ri_07; do
+            actual="$(docker exec -e MYSQL_PWD=root biz-ci-mysql mysql -N -uroot \
+              -e "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='${database}'")"
+            test "$actual" = "$database"
+          done
+
+      - name: Run consolidated MySQL qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          run_integration() {
+            local label="$1"
+            local database="$2"
+            local pattern="$3"
+            local started
+            started="$(date +%s)"
+            echo "::group::${label}"
+            (
+              cd biz/integration
+              YUNKA_TEST_MYSQL_DSN="root:root@tcp(127.0.0.1:3306)/${database}?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true" "$RUNNER_TEMP/biz-integration.test" -test.count=1 -test.run "${pattern}"
+            )
+            local elapsed="$(( $(date +%s) - started ))"
+            echo "${label}: ${elapsed}s" >> "$GITHUB_STEP_SUMMARY"
+            echo "::endgroup::"
+          }
+
+          run_integration "B12.3 tenant member" "biz_b123" '^TestB123'
+          run_integration "B12.4 tenant role" "biz_b124" '^TestB124'
+          run_integration "B12.5 tenant bootstrap" "biz_b125" '^TestB125'
+          run_integration "B12.6 concurrency" "biz_b126" '^Test(B126|AG02OwnerInvariantUsesCurrentReadAfterSnapshot)'
+          run_integration "EC-RI-04 department" "biz_ec_ri_04" '^TestECIR04TenantDepartmentRESTIsAuthoritativeAndTenantScoped$'
+          run_integration "EC-RI-05 tenant profile" "biz_ec_ri_05" '^TestECIR05TenantProfileRESTIsAuthoritativeCASAndTenantScoped$'
+          run_integration "EC-RI-06 tenant usage" "biz_ec_ri_06_usage" '^TestECIR06TenantUsageCountsOnlyNonRemovedMembersAndKeepsTenantScope$'
+          run_integration "EC-RI-07 audit" "biz_ec_ri_07" '^TestECIR07AuditTrailIsServerProducedTenantScopedAndExportAudited$'
+
+          go -C biz test -count=1 ./internal/architecture             -run '^TestECRI06Tenant(SubscriptionReadIsSessionScoped|UsageReadIsSessionScopedAndComposed|OwnerCanReadCommercialEntitlements)$'
+
+          test -z "$(git -C biz status --porcelain)"
+
+      - name: Stop MySQL
+        if: always()
+        shell: bash
+        run: |
+          docker rm -f biz-ci-mysql >/dev/null 2>&1 || true

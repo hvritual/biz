@@ -127,6 +127,35 @@ def validate(base_ref: str | None = None) -> list[str]:
             errors.append(f"CI budget {key}={actual!r}; topology contract requires {expected!r}")
 
     workflows = {path.name: path for path in WORKFLOWS.glob("*.yml")}
+
+    mysql_budget = contract.get("performance_budgets", {}).get("mysql_runtime_qualification")
+    if mysql_budget:
+        mysql_workflow = mysql_budget["workflow"]
+        mysql_path = workflows.get(mysql_workflow)
+        if mysql_path is None:
+            errors.append(f"MySQL performance workflow missing: {mysql_workflow}")
+        else:
+            mysql_text = mysql_path.read_text(encoding="utf-8")
+            timeouts = [
+                int(value)
+                for value in re.findall(r"^    timeout-minutes:\s*(\d+)\s*$", mysql_text, re.MULTILINE)
+            ]
+            max_minutes = int(mysql_budget["max_job_minutes"])
+            if len(timeouts) != 1:
+                errors.append(
+                    f"{mysql_workflow}: expected exactly one timed qualification job; found {len(timeouts)}"
+                )
+            elif timeouts[0] > max_minutes:
+                errors.append(
+                    f"{mysql_workflow}: timeout {timeouts[0]}m exceeds MySQL budget {max_minutes}m"
+                )
+            image = mysql_budget.get("image")
+            if image and f"mysql:{image.split(':', 1)[-1]}" not in mysql_text:
+                errors.append(f"{mysql_workflow}: MySQL image drifted from {image}")
+            if expected_full.count(mysql_workflow) != 1:
+                errors.append(
+                    f"Full Merge Gate must contain exactly one consolidated MySQL workflow {mysql_workflow}"
+                )
     pull_entrypoints = sorted(
         name for name, path in workflows.items()
         if "pull_request" in on_children(path.read_text(encoding="utf-8"))
@@ -171,9 +200,20 @@ def validate(base_ref: str | None = None) -> list[str]:
             errors.append(f"PR Qualification references issue-numbered permanent gate: {name}")
 
     merge = workflows["pr-merge-gate.yml"].read_text(encoding="utf-8")
-    full_jobs = re.findall(r"^  full-[^:]+:", merge, re.MULTILINE)
+    full_jobs = [
+        match.group(1)
+        for match in re.finditer(r"^  (full-[^:]+):", merge, re.MULTILINE)
+    ]
     if len(full_jobs) != expected_units:
         errors.append(f"PR Merge Gate declares {len(full_jobs)} full jobs; expected {expected_units}")
+    expected_full_jobs = [
+        f"full-{index:02d}-{name.removesuffix('.yml')}"
+        for index, name in enumerate(expected_full, start=1)
+    ]
+    if full_jobs != expected_full_jobs:
+        errors.append(
+            f"PR Merge Gate full job names/order drifted: {full_jobs}; expected {expected_full_jobs}"
+        )
     for name in expected_full:
         count = merge.count(f"uses: ./.github/workflows/{name}")
         if count != 1:
