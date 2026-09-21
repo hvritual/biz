@@ -1,30 +1,7 @@
 name: Enterprise 172 native login qualification
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - .github/workflows/enterprise-172-native-login.yml
-      - .github/workflows/ce12-browser-e2e.yml
-      - cmd/biz-idp/**
-      - docs/enterprise-center/native-login.md
-      - internal/access/infrastructure/persistence/first_party_idp*.go
-      - internal/access/infrastructure/persistence/login_identifier*.go
-      - internal/access/infrastructure/persistence/verification*.go
-      - internal/bizruntime/first_party_idp*.go
-      - internal/bizruntime/first_party_native_login*.go
-      - internal/bizruntime/config.go
-      - integration/enterprise_172_native_login_mysql_test.go
-      - integration/ce12_browser_seed_test.go
-      - web/tests/ce12/**
-      - scripts/accept-local-login.mjs
-      - go.mod
-      - go.sum
+  workflow_call:
   workflow_dispatch:
 
 permissions:
