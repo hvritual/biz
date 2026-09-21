@@ -24,10 +24,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: enterprise-174-current-authorization-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   contracts-go:
     runs-on: ubuntu-latest
