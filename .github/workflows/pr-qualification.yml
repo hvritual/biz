@@ -84,14 +84,14 @@ jobs:
           node --test .github/scripts/main-qualification.test.mjs
 
       - name: Enterprise180 Delivery Admission
-        if: ${{ needs.route.outputs.enterprise180 == 'true' || contains(github.event.pull_request.body || '', 'Refs #180') || contains(github.event.pull_request.body || '', 'Closes #180') || contains(github.event.pull_request.body || '', 'Fixes #180') || contains(github.event.pull_request.body || '', 'Resolves #180') }}
+        if: needs.route.outputs.enterprise180 == 'true'
         env:
           CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: python3 scripts/enterprise_180_admission.py check --required true
 
       - name: Retain Enterprise180 BLOCKED/ADMITTED receipt
-        if: ${{ always() && (needs.route.outputs.enterprise180 == 'true' || contains(github.event.pull_request.body || '', 'Refs #180') || contains(github.event.pull_request.body || '', 'Closes #180') || contains(github.event.pull_request.body || '', 'Fixes #180') || contains(github.event.pull_request.body || '', 'Resolves #180')) }}
+        if: always() && needs.route.outputs.enterprise180 == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: enterprise180-admission-pr-${{ github.run_id }}-${{ github.run_attempt }}
@@ -125,7 +125,7 @@ jobs:
     uses: ./.github/workflows/enterprise-role-qualification.yml
     with:
       skip_fast_check: true
-      enforce_enterprise180_admission: ${{ needs.route.outputs.enterprise180 == 'true' || contains(github.event.pull_request.body || '', 'Refs #180') || contains(github.event.pull_request.body || '', 'Closes #180') || contains(github.event.pull_request.body || '', 'Fixes #180') || contains(github.event.pull_request.body || '', 'Resolves #180') }}
+      enforce_enterprise180_admission: ${{ needs.route.outputs.enterprise180 == 'true' }}
 
   commercial-map:
     needs: [route, governance, fast-web]
