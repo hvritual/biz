@@ -2,17 +2,6 @@ name: ec-ri-06-plan-read-web
 
 on:
   workflow_call:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/ec-ri-06-plan-read-web.yml
-      - web/**
-      - contracts/proto/commercial/v1/subscription.proto
-      - contracts/proto/access/v1/tenant_member.proto
-      - contracts/commercial/operation-capabilities.v1.json
-      - contracts/generated/openapi.json
-      - internal/architecture/ec_ri_06_tenant_plan_read_test.go
   workflow_dispatch:
 
 permissions:
