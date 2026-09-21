@@ -130,11 +130,7 @@ WEB_E2E_HARNESS_FILES = {
 
 ENTERPRISE_180_PATH_PREFIXES = (
     "integration/enterprise_180_",
-    "scripts/enterprise_180_admission",
 )
-ENTERPRISE_180_FILES = {
-    "docs/delivery/ENTERPRISE-180-ADMISSION.md",
-}
 
 ROLE_GRANT_PATH_PREFIXES = (
     "internal/access/authorization/",
@@ -234,8 +230,7 @@ def route(paths: list[str]) -> dict[str, object]:
     )
 
     enterprise180 = any(
-        path in ENTERPRISE_180_FILES
-        or any(path.startswith(prefix) for prefix in ENTERPRISE_180_PATH_PREFIXES)
+        any(path.startswith(prefix) for prefix in ENTERPRISE_180_PATH_PREFIXES)
         for path in files
     )
 
