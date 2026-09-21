@@ -90,6 +90,11 @@ def validate_policy_contract(payload: dict[str, object]) -> list[dict[str, str]]
         require_contract(q011.get("multiple_policies_per_role") is False, "Q011_MULTI_POLICY_FORBIDDEN", "一期不允许 Role 多策略组合")
         require_contract(q011.get("effective_scope_operator") == "intersection", "Q011_SCOPE_OPERATOR_INVALID", "有效范围必须使用约束性交集")
         require_contract(
+            q011.get("applicable_role_policy_scope_aggregation") == "intersection_of_current_policies_on_roles_granting_action",
+            "Q011_MULTI_ROLE_SCOPE_AGGREGATION_INVALID",
+            "多角色可用策略范围必须按当前授予动作的角色策略做交集，不能通过角色 union 扩权",
+        )
+        require_contract(
             q011.get("effective_scope_dimensions") == [
                 "applicable_role_policy_scope",
                 "member_explicit_scope",
@@ -103,6 +108,18 @@ def validate_policy_contract(payload: dict[str, object]) -> list[dict[str, str]]
             q011.get("policy_contraction_behavior") == "next_sensitive_request_must_re_evaluate_and_deny_if_out_of_scope",
             "Q011_CONTRACTION_INVALID",
             "策略收缩必须在下一敏感请求按当前事实重新计算并拒绝越界",
+        )
+        require_contract(
+            payload.get("required_negative_examples") == [
+                "tenant_a_object_to_tenant_b_member_rejected",
+                "unassignable_object_direct_api_injection_rejected",
+                "expired_revoked_or_cross_tenant_policy_rejected",
+                "department_move_does_not_expand_scope",
+                "broader_second_role_does_not_bypass_member_explicit_scope",
+                "policy_contraction_denies_next_sensitive_request",
+            ],
+            "POLICY_NEGATIVE_EXAMPLES_INCOMPLETE",
+            "policy contract 必须保留固定的六组越权/收缩反例",
         )
     return blockers
 
