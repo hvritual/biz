@@ -123,6 +123,34 @@
       "workflow": "mysql-runtime-qualification.yml",
       "max_job_minutes": 2,
       "image": "mysql:8.4"
+    },
+    "ce08_qualification": {
+      "workflow": "ce08-qualification.yml",
+      "max_job_minutes": 5,
+      "shard_manifest": "scripts/ci_ce08_shards.json",
+      "expected_race_tests": [
+        "TestCE08MySQLBusinessKeyConvergesAcrossRuntimeInstances",
+        "TestCE08MySQLConcurrentReplayAndDifferentPayloadNeverDuplicateBaseSubscription"
+      ],
+      "delegated_full_gate_coverage": [
+        "mysql-runtime-qualification.yml",
+        "b12-multitenant-access-pressure.yml",
+        "ce02-bootstrap.yml",
+        "ce04-qualification.yml",
+        "ce05-qualification.yml",
+        "ce06-qualification.yml",
+        "ce07-qualification.yml"
+      ]
+    }
+  },
+  "resilience_contracts": {
+    "b12_7_runtime_evidence_upload": {
+      "workflow": "b12-7-runtime-qualification.yml",
+      "attempts": 2,
+      "first_attempt_continue_on_error": true,
+      "retry_only_after_failure": true,
+      "if_no_files_found": "error",
+      "overwrite_on_retry": true
     }
   }
 }

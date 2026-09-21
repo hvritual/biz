@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "purpose": "CE08 Full Gate sharding. Exact-set validated at runtime so no TestCE08MySQL* can be silently omitted.",
+  "shards": [
+    {
+      "id": "s1",
+      "tests": [
+        "TestCE08MySQLTenantIdentityCannotManageDefaultRules",
+        "TestCE08MySQLSpecificRuleAndFallbackMaterializeConsistentEntitlements",
+        "TestCE08MySQLRuleOrderingIsDeterministicAcrossEqualPriority",
+        "TestCE08MySQLTransportKeyCannotBindAnotherRequest",
+        "TestCE08MySQLRuleReceiptRejectsSameKeyDifferentPayload",
+        "TestCE08MySQLMemberChildFailureRollsBackBeforeSubscription",
+        "TestCE08MySQLBaseSubscriptionUniqueConstraintRejectsSecondRow",
+        "TestCE08MySQLDefaultRuleListCarriesVersionAndReason",
+        "TestCE08MySQLConcurrentReplayAndDifferentPayloadNeverDuplicateBaseSubscription",
+        "TestCE08MySQLMatchExplanationBindsRuleVersion",
+        "TestCE08MySQLEvidenceTablesHaveReferentiallyStablePlanVersion",
+        "TestCE08MySQLSubscriptionCreatedAtUsesDatabaseUTC"
+      ]
+    },
+    {
+      "id": "s2",
+      "tests": [
+        "TestCE08MySQLDisabledHighPriorityRuleIsSkipped",
+        "TestCE08MySQLMissingPlanRuleIsRejected",
+        "TestCE08MySQLInternalBootstrapHasNoRPC",
+        "TestCE08MySQLConcreteBootstrapScopeRejectsWildcardInput",
+        "TestCE08MySQLFixedDaysMaterializesExpiryOnEverySource",
+        "TestCE08MySQLWildcardRuleRequiresGloballyApplicablePlan",
+        "TestCE08MySQLSubscriptionIDIsStableForTenant",
+        "TestCE08MySQLNoTenantCanChoosePlanInCreateRequest",
+        "TestCE08MySQLSubscriptionFailureRollsBackTenantOwnerEntitlementsAndRetry",
+        "TestCE08MySQLSubscriptionAuditAndReceiptAreExactlyOnce",
+        "TestCE08MySQLNoConfiguredDefaultFailsClosed"
+      ]
+    },
+    {
+      "id": "s3",
+      "tests": [
+        "TestCE08MySQLAtomicFailureMatrix",
+        "TestCE08MySQLBusinessKeyConvergesAcrossRuntimeInstances",
+        "TestCE08MySQLCorruptAuthorityCannotSilentlyFallBack",
+        "TestCE08MySQLRetiredSpecificRuleFallsBackToEligibleGlobalRule",
+        "TestCE08MySQLRuleReplayAndDisableAfterRetirement",
+        "TestCE08MySQLInvalidSpecificRuleCannotBeInstalled"
+      ]
+    }
+  ],
+  "race_tests": [
+    "TestCE08MySQLBusinessKeyConvergesAcrossRuntimeInstances",
+    "TestCE08MySQLConcurrentReplayAndDifferentPayloadNeverDuplicateBaseSubscription"
+  ],
+  "delegated_full_gate_coverage": [
+    "mysql-runtime-qualification.yml",
+    "b12-multitenant-access-pressure.yml",
+    "ce02-bootstrap.yml",
+    "ce04-qualification.yml",
+    "ce05-qualification.yml",
+    "ce06-qualification.yml",
+    "ce07-qualification.yml"
+  ]
+}
