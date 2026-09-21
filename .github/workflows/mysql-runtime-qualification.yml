@@ -100,7 +100,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker exec -e MYSQL_PWD=root biz-ci-mysql mysql -uroot <<'SQL'
+          docker exec -i -e MYSQL_PWD=root biz-ci-mysql mysql -uroot <<'SQL'
           CREATE DATABASE IF NOT EXISTS biz_b123 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
           CREATE DATABASE IF NOT EXISTS biz_b124 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
           CREATE DATABASE IF NOT EXISTS biz_b125 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
@@ -110,6 +110,14 @@ jobs:
           CREATE DATABASE IF NOT EXISTS biz_ec_ri_06_usage CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
           CREATE DATABASE IF NOT EXISTS biz_ec_ri_07 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
           SQL
+
+          for database in \
+            biz_b123 biz_b124 biz_b125 biz_b126 \
+            biz_ec_ri_04 biz_ec_ri_05 biz_ec_ri_06_usage biz_ec_ri_07; do
+            actual="$(docker exec -e MYSQL_PWD=root biz-ci-mysql mysql -N -uroot \
+              -e "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='${database}'")"
+            test "$actual" = "$database"
+          done
 
       - name: Run consolidated MySQL qualification
         shell: bash
