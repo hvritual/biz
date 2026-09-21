@@ -8,13 +8,47 @@ on:
         required: false
         type: boolean
         default: false
+      enforce_enterprise180_admission:
+        description: Require #180 Human policy decisions before any role/data-policy qualification
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact candidate for admission
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Evaluate Enterprise180 Human policy admission
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          ENTERPRISE180_ADMISSION_REQUIRED: ${{ inputs.enforce_enterprise180_admission }}
+        run: python3 scripts/enterprise_180_admission.py check --required "$ENTERPRISE180_ADMISSION_REQUIRED"
+
+      - name: Retain Enterprise180 admission receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: enterprise180-admission-role-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/enterprise180-admission.json
+          if-no-files-found: error
+          retention-days: 30
+
   backend:
+    needs: admission
+    if: needs.admission.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -115,6 +149,8 @@ jobs:
           test -z "$(git -C biz status --porcelain)"
 
   web:
+    needs: admission
+    if: needs.admission.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:

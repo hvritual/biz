@@ -20,6 +20,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       docs_only: ${{ steps.route.outputs.docs_only }}
+      enterprise180: ${{ steps.route.outputs.enterprise180 }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -304,6 +305,8 @@ jobs:
     needs: [route, wait-qualification]
     if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/enterprise-role-qualification.yml
+    with:
+      enforce_enterprise180_admission: ${{ needs.route.outputs.enterprise180 == 'true' }}
 
   full-42-evolution-qualification:
     needs: [route, wait-qualification]
