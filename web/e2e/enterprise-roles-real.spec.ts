@@ -279,7 +279,7 @@ test('role permission tree preserves mixed full and none parent states and autho
   await expect(reopenedGroup.getByLabel('企业成员 全选')).not.toBeChecked()
   await expect(reopenedGroup.locator('input[type="checkbox"]:checked')).toHaveCount(0)
 
-  await dialog.getByRole('button', { name: '企业角色' }).focus()
+  await dialog.getByRole('button', { name: '角色权限' }).focus()
   await dialog.getByRole('button', { name: '企业成员' }).click()
   await expect(reopenedGroup.getByLabel('企业成员 全选')).toBeFocused()
 })
