@@ -68,6 +68,7 @@ jobs:
           python3 scripts/check_ci_qualification_governance.py
           python3 scripts/test_ci_changed_files_router.py
           python3 scripts/test_candidate_lifecycle.py
+          node --test .github/scripts/main-qualification.test.mjs
 
   fast-web:
     needs: route
