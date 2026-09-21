@@ -19,7 +19,7 @@ MAIN_ENTRYPOINT = "main-receipt.yml"
 DOMAIN_GATE_UNITS = {
     "b12-4-tenant-role-mysql.yml",
     "b12-multitenant-access-pressure.yml",
-    "enterprise-178-role-lifecycle.yml",
+    "enterprise-role-qualification.yml",
     "ce03-qualification.yml",
     "ce10-qualification.yml",
     "coffeelink-web.yml",
@@ -29,7 +29,6 @@ DOMAIN_GATE_UNITS = {
     "enterprise-172-native-login.yml",
     "delivery-workspace-isolation.yml",
     "web-e2e-harness.yml",
-    "enterprise-179-role-grant-tree.yml",
 }
 
 REQUIRED_LIFECYCLE_STATES = [
