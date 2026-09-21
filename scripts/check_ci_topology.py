@@ -156,6 +156,84 @@ def validate(base_ref: str | None = None) -> list[str]:
                 errors.append(
                     f"Full Merge Gate must contain exactly one consolidated MySQL workflow {mysql_workflow}"
                 )
+    ce08_budget = contract.get("performance_budgets", {}).get("ce08_qualification")
+    if ce08_budget:
+        ce08_workflow = ce08_budget["workflow"]
+        ce08_path = workflows.get(ce08_workflow)
+        shard_manifest_path = ROOT / ce08_budget["shard_manifest"]
+        if ce08_path is None:
+            errors.append(f"CE08 performance workflow missing: {ce08_workflow}")
+        else:
+            ce08_text = ce08_path.read_text(encoding="utf-8")
+            timeouts = [
+                int(value)
+                for value in re.findall(r"^    timeout-minutes:\s*(\d+)\s*$", ce08_text, re.MULTILINE)
+            ]
+            max_minutes = int(ce08_budget["max_job_minutes"])
+            if len(timeouts) != 1:
+                errors.append(
+                    f"{ce08_workflow}: expected exactly one timed qualification job; found {len(timeouts)}"
+                )
+            elif timeouts[0] > max_minutes:
+                errors.append(
+                    f"{ce08_workflow}: timeout {timeouts[0]}m exceeds CE08 budget {max_minutes}m"
+                )
+        if not shard_manifest_path.exists():
+            errors.append(f"CE08 shard manifest missing: {shard_manifest_path.relative_to(ROOT)}")
+        else:
+            shard_manifest = json.loads(shard_manifest_path.read_text(encoding="utf-8"))
+            manifest_tests = [
+                test
+                for shard in shard_manifest.get("shards", [])
+                for test in shard.get("tests", [])
+            ]
+            if len(manifest_tests) != len(set(manifest_tests)):
+                errors.append("CE08 shard manifest contains duplicate tests")
+            source_tests: set[str] = set()
+            for source in (ROOT / "integration").glob("*.go"):
+                text = source.read_text(encoding="utf-8")
+                source_tests.update(
+                    re.findall(r"^func (TestCE08MySQL[A-Za-z0-9_]+)\(t \*testing\.T\)", text, re.MULTILINE)
+                )
+            if set(manifest_tests) != source_tests:
+                errors.append(
+                    "CE08 shard manifest exact-set drifted from integration tests: "
+                    f"missing={sorted(source_tests - set(manifest_tests))} "
+                    f"stale={sorted(set(manifest_tests) - source_tests)}"
+                )
+            expected_race = set(ce08_budget.get("expected_race_tests", []))
+            actual_race = set(shard_manifest.get("race_tests", []))
+            if actual_race != expected_race:
+                errors.append(
+                    f"CE08 race set drifted: {sorted(actual_race)}; expected {sorted(expected_race)}"
+                )
+            if not actual_race.issubset(source_tests):
+                errors.append("CE08 race set references tests outside CE08 MySQL coverage")
+            delegated = shard_manifest.get("delegated_full_gate_coverage", [])
+            expected_delegated = ce08_budget.get("delegated_full_gate_coverage", [])
+            if delegated != expected_delegated:
+                errors.append("CE08 delegated Full Gate coverage drifted from topology contract")
+            for workflow in delegated:
+                if workflow not in expected_full:
+                    errors.append(f"CE08 delegated workflow missing from Full Merge Gate: {workflow}")
+
+        ce08_script = (ROOT / "scripts" / "ce08_qualify.sh").read_text(encoding="utf-8")
+        forbidden_ce08_duplicates = [
+            "^TestCE07MySQL",
+            "^TestCE06MySQL",
+            "^TestCE05MySQL",
+            "^TestCE04MySQL",
+            "^TestCE02",
+            "TestB122TenantLifecycleRESTAndGRPCUseUnifiedExecutor",
+            "go test -count=1 -json ./...",
+            "go vet ./...",
+            "go build ./...",
+            "-race -count=1 -tags=integration -json ./integration -run '^TestCE08MySQL'",
+        ]
+        for marker in forbidden_ce08_duplicates:
+            if marker in ce08_script:
+                errors.append(f"CE08 qualification reintroduced delegated duplicate coverage: {marker}")
+
     pull_entrypoints = sorted(
         name for name, path in workflows.items()
         if "pull_request" in on_children(path.read_text(encoding="utf-8"))
