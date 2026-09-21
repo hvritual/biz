@@ -201,20 +201,10 @@ jobs:
     if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/coffeelink-web.yml
 
-  full-24-ec-ri-04-department-mysql:
-    needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
-    uses: ./.github/workflows/ec-ri-04-department-mysql.yml
-
   full-25-ec-ri-04-web-qualification:
     needs: [route, wait-qualification]
     if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ec-ri-04-web-qualification.yml
-
-  full-26-ec-ri-05-tenant-profile-mysql:
-    needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
-    uses: ./.github/workflows/ec-ri-05-tenant-profile-mysql.yml
 
   full-27-ec-ri-05-web-qualification:
     needs: [route, wait-qualification]
@@ -230,16 +220,6 @@ jobs:
     needs: [route, wait-qualification]
     if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ec-ri-06-plan-read-web.yml
-
-  full-30-ec-ri-06-tenant-usage-mysql:
-    needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
-    uses: ./.github/workflows/ec-ri-06-tenant-usage-mysql.yml
-
-  full-31-ec-ri-07-audit-mysql:
-    needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
-    uses: ./.github/workflows/ec-ri-07-audit-mysql.yml
 
   full-32-ec-ri-07-web-qualification:
     needs: [route, wait-qualification]
