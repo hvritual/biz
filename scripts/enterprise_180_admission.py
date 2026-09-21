@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DECISIONS = ROOT / "docs/enterprise-center/decisions.md"
 CONTRACTS = ROOT / "docs/enterprise-center/contracts.md"
+POLICY_CONTRACT = ROOT / "docs/enterprise-center/enterprise180-policy-contract.v1.json"
 RECEIPT = "enterprise180-admission.json"
 
 REQUIRED = {
@@ -52,7 +53,65 @@ def parse_decisions(text: str) -> dict[str, list[str]]:
     return found
 
 
-def evaluate(text: str, required: bool) -> tuple[str, list[dict[str, str]]]:
+def validate_policy_contract(payload: dict[str, object]) -> list[dict[str, str]]:
+    blockers: list[dict[str, str]] = []
+
+    def require_contract(ok: bool, reason: str, description: str) -> None:
+        if not ok:
+            blockers.append({
+                "id": "POLICY_CONTRACT",
+                "status": "INVALID",
+                "reason": reason,
+                "description": description,
+            })
+
+    require_contract(payload.get("schema_version") == 1, "POLICY_CONTRACT_SCHEMA_INVALID", "policy contract schema_version 必须为 1")
+    require_contract(payload.get("status") == "ACCEPTED", "POLICY_CONTRACT_NOT_ACCEPTED", "policy contract 必须为 ACCEPTED")
+    require_contract(
+        payload.get("accepted_decisions") == ["Q-009", "Q-011"],
+        "POLICY_CONTRACT_DECISION_BINDING_INVALID",
+        "policy contract 必须精确绑定 Q-009/Q-011",
+    )
+
+    q009 = payload.get("q009_business_scope_binding")
+    q011 = payload.get("q011_data_policy_composition")
+    require_contract(isinstance(q009, dict), "Q009_CONTRACT_MISSING", "缺少 Q-009 结构化合同")
+    require_contract(isinstance(q011, dict), "Q011_CONTRACT_MISSING", "缺少 Q-011 结构化合同")
+    if isinstance(q009, dict):
+        require_contract(q009.get("assignment_mode") == "explicit", "Q009_ASSIGNMENT_MODE_INVALID", "Q-009 必须采用显式范围绑定")
+        require_contract(q009.get("tenant_bound") is True, "Q009_TENANT_BOUND_REQUIRED", "Q-009 必须 tenant-bound")
+        require_contract(q009.get("assignable_only") is True, "Q009_ASSIGNABLE_ONLY_REQUIRED", "Q-009 只允许当前可分配对象")
+        require_contract(q009.get("authoritative_readback") is True, "Q009_READBACK_REQUIRED", "Q-009 写后必须权威回读")
+        require_contract(q009.get("organization_relation_grants_access") is False, "Q009_IMPLICIT_ORG_GRANT_FORBIDDEN", "组织关系不得隐式授予数据权限")
+        require_contract(q009.get("derived_data_scope_authoritative") is False, "Q009_DERIVED_SCOPE_AUTHORITY_FORBIDDEN", "derived_data_scope 不得成为授权权威")
+
+    if isinstance(q011, dict):
+        require_contract(q011.get("role_policy_cardinality") == "zero_or_one", "Q011_CARDINALITY_INVALID", "一期 Role 最多引用一个 Data Policy")
+        require_contract(q011.get("multiple_policies_per_role") is False, "Q011_MULTI_POLICY_FORBIDDEN", "一期不允许 Role 多策略组合")
+        require_contract(q011.get("effective_scope_operator") == "intersection", "Q011_SCOPE_OPERATOR_INVALID", "有效范围必须使用约束性交集")
+        require_contract(
+            q011.get("effective_scope_dimensions") == [
+                "applicable_role_policy_scope",
+                "member_explicit_scope",
+                "current_tenant_assignable_scope",
+            ],
+            "Q011_SCOPE_DIMENSIONS_INVALID",
+            "有效范围必须精确由 role policy、member explicit scope、tenant assignable scope 三维交集",
+        )
+        require_contract(q011.get("missing_required_policy_behavior") == "deny", "Q011_FAIL_CLOSED_REQUIRED", "缺失必需策略必须 fail-closed")
+        require_contract(
+            q011.get("policy_contraction_behavior") == "next_sensitive_request_must_re_evaluate_and_deny_if_out_of_scope",
+            "Q011_CONTRACTION_INVALID",
+            "策略收缩必须在下一敏感请求按当前事实重新计算并拒绝越界",
+        )
+    return blockers
+
+
+def evaluate(
+    text: str,
+    required: bool,
+    policy_contract: dict[str, object] | None = None,
+) -> tuple[str, list[dict[str, str]]]:
     if not required:
         return "NOT_APPLICABLE", []
 
@@ -84,12 +143,15 @@ def evaluate(text: str, required: bool) -> tuple[str, list[dict[str, str]]]:
                 "description": rule["description"],
             })
 
+    if not blockers and policy_contract is not None:
+        blockers.extend(validate_policy_contract(policy_contract))
     return ("BLOCKED" if blockers else "ADMITTED"), blockers
 
 
 def receipt(required: bool) -> dict[str, object]:
     decisions_text = DECISIONS.read_text(encoding="utf-8")
-    state, blockers = evaluate(decisions_text, required)
+    policy_contract = json.loads(POLICY_CONTRACT.read_text(encoding="utf-8"))
+    state, blockers = evaluate(decisions_text, required, policy_contract)
     return {
         "schema_version": 1,
         "gate": "enterprise180_delivery_admission",
@@ -104,6 +166,8 @@ def receipt(required: bool) -> dict[str, object]:
             "decisions_sha256": sha256(DECISIONS),
             "contracts_path": str(CONTRACTS.relative_to(ROOT)),
             "contracts_sha256": sha256(CONTRACTS),
+            "policy_contract_path": str(POLICY_CONTRACT.relative_to(ROOT)),
+            "policy_contract_sha256": sha256(POLICY_CONTRACT),
         },
         "blockers": blockers,
         "next_action": (
