@@ -2,17 +2,6 @@ name: CE-02 qualification
 
 on:
   workflow_call:
-  push:
-    branches: [feat/ce-02-module-catalog]
-    paths:
-      - .github/workflows/ce02-bootstrap.yml
-      - contracts/**
-      - internal/commercial/**
-      - internal/bizruntime/**
-      - integration/ce02_**
-      - docs/commercial-entitlements/**
-      - go.mod
-      - go.sum
   workflow_dispatch:
 
 permissions:
