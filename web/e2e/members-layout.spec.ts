@@ -50,7 +50,7 @@ test('view slides out details without a desktop scrim, preserves art and does no
     detailBox = await drawer.boundingBox()
   expect(artBox!.x + artBox!.width).toBeLessThanOrEqual(detailBox!.x)
   await drawer.getByRole('tab', { name: '角色权限', exact: true }).click()
-  await expect(drawer).toContainText('tenant.member.read')
+  await expect(drawer).toContainText('查看成员')
   await drawer.getByRole('tab', { name: '数据权限', exact: true }).click()
   await expect(drawer).toContainText('当前数据范围')
   await drawer.getByRole('tab', { name: '操作日志', exact: true }).click()

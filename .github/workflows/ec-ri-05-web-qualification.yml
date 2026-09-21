@@ -1,22 +1,7 @@
 name: ec-ri-05-web-qualification
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
-  push:
-    branches:
-      - feat/enterprise-tenant-profile-real-integration
-    paths:
-      - .github/workflows/ec-ri-05-web-qualification.yml
-      - web/**
-  pull_request:
-    branches:
-      - main
-    paths:
-      - .github/workflows/ec-ri-05-web-qualification.yml
-      - web/**
+  workflow_call:
   workflow_dispatch:
 
 permissions:

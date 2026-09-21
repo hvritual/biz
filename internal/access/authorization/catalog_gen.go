@@ -4,7 +4,7 @@ package authorization
 
 import "yunka.io/gateway/authz"
 
-const CommercialCapabilityMappingVersion = "21"
+const CommercialCapabilityMappingVersion = "22"
 
 var generatedActions = []Action{
 	{
@@ -755,6 +755,13 @@ var generatedActions = []Action{
 		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.role.manage")}, PermissionMode: "all",
 		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.role.permission"},
 		RPC: "/access.v1.TenantRolePermissionApplication/CreateTenantRole", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/tenant/roles"}},
+	},
+	{
+		Code: "tenant.role.delete", Domain: "access", Application: "tenant_role_permission", UseCase: "delete_tenant_role",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.role.manage")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.role.permission"},
+		RPC: "/access.v1.TenantRolePermissionApplication/DeleteTenantRole", HTTP: []HTTPBinding{{Method: "DELETE", Path: "/v1/tenant/roles/{role_id}"}},
 	},
 	{
 		Code: "tenant.role.disable", Domain: "access", Application: "tenant_role_permission", UseCase: "disable_tenant_role",

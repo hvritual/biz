@@ -1,25 +1,7 @@
 name: Enterprise 169 privacy consent qualification
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - .github/workflows/enterprise-169-privacy-consent.yml
-      - cmd/biz-idp/**
-      - docs/enterprise-center/privacy-consent.md
-      - internal/access/**
-      - internal/bizruntime/**
-      - integration/enterprise_169_privacy_consent_mysql_test.go
-      - integration/ce12_browser_seed_test.go
-      - web/tests/ce12/**
-      - .github/workflows/ce12-browser-e2e.yml
-      - go.mod
-      - go.sum
+  workflow_call:
   workflow_dispatch:
 
 permissions:

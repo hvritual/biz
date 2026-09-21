@@ -1,3 +1,4 @@
+import { backendErrorFallback, backendTermLabel } from '@/i18n/backend-terms'
 import {
   CommercialApiError,
   commercialRequestId,
@@ -96,25 +97,11 @@ export function sameTrustedSession(a: TrustedSession, b: TrustedSession) {
 }
 
 export function memberStatusLabel(status: string) {
-  return (
-    {
-      TENANT_MEMBER_STATUS_INVITED: '待激活',
-      TENANT_MEMBER_STATUS_ACTIVE: '已启用',
-      TENANT_MEMBER_STATUS_SUSPENDED: '已停用',
-      TENANT_MEMBER_STATUS_REMOVED: '已移除',
-    }[status] ?? status
-  )
+  return backendTermLabel('memberStatus', status)
 }
 
 export function memberDataScopeLabel(scope: string) {
-  return (
-    {
-      none: '无数据权限',
-      self: '仅本人',
-      sites: '授权点位',
-      all: '全部数据',
-    }[scope] ?? (scope || '无数据权限')
-  )
+  return backendTermLabel('dataScope', scope)
 }
 
 export function memberRuntimeError(error: unknown) {
@@ -128,9 +115,9 @@ export function memberRuntimeError(error: unknown) {
       if (message.includes('activation')) return '该成员仍有待完成的激活流程，不能由管理员直接启用。'
       return '成员状态或请求版本已发生变化，请刷新后重试。'
     }
-    return error.message
+    return backendErrorFallback('member')
   }
-  return error instanceof Error ? error.message : '成员服务请求失败。'
+  return error instanceof Error ? error.message : backendErrorFallback('member')
 }
 
 function requireTenantSession(session: TrustedSession) {

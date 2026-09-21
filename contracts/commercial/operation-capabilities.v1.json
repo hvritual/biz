@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "21",
+  "mapping_version": "22",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -1209,6 +1209,15 @@
     },
     {
       "operation_id": "tenant.role.disable",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.role.delete",
       "classification": "tenant_business",
       "module_code": "access-management",
       "capability_codes": [

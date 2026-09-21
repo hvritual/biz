@@ -3472,6 +3472,37 @@
       }
     },
     {
+      "id": "tenant.role.delete",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.role.delete",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.delete/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.role.delete",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.delete/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.role.delete"
+      }
+    },
+    {
       "id": "tenant.role.disable",
       "application": "access/tenant_role_permission",
       "bindings": [
@@ -4440,6 +4471,7 @@
         "tenant.profile.update",
         "tenant.role.assign_member",
         "tenant.role.create",
+        "tenant.role.delete",
         "tenant.role.disable",
         "tenant.role.enable",
         "tenant.role.get",

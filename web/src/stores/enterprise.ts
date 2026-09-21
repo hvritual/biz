@@ -4,6 +4,7 @@ import {
   createEnterpriseDataSource,
   emptyEnterpriseSnapshot,
   projectMember,
+  projectRole,
   type EnterpriseDomain,
   type EnterpriseSourceState,
 } from '@/services/enterprise/dataSource'
@@ -30,9 +31,11 @@ import {
 } from '@/services/enterprise/memberRuntime'
 import {
   createEnterpriseRole,
+  deleteEnterpriseRole,
   disableEnterpriseRole,
   enableEnterpriseRole,
   getEnterpriseRole,
+  listEnterpriseRoles,
   readEnterpriseRoleSession,
   roleRequestId,
   roleRuntimeError,
@@ -298,6 +301,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     return JSON.stringify({
       id: role.id,
       name: role.name.trim(),
+      description: role.description.trim(),
       enabled: role.enabled,
       scope: role.scope,
       permissions: [...role.permissions].sort(),
@@ -916,7 +920,12 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       status: role.enabled ? 'TENANT_ROLE_STATUS_ACTIVE' : 'TENANT_ROLE_STATUS_DISABLED',
       version: role.runtimeVersion ?? 0,
       permissions: role.permissions.map((permission) => ({ permission, scope: grantScope(role.scope) })),
-      protectedOwner: role.builtin,
+      description: role.description,
+      roleCode: role.roleCode ?? '',
+      systemRole: role.builtin,
+      memberCount: role.memberCount ?? 0,
+      protectedOwner: role.roleCode === 'tenant_owner',
+      protectedSystem: role.builtin,
     }
   }
 
@@ -933,6 +942,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
 
   async function saveRole(role: Role) {
     if (!role.name.trim()) throw new Error('请填写角色名称。')
+    if (role.description.trim().length > 120) throw new Error('角色说明不能超过 120 个字符。')
     if (roles.value.some((value) => value.id !== role.id && value.name === role.name)) throw new Error('角色名称已存在。')
     const old = roles.value.find((value) => value.id === role.id)
     if (old?.builtin) throw new Error('内置角色不可直接修改，请复制为自定义角色。')
@@ -960,11 +970,11 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       const trusted = await stableRoleSession()
       let serverRole: EnterpriseTenantRole
       if (!old) {
-        serverRole = await createEnterpriseRole(trusted, role.name, key('create', () => roleRequestId('create'))) as EnterpriseTenantRole
+        serverRole = await createEnterpriseRole(trusted, role.name, role.description, key('create', () => roleRequestId('create'))) as EnterpriseTenantRole
       } else {
         serverRole = asServerRole(old)
         if (old.name !== role.name) {
-          serverRole = await updateEnterpriseRole(trusted, serverRole, role.name, key('update', () => roleRequestId('update')))
+          serverRole = await updateEnterpriseRole(trusted, serverRole, role.name, role.description, key('update', () => roleRequestId('update')))
         }
       }
       const grants: PermissionGrant[] = role.permissions.map((permission) => ({
@@ -984,6 +994,50 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
           : await disableEnterpriseRole(trusted, serverRole, key('disable', () => roleRequestId('disable')))
       }
       await getEnterpriseRole(trusted, serverRole.id)
+      await refresh(['roles', 'members'])
+      roleMutation = null
+    } catch (error) {
+      throw new Error(roleRuntimeError(error))
+    }
+  }
+
+  async function queryRoles(input: { query: string; status: '' | 'active' | 'disabled' }) {
+    if (previewMode) return true
+    loading.value = true
+    sourceError.value = ''
+    try {
+      const trusted = await stableRoleSession()
+      const status = input.status === 'active'
+        ? 'TENANT_ROLE_STATUS_ACTIVE'
+        : input.status === 'disabled'
+          ? 'TENANT_ROLE_STATUS_DISABLED'
+          : ''
+      const result = await listEnterpriseRoles(trusted, { query: input.query.trim(), status })
+      snapshot.value = { ...snapshot.value, roles: result.map(projectRole) }
+      return true
+    } catch (error) {
+      sourceError.value = roleRuntimeError(error)
+      throw new Error(sourceError.value)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function deleteRole(role: Role) {
+    if (role.builtin) throw new Error('系统内置角色不可删除。')
+    if ((role.memberCount ?? members.value.filter((member) => member.roleIds.includes(role.id) && member.status !== 'removed').length) > 0) {
+      throw new Error('该角色仍有关联成员，请先移除成员绑定。')
+    }
+    if (previewMode) {
+      snapshot.value.roles = roles.value.filter((value) => value.id !== role.id)
+      audit('角色权限', '删除角色', role.name, JSON.stringify(role), '已删除', '界面预览操作', 'high')
+      return
+    }
+    const signature = JSON.stringify({ action: 'delete', id: role.id, version: role.runtimeVersion ?? 0 })
+    const key = roleMutationKey(signature, 'delete', () => roleRequestId('delete'))
+    try {
+      const trusted = await stableRoleSession()
+      await deleteEnterpriseRole(trusted, asServerRole(role), key)
       await refresh(['roles', 'members'])
       roleMutation = null
     } catch (error) {
@@ -1194,7 +1248,9 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     saveMember,
     changeStatus,
     changeStatuses,
+    queryRoles,
     saveRole,
+    deleteRole,
     saveCompany,
     saveDepartment,
     refreshBranding,

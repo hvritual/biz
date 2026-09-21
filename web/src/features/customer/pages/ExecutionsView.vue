@@ -73,14 +73,14 @@ const current = computed(() => store.snapshot.executions.find((e) => e.id === se
           :tone="current.state === '部分失败' ? 'warning' : 'success'"
         />
         <dl class="customer-info-list" style="margin-top: 22px">
-          <dt>业务幂等键</dt>
+          <dt>执行编号</dt>
           <dd>{{ current.businessKey }}</dd>
           <dt>既有事项</dt>
           <dd>
             <RouterLink :to="`/customers/work/${current.workId}`" class="btn-link">{{
               current.workId
             }}</RouterLink>
-            · 已回读
+            · 已确认
           </dd>
           <dt>失败步骤</dt>
           <dd>{{ current.failedStep || '无待恢复步骤' }}</dd>

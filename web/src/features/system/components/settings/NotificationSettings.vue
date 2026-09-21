@@ -58,7 +58,7 @@ function save() {
       </div>
     </div>
     <div class="notice-box">
-      <AppIcon name="help" />通知订阅为界面预览，消息投递状态必须以实际服务端回执为准。
+      <AppIcon name="help" />通知订阅保存后按当前可用渠道生效；是否送达以通知记录为准。
     </div>
     <div class="form-footer"><UiButton class="btn btn-primary" @click="save">保存通知设置</UiButton></div>
   </div>

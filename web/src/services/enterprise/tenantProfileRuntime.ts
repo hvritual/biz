@@ -1,3 +1,4 @@
+import { backendErrorFallback } from '@/i18n/backend-terms'
 import {
   CommercialApiError,
   commercialRequestId,
@@ -37,9 +38,9 @@ export function tenantProfileRuntimeError(error: unknown) {
     if (error.code === 'unauthenticated') return '登录会话已失效，请重新登录。'
     if (error.code === 'forbidden') return '当前账号没有维护企业资料的权限。'
     if (error.code === 'conflict') return '企业资料已被其他操作修改，请刷新后重试。'
-    return error.message
+    return backendErrorFallback('profile')
   }
-  return error instanceof Error ? error.message : '企业资料服务请求失败。'
+  return error instanceof Error ? error.message : backendErrorFallback('profile')
 }
 
 function requireTenantSession(session: TrustedSession) {

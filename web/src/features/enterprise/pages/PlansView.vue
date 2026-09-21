@@ -9,7 +9,6 @@ import PageHeading from '@/ui/common/PageHeading.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
-import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
 import PlanChangeLifecycle from '@/features/enterprise/components/PlanChangeLifecycle.vue'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 
@@ -82,10 +81,7 @@ function submitDemoChange() {
 
 <template>
   <div class="page-stack" data-enterprise-page="plan" data-ui-template="WorkbenchPage">
-    <PageHeading title="套餐信息" description="查看当前订阅、可用功能与使用额度，让业务增长有据可依" />
-    <EnterpriseSourceBanner />
-
-    <div v-if="plan.loading && !plan.model" class="card state-card" role="status">正在读取当前租户套餐、权益与用量…</div>
+    <PageHeading title="套餐信息" description="查看当前订阅、可用功能与使用额度，让业务增长有据可依" /><div v-if="plan.loading && !plan.model" class="card state-card" role="status">正在读取当前租户套餐、权益与用量…</div>
     <div v-else-if="plan.error && plan.isServerBacked && !plan.model" class="card state-card error-state" role="alert">
       <div>
         <strong>无法读取套餐额度</strong>
@@ -104,7 +100,7 @@ function submitDemoChange() {
               <h2>{{ plan.currentPlan }} <StatusBadge :text="plan.subscriptionState" /></h2>
             </div>
           </div>
-          <p>{{ plan.isServerBacked ? '当前订阅、功能权益与额度来自服务端权威读模型。' : '适用于多点位运营团队，统一管理设备、成员与服务。' }}</p>
+          <p>{{ plan.isServerBacked ? '查看当前套餐、功能权益与可用额度。' : '适用于多点位运营团队，统一管理设备、成员与服务。' }}</p>
           <div class="plan-dates">
             <div><span>生效日期</span><strong>{{ formatDate(plan.periodStart) }}</strong></div>
             <div><span>到期日期</span><strong>{{ formatDate(plan.periodEnd) }}</strong></div>
@@ -117,7 +113,7 @@ function submitDemoChange() {
             <UiButton class="btn" @click="openChange">{{ plan.serverChangeContext ? '查看变更生命周期' : '申请调整额度' }}</UiButton>
           </div>
           <small class="preview-plan">
-            {{ plan.isServerBacked ? '真实变更必须经过 preview / confirm / receipt 权威链路，不由页面自行认定付款或生效。' : '当前为界面演示数据，不代表真实订阅。' }}
+            {{ plan.isServerBacked ? '套餐变更将在确认后按业务规则处理，最终状态以结果页为准。' : '当前套餐信息仅供查看。' }}
           </small>
         </section>
 
@@ -173,13 +169,13 @@ function submitDemoChange() {
               </div>
               <StatusBadge :text="feature.enabled ? '已开通' : '未开通'" :tone="feature.enabled ? 'success' : 'warning'" :dot="false" />
             </div>
-            <div v-if="plan.features.length === 0" class="muted">当前服务端未返回模块级权益。</div>
+            <div v-if="plan.features.length === 0" class="muted">当前套餐暂无可展示的模块权益。</div>
           </div>
         </template>
 
         <template v-else-if="tab === '使用额度'">
           <div v-if="plan.error && plan.model" class="notice-box quota-warning">
-            <AppIcon name="help" />{{ plan.error }}；未取得权威 meter 的额度保持“未知”，不会显示为 0。
+            <AppIcon name="help" />额度信息暂不可用，请稍后重试。
           </div>
           <div class="table-scroll quota-table">
             <table class="data-table">
@@ -204,13 +200,13 @@ function submitDemoChange() {
           <div class="timeline plan-timeline">
             <template v-if="plan.isServerBacked && plan.model">
               <div class="timeline-item">
-                <strong>当前订阅修订 r{{ plan.model.subscription.revision }}</strong>
-                <p>{{ plan.model.subscription.planCode }} · {{ plan.model.subscription.state }}</p>
-                <small>{{ plan.model.subscription.updatedAt || plan.model.subscription.createdAt || '服务端记录' }}</small>
+                <strong>当前套餐信息</strong>
+                <p>{{ plan.currentPlan }} · {{ plan.subscriptionState }}</p>
+                <small>{{ plan.model.subscription.updatedAt || plan.model.subscription.createdAt || '最近更新' }}</small>
               </div>
               <div v-if="plan.model.subscription.pendingChangeId" class="timeline-item">
                 <strong>存在待处理套餐变更</strong>
-                <p>{{ plan.model.subscription.pendingChangeId }}</p>
+                <p>已有一项套餐变更正在处理中。</p>
               </div>
             </template>
             <template v-else>
@@ -228,7 +224,7 @@ function submitDemoChange() {
 
     <UiDialog :open="requestOpen" title="申请套餐调整" @close="requestOpen = false">
       <div class="page-stack">
-        <div class="notice-box"><AppIcon name="help" />此操作仅用于 demo 演示，不会购买服务、变更实际订阅或扣费。</div>
+        <div class="notice-box"><AppIcon name="help" />此操作仅用于演示申请流程，不会购买服务、变更实际订阅或扣费。</div>
         <label class="field"><span>意向套餐</span><UiSelect v-model="targetPlan" class="select"><UiOption>企业版</UiOption><UiOption>标准版扩容</UiOption><UiOption>联系商务定制</UiOption></UiSelect></label>
         <label class="field"><span>需求说明</span><UiTextarea v-model="note" class="textarea" maxlength="500" placeholder="描述所需成员、点位、设备或功能额度" /></label>
       </div>

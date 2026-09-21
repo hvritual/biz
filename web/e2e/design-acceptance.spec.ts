@@ -135,8 +135,8 @@ test('no-results and permission/session states are explicit, not fake data', asy
   await main.getByRole('button', { name: '查询', exact: true }).click()
   await expect(main.locator('.member-data-panel .empty-state')).toBeVisible()
   await page.goto('/#/platform/tenants')
-  await expect(page.getByText('尚未建立平台可信会话', { exact: true })).toBeVisible()
-  await expect(page.getByText(/不展示示例租户数据/)).toBeVisible()
+  await expect(page.getByText('请先登录平台账号', { exact: true })).toBeVisible()
+  await expect(page.getByText(/不会显示示例租户数据/)).toBeVisible()
 })
 
 test('automated accessibility smoke has names, stable ARIA relationships and one page heading', async ({ page }) => {

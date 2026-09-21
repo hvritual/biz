@@ -1,4 +1,4 @@
-import { expect, type Locator } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 
 export async function selectUiOption(control: Locator, value: string | number) {
   await control.click()
@@ -10,4 +10,11 @@ export async function selectUiOption(control: Locator, value: string | number) {
   )
   expect(index, `UI option value not found: ${expected}`).toBeGreaterThanOrEqual(0)
   await options.nth(index).click()
+}
+
+export async function installApiFailFast(page: Page) {
+  await page.route(/\/(?:api\/)?(?:auth|v1)\//, async (route) => {
+    const request = route.request()
+    throw new Error(`Unhandled API request: ${request.method()} ${new URL(request.url()).pathname}`)
+  })
 }

@@ -8,7 +8,6 @@ import PageHeading from '@/ui/common/PageHeading.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import brand from '@/assets/brand-mark.png'
-import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
@@ -30,7 +29,7 @@ async function save() {
   }
   try {
     await store.saveCompany(draft.value)
-    ui.toast(store.sourceKind === 'api' ? '企业资料已由服务端确认并回读。' : '企业资料已保存到本地预览。')
+    ui.toast('企业资料已保存。')
   } catch (e) {
     error.value = e instanceof Error ? e.message : '保存失败。'
   }
@@ -61,12 +60,21 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
 <template>
   <div class="page-stack" data-enterprise-page="company" data-ui-template="FormPage">
     <PageHeading title="企业信息" description="维护企业基本资料与联系信息，统一团队的身份与展示" />
-    <EnterpriseSourceBanner />
-    <div class="split-layout">
+    <div v-if="store.sourceError" class="notice-box company-access-state" role="alert">
+      <AppIcon name="warning" :size="18" />
+      <div>
+        <strong>企业信息暂不可用</strong>
+        <p>{{ store.sourceError }}</p>
+      </div>
+    </div>
+    <div v-else class="split-layout">
       <form data-ui-region="form-workspace" class="card panel-pad company-form" :inert="!canManageCompany" @submit.prevent="save">
         <div class="row-between block-title">
           <h2>基本信息</h2>
           <StatusBadge text="企业正常" />
+        </div>
+        <div v-if="!canManageCompany" class="notice-box" role="status">
+          <AppIcon name="shield" :size="16" />你可以查看当前企业资料，但没有编辑权限。
         </div>
         <div class="form-grid">
           <label class="field"
@@ -105,16 +113,16 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
                   aria-label="选择企业 Logo"
                   @change="upload"
               /></label>
-              <div v-else class="logo-api-state" aria-label="企业 Logo 服务端资产状态">
+              <div v-else class="logo-api-state" aria-label="企业 Logo 状态">
                 <AppIcon name="shield" :size="16" />
                 <div>
-                  <strong>Logo 由资产服务管理</strong>
-                  <small>{{ store.company.logoAssetRef || '尚未配置资产引用' }}</small>
+                  <strong>企业 Logo</strong>
+                  <small>{{ store.company.logoAssetRef ? '已配置' : '尚未配置' }}</small>
                 </div>
               </div>
             </div>
-            <small v-if="store.previewMode">PNG / JPG / WebP，最大 2 MB；当前仅预览。</small>
-            <small v-else>API 模式不生成 DataURL，也不制造尚未接入的上传成功状态。</small>
+            <small v-if="store.previewMode">PNG / JPG / WebP，最大 2 MB。</small>
+            <small v-else>当前暂不支持在此页面更换 Logo。</small>
           </div>
           <label class="field full-width"
             ><span>企业简介</span
@@ -161,16 +169,16 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
             <p>{{ store.company.industry }}</p>
           </div>
           <dl class="detail-list">
-            <dt>租户标识</dt>
+            <dt>企业编号</dt>
             <dd class="mono">{{ store.tenantId }}</dd>
             <dt>当前套餐</dt>
-            <dd>{{ store.sourceKind === 'api' ? '由套餐服务提供' : '标准版（示例）' }}</dd>
+            <dd>{{ store.sourceKind === 'api' ? '请在套餐额度中查看' : '标准版' }}</dd>
             <dt>企业成员</dt>
             <dd>{{ store.members.filter((m) => m.status !== 'removed').length }} 人</dd>
           </dl>
           <div class="divider" />
           <div class="notice-box">
-            <AppIcon name="help" :size="16" />本轮不采集营业执照、法人证件或支付资料，不虚构企业认证结果。
+            <AppIcon name="help" :size="16" />企业认证资料暂不在此页面维护。
           </div>
         </section>
         <section class="card panel-pad">
@@ -196,6 +204,18 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
 <style scoped>
 .company-form {
   padding: 28px;
+}
+.company-access-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.company-access-state strong,
+.company-access-state p {
+  display: block;
+}
+.company-access-state p {
+  margin: 4px 0 0;
 }
 .logo-control {
   display: flex;

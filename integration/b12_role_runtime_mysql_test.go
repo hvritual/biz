@@ -120,20 +120,41 @@ func TestB124TenantRolePermissionsAreTenantScopedAndImmediate(t *testing.T) {
 		t.Fatalf("assigned member status=%d want=%d", got, http.StatusOK)
 	}
 
-	// Disabling a role immediately changes the next authorization decision;
-	// no re-login or cached role refresh is required.
+	// #178 forbids disabling any role that still has members. The rejected
+	// transition must not change authorization or the authoritative version.
+	if _, err := roles.DisableTenantRole(ctxA("role-disable-in-use"), &accessv1.DisableTenantRoleRequest{RoleId: role.GetId(), Version: role.GetVersion()}); err == nil {
+		t.Fatal("member-bound role disable unexpectedly succeeded")
+	}
+	readback, err := roles.GetTenantRole(ctxA("role-read-after-reject"), &accessv1.GetTenantRoleRequest{RoleId: role.GetId()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if readback.GetStatus() != accessv1.TenantRoleStatus_TENANT_ROLE_STATUS_ACTIVE || readback.GetVersion() != role.GetVersion() {
+		t.Fatalf("rejected disable changed role=%+v", readback)
+	}
+	if got := memberListStatusB124(t, base, memberToken); got != http.StatusOK {
+		t.Fatalf("rejected disable changed member authorization status=%d want=%d", got, http.StatusOK)
+	}
+
+	role, err = roles.RevokeTenantRoleMember(ctxA("role-revoke-before-disable"), &accessv1.RevokeTenantRoleMemberRequest{RoleId: role.GetId(), UserId: memberID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := memberListStatusB124(t, base, memberToken); got != http.StatusForbidden {
+		t.Fatalf("revoked assignment member status=%d want=%d", got, http.StatusForbidden)
+	}
 	role, err = roles.DisableTenantRole(ctxA("role-disable"), &accessv1.DisableTenantRoleRequest{RoleId: role.GetId(), Version: role.GetVersion()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if role.GetVersion() != 3 || role.GetStatus() != accessv1.TenantRoleStatus_TENANT_ROLE_STATUS_DISABLED {
+	if role.GetStatus() != accessv1.TenantRoleStatus_TENANT_ROLE_STATUS_DISABLED {
 		t.Fatalf("disabled role=%+v", role)
 	}
-	if got := memberListStatusB124(t, base, memberToken); got != http.StatusForbidden {
-		t.Fatalf("disabled role member status=%d want=%d", got, http.StatusForbidden)
-	}
-
 	role, err = roles.EnableTenantRole(ctxA("role-enable"), &accessv1.EnableTenantRoleRequest{RoleId: role.GetId(), Version: role.GetVersion()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	role, err = roles.AssignTenantRoleMember(ctxA("role-reassign"), &accessv1.AssignTenantRoleMemberRequest{RoleId: role.GetId(), UserId: memberID})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,6 +190,9 @@ func TestB124TenantRolePermissionsAreTenantScopedAndImmediate(t *testing.T) {
 	}
 
 	if _, err := roles.RevokeTenantRoleMember(ctxA("role-revoke"), &accessv1.RevokeTenantRoleMemberRequest{RoleId: role.GetId(), UserId: memberID}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := roles.RevokeTenantRoleMember(ctxA("role-revoke-repeat"), &accessv1.RevokeTenantRoleMemberRequest{RoleId: role.GetId(), UserId: memberID}); err != nil {
 		t.Fatal(err)
 	}
 	if got := memberListStatusB124(t, base, memberToken); got != http.StatusForbidden {

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "required_workflows": [
+    "CoffeeLink Vue console",
+    "CE-03 qualification",
+    "CE-04 qualification",
+    "CE-05 qualification",
+    "CE-06 qualification",
+    "CE-07 qualification",
+    "CE-08 qualification",
+    "CE-09 qualification",
+    "CE-10 qualification",
+    "CE-12 browser identity E2E",
+    "CE-13 plan catalog qualification",
+    "CE-13 platform commercial web-session qualification",
+    "Enterprise 171 session isolation qualification",
+    "Enterprise 174 current authorization gate",
+    "Enterprise 175 authorized navigation gate",
+    "Enterprise 177 member lifecycle qualification",
+    "Unified evolution qualification",
+    "b12-8-framework-pressure-disposition",
+    "c9-biz-pressure",
+    "ec-ri-04-web-qualification",
+    "ec-ri-05-web-qualification",
+    "ec-ri-06-plan-change-web",
+    "ec-ri-06-plan-read-web",
+    "ec-ri-07-web-qualification"
+  ],
+  "poll_seconds": 20,
+  "max_attempts": 150,
+  "rules": {
+    "candidate_sha_immutable": true,
+    "all_required_workflows_must_complete": true,
+    "all_required_workflows_must_succeed": true,
+    "group_failures_by_signature": true,
+    "preflight_must_pass_before_full_qualification": true,
+    "failure_signature_format": "rule + file + line + normalized error"
+  },
+  "preflight": {
+    "working_directory": "web",
+    "command": "npm run check",
+    "fail_fast": true
+  }
+}

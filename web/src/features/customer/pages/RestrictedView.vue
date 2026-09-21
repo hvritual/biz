@@ -30,7 +30,7 @@ function save() {
       description="明确区分无权限、无数据和接口失败"
     /><CustomerAlert
       title="当前场景没有财务字段查看权限"
-      description="不在页面 DOM 中渲染金额字段。这里演示受限状态，不是完整的服务端授权实现。"
+      description="当前账号无权查看财务金额；你仍可查看已授权的事项基本信息。"
       tone="warning"
     />
     <div class="customer-split">

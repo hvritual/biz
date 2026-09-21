@@ -1,28 +1,7 @@
 name: CE-03 qualification
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
-  push:
-    branches: [main, feat/ce-03-capability-mapping]
-    paths:
-      - .github/workflows/ce03-qualification.yml
-      - contracts/**
-      - internal/commercial/**
-      - internal/architecture/**
-      - internal/access/application/**
-      - internal/deviceops/application/**
-      - cmd/commercial-catalog/**
-      - scripts/ce03_*.py
-      - scripts/test_ce03_*.py
-      - docs/commercial-entitlements/**
-      - Makefile
-      - go.mod
-      - go.sum
-  pull_request:
-    branches: [main]
+  workflow_call:
   workflow_dispatch:
 
 permissions:

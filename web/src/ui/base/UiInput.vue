@@ -11,8 +11,15 @@ const props = withDefaults(
     modelModifiers?: ModelModifiers
     value?: string | number | null
     checked?: boolean
+    indeterminate?: boolean
   }>(),
-  { modelValue: undefined },
+  {
+    modelValue: undefined,
+    modelModifiers: undefined,
+    value: undefined,
+    checked: undefined,
+    indeterminate: false,
+  },
 )
 const emit = defineEmits<{
   'update:modelValue': [value: InputModelValue]
@@ -78,6 +85,8 @@ function handleChange(event: Event) {
     :class="classes"
     :value="displayValue"
     :checked="displayChecked"
+    :indeterminate="inputType === 'checkbox' && Boolean(props.indeterminate)"
+    :aria-checked="props.indeterminate ? 'mixed' : undefined"
     @input="handleInput"
     @change="handleChange"
   />

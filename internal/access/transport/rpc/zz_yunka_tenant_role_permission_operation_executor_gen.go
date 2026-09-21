@@ -61,6 +61,19 @@ func (server *TenantRolePermissionOperationServer) CreateTenantRole(ctx context.
 	return response, nil
 }
 
+func (server *TenantRolePermissionOperationServer) DeleteTenantRole(ctx context.Context, request *accessv1.DeleteTenantRoleRequest) (*accessv1.TenantRoleDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantRolePermissionDeleteTenantRole(), request, server.application.DeleteTenantRole)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *TenantRolePermissionOperationServer) DisableTenantRole(ctx context.Context, request *accessv1.DisableTenantRoleRequest) (*accessv1.TenantRoleDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {

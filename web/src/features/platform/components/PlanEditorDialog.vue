@@ -147,7 +147,7 @@ function submit() {
       <header class="plan-editor-header">
         <div>
           <h2 id="plan-editor-title">{{ mode === 'create' ? '新建套餐首稿' : '编辑套餐草稿' }}</h2>
-          <p>发布后内容不可覆盖；服务端仍会执行 CE-07 完整校验。</p>
+          <p>发布后版本内容不可直接覆盖；提交前会再次校验完整性和依赖关系。</p>
         </div>
         <UiButton class="btn" type="button" @click="emit('close')">关闭</UiButton>
       </header>
@@ -219,7 +219,7 @@ function submit() {
       <div v-if="localError || serverError" class="notice danger" role="alert">{{ localError || serverError }}</div>
       <footer class="plan-editor-footer">
         <UiButton class="btn" type="button" @click="emit('close')">取消</UiButton>
-        <UiButton class="btn primary" type="button" :disabled="pending" @click="submit">{{ pending ? '提交中…' : '提交到服务端' }}</UiButton>
+        <UiButton class="btn primary" type="button" :disabled="pending" @click="submit">{{ pending ? '提交中…' : '提交' }}</UiButton>
       </footer>
     </section>
   </div>

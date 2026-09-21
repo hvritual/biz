@@ -586,6 +586,36 @@
           "number": 1,
           "kind": "scalar",
           "type": "string"
+        },
+        {
+          "name": "description",
+          "jsonName": "description",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "DeleteTenantRoleRequest",
+      "fullName": "access.v1.DeleteTenantRoleRequest",
+      "fields": [
+        {
+          "name": "role_id",
+          "jsonName": "roleId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
         }
       ],
       "dto": {
@@ -1165,7 +1195,22 @@
     {
       "name": "ListTenantRolesRequest",
       "fullName": "access.v1.ListTenantRolesRequest",
-      "fields": null,
+      "fields": [
+        {
+          "name": "query",
+          "jsonName": "query",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "jsonName": "status",
+          "number": 2,
+          "kind": "enum",
+          "type": "access.v1.TenantRoleStatus"
+        }
+      ],
       "dto": {
         "kind": "input"
       }
@@ -2130,6 +2175,34 @@
           "number": 5,
           "kind": "scalar",
           "type": "uint64"
+        },
+        {
+          "name": "description",
+          "jsonName": "description",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "role_code",
+          "jsonName": "roleCode",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "system_role",
+          "jsonName": "systemRole",
+          "number": 8,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "member_count",
+          "jsonName": "memberCount",
+          "number": 9,
+          "kind": "scalar",
+          "type": "uint64"
         }
       ],
       "dto": {
@@ -2509,6 +2582,13 @@
           "number": 3,
           "kind": "scalar",
           "type": "uint64"
+        },
+        {
+          "name": "description",
+          "jsonName": "description",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
@@ -8945,6 +9025,47 @@
           },
           "authorization": {
             "operationId": "tenant.role.create",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "DeleteTenantRole",
+          "fullName": "access.v1.TenantRolePermissionApplication.DeleteTenantRole",
+          "request": "access.v1.DeleteTenantRoleRequest",
+          "response": "access.v1.TenantRoleDTO",
+          "http": [
+            {
+              "method": "DELETE",
+              "path": "/v1/tenant/roles/{role_id}"
+            }
+          ],
+          "operation": {
+            "id": "tenant.role.delete",
+            "useCase": "delete_tenant_role",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.role.delete",
             "permissions": [
               "tenant.role.manage"
             ],

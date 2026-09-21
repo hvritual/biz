@@ -78,11 +78,14 @@ type membershipRecord struct {
 func (membershipRecord) TableName() string { return "biz_memberships" }
 
 type roleRecord struct {
-	ID       string `gorm:"column:id;primaryKey;size:160"`
-	TenantID string `gorm:"column:tenant_id;size:64;not null;index:idx_role_tenant;uniqueIndex:uniq_role_name,priority:1"`
-	Name     string `gorm:"column:name;size:100;not null;uniqueIndex:uniq_role_name,priority:2"`
-	Status   string `gorm:"column:status;size:32;not null"`
-	Version  uint64 `gorm:"column:version;not null;default:1"`
+	ID          string  `gorm:"column:id;primaryKey;size:160"`
+	TenantID    string  `gorm:"column:tenant_id;size:64;not null;index:idx_role_tenant;uniqueIndex:uniq_role_name,priority:1;uniqueIndex:uniq_role_code,priority:1"`
+	Name        string  `gorm:"column:name;size:100;not null;uniqueIndex:uniq_role_name,priority:2"`
+	Description string  `gorm:"column:description;size:120;not null;default:''"`
+	RoleCode    *string `gorm:"column:role_code;size:64;uniqueIndex:uniq_role_code,priority:2"`
+	SystemRole  bool    `gorm:"column:system_role;not null;default:false"`
+	Status      string  `gorm:"column:status;size:32;not null"`
+	Version     uint64  `gorm:"column:version;not null;default:1"`
 }
 
 func (roleRecord) TableName() string { return "biz_roles" }

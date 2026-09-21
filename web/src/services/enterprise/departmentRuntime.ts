@@ -1,3 +1,4 @@
+import { backendErrorFallback, backendTermLabel } from '@/i18n/backend-terms'
 import {
   CommercialApiError,
   commercialRequestId,
@@ -40,12 +41,7 @@ export function departmentRequestId(action: DepartmentMutation, suffix = '') {
 }
 
 export function departmentStatusLabel(status: string) {
-  return (
-    {
-      TENANT_DEPARTMENT_STATUS_ACTIVE: '已启用',
-      TENANT_DEPARTMENT_STATUS_DISABLED: '已停用',
-    }[status] ?? status
-  )
+  return backendTermLabel('departmentStatus', status)
 }
 
 export function departmentRuntimeError(error: unknown) {
@@ -53,9 +49,9 @@ export function departmentRuntimeError(error: unknown) {
     if (error.code === 'unauthenticated') return '登录会话已失效，请重新登录。'
     if (error.code === 'forbidden') return '当前账号没有管理企业组织架构的权限。'
     if (error.code === 'conflict') return '部门版本、层级、负责人或成员归属规则发生冲突，请刷新后重试。'
-    return error.message
+    return backendErrorFallback('department')
   }
-  return error instanceof Error ? error.message : '组织架构服务请求失败。'
+  return error instanceof Error ? error.message : backendErrorFallback('department')
 }
 
 function requireTenantSession(session: TrustedSession) {

@@ -40,7 +40,7 @@ test('platform tenant route keeps trusted identity behavior while labels switch 
   await page.goto('/#/platform/tenants')
   await chooseLocale(page, 'English')
   await expect(page.getByRole('heading', { name: 'Tenant Management', level: 1 })).toBeVisible()
-  await expect(page.getByText('No trusted platform session')).toBeVisible()
+  await expect(page.getByText('Sign in with a platform account')).toBeVisible()
   await expect(page).toHaveURL(/#\/platform\/tenants/)
   await chooseLocale(page, '中文')
   await expect(page.getByRole('heading', { name: '租户管理', level: 1 })).toBeVisible()

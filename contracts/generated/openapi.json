@@ -142,6 +142,9 @@
       },
       "access_v1_CreateTenantRoleRequest": {
         "properties": {
+          "description": {
+            "type": "string"
+          },
           "name": {
             "type": "string"
           }
@@ -159,6 +162,20 @@
         ],
         "type": "string",
         "x-yunka-proto-full-name": "access.v1.DataScope"
+      },
+      "access_v1_DeleteTenantRoleRequest": {
+        "properties": {
+          "roleId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.DeleteTenantRoleRequest"
       },
       "access_v1_DisableTenantDepartmentRequest": {
         "properties": {
@@ -495,7 +512,14 @@
         "x-yunka-proto-full-name": "access.v1.ListTenantMembersResponse"
       },
       "access_v1_ListTenantRolesRequest": {
-        "properties": {},
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/access_v1_TenantRoleStatus"
+          }
+        },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.ListTenantRolesRequest"
       },
@@ -1018,8 +1042,16 @@
       },
       "access_v1_TenantRoleDTO": {
         "properties": {
+          "description": {
+            "type": "string"
+          },
           "id": {
             "type": "string"
+          },
+          "memberCount": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
           },
           "name": {
             "type": "string"
@@ -1030,8 +1062,14 @@
             },
             "type": "array"
           },
+          "roleCode": {
+            "type": "string"
+          },
           "status": {
             "$ref": "#/components/schemas/access_v1_TenantRoleStatus"
+          },
+          "systemRole": {
+            "type": "boolean"
           },
           "version": {
             "format": "uint64",
@@ -1242,6 +1280,9 @@
       },
       "access_v1_UpdateTenantRoleRequest": {
         "properties": {
+          "description": {
+            "type": "string"
+          },
           "name": {
             "type": "string"
           },
@@ -5924,6 +5965,24 @@
     "/v1/tenant/roles": {
       "get": {
         "operationId": "access.v1.TenantRolePermissionApplication.ListTenantRoles",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/access_v1_TenantRoleStatus"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -5972,6 +6031,45 @@
       }
     },
     "/v1/tenant/roles/{role_id}": {
+      "delete": {
+        "operationId": "access.v1.TenantRolePermissionApplication.DeleteTenantRole",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "roleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": false,
+            "schema": {
+              "format": "uint64",
+              "type": "string",
+              "x-yunka-protobuf-json-integer": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantRoleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantRolePermissionApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantRolePermissionApplication/DeleteTenantRole"
+      },
       "get": {
         "operationId": "access.v1.TenantRolePermissionApplication.GetTenantRole",
         "parameters": [

@@ -271,7 +271,7 @@ test('33 import returns per-row created IDs and preserves duplicates', async ({ 
   await page.getByRole('button', { name: '仅导入通过的 5 条', exact: true }).click()
   const d = page.getByRole('dialog', { name: '确认导入客户', exact: true })
   await d.getByRole('button', { name: '确认导入', exact: true }).click()
-  await expect(page.getByText('导入结果已回读', { exact: true })).toBeVisible()
+  await expect(page.getByText('导入结果已确认', { exact: true })).toBeVisible()
   expect((await state(page)).customers).toHaveLength(13)
 })
 test('34 active customer archival is blocked', async ({ page }) => {

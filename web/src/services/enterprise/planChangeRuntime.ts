@@ -1,3 +1,4 @@
+import { backendErrorFallback } from '@/i18n/backend-terms'
 import {
   CommercialApiError,
   commercialRequestId,
@@ -110,17 +111,17 @@ export function tenantChangeRuntimeError(error: unknown) {
   if (error instanceof CommercialApiError) {
     if (error.code === 'unauthenticated') return '登录会话已失效，请重新登录。'
     if (error.code === 'forbidden') return '当前账号没有变更套餐的权限。'
-    if (error.code === 'conflict') return '套餐状态已变化，请重新生成变更预览。'
+    if (error.code === 'conflict') return '套餐状态已变化，请重新生成变更方案。'
     if (error.message.includes('SUBSCRIPTION_CHANGE_EXTERNAL_APPROVAL_REQUIRED')) {
       return '该套餐存在价格引用，需要先完成外部商业或支付审批，当前页面不会绕过审批直接生效。'
     }
     if (error.message.includes('SUBSCRIPTION_CHANGE_PREVIEW_EXPIRED')) {
-      return '变更预览已过期，请重新生成预览。'
+      return '变更方案已过期，请重新生成方案。'
     }
     if (error.message.includes('SUBSCRIPTION_CHANGE_QUOTA_VALIDATION_REQUIRED')) {
-      return '当前额度状态需要权威复核，暂不能确认此次变更。'
+      return '当前额度状态需要重新核对，暂不能确认此次变更。'
     }
-    return error.message
+    return backendErrorFallback('planChange')
   }
-  return error instanceof Error ? error.message : '套餐变更服务请求失败。'
+  return error instanceof Error ? error.message : backendErrorFallback('planChange')
 }

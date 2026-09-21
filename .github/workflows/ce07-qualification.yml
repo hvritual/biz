@@ -1,14 +1,7 @@
 name: CE-07 qualification
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 on:
-  push:
-    branches: [main]
-    paths: ['contracts/**','internal/**','integration/ce07*','scripts/ce07*','docs/commercial-entitlements/**','.github/workflows/ce07-qualification.yml','Makefile','go.mod','go.sum','.yunka/**']
-  pull_request:
-    branches: [main]
+  workflow_call:
   workflow_dispatch:
 permissions:
   contents: read

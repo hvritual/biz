@@ -49,21 +49,21 @@ watch(
   <div class="customer-area">
     <CustomerAlert
       v-if="store.loadError"
-      title="预览数据读取失败"
+      title="演示数据读取失败"
       :description="store.loadError"
       tone="danger"
-      ><UiButton class="btn" @click="store.resetPreview">重置当前租户预览数据</UiButton></CustomerAlert
+      ><UiButton class="btn" @click="store.resetPreview">重置演示数据</UiButton></CustomerAlert
     ><template v-else
       ><CustomerAlert
         v-if="store.lastReceipt"
         class="customer-banner-result"
-        title="本地预览操作已保存"
+        title="操作已保存"
         :description="store.lastReceipt"
         tone="success"
-        ><UiButton class="btn-link" @click="store.lastReceipt = ''">收起回执</UiButton></CustomerAlert
+        ><UiButton class="btn-link" @click="store.lastReceipt = ''">收起</UiButton></CustomerAlert
       ><RouterView />
       <p class="customer-preview-note">
-        界面审核 · 示例数据 · 本地预览操作，不连接合同、财务或设备生产系统
+        演示内容 · 部分操作仅用于界面体验，不会影响真实合同、财务或设备
       </p></template
     ><CustomerActionDialog
       :id="id"

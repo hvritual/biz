@@ -1,8 +1,208 @@
 import { validatePatternBindings } from './pattern-contracts.mjs'
-import { basename, resolve } from 'node:path'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { basename, relative, resolve } from 'node:path'
 import { StaticSource, componentFile, readStrictJson } from './static-source.mjs'
 import { validateUiContract } from './ui-contract-schema.mjs'
 import { componentSources, readVue, verifyPageSource } from './vue-source.mjs'
+
+const rawBackendCodePattern = /\b(?:office|rental)-[a-z0-9-]+\b|\b(?:ENTITLEMENT|TENANT|MODULE)_[A-Z0-9_]+\b|\btenant\.[a-z0-9.]+\b/gi
+
+const rawBackendPresentationField = /\b(planCode|moduleCode|sourceKind|fieldAction|effect|salesScope|technicalStatus|salesStatus|permission)\b/
+
+const engineeringLanguagePatterns = [
+  ['data mode badge', /实时数据|Live data/gi],
+  ['runtime implementation status', /可信运行会话|Trusted runtime session|Runtime Workspace/gi],
+  ['API mode', /API\s*模式|API mode/gi],
+  ['server implementation', /服务端|from the server|by the server|loading server|server data|server identity|server records?|server rules?|server readback|server contract|server confirmed/gi],
+  ['readback implementation', /回读|readback/gi],
+  ['authority implementation', /权威|authoritative/gi],
+  ['local implementation preview', /本地预览|本地模拟|local preview|local mock/gi],
+  ['data source implementation', /数据源状态|data source status/gi],
+  ['internal lifecycle terminology', /preview\s*\/\s*confirm\s*\/\s*receipt|\bmeter\b/gi],
+  ['internal transport field', /请求\s*ID|幂等|会话引用|回执引用|请求摘要|request\s*ID|idempotency|session reference|receipt reference|request digest/gi],
+]
+
+function sourceFilesUnder(directory, files = []) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = resolve(directory, entry.name)
+    if (entry.isDirectory()) sourceFilesUnder(path, files)
+    else files.push(path)
+  }
+  return files
+}
+
+function stringLiterals(source = '') {
+  return source.match(/'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`/g)?.join('\n') ?? ''
+}
+
+function visibleSource(file) {
+  if (file.endsWith('.vue')) {
+    const { descriptor } = readVue(file)
+    return [
+      descriptor.template?.content ?? '',
+      stringLiterals(descriptor.script?.content),
+      stringLiterals(descriptor.scriptSetup?.content),
+    ].join('\n')
+  }
+  return stringLiterals(readFileSync(file, 'utf8'))
+}
+
+function productLanguageFailures(root) {
+  const featuresRoot = resolve(root, 'src/features')
+  const i18nRoot = resolve(root, 'src/i18n')
+  const files = [
+    ...sourceFilesUnder(featuresRoot).filter((file) => {
+      const normalized = file.replaceAll('\\', '/')
+      return (file.endsWith('.vue') || file.endsWith('.ts'))
+        && !normalized.includes('/features/runtime/')
+        && !/\.(?:spec|test)\.ts$/.test(normalized)
+    }),
+    ...sourceFilesUnder(i18nRoot).filter((file) => file.endsWith('.ts')),
+  ]
+  const failures = []
+  for (const file of files) {
+    const source = visibleSource(file)
+    for (const [label, pattern] of engineeringLanguagePatterns) {
+      pattern.lastIndex = 0
+      if (pattern.test(source)) failures.push(`${relative(root, file)}: product UI exposes engineering language (${label})`)
+    }
+  }
+  const sourceBanner = resolve(root, 'src/features/enterprise/components/EnterpriseSourceBanner.vue')
+  if (existsSync(sourceBanner)) failures.push('EnterpriseSourceBanner must not exist on product surfaces')
+  return failures
+}
+
+function contractSourceFile(root, reference) {
+  if (reference.startsWith('@/')) return resolve(root, 'src', reference.slice(2))
+  return resolve(root, reference)
+}
+
+function backendProjectionFailures(root, contract) {
+  const failures = []
+  const termProjection = contract.presentation.backend_term_projection
+  for (const [kind, reference] of [['catalog', termProjection.catalog], ['messages', termProjection.messages]]) {
+    const file = contractSourceFile(root, reference)
+    if (!existsSync(file)) failures.push(`Backend term ${kind} is missing: ${reference}`)
+  }
+  for (const consumer of termProjection.required_consumers) {
+    const file = resolve(root, consumer)
+    if (!existsSync(file)) {
+      failures.push(`Backend term projection consumer is missing: ${consumer}`)
+      continue
+    }
+    if (!readFileSync(file, 'utf8').includes('backendTermLabel')) {
+      failures.push(`${consumer}: backend-returned terms must use backendTermLabel()`)
+    }
+  }
+  for (const consumer of contract.presentation.backend_error_projection.required_consumers) {
+    const file = resolve(root, consumer)
+    if (!existsSync(file)) {
+      failures.push(`Backend error projection consumer is missing: ${consumer}`)
+      continue
+    }
+    if (!readFileSync(file, 'utf8').includes('backendErrorFallback')) {
+      failures.push(`${consumer}: backend errors must use backendErrorFallback()`)
+    }
+  }
+  return failures
+}
+
+function playwrightAssertionBlocks(source) {
+  const lines = source.split('\n')
+  const blocks = []
+  for (let index = 0; index < lines.length; index += 1) {
+    if (!/\bexpect\s*\(/.test(lines[index])) continue
+    let block = lines[index]
+    const anyMatcher = /\)\.(?:not\.)?to[A-Z][A-Za-z0-9]*\s*\(/
+    for (let cursor = index + 1; cursor < Math.min(lines.length, index + 8); cursor += 1) {
+      if (anyMatcher.test(block)) break
+      block += ` ${lines[cursor]}`
+    }
+    if (/(?:toBeVisible|toContainText|toHaveText|toHaveValue|toHaveCount)\s*\(/.test(block)) {
+      blocks.push({ line: index + 1, source: block })
+    }
+  }
+  return blocks
+}
+
+function visibleAssertionCopy(source) {
+  const values = []
+  for (const pattern of [
+    /(?:getByText|toContainText|toHaveText|toHaveValue)\s*\(\s*(['"`])([\s\S]*?)\1/g,
+    /name\s*:\s*(['"`])([\s\S]*?)\1/g,
+  ]) {
+    for (const match of source.matchAll(pattern)) values.push(match[2])
+  }
+  return values.join('\n')
+}
+
+function e2eEngineeringCopyFailures(root) {
+  const failures = []
+  const roots = ['e2e', 'tests'].map((directory) => resolve(root, directory)).filter(existsSync)
+  for (const directory of roots) {
+    for (const file of sourceFilesUnder(directory).filter((entry) => /\.(?:ts|tsx|js|mjs)$/.test(entry))) {
+      for (const assertion of playwrightAssertionBlocks(readFileSync(file, 'utf8'))) {
+        if (/toHaveCount\s*\(\s*0\s*\)|\.not\./.test(assertion.source)) continue
+        if (!/(?:toBeVisible|toContainText|toHaveText|toHaveValue)\s*\(/.test(assertion.source)) continue
+        let matched = false
+        for (const [label, pattern] of engineeringLanguagePatterns) {
+          pattern.lastIndex = 0
+          if (pattern.test(assertion.source)) {
+            failures.push(`${relative(root, file)}:${assertion.line}: E2E binds product behavior to engineering copy (${label})`)
+            matched = true
+            break
+          }
+        }
+        if (matched) continue
+        const visibleCopy = visibleAssertionCopy(assertion.source)
+        rawBackendCodePattern.lastIndex = 0
+        if (rawBackendCodePattern.test(visibleCopy)) {
+          failures.push(`${relative(root, file)}:${assertion.line}: E2E binds product behavior to engineering copy (raw backend code)`)
+        }
+      }
+    }
+  }
+  return failures
+}
+
+function rawBackendCollectionFailures(template, consumer) {
+  const failures = []
+  const collectionPattern = /v-for="(\w+)\s+in\s+[^"]*\b(capabilityCodes|dependencies|quotaSchemaKeys|fieldPolicySchemaKeys)\b"[^>]*>([\s\S]*?)<\/span>/g
+  for (const match of template.matchAll(collectionPattern)) {
+    const item = match[1]
+    const body = match[3]
+    if (new RegExp('\\{\\{\\s*' + item + '\\s*\\}\\}').test(body)) {
+      failures.push(`${consumer}: product template displays a raw backend collection value`)
+    }
+  }
+  return failures
+}
+
+function rawBackendPresentationFailures(root, contract) {
+  const failures = []
+  for (const consumer of contract.presentation.backend_term_projection.required_consumers.filter((path) => path.endsWith('.vue'))) {
+    const file = resolve(root, consumer)
+    if (!existsSync(file)) continue
+    const { descriptor } = readVue(file)
+    const template = descriptor.template?.content ?? ''
+    failures.push(...rawBackendCollectionFailures(template, consumer))
+    for (const match of template.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
+      const expression = match[1]
+      if (rawBackendPresentationField.test(expression) && !/backendTermLabel|backendBusinessText|planLabel/.test(expression)) {
+        failures.push(`${consumer}: product template displays a raw backend field`)
+      }
+      rawBackendPresentationField.lastIndex = 0
+    }
+    for (const match of template.matchAll(/:(?:placeholder|title|aria-label|label)="([^"]+)"/g)) {
+      const expression = match[1]
+      if (rawBackendPresentationField.test(expression) && !/backendTermLabel|backendBusinessText|planLabel/.test(expression)) {
+        failures.push(`${consumer}: product attribute displays a raw backend field`)
+      }
+      rawBackendPresentationField.lastIndex = 0
+    }
+  }
+  return failures
+}
 
 export function checkUiModel(root) {
   const contract = validateUiContract(readStrictJson(resolve(root, 'ui-contracts.json')))
@@ -73,5 +273,9 @@ export function checkUiModel(root) {
     if (route.meta.pageTemplate !== page.template) failures.push(`${page.path}: pageTemplate must be ${page.template}`)
     failures.push(...verifyPageSource(reader, page, componentFile(route.component)))
   }
+  failures.push(...productLanguageFailures(root))
+  failures.push(...backendProjectionFailures(root, contract))
+  failures.push(...rawBackendPresentationFailures(root, contract))
+  failures.push(...e2eEngineeringCopyFailures(root))
   return { failures: [...new Set(failures)], contract, routes, sourceCount: reader.modules.size }
 }

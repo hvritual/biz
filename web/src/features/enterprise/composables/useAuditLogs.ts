@@ -55,8 +55,8 @@ export function useAuditLogs() {
 
   function exportDemoLogs() {
     const list = [...demoFiltered.value]
-    downloadCsv('操作日志-界面预览.csv', [
-      ['时间', '操作人', '模块', '操作', '对象', '结果', '风险', '请求ID'],
+    downloadCsv('操作日志-示例.csv', [
+      ['时间', '操作人', '模块', '操作', '对象', '结果', '风险'],
       ...list.map((log) => [
         log.time,
         log.actor,
@@ -65,11 +65,10 @@ export function useAuditLogs() {
         log.target,
         log.result,
         demoRiskLabels[log.risk],
-        log.requestId,
       ]),
     ])
-    store.audit('操作日志', '导出操作记录', `${list.length} 条预览记录`)
-    ui.toast('本地预览日志已导出。')
+    store.audit('操作日志', '导出操作记录', `${list.length} 条示例记录`)
+    ui.toast('操作日志已导出。')
   }
 
   function pretty(value: string) {
@@ -116,7 +115,31 @@ export function useAuditLogs() {
   }
 
   function actorLabel(record: EnterpriseAuditRecord) {
-    return record.actorSubject || record.actorUserId || '未知主体'
+    const id = record.actorUserId || record.actorSubject.replace(/^user:/, '')
+    return id ? `账号 ${id}` : '未知操作人'
+  }
+
+  function moduleLabel(value: string) {
+    if (value === 'access') return '权限与成员'
+    if (value === 'commercial') return '套餐与权益'
+    if (value === 'enterprise') return '企业管理'
+    return value || '业务操作'
+  }
+
+  function operationLabel(value: string) {
+    const labels: Record<string, string> = {
+      'tenant.member.suspend': '禁用成员',
+      'tenant.member.activate': '启用成员',
+      'tenant.member.remove': '移除成员',
+      'access.audit.export': '导出操作日志',
+    }
+    return labels[value] ?? '业务操作'
+  }
+
+  function targetLabel(value: string) {
+    if (value.startsWith('user_id:')) return `成员 ${value.slice('user_id:'.length)}`
+    if (value.startsWith('tenant_id:')) return `企业 ${value.slice('tenant_id:'.length)}`
+    return value || '—'
   }
 
   function formatTime(value: string) {
@@ -324,24 +347,21 @@ export function useAuditLogs() {
       }
       const exported = await exportEnterpriseAuditRecords(current, filter, key)
       if (token !== serverEpoch) return
-      downloadCsv(`操作日志-${exported.exportId || 'server-export'}.csv`, [
-        ['时间', '操作人', '用户ID', '操作', '对象', '结果', '风险', '请求ID', '会话引用', '回执引用', '原因'],
+      downloadCsv(`操作日志-${exported.exportId || 'export'}.csv`, [
+        ['时间', '操作人', '模块', '操作', '对象', '结果', '风险', '原因'],
         ...exported.records.map((record) => [
           record.occurredAt,
-          record.actorSubject,
-          record.actorUserId,
-          record.operationId,
-          record.target,
-          record.result,
-          record.risk,
-          record.requestId,
-          record.sessionRef,
-          record.receiptRef,
+          actorLabel(record),
+          moduleLabel(record.module),
+          operationLabel(record.operationId),
+          targetLabel(record.target),
+          resultLabels[record.result],
+          serverRiskLabels[record.risk],
           record.reason,
         ]),
       ])
       exportRetry.value = null
-      serverNotice.value = `服务端导出已完成：${exported.records.length} 条；导出操作本身已进入审计链，可刷新列表查看。`
+      serverNotice.value = `日志导出完成：${exported.records.length} 条；本次导出操作已记录，可刷新列表查看。`
     } catch (error) {
       if (token === serverEpoch) serverError.value = auditRuntimeError(error)
     } finally {
@@ -372,7 +392,7 @@ export function useAuditLogs() {
     serverBusy, detailBusy, exportBusy, serverError, serverNotice, selectedServer,
     queryDraft, operationDraft, resultDraft, riskDraft, exportRetry,
     canReadServer, pageHighRisk, pageFailures, pageExports, serverRiskLabels, resultLabels,
-    actorLabel, formatTime, resultTone, riskTone,
+    actorLabel, moduleLabel, operationLabel, targetLabel, formatTime, resultTone, riskTone,
     refreshServer, applyServerFilters, resetServerFilters,
     changeServerTenant, logoutServer, loginServer, openServerDetail, exportServerLogs,
   }

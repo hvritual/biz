@@ -101,7 +101,7 @@ function fix() {
     >
     <div class="card customer-flow">
       <div
-        v-for="(text, index) in ['选择文件', '字段映射', '逐行校验', '确认导入', '结果回读']"
+        v-for="(text, index) in ['选择文件', '字段映射', '逐行校验', '确认导入', '导入结果']"
         :key="text"
         class="customer-flow-step"
         :class="{ done: index < stage, current: index === stage }"
@@ -223,7 +223,7 @@ function fix() {
           </table>
         </div></CustomerSection
       ><CustomerAlert
-        :title="stage === 4 ? '导入结果已回读' : '本轮只导入已通过且明确勾选的记录'"
+        :title="stage === 4 ? '导入结果已确认' : '本轮只导入已通过且明确勾选的记录'"
         description="重复与错误行保留，不自动覆盖。结果返回创建编号与失败原因，重复提交不重复创建。"
         :tone="stage === 4 ? 'success' : 'primary'"
       />

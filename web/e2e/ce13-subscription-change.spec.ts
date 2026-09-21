@@ -82,9 +82,9 @@ async function setupWorkspace(page: Page, current = subscription()) {
   await page.route('**/api/v1/platform/tenants/tenant-1/entitlements', (route) => fulfillJson(route, entitlement()))
 
   await page.goto('/#/platform/commercial/tenant-entitlements')
-  await page.getByLabel('租户 ID').fill('tenant-1')
+  await page.getByLabel('租户编号').fill('tenant-1')
   await page.getByRole('button', { name: '读取权益' }).click()
-  await expect(page.locator('.subscription-card').getByText('office-pro v2')).toBeVisible()
+  await expect(page.locator('.subscription-card').getByText('办公专业版 v2')).toBeVisible()
 }
 
 test('TestCE13SubscriptionChangePreviewUsesServerImpactAndMatchingIdempotencyKey', async ({ page }) => {
@@ -136,17 +136,17 @@ test('TestCE13SubscriptionChangePreviewUsesServerImpactAndMatchingIdempotencyKey
   })
 
   const workspace = page.getByTestId('ce13-subscription-change')
-  await workspace.getByLabel('目标 plan_code').fill('office-basic')
+  await workspace.getByLabel('目标套餐编号').fill('office-basic')
   await workspace.getByLabel('目标版本').fill('1')
-  await workspace.getByLabel('预览原因').fill('客户缩减规模，需要下周期降级')
-  await workspace.getByRole('button', { name: '生成不可变预览' }).click()
+  await workspace.getByLabel('变更原因').fill('客户缩减规模，需要下周期降级')
+  await workspace.getByRole('button', { name: '查看变更方案' }).click()
 
-  await expect(workspace.getByText('DOWNGRADE')).toBeVisible()
-  await expect(workspace.getByText('SCHEDULED')).toBeVisible()
+  await expect(workspace.getByText('降级', { exact: true })).toBeVisible()
+  await expect(workspace.getByText('预约生效', { exact: true })).toBeVisible()
   await expect(workspace.getByText('确认前仍需额度再校验')).toBeVisible()
-  await expect(workspace.getByText('price_ref:office-basic')).toBeVisible()
-  await expect(workspace.getByText('REVALIDATE_AT_EXECUTION')).toBeVisible()
-  await expect(workspace.getByText(/SCHEDULED 只表示预约已保存/)).toHaveCount(0)
+  await expect(workspace.getByText('按当前套餐价格规则确认')).toBeVisible()
+  await expect(workspace.getByText('待确认', { exact: true })).toBeVisible()
+  await expect(workspace.getByText(/套餐变更已预约，当前套餐和权益尚未切换/)).toHaveCount(0)
 
   const requestId = String(previewBody?.requestId)
   expect(requestId).toContain('ce13-subscription-preview-')
@@ -231,21 +231,21 @@ test('TestCE13SubscriptionChangeConfirmPinsPreviewHashAndRendersImmutableReceipt
   })
 
   const workspace = page.getByTestId('ce13-subscription-change')
-  await workspace.getByLabel('目标 plan_code').fill('office-ultimate')
+  await workspace.getByLabel('目标套餐编号').fill('office-ultimate')
   await workspace.getByLabel('目标版本').fill('3')
-  await workspace.getByLabel('预览原因').fill('客户批准升级旗舰套餐')
-  await workspace.getByRole('button', { name: '生成不可变预览' }).click()
-  await expect(workspace.getByText('UPGRADE')).toBeVisible()
+  await workspace.getByLabel('变更原因').fill('客户批准升级旗舰套餐')
+  await workspace.getByRole('button', { name: '查看变更方案' }).click()
+  await expect(workspace.getByText('升级', { exact: true })).toBeVisible()
 
-  await workspace.getByLabel(/PLATFORM_MANUAL_APPROVAL/).check()
+  await workspace.getByLabel(/已核对本次套餐变更影响/).check()
   await workspace.getByLabel('确认原因').fill('平台主管确认升级')
-  await workspace.getByRole('button', { name: '确认此 preview_hash' }).click()
+  await workspace.getByRole('button', { name: '确认变更', exact: true }).click()
 
   const receipt = workspace.locator('.receipt-panel')
-  await expect(receipt.getByText('不可变变更回执')).toBeVisible()
-  await expect(receipt.getByText('APPLIED').first()).toBeVisible()
-  await expect(receipt.getByText('office-ultimate v3')).toBeVisible()
-  await expect(receipt.getByText('PLATFORM_MANUAL_APPROVAL')).toBeVisible()
+  await expect(receipt.getByText('变更结果')).toBeVisible()
+  await expect(receipt.getByText('已生效', { exact: true }).first()).toBeVisible()
+  await expect(receipt.getByText('办公旗舰版 v3')).toBeVisible()
+  await expect(receipt.getByText('已确认', { exact: true })).toBeVisible()
 
   const requestId = String(confirmBody?.requestId)
   expect(requestId).toContain('ce13-subscription-confirm-')

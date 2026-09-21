@@ -1,24 +1,7 @@
 name: Enterprise 168 sensitive contact qualification
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - .github/workflows/enterprise-168-sensitive-contacts.yml
-      - cmd/biz/**
-      - cmd/biz-idp/**
-      - docs/enterprise-center/sensitive-identity.md
-      - internal/access/**
-      - internal/bizruntime/**
-      - integration/enterprise_168_sensitive_contacts_mysql_test.go
-      - integration/enterprise_168_migration_backfill_mysql_test.go
-      - go.mod
-      - go.sum
+  workflow_call:
   workflow_dispatch:
 
 permissions:

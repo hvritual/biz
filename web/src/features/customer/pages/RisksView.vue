@@ -62,7 +62,7 @@ const signal = computed(() => signals.find((x) => x.name === active.value)!)
       <CustomerSection :title="signal.name + ' · 证据与判断'" icon="warning"
         ><CustomerAlert
           :title="signal.fact"
-          :description="`数据来源：${signal.source} · 本地预览快照`"
+          :description="`数据来源：${signal.source} · 当前风险分析`"
           tone="warning"
         />
         <dl class="customer-info-list" style="margin-top: 24px">

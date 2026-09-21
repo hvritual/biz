@@ -107,7 +107,7 @@ describe('audit page state', () => {
     expect(mocks.export).toHaveBeenNthCalledWith(2, session, {}, 'enterprise-audit-export-a')
     expect(mocks.requestId).toHaveBeenCalledTimes(1)
     expect(mocks.downloadCsv).toHaveBeenCalledTimes(1)
-    expect(model.serverNotice.value).toContain('服务端导出已完成：1 条')
+    expect(model.serverNotice.value).toContain('日志导出完成：1 条')
     expect(model.exportRetry.value).toBeNull()
     expect(mocks.store.audit).not.toHaveBeenCalled()
   })

@@ -3,6 +3,8 @@ import { UiButton, UiInput, UiTextarea } from '@/ui/base'
 
 import AuthorityPicker from '@/features/platform/components/AuthorityPicker.vue'
 import { computed, onMounted, ref } from 'vue'
+import { backendBusinessText, backendTermLabel } from '@/i18n/backend-terms'
+import { currentUiLocale } from '@/i18n'
 import PageHeading from '@/ui/common/PageHeading.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import EntitlementDecisionTable from '@/features/platform/components/EntitlementDecisionTable.vue'
@@ -64,7 +66,7 @@ function capabilityCodes() {
 function formatTime(value: string) {
   if (!value) return '—'
   const parsed = new Date(value)
-  return Number.isNaN(parsed.valueOf()) ? value : parsed.toLocaleString('zh-CN', { hour12: false })
+  return Number.isNaN(parsed.valueOf()) ? value : parsed.toLocaleString(currentUiLocale(), { hour12: false })
 }
 
 async function loadModules() {
@@ -147,7 +149,7 @@ async function createOverride(input: CreateEntitlementOverrideInput) {
       expectedVersion: sourceVersion.value,
     })
     overrideDialogOpen.value = false
-    actionMessage.value = '专项权益来源已创建，正在使用服务端新版本重新解析。'
+    actionMessage.value = '专项权益已创建，正在刷新最新权益结果。'
     await loadWorkspace()
   } catch (error) {
     await handleActionError(error, '专项权益来源创建失败', true)
@@ -178,7 +180,7 @@ async function confirmRevoke() {
       reason: revokeReason.value.trim(),
     })
     revokeTarget.value = null
-    actionMessage.value = '专项来源已撤销；历史记录保留，权益已重新解析。'
+    actionMessage.value = '专项权益已撤销；历史记录已保留，最新权益结果已更新。'
     await loadWorkspace()
   } catch (error) {
     await handleActionError(error, '专项权益撤销失败', true)
@@ -189,12 +191,12 @@ async function confirmRevoke() {
 
 async function handleActionError(error: unknown, fallback: string, rereadOnConflict = false) {
   if (error instanceof CommercialApiError && error.code === 'conflict') {
-    actionError.value = 'source_version 已变化，操作未覆盖其他人的修改；已重新读取最新权益事实。'
+    actionError.value = '权益信息已变化，本次操作没有覆盖其他人的修改；已重新加载最新结果。'
     if (rereadOnConflict) await loadWorkspace()
     return
   }
   if (error instanceof CommercialApiError && ['unauthenticated', 'forbidden'].includes(error.code)) {
-    actionError.value = `当前可信平台会话无权执行该操作：${error.message}`
+    actionError.value = `当前平台账号无权执行该操作：${error.message}`
     return
   }
   actionError.value = error instanceof Error ? error.message : fallback
@@ -208,53 +210,53 @@ onMounted(loadModules)
     <div data-ui-region="page-heading">
       <PageHeading
         title="租户权益"
-        description="以租户上下文查看订阅、服务端权益决策、专项来源与变更工作区；浏览器不自行合并权益"
+        description="查看当前租户的订阅、权益结果、专项权益与变更记录"
       />
     </div>
 
     <div data-ui-region="authority"><AuthorityPicker kind="tenants" @select="(id) => { tenantIdInput = id; loadWorkspace() }" /></div>
     <section class="card workspace-card" data-ui-region="context">
       <div class="workspace-title">
-        <div><h2>tenant_id 权益工作台</h2><p>选择器和输入均由可信平台会话授权；浏览器不携带 API Key，也不自行推断租户权益。</p></div>
-        <span class="boundary-badge">可信平台会话</span>
+        <div><h2>租户权益工作台</h2><p>选择租户后查看当前套餐、专项权益与最终可用能力。</p></div>
+        <span class="boundary-badge">平台管理</span>
       </div>
       <form class="lookup-row" @submit.prevent="loadWorkspace">
-        <label for="tenant-id">租户 ID</label>
-        <UiInput id="tenant-id" v-model="tenantIdInput" class="input" autocomplete="off" placeholder="输入真实 tenant_id" />
+        <label for="tenant-id">租户编号</label>
+        <UiInput id="tenant-id" v-model="tenantIdInput" class="input" autocomplete="off" placeholder="输入租户编号" />
         <UiButton class="btn primary" type="submit" :disabled="loadState === 'loading'">读取权益</UiButton>
       </form>
       <div class="filter-row">
-        <label for="capability-filter">能力过滤（可空，逗号或换行分隔）</label>
-        <UiInput id="capability-filter" v-model="capabilityFilter" class="input" placeholder="device.lifecycle, customer.view" />
-        <UiButton class="btn" type="button" :disabled="!activeTenantId || pending" @click="refreshExplanation">重新解释</UiButton>
+        <label for="capability-filter">功能能力过滤（可选）</label>
+        <UiInput id="capability-filter" v-model="capabilityFilter" class="input" placeholder="输入需要查看的功能能力" />
+        <UiButton class="btn" type="button" :disabled="!activeTenantId || pending" @click="refreshExplanation">重新计算</UiButton>
       </div>
     </section>
 
     <section v-if="actionMessage" class="notice success" role="status">{{ actionMessage }}</section>
     <section v-if="actionError && !overrideDialogOpen" class="notice danger" role="alert">{{ actionError }}</section>
 
-    <section v-if="loadState === 'idle'" class="card state-card"><strong>选择或输入 tenant_id 开始</strong><p>读取订阅、专项来源和权益解释都由服务端平台权限决定。</p></section>
-    <section v-else-if="loadState === 'loading'" class="card state-card" aria-live="polite"><strong>正在读取 {{ activeTenantId }} 的商业事实</strong><p>并行读取当前订阅、override 来源和服务端权益解释。</p></section>
-    <section v-else-if="loadState === 'blocked'" class="card state-card warning" role="alert"><strong>当前平台会话无权限读取该租户权益</strong><p>{{ errorMessage }}</p><UiButton class="btn" type="button" @click="loadWorkspace">重新检查</UiButton></section>
+    <section v-if="loadState === 'idle'" class="card state-card"><strong>选择或输入租户编号开始</strong><p>可查看内容取决于当前平台账号的权限范围。</p></section>
+    <section v-else-if="loadState === 'loading'" class="card state-card" aria-live="polite"><strong>正在读取 {{ activeTenantId }} 的权益信息</strong><p>正在获取当前订阅、专项权益和权益结果。</p></section>
+    <section v-else-if="loadState === 'blocked'" class="card state-card warning" role="alert"><strong>当前平台账号无权读取该租户权益</strong><p>{{ errorMessage }}</p><UiButton class="btn" type="button" @click="loadWorkspace">重新检查</UiButton></section>
     <section v-else-if="loadState === 'error'" class="card state-card danger" role="alert"><strong>租户权益读取失败</strong><p>{{ errorMessage }}</p><UiButton class="btn" type="button" @click="loadWorkspace">重试</UiButton></section>
 
     <template v-else-if="loadState === 'ready' && entitlement">
       <section class="metric-grid" data-ui-region="metrics">
-        <article class="card metric"><span>source_version</span><strong>{{ summary.sourceVersion }}</strong><small>专项来源聚合版本</small></article>
-        <article class="card metric"><span>entitlement_version</span><strong>{{ summary.entitlementVersion }}</strong><small>服务端派生版本</small></article>
+        <article class="card metric"><span>专项权益版本</span><strong>{{ summary.sourceVersion }}</strong><small>用于识别当前专项权益状态</small></article>
+        <article class="card metric"><span>权益版本</span><strong>{{ summary.entitlementVersion }}</strong><small>当前计算版本</small></article>
         <article class="card metric"><span>权益决策</span><strong>{{ summary.decisions }}</strong><small>{{ capabilityCodes().length ? '已过滤' : '全部' }}</small></article>
-        <article class="card metric"><span>下一时间边界</span><strong class="time-value">{{ formatTime(String(summary.nextTransition)) }}</strong><small>next_transition_at</small></article>
+        <article class="card metric"><span>下一变化时间</span><strong class="time-value">{{ formatTime(String(summary.nextTransition)) }}</strong><small>到达该时间后权益可能发生变化</small></article>
       </section>
 
       <section class="card subscription-card" data-ui-region="subscription">
-        <div class="section-header"><div><h2>当前订阅</h2><p>订阅是权益来源之一，不等同于最终服务端决策。</p></div><StatusBadge v-if="subscription" :text="subscription.state || 'unknown'" :tone="subscription.state === 'ACTIVE' ? 'success' : 'neutral'" /></div>
+        <div class="section-header"><div><h2>当前订阅</h2><p>订阅是权益来源之一，最终可用权益以当前结果为准。</p></div><StatusBadge v-if="subscription" :text="backendTermLabel('subscriptionState', subscription.state)" :tone="subscription.state === 'ACTIVE' ? 'success' : 'neutral'" /></div>
         <div v-if="subscription" class="subscription-grid">
-          <div><span>套餐</span><strong>{{ subscription.planCode }} v{{ subscription.planVersion }}</strong></div>
-          <div><span>销售范围</span><strong>{{ subscription.salesScope || '—' }}</strong></div>
+          <div><span>套餐</span><strong>{{ backendTermLabel('plan', subscription.planCode) }} v{{ subscription.planVersion }}</strong></div>
+          <div><span>销售范围</span><strong>{{ backendTermLabel('salesScope', subscription.salesScope) }}</strong></div>
           <div><span>期间</span><strong>{{ formatTime(subscription.periodStart) }} → {{ formatTime(subscription.periodEnd) }}</strong></div>
           <div><span>权益来源版本</span><strong>{{ subscription.entitlementSourceVersion }}</strong></div>
-          <div><span>待处理变更</span><strong>{{ subscription.pendingChangeId || '无' }}</strong></div>
-          <div><span>匹配说明</span><strong>{{ subscription.matchExplanation || '—' }}</strong></div>
+          <div><span>待处理变更</span><strong>{{ subscription.pendingChangeId ? '有待处理变更' : '无' }}</strong></div>
+          <div><span>匹配说明</span><strong>{{ backendBusinessText(subscription.matchExplanation) }}</strong></div>
         </div>
         <p v-else class="empty-text">当前没有可读取的租户订阅记录。</p>
       </section>
@@ -262,11 +264,8 @@ onMounted(loadModules)
       <div data-ui-region="change-workspace"><SubscriptionChangeWorkspace :tenant-id="activeTenantId" :subscription="subscription" @refresh="loadWorkspace" /></div>
 
       <section class="resolver-meta card" data-ui-region="resolver-meta">
-        <span>evaluated_at {{ formatTime(entitlement.evaluatedAt) }}</span>
-        <span>valid_until {{ formatTime(entitlement.validUntil) }}</span>
-        <span>resolver_version {{ entitlement.resolverVersion }}</span>
-        <span>catalog_revision {{ entitlement.catalogRevision }}</span>
-        <span>catalog {{ entitlement.catalogVersions?.map((item) => `${item.moduleCode}@${item.version}`).join(' · ') || '—' }}</span>
+        <span>计算时间 {{ formatTime(entitlement.evaluatedAt) }}</span>
+        <span>结果有效至 {{ formatTime(entitlement.validUntil) }}</span>
       </section>
 
       <div data-ui-region="decisions"><EntitlementDecisionTable :decisions="entitlement.decisions ?? []" /></div>
@@ -285,8 +284,8 @@ onMounted(loadModules)
 
     <div v-if="revokeTarget" class="dialog-backdrop" @click.self="revokeTarget = null">
       <section class="card revoke-dialog" role="dialog" aria-modal="true">
-        <h2>撤销专项来源</h2>
-        <p>来源 {{ revokeTarget.id }} 将保留历史，只设置 revoked_at 并递增 source_version。</p>
+        <h2>撤销专项权益</h2>
+        <p>撤销后该专项权益不再生效，历史操作记录仍会保留。</p>
         <label>撤销原因<UiTextarea v-model="revokeReason" class="input" rows="3" /></label>
         <div class="dialog-actions"><UiButton class="btn" type="button" @click="revokeTarget = null">取消</UiButton><UiButton class="btn primary" type="button" :disabled="pending" @click="confirmRevoke">确认撤销</UiButton></div>
       </section>

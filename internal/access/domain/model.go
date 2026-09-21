@@ -34,6 +34,9 @@ const (
 	TenantRoleStatusActive   = "active"
 	TenantRoleStatusDisabled = "disabled"
 	TenantOwnerRoleName      = "owner"
+	TenantAdminRoleName      = "tenant_admin"
+	TenantOwnerRoleCode      = "tenant_owner"
+	TenantAdminRoleCode      = "tenant_admin"
 )
 
 var OwnerRequiredPermissions = []string{
@@ -56,6 +59,7 @@ var (
 	ErrInvalidTenantMemberProfile    = errors.New("access: invalid tenant member profile")
 	ErrInvalidTenantRoleTransition   = errors.New("access: invalid tenant role state transition")
 	ErrProtectedOwnerRole            = errors.New("access: owner role invariant would be violated")
+	ErrProtectedSystemRole           = errors.New("access: system role is immutable")
 )
 
 type Tenant struct {
@@ -207,6 +211,10 @@ type Role struct {
 	ID          string
 	TenantID    string
 	Name        string
+	Description string
+	Code        string
+	System      bool
+	MemberCount uint64
 	Status      string
 	Permissions []PermissionGrant
 	Version     uint64
@@ -220,6 +228,8 @@ func NewRole(id, tenantID, name string, now time.Time) Role {
 
 func NewOwnerRole(id, tenantID string, now time.Time) Role {
 	role := NewRole(id, tenantID, TenantOwnerRoleName, now)
+	role.Code = TenantOwnerRoleCode
+	role.System = true
 	role.Permissions = make([]PermissionGrant, 0, len(OwnerRequiredPermissions))
 	for _, permission := range OwnerRequiredPermissions {
 		role.Permissions = append(role.Permissions, PermissionGrant{TenantID: tenantID, RoleID: id, Permission: permission, Scope: DataScopeAll})
@@ -227,13 +237,40 @@ func NewOwnerRole(id, tenantID string, now time.Time) Role {
 	return role
 }
 
-func (role Role) IsOwner() bool { return role.Name == TenantOwnerRoleName }
+func NewAdminRole(id, tenantID string, now time.Time) Role {
+	role := NewRole(id, tenantID, TenantAdminRoleName, now)
+	role.Code = TenantAdminRoleCode
+	role.System = true
+	return role
+}
+
+func (role Role) IsOwner() bool {
+	return role.Code == TenantOwnerRoleCode || (role.Code == "" && role.Name == TenantOwnerRoleName)
+}
+
+func (role Role) IsSystemRole() bool {
+	return role.System || role.Code == TenantOwnerRoleCode || role.Code == TenantAdminRoleCode
+}
 
 func (role *Role) Rename(name string, now time.Time) error {
-	if role == nil || role.Status == TenantRoleStatusDisabled || role.IsOwner() || name == TenantOwnerRoleName {
+	name = strings.TrimSpace(name)
+	if role == nil || role.Status == TenantRoleStatusDisabled || role.IsSystemRole() || name == "" || name == TenantOwnerRoleName || name == TenantAdminRoleName || name == TenantOwnerRoleCode || name == TenantAdminRoleCode {
 		return ErrInvalidTenantRoleTransition
 	}
 	role.Name = name
+	role.UpdatedAt = now
+	return nil
+}
+
+func (role *Role) UpdateDescription(description string, now time.Time) error {
+	if role == nil || role.IsSystemRole() {
+		return ErrProtectedSystemRole
+	}
+	description = strings.TrimSpace(description)
+	if len([]rune(description)) > 120 {
+		return ErrInvalidTenantRoleTransition
+	}
+	role.Description = description
 	role.UpdatedAt = now
 	return nil
 }
@@ -245,6 +282,9 @@ func (role *Role) Disable(now time.Time) error {
 	if role.IsOwner() {
 		return ErrProtectedOwnerRole
 	}
+	if role.IsSystemRole() {
+		return ErrProtectedSystemRole
+	}
 	role.Status = TenantRoleStatusDisabled
 	role.UpdatedAt = now
 	return nil
@@ -253,6 +293,9 @@ func (role *Role) Disable(now time.Time) error {
 func (role *Role) Enable(now time.Time) error {
 	if role == nil || role.Status != TenantRoleStatusDisabled {
 		return ErrInvalidTenantRoleTransition
+	}
+	if role.IsSystemRole() {
+		return ErrProtectedSystemRole
 	}
 	role.Status = TenantRoleStatusActive
 	role.UpdatedAt = now

@@ -93,6 +93,12 @@ export interface Access_V1_CreateTenantRequest {
 
 export interface Access_V1_CreateTenantRoleRequest {
   name?: string;
+  description?: string;
+}
+
+export interface Access_V1_DeleteTenantRoleRequest {
+  roleId?: string;
+  version?: string;
 }
 
 export interface Access_V1_DisableTenantDepartmentRequest {
@@ -220,6 +226,8 @@ export interface Access_V1_ListTenantMembersResponse {
 }
 
 export interface Access_V1_ListTenantRolesRequest {
+  query?: string;
+  status?: Access_V1_TenantRoleStatus;
 }
 
 export interface Access_V1_ListTenantRolesResponse {
@@ -395,6 +403,10 @@ export interface Access_V1_TenantRoleDTO {
   status?: Access_V1_TenantRoleStatus;
   permissions?: readonly Access_V1_PermissionGrantDTO[];
   version?: string;
+  description?: string;
+  roleCode?: string;
+  systemRole?: boolean;
+  memberCount?: string;
 }
 
 export interface Access_V1_UpdateTenantBrandingRequest {
@@ -461,6 +473,7 @@ export interface Access_V1_UpdateTenantRoleRequest {
   roleId?: string;
   name?: string;
   version?: string;
+  description?: string;
 }
 
 export interface Commercial_V1_ChangePlanVersionStateRequest {
@@ -1464,6 +1477,15 @@ export const operations = {
       { method: "POST", path: "/v1/tenant/roles", body: "*" },
     ]
   },
+  "access.v1.TenantRolePermissionApplication.DeleteTenantRole": {
+    fullName: "access.v1.TenantRolePermissionApplication.DeleteTenantRole",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/DeleteTenantRole",
+    requestType: "access.v1.DeleteTenantRoleRequest",
+    responseType: "access.v1.TenantRoleDTO",
+    http: [
+      { method: "DELETE", path: "/v1/tenant/roles/{role_id}" },
+    ]
+  },
   "access.v1.TenantRolePermissionApplication.DisableTenantRole": {
     fullName: "access.v1.TenantRolePermissionApplication.DisableTenantRole",
     rpcPath: "/access.v1.TenantRolePermissionApplication/DisableTenantRole",
@@ -2140,6 +2162,10 @@ export class Access_V1_TenantRolePermissionApplicationClient {
 
   createTenantRole(request: Access_V1_CreateTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
     return this.transport.call<Access_V1_CreateTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.CreateTenantRole"], request);
+  }
+
+  deleteTenantRole(request: Access_V1_DeleteTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
+    return this.transport.call<Access_V1_DeleteTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.DeleteTenantRole"], request);
   }
 
   disableTenantRole(request: Access_V1_DisableTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
