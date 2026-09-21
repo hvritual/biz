@@ -323,7 +323,7 @@ onMounted(loadModules)
                 <UiOption value="MODULE_TECHNICAL_STATUS_DISABLED">{{ backendTermLabel('technicalStatus', 'MODULE_TECHNICAL_STATUS_DISABLED') }}</UiOption>
               </UiSelect>
             </label>
-            <div class="field"><span>销售状态</span><strong>{{ salesLabel(selected.salesStatus) }}</strong></div>
+            <div class="field"><span>销售状态</span><strong>{{ backendTermLabel('salesStatus', selected.salesStatus) }}</strong></div>
           </div>
         </section>
 
