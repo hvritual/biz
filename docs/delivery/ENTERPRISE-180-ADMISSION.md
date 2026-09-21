@@ -22,10 +22,11 @@ The receipt explicitly records `semantics_implemented=false`. The checker is for
 
 ## Routing
 
-An #180 candidate is selected when either:
-
-1. changed files include the mandatory `integration/enterprise_180_*` qualification evidence; or
-2. the PR body explicitly links #180 with `Closes #180`, `Fixes #180`, `Resolves #180`, or `Refs #180`.
+An #180 candidate is selected when changed files include the mandatory
+`integration/enterprise_180_*` qualification evidence. The integration evidence
+is part of the candidate definition, so a business implementation cannot opt out
+of admission merely by changing PR prose. Issue linkage remains recorded by the
+normal Delivery Execution receipt and does not replace this route signal.
 
 The existing canonical `enterprise-role-qualification.yml` is reused. No issue-specific workflow entrypoint and no 43rd Full Gate unit are added.
 
