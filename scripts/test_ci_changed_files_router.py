@@ -58,6 +58,10 @@ class RouteTests(unittest.TestCase):
         self.assertTrue(result["domains"]["core"])
         self.assertTrue(result["delivery_isolation"])
 
+    def test_dot_github_path_preserves_core_identity(self):
+        result = route([".github/workflows/pr-qualification.yml"])
+        self.assertTrue(result["domains"]["core"])
+
     def test_commercial_receipt_docs_stay_lightweight(self):
         result = route(["docs/commercial-entitlements/tasks.json"])
         self.assertTrue(result["docs_only"])
