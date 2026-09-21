@@ -86,20 +86,15 @@ jobs:
     if: needs.route.outputs.access == 'true'
     uses: ./.github/workflows/b12-multitenant-access-pressure.yml
 
-  access-lifecycle:
-    needs: [route, governance, fast-web]
-    if: needs.route.outputs.access == 'true'
-    uses: ./.github/workflows/enterprise-178-role-lifecycle.yml
-
   access-native-login:
     needs: [route, governance, fast-web]
     if: needs.route.outputs.native_login == 'true'
     uses: ./.github/workflows/enterprise-172-native-login.yml
 
-  access-role-grants:
+  access-enterprise-role:
     needs: [route, governance, fast-web]
     if: needs.route.outputs.role_grants == 'true'
-    uses: ./.github/workflows/enterprise-179-role-grant-tree.yml
+    uses: ./.github/workflows/enterprise-role-qualification.yml
     with:
       skip_fast_check: true
 
