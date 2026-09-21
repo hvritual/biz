@@ -3,7 +3,10 @@
   "contract_id": "enterprise180-policy-v1",
   "issue_number": 180,
   "status": "ACCEPTED",
-  "accepted_decisions": ["Q-009", "Q-011"],
+  "accepted_decisions": [
+    "Q-009",
+    "Q-011"
+  ],
   "q009_business_scope_binding": {
     "assignment_mode": "explicit",
     "candidate_authority": "authoritative_resource_domain",
@@ -38,7 +41,8 @@
       "abac_condition_dsl",
       "arbitrary_multi_policy_union",
       "policy_nesting"
-    ]
+    ],
+    "applicable_role_policy_scope_aggregation": "intersection_of_current_policies_on_roles_granting_action"
   },
   "invariants": [
     "department_membership_or_manager_status_never_creates_business_data_access_by_itself",
