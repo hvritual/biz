@@ -146,9 +146,15 @@
       "workflow": "coffeelink-web.yml",
       "max_job_minutes": 4,
       "full_gate_skip_fast_check": true,
-      "api_e2e_workers": 2,
       "default_e2e_workers": 4,
-      "delegated_fast_gate": "PR Qualification / fast-web"
+      "delegated_fast_gate": "PR Qualification / fast-web",
+      "parallel_specs": [
+        "web/e2e/customer-gallery.spec.ts"
+      ],
+      "delegated_api_e2e": {
+        "enterprise-177-member-lifecycle.yml": "e2e/enterprise-members-real.spec.ts",
+        "enterprise-role-qualification.yml": "e2e/enterprise-roles-real.spec.ts"
+      }
     }
   },
   "resilience_contracts": {
