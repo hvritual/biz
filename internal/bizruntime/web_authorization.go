@@ -82,15 +82,16 @@ func (auth *runtimeWebAuth) handleActionCatalog(writer http.ResponseWriter, requ
 			http.Error(writer, "authorization unavailable", http.StatusServiceUnavailable)
 			return
 		}
-		tenantActions, snapshot, err = availableTenantRoleActions(
+		filtered, snapshot, readErr := availableTenantRoleActions(
 			request.Context(),
 			entitlements,
 			authentication.Session.ActiveTenantID,
 		)
-		if err != nil {
+		if readErr != nil {
 			http.Error(writer, "authorization unavailable", http.StatusServiceUnavailable)
 			return
 		}
+		tenantActions = filtered
 		entitlementSummary = &authorizationEntitlementVersionSummary{
 			Version:         snapshot.EntitlementVersion,
 			SourceVersion:   snapshot.SourceVersion,
