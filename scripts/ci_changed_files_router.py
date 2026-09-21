@@ -128,6 +128,14 @@ WEB_E2E_HARNESS_FILES = {
     ".github/workflows/web-e2e-harness.yml",
 }
 
+ENTERPRISE_180_PATH_PREFIXES = (
+    "integration/enterprise_180_",
+    "scripts/enterprise_180_admission",
+)
+ENTERPRISE_180_FILES = {
+    "docs/delivery/ENTERPRISE-180-ADMISSION.md",
+}
+
 ROLE_GRANT_PATH_PREFIXES = (
     "internal/access/authorization/",
     "web/src/features/enterprise/components/roles/",
@@ -225,7 +233,13 @@ def route(paths: list[str]) -> dict[str, object]:
         for path in files
     )
 
-    role_grants = any(
+    enterprise180 = any(
+        path in ENTERPRISE_180_FILES
+        or any(path.startswith(prefix) for prefix in ENTERPRISE_180_PATH_PREFIXES)
+        for path in files
+    )
+
+    role_grants = enterprise180 or any(
         path in ROLE_GRANT_FILES or any(path.startswith(prefix) for prefix in ROLE_GRANT_PATH_PREFIXES)
         for path in files
     )
@@ -264,6 +278,7 @@ def route(paths: list[str]) -> dict[str, object]:
         "web_e2e_harness": web_e2e_harness,
         "web_product": web_product,
         "role_grants": role_grants,
+        "enterprise180": enterprise180,
     }
 
 
@@ -280,6 +295,7 @@ def emit_github_output(path: str, result: dict[str, object]) -> None:
         handle.write(f"web_e2e_harness={str(result['web_e2e_harness']).lower()}\n")
         handle.write(f"web_product={str(result['web_product']).lower()}\n")
         handle.write(f"role_grants={str(result['role_grants']).lower()}\n")
+        handle.write(f"enterprise180={str(result['enterprise180']).lower()}\n")
         handle.write("domain_matrix=" + json.dumps(result["domain_matrix"], separators=(",", ":")) + "\n")
         for domain in DOMAINS:
             handle.write(f"{domain}={str(bool(domains[domain])).lower()}\n")
