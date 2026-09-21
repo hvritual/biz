@@ -14,8 +14,9 @@ var (
 	ErrTenantRoleExists    = errors.New("access: tenant role already exists")
 	ErrTenantRoleMember    = errors.New("access: role target must be an invited or active tenant member")
 	ErrTenantRoleProtected = errors.New("access: system role is protected")
-	ErrTenantRoleInUse     = errors.New("access: role still has assigned members")
-	ErrLastTenantOwner     = errors.New("access: last active tenant owner cannot be revoked")
+	ErrTenantRoleInUse          = errors.New("access: role still has assigned members")
+	ErrTenantRoleGrantUnavailable = errors.New("access: requested role grant is not currently available")
+	ErrLastTenantOwner          = errors.New("access: last active tenant owner cannot be revoked")
 )
 
 type TenantRoleRepository interface {
