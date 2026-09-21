@@ -1,3 +1,4 @@
+import { backendErrorFallback } from '@/i18n/backend-terms'
 import {
   CommercialApiError,
   commercialRequestId,
@@ -35,9 +36,9 @@ export function tenantBrandingRuntimeError(error: unknown) {
     if (error.code === 'unauthenticated') return '登录会话已失效，请重新登录。'
     if (error.code === 'forbidden') return '当前账号没有维护企业品牌主题的权限。'
     if (error.code === 'conflict') return '企业品牌主题已被其他操作修改，请重新读取后再试。'
-    return error.message
+    return backendErrorFallback('branding')
   }
-  return error instanceof Error ? error.message : '企业品牌主题服务请求失败。'
+  return error instanceof Error ? error.message : backendErrorFallback('branding')
 }
 
 function requireTenantSession(session: TrustedSession) {
@@ -71,7 +72,7 @@ export async function getEnterpriseTenantBranding(session: TrustedSession) {
   })
   const snapshot = brandingSnapshot(value)
   if (snapshot.tenantId && snapshot.tenantId !== session.active_tenant_id) {
-    throw new Error('企业品牌主题服务返回了不属于当前租户的数据。')
+    throw new Error('企业品牌主题与当前企业不匹配，请刷新后重试。')
   }
   return snapshot
 }

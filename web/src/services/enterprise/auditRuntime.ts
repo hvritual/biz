@@ -1,3 +1,4 @@
+import { backendErrorFallback } from '@/i18n/backend-terms'
 import {
   CommercialApiError,
   commercialRequestId,
@@ -112,10 +113,10 @@ export function auditRuntimeError(error: unknown) {
   if (error instanceof CommercialApiError) {
     if (error.code === 'unauthenticated') return '登录会话已失效，请重新登录。'
     if (error.code === 'forbidden') return '当前账号没有读取或导出企业审计日志的权限。'
-    if (error.code === 'conflict') return '审计导出请求发生幂等冲突，请刷新后重新发起。'
-    return error.message
+    if (error.code === 'conflict') return '当前导出请求与已有操作冲突，请刷新后重新发起。'
+    return backendErrorFallback('audit')
   }
-  return error instanceof Error ? error.message : '审计日志服务请求失败。'
+  return error instanceof Error ? error.message : backendErrorFallback('audit')
 }
 
 export function sameAuditSession(a: TrustedSession, b: TrustedSession) {

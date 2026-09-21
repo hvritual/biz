@@ -14,8 +14,8 @@ const unavailable = computed(() => reason.value === 'unavailable')
   <section class="authorization-state card panel-pad" data-authorization-state>
     <AppIcon :name="unavailable ? 'error' : 'lock'" :size="34" />
     <h1>{{ unavailable ? '授权信息暂时不可用' : '没有访问权限' }}</h1>
-    <p v-if="unavailable">当前授权事实未能从服务端安全读取。系统不会回退到缓存权限或演示数据。</p>
-    <p v-else>当前账号没有进入此页面的有效授权。菜单隐藏不能替代服务端 API 授权。</p>
+    <p v-if="unavailable">暂时无法确认当前账号权限，请刷新或重新登录后再试。</p>
+    <p v-else>当前账号没有访问此页面的权限。如需使用，请联系企业管理员。</p>
     <div class="row">
       <UiButton v-if="reason === 'unauthenticated'" class="btn btn-primary" @click="redirectToTrustedLogin">重新登录</UiButton>
       <RouterLink v-else class="btn" to="/dashboard">返回工作台</RouterLink>

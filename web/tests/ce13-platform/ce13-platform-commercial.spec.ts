@@ -335,7 +335,7 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await editor.getByLabel("device.lifecycle").check();
   await editor.getByRole("button", { name: "添加范围" }).click();
   await editor.getByPlaceholder("default").fill("default");
-  await editor.getByRole("button", { name: "提交到服务端" }).click();
+  await editor.getByRole("button", { name: "提交", exact: true }).click();
   await expect(page.getByText("套餐草稿已创建。")).toBeVisible();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "发布", exact: true }).click();
@@ -372,34 +372,34 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await expect(overlay).toBeHidden();
 
   await page.goto(`${data.web_base_url}/#/platform/commercial/tenant-entitlements`);
-  await page.getByLabel("租户 ID").fill(data.tenant_id);
+  await page.getByLabel("租户编号").fill(data.tenant_id);
   await page.getByRole("button", { name: "读取权益" }).click();
   await expect(page.locator(".subscription-card")).toBeVisible();
-  await page.getByRole("button", { name: "新增专项来源" }).click();
-  const override = page.getByRole("dialog", { name: "新增专项权益来源" });
+  await page.getByRole("button", { name: "新增专项权益" }).click();
+  const override = page.getByRole("dialog", { name: "新增专项权益" });
   await override.getByLabel("模块", { exact: true }).click();
   await page.locator('[data-slot="select-item"][data-ui-option-value="device-operations"]').click();
-  await override.getByLabel("目标类型", { exact: true }).click();
+  await override.getByLabel("授权范围", { exact: true }).click();
   await page.locator('[data-slot="select-item"][data-ui-option-value="ENTITLEMENT_TARGET_CAPABILITY"]').click();
-  await override.getByLabel("目标 key", { exact: true }).click();
+  await override.getByLabel("具体项目", { exact: true }).click();
   await page.locator('[data-slot="select-item"][data-ui-option-value="device.lifecycle"]').click();
-  await override.getByLabel("效果", { exact: true }).click();
+  await override.getByLabel("授权结果", { exact: true }).click();
   await page.locator('[data-slot="select-item"][data-ui-option-value="ENTITLEMENT_EFFECT_DENY"]').click();
   await override.getByLabel("原因", { exact: true }).fill("CE-13 可见来源验证");
-  await override.getByRole("button", { name: "创建专项来源" }).click();
+  await override.getByRole("button", { name: "创建专项权益" }).click();
   await expect(page.getByText("CE-13 可见来源验证", { exact: true })).toBeVisible();
-  await expect(page.getByText("denies").first()).toBeVisible();
+  await expect(page.getByText("拒绝", { exact: true }).first()).toBeVisible();
 
   const change = page.getByTestId("ce13-subscription-change");
-  await change.getByLabel("目标 plan_code").fill(code);
+  await change.getByLabel("目标套餐编号").fill(code);
   await change.getByLabel("目标版本").fill("1");
-  await change.getByLabel("预览原因").fill("CE-13 可见人工变更预览");
-  await change.getByRole("button", { name: "生成不可变预览" }).click();
-  await expect(change.getByText(/change /)).toBeVisible();
-  await change.getByLabel(/PLATFORM_MANUAL_APPROVAL/).check();
+  await change.getByLabel("变更原因").fill("CE-13 可见人工变更预览");
+  await change.getByRole("button", { name: "查看变更方案" }).click();
+  await expect(change.getByText(/变更编号/)).toBeVisible();
+  await change.getByLabel(/已核对本次套餐变更影响/).check();
   await change.getByLabel("确认原因").fill("CE-13 可见人工批准");
-  await change.getByRole("button", { name: "确认此 preview_hash" }).click();
-  await expect(change.getByText("不可变变更回执")).toBeVisible();
+  await change.getByRole("button", { name: "确认变更", exact: true }).click();
+  await expect(change.getByText("变更结果")).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("ce13-tenant-change-1366.png"), fullPage: true });
 
   await context.close();
@@ -410,7 +410,7 @@ test("TestCE13TenantSessionCannotUsePlatformConsole", async ({ browser }) => {
   const tenant = await login(browser, data, data.tenant_email, data.tenant_password);
   await tenant.page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
   await expect(tenant.page.getByRole("heading", { name: "模块目录", exact: true })).toBeVisible();
-  await expect(tenant.page.getByText("当前会话无平台商业访问权限")).toBeVisible();
+  await expect(tenant.page.getByText("当前账号无平台商业管理权限")).toBeVisible();
   await expect(tenant.page.getByRole("button", { name: "查看详情" })).toHaveCount(0);
   await tenant.context.close();
 });

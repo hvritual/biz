@@ -49,6 +49,23 @@ AppShell
 
 `RuntimeConsoleView.vue` 不允许挂载到 platform / tenant 正式业务路由。
 
+### 2.2 产品语言边界
+
+正式产品 UI 只表达用户需要理解的 **业务对象、当前状态、可执行动作、业务影响与处理结果**。实现方式属于工程内部信息，不得作为普通业务界面的状态标签、提示条、说明文案或详情字段。
+
+以下内容不得直接出现在 platform / tenant 产品 Surface：
+
+- 用“实时数据 / Live data”标识数据真实性或环境；
+- `API 模式`、`Runtime`、`服务端`、`回读`、`权威读模型` 等实现层术语；
+- `preview / confirm / receipt`、`meter`、`DataURL` 等内部链路或数据结构名称；
+- 请求 ID、幂等引用、会话引用、回执引用、请求摘要等调试/传输字段。
+
+同一事实必须转换为业务语言，例如：**已保存、已更新、处理中、暂不可用、当前企业、操作编号、需要进一步确认、最终状态以处理结果为准**。
+
+例外仅限用户本身需要管理的技术型业务对象，例如“接口与集成”。即使属于此类功能，也不得借此暴露内部架构、数据源模式、协议链路或调试字段。
+
+该规则由 `web/ui-contracts.json` 的 `product_surface_forbids_engineering_language` 和 UI Contract 静态检查共同约束。
+
 ---
 
 ## 3. 当前视觉 Token（IMPLEMENTED）
@@ -224,8 +241,8 @@ V1.1 中的通用 `none` 遮罩变体仍可作为未来其他产品预设，但*
 
 ```text
 PageHeading + 平台插画
-服务端接入边界说明（只读设计预览）
-概览卡：4 项指标 + 生命周期控制链
+业务可用性说明
+概览卡：4 项指标 + 生命周期状态
 操作流程预览（按需展开）
 查询面板
 工作区卡
@@ -233,7 +250,7 @@ PageHeading + 平台插画
 └── 右侧详情（桌面 320px）
 ```
 
-**重要边界：**这些页面当前的记录、指标和主要动作仍属于设计预览。界面明确显示“服务端契约待接入 / 只读设计预览”；真实写操作未来必须接入可信会话、CSRF、Idempotency、版本控制与服务端读回。在此之前不得把预览数据、按钮或流程描述成生产能力已完成。
+**重要边界：**这些页面当前仍包含尚未完整开放的业务能力。产品界面只能用“暂不可用、仅查看、需要确认、处理中”等业务状态表达限制，不再向用户展示服务端契约、数据源模式、幂等、回读等工程实现信息。工程层仍必须保留相应安全与一致性约束，但证据进入代码、测试和审计，不进入普通业务 UI。
 
 生命周期页的 320px 详情区是页面内工作区详情，不替代成员管理的 360px `MemberDetailDrawer` 规则。
 
@@ -283,6 +300,7 @@ Route
 - ModulePanel 展开不推挤正文；
 - platform surface 不渲染 Runtime Console；
 - demo/API 不切换完整产品 UI；
+- platform / tenant 产品 Surface 不暴露工程实现术语；
 - 页面 required regions 存在；
 - 关键视口截图完整；
 - loading / error / empty / dialog / drawer 不破坏信息层级；
@@ -306,7 +324,42 @@ Route
 
 ---
 
-## 12. 文档同步规则
+## 12. 后台术语投影与 Candidate Qualification（IMPLEMENTED）
+
+后台返回的 enum、code、状态和值域不是产品文案。产品 Surface 必须经过统一的国际化投影：
+
+```text
+Backend DTO / Enum / Code
+→ backendTermLabel(kind, raw)
+→ vue-i18n backendTerms.*
+→ Business UI
+```
+
+硬规则：
+
+- 禁止 Vue、store、composable 各自维护 `ENTITLEMENT_* / TENANT_* / MODULE_*` 的中文映射表；
+- `web/src/i18n/backend-terms.ts` 是后台术语语义注册表，`backend-term-messages.ts` 提供 zh-CN / en-US；
+- 未识别后台值必须使用业务兜底，禁止 `raw ?? label`、`label || raw` 把未知 code 直接暴露给用户；
+- 后台返回的人类业务说明可保留；看起来像 enum、snake_case、dot-code、runtime/readback 等工程文本时必须降级为业务兜底；
+- E2E 可以断言工程术语“不存在”，但不能用“服务端确认、回读、API 模式”等工程文案作为成功条件；
+- `web/ui-contracts.json.presentation.backend_term_projection.required_consumers` 声明必须接入统一投影的消费者，静态门禁负责检查。
+
+PR 级验证采用固定 Candidate SHA：
+
+```text
+Candidate SHA
+→ required workflows 全部完成
+→ failure signature 去重
+→ HEAD 漂移检查
+→ Candidate Qualification
+→ PASS 后进入 Merge Gate
+```
+
+Candidate 运行期间不得通过零散提交逐个追红灯；应等待一轮结束后统一收集 root cause，再生成下一 Candidate。
+
+---
+
+## 13. 文档同步规则
 
 以后任何 PR 只要改变以下任一事实，就必须同步本规范或在 PR 中明确声明“无规范变化”并给出原因：
 

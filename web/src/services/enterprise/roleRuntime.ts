@@ -1,3 +1,4 @@
+import { backendErrorFallback, backendTermLabel } from '@/i18n/backend-terms'
 import {
   CommercialApiError,
   commercialRequestId,
@@ -33,12 +34,7 @@ export function roleRequestId(action: RoleMutation, suffix = '') {
 }
 
 export function roleStatusLabel(status: string) {
-  return (
-    {
-      TENANT_ROLE_STATUS_ACTIVE: '已启用',
-      TENANT_ROLE_STATUS_DISABLED: '已停用',
-    }[status] ?? status
-  )
+  return backendTermLabel('roleStatus', status)
 }
 
 export function roleRuntimeError(error: unknown) {
@@ -46,9 +42,9 @@ export function roleRuntimeError(error: unknown) {
     if (error.code === 'unauthenticated') return '登录会话已失效，请重新登录。'
     if (error.code === 'forbidden') return '当前账号没有管理企业角色与权限的权限。'
     if (error.code === 'conflict') return '角色版本或所有者保护规则已发生冲突，请刷新后重试。'
-    return error.message
+    return backendErrorFallback('role')
   }
-  return error instanceof Error ? error.message : '角色权限服务请求失败。'
+  return error instanceof Error ? error.message : backendErrorFallback('role')
 }
 
 function requireTenantSession(session: TrustedSession) {

@@ -5,6 +5,9 @@ const flags = [
   'screenshots_are_acceptance_evidence', 'navigation_section_groups_required',
   'navigation_forbids_entity_bound_paths', 'navigation_rental_work_collections_required',
   'enterprise_canonical_routes_required', 'product_shell_forbids_data_mode_ui_branch',
+  'product_surface_forbids_engineering_language',
+  'product_surface_requires_backend_term_i18n_projection', 'unknown_backend_terms_must_not_fallback_to_raw',
+  'backend_error_messages_must_use_business_fallback', 'e2e_forbids_engineering_copy_assertions',
 ]
 
 function object(value, path, keys) {
@@ -25,7 +28,7 @@ function strings(value, path, empty = false) {
 }
 
 export function validateUiContract(contract) {
-  object(contract, '$', ['schema_version', 'design_system', 'visual_viewports', 'rules', 'navigation', 'routes', 'patterns'])
+  object(contract, '$', ['schema_version', 'design_system', 'visual_viewports', 'rules', 'presentation', 'navigation', 'routes', 'patterns'])
   if (contract.schema_version !== 1) throw new Error('$.schema_version: unsupported version')
   text(contract.design_system, '$.design_system')
   if (!Array.isArray(contract.visual_viewports)) throw new Error('$.visual_viewports: expected array')
@@ -38,6 +41,14 @@ export function validateUiContract(contract) {
   object(contract.rules, '$.rules', [...flags, 'navigation_drink_configuration_domain'])
   for (const flag of flags) if (contract.rules[flag] !== true) throw new Error(`$.rules.${flag}: required protection cannot be disabled`)
   if (contract.rules.navigation_drink_configuration_domain !== 'device-operations') throw new Error('Drink configuration must belong to device-operations')
+  object(contract.presentation, '$.presentation', ['backend_term_projection', 'backend_error_projection'])
+  object(contract.presentation.backend_term_projection, '$.presentation.backend_term_projection', ['catalog', 'messages', 'unknown_value_policy', 'required_consumers'])
+  text(contract.presentation.backend_term_projection.catalog, '$.presentation.backend_term_projection.catalog')
+  text(contract.presentation.backend_term_projection.messages, '$.presentation.backend_term_projection.messages')
+  if (contract.presentation.backend_term_projection.unknown_value_policy !== 'business_fallback') throw new Error('Unknown backend terms must use business_fallback')
+  strings(contract.presentation.backend_term_projection.required_consumers, '$.presentation.backend_term_projection.required_consumers')
+  object(contract.presentation.backend_error_projection, '$.presentation.backend_error_projection', ['required_consumers'])
+  strings(contract.presentation.backend_error_projection.required_consumers, '$.presentation.backend_error_projection.required_consumers')
   object(contract.navigation, '$.navigation', [
     'primary_domains', 'primary_domain_ids', 'required_section_groups', 'section_groups',
     'forbidden_entity_path_tokens', 'rental_work_collections',

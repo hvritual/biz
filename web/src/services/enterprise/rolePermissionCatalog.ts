@@ -1,4 +1,5 @@
 import type { PermissionGrant } from '@/services/runtime/api'
+import { backendTermLabel } from '@/i18n/backend-terms'
 
 export type RoleGrantScope = 'none' | 'self' | 'sites' | 'all'
 
@@ -15,48 +16,40 @@ export type RolePermissionDefinition = {
   description: string
 }
 
-let liveRolePermissionCatalog: RolePermissionDefinition[] = []
+type CachedRolePermissionDefinition = {
+  permission: string
+  groupKey: string
+  groups: string[]
+  actions: string[]
+}
+
+let liveRolePermissionCatalog: CachedRolePermissionDefinition[] = []
 
 
-function permissionPresentation(permission: string, groups: string[]) {
-  const group =
-    permission.startsWith('tenant.member.') ? '企业成员'
-      : permission.startsWith('tenant.organization.') ? '组织架构'
-        : permission.startsWith('tenant.role.') ? '角色权限'
-          : permission.startsWith('tenant.delegation.') ? '租户授权'
-            : permission.startsWith('tenant.audit.') ? '操作日志'
-              : permission.startsWith('tenant.profile.') || permission.startsWith('tenant.branding.') ? '企业信息'
-                : permission.startsWith('device.') || permission.startsWith('site.') ? '设备运营'
-                  : permission.startsWith('tenant.entitlement.') || permission.startsWith('commercial.') ? '企业权益'
-                    : (groups[0] ?? '未分类')
+function permissionGroupKey(permission: string) {
+  return permission.startsWith('tenant.member.') ? 'member'
+    : permission.startsWith('tenant.organization.') ? 'organization'
+      : permission.startsWith('tenant.role.') ? 'role'
+        : permission.startsWith('tenant.delegation.') ? 'delegation'
+          : permission.startsWith('tenant.audit.') ? 'audit'
+            : permission.startsWith('tenant.profile.') || permission.startsWith('tenant.branding.') ? 'enterpriseInfo'
+              : permission.startsWith('device.') || permission.startsWith('site.') ? 'deviceOperations'
+                : permission.startsWith('tenant.entitlement.') || permission.startsWith('commercial.') ? 'enterpriseEntitlements'
+                  : 'uncategorized'
+}
 
-  const labels: Record<string, string> = {
-    'tenant.member.read': '查看成员',
-    'tenant.member.manage': '管理成员',
-    'tenant.organization.read': '查看组织',
-    'tenant.organization.manage': '管理组织',
-    'tenant.role.read': '查看角色',
-    'tenant.role.manage': '管理角色',
-    'tenant.delegation.read': '查看授权',
-    'tenant.delegation.manage': '管理授权',
-    'tenant.audit.read': '查看日志',
-    'tenant.audit.export': '导出日志',
-    'tenant.profile.read': '查看企业信息',
-    'tenant.profile.manage': '管理企业信息',
-    'tenant.branding.read': '查看品牌',
-    'tenant.branding.manage': '管理品牌',
-    'device.read': '查看设备',
-    'device.create': '创建设备',
-    'device.update': '更新设备',
-    'device.delete': '删除设备',
-    'site.read': '查看点位',
-    'tenant.entitlement.read': '查看企业权益',
-    'commercial.catalog.read': '读取商业目录',
-  }
-
+function permissionPresentation(item: CachedRolePermissionDefinition): RolePermissionDefinition {
+  const label = backendTermLabel('permission', item.permission)
+  const description = item.actions.length
+    ? item.actions.map((action) => backendTermLabel('permissionAction', action)).join(' · ')
+    : item.groups.length
+      ? item.groups.map((group) => backendTermLabel('permissionGroup', group)).join(' · ')
+      : label
   return {
-    group,
-    label: labels[permission] ?? permission,
+    permission: item.permission,
+    group: backendTermLabel('permissionGroup', item.groupKey),
+    label,
+    description,
   }
 }
 
@@ -69,20 +62,12 @@ export function replaceRolePermissionCatalog(definitions: ServerPermissionDefini
       seen.add(permission)
       return true
     })
-    .map((item) => {
-      const groups = [...new Set(item.groups.map((value) => value.trim()).filter(Boolean))].sort()
-      const actions = [...new Set(item.actions.map((value) => value.trim()).filter(Boolean))].sort()
-      const permission = item.permission.trim()
-      const presentation = permissionPresentation(permission, groups)
-      return {
-        permission,
-        group: presentation.group,
-        label: presentation.label,
-        // Presentation metadata never grants authority: action codes and permission
-        // membership still come exclusively from the server Action Catalog.
-        description: actions.length ? actions.join(' · ') : permission,
-      }
-    })
+    .map((item) => ({
+      permission: item.permission.trim(),
+      groupKey: permissionGroupKey(item.permission.trim()),
+      groups: [...new Set(item.groups.map((value) => value.trim()).filter(Boolean))].sort(),
+      actions: [...new Set(item.actions.map((value) => value.trim()).filter(Boolean))].sort(),
+    }))
     .sort((left, right) => left.permission.localeCompare(right.permission))
 }
 
@@ -98,16 +83,17 @@ export const roleGrantScopeOptions: Array<{ value: RoleGrantScope; label: string
 ]
 
 export function roleGrantScopeLabel(scope: string) {
-  return roleGrantScopeOptions.find((item) => item.value === scope)?.label ?? scope
+  return backendTermLabel('dataScope', scope)
 }
 
 export function rolePermissionLabel(permission: string) {
-  return liveRolePermissionCatalog.find((item) => item.permission === permission)?.label ?? permission
+  return backendTermLabel('permission', permission)
 }
 
 export function rolePermissionGroups() {
   const groups = new Map<string, RolePermissionDefinition[]>()
-  for (const item of liveRolePermissionCatalog) {
+  for (const cached of liveRolePermissionCatalog) {
+    const item = permissionPresentation(cached)
     const values = groups.get(item.group) ?? []
     values.push(item)
     groups.set(item.group, values)
