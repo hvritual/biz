@@ -181,6 +181,8 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
             )
         if "candidate_lifecycle.py validate-contract" not in text or "test_candidate_lifecycle.py" not in text:
             errors.append("pr-qualification.yml: Candidate lifecycle contract/tests are not gated before Domain Gate")
+        if "ready_for_review" in text:
+            errors.append("pr-qualification.yml: Ready transition must not rerun Draft qualification")
         for bounded in (
             "enterprise-172-native-login.yml",
             "delivery-workspace-isolation.yml",
