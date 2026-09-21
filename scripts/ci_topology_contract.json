@@ -14,12 +14,9 @@
     ]
   },
   "full_merge_gate": {
-    "expected_units": 42,
+    "expected_units": 35,
     "expected_workflows": [
-      "b12-3-tenant-member-mysql.yml",
-      "b12-4-tenant-role-mysql.yml",
-      "b12-5-tenant-bootstrap-mysql.yml",
-      "b12-6-concurrency-mysql.yml",
+      "mysql-runtime-qualification.yml",
       "b12-7-runtime-qualification.yml",
       "b12-8-framework-pressure-disposition.yml",
       "b12-multitenant-access-pressure.yml",
@@ -39,14 +36,10 @@
       "ce13-plan-catalog-qualification.yml",
       "ce13-platform-web-session.yml",
       "coffeelink-web.yml",
-      "ec-ri-04-department-mysql.yml",
       "ec-ri-04-web-qualification.yml",
-      "ec-ri-05-tenant-profile-mysql.yml",
       "ec-ri-05-web-qualification.yml",
       "ec-ri-06-plan-change-web.yml",
       "ec-ri-06-plan-read-web.yml",
-      "ec-ri-06-tenant-usage-mysql.yml",
-      "ec-ri-07-audit-mysql.yml",
       "ec-ri-07-web-qualification.yml",
       "enterprise-168-sensitive-contacts.yml",
       "enterprise-169-privacy-consent.yml",
@@ -112,6 +105,7 @@
     "enterprise-177-member-lifecycle.yml",
     "enterprise-role-qualification.yml",
     "evolution-qualification.yml",
+    "mysql-runtime-qualification.yml",
     "web-e2e-harness.yml"
   ],
   "legacy_issue_named_pr_gate_allowlist": [
