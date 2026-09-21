@@ -3,7 +3,7 @@ name: CE-08 qualification
 on:
   workflow_call:
   push:
-    branches: [fix/ce-08-complete, main]
+    branches: [fix/ce-08-complete]
     paths: ['contracts/**','internal/**','integration/ce08*','integration/b12_tenant*','scripts/ce08*','docs/commercial-entitlements/**','.github/workflows/ce08-qualification.yml','Makefile','go.mod','go.sum','.yunka/**']
   workflow_dispatch:
 permissions: {contents: read}
