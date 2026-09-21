@@ -2,20 +2,6 @@ name: ec-ri-05-tenant-profile-mysql
 
 on:
   workflow_call:
-  push:
-    branches:
-      - feat/enterprise-tenant-profile-real-integration
-    paths:
-      - .github/workflows/ec-ri-05-tenant-profile-mysql.yml
-      - contracts/**
-      - internal/access/**
-      - internal/assembly/**
-      - internal/bizruntime/**
-      - integration/ec_ri_05_tenant_profile_mysql_test.go
-      - integration/b12_member_runtime_mysql_test.go
-      - modules/access/**
-      - go.mod
-      - go.sum
   workflow_dispatch:
 
 permissions:
