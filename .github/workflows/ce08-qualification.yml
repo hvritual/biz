@@ -21,6 +21,7 @@ jobs:
         env: {MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: biz_ce08}
         ports: ['3306:3306']
         options: >-
+          --tmpfs /var/lib/mysql:rw,nosuid,size=1g
           --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
           --health-interval=2s --health-timeout=2s --health-retries=45
     steps:
