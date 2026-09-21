@@ -101,25 +101,10 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-  full-01-b12-3-tenant-member-mysql:
+  full-01-mysql-runtime-qualification:
     needs: [route, wait-qualification]
     if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
-    uses: ./.github/workflows/b12-3-tenant-member-mysql.yml
-
-  full-02-b12-4-tenant-role-mysql:
-    needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
-    uses: ./.github/workflows/b12-4-tenant-role-mysql.yml
-
-  full-03-b12-5-tenant-bootstrap-mysql:
-    needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
-    uses: ./.github/workflows/b12-5-tenant-bootstrap-mysql.yml
-
-  full-04-b12-6-concurrency-mysql:
-    needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
-    uses: ./.github/workflows/b12-6-concurrency-mysql.yml
+    uses: ./.github/workflows/mysql-runtime-qualification.yml
 
   full-05-b12-7-runtime-qualification:
     needs: [route, wait-qualification]
@@ -318,10 +303,7 @@ jobs:
       - route
       - freeze-candidate
       - wait-qualification
-      - full-01-b12-3-tenant-member-mysql
-      - full-02-b12-4-tenant-role-mysql
-      - full-03-b12-5-tenant-bootstrap-mysql
-      - full-04-b12-6-concurrency-mysql
+      - full-01-mysql-runtime-qualification
       - full-05-b12-7-runtime-qualification
       - full-06-b12-8-framework-pressure-disposition
       - full-07-b12-multitenant-access-pressure
@@ -341,14 +323,10 @@ jobs:
       - full-21-ce13-plan-catalog-qualification
       - full-22-ce13-platform-web-session
       - full-23-coffeelink-web
-      - full-24-ec-ri-04-department-mysql
       - full-25-ec-ri-04-web-qualification
-      - full-26-ec-ri-05-tenant-profile-mysql
       - full-27-ec-ri-05-web-qualification
       - full-28-ec-ri-06-plan-change-web
       - full-29-ec-ri-06-plan-read-web
-      - full-30-ec-ri-06-tenant-usage-mysql
-      - full-31-ec-ri-07-audit-mysql
       - full-32-ec-ri-07-web-qualification
       - full-33-enterprise-168-sensitive-contacts
       - full-34-enterprise-169-privacy-consent
