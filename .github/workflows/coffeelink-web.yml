@@ -1,6 +1,12 @@
 name: CoffeeLink Vue console
 on:
   workflow_call:
+    inputs:
+      skip_fast_check:
+        description: Fast Gate already passed in PR Qualification
+        required: false
+        type: boolean
+        default: false
   push:
     branches: [main, feat/coffeelink-vue-console]
     paths: ['web/**', '.github/workflows/coffeelink-web.yml']
@@ -19,7 +25,9 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
         working-directory: web
-      - run: npm run check
+      - name: Run canonical Web Fast Gate
+        if: ${{ !inputs.skip_fast_check }}
+        run: npm run check
         working-directory: web
       - name: Install browser and Chinese text support
         working-directory: web
