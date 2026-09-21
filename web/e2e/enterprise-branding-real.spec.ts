@@ -27,8 +27,8 @@ async function useZhLocale(page: Page) {
   await page.addInitScript(() => localStorage.setItem('coffeelink.locale', 'zh-CN'))
 }
 
-async function mockBrandingServer(page: Page, options: Options = {
-  await installApiFailFast(page)}) {
+async function mockBrandingServer(page: Page, options: Options = {}) {
+  await installApiFailFast(page)
   let activeTenant = 'tenant-a'
   const states: Record<string, Branding> = {
     'tenant-a': { tenantId: 'tenant-a', preset: 'violet', primary: '', version: 7, canManage: options.canManage ?? true },
