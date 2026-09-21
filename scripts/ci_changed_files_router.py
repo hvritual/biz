@@ -124,7 +124,10 @@ DELIVERY_ISOLATION_FILES = {
 
 
 def clean(path: str) -> str:
-    return str(PurePosixPath(path.strip())).lstrip("./")
+    value = path.strip().replace("\\", "/")
+    while value.startswith("./"):
+        value = value[2:]
+    return str(PurePosixPath(value))
 
 
 def is_docs_only_path(path: str) -> bool:
