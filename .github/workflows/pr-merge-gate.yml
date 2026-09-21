@@ -323,6 +323,11 @@ jobs:
     if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/evolution-qualification.yml
 
+  full-43-enterprise-179-role-grant-tree:
+    needs: [route, wait-qualification]
+    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    uses: ./.github/workflows/enterprise-179-role-grant-tree.yml
+
   merge-ready:
     needs:
       - route
@@ -368,6 +373,7 @@ jobs:
       - full-40-enterprise-177-member-lifecycle
       - full-41-enterprise-178-role-lifecycle
       - full-42-evolution-qualification
+      - full-43-enterprise-179-role-grant-tree
     if: always() && github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
     permissions:
