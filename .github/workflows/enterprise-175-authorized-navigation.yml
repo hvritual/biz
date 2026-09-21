@@ -2,22 +2,6 @@ name: Enterprise 175 authorized navigation gate
 
 on:
   workflow_call:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/enterprise-175-authorized-navigation.yml
-      - .github/workflows/ce12-browser-e2e.yml
-      - web/src/router/**
-      - web/src/services/runtime/**
-      - web/src/features/app-shell/**
-      - web/src/features/enterprise/**
-      - web/src/features/system/pages/AuthorizationStateView.vue
-      - web/src/i18n/**
-      - web/src/stores/**
-      - web/e2e/enterprise-*.spec.ts
-      - web/tests/ce12/enterprise-175-authorization-ui.spec.ts
-      - web/package.json
-      - web/package-lock.json
   workflow_dispatch:
 
 permissions:
