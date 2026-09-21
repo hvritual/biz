@@ -29,6 +29,7 @@ DOMAIN_GATE_UNITS = {
     "enterprise-172-native-login.yml",
     "delivery-workspace-isolation.yml",
     "web-e2e-harness.yml",
+    "enterprise-179-role-grant-tree.yml",
 }
 
 REQUIRED_LIFECYCLE_STATES = [
