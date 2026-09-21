@@ -47,6 +47,23 @@ class RouteTests(unittest.TestCase):
         result = route(["internal/future-domain/service.go"])
         self.assertTrue(result["domains"]["core"])
 
+    def test_native_login_is_explicit_subroute(self):
+        result = route(["internal/bizruntime/first_party_native_login.go"])
+        self.assertTrue(result["domains"]["access"])
+        self.assertTrue(result["native_login"])
+        self.assertFalse(result["delivery_isolation"])
+
+    def test_workspace_lock_routes_delivery_isolation(self):
+        result = route([".yunka/source.env"])
+        self.assertTrue(result["domains"]["core"])
+        self.assertTrue(result["delivery_isolation"])
+
+    def test_commercial_receipt_docs_stay_lightweight(self):
+        result = route(["docs/commercial-entitlements/tasks.json"])
+        self.assertTrue(result["docs_only"])
+        self.assertTrue(result["ce_receipts"])
+        self.assertEqual(result["domain_count"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()
