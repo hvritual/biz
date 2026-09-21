@@ -34,6 +34,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/candidate_lifecycle.py validate-contract
+          python3 scripts/check_ci_topology.py
           python3 scripts/check_ci_qualification_governance.py
           python3 scripts/test_ci_changed_files_router.py
           python3 scripts/test_candidate_lifecycle.py
