@@ -284,7 +284,7 @@ onMounted(loadModules)
 
     <div v-if="revokeTarget" class="dialog-backdrop" @click.self="revokeTarget = null">
       <section class="card revoke-dialog" role="dialog" aria-modal="true">
-        <h2>撤销专项来源</h2>
+        <h2>撤销专项权益</h2>
         <p>撤销后该专项权益不再生效，历史操作记录仍会保留。</p>
         <label>撤销原因<UiTextarea v-model="revokeReason" class="input" rows="3" /></label>
         <div class="dialog-actions"><UiButton class="btn" type="button" @click="revokeTarget = null">取消</UiButton><UiButton class="btn primary" type="button" :disabled="pending" @click="confirmRevoke">确认撤销</UiButton></div>

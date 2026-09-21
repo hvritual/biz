@@ -230,7 +230,7 @@ test('401 exits to trusted login while downstream 403 responses never fall back 
 test('entitlement authority failure stays visible instead of substituting preview quotas', async ({ page }) => {
   await mockPlanServer(page, { entitlementStatus: 500 })
   await openRealPlan(page)
-  await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('entitlements denied')
+  await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('套餐与权益暂不可用，请稍后重试。')
   await expect(page.getByText('成员账号', { exact: true })).toHaveCount(0)
   await expect(page.getByText('500 GB', { exact: true })).toHaveCount(0)
 })

@@ -3,7 +3,7 @@ import { UiButton } from '@/ui/base'
 
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import type { EntitlementOverrideDTO } from '@/services/commercial/platformCommercial'
-import { backendBusinessText, backendTermLabel } from '@/i18n/backend-terms'
+import { backendTermLabel } from '@/i18n/backend-terms'
 
 defineProps<{
   sources: EntitlementOverrideDTO[]
@@ -59,7 +59,7 @@ function limitLabel(source: EntitlementOverrideDTO) {
             <td>{{ limitLabel(source) }}</td>
             <td><StatusBadge :text="sourceState(source).text" :tone="sourceState(source).tone" /></td>
             <td><small>生效：{{ source.effectiveAt || '创建时' }}</small><small>到期：{{ source.expiresAt || '无到期时间' }}</small></td>
-            <td><span>{{ source.reason ? backendBusinessText(source.reason) : '—' }}</span><small>{{ source.actorId ? '操作人已记录' : '—' }}</small></td>
+            <td><span>{{ source.reason || '—' }}</span><small>{{ source.actorId ? '操作人已记录' : '—' }}</small></td>
             <td><UiButton v-if="!source.revokedAt" class="btn small danger" type="button" :disabled="pending" @click="emit('revoke', source)">撤销</UiButton></td>
           </tr>
         </tbody>

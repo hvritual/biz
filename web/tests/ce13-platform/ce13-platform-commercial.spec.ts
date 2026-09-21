@@ -410,7 +410,7 @@ test("TestCE13TenantSessionCannotUsePlatformConsole", async ({ browser }) => {
   const tenant = await login(browser, data, data.tenant_email, data.tenant_password);
   await tenant.page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
   await expect(tenant.page.getByRole("heading", { name: "模块目录", exact: true })).toBeVisible();
-  await expect(tenant.page.getByText("当前会话无平台商业访问权限")).toBeVisible();
+  await expect(tenant.page.getByText("当前账号无平台商业管理权限")).toBeVisible();
   await expect(tenant.page.getByRole("button", { name: "查看详情" })).toHaveCount(0);
   await tenant.context.close();
 });
