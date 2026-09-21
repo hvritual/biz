@@ -79,7 +79,7 @@ async function loadServerPermissionCatalog() {
   } catch (cause) {
     clearRolePermissionCatalog()
     catalogRevision.value += 1
-    error.value = cause instanceof Error ? cause.message : '服务端权限目录读取失败。'
+    error.value = cause instanceof Error ? cause.message : '权限目录读取失败，请稍后重试。'
   } finally {
     catalogBusy.value = false
   }
@@ -120,8 +120,8 @@ async function save() {
     await store.saveRole(draft.value)
     ui.toast(
       store.previewMode
-        ? '角色配置已保存到当前企业预览，操作已记录。'
-        : '角色配置已由服务端确认并完成权威回读。',
+        ? '角色配置已保存。'
+        : '角色配置已保存并更新。',
       'success',
     )
     emit('close')
@@ -145,9 +145,9 @@ async function save() {
         <AppIcon name="shield" />内置角色只读。企业所有者拥有受保护的管理能力，不能通过此页面修改或禁用。
       </div>
       <div v-if="apiMode" class="notice-box">
-        <AppIcon name="help" />真实模式的 permission keys 与 operation/API 映射来自服务端 Action Catalog；前端不维护第二份授权目录。
+        <AppIcon name="help" />当前可配置权限以系统权限目录为准；角色只能选择已开放的权限项。
       </div>
-      <div v-if="apiMode && catalogBusy" class="notice-box">正在读取当前 Action Catalog…</div>
+      <div v-if="apiMode && catalogBusy" class="notice-box">正在读取可配置权限…</div>
 
       <div class="form-grid">
         <label class="field">

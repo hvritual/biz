@@ -174,7 +174,6 @@ async function mockOrganizationServer(page: Page, options: Options = {}) {
 async function openRealOrganization(page: Page) {
   await page.goto('/#/enterprise/organization')
   await expect(page.locator('[data-enterprise-page="organization"]')).toBeVisible()
-  await expect(page.locator('[data-enterprise-source="api"]')).toBeVisible()
 }
 
 async function selectDepartment(page: Page, name: string) {
@@ -206,7 +205,7 @@ test('department create uses CSRF and idempotency then confirms from server read
   await expect(dialog.getByLabel('部门编号')).toHaveAttribute('readonly', '')
   await expect(dialog.getByLabel('部门职责')).toHaveAttribute('readonly', '')
   await dialog.getByRole('button', { name: '保存部门' }).click()
-  await expect(page.getByRole('status')).toContainText('服务端确认')
+  await expect(page.getByRole('status')).toContainText('组织调整已保存。')
   await expect(page.getByRole('button', { name: /^市场运营部/ })).toBeVisible()
   const write = server.getWrites().find((item) => item.path === '/v1/tenant/departments')!
   expect(write.headers['idempotency-key']).toMatch(/^enterprise-department-create-/)
@@ -255,6 +254,6 @@ test('successful department write without readback is never shown as confirmed s
   const dialog = page.getByRole('dialog', { name: '部门信息' })
   await dialog.getByLabel('部门名称').fill('未确认部门')
   await dialog.getByRole('button', { name: '保存部门' }).click()
-  await expect(dialog.getByRole('alert')).toContainText('department readback failed')
-  await expect(page.getByText(/部门配置已由服务端确认/)).toHaveCount(0)
+  await expect(dialog.getByRole('alert')).toContainText('组织架构暂不可用，请稍后重试。')
+  await expect(page.getByRole('status')).toHaveCount(0)
 })

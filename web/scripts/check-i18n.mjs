@@ -10,7 +10,6 @@ const migrated = [
   'src/features/platform/pages/PlatformTenantsView.vue',
   'src/features/enterprise/pages/MembersView.vue',
   'src/features/enterprise/pages/BrandingView.vue',
-  'src/features/enterprise/components/EnterpriseSourceBanner.vue',
   'src/features/enterprise/components/members/MemberFilters.vue',
   'src/features/enterprise/components/members/MemberOverview.vue',
   'src/features/enterprise/components/members/MemberTable.vue',

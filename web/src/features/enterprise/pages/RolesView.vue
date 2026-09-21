@@ -14,7 +14,6 @@ import StatusBadge from '@/ui/common/StatusBadge.vue'
 import EmptyState from '@/ui/common/EmptyState.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import RoleEditor from '@/features/enterprise/components/roles/RoleEditor.vue'
-import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 const store = useEnterpriseStore(),
   route = useRoute(),
@@ -115,7 +114,6 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
 <template>
   <div class="page-stack" data-enterprise-page="roles" data-ui-template="ListPage">
     <PageHeading title="角色权限" description="以最小必要权限分配职责，独立控制功能权限与数据范围" />
-    <EnterpriseSourceBanner />
     <div class="metric-grid">
       <MetricCard
         label="角色总数"

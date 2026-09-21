@@ -15,7 +15,6 @@ import {
 const ui = useUiStore(), route = useRoute(), router = useRouter()
 const { t } = useI18n()
 const hoverOpened = ref<string | null>(null)
-const previewLabel = computed(() => route.meta.surface === 'platform' || route.meta.surface === 'runtime' ? t('shell.trustedRuntime') : t('shell.previewData'))
 const visiblePrimaryNavigation = computed(() =>
   primaryNavigation.filter((item) => {
     if (!authorizationApiMode()) return true
@@ -51,7 +50,7 @@ function toggleCollapsed() { hoverOpened.value = null; ui.closeMenu(); ui.collap
         <AppIcon :name="item.icon" :size="20"/><span>{{ label(item) }}</span>
       </UiButton>
     </div>
-    <footer><span v-if="!ui.collapsed" class="preview-label">{{ previewLabel }}</span><UiButton class="icon-button collapse-button" :aria-label="ui.collapsed?t('shell.expandPrimary'):t('shell.collapsePrimary')" @click="toggleCollapsed"><AppIcon :name="ui.collapsed?'expand':'collapse'" :size="17"/></UiButton></footer>
+    <footer><UiButton class="icon-button collapse-button" :aria-label="ui.collapsed?t('shell.expandPrimary'):t('shell.collapsePrimary')" @click="toggleCollapsed"><AppIcon :name="ui.collapsed?'expand':'collapse'" :size="17"/></UiButton></footer>
   </nav>
 </template>
 <style scoped>
@@ -67,8 +66,7 @@ function toggleCollapsed() { hoverOpened.value = null; ui.closeMenu(); ui.collap
 .primary-item.active > .icon { color:var(--color-on-primary); }
 .collapsed .primary-item { padding:0; justify-content:center; }
 .collapsed .primary-item span { display:none; }
-footer { display:flex; justify-content:space-between; align-items:center; padding:12px 7px 0; gap:5px; border-top:1px solid var(--color-border); min-height:46px; }
-.preview-label { font-size:10px; color:var(--color-text-muted); white-space:nowrap; }
+footer { display:flex; justify-content:flex-end; align-items:center; padding:12px 7px 0; gap:5px; border-top:1px solid var(--color-border); min-height:46px; }
 .collapse-button { border:1px solid var(--color-border); background:var(--color-surface); border-radius:50%; width:29px; height:29px; flex-shrink:0; }
 .collapsed footer { padding:10px 0 0; justify-content:center; }
 @media (max-height:830px){.primary-item{height:42px;margin:1px 0;font-size:12px;gap:12px}.primary-item>.icon{width:18px;height:18px}.primary-nav{padding-top:8px}}

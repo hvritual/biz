@@ -215,9 +215,5 @@
   "system/components/settings/SecuritySettings.vue": {
     "scenario": "系统设置 · 领域展示 · SecuritySettings",
     "scope": "仅用于系统设置业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
-  },
-  "enterprise/components/EnterpriseSourceBanner.vue": {
-    "scenario": "企业中心 · 数据源状态与租户上下文 · EnterpriseSourceBanner",
-    "scope": "仅用于企业中心 canonical 页面展示统一 demo/API 数据源状态、真实会话错误、租户切换与刷新；不得作为另一套 API 页面入口。"
   }
 }

@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import type { EntitlementDecisionDTO } from '@/services/commercial/platformCommercial'
+import { backendBusinessText, backendTermLabel } from '@/i18n/backend-terms'
 
 defineProps<{ decisions: EntitlementDecisionDTO[] }>()
 
 function targetLabel(item: EntitlementDecisionDTO) {
-  const parts = [item.moduleCode, item.key, item.fieldAction].filter(Boolean)
-  return parts.join(' / ') || '—'
+  const target = item.key
+    ? backendTermLabel('entitlementKey', item.key)
+    : backendTermLabel('module', item.moduleCode)
+  return item.fieldAction ? `${target} · ${backendTermLabel('fieldAction', item.fieldAction)}` : target
 }
 
 function decisionLabel(item: EntitlementDecisionDTO) {
@@ -23,14 +26,15 @@ function decisionTone(item: EntitlementDecisionDTO): 'success' | 'warning' | 'ne
 
 function limitLabel(item: EntitlementDecisionDTO) {
   if (!item.limit) return '—'
-  return item.limit.unlimited ? 'unlimited' : String(item.limit.value ?? 0)
+  return item.limit.unlimited ? '不限' : String(item.limit.value ?? 0)
 }
+
 </script>
 
 <template>
   <section class="card decision-card">
     <div class="section-header">
-      <div><h2>权益决策与来源解释</h2><p>平台解释保留来源 actor / reason；决策由服务端 resolver 产生，前端不自行合并来源。</p></div>
+      <div><h2>权益结果与来源</h2><p>查看当前权益结果、来源与调整原因，便于确认租户实际可用能力。</p></div>
       <span class="count">{{ decisions.length }} 项</span>
     </div>
 
@@ -39,20 +43,20 @@ function limitLabel(item: EntitlementDecisionDTO) {
       <article v-for="(item, index) in decisions" :key="`${item.kind}-${item.moduleCode}-${item.key}-${item.fieldAction}-${index}`" class="decision-row">
         <div class="decision-main">
           <div class="decision-title">
-            <strong>{{ item.kind || 'decision' }}</strong>
+            <strong>{{ backendTermLabel('decisionKind', item.kind) }}</strong>
             <StatusBadge :text="decisionLabel(item)" :tone="decisionTone(item)" />
           </div>
           <p class="target">{{ targetLabel(item) }}</p>
-          <div class="decision-meta"><span>reason: {{ item.reason || '—' }}</span><span>limit: {{ limitLabel(item) }}</span></div>
+          <div class="decision-meta"><span>判断说明：{{ backendBusinessText(item.reason) }}</span><span>额度：{{ limitLabel(item) }}</span></div>
         </div>
 
         <div class="sources">
           <strong>来源链</strong>
           <p v-if="!item.sources?.length" class="muted">无来源解释</p>
           <div v-for="source in item.sources ?? []" :key="`${source.id}-${source.sourceKind}-${source.effect}`" class="source-row">
-            <div><b>{{ source.sourceKind || 'unknown' }}</b><span>{{ source.effect || '—' }}</span><span>{{ source.state || '—' }}</span></div>
-            <p>{{ source.disposition || '—' }}<template v-if="source.reason"> · {{ source.reason }}</template></p>
-            <small>source {{ source.id || '—' }}<template v-if="source.actorId"> · actor {{ source.actorId }}</template></small>
+            <div><b>{{ backendTermLabel('sourceKind', source.sourceKind) }}</b><span>{{ backendTermLabel('entitlementEffect', source.effect) }}</span><span>{{ backendTermLabel('sourceState', source.state) }}</span></div>
+            <p>{{ backendTermLabel('disposition', source.disposition) }}<template v-if="source.reason"> · {{ backendBusinessText(source.reason) }}</template></p>
+            <small>来源记录已保留</small>
           </div>
         </div>
       </article>

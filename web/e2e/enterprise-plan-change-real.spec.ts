@@ -225,7 +225,6 @@ async function mockServer(page: Page, options: Options = {}): Promise<Captured> 
 async function openFlow(page: Page) {
   await page.goto('/#/enterprise/plan')
   await expect(page.locator('[data-enterprise-page="plan"]')).toBeVisible()
-  await expect(page.locator('[data-enterprise-source="api"]')).toBeVisible()
   await page.getByRole('button', { name: '管理套餐变更', exact: true }).click()
   const lifecycle = page.locator('[data-plan-change-lifecycle]')
   await lifecycle.locator('[data-plan-change-open]').click()
@@ -238,8 +237,8 @@ async function selectTargetAndPreview(page: Page) {
   const lifecycle = page.locator('[data-plan-change-lifecycle]')
   await lifecycle.getByRole('button', { name: /专业版/ }).click()
   await lifecycle.locator('[data-plan-change-preview]').click()
-  await expect(lifecycle.getByText(/UPGRADE/).first()).toBeVisible()
-  await expect(lifecycle.locator('.steps').getByText(/权威预览/).first()).toBeVisible()
+  await expect(lifecycle.getByText('升级', { exact: true }).first()).toBeVisible()
+  await expect(lifecycle.locator('.steps').getByText(/确认方案/).first()).toBeVisible()
 }
 
 function screenshot(name: string) {
@@ -286,21 +285,25 @@ test('paid target fails closed at external commercial approval boundary', async 
   await page.screenshot({ path: screenshot('enterprise-plan-change-external-approval-1440'), fullPage: false })
 })
 
-for (const status of ['APPLIED', 'SCHEDULED', 'PROVISIONING'] as const) {
-  test(`tenant no-price change confirms to authoritative ${status} receipt`, async ({ page }) => {
+for (const [status, displayStatus] of [
+  ['APPLIED', '已生效'],
+  ['SCHEDULED', '已预约'],
+  ['PROVISIONING', '处理中'],
+] as const) {
+  test(`tenant no-price change shows ${displayStatus} result`, async ({ page }) => {
     const captured = await mockServer(page, { receiptStatus: status })
     await page.setViewportSize({ width: 1440, height: 900 })
     await openFlow(page)
     await selectTargetAndPreview(page)
     await page.locator('[data-plan-change-confirm]').click()
-    await expect(page.locator('[data-plan-change-receipt]')).toContainText(status)
+    await expect(page.locator('[data-plan-change-receipt]')).toContainText(displayStatus)
     await expect.poll(() => captured.confirmBodies.length).toBe(1)
     expect(captured.confirmBodies[0]?.tenantId).toBeUndefined()
     expect(captured.confirmBodies[0]?.previewHash).toBe('a'.repeat(64))
     expect(captured.confirmHeaders[0]?.['x-biz-session-context']).toContain('tenant-001')
     expect(captured.confirmHeaders[0]?.['x-csrf-token']).toBe('csrf-plan-change')
     expect(captured.confirmHeaders[0]?.['idempotency-key']).toBeTruthy()
-    await expect(page.locator('[data-plan-change-receipt]')).toContainText(status)
+    await expect(page.locator('[data-plan-change-receipt]')).toContainText(displayStatus)
     await expect(page.locator('[data-plan-change-lifecycle]')).toContainText('chg-tenant-preview-001')
     await page.locator('[data-plan-change-lifecycle]').scrollIntoViewIfNeeded()
     await page.screenshot({ path: screenshot(`enterprise-plan-change-${status.toLowerCase()}-1440`), fullPage: false })

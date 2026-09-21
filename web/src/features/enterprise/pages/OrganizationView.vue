@@ -15,7 +15,6 @@ import AvatarMark from '@/ui/common/AvatarMark.vue'
 import DepartmentTree from '@/features/enterprise/components/organization/DepartmentTree.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import AppPagination from '@/ui/common/AppPagination.vue'
-import EnterpriseSourceBanner from '@/features/enterprise/components/EnterpriseSourceBanner.vue'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
@@ -87,7 +86,7 @@ async function save() {
     await store.saveDepartment(draft.value)
     selected.value = draft.value.id
     editOpen.value = false
-    ui.toast(store.sourceKind === 'api' ? '组织调整已由服务端确认并回读。' : '组织调整已保存到当前企业预览。')
+    ui.toast('组织调整已保存。')
   } catch (e) {
     error.value = e instanceof Error ? e.message : '保存失败。'
   }
@@ -106,7 +105,14 @@ onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).ca
 <template>
   <div class="page-stack" data-enterprise-page="organization" data-ui-template="WorkbenchPage">
     <PageHeading title="组织架构" description="管理部门与汇报关系，让组织协作与数据边界保持清晰" />
-    <EnterpriseSourceBanner />
+    <div v-if="store.sourceError" class="notice-box organization-access-state" role="alert">
+      <AppIcon name="warning" :size="18" />
+      <div>
+        <strong>组织架构暂不可用</strong>
+        <p>{{ store.sourceError }}</p>
+      </div>
+    </div>
+    <template v-else>
     <div class="metric-grid">
       <MetricCard
         label="部门数量"
@@ -225,7 +231,7 @@ onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).ca
           ><span class="required">部门名称</span
           ><UiInput v-model="draft.name" class="input" maxlength="40" /></label
         ><label class="field"
-          ><span>部门编号</span><UiInput v-model="draft.code" class="input" maxlength="30" :readonly="store.sourceKind === 'api'" :placeholder="store.sourceKind === 'api' ? '服务端合同暂未提供部门编号' : ''" /></label
+          ><span>部门编号</span><UiInput v-model="draft.code" class="input" maxlength="30" :readonly="store.sourceKind === 'api'" :placeholder="store.sourceKind === 'api' ? '当前暂不支持编辑部门编号' : ''" /></label
         ><label class="field"
           ><span>上级部门</span
           ><UiSelect v-model="draft.parentId" class="select">
@@ -249,20 +255,33 @@ onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).ca
           </UiSelect></label
         ><label class="field full-width"
           ><span>部门职责</span
-          ><UiTextarea v-model="draft.description" class="textarea" maxlength="300" :readonly="store.sourceKind === 'api'" :placeholder="store.sourceKind === 'api' ? '服务端合同暂未提供部门职责字段' : ''" /></label
+          ><UiTextarea v-model="draft.description" class="textarea" maxlength="300" :readonly="store.sourceKind === 'api'" :placeholder="store.sourceKind === 'api' ? '当前暂不支持编辑部门职责' : ''" /></label
         ><label class="option-line"><UiInput v-model="draft.enabled" type="checkbox" />启用部门</label>
       </div>
       <div class="notice-box department-notice">
-        <AppIcon name="help" />组织调整会影响“所属部门及下级”的数据范围。真实授权变更必须由服务端重新计算。
+        <AppIcon name="help" />组织调整可能影响“所属部门及下级”的数据范围，请在保存前确认相关成员权限。
       </div>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
       <template #footer
         ><UiButton class="btn" @click="editOpen = false">取消</UiButton><UiButton class="btn btn-primary" @click="save">保存部门</UiButton></template
       ></UiDialog
     >
+    </template>
   </div>
 </template>
 <style scoped>
+.organization-access-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.organization-access-state strong,
+.organization-access-state p {
+  display: block;
+}
+.organization-access-state p {
+  margin: 4px 0 0;
+}
 .organization-layout {
   display: grid;
   grid-template-columns: 244px minmax(0, 1fr);

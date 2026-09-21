@@ -163,7 +163,7 @@ test('TestCE13PlanCreateUsesTrustedSessionCsrfAndRereadsServerFact', async ({ pa
   await dialog.getByLabel('套餐名称').fill('新办公室套餐')
   await dialog.getByRole('button', { name: '添加范围' }).click()
   await dialog.getByPlaceholder('default').fill('default')
-  await dialog.getByRole('button', { name: '提交到服务端' }).click()
+  await dialog.getByRole('button', { name: '提交', exact: true }).click()
 
   await expect(page.getByText('套餐草稿已创建。')).toBeVisible()
   await expect(page.getByText('新办公室套餐').first()).toBeVisible()

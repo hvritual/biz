@@ -132,7 +132,6 @@ async function mockPlanServer(page: Page, options: Options = {}): Promise<Captur
 async function openRealPlan(page: Page) {
   await page.goto('/#/enterprise/plan')
   await expect(page.locator('[data-enterprise-page="plan"]')).toBeVisible()
-  await expect(page.locator('[data-enterprise-source="api"]')).toBeVisible()
 }
 
 test('real plan page renders authoritative subscription, entitlement and usage facts across CoffeeLink viewports', async ({ page }) => {
@@ -141,9 +140,10 @@ test('real plan page renders authoritative subscription, entitlement and usage f
   for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1536, height: 1024 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport)
     await openRealPlan(page)
-    await expect(page.locator('.current-plan h2')).toContainText('rental-growth-2026')
-    await expect(page.getByText('tenant.members', { exact: true }).first()).toBeVisible()
-    await expect(page.getByText('monthly.reports', { exact: true }).first()).toBeVisible()
+    await expect(page.locator('.current-plan h2')).toContainText('租赁成长版')
+    await expect(page.getByText('成员额度', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('月度报表额度', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText(/tenant\.members|monthly\.reports|rental-growth-2026/)).toHaveCount(0)
     await expect(page.getByText('标准版', { exact: true })).toHaveCount(0)
     await expect(page.getByText('500 GB', { exact: true })).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
@@ -173,12 +173,12 @@ test('finite member quota uses authoritative usage while unsupported quotas stay
   await openRealPlan(page)
   await page.getByRole('button', { name: '使用额度' }).click()
 
-  const memberRow = page.getByRole('row').filter({ hasText: 'tenant.members' })
+  const memberRow = page.getByRole('row').filter({ hasText: '成员额度' })
   await expect(memberRow).toContainText('3')
   await expect(memberRow).toContainText('100.0%')
   await expect(memberRow).toContainText('额度已用尽')
 
-  const unknownRow = page.getByRole('row').filter({ hasText: 'monthly.reports' })
+  const unknownRow = page.getByRole('row').filter({ hasText: '月度报表额度' })
   await expect(unknownRow).toContainText('100')
   await expect(unknownRow).toContainText('未知')
   await expect(unknownRow).toContainText('用量未知')
@@ -189,7 +189,7 @@ test('member quota below limit renders authoritative remaining capacity', async 
   await mockPlanServer(page, { memberUsed: 2 })
   await openRealPlan(page)
   await page.getByRole('button', { name: '使用额度' }).click()
-  const memberRow = page.getByRole('row').filter({ hasText: 'tenant.members' })
+  const memberRow = page.getByRole('row').filter({ hasText: '成员额度' })
   await expect(memberRow).toContainText('2')
   await expect(memberRow).toContainText('3')
   await expect(memberRow).toContainText('66.7%')
@@ -200,8 +200,8 @@ test('usage authority 5xx keeps quota limits visible but explicitly degrades usa
   await mockPlanServer(page, { usageStatus: 500 })
   await openRealPlan(page)
   await page.getByRole('button', { name: '使用额度' }).click()
-  await expect(page.getByText(/用量服务暂不可用/)).toBeVisible()
-  const memberRow = page.getByRole('row').filter({ hasText: 'tenant.members' })
+  await expect(page.getByText(/额度信息暂不可用/)).toBeVisible()
+  const memberRow = page.getByRole('row').filter({ hasText: '成员额度' })
   await expect(memberRow).toContainText('3')
   await expect(memberRow).toContainText('未知')
   await expect(memberRow).toContainText('用量未知')
@@ -230,7 +230,7 @@ test('401 exits to trusted login while downstream 403 responses never fall back 
 test('entitlement authority failure stays visible instead of substituting preview quotas', async ({ page }) => {
   await mockPlanServer(page, { entitlementStatus: 500 })
   await openRealPlan(page)
-  await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('entitlements denied')
+  await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('套餐与权益暂不可用，请稍后重试。')
   await expect(page.getByText('成员账号', { exact: true })).toHaveCount(0)
   await expect(page.getByText('500 GB', { exact: true })).toHaveCount(0)
 })
