@@ -3,6 +3,7 @@ import { appendFile, readFile, writeFile } from 'node:fs/promises'
 const ansi = /\u001b\[[0-9;]*m/g
 const failureHeadline = /(?:Error:\s*expect|AssertionError|panic:|--- FAIL:|##\[error\])/i
 const testLocation = /((?:web\/|internal\/|integration\/|e2e\/|tests\/)?[A-Za-z0-9_.\/-]+\.(?:spec|test)\.(?:ts|tsx|js|mjs|cjs)|[A-Za-z0-9_.\/-]+_test\.go):(\d+)(?::\d+)?/g
+const diagnosticLocation = /((?:web|src|internal|integration|e2e|tests)\/[A-Za-z0-9_.\/-]+\.(?:vue|ts|tsx|js|mjs|cjs|go|json)):(\d+)(?::\d+)?:\s*(.+)$/
 
 export function latestRequiredRuns(runs, required) {
   const selected = new Map()
@@ -36,6 +37,41 @@ export function extractFailureSignature(log, fallback = 'workflow failure') {
   return `${path}:${location[2]} | ${headline}`
 }
 
+function diagnosticRule(message) {
+  if (/E2E binds product behavior to engineering copy/i.test(message)) return 'UI-E2E-ENGINEERING-COPY'
+  if (/product UI exposes engineering language/i.test(message)) return 'UI-PRODUCT-ENGINEERING-LANGUAGE'
+  if (/product template displays a raw backend field|product attribute displays a raw backend field/i.test(message)) return 'UI-RAW-BACKEND-DISPLAY'
+  if (/backend-returned terms must use backendTermLabel/i.test(message)) return 'UI-BACKEND-TERM-PROJECTION'
+  if (/backend errors must use backendErrorFallback/i.test(message)) return 'UI-BACKEND-ERROR-PROJECTION'
+  return 'STATIC-DIAGNOSTIC'
+}
+
+function diagnosticDetail(message) {
+  const label = message.match(/\(([^()]+)\)\s*$/)?.[1]
+  return label ?? message.replace(/\s+/g, ' ').slice(0, 180)
+}
+
+export function extractFailureSignatures(log, fallback = 'workflow failure') {
+  const clean = String(log ?? '').replace(ansi, '')
+  const signatures = []
+  for (const line of clean.split('\n')) {
+    const match = line.match(diagnosticLocation)
+    if (!match) continue
+    const message = match[3].trim()
+    if (!/E2E binds product behavior to engineering copy|product UI exposes engineering language|product (?:template|attribute) displays a raw backend field|backend-returned terms must use backendTermLabel|backend errors must use backendErrorFallback/i.test(message)) continue
+    signatures.push(diagnosticRule(message) + ' | ' + match[1] + ':' + match[2] + ' | ' + diagnosticDetail(message))
+  }
+  return signatures.length ? [...new Set(signatures)] : [extractFailureSignature(clean, fallback)]
+}
+
+export function fallbackFailureSignature(steps = []) {
+  const failedSteps = steps
+    .filter((step) => step.conclusion === 'failure')
+    .map((step) => String(step.name ?? '').trim())
+    .filter(Boolean)
+    .sort()
+  return 'CI-LOG-UNAVAILABLE | ' + (failedSteps.join(' + ') || 'failed job')
+}
 export function groupFailureSignatures(entries) {
   const groups = new Map()
   for (const entry of entries) {
@@ -93,32 +129,40 @@ async function candidateHead(repository, prNumber, token) {
   return pull.head?.sha ?? ''
 }
 
+async function jobLog(repository, jobId, token, attempts = 5) {
+  let lastError
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await api('/repos/' + repository + '/actions/jobs/' + jobId + '/logs', token, { text: true })
+    } catch (error) {
+      lastError = error
+      if (attempt < attempts) await sleep(attempt * 1500)
+    }
+  }
+  throw lastError
+}
 async function failureEntries(repository, failedRuns, token) {
   const entries = []
   for (const run of failedRuns) {
-    const payload = await api(`/repos/${repository}/actions/runs/${run.id}/jobs?filter=latest&per_page=100`, token)
+    const payload = await api('/repos/' + repository + '/actions/runs/' + run.id + '/jobs?filter=latest&per_page=100', token)
     const failedJobs = (payload.jobs ?? []).filter((job) => !['success', 'skipped'].includes(job.conclusion))
     if (!failedJobs.length) {
-      entries.push({ workflow: run.name, job: 'workflow', signature: `${run.name} | ${run.conclusion ?? 'failed'}` })
+      entries.push({ workflow: run.name, job: 'workflow', signature: 'CI-WORKFLOW-FAILURE | no failed job metadata' })
       continue
     }
     for (const job of failedJobs) {
-      let log = ''
       try {
-        log = await api(`/repos/${repository}/actions/jobs/${job.id}/logs`, token, { text: true })
+        const log = await jobLog(repository, job.id, token)
+        for (const signature of extractFailureSignatures(log, fallbackFailureSignature(job.steps ?? []))) {
+          entries.push({ workflow: run.name, job: job.name, signature })
+        }
       } catch {
-        log = (job.steps ?? []).filter((step) => step.conclusion === 'failure').map((step) => step.name).join('\n')
+        entries.push({ workflow: run.name, job: job.name, signature: fallbackFailureSignature(job.steps ?? []) })
       }
-      entries.push({
-        workflow: run.name,
-        job: job.name,
-        signature: extractFailureSignature(log, `${run.name}/${job.name}`),
-      })
     }
   }
   return entries
 }
-
 function markdownSummary({ candidate, required, snapshot, groups, headChanged, qualification }) {
   const lines = [
     '# Candidate Qualification',
@@ -130,14 +174,14 @@ function markdownSummary({ candidate, required, snapshot, groups, headChanged, q
     `- Active: **${snapshot.active.length}**`,
     `- Missing: **${snapshot.missing.length}**`,
     `- HEAD changed: **${headChanged ? 'true' : 'false'}**`,
-    `- Failure signatures: **${groups.length}**`,
+    `- Root-cause signatures: **${groups.length}**`,
     `- Qualification: **${qualification}**`,
     '',
   ]
   if (snapshot.missing.length) lines.push('## Missing workflows', '', ...snapshot.missing.map((name) => `- ${name}`), '')
   if (snapshot.active.length) lines.push('## Active workflows', '', ...snapshot.active.map((name) => `- ${name}`), '')
   if (groups.length) {
-    lines.push('## Failure signatures', '', '| Signature | Workflows | Jobs |', '|---|---|---|')
+    lines.push('## Root-cause signatures', '', '| Signature | Workflows | Jobs |', '|---|---|---|')
     for (const group of groups) lines.push(`| ${group.signature.replaceAll('|', '\\|')} | ${group.workflows.join('<br>')} | ${group.jobs.join('<br>')} |`)
     lines.push('')
   }
@@ -182,7 +226,7 @@ async function main() {
       console.log(`FAILURE=${finalSnapshot.failed.length}`)
       console.log('ACTIVE=0')
       console.log('HEAD_CHANGED=false')
-      console.log(`FAILURE_SIGNATURES=${groups.length}`)
+      console.log(`ROOT_CAUSE_SIGNATURES=${groups.length}`)
       console.log(`QUALIFICATION=${qualification}`)
       await writeOutputs({
         candidate_sha: candidate,
@@ -191,7 +235,7 @@ async function main() {
         failure: finalSnapshot.failed.length,
         active: 0,
         head_changed: false,
-        failure_signatures: groups.length,
+        root_cause_signatures: groups.length,
         qualification,
       })
       if (qualification !== 'PASS') process.exitCode = 1
@@ -210,7 +254,7 @@ async function main() {
   console.log(`FAILURE=${finalSnapshot.failed.length}`)
   console.log(`ACTIVE=${finalSnapshot.active.length}`)
   console.log(`HEAD_CHANGED=${headChanged}`)
-  console.log('FAILURE_SIGNATURES=0')
+  console.log('ROOT_CAUSE_SIGNATURES=0')
   console.log(`QUALIFICATION=${qualification}`)
   await writeOutputs({
     candidate_sha: candidate,
@@ -219,7 +263,7 @@ async function main() {
     failure: finalSnapshot.failed.length,
     active: finalSnapshot.active.length,
     head_changed: headChanged,
-    failure_signatures: 0,
+    root_cause_signatures: 0,
     qualification,
   })
   process.exitCode = 1

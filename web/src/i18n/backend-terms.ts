@@ -3,6 +3,7 @@ import { t } from './index'
 export const backendTermCatalog = {
   plan: {
     'rental-growth-2026': 'rentalGrowth2026',
+    'rental-pro-2026': 'rentalPro2026',
     'office-pro': 'officePro',
     'office-basic': 'officeBasic',
     'office-ultimate': 'officeUltimate',
@@ -100,6 +101,49 @@ export const backendTermCatalog = {
     DATA_SCOPE_SITES: 'sites', sites: 'sites',
     DATA_SCOPE_ALL: 'all', all: 'all',
   },
+  permission: {
+    'tenant.member.read': 'tenantMemberRead',
+    'tenant.member.manage': 'tenantMemberManage',
+    'tenant.organization.read': 'tenantOrganizationRead',
+    'tenant.organization.manage': 'tenantOrganizationManage',
+    'tenant.role.read': 'tenantRoleRead',
+    'tenant.role.manage': 'tenantRoleManage',
+    'tenant.delegation.read': 'tenantDelegationRead',
+    'tenant.delegation.manage': 'tenantDelegationManage',
+    'tenant.audit.read': 'tenantAuditRead',
+    'tenant.audit.export': 'tenantAuditExport',
+    'tenant.profile.read': 'tenantProfileRead',
+    'tenant.profile.manage': 'tenantProfileManage',
+    'tenant.branding.read': 'tenantBrandingRead',
+    'tenant.branding.manage': 'tenantBrandingManage',
+    'device.read': 'deviceRead',
+    'device.create': 'deviceCreate',
+    'device.update': 'deviceUpdate',
+    'device.delete': 'deviceDelete',
+    'site.read': 'siteRead',
+    'tenant.entitlement.read': 'tenantEntitlementRead',
+    'commercial.catalog.read': 'commercialCatalogRead',
+  },
+  permissionGroup: {
+    member: 'member',
+    organization: 'organization',
+    role: 'role',
+    delegation: 'delegation',
+    audit: 'audit',
+    enterpriseInfo: 'enterpriseInfo',
+    deviceOperations: 'deviceOperations',
+    enterpriseEntitlements: 'enterpriseEntitlements',
+    uncategorized: 'uncategorized',
+  },
+  permissionAction: {
+    read: 'read',
+    manage: 'manage',
+    assign: 'assign',
+    export: 'export',
+    create: 'create',
+    update: 'update',
+    delete: 'delete',
+  },
   reason: {
     'plan grant': 'planGrant',
     'not in plan': 'notInPlan',
@@ -142,5 +186,6 @@ export function backendBusinessText(value: unknown) {
   const raw = rawValue(value)
   if (!raw) return backendTermLabel('reason', raw)
   if (backendTermKnown('reason', raw)) return backendTermLabel('reason', raw)
-  return engineeringText.test(raw) ? backendTermLabel('reason', raw) : raw
+  if (/[\u3400-\u9fff]/u.test(raw) && !engineeringText.test(raw)) return raw
+  return backendTermLabel('reason', raw)
 }

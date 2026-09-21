@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   extractFailureSignature,
+  extractFailureSignatures,
+  fallbackFailureSignature,
   groupFailureSignatures,
   latestRequiredRuns,
   qualificationSnapshot,
@@ -49,4 +51,31 @@ test('failure signature does not depend on absolute runner path', () => {
   const a = extractFailureSignature('Error: expect failed\n at /home/runner/work/biz/biz/web/e2e/a.spec.ts:42:7')
   const b = extractFailureSignature('Error: expect failed\n at web/e2e/a.spec.ts:42:7')
   assert.equal(a, b)
+})
+
+test('static UI diagnostics become rule-file-line root-cause signatures', () => {
+  const log = [
+    '2026-09-21T00:01:05Z e2e/a.spec.ts:42: E2E binds product behavior to engineering copy (internal transport field)',
+    '2026-09-21T00:01:05Z e2e/b.spec.ts:7: E2E binds product behavior to engineering copy (raw backend code)',
+  ].join('\n')
+  assert.deepEqual(extractFailureSignatures(log), [
+    'UI-E2E-ENGINEERING-COPY | e2e/a.spec.ts:42 | internal transport field',
+    'UI-E2E-ENGINEERING-COPY | e2e/b.spec.ts:7 | raw backend code',
+  ])
+})
+
+test('repeated static diagnostics collapse across workflows', () => {
+  const signature = 'UI-E2E-ENGINEERING-COPY | e2e/a.spec.ts:42 | raw backend code'
+  const groups = groupFailureSignatures([
+    { signature, workflow: 'A', job: 'web' },
+    { signature, workflow: 'B', job: 'web-contract' },
+    { signature, workflow: 'C', job: 'session-isolation' },
+  ])
+  assert.equal(groups.length, 1)
+  assert.deepEqual(groups[0].workflows, ['A', 'B', 'C'])
+})
+
+test('log-unavailable fallback depends on failed steps, not workflow name', () => {
+  const steps = [{ name: 'Run npm run check', conclusion: 'failure' }]
+  assert.equal(fallbackFailureSignature(steps), 'CI-LOG-UNAVAILABLE | Run npm run check')
 })

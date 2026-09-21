@@ -28,6 +28,13 @@ describe('backend term presentation', () => {
     expect(backendTermLabel('entitlementEffect', raw)).not.toContain(raw)
   })
 
+  it('translates permission codes and safely handles unknown permissions', () => {
+    expect(backendTermLabel('permission', 'tenant.member.read')).toBe('查看成员')
+    expect(backendTermLabel('permission', 'tenant.future.permission')).toBe('其他权限')
+    i18n.global.locale.value = 'en-US'
+    expect(backendTermLabel('permission', 'tenant.member.read')).toBe('View members')
+  })
+
   it('translates tenant statuses without leaking unknown raw values', () => {
     expect(backendTermLabel('memberStatus', 'TENANT_MEMBER_STATUS_ACTIVE')).toBe('已启用')
     expect(backendTermLabel('memberStatus', 'TENANT_MEMBER_STATUS_FUTURE')).toBe('成员状态待确认')

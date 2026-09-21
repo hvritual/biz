@@ -99,15 +99,15 @@ test('TestCE13TenantEntitlementWorkspaceUsesExplicitTenantAndServerExplanation',
   })
 
   await page.goto('/#/platform/commercial/tenant-entitlements')
-  await expect(page.getByText('可信平台会话').first()).toBeVisible()
-  await page.getByLabel('租户 ID').fill('tenant-1')
+  await expect(page.getByText('租户权益工作台', { exact: true })).toBeVisible()
+  await page.getByLabel('租户编号').fill('tenant-1')
   await page.getByLabel(/能力过滤/).fill(' device.lifecycle ')
   await page.getByRole('button', { name: '读取权益' }).click()
 
-  await expect(page.locator('.subscription-card').getByText('office-pro v2')).toBeVisible()
-  await expect(page.getByText('device.lifecycle').first()).toBeVisible()
+  await expect(page.locator('.subscription-card').getByText('办公专业版 v2')).toBeVisible()
+  await expect(page.getByText('设备生命周期').first()).toBeVisible()
   await expect(page.getByText('套餐基础能力')).toBeVisible()
-  await expect(page.getByText('plan:office-pro:2')).toBeVisible()
+  await expect(page.getByText('来源记录已保留')).toBeVisible()
   await expect(page.getByText('11').first()).toBeVisible()
   expect(explainBody).toMatchObject({ tenantId: 'tenant-1', capabilityCodes: ['device.lifecycle'] })
   expect(tenantDirectoryCalls).toBe(0)
@@ -161,7 +161,7 @@ test('TestCE13TenantOverrideCreateAndRevokeUseSourceVersionCas', async ({ page }
   })
 
   await page.goto('/#/platform/commercial/tenant-entitlements')
-  await page.getByLabel('租户 ID').fill('tenant-1')
+  await page.getByLabel('租户编号').fill('tenant-1')
   await page.getByRole('button', { name: '读取权益' }).click()
   await page.getByRole('button', { name: '新增专项来源' }).click()
 

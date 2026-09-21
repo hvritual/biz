@@ -30,6 +30,41 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Candidate preflight
+        working-directory: web
+        shell: bash
+        run: |
+          set +e
+          npm run check
+          code=$?
+          if [ "$code" -ne 0 ]; then
+            {
+              echo "# Candidate Qualification"
+              echo
+              echo "- Candidate SHA: \`$CANDIDATE_SHA\`"
+              echo "- Preflight: **FAIL**"
+              echo "- Qualification: **PREFLIGHT_FAIL**"
+              echo
+              echo "Full-matrix aggregation was not awaited because the candidate failed static/type/unit/build gates."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "CANDIDATE_SHA=$CANDIDATE_SHA"
+            echo "PREFLIGHT=FAIL"
+            echo "QUALIFICATION=PREFLIGHT_FAIL"
+            exit "$code"
+          fi
+          echo "PREFLIGHT=PASS"
+
       - name: Qualify fixed candidate SHA
         id: qualify
         run: node .github/scripts/candidate-qualification.mjs

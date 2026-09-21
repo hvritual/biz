@@ -82,9 +82,9 @@ async function setupWorkspace(page: Page, current = subscription()) {
   await page.route('**/api/v1/platform/tenants/tenant-1/entitlements', (route) => fulfillJson(route, entitlement()))
 
   await page.goto('/#/platform/commercial/tenant-entitlements')
-  await page.getByLabel('租户 ID').fill('tenant-1')
+  await page.getByLabel('租户编号').fill('tenant-1')
   await page.getByRole('button', { name: '读取权益' }).click()
-  await expect(page.locator('.subscription-card').getByText('office-pro v2')).toBeVisible()
+  await expect(page.locator('.subscription-card').getByText('办公专业版 v2')).toBeVisible()
 }
 
 test('TestCE13SubscriptionChangePreviewUsesServerImpactAndMatchingIdempotencyKey', async ({ page }) => {
@@ -244,7 +244,7 @@ test('TestCE13SubscriptionChangeConfirmPinsPreviewHashAndRendersImmutableReceipt
   const receipt = workspace.locator('.receipt-panel')
   await expect(receipt.getByText('变更结果')).toBeVisible()
   await expect(receipt.getByText('已生效', { exact: true }).first()).toBeVisible()
-  await expect(receipt.getByText('office-ultimate v3')).toBeVisible()
+  await expect(receipt.getByText('办公旗舰版 v3')).toBeVisible()
   await expect(receipt.getByText('已确认', { exact: true })).toBeVisible()
 
   const requestId = String(confirmBody?.requestId)

@@ -560,7 +560,9 @@
         "src/features/platform/components/SubscriptionChangeWorkspace.vue",
         "src/features/enterprise/components/PlanChangeLifecycle.vue",
         "src/features/platform/pages/CommercialTenantEntitlementsView.vue",
-        "src/features/platform/pages/CommercialModulesView.vue"
+        "src/features/platform/pages/CommercialModulesView.vue",
+        "src/services/enterprise/rolePermissionCatalog.ts",
+        "src/features/enterprise/components/members/MemberDetailDrawer.vue"
       ]
     },
     "backend_error_projection": {

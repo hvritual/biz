@@ -56,7 +56,7 @@ function limitLabel(item: EntitlementDecisionDTO) {
           <div v-for="source in item.sources ?? []" :key="`${source.id}-${source.sourceKind}-${source.effect}`" class="source-row">
             <div><b>{{ backendTermLabel('sourceKind', source.sourceKind) }}</b><span>{{ backendTermLabel('entitlementEffect', source.effect) }}</span><span>{{ backendTermLabel('sourceState', source.state) }}</span></div>
             <p>{{ backendTermLabel('disposition', source.disposition) }}<template v-if="source.reason"> · {{ backendBusinessText(source.reason) }}</template></p>
-            <small>记录 {{ source.id || '—' }}<template v-if="source.actorId"> · 操作人 {{ source.actorId }}</template></small>
+            <small>来源记录已保留</small>
           </div>
         </div>
       </article>

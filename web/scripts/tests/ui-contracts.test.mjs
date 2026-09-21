@@ -90,12 +90,36 @@ test('declared backend-error consumers must not expose raw backend messages', (t
   assert.ok(checkUiModel(root).failures.some((error) => error.includes('backend errors must use backendErrorFallback')))
 })
 
-test('E2E cannot bind success behavior to engineering copy', (t) => {
+test('raw backend fields cannot be rendered directly by declared product consumers', (t) => {
+  const root = fixture(t)
+  edit(root, 'src/features/enterprise/components/members/MemberDetailDrawer.vue', (source) =>
+    source.replace("backendTermLabel('permission', permission)", 'permission'),
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('product template displays a raw backend field')))
+})
+
+test('E2E cannot bind visible product behavior to engineering copy', (t) => {
   const root = fixture(t)
   edit(root, 'e2e/enterprise-members-real.spec.ts', (source) =>
-    source + "\ntest('forbidden copy binding', async ({ page }) => { await expect(page.getByText('服务端确认')).toBeVisible() })\n",
+    source + "\ntest('forbidden copy binding', async ({ page }) => {\n  await expect(\n    page.getByText('服务端确认'),\n  ).toBeVisible()\n})\n",
   )
   assert.ok(checkUiModel(root).failures.some((error) => error.includes('E2E binds product behavior to engineering copy')))
+})
+
+test('E2E cannot bind visible product behavior to raw backend codes', (t) => {
+  const root = fixture(t)
+  edit(root, 'e2e/enterprise-members-real.spec.ts', (source) =>
+    source + "\ntest('forbidden raw code binding', async ({ page }) => { await expect(page.getByText('office-pro v2')).toBeVisible() })\n",
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('raw backend code')))
+})
+
+test('transport assertions remain valid engineering evidence', (t) => {
+  const root = fixture(t)
+  edit(root, 'e2e/enterprise-members-real.spec.ts', (source) =>
+    source + "\ntest('transport evidence', async () => { const requestId = 'request-id'; expect(requestId).toContain('request'); expect({ 'idempotency-key': 'x' }['idempotency-key']).toBeTruthy() })\n",
+  )
+  assert.ok(!checkUiModel(root).failures.some((error) => error.includes('transport evidence') && error.includes('engineering copy')))
 })
 
 test('negative E2E assertions may prove engineering copy is absent', (t) => {

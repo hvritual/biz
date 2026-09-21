@@ -32,6 +32,13 @@
     "candidate_sha_immutable": true,
     "all_required_workflows_must_complete": true,
     "all_required_workflows_must_succeed": true,
-    "group_failures_by_signature": true
+    "group_failures_by_signature": true,
+    "preflight_must_pass_before_full_qualification": true,
+    "failure_signature_format": "rule + file + line + normalized error"
+  },
+  "preflight": {
+    "working_directory": "web",
+    "command": "npm run check",
+    "fail_fast": true
   }
 }
