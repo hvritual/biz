@@ -122,6 +122,12 @@ DELIVERY_ISOLATION_FILES = {
     "scripts/verify-yunka-source.sh",
 }
 
+WEB_E2E_HARNESS_PREFIXES = ("web/e2e/",)
+WEB_E2E_HARNESS_FILES = {
+    "web/playwright.config.ts",
+    ".github/workflows/web-e2e-harness.yml",
+}
+
 
 def clean(path: str) -> str:
     value = path.strip().replace("\\", "/")
@@ -183,6 +189,17 @@ def route(paths: list[str]) -> dict[str, object]:
         for path in files
     )
 
+    web_e2e_harness = any(
+        path in WEB_E2E_HARNESS_FILES or any(path.startswith(prefix) for prefix in WEB_E2E_HARNESS_PREFIXES)
+        for path in files
+    )
+    web_product = any(
+        path.startswith("web/")
+        and path not in WEB_E2E_HARNESS_FILES
+        and not any(path.startswith(prefix) for prefix in WEB_E2E_HARNESS_PREFIXES)
+        for path in files
+    )
+
     domains: set[str] = set()
     non_derived_source = False
     for path in files:
@@ -214,6 +231,8 @@ def route(paths: list[str]) -> dict[str, object]:
         "native_login": native_login,
         "delivery_isolation": delivery_isolation,
         "ce_receipts": ce_receipts,
+        "web_e2e_harness": web_e2e_harness,
+        "web_product": web_product,
     }
 
 
@@ -227,6 +246,8 @@ def emit_github_output(path: str, result: dict[str, object]) -> None:
         handle.write(f"native_login={str(result['native_login']).lower()}\n")
         handle.write(f"delivery_isolation={str(result['delivery_isolation']).lower()}\n")
         handle.write(f"ce_receipts={str(result['ce_receipts']).lower()}\n")
+        handle.write(f"web_e2e_harness={str(result['web_e2e_harness']).lower()}\n")
+        handle.write(f"web_product={str(result['web_product']).lower()}\n")
         handle.write("domain_matrix=" + json.dumps(result["domain_matrix"], separators=(",", ":")) + "\n")
         for domain in DOMAINS:
             handle.write(f"{domain}={str(bool(domains[domain])).lower()}\n")
