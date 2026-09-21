@@ -68,6 +68,18 @@ class RouteTests(unittest.TestCase):
         self.assertTrue(result["ce_receipts"])
         self.assertEqual(result["domain_count"], 0)
 
+    def test_e2e_only_change_uses_harness_not_product_web(self):
+        result = route(["web/e2e/enterprise-roles-real.spec.ts", "web/e2e/ui.helpers.ts"])
+        self.assertTrue(result["domains"]["web"])
+        self.assertTrue(result["web_e2e_harness"])
+        self.assertFalse(result["web_product"])
+
+    def test_product_web_change_uses_product_gate(self):
+        result = route(["web/src/features/enterprise/pages/RolesView.vue"])
+        self.assertTrue(result["domains"]["web"])
+        self.assertFalse(result["web_e2e_harness"])
+        self.assertTrue(result["web_product"])
+
 
 if __name__ == "__main__":
     unittest.main()
