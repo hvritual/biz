@@ -98,7 +98,7 @@ func TestEnterprise179RoleGrantTreeRejectsInjectionAndRevokesNextRequest(t *test
 	}
 	for _, injected := range []string{"tenant.unknown.injected", "device.read"} {
 		_, err := roles.SetTenantRolePermissions(ctxA("reject-"+injected), &accessv1.SetTenantRolePermissionsRequest{
-			RoleId: roleA.GetId(),
+			RoleId:  roleA.GetId(),
 			Version: before.GetVersion(),
 			Permissions: []*accessv1.PermissionGrantInput{
 				{Permission: "tenant.member.read", Scope: accessv1.DataScope_DATA_SCOPE_ALL},
