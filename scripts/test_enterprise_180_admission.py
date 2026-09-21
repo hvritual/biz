@@ -70,6 +70,18 @@ class Enterprise180AdmissionTests(unittest.TestCase):
         blockers = gate.validate_policy_contract(policy)
         self.assertIn("Q011_MULTI_POLICY_FORBIDDEN", [item["reason"] for item in blockers])
 
+    def test_policy_contract_rejects_multi_role_union_expansion(self):
+        policy = json.loads(gate.POLICY_CONTRACT.read_text(encoding="utf-8"))
+        policy["q011_data_policy_composition"]["applicable_role_policy_scope_aggregation"] = "union"
+        blockers = gate.validate_policy_contract(policy)
+        self.assertIn("Q011_MULTI_ROLE_SCOPE_AGGREGATION_INVALID", [item["reason"] for item in blockers])
+
+    def test_policy_contract_requires_all_negative_examples(self):
+        policy = json.loads(gate.POLICY_CONTRACT.read_text(encoding="utf-8"))
+        policy["required_negative_examples"].pop()
+        blockers = gate.validate_policy_contract(policy)
+        self.assertIn("POLICY_NEGATIVE_EXAMPLES_INCOMPLETE", [item["reason"] for item in blockers])
+
     def test_receipt_admits_contract_but_disclaims_runtime_semantics(self):
         report = gate.receipt(True)
         self.assertFalse(report["semantics_implemented"])
