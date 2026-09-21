@@ -42,13 +42,21 @@ func Catalog() []Action {
 }
 
 func TenantRolePermissions() []PermissionDefinition {
-	actions := make([]Action, 0, len(generatedActions))
-	for _, action := range generatedActions {
-		if action.TenantRequired {
-			actions = append(actions, action)
+	return TenantRolePermissionsForActions(RoleAssignableActions(generatedActions))
+}
+
+func RoleAssignableActions(actions []Action) []Action {
+	out := make([]Action, 0, len(actions))
+	for _, action := range actions {
+		if !action.TenantRequired || !containsString(action.Authentication, "web-session") {
+			continue
 		}
+		if action.RPC == "" && len(action.HTTP) == 0 {
+			continue
+		}
+		out = append(out, cloneAction(action))
 	}
-	return TenantRolePermissionsForActions(actions)
+	return out
 }
 
 func TenantRolePermissionsForActions(actions []Action) []PermissionDefinition {
@@ -142,6 +150,15 @@ func cloneAction(action Action) Action {
 		action.HTTP = append([]HTTPBinding{}, action.HTTP...)
 	}
 	return action
+}
+
+func containsString(values []string, expected string) bool {
+	for _, value := range values {
+		if value == expected {
+			return true
+		}
+	}
+	return false
 }
 
 func mapKeys(values map[string]struct{}) []string {
