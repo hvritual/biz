@@ -249,6 +249,33 @@ def validate(base_ref: str | None = None) -> list[str]:
             if marker in ce08_script:
                 errors.append(f"CE08 qualification reintroduced delegated duplicate coverage: {marker}")
 
+    b127_resilience = contract.get("resilience_contracts", {}).get("b12_7_runtime_evidence_upload")
+    if b127_resilience:
+        workflow = b127_resilience["workflow"]
+        path = workflows.get(workflow)
+        if path is None:
+            errors.append(f"B12.7 evidence resilience workflow missing: {workflow}")
+        else:
+            text = path.read_text(encoding="utf-8")
+            action = "uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
+            if text.count(action) != int(b127_resilience["attempts"]):
+                errors.append(
+                    f"{workflow}: B12.7 evidence upload attempts drifted; "
+                    f"found {text.count(action)} expected {b127_resilience['attempts']}"
+                )
+            required_markers = [
+                "id: upload-runtime-evidence",
+                "continue-on-error: true",
+                "steps.upload-runtime-evidence.outcome == 'failure'",
+                "if-no-files-found: error",
+                "overwrite: true",
+            ]
+            for marker in required_markers:
+                if marker not in text:
+                    errors.append(f"{workflow}: B12.7 evidence resilience marker missing: {marker}")
+            if text.count("if-no-files-found: error") != int(b127_resilience["attempts"]):
+                errors.append(f"{workflow}: every B12.7 upload attempt must fail on missing evidence")
+
     pull_entrypoints = sorted(
         name for name, path in workflows.items()
         if "pull_request" in on_children(path.read_text(encoding="utf-8"))
