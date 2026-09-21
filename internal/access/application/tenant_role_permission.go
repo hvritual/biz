@@ -46,7 +46,10 @@ func (service *TenantRolePermissionService) CreateTenantRole(ctx context.Context
 		return nil, ErrInvalidTenantRoleRequest
 	}
 	name := strings.TrimSpace(request.GetName())
-	if name == "" || name == domain.TenantOwnerRoleName {
+	description := strings.TrimSpace(request.GetDescription())
+	if name == "" || len([]rune(name)) > 100 || len([]rune(description)) > 120 ||
+		name == domain.TenantOwnerRoleName || name == domain.TenantAdminRoleName ||
+		name == domain.TenantOwnerRoleCode || name == domain.TenantAdminRoleCode {
 		return nil, ErrInvalidTenantRoleRequest
 	}
 	tenantID, err := trustedTenantID(ctx)
@@ -54,6 +57,7 @@ func (service *TenantRolePermissionService) CreateTenantRole(ctx context.Context
 		return nil, err
 	}
 	role := domain.NewRole(newTenantRoleID(), tenantID, name, time.Now().UTC())
+	role.Description = description
 	err = requestscope.JoinDo(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRoleRepositories]) error {
 		return scope.Repositories().Role.Create(scope.Context(), &role)
 	})
@@ -80,13 +84,24 @@ func (service *TenantRolePermissionService) GetTenantRole(ctx context.Context, r
 	return tenantRoleDTO(role), nil
 }
 
-func (service *TenantRolePermissionService) ListTenantRoles(ctx context.Context, _ *accessv1.ListTenantRolesRequest) (*accessv1.ListTenantRolesResponse, error) {
+func (service *TenantRolePermissionService) ListTenantRoles(ctx context.Context, request *accessv1.ListTenantRolesRequest) (*accessv1.ListTenantRolesResponse, error) {
+	if request == nil {
+		request = &accessv1.ListTenantRolesRequest{}
+	}
 	tenantID, err := trustedTenantID(ctx)
 	if err != nil {
 		return nil, err
 	}
+	status := ""
+	if request.GetStatus() != accessv1.TenantRoleStatus_TENANT_ROLE_STATUS_UNSPECIFIED {
+		mapped, ok := tenantRoleStatusDomain(request.GetStatus())
+		if !ok {
+			return nil, ErrInvalidTenantRoleRequest
+		}
+		status = mapped
+	}
 	roles, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRoleRepositories]) ([]domain.Role, error) {
-		return scope.Repositories().Role.List(scope.Context(), tenantID)
+		return scope.Repositories().Role.List(scope.Context(), tenantID, strings.TrimSpace(request.GetQuery()), status)
 	})
 	if err != nil {
 		return nil, err
@@ -99,11 +114,16 @@ func (service *TenantRolePermissionService) ListTenantRoles(ctx context.Context,
 }
 
 func (service *TenantRolePermissionService) UpdateTenantRole(ctx context.Context, request *accessv1.UpdateTenantRoleRequest) (*accessv1.TenantRoleDTO, error) {
-	if request == nil || strings.TrimSpace(request.GetRoleId()) == "" || strings.TrimSpace(request.GetName()) == "" || request.GetVersion() == 0 {
+	if request == nil || strings.TrimSpace(request.GetRoleId()) == "" || strings.TrimSpace(request.GetName()) == "" || request.GetVersion() == 0 ||
+		len([]rune(strings.TrimSpace(request.GetName()))) > 100 || len([]rune(strings.TrimSpace(request.GetDescription()))) > 120 {
 		return nil, ErrInvalidTenantRoleRequest
 	}
 	return service.mutateRole(ctx, strings.TrimSpace(request.GetRoleId()), request.GetVersion(), func(role *domain.Role) error {
-		return role.Rename(strings.TrimSpace(request.GetName()), time.Now().UTC())
+		now := time.Now().UTC()
+		if err := role.Rename(strings.TrimSpace(request.GetName()), now); err != nil {
+			return err
+		}
+		return role.UpdateDescription(strings.TrimSpace(request.GetDescription()), now)
 	})
 }
 
@@ -123,6 +143,23 @@ func (service *TenantRolePermissionService) EnableTenantRole(ctx context.Context
 	return service.mutateRole(ctx, strings.TrimSpace(request.GetRoleId()), request.GetVersion(), func(role *domain.Role) error {
 		return role.Enable(time.Now().UTC())
 	})
+}
+
+func (service *TenantRolePermissionService) DeleteTenantRole(ctx context.Context, request *accessv1.DeleteTenantRoleRequest) (*accessv1.TenantRoleDTO, error) {
+	if request == nil || strings.TrimSpace(request.GetRoleId()) == "" || request.GetVersion() == 0 {
+		return nil, ErrInvalidTenantRoleRequest
+	}
+	tenantID, err := trustedTenantID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	role, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRoleRepositories]) (domain.Role, error) {
+		return scope.Repositories().Role.Delete(scope.Context(), tenantID, strings.TrimSpace(request.GetRoleId()), request.GetVersion())
+	})
+	if err != nil {
+		return nil, err
+	}
+	return tenantRoleDTO(role), nil
 }
 
 func (service *TenantRolePermissionService) SetTenantRolePermissions(ctx context.Context, request *accessv1.SetTenantRolePermissionsRequest) (*accessv1.TenantRoleDTO, error) {
@@ -243,12 +280,23 @@ func permissionGrantInputs(tenantID, roleID string, inputs []*accessv1.Permissio
 }
 
 func tenantRoleDTO(role domain.Role) *accessv1.TenantRoleDTO {
-	result := &accessv1.TenantRoleDTO{Id: role.ID, Name: role.Name, Status: tenantRoleStatusDTO(role.Status), Version: role.Version}
+	result := &accessv1.TenantRoleDTO{Id: role.ID, Name: role.Name, Description: role.Description, RoleCode: role.Code, SystemRole: role.System, MemberCount: role.MemberCount, Status: tenantRoleStatusDTO(role.Status), Version: role.Version}
 	result.Permissions = make([]*accessv1.PermissionGrantDTO, 0, len(role.Permissions))
 	for _, grant := range role.Permissions {
 		result.Permissions = append(result.Permissions, &accessv1.PermissionGrantDTO{Permission: grant.Permission, Scope: dataScopeDTO(grant.Scope)})
 	}
 	return result
+}
+
+func tenantRoleStatusDomain(status accessv1.TenantRoleStatus) (string, bool) {
+	switch status {
+	case accessv1.TenantRoleStatus_TENANT_ROLE_STATUS_ACTIVE:
+		return domain.TenantRoleStatusActive, true
+	case accessv1.TenantRoleStatus_TENANT_ROLE_STATUS_DISABLED:
+		return domain.TenantRoleStatusDisabled, true
+	default:
+		return "", false
+	}
 }
 
 func tenantRoleStatusDTO(status string) accessv1.TenantRoleStatus {

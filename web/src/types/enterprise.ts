@@ -26,10 +26,12 @@ export interface Role {
   id: string
   name: string
   description: string
+  roleCode?: string
   builtin: boolean
   enabled: boolean
   scope: DataScope
   permissions: string[]
+  memberCount?: number
   updatedAt: string
   runtimeVersion?: string | number
 }

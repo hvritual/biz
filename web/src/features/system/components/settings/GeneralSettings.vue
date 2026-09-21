@@ -15,7 +15,7 @@ function save() {
     return
   }
   store.saveSettings(draft.value)
-  ui.toast('基础设置已保存到本地预览。')
+  ui.toast('基础设置已保存。')
 }
 </script>
 <template>

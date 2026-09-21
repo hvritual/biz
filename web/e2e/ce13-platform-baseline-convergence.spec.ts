@@ -80,8 +80,8 @@ test('TestCE13ModuleSalesStatusUsesTrustedSessionCsrfAndServerVersion', async ({
   await page.goto('/#/platform/commercial/modules')
   await page.getByRole('button', { name: '查看详情' }).click()
   const dialog = page.getByRole('dialog', { name: /模块详情/ })
-  await expect(dialog.getByText('customer.read')).toBeVisible()
-  await expect(dialog.getByText('tenant')).toBeVisible()
+  await expect(dialog.getByText('查看客户')).toBeVisible()
+  await expect(dialog.getByText('租户基础能力')).toBeVisible()
   await dialog.getByLabel('变更原因').fill('CE-13 销售状态收口验证')
   await dialog.getByRole('button', { name: '停售销售' }).click()
 

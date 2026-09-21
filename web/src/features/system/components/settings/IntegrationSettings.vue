@@ -39,7 +39,7 @@ function save() {
       <span><AppIcon name="key" :size="25" /></span>
       <div>
         <h3>API 凭据</h3>
-        <p>凭据由服务端创建并限定租户、权限与有效期。管理端只展示脱敏信息。</p>
+        <p>凭据由系统创建，并限定企业、权限与有效期。管理页面只展示脱敏信息。</p>
         <small class="muted">待接入凭据管理服务</small>
       </div>
     </section>
@@ -48,7 +48,7 @@ function save() {
       <label class="field"
         ><span>回调地址</span
         ><UiInput v-model="webhook" class="input" placeholder="https://example.com/webhook" type="url" /><small
-          >保存草稿不会向该地址发送请求。正式接入需服务端完成地址验证与签名投递。</small
+          >保存草稿不会立即启用通知；地址验证通过后才能正式使用。</small
         ></label
       >
     </div>

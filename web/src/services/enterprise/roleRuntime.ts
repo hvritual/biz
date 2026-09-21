@@ -1,3 +1,4 @@
+import { backendErrorFallback, backendTermLabel } from '@/i18n/backend-terms'
 import {
   CommercialApiError,
   commercialRequestId,
@@ -14,15 +15,21 @@ import {
 } from '@/services/runtime/api'
 import type { RoleGrantScope } from './rolePermissionCatalog'
 
-export type RoleMutation = 'create' | 'update' | 'enable' | 'disable' | 'permissions' | 'assign' | 'revoke'
+export type RoleMutation = 'create' | 'update' | 'enable' | 'disable' | 'delete' | 'permissions' | 'assign' | 'revoke'
 
 export type EnterpriseTenantRole = TenantRole & {
   permissions: PermissionGrant[]
+  description: string
+  roleCode: string
+  systemRole: boolean
+  memberCount: number
   protectedOwner: boolean
+  protectedSystem: boolean
 }
 
 export type EnterpriseRoleDraft = {
   name: string
+  description: string
   enabled: boolean
   permissions: PermissionGrant[]
   memberIds: string[]
@@ -33,12 +40,7 @@ export function roleRequestId(action: RoleMutation, suffix = '') {
 }
 
 export function roleStatusLabel(status: string) {
-  return (
-    {
-      TENANT_ROLE_STATUS_ACTIVE: '已启用',
-      TENANT_ROLE_STATUS_DISABLED: '已停用',
-    }[status] ?? status
-  )
+  return backendTermLabel('roleStatus', status)
 }
 
 export function roleRuntimeError(error: unknown) {
@@ -46,9 +48,9 @@ export function roleRuntimeError(error: unknown) {
     if (error.code === 'unauthenticated') return '登录会话已失效，请重新登录。'
     if (error.code === 'forbidden') return '当前账号没有管理企业角色与权限的权限。'
     if (error.code === 'conflict') return '角色版本或所有者保护规则已发生冲突，请刷新后重试。'
-    return error.message
+    return backendErrorFallback('role')
   }
-  return error instanceof Error ? error.message : '角色权限服务请求失败。'
+  return error instanceof Error ? error.message : backendErrorFallback('role')
 }
 
 function requireTenantSession(session: TrustedSession) {
@@ -92,10 +94,17 @@ function roleSnapshot(role: TenantRole): EnterpriseTenantRole {
         scope: normalizeScope(grant.scope),
       }))
     : []
+  const roleCode = role.roleCode ?? ''
+  const systemRole = Boolean(role.systemRole)
   return Object.freeze({
     ...role,
+    description: role.description ?? '',
+    roleCode,
+    systemRole,
+    memberCount: Number(role.memberCount ?? 0),
     permissions,
-    protectedOwner: role.name === 'owner',
+    protectedOwner: roleCode === 'tenant_owner' || (!roleCode && role.name === 'owner'),
+    protectedSystem: systemRole || roleCode === 'tenant_owner' || roleCode === 'tenant_admin',
   }) as EnterpriseTenantRole
 }
 
@@ -107,9 +116,16 @@ export async function switchEnterpriseRoleTenant(tenantId: string) {
   return selectSessionTenant(tenantId)
 }
 
-export async function listEnterpriseRoles(session: TrustedSession) {
+export async function listEnterpriseRoles(
+  session: TrustedSession,
+  filters: { query?: string; status?: string } = {},
+) {
   requireTenantSession(session)
-  const result = await request<{ roles?: TenantRole[] }>('/v1/tenant/roles', { headers: headers(session) })
+  const params = new URLSearchParams()
+  if (filters.query?.trim()) params.set('query', filters.query.trim())
+  if (filters.status) params.set('status', filters.status)
+  const suffix = params.toString() ? `?${params.toString()}` : ''
+  const result = await request<{ roles?: TenantRole[] }>(`/v1/tenant/roles${suffix}`, { headers: headers(session) })
   return Array.isArray(result.roles) ? result.roles.map(roleSnapshot) : []
 }
 
@@ -124,7 +140,7 @@ export async function getEnterpriseRole(session: TrustedSession, roleId: string)
 async function roleMutate(
   session: TrustedSession,
   path: string,
-  method: 'POST' | 'PATCH' | 'PUT',
+  method: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
   body: unknown,
   idempotencyKey: string,
 ) {
@@ -136,16 +152,32 @@ async function roleMutate(
   return roleSnapshot(role)
 }
 
-export function createEnterpriseRole(session: TrustedSession, name: string, key: string) {
-  return roleMutate(session, '/v1/tenant/roles', 'POST', { name: name.trim() }, key)
+export function createEnterpriseRole(session: TrustedSession, name: string, description: string, key: string) {
+  return roleMutate(session, '/v1/tenant/roles', 'POST', { name: name.trim(), description: description.trim() }, key)
 }
 
-export function updateEnterpriseRole(session: TrustedSession, role: EnterpriseTenantRole, name: string, key: string) {
+export function updateEnterpriseRole(
+  session: TrustedSession,
+  role: EnterpriseTenantRole,
+  name: string,
+  description: string,
+  key: string,
+) {
   return roleMutate(
     session,
     `/v1/tenant/roles/${encodeURIComponent(role.id)}`,
     'PATCH',
-    { roleId: role.id, name: name.trim(), version: role.version },
+    { roleId: role.id, name: name.trim(), description: description.trim(), version: role.version },
+    key,
+  )
+}
+
+export function deleteEnterpriseRole(session: TrustedSession, role: EnterpriseTenantRole, key: string) {
+  return roleMutate(
+    session,
+    `/v1/tenant/roles/${encodeURIComponent(role.id)}?version=${encodeURIComponent(String(role.version))}`,
+    'DELETE',
+    {},
     key,
   )
 }

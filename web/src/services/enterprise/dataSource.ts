@@ -105,14 +105,22 @@ export function projectMember(value: EnterpriseTenantMember): Member {
 }
 
 export function projectRole(value: EnterpriseTenantRole): Role {
+  const displayName =
+    value.roleCode === 'tenant_owner'
+      ? '企业所有者'
+      : value.roleCode === 'tenant_admin'
+        ? '企业管理员'
+        : value.name
   return {
     id: value.id,
-    name: value.protectedOwner && value.name === 'owner' ? '企业所有者' : value.name,
-    description: '',
-    builtin: value.protectedOwner,
+    name: displayName,
+    description: value.description,
+    roleCode: value.roleCode,
+    builtin: value.protectedSystem,
     enabled: value.status === 'TENANT_ROLE_STATUS_ACTIVE',
     scope: strongestRoleScope(value),
     permissions: value.permissions.map((grant) => grant.permission),
+    memberCount: value.memberCount,
     updatedAt: '',
     runtimeVersion: value.version,
   }

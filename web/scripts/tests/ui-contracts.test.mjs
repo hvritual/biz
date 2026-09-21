@@ -14,6 +14,8 @@ function fixture(t) {
   t.after(() => rmSync(root, { recursive: true, force: true }))
   cpSync(join(webRoot, 'src'), join(root, 'src'), { recursive: true })
   cpSync(join(webRoot, 'ui-contracts.json'), join(root, 'ui-contracts.json'))
+  cpSync(join(webRoot, 'e2e'), join(root, 'e2e'), { recursive: true })
+  cpSync(join(webRoot, 'tests'), join(root, 'tests'), { recursive: true })
   return root
 }
 function edit(root, path, transform) {
@@ -47,6 +49,103 @@ for (const [name, mutate, error] of [
     assert.throws(() => validateUiContract(value), error)
   })
 }
+
+test('product surfaces reject implementation terminology', (t) => {
+  const root = fixture(t)
+  edit(root, 'src/features/app-shell/components/AppHeader.vue', (source) =>
+    source.replace('</header>', '<span>实时数据</span></header>'),
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('product UI exposes engineering language')))
+})
+
+test('Vue script copy cannot bypass product language guard', (t) => {
+  const root = fixture(t)
+  edit(root, 'src/features/app-shell/components/AppHeader.vue', (source) =>
+    source.replace('<script setup lang="ts">', '<script setup lang="ts">\nconst leakedRuntimeCopy = \'服务端回读\''),
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('product UI exposes engineering language')))
+})
+
+test('feature TypeScript cannot bypass product language guard', (t) => {
+  const root = fixture(t)
+  edit(root, 'src/features/enterprise/composables/useAuditLogs.ts', (source) =>
+    source.replace('export function useAuditLogs() {', "const leakedProductCopy = '服务端回读'\nexport function useAuditLogs() {"),
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('product UI exposes engineering language')))
+})
+
+test('declared backend-term consumers must use the centralized translator', (t) => {
+  const root = fixture(t)
+  edit(root, 'src/features/platform/components/EntitlementDecisionTable.vue', (source) =>
+    source.replaceAll('backendTermLabel', 'localTermLabel'),
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('backend-returned terms must use backendTermLabel')))
+})
+
+test('declared backend-error consumers must not expose raw backend messages', (t) => {
+  const root = fixture(t)
+  edit(root, 'src/services/enterprise/tenantProfileRuntime.ts', (source) =>
+    source.replaceAll('backendErrorFallback', 'localErrorFallback'),
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('backend errors must use backendErrorFallback')))
+})
+
+test('raw backend collections cannot be rendered directly', (t) => {
+  const root = fixture(t)
+  edit(root, 'src/features/platform/pages/CommercialModulesView.vue', (source) =>
+    source.replace("{{ backendTermLabel('entitlementKey', item) }}", '{{ item }}'),
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('raw backend collection value')))
+})
+
+test('raw backend fields cannot be rendered directly by declared product consumers', (t) => {
+  const root = fixture(t)
+  edit(root, 'src/features/enterprise/components/members/MemberDetailDrawer.vue', (source) =>
+    source.replace("backendTermLabel('permission', permission)", 'permission'),
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('product template displays a raw backend field')))
+})
+
+test('E2E cannot bind visible product behavior to engineering copy', (t) => {
+  const root = fixture(t)
+  edit(root, 'e2e/enterprise-members-real.spec.ts', (source) =>
+    source + "\ntest('forbidden copy binding', async ({ page }) => {\n  await expect(\n    page.getByText('服务端确认'),\n  ).toBeVisible()\n})\n",
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('E2E binds product behavior to engineering copy')))
+})
+
+test('E2E cannot bind visible product behavior to raw backend codes', (t) => {
+  const root = fixture(t)
+  edit(root, 'e2e/enterprise-members-real.spec.ts', (source) =>
+    source + "\ntest('forbidden raw code binding', async ({ page }) => { await expect(page.getByText('office-pro v2')).toBeVisible() })\n",
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('raw backend code')))
+})
+
+test('transport assertions remain valid engineering evidence', (t) => {
+  const root = fixture(t)
+  edit(root, 'e2e/enterprise-members-real.spec.ts', (source) =>
+    source + "\ntest('transport evidence', async () => { const requestId = 'request-id'; expect(requestId).toContain('request'); expect({ 'idempotency-key': 'x' }['idempotency-key']).toBeTruthy() })\n",
+  )
+  assert.ok(!checkUiModel(root).failures.some((error) => error.includes('transport evidence') && error.includes('engineering copy')))
+})
+
+test('negative E2E assertions may prove engineering copy is absent', (t) => {
+  const root = fixture(t)
+  edit(root, 'e2e/enterprise-members-real.spec.ts', (source) =>
+    source + "\ntest('absence contract', async ({ page }) => { await expect(page.getByText('服务端确认')).toHaveCount(0) })\n",
+  )
+  assert.ok(!checkUiModel(root).failures.some((error) => error.includes('E2E binds product behavior to engineering copy')))
+})
+
+test('EnterpriseSourceBanner cannot be reintroduced', (t) => {
+  const root = fixture(t)
+  writeFileSync(
+    join(root, 'src/features/enterprise/components/EnterpriseSourceBanner.vue'),
+    '<template><div>business data source</div></template>',
+  )
+  assert.ok(checkUiModel(root).failures.some((error) => error.includes('EnterpriseSourceBanner must not exist')))
+})
 
 test('removing a page declaration cannot hide an existing business route', (t) => {
   const root = fixture(t)

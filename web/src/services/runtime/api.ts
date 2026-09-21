@@ -116,6 +116,10 @@ export type PermissionGrant = {
 export type TenantRole = {
   id: string
   name: string
+  description?: string
+  roleCode?: string
+  systemRole?: boolean
+  memberCount?: string | number
   status: string
   permissions?: PermissionGrant[]
   version: string | number

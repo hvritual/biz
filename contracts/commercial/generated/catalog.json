@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "mapping_version": "21",
+  "mapping_version": "22",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "761249463fc1043c3630f963c1f179f91942dc393aa46743044a8e0bf6ebf0c5",
-    "contracts/generated/manifest.json": "40b31ed8d5a14821baaa863ed023ef9282ce39fdc9e98293d626fc908a6ffc6e",
-    "contracts/generated/operation-plans.json": "64f06029573b55723f4a4b6b52036e24ecf4fa86169c36471363d7e9cfbd83f0",
+    "contracts/commercial/operation-capabilities.v1.json": "79502067282a921e04b2ba5c17ac7b5f1b4d33c28c64dca230f68c0bdf686f3d",
+    "contracts/generated/manifest.json": "bcc7fbf8f4b384b3c2ad8b1f410eae094ffbddf77f981698d425ce19f0149922",
+    "contracts/generated/operation-plans.json": "47e732de9a90b87e5100f4ba2496d749a8a9fa02e6749b0237d657983c26f5c5",
     "internal/access/application/tenant_delegation.go": "b43e6709e61b7867395bc04a901a19c2a54cf4ec9565e875b354b1622e636589",
     "internal/access/application/tenant_member_lifecycle.go": "0abbc9f35ca41183b2b217a10b0d57c5ba6bbd682f6fc8cf20cd09365a3ba71a",
     "internal/access/application/tenantlifecycle/internal/usecase/service.go": "63e3eba06691d15fa88041b660431b48e87640bfaf35954774595db9880e5d29",
@@ -1918,6 +1918,24 @@
       "consumer_type": "tenant",
       "tenant_required": true,
       "rpc": "/access.v1.TenantRolePermissionApplication/CreateTenantRole",
+      "required_capability_codes": [
+        "tenant.role.permission"
+      ],
+      "always_required_capability_codes": [
+        "tenant.role.permission"
+      ]
+    },
+    {
+      "operation_id": "tenant.role.delete",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/access.v1.TenantRolePermissionApplication/DeleteTenantRole",
       "required_capability_codes": [
         "tenant.role.permission"
       ],

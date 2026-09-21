@@ -12,7 +12,7 @@ const domains = [
   },
   {
     title: '模块目录',
-    description: '管理平台功能模块、技术状态、销售状态和服务端声明的依赖关系。',
+    description: '管理平台功能模块、技术状态、销售状态和模块依赖关系。',
     icon: 'database',
     path: '/platform/commercial/modules',
     capability: '能力目录',
@@ -35,7 +35,7 @@ const domains = [
 
 const guardrails = [
   ['身份边界', '平台管理只接受平台可信会话；租户身份不能读取平台租户目录。'],
-  ['数据边界', '平台商业事实以服务端回读为准，不使用前端 seed 模拟真实开通结果。'],
+  ['数据边界', '平台商业信息以实际处理结果为准，不使用示例数据替代真实开通状态。'],
   ['操作边界', '套餐、权益、租户生命周期分别维护，不用页面状态替代后端授权。'],
 ]
 </script>
@@ -77,7 +77,7 @@ const guardrails = [
       <div class="governance-heading">
         <div>
           <h2>平台治理边界</h2>
-          <p>把“能看到页面”与“有权执行操作”分开，所有真实写操作都需要服务端回执与回读。</p>
+          <p>页面可见不代表具备操作权限；所有变更只有在结果确认后才视为完成。</p>
         </div>
         <RouterLink class="btn" to="/platform/commercial/tenant-entitlements"><AppIcon name="shield" :size="15" />查看租户权益</RouterLink>
       </div>

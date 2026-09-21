@@ -1,3 +1,4 @@
+import { backendErrorFallback } from '@/i18n/backend-terms'
 import {
   CommercialApiError,
   mutate,
@@ -42,9 +43,9 @@ export function enterprisePlanRuntimeError(error: unknown) {
     if (error.code === 'unauthenticated') return '登录会话已失效，请重新登录。'
     if (error.code === 'forbidden') return '当前账号没有查看套餐与权益的权限。'
     if (error.code === 'conflict') return '租户上下文已变化，请刷新后重试。'
-    return error.message
+    return backendErrorFallback('planRead')
   }
-  return error instanceof Error ? error.message : '套餐与权益服务请求失败。'
+  return error instanceof Error ? error.message : backendErrorFallback('planRead')
 }
 
 export async function readEnterprisePlanSession() {
@@ -90,10 +91,10 @@ export async function loadEnterprisePlanReadModel(): Promise<EnterprisePlanReadM
     getMyTenantEntitlements(session),
   ])
   if (subscription.tenantId && subscription.tenantId !== session.active_tenant_id) {
-    throw new Error('套餐服务返回了不属于当前租户的数据。')
+    throw new Error('套餐信息与当前企业不匹配，请刷新后重试。')
   }
   if (entitlements.tenantId && entitlements.tenantId !== session.active_tenant_id) {
-    throw new Error('权益服务返回了不属于当前租户的数据。')
+    throw new Error('权益信息与当前企业不匹配，请刷新后重试。')
   }
 
   let usage: EnterpriseTenantUsage = { usages: [] }

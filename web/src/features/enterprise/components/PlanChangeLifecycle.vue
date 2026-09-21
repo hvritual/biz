@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { backendTermLabel } from '@/i18n/backend-terms'
+import { currentUiLocale } from '@/i18n'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import { UiButton, UiInput } from '@/ui/base'
@@ -37,11 +39,7 @@ const receipt = ref<SubscriptionChangeReceiptDTO | null>(null)
 const working = ref(false)
 const errorMessage = ref('')
 
-const actionLabel = computed(() => ({
-  SWITCH: '切换套餐',
-  RENEW: '续订当前套餐',
-  STOP_RENEWAL: '停止自动续费',
-}[action.value]))
+const actionLabel = computed(() => backendTermLabel('changeAction', action.value))
 const stage = computed(() => receipt.value ? 'receipt' : preview.value ? 'preview' : 'select')
 const requiresTarget = computed(() => action.value === 'SWITCH')
 const approvalRequired = computed(() => needsExternalCommercialApproval(preview.value))
@@ -50,8 +48,8 @@ const canPreview = computed(() => {
   if (requiresTarget.value && !selectedTarget.value) return false
   return true
 })
-const currentPlanKey = computed(() => `${props.subscription.planCode}@${props.subscription.planVersion}`)
-const previewTargetName = computed(() => preview.value?.target?.name || preview.value?.target?.planCode || '当前套餐')
+const currentPlanKey = computed(() => `${backendTermLabel('plan', props.subscription.planCode)} v${props.subscription.planVersion}`)
+const previewTargetName = computed(() => preview.value?.target?.name || backendTermLabel('plan', preview.value?.target?.planCode))
 const receiptTone = computed(() => {
   if (receipt.value?.status === 'APPLIED') return 'success'
   if (receipt.value?.status === 'SCHEDULED' || receipt.value?.status === 'PROVISIONING') return 'warning'
@@ -67,15 +65,27 @@ watch(action, () => {
 })
 
 function priceLabel(target: PlanVersionDTO) {
-  const ref = String(target.terms?.priceRef ?? '').trim()
-  return ref ? `价格引用 ${ref}` : '无外部价格引用'
+  const hasPrice = Boolean(String(target.terms?.priceRef ?? '').trim())
+  return hasPrice ? '费用按销售方案确认' : '暂无额外费用信息'
+}
+
+function classificationLabel(value?: string) {
+  return backendTermLabel('changeClassification', value)
+}
+
+function effectiveModeLabel(value?: string) {
+  return backendTermLabel('effectiveMode', value)
+}
+
+function receiptStatusLabel(value?: string) {
+  return backendTermLabel('receiptStatus', value)
 }
 
 function formatDate(value?: string) {
   if (!value) return '—'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+  return new Intl.DateTimeFormat(currentUiLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(date)
 }
 
 function effectiveAtIso() {
@@ -146,8 +156,8 @@ async function confirmPreview() {
     <div class="lifecycle-head">
       <div>
         <div class="eyebrow">套餐变更</div>
-        <h2>租户自服务变更生命周期</h2>
-        <p>目标发现、权威预览、额度与依赖校验、确认、生效状态和回执均由服务端控制。</p>
+        <h2>套餐变更</h2>
+        <p>选择目标套餐后，系统会核对可变更范围、额度影响和生效时间，并在确认后展示处理结果。</p>
       </div>
       <UiButton v-if="!opened" class="btn primary" data-plan-change-open @click="openLifecycle">
         变更套餐
@@ -158,8 +168,8 @@ async function confirmPreview() {
     <div v-if="opened" class="lifecycle-body">
       <div class="steps" aria-label="套餐变更步骤">
         <span :class="{ active: stage === 'select' }"><b>1</b> 选择变更</span>
-        <span :class="{ active: stage === 'preview' }"><b>2</b> 权威预览</span>
-        <span :class="{ active: stage === 'receipt' }"><b>3</b> 结果回执</span>
+        <span :class="{ active: stage === 'preview' }"><b>2</b> 确认方案</span>
+        <span :class="{ active: stage === 'receipt' }"><b>3</b> 处理结果</span>
       </div>
 
       <div v-if="errorMessage" class="change-alert" role="alert">
@@ -171,7 +181,7 @@ async function confirmPreview() {
           <span class="field-label">变更方式</span>
           <div class="action-grid">
             <UiButton :class="['action-card', { selected: action === 'SWITCH' }]" @click="action = 'SWITCH'">
-              <strong>切换套餐</strong><small>升级或降级到服务端可用版本</small>
+              <strong>切换套餐</strong><small>升级或降级到当前可选套餐</small>
             </UiButton>
             <UiButton :class="['action-card', { selected: action === 'RENEW' }]" @click="action = 'RENEW'">
               <strong>续订</strong><small>续订当前 {{ currentPlanKey }}</small>
@@ -185,9 +195,9 @@ async function confirmPreview() {
         <div v-if="action === 'SWITCH'" class="choice-block">
           <div class="row-between">
             <span class="field-label">可切换套餐</span>
-            <span class="muted">只显示 published + eligible</span>
+            <span class="muted">仅显示当前可选择的套餐</span>
           </div>
-          <div v-if="targetsLoading" class="inline-state">正在读取服务端可用套餐…</div>
+          <div v-if="targetsLoading" class="inline-state">正在读取可选套餐…</div>
           <div v-else class="target-grid">
             <UiButton
               v-for="target in targets"
@@ -196,8 +206,8 @@ async function confirmPreview() {
               :class="['target-card', { selected: selectedTarget?.planCode === target.planCode && selectedTarget?.version === target.version }]"
               @click="selectedTarget = target"
             >
-              <span class="row-between"><strong>{{ target.name || target.planCode }}</strong><span>v{{ target.version }}</span></span>
-              <small>{{ target.planCode }}</small>
+              <span class="row-between"><strong>{{ target.name || backendTermLabel('plan', target.planCode) }}</strong><span>v{{ target.version }}</span></span>
+              <small>{{ backendTermLabel('plan', target.planCode) }}</small>
               <span class="target-meta">{{ target.terms?.modules?.length ?? 0 }} 个模块 · {{ priceLabel(target) }}</span>
             </UiButton>
             <div v-if="targets.length === 0" class="empty-target">当前销售范围没有其他可切换的已发布套餐。</div>
@@ -216,9 +226,9 @@ async function confirmPreview() {
         </div>
 
         <div class="action-row">
-          <span class="boundary-note">浏览器不会提交 tenant_id、sales_scope、用量、支付状态或权益版本。</span>
+          <span class="boundary-note">变更只针对当前企业，已有用量和已生效权益不会被页面直接改写。</span>
           <UiButton class="btn primary" :disabled="!canPreview || working" data-plan-change-preview @click="createPreview">
-            {{ working ? '正在生成…' : '生成权威预览' }}
+            {{ working ? '正在生成…' : '查看变更方案' }}
           </UiButton>
         </div>
       </template>
@@ -227,30 +237,30 @@ async function confirmPreview() {
         <div class="preview-hero">
           <div>
             <span class="field-label">{{ actionLabel }}</span>
-            <h3>{{ subscription.planCode }} → {{ previewTargetName }}</h3>
-            <p>{{ preview.classification }} · {{ preview.mode }} · 预览有效至 {{ formatDate(preview.expiresAt) }}</p>
+            <h3>{{ backendTermLabel('plan', subscription.planCode) }} → {{ previewTargetName }}</h3>
+            <p>{{ classificationLabel(preview.classification) }} · {{ effectiveModeLabel(preview.mode) }} · 请于 {{ formatDate(preview.expiresAt) }} 前确认</p>
           </div>
-          <StatusBadge :text="preview.classification || 'PREVIEW'" :dot="false" />
+          <StatusBadge :text="classificationLabel(preview.classification)" :dot="false" />
         </div>
 
         <div class="preview-grid">
-          <div><span>变更 ID</span><strong>{{ preview.changeId }}</strong></div>
+          <div><span>变更编号</span><strong>{{ preview.changeId }}</strong></div>
           <div><span>生效时间</span><strong>{{ formatDate(preview.effectiveAt) }}</strong></div>
-          <div><span>价格权威</span><strong>{{ preview.pricingBasis || 'NO_PRICE_REFERENCE' }}</strong></div>
+          <div><span>费用确认</span><strong>{{ approvalRequired ? '需要进一步确认' : '无需额外确认' }}</strong></div>
           <div><span>额度复核</span><strong>{{ preview.quotaValidationRequired ? '确认前需要复核' : '当前可确认' }}</strong></div>
         </div>
 
         <div v-if="approvalRequired" class="approval-card" data-plan-change-external-approval>
           <AppIcon name="shield" :size="20" />
-          <div><strong>需要外部商业 / 支付审批</strong><p>目标套餐存在价格引用。本页面不会把“点击确认”当作支付凭证，也不会绕过平台商业审批。</p></div>
+          <div><strong>需要进一步确认费用</strong><p>该套餐涉及额外费用，请先完成对应的商业或支付确认，再继续变更。</p></div>
         </div>
 
         <div class="impact-grid">
           <div class="impact-card">
             <h4>额度影响</h4>
             <div v-if="preview.quotaImpacts?.length" class="impact-list">
-              <div v-for="item in preview.quotaImpacts" :key="`${item.moduleCode}:${item.key}`">
-                <span>{{ item.moduleCode }} / {{ item.key }}</span>
+              <div v-for="(item, index) in preview.quotaImpacts" :key="`${item.moduleCode}:${item.key}`">
+                <span>{{ backendTermLabel('entitlementKey', item.key) }} · {{ index + 1 }}</span>
                 <strong>{{ item.usageKnown ? `已用 ${item.used}` : '用量未知' }}</strong>
                 <small>{{ item.overLimit ? '超过目标额度' : item.policy || '通过当前校验' }}</small>
               </div>
@@ -259,14 +269,14 @@ async function confirmPreview() {
           </div>
           <div class="impact-card">
             <h4>准备与依赖</h4>
-            <p v-if="preview.provisioningRequirements?.length">需要 {{ preview.provisioningRequirements.length }} 项外部准备；确认后进入 PROVISIONING。</p>
-            <p v-else>无需外部准备，可按预览的生效模式执行。</p>
+            <p v-if="preview.provisioningRequirements?.length">需要完成 {{ preview.provisioningRequirements.length }} 项准备工作后再生效。</p>
+            <p v-else>无需额外准备，可按当前方案生效。</p>
             <p v-if="preview.dependencies?.length" class="muted">涉及 {{ preview.dependencies.length }} 个模块依赖。</p>
           </div>
         </div>
 
         <div class="impact-card impacts">
-          <h4>服务端影响说明</h4>
+          <h4>变更影响</h4>
           <ul><li v-for="impact in preview.impacts" :key="impact">{{ impact }}</li></ul>
         </div>
 
@@ -287,23 +297,23 @@ async function confirmPreview() {
         <div class="result-hero" data-plan-change-receipt>
           <span class="result-icon"><AppIcon name="check" :size="28" /></span>
           <div>
-            <span class="field-label">服务端变更回执</span>
-            <h3>{{ receipt.status }}</h3>
+            <span class="field-label">套餐变更结果</span>
+            <h3>{{ receiptStatusLabel(receipt.status) }}</h3>
             <p>确认时间 {{ formatDate(receipt.confirmedAt) }} · 生效时间 {{ formatDate(receipt.effectiveAt) }}</p>
           </div>
-          <StatusBadge :text="receipt.status" :tone="receiptTone" :dot="false" />
+          <StatusBadge :text="receiptStatusLabel(receipt.status)" :tone="receiptTone" :dot="false" />
         </div>
         <div class="preview-grid">
-          <div><span>变更 ID</span><strong>{{ receipt.changeId }}</strong></div>
-          <div><span>执行模式</span><strong>{{ receipt.mode }}</strong></div>
-          <div><span>价格授权</span><strong>{{ receipt.pricingAuthority }}</strong></div>
-          <div><span>Provisioning</span><strong>{{ receipt.provisioningTaskId || '无需外部准备' }}</strong></div>
+          <div><span>变更编号</span><strong>{{ receipt.changeId }}</strong></div>
+          <div><span>生效方式</span><strong>{{ effectiveModeLabel(receipt.mode) }}</strong></div>
+          <div><span>费用处理</span><strong>按当前套餐规则</strong></div>
+          <div><span>后续处理</span><strong>{{ receipt.provisioningTaskId ? '需要进一步处理' : '无需额外处理' }}</strong></div>
         </div>
         <div class="result-note">
           <strong v-if="receipt.status === 'APPLIED'">套餐变更已生效。</strong>
           <strong v-else-if="receipt.status === 'SCHEDULED'">套餐变更已预约。</strong>
           <strong v-else-if="receipt.status === 'PROVISIONING'">套餐变更正在外部准备。</strong>
-          <span>页面会重新读取当前订阅；SCHEDULED / PROVISIONING 状态通过 pendingChangeId 持续保持权威关联。</span>
+          <span>如变更尚未完成，可稍后刷新页面查看最新状态。</span>
         </div>
         <div class="action-row"><UiButton class="btn" @click="resetLifecycle">发起其他变更</UiButton></div>
       </template>

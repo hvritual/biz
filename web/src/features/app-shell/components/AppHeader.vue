@@ -75,7 +75,6 @@ async function logout() {
         <UiOption v-if="store.tenantOptions.length === 0" value="" disabled>{{ t('header.selectCompany') }}</UiOption>
         <UiOption v-for="tenant in store.tenantOptions" :key="tenant.id" :value="tenant.id">{{ tenant.name }}</UiOption>
       </UiSelect>
-      <span class="edition">{{ store.sourceKind === 'api' ? t('header.liveData') : t('header.standardEdition') }}</span>
     </div>
     <div v-else class="header-company">
       {{ route.meta.surface === 'platform' ? t('header.platform') : t('header.workspace') }}
@@ -115,22 +114,22 @@ async function logout() {
     <div class="page-stack">
       <div class="notice-box">
         <AppIcon name="help" />
-        {{ store.sourceKind === 'api' ? 'The current enterprise surface uses server data; unavailable notification or download capabilities remain explicit.' : 'This is an isolated frontend preview and is not connected to production notification or download services.' }}
+        {{ t('header.panelNotice') }}
       </div>
       <template v-if="panel === t('header.help')">
         <h3>{{ t('shell.companyGuide') }}</h3>
-        <p class="secondary">Use the primary navigation to open the connected module panel. Escape closes overlays and keyboard navigation remains available.</p>
+        <p class="secondary">{{ t('header.helpDescription') }}</p>
       </template>
       <template v-else-if="panel === t('header.notifications')">
-        <p>No notification source is connected.</p>
-        <UiButton class="btn" @click="() => { router.push('/system/notifications'); panel = '' }">Open notification settings</UiButton>
+        <p>{{ t('header.notificationsUnavailable') }}</p>
+        <UiButton class="btn" @click="() => { router.push('/system/notifications'); panel = '' }">{{ t('header.openNotificationSettings') }}</UiButton>
       </template>
       <template v-else-if="panel === t('header.downloads')">
-        <p>List exports are downloaded by the browser and are not uploaded to a remote service.</p>
+        <p>{{ t('header.downloadDescription') }}</p>
       </template>
       <template v-else>
         <p v-if="store.sourceKind === 'api'">{{ store.session?.user_id || 'Unknown user' }} · {{ store.tenantId || 'No tenant selected' }}</p>
-        <p v-else>Preview identity · enterprise owner</p>
+        <p v-else>{{ t('header.defaultRole') }}</p>
         <UiButton v-if="store.sourceKind === 'api'" class="btn" @click="logout">{{ t('common.logout') }}</UiButton>
       </template>
     </div>
@@ -147,7 +146,6 @@ async function logout() {
 .header-company { display: flex; align-items: center; gap: 9px; white-space: nowrap; }
 .header-company > .icon { color: var(--color-success); }
 .header-company select { border: 0; background: transparent; font-size: 12px; font-weight: 600; max-width: 190px; outline-offset: 4px; }
-.edition { font-size: 12px; background: var(--color-primary-soft); color: var(--color-primary); border-radius: 7px; padding: 8px 11px; }
 .global-search { display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 36px; border: 1px solid var(--color-border); border-radius: 9px; background: var(--color-surface-soft); margin: 0 auto; max-width: 470px; flex: 1; min-width: 100px; color: var(--color-text-muted); }
 .global-search input { border: 0; background: none; outline: 0; min-width: 0; flex: 1; font-size: 12px; }
 .global-search input::placeholder { color: var(--color-text-muted); }
@@ -160,7 +158,7 @@ async function logout() {
 .profile { display: flex; align-items: center; gap: 10px; text-align: left; padding: 0 0 0 12px; border-left: 1px solid var(--color-border); font-size: 13px; }
 .profile small { display: block; color: var(--color-text-muted); font-size: 11px; }
 .mobile-toggle { display: none; }
-@media (max-width: 1250px) { .header-link { display: none; } .header-company select { max-width: 155px; } .header-actions { gap: 6px; } .app-header { gap: 14px; } .edition { display: none; } }
+@media (max-width: 1250px) { .header-link { display: none; } .header-company select { max-width: 155px; } .header-actions { gap: 6px; } .app-header { gap: 14px; } }
 @media (max-width: 900px) { .locale-select { display: none; } }
 @media (max-width: 767px) { .app-header { padding: 0 14px; gap: 8px; } .brand { width: auto; flex: 1; } .brand strong { font-size: 19px; } .brand img { height: 37px; width: 31px; } .brand small { font-size: 10px; } .header-company, .global-search, .profile > span:not(.avatar-mark), .profile > .icon { display: none; } .profile { padding-left: 5px; border: 0; } .mobile-toggle { display: flex; order: -1; } .header-actions { gap: 2px; } }
 </style>

@@ -7,6 +7,7 @@ import {
   type EnterprisePlanReadModel,
 } from '@/services/enterprise/planRuntime'
 import type { EntitlementDecisionDTO } from '@/services/commercial/platformCommercial'
+import { backendTermLabel } from '@/i18n/backend-terms'
 
 export type EnterprisePlanFeature = {
   key: string
@@ -46,7 +47,11 @@ function demoFeatures(): EnterprisePlanFeature[] {
 }
 
 function decisionLabel(decision: EntitlementDecisionDTO) {
-  return decision.key || decision.moduleCode || '未命名权益'
+  return backendTermLabel('entitlementKey', decision.key || decision.moduleCode)
+}
+
+function decisionDescription(decision: EntitlementDecisionDTO) {
+  return decision.allowed ? '当前套餐已包含该能力。' : '当前套餐未包含该能力。'
 }
 
 export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
@@ -57,11 +62,11 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
   const demoRequestCount = ref(0)
 
   const isServerBacked = computed(() => enterprise.sourceKind === 'api')
-  const currentPlan = computed(() => model.value?.subscription.planCode || '标准版')
+  const currentPlan = computed(() => model.value ? backendTermLabel('plan', model.value.subscription.planCode) : '标准版')
   const periodStart = computed(() => model.value?.subscription.periodStart || model.value?.subscription.createdAt || '2026-09-08')
   const periodEnd = computed(() => model.value?.subscription.periodEnd || '2027-09-07')
-  const cycle = computed(() => model.value ? '按服务端订阅周期' : '按年')
-  const subscriptionState = computed(() => model.value?.subscription.state || '使用中')
+  const cycle = computed(() => model.value ? '按订阅有效期' : '按年')
+  const subscriptionState = computed(() => model.value ? backendTermLabel('subscriptionState', model.value.subscription.state) : '使用中')
   const serverChangeContext = computed(() => model.value ? { session: model.value.session, subscription: model.value.subscription } : null)
 
   const features = computed<EnterprisePlanFeature[]>(() => {
@@ -69,8 +74,8 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
     const rows = model.value.entitlements.decisions.filter((decision) => decision.kind === 'module')
     return rows.map((decision) => ({
       key: `${decision.moduleCode}:${decision.key}`,
-      label: decision.moduleCode || decisionLabel(decision),
-      description: decision.reason || decisionLabel(decision),
+      label: backendTermLabel('module', decision.moduleCode),
+      description: decisionDescription(decision),
       icon: 'shield',
       enabled: Boolean(decision.allowed),
     }))
@@ -130,7 +135,7 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
     error.value = ''
     try {
       model.value = await loadEnterprisePlanReadModel()
-      if (model.value.usageError) error.value = `用量服务暂不可用：${model.value.usageError}`
+      if (model.value.usageError) error.value = '额度使用信息暂不可用，请稍后重试。'
     } catch (cause) {
       model.value = null
       error.value = enterprisePlanRuntimeError(cause)
@@ -145,11 +150,11 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
   }
 
   function recordDemoChange(targetPlan: string, note: string) {
-    if (isServerBacked.value) throw new Error('真实套餐变更必须使用服务端 preview / confirm / receipt 生命周期。')
+    if (isServerBacked.value) throw new Error('套餐变更请通过正式的套餐变更流程完成。')
     demoRequestCount.value += 1
     enterprise.audit(
       '套餐信息',
-      '创建套餐调整申请（预览）',
+      '创建套餐调整申请（演示）',
       targetPlan,
       currentPlan.value,
       '待商务确认',
