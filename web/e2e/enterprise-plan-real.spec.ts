@@ -24,8 +24,8 @@ function json(route: Route, status: number, body: unknown) {
   return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
 }
 
-async function mockPlanServer(page: Page, options: Options = {
-  await installApiFailFast(page)}): Promise<Captured> {
+async function mockPlanServer(page: Page, options: Options = {}): Promise<Captured> {
+  await installApiFailFast(page)
   const captured: Captured = {
     subscriptionPaths: [],
     entitlementBodies: [],
