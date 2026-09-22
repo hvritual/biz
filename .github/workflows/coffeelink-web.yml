@@ -7,13 +7,30 @@ on:
         required: false
         type: boolean
         default: false
+      enforce_performance:
+        description: Enforce targeted CoffeeLink performance acceptance
+        required: false
+        type: boolean
+        default: false
+      performance_target_seconds:
+        description: Target lane duration for targeted performance acceptance
+        required: false
+        type: number
+        default: 180
+      performance_hard_seconds:
+        description: Diagnostic hard performance budget before classification as exceeded
+        required: false
+        type: number
+        default: 240
 permissions:
   contents: read
 jobs:
   core:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 6
     steps:
+      - name: Start CoffeeLink core performance clock
+        run: date +%s > "$RUNNER_TEMP/coffeelink-core.started"
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -133,6 +150,26 @@ jobs:
         if: always()
         working-directory: web
         run: node scripts/collect-ui-evidence.mjs
+      - name: Write CoffeeLink core performance receipt
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          ENFORCE_PERFORMANCE: ${{ inputs.enforce_performance }}
+        run: |
+          set -euo pipefail
+          args=(
+            --lane core
+            --started-file "$RUNNER_TEMP/coffeelink-core.started"
+            --target-seconds "${{ inputs.performance_target_seconds }}"
+            --hard-seconds "${{ inputs.performance_hard_seconds }}"
+            --candidate-sha "$CANDIDATE_SHA"
+            --job-status "$JOB_STATUS"
+            --output "$RUNNER_TEMP/coffeelink-core-performance.json"
+          )
+          if [ "$ENFORCE_PERFORMANCE" = "true" ]; then args+=(--enforce); fi
+          python3 scripts/coffeelink_performance.py "${args[@]}"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
@@ -141,13 +178,16 @@ jobs:
             web/screenshots
             web/test-results
             web/dist
+            ${{ runner.temp }}/coffeelink-core-performance.json
           if-no-files-found: error
           retention-days: 14
 
   site-rental:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 6
     steps:
+      - name: Start CoffeeLink site-rental performance clock
+        run: date +%s > "$RUNNER_TEMP/coffeelink-site-rental.started"
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -190,6 +230,26 @@ jobs:
               assert title in serialized, f'missing site-rental evidence: {title}'
           print(f'SITE_RENTAL_E2E=PASS expected={stats.get("expected", 0)} required={len(required)}')
           PY
+      - name: Write CoffeeLink site-rental performance receipt
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          ENFORCE_PERFORMANCE: ${{ inputs.enforce_performance }}
+        run: |
+          set -euo pipefail
+          args=(
+            --lane site-rental
+            --started-file "$RUNNER_TEMP/coffeelink-site-rental.started"
+            --target-seconds "${{ inputs.performance_target_seconds }}"
+            --hard-seconds "${{ inputs.performance_hard_seconds }}"
+            --candidate-sha "$CANDIDATE_SHA"
+            --job-status "$JOB_STATUS"
+            --output "$RUNNER_TEMP/coffeelink-site-rental-performance.json"
+          )
+          if [ "$ENFORCE_PERFORMANCE" = "true" ]; then args+=(--enforce); fi
+          python3 scripts/coffeelink_performance.py "${args[@]}"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
@@ -197,5 +257,6 @@ jobs:
           path: |
             web/screenshots/site-rental
             web/test-results
+            ${{ runner.temp }}/coffeelink-site-rental-performance.json
           if-no-files-found: error
           retention-days: 14
