@@ -96,3 +96,31 @@ No Full Gate is used for parameter tuning.
 5. Exactly one canonical Full Gate on the final SHA, 35 logical units / 42 domain jobs,
    Proof Ownership VERIFIED and zero hard violations.
 6. Exact squash merge followed by Main Qualification / MAIN_VERIFIED.
+
+## Targeted evidence and final ratchet
+
+Second-stage candidate `c6b12c1e063970b5ca6539d4657cb5749f3c0886` passed all CE13-owned
+functional/browser proof and both targeted performance gates in PR Qualification
+`35740880345`:
+
+| Gate | job wall | receipt | MySQL ready | browser prep | target |
+|---|---:|---:|---:|---:|---:|
+| CE13 Plan Catalog | 117s | 105s | 29s | 54s (overlapped) | 120s |
+| CE13 Platform Session | 121s | 112s | 25s | 54s (overlapped) | 120s |
+
+The first migration sample also proved both functional chains while missing the 120s
+target (135s / 137s receipts). The second stage moved browser preparation behind a
+bounded helper and overlapped it only after Go/Node toolchain setup, with generation +
+scoped backend proof. It does not overlap Docker pull, Go module setup and browser
+bootstrap from the start of the job.
+
+Actual Proof Governance inventory on the second-stage candidate reports
+`legacy_cost_findings=85`, down from 92 on main. The final ratchet therefore:
+- sets both CE13 gates to target 120s / hard 180s;
+- removes all CE13 Plan legacy ceilings for disabled Go cache, service MySQL, headed
+  Chromium and CE07 MySQL overlap;
+- removes all CE13 Platform Session legacy ceilings for disabled Go cache, service
+  MySQL and headed Chromium.
+
+The ratcheted SHA must rerun PR Qualification. Only that exact SHA may trigger one
+canonical Full Gate.
