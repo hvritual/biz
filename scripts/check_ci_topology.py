@@ -343,7 +343,7 @@ def validate(base_ref: str | None = None) -> list[str]:
                 "if: ${{ !inputs.skip_fast_check }}",
                 "Build default CoffeeLink bundle",
                 "run: npx vite build",
-                "Install browser and Chinese text support",
+                "Install core headless browser and Chinese text support",
                 f"npx playwright test --workers={int(web_budget['core_e2e_workers'])}",
                 f"npx playwright test --workers={int(web_budget['rental_e2e_workers'])} e2e/site-rental.spec.ts",
                 "! -name 'site-rental.spec.ts'",
@@ -353,6 +353,9 @@ def validate(base_ref: str | None = None) -> list[str]:
                 "coffeelink-site-rental-review",
                 "Write CoffeeLink core performance receipt",
                 "Write CoffeeLink site-rental performance receipt",
+                "Install site-rental headless browser and Chinese text support",
+                "npx playwright install --with-deps --only-shell chromium",
+                "fc-match \"Noto Sans CJK SC\"",
                 "scripts/coffeelink_performance.py",
                 "coffeelink-core-performance.json",
                 "coffeelink-site-rental-performance.json",
@@ -360,6 +363,13 @@ def validate(base_ref: str | None = None) -> list[str]:
             for marker in required_markers:
                 if marker not in text:
                     errors.append(f"{workflow}: CoffeeLink performance/coverage marker missing: {marker}")
+
+            core_block = text.split("  core:", 1)[1].split("  site-rental:", 1)[0] if "  core:" in text and "  site-rental:" in text else ""
+            if "npx playwright install --with-deps chromium" in core_block:
+                errors.append(f"{workflow}: core must not download headed Chromium")
+            site_rental_block = text.split("  site-rental:", 1)[1] if "  site-rental:" in text else ""
+            if "npx playwright install --with-deps chromium" in site_rental_block:
+                errors.append(f"{workflow}: site-rental must not download headed Chromium")
 
             forbidden_direct = [
                 "VITE_DATA_MODE=api",
@@ -375,6 +385,18 @@ def validate(base_ref: str | None = None) -> list[str]:
             for marker in forbidden_direct:
                 if marker in text:
                     errors.append(f"{workflow}: CoffeeLink delegated/long-tail regression reintroduced: {marker}")
+
+        for stability_path, markers in web_budget.get("core_stability_contracts", {}).items():
+            stability_file = ROOT / stability_path
+            if not stability_file.exists():
+                errors.append(f"CoffeeLink core stability file missing: {stability_path}")
+                continue
+            stability_text = stability_file.read_text(encoding="utf-8")
+            for marker in markers:
+                if marker not in stability_text:
+                    errors.append(
+                        f"CoffeeLink core stability marker missing: {stability_path}: {marker}"
+                    )
 
         for spec_path in web_budget.get("parallel_specs", []):
             spec = ROOT / spec_path
@@ -446,10 +468,10 @@ def validate(base_ref: str | None = None) -> list[str]:
             branch_prefix = web_budget["target_branch_prefix"]
             target_required = [
                 "needs: [route, governance, fast-web]",
-                f"if: needs.route.outputs.web_product == 'true' || startsWith(github.head_ref, '{branch_prefix}')",
+                f"if: needs.route.outputs.web_product == 'true' || needs.route.outputs.coffeelink_governance == 'true' || startsWith(github.head_ref, '{branch_prefix}')",
                 "uses: ./.github/workflows/coffeelink-web.yml",
                 "skip_fast_check: true",
-                f"enforce_performance: ${{{{ startsWith(github.head_ref, '{branch_prefix}') }}}}",
+                f"enforce_performance: ${{{{ needs.route.outputs.coffeelink_governance == 'true' || startsWith(github.head_ref, '{branch_prefix}') }}}}",
                 f"performance_target_seconds: {target_seconds}",
                 f"performance_hard_seconds: {hard_seconds}",
             ]

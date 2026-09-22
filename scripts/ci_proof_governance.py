@@ -25,7 +25,12 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = 'scripts/ci_proof_contract.json'
 TOPOLOGY = 'scripts/ci_topology_contract.json'
 RECEIPT = 'ci-proof-execution.json'
-PROTECTED = (CONTRACT, 'scripts/ci_proof_governance.py', 'scripts/test_ci_proof_governance.py')
+PROTECTED = (CONTRACT, 'scripts/ci_proof_governance.py', 'scripts/test_ci_proof_governance.py',
+             'scripts/ci_commercial_baseline.json', 'scripts/ci_commercial_runtime.py',
+             'scripts/test_ci_commercial_runtime.py', 'scripts/check_ci_commercial.py',
+             'scripts/ci_commercial_mysql.sh', 'scripts/ci_ce13_mysql.sh',
+             'scripts/ci_ce13_browser.sh', 'scripts/check_ci_ce13.py',
+             'scripts/test_ci_ce13_runtime.py')
 RUNTIMES = {'go-mysql', 'go', 'browser', 'mixed', 'static'}
 RULES = {'go.all.test', 'go.all.vet', 'go.all.build', 'generation.check',
          'generation.generate', 'web.fast', 'bootstrap.go-cache-disabled',

@@ -18,3 +18,9 @@ export async function installApiFailFast(page: Page) {
     throw new Error(`Unhandled API request: ${request.method()} ${new URL(request.url()).pathname}`)
   })
 }
+
+export async function installUnauthenticatedSession(page: Page) {
+  await page.route('**/api/auth/session', async (route) => {
+    await route.fulfill({ json: { authenticated: false } })
+  })
+}

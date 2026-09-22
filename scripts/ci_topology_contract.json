@@ -168,7 +168,26 @@
       "target_branch_prefix": "chore/ci-coffeelink-",
       "target_pr_job": "web-product",
       "performance_receipt_script": "scripts/coffeelink_performance.py",
-      "performance_receipt_test": "scripts/test_coffeelink_performance.py"
+      "performance_receipt_test": "scripts/test_coffeelink_performance.py",
+      "core_stability_contracts": {
+        "web/e2e/console.spec.ts": [
+          "ensurePrimaryNavigationCollapsed(page, true)",
+          "ensurePrimaryNavigationCollapsed(page, false)"
+        ],
+        "web/e2e/ui.helpers.ts": [
+          "installUnauthenticatedSession",
+          "**/api/auth/session"
+        ],
+        "web/e2e/design-acceptance.spec.ts": [
+          "installUnauthenticatedSession"
+        ],
+        "web/e2e/i18n.spec.ts": [
+          "installUnauthenticatedSession"
+        ],
+        "web/e2e/theme-appearance.spec.ts": [
+          "installUnauthenticatedSession"
+        ]
+      }
     },
     "ce10_qualification": {
       "workflow": "ce10-qualification.yml",

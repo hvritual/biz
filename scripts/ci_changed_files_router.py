@@ -129,6 +129,30 @@ WEB_E2E_HARNESS_FILES = {
     ".github/workflows/web-e2e-harness.yml",
 }
 
+COFFEELINK_GATE_FILES = {
+    ".github/workflows/coffeelink-web.yml",
+    "scripts/coffeelink_performance.py",
+    "scripts/test_coffeelink_performance.py",
+    "web/e2e/theme-appearance.spec.ts",
+    "web/e2e/i18n.spec.ts",
+    "web/e2e/design-acceptance.spec.ts",
+    "web/e2e/console.spec.ts",
+}
+
+CE13_GATE_FILES = {
+    ".github/workflows/ce13-plan-catalog-qualification.yml",
+    ".github/workflows/ce13-platform-web-session.yml",
+    "scripts/ci_ce13_mysql.sh",
+    "scripts/check_ci_ce13.py",
+    "scripts/test_ci_ce13_runtime.py",
+    "web/playwright.ce13-plan-catalog.config.ts",
+    "web/playwright.ce13-platform.config.ts",
+}
+CE13_GATE_PREFIXES = (
+    "web/tests/ce13-plan-catalog/",
+    "web/tests/ce13-platform/",
+)
+
 ENTERPRISE_180_PATH_PREFIXES = (
     "integration/enterprise_180_",
 )
@@ -223,7 +247,12 @@ def route(paths: list[str]) -> dict[str, object]:
         path in WEB_E2E_HARNESS_FILES or any(path.startswith(prefix) for prefix in WEB_E2E_HARNESS_PREFIXES)
         for path in files
     )
-    web_product = any(
+    coffeelink_governance = any(path in COFFEELINK_GATE_FILES for path in files)
+    ce13_governance = any(
+        path in CE13_GATE_FILES or any(path.startswith(prefix) for prefix in CE13_GATE_PREFIXES)
+        for path in files
+    )
+    web_product = coffeelink_governance or any(
         path.startswith("web/")
         and path not in WEB_E2E_HARNESS_FILES
         and not any(path.startswith(prefix) for prefix in WEB_E2E_HARNESS_PREFIXES)
@@ -273,6 +302,8 @@ def route(paths: list[str]) -> dict[str, object]:
         "ce_receipts": ce_receipts,
         "web_e2e_harness": web_e2e_harness,
         "web_product": web_product,
+        "coffeelink_governance": coffeelink_governance,
+        "ce13_governance": ce13_governance,
         "role_grants": role_grants,
         "enterprise180": enterprise180,
     }
@@ -290,6 +321,8 @@ def emit_github_output(path: str, result: dict[str, object]) -> None:
         handle.write(f"ce_receipts={str(result['ce_receipts']).lower()}\n")
         handle.write(f"web_e2e_harness={str(result['web_e2e_harness']).lower()}\n")
         handle.write(f"web_product={str(result['web_product']).lower()}\n")
+        handle.write(f"coffeelink_governance={str(result['coffeelink_governance']).lower()}\n")
+        handle.write(f"ce13_governance={str(result['ce13_governance']).lower()}\n")
         handle.write(f"role_grants={str(result['role_grants']).lower()}\n")
         handle.write(f"enterprise180={str(result['enterprise180']).lower()}\n")
         handle.write("domain_matrix=" + json.dumps(result["domain_matrix"], separators=(",", ":")) + "\n")
