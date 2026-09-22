@@ -353,6 +353,9 @@ def validate(base_ref: str | None = None) -> list[str]:
                 "coffeelink-site-rental-review",
                 "Write CoffeeLink core performance receipt",
                 "Write CoffeeLink site-rental performance receipt",
+                "Install site-rental headless browser and Chinese text support",
+                "npx playwright install --with-deps --only-shell chromium",
+                "fc-match \"Noto Sans CJK SC\"",
                 "scripts/coffeelink_performance.py",
                 "coffeelink-core-performance.json",
                 "coffeelink-site-rental-performance.json",
@@ -360,6 +363,10 @@ def validate(base_ref: str | None = None) -> list[str]:
             for marker in required_markers:
                 if marker not in text:
                     errors.append(f"{workflow}: CoffeeLink performance/coverage marker missing: {marker}")
+
+            site_rental_block = text.split("  site-rental:", 1)[1] if "  site-rental:" in text else ""
+            if "npx playwright install --with-deps chromium" in site_rental_block:
+                errors.append(f"{workflow}: site-rental must not download headed Chromium")
 
             forbidden_direct = [
                 "VITE_DATA_MODE=api",
