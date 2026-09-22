@@ -318,8 +318,14 @@ def validate(base_ref: str | None = None) -> list[str]:
                 "if: ${{ !inputs.skip_fast_check }}",
                 "Build default CoffeeLink bundle",
                 "run: npx vite build",
-                f"npx playwright test --workers={int(web_budget['default_e2e_workers'])}",
-                "npx playwright install --with-deps chromium",
+                "Use runner Chrome and verify Chinese text support",
+                "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH",
+                "Run sharded CoffeeLink E2E",
+                f"npx playwright test --workers={int(web_budget['core_e2e_workers'])}",
+                f"npx playwright test --workers={int(web_budget['rental_e2e_workers'])} e2e/site-rental.spec.ts",
+                "PLAYWRIGHT_REUSE_SERVER=1",
+                "PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/results.json",
+                "PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/site-rental-results.json",
                 "Verify visual contract evidence",
             ]
             for marker in required_markers:
@@ -334,6 +340,7 @@ def validate(base_ref: str | None = None) -> list[str]:
                 "e2e/enterprise-roles-real.spec.ts",
                 "npm run test:e2e",
                 "enterprise_required",
+                "npx playwright install --with-deps chromium",
             ]
             for marker in forbidden_direct:
                 if marker in text:
@@ -347,6 +354,24 @@ def validate(base_ref: str | None = None) -> list[str]:
             spec_text = spec.read_text(encoding="utf-8")
             if "test.describe.configure({ mode: 'parallel' })" not in spec_text:
                 errors.append(f"CoffeeLink parallel spec lost file-level parallelism: {spec_path}")
+
+        for spec_path in web_budget.get("dedicated_serial_specs", []):
+            spec = ROOT / spec_path
+            if not spec.exists():
+                errors.append(f"CoffeeLink dedicated serial spec missing: {spec_path}")
+                continue
+            spec_text = spec.read_text(encoding="utf-8")
+            if "test.describe.configure({ mode: 'parallel' })" in spec_text:
+                errors.append(f"CoffeeLink dedicated serial spec must not enable file-level parallelism: {spec_path}")
+
+        playwright_config = (ROOT / "web" / "playwright.config.ts").read_text(encoding="utf-8")
+        for marker in (
+            "PLAYWRIGHT_JSON_OUTPUT_FILE",
+            "PLAYWRIGHT_OUTPUT_DIR",
+            "PLAYWRIGHT_REUSE_SERVER",
+        ):
+            if marker not in playwright_config:
+                errors.append(f"CoffeeLink Playwright shard support marker missing: {marker}")
 
         for delegated_workflow, spec_path in web_budget.get("delegated_api_e2e", {}).items():
             if delegated_workflow not in expected_full:
