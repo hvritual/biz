@@ -29,6 +29,7 @@ jobs:
       ce_receipts: ${{ steps.route.outputs.ce_receipts }}
       web_e2e_harness: ${{ steps.route.outputs.web_e2e_harness }}
       web_product: ${{ steps.route.outputs.web_product }}
+      coffeelink_governance: ${{ steps.route.outputs.coffeelink_governance }}
       role_grants: ${{ steps.route.outputs.role_grants }}
       enterprise180: ${{ steps.route.outputs.enterprise180 }}
     steps:
@@ -76,6 +77,8 @@ jobs:
           python3 scripts/check_ci_topology.py --base-ref "$BASE_SHA"
           python3 scripts/ci_proof_governance.py check --base-ref "$BASE_SHA" --output "$RUNNER_TEMP/ci-proof-contract.json"
           python3 scripts/test_ci_proof_governance.py
+          python3 scripts/ci_commercial_runtime.py check
+          python3 scripts/test_ci_commercial_runtime.py
           python3 scripts/delivery_execution.py validate-contract
           python3 scripts/test_delivery_execution.py
           python3 scripts/candidate_lifecycle.py validate-contract
@@ -165,11 +168,11 @@ jobs:
 
   web-product:
     needs: [route, governance, fast-web]
-    if: needs.route.outputs.web_product == 'true' || startsWith(github.head_ref, 'chore/ci-coffeelink-')
+    if: needs.route.outputs.web_product == 'true' || needs.route.outputs.coffeelink_governance == 'true' || startsWith(github.head_ref, 'chore/ci-coffeelink-')
     uses: ./.github/workflows/coffeelink-web.yml
     with:
       skip_fast_check: true
-      enforce_performance: ${{ startsWith(github.head_ref, 'chore/ci-coffeelink-') }}
+      enforce_performance: ${{ needs.route.outputs.coffeelink_governance == 'true' || startsWith(github.head_ref, 'chore/ci-coffeelink-') }}
       performance_target_seconds: 180
       performance_hard_seconds: 240
 
@@ -215,3 +218,39 @@ jobs:
       enforce_performance: ${{ startsWith(github.head_ref, 'chore/ci-evolution-') }}
       performance_target_seconds: 240
       performance_hard_seconds: 300
+
+  commercial-batch-ce04:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-proof-commercial-')
+    uses: ./.github/workflows/ce04-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
+      performance_hard_seconds: 150
+
+  commercial-batch-ce05:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-proof-commercial-')
+    uses: ./.github/workflows/ce05-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
+      performance_hard_seconds: 180
+
+  commercial-batch-ce06:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-proof-commercial-')
+    uses: ./.github/workflows/ce06-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
+      performance_hard_seconds: 180
+
+  commercial-batch-ce07:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-proof-commercial-')
+    uses: ./.github/workflows/ce07-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
+      performance_hard_seconds: 180

@@ -80,6 +80,12 @@ class RouteTests(unittest.TestCase):
         self.assertFalse(result["web_e2e_harness"])
         self.assertTrue(result["web_product"])
 
+    def test_coffeelink_gate_change_runs_targeted_product_performance(self):
+        result = route([".github/workflows/coffeelink-web.yml"])
+        self.assertTrue(result["domains"]["core"])
+        self.assertTrue(result["web_product"])
+        self.assertTrue(result["coffeelink_governance"])
+
     def test_role_grant_change_uses_role_grant_gate(self):
         result = route([
             "internal/bizruntime/role_entitlements.go",
