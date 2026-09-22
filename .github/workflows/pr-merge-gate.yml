@@ -347,7 +347,19 @@ jobs:
           python3 scripts/candidate_lifecycle.py assert-fresh --main-ref origin/main --candidate-ref HEAD
       - name: Enforce Delivery Execution Control Plane
         if: always()
-        run: python3 scripts/delivery_execution.py merge-ready
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/ci_proof_governance.py audit-run
+          python3 scripts/delivery_execution.py merge-ready
+      - name: Retain actual proof coverage and performance
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ci-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-proof-execution.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Retain exact delivery receipt even on failure
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
