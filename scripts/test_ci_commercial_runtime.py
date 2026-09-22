@@ -117,7 +117,7 @@ class SourceTests(unittest.TestCase):
     def mutated(self, path, transform):
         with tempfile.TemporaryDirectory() as d:
             root=Path(d)
-            paths=['scripts/ci_commercial_baseline.json','scripts/ci_commercial_mysql.sh','.github/workflows/pr-qualification.yml']
+            paths=['scripts/ci_commercial_baseline.json','scripts/ci_commercial_mysql.sh','scripts/ci_proof_contract.json','.github/workflows/pr-qualification.yml']
             for n in range(4,8):
                 paths += [f'scripts/ce0{n}_qualify.sh',f'.github/workflows/ce0{n}-qualification.yml']
             for p in paths:
