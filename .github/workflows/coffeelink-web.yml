@@ -10,9 +10,9 @@ on:
 permissions:
   contents: read
 jobs:
-  web:
+  core:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -26,73 +26,24 @@ jobs:
         if: ${{ !inputs.skip_fast_check }}
         run: npm run check
         working-directory: web
-      - name: Use runner Chrome and verify Chinese text support
+      - name: Install browser and Chinese text support
         working-directory: web
-        shell: bash
         run: |
-          set -euo pipefail
-          browser="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
-          test -n "$browser"
-          test -x "$browser"
-          echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=$browser" >> "$GITHUB_ENV"
-          if ! fc-list :lang=zh family | grep -qi 'Noto Sans CJK'; then
-            sudo apt-get update
-            sudo apt-get install -y fonts-noto-cjk
-          fi
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
       - name: Build default CoffeeLink bundle
         run: npx vite build
         working-directory: web
-      - name: Run sharded CoffeeLink E2E
+      - name: Run CoffeeLink core E2E
         working-directory: web
         shell: bash
         run: |
           set -euo pipefail
-
-          npm run preview > "$RUNNER_TEMP/coffeelink-preview.log" 2>&1 &
-          preview_pid="$!"
-          cleanup() {
-            kill "$preview_pid" >/dev/null 2>&1 || true
-          }
-          trap cleanup EXIT
-
-          ready=0
-          for attempt in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
-              ready=1
-              break
-            fi
-            sleep 1
-          done
-          test "$ready" = 1
-
           mapfile -t core_specs < <(
             find e2e -maxdepth 1 -type f -name '*.spec.ts' ! -name 'site-rental.spec.ts' -print | sort
           )
           test "${#core_specs[@]}" -gt 0
-
-          (
-            PLAYWRIGHT_REUSE_SERVER=1 \
-            PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/results.json \
-            PLAYWRIGHT_OUTPUT_DIR=test-results/core-artifacts \
-              npx playwright test --workers=3 "${core_specs[@]}"
-          ) &
-          core_pid="$!"
-
-          (
-            PLAYWRIGHT_REUSE_SERVER=1 \
-            PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/site-rental-results.json \
-            PLAYWRIGHT_OUTPUT_DIR=test-results/site-rental-artifacts \
-              npx playwright test --workers=1 e2e/site-rental.spec.ts
-          ) &
-          rental_pid="$!"
-
-          core_status=0
-          wait "$core_pid" || core_status="$?"
-          rental_status=0
-          wait "$rental_pid" || rental_status="$?"
-
-          test "$core_status" = 0
-          test "$rental_status" = 0
+          npx playwright test --workers=4 "${core_specs[@]}"
       - name: Verify visual contract evidence
         working-directory: web
         shell: bash
@@ -107,13 +58,6 @@ jobs:
           stats = results['stats']
           assert stats.get('unexpected', 0) == 0, stats
           expected = stats.get('expected', 0)
-
-          rental_results = json.loads((root / 'site-rental-results.json').read_text())
-          rental_stats = rental_results['stats']
-          assert rental_stats.get('unexpected', 0) == 0, rental_stats
-          rental_serialized = json.dumps(rental_results, ensure_ascii=False)
-          assert 'responsive views and dialogs are reachable without viewport overflow or console errors' in rental_serialized
-          assert 'expired contract has no current quote while historical versions remain available' in rental_serialized
           assert expected >= 20, stats
           serialized = json.dumps(results, ensure_ascii=False)
           assert 'TestCE11' in serialized, 'TestCE11 acceptance identity missing'
@@ -179,8 +123,7 @@ jobs:
               width, height = struct.unpack('>II', data[16:24])
               assert (width, height) == want, (name, width, height, want)
           print(
-              f'UI_CONTRACT_VISUAL_EVIDENCE=PASS core_e2e={expected} '
-              f'site_rental_e2e={rental_stats.get("expected", 0)} '
+              f'UI_CONTRACT_VISUAL_EVIDENCE=PASS e2e={expected} '
               f'gallery={len(gallery_pngs)} compatibility={len(compatibility_pngs)} '
               'contracts=CoffeeLink-V1.1 enterprise-member-api=PASS enterprise-role-api=PASS'
           )
@@ -198,5 +141,61 @@ jobs:
             web/screenshots
             web/test-results
             web/dist
+          if-no-files-found: error
+          retention-days: 14
+
+  site-rental:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - name: Install browser and Chinese text support
+        working-directory: web
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Build default CoffeeLink bundle
+        run: npx vite build
+        working-directory: web
+      - name: Run serial site-rental E2E
+        run: npx playwright test --workers=1 e2e/site-rental.spec.ts
+        working-directory: web
+      - name: Verify site-rental evidence
+        working-directory: web
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          results = json.loads(Path('test-results/results.json').read_text())
+          stats = results['stats']
+          assert stats.get('unexpected', 0) == 0, stats
+          serialized = json.dumps(results, ensure_ascii=False)
+          required = [
+              'site list, actual linked records, and existing connected navigation',
+              'billing draft, dispute, resolution and frozen snapshot form a single-record loop',
+              'responsive views and dialogs are reachable without viewport overflow or console errors',
+              'expired contract has no current quote while historical versions remain available',
+          ]
+          for title in required:
+              assert title in serialized, f'missing site-rental evidence: {title}'
+          print(f'SITE_RENTAL_E2E=PASS expected={stats.get("expected", 0)} required={len(required)}')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: coffeelink-site-rental-review
+          path: |
+            web/screenshots/site-rental
+            web/test-results
           if-no-files-found: error
           retention-days: 14
