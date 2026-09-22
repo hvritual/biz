@@ -4,6 +4,10 @@ package policy
 
 import "yunka.io/pkg/operationplan"
 
+func OperationPlanSiteManagementListAssignableRoleSites() operationplan.Plan {
+	return operationplan.Plan{OperationID: "site.role_scope_directory", Domain: "deviceops", Application: "site_management", UseCase: "list_assignable_role_sites", RequestType: "deviceops.v1.SiteScopeDirectoryRequest", ResponseType: "deviceops.v1.SiteScopeDirectoryResponse", Execution: operationplan.Execution{Transaction: "read_only", Idempotency: "none"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key", "web-session"}, Permissions: []string{"tenant.role.manage"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "", HTTP: []operationplan.HTTPBinding{}}}
+}
+
 func OperationPlanSiteManagementValidateTransferTarget() operationplan.Plan {
 	return operationplan.Plan{OperationID: "site.validate_transfer_target", Domain: "deviceops", Application: "site_management", UseCase: "validate_transfer_target", RequestType: "deviceops.v1.ValidateTransferTargetRequest", ResponseType: "deviceops.v1.SiteDTO", Execution: operationplan.Execution{Transaction: "read_only", Idempotency: "none"}, Security: operationplan.Security{Public: false, TenantRequired: true, Authentication: []string{"api-key", "web-session"}, Permissions: []string{"site.read"}, PermissionMode: "all"}, Composition: operationplan.Composition{Boundary: "", RequiresOperations: []string{}, PermissionClosure: []string{}}, ApplicationRequires: []string{}, Bindings: operationplan.Bindings{RPC: "", HTTP: []operationplan.HTTPBinding{}}}
 }

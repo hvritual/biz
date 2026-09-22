@@ -409,6 +409,51 @@
       }
     },
     {
+      "name": "CreateTenantDataPolicyRequest",
+      "fullName": "access.v1.CreateTenantDataPolicyRequest",
+      "fields": [
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "site_ids",
+          "jsonName": "siteIds",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "not_before",
+          "jsonName": "notBefore",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "jsonName": "expiresAt",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "policy_id",
+          "jsonName": "policyId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "CreateTenantDepartmentRequest",
       "fullName": "access.v1.CreateTenantDepartmentRequest",
       "fields": [
@@ -814,6 +859,22 @@
       }
     },
     {
+      "name": "GetTenantDataPolicyRequest",
+      "fullName": "access.v1.GetTenantDataPolicyRequest",
+      "fields": [
+        {
+          "name": "policy_id",
+          "jsonName": "policyId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "GetTenantDelegationRequest",
       "fullName": "access.v1.GetTenantDelegationRequest",
       "fields": [
@@ -1061,6 +1122,31 @@
           "number": 4,
           "kind": "scalar",
           "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListTenantDataPoliciesRequest",
+      "fullName": "access.v1.ListTenantDataPoliciesRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListTenantDataPoliciesResponse",
+      "fullName": "access.v1.ListTenantDataPoliciesResponse",
+      "fields": [
+        {
+          "name": "policies",
+          "jsonName": "policies",
+          "number": 1,
+          "kind": "message",
+          "type": "access.v1.TenantDataPolicyDTO",
+          "repeated": true
         }
       ],
       "dto": {
@@ -1364,6 +1450,29 @@
       }
     },
     {
+      "name": "RevokeTenantDataPolicyRequest",
+      "fullName": "access.v1.RevokeTenantDataPolicyRequest",
+      "fields": [
+        {
+          "name": "policy_id",
+          "jsonName": "policyId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "RevokeTenantDelegationRequest",
       "fullName": "access.v1.RevokeTenantDelegationRequest",
       "fields": [
@@ -1403,6 +1512,43 @@
           "number": 2,
           "kind": "scalar",
           "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "SetTenantRoleDataPolicyRequest",
+      "fullName": "access.v1.SetTenantRoleDataPolicyRequest",
+      "fields": [
+        {
+          "name": "role_id",
+          "jsonName": "roleId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "policy_id",
+          "jsonName": "policyId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "policy_version",
+          "jsonName": "policyVersion",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
         }
       ],
       "dto": {
@@ -1717,6 +1863,130 @@
           "number": 4,
           "kind": "scalar",
           "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "TenantDataPolicyDTO",
+      "fullName": "access.v1.TenantDataPolicyDTO",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "jsonName": "status",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "site_ids",
+          "jsonName": "siteIds",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "not_before",
+          "jsonName": "notBefore",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "jsonName": "expiresAt",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "effective",
+          "jsonName": "effective",
+          "number": 8,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "invalid_reason",
+          "jsonName": "invalidReason",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "TenantDataPolicyReferenceDTO",
+      "fullName": "access.v1.TenantDataPolicyReferenceDTO",
+      "fields": [
+        {
+          "name": "policy_id",
+          "jsonName": "policyId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "policy_name",
+          "jsonName": "policyName",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "policy_version",
+          "jsonName": "policyVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "accepted_version",
+          "jsonName": "acceptedVersion",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "effective",
+          "jsonName": "effective",
+          "number": 5,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "invalid_reason",
+          "jsonName": "invalidReason",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
@@ -2203,6 +2473,13 @@
           "number": 9,
           "kind": "scalar",
           "type": "uint64"
+        },
+        {
+          "name": "data_policy",
+          "jsonName": "dataPolicy",
+          "number": 10,
+          "kind": "message",
+          "type": "access.v1.TenantDataPolicyReferenceDTO"
         }
       ],
       "dto": {
@@ -2233,6 +2510,58 @@
           "number": 3,
           "kind": "scalar",
           "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "UpdateTenantDataPolicyRequest",
+      "fullName": "access.v1.UpdateTenantDataPolicyRequest",
+      "fields": [
+        {
+          "name": "policy_id",
+          "jsonName": "policyId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "site_ids",
+          "jsonName": "siteIds",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "not_before",
+          "jsonName": "notBefore",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "jsonName": "expiresAt",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
@@ -6899,6 +7228,54 @@
       }
     },
     {
+      "name": "SiteScopeDirectoryRequest",
+      "fullName": "deviceops.v1.SiteScopeDirectoryRequest",
+      "fields": [
+        {
+          "name": "site_ids",
+          "jsonName": "siteIds",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "resolve",
+          "jsonName": "resolve",
+          "number": 2,
+          "kind": "scalar",
+          "type": "bool"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "SiteScopeDirectoryResponse",
+      "fullName": "deviceops.v1.SiteScopeDirectoryResponse",
+      "fields": [
+        {
+          "name": "sites",
+          "jsonName": "sites",
+          "number": 1,
+          "kind": "message",
+          "type": "deviceops.v1.SiteDTO",
+          "repeated": true
+        },
+        {
+          "name": "total",
+          "jsonName": "total",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "TransferDeviceRequest",
       "fullName": "deviceops.v1.TransferDeviceRequest",
       "fields": [
@@ -8910,6 +9287,9 @@
       "domain": "access",
       "application": {
         "name": "tenant_role_permission",
+        "requires": [
+          "deviceops/site_management"
+        ],
         "operations": [
           {
             "id": "tenant.role.assert_member_deactivation_allowed",
@@ -8983,6 +9363,52 @@
           },
           "authorization": {
             "operationId": "tenant.role.assign_member",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "CreateTenantDataPolicy",
+          "fullName": "access.v1.TenantRolePermissionApplication.CreateTenantDataPolicy",
+          "request": "access.v1.CreateTenantDataPolicyRequest",
+          "response": "access.v1.TenantDataPolicyDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/data-policies",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.data_policy.create",
+            "useCase": "create_tenant_data_policy",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "site.role_scope_directory"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.data_policy.create",
             "permissions": [
               "tenant.role.manage"
             ],
@@ -9162,6 +9588,47 @@
           }
         },
         {
+          "name": "GetTenantDataPolicy",
+          "fullName": "access.v1.TenantRolePermissionApplication.GetTenantDataPolicy",
+          "request": "access.v1.GetTenantDataPolicyRequest",
+          "response": "access.v1.TenantDataPolicyDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/data-policies/{policy_id}"
+            }
+          ],
+          "operation": {
+            "id": "tenant.data_policy.get",
+            "useCase": "get_tenant_data_policy",
+            "permissions": [
+              "tenant.role.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.data_policy.get",
+            "permissions": [
+              "tenant.role.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "GetTenantRole",
           "fullName": "access.v1.TenantRolePermissionApplication.GetTenantRole",
           "request": "access.v1.GetTenantRoleRequest",
@@ -9191,6 +9658,47 @@
           },
           "authorization": {
             "operationId": "tenant.role.get",
+            "permissions": [
+              "tenant.role.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListTenantDataPolicies",
+          "fullName": "access.v1.TenantRolePermissionApplication.ListTenantDataPolicies",
+          "request": "access.v1.ListTenantDataPoliciesRequest",
+          "response": "access.v1.ListTenantDataPoliciesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/data-policies"
+            }
+          ],
+          "operation": {
+            "id": "tenant.data_policy.list",
+            "useCase": "list_tenant_data_policies",
+            "permissions": [
+              "tenant.role.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.data_policy.list",
             "permissions": [
               "tenant.role.read"
             ],
@@ -9244,6 +9752,48 @@
           }
         },
         {
+          "name": "RevokeTenantDataPolicy",
+          "fullName": "access.v1.TenantRolePermissionApplication.RevokeTenantDataPolicy",
+          "request": "access.v1.RevokeTenantDataPolicyRequest",
+          "response": "access.v1.TenantDataPolicyDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/data-policies/{policy_id}/revoke",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.data_policy.revoke",
+            "useCase": "revoke_tenant_data_policy",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.data_policy.revoke",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "RevokeTenantRoleMember",
           "fullName": "access.v1.TenantRolePermissionApplication.RevokeTenantRoleMember",
           "request": "access.v1.RevokeTenantRoleMemberRequest",
@@ -9286,6 +9836,48 @@
           }
         },
         {
+          "name": "SetTenantRoleDataPolicy",
+          "fullName": "access.v1.TenantRolePermissionApplication.SetTenantRoleDataPolicy",
+          "request": "access.v1.SetTenantRoleDataPolicyRequest",
+          "response": "access.v1.TenantRoleDTO",
+          "http": [
+            {
+              "method": "PUT",
+              "path": "/v1/tenant/roles/{role_id}/data-policy",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.role.set_data_policy",
+            "useCase": "set_tenant_role_data_policy",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.role.set_data_policy",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "SetTenantRolePermissions",
           "fullName": "access.v1.TenantRolePermissionApplication.SetTenantRolePermissions",
           "request": "access.v1.SetTenantRolePermissionsRequest",
@@ -9316,6 +9908,52 @@
           },
           "authorization": {
             "operationId": "tenant.role.set_permissions",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "UpdateTenantDataPolicy",
+          "fullName": "access.v1.TenantRolePermissionApplication.UpdateTenantDataPolicy",
+          "request": "access.v1.UpdateTenantDataPolicyRequest",
+          "response": "access.v1.TenantDataPolicyDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/tenant/data-policies/{policy_id}",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.data_policy.update",
+            "useCase": "update_tenant_data_policy",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "site.role_scope_directory"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.data_policy.update",
             "permissions": [
               "tenant.role.manage"
             ],
@@ -11931,6 +12569,26 @@
       "application": {
         "name": "site_management",
         "operations": [
+          {
+            "id": "site.role_scope_directory",
+            "useCase": "list_assignable_role_sites",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "deviceops.v1.SiteScopeDirectoryRequest",
+            "responseType": "deviceops.v1.SiteScopeDirectoryResponse",
+            "applicationMethod": "ListAssignableRoleSites"
+          },
           {
             "id": "site.validate_transfer_target",
             "useCase": "validate_transfer_target",

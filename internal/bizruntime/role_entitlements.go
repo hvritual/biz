@@ -188,32 +188,44 @@ func (w checkedRoles) BootstrapTenantOwnerRole(ctx context.Context, r *accessv1.
 	return v, roleExecutionError(ctx, "tenant.role.bootstrap_owner", err)
 }
 func (w checkedRoles) ListTenantDataPolicies(ctx context.Context, r *accessv1.ListTenantDataPoliciesRequest) (*accessv1.ListTenantDataPoliciesResponse, error) {
-	if err := enforcement.RequireExecuted(ctx, "tenant.data_policy.list"); err != nil { return nil, err }
+	if err := enforcement.RequireExecuted(ctx, "tenant.data_policy.list"); err != nil {
+		return nil, err
+	}
 	v, err := w.inner.ListTenantDataPolicies(ctx, r)
 	return v, enforcement.ExecutionError(ctx, "tenant.data_policy.list", err)
 }
 func (w checkedRoles) GetTenantDataPolicy(ctx context.Context, r *accessv1.GetTenantDataPolicyRequest) (*accessv1.TenantDataPolicyDTO, error) {
-	if err := enforcement.RequireExecuted(ctx, "tenant.data_policy.get"); err != nil { return nil, err }
+	if err := enforcement.RequireExecuted(ctx, "tenant.data_policy.get"); err != nil {
+		return nil, err
+	}
 	v, err := w.inner.GetTenantDataPolicy(ctx, r)
 	return v, enforcement.ExecutionError(ctx, "tenant.data_policy.get", err)
 }
 func (w checkedRoles) CreateTenantDataPolicy(ctx context.Context, r *accessv1.CreateTenantDataPolicyRequest) (*accessv1.TenantDataPolicyDTO, error) {
-	if err := enforcement.RequireExecuted(ctx, "tenant.data_policy.create"); err != nil { return nil, err }
+	if err := enforcement.RequireExecuted(ctx, "tenant.data_policy.create"); err != nil {
+		return nil, err
+	}
 	v, err := w.inner.CreateTenantDataPolicy(ctx, r)
 	return v, roleExecutionError(ctx, "tenant.data_policy.create", err)
 }
 func (w checkedRoles) UpdateTenantDataPolicy(ctx context.Context, r *accessv1.UpdateTenantDataPolicyRequest) (*accessv1.TenantDataPolicyDTO, error) {
-	if err := enforcement.RequireExecuted(ctx, "tenant.data_policy.update"); err != nil { return nil, err }
+	if err := enforcement.RequireExecuted(ctx, "tenant.data_policy.update"); err != nil {
+		return nil, err
+	}
 	v, err := w.inner.UpdateTenantDataPolicy(ctx, r)
 	return v, roleExecutionError(ctx, "tenant.data_policy.update", err)
 }
 func (w checkedRoles) RevokeTenantDataPolicy(ctx context.Context, r *accessv1.RevokeTenantDataPolicyRequest) (*accessv1.TenantDataPolicyDTO, error) {
-	if err := enforcement.RequireExecuted(ctx, "tenant.data_policy.revoke"); err != nil { return nil, err }
+	if err := enforcement.RequireExecuted(ctx, "tenant.data_policy.revoke"); err != nil {
+		return nil, err
+	}
 	v, err := w.inner.RevokeTenantDataPolicy(ctx, r)
 	return v, roleExecutionError(ctx, "tenant.data_policy.revoke", err)
 }
 func (w checkedRoles) SetTenantRoleDataPolicy(ctx context.Context, r *accessv1.SetTenantRoleDataPolicyRequest) (*accessv1.TenantRoleDTO, error) {
-	if err := enforcement.RequireExecuted(ctx, "tenant.role.set_data_policy"); err != nil { return nil, err }
+	if err := enforcement.RequireExecuted(ctx, "tenant.role.set_data_policy"); err != nil {
+		return nil, err
+	}
 	v, err := w.inner.SetTenantRoleDataPolicy(ctx, r)
 	return v, roleExecutionError(ctx, "tenant.role.set_data_policy", err)
 }

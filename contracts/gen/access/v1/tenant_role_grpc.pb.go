@@ -29,6 +29,12 @@ const (
 	TenantRolePermissionApplication_SetTenantRolePermissions_FullMethodName = "/access.v1.TenantRolePermissionApplication/SetTenantRolePermissions"
 	TenantRolePermissionApplication_AssignTenantRoleMember_FullMethodName   = "/access.v1.TenantRolePermissionApplication/AssignTenantRoleMember"
 	TenantRolePermissionApplication_RevokeTenantRoleMember_FullMethodName   = "/access.v1.TenantRolePermissionApplication/RevokeTenantRoleMember"
+	TenantRolePermissionApplication_ListTenantDataPolicies_FullMethodName   = "/access.v1.TenantRolePermissionApplication/ListTenantDataPolicies"
+	TenantRolePermissionApplication_GetTenantDataPolicy_FullMethodName      = "/access.v1.TenantRolePermissionApplication/GetTenantDataPolicy"
+	TenantRolePermissionApplication_CreateTenantDataPolicy_FullMethodName   = "/access.v1.TenantRolePermissionApplication/CreateTenantDataPolicy"
+	TenantRolePermissionApplication_UpdateTenantDataPolicy_FullMethodName   = "/access.v1.TenantRolePermissionApplication/UpdateTenantDataPolicy"
+	TenantRolePermissionApplication_RevokeTenantDataPolicy_FullMethodName   = "/access.v1.TenantRolePermissionApplication/RevokeTenantDataPolicy"
+	TenantRolePermissionApplication_SetTenantRoleDataPolicy_FullMethodName  = "/access.v1.TenantRolePermissionApplication/SetTenantRoleDataPolicy"
 )
 
 // TenantRolePermissionApplicationClient is the client API for TenantRolePermissionApplication service.
@@ -45,6 +51,12 @@ type TenantRolePermissionApplicationClient interface {
 	SetTenantRolePermissions(ctx context.Context, in *SetTenantRolePermissionsRequest, opts ...grpc.CallOption) (*TenantRoleDTO, error)
 	AssignTenantRoleMember(ctx context.Context, in *AssignTenantRoleMemberRequest, opts ...grpc.CallOption) (*TenantRoleDTO, error)
 	RevokeTenantRoleMember(ctx context.Context, in *RevokeTenantRoleMemberRequest, opts ...grpc.CallOption) (*TenantRoleDTO, error)
+	ListTenantDataPolicies(ctx context.Context, in *ListTenantDataPoliciesRequest, opts ...grpc.CallOption) (*ListTenantDataPoliciesResponse, error)
+	GetTenantDataPolicy(ctx context.Context, in *GetTenantDataPolicyRequest, opts ...grpc.CallOption) (*TenantDataPolicyDTO, error)
+	CreateTenantDataPolicy(ctx context.Context, in *CreateTenantDataPolicyRequest, opts ...grpc.CallOption) (*TenantDataPolicyDTO, error)
+	UpdateTenantDataPolicy(ctx context.Context, in *UpdateTenantDataPolicyRequest, opts ...grpc.CallOption) (*TenantDataPolicyDTO, error)
+	RevokeTenantDataPolicy(ctx context.Context, in *RevokeTenantDataPolicyRequest, opts ...grpc.CallOption) (*TenantDataPolicyDTO, error)
+	SetTenantRoleDataPolicy(ctx context.Context, in *SetTenantRoleDataPolicyRequest, opts ...grpc.CallOption) (*TenantRoleDTO, error)
 }
 
 type tenantRolePermissionApplicationClient struct {
@@ -155,6 +167,66 @@ func (c *tenantRolePermissionApplicationClient) RevokeTenantRoleMember(ctx conte
 	return out, nil
 }
 
+func (c *tenantRolePermissionApplicationClient) ListTenantDataPolicies(ctx context.Context, in *ListTenantDataPoliciesRequest, opts ...grpc.CallOption) (*ListTenantDataPoliciesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTenantDataPoliciesResponse)
+	err := c.cc.Invoke(ctx, TenantRolePermissionApplication_ListTenantDataPolicies_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantRolePermissionApplicationClient) GetTenantDataPolicy(ctx context.Context, in *GetTenantDataPolicyRequest, opts ...grpc.CallOption) (*TenantDataPolicyDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TenantDataPolicyDTO)
+	err := c.cc.Invoke(ctx, TenantRolePermissionApplication_GetTenantDataPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantRolePermissionApplicationClient) CreateTenantDataPolicy(ctx context.Context, in *CreateTenantDataPolicyRequest, opts ...grpc.CallOption) (*TenantDataPolicyDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TenantDataPolicyDTO)
+	err := c.cc.Invoke(ctx, TenantRolePermissionApplication_CreateTenantDataPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantRolePermissionApplicationClient) UpdateTenantDataPolicy(ctx context.Context, in *UpdateTenantDataPolicyRequest, opts ...grpc.CallOption) (*TenantDataPolicyDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TenantDataPolicyDTO)
+	err := c.cc.Invoke(ctx, TenantRolePermissionApplication_UpdateTenantDataPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantRolePermissionApplicationClient) RevokeTenantDataPolicy(ctx context.Context, in *RevokeTenantDataPolicyRequest, opts ...grpc.CallOption) (*TenantDataPolicyDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TenantDataPolicyDTO)
+	err := c.cc.Invoke(ctx, TenantRolePermissionApplication_RevokeTenantDataPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantRolePermissionApplicationClient) SetTenantRoleDataPolicy(ctx context.Context, in *SetTenantRoleDataPolicyRequest, opts ...grpc.CallOption) (*TenantRoleDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TenantRoleDTO)
+	err := c.cc.Invoke(ctx, TenantRolePermissionApplication_SetTenantRoleDataPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TenantRolePermissionApplicationServer is the server API for TenantRolePermissionApplication service.
 // All implementations should embed UnimplementedTenantRolePermissionApplicationServer
 // for forward compatibility.
@@ -169,6 +241,12 @@ type TenantRolePermissionApplicationServer interface {
 	SetTenantRolePermissions(context.Context, *SetTenantRolePermissionsRequest) (*TenantRoleDTO, error)
 	AssignTenantRoleMember(context.Context, *AssignTenantRoleMemberRequest) (*TenantRoleDTO, error)
 	RevokeTenantRoleMember(context.Context, *RevokeTenantRoleMemberRequest) (*TenantRoleDTO, error)
+	ListTenantDataPolicies(context.Context, *ListTenantDataPoliciesRequest) (*ListTenantDataPoliciesResponse, error)
+	GetTenantDataPolicy(context.Context, *GetTenantDataPolicyRequest) (*TenantDataPolicyDTO, error)
+	CreateTenantDataPolicy(context.Context, *CreateTenantDataPolicyRequest) (*TenantDataPolicyDTO, error)
+	UpdateTenantDataPolicy(context.Context, *UpdateTenantDataPolicyRequest) (*TenantDataPolicyDTO, error)
+	RevokeTenantDataPolicy(context.Context, *RevokeTenantDataPolicyRequest) (*TenantDataPolicyDTO, error)
+	SetTenantRoleDataPolicy(context.Context, *SetTenantRoleDataPolicyRequest) (*TenantRoleDTO, error)
 }
 
 // UnimplementedTenantRolePermissionApplicationServer should be embedded to have
@@ -207,6 +285,24 @@ func (UnimplementedTenantRolePermissionApplicationServer) AssignTenantRoleMember
 }
 func (UnimplementedTenantRolePermissionApplicationServer) RevokeTenantRoleMember(context.Context, *RevokeTenantRoleMemberRequest) (*TenantRoleDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method RevokeTenantRoleMember not implemented")
+}
+func (UnimplementedTenantRolePermissionApplicationServer) ListTenantDataPolicies(context.Context, *ListTenantDataPoliciesRequest) (*ListTenantDataPoliciesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListTenantDataPolicies not implemented")
+}
+func (UnimplementedTenantRolePermissionApplicationServer) GetTenantDataPolicy(context.Context, *GetTenantDataPolicyRequest) (*TenantDataPolicyDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTenantDataPolicy not implemented")
+}
+func (UnimplementedTenantRolePermissionApplicationServer) CreateTenantDataPolicy(context.Context, *CreateTenantDataPolicyRequest) (*TenantDataPolicyDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateTenantDataPolicy not implemented")
+}
+func (UnimplementedTenantRolePermissionApplicationServer) UpdateTenantDataPolicy(context.Context, *UpdateTenantDataPolicyRequest) (*TenantDataPolicyDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateTenantDataPolicy not implemented")
+}
+func (UnimplementedTenantRolePermissionApplicationServer) RevokeTenantDataPolicy(context.Context, *RevokeTenantDataPolicyRequest) (*TenantDataPolicyDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeTenantDataPolicy not implemented")
+}
+func (UnimplementedTenantRolePermissionApplicationServer) SetTenantRoleDataPolicy(context.Context, *SetTenantRoleDataPolicyRequest) (*TenantRoleDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetTenantRoleDataPolicy not implemented")
 }
 func (UnimplementedTenantRolePermissionApplicationServer) testEmbeddedByValue() {}
 
@@ -408,6 +504,114 @@ func _TenantRolePermissionApplication_RevokeTenantRoleMember_Handler(srv interfa
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TenantRolePermissionApplication_ListTenantDataPolicies_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTenantDataPoliciesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantRolePermissionApplicationServer).ListTenantDataPolicies(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantRolePermissionApplication_ListTenantDataPolicies_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantRolePermissionApplicationServer).ListTenantDataPolicies(ctx, req.(*ListTenantDataPoliciesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantRolePermissionApplication_GetTenantDataPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTenantDataPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantRolePermissionApplicationServer).GetTenantDataPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantRolePermissionApplication_GetTenantDataPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantRolePermissionApplicationServer).GetTenantDataPolicy(ctx, req.(*GetTenantDataPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantRolePermissionApplication_CreateTenantDataPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTenantDataPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantRolePermissionApplicationServer).CreateTenantDataPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantRolePermissionApplication_CreateTenantDataPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantRolePermissionApplicationServer).CreateTenantDataPolicy(ctx, req.(*CreateTenantDataPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantRolePermissionApplication_UpdateTenantDataPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateTenantDataPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantRolePermissionApplicationServer).UpdateTenantDataPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantRolePermissionApplication_UpdateTenantDataPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantRolePermissionApplicationServer).UpdateTenantDataPolicy(ctx, req.(*UpdateTenantDataPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantRolePermissionApplication_RevokeTenantDataPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeTenantDataPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantRolePermissionApplicationServer).RevokeTenantDataPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantRolePermissionApplication_RevokeTenantDataPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantRolePermissionApplicationServer).RevokeTenantDataPolicy(ctx, req.(*RevokeTenantDataPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantRolePermissionApplication_SetTenantRoleDataPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetTenantRoleDataPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantRolePermissionApplicationServer).SetTenantRoleDataPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantRolePermissionApplication_SetTenantRoleDataPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantRolePermissionApplicationServer).SetTenantRoleDataPolicy(ctx, req.(*SetTenantRoleDataPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TenantRolePermissionApplication_ServiceDesc is the grpc.ServiceDesc for TenantRolePermissionApplication service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -454,6 +658,30 @@ var TenantRolePermissionApplication_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RevokeTenantRoleMember",
 			Handler:    _TenantRolePermissionApplication_RevokeTenantRoleMember_Handler,
+		},
+		{
+			MethodName: "ListTenantDataPolicies",
+			Handler:    _TenantRolePermissionApplication_ListTenantDataPolicies_Handler,
+		},
+		{
+			MethodName: "GetTenantDataPolicy",
+			Handler:    _TenantRolePermissionApplication_GetTenantDataPolicy_Handler,
+		},
+		{
+			MethodName: "CreateTenantDataPolicy",
+			Handler:    _TenantRolePermissionApplication_CreateTenantDataPolicy_Handler,
+		},
+		{
+			MethodName: "UpdateTenantDataPolicy",
+			Handler:    _TenantRolePermissionApplication_UpdateTenantDataPolicy_Handler,
+		},
+		{
+			MethodName: "RevokeTenantDataPolicy",
+			Handler:    _TenantRolePermissionApplication_RevokeTenantDataPolicy_Handler,
+		},
+		{
+			MethodName: "SetTenantRoleDataPolicy",
+			Handler:    _TenantRolePermissionApplication_SetTenantRoleDataPolicy_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

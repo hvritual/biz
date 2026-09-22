@@ -19,7 +19,7 @@ var ErrInvalidTenantRoleRequest = errors.New("access: invalid tenant role reques
 
 type TenantRolePermissionService struct {
 	repositories requestscope.RepositoryFactory[ports.TenantRoleRepositories]
-	sites TenantRolePermissionToDeviceopsSiteManagementChildCapability
+	sites        TenantRolePermissionToDeviceopsSiteManagementChildCapability
 }
 
 func NewTenantRolePermissionService(repositories requestscope.RepositoryFactory[ports.TenantRoleRepositories]) (*TenantRolePermissionService, error) {

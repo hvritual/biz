@@ -4,7 +4,7 @@ package authorization
 
 import "yunka.io/gateway/authz"
 
-const CommercialCapabilityMappingVersion = "22"
+const CommercialCapabilityMappingVersion = "23"
 
 var generatedActions = []Action{
 	{
@@ -484,6 +484,13 @@ var generatedActions = []Action{
 		RPC: "/deviceops.v1.DeviceApplication/UpdateDevice", HTTP: []HTTPBinding{{Method: "PATCH", Path: "/v1/devices/{id}"}},
 	},
 	{
+		Code: "site.role_scope_directory", Domain: "deviceops", Application: "site_management", UseCase: "list_assignable_role_sites",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.role.manage")}, PermissionMode: "all",
+		Classification: "foundation_exempt", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "", HTTP: []HTTPBinding{},
+	},
+	{
 		Code: "site.validate_transfer_target", Domain: "deviceops", Application: "site_management", UseCase: "validate_transfer_target",
 		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
 		Permissions: []authz.PermissionKey{authz.PermissionKey("site.read")}, PermissionMode: "all",
@@ -531,6 +538,41 @@ var generatedActions = []Action{
 		Permissions: []authz.PermissionKey{authz.PermissionKey("commercial.catalog.read"), authz.PermissionKey("platform.plan.read"), authz.PermissionKey("platform.tenant.create")}, PermissionMode: "all",
 		Classification: "platform_management", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.lifecycle"},
 		RPC: "/access.v1.TenantLifecycleApplication/CreateTenant", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/tenants"}},
+	},
+	{
+		Code: "tenant.data_policy.create", Domain: "access", Application: "tenant_role_permission", UseCase: "create_tenant_data_policy",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.role.manage")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.role.permission"},
+		RPC: "/access.v1.TenantRolePermissionApplication/CreateTenantDataPolicy", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/tenant/data-policies"}},
+	},
+	{
+		Code: "tenant.data_policy.get", Domain: "access", Application: "tenant_role_permission", UseCase: "get_tenant_data_policy",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.role.read")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.role.permission"},
+		RPC: "/access.v1.TenantRolePermissionApplication/GetTenantDataPolicy", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/data-policies/{policy_id}"}},
+	},
+	{
+		Code: "tenant.data_policy.list", Domain: "access", Application: "tenant_role_permission", UseCase: "list_tenant_data_policies",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.role.read")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.role.permission"},
+		RPC: "/access.v1.TenantRolePermissionApplication/ListTenantDataPolicies", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/data-policies"}},
+	},
+	{
+		Code: "tenant.data_policy.revoke", Domain: "access", Application: "tenant_role_permission", UseCase: "revoke_tenant_data_policy",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.role.manage")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.role.permission"},
+		RPC: "/access.v1.TenantRolePermissionApplication/RevokeTenantDataPolicy", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/tenant/data-policies/{policy_id}/revoke"}},
+	},
+	{
+		Code: "tenant.data_policy.update", Domain: "access", Application: "tenant_role_permission", UseCase: "update_tenant_data_policy",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.role.manage")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.role.permission"},
+		RPC: "/access.v1.TenantRolePermissionApplication/UpdateTenantDataPolicy", HTTP: []HTTPBinding{{Method: "PATCH", Path: "/v1/tenant/data-policies/{policy_id}"}},
 	},
 	{
 		Code: "tenant.delegation.get", Domain: "access", Application: "tenant_delegation_management", UseCase: "get_tenant_delegation",
@@ -797,6 +839,13 @@ var generatedActions = []Action{
 		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.role.manage")}, PermissionMode: "all",
 		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.role.permission"},
 		RPC: "/access.v1.TenantRolePermissionApplication/RevokeTenantRoleMember", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/tenant/roles/{role_id}/members/{user_id}/revoke"}},
+	},
+	{
+		Code: "tenant.role.set_data_policy", Domain: "access", Application: "tenant_role_permission", UseCase: "set_tenant_role_data_policy",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.role.manage")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.role.permission"},
+		RPC: "/access.v1.TenantRolePermissionApplication/SetTenantRoleDataPolicy", HTTP: []HTTPBinding{{Method: "PUT", Path: "/v1/tenant/roles/{role_id}/data-policy"}},
 	},
 	{
 		Code: "tenant.role.set_permissions", Domain: "access", Application: "tenant_role_permission", UseCase: "set_tenant_role_permissions",
