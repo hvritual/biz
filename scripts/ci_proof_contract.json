@@ -14,40 +14,768 @@
     }
   },
   "gates": {
-    "mysql-runtime-qualification.yml": {"owns": ["mysql-runtime-qualification.qualification"], "delegates": [], "runtime": "go-mysql", "jobs": ["mysql-runtime"], "target_seconds": 110, "hard_seconds": 120, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {}},
-    "b12-7-runtime-qualification.yml": {"owns": ["b12-7-runtime-qualification.qualification"], "delegates": ["repository.go.regression"], "runtime": "go-mysql", "jobs": ["b12-7-runtime-qualification"], "target_seconds": 120, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.service-mysql": 1, "go.all.build": 1}},
-    "b12-8-framework-pressure-disposition.yml": {"owns": ["b12-8-framework-pressure-disposition.qualification"], "delegates": [], "runtime": "static", "jobs": ["disposition"], "target_seconds": 90, "hard_seconds": 180, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {}},
-    "b12-multitenant-access-pressure.yml": {"owns": ["b12-multitenant-access-pressure.qualification", "contracts.access.generation"], "delegates": ["repository.go.regression"], "runtime": "go-mysql", "jobs": ["b12-1-contract-closure", "b12-2-tenant-lifecycle-mysql"], "target_seconds": 120, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 2, "bootstrap.service-mysql": 1, "go.all.build": 1, "go.all.test": 1, "go.all.vet": 1}},
-    "c9-pressure.yml": {"owns": ["c9-pressure.qualification"], "delegates": [], "runtime": "static", "jobs": ["source-conformance"], "target_seconds": 90, "hard_seconds": 180, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {}},
-    "ce01-qualification.yml": {"owns": ["ce01-qualification.qualification"], "delegates": ["repository.go.regression"], "runtime": "go-mysql", "jobs": ["qualify"], "target_seconds": 120, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.service-mysql": 1, "go.all.build": 1, "go.all.test": 1, "go.all.vet": 1}},
-    "ce02-bootstrap.yml": {"owns": ["ce02-bootstrap.qualification"], "delegates": ["repository.go.regression"], "runtime": "go-mysql", "jobs": ["qualify"], "target_seconds": 120, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.service-mysql": 1, "go.all.build": 1, "go.all.test": 1, "go.all.vet": 1}},
-    "ce03-qualification.yml": {"owns": ["ce03-qualification.qualification", "contracts.commercial.generation"], "delegates": ["ce02-bootstrap.qualification", "repository.go.regression"], "runtime": "go-mysql", "jobs": ["qualify"], "target_seconds": 120, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.service-mysql": 1, "go.all.build": 1, "go.all.test": 1, "go.all.vet": 1, "overlap.ce02.mysql": 1}},
-    "ce04-qualification.yml": {"owns": ["ce04-qualification.qualification"], "delegates": ["ce02-bootstrap.qualification", "repository.go.regression"], "runtime": "go-mysql", "jobs": ["qualify"], "target_seconds": 120, "hard_seconds": 240, "race_commands": ["go test -race -count=1 -json ./internal/commercial/domain/entitlement"], "restart": "durable-container", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.service-mysql": 1, "generation.check": 2, "generation.generate": 1, "go.all.build": 1, "go.all.test": 1, "go.all.vet": 1, "overlap.ce02.mysql": 1}},
-    "ce05-qualification.yml": {"owns": ["ce05-qualification.qualification"], "delegates": ["ce02-bootstrap.qualification", "repository.go.regression"], "runtime": "go-mysql", "jobs": ["qualify"], "target_seconds": 120, "hard_seconds": 240, "race_commands": ["go test -race -count=1 -json ./internal/commercial/enforcement"], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.service-mysql": 1, "generation.check": 2, "generation.generate": 1, "go.all.build": 1, "go.all.test": 1, "go.all.vet": 1}},
-    "ce06-qualification.yml": {"owns": ["ce06-qualification.qualification"], "delegates": ["ce02-bootstrap.qualification", "ce04-qualification.qualification", "ce05-qualification.qualification", "repository.go.regression"], "runtime": "go-mysql", "jobs": ["qualify"], "target_seconds": 120, "hard_seconds": 240, "race_commands": ["go test -race -count=1 -json ./internal/commercial/domain/snapshot ./internal/commercial/infrastructure/consistency ./internal/commercial/infrastructure/persistence"], "restart": "durable-container", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.service-mysql": 1, "generation.check": 2, "generation.generate": 1, "go.all.build": 1, "go.all.test": 1, "go.all.vet": 1, "overlap.ce02.mysql": 1, "overlap.ce04.mysql": 1, "overlap.ce05.mysql": 1}},
-    "ce07-qualification.yml": {"owns": ["ce07-qualification.qualification"], "delegates": ["ce02-bootstrap.qualification", "ce04-qualification.qualification", "ce05-qualification.qualification", "ce06-qualification.qualification", "repository.go.regression"], "runtime": "go-mysql", "jobs": ["qualify"], "target_seconds": 120, "hard_seconds": 240, "race_commands": ["go test -race -count=1 -tags=integration -json ./integration -run ^TestCE07MySQL"], "restart": "durable-container", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.service-mysql": 1, "generation.check": 2, "generation.generate": 1, "go.all.build": 1, "go.all.test": 1, "go.all.vet": 1, "overlap.ce02.mysql": 1, "overlap.ce04.mysql": 1, "overlap.ce05.mysql": 1, "overlap.ce06.mysql": 1}},
-    "ce08-qualification.yml": {"owns": ["ce08-qualification.qualification"], "delegates": ["b12-multitenant-access-pressure.qualification", "ce02-bootstrap.qualification", "ce04-qualification.qualification", "ce05-qualification.qualification", "ce06-qualification.qualification", "ce07-qualification.qualification", "mysql-runtime-qualification.qualification"], "runtime": "go-mysql", "jobs": ["qualify"], "target_seconds": 180, "hard_seconds": 240, "race_commands": ["go test -race -count=1 -tags=integration -json ./integration -run $CE08_RACE_REGEX"], "restart": "durable-container", "legacy_cost_ceiling": {"bootstrap.service-mysql": 1}},
-    "ce09-qualification.yml": {"owns": ["ce09-qualification.qualification"], "delegates": ["b12-multitenant-access-pressure.qualification", "ce02-bootstrap.qualification", "ce04-qualification.qualification", "ce05-qualification.qualification", "ce06-qualification.qualification", "ce07-qualification.qualification", "ce08-qualification.qualification", "evolution-qualification.qualification", "mysql-runtime-qualification.qualification"], "runtime": "go-mysql", "jobs": ["qualify"], "target_seconds": 180, "hard_seconds": 240, "race_commands": ["go test -timeout=5m -race -count=1 -tags=integration -json ./integration -run ^TestCE09MySQLConcurrentUpgradeAndDowngradeHaveOneWinner$"], "restart": "isolated-durable-container", "legacy_cost_ceiling": {"generation.generate": 1}},
-    "ce10-qualification.yml": {"owns": ["ce10-qualification.qualification"], "delegates": ["b12-multitenant-access-pressure.qualification", "ce02-bootstrap.qualification", "ce04-qualification.qualification", "ce05-qualification.qualification", "ce06-qualification.qualification", "ce07-qualification.qualification", "ce08-qualification.qualification", "ce09-qualification.qualification", "evolution-qualification.qualification", "mysql-runtime-qualification.qualification"], "runtime": "go-mysql", "jobs": ["qualify"], "target_seconds": 180, "hard_seconds": 240, "race_commands": ["go test -timeout=8m -race -count=1 -tags=integration -json ./integration -run ^TestCE10MySQLConcurrentRuntimesDoNotPrepareTwice$"], "restart": "isolated-durable-container", "legacy_cost_ceiling": {"generation.generate": 1}},
-    "ce12-browser-e2e.yml": {"owns": ["ce12-browser-e2e.qualification"], "delegates": ["ce12-qualification.qualification"], "runtime": "mixed", "jobs": ["browser-e2e"], "target_seconds": 150, "hard_seconds": 180, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {}},
-    "ce12-qualification.yml": {"owns": ["ce12-qualification.qualification"], "delegates": ["repository.go.regression"], "runtime": "go-mysql", "jobs": ["qualify"], "target_seconds": 120, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.service-mysql": 1, "go.all.test": 1, "go.all.vet": 1}},
-    "ce13-plan-catalog-qualification.yml": {"owns": ["ce13-plan-catalog-qualification.qualification"], "delegates": ["ce07-qualification.qualification"], "runtime": "mixed", "jobs": ["qualify"], "target_seconds": 150, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.headed-chromium": 1, "bootstrap.service-mysql": 1, "overlap.ce07.mysql": 1}},
-    "ce13-platform-web-session.yml": {"owns": ["ce13-platform-web-session.qualification"], "delegates": [], "runtime": "mixed", "jobs": ["qualify"], "target_seconds": 150, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.headed-chromium": 1, "bootstrap.service-mysql": 1}},
-    "coffeelink-web.yml": {"owns": ["coffeelink-web.qualification"], "delegates": ["repository.web.fast"], "runtime": "browser", "jobs": ["core", "site-rental"], "target_seconds": 180, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.headed-chromium": 2, "web.fast": 1}},
-    "ec-ri-04-web-qualification.yml": {"owns": ["ec-ri-04-web-qualification.qualification"], "delegates": ["repository.web.fast"], "runtime": "browser", "jobs": ["web"], "target_seconds": 150, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.headed-chromium": 1, "web.fast": 1}},
-    "ec-ri-05-web-qualification.yml": {"owns": ["ec-ri-05-web-qualification.qualification"], "delegates": ["repository.web.fast"], "runtime": "browser", "jobs": ["web"], "target_seconds": 150, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.headed-chromium": 1, "web.fast": 1}},
-    "ec-ri-06-plan-change-web.yml": {"owns": ["ec-ri-06-plan-change-web.qualification"], "delegates": ["repository.web.fast"], "runtime": "browser", "jobs": ["web"], "target_seconds": 150, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.headed-chromium": 1, "web.fast": 1}},
-    "ec-ri-06-plan-read-web.yml": {"owns": ["ec-ri-06-plan-read-web.qualification"], "delegates": ["repository.web.fast"], "runtime": "browser", "jobs": ["web"], "target_seconds": 150, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.headed-chromium": 1, "web.fast": 1}},
-    "ec-ri-07-web-qualification.yml": {"owns": ["ec-ri-07-web-qualification.qualification"], "delegates": ["repository.web.fast"], "runtime": "browser", "jobs": ["web"], "target_seconds": 150, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.headed-chromium": 1, "web.fast": 1}},
-    "enterprise-168-sensitive-contacts.yml": {"owns": ["enterprise-168-sensitive-contacts.qualification"], "delegates": [], "runtime": "go-mysql", "jobs": ["sensitive-contacts"], "target_seconds": 120, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.service-mysql": 1}},
-    "enterprise-169-privacy-consent.yml": {"owns": ["enterprise-169-privacy-consent.qualification"], "delegates": [], "runtime": "go-mysql", "jobs": ["privacy-consent"], "target_seconds": 120, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.service-mysql": 1}},
-    "enterprise-170-verification-notification.yml": {"owns": ["enterprise-170-verification-notification.qualification"], "delegates": [], "runtime": "go-mysql", "jobs": ["verification-notification"], "target_seconds": 120, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.service-mysql": 1}},
-    "enterprise-171-session-isolation.yml": {"owns": ["enterprise-171-session-isolation.qualification"], "delegates": [], "runtime": "mixed", "jobs": ["session-isolation"], "target_seconds": 150, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.service-mysql": 1}},
-    "enterprise-173-password-security.yml": {"owns": ["enterprise-173-password-security.qualification"], "delegates": ["repository.web.fast"], "runtime": "mixed", "jobs": ["password-security"], "target_seconds": 150, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.service-mysql": 1, "web.fast": 1}},
-    "enterprise-174-current-authorization.yml": {"owns": ["enterprise-174-current-authorization.qualification"], "delegates": ["repository.web.fast"], "runtime": "mixed", "jobs": ["contracts-go", "mysql-current-authorization", "web-contract"], "target_seconds": 150, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 2, "bootstrap.service-mysql": 1, "generation.check": 1, "generation.generate": 2, "web.fast": 1}},
-    "enterprise-175-authorized-navigation.yml": {"owns": ["enterprise-175-authorized-navigation.qualification"], "delegates": ["repository.web.fast"], "runtime": "browser", "jobs": ["web-contract"], "target_seconds": 150, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"web.fast": 1}},
-    "enterprise-177-member-lifecycle.yml": {"owns": ["enterprise-177-member-lifecycle.qualification"], "delegates": ["repository.web.fast"], "runtime": "mixed", "jobs": ["backend", "web"], "target_seconds": 150, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.headed-chromium": 1, "bootstrap.service-mysql": 1, "web.fast": 1}},
-    "enterprise-role-qualification.yml": {"owns": ["enterprise-role-qualification.qualification"], "delegates": ["repository.web.fast"], "runtime": "mixed", "jobs": ["admission", "backend", "web"], "target_seconds": 150, "hard_seconds": 240, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.go-cache-disabled": 1, "bootstrap.headed-chromium": 1, "bootstrap.service-mysql": 1, "web.fast": 1}},
-    "evolution-qualification.yml": {"owns": ["evolution-qualification.qualification", "repository.go.regression"], "delegates": ["ce02-bootstrap.qualification", "ce04-qualification.qualification", "ce05-qualification.qualification", "ce06-qualification.qualification", "ce07-qualification.qualification", "ce08-qualification.qualification", "ce09-qualification.qualification", "ce10-qualification.qualification", "ce12-browser-e2e.qualification", "ce12-qualification.qualification", "ce13-plan-catalog-qualification.qualification", "ce13-platform-web-session.qualification"], "runtime": "go-mysql", "jobs": ["qualify"], "target_seconds": 240, "hard_seconds": 300, "race_commands": [], "restart": "process-restart", "legacy_cost_ceiling": {"generation.check": 1, "generation.generate": 1}}
+    "mysql-runtime-qualification.yml": {
+      "owns": [
+        "mysql-runtime-qualification.qualification"
+      ],
+      "delegates": [],
+      "runtime": "go-mysql",
+      "jobs": [
+        "mysql-runtime"
+      ],
+      "target_seconds": 110,
+      "hard_seconds": 120,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {}
+    },
+    "b12-7-runtime-qualification.yml": {
+      "owns": [
+        "b12-7-runtime-qualification.qualification"
+      ],
+      "delegates": [
+        "repository.go.regression"
+      ],
+      "runtime": "go-mysql",
+      "jobs": [
+        "b12-7-runtime-qualification"
+      ],
+      "target_seconds": 120,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 1,
+        "bootstrap.service-mysql": 1,
+        "go.all.build": 1
+      }
+    },
+    "b12-8-framework-pressure-disposition.yml": {
+      "owns": [
+        "b12-8-framework-pressure-disposition.qualification"
+      ],
+      "delegates": [],
+      "runtime": "static",
+      "jobs": [
+        "disposition"
+      ],
+      "target_seconds": 90,
+      "hard_seconds": 180,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {}
+    },
+    "b12-multitenant-access-pressure.yml": {
+      "owns": [
+        "b12-multitenant-access-pressure.qualification",
+        "contracts.access.generation"
+      ],
+      "delegates": [
+        "repository.go.regression"
+      ],
+      "runtime": "go-mysql",
+      "jobs": [
+        "b12-1-contract-closure",
+        "b12-2-tenant-lifecycle-mysql"
+      ],
+      "target_seconds": 120,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 2,
+        "bootstrap.service-mysql": 1,
+        "go.all.build": 1,
+        "go.all.test": 1,
+        "go.all.vet": 1
+      }
+    },
+    "c9-pressure.yml": {
+      "owns": [
+        "c9-pressure.qualification"
+      ],
+      "delegates": [],
+      "runtime": "static",
+      "jobs": [
+        "source-conformance"
+      ],
+      "target_seconds": 90,
+      "hard_seconds": 180,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {}
+    },
+    "ce01-qualification.yml": {
+      "owns": [
+        "ce01-qualification.qualification"
+      ],
+      "delegates": [
+        "repository.go.regression"
+      ],
+      "runtime": "go-mysql",
+      "jobs": [
+        "qualify"
+      ],
+      "target_seconds": 120,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 1,
+        "bootstrap.service-mysql": 1,
+        "go.all.build": 1,
+        "go.all.test": 1,
+        "go.all.vet": 1
+      }
+    },
+    "ce02-bootstrap.yml": {
+      "owns": [
+        "ce02-bootstrap.qualification"
+      ],
+      "delegates": [
+        "repository.go.regression"
+      ],
+      "runtime": "go-mysql",
+      "jobs": [
+        "qualify"
+      ],
+      "target_seconds": 120,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 1,
+        "bootstrap.service-mysql": 1,
+        "go.all.build": 1,
+        "go.all.test": 1,
+        "go.all.vet": 1
+      }
+    },
+    "ce03-qualification.yml": {
+      "owns": [
+        "ce03-qualification.qualification",
+        "contracts.commercial.generation"
+      ],
+      "delegates": [
+        "ce02-bootstrap.qualification",
+        "repository.go.regression"
+      ],
+      "runtime": "go-mysql",
+      "jobs": [
+        "qualify"
+      ],
+      "target_seconds": 120,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 1,
+        "bootstrap.service-mysql": 1,
+        "go.all.build": 1,
+        "go.all.test": 1,
+        "go.all.vet": 1,
+        "overlap.ce02.mysql": 1
+      }
+    },
+    "ce04-qualification.yml": {
+      "owns": [
+        "ce04-qualification.qualification"
+      ],
+      "delegates": [
+        "ce02-bootstrap.qualification",
+        "repository.go.regression"
+      ],
+      "runtime": "go-mysql",
+      "jobs": [
+        "qualify"
+      ],
+      "target_seconds": 120,
+      "hard_seconds": 150,
+      "race_commands": [
+        "go test -race -count=1 -json ./internal/commercial/domain/entitlement"
+      ],
+      "restart": "durable-container",
+      "legacy_cost_ceiling": {
+        "generation.check": 2,
+        "generation.generate": 1
+      }
+    },
+    "ce05-qualification.yml": {
+      "owns": [
+        "ce05-qualification.qualification"
+      ],
+      "delegates": [
+        "ce02-bootstrap.qualification",
+        "repository.go.regression"
+      ],
+      "runtime": "go-mysql",
+      "jobs": [
+        "qualify"
+      ],
+      "target_seconds": 120,
+      "hard_seconds": 180,
+      "race_commands": [
+        "go test -race -count=1 -json ./internal/commercial/enforcement"
+      ],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "generation.check": 2,
+        "generation.generate": 1
+      }
+    },
+    "ce06-qualification.yml": {
+      "owns": [
+        "ce06-qualification.qualification"
+      ],
+      "delegates": [
+        "ce02-bootstrap.qualification",
+        "ce04-qualification.qualification",
+        "ce05-qualification.qualification",
+        "repository.go.regression"
+      ],
+      "runtime": "go-mysql",
+      "jobs": [
+        "qualify"
+      ],
+      "target_seconds": 120,
+      "hard_seconds": 180,
+      "race_commands": [
+        "go test -race -count=1 -json ./internal/commercial/domain/snapshot ./internal/commercial/infrastructure/consistency ./internal/commercial/infrastructure/persistence"
+      ],
+      "restart": "durable-container",
+      "legacy_cost_ceiling": {
+        "generation.check": 2,
+        "generation.generate": 1
+      }
+    },
+    "ce07-qualification.yml": {
+      "owns": [
+        "ce07-qualification.qualification"
+      ],
+      "delegates": [
+        "ce02-bootstrap.qualification",
+        "ce04-qualification.qualification",
+        "ce05-qualification.qualification",
+        "ce06-qualification.qualification",
+        "repository.go.regression"
+      ],
+      "runtime": "go-mysql",
+      "jobs": [
+        "qualify"
+      ],
+      "target_seconds": 120,
+      "hard_seconds": 180,
+      "race_commands": [
+        "go test -race -count=1 -tags=integration -json ./integration -run ^TestCE07MySQL"
+      ],
+      "restart": "durable-container",
+      "legacy_cost_ceiling": {
+        "generation.check": 2,
+        "generation.generate": 1
+      }
+    },
+    "ce08-qualification.yml": {
+      "owns": [
+        "ce08-qualification.qualification"
+      ],
+      "delegates": [
+        "b12-multitenant-access-pressure.qualification",
+        "ce02-bootstrap.qualification",
+        "ce04-qualification.qualification",
+        "ce05-qualification.qualification",
+        "ce06-qualification.qualification",
+        "ce07-qualification.qualification",
+        "mysql-runtime-qualification.qualification"
+      ],
+      "runtime": "go-mysql",
+      "jobs": [
+        "qualify"
+      ],
+      "target_seconds": 180,
+      "hard_seconds": 240,
+      "race_commands": [
+        "go test -race -count=1 -tags=integration -json ./integration -run $CE08_RACE_REGEX"
+      ],
+      "restart": "durable-container",
+      "legacy_cost_ceiling": {
+        "bootstrap.service-mysql": 1
+      }
+    },
+    "ce09-qualification.yml": {
+      "owns": [
+        "ce09-qualification.qualification"
+      ],
+      "delegates": [
+        "b12-multitenant-access-pressure.qualification",
+        "ce02-bootstrap.qualification",
+        "ce04-qualification.qualification",
+        "ce05-qualification.qualification",
+        "ce06-qualification.qualification",
+        "ce07-qualification.qualification",
+        "ce08-qualification.qualification",
+        "evolution-qualification.qualification",
+        "mysql-runtime-qualification.qualification"
+      ],
+      "runtime": "go-mysql",
+      "jobs": [
+        "qualify"
+      ],
+      "target_seconds": 180,
+      "hard_seconds": 240,
+      "race_commands": [
+        "go test -timeout=5m -race -count=1 -tags=integration -json ./integration -run ^TestCE09MySQLConcurrentUpgradeAndDowngradeHaveOneWinner$"
+      ],
+      "restart": "isolated-durable-container",
+      "legacy_cost_ceiling": {
+        "generation.generate": 1
+      }
+    },
+    "ce10-qualification.yml": {
+      "owns": [
+        "ce10-qualification.qualification"
+      ],
+      "delegates": [
+        "b12-multitenant-access-pressure.qualification",
+        "ce02-bootstrap.qualification",
+        "ce04-qualification.qualification",
+        "ce05-qualification.qualification",
+        "ce06-qualification.qualification",
+        "ce07-qualification.qualification",
+        "ce08-qualification.qualification",
+        "ce09-qualification.qualification",
+        "evolution-qualification.qualification",
+        "mysql-runtime-qualification.qualification"
+      ],
+      "runtime": "go-mysql",
+      "jobs": [
+        "qualify"
+      ],
+      "target_seconds": 180,
+      "hard_seconds": 240,
+      "race_commands": [
+        "go test -timeout=8m -race -count=1 -tags=integration -json ./integration -run ^TestCE10MySQLConcurrentRuntimesDoNotPrepareTwice$"
+      ],
+      "restart": "isolated-durable-container",
+      "legacy_cost_ceiling": {
+        "generation.generate": 1
+      }
+    },
+    "ce12-browser-e2e.yml": {
+      "owns": [
+        "ce12-browser-e2e.qualification"
+      ],
+      "delegates": [
+        "ce12-qualification.qualification"
+      ],
+      "runtime": "mixed",
+      "jobs": [
+        "browser-e2e"
+      ],
+      "target_seconds": 150,
+      "hard_seconds": 180,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {}
+    },
+    "ce12-qualification.yml": {
+      "owns": [
+        "ce12-qualification.qualification"
+      ],
+      "delegates": [
+        "repository.go.regression"
+      ],
+      "runtime": "go-mysql",
+      "jobs": [
+        "qualify"
+      ],
+      "target_seconds": 120,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 1,
+        "bootstrap.service-mysql": 1,
+        "go.all.test": 1,
+        "go.all.vet": 1
+      }
+    },
+    "ce13-plan-catalog-qualification.yml": {
+      "owns": [
+        "ce13-plan-catalog-qualification.qualification"
+      ],
+      "delegates": [
+        "ce07-qualification.qualification"
+      ],
+      "runtime": "mixed",
+      "jobs": [
+        "qualify"
+      ],
+      "target_seconds": 150,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 1,
+        "bootstrap.headed-chromium": 1,
+        "bootstrap.service-mysql": 1,
+        "overlap.ce07.mysql": 1
+      }
+    },
+    "ce13-platform-web-session.yml": {
+      "owns": [
+        "ce13-platform-web-session.qualification"
+      ],
+      "delegates": [],
+      "runtime": "mixed",
+      "jobs": [
+        "qualify"
+      ],
+      "target_seconds": 150,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 1,
+        "bootstrap.headed-chromium": 1,
+        "bootstrap.service-mysql": 1
+      }
+    },
+    "coffeelink-web.yml": {
+      "owns": [
+        "coffeelink-web.qualification"
+      ],
+      "delegates": [
+        "repository.web.fast"
+      ],
+      "runtime": "browser",
+      "jobs": [
+        "core",
+        "site-rental"
+      ],
+      "target_seconds": 180,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.headed-chromium": 2,
+        "web.fast": 1
+      }
+    },
+    "ec-ri-04-web-qualification.yml": {
+      "owns": [
+        "ec-ri-04-web-qualification.qualification"
+      ],
+      "delegates": [
+        "repository.web.fast"
+      ],
+      "runtime": "browser",
+      "jobs": [
+        "web"
+      ],
+      "target_seconds": 150,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.headed-chromium": 1,
+        "web.fast": 1
+      }
+    },
+    "ec-ri-05-web-qualification.yml": {
+      "owns": [
+        "ec-ri-05-web-qualification.qualification"
+      ],
+      "delegates": [
+        "repository.web.fast"
+      ],
+      "runtime": "browser",
+      "jobs": [
+        "web"
+      ],
+      "target_seconds": 150,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.headed-chromium": 1,
+        "web.fast": 1
+      }
+    },
+    "ec-ri-06-plan-change-web.yml": {
+      "owns": [
+        "ec-ri-06-plan-change-web.qualification"
+      ],
+      "delegates": [
+        "repository.web.fast"
+      ],
+      "runtime": "browser",
+      "jobs": [
+        "web"
+      ],
+      "target_seconds": 150,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.headed-chromium": 1,
+        "web.fast": 1
+      }
+    },
+    "ec-ri-06-plan-read-web.yml": {
+      "owns": [
+        "ec-ri-06-plan-read-web.qualification"
+      ],
+      "delegates": [
+        "repository.web.fast"
+      ],
+      "runtime": "browser",
+      "jobs": [
+        "web"
+      ],
+      "target_seconds": 150,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.headed-chromium": 1,
+        "web.fast": 1
+      }
+    },
+    "ec-ri-07-web-qualification.yml": {
+      "owns": [
+        "ec-ri-07-web-qualification.qualification"
+      ],
+      "delegates": [
+        "repository.web.fast"
+      ],
+      "runtime": "browser",
+      "jobs": [
+        "web"
+      ],
+      "target_seconds": 150,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.headed-chromium": 1,
+        "web.fast": 1
+      }
+    },
+    "enterprise-168-sensitive-contacts.yml": {
+      "owns": [
+        "enterprise-168-sensitive-contacts.qualification"
+      ],
+      "delegates": [],
+      "runtime": "go-mysql",
+      "jobs": [
+        "sensitive-contacts"
+      ],
+      "target_seconds": 120,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 1,
+        "bootstrap.service-mysql": 1
+      }
+    },
+    "enterprise-169-privacy-consent.yml": {
+      "owns": [
+        "enterprise-169-privacy-consent.qualification"
+      ],
+      "delegates": [],
+      "runtime": "go-mysql",
+      "jobs": [
+        "privacy-consent"
+      ],
+      "target_seconds": 120,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 1,
+        "bootstrap.service-mysql": 1
+      }
+    },
+    "enterprise-170-verification-notification.yml": {
+      "owns": [
+        "enterprise-170-verification-notification.qualification"
+      ],
+      "delegates": [],
+      "runtime": "go-mysql",
+      "jobs": [
+        "verification-notification"
+      ],
+      "target_seconds": 120,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 1,
+        "bootstrap.service-mysql": 1
+      }
+    },
+    "enterprise-171-session-isolation.yml": {
+      "owns": [
+        "enterprise-171-session-isolation.qualification"
+      ],
+      "delegates": [],
+      "runtime": "mixed",
+      "jobs": [
+        "session-isolation"
+      ],
+      "target_seconds": 150,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 1,
+        "bootstrap.service-mysql": 1
+      }
+    },
+    "enterprise-173-password-security.yml": {
+      "owns": [
+        "enterprise-173-password-security.qualification"
+      ],
+      "delegates": [
+        "repository.web.fast"
+      ],
+      "runtime": "mixed",
+      "jobs": [
+        "password-security"
+      ],
+      "target_seconds": 150,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 1,
+        "bootstrap.service-mysql": 1,
+        "web.fast": 1
+      }
+    },
+    "enterprise-174-current-authorization.yml": {
+      "owns": [
+        "enterprise-174-current-authorization.qualification"
+      ],
+      "delegates": [
+        "repository.web.fast"
+      ],
+      "runtime": "mixed",
+      "jobs": [
+        "contracts-go",
+        "mysql-current-authorization",
+        "web-contract"
+      ],
+      "target_seconds": 150,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 2,
+        "bootstrap.service-mysql": 1,
+        "generation.check": 1,
+        "generation.generate": 2,
+        "web.fast": 1
+      }
+    },
+    "enterprise-175-authorized-navigation.yml": {
+      "owns": [
+        "enterprise-175-authorized-navigation.qualification"
+      ],
+      "delegates": [
+        "repository.web.fast"
+      ],
+      "runtime": "browser",
+      "jobs": [
+        "web-contract"
+      ],
+      "target_seconds": 150,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "web.fast": 1
+      }
+    },
+    "enterprise-177-member-lifecycle.yml": {
+      "owns": [
+        "enterprise-177-member-lifecycle.qualification"
+      ],
+      "delegates": [
+        "repository.web.fast"
+      ],
+      "runtime": "mixed",
+      "jobs": [
+        "backend",
+        "web"
+      ],
+      "target_seconds": 150,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 1,
+        "bootstrap.headed-chromium": 1,
+        "bootstrap.service-mysql": 1,
+        "web.fast": 1
+      }
+    },
+    "enterprise-role-qualification.yml": {
+      "owns": [
+        "enterprise-role-qualification.qualification"
+      ],
+      "delegates": [
+        "repository.web.fast"
+      ],
+      "runtime": "mixed",
+      "jobs": [
+        "admission",
+        "backend",
+        "web"
+      ],
+      "target_seconds": 150,
+      "hard_seconds": 240,
+      "race_commands": [],
+      "restart": "none",
+      "legacy_cost_ceiling": {
+        "bootstrap.go-cache-disabled": 1,
+        "bootstrap.headed-chromium": 1,
+        "bootstrap.service-mysql": 1,
+        "web.fast": 1
+      }
+    },
+    "evolution-qualification.yml": {
+      "owns": [
+        "evolution-qualification.qualification",
+        "repository.go.regression"
+      ],
+      "delegates": [
+        "ce02-bootstrap.qualification",
+        "ce04-qualification.qualification",
+        "ce05-qualification.qualification",
+        "ce06-qualification.qualification",
+        "ce07-qualification.qualification",
+        "ce08-qualification.qualification",
+        "ce09-qualification.qualification",
+        "ce10-qualification.qualification",
+        "ce12-browser-e2e.qualification",
+        "ce12-qualification.qualification",
+        "ce13-plan-catalog-qualification.qualification",
+        "ce13-platform-web-session.qualification"
+      ],
+      "runtime": "go-mysql",
+      "jobs": [
+        "qualify"
+      ],
+      "target_seconds": 240,
+      "hard_seconds": 300,
+      "race_commands": [],
+      "restart": "process-restart",
+      "legacy_cost_ceiling": {
+        "generation.check": 1,
+        "generation.generate": 1
+      }
+    }
   }
 }
