@@ -2,6 +2,22 @@ name: CE-12 browser identity E2E
 
 on:
   workflow_call:
+    inputs:
+      enforce_performance:
+        description: Enforce targeted CE12 browser performance acceptance
+        required: false
+        type: boolean
+        default: false
+      performance_target_seconds:
+        description: Target CE12 browser qualification duration
+        required: false
+        type: number
+        default: 150
+      performance_hard_seconds:
+        description: Diagnostic CE12 browser hard performance budget
+        required: false
+        type: number
+        default: 180
   workflow_dispatch:
 
 permissions:
@@ -9,30 +25,21 @@ permissions:
 
 env:
   YUNKA_TEST_RESET_FIXTURES: "1"
+
 jobs:
   browser-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 4
     env:
       BIZ_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       YUNKA_SHA: 9ee6640f5e19777b4c04d9e4937a93e2035eacda
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce12_browser?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
       CE12_E2E_ENV_FILE: /tmp/ce12-browser.json
       CE12_BIZ_BASE_URL: http://127.0.0.1:18080
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: biz_ce12_browser
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=30
     steps:
+      - name: Start CE12 browser performance clock
+        run: date +%s > "$RUNNER_TEMP/ce12-browser.started"
+
       - name: Checkout exact Biz candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -40,6 +47,22 @@ jobs:
           path: biz
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Start isolated CE12 MySQL preparation
+        shell: bash
+        run: |
+          set -euo pipefail
+          container="ce12-browser-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          docker rm -f "$container" >/dev/null 2>&1 || true
+          export CE12_MYSQL_CONTAINER="$container"
+          echo "CE12_MYSQL_CONTAINER=$container" >> "$GITHUB_ENV"
+          date +%s > "$RUNNER_TEMP/ce12-mysql.started"
+          nohup bash -c '
+            set -euo pipefail
+            docker pull mysql:8.4
+            docker run               --name "$CE12_MYSQL_CONTAINER"               --tmpfs /var/lib/mysql:rw,nosuid,size=1g               -e MYSQL_ROOT_PASSWORD=root               -e MYSQL_DATABASE=biz_ce12_browser               -p 127.0.0.1:3306:3306               -d mysql:8.4
+          ' >"$RUNNER_TEMP/ce12-mysql-launch.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/ce12-mysql-launch.pid"
 
       - name: Checkout exact Yunka compatibility baseline
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -62,7 +85,15 @@ jobs:
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
           go-version: ${{ steps.lock.outputs.go_version }}
-          cache: false
+          cache: true
+          cache-dependency-path: biz/go.sum
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: biz/web/package-lock.json
 
       - name: Verify exact sources and format
         shell: bash
@@ -71,33 +102,60 @@ jobs:
           test "$(git -C biz rev-parse HEAD)" = "$BIZ_SHA"
           echo "CE12_BIZ_EXACT_HEAD=$BIZ_SHA"
           test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
-          bad="$(gofmt -l \
-            biz/internal/access/infrastructure/persistence/first_party_idp.go \
-            biz/internal/access/infrastructure/persistence/first_party_idp_security.go \
-            biz/internal/access/infrastructure/persistence/login_identifier.go \
-            biz/internal/access/infrastructure/persistence/login_identifier_test.go \
-            biz/internal/access/infrastructure/persistence/web_session.go \
-            biz/internal/bizruntime/config.go \
-            biz/internal/bizruntime/first_party_idp.go \
-            biz/internal/bizruntime/first_party_idp_hardening_test.go \
-            biz/internal/bizruntime/first_party_idp_server.go \
-            biz/internal/bizruntime/first_party_native_login.go \
-            biz/internal/bizruntime/oidc_static.go \
-            biz/internal/bizruntime/web_auth.go \
-            biz/integration/ce12_browser_seed_test.go \
-            biz/cmd/biz-idp/main.go \
-            biz/cmd/biz-idp/notification_sender.go \
-            biz/cmd/biz-idp/notification_sender_qualification.go \
-            biz/cmd/biz-idp-credential/main.go)"
+          bad="$(gofmt -l             biz/internal/access/infrastructure/persistence/first_party_idp.go             biz/internal/access/infrastructure/persistence/first_party_idp_security.go             biz/internal/access/infrastructure/persistence/login_identifier.go             biz/internal/access/infrastructure/persistence/login_identifier_test.go             biz/internal/access/infrastructure/persistence/web_session.go             biz/internal/bizruntime/config.go             biz/internal/bizruntime/first_party_idp.go             biz/internal/bizruntime/first_party_idp_hardening_test.go             biz/internal/bizruntime/first_party_idp_server.go             biz/internal/bizruntime/first_party_native_login.go             biz/internal/bizruntime/oidc_static.go             biz/internal/bizruntime/web_auth.go             biz/integration/ce12_browser_seed_test.go             biz/cmd/biz-idp/main.go             biz/cmd/biz-idp/notification_sender.go             biz/cmd/biz-idp/notification_sender_qualification.go             biz/cmd/biz-idp-credential/main.go)"
           test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
 
-      - name: Compile and test CE-12 identity code
+      - name: Prepare CE12 runtime and browser dependencies in parallel
         shell: bash
         run: |
           set -euo pipefail
-          go -C biz test -count=1 ./internal/access/infrastructure/persistence ./internal/bizruntime
-          go -C biz build ./cmd/biz ./cmd/biz-idp ./cmd/biz-idp-credential
-          go -C biz build -tags=qualification -o "$RUNNER_TEMP/ce12-idp-qualification" ./cmd/biz-idp
+          started="$(date +%s)"
+          (
+            go -C biz build -o "$RUNNER_TEMP/ce12-biz" ./cmd/biz
+          ) >"$RUNNER_TEMP/ce12-build-biz.log" 2>&1 &
+          biz_pid="$!"
+          (
+            go -C biz build -tags=qualification -o "$RUNNER_TEMP/ce12-idp-qualification" ./cmd/biz-idp
+          ) >"$RUNNER_TEMP/ce12-build-idp.log" 2>&1 &
+          idp_pid="$!"
+          (
+            cd biz/web
+            npm ci
+            npx playwright install --with-deps chromium
+            sudo apt-get install -y fonts-noto-cjk
+          ) >"$RUNNER_TEMP/ce12-browser-deps.log" 2>&1 &
+          browser_pid="$!"
+
+          status=0
+          for item in "biz:$biz_pid" "idp:$idp_pid" "browser:$browser_pid"; do
+            name="${item%%:*}"
+            pid="${item##*:}"
+            if ! wait "$pid"; then
+              echo "CE12_PREP_FAILURE=$name" >&2
+              status=1
+            fi
+          done
+          test "$status" = 0
+          echo "CE12_PARALLEL_PREP_SECONDS=$(( $(date +%s) - started ))"
+
+      - name: Wait for CE12 MySQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          ready=0
+          for attempt in $(seq 1 90); do
+            if docker exec "$CE12_MYSQL_CONTAINER" mysqladmin ping -h 127.0.0.1 -proot --silent >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != 1 ]; then
+            cat "$RUNNER_TEMP/ce12-mysql-launch.log" >&2 || true
+            docker logs "$CE12_MYSQL_CONTAINER" >&2 || true
+            exit 1
+          fi
+          echo "CE12_MYSQL_READY_SECONDS=$(( $(date +%s) - $(cat "$RUNNER_TEMP/ce12-mysql.started") ))"
 
       - name: Seed real member authority and three tenant outcomes
         shell: bash
@@ -150,7 +208,7 @@ jobs:
           : > "$YUNKA_BIZ_IDP_QUALIFICATION_NOTIFICATION_FILE"
           chmod 600 "$YUNKA_BIZ_IDP_QUALIFICATION_NOTIFICATION_FILE"
           echo "CE12_OTP_FILE=$YUNKA_BIZ_IDP_QUALIFICATION_NOTIFICATION_FILE" >> "$GITHUB_ENV"
-          nohup go -C biz run -tags=qualification ./cmd/biz-idp >"$RUNNER_TEMP/ce12-idp.log" 2>&1 &
+          nohup "$RUNNER_TEMP/ce12-idp-qualification" >"$RUNNER_TEMP/ce12-idp.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/ce12-idp.pid"
           for attempt in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:18081/healthz >/dev/null; then break; fi
@@ -184,29 +242,13 @@ jobs:
           export YUNKA_BIZ_OIDC_POST_LOGOUT_REDIRECT_URL="http://127.0.0.1:18080/"
           export YUNKA_BIZ_OIDC_COOKIE_SECURE="false"
           export YUNKA_BIZ_OIDC_SCOPES="openid profile email"
-          nohup go -C biz run ./cmd/biz >"$RUNNER_TEMP/ce12-biz.log" 2>&1 &
+          nohup "$RUNNER_TEMP/ce12-biz" >"$RUNNER_TEMP/ce12-biz.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/ce12-biz.pid"
           for attempt in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:18080/healthz >/dev/null; then break; fi
             sleep 1
           done
           curl -fsS http://127.0.0.1:18080/healthz
-
-      - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: biz/web/package-lock.json
-
-      - name: Install browser E2E dependencies
-        working-directory: biz/web
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm ci
-          npx playwright install --with-deps chromium
-          sudo apt-get install -y fonts-noto-cjk
 
       - name: Start CoffeeLink API-mode UI
         working-directory: biz/web
@@ -251,6 +293,28 @@ jobs:
           print('CE12_THEME_APPEARANCE_AUTHORITY=PASS')
           PY
 
+      - name: Write CE12 browser performance receipt
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          ENFORCE_PERFORMANCE: ${{ inputs.enforce_performance }}
+        run: |
+          set -euo pipefail
+          args=(
+            --surface ce12-browser
+            --lane browser-e2e
+            --started-file "$RUNNER_TEMP/ce12-browser.started"
+            --target-seconds "${{ inputs.performance_target_seconds }}"
+            --hard-seconds "${{ inputs.performance_hard_seconds }}"
+            --candidate-sha "$CANDIDATE_SHA"
+            --job-status "$JOB_STATUS"
+            --output "$RUNNER_TEMP/ce12-browser-performance.json"
+          )
+          if [ "$ENFORCE_PERFORMANCE" = "true" ]; then args+=(--enforce); fi
+          python3 biz/scripts/ci_performance_receipt.py "${args[@]}"
+
       - name: Capture qualification evidence
         if: always()
         shell: bash
@@ -262,11 +326,15 @@ jobs:
           cp "$RUNNER_TEMP/ce12-web.log" biz/web/test-results/ce12-web.log 2>/dev/null
           cp "$RUNNER_TEMP/ce12-discovery.json" biz/web/test-results/ce12-discovery.json 2>/dev/null
           cp "$RUNNER_TEMP/ce12-jwks.json" biz/web/test-results/ce12-jwks.json 2>/dev/null
-          # OTP qualification secrets stay runner-local and are never uploaded as artifacts.
+          cp "$RUNNER_TEMP/ce12-build-biz.log" biz/web/test-results/ce12-build-biz.log 2>/dev/null
+          cp "$RUNNER_TEMP/ce12-build-idp.log" biz/web/test-results/ce12-build-idp.log 2>/dev/null
+          cp "$RUNNER_TEMP/ce12-browser-deps.log" biz/web/test-results/ce12-browser-deps.log 2>/dev/null
+          cp "$RUNNER_TEMP/ce12-mysql-launch.log" biz/web/test-results/ce12-mysql-launch.log 2>/dev/null
+          cp "$RUNNER_TEMP/ce12-browser-performance.json" biz/web/test-results/ce12-browser-performance.json 2>/dev/null
           rm -f "$RUNNER_TEMP/ce12-otp.jsonl"
           find biz/web/test-results -maxdepth 1 -type f ! -name ce12-evidence-sha256.txt -print0 | sort -z | xargs -0 -r sha256sum > biz/web/test-results/ce12-evidence-sha256.txt
 
-      - name: Stop CE-12 servers
+      - name: Stop CE-12 servers and MySQL
         if: always()
         shell: bash
         run: |
@@ -274,6 +342,7 @@ jobs:
           test ! -f "$RUNNER_TEMP/ce12-web.pid" || kill "$(cat "$RUNNER_TEMP/ce12-web.pid")" 2>/dev/null
           test ! -f "$RUNNER_TEMP/ce12-biz.pid" || kill "$(cat "$RUNNER_TEMP/ce12-biz.pid")" 2>/dev/null
           test ! -f "$RUNNER_TEMP/ce12-idp.pid" || kill "$(cat "$RUNNER_TEMP/ce12-idp.pid")" 2>/dev/null
+          docker rm -f "${CE12_MYSQL_CONTAINER:-}" >/dev/null 2>&1 || true
 
       - name: Verify candidate worktree remains clean
         if: always()
