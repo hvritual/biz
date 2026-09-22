@@ -1,4 +1,9 @@
 import { expect, test } from '@playwright/test'
+import { installUnauthenticatedSession } from './ui.helpers'
+
+test.beforeEach(async ({ page }) => {
+  await installUnauthenticatedSession(page)
+})
 
 async function useZh(page) {
   await page.addInitScript(() => localStorage.setItem('coffeelink.locale', 'zh-CN'))

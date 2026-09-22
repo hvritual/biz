@@ -86,6 +86,23 @@ class RouteTests(unittest.TestCase):
         self.assertTrue(result["web_product"])
         self.assertTrue(result["coffeelink_governance"])
 
+    def test_coffeelink_core_stability_spec_runs_product_and_e2e_gates(self):
+        result = route(["web/e2e/console.spec.ts"])
+        self.assertTrue(result["domains"]["web"])
+        self.assertTrue(result["web_e2e_harness"])
+        self.assertTrue(result["web_product"])
+        self.assertTrue(result["coffeelink_governance"])
+
+    def test_ce13_gate_change_runs_targeted_ce13_batch(self):
+        result = route([".github/workflows/ce13-plan-catalog-qualification.yml"])
+        self.assertTrue(result["domains"]["core"])
+        self.assertTrue(result["ce13_governance"])
+
+    def test_ce13_browser_test_change_runs_targeted_ce13_batch(self):
+        result = route(["web/tests/ce13-platform/session.spec.ts"])
+        self.assertTrue(result["domains"]["web"])
+        self.assertTrue(result["ce13_governance"])
+
     def test_role_grant_change_uses_role_grant_gate(self):
         result = route([
             "internal/bizruntime/role_entitlements.go",

@@ -30,6 +30,7 @@ jobs:
       web_e2e_harness: ${{ steps.route.outputs.web_e2e_harness }}
       web_product: ${{ steps.route.outputs.web_product }}
       coffeelink_governance: ${{ steps.route.outputs.coffeelink_governance }}
+      ce13_governance: ${{ steps.route.outputs.ce13_governance }}
       role_grants: ${{ steps.route.outputs.role_grants }}
       enterprise180: ${{ steps.route.outputs.enterprise180 }}
     steps:
@@ -79,6 +80,8 @@ jobs:
           python3 scripts/test_ci_proof_governance.py
           python3 scripts/ci_commercial_runtime.py check
           python3 scripts/test_ci_commercial_runtime.py
+          python3 scripts/check_ci_ce13.py
+          python3 scripts/test_ci_ce13_runtime.py
           python3 scripts/delivery_execution.py validate-contract
           python3 scripts/test_delivery_execution.py
           python3 scripts/candidate_lifecycle.py validate-contract
@@ -188,6 +191,24 @@ jobs:
     with:
       enforce_performance: true
       performance_target_seconds: 150
+      performance_hard_seconds: 180
+
+  commercial-batch-ce13-plan:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.ce13_governance == 'true' || startsWith(github.head_ref, 'chore/ci-proof-ce13-')
+    uses: ./.github/workflows/ce13-plan-catalog-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
+      performance_hard_seconds: 180
+
+  commercial-batch-ce13-session:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.ce13_governance == 'true' || startsWith(github.head_ref, 'chore/ci-proof-ce13-')
+    uses: ./.github/workflows/ce13-platform-web-session.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
       performance_hard_seconds: 180
 
   core-static:
