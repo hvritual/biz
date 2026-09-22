@@ -10,11 +10,11 @@ on:
       performance_target_seconds:
         type: number
         required: false
-        default: 150
+        default: 120
       performance_hard_seconds:
         type: number
         required: false
-        default: 240
+        default: 180
   workflow_dispatch:
 
 permissions:
