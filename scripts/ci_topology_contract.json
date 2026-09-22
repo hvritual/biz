@@ -194,6 +194,36 @@
         "ce09-qualification.yml",
         "evolution-qualification.yml"
       ]
+    },
+    "evolution_qualification": {
+      "workflow": "evolution-qualification.yml",
+      "max_job_minutes": 6,
+      "performance_target_seconds": 240,
+      "performance_hard_seconds": 300,
+      "target_branch_prefix": "chore/ci-evolution-",
+      "target_pr_job": "deviceops-regression",
+      "performance_receipt_script": "scripts/ci_performance_receipt.py",
+      "performance_receipt_test": "scripts/test_ci_performance_receipt.py",
+      "retained_groups": [
+        "business",
+        "CE16",
+        "CE16-restart",
+        "delegation"
+      ],
+      "delegated_full_gate_coverage": [
+        "ce02-bootstrap.yml",
+        "ce04-qualification.yml",
+        "ce05-qualification.yml",
+        "ce06-qualification.yml",
+        "ce07-qualification.yml",
+        "ce08-qualification.yml",
+        "ce09-qualification.yml",
+        "ce10-qualification.yml",
+        "ce12-browser-e2e.yml",
+        "ce12-qualification.yml",
+        "ce13-plan-catalog-qualification.yml",
+        "ce13-platform-web-session.yml"
+      ]
     }
   },
   "resilience_contracts": {

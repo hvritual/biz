@@ -180,5 +180,9 @@ jobs:
 
   deviceops-regression:
     needs: [route, governance, fast-web]
-    if: needs.route.outputs.deviceops == 'true'
+    if: needs.route.outputs.deviceops == 'true' || startsWith(github.head_ref, 'chore/ci-evolution-')
     uses: ./.github/workflows/evolution-qualification.yml
+    with:
+      enforce_performance: ${{ startsWith(github.head_ref, 'chore/ci-evolution-') }}
+      performance_target_seconds: 240
+      performance_hard_seconds: 300
