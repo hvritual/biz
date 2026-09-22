@@ -161,6 +161,19 @@ service DeviceApplication {
 // SiteApplication declares an internal canonical Operation without exposing a
 // protobuf RPC method. The Operation remains available to typed child
 // capabilities, OperationPlan, and Application Graph only.
+message SiteScopeDirectoryRequest {
+  repeated string site_ids = 1;
+  string query = 2;
+  uint32 page = 3;
+  uint32 page_size = 4;
+  bool resolve = 5;
+  bool lock = 6;
+}
+message SiteScopeDirectoryResponse {
+  repeated SiteDTO sites = 1;
+  uint64 total = 2;
+}
+
 service SiteApplication {
   option (yunka.dsl.v1.application) = {
     name: "site_management"
@@ -176,6 +189,32 @@ service SiteApplication {
       request_type: "deviceops.v1.ValidateTransferTargetRequest"
       response_type: "deviceops.v1.SiteDTO"
       application_method: "ValidateTransferTarget"
+    }
+    operations: {
+      id: "site.role_scope_directory"
+      use_case: "list_assignable_role_sites"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+      request_type: "deviceops.v1.SiteScopeDirectoryRequest"
+      response_type: "deviceops.v1.SiteScopeDirectoryResponse"
+      application_method: "ListAssignableRoleSites"
+    }
+    operations: {
+      id: "site.member_scope_directory"
+      use_case: "list_assignable_member_sites"
+      permissions: "tenant.member.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+      request_type: "deviceops.v1.SiteScopeDirectoryRequest"
+      response_type: "deviceops.v1.SiteScopeDirectoryResponse"
+      application_method: "ListAssignableMemberSites"
     }
   };
 }

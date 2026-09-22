@@ -122,11 +122,39 @@ jobs:
           make -C yunka.io rpc-tools
           echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
 
-      - name: Verify canonical generation, formatting and unit regression
+      - name: Generate canonical contracts with recoverable source evidence
         shell: bash
         run: |
           set -euo pipefail
           make -C biz generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
+
+      - name: Retain canonical generated diff without modifying the candidate
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$RUNNER_TEMP/canonical-generation"
+          mkdir -p "$output"
+          # Include new generated paths in the diff; never commit or push from CI.
+          git -C biz add --intent-to-add -- contracts/gen contracts/generated internal modules
+          git -C biz diff --binary > "$output/generated.patch"
+          printf 'candidate_sha=%s\ncandidate_tree=%s\n' "$(git -C biz rev-parse HEAD)" "$(git -C biz rev-parse HEAD^{tree})" > "$output/provenance.txt"
+          sha256sum yunka.io/tools/toolchain.env > "$output/toolchain.sha256"
+          (cd "$output" && sha256sum generated.patch provenance.txt toolchain.sha256 > SHA256SUMS)
+
+      - name: Upload canonical generation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: enterprise-role-generated-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/canonical-generation/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Verify canonical generation, formatting and unit regression
+        shell: bash
+        run: |
+          set -euo pipefail
           git -C biz diff --exit-code
           mapfile -t changed < <(git -C biz diff --name-only origin/main...HEAD -- '*.go')
           if ((${#changed[@]})); then
