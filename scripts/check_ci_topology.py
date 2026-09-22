@@ -383,6 +383,18 @@ def validate(base_ref: str | None = None) -> list[str]:
                 if marker in text:
                     errors.append(f"{workflow}: CoffeeLink delegated/long-tail regression reintroduced: {marker}")
 
+        for stability_path, markers in web_budget.get("core_stability_contracts", {}).items():
+            stability_file = ROOT / stability_path
+            if not stability_file.exists():
+                errors.append(f"CoffeeLink core stability file missing: {stability_path}")
+                continue
+            stability_text = stability_file.read_text(encoding="utf-8")
+            for marker in markers:
+                if marker not in stability_text:
+                    errors.append(
+                        f"CoffeeLink core stability marker missing: {stability_path}: {marker}"
+                    )
+
         for spec_path in web_budget.get("parallel_specs", []):
             spec = ROOT / spec_path
             if not spec.exists():
