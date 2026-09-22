@@ -18,6 +18,7 @@ class SourceContractTests(unittest.TestCase):
                 ".github/workflows/ce13-platform-web-session.yml",
                 ".github/workflows/pr-qualification.yml",
                 "scripts/ci_ce13_mysql.sh",
+                "scripts/ci_ce13_browser.sh",
                 "web/playwright.ce13-plan-catalog.config.ts",
                 "web/playwright.ce13-platform.config.ts",
             ]
@@ -42,7 +43,7 @@ class SourceContractTests(unittest.TestCase):
                      lambda s: s.replace("cache: true", "cache: false"))
 
     def test_headed_chromium_rejected(self):
-        self.mutated(".github/workflows/ce13-plan-catalog-qualification.yml",
+        self.mutated("scripts/ci_ce13_browser.sh",
                      lambda s: s.replace("--only-shell ", ""))
 
     def test_ce07_overlap_rejected(self):
@@ -68,6 +69,14 @@ class SourceContractTests(unittest.TestCase):
             capture_output=True, text=True)
         self.assertEqual(result.returncode, 2)
         self.assertIn("CI_OWNED_DATABASE_ONLY", result.stderr)
+
+    def test_browser_helper_ci_only(self):
+        result = subprocess.run(
+            ["bash", str(ROOT / "scripts/ci_ce13_browser.sh"), "start", "plan"],
+            env={**os.environ, "GITHUB_ACTIONS": "false"},
+            capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("CI_OWNED_BROWSER_ONLY", result.stderr)
 
 if __name__ == "__main__":
     unittest.main()
