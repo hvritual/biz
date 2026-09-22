@@ -248,6 +248,30 @@
         "ce08-qualification.yml",
         "evolution-qualification.yml"
       ]
+    },
+    "ce12_browser_e2e": {
+      "workflow": "ce12-browser-e2e.yml",
+      "max_job_minutes": 4,
+      "performance_target_seconds": 150,
+      "performance_hard_seconds": 180,
+      "target_branch_prefix": "chore/ci-ce12-browser-",
+      "target_pr_job": "identity-browser",
+      "performance_receipt_script": "scripts/ci_performance_receipt.py",
+      "performance_receipt_test": "scripts/test_ci_performance_receipt.py",
+      "playwright_config": "web/playwright.ce12.config.ts",
+      "delegated_full_gate_coverage": [
+        "ce12-qualification.yml"
+      ],
+      "required_browser_titles": [
+        "TestCE12BrowserRealIdPToSessionTenantIAMEntitlement",
+        "TestCE12BrowserRealTenantBrandAppearanceAndStaleReadback",
+        "TestEnterprise171CrossTabTenantIsolationBackNavigationAndStaleContext",
+        "TestEnterprise172UsernamePhoneEmailPasswordOTPMatrix",
+        "TestEnterprise173PasswordRecoveryRevokesSessionsAndChangesCredential",
+        "TestEnterprise173SelfPasswordChangeUIRevokesCurrentSession",
+        "TestEnterprise173AdminRecoveryIsPermissionedScopedAndPolicyBlocked",
+        "TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed"
+      ]
     }
   },
   "resilience_contracts": {
