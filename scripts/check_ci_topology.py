@@ -633,6 +633,124 @@ def validate(base_ref: str | None = None) -> list[str]:
         if governance_command not in prq_text:
             errors.append(f"PR Qualification CE10 governance hook missing: {governance_command}")
 
+    evolution_budget = contract.get("performance_budgets", {}).get("evolution_qualification")
+    if evolution_budget:
+        workflow = evolution_budget["workflow"]
+        path = workflows.get(workflow)
+        if path is None:
+            errors.append(f"Evolution performance workflow missing: {workflow}")
+        else:
+            text = path.read_text(encoding="utf-8")
+            timeouts = [
+                int(value)
+                for value in re.findall(r"^    timeout-minutes:\s*(\d+)\s*$", text, re.MULTILINE)
+            ]
+            max_minutes = int(evolution_budget["max_job_minutes"])
+            if len(timeouts) != 1:
+                errors.append(f"{workflow}: expected exactly one timed Evolution job; found {len(timeouts)}")
+            elif timeouts[0] > max_minutes:
+                errors.append(
+                    f"{workflow}: timeout {timeouts[0]}m exceeds Evolution execution budget {max_minutes}m"
+                )
+
+            target_seconds = int(evolution_budget["performance_target_seconds"])
+            hard_seconds = int(evolution_budget["performance_hard_seconds"])
+            if not (0 < target_seconds < hard_seconds < max_minutes * 60):
+                errors.append(
+                    "Evolution performance budgets must satisfy "
+                    f"0 < target({target_seconds}) < hard({hard_seconds}) "
+                    f"< execution-timeout({max_minutes * 60})"
+                )
+
+            retained_groups = evolution_budget.get("retained_groups", [])
+            group_marker = "EVOLUTION_GROUPS: " + ",".join(retained_groups)
+            required_workflow_markers = [
+                "enforce_performance:",
+                "performance_target_seconds:",
+                "performance_hard_seconds:",
+                "Start evolution performance clock",
+                "cache: true",
+                "cache-dependency-path: biz/go.sum",
+                "Start isolated evolution MySQL",
+                "--tmpfs /var/lib/mysql:rw,nosuid,size=1g",
+                group_marker,
+                "Retained evolution MySQL suites",
+                "Write evolution performance receipt",
+                "scripts/ci_performance_receipt.py",
+                "evolution-performance.json",
+                "github.event.pull_request.head.sha || github.sha",
+            ]
+            for marker in required_workflow_markers:
+                if marker not in text:
+                    errors.append(f"{workflow}: Evolution performance marker missing: {marker}")
+            if "services:" in text:
+                errors.append(
+                    f"{workflow}: Evolution MySQL must be workflow-owned and started before toolchain work"
+                )
+
+        receipt_script = ROOT / evolution_budget["performance_receipt_script"]
+        receipt_test = ROOT / evolution_budget["performance_receipt_test"]
+        if not receipt_script.exists():
+            errors.append(
+                f"Evolution performance receipt script missing: {receipt_script.relative_to(ROOT)}"
+            )
+        if not receipt_test.exists():
+            errors.append(
+                f"Evolution performance receipt test missing: {receipt_test.relative_to(ROOT)}"
+            )
+
+        evolution_script = ROOT / "scripts" / "qualify-evolution-mysql.py"
+        if not evolution_script.exists():
+            errors.append("Evolution MySQL qualification script missing")
+        else:
+            evolution_script_text = evolution_script.read_text(encoding="utf-8")
+            for marker in [
+                "EVOLUTION_GROUPS",
+                "selected = set(filter(None",
+                "if selected and group not in selected:",
+            ]:
+                if marker not in evolution_script_text:
+                    errors.append(
+                        f"Evolution MySQL selection contract missing from qualify-evolution-mysql.py: {marker}"
+                    )
+
+        delegated = evolution_budget.get("delegated_full_gate_coverage", [])
+        for delegated_workflow in delegated:
+            if delegated_workflow not in expected_full:
+                errors.append(
+                    f"Evolution delegated workflow missing from Full Merge Gate: {delegated_workflow}"
+                )
+
+        prq_text = workflows["pr-qualification.yml"].read_text(encoding="utf-8")
+        target_job = evolution_budget["target_pr_job"]
+        target_match = re.search(
+            rf"(?ms)^  {re.escape(target_job)}:\n(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:|\Z)",
+            prq_text,
+        )
+        if not target_match:
+            errors.append(f"PR Qualification targeted Evolution job missing: {target_job}")
+        else:
+            target_block = target_match.group(0)
+            branch_prefix = evolution_budget["target_branch_prefix"]
+            target_required = [
+                "needs: [route, governance, fast-web]",
+                f"if: needs.route.outputs.deviceops == 'true' || startsWith(github.head_ref, '{branch_prefix}')",
+                "uses: ./.github/workflows/evolution-qualification.yml",
+                f"enforce_performance: ${{{{ startsWith(github.head_ref, '{branch_prefix}') }}}}",
+                f"performance_target_seconds: {target_seconds}",
+                f"performance_hard_seconds: {hard_seconds}",
+            ]
+            for marker in target_required:
+                if marker not in target_block:
+                    errors.append(
+                        f"PR Qualification Evolution target marker missing: {marker}"
+                    )
+
+        governance_command = f"python3 {evolution_budget['performance_receipt_test']}"
+        if governance_command not in prq_text:
+            errors.append(
+                f"PR Qualification Evolution governance hook missing: {governance_command}"
+            )
     pull_entrypoints = sorted(
         name for name, path in workflows.items()
         if "pull_request" in on_children(path.read_text(encoding="utf-8"))
