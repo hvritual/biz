@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { ready, action, fill, commit, snap, state, accept } from './customer.helpers'
 
 test.use({ viewport: { width: 1536, height: 1024 }, deviceScaleFactor: 2 })
+test.describe.configure({ mode: 'parallel' })
 test.beforeEach(async ({ page }) => {
   page.on('pageerror', (e) => {
     throw e

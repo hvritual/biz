@@ -89,10 +89,12 @@ class ControlTests(unittest.TestCase):
         for actual in ({'full-01-one': {}}, {'full-01-one': {}, 'full-02-two': {}, 'full-03-extra': {}}):
             self.blocked('FULL_RESULT_SET_MISMATCH', d.full_results, actual, ['full-01-one', 'full-02-two'])
 
-    def test_all_42_required_results_pass(self):
-        expected = [f'full-{n:02d}-test' for n in range(1, 43)]
+    def test_all_required_full_results_pass(self):
+        topology = json.loads((Path(__file__).parent / 'ci_topology_contract.json').read_text())
+        count = topology['full_merge_gate']['expected_units']
+        expected = [f'full-{n:02d}-test' for n in range(1, count + 1)]
         needs = {k: {'result': 'success'} for k in expected + ['route', 'freeze-candidate', 'wait-qualification']}
-        self.assertEqual(len(d.full_results(needs, expected)), 42)
+        self.assertEqual(len(d.full_results(needs, expected)), count)
 
     def test_skipped_cancelled_failure_or_unknown_full_is_not_success(self):
         for value in ['skipped', 'cancelled', 'failure', None]:

@@ -14,12 +14,9 @@
     ]
   },
   "full_merge_gate": {
-    "expected_units": 42,
+    "expected_units": 35,
     "expected_workflows": [
-      "b12-3-tenant-member-mysql.yml",
-      "b12-4-tenant-role-mysql.yml",
-      "b12-5-tenant-bootstrap-mysql.yml",
-      "b12-6-concurrency-mysql.yml",
+      "mysql-runtime-qualification.yml",
       "b12-7-runtime-qualification.yml",
       "b12-8-framework-pressure-disposition.yml",
       "b12-multitenant-access-pressure.yml",
@@ -39,14 +36,10 @@
       "ce13-plan-catalog-qualification.yml",
       "ce13-platform-web-session.yml",
       "coffeelink-web.yml",
-      "ec-ri-04-department-mysql.yml",
       "ec-ri-04-web-qualification.yml",
-      "ec-ri-05-tenant-profile-mysql.yml",
       "ec-ri-05-web-qualification.yml",
       "ec-ri-06-plan-change-web.yml",
       "ec-ri-06-plan-read-web.yml",
-      "ec-ri-06-tenant-usage-mysql.yml",
-      "ec-ri-07-audit-mysql.yml",
       "ec-ri-07-web-qualification.yml",
       "enterprise-168-sensitive-contacts.yml",
       "enterprise-169-privacy-consent.yml",
@@ -112,6 +105,7 @@
     "enterprise-177-member-lifecycle.yml",
     "enterprise-role-qualification.yml",
     "evolution-qualification.yml",
+    "mysql-runtime-qualification.yml",
     "web-e2e-harness.yml"
   ],
   "legacy_issue_named_pr_gate_allowlist": [
@@ -123,5 +117,171 @@
   "forbidden_workflows": [
     "enterprise-178-role-lifecycle.yml",
     "enterprise-179-role-grant-tree.yml"
-  ]
+  ],
+  "performance_budgets": {
+    "mysql_runtime_qualification": {
+      "workflow": "mysql-runtime-qualification.yml",
+      "max_job_minutes": 2,
+      "image": "mysql:8.4"
+    },
+    "ce08_qualification": {
+      "workflow": "ce08-qualification.yml",
+      "max_job_minutes": 5,
+      "shard_manifest": "scripts/ci_ce08_shards.json",
+      "expected_race_tests": [
+        "TestCE08MySQLBusinessKeyConvergesAcrossRuntimeInstances",
+        "TestCE08MySQLConcurrentReplayAndDifferentPayloadNeverDuplicateBaseSubscription"
+      ],
+      "delegated_full_gate_coverage": [
+        "mysql-runtime-qualification.yml",
+        "b12-multitenant-access-pressure.yml",
+        "ce02-bootstrap.yml",
+        "ce04-qualification.yml",
+        "ce05-qualification.yml",
+        "ce06-qualification.yml",
+        "ce07-qualification.yml"
+      ]
+    },
+    "coffeelink_web": {
+      "workflow": "coffeelink-web.yml",
+      "max_job_minutes": 6,
+      "full_gate_skip_fast_check": true,
+      "delegated_fast_gate": "PR Qualification / fast-web",
+      "parallel_specs": [
+        "web/e2e/customer-gallery.spec.ts"
+      ],
+      "delegated_api_e2e": {
+        "enterprise-177-member-lifecycle.yml": "e2e/enterprise-members-real.spec.ts",
+        "enterprise-role-qualification.yml": "e2e/enterprise-roles-real.spec.ts"
+      },
+      "core_e2e_workers": 4,
+      "rental_e2e_workers": 1,
+      "dedicated_serial_specs": [
+        "web/e2e/site-rental.spec.ts"
+      ],
+      "expected_jobs": [
+        "core",
+        "site-rental"
+      ],
+      "performance_target_seconds": 180,
+      "performance_hard_seconds": 240,
+      "target_branch_prefix": "chore/ci-coffeelink-",
+      "target_pr_job": "web-product",
+      "performance_receipt_script": "scripts/coffeelink_performance.py",
+      "performance_receipt_test": "scripts/test_coffeelink_performance.py"
+    },
+    "ce10_qualification": {
+      "workflow": "ce10-qualification.yml",
+      "max_job_minutes": 6,
+      "performance_target_seconds": 180,
+      "performance_hard_seconds": 240,
+      "target_branch_prefix": "chore/ci-ce10-",
+      "target_pr_job": "commercial-runtime",
+      "performance_receipt_script": "scripts/ci_performance_receipt.py",
+      "performance_receipt_test": "scripts/test_ci_performance_receipt.py",
+      "expected_race_tests": [
+        "TestCE10MySQLConcurrentRuntimesDoNotPrepareTwice"
+      ],
+      "delegated_full_gate_coverage": [
+        "b12-multitenant-access-pressure.yml",
+        "mysql-runtime-qualification.yml",
+        "ce02-bootstrap.yml",
+        "ce04-qualification.yml",
+        "ce05-qualification.yml",
+        "ce06-qualification.yml",
+        "ce07-qualification.yml",
+        "ce08-qualification.yml",
+        "ce09-qualification.yml",
+        "evolution-qualification.yml"
+      ]
+    },
+    "evolution_qualification": {
+      "workflow": "evolution-qualification.yml",
+      "max_job_minutes": 6,
+      "performance_target_seconds": 240,
+      "performance_hard_seconds": 300,
+      "target_branch_prefix": "chore/ci-evolution-",
+      "target_pr_job": "deviceops-regression",
+      "performance_receipt_script": "scripts/ci_performance_receipt.py",
+      "performance_receipt_test": "scripts/test_ci_performance_receipt.py",
+      "retained_groups": [
+        "business",
+        "CE16",
+        "CE16-restart",
+        "delegation"
+      ],
+      "delegated_full_gate_coverage": [
+        "ce02-bootstrap.yml",
+        "ce04-qualification.yml",
+        "ce05-qualification.yml",
+        "ce06-qualification.yml",
+        "ce07-qualification.yml",
+        "ce08-qualification.yml",
+        "ce09-qualification.yml",
+        "ce10-qualification.yml",
+        "ce12-browser-e2e.yml",
+        "ce12-qualification.yml",
+        "ce13-plan-catalog-qualification.yml",
+        "ce13-platform-web-session.yml"
+      ]
+    },
+    "ce09_qualification": {
+      "workflow": "ce09-qualification.yml",
+      "max_job_minutes": 6,
+      "performance_target_seconds": 180,
+      "performance_hard_seconds": 240,
+      "target_branch_prefix": "chore/ci-ce09-",
+      "target_pr_job": "commercial-change",
+      "performance_receipt_script": "scripts/ci_performance_receipt.py",
+      "performance_receipt_test": "scripts/test_ci_performance_receipt.py",
+      "expected_race_tests": [
+        "TestCE09MySQLConcurrentUpgradeAndDowngradeHaveOneWinner"
+      ],
+      "delegated_full_gate_coverage": [
+        "mysql-runtime-qualification.yml",
+        "b12-multitenant-access-pressure.yml",
+        "ce02-bootstrap.yml",
+        "ce04-qualification.yml",
+        "ce05-qualification.yml",
+        "ce06-qualification.yml",
+        "ce07-qualification.yml",
+        "ce08-qualification.yml",
+        "evolution-qualification.yml"
+      ]
+    },
+    "ce12_browser_e2e": {
+      "workflow": "ce12-browser-e2e.yml",
+      "max_job_minutes": 4,
+      "performance_target_seconds": 150,
+      "performance_hard_seconds": 180,
+      "target_branch_prefix": "chore/ci-ce12-browser-",
+      "target_pr_job": "identity-browser",
+      "performance_receipt_script": "scripts/ci_performance_receipt.py",
+      "performance_receipt_test": "scripts/test_ci_performance_receipt.py",
+      "playwright_config": "web/playwright.ce12.config.ts",
+      "delegated_full_gate_coverage": [
+        "ce12-qualification.yml"
+      ],
+      "required_browser_titles": [
+        "TestCE12BrowserRealIdPToSessionTenantIAMEntitlement",
+        "TestCE12BrowserRealTenantBrandAppearanceAndStaleReadback",
+        "TestEnterprise171CrossTabTenantIsolationBackNavigationAndStaleContext",
+        "TestEnterprise172UsernamePhoneEmailPasswordOTPMatrix",
+        "TestEnterprise173PasswordRecoveryRevokesSessionsAndChangesCredential",
+        "TestEnterprise173SelfPasswordChangeUIRevokesCurrentSession",
+        "TestEnterprise173AdminRecoveryIsPermissionedScopedAndPolicyBlocked",
+        "TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed"
+      ]
+    }
+  },
+  "resilience_contracts": {
+    "b12_7_runtime_evidence_upload": {
+      "workflow": "b12-7-runtime-qualification.yml",
+      "attempts": 2,
+      "first_attempt_continue_on_error": true,
+      "retry_only_after_failure": true,
+      "if_no_files_found": "error",
+      "overwrite_on_retry": true
+    }
+  }
 }
