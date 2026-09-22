@@ -84,6 +84,8 @@ type roleRecord struct {
 	Description string  `gorm:"column:description;size:120;not null;default:''"`
 	RoleCode    *string `gorm:"column:role_code;size:64;uniqueIndex:uniq_role_code,priority:2"`
 	SystemRole  bool    `gorm:"column:system_role;not null;default:false"`
+	DataPolicyID *string `gorm:"column:data_policy_id;size:160;index"`
+	DataPolicyAcceptedVersion *uint64 `gorm:"column:data_policy_accepted_version"`
 	Status      string  `gorm:"column:status;size:32;not null"`
 	Version     uint64  `gorm:"column:version;not null;default:1"`
 }
@@ -151,7 +153,7 @@ func NewWithContactProtection(database *gorm.DB, protection *ContactProtection) 
 func (store *Store) AutoMigrate(ctx context.Context) error {
 	return store.database.WithContext(ctx).AutoMigrate(
 		&tenantCreationRecord{}, &tenantRecord{}, &userRecord{}, &membershipRecord{}, &roleRecord{},
-		&memberRoleRecord{}, &permissionGrantRecord{}, &memberSiteRecord{}, &apiTokenRecord{}, &auditEventRecord{},
+		&memberRoleRecord{}, &permissionGrantRecord{}, &memberSiteRecord{}, &dataPolicyRecord{}, &dataPolicySiteRecord{}, &apiTokenRecord{}, &auditEventRecord{},
 		&memberRemovedRoleSnapshotRecord{}, &memberRemovedSiteSnapshotRecord{}, &memberStatusAppealRecord{},
 	)
 }

@@ -19,6 +19,7 @@ var ErrInvalidTenantRoleRequest = errors.New("access: invalid tenant role reques
 
 type TenantRolePermissionService struct {
 	repositories requestscope.RepositoryFactory[ports.TenantRoleRepositories]
+	sites TenantRolePermissionToDeviceopsSiteManagementChildCapability
 }
 
 func NewTenantRolePermissionService(repositories requestscope.RepositoryFactory[ports.TenantRoleRepositories]) (*TenantRolePermissionService, error) {
@@ -26,6 +27,21 @@ func NewTenantRolePermissionService(repositories requestscope.RepositoryFactory[
 		return nil, errors.New("access: tenant role repository factory is required")
 	}
 	return &TenantRolePermissionService{repositories: repositories}, nil
+}
+
+func NewTenantRolePermissionServiceWithCapabilities(
+	repositories requestscope.RepositoryFactory[ports.TenantRoleRepositories],
+	sites TenantRolePermissionToDeviceopsSiteManagementChildCapability,
+) (*TenantRolePermissionService, error) {
+	service, err := NewTenantRolePermissionService(repositories)
+	if err != nil {
+		return nil, err
+	}
+	if sites == nil {
+		return nil, errors.New("access: tenant data policy site directory is required")
+	}
+	service.sites = sites
+	return service, nil
 }
 
 func (service *TenantRolePermissionService) BootstrapTenantOwnerRole(ctx context.Context, request *accessv1.BootstrapTenantOwnerRoleRequest) (*accessv1.TenantRoleDTO, error) {
@@ -285,6 +301,7 @@ func tenantRoleDTO(role domain.Role) *accessv1.TenantRoleDTO {
 	for _, grant := range role.Permissions {
 		result.Permissions = append(result.Permissions, &accessv1.PermissionGrantDTO{Permission: grant.Permission, Scope: dataScopeDTO(grant.Scope)})
 	}
+	result.DataPolicy = tenantDataPolicyReferenceDTO(role.DataPolicy)
 	return result
 }
 

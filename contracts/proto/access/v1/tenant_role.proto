@@ -164,35 +164,6 @@ message SetTenantRoleDataPolicyRequest {
   string policy_id = 3;
   uint64 policy_version = 4;
 }
-message TenantScopeCandidateDTO {
-  string id = 1;
-  string name = 2;
-  bool assignable = 3;
-  string unavailable_reason = 4;
-  uint64 version = 5;
-}
-message ListTenantScopeCandidatesRequest {
-  string query = 1;
-  uint32 page = 2;
-  uint32 page_size = 3;
-}
-message ListTenantScopeCandidatesResponse {
-  repeated TenantScopeCandidateDTO candidates = 1;
-  uint64 total = 2;
-}
-message GetTenantMemberBusinessScopeRequest { string user_id = 1; }
-message SetTenantMemberBusinessScopeRequest {
-  string user_id = 1;
-  uint64 version = 2;
-  repeated string site_ids = 3;
-}
-message TenantMemberBusinessScopeDTO {
-  string user_id = 1;
-  uint64 version = 2;
-  repeated TenantScopeCandidateDTO sites = 3;
-  string tenant_id = 4;
-}
-
 service TenantRolePermissionApplication {
   option (yunka.dsl.v1.application) = {
     name: "tenant_role_permission"
@@ -452,68 +423,4 @@ service TenantRolePermissionApplication {
     };
   }
 
-  rpc ListTenantDataPolicyCandidates(ListTenantScopeCandidatesRequest) returns (ListTenantScopeCandidatesResponse) {
-    option (google.api.http) = { get: "/v1/tenant/data-policy-candidates" };
-    option (yunka.dsl.v1.operation) = {
-      id: "tenant.data_policy.candidates"
-      use_case: "list_tenant_data_policy_candidates"
-      permissions: "tenant.role.manage"
-      permission_mode: PERMISSION_ALL
-      tenant_required: true
-      authentication: AUTHENTICATION_API_KEY
-      authentication: AUTHENTICATION_WEB_SESSION
-      requires_operations: "site.role_scope_directory"
-      composition: COMPOSITION_LOCAL
-      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
-    };
-  }
-
-  rpc ListTenantMemberScopeCandidates(ListTenantScopeCandidatesRequest) returns (ListTenantScopeCandidatesResponse) {
-    option (google.api.http) = { get: "/v1/tenant/member-scope-candidates" };
-    option (yunka.dsl.v1.operation) = {
-      id: "tenant.member.scope_candidates"
-      use_case: "list_tenant_member_scope_candidates"
-      permissions: "tenant.member.manage"
-      permission_mode: PERMISSION_ALL
-      tenant_required: true
-      authentication: AUTHENTICATION_API_KEY
-      authentication: AUTHENTICATION_WEB_SESSION
-      requires_operations: "site.member_scope_directory"
-      composition: COMPOSITION_LOCAL
-      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
-    };
-  }
-
-  rpc GetTenantMemberBusinessScope(GetTenantMemberBusinessScopeRequest) returns (TenantMemberBusinessScopeDTO) {
-    option (google.api.http) = { get: "/v1/tenant/members/{user_id}/business-scope" };
-    option (yunka.dsl.v1.operation) = {
-      id: "tenant.member.business_scope.get"
-      use_case: "get_tenant_member_business_scope"
-      permissions: "tenant.member.manage"
-      permission_mode: PERMISSION_ALL
-      tenant_required: true
-      authentication: AUTHENTICATION_API_KEY
-      authentication: AUTHENTICATION_WEB_SESSION
-      requires_operations: "site.member_scope_directory"
-      composition: COMPOSITION_LOCAL
-      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
-    };
-  }
-
-  rpc SetTenantMemberBusinessScope(SetTenantMemberBusinessScopeRequest) returns (TenantMemberBusinessScopeDTO) {
-    option (google.api.http) = { put: "/v1/tenant/members/{user_id}/business-scope" body: "*" };
-    option (yunka.dsl.v1.operation) = {
-      id: "tenant.member.business_scope.set"
-      use_case: "set_tenant_member_business_scope"
-      permissions: "tenant.member.manage"
-      permission_mode: PERMISSION_ALL
-      tenant_required: true
-      authentication: AUTHENTICATION_API_KEY
-      authentication: AUTHENTICATION_WEB_SESSION
-      requires_operations: "site.member_scope_directory"
-      composition: COMPOSITION_LOCAL
-      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
-    };
-  }
-
-}
+        }
