@@ -76,6 +76,8 @@ jobs:
           python3 scripts/check_ci_topology.py --base-ref "$BASE_SHA"
           python3 scripts/ci_proof_governance.py check --base-ref "$BASE_SHA" --output "$RUNNER_TEMP/ci-proof-contract.json"
           python3 scripts/test_ci_proof_governance.py
+          python3 scripts/ci_commercial_runtime.py check
+          python3 scripts/test_ci_commercial_runtime.py
           python3 scripts/delivery_execution.py validate-contract
           python3 scripts/test_delivery_execution.py
           python3 scripts/candidate_lifecycle.py validate-contract
@@ -215,3 +217,39 @@ jobs:
       enforce_performance: ${{ startsWith(github.head_ref, 'chore/ci-evolution-') }}
       performance_target_seconds: 240
       performance_hard_seconds: 300
+
+  commercial-batch-ce04:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-proof-commercial-')
+    uses: ./.github/workflows/ce04-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
+      performance_hard_seconds: 240
+
+  commercial-batch-ce05:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-proof-commercial-')
+    uses: ./.github/workflows/ce05-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
+      performance_hard_seconds: 240
+
+  commercial-batch-ce06:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-proof-commercial-')
+    uses: ./.github/workflows/ce06-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
+      performance_hard_seconds: 240
+
+  commercial-batch-ce07:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-proof-commercial-')
+    uses: ./.github/workflows/ce07-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
+      performance_hard_seconds: 240

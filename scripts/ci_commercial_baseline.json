@@ -1,0 +1,448 @@
+{
+  "schema_version": 1,
+  "baseline_main": "aa27510fb7e4f1aaa454b84465958f41ef9e045e",
+  "baseline_tree": "69f6baf4070d1dafcbf92706f974cf447a5251bd",
+  "baseline_run_id": 35716000630,
+  "gates": {
+    "ce04": {
+      "baseline_artifact_sha256": "77ea5bc7abf1a12219be44fbc4a330fe7ed6582a2922f597ba1f8c66bae28d4c",
+      "suites": {
+        "focused": {
+          "leaf_tests": 47,
+          "passed": {
+            "github.com/hvritual/biz/internal/architecture": [
+              "TestCE04GeneratedEntryClassifications",
+              "TestCE04OwnerAndRootTransactionBoundary"
+            ],
+            "github.com/hvritual/biz/internal/commercial/domain/entitlement": [
+              "TestCE04AllSourcesMustMatchCurrentCatalog",
+              "TestCE04AllSourcesMustMatchCurrentCatalog/unknown_capability",
+              "TestCE04AllSourcesMustMatchCurrentCatalog/unknown_field",
+              "TestCE04AllSourcesMustMatchCurrentCatalog/unknown_module",
+              "TestCE04AllSourcesMustMatchCurrentCatalog/unknown_quota",
+              "TestCE04CapabilityPriorityAndTenantIsolation",
+              "TestCE04CapabilityPriorityAndTenantIsolation/B_cannot_consume_A_sources",
+              "TestCE04CapabilityPriorityAndTenantIsolation/capability_deny_wins",
+              "TestCE04CapabilityPriorityAndTenantIsolation/implementation_not_ready",
+              "TestCE04CapabilityPriorityAndTenantIsolation/module_deny_wins",
+              "TestCE04CapabilityPriorityAndTenantIsolation/module_grant",
+              "TestCE04CapabilityPriorityAndTenantIsolation/no_implicit_free_access",
+              "TestCE04CapabilityPriorityAndTenantIsolation/safety_wins_ordinary_grant",
+              "TestCE04CapabilityPriorityAndTenantIsolation/sales_retirement_preserves_grants",
+              "TestCE04CapabilityPriorityAndTenantIsolation/specific_capability",
+              "TestCE04CapabilityPriorityAndTenantIsolation/specific_capability_is_not_wildcard",
+              "TestCE04CapabilityPriorityAndTenantIsolation/technical_disabled",
+              "TestCE04DependenciesAndInvalidCatalog",
+              "TestCE04DependenciesAndInvalidCatalog/cycle_rejected",
+              "TestCE04DependenciesAndInvalidCatalog/dependency_granted",
+              "TestCE04DependenciesAndInvalidCatalog/missing_dependent_grant",
+              "TestCE04DependenciesAndInvalidCatalog/missing_persisted_dependency",
+              "TestCE04DependenciesAndInvalidCatalog/unknown_technical_state_rejected",
+              "TestCE04DeterminismAndInvalidSources",
+              "TestCE04DeterminismAndInvalidSources/duplicate_source_cannot_double_quota",
+              "TestCE04DeterminismAndInvalidSources/empty_interval",
+              "TestCE04DeterminismAndInvalidSources/empty_reason",
+              "TestCE04DeterminismAndInvalidSources/invalid_unlimited",
+              "TestCE04DeterminismAndInvalidSources/mask_write_forbidden",
+              "TestCE04DeterminismAndInvalidSources/precision_would_be_truncated",
+              "TestCE04DeterminismAndInvalidSources/unknown_capability_cannot_be_persisted",
+              "TestCE04DeterminismAndInvalidSources/unknown_effect",
+              "TestCE04DeterminismAndInvalidSources/unlimited_addition",
+              "TestCE04DeterminismAndInvalidSources/zero_source_version",
+              "TestCE04ExplicitDenialWithoutUsableGrant",
+              "TestCE04FieldActionsAndSafetyMask",
+              "TestCE04HalfOpenTimeAndRevoke",
+              "TestCE04HalfOpenTimeAndRevoke/at_end",
+              "TestCE04HalfOpenTimeAndRevoke/at_start",
+              "TestCE04HalfOpenTimeAndRevoke/before",
+              "TestCE04HalfOpenTimeAndRevoke/before_end",
+              "TestCE04HalfOpenTimeAndRevoke/next_future_denial_bounds_grant",
+              "TestCE04HalfOpenTimeAndRevoke/revoked_before_future_start",
+              "TestCE04QuotaReplacementAndRestoration",
+              "TestCE04QuotaReplacementAndRestoration/duplicate_replacement_fail_closed",
+              "TestCE04QuotaReplacementAndRestoration/future_replacement_overlap_rejected",
+              "TestCE04QuotaReplacementAndRestoration/overflow_fail_closed",
+              "TestCE04QuotaReplacementAndRestoration/revocation_restores_increment",
+              "TestCE04QuotaReplacementAndRestoration/typed_real_future_sources_have_separate_semantics",
+              "TestCE04QuotaReplacementAndRestoration/unlimited_is_explicit",
+              "TestCE04QuotaReplacementAndRestoration/zero_is_finite"
+            ]
+          }
+        },
+        "race": {
+          "leaf_tests": 45,
+          "passed": {
+            "github.com/hvritual/biz/internal/commercial/domain/entitlement": [
+              "TestCE04AllSourcesMustMatchCurrentCatalog",
+              "TestCE04AllSourcesMustMatchCurrentCatalog/unknown_capability",
+              "TestCE04AllSourcesMustMatchCurrentCatalog/unknown_field",
+              "TestCE04AllSourcesMustMatchCurrentCatalog/unknown_module",
+              "TestCE04AllSourcesMustMatchCurrentCatalog/unknown_quota",
+              "TestCE04CapabilityPriorityAndTenantIsolation",
+              "TestCE04CapabilityPriorityAndTenantIsolation/B_cannot_consume_A_sources",
+              "TestCE04CapabilityPriorityAndTenantIsolation/capability_deny_wins",
+              "TestCE04CapabilityPriorityAndTenantIsolation/implementation_not_ready",
+              "TestCE04CapabilityPriorityAndTenantIsolation/module_deny_wins",
+              "TestCE04CapabilityPriorityAndTenantIsolation/module_grant",
+              "TestCE04CapabilityPriorityAndTenantIsolation/no_implicit_free_access",
+              "TestCE04CapabilityPriorityAndTenantIsolation/safety_wins_ordinary_grant",
+              "TestCE04CapabilityPriorityAndTenantIsolation/sales_retirement_preserves_grants",
+              "TestCE04CapabilityPriorityAndTenantIsolation/specific_capability",
+              "TestCE04CapabilityPriorityAndTenantIsolation/specific_capability_is_not_wildcard",
+              "TestCE04CapabilityPriorityAndTenantIsolation/technical_disabled",
+              "TestCE04DependenciesAndInvalidCatalog",
+              "TestCE04DependenciesAndInvalidCatalog/cycle_rejected",
+              "TestCE04DependenciesAndInvalidCatalog/dependency_granted",
+              "TestCE04DependenciesAndInvalidCatalog/missing_dependent_grant",
+              "TestCE04DependenciesAndInvalidCatalog/missing_persisted_dependency",
+              "TestCE04DependenciesAndInvalidCatalog/unknown_technical_state_rejected",
+              "TestCE04DeterminismAndInvalidSources",
+              "TestCE04DeterminismAndInvalidSources/duplicate_source_cannot_double_quota",
+              "TestCE04DeterminismAndInvalidSources/empty_interval",
+              "TestCE04DeterminismAndInvalidSources/empty_reason",
+              "TestCE04DeterminismAndInvalidSources/invalid_unlimited",
+              "TestCE04DeterminismAndInvalidSources/mask_write_forbidden",
+              "TestCE04DeterminismAndInvalidSources/precision_would_be_truncated",
+              "TestCE04DeterminismAndInvalidSources/unknown_capability_cannot_be_persisted",
+              "TestCE04DeterminismAndInvalidSources/unknown_effect",
+              "TestCE04DeterminismAndInvalidSources/unlimited_addition",
+              "TestCE04DeterminismAndInvalidSources/zero_source_version",
+              "TestCE04ExplicitDenialWithoutUsableGrant",
+              "TestCE04FieldActionsAndSafetyMask",
+              "TestCE04HalfOpenTimeAndRevoke",
+              "TestCE04HalfOpenTimeAndRevoke/at_end",
+              "TestCE04HalfOpenTimeAndRevoke/at_start",
+              "TestCE04HalfOpenTimeAndRevoke/before",
+              "TestCE04HalfOpenTimeAndRevoke/before_end",
+              "TestCE04HalfOpenTimeAndRevoke/next_future_denial_bounds_grant",
+              "TestCE04HalfOpenTimeAndRevoke/revoked_before_future_start",
+              "TestCE04QuotaReplacementAndRestoration",
+              "TestCE04QuotaReplacementAndRestoration/duplicate_replacement_fail_closed",
+              "TestCE04QuotaReplacementAndRestoration/future_replacement_overlap_rejected",
+              "TestCE04QuotaReplacementAndRestoration/overflow_fail_closed",
+              "TestCE04QuotaReplacementAndRestoration/revocation_restores_increment",
+              "TestCE04QuotaReplacementAndRestoration/typed_real_future_sources_have_separate_semantics",
+              "TestCE04QuotaReplacementAndRestoration/unlimited_is_explicit",
+              "TestCE04QuotaReplacementAndRestoration/zero_is_finite"
+            ]
+          }
+        },
+        "mysql": {
+          "leaf_tests": 7,
+          "passed": {
+            "github.com/hvritual/biz/integration": [
+              "TestCE04MySQLInvalidStoredSourceFailsClosed",
+              "TestCE04MySQLQuotaCASIdempotencyAndAuditRollback",
+              "TestCE04MySQLRESTAndGRPCIsolationAndProvenance",
+              "TestCE04MySQLReferencedModuleCannotBeHardDeleted",
+              "TestCE04MySQLRepeatedRequestBodyRESTAndGRPCParity",
+              "TestCE04MySQLTimeTechnicalFieldsAndInvalidSources",
+              "TestCE04MySQLWellShapedOrphanSourceFailsClosed"
+            ]
+          }
+        },
+        "restart-before": {
+          "leaf_tests": 1,
+          "passed": {
+            "github.com/hvritual/biz/integration": [
+              "TestCE04PersistenceBeforeRestart"
+            ]
+          }
+        },
+        "restart-after": {
+          "leaf_tests": 1,
+          "passed": {
+            "github.com/hvritual/biz/integration": [
+              "TestCE04PersistenceAfterRestart"
+            ]
+          }
+        }
+      },
+      "commands": {
+        "focused": "go test -count=1 -json ./internal/commercial/... ./internal/architecture -run '^TestCE04'",
+        "race": "go test -race -count=1 -json ./internal/commercial/domain/entitlement",
+        "mysql": "go test -count=1 -tags=integration -json ./integration -run '^TestCE04MySQL'",
+        "restart-before": "go test -count=1 -tags=integration -json ./integration -run '^TestCE04PersistenceBeforeRestart$'",
+        "restart-after": "go test -count=1 -tags=integration -json ./integration -run '^TestCE04PersistenceAfterRestart$'"
+      }
+    },
+    "ce05": {
+      "baseline_artifact_sha256": "eb338d6d32e13ec30331bec3d5d8366ad68092ec884f98767ea471480976ecd7",
+      "suites": {
+        "focused": {
+          "leaf_tests": 14,
+          "passed": {
+            "github.com/hvritual/biz/internal/architecture": [
+              "TestCE05EmbeddedPolicyAndRealConditionalChild",
+              "TestCE05EnforcementDoesNotCreateExecutorsOrReadRepositories",
+              "TestCE05EveryBusinessChildHasInvocationCheck"
+            ],
+            "github.com/hvritual/biz/internal/commercial/enforcement": [
+              "TestCE05GuardPolicyAndContext",
+              "TestCE05GuardPolicyAndContext/conditional_excludes_unused_capability",
+              "TestCE05GuardPolicyAndContext/explicit_recovery_avoids_business_reader",
+              "TestCE05GuardPolicyAndContext/mandatory_closure_includes_child",
+              "TestCE05GuardPolicyAndContext/missing_scope_cannot_reuse_token",
+              "TestCE05GuardPolicyAndContext/private_root",
+              "TestCE05GuardPolicyAndContext/reader_tenant_mismatch_fails_closed",
+              "TestCE05GuardPolicyAndContext/source_error_fails_closed",
+              "TestCE05GuardPolicyAndContext/unknown_root",
+              "TestCE05GuardPolicyAndContext/wrong_authority",
+              "TestCE05GuardRejectsInvalidPolicy",
+              "TestCE05HTTPErrorProjectionDoesNotWeakenIAM"
+            ]
+          }
+        },
+        "race": {
+          "leaf_tests": 12,
+          "passed": {
+            "github.com/hvritual/biz/internal/commercial/enforcement": [
+              "TestCE05GuardPolicyAndContext",
+              "TestCE05GuardPolicyAndContext/conditional_excludes_unused_capability",
+              "TestCE05GuardPolicyAndContext/explicit_recovery_avoids_business_reader",
+              "TestCE05GuardPolicyAndContext/mandatory_closure_includes_child",
+              "TestCE05GuardPolicyAndContext/missing_scope_cannot_reuse_token",
+              "TestCE05GuardPolicyAndContext/private_root",
+              "TestCE05GuardPolicyAndContext/reader_tenant_mismatch_fails_closed",
+              "TestCE05GuardPolicyAndContext/source_error_fails_closed",
+              "TestCE05GuardPolicyAndContext/unknown_root",
+              "TestCE05GuardPolicyAndContext/wrong_authority",
+              "TestCE05GuardRejectsInvalidPolicy",
+              "TestCE05HTTPErrorProjectionDoesNotWeakenIAM",
+              "TestCE10WorkerEntryRequiresProcessCapabilityAndUnchangedPlatform"
+            ]
+          }
+        },
+        "mysql": {
+          "leaf_tests": 5,
+          "passed": {
+            "github.com/hvritual/biz/integration": [
+              "TestCE05MySQLConditionalChildOnlyWhenMoving",
+              "TestCE05MySQLIAMAndDataScopeStillRequired",
+              "TestCE05MySQLNoImplicitAccessManagementOrExpiredGrant",
+              "TestCE05MySQLRESTGRPCGrantAndDeny",
+              "TestCE05MySQLTechnicalStopExpiryAndSourceFailure"
+            ]
+          }
+        }
+      },
+      "commands": {
+        "focused": "go test -count=1 -json ./internal/commercial/... ./internal/architecture -run '^TestCE05'",
+        "race": "go test -race -count=1 -json ./internal/commercial/enforcement",
+        "mysql": "go test -count=1 -tags=integration -json ./integration -run '^TestCE05MySQL'"
+      }
+    },
+    "ce06": {
+      "baseline_artifact_sha256": "67ec1e5494e5c907db9866107d733fac5678aad528c402fd5fe038bb8a889c3b",
+      "suites": {
+        "focused": {
+          "leaf_tests": 17,
+          "passed": {
+            "github.com/hvritual/biz/internal/architecture": [
+              "TestCE06AllBusinessWritesJoinInvocationBarrier"
+            ],
+            "github.com/hvritual/biz/internal/commercial/domain/snapshot": [
+              "TestCE06SnapshotImmutableBounds",
+              "TestCE06SnapshotImmutableBounds/after_expiry",
+              "TestCE06SnapshotImmutableBounds/at_expiry",
+              "TestCE06SnapshotImmutableBounds/before_start",
+              "TestCE06SnapshotImmutableBounds/corrupted",
+              "TestCE06SnapshotImmutableBounds/old_catalog",
+              "TestCE06SnapshotImmutableBounds/old_source",
+              "TestCE06SnapshotImmutableBounds/old_version",
+              "TestCE06SnapshotImmutableBounds/other_tenant",
+              "TestCE06SnapshotImmutableBounds/permission_never_in_tenant_cache",
+              "TestCE06SnapshotImmutableBounds/unknown_request_denied_once",
+              "TestCE06SnapshotImmutableBounds/valid"
+            ],
+            "github.com/hvritual/biz/internal/commercial/infrastructure/consistency": [
+              "TestCE06TransientClassification",
+              "TestCE06TransientClassification/1049",
+              "TestCE06TransientClassification/1062",
+              "TestCE06TransientClassification/1205",
+              "TestCE06TransientClassification/1213"
+            ],
+            "github.com/hvritual/biz/internal/commercial/infrastructure/persistence": [
+              "TestCE06CacheCopiesAndBound"
+            ]
+          }
+        },
+        "race": {
+          "leaf_tests": 16,
+          "passed": {
+            "github.com/hvritual/biz/internal/commercial/domain/snapshot": [
+              "TestCE06SnapshotImmutableBounds",
+              "TestCE06SnapshotImmutableBounds/after_expiry",
+              "TestCE06SnapshotImmutableBounds/at_expiry",
+              "TestCE06SnapshotImmutableBounds/before_start",
+              "TestCE06SnapshotImmutableBounds/corrupted",
+              "TestCE06SnapshotImmutableBounds/old_catalog",
+              "TestCE06SnapshotImmutableBounds/old_source",
+              "TestCE06SnapshotImmutableBounds/old_version",
+              "TestCE06SnapshotImmutableBounds/other_tenant",
+              "TestCE06SnapshotImmutableBounds/permission_never_in_tenant_cache",
+              "TestCE06SnapshotImmutableBounds/unknown_request_denied_once",
+              "TestCE06SnapshotImmutableBounds/valid"
+            ],
+            "github.com/hvritual/biz/internal/commercial/infrastructure/consistency": [
+              "TestCE06TransientClassification",
+              "TestCE06TransientClassification/1049",
+              "TestCE06TransientClassification/1062",
+              "TestCE06TransientClassification/1205",
+              "TestCE06TransientClassification/1213"
+            ],
+            "github.com/hvritual/biz/internal/commercial/infrastructure/persistence": [
+              "TestCE06CacheCopiesAndBound"
+            ]
+          }
+        },
+        "mysql": {
+          "leaf_tests": 11,
+          "passed": {
+            "github.com/hvritual/biz/integration": [
+              "TestCE06MySQLAtomicInvalidationAndSnapshotRollback",
+              "TestCE06MySQLConcurrentReadsPreserveVersion",
+              "TestCE06MySQLDeadlockRetriesWholeRequest",
+              "TestCE06MySQLExpiryRecheckedAfterPreflight",
+              "TestCE06MySQLGlobalDisableSerializesWithWrites",
+              "TestCE06MySQLGlobalDisableSerializesWithWrites/write_first=false",
+              "TestCE06MySQLGlobalDisableSerializesWithWrites/write_first=true",
+              "TestCE06MySQLRevocationWinsAgainstOldRootSnapshot",
+              "TestCE06MySQLSnapshotsAndPermissionAssociation",
+              "TestCE06MySQLStaleCacheAndCrossInstance",
+              "TestCE06MySQLTimeTransitionsWithoutScheduler",
+              "TestCE06MySQLWriteWinsThenRevocationBlocksNewRequests"
+            ]
+          }
+        },
+        "restart-before": {
+          "leaf_tests": 1,
+          "passed": {
+            "github.com/hvritual/biz/integration": [
+              "TestCE06PersistenceBeforeRestart"
+            ]
+          }
+        },
+        "restart-after": {
+          "leaf_tests": 1,
+          "passed": {
+            "github.com/hvritual/biz/integration": [
+              "TestCE06PersistenceAfterRestart"
+            ]
+          }
+        }
+      },
+      "commands": {
+        "focused": "go test -count=1 -json ./internal/commercial/... ./internal/architecture -run '^TestCE06'",
+        "race": "go test -race -count=1 -json ./internal/commercial/domain/snapshot ./internal/commercial/infrastructure/consistency ./internal/commercial/infrastructure/persistence",
+        "mysql": "go test -count=1 -tags=integration -json ./integration -run '^TestCE06MySQL'",
+        "restart-before": "go test -count=1 -tags=integration -json ./integration -run '^TestCE06PersistenceBeforeRestart$'",
+        "restart-after": "go test -count=1 -tags=integration -json ./integration -run '^TestCE06PersistenceAfterRestart$'"
+      }
+    },
+    "ce07": {
+      "baseline_artifact_sha256": "8a3ee3043ef0ee4c39dab502f5578d9aa8f5670d69202039794525ae3057020d",
+      "suites": {
+        "focused": {
+          "leaf_tests": 28,
+          "passed": {
+            "github.com/hvritual/biz/internal/architecture": [
+              "TestCE07PlanOwnerAndNoHardDelete"
+            ],
+            "github.com/hvritual/biz/internal/commercial/domain/plan": [
+              "TestCE07CanonicalHashAndCopy",
+              "TestCE07IntegrityAndEligibility",
+              "TestCE07SafetyFloorCannotBeDisabled",
+              "TestCE07TermsRejectInvalidOffers",
+              "TestCE07TermsRejectInvalidOffers/ambiguous_unlimited",
+              "TestCE07TermsRejectInvalidOffers/disabled",
+              "TestCE07TermsRejectInvalidOffers/duplicate_capability",
+              "TestCE07TermsRejectInvalidOffers/duplicate_field",
+              "TestCE07TermsRejectInvalidOffers/duplicate_module",
+              "TestCE07TermsRejectInvalidOffers/duplicate_scope",
+              "TestCE07TermsRejectInvalidOffers/invalid_action",
+              "TestCE07TermsRejectInvalidOffers/invalid_validity",
+              "TestCE07TermsRejectInvalidOffers/masked_write",
+              "TestCE07TermsRejectInvalidOffers/missing_actual_child_capability",
+              "TestCE07TermsRejectInvalidOffers/missing_module_dependency",
+              "TestCE07TermsRejectInvalidOffers/module_scope_cannot_widen",
+              "TestCE07TermsRejectInvalidOffers/no_scope",
+              "TestCE07TermsRejectInvalidOffers/not_ready",
+              "TestCE07TermsRejectInvalidOffers/quota_overflow",
+              "TestCE07TermsRejectInvalidOffers/retired",
+              "TestCE07TermsRejectInvalidOffers/unknown_capability",
+              "TestCE07TermsRejectInvalidOffers/unknown_field",
+              "TestCE07TermsRejectInvalidOffers/unknown_module",
+              "TestCE07TermsRejectInvalidOffers/unknown_quota",
+              "TestCE07TermsRejectInvalidOffers/unlimited_with_days",
+              "TestCE07TermsRejectInvalidOffers/wildcard_mixed",
+              "TestCE07TermsRejectInvalidOffers/zero_fixed_days",
+              "TestCE07ZeroUnlimitedAndClosedDependencies"
+            ]
+          }
+        },
+        "race": {
+          "leaf_tests": 11,
+          "passed": {
+            "github.com/hvritual/biz/integration": [
+              "TestCE07MySQLAuditFailureRollsBack",
+              "TestCE07MySQLCurrentCatalogRejectsStalePublish",
+              "TestCE07MySQLIdempotencyCASAndDuplicatePublication",
+              "TestCE07MySQLPlatformAndRoleAdminIsolation",
+              "TestCE07MySQLPublishSerializesBeforeTechnicalDisable",
+              "TestCE07MySQLRESTAndInvalidAuthoring",
+              "TestCE07MySQLRESTAndInvalidAuthoring/invalid_field",
+              "TestCE07MySQLRESTAndInvalidAuthoring/invalid_quota",
+              "TestCE07MySQLRESTAndInvalidAuthoring/mask_floor",
+              "TestCE07MySQLRESTAndInvalidAuthoring/missing_dependency",
+              "TestCE07MySQLRESTAndInvalidAuthoring/unknown",
+              "TestCE07MySQLVersionsImmutableAndRetiredReferencesReadable"
+            ]
+          }
+        },
+        "mysql": {
+          "leaf_tests": 11,
+          "passed": {
+            "github.com/hvritual/biz/integration": [
+              "TestCE07MySQLAuditFailureRollsBack",
+              "TestCE07MySQLCurrentCatalogRejectsStalePublish",
+              "TestCE07MySQLIdempotencyCASAndDuplicatePublication",
+              "TestCE07MySQLPlatformAndRoleAdminIsolation",
+              "TestCE07MySQLPublishSerializesBeforeTechnicalDisable",
+              "TestCE07MySQLRESTAndInvalidAuthoring",
+              "TestCE07MySQLRESTAndInvalidAuthoring/invalid_field",
+              "TestCE07MySQLRESTAndInvalidAuthoring/invalid_quota",
+              "TestCE07MySQLRESTAndInvalidAuthoring/mask_floor",
+              "TestCE07MySQLRESTAndInvalidAuthoring/missing_dependency",
+              "TestCE07MySQLRESTAndInvalidAuthoring/unknown",
+              "TestCE07MySQLVersionsImmutableAndRetiredReferencesReadable"
+            ]
+          }
+        },
+        "restart-before": {
+          "leaf_tests": 1,
+          "passed": {
+            "github.com/hvritual/biz/integration": [
+              "TestCE07PersistenceBeforeRestart"
+            ]
+          }
+        },
+        "restart-after": {
+          "leaf_tests": 1,
+          "passed": {
+            "github.com/hvritual/biz/integration": [
+              "TestCE07PersistenceAfterRestart"
+            ]
+          }
+        }
+      },
+      "commands": {
+        "focused": "go test -count=1 -json ./internal/commercial/... ./internal/architecture -run '^TestCE07'",
+        "race": "go test -race -count=1 -tags=integration -json ./integration -run '^TestCE07MySQL'",
+        "mysql": "go test -count=1 -tags=integration -json ./integration -run '^TestCE07MySQL'",
+        "restart-before": "go test -count=1 -tags=integration -json ./integration -run '^TestCE07PersistenceBeforeRestart$'",
+        "restart-after": "go test -count=1 -tags=integration -json ./integration -run '^TestCE07PersistenceAfterRestart$'"
+      }
+    }
+  }
+}
