@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Static fail-closed contract checks for CE13 Batch B."""
 from pathlib import Path
+import json
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,6 +74,22 @@ def check(root=ROOT):
             "CE13_HEADLESS_ONLY_REQUIRED")
     require('fc-match "Noto Sans CJK SC"' in browser_helper,
             "CE13_FONT_PROBE_REQUIRED")
+
+    proof = json.loads((root / "scripts/ci_proof_contract.json").read_text())
+    for workflow in [
+        "ce13-plan-catalog-qualification.yml",
+        "ce13-platform-web-session.yml",
+    ]:
+        gate = proof["gates"][workflow]
+        require(gate["target_seconds"] == 120 and gate["hard_seconds"] == 180,
+                "CE13_PERFORMANCE_RATCHET_DRIFT:" + workflow)
+        require(gate["legacy_cost_ceiling"] == {},
+                "CE13_LEGACY_DEBT_RATCHET_DRIFT:" + workflow)
+        workflow_text = (root / ".github/workflows" / workflow).read_text()
+        require("performance_target_seconds:\n        type: number\n        required: false\n        default: 120" in workflow_text,
+                "CE13_WORKFLOW_TARGET_DRIFT:" + workflow)
+        require("performance_hard_seconds:\n        type: number\n        required: false\n        default: 180" in workflow_text,
+                "CE13_WORKFLOW_HARD_DRIFT:" + workflow)
 
     prq = (root / ".github/workflows/pr-qualification.yml").read_text()
     for job, workflow in [
