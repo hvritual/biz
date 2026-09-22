@@ -149,7 +149,8 @@
       "default_e2e_workers": 4,
       "delegated_fast_gate": "PR Qualification / fast-web",
       "parallel_specs": [
-        "web/e2e/customer-gallery.spec.ts"
+        "web/e2e/customer-gallery.spec.ts",
+        "web/e2e/site-rental.spec.ts"
       ],
       "delegated_api_e2e": {
         "enterprise-177-member-lifecycle.yml": "e2e/enterprise-members-real.spec.ts",
