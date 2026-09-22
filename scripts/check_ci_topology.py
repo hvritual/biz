@@ -464,6 +464,168 @@ def validate(base_ref: str | None = None) -> list[str]:
             if command not in prq_text:
                 errors.append(f"PR Qualification CoffeeLink governance hook missing: {command}")
 
+    ce10_budget = contract.get("performance_budgets", {}).get("ce10_qualification")
+    if ce10_budget:
+        workflow = ce10_budget["workflow"]
+        path = workflows.get(workflow)
+        if path is None:
+            errors.append(f"CE10 performance workflow missing: {workflow}")
+        else:
+            text = path.read_text(encoding="utf-8")
+            timeouts = [
+                int(value)
+                for value in re.findall(r"^    timeout-minutes:\s*(\d+)\s*$", text, re.MULTILINE)
+            ]
+            max_minutes = int(ce10_budget["max_job_minutes"])
+            if len(timeouts) != 1:
+                errors.append(f"{workflow}: expected exactly one timed CE10 job; found {len(timeouts)}")
+            elif timeouts[0] > max_minutes:
+                errors.append(f"{workflow}: timeout {timeouts[0]}m exceeds CE10 execution budget {max_minutes}m")
+
+            target_seconds = int(ce10_budget["performance_target_seconds"])
+            hard_seconds = int(ce10_budget["performance_hard_seconds"])
+            if not (0 < target_seconds < hard_seconds < max_minutes * 60):
+                errors.append(
+                    "CE10 performance budgets must satisfy "
+                    f"0 < target({target_seconds}) < hard({hard_seconds}) < execution-timeout({max_minutes * 60})"
+                )
+
+            required_workflow_markers = [
+                "enforce_performance:",
+                "performance_target_seconds:",
+                "performance_hard_seconds:",
+                "Start CE10 performance clock",
+                "cache: true",
+                "cache-dependency-path: biz/go.sum",
+                "Write CE10 performance receipt",
+                "scripts/ci_performance_receipt.py",
+                "ce10-performance.json",
+                "github.event.pull_request.head.sha || github.sha",
+            ]
+            for marker in required_workflow_markers:
+                if marker not in text:
+                    errors.append(f"{workflow}: CE10 performance marker missing: {marker}")
+            if "services:" in text:
+                errors.append(f"{workflow}: CE10 MySQL must be script-owned so performance timing includes database startup")
+
+        receipt_script = ROOT / ce10_budget["performance_receipt_script"]
+        receipt_test = ROOT / ce10_budget["performance_receipt_test"]
+        if not receipt_script.exists():
+            errors.append(f"CE10 performance receipt script missing: {receipt_script.relative_to(ROOT)}")
+        if not receipt_test.exists():
+            errors.append(f"CE10 performance receipt test missing: {receipt_test.relative_to(ROOT)}")
+
+        ce10_script_path = ROOT / "scripts" / "ce10_qualify.sh"
+        if not ce10_script_path.exists():
+            errors.append("CE10 qualification script missing")
+            ce10_script = ""
+        else:
+            ce10_script = ce10_script_path.read_text(encoding="utf-8")
+            syntax = subprocess.run(
+                ["bash", "-n", str(ce10_script_path)],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            if syntax.returncode != 0:
+                errors.append(
+                    "CE10 qualification shell syntax invalid: "
+                    + (syntax.stderr.strip() or syntax.stdout.strip())
+                )
+
+        required_script_markers = [
+            "ce10-fast-",
+            "ce10-restart-",
+            "--tmpfs /var/lib/mysql:rw,nosuid,size=1g",
+            "127.0.0.1:3306",
+            "127.0.0.1:3307",
+            'docker restart "$restart_container"',
+            "ce10-parallel-stage",
+            "TestCE10MySQLConcurrentRuntimesDoNotPrepareTwice",
+            "delegated_full_gate_coverage",
+        ]
+        for marker in required_script_markers:
+            if marker not in ce10_script:
+                errors.append(f"CE10 qualification marker missing: {marker}")
+
+        forbidden_ce10_duplicates = [
+            "for group in CE09 CE08 CE07 CE06 CE05 CE04 CE02 B12",
+            "^TestCE09MySQL",
+            "^TestCE08MySQL",
+            "^TestCE07MySQL",
+            "^TestCE06MySQL",
+            "^TestCE05MySQL",
+            "^TestCE04MySQL",
+            "^TestCE02",
+            "^Test(B122|B123|B124|B125|B126|AG02OwnerInvariantUsesCurrentReadAfterSnapshot)",
+            "go test -timeout=5m -count=1 -json ./...",
+            "go vet ./...",
+            "go build ./...",
+            "run_check check-before",
+            "run_check check-after",
+            'docker restart "$MYSQL_CONTAINER_ID"',
+        ]
+        for marker in forbidden_ce10_duplicates:
+            if marker in ce10_script:
+                errors.append(f"CE10 qualification reintroduced delegated duplicate coverage: {marker}")
+
+        expected_race = set(ce10_budget.get("expected_race_tests", []))
+        concurrent_tests: set[str] = set()
+        for source in (ROOT / "integration").glob("ce10_*_test.go"):
+            source_text = source.read_text(encoding="utf-8")
+            matches = list(re.finditer(
+                r"^func (TestCE10MySQL[A-Za-z0-9_]+)\(t \*testing\.T\) \{",
+                source_text,
+                re.MULTILINE,
+            ))
+            for index, match in enumerate(matches):
+                end = matches[index + 1].start() if index + 1 < len(matches) else len(source_text)
+                body = source_text[match.end():end]
+                if "go func" in body:
+                    concurrent_tests.add(match.group(1))
+        if concurrent_tests != expected_race:
+            errors.append(
+                f"CE10 race set drifted: source concurrency={sorted(concurrent_tests)} "
+                f"expected={sorted(expected_race)}"
+            )
+        for test_name in expected_race:
+            if test_name not in ce10_script:
+                errors.append(f"CE10 race test missing from qualification script: {test_name}")
+
+        delegated = ce10_budget.get("delegated_full_gate_coverage", [])
+        for delegated_workflow in delegated:
+            if delegated_workflow not in expected_full:
+                errors.append(f"CE10 delegated workflow missing from Full Merge Gate: {delegated_workflow}")
+
+        prq_text = workflows["pr-qualification.yml"].read_text(encoding="utf-8")
+        target_job = ce10_budget["target_pr_job"]
+        target_match = re.search(
+            rf"(?ms)^  {re.escape(target_job)}:\n(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:|\Z)",
+            prq_text,
+        )
+        if not target_match:
+            errors.append(f"PR Qualification targeted CE10 job missing: {target_job}")
+        else:
+            target_block = target_match.group(0)
+            branch_prefix = ce10_budget["target_branch_prefix"]
+            target_required = [
+                "needs: [route, governance, fast-web]",
+                f"if: needs.route.outputs.commercial == 'true' || startsWith(github.head_ref, '{branch_prefix}')",
+                "uses: ./.github/workflows/ce10-qualification.yml",
+                f"enforce_performance: ${{{{ startsWith(github.head_ref, '{branch_prefix}') }}}}",
+                f"performance_target_seconds: {target_seconds}",
+                f"performance_hard_seconds: {hard_seconds}",
+            ]
+            for marker in target_required:
+                if marker not in target_block:
+                    errors.append(f"PR Qualification CE10 target marker missing: {marker}")
+
+        governance_command = f"python3 {ce10_budget['performance_receipt_test']}"
+        if governance_command not in prq_text:
+            errors.append(f"PR Qualification CE10 governance hook missing: {governance_command}")
+
     pull_entrypoints = sorted(
         name for name, path in workflows.items()
         if "pull_request" in on_children(path.read_text(encoding="utf-8"))
