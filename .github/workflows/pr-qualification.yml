@@ -105,16 +105,6 @@ jobs:
     if: needs.route.outputs.docs_only != 'true'
     uses: ./.github/workflows/candidate-qualification.yml
 
-  coffeelink-performance-target:
-    needs: [route, governance, fast-web]
-    if: startsWith(github.head_ref, 'chore/ci-coffeelink-')
-    uses: ./.github/workflows/coffeelink-web.yml
-    with:
-      skip_fast_check: true
-      enforce_performance: true
-      performance_target_seconds: 180
-      performance_hard_seconds: 240
-
   access-role:
     needs: [route, governance, fast-web]
     if: needs.route.outputs.access == 'true'
@@ -150,10 +140,13 @@ jobs:
 
   web-product:
     needs: [route, governance, fast-web]
-    if: needs.route.outputs.web_product == 'true' && !startsWith(github.head_ref, 'chore/ci-coffeelink-')
+    if: needs.route.outputs.web_product == 'true' || startsWith(github.head_ref, 'chore/ci-coffeelink-')
     uses: ./.github/workflows/coffeelink-web.yml
     with:
       skip_fast_check: true
+      enforce_performance: ${{ startsWith(github.head_ref, 'chore/ci-coffeelink-') }}
+      performance_target_seconds: 180
+      performance_hard_seconds: 240
 
   web-e2e-harness:
     needs: [route, governance, fast-web]
