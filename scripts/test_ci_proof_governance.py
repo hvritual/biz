@@ -251,7 +251,7 @@ class BasePolicyTests(unittest.TestCase):
 
     def test_governance_cannot_raise_debt_ceiling(self):
         from types import SimpleNamespace
-        changed=copy.deepcopy(C);changed['gates']['ce06-qualification.yml']['legacy_cost_ceiling']['go.all.test']+=1
+        changed=copy.deepcopy(C);changed['gates']['ce06-qualification.yml']['legacy_cost_ceiling']['go.all.test']=1
         with patch.object(g.subprocess,'run',return_value=SimpleNamespace(returncode=0,stdout=json.dumps(C))), patch.dict(os.environ,{'GITHUB_HEAD_REF':'chore/ci-proof-production'}):
             with self.assertRaisesRegex(g.Violation,'LEGACY_DEBT_INCREASE'):
                 g.check_base(ROOT,'a'*40,changed)
