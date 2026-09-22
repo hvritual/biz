@@ -303,13 +303,19 @@ def validate(base_ref: str | None = None) -> list[str]:
                 for value in re.findall(r"^    timeout-minutes:\s*(\d+)\s*$", text, re.MULTILINE)
             ]
             max_minutes = int(web_budget["max_job_minutes"])
-            if len(timeouts) != 1:
+            expected_jobs = web_budget.get("expected_jobs", [])
+            declared_jobs = re.findall(r"^  ([A-Za-z0-9_-]+):\n    runs-on:", text, re.MULTILINE)
+            if declared_jobs != expected_jobs:
                 errors.append(
-                    f"{workflow}: expected exactly one timed web qualification job; found {len(timeouts)}"
+                    f"{workflow}: CoffeeLink job set/order drifted: {declared_jobs}; expected {expected_jobs}"
                 )
-            elif timeouts[0] > max_minutes:
+            if len(timeouts) != len(expected_jobs):
                 errors.append(
-                    f"{workflow}: timeout {timeouts[0]}m exceeds CoffeeLink budget {max_minutes}m"
+                    f"{workflow}: expected {len(expected_jobs)} timed qualification jobs; found {len(timeouts)}"
+                )
+            elif any(value > max_minutes for value in timeouts):
+                errors.append(
+                    f"{workflow}: timeout {timeouts} exceeds CoffeeLink per-job budget {max_minutes}m"
                 )
 
             required_markers = [
@@ -318,15 +324,14 @@ def validate(base_ref: str | None = None) -> list[str]:
                 "if: ${{ !inputs.skip_fast_check }}",
                 "Build default CoffeeLink bundle",
                 "run: npx vite build",
-                "Use runner Chrome and verify Chinese text support",
-                "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH",
-                "Run sharded CoffeeLink E2E",
+                "Install browser and Chinese text support",
                 f"npx playwright test --workers={int(web_budget['core_e2e_workers'])}",
                 f"npx playwright test --workers={int(web_budget['rental_e2e_workers'])} e2e/site-rental.spec.ts",
-                "PLAYWRIGHT_REUSE_SERVER=1",
-                "PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/results.json",
-                "PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/site-rental-results.json",
+                "! -name 'site-rental.spec.ts'",
                 "Verify visual contract evidence",
+                "Verify site-rental evidence",
+                "coffeelink-visual-review",
+                "coffeelink-site-rental-review",
             ]
             for marker in required_markers:
                 if marker not in text:
@@ -340,7 +345,8 @@ def validate(base_ref: str | None = None) -> list[str]:
                 "e2e/enterprise-roles-real.spec.ts",
                 "npm run test:e2e",
                 "enterprise_required",
-                "npx playwright install --with-deps chromium",
+                "PLAYWRIGHT_REUSE_SERVER",
+                "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH",
             ]
             for marker in forbidden_direct:
                 if marker in text:
@@ -363,15 +369,6 @@ def validate(base_ref: str | None = None) -> list[str]:
             spec_text = spec.read_text(encoding="utf-8")
             if "test.describe.configure({ mode: 'parallel' })" in spec_text:
                 errors.append(f"CoffeeLink dedicated serial spec must not enable file-level parallelism: {spec_path}")
-
-        playwright_config = (ROOT / "web" / "playwright.config.ts").read_text(encoding="utf-8")
-        for marker in (
-            "PLAYWRIGHT_JSON_OUTPUT_FILE",
-            "PLAYWRIGHT_OUTPUT_DIR",
-            "PLAYWRIGHT_REUSE_SERVER",
-        ):
-            if marker not in playwright_config:
-                errors.append(f"CoffeeLink Playwright shard support marker missing: {marker}")
 
         for delegated_workflow, spec_path in web_budget.get("delegated_api_e2e", {}).items():
             if delegated_workflow not in expected_full:
