@@ -290,6 +290,180 @@ def validate(base_ref: str | None = None) -> list[str]:
             if text.count("if-no-files-found: error") != int(b127_resilience["attempts"]):
                 errors.append(f"{workflow}: every B12.7 upload attempt must fail on missing evidence")
 
+    web_budget = contract.get("performance_budgets", {}).get("coffeelink_web")
+    if web_budget:
+        workflow = web_budget["workflow"]
+        path = workflows.get(workflow)
+        if path is None:
+            errors.append(f"CoffeeLink Web performance workflow missing: {workflow}")
+        else:
+            text = path.read_text(encoding="utf-8")
+            timeouts = [
+                int(value)
+                for value in re.findall(r"^    timeout-minutes:\s*(\d+)\s*$", text, re.MULTILINE)
+            ]
+            max_minutes = int(web_budget["max_job_minutes"])
+            expected_jobs = web_budget.get("expected_jobs", [])
+            declared_jobs = re.findall(r"^  ([A-Za-z0-9_-]+):\n    runs-on:", text, re.MULTILINE)
+            if declared_jobs != expected_jobs:
+                errors.append(
+                    f"{workflow}: CoffeeLink job set/order drifted: {declared_jobs}; expected {expected_jobs}"
+                )
+            if len(timeouts) != len(expected_jobs):
+                errors.append(
+                    f"{workflow}: expected {len(expected_jobs)} timed qualification jobs; found {len(timeouts)}"
+                )
+            elif any(value > max_minutes for value in timeouts):
+                errors.append(
+                    f"{workflow}: timeout {timeouts} exceeds CoffeeLink per-job budget {max_minutes}m"
+                )
+
+            target_seconds = int(web_budget["performance_target_seconds"])
+            hard_seconds = int(web_budget["performance_hard_seconds"])
+            if not (0 < target_seconds < hard_seconds < max_minutes * 60):
+                errors.append(
+                    "CoffeeLink performance budgets must satisfy "
+                    f"0 < target({target_seconds}) < hard({hard_seconds}) < "
+                    f"execution-timeout({max_minutes * 60})"
+                )
+
+            receipt_script = ROOT / web_budget["performance_receipt_script"]
+            receipt_test = ROOT / web_budget["performance_receipt_test"]
+            if not receipt_script.exists():
+                errors.append(f"CoffeeLink performance receipt script missing: {receipt_script.relative_to(ROOT)}")
+            if not receipt_test.exists():
+                errors.append(f"CoffeeLink performance receipt test missing: {receipt_test.relative_to(ROOT)}")
+
+            required_markers = [
+                "skip_fast_check:",
+                "default: false",
+                "enforce_performance:",
+                "performance_target_seconds:",
+                "performance_hard_seconds:",
+                "if: ${{ !inputs.skip_fast_check }}",
+                "Build default CoffeeLink bundle",
+                "run: npx vite build",
+                "Install browser and Chinese text support",
+                f"npx playwright test --workers={int(web_budget['core_e2e_workers'])}",
+                f"npx playwright test --workers={int(web_budget['rental_e2e_workers'])} e2e/site-rental.spec.ts",
+                "! -name 'site-rental.spec.ts'",
+                "Verify visual contract evidence",
+                "Verify site-rental evidence",
+                "coffeelink-visual-review",
+                "coffeelink-site-rental-review",
+                "Write CoffeeLink core performance receipt",
+                "Write CoffeeLink site-rental performance receipt",
+                "scripts/coffeelink_performance.py",
+                "coffeelink-core-performance.json",
+                "coffeelink-site-rental-performance.json",
+            ]
+            for marker in required_markers:
+                if marker not in text:
+                    errors.append(f"{workflow}: CoffeeLink performance/coverage marker missing: {marker}")
+
+            forbidden_direct = [
+                "VITE_DATA_MODE=api",
+                "ENTERPRISE_MEMBER_REAL_E2E",
+                "ENTERPRISE_ROLE_REAL_E2E",
+                "e2e/enterprise-members-real.spec.ts",
+                "e2e/enterprise-roles-real.spec.ts",
+                "npm run test:e2e",
+                "enterprise_required",
+                "PLAYWRIGHT_REUSE_SERVER",
+                "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH",
+            ]
+            for marker in forbidden_direct:
+                if marker in text:
+                    errors.append(f"{workflow}: CoffeeLink delegated/long-tail regression reintroduced: {marker}")
+
+        for spec_path in web_budget.get("parallel_specs", []):
+            spec = ROOT / spec_path
+            if not spec.exists():
+                errors.append(f"CoffeeLink parallel spec missing: {spec_path}")
+                continue
+            spec_text = spec.read_text(encoding="utf-8")
+            if "test.describe.configure({ mode: 'parallel' })" not in spec_text:
+                errors.append(f"CoffeeLink parallel spec lost file-level parallelism: {spec_path}")
+
+        for spec_path in web_budget.get("dedicated_serial_specs", []):
+            spec = ROOT / spec_path
+            if not spec.exists():
+                errors.append(f"CoffeeLink dedicated serial spec missing: {spec_path}")
+                continue
+            spec_text = spec.read_text(encoding="utf-8")
+            if "test.describe.configure({ mode: 'parallel' })" in spec_text:
+                errors.append(f"CoffeeLink dedicated serial spec must not enable file-level parallelism: {spec_path}")
+
+        for delegated_workflow, spec_path in web_budget.get("delegated_api_e2e", {}).items():
+            if delegated_workflow not in expected_full:
+                errors.append(f"CoffeeLink delegated API workflow missing from Full Gate: {delegated_workflow}")
+                continue
+            delegated_path = workflows.get(delegated_workflow)
+            if delegated_path is None:
+                errors.append(f"CoffeeLink delegated API workflow file missing: {delegated_workflow}")
+                continue
+            delegated_text = delegated_path.read_text(encoding="utf-8")
+            required = ["VITE_DATA_MODE=api", spec_path]
+            if spec_path.endswith("enterprise-members-real.spec.ts"):
+                required.append("ENTERPRISE_MEMBER_REAL_E2E=1")
+            if spec_path.endswith("enterprise-roles-real.spec.ts"):
+                required.append("ENTERPRISE_ROLE_REAL_E2E=1")
+            for marker in required:
+                if marker not in delegated_text:
+                    errors.append(
+                        f"{delegated_workflow}: delegated CoffeeLink API proof marker missing: {marker}"
+                    )
+
+        merge_text = workflows["pr-merge-gate.yml"].read_text(encoding="utf-8")
+        merge_block_match = re.search(
+            r"(?ms)^  full-20-coffeelink-web:\n(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:|\Z)",
+            merge_text,
+        )
+        if not merge_block_match:
+            errors.append("PR Merge Gate CoffeeLink Web job missing")
+        else:
+            merge_block = merge_block_match.group(0)
+            required_merge = [
+                "needs: [route, wait-qualification]",
+                "needs.wait-qualification.result == 'success'",
+                "uses: ./.github/workflows/coffeelink-web.yml",
+                "skip_fast_check: true",
+            ]
+            for marker in required_merge:
+                if marker not in merge_block:
+                    errors.append(f"PR Merge Gate CoffeeLink proof-reuse marker missing: {marker}")
+
+        prq_text = workflows["pr-qualification.yml"].read_text(encoding="utf-8")
+        target_job = web_budget["target_pr_job"]
+        target_match = re.search(
+            rf"(?ms)^  {re.escape(target_job)}:\n(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:|\Z)",
+            prq_text,
+        )
+        if not target_match:
+            errors.append(f"PR Qualification targeted CoffeeLink job missing: {target_job}")
+        else:
+            target_block = target_match.group(0)
+            branch_prefix = web_budget["target_branch_prefix"]
+            target_required = [
+                "needs: [route, governance, fast-web]",
+                f"if: needs.route.outputs.web_product == 'true' || startsWith(github.head_ref, '{branch_prefix}')",
+                "uses: ./.github/workflows/coffeelink-web.yml",
+                "skip_fast_check: true",
+                f"enforce_performance: ${{{{ startsWith(github.head_ref, '{branch_prefix}') }}}}",
+                f"performance_target_seconds: {target_seconds}",
+                f"performance_hard_seconds: {hard_seconds}",
+            ]
+            for marker in target_required:
+                if marker not in target_block:
+                    errors.append(f"PR Qualification CoffeeLink target marker missing: {marker}")
+
+        governance_commands = [
+            f"python3 {web_budget['performance_receipt_test']}",
+        ]
+        for command in governance_commands:
+            if command not in prq_text:
+                errors.append(f"PR Qualification CoffeeLink governance hook missing: {command}")
+
     pull_entrypoints = sorted(
         name for name, path in workflows.items()
         if "pull_request" in on_children(path.read_text(encoding="utf-8"))

@@ -7,13 +7,30 @@ on:
         required: false
         type: boolean
         default: false
+      enforce_performance:
+        description: Enforce targeted CoffeeLink performance acceptance
+        required: false
+        type: boolean
+        default: false
+      performance_target_seconds:
+        description: Target lane duration for targeted performance acceptance
+        required: false
+        type: number
+        default: 180
+      performance_hard_seconds:
+        description: Diagnostic hard performance budget before classification as exceeded
+        required: false
+        type: number
+        default: 240
 permissions:
   contents: read
 jobs:
-  web:
+  core:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 6
     steps:
+      - name: Start CoffeeLink core performance clock
+        run: date +%s > "$RUNNER_TEMP/coffeelink-core.started"
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -31,56 +48,19 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           sudo apt-get install -y fonts-noto-cjk
-      - name: Run enterprise API-mode E2E
+      - name: Build default CoffeeLink bundle
+        run: npx vite build
+        working-directory: web
+      - name: Run CoffeeLink core E2E
         working-directory: web
         shell: bash
         run: |
           set -euo pipefail
-          VITE_DATA_MODE=api npm run build
-          ENTERPRISE_MEMBER_REAL_E2E=1 ENTERPRISE_ROLE_REAL_E2E=1 npx playwright test \
-            e2e/enterprise-members-real.spec.ts \
-            e2e/enterprise-roles-real.spec.ts
-          python3 - <<'PY'
-          from pathlib import Path
-          import json
-
-          results = json.loads(Path('test-results/results.json').read_text())
-          stats = results['stats']
-          assert stats.get('unexpected', 0) == 0, stats
-          serialized = json.dumps(results, ensure_ascii=False)
-          member_required = [
-              'canonical member page renders authoritative member, role, department and scope across CoffeeLink viewports',
-              'canonical members use server-side filters, pagination and authoritative total',
-              'canonical invite uses one atomic create write with activation choice and authoritative readback',
-              'canonical member edit is one atomic update and preserves immutable username',
-              'canonical role change is one atomic member update and scope remains server-derived',
-              '401 redirects to trusted login and 403 blocks members before protected data loads',
-              'canonical profile 409 preserves draft and reuses the same idempotency key',
-              'successful member write without GET readback is never presented as canonical success',
-          ]
-          role_required = [
-              'real role page renders authoritative grants and member counts across CoffeeLink viewports',
-              'role create and permission update use independent idempotency keys and confirm from role readback',
-              'canonical roles page exposes authoritative member counts while membership changes stay on Members flow',
-              '401 redirects to trusted login and 403 blocks roles before protected data loads',
-              'role 409 preserves the same idempotency key and editor draft for retry',
-              'protected owner role is read-only in the canonical role editor',
-              'a successful role write without readback is not presented as confirmed success',
-          ]
-          for title in member_required:
-              assert title in serialized, f'missing EC-RI-02 browser evidence: {title}'
-          for title in role_required:
-              assert title in serialized, f'missing EC-RI-03 browser evidence: {title}'
-          print(
-              f'ENTERPRISE_REAL_E2E=PASS expected={stats.get("expected", 0)} '
-              f'ec_ri_02={len(member_required)} ec_ri_03={len(role_required)}'
+          mapfile -t core_specs < <(
+            find e2e -maxdepth 1 -type f -name '*.spec.ts' ! -name 'site-rental.spec.ts' -print | sort
           )
-          PY
-          mkdir -p screenshots/api-mode-results
-          cp test-results/results.json screenshots/api-mode-results/results.json
-          npm run build
-      - run: npm run test:e2e
-        working-directory: web
+          test "${#core_specs[@]}" -gt 0
+          npx playwright test --workers=4 "${core_specs[@]}"
       - name: Verify visual contract evidence
         working-directory: web
         shell: bash
@@ -150,22 +130,12 @@ jobs:
                   required[f'rental-{flow}-{width}.png'] = (width, height)
 
           gallery = Path('screenshots')
-          enterprise_required = {}
-          for surface in ['members', 'roles']:
-              for width, height in [(1366, 768), (1440, 900), (1536, 1024), (390, 844)]:
-                  enterprise_required[f'enterprise-{surface}-real-{width}.png'] = (width, height)
-
           gallery_pngs = list(gallery.glob('*.png'))
           compatibility_pngs = list(shots.glob('*.png'))
           actual_pngs = gallery_pngs + compatibility_pngs
           assert len(actual_pngs) >= 66, len(actual_pngs)
           for name, want in required.items():
               data = (shots / name).read_bytes()
-              assert data[:8] == b'\x89PNG\r\n\x1a\n', name
-              width, height = struct.unpack('>II', data[16:24])
-              assert (width, height) == want, (name, width, height, want)
-          for name, want in enterprise_required.items():
-              data = (gallery / name).read_bytes()
               assert data[:8] == b'\x89PNG\r\n\x1a\n', name
               width, height = struct.unpack('>II', data[16:24])
               assert (width, height) == want, (name, width, height, want)
@@ -180,6 +150,26 @@ jobs:
         if: always()
         working-directory: web
         run: node scripts/collect-ui-evidence.mjs
+      - name: Write CoffeeLink core performance receipt
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          ENFORCE_PERFORMANCE: ${{ inputs.enforce_performance }}
+        run: |
+          set -euo pipefail
+          args=(
+            --lane core
+            --started-file "$RUNNER_TEMP/coffeelink-core.started"
+            --target-seconds "${{ inputs.performance_target_seconds }}"
+            --hard-seconds "${{ inputs.performance_hard_seconds }}"
+            --candidate-sha "$CANDIDATE_SHA"
+            --job-status "$JOB_STATUS"
+            --output "$RUNNER_TEMP/coffeelink-core-performance.json"
+          )
+          if [ "$ENFORCE_PERFORMANCE" = "true" ]; then args+=(--enforce); fi
+          python3 scripts/coffeelink_performance.py "${args[@]}"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
@@ -188,5 +178,85 @@ jobs:
             web/screenshots
             web/test-results
             web/dist
+            ${{ runner.temp }}/coffeelink-core-performance.json
+          if-no-files-found: error
+          retention-days: 14
+
+  site-rental:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Start CoffeeLink site-rental performance clock
+        run: date +%s > "$RUNNER_TEMP/coffeelink-site-rental.started"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - name: Install browser and Chinese text support
+        working-directory: web
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Build default CoffeeLink bundle
+        run: npx vite build
+        working-directory: web
+      - name: Run serial site-rental E2E
+        run: npx playwright test --workers=1 e2e/site-rental.spec.ts
+        working-directory: web
+      - name: Verify site-rental evidence
+        working-directory: web
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          results = json.loads(Path('test-results/results.json').read_text())
+          stats = results['stats']
+          assert stats.get('unexpected', 0) == 0, stats
+          serialized = json.dumps(results, ensure_ascii=False)
+          required = [
+              'site list, actual linked records, and existing connected navigation',
+              'billing draft, dispute, resolution and frozen snapshot form a single-record loop',
+              'responsive views and dialogs are reachable without viewport overflow or console errors',
+              'expired contract has no current quote while historical versions remain available',
+          ]
+          for title in required:
+              assert title in serialized, f'missing site-rental evidence: {title}'
+          print(f'SITE_RENTAL_E2E=PASS expected={stats.get("expected", 0)} required={len(required)}')
+          PY
+      - name: Write CoffeeLink site-rental performance receipt
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          ENFORCE_PERFORMANCE: ${{ inputs.enforce_performance }}
+        run: |
+          set -euo pipefail
+          args=(
+            --lane site-rental
+            --started-file "$RUNNER_TEMP/coffeelink-site-rental.started"
+            --target-seconds "${{ inputs.performance_target_seconds }}"
+            --hard-seconds "${{ inputs.performance_hard_seconds }}"
+            --candidate-sha "$CANDIDATE_SHA"
+            --job-status "$JOB_STATUS"
+            --output "$RUNNER_TEMP/coffeelink-site-rental-performance.json"
+          )
+          if [ "$ENFORCE_PERFORMANCE" = "true" ]; then args+=(--enforce); fi
+          python3 scripts/coffeelink_performance.py "${args[@]}"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: coffeelink-site-rental-review
+          path: |
+            web/screenshots/site-rental
+            web/test-results
+            ${{ runner.temp }}/coffeelink-site-rental-performance.json
           if-no-files-found: error
           retention-days: 14
