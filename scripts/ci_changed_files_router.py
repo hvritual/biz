@@ -136,7 +136,6 @@ COFFEELINK_GATE_FILES = {
     "web/e2e/theme-appearance.spec.ts",
     "web/e2e/i18n.spec.ts",
     "web/e2e/design-acceptance.spec.ts",
-    "web/e2e/ui.helpers.ts",
     "web/e2e/console.spec.ts",
 }
 
