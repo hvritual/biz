@@ -81,6 +81,7 @@ jobs:
           python3 scripts/test_ci_changed_files_router.py
           python3 scripts/test_enterprise_180_admission.py
           python3 scripts/test_candidate_lifecycle.py
+          python3 scripts/test_coffeelink_performance.py
           node --test .github/scripts/main-qualification.test.mjs
 
       - name: Enterprise180 Delivery Admission
@@ -103,6 +104,16 @@ jobs:
     needs: [route, governance]
     if: needs.route.outputs.docs_only != 'true'
     uses: ./.github/workflows/candidate-qualification.yml
+
+  coffeelink-performance-target:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-coffeelink-')
+    uses: ./.github/workflows/coffeelink-web.yml
+    with:
+      skip_fast_check: true
+      enforce_performance: true
+      performance_target_seconds: 180
+      performance_hard_seconds: 240
 
   access-role:
     needs: [route, governance, fast-web]
@@ -139,7 +150,7 @@ jobs:
 
   web-product:
     needs: [route, governance, fast-web]
-    if: needs.route.outputs.web_product == 'true'
+    if: needs.route.outputs.web_product == 'true' && !startsWith(github.head_ref, 'chore/ci-coffeelink-')
     uses: ./.github/workflows/coffeelink-web.yml
     with:
       skip_fast_check: true
