@@ -133,6 +133,11 @@ COFFEELINK_GATE_FILES = {
     ".github/workflows/coffeelink-web.yml",
     "scripts/coffeelink_performance.py",
     "scripts/test_coffeelink_performance.py",
+    "web/e2e/theme-appearance.spec.ts",
+    "web/e2e/i18n.spec.ts",
+    "web/e2e/design-acceptance.spec.ts",
+    "web/e2e/ui.helpers.ts",
+    "web/e2e/console.spec.ts",
 }
 
 CE13_GATE_FILES = {
