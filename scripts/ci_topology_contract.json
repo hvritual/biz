@@ -169,6 +169,31 @@
       "target_pr_job": "web-product",
       "performance_receipt_script": "scripts/coffeelink_performance.py",
       "performance_receipt_test": "scripts/test_coffeelink_performance.py"
+    },
+    "ce10_qualification": {
+      "workflow": "ce10-qualification.yml",
+      "max_job_minutes": 6,
+      "performance_target_seconds": 180,
+      "performance_hard_seconds": 240,
+      "target_branch_prefix": "chore/ci-ce10-",
+      "target_pr_job": "commercial-runtime",
+      "performance_receipt_script": "scripts/ci_performance_receipt.py",
+      "performance_receipt_test": "scripts/test_ci_performance_receipt.py",
+      "expected_race_tests": [
+        "TestCE10MySQLConcurrentRuntimesDoNotPrepareTwice"
+      ],
+      "delegated_full_gate_coverage": [
+        "b12-multitenant-access-pressure.yml",
+        "mysql-runtime-qualification.yml",
+        "ce02-bootstrap.yml",
+        "ce04-qualification.yml",
+        "ce05-qualification.yml",
+        "ce06-qualification.yml",
+        "ce07-qualification.yml",
+        "ce08-qualification.yml",
+        "ce09-qualification.yml",
+        "evolution-qualification.yml"
+      ]
     }
   },
   "resilience_contracts": {
