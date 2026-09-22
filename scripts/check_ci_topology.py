@@ -446,27 +446,16 @@ def validate(base_ref: str | None = None) -> list[str]:
             branch_prefix = web_budget["target_branch_prefix"]
             target_required = [
                 "needs: [route, governance, fast-web]",
-                f"if: startsWith(github.head_ref, '{branch_prefix}')",
+                f"if: needs.route.outputs.web_product == 'true' || startsWith(github.head_ref, '{branch_prefix}')",
                 "uses: ./.github/workflows/coffeelink-web.yml",
                 "skip_fast_check: true",
-                "enforce_performance: true",
+                f"enforce_performance: ${{{{ startsWith(github.head_ref, '{branch_prefix}') }}}}",
                 f"performance_target_seconds: {target_seconds}",
                 f"performance_hard_seconds: {hard_seconds}",
             ]
             for marker in target_required:
                 if marker not in target_block:
                     errors.append(f"PR Qualification CoffeeLink target marker missing: {marker}")
-
-        web_product_match = re.search(
-            r"(?ms)^  web-product:\n(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:|\Z)",
-            prq_text,
-        )
-        if not web_product_match:
-            errors.append("PR Qualification web-product job missing")
-        else:
-            branch_prefix = web_budget["target_branch_prefix"]
-            if f"!startsWith(github.head_ref, '{branch_prefix}')" not in web_product_match.group(0):
-                errors.append("PR Qualification web-product must not duplicate targeted CoffeeLink performance gate")
 
         governance_commands = [
             f"python3 {web_budget['performance_receipt_test']}",
