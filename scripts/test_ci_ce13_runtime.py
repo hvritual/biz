@@ -19,6 +19,7 @@ class SourceContractTests(unittest.TestCase):
                 ".github/workflows/pr-qualification.yml",
                 "scripts/ci_ce13_mysql.sh",
                 "scripts/ci_ce13_browser.sh",
+                "scripts/ci_proof_contract.json",
                 "web/playwright.ce13-plan-catalog.config.ts",
                 "web/playwright.ce13-platform.config.ts",
             ]
@@ -61,6 +62,16 @@ class SourceContractTests(unittest.TestCase):
     def test_tmpfs_rejected(self):
         self.mutated("scripts/ci_ce13_mysql.sh",
                      lambda s: s.replace("docker run --name", "docker run --tmpfs /var/lib/mysql --name"))
+
+    def test_budget_relaxation_rejected(self):
+        self.mutated("scripts/ci_proof_contract.json",
+                     lambda s: s.replace('"ce13-plan-catalog-qualification.yml": {"owns": ["ce13-plan-catalog-qualification.qualification"], "delegates": ["ce07-qualification.qualification"], "runtime": "mixed", "jobs": ["qualify"], "target_seconds": 120, "hard_seconds": 180',
+                                                 '"ce13-plan-catalog-qualification.yml": {"owns": ["ce13-plan-catalog-qualification.qualification"], "delegates": ["ce07-qualification.qualification"], "runtime": "mixed", "jobs": ["qualify"], "target_seconds": 120, "hard_seconds": 240'))
+
+    def test_legacy_debt_reintroduction_rejected(self):
+        self.mutated("scripts/ci_proof_contract.json",
+                     lambda s: s.replace('"ce13-platform-web-session.yml": {"owns": ["ce13-platform-web-session.qualification"], "delegates": [], "runtime": "mixed", "jobs": ["qualify"], "target_seconds": 120, "hard_seconds": 180, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {}',
+                                                 '"ce13-platform-web-session.yml": {"owns": ["ce13-platform-web-session.qualification"], "delegates": [], "runtime": "mixed", "jobs": ["qualify"], "target_seconds": 120, "hard_seconds": 180, "race_commands": [], "restart": "none", "legacy_cost_ceiling": {"bootstrap.service-mysql": 1}'))
 
     def test_helper_ci_only(self):
         result = subprocess.run(
