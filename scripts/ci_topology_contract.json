@@ -224,6 +224,30 @@
         "ce13-plan-catalog-qualification.yml",
         "ce13-platform-web-session.yml"
       ]
+    },
+    "ce09_qualification": {
+      "workflow": "ce09-qualification.yml",
+      "max_job_minutes": 6,
+      "performance_target_seconds": 180,
+      "performance_hard_seconds": 240,
+      "target_branch_prefix": "chore/ci-ce09-",
+      "target_pr_job": "commercial-change",
+      "performance_receipt_script": "scripts/ci_performance_receipt.py",
+      "performance_receipt_test": "scripts/test_ci_performance_receipt.py",
+      "expected_race_tests": [
+        "TestCE09MySQLConcurrentUpgradeAndDowngradeHaveOneWinner"
+      ],
+      "delegated_full_gate_coverage": [
+        "mysql-runtime-qualification.yml",
+        "b12-multitenant-access-pressure.yml",
+        "ce02-bootstrap.yml",
+        "ce04-qualification.yml",
+        "ce05-qualification.yml",
+        "ce06-qualification.yml",
+        "ce07-qualification.yml",
+        "ce08-qualification.yml",
+        "evolution-qualification.yml"
+      ]
     }
   },
   "resilience_contracts": {
