@@ -798,6 +798,139 @@ def validate(base_ref: str | None = None) -> list[str]:
         governance_command = f"python3 {ce09_budget['performance_receipt_test']}"
         if governance_command not in prq_text:
             errors.append(f"PR Qualification CE09 governance hook missing: {governance_command}")
+    ce12_browser_budget = contract.get("performance_budgets", {}).get("ce12_browser_e2e")
+    if ce12_browser_budget:
+        workflow = ce12_browser_budget["workflow"]
+        path = workflows.get(workflow)
+        if path is None:
+            errors.append(f"CE12 browser performance workflow missing: {workflow}")
+        else:
+            text = path.read_text(encoding="utf-8")
+            timeouts = [
+                int(value)
+                for value in re.findall(r"^    timeout-minutes:\s*(\d+)\s*$", text, re.MULTILINE)
+            ]
+            max_minutes = int(ce12_browser_budget["max_job_minutes"])
+            if len(timeouts) != 1:
+                errors.append(f"{workflow}: expected exactly one timed CE12 browser job; found {len(timeouts)}")
+            elif timeouts[0] > max_minutes:
+                errors.append(
+                    f"{workflow}: timeout {timeouts[0]}m exceeds CE12 browser execution budget {max_minutes}m"
+                )
+
+            target_seconds = int(ce12_browser_budget["performance_target_seconds"])
+            hard_seconds = int(ce12_browser_budget["performance_hard_seconds"])
+            if not (0 < target_seconds < hard_seconds < max_minutes * 60):
+                errors.append(
+                    "CE12 browser performance budgets must satisfy "
+                    f"0 < target({target_seconds}) < hard({hard_seconds}) "
+                    f"< execution-timeout({max_minutes * 60})"
+                )
+
+            required_workflow_markers = [
+                "enforce_performance:",
+                "performance_target_seconds:",
+                "performance_hard_seconds:",
+                "Start CE12 browser performance clock",
+                "Start isolated CE12 MySQL preparation",
+                "--tmpfs /var/lib/mysql:rw,nosuid,size=1g",
+                "cache: true",
+                "cache-dependency-path: biz/go.sum",
+                "Build CE12 browser runtime binaries",
+                "Install browser E2E dependencies",
+                'go -C biz build -o "$RUNNER_TEMP/ce12-biz" ./cmd/biz',
+                'go -C biz build -tags=qualification -o "$RUNNER_TEMP/ce12-idp-qualification" ./cmd/biz-idp',
+                "npm ci",
+                "npx playwright install --with-deps --only-shell chromium",
+                'nohup "$RUNNER_TEMP/ce12-idp-qualification"',
+                'nohup "$RUNNER_TEMP/ce12-biz"',
+                "Run complete browser trust chain",
+                "Write CE12 browser performance receipt",
+                "scripts/ci_performance_receipt.py",
+                "ce12-browser-performance.json",
+                "github.event.pull_request.head.sha || github.sha",
+            ]
+            for marker in required_workflow_markers:
+                if marker not in text:
+                    errors.append(f"{workflow}: CE12 browser performance marker missing: {marker}")
+            if "services:" in text:
+                errors.append(
+                    f"{workflow}: CE12 browser MySQL must be workflow-owned so startup can overlap toolchain/browser preparation"
+                )
+
+            forbidden_duplicate_markers = [
+                "Compile and test CE-12 identity code",
+                "go -C biz test -count=1 ./internal/access/infrastructure/persistence ./internal/bizruntime",
+                "go -C biz build ./cmd/biz ./cmd/biz-idp ./cmd/biz-idp-credential",
+                "go -C biz run -tags=qualification ./cmd/biz-idp",
+                "go -C biz run ./cmd/biz",
+            ]
+            for marker in forbidden_duplicate_markers:
+                if marker in text:
+                    errors.append(f"{workflow}: CE12 browser reintroduced delegated/duplicate runtime work: {marker}")
+
+            for title in ce12_browser_budget.get("required_browser_titles", []):
+                if title not in text:
+                    errors.append(f"{workflow}: required CE12 browser evidence title missing: {title}")
+
+        receipt_script = ROOT / ce12_browser_budget["performance_receipt_script"]
+        receipt_test = ROOT / ce12_browser_budget["performance_receipt_test"]
+        if not receipt_script.exists():
+            errors.append(
+                f"CE12 browser performance receipt script missing: {receipt_script.relative_to(ROOT)}"
+            )
+        if not receipt_test.exists():
+            errors.append(
+                f"CE12 browser performance receipt test missing: {receipt_test.relative_to(ROOT)}"
+            )
+
+        playwright_path = ROOT / ce12_browser_budget["playwright_config"]
+        if not playwright_path.exists():
+            errors.append(f"CE12 browser Playwright config missing: {playwright_path.relative_to(ROOT)}")
+        else:
+            playwright_text = playwright_path.read_text(encoding="utf-8")
+            for marker in ["fullyParallel: false", "workers: 1"]:
+                if marker not in playwright_text:
+                    errors.append(
+                        f"CE12 browser trust chain must remain serial unless separately qualified: missing {marker}"
+                    )
+
+        for delegated_workflow in ce12_browser_budget.get("delegated_full_gate_coverage", []):
+            if delegated_workflow not in expected_full:
+                errors.append(
+                    f"CE12 browser delegated workflow missing from Full Merge Gate: {delegated_workflow}"
+                )
+
+        prq_text = workflows["pr-qualification.yml"].read_text(encoding="utf-8")
+        target_job = ce12_browser_budget["target_pr_job"]
+        target_match = re.search(
+            rf"(?ms)^  {re.escape(target_job)}:\n(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:|\Z)",
+            prq_text,
+        )
+        if not target_match:
+            errors.append(f"PR Qualification targeted CE12 browser job missing: {target_job}")
+        else:
+            target_block = target_match.group(0)
+            branch_prefix = ce12_browser_budget["target_branch_prefix"]
+            target_required = [
+                "needs: [route, governance, fast-web]",
+                f"if: startsWith(github.head_ref, '{branch_prefix}')",
+                "uses: ./.github/workflows/ce12-browser-e2e.yml",
+                "enforce_performance: true",
+                f"performance_target_seconds: {target_seconds}",
+                f"performance_hard_seconds: {hard_seconds}",
+            ]
+            for marker in target_required:
+                if marker not in target_block:
+                    errors.append(
+                        f"PR Qualification CE12 browser target marker missing: {marker}"
+                    )
+
+        governance_command = f"python3 {ce12_browser_budget['performance_receipt_test']}"
+        if governance_command not in prq_text:
+            errors.append(
+                f"PR Qualification CE12 browser governance hook missing: {governance_command}"
+            )
     evolution_budget = contract.get("performance_budgets", {}).get("evolution_qualification")
     if evolution_budget:
         workflow = evolution_budget["workflow"]

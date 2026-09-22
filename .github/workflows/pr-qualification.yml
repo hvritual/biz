@@ -167,6 +167,15 @@ jobs:
     if: needs.route.outputs.web_e2e_harness == 'true'
     uses: ./.github/workflows/web-e2e-harness.yml
 
+  identity-browser:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-ce12-browser-')
+    uses: ./.github/workflows/ce12-browser-e2e.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 150
+      performance_hard_seconds: 180
+
   core-static:
     needs: [route, governance, fast-web]
     if: needs.route.outputs.core == 'true'
