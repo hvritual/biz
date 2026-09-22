@@ -77,3 +77,31 @@ The final ratcheted SHA must pass PR Qualification again, one canonical Full
 Gate, the production API-backed proof audit and Main Qualification. Exact
 results belong in the PR/immutable artifacts, not fabricated in this plan.
 A single warm observation cannot establish a p95 or permanent speedup.
+
+## Targeted evidence and final ratchet
+
+Initial migration candidate `e71b15068ce81b1f3d2314e8e92c3beff8cd5aee`
+passed PR Qualification run `35720381788`. All four targeted lanes retained their
+baseline suite identities, exact race argv and restart semantics.
+
+| Gate | job wall | receipt elapsed | MySQL ready | target | final hard |
+|---|---:|---:|---:|---:|---:|
+| CE04 | 85s | 75s | 29s | 120s | 150s |
+| CE05 | 112s | 102s | 41s | 120s | 180s |
+| CE06 | 116s | 108s | 24s | 120s | 180s |
+| CE07 | 120s | 110s | 35s | 120s | 180s |
+
+The hard budgets retain measured headroom without being presented as p95 values.
+They are lower than the prior 240-second caps and may only be ratcheted downward by
+a later governance migration. Target remains 120 seconds for all four gates.
+
+The migrated literal inventory is now frozen at exactly three recognized legacy
+cost sites per gate: `generation.check=2` and `generation.generate=1`. Removed
+`bootstrap.go-cache-disabled`, `bootstrap.service-mysql`, broad
+`go.all.{test,vet,build}`, and downstream CE MySQL overlap ceilings are no longer
+registered. Reintroducing any of them is therefore a governance failure rather
+than accepted legacy debt.
+
+These targeted samples prove the final ratchet is reasonable; they do not prove
+Full Gate contention behaviour. The ratcheted SHA must pass PR Qualification again
+and exactly one canonical Full Gate before merge.
