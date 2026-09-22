@@ -177,13 +177,25 @@ jobs:
           trap - EXIT
 
       - name: Export B12.7 runtime evidence
+        id: upload-runtime-evidence
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: b12-7-runtime-evidence
           path: ${{ runner.temp }}/b12-7-runtime-evidence
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 30
+
+      - name: Retry B12.7 runtime evidence upload once
+        if: always() && steps.upload-runtime-evidence.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: b12-7-runtime-evidence
+          path: ${{ runner.temp }}/b12-7-runtime-evidence
+          if-no-files-found: error
+          retention-days: 30
+          overwrite: true
 
       - name: Require clean Biz worktree
         shell: bash

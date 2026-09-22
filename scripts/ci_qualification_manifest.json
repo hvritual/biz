@@ -3,28 +3,7 @@
   "purpose": "PR qualification routing for #205. These workflows are reusable qualification units and must not self-trigger on pull_request.",
   "workflows": [
     {
-      "file": "b12-3-tenant-member-mysql.yml",
-      "domains": [
-        "access"
-      ],
-      "heavy": true
-    },
-    {
-      "file": "b12-4-tenant-role-mysql.yml",
-      "domains": [
-        "access"
-      ],
-      "heavy": true
-    },
-    {
-      "file": "b12-5-tenant-bootstrap-mysql.yml",
-      "domains": [
-        "access"
-      ],
-      "heavy": true
-    },
-    {
-      "file": "b12-6-concurrency-mysql.yml",
+      "file": "mysql-runtime-qualification.yml",
       "domains": [
         "access",
         "commercial"
@@ -169,24 +148,10 @@
       "heavy": true
     },
     {
-      "file": "ec-ri-04-department-mysql.yml",
-      "domains": [
-        "access"
-      ],
-      "heavy": true
-    },
-    {
       "file": "ec-ri-04-web-qualification.yml",
       "domains": [
         "access",
         "web"
-      ],
-      "heavy": true
-    },
-    {
-      "file": "ec-ri-05-tenant-profile-mysql.yml",
-      "domains": [
-        "access"
       ],
       "heavy": true
     },
@@ -211,20 +176,6 @@
       "domains": [
         "commercial",
         "web"
-      ],
-      "heavy": true
-    },
-    {
-      "file": "ec-ri-06-tenant-usage-mysql.yml",
-      "domains": [
-        "commercial"
-      ],
-      "heavy": true
-    },
-    {
-      "file": "ec-ri-07-audit-mysql.yml",
-      "domains": [
-        "access"
       ],
       "heavy": true
     },

@@ -74,6 +74,8 @@ jobs:
           set -euo pipefail
           git fetch origin "$BASE_SHA" --depth=1
           python3 scripts/check_ci_topology.py --base-ref "$BASE_SHA"
+          python3 scripts/ci_proof_governance.py check --base-ref "$BASE_SHA" --output "$RUNNER_TEMP/ci-proof-contract.json"
+          python3 scripts/test_ci_proof_governance.py
           python3 scripts/delivery_execution.py validate-contract
           python3 scripts/test_delivery_execution.py
           python3 scripts/candidate_lifecycle.py validate-contract
@@ -81,7 +83,18 @@ jobs:
           python3 scripts/test_ci_changed_files_router.py
           python3 scripts/test_enterprise_180_admission.py
           python3 scripts/test_candidate_lifecycle.py
+          python3 scripts/test_coffeelink_performance.py
+          python3 scripts/test_ci_performance_receipt.py
           node --test .github/scripts/main-qualification.test.mjs
+
+      - name: Retain proof ownership contract decision
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ci-proof-contract-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-proof-contract.json
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Enterprise180 Delivery Admission
         if: needs.route.outputs.enterprise180 == 'true'
@@ -155,20 +168,45 @@ jobs:
 
   commercial-runtime:
     needs: [route, governance, fast-web]
-    if: needs.route.outputs.commercial == 'true'
+    if: needs.route.outputs.commercial == 'true' || startsWith(github.head_ref, 'chore/ci-ce10-')
     uses: ./.github/workflows/ce10-qualification.yml
+    with:
+      enforce_performance: ${{ startsWith(github.head_ref, 'chore/ci-ce10-') }}
+      performance_target_seconds: 180
+      performance_hard_seconds: 240
+
+  commercial-change:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-ce09-')
+    uses: ./.github/workflows/ce09-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 180
+      performance_hard_seconds: 240
 
   web-product:
     needs: [route, governance, fast-web]
-    if: needs.route.outputs.web_product == 'true'
+    if: needs.route.outputs.web_product == 'true' || startsWith(github.head_ref, 'chore/ci-coffeelink-')
     uses: ./.github/workflows/coffeelink-web.yml
     with:
       skip_fast_check: true
+      enforce_performance: ${{ startsWith(github.head_ref, 'chore/ci-coffeelink-') }}
+      performance_target_seconds: 180
+      performance_hard_seconds: 240
 
   web-e2e-harness:
     needs: [route, governance, fast-web]
     if: needs.route.outputs.web_e2e_harness == 'true'
     uses: ./.github/workflows/web-e2e-harness.yml
+
+  identity-browser:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-ce12-browser-')
+    uses: ./.github/workflows/ce12-browser-e2e.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 150
+      performance_hard_seconds: 180
 
   core-static:
     needs: [route, governance, fast-web]
@@ -192,5 +230,9 @@ jobs:
 
   deviceops-regression:
     needs: [route, governance, fast-web]
-    if: needs.route.outputs.deviceops == 'true'
+    if: needs.route.outputs.deviceops == 'true' || startsWith(github.head_ref, 'chore/ci-evolution-')
     uses: ./.github/workflows/evolution-qualification.yml
+    with:
+      enforce_performance: ${{ startsWith(github.head_ref, 'chore/ci-evolution-') }}
+      performance_target_seconds: 240
+      performance_hard_seconds: 300
