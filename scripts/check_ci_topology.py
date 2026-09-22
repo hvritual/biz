@@ -453,10 +453,10 @@ def validate(base_ref: str | None = None) -> list[str]:
             branch_prefix = web_budget["target_branch_prefix"]
             target_required = [
                 "needs: [route, governance, fast-web]",
-                f"if: needs.route.outputs.web_product == 'true' || startsWith(github.head_ref, '{branch_prefix}')",
+                f"if: needs.route.outputs.web_product == 'true' || needs.route.outputs.coffeelink_governance == 'true' || startsWith(github.head_ref, '{branch_prefix}')",
                 "uses: ./.github/workflows/coffeelink-web.yml",
                 "skip_fast_check: true",
-                f"enforce_performance: ${{{{ startsWith(github.head_ref, '{branch_prefix}') }}}}",
+                f"enforce_performance: ${{{{ needs.route.outputs.coffeelink_governance == 'true' || startsWith(github.head_ref, '{branch_prefix}') }}}}",
                 f"performance_target_seconds: {target_seconds}",
                 f"performance_hard_seconds: {hard_seconds}",
             ]
