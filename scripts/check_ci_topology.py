@@ -318,9 +318,28 @@ def validate(base_ref: str | None = None) -> list[str]:
                     f"{workflow}: timeout {timeouts} exceeds CoffeeLink per-job budget {max_minutes}m"
                 )
 
+            target_seconds = int(web_budget["performance_target_seconds"])
+            hard_seconds = int(web_budget["performance_hard_seconds"])
+            if not (0 < target_seconds < hard_seconds < max_minutes * 60):
+                errors.append(
+                    "CoffeeLink performance budgets must satisfy "
+                    f"0 < target({target_seconds}) < hard({hard_seconds}) < "
+                    f"execution-timeout({max_minutes * 60})"
+                )
+
+            receipt_script = ROOT / web_budget["performance_receipt_script"]
+            receipt_test = ROOT / web_budget["performance_receipt_test"]
+            if not receipt_script.exists():
+                errors.append(f"CoffeeLink performance receipt script missing: {receipt_script.relative_to(ROOT)}")
+            if not receipt_test.exists():
+                errors.append(f"CoffeeLink performance receipt test missing: {receipt_test.relative_to(ROOT)}")
+
             required_markers = [
                 "skip_fast_check:",
                 "default: false",
+                "enforce_performance:",
+                "performance_target_seconds:",
+                "performance_hard_seconds:",
                 "if: ${{ !inputs.skip_fast_check }}",
                 "Build default CoffeeLink bundle",
                 "run: npx vite build",
@@ -332,6 +351,11 @@ def validate(base_ref: str | None = None) -> list[str]:
                 "Verify site-rental evidence",
                 "coffeelink-visual-review",
                 "coffeelink-site-rental-review",
+                "Write CoffeeLink core performance receipt",
+                "Write CoffeeLink site-rental performance receipt",
+                "scripts/coffeelink_performance.py",
+                "coffeelink-core-performance.json",
+                "coffeelink-site-rental-performance.json",
             ]
             for marker in required_markers:
                 if marker not in text:
@@ -408,6 +432,48 @@ def validate(base_ref: str | None = None) -> list[str]:
             for marker in required_merge:
                 if marker not in merge_block:
                     errors.append(f"PR Merge Gate CoffeeLink proof-reuse marker missing: {marker}")
+
+        prq_text = workflows["pr-qualification.yml"].read_text(encoding="utf-8")
+        target_job = web_budget["target_pr_job"]
+        target_match = re.search(
+            rf"(?ms)^  {re.escape(target_job)}:\n(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:|\Z)",
+            prq_text,
+        )
+        if not target_match:
+            errors.append(f"PR Qualification targeted CoffeeLink job missing: {target_job}")
+        else:
+            target_block = target_match.group(0)
+            branch_prefix = web_budget["target_branch_prefix"]
+            target_required = [
+                "needs: [route, governance, fast-web]",
+                f"if: startsWith(github.head_ref, '{branch_prefix}')",
+                "uses: ./.github/workflows/coffeelink-web.yml",
+                "skip_fast_check: true",
+                "enforce_performance: true",
+                f"performance_target_seconds: {target_seconds}",
+                f"performance_hard_seconds: {hard_seconds}",
+            ]
+            for marker in target_required:
+                if marker not in target_block:
+                    errors.append(f"PR Qualification CoffeeLink target marker missing: {marker}")
+
+        web_product_match = re.search(
+            r"(?ms)^  web-product:\n(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:|\Z)",
+            prq_text,
+        )
+        if not web_product_match:
+            errors.append("PR Qualification web-product job missing")
+        else:
+            branch_prefix = web_budget["target_branch_prefix"]
+            if f"!startsWith(github.head_ref, '{branch_prefix}')" not in web_product_match.group(0):
+                errors.append("PR Qualification web-product must not duplicate targeted CoffeeLink performance gate")
+
+        governance_commands = [
+            f"python3 {web_budget['performance_receipt_test']}",
+        ]
+        for command in governance_commands:
+            if command not in prq_text:
+                errors.append(f"PR Qualification CoffeeLink governance hook missing: {command}")
 
     pull_entrypoints = sorted(
         name for name, path in workflows.items()
