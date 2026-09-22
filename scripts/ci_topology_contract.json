@@ -144,7 +144,7 @@
     },
     "coffeelink_web": {
       "workflow": "coffeelink-web.yml",
-      "max_job_minutes": 4,
+      "max_job_minutes": 3,
       "full_gate_skip_fast_check": true,
       "delegated_fast_gate": "PR Qualification / fast-web",
       "parallel_specs": [
@@ -154,13 +154,15 @@
         "enterprise-177-member-lifecycle.yml": "e2e/enterprise-members-real.spec.ts",
         "enterprise-role-qualification.yml": "e2e/enterprise-roles-real.spec.ts"
       },
-      "core_e2e_workers": 3,
+      "core_e2e_workers": 4,
       "rental_e2e_workers": 1,
       "dedicated_serial_specs": [
         "web/e2e/site-rental.spec.ts"
       ],
-      "use_runner_chrome": true,
-      "shared_preview": true
+      "expected_jobs": [
+        "core",
+        "site-rental"
+      ]
     }
   },
   "resilience_contracts": {
