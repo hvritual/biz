@@ -1,13 +1,17 @@
 import { defineConfig, devices } from '@playwright/test'
+const jsonOutputFile = process.env.PLAYWRIGHT_JSON_OUTPUT_FILE || 'test-results/results.json'
+const outputDir = process.env.PLAYWRIGHT_OUTPUT_DIR || 'test-results'
+
 export default defineConfig({
   testDir: './e2e',
+  outputDir,
   fullyParallel: false,
   workers: 1,
   retries: 0,
   reporter: [
     ['list'],
     ['html', { open: 'never' }],
-    ['json', { outputFile: 'test-results/results.json' }],
+    ['json', { outputFile: jsonOutputFile }],
   ],
   use: {
     baseURL: 'http://127.0.0.1:4173',
@@ -25,7 +29,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run preview',
     url: 'http://127.0.0.1:4173',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: process.env.PLAYWRIGHT_REUSE_SERVER === '1' || !process.env.CI,
     timeout: 30000,
   },
 })
