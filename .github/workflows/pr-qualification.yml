@@ -118,6 +118,27 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Preserve exact candidate source for reproducible review
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          mkdir -p "$RUNNER_TEMP/delivery-source"
+          git archive --format=tar.gz --output="$RUNNER_TEMP/delivery-source/candidate-source.tar.gz" HEAD
+          git ls-tree -r HEAD > "$RUNNER_TEMP/delivery-source/tree.txt"
+          printf 'candidate_sha=%s\ncandidate_tree=%s\n' "$CANDIDATE_SHA" "$(git rev-parse HEAD^{tree})" > "$RUNNER_TEMP/delivery-source/provenance.txt"
+          (cd "$RUNNER_TEMP/delivery-source" && sha256sum candidate-source.tar.gz tree.txt provenance.txt > SHA256SUMS)
+
+      - name: Retain tracked candidate source only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: delivery-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/delivery-source/
+          if-no-files-found: error
+          retention-days: 30
+
   fast-web:
     needs: [route, governance]
     if: needs.route.outputs.docs_only != 'true'
