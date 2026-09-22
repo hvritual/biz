@@ -29,6 +29,7 @@ jobs:
       ce_receipts: ${{ steps.route.outputs.ce_receipts }}
       web_e2e_harness: ${{ steps.route.outputs.web_e2e_harness }}
       web_product: ${{ steps.route.outputs.web_product }}
+      coffeelink_governance: ${{ steps.route.outputs.coffeelink_governance }}
       role_grants: ${{ steps.route.outputs.role_grants }}
       enterprise180: ${{ steps.route.outputs.enterprise180 }}
     steps:
@@ -167,11 +168,11 @@ jobs:
 
   web-product:
     needs: [route, governance, fast-web]
-    if: needs.route.outputs.web_product == 'true' || startsWith(github.head_ref, 'chore/ci-coffeelink-')
+    if: needs.route.outputs.web_product == 'true' || needs.route.outputs.coffeelink_governance == 'true' || startsWith(github.head_ref, 'chore/ci-coffeelink-')
     uses: ./.github/workflows/coffeelink-web.yml
     with:
       skip_fast_check: true
-      enforce_performance: ${{ startsWith(github.head_ref, 'chore/ci-coffeelink-') }}
+      enforce_performance: ${{ needs.route.outputs.coffeelink_governance == 'true' || startsWith(github.head_ref, 'chore/ci-coffeelink-') }}
       performance_target_seconds: 180
       performance_hard_seconds: 240
 
