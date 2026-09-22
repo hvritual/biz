@@ -580,8 +580,15 @@ def validate(base_ref: str | None = None) -> list[str]:
                 source_text,
                 re.MULTILINE,
             ))
-            for index, match in enumerate(matches):
-                end = matches[index + 1].start() if index + 1 < len(matches) else len(source_text)
+            func_starts = [
+                marker.start()
+                for marker in re.finditer(r"^func ", source_text, re.MULTILINE)
+            ]
+            for match in matches:
+                end = next(
+                    (position for position in func_starts if position > match.start()),
+                    len(source_text),
+                )
                 body = source_text[match.end():end]
                 if "go func" in body:
                     concurrent_tests.add(match.group(1))
