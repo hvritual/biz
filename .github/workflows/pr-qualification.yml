@@ -143,6 +143,15 @@ jobs:
       performance_target_seconds: 180
       performance_hard_seconds: 240
 
+  commercial-change:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-ce09-')
+    uses: ./.github/workflows/ce09-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 180
+      performance_hard_seconds: 240
+
   web-product:
     needs: [route, governance, fast-web]
     if: needs.route.outputs.web_product == 'true' || startsWith(github.head_ref, 'chore/ci-coffeelink-')
