@@ -633,6 +633,171 @@ def validate(base_ref: str | None = None) -> list[str]:
         if governance_command not in prq_text:
             errors.append(f"PR Qualification CE10 governance hook missing: {governance_command}")
 
+    ce09_budget = contract.get("performance_budgets", {}).get("ce09_qualification")
+    if ce09_budget:
+        workflow = ce09_budget["workflow"]
+        path = workflows.get(workflow)
+        if path is None:
+            errors.append(f"CE09 performance workflow missing: {workflow}")
+        else:
+            text = path.read_text(encoding="utf-8")
+            timeouts = [
+                int(value)
+                for value in re.findall(r"^    timeout-minutes:\s*(\d+)\s*$", text, re.MULTILINE)
+            ]
+            max_minutes = int(ce09_budget["max_job_minutes"])
+            if len(timeouts) != 1:
+                errors.append(f"{workflow}: expected exactly one timed CE09 job; found {len(timeouts)}")
+            elif timeouts[0] > max_minutes:
+                errors.append(f"{workflow}: timeout {timeouts[0]}m exceeds CE09 execution budget {max_minutes}m")
+
+            target_seconds = int(ce09_budget["performance_target_seconds"])
+            hard_seconds = int(ce09_budget["performance_hard_seconds"])
+            if not (0 < target_seconds < hard_seconds < max_minutes * 60):
+                errors.append(
+                    "CE09 performance budgets must satisfy "
+                    f"0 < target({target_seconds}) < hard({hard_seconds}) < execution-timeout({max_minutes * 60})"
+                )
+
+            required_workflow_markers = [
+                "enforce_performance:",
+                "performance_target_seconds:",
+                "performance_hard_seconds:",
+                "Start CE09 performance clock",
+                "cache: true",
+                "cache-dependency-path: biz/go.sum",
+                "Write CE09 performance receipt",
+                "scripts/ci_performance_receipt.py",
+                "ce09-performance.json",
+                "github.event.pull_request.head.sha || github.sha",
+            ]
+            for marker in required_workflow_markers:
+                if marker not in text:
+                    errors.append(f"{workflow}: CE09 performance marker missing: {marker}")
+            if "services:" in text:
+                errors.append(f"{workflow}: CE09 MySQL must be script-owned so database startup can overlap qualification setup")
+
+        receipt_script = ROOT / ce09_budget["performance_receipt_script"]
+        receipt_test = ROOT / ce09_budget["performance_receipt_test"]
+        if not receipt_script.exists():
+            errors.append(f"CE09 performance receipt script missing: {receipt_script.relative_to(ROOT)}")
+        if not receipt_test.exists():
+            errors.append(f"CE09 performance receipt test missing: {receipt_test.relative_to(ROOT)}")
+
+        ce09_script_path = ROOT / "scripts" / "ce09_qualify.sh"
+        if not ce09_script_path.exists():
+            errors.append("CE09 qualification script missing")
+            ce09_script = ""
+        else:
+            ce09_script = ce09_script_path.read_text(encoding="utf-8")
+            syntax = subprocess.run(
+                ["bash", "-n", str(ce09_script_path)],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            if syntax.returncode != 0:
+                errors.append(
+                    "CE09 qualification shell syntax invalid: "
+                    + (syntax.stderr.strip() or syntax.stdout.strip())
+                )
+
+        required_script_markers = [
+            "ce09-fast-",
+            "ce09-restart-",
+            "--tmpfs /var/lib/mysql:rw,nosuid,size=1g",
+            "127.0.0.1:3306",
+            "127.0.0.1:3307",
+            'docker restart "$restart_container"',
+            "ce09-parallel-stage",
+            "TestCE09MySQLConcurrentUpgradeAndDowngradeHaveOneWinner",
+            "delegated_full_gate_coverage",
+        ]
+        for marker in required_script_markers:
+            if marker not in ce09_script:
+                errors.append(f"CE09 qualification marker missing: {marker}")
+
+        forbidden_ce09_duplicates = [
+            "Test(B122|B123|B124|B125|B126|AG02OwnerInvariantUsesCurrentReadAfterSnapshot)",
+            "^TestCE08MySQL",
+            "^TestCE07MySQL",
+            "^TestCE06MySQL",
+            "^TestCE05MySQL",
+            "^TestCE04MySQL",
+            "^TestCE02",
+            "go test -timeout=5m -count=1 -json ./...",
+            "go vet ./...",
+            "go build ./...",
+            "make check",
+            'docker restart "$MYSQL_CONTAINER_ID"',
+        ]
+        for marker in forbidden_ce09_duplicates:
+            if marker in ce09_script:
+                errors.append(f"CE09 qualification reintroduced delegated duplicate coverage: {marker}")
+
+        expected_race = set(ce09_budget.get("expected_race_tests", []))
+        concurrent_tests: set[str] = set()
+        for source in (ROOT / "integration").glob("ce09_*_test.go"):
+            source_text = source.read_text(encoding="utf-8")
+            matches = list(re.finditer(
+                r"^func (TestCE09MySQL[A-Za-z0-9_]+)\(t \*testing\.T\) \{",
+                source_text,
+                re.MULTILINE,
+            ))
+            func_starts = [
+                marker.start()
+                for marker in re.finditer(r"^func ", source_text, re.MULTILINE)
+            ]
+            for match in matches:
+                end = next(
+                    (position for position in func_starts if position > match.start()),
+                    len(source_text),
+                )
+                body = source_text[match.end():end]
+                if "go func" in body:
+                    concurrent_tests.add(match.group(1))
+        if concurrent_tests != expected_race:
+            errors.append(
+                f"CE09 race set drifted: source concurrency={sorted(concurrent_tests)} "
+                f"expected={sorted(expected_race)}"
+            )
+        for test_name in expected_race:
+            if test_name not in ce09_script:
+                errors.append(f"CE09 race test missing from qualification script: {test_name}")
+
+        delegated = ce09_budget.get("delegated_full_gate_coverage", [])
+        for delegated_workflow in delegated:
+            if delegated_workflow not in expected_full:
+                errors.append(f"CE09 delegated workflow missing from Full Merge Gate: {delegated_workflow}")
+
+        prq_text = workflows["pr-qualification.yml"].read_text(encoding="utf-8")
+        target_job = ce09_budget["target_pr_job"]
+        target_match = re.search(
+            rf"(?ms)^  {re.escape(target_job)}:\n(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:|\Z)",
+            prq_text,
+        )
+        if not target_match:
+            errors.append(f"PR Qualification targeted CE09 job missing: {target_job}")
+        else:
+            target_block = target_match.group(0)
+            branch_prefix = ce09_budget["target_branch_prefix"]
+            target_required = [
+                "needs: [route, governance, fast-web]",
+                f"if: startsWith(github.head_ref, '{branch_prefix}')",
+                "uses: ./.github/workflows/ce09-qualification.yml",
+                "enforce_performance: true",
+                f"performance_target_seconds: {target_seconds}",
+                f"performance_hard_seconds: {hard_seconds}",
+            ]
+            for marker in target_required:
+                if marker not in target_block:
+                    errors.append(f"PR Qualification CE09 target marker missing: {marker}")
+
+        governance_command = f"python3 {ce09_budget['performance_receipt_test']}"
+        if governance_command not in prq_text:
+            errors.append(f"PR Qualification CE09 governance hook missing: {governance_command}")
     evolution_budget = contract.get("performance_budgets", {}).get("evolution_qualification")
     if evolution_budget:
         workflow = evolution_budget["workflow"]
