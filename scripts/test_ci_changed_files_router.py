@@ -118,6 +118,21 @@ class RouteTests(unittest.TestCase):
         self.assertTrue(result["role_grants"])
         self.assertTrue(result["enterprise180"])
 
+    def test_policy_source_contract_and_reusable_lane_cannot_skip_admission(self):
+        for path in [
+            "contracts/proto/access/v1/tenant_role.proto",
+            ".github/workflows/enterprise-role-qualification.yml",
+            "internal/access/application/tenant_data_policy.go",
+            "internal/access/infrastructure/persistence/business_scope.go",
+            "web/src/features/enterprise/components/policies/RoleDataPolicyDialog.vue",
+            "docs/enterprise-center/enterprise180-policy-contract.v1.json",
+        ]:
+            with self.subTest(path=path):
+                result = route([path])
+                self.assertTrue(result["enterprise180"])
+                self.assertTrue(result["role_grants"])
+                self.assertFalse(result["docs_only"])
+
     def test_admission_infrastructure_does_not_impersonate_business_candidate(self):
         result = route([
             "scripts/enterprise_180_admission.py",
