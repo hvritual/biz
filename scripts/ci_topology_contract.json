@@ -166,7 +166,7 @@
       "performance_target_seconds": 180,
       "performance_hard_seconds": 240,
       "target_branch_prefix": "chore/ci-coffeelink-",
-      "target_pr_job": "coffeelink-performance-target",
+      "target_pr_job": "web-product",
       "performance_receipt_script": "scripts/coffeelink_performance.py",
       "performance_receipt_test": "scripts/test_coffeelink_performance.py"
     }
