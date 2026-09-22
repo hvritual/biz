@@ -105,38 +105,25 @@ jobs:
           bad="$(gofmt -l             biz/internal/access/infrastructure/persistence/first_party_idp.go             biz/internal/access/infrastructure/persistence/first_party_idp_security.go             biz/internal/access/infrastructure/persistence/login_identifier.go             biz/internal/access/infrastructure/persistence/login_identifier_test.go             biz/internal/access/infrastructure/persistence/web_session.go             biz/internal/bizruntime/config.go             biz/internal/bizruntime/first_party_idp.go             biz/internal/bizruntime/first_party_idp_hardening_test.go             biz/internal/bizruntime/first_party_idp_server.go             biz/internal/bizruntime/first_party_native_login.go             biz/internal/bizruntime/oidc_static.go             biz/internal/bizruntime/web_auth.go             biz/integration/ce12_browser_seed_test.go             biz/cmd/biz-idp/main.go             biz/cmd/biz-idp/notification_sender.go             biz/cmd/biz-idp/notification_sender_qualification.go             biz/cmd/biz-idp-credential/main.go)"
           test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
 
-      - name: Prepare CE12 runtime and browser dependencies in parallel
+      - name: Build CE12 browser runtime binaries
         shell: bash
         run: |
           set -euo pipefail
           started="$(date +%s)"
-          (
-            go -C biz build -o "$RUNNER_TEMP/ce12-biz" ./cmd/biz
-          ) >"$RUNNER_TEMP/ce12-build-biz.log" 2>&1 &
-          biz_pid="$!"
-          (
-            go -C biz build -tags=qualification -o "$RUNNER_TEMP/ce12-idp-qualification" ./cmd/biz-idp
-          ) >"$RUNNER_TEMP/ce12-build-idp.log" 2>&1 &
-          idp_pid="$!"
-          (
-            cd biz/web
-            npm ci
-            npx playwright install --with-deps chromium
-            sudo apt-get install -y fonts-noto-cjk
-          ) >"$RUNNER_TEMP/ce12-browser-deps.log" 2>&1 &
-          browser_pid="$!"
+          go -C biz build -tags=qualification -o "$RUNNER_TEMP/ce12-idp-qualification" ./cmd/biz-idp >"$RUNNER_TEMP/ce12-build-idp.log" 2>&1
+          go -C biz build -o "$RUNNER_TEMP/ce12-biz" ./cmd/biz >"$RUNNER_TEMP/ce12-build-biz.log" 2>&1
+          echo "CE12_RUNTIME_BUILD_SECONDS=$(( $(date +%s) - started ))"
 
-          status=0
-          for item in "biz:$biz_pid" "idp:$idp_pid" "browser:$browser_pid"; do
-            name="${item%%:*}"
-            pid="${item##*:}"
-            if ! wait "$pid"; then
-              echo "CE12_PREP_FAILURE=$name" >&2
-              status=1
-            fi
-          done
-          test "$status" = 0
-          echo "CE12_PARALLEL_PREP_SECONDS=$(( $(date +%s) - started ))"
+      - name: Install browser E2E dependencies
+        working-directory: biz/web
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date +%s)"
+          npm ci
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+          echo "CE12_BROWSER_DEPS_SECONDS=$(( $(date +%s) - started ))"
 
       - name: Wait for CE12 MySQL
         shell: bash
