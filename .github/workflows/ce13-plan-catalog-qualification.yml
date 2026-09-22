@@ -79,6 +79,13 @@ jobs:
           cache: true
           cache-dependency-path: biz/go.sum
 
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: biz/web/package-lock.json
+
       - name: Install locked protobuf toolchain
         shell: bash
         run: |
@@ -93,6 +100,9 @@ jobs:
           GOBIN="$RUNNER_TEMP/protobuf-bin" go install "google.golang.org/protobuf/cmd/protoc-gen-go@${{ steps.lock.outputs.protoc_gen_go_version }}"
           GOBIN="$RUNNER_TEMP/protobuf-bin" go install "google.golang.org/grpc/cmd/protoc-gen-go-grpc@${{ steps.lock.outputs.protoc_gen_go_grpc_version }}"
           echo "$RUNNER_TEMP/protobuf-bin" >> "$GITHUB_PATH"
+
+      - name: Start CE13 browser dependency preparation
+        run: bash biz/scripts/ci_ce13_browser.sh start plan
 
       - name: Verify deterministic contract generation
         shell: bash
@@ -181,24 +191,8 @@ jobs:
           done
           curl -fsS http://127.0.0.1:18080/healthz
 
-      - name: Setup Node and browser
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: biz/web/package-lock.json
-
-      - name: Install browser dependencies
-        working-directory: biz/web
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm ci
-          npx playwright install --with-deps --only-shell chromium
-          if ! fc-match "Noto Sans CJK SC" | grep -qi 'Noto Sans CJK'; then
-            sudo apt-get install -y --no-install-recommends fonts-noto-cjk
-          fi
-          fc-match "Noto Sans CJK SC"
+      - name: Wait for CE13 browser dependencies
+        run: bash biz/scripts/ci_ce13_browser.sh wait plan
 
       - name: Run plan catalog browser authority chain
         working-directory: biz/web
@@ -247,6 +241,7 @@ jobs:
           cp "$RUNNER_TEMP/ce13-catalog-idp.log" biz/web/test-results/ce13-catalog-idp.log 2>/dev/null
           cp "$RUNNER_TEMP/ce13-catalog-biz.log" biz/web/test-results/ce13-catalog-biz.log 2>/dev/null
           cp "$RUNNER_TEMP/ce13-plan/mysql-launch.log" biz/web/test-results/ce13-plan-mysql-launch.log 2>/dev/null
+          cp "$RUNNER_TEMP/ce13-plan/browser-prep.log" biz/web/test-results/ce13-plan-browser-prep.log 2>/dev/null
           cp "$RUNNER_TEMP/ce13-plan/mysql-server.log" biz/web/test-results/ce13-plan-mysql-server.log 2>/dev/null
           cp "$RUNNER_TEMP/ce13-plan/performance.json" biz/web/test-results/ce13-plan-performance.json 2>/dev/null
           find biz/web/test-results -maxdepth 1 -type f ! -name ce13-plan-catalog-sha256.txt -print0 | sort -z | xargs -0 -r sha256sum > biz/web/test-results/ce13-plan-catalog-sha256.txt
@@ -258,6 +253,10 @@ jobs:
           set +e
           test ! -f "$RUNNER_TEMP/ce13-catalog-biz.pid" || kill "$(cat "$RUNNER_TEMP/ce13-catalog-biz.pid")" 2>/dev/null
           test ! -f "$RUNNER_TEMP/ce13-catalog-idp.pid" || kill "$(cat "$RUNNER_TEMP/ce13-catalog-idp.pid")" 2>/dev/null
+
+      - name: Stop CE13 browser dependency preparation
+        if: always()
+        run: bash biz/scripts/ci_ce13_browser.sh stop plan
 
       - name: Stop workflow-owned CE13 MySQL
         if: always()
