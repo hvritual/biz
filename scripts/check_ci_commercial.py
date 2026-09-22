@@ -44,8 +44,15 @@ def check_sources(root=ROOT):
         require(f'performance_hard_seconds:\n        type: number\n        required: false\n        default: {hard}' in workflow,
                 'WORKFLOW_HARD_BUDGET_DRIFT:' + code)
     prq = (root / '.github/workflows/pr-qualification.yml').read_text()
+    prq_lines = prq.splitlines()
     for code, hard in expected_hard.items():
-        block = prq.split(f'  commercial-batch-{code}:', 1)[1].split('\n  ', 1)[0]
+        header = f'  commercial-batch-{code}:'
+        require(header in prq_lines, 'TARGETED_JOB_MISSING:' + code)
+        start = prq_lines.index(header)
+        end = next((i for i in range(start + 1, len(prq_lines))
+                    if prq_lines[i].startswith('  ') and not prq_lines[i].startswith('    ')
+                    and prq_lines[i].endswith(':')), len(prq_lines))
+        block = '\n'.join(prq_lines[start:end])
         require(f'performance_hard_seconds: {hard}' in block,
                 'TARGETED_HARD_BUDGET_DRIFT:' + code)
     helper = (root / 'scripts/ci_commercial_mysql.sh').read_text()
