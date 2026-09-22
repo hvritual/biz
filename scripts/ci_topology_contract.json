@@ -144,7 +144,7 @@
     },
     "coffeelink_web": {
       "workflow": "coffeelink-web.yml",
-      "max_job_minutes": 3,
+      "max_job_minutes": 6,
       "full_gate_skip_fast_check": true,
       "delegated_fast_gate": "PR Qualification / fast-web",
       "parallel_specs": [
@@ -162,7 +162,13 @@
       "expected_jobs": [
         "core",
         "site-rental"
-      ]
+      ],
+      "performance_target_seconds": 180,
+      "performance_hard_seconds": 240,
+      "target_branch_prefix": "chore/ci-coffeelink-",
+      "target_pr_job": "coffeelink-performance-target",
+      "performance_receipt_script": "scripts/coffeelink_performance.py",
+      "performance_receipt_test": "scripts/test_coffeelink_performance.py"
     }
   },
   "resilience_contracts": {
