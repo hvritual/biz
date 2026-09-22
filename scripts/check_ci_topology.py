@@ -841,7 +841,7 @@ def validate(base_ref: str | None = None) -> list[str]:
                 'go -C biz build -o "$RUNNER_TEMP/ce12-biz" ./cmd/biz',
                 'go -C biz build -tags=qualification -o "$RUNNER_TEMP/ce12-idp-qualification" ./cmd/biz-idp',
                 "npm ci",
-                "npx playwright install --with-deps chromium",
+                "npx playwright install --with-deps --only-shell chromium",
                 'nohup "$RUNNER_TEMP/ce12-idp-qualification"',
                 'nohup "$RUNNER_TEMP/ce12-biz"',
                 "Run complete browser trust chain",
