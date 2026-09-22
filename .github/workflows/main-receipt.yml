@@ -35,6 +35,8 @@ jobs:
           set -euo pipefail
           python3 scripts/candidate_lifecycle.py validate-contract
           python3 scripts/check_ci_topology.py
+          python3 scripts/ci_proof_governance.py check --output "$RUNNER_TEMP/ci-proof-contract.json"
+          python3 scripts/test_ci_proof_governance.py
           python3 scripts/delivery_execution.py validate-contract
           python3 scripts/test_delivery_execution.py
           python3 scripts/check_ci_qualification_governance.py
@@ -44,6 +46,18 @@ jobs:
 
       - name: Verify exact delivery receipt and latest attempts
         run: python3 scripts/delivery_execution.py verify-main
+
+      - name: Verify exact proof ownership receipt
+        run: python3 scripts/ci_proof_governance.py verify-main
+
+      - name: Retain verified main proof receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ci-proof-main-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-proof-execution.json
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Verify merged PR proof chain
         id: proof
