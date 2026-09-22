@@ -40,10 +40,10 @@ def check(root=ROOT):
                 f"ci_ce13_mysql.sh wait {lane}" in text and
                 f"ci_ce13_mysql.sh stop {lane}" in text,
                 "CE13_OWNED_MYSQL_REQUIRED:" + lane)
-        require("npx playwright install --with-deps --only-shell chromium" in text,
-                "CE13_HEADLESS_ONLY_REQUIRED:" + lane)
-        require('fc-match "Noto Sans CJK SC"' in text,
-                "CE13_FONT_PROBE_REQUIRED:" + lane)
+        require(f"ci_ce13_browser.sh start {lane}" in text and
+                f"ci_ce13_browser.sh wait {lane}" in text and
+                f"ci_ce13_browser.sh stop {lane}" in text,
+                "CE13_BROWSER_PREP_REQUIRED:" + lane)
         require("go -C biz run" not in text, "CE13_GO_RUN_RECOMPILE_REINTRODUCED:" + lane)
         for marker in spec["builds"]:
             require(marker in text, "CE13_PREBUILT_RUNTIME_MISSING:" + lane + ":" + marker)
@@ -65,6 +65,14 @@ def check(root=ROOT):
     require("GITHUB_ACTIONS" in helper and "ci.batch-b" in helper,
             "CE13_MYSQL_OWNERSHIP_GUARD_MISSING")
     require("--tmpfs" not in helper, "CE13_DURABLE_DB_REQUIRED")
+
+    browser_helper = (root / "scripts/ci_ce13_browser.sh").read_text()
+    require("GITHUB_ACTIONS" in browser_helper,
+            "CE13_BROWSER_OWNERSHIP_GUARD_MISSING")
+    require("npx playwright install --with-deps --only-shell chromium" in browser_helper,
+            "CE13_HEADLESS_ONLY_REQUIRED")
+    require('fc-match "Noto Sans CJK SC"' in browser_helper,
+            "CE13_FONT_PROBE_REQUIRED")
 
     prq = (root / ".github/workflows/pr-qualification.yml").read_text()
     for job, workflow in [
