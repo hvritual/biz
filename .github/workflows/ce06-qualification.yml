@@ -14,7 +14,7 @@ on:
       performance_hard_seconds:
         type: number
         required: false
-        default: 240
+        default: 180
   workflow_dispatch:
 permissions:
   contents: read
@@ -79,7 +79,7 @@ jobs:
             --lane qualify
             --started-file "$RUNNER_TEMP/ce06.started"
             --target-seconds "${{ inputs.performance_target_seconds || 120 }}"
-            --hard-seconds "${{ inputs.performance_hard_seconds || 240 }}"
+            --hard-seconds "${{ inputs.performance_hard_seconds || 180 }}"
             --candidate-sha "$CANDIDATE_SHA"
             --job-status "$JOB_STATUS"
             --output "$RUNNER_TEMP/ce06/performance.json"
