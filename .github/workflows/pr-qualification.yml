@@ -225,7 +225,7 @@ jobs:
     with:
       enforce_performance: true
       performance_target_seconds: 120
-      performance_hard_seconds: 240
+      performance_hard_seconds: 150
 
   commercial-batch-ce05:
     needs: [route, governance, fast-web]
@@ -234,7 +234,7 @@ jobs:
     with:
       enforce_performance: true
       performance_target_seconds: 120
-      performance_hard_seconds: 240
+      performance_hard_seconds: 180
 
   commercial-batch-ce06:
     needs: [route, governance, fast-web]
@@ -243,7 +243,7 @@ jobs:
     with:
       enforce_performance: true
       performance_target_seconds: 120
-      performance_hard_seconds: 240
+      performance_hard_seconds: 180
 
   commercial-batch-ce07:
     needs: [route, governance, fast-web]
@@ -252,4 +252,4 @@ jobs:
     with:
       enforce_performance: true
       performance_target_seconds: 120
-      performance_hard_seconds: 240
+      performance_hard_seconds: 180
