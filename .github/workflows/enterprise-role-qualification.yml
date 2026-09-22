@@ -172,7 +172,92 @@ jobs:
           set -euo pipefail
           go -C biz test -count=1 -tags=integration ./integration -run '^TestEnterprise178'
           go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise179'
-          go -C biz test -count=1 -tags=integration ./integration -run '^TestB124TenantRolePermissionsAreTenantScopedAndImmediate$'
+          enterprise180_log="$RUNNER_TEMP/enterprise180-data-policy.log"
+          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise180DataPolicyAuthorityAndRoleReference
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestB124OwnerRoleProtectsRequiredPermissionsAndLastAssignment$'
+          test -z "$(git -C biz status --porcelain)"
+
+  web:
+    needs: admission
+    if: needs.admission.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+        working-directory: web
+
+      - name: Run canonical Web Fast Gate
+        if: ${{ !inputs.skip_fast_check }}
+        run: npm run check
+        working-directory: web
+
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+
+      - name: Run canonical role lifecycle and grant E2E
+        working-directory: web
+        shell: bash
+        run: |
+          set -euo pipefail
+          VITE_DATA_MODE=api npm run build
+          ENTERPRISE_ROLE_REAL_E2E=1 npx playwright test e2e/enterprise-roles-real.spec.ts
+ | tee "$enterprise180_log"
+          grep -Fq -- '--- PASS: TestEnterprise180DataPolicyAuthorityAndRoleReference ' "$enterprise180_log"
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestB124TenantRolePermissionsAreTenantScopedAndImmediate
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestB124OwnerRoleProtectsRequiredPermissionsAndLastAssignment$'
+          test -z "$(git -C biz status --porcelain)"
+
+  web:
+    needs: admission
+    if: needs.admission.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+        working-directory: web
+
+      - name: Run canonical Web Fast Gate
+        if: ${{ !inputs.skip_fast_check }}
+        run: npm run check
+        working-directory: web
+
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+
+      - name: Run canonical role lifecycle and grant E2E
+        working-directory: web
+        shell: bash
+        run: |
+          set -euo pipefail
+          VITE_DATA_MODE=api npm run build
+          ENTERPRISE_ROLE_REAL_E2E=1 npx playwright test e2e/enterprise-roles-real.spec.ts
+
           go -C biz test -count=1 -tags=integration ./integration -run '^TestB124OwnerRoleProtectsRequiredPermissionsAndLastAssignment$'
           test -z "$(git -C biz status --porcelain)"
 
