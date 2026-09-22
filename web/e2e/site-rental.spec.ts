@@ -3,6 +3,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 const screenDir = 'screenshots/site-rental'
 test.use({ viewport: { width: 1536, height: 1024 }, deviceScaleFactor: 2, locale: 'zh-CN' })
+test.describe.configure({ mode: 'parallel' })
 async function go(page: Page, path = '/sites') {
   await page.goto('/#' + path)
   await expect(page.locator('.rental-area h1').first()).toBeVisible()
