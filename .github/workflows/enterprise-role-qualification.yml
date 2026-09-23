@@ -221,4 +221,4 @@ jobs:
         run: |
           set -euo pipefail
           VITE_DATA_MODE=api npm run build
-          ENTERPRISE_ROLE_REAL_E2E=1 npx playwright test e2e/enterprise-roles-real.spec.ts
+          ENTERPRISE_ROLE_REAL_E2E=1 ENTERPRISE_DATA_PERMISSION_REAL_E2E=1 npx playwright test e2e/enterprise-roles-real.spec.ts e2e/enterprise-data-policy-ui.spec.ts
