@@ -907,6 +907,22 @@
       }
     },
     {
+      "name": "GetTenantMemberBusinessScopeRequest",
+      "fullName": "access.v1.GetTenantMemberBusinessScopeRequest",
+      "fields": [
+        {
+          "name": "user_id",
+          "jsonName": "userId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "GetTenantMemberRequest",
       "fullName": "access.v1.GetTenantMemberRequest",
       "fields": [
@@ -1197,6 +1213,60 @@
           "kind": "message",
           "type": "access.v1.TenantDepartmentDTO",
           "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListTenantMemberScopeCandidatesRequest",
+      "fullName": "access.v1.ListTenantMemberScopeCandidatesRequest",
+      "fields": [
+        {
+          "name": "query",
+          "jsonName": "query",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListTenantMemberScopeCandidatesResponse",
+      "fullName": "access.v1.ListTenantMemberScopeCandidatesResponse",
+      "fields": [
+        {
+          "name": "candidates",
+          "jsonName": "candidates",
+          "number": 1,
+          "kind": "message",
+          "type": "access.v1.TenantMemberScopeCandidateDTO",
+          "repeated": true
+        },
+        {
+          "name": "total",
+          "jsonName": "total",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
         }
       ],
       "dto": {
@@ -1512,6 +1582,37 @@
           "number": 2,
           "kind": "scalar",
           "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "SetTenantMemberBusinessScopeRequest",
+      "fullName": "access.v1.SetTenantMemberBusinessScopeRequest",
+      "fields": [
+        {
+          "name": "user_id",
+          "jsonName": "userId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "site_ids",
+          "jsonName": "siteIds",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
         }
       ],
       "dto": {
@@ -2139,6 +2240,44 @@
       }
     },
     {
+      "name": "TenantMemberBusinessScopeDTO",
+      "fullName": "access.v1.TenantMemberBusinessScopeDTO",
+      "fields": [
+        {
+          "name": "user_id",
+          "jsonName": "userId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "site_ids",
+          "jsonName": "siteIds",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "TenantMemberCreationReceipt",
       "fullName": "access.v1.TenantMemberCreationReceipt",
       "fields": [
@@ -2298,6 +2437,50 @@
           "name": "role_status",
           "jsonName": "roleStatus",
           "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "TenantMemberScopeCandidateDTO",
+      "fullName": "access.v1.TenantMemberScopeCandidateDTO",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "assignable",
+          "jsonName": "assignable",
+          "number": 4,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "unavailable_reason",
+          "jsonName": "unavailableReason",
+          "number": 5,
           "kind": "scalar",
           "type": "string"
         }
@@ -7245,6 +7428,27 @@
           "number": 2,
           "kind": "scalar",
           "type": "bool"
+        },
+        {
+          "name": "query",
+          "jsonName": "query",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint32"
         }
       ],
       "dto": {
@@ -8567,7 +8771,8 @@
         "name": "tenant_member_lifecycle",
         "requires": [
           "access/tenant_department_management",
-          "access/tenant_role_permission"
+          "access/tenant_role_permission",
+          "deviceops/site_management"
         ],
         "operations": [
           {
@@ -8744,6 +8949,47 @@
           }
         },
         {
+          "name": "GetTenantMemberBusinessScope",
+          "fullName": "access.v1.TenantMemberLifecycleApplication.GetTenantMemberBusinessScope",
+          "request": "access.v1.GetTenantMemberBusinessScopeRequest",
+          "response": "access.v1.TenantMemberBusinessScopeDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/members/{user_id}/business-scope"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.business_scope.get",
+            "useCase": "get_tenant_member_business_scope",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.business_scope.get",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "InviteTenantMember",
           "fullName": "access.v1.TenantMemberLifecycleApplication.InviteTenantMember",
           "request": "access.v1.InviteTenantMemberRequest",
@@ -8815,6 +9061,51 @@
           },
           "authorization": {
             "operationId": "tenant.member.list_removed",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListTenantMemberScopeCandidates",
+          "fullName": "access.v1.TenantMemberLifecycleApplication.ListTenantMemberScopeCandidates",
+          "request": "access.v1.ListTenantMemberScopeCandidatesRequest",
+          "response": "access.v1.ListTenantMemberScopeCandidatesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/member-scope-candidates"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.scope_candidates",
+            "useCase": "list_tenant_member_scope_candidates",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "site.member_scope_directory"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.scope_candidates",
             "permissions": [
               "tenant.member.manage"
             ],
@@ -8952,6 +9243,52 @@
             "permissions": [
               "tenant.member.manage",
               "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "SetTenantMemberBusinessScope",
+          "fullName": "access.v1.TenantMemberLifecycleApplication.SetTenantMemberBusinessScope",
+          "request": "access.v1.SetTenantMemberBusinessScopeRequest",
+          "response": "access.v1.TenantMemberBusinessScopeDTO",
+          "http": [
+            {
+              "method": "PUT",
+              "path": "/v1/tenant/members/{user_id}/business-scope",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.business_scope.set",
+            "useCase": "set_tenant_member_business_scope",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "site.member_scope_directory"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.business_scope.set",
+            "permissions": [
+              "tenant.member.manage"
             ],
             "permissionMode": "all",
             "tenantRequired": true,
@@ -12569,6 +12906,26 @@
       "application": {
         "name": "site_management",
         "operations": [
+          {
+            "id": "site.member_scope_directory",
+            "useCase": "list_assignable_member_sites",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "deviceops.v1.SiteScopeDirectoryRequest",
+            "responseType": "deviceops.v1.SiteScopeDirectoryResponse",
+            "applicationMethod": "ListAssignableMemberSites"
+          },
           {
             "id": "site.role_scope_directory",
             "useCase": "list_assignable_role_sites",

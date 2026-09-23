@@ -9,6 +9,7 @@ import (
 
 // SiteApplication is generated from PB and contains no business implementation.
 type SiteManagementApplication interface {
+	ListAssignableMemberSites(context.Context, *deviceopsv1.SiteScopeDirectoryRequest) (*deviceopsv1.SiteScopeDirectoryResponse, error)
 	ListAssignableRoleSites(context.Context, *deviceopsv1.SiteScopeDirectoryRequest) (*deviceopsv1.SiteScopeDirectoryResponse, error)
 	ValidateTransferTarget(context.Context, *deviceopsv1.ValidateTransferTargetRequest) (*deviceopsv1.SiteDTO, error)
 }

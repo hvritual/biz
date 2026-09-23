@@ -14,17 +14,17 @@ func (err tenantMemberSpecificConflict) Error() string { return err.message }
 func (tenantMemberSpecificConflict) Unwrap() error     { return ErrTenantMemberConflict }
 
 var (
-	ErrTenantMemberNotFound              = errors.New("access: tenant member not found")
-	ErrTenantMemberConflict              = errors.New("access: tenant member version conflict")
-	ErrTenantMemberExists                = errors.New("access: tenant member already exists")
-	ErrTenantMemberUsernameConflict      = tenantMemberSpecificConflict{message: "access: tenant member username conflicts with another account"}
-	ErrTenantMemberContactConflict       = tenantMemberSpecificConflict{message: "access: tenant member contact conflicts with another account"}
-	ErrTenantMemberActivationUnavailable = errors.New("access: tenant member activation is unavailable")
-	ErrTenantMemberExistingAccountSMS    = errors.New("access: existing account must not receive a new initial password")
-	ErrTenantMemberActivationPending     = errors.New("access: member must complete pending activation")
-	ErrTenantMemberSelfDeactivation      = errors.New("access: member must not deactivate own membership")
-	ErrTenantMemberProtectedOwner        = errors.New("access: protected owner requires owner actor")
-	ErrTenantMemberRestoreUnavailable    = errors.New("access: removed member cannot be restored safely")
+	ErrTenantMemberNotFound                 = errors.New("access: tenant member not found")
+	ErrTenantMemberConflict                 = errors.New("access: tenant member version conflict")
+	ErrTenantMemberExists                   = errors.New("access: tenant member already exists")
+	ErrTenantMemberUsernameConflict         = tenantMemberSpecificConflict{message: "access: tenant member username conflicts with another account"}
+	ErrTenantMemberContactConflict          = tenantMemberSpecificConflict{message: "access: tenant member contact conflicts with another account"}
+	ErrTenantMemberActivationUnavailable    = errors.New("access: tenant member activation is unavailable")
+	ErrTenantMemberExistingAccountSMS       = errors.New("access: existing account must not receive a new initial password")
+	ErrTenantMemberActivationPending        = errors.New("access: member must complete pending activation")
+	ErrTenantMemberSelfDeactivation         = errors.New("access: member must not deactivate own membership")
+	ErrTenantMemberProtectedOwner           = errors.New("access: protected owner requires owner actor")
+	ErrTenantMemberRestoreUnavailable       = errors.New("access: removed member cannot be restored safely")
 	ErrTenantMemberBusinessScopeUnavailable = errors.New("access: tenant member business scope is unavailable")
 )
 

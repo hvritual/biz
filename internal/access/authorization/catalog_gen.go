@@ -4,7 +4,7 @@ package authorization
 
 import "yunka.io/gateway/authz"
 
-const CommercialCapabilityMappingVersion = "23"
+const CommercialCapabilityMappingVersion = "24"
 
 var generatedActions = []Action{
 	{
@@ -484,6 +484,13 @@ var generatedActions = []Action{
 		RPC: "/deviceops.v1.DeviceApplication/UpdateDevice", HTTP: []HTTPBinding{{Method: "PATCH", Path: "/v1/devices/{id}"}},
 	},
 	{
+		Code: "site.member_scope_directory", Domain: "deviceops", Application: "site_management", UseCase: "list_assignable_member_sites",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage")}, PermissionMode: "all",
+		Classification: "foundation_exempt", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "", HTTP: []HTTPBinding{},
+	},
+	{
 		Code: "site.role_scope_directory", Domain: "deviceops", Application: "site_management", UseCase: "list_assignable_role_sites",
 		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
 		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.role.manage")}, PermissionMode: "all",
@@ -680,6 +687,20 @@ var generatedActions = []Action{
 		RPC: "", HTTP: []HTTPBinding{},
 	},
 	{
+		Code: "tenant.member.business_scope.get", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "get_tenant_member_business_scope",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
+		RPC: "/access.v1.TenantMemberLifecycleApplication/GetTenantMemberBusinessScope", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/members/{user_id}/business-scope"}},
+	},
+	{
+		Code: "tenant.member.business_scope.set", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "set_tenant_member_business_scope",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
+		RPC: "/access.v1.TenantMemberLifecycleApplication/SetTenantMemberBusinessScope", HTTP: []HTTPBinding{{Method: "PUT", Path: "/v1/tenant/members/{user_id}/business-scope"}},
+	},
+	{
 		Code: "tenant.member.count_quota_usage", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "count_tenant_quota_usage",
 		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
 		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.entitlement.read")}, PermissionMode: "all",
@@ -741,6 +762,13 @@ var generatedActions = []Action{
 		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage"), authz.PermissionKey("tenant.role.manage")}, PermissionMode: "all",
 		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
 		RPC: "/access.v1.TenantMemberLifecycleApplication/RestoreTenantMember", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/tenant/members/{user_id}/restore"}},
+	},
+	{
+		Code: "tenant.member.scope_candidates", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "list_tenant_member_scope_candidates",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
+		RPC: "/access.v1.TenantMemberLifecycleApplication/ListTenantMemberScopeCandidates", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/member-scope-candidates"}},
 	},
 	{
 		Code: "tenant.member.suspend", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "suspend_tenant_member",

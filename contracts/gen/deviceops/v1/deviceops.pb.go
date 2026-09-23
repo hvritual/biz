@@ -698,6 +698,9 @@ type SiteScopeDirectoryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SiteIds       []string               `protobuf:"bytes,1,rep,name=site_ids,json=siteIds,proto3" json:"site_ids,omitempty"`
 	Resolve       bool                   `protobuf:"varint,2,opt,name=resolve,proto3" json:"resolve,omitempty"`
+	Query         string                 `protobuf:"bytes,3,opt,name=query,proto3" json:"query,omitempty"`
+	Page          uint32                 `protobuf:"varint,4,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      uint32                 `protobuf:"varint,5,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -744,6 +747,27 @@ func (x *SiteScopeDirectoryRequest) GetResolve() bool {
 		return x.Resolve
 	}
 	return false
+}
+
+func (x *SiteScopeDirectoryRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *SiteScopeDirectoryRequest) GetPage() uint32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *SiteScopeDirectoryRequest) GetPageSize() uint32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
 }
 
 type SiteScopeDirectoryResponse struct {
@@ -841,10 +865,13 @@ const file_deviceops_v1_deviceops_proto_rawDesc = "" +
 	"\aversion\x18\x03 \x01(\x04R\aversion\"D\n" +
 	"%AssertDeviceOwnedByActorTenantRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"(\n" +
-	"&AssertDeviceOwnedByActorTenantResponse\"P\n" +
+	"&AssertDeviceOwnedByActorTenantResponse\"\x97\x01\n" +
 	"\x19SiteScopeDirectoryRequest\x12\x19\n" +
 	"\bsite_ids\x18\x01 \x03(\tR\asiteIds\x12\x18\n" +
-	"\aresolve\x18\x02 \x01(\bR\aresolve\"_\n" +
+	"\aresolve\x18\x02 \x01(\bR\aresolve\x12\x14\n" +
+	"\x05query\x18\x03 \x01(\tR\x05query\x12\x12\n" +
+	"\x04page\x18\x04 \x01(\rR\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x05 \x01(\rR\bpageSize\"_\n" +
 	"\x1aSiteScopeDirectoryResponse\x12+\n" +
 	"\x05sites\x18\x01 \x03(\v2\x15.deviceops.v1.SiteDTOR\x05sites\x12\x14\n" +
 	"\x05total\x18\x02 \x01(\x04R\x05total2\xa1\t\n" +
@@ -862,11 +889,12 @@ const file_deviceops_v1_deviceops_proto_rawDesc = "" +
 	"\fDeleteDevice\x12!.deviceops.v1.DeleteDeviceRequest\x1a\".deviceops.v1.DeleteDeviceResponse\"U\xe2\xf3\x189\n" +
 	"\rdevice.delete\x12\rdelete_device\x1a\rdevice.delete(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x12*\x10/v1/devices/{id}\x1a\xae\x02\xda\xf3\x18\xa9\x02\n" +
 	"\x11device_management\x12\x19deviceops/site_management\x1a\xf8\x01\n" +
-	"#device.assert_owned_by_actor_tenant\x12#assert_device_owned_by_actor_tenant\x1a\x18tenant.delegation.manage(\x012\x01\x02R\x04\b\x02\x10\x01Z2deviceops.v1.AssertDeviceOwnedByActorTenantRequestb3deviceops.v1.AssertDeviceOwnedByActorTenantResponsej\x1eAssertDeviceOwnedByActorTenant2\x9b\x03\n" +
-	"\x0fSiteApplication\x1a\x87\x03\xda\xf3\x18\x82\x03\n" +
+	"#device.assert_owned_by_actor_tenant\x12#assert_device_owned_by_actor_tenant\x1a\x18tenant.delegation.manage(\x012\x01\x02R\x04\b\x02\x10\x01Z2deviceops.v1.AssertDeviceOwnedByActorTenantRequestb3deviceops.v1.AssertDeviceOwnedByActorTenantResponsej\x1eAssertDeviceOwnedByActorTenant2\xe7\x04\n" +
+	"\x0fSiteApplication\x1a\xd3\x04\xda\xf3\x18\xce\x04\n" +
 	"\x0fsite_management\x1a\xaa\x01\n" +
 	"\x1dsite.validate_transfer_target\x12\x18validate_transfer_target\x1a\tsite.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01Z*deviceops.v1.ValidateTransferTargetRequestb\x14deviceops.v1.SiteDTOj\x16ValidateTransferTarget\x1a\xc1\x01\n" +
-	"\x19site.role_scope_directory\x12\x1alist_assignable_role_sites\x1a\x12tenant.role.manage(\x012\x02\x02\x04R\x04\b\x02\x10\x01Z&deviceops.v1.SiteScopeDirectoryRequestb'deviceops.v1.SiteScopeDirectoryResponsej\x17ListAssignableRoleSites2\xde\x02\n" +
+	"\x19site.role_scope_directory\x12\x1alist_assignable_role_sites\x1a\x12tenant.role.manage(\x012\x02\x02\x04R\x04\b\x02\x10\x01Z&deviceops.v1.SiteScopeDirectoryRequestb'deviceops.v1.SiteScopeDirectoryResponsej\x17ListAssignableRoleSites\x1a\xc9\x01\n" +
+	"\x1bsite.member_scope_directory\x12\x1clist_assignable_member_sites\x1a\x14tenant.member.manage(\x012\x02\x02\x04R\x04\b\x02\x10\x01Z&deviceops.v1.SiteScopeDirectoryRequestb'deviceops.v1.SiteScopeDirectoryResponsej\x19ListAssignableMemberSites2\xde\x02\n" +
 	"\x19DeviceTransferApplication\x12\xf1\x01\n" +
 	"\x0eTransferDevice\x12#.deviceops.v1.TransferDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"\xa0\x01\xe2\xf3\x18x\n" +
 	"\x0fdevice.transfer\x12\x0ftransfer_device\x1a\tsite.read\x1a\rdevice.update(\x012\x02\x02\x04B\x1dsite.validate_transfer_targetB\rdevice.updateH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x1e:\x01*2\x19/v1/devices/{id}/transfer\x1aM\xda\xf3\x18I\n" +
