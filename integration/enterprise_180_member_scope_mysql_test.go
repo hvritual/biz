@@ -13,8 +13,10 @@ import (
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 func TestEnterprise180MemberBusinessScopeAuthority(t *testing.T) {
@@ -87,12 +89,12 @@ func TestEnterprise180MemberBusinessScopeAuthority(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	replayed, err := members.SetTenantMemberBusinessScope(idempotentCtx, setRequest)
-	if err != nil {
-		t.Fatalf("idempotent replay failed: %v", err)
+	_, replayErr := members.SetTenantMemberBusinessScope(idempotentCtx, setRequest)
+	if status.Code(replayErr) != codes.AlreadyExists {
+		t.Fatalf("completed idempotency key replay code=%s err=%v want=%s", status.Code(replayErr), replayErr, codes.AlreadyExists)
 	}
-	if first.GetVersion() != 2 || replayed.GetVersion() != first.GetVersion() || fmt.Sprint(first.GetSiteIds()) != fmt.Sprint([]string{siteA, siteA2}) {
-		t.Fatalf("idempotent write first=%+v replay=%+v", first, replayed)
+	if first.GetVersion() != 2 || fmt.Sprint(first.GetSiteIds()) != fmt.Sprint([]string{siteA, siteA2}) {
+		t.Fatalf("initial idempotent write=%+v", first)
 	}
 
 	readback, err := members.GetTenantMemberBusinessScope(authCtx(tokenA), &accessv1.GetTenantMemberBusinessScopeRequest{UserId: memberA})
