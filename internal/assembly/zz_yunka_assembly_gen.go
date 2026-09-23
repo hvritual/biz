@@ -24,7 +24,7 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "3b79868cf32af15a3ea1a22996cb8c3ab86f4a5c00f34af00276fb05f72e53dd"
+const AssemblyPlanDigest = "f03dcb523c99dc709ce35460109825c2380f9bc11b39fe6aece5fec4be851fdc"
 
 type AccessTenantAuditManagementDependencies struct {
 }
@@ -43,10 +43,13 @@ type AccessTenantLifecycleDependencies struct {
 	CommercialSubscriptionManagement accessapplication.TenantLifecycleToCommercialSubscriptionManagementChildCapability
 }
 
+type AccessTenantMemberBusinessScopeDependencies struct {
+	DeviceopsSiteManagement accessapplication.TenantMemberBusinessScopeToDeviceopsSiteManagementChildCapability
+}
+
 type AccessTenantMemberLifecycleDependencies struct {
 	AccessTenantDepartmentManagement accessapplication.TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability
 	AccessTenantRolePermission       accessapplication.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability
-	DeviceopsSiteManagement          accessapplication.TenantMemberLifecycleToDeviceopsSiteManagementChildCapability
 }
 
 type AccessTenantProfileManagementDependencies struct {
@@ -102,6 +105,7 @@ type ApplicationFactories interface {
 	BuildAccessTenantDelegationManagement(AccessTenantDelegationManagementDependencies) (accessapplication.TenantDelegationManagementApplication, error)
 	BuildAccessTenantDepartmentManagement(AccessTenantDepartmentManagementDependencies) (accessapplication.TenantDepartmentManagementApplication, error)
 	BuildAccessTenantLifecycle(AccessTenantLifecycleDependencies) (accessapplication.TenantLifecycleApplication, error)
+	BuildAccessTenantMemberBusinessScope(AccessTenantMemberBusinessScopeDependencies) (accessapplication.TenantMemberBusinessScopeApplication, error)
 	BuildAccessTenantMemberLifecycle(AccessTenantMemberLifecycleDependencies) (accessapplication.TenantMemberLifecycleApplication, error)
 	BuildAccessTenantProfileManagement(AccessTenantProfileManagementDependencies) (accessapplication.TenantProfileManagementApplication, error)
 	BuildAccessTenantRolePermission(AccessTenantRolePermissionDependencies) (accessapplication.TenantRolePermissionApplication, error)
@@ -122,6 +126,7 @@ type Applications struct {
 	AccessTenantDelegationManagement accessapplication.TenantDelegationManagementApplication
 	AccessTenantDepartmentManagement accessapplication.TenantDepartmentManagementApplication
 	AccessTenantLifecycle            accessapplication.TenantLifecycleApplication
+	AccessTenantMemberBusinessScope  accessapplication.TenantMemberBusinessScopeApplication
 	AccessTenantMemberLifecycle      accessapplication.TenantMemberLifecycleApplication
 	AccessTenantProfileManagement    accessapplication.TenantProfileManagementApplication
 	AccessTenantRolePermission       accessapplication.TenantRolePermissionApplication
@@ -225,6 +230,17 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	if applications.DeviceopsSiteManagement == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for deviceops/site_management")
 	}
+	accessTenantMemberBusinessScopeDeviceopsSiteManagementCapability, err := accessapplication.NewTenantMemberBusinessScopeToDeviceopsSiteManagementChildCapability(applications.DeviceopsSiteManagement, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_member_business_scope dependency deviceops/site_management: %w", err)
+	}
+	applications.AccessTenantMemberBusinessScope, err = factories.BuildAccessTenantMemberBusinessScope(AccessTenantMemberBusinessScopeDependencies{DeviceopsSiteManagement: accessTenantMemberBusinessScopeDeviceopsSiteManagementCapability})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_member_business_scope: %w", err)
+	}
+	if applications.AccessTenantMemberBusinessScope == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_member_business_scope")
+	}
 	accessTenantRolePermissionDeviceopsSiteManagementCapability, err := accessapplication.NewTenantRolePermissionToDeviceopsSiteManagementChildCapability(applications.DeviceopsSiteManagement, executor)
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_role_permission dependency deviceops/site_management: %w", err)
@@ -244,11 +260,7 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_member_lifecycle dependency access/tenant_role_permission: %w", err)
 	}
-	accessTenantMemberLifecycleDeviceopsSiteManagementCapability, err := accessapplication.NewTenantMemberLifecycleToDeviceopsSiteManagementChildCapability(applications.DeviceopsSiteManagement, executor)
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_member_lifecycle dependency deviceops/site_management: %w", err)
-	}
-	applications.AccessTenantMemberLifecycle, err = factories.BuildAccessTenantMemberLifecycle(AccessTenantMemberLifecycleDependencies{AccessTenantDepartmentManagement: accessTenantMemberLifecycleAccessTenantDepartmentManagementCapability, AccessTenantRolePermission: accessTenantMemberLifecycleAccessTenantRolePermissionCapability, DeviceopsSiteManagement: accessTenantMemberLifecycleDeviceopsSiteManagementCapability})
+	applications.AccessTenantMemberLifecycle, err = factories.BuildAccessTenantMemberLifecycle(AccessTenantMemberLifecycleDependencies{AccessTenantDepartmentManagement: accessTenantMemberLifecycleAccessTenantDepartmentManagementCapability, AccessTenantRolePermission: accessTenantMemberLifecycleAccessTenantRolePermissionCapability})
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_member_lifecycle: %w", err)
 	}
@@ -416,6 +428,15 @@ func RegisterTransports(bindings TransportBindings, applications Applications, e
 	}
 	if err := accessrpc.RegisterTenantLifecycleOperationExecutor(bindings.RPC, applications.AccessTenantLifecycle, executor); err != nil {
 		return fmt.Errorf("yunka assembly: register gRPC access/tenant_lifecycle: %w", err)
+	}
+	if applications.AccessTenantMemberBusinessScope == nil {
+		return errors.New("yunka assembly: application access/tenant_member_business_scope is required for transport registration")
+	}
+	if err := accessrest.RegisterTenantMemberBusinessScopeOperationExecutor(bindings.HTTP, applications.AccessTenantMemberBusinessScope, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register HTTP access/tenant_member_business_scope: %w", err)
+	}
+	if err := accessrpc.RegisterTenantMemberBusinessScopeOperationExecutor(bindings.RPC, applications.AccessTenantMemberBusinessScope, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register gRPC access/tenant_member_business_scope: %w", err)
 	}
 	if applications.AccessTenantMemberLifecycle == nil {
 		return errors.New("yunka assembly: application access/tenant_member_lifecycle is required for transport registration")

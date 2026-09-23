@@ -44,16 +44,10 @@ func RegisterTenantMemberLifecycleOperationExecutor(mux *http.ServeMux, applicat
 	if err := httpbinding.Register(mux, "GET", "/v1/tenant/members/{user_id}", handler.handleOperationGetTenantMember); err != nil {
 		return err
 	}
-	if err := httpbinding.Register(mux, "GET", "/v1/tenant/members/{user_id}/business-scope", handler.handleOperationGetTenantMemberBusinessScope); err != nil {
-		return err
-	}
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/members", handler.handleOperationInviteTenantMember); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "GET", "/v1/tenant/members/removed", handler.handleOperationListRemovedTenantMembers); err != nil {
-		return err
-	}
-	if err := httpbinding.Register(mux, "GET", "/v1/tenant/member-scope-candidates", handler.handleOperationListTenantMemberScopeCandidates); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "GET", "/v1/tenant/members", handler.handleOperationListTenantMembers); err != nil {
@@ -63,9 +57,6 @@ func RegisterTenantMemberLifecycleOperationExecutor(mux *http.ServeMux, applicat
 		return err
 	}
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/members/{user_id}/restore", handler.handleOperationRestoreTenantMember); err != nil {
-		return err
-	}
-	if err := httpbinding.Register(mux, "PUT", "/v1/tenant/members/{user_id}/business-scope", handler.handleOperationSetTenantMemberBusinessScope); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/members/{user_id}/suspend", handler.handleOperationSuspendTenantMember); err != nil {
@@ -184,24 +175,6 @@ func (handler *TenantMemberLifecycleOperationHandler) handleOperationGetTenantMe
 	_, _ = writer.Write(payload)
 }
 
-func (handler *TenantMemberLifecycleOperationHandler) handleOperationGetTenantMemberBusinessScope(writer http.ResponseWriter, request *http.Request) {
-	wire := &accessv1.GetTenantMemberBusinessScopeRequest{}
-	wire.UserId = request.PathValue("user_id")
-	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleGetTenantMemberBusinessScope(), wire, handler.application.GetTenantMemberBusinessScope)
-	if err != nil {
-		writeTenantMemberLifecycleOperationError(writer, err)
-		return
-	}
-	payload, err := protojson.Marshal(output)
-	if err != nil {
-		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
-		return
-	}
-	writer.Header().Set("Content-Type", "application/json")
-	_, _ = writer.Write(payload)
-}
-
 func (handler *TenantMemberLifecycleOperationHandler) handleOperationInviteTenantMember(writer http.ResponseWriter, request *http.Request) {
 	wire := &accessv1.InviteTenantMemberRequest{}
 	body, err := io.ReadAll(request.Body)
@@ -250,42 +223,6 @@ func (handler *TenantMemberLifecycleOperationHandler) handleOperationListRemoved
 	}
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleListRemovedTenantMembers(), wire, handler.application.ListRemovedTenantMembers)
-	if err != nil {
-		writeTenantMemberLifecycleOperationError(writer, err)
-		return
-	}
-	payload, err := protojson.Marshal(output)
-	if err != nil {
-		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
-		return
-	}
-	writer.Header().Set("Content-Type", "application/json")
-	_, _ = writer.Write(payload)
-}
-
-func (handler *TenantMemberLifecycleOperationHandler) handleOperationListTenantMemberScopeCandidates(writer http.ResponseWriter, request *http.Request) {
-	wire := &accessv1.ListTenantMemberScopeCandidatesRequest{}
-	if raw := request.URL.Query().Get("query"); raw != "" {
-		wire.Query = raw
-	}
-	if raw := request.URL.Query().Get("page"); raw != "" {
-		parsed, err := strconv.ParseUint(raw, 10, 32)
-		if err != nil {
-			http.Error(writer, "invalid request parameter", http.StatusBadRequest)
-			return
-		}
-		wire.Page = uint32(parsed)
-	}
-	if raw := request.URL.Query().Get("page_size"); raw != "" {
-		parsed, err := strconv.ParseUint(raw, 10, 32)
-		if err != nil {
-			http.Error(writer, "invalid request parameter", http.StatusBadRequest)
-			return
-		}
-		wire.PageSize = uint32(parsed)
-	}
-	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleListTenantMemberScopeCandidates(), wire, handler.application.ListTenantMemberScopeCandidates)
 	if err != nil {
 		writeTenantMemberLifecycleOperationError(writer, err)
 		return
@@ -386,35 +323,6 @@ func (handler *TenantMemberLifecycleOperationHandler) handleOperationRestoreTena
 	wire.UserId = request.PathValue("user_id")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleRestoreTenantMember(), wire, handler.application.RestoreTenantMember)
-	if err != nil {
-		writeTenantMemberLifecycleOperationError(writer, err)
-		return
-	}
-	payload, err := protojson.Marshal(output)
-	if err != nil {
-		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
-		return
-	}
-	writer.Header().Set("Content-Type", "application/json")
-	_, _ = writer.Write(payload)
-}
-
-func (handler *TenantMemberLifecycleOperationHandler) handleOperationSetTenantMemberBusinessScope(writer http.ResponseWriter, request *http.Request) {
-	wire := &accessv1.SetTenantMemberBusinessScopeRequest{}
-	body, err := io.ReadAll(request.Body)
-	if err != nil {
-		http.Error(writer, "invalid request body", http.StatusBadRequest)
-		return
-	}
-	if len(body) > 0 {
-		if err := protojson.Unmarshal(body, wire); err != nil {
-			http.Error(writer, "invalid request body", http.StatusBadRequest)
-			return
-		}
-	}
-	wire.UserId = request.PathValue("user_id")
-	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
-	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleSetTenantMemberBusinessScope(), wire, handler.application.SetTenantMemberBusinessScope)
 	if err != nil {
 		writeTenantMemberLifecycleOperationError(writer, err)
 		return

@@ -3524,8 +3524,7 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_department_management",
-        "access/tenant_role_permission",
-        "deviceops/site_management"
+        "access/tenant_role_permission"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/ActivateTenantMember",
@@ -3561,15 +3560,14 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_department_management",
-        "access/tenant_role_permission",
-        "deviceops/site_management"
+        "access/tenant_role_permission"
       ],
       "bindings": {}
     },
     {
       "operationId": "tenant.member.business_scope.get",
       "domain": "access",
-      "application": "tenant_member_lifecycle",
+      "application": "tenant_member_business_scope",
       "useCase": "get_tenant_member_business_scope",
       "requestType": "access.v1.GetTenantMemberBusinessScopeRequest",
       "responseType": "access.v1.TenantMemberBusinessScopeDTO",
@@ -3590,12 +3588,10 @@
       },
       "composition": {},
       "applicationRequires": [
-        "access/tenant_department_management",
-        "access/tenant_role_permission",
         "deviceops/site_management"
       ],
       "bindings": {
-        "rpc": "/access.v1.TenantMemberLifecycleApplication/GetTenantMemberBusinessScope",
+        "rpc": "/access.v1.TenantMemberBusinessScopeApplication/GetTenantMemberBusinessScope",
         "http": [
           {
             "method": "GET",
@@ -3607,7 +3603,7 @@
     {
       "operationId": "tenant.member.business_scope.set",
       "domain": "access",
-      "application": "tenant_member_lifecycle",
+      "application": "tenant_member_business_scope",
       "useCase": "set_tenant_member_business_scope",
       "requestType": "access.v1.SetTenantMemberBusinessScopeRequest",
       "responseType": "access.v1.TenantMemberBusinessScopeDTO",
@@ -3636,12 +3632,10 @@
         ]
       },
       "applicationRequires": [
-        "access/tenant_department_management",
-        "access/tenant_role_permission",
         "deviceops/site_management"
       ],
       "bindings": {
-        "rpc": "/access.v1.TenantMemberLifecycleApplication/SetTenantMemberBusinessScope",
+        "rpc": "/access.v1.TenantMemberBusinessScopeApplication/SetTenantMemberBusinessScope",
         "http": [
           {
             "method": "PUT",
@@ -3676,8 +3670,7 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_department_management",
-        "access/tenant_role_permission",
-        "deviceops/site_management"
+        "access/tenant_role_permission"
       ],
       "bindings": {}
     },
@@ -3717,8 +3710,7 @@
       },
       "applicationRequires": [
         "access/tenant_department_management",
-        "access/tenant_role_permission",
-        "deviceops/site_management"
+        "access/tenant_role_permission"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/CreateTenantMember",
@@ -3756,8 +3748,7 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_department_management",
-        "access/tenant_role_permission",
-        "deviceops/site_management"
+        "access/tenant_role_permission"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/GetTenantMember",
@@ -3794,8 +3785,7 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_department_management",
-        "access/tenant_role_permission",
-        "deviceops/site_management"
+        "access/tenant_role_permission"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/InviteTenantMember",
@@ -3833,8 +3823,7 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_department_management",
-        "access/tenant_role_permission",
-        "deviceops/site_management"
+        "access/tenant_role_permission"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/ListTenantMembers",
@@ -3871,8 +3860,7 @@
       "composition": {},
       "applicationRequires": [
         "access/tenant_department_management",
-        "access/tenant_role_permission",
-        "deviceops/site_management"
+        "access/tenant_role_permission"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/ListRemovedTenantMembers",
@@ -3917,8 +3905,7 @@
       },
       "applicationRequires": [
         "access/tenant_department_management",
-        "access/tenant_role_permission",
-        "deviceops/site_management"
+        "access/tenant_role_permission"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/UpdateTenantMemberProfile",
@@ -3964,8 +3951,7 @@
       },
       "applicationRequires": [
         "access/tenant_department_management",
-        "access/tenant_role_permission",
-        "deviceops/site_management"
+        "access/tenant_role_permission"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/RemoveTenantMember",
@@ -4012,8 +3998,7 @@
       },
       "applicationRequires": [
         "access/tenant_department_management",
-        "access/tenant_role_permission",
-        "deviceops/site_management"
+        "access/tenant_role_permission"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/RestoreTenantMember",
@@ -4029,7 +4014,7 @@
     {
       "operationId": "tenant.member.scope_candidates",
       "domain": "access",
-      "application": "tenant_member_lifecycle",
+      "application": "tenant_member_business_scope",
       "useCase": "list_tenant_member_scope_candidates",
       "requestType": "access.v1.ListTenantMemberScopeCandidatesRequest",
       "responseType": "access.v1.ListTenantMemberScopeCandidatesResponse",
@@ -4058,12 +4043,10 @@
         ]
       },
       "applicationRequires": [
-        "access/tenant_department_management",
-        "access/tenant_role_permission",
         "deviceops/site_management"
       ],
       "bindings": {
-        "rpc": "/access.v1.TenantMemberLifecycleApplication/ListTenantMemberScopeCandidates",
+        "rpc": "/access.v1.TenantMemberBusinessScopeApplication/ListTenantMemberScopeCandidates",
         "http": [
           {
             "method": "GET",
@@ -4105,8 +4088,7 @@
       },
       "applicationRequires": [
         "access/tenant_department_management",
-        "access/tenant_role_permission",
-        "deviceops/site_management"
+        "access/tenant_role_permission"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/SuspendTenantMember",
@@ -4156,8 +4138,7 @@
       },
       "applicationRequires": [
         "access/tenant_department_management",
-        "access/tenant_role_permission",
-        "deviceops/site_management"
+        "access/tenant_role_permission"
       ],
       "bindings": {
         "rpc": "/access.v1.TenantMemberLifecycleApplication/UpdateTenantMember",

@@ -6,9 +6,7 @@ import (
 	context "context"
 	errors "errors"
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
-	deviceopsv1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
 	accesspolicy "github.com/hvritual/biz/internal/access/policy"
-	deviceopspolicy "github.com/hvritual/biz/internal/deviceops/policy"
 	operation "yunka.io/framework/operation"
 )
 
@@ -68,37 +66,8 @@ func (capability *c9TenantMemberLifecycleToAccessTenantRolePermissionChildCapabi
 	return operation.ExecuteChildTyped(ctx, capability.executor, accesspolicy.OperationPlanTenantRolePermissionRevokeTenantRoleMember(), request, capability.application.RevokeTenantRoleMember)
 }
 
-type TenantMemberLifecycleToDeviceopsSiteManagementChildCapability interface {
-	ListAssignableMemberSites(context.Context, *deviceopsv1.SiteScopeDirectoryRequest) (*deviceopsv1.SiteScopeDirectoryResponse, error)
-}
-
-// TenantMemberLifecycleToDeviceopsSiteManagementTargetApplication is the consumer-edge-owned view of the target Application.
-type TenantMemberLifecycleToDeviceopsSiteManagementTargetApplication interface {
-	ListAssignableMemberSites(context.Context, *deviceopsv1.SiteScopeDirectoryRequest) (*deviceopsv1.SiteScopeDirectoryResponse, error)
-}
-
-type c9TenantMemberLifecycleToDeviceopsSiteManagementChildCapability struct {
-	application TenantMemberLifecycleToDeviceopsSiteManagementTargetApplication
-	executor    operation.Executor
-}
-
-func NewTenantMemberLifecycleToDeviceopsSiteManagementChildCapability(application TenantMemberLifecycleToDeviceopsSiteManagementTargetApplication, executor operation.Executor) (TenantMemberLifecycleToDeviceopsSiteManagementChildCapability, error) {
-	if application == nil {
-		return nil, errors.New("contract C9 child capability: target application is required")
-	}
-	if executor == nil {
-		return nil, errors.New("contract C9 child capability: operation executor is required")
-	}
-	return &c9TenantMemberLifecycleToDeviceopsSiteManagementChildCapability{application: application, executor: executor}, nil
-}
-
-func (capability *c9TenantMemberLifecycleToDeviceopsSiteManagementChildCapability) ListAssignableMemberSites(ctx context.Context, request *deviceopsv1.SiteScopeDirectoryRequest) (*deviceopsv1.SiteScopeDirectoryResponse, error) {
-	return operation.ExecuteChildTyped(ctx, capability.executor, deviceopspolicy.OperationPlanSiteManagementListAssignableMemberSites(), request, capability.application.ListAssignableMemberSites)
-}
-
 // TenantMemberLifecycleCapabilities exposes edge-owned C9 child-Operation wrappers for declared operation dependencies.
 type TenantMemberLifecycleCapabilities interface {
 	AccessTenantDepartmentManagement() TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability
 	AccessTenantRolePermission() TenantMemberLifecycleToAccessTenantRolePermissionChildCapability
-	DeviceopsSiteManagement() TenantMemberLifecycleToDeviceopsSiteManagementChildCapability
 }

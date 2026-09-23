@@ -687,18 +687,18 @@ var generatedActions = []Action{
 		RPC: "", HTTP: []HTTPBinding{},
 	},
 	{
-		Code: "tenant.member.business_scope.get", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "get_tenant_member_business_scope",
+		Code: "tenant.member.business_scope.get", Domain: "access", Application: "tenant_member_business_scope", UseCase: "get_tenant_member_business_scope",
 		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
 		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage")}, PermissionMode: "all",
 		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
-		RPC: "/access.v1.TenantMemberLifecycleApplication/GetTenantMemberBusinessScope", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/members/{user_id}/business-scope"}},
+		RPC: "/access.v1.TenantMemberBusinessScopeApplication/GetTenantMemberBusinessScope", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/members/{user_id}/business-scope"}},
 	},
 	{
-		Code: "tenant.member.business_scope.set", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "set_tenant_member_business_scope",
+		Code: "tenant.member.business_scope.set", Domain: "access", Application: "tenant_member_business_scope", UseCase: "set_tenant_member_business_scope",
 		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
 		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage")}, PermissionMode: "all",
 		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
-		RPC: "/access.v1.TenantMemberLifecycleApplication/SetTenantMemberBusinessScope", HTTP: []HTTPBinding{{Method: "PUT", Path: "/v1/tenant/members/{user_id}/business-scope"}},
+		RPC: "/access.v1.TenantMemberBusinessScopeApplication/SetTenantMemberBusinessScope", HTTP: []HTTPBinding{{Method: "PUT", Path: "/v1/tenant/members/{user_id}/business-scope"}},
 	},
 	{
 		Code: "tenant.member.count_quota_usage", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "count_tenant_quota_usage",
@@ -764,11 +764,11 @@ var generatedActions = []Action{
 		RPC: "/access.v1.TenantMemberLifecycleApplication/RestoreTenantMember", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/tenant/members/{user_id}/restore"}},
 	},
 	{
-		Code: "tenant.member.scope_candidates", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "list_tenant_member_scope_candidates",
+		Code: "tenant.member.scope_candidates", Domain: "access", Application: "tenant_member_business_scope", UseCase: "list_tenant_member_scope_candidates",
 		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
 		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage")}, PermissionMode: "all",
 		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
-		RPC: "/access.v1.TenantMemberLifecycleApplication/ListTenantMemberScopeCandidates", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/member-scope-candidates"}},
+		RPC: "/access.v1.TenantMemberBusinessScopeApplication/ListTenantMemberScopeCandidates", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/member-scope-candidates"}},
 	},
 	{
 		Code: "tenant.member.suspend", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "suspend_tenant_member",

@@ -5919,7 +5919,7 @@
     },
     "/v1/tenant/member-scope-candidates": {
       "get": {
-        "operationId": "access.v1.TenantMemberLifecycleApplication.ListTenantMemberScopeCandidates",
+        "operationId": "access.v1.TenantMemberBusinessScopeApplication.ListTenantMemberScopeCandidates",
         "parameters": [
           {
             "in": "query",
@@ -5961,9 +5961,9 @@
           }
         },
         "tags": [
-          "access.v1.TenantMemberLifecycleApplication"
+          "access.v1.TenantMemberBusinessScopeApplication"
         ],
-        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/ListTenantMemberScopeCandidates"
+        "x-yunka-rpc": "/access.v1.TenantMemberBusinessScopeApplication/ListTenantMemberScopeCandidates"
       }
     },
     "/v1/tenant/members": {
@@ -6253,7 +6253,7 @@
     },
     "/v1/tenant/members/{user_id}/business-scope": {
       "get": {
-        "operationId": "access.v1.TenantMemberLifecycleApplication.GetTenantMemberBusinessScope",
+        "operationId": "access.v1.TenantMemberBusinessScopeApplication.GetTenantMemberBusinessScope",
         "parameters": [
           {
             "in": "path",
@@ -6277,12 +6277,12 @@
           }
         },
         "tags": [
-          "access.v1.TenantMemberLifecycleApplication"
+          "access.v1.TenantMemberBusinessScopeApplication"
         ],
-        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/GetTenantMemberBusinessScope"
+        "x-yunka-rpc": "/access.v1.TenantMemberBusinessScopeApplication/GetTenantMemberBusinessScope"
       },
       "put": {
-        "operationId": "access.v1.TenantMemberLifecycleApplication.SetTenantMemberBusinessScope",
+        "operationId": "access.v1.TenantMemberBusinessScopeApplication.SetTenantMemberBusinessScope",
         "parameters": [
           {
             "in": "path",
@@ -6316,9 +6316,9 @@
           }
         },
         "tags": [
-          "access.v1.TenantMemberLifecycleApplication"
+          "access.v1.TenantMemberBusinessScopeApplication"
         ],
-        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/SetTenantMemberBusinessScope"
+        "x-yunka-rpc": "/access.v1.TenantMemberBusinessScopeApplication/SetTenantMemberBusinessScope"
       }
     },
     "/v1/tenant/members/{user_id}/profile": {

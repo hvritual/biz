@@ -8764,6 +8764,151 @@
       ]
     },
     {
+      "name": "TenantMemberBusinessScopeApplication",
+      "fullName": "access.v1.TenantMemberBusinessScopeApplication",
+      "domain": "access",
+      "application": {
+        "name": "tenant_member_business_scope",
+        "requires": [
+          "deviceops/site_management"
+        ]
+      },
+      "methods": [
+        {
+          "name": "GetTenantMemberBusinessScope",
+          "fullName": "access.v1.TenantMemberBusinessScopeApplication.GetTenantMemberBusinessScope",
+          "request": "access.v1.GetTenantMemberBusinessScopeRequest",
+          "response": "access.v1.TenantMemberBusinessScopeDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/members/{user_id}/business-scope"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.business_scope.get",
+            "useCase": "get_tenant_member_business_scope",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.business_scope.get",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListTenantMemberScopeCandidates",
+          "fullName": "access.v1.TenantMemberBusinessScopeApplication.ListTenantMemberScopeCandidates",
+          "request": "access.v1.ListTenantMemberScopeCandidatesRequest",
+          "response": "access.v1.ListTenantMemberScopeCandidatesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/member-scope-candidates"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.scope_candidates",
+            "useCase": "list_tenant_member_scope_candidates",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "site.member_scope_directory"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.scope_candidates",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "SetTenantMemberBusinessScope",
+          "fullName": "access.v1.TenantMemberBusinessScopeApplication.SetTenantMemberBusinessScope",
+          "request": "access.v1.SetTenantMemberBusinessScopeRequest",
+          "response": "access.v1.TenantMemberBusinessScopeDTO",
+          "http": [
+            {
+              "method": "PUT",
+              "path": "/v1/tenant/members/{user_id}/business-scope",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.business_scope.set",
+            "useCase": "set_tenant_member_business_scope",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "site.member_scope_directory"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.business_scope.set",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "TenantMemberLifecycleApplication",
       "fullName": "access.v1.TenantMemberLifecycleApplication",
       "domain": "access",
@@ -8771,8 +8916,7 @@
         "name": "tenant_member_lifecycle",
         "requires": [
           "access/tenant_department_management",
-          "access/tenant_role_permission",
-          "deviceops/site_management"
+          "access/tenant_role_permission"
         ],
         "operations": [
           {
@@ -8949,47 +9093,6 @@
           }
         },
         {
-          "name": "GetTenantMemberBusinessScope",
-          "fullName": "access.v1.TenantMemberLifecycleApplication.GetTenantMemberBusinessScope",
-          "request": "access.v1.GetTenantMemberBusinessScopeRequest",
-          "response": "access.v1.TenantMemberBusinessScopeDTO",
-          "http": [
-            {
-              "method": "GET",
-              "path": "/v1/tenant/members/{user_id}/business-scope"
-            }
-          ],
-          "operation": {
-            "id": "tenant.member.business_scope.get",
-            "useCase": "get_tenant_member_business_scope",
-            "permissions": [
-              "tenant.member.manage"
-            ],
-            "permissionMode": "all",
-            "tenantRequired": true,
-            "authentication": [
-              "api-key",
-              "web-session"
-            ],
-            "execution": {
-              "transaction": "read_only",
-              "idempotency": "none"
-            }
-          },
-          "authorization": {
-            "operationId": "tenant.member.business_scope.get",
-            "permissions": [
-              "tenant.member.manage"
-            ],
-            "permissionMode": "all",
-            "tenantRequired": true,
-            "authentication": [
-              "api-key",
-              "web-session"
-            ]
-          }
-        },
-        {
           "name": "InviteTenantMember",
           "fullName": "access.v1.TenantMemberLifecycleApplication.InviteTenantMember",
           "request": "access.v1.InviteTenantMemberRequest",
@@ -9061,51 +9164,6 @@
           },
           "authorization": {
             "operationId": "tenant.member.list_removed",
-            "permissions": [
-              "tenant.member.manage"
-            ],
-            "permissionMode": "all",
-            "tenantRequired": true,
-            "authentication": [
-              "api-key",
-              "web-session"
-            ]
-          }
-        },
-        {
-          "name": "ListTenantMemberScopeCandidates",
-          "fullName": "access.v1.TenantMemberLifecycleApplication.ListTenantMemberScopeCandidates",
-          "request": "access.v1.ListTenantMemberScopeCandidatesRequest",
-          "response": "access.v1.ListTenantMemberScopeCandidatesResponse",
-          "http": [
-            {
-              "method": "GET",
-              "path": "/v1/tenant/member-scope-candidates"
-            }
-          ],
-          "operation": {
-            "id": "tenant.member.scope_candidates",
-            "useCase": "list_tenant_member_scope_candidates",
-            "permissions": [
-              "tenant.member.manage"
-            ],
-            "permissionMode": "all",
-            "tenantRequired": true,
-            "authentication": [
-              "api-key",
-              "web-session"
-            ],
-            "requiresOperations": [
-              "site.member_scope_directory"
-            ],
-            "composition": "local",
-            "execution": {
-              "transaction": "read_only",
-              "idempotency": "none"
-            }
-          },
-          "authorization": {
-            "operationId": "tenant.member.scope_candidates",
             "permissions": [
               "tenant.member.manage"
             ],
@@ -9243,52 +9301,6 @@
             "permissions": [
               "tenant.member.manage",
               "tenant.role.manage"
-            ],
-            "permissionMode": "all",
-            "tenantRequired": true,
-            "authentication": [
-              "api-key",
-              "web-session"
-            ]
-          }
-        },
-        {
-          "name": "SetTenantMemberBusinessScope",
-          "fullName": "access.v1.TenantMemberLifecycleApplication.SetTenantMemberBusinessScope",
-          "request": "access.v1.SetTenantMemberBusinessScopeRequest",
-          "response": "access.v1.TenantMemberBusinessScopeDTO",
-          "http": [
-            {
-              "method": "PUT",
-              "path": "/v1/tenant/members/{user_id}/business-scope",
-              "body": "*"
-            }
-          ],
-          "operation": {
-            "id": "tenant.member.business_scope.set",
-            "useCase": "set_tenant_member_business_scope",
-            "permissions": [
-              "tenant.member.manage"
-            ],
-            "permissionMode": "all",
-            "tenantRequired": true,
-            "authentication": [
-              "api-key",
-              "web-session"
-            ],
-            "requiresOperations": [
-              "site.member_scope_directory"
-            ],
-            "composition": "local",
-            "execution": {
-              "transaction": "local",
-              "idempotency": "required"
-            }
-          },
-          "authorization": {
-            "operationId": "tenant.member.business_scope.set",
-            "permissions": [
-              "tenant.member.manage"
             ],
             "permissionMode": "all",
             "tenantRequired": true,

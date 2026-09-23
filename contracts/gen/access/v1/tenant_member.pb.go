@@ -1875,14 +1875,8 @@ const file_access_v1_tenant_member_proto_rawDesc = "" +
 	"\x1aTenantMemberActivationMode\x12-\n" +
 	")TENANT_MEMBER_ACTIVATION_MODE_UNSPECIFIED\x10\x00\x121\n" +
 	"-TENANT_MEMBER_ACTIVATION_MODE_ACTIVATION_LINK\x10\x01\x126\n" +
-	"2TENANT_MEMBER_ACTIVATION_MODE_SMS_INITIAL_PASSWORD\x10\x022\x85\"\n" +
-	" TenantMemberLifecycleApplication\x12\xc0\x02\n" +
-	"\x1fListTenantMemberScopeCandidates\x121.access.v1.ListTenantMemberScopeCandidatesRequest\x1a2.access.v1.ListTenantMemberScopeCandidatesResponse\"\xb5\x01\xe2\xf3\x18\x86\x01\n" +
-	"\x1etenant.member.scope_candidates\x12#list_tenant_member_scope_candidates\x1a\x14tenant.member.manage(\x012\x02\x02\x04B\x1bsite.member_scope_directoryH\x01R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02$\x12\"/v1/tenant/member-scope-candidates\x12\x97\x02\n" +
-	"\x1cGetTenantMemberBusinessScope\x12..access.v1.GetTenantMemberBusinessScopeRequest\x1a'.access.v1.TenantMemberBusinessScopeDTO\"\x9d\x01\xe2\xf3\x18f\n" +
-	" tenant.member.business_scope.get\x12 get_tenant_member_business_scope\x1a\x14tenant.member.manage(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02-\x12+/v1/tenant/members/{user_id}/business-scope\x12\xba\x02\n" +
-	"\x1cSetTenantMemberBusinessScope\x12..access.v1.SetTenantMemberBusinessScopeRequest\x1a'.access.v1.TenantMemberBusinessScopeDTO\"\xc0\x01\xe2\xf3\x18\x85\x01\n" +
-	" tenant.member.business_scope.set\x12 set_tenant_member_business_scope\x1a\x14tenant.member.manage(\x012\x02\x02\x04B\x1bsite.member_scope_directoryH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x020:\x01*\x1a+/v1/tenant/members/{user_id}/business-scope\x12\xc7\x01\n" +
+	"2TENANT_MEMBER_ACTIVATION_MODE_SMS_INITIAL_PASSWORD\x10\x022\xd0\x1a\n" +
+	" TenantMemberLifecycleApplication\x12\xc7\x01\n" +
 	"\x12InviteTenantMember\x12$.access.v1.InviteTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"o\xe2\xf3\x18N\n" +
 	"\x14tenant.member.invite\x12\x14invite_tenant_member\x1a\x14tenant.member.manage(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/tenant/members\x12\xc1\x02\n" +
 	"\x12CreateTenantMember\x12$.access.v1.CreateTenantMemberRequest\x1a&.access.v1.TenantMemberCreationReceipt\"\xdc\x01\xe2\xf3\x18\xb3\x01\n" +
@@ -1904,10 +1898,18 @@ const file_access_v1_tenant_member_proto_rawDesc = "" +
 	"\x13SuspendTenantMember\x12%.access.v1.SuspendTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"\xb6\x01\xe2\xf3\x18\x82\x01\n" +
 	"\x15tenant.member.suspend\x12\x15suspend_tenant_member\x1a\x14tenant.member.manage(\x012\x02\x02\x04B.tenant.role.assert_member_deactivation_allowedH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02):\x01*\"$/v1/tenant/members/{user_id}/suspend\x12\x8c\x02\n" +
 	"\x12RemoveTenantMember\x12$.access.v1.RemoveTenantMemberRequest\x1a\x1a.access.v1.TenantMemberDTO\"\xb3\x01\xe2\xf3\x18\x80\x01\n" +
-	"\x14tenant.member.remove\x12\x14remove_tenant_member\x1a\x14tenant.member.manage(\x012\x02\x02\x04B.tenant.role.assert_member_deactivation_allowedH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02(:\x01*\"#/v1/tenant/members/{user_id}/remove\x1a\x94\x04\xda\xf3\x18\x8f\x04\n" +
-	"\x17tenant_member_lifecycle\x12\x1daccess/tenant_role_permission\x12#access/tenant_department_management\x12\x19deviceops/site_management\x1a\xc3\x01\n" +
+	"\x14tenant.member.remove\x12\x14remove_tenant_member\x1a\x14tenant.member.manage(\x012\x02\x02\x04B.tenant.role.assert_member_deactivation_allowedH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02(:\x01*\"#/v1/tenant/members/{user_id}/remove\x1a\xf9\x03\xda\xf3\x18\xf4\x03\n" +
+	"\x17tenant_member_lifecycle\x12\x1daccess/tenant_role_permission\x12#access/tenant_department_management\x1a\xc3\x01\n" +
 	"\x1dtenant.member.bootstrap_owner\x12\x1dbootstrap_tenant_owner_member\x1a\x16platform.tenant.create2\x01\x02R\x04\b\x03\x10\x01Z+access.v1.BootstrapTenantOwnerMemberRequestb\x19access.v1.TenantMemberDTOj\x1aBootstrapTenantOwnerMember\x1a\xce\x01\n" +
-	"\x1ftenant.member.count_quota_usage\x12\x18count_tenant_quota_usage\x1a\x17tenant.entitlement.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01Z(access.v1.CountTenantQuotaMembersRequestb)access.v1.CountTenantQuotaMembersResponsej\x17CountTenantQuotaMembersBJ\xca\xf3\x18\f\n" +
+	"\x1ftenant.member.count_quota_usage\x12\x18count_tenant_quota_usage\x1a\x17tenant.entitlement.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01Z(access.v1.CountTenantQuotaMembersRequestb)access.v1.CountTenantQuotaMembersResponsej\x17CountTenantQuotaMembers2\xff\a\n" +
+	"$TenantMemberBusinessScopeApplication\x12\xc0\x02\n" +
+	"\x1fListTenantMemberScopeCandidates\x121.access.v1.ListTenantMemberScopeCandidatesRequest\x1a2.access.v1.ListTenantMemberScopeCandidatesResponse\"\xb5\x01\xe2\xf3\x18\x86\x01\n" +
+	"\x1etenant.member.scope_candidates\x12#list_tenant_member_scope_candidates\x1a\x14tenant.member.manage(\x012\x02\x02\x04B\x1bsite.member_scope_directoryH\x01R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02$\x12\"/v1/tenant/member-scope-candidates\x12\x97\x02\n" +
+	"\x1cGetTenantMemberBusinessScope\x12..access.v1.GetTenantMemberBusinessScopeRequest\x1a'.access.v1.TenantMemberBusinessScopeDTO\"\x9d\x01\xe2\xf3\x18f\n" +
+	" tenant.member.business_scope.get\x12 get_tenant_member_business_scope\x1a\x14tenant.member.manage(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02-\x12+/v1/tenant/members/{user_id}/business-scope\x12\xba\x02\n" +
+	"\x1cSetTenantMemberBusinessScope\x12..access.v1.SetTenantMemberBusinessScopeRequest\x1a'.access.v1.TenantMemberBusinessScopeDTO\"\xc0\x01\xe2\xf3\x18\x85\x01\n" +
+	" tenant.member.business_scope.set\x12 set_tenant_member_business_scope\x1a\x14tenant.member.manage(\x012\x02\x02\x04B\x1bsite.member_scope_directoryH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x020:\x01*\x1a+/v1/tenant/members/{user_id}/business-scope\x1a=\xda\xf3\x189\n" +
+	"\x1ctenant_member_business_scope\x12\x19deviceops/site_managementBJ\xca\xf3\x18\f\n" +
 	"\x06access\x12\x02v1Z8github.com/hvritual/biz/contracts/gen/access/v1;accessv1b\x06proto3"
 
 var (
@@ -1961,34 +1963,34 @@ var file_access_v1_tenant_member_proto_depIdxs = []int32{
 	0,  // 5: access.v1.ListTenantMembersRequest.status:type_name -> access.v1.TenantMemberStatus
 	3,  // 6: access.v1.ListTenantMembersResponse.members:type_name -> access.v1.TenantMemberDTO
 	20, // 7: access.v1.ListTenantMemberScopeCandidatesResponse.candidates:type_name -> access.v1.TenantMemberScopeCandidateDTO
-	21, // 8: access.v1.TenantMemberLifecycleApplication.ListTenantMemberScopeCandidates:input_type -> access.v1.ListTenantMemberScopeCandidatesRequest
-	23, // 9: access.v1.TenantMemberLifecycleApplication.GetTenantMemberBusinessScope:input_type -> access.v1.GetTenantMemberBusinessScopeRequest
-	24, // 10: access.v1.TenantMemberLifecycleApplication.SetTenantMemberBusinessScope:input_type -> access.v1.SetTenantMemberBusinessScopeRequest
-	4,  // 11: access.v1.TenantMemberLifecycleApplication.InviteTenantMember:input_type -> access.v1.InviteTenantMemberRequest
-	5,  // 12: access.v1.TenantMemberLifecycleApplication.CreateTenantMember:input_type -> access.v1.CreateTenantMemberRequest
-	7,  // 13: access.v1.TenantMemberLifecycleApplication.GetTenantMember:input_type -> access.v1.GetTenantMemberRequest
-	8,  // 14: access.v1.TenantMemberLifecycleApplication.ListTenantMembers:input_type -> access.v1.ListTenantMembersRequest
-	17, // 15: access.v1.TenantMemberLifecycleApplication.ListRemovedTenantMembers:input_type -> access.v1.ListRemovedTenantMembersRequest
-	12, // 16: access.v1.TenantMemberLifecycleApplication.UpdateTenantMemberProfile:input_type -> access.v1.UpdateTenantMemberProfileRequest
-	13, // 17: access.v1.TenantMemberLifecycleApplication.UpdateTenantMember:input_type -> access.v1.UpdateTenantMemberRequest
-	14, // 18: access.v1.TenantMemberLifecycleApplication.ActivateTenantMember:input_type -> access.v1.ActivateTenantMemberRequest
-	18, // 19: access.v1.TenantMemberLifecycleApplication.RestoreTenantMember:input_type -> access.v1.RestoreTenantMemberRequest
-	15, // 20: access.v1.TenantMemberLifecycleApplication.SuspendTenantMember:input_type -> access.v1.SuspendTenantMemberRequest
-	16, // 21: access.v1.TenantMemberLifecycleApplication.RemoveTenantMember:input_type -> access.v1.RemoveTenantMemberRequest
-	22, // 22: access.v1.TenantMemberLifecycleApplication.ListTenantMemberScopeCandidates:output_type -> access.v1.ListTenantMemberScopeCandidatesResponse
-	25, // 23: access.v1.TenantMemberLifecycleApplication.GetTenantMemberBusinessScope:output_type -> access.v1.TenantMemberBusinessScopeDTO
-	25, // 24: access.v1.TenantMemberLifecycleApplication.SetTenantMemberBusinessScope:output_type -> access.v1.TenantMemberBusinessScopeDTO
-	3,  // 25: access.v1.TenantMemberLifecycleApplication.InviteTenantMember:output_type -> access.v1.TenantMemberDTO
-	6,  // 26: access.v1.TenantMemberLifecycleApplication.CreateTenantMember:output_type -> access.v1.TenantMemberCreationReceipt
-	3,  // 27: access.v1.TenantMemberLifecycleApplication.GetTenantMember:output_type -> access.v1.TenantMemberDTO
-	9,  // 28: access.v1.TenantMemberLifecycleApplication.ListTenantMembers:output_type -> access.v1.ListTenantMembersResponse
-	9,  // 29: access.v1.TenantMemberLifecycleApplication.ListRemovedTenantMembers:output_type -> access.v1.ListTenantMembersResponse
-	3,  // 30: access.v1.TenantMemberLifecycleApplication.UpdateTenantMemberProfile:output_type -> access.v1.TenantMemberDTO
-	3,  // 31: access.v1.TenantMemberLifecycleApplication.UpdateTenantMember:output_type -> access.v1.TenantMemberDTO
-	3,  // 32: access.v1.TenantMemberLifecycleApplication.ActivateTenantMember:output_type -> access.v1.TenantMemberDTO
-	3,  // 33: access.v1.TenantMemberLifecycleApplication.RestoreTenantMember:output_type -> access.v1.TenantMemberDTO
-	3,  // 34: access.v1.TenantMemberLifecycleApplication.SuspendTenantMember:output_type -> access.v1.TenantMemberDTO
-	3,  // 35: access.v1.TenantMemberLifecycleApplication.RemoveTenantMember:output_type -> access.v1.TenantMemberDTO
+	4,  // 8: access.v1.TenantMemberLifecycleApplication.InviteTenantMember:input_type -> access.v1.InviteTenantMemberRequest
+	5,  // 9: access.v1.TenantMemberLifecycleApplication.CreateTenantMember:input_type -> access.v1.CreateTenantMemberRequest
+	7,  // 10: access.v1.TenantMemberLifecycleApplication.GetTenantMember:input_type -> access.v1.GetTenantMemberRequest
+	8,  // 11: access.v1.TenantMemberLifecycleApplication.ListTenantMembers:input_type -> access.v1.ListTenantMembersRequest
+	17, // 12: access.v1.TenantMemberLifecycleApplication.ListRemovedTenantMembers:input_type -> access.v1.ListRemovedTenantMembersRequest
+	12, // 13: access.v1.TenantMemberLifecycleApplication.UpdateTenantMemberProfile:input_type -> access.v1.UpdateTenantMemberProfileRequest
+	13, // 14: access.v1.TenantMemberLifecycleApplication.UpdateTenantMember:input_type -> access.v1.UpdateTenantMemberRequest
+	14, // 15: access.v1.TenantMemberLifecycleApplication.ActivateTenantMember:input_type -> access.v1.ActivateTenantMemberRequest
+	18, // 16: access.v1.TenantMemberLifecycleApplication.RestoreTenantMember:input_type -> access.v1.RestoreTenantMemberRequest
+	15, // 17: access.v1.TenantMemberLifecycleApplication.SuspendTenantMember:input_type -> access.v1.SuspendTenantMemberRequest
+	16, // 18: access.v1.TenantMemberLifecycleApplication.RemoveTenantMember:input_type -> access.v1.RemoveTenantMemberRequest
+	21, // 19: access.v1.TenantMemberBusinessScopeApplication.ListTenantMemberScopeCandidates:input_type -> access.v1.ListTenantMemberScopeCandidatesRequest
+	23, // 20: access.v1.TenantMemberBusinessScopeApplication.GetTenantMemberBusinessScope:input_type -> access.v1.GetTenantMemberBusinessScopeRequest
+	24, // 21: access.v1.TenantMemberBusinessScopeApplication.SetTenantMemberBusinessScope:input_type -> access.v1.SetTenantMemberBusinessScopeRequest
+	3,  // 22: access.v1.TenantMemberLifecycleApplication.InviteTenantMember:output_type -> access.v1.TenantMemberDTO
+	6,  // 23: access.v1.TenantMemberLifecycleApplication.CreateTenantMember:output_type -> access.v1.TenantMemberCreationReceipt
+	3,  // 24: access.v1.TenantMemberLifecycleApplication.GetTenantMember:output_type -> access.v1.TenantMemberDTO
+	9,  // 25: access.v1.TenantMemberLifecycleApplication.ListTenantMembers:output_type -> access.v1.ListTenantMembersResponse
+	9,  // 26: access.v1.TenantMemberLifecycleApplication.ListRemovedTenantMembers:output_type -> access.v1.ListTenantMembersResponse
+	3,  // 27: access.v1.TenantMemberLifecycleApplication.UpdateTenantMemberProfile:output_type -> access.v1.TenantMemberDTO
+	3,  // 28: access.v1.TenantMemberLifecycleApplication.UpdateTenantMember:output_type -> access.v1.TenantMemberDTO
+	3,  // 29: access.v1.TenantMemberLifecycleApplication.ActivateTenantMember:output_type -> access.v1.TenantMemberDTO
+	3,  // 30: access.v1.TenantMemberLifecycleApplication.RestoreTenantMember:output_type -> access.v1.TenantMemberDTO
+	3,  // 31: access.v1.TenantMemberLifecycleApplication.SuspendTenantMember:output_type -> access.v1.TenantMemberDTO
+	3,  // 32: access.v1.TenantMemberLifecycleApplication.RemoveTenantMember:output_type -> access.v1.TenantMemberDTO
+	22, // 33: access.v1.TenantMemberBusinessScopeApplication.ListTenantMemberScopeCandidates:output_type -> access.v1.ListTenantMemberScopeCandidatesResponse
+	25, // 34: access.v1.TenantMemberBusinessScopeApplication.GetTenantMemberBusinessScope:output_type -> access.v1.TenantMemberBusinessScopeDTO
+	25, // 35: access.v1.TenantMemberBusinessScopeApplication.SetTenantMemberBusinessScope:output_type -> access.v1.TenantMemberBusinessScopeDTO
 	22, // [22:36] is the sub-list for method output_type
 	8,  // [8:22] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name
@@ -2009,7 +2011,7 @@ func file_access_v1_tenant_member_proto_init() {
 			NumEnums:      2,
 			NumMessages:   24,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_access_v1_tenant_member_proto_goTypes,
 		DependencyIndexes: file_access_v1_tenant_member_proto_depIdxs,

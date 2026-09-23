@@ -74,19 +74,6 @@ func (server *TenantMemberLifecycleOperationServer) GetTenantMember(ctx context.
 	return response, nil
 }
 
-func (server *TenantMemberLifecycleOperationServer) GetTenantMemberBusinessScope(ctx context.Context, request *accessv1.GetTenantMemberBusinessScopeRequest) (*accessv1.TenantMemberBusinessScopeDTO, error) {
-	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
-		if values := metadata.Get("idempotency-key"); len(values) > 0 {
-			ctx = execution.WithIdempotencyKey(ctx, values[0])
-		}
-	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleGetTenantMemberBusinessScope(), request, server.application.GetTenantMemberBusinessScope)
-	if err != nil {
-		return nil, gatewaygrpc.OperationError(err)
-	}
-	return response, nil
-}
-
 func (server *TenantMemberLifecycleOperationServer) InviteTenantMember(ctx context.Context, request *accessv1.InviteTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
@@ -107,19 +94,6 @@ func (server *TenantMemberLifecycleOperationServer) ListRemovedTenantMembers(ctx
 		}
 	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleListRemovedTenantMembers(), request, server.application.ListRemovedTenantMembers)
-	if err != nil {
-		return nil, gatewaygrpc.OperationError(err)
-	}
-	return response, nil
-}
-
-func (server *TenantMemberLifecycleOperationServer) ListTenantMemberScopeCandidates(ctx context.Context, request *accessv1.ListTenantMemberScopeCandidatesRequest) (*accessv1.ListTenantMemberScopeCandidatesResponse, error) {
-	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
-		if values := metadata.Get("idempotency-key"); len(values) > 0 {
-			ctx = execution.WithIdempotencyKey(ctx, values[0])
-		}
-	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleListTenantMemberScopeCandidates(), request, server.application.ListTenantMemberScopeCandidates)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
@@ -159,19 +133,6 @@ func (server *TenantMemberLifecycleOperationServer) RestoreTenantMember(ctx cont
 		}
 	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleRestoreTenantMember(), request, server.application.RestoreTenantMember)
-	if err != nil {
-		return nil, gatewaygrpc.OperationError(err)
-	}
-	return response, nil
-}
-
-func (server *TenantMemberLifecycleOperationServer) SetTenantMemberBusinessScope(ctx context.Context, request *accessv1.SetTenantMemberBusinessScopeRequest) (*accessv1.TenantMemberBusinessScopeDTO, error) {
-	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
-		if values := metadata.Get("idempotency-key"); len(values) > 0 {
-			ctx = execution.WithIdempotencyKey(ctx, values[0])
-		}
-	}
-	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleSetTenantMemberBusinessScope(), request, server.application.SetTenantMemberBusinessScope)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}

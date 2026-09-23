@@ -43,6 +43,16 @@
       }
     },
     {
+      "id": "access/tenant_member_business_scope",
+      "domain": "access",
+      "name": "tenant_member_business_scope",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_member_business_scope"
+      }
+    },
+    {
       "id": "access/tenant_member_lifecycle",
       "domain": "access",
       "name": "tenant_member_lifecycle",
@@ -220,6 +230,15 @@
       }
     },
     {
+      "from": "access/tenant_member_business_scope",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_member_business_scope/requires/deviceops/site_management"
+      }
+    },
+    {
       "from": "access/tenant_member_lifecycle",
       "to": "access/tenant_department_management",
       "evidence": {
@@ -235,15 +254,6 @@
         "ownership": "reused",
         "source": "manifest.json",
         "ref": "applications/access/tenant_member_lifecycle/requires/access/tenant_role_permission"
-      }
-    },
-    {
-      "from": "access/tenant_member_lifecycle",
-      "to": "deviceops/site_management",
-      "evidence": {
-        "ownership": "reused",
-        "source": "manifest.json",
-        "ref": "applications/access/tenant_member_lifecycle/requires/deviceops/site_management"
       }
     },
     {
@@ -498,6 +508,15 @@
         "ownership": "derived",
         "source": "application-dependency-closure",
         "ref": "access/tenant_lifecycle-\u003edeviceops/site_management"
+      }
+    },
+    {
+      "from": "access/tenant_member_business_scope",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_member_business_scope-\u003edeviceops/site_management"
       }
     },
     {
@@ -3248,7 +3267,7 @@
     },
     {
       "id": "tenant.member.business_scope.get",
-      "application": "access/tenant_member_lifecycle",
+      "application": "access/tenant_member_business_scope",
       "bindings": [
         {
           "operationId": "tenant.member.business_scope.get",
@@ -3279,7 +3298,7 @@
     },
     {
       "id": "tenant.member.business_scope.set",
-      "application": "access/tenant_member_lifecycle",
+      "application": "access/tenant_member_business_scope",
       "bindings": [
         {
           "operationId": "tenant.member.business_scope.set",
@@ -3567,7 +3586,7 @@
     },
     {
       "id": "tenant.member.scope_candidates",
-      "application": "access/tenant_member_lifecycle",
+      "application": "access/tenant_member_business_scope",
       "bindings": [
         {
           "operationId": "tenant.member.scope_candidates",
@@ -4765,6 +4784,7 @@
         "access/tenant_delegation_management",
         "access/tenant_department_management",
         "access/tenant_lifecycle",
+        "access/tenant_member_business_scope",
         "access/tenant_member_lifecycle",
         "access/tenant_profile_management",
         "access/tenant_role_permission",
