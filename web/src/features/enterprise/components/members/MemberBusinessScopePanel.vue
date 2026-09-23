@@ -21,7 +21,6 @@ import {
 const props=defineProps<{member:Member;canRead?:boolean;canEdit?:boolean}>()
 const store=useEnterpriseStore(),ui=useUiStore()
 const scope=ref<EnterpriseMemberBusinessScope|null>(null),candidates=ref<EnterpriseMemberScopeCandidate[]>([]),selected=ref<string[]>([]),loading=ref(false),editorOpen=ref(false),busy=ref(false),error=ref(''),candidateError=ref(''),pendingVerification=ref(false),expectedIds=ref<string[]>([]),mutation=ref<{signature:string;key:string}|null>(null)
-const assignedCandidates=computed(()=>candidates.value.filter(candidate=>scope.value?.siteIds.includes(candidate.id)))
 const candidateIds=computed(()=>new Set(candidates.value.map(candidate=>candidate.id)))
 const withdrawnIds=computed(()=>selected.value.filter(id=>!candidateIds.value.has(id)))
 const unavailableSelected=computed(()=>candidates.value.filter(candidate=>!candidate.assignable&&selected.value.includes(candidate.id)).map(candidate=>candidate.id))

@@ -42,8 +42,8 @@ const canEditRole = computed(() => roleActionsAllowed([
   'tenant.role.disable',
 ]))
 const canDeleteRole = computed(() => roleActionsAllowed(['tenant.role.delete']))
-const canReadDataPolicy = computed(() => roleActionsAllowed(['tenant.data_policy.list', 'tenant.role.get']))
-const canManageDataPolicy = computed(() => roleActionsAllowed(['tenant.data_policy.list', 'tenant.role.get', 'tenant.role.set_data_policy']))
+const canReadDataPolicy = computed(() => !store.previewMode && roleActionsAllowed(['tenant.data_policy.list', 'tenant.role.get']))
+const canManageDataPolicy = computed(() => !store.previewMode && roleActionsAllowed(['tenant.data_policy.list', 'tenant.role.get', 'tenant.role.set_data_policy']))
 const filtered = computed(() =>
   store.roles.filter(
     (r) =>
