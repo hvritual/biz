@@ -11,6 +11,8 @@ import (
 	"github.com/hvritual/biz/internal/deviceops/domain"
 	"github.com/hvritual/biz/internal/deviceops/ports"
 	devicesecurity "github.com/hvritual/biz/internal/deviceops/security"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"yunka.io/framework/requestscope"
 )
 
@@ -63,6 +65,9 @@ func (service *Service) GetDevice(ctx context.Context, request *deviceopsv1.GetD
 		return scope.Repositories().Device.GetVisible(scope.Context(), strings.TrimSpace(request.GetId()))
 	})
 	if err != nil {
+		if errors.Is(err, ports.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
 		return nil, err
 	}
 	return toDTO(device), nil
