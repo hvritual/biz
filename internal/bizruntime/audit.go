@@ -287,7 +287,7 @@ func auditReason(message protoreflect.Message, fields protoreflect.FieldDescript
 
 func auditRisk(operationID string) string {
 	value := strings.ToLower(operationID)
-	for _, marker := range []string{"role", "permission", "suspend", "remove", "delete", "close", "transfer", "subscription.change.confirm", "audit.export"} {
+	for _, marker := range []string{"role", "permission", "business_scope", "suspend", "remove", "delete", "close", "transfer", "subscription.change.confirm", "audit.export"} {
 		if strings.Contains(value, marker) {
 			return domain.AuditRiskHigh
 		}

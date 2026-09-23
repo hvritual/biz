@@ -166,6 +166,8 @@ ENTERPRISE_180_PATH_PREFIXES = (
 )
 ENTERPRISE_180_FILES = {
     "contracts/proto/access/v1/tenant_role.proto",
+    "contracts/proto/access/v1/tenant_member.proto",
+    "contracts/proto/deviceops/v1/deviceops.proto",
     ".github/workflows/enterprise-role-qualification.yml",
     "internal/access/infrastructure/persistence/business_scope.go",
     "internal/access/infrastructure/persistence/member_business_scope.go",

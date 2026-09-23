@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "23",
+  "mapping_version": "24",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -766,6 +766,13 @@
       ]
     },
     {
+      "operation_id": "site.member_scope_directory",
+      "classification": "foundation_exempt",
+      "capability_codes": [],
+      "exemption_reason": "Transport-private tenant-bound site directory used by Access member explicit-scope candidate discovery and validation; it grants no independent tenant business action.",
+      "children": []
+    },
+    {
       "operation_id": "site.role_scope_directory",
       "classification": "foundation_exempt",
       "capability_codes": [],
@@ -1064,6 +1071,31 @@
       "exemption_reason": "租户创建根事务内的初始所有者引导，仅供已授权平台创建流程调用；不是公开购买入口。"
     },
     {
+      "operation_id": "tenant.member.business_scope.get",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.member.business_scope.set",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [
+        {
+          "operation_id": "site.member_scope_directory",
+          "mode": "conditional",
+          "condition": "site_ids is non-empty and must resolve against the current-tenant assignable site directory",
+          "source": "internal/access/application/member_business_scope.go#SetTenantMemberBusinessScope"
+        }
+      ]
+    },
+    {
       "operation_id": "tenant.member.count_quota_usage",
       "classification": "foundation_exempt",
       "module_code": "access-management",
@@ -1172,6 +1204,21 @@
           "mode": "conditional",
           "condition": "removal snapshot contains a role that still exists and remains active",
           "source": "internal/access/application/tenant_member_lifecycle.go#RestoreTenantMember"
+        }
+      ]
+    },
+    {
+      "operation_id": "tenant.member.scope_candidates",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": [
+        {
+          "operation_id": "site.member_scope_directory",
+          "mode": "always",
+          "source": "internal/access/application/member_business_scope.go#ListTenantMemberScopeCandidates"
         }
       ]
     },

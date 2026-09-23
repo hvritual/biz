@@ -62,6 +62,30 @@ func (w checkedMembers) ListTenantMembers(ctx context.Context, r *accessv1.ListT
 	v, err := w.inner.ListTenantMembers(ctx, r)
 	return v, enforcement.ExecutionError(ctx, "tenant.member.list", err)
 }
+func (w checkedMembers) ListTenantMemberScopeCandidates(ctx context.Context, r *accessv1.ListTenantMemberScopeCandidatesRequest) (*accessv1.ListTenantMemberScopeCandidatesResponse, error) {
+	if err := enforcement.RequireExecuted(ctx, "tenant.member.scope_candidates"); err != nil {
+		return nil, err
+	}
+	v, err := w.inner.ListTenantMemberScopeCandidates(ctx, r)
+	return v, enforcement.ExecutionError(ctx, "tenant.member.scope_candidates", err)
+}
+
+func (w checkedMembers) GetTenantMemberBusinessScope(ctx context.Context, r *accessv1.GetTenantMemberBusinessScopeRequest) (*accessv1.TenantMemberBusinessScopeDTO, error) {
+	if err := enforcement.RequireExecuted(ctx, "tenant.member.business_scope.get"); err != nil {
+		return nil, err
+	}
+	v, err := w.inner.GetTenantMemberBusinessScope(ctx, r)
+	return v, enforcement.ExecutionError(ctx, "tenant.member.business_scope.get", err)
+}
+
+func (w checkedMembers) SetTenantMemberBusinessScope(ctx context.Context, r *accessv1.SetTenantMemberBusinessScopeRequest) (*accessv1.TenantMemberBusinessScopeDTO, error) {
+	if err := enforcement.RequireExecuted(ctx, "tenant.member.business_scope.set"); err != nil {
+		return nil, err
+	}
+	v, err := w.inner.SetTenantMemberBusinessScope(ctx, r)
+	return v, enforcement.ExecutionError(ctx, "tenant.member.business_scope.set", err)
+}
+
 func (w checkedMembers) ListRemovedTenantMembers(ctx context.Context, r *accessv1.ListRemovedTenantMembersRequest) (*accessv1.ListTenantMembersResponse, error) {
 	if err := enforcement.RequireExecuted(ctx, "tenant.member.list_removed"); err != nil {
 		return nil, err

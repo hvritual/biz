@@ -175,6 +175,9 @@ jobs:
           enterprise180_log="$RUNNER_TEMP/enterprise180-data-policy.log"
           go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise180DataPolicyAuthorityAndRoleReference$' | tee "$enterprise180_log"
           grep -Fq -- '--- PASS: TestEnterprise180DataPolicyAuthorityAndRoleReference ' "$enterprise180_log"
+          enterprise180_member_scope_log="$RUNNER_TEMP/enterprise180-member-business-scope.log"
+          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise180MemberBusinessScopeAuthority$' | tee "$enterprise180_member_scope_log"
+          grep -Fq -- '--- PASS: TestEnterprise180MemberBusinessScopeAuthority ' "$enterprise180_member_scope_log"
           go -C biz test -count=1 -tags=integration ./integration -run '^TestB124TenantRolePermissionsAreTenantScopedAndImmediate$'
           go -C biz test -count=1 -tags=integration ./integration -run '^TestB124OwnerRoleProtectsRequiredPermissionsAndLastAssignment$'
           test -z "$(git -C biz status --porcelain)"

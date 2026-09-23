@@ -39,12 +39,13 @@ func (factory applicationFactories) BuildAccessTenantProfileManagement(generated
 }
 
 func (factory applicationFactories) BuildAccessTenantMemberLifecycle(dependencies generatedassembly.AccessTenantMemberLifecycleDependencies) (accessapp.TenantMemberLifecycleApplication, error) {
-	if dependencies.AccessTenantRolePermission == nil || dependencies.AccessTenantDepartmentManagement == nil {
-		return nil, errors.New("biz access pressure: tenant member lifecycle role and department dependencies are required")
+	if dependencies.AccessTenantRolePermission == nil || dependencies.AccessTenantDepartmentManagement == nil || dependencies.DeviceopsSiteManagement == nil {
+		return nil, errors.New("biz access pressure: tenant member lifecycle role, department and site dependencies are required")
 	}
 	inner, err := accessapp.NewTenantMemberLifecycleServiceWithActivation(factory.memberRepositories, tenantMemberLifecycleCapabilities{
 		departments: dependencies.AccessTenantDepartmentManagement,
 		roles:       dependencies.AccessTenantRolePermission,
+		sites:       dependencies.DeviceopsSiteManagement,
 	}, factory.memberActivationTTL, factory.memberActivationURL)
 	if err != nil {
 		return nil, err
@@ -97,6 +98,7 @@ func (capabilities tenantDelegationManagementCapabilities) DeviceopsDeviceManage
 type tenantMemberLifecycleCapabilities struct {
 	departments accessapp.TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability
 	roles       accessapp.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability
+	sites       accessapp.TenantMemberLifecycleToDeviceopsSiteManagementChildCapability
 }
 
 func (capabilities tenantMemberLifecycleCapabilities) AccessTenantDepartmentManagement() accessapp.TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability {
@@ -105,6 +107,10 @@ func (capabilities tenantMemberLifecycleCapabilities) AccessTenantDepartmentMana
 
 func (capabilities tenantMemberLifecycleCapabilities) AccessTenantRolePermission() accessapp.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability {
 	return capabilities.roles
+}
+
+func (capabilities tenantMemberLifecycleCapabilities) DeviceopsSiteManagement() accessapp.TenantMemberLifecycleToDeviceopsSiteManagementChildCapability {
+	return capabilities.sites
 }
 
 type tenantLifecycleCapabilities struct {

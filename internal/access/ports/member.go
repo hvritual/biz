@@ -25,6 +25,7 @@ var (
 	ErrTenantMemberSelfDeactivation      = errors.New("access: member must not deactivate own membership")
 	ErrTenantMemberProtectedOwner        = errors.New("access: protected owner requires owner actor")
 	ErrTenantMemberRestoreUnavailable    = errors.New("access: removed member cannot be restored safely")
+	ErrTenantMemberBusinessScopeUnavailable = errors.New("access: tenant member business scope is unavailable")
 )
 
 type tenantMemberListStatusQueryKey struct{}
@@ -101,6 +102,8 @@ type TenantMemberRepository interface {
 	List(context.Context, string, TenantMemberListQuery) (TenantMemberListPage, error)
 	ListRemoved(context.Context, string, uint32, uint32) (TenantMemberListPage, error)
 	CountQuotaMembers(context.Context, string) (uint64, error)
+	GetBusinessScope(context.Context, string, string) (domain.MemberBusinessScope, error)
+	ReplaceBusinessScope(context.Context, string, string, uint64, []string, time.Time) (domain.MemberBusinessScope, error)
 	Update(context.Context, *domain.Membership, uint64) error
 	Remove(context.Context, *domain.Membership, uint64) error
 	Restore(context.Context, *domain.Membership, uint64) ([]string, error)
