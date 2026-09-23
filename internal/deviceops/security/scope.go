@@ -3,7 +3,6 @@ package security
 import (
 	"context"
 	"errors"
-	"sort"
 	"strings"
 
 	deviceopsv1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
@@ -15,14 +14,29 @@ import (
 var ErrAuthorizedScopeMissing = errors.New("deviceops security: authorized scope missing")
 
 type Scope struct {
-	All     bool
-	Self    bool
-	Sites   bool
-	UserID  string
-	SiteIDs []string
+	All           bool
+	Self          bool
+	Sites         bool
+	UserID        string
+	SiteIDs       []string
+	TenantID      string
+	PolicyBound   bool
+	PolicySiteIDs []string
 }
 
 func (scope Scope) AllowsSite(siteID string) bool {
+	if scope.PolicyBound {
+		found := false
+		for _, allowed := range scope.PolicySiteIDs {
+			if allowed == siteID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
 	if scope.All || scope.Self {
 		return true
 	}
@@ -59,19 +73,21 @@ func RequireScope(ctx context.Context) (Scope, error) {
 	return scope, nil
 }
 
+// Guard requires a current Access policy resolver; production cannot silently
+// fall back to legacy grants or a session's cached authorization summary.
 type Guard struct {
-	sites accessports.MemberSiteResolver
+	policies accessports.BusinessScopeResolver
 }
 
-func NewGuard(sites accessports.MemberSiteResolver) (*Guard, error) {
-	if sites == nil {
-		return nil, errors.New("deviceops security: member site resolver is required")
+func NewGuard(policies accessports.BusinessScopeResolver) (*Guard, error) {
+	if policies == nil {
+		return nil, errors.New("deviceops security: business scope resolver is required")
 	}
-	return &Guard{sites: sites}, nil
+	return &Guard{policies: policies}, nil
 }
 
 func (guard *Guard) Prepare(ctx context.Context, authorized authz.AuthorizedOperation, input any) (context.Context, error) {
-	scope := Scope{UserID: authorized.Principal.UserID}
+	scope := Scope{UserID: authorized.Principal.UserID, TenantID: authorized.Principal.TenantID}
 	resourcePermission := map[authz.OperationID]authz.PermissionKey{
 		"device.list": "device.read", "device.get": "device.read", "device.create": "device.create",
 		"device.update": "device.update", "device.delete": "device.delete", "device.transfer": "device.update",
@@ -82,35 +98,29 @@ func (guard *Guard) Prepare(ctx context.Context, authorized authz.AuthorizedOper
 	if resourcePermission == "" {
 		return nil, denied(authorized)
 	}
-	for _, grant := range authorized.Decision.Grants {
-		if grant.Permission != resourcePermission {
-			continue
-		}
-		switch accessdomain.DataScope(strings.TrimSpace(grant.Scope)) {
-		case accessdomain.DataScopeAll:
-			scope.All = true
-		case accessdomain.DataScopeSites:
-			scope.Sites = true
-		case accessdomain.DataScopeSelf:
-			scope.Self = true
-		}
+	current, err := guard.policies.ResolveBusinessScope(ctx, scope.TenantID, scope.UserID, resourcePermission)
+	if errors.Is(err, accessdomain.ErrInvalidTenantDataPolicy) {
+		return nil, denied(authorized)
 	}
+	if err != nil {
+		return nil, err
+	}
+	scope.All, scope.Self, scope.Sites = current.All, current.Self, current.Sites
+	scope.SiteIDs = append([]string(nil), current.MemberSiteIDs...)
+	scope.PolicyBound = current.PolicyBound
+	scope.PolicySiteIDs = append([]string(nil), current.PolicySiteIDs...)
 	if !scope.All && !scope.Sites && !scope.Self {
 		return nil, denied(authorized)
 	}
-	if (scope.Sites || scope.Self) && strings.TrimSpace(scope.UserID) == "" {
+	if (scope.Sites || scope.Self || scope.PolicyBound) && (strings.TrimSpace(scope.UserID) == "" || strings.TrimSpace(scope.TenantID) == "") {
 		return nil, denied(authorized)
-	}
-	if scope.Sites {
-		sites, err := guard.sites.ResolveMemberSites(ctx, authorized.Principal.TenantID, authorized.Principal.UserID)
-		if err != nil {
-			return nil, err
-		}
-		scope.SiteIDs = append([]string(nil), sites...)
-		sort.Strings(scope.SiteIDs)
 	}
 	// Resource write scope is resolved before the Application boundary.
 	switch request := input.(type) {
+	case *deviceopsv1.ValidateTransferTargetRequest:
+		if siteID := strings.TrimSpace(request.GetSiteId()); siteID != "" && !scope.AllowsSite(siteID) {
+			return nil, denied(authorized)
+		}
 	case *deviceopsv1.CreateDeviceRequest:
 		if siteID := strings.TrimSpace(request.GetSiteId()); siteID != "" && !scope.AllowsSite(siteID) {
 			return nil, denied(authorized)

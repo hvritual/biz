@@ -2,9 +2,13 @@ package bizruntime
 
 import (
 	"context"
+	"errors"
 	devicev1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
 	"github.com/hvritual/biz/internal/commercial/enforcement"
 	deviceapp "github.com/hvritual/biz/internal/deviceops/application"
+	deviceports "github.com/hvritual/biz/internal/deviceops/ports"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"yunka.io/gateway/authz"
 )
 
@@ -34,6 +38,9 @@ func (w checkedDevice) GetDevice(ctx context.Context, r *devicev1.GetDeviceReque
 		return nil, err
 	}
 	value, err := w.inner.GetDevice(ctx, r)
+	if errors.Is(err, deviceports.ErrNotFound) {
+		err = status.Error(codes.NotFound, err.Error())
+	}
 	return value, enforcement.ExecutionError(ctx, "device.get", err)
 }
 func (w checkedDevice) CreateDevice(ctx context.Context, r *devicev1.CreateDeviceRequest) (*devicev1.DeviceDTO, error) {

@@ -2,6 +2,8 @@ package security
 
 import (
 	"context"
+	"errors"
+	"github.com/hvritual/biz/internal/access/domain"
 	"testing"
 	"yunka.io/framework/core/identity"
 	"yunka.io/gateway/authz"
@@ -9,8 +11,11 @@ import (
 
 type pressureSites struct{}
 
-func (pressureSites) ResolveMemberSites(context.Context, string, string) ([]string, error) {
-	return nil, nil
+func (pressureSites) ResolveBusinessScope(_ context.Context, tenant, user string, permission authz.PermissionKey) (domain.EffectiveBusinessScope, error) {
+	if tenant != "t" || user != "u" || (permission != "device.update" && permission != "device.create") {
+		return domain.EffectiveBusinessScope{}, errors.New("unexpected resource scope request")
+	}
+	return domain.EffectiveBusinessScope{Self: true}, nil
 }
 func TestPressureOperationsKeepResourceSpecificScope(t *testing.T) {
 	guard, err := NewGuard(pressureSites{})
