@@ -49,7 +49,7 @@ func TestEnterprise180MemberBusinessScopeAuthority(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer connection.Close()
-	members := accessv1.NewTenantMemberLifecycleApplicationClient(connection)
+	members := accessv1.NewTenantMemberBusinessScopeApplicationClient(connection)
 	authCtx := func(token string) context.Context {
 		return metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer "+token)
 	}

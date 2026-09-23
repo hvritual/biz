@@ -39,18 +39,28 @@ func (factory applicationFactories) BuildAccessTenantProfileManagement(generated
 }
 
 func (factory applicationFactories) BuildAccessTenantMemberLifecycle(dependencies generatedassembly.AccessTenantMemberLifecycleDependencies) (accessapp.TenantMemberLifecycleApplication, error) {
-	if dependencies.AccessTenantRolePermission == nil || dependencies.AccessTenantDepartmentManagement == nil || dependencies.DeviceopsSiteManagement == nil {
-		return nil, errors.New("biz access pressure: tenant member lifecycle role, department and site dependencies are required")
+	if dependencies.AccessTenantRolePermission == nil || dependencies.AccessTenantDepartmentManagement == nil {
+		return nil, errors.New("biz access pressure: tenant member lifecycle role and department dependencies are required")
 	}
 	inner, err := accessapp.NewTenantMemberLifecycleServiceWithActivation(factory.memberRepositories, tenantMemberLifecycleCapabilities{
 		departments: dependencies.AccessTenantDepartmentManagement,
 		roles:       dependencies.AccessTenantRolePermission,
-		sites:       dependencies.DeviceopsSiteManagement,
 	}, factory.memberActivationTTL, factory.memberActivationURL)
 	if err != nil {
 		return nil, err
 	}
 	return checkedMembers{inner: inner}, nil
+}
+
+func (factory applicationFactories) BuildAccessTenantMemberBusinessScope(dependencies generatedassembly.AccessTenantMemberBusinessScopeDependencies) (accessapp.TenantMemberBusinessScopeApplication, error) {
+	if dependencies.DeviceopsSiteManagement == nil {
+		return nil, errors.New("biz access pressure: tenant member business scope site dependency is required")
+	}
+	inner, err := accessapp.NewTenantMemberBusinessScopeService(factory.memberRepositories, dependencies.DeviceopsSiteManagement)
+	if err != nil {
+		return nil, err
+	}
+	return checkedMemberBusinessScope{inner: inner}, nil
 }
 
 func (factory applicationFactories) BuildAccessTenantRolePermission(dependencies generatedassembly.AccessTenantRolePermissionDependencies) (accessapp.TenantRolePermissionApplication, error) {
@@ -98,7 +108,6 @@ func (capabilities tenantDelegationManagementCapabilities) DeviceopsDeviceManage
 type tenantMemberLifecycleCapabilities struct {
 	departments accessapp.TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability
 	roles       accessapp.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability
-	sites       accessapp.TenantMemberLifecycleToDeviceopsSiteManagementChildCapability
 }
 
 func (capabilities tenantMemberLifecycleCapabilities) AccessTenantDepartmentManagement() accessapp.TenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability {
@@ -107,10 +116,6 @@ func (capabilities tenantMemberLifecycleCapabilities) AccessTenantDepartmentMana
 
 func (capabilities tenantMemberLifecycleCapabilities) AccessTenantRolePermission() accessapp.TenantMemberLifecycleToAccessTenantRolePermissionChildCapability {
 	return capabilities.roles
-}
-
-func (capabilities tenantMemberLifecycleCapabilities) DeviceopsSiteManagement() accessapp.TenantMemberLifecycleToDeviceopsSiteManagementChildCapability {
-	return capabilities.sites
 }
 
 type tenantLifecycleCapabilities struct {

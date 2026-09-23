@@ -102,11 +102,14 @@ type TenantMemberRepository interface {
 	List(context.Context, string, TenantMemberListQuery) (TenantMemberListPage, error)
 	ListRemoved(context.Context, string, uint32, uint32) (TenantMemberListPage, error)
 	CountQuotaMembers(context.Context, string) (uint64, error)
-	GetBusinessScope(context.Context, string, string) (domain.MemberBusinessScope, error)
-	ReplaceBusinessScope(context.Context, string, string, uint64, []string, time.Time) (domain.MemberBusinessScope, error)
 	Update(context.Context, *domain.Membership, uint64) error
 	Remove(context.Context, *domain.Membership, uint64) error
 	Restore(context.Context, *domain.Membership, uint64) ([]string, error)
+}
+
+type TenantMemberBusinessScopeRepository interface {
+	GetBusinessScope(context.Context, string, string) (domain.MemberBusinessScope, error)
+	ReplaceBusinessScope(context.Context, string, string, uint64, []string, time.Time) (domain.MemberBusinessScope, error)
 }
 
 type TenantMemberLifecycleNotificationRepository interface {
@@ -119,7 +122,8 @@ type TenantMemberActivationRepository interface {
 }
 
 type TenantMemberRepositories struct {
-	Member     TenantMemberRepository
-	Activation TenantMemberActivationRepository
-	Lifecycle  TenantMemberLifecycleNotificationRepository
+	Member        TenantMemberRepository
+	BusinessScope TenantMemberBusinessScopeRepository
+	Activation    TenantMemberActivationRepository
+	Lifecycle     TenantMemberLifecycleNotificationRepository
 }

@@ -70,8 +70,8 @@ func newTenantMemberLifecycleService(
 	if repositories == nil {
 		return nil, errors.New("access: tenant member repository factory is required")
 	}
-	if capabilities == nil || capabilities.AccessTenantRolePermission() == nil || capabilities.AccessTenantDepartmentManagement() == nil || capabilities.DeviceopsSiteManagement() == nil {
-		return nil, errors.New("access: tenant member role, department and site capabilities are required")
+	if capabilities == nil || capabilities.AccessTenantRolePermission() == nil || capabilities.AccessTenantDepartmentManagement() == nil {
+		return nil, errors.New("access: tenant member role and department capabilities are required")
 	}
 	activationURL = strings.TrimSpace(activationURL)
 	if activationTTL < 0 {
@@ -809,8 +809,7 @@ func wrapTenantMemberConflict(err error) error {
 		errors.Is(err, ports.ErrTenantMemberUsernameConflict),
 		errors.Is(err, ports.ErrTenantMemberContactConflict),
 		errors.Is(err, ports.ErrTenantMemberExistingAccountSMS),
-		errors.Is(err, ports.ErrTenantMemberActivationPending),
-		errors.Is(err, ports.ErrTenantMemberBusinessScopeUnavailable):
+		errors.Is(err, ports.ErrTenantMemberActivationPending):
 		return &tenantMemberConflictError{cause: err}
 	default:
 		return err

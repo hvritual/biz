@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"strings"
 	"time"
@@ -13,7 +14,25 @@ import (
 	"yunka.io/framework/requestscope"
 )
 
-func (service *TenantMemberLifecycleService) ListTenantMemberScopeCandidates(
+type TenantMemberBusinessScopeService struct {
+	repositories requestscope.RepositoryFactory[ports.TenantMemberRepositories]
+	sites        TenantMemberBusinessScopeToDeviceopsSiteManagementChildCapability
+}
+
+func NewTenantMemberBusinessScopeService(
+	repositories requestscope.RepositoryFactory[ports.TenantMemberRepositories],
+	sites TenantMemberBusinessScopeToDeviceopsSiteManagementChildCapability,
+) (*TenantMemberBusinessScopeService, error) {
+	if repositories == nil {
+		return nil, errors.New("access: tenant member business scope repository factory is required")
+	}
+	if sites == nil {
+		return nil, errors.New("access: tenant member business scope site directory is required")
+	}
+	return &TenantMemberBusinessScopeService{repositories: repositories, sites: sites}, nil
+}
+
+func (service *TenantMemberBusinessScopeService) ListTenantMemberScopeCandidates(
 	ctx context.Context,
 	request *accessv1.ListTenantMemberScopeCandidatesRequest,
 ) (*accessv1.ListTenantMemberScopeCandidatesResponse, error) {
@@ -21,7 +40,7 @@ func (service *TenantMemberLifecycleService) ListTenantMemberScopeCandidates(
 	if err != nil {
 		return nil, err
 	}
-	response, err := service.capabilities.DeviceopsSiteManagement().ListAssignableMemberSites(ctx, &deviceopsv1.SiteScopeDirectoryRequest{
+	response, err := service.sites.ListAssignableMemberSites(ctx, &deviceopsv1.SiteScopeDirectoryRequest{
 		Query: query, Page: page, PageSize: pageSize,
 	})
 	if err != nil {
@@ -39,7 +58,7 @@ func (service *TenantMemberLifecycleService) ListTenantMemberScopeCandidates(
 	return result, nil
 }
 
-func (service *TenantMemberLifecycleService) GetTenantMemberBusinessScope(
+func (service *TenantMemberBusinessScopeService) GetTenantMemberBusinessScope(
 	ctx context.Context,
 	request *accessv1.GetTenantMemberBusinessScopeRequest,
 ) (*accessv1.TenantMemberBusinessScopeDTO, error) {
@@ -51,7 +70,7 @@ func (service *TenantMemberLifecycleService) GetTenantMemberBusinessScope(
 		return nil, err
 	}
 	scope, err := requestscope.JoinValue(ctx, service.repositories, func(view *requestscope.View[ports.TenantMemberRepositories]) (domain.MemberBusinessScope, error) {
-		return view.Repositories().Member.GetBusinessScope(view.Context(), tenantID, strings.TrimSpace(request.GetUserId()))
+		return view.Repositories().BusinessScope.GetBusinessScope(view.Context(), tenantID, strings.TrimSpace(request.GetUserId()))
 	})
 	if err != nil {
 		return nil, err
@@ -59,7 +78,7 @@ func (service *TenantMemberLifecycleService) GetTenantMemberBusinessScope(
 	return tenantMemberBusinessScopeDTO(scope), nil
 }
 
-func (service *TenantMemberLifecycleService) SetTenantMemberBusinessScope(
+func (service *TenantMemberBusinessScopeService) SetTenantMemberBusinessScope(
 	ctx context.Context,
 	request *accessv1.SetTenantMemberBusinessScopeRequest,
 ) (*accessv1.TenantMemberBusinessScopeDTO, error) {
@@ -76,7 +95,7 @@ func (service *TenantMemberLifecycleService) SetTenantMemberBusinessScope(
 		return nil, err
 	}
 	current, err := requestscope.JoinValue(ctx, service.repositories, func(view *requestscope.View[ports.TenantMemberRepositories]) (domain.MemberBusinessScope, error) {
-		return view.Repositories().Member.GetBusinessScope(view.Context(), tenantID, userID)
+		return view.Repositories().BusinessScope.GetBusinessScope(view.Context(), tenantID, userID)
 	})
 	if err != nil {
 		return nil, err
@@ -90,7 +109,7 @@ func (service *TenantMemberLifecycleService) SetTenantMemberBusinessScope(
 		}
 	}
 	updated, err := requestscope.JoinValue(ctx, service.repositories, func(view *requestscope.View[ports.TenantMemberRepositories]) (domain.MemberBusinessScope, error) {
-		return view.Repositories().Member.ReplaceBusinessScope(view.Context(), tenantID, userID, request.GetVersion(), siteIDs, time.Now().UTC())
+		return view.Repositories().BusinessScope.ReplaceBusinessScope(view.Context(), tenantID, userID, request.GetVersion(), siteIDs, time.Now().UTC())
 	})
 	if err != nil {
 		return nil, wrapTenantMemberConflict(err)
@@ -98,8 +117,8 @@ func (service *TenantMemberLifecycleService) SetTenantMemberBusinessScope(
 	return tenantMemberBusinessScopeDTO(updated), nil
 }
 
-func (service *TenantMemberLifecycleService) validateTenantMemberBusinessScopeSites(ctx context.Context, siteIDs []string) error {
-	response, err := service.capabilities.DeviceopsSiteManagement().ListAssignableMemberSites(ctx, &deviceopsv1.SiteScopeDirectoryRequest{
+func (service *TenantMemberBusinessScopeService) validateTenantMemberBusinessScopeSites(ctx context.Context, siteIDs []string) error {
+	response, err := service.sites.ListAssignableMemberSites(ctx, &deviceopsv1.SiteScopeDirectoryRequest{
 		SiteIds: siteIDs, Resolve: true,
 	})
 	if err != nil {

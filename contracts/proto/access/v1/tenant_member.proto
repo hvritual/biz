@@ -159,7 +159,6 @@ message BootstrapTenantOwnerMemberRequest {
   string email = 3;
 }
 
-
 message TenantMemberScopeCandidateDTO {
   string id = 1;
   string name = 2;
@@ -201,7 +200,6 @@ service TenantMemberLifecycleApplication {
     name: "tenant_member_lifecycle"
     requires: "access/tenant_role_permission"
     requires: "access/tenant_department_management"
-    requires: "deviceops/site_management"
     operations: {
       id: "tenant.member.bootstrap_owner"
       use_case: "bootstrap_tenant_owner_member"
@@ -228,53 +226,6 @@ service TenantMemberLifecycleApplication {
       application_method: "CountTenantQuotaMembers"
     }
   };
-
-
-  rpc ListTenantMemberScopeCandidates(ListTenantMemberScopeCandidatesRequest) returns (ListTenantMemberScopeCandidatesResponse) {
-    option (google.api.http) = { get: "/v1/tenant/member-scope-candidates" };
-    option (yunka.dsl.v1.operation) = {
-      id: "tenant.member.scope_candidates"
-      use_case: "list_tenant_member_scope_candidates"
-      permissions: "tenant.member.manage"
-      permission_mode: PERMISSION_ALL
-      tenant_required: true
-      authentication: AUTHENTICATION_API_KEY
-      authentication: AUTHENTICATION_WEB_SESSION
-      requires_operations: "site.member_scope_directory"
-      composition: COMPOSITION_LOCAL
-      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
-    };
-  }
-
-  rpc GetTenantMemberBusinessScope(GetTenantMemberBusinessScopeRequest) returns (TenantMemberBusinessScopeDTO) {
-    option (google.api.http) = { get: "/v1/tenant/members/{user_id}/business-scope" };
-    option (yunka.dsl.v1.operation) = {
-      id: "tenant.member.business_scope.get"
-      use_case: "get_tenant_member_business_scope"
-      permissions: "tenant.member.manage"
-      permission_mode: PERMISSION_ALL
-      tenant_required: true
-      authentication: AUTHENTICATION_API_KEY
-      authentication: AUTHENTICATION_WEB_SESSION
-      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
-    };
-  }
-
-  rpc SetTenantMemberBusinessScope(SetTenantMemberBusinessScopeRequest) returns (TenantMemberBusinessScopeDTO) {
-    option (google.api.http) = { put: "/v1/tenant/members/{user_id}/business-scope" body: "*" };
-    option (yunka.dsl.v1.operation) = {
-      id: "tenant.member.business_scope.set"
-      use_case: "set_tenant_member_business_scope"
-      permissions: "tenant.member.manage"
-      permission_mode: PERMISSION_ALL
-      tenant_required: true
-      authentication: AUTHENTICATION_API_KEY
-      authentication: AUTHENTICATION_WEB_SESSION
-      requires_operations: "site.member_scope_directory"
-      composition: COMPOSITION_LOCAL
-      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
-    };
-  }
 
   rpc InviteTenantMember(InviteTenantMemberRequest) returns (TenantMemberDTO) {
     option (google.api.http) = { post: "/v1/tenant/members" body: "*" };
@@ -443,6 +394,60 @@ service TenantMemberLifecycleApplication {
       authentication: AUTHENTICATION_API_KEY
       authentication: AUTHENTICATION_WEB_SESSION
       requires_operations: "tenant.role.assert_member_deactivation_allowed"
+      composition: COMPOSITION_LOCAL
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+}
+
+
+service TenantMemberBusinessScopeApplication {
+  option (yunka.dsl.v1.application) = {
+    name: "tenant_member_business_scope"
+    requires: "deviceops/site_management"
+  };
+
+  rpc ListTenantMemberScopeCandidates(ListTenantMemberScopeCandidatesRequest) returns (ListTenantMemberScopeCandidatesResponse) {
+    option (google.api.http) = { get: "/v1/tenant/member-scope-candidates" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.scope_candidates"
+      use_case: "list_tenant_member_scope_candidates"
+      permissions: "tenant.member.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      requires_operations: "site.member_scope_directory"
+      composition: COMPOSITION_LOCAL
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc GetTenantMemberBusinessScope(GetTenantMemberBusinessScopeRequest) returns (TenantMemberBusinessScopeDTO) {
+    option (google.api.http) = { get: "/v1/tenant/members/{user_id}/business-scope" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.business_scope.get"
+      use_case: "get_tenant_member_business_scope"
+      permissions: "tenant.member.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc SetTenantMemberBusinessScope(SetTenantMemberBusinessScopeRequest) returns (TenantMemberBusinessScopeDTO) {
+    option (google.api.http) = { put: "/v1/tenant/members/{user_id}/business-scope" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.business_scope.set"
+      use_case: "set_tenant_member_business_scope"
+      permissions: "tenant.member.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      requires_operations: "site.member_scope_directory"
       composition: COMPOSITION_LOCAL
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };
