@@ -43,6 +43,16 @@
       }
     },
     {
+      "id": "access/tenant_member_business_scope",
+      "domain": "access",
+      "name": "tenant_member_business_scope",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_member_business_scope"
+      }
+    },
+    {
       "id": "access/tenant_member_lifecycle",
       "domain": "access",
       "name": "tenant_member_lifecycle",
@@ -217,6 +227,15 @@
         "ownership": "reused",
         "source": "manifest.json",
         "ref": "applications/access/tenant_lifecycle/requires/commercial/subscription_management"
+      }
+    },
+    {
+      "from": "access/tenant_member_business_scope",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_member_business_scope/requires/deviceops/site_management"
       }
     },
     {
@@ -489,6 +508,15 @@
         "ownership": "derived",
         "source": "application-dependency-closure",
         "ref": "access/tenant_lifecycle-\u003edeviceops/site_management"
+      }
+    },
+    {
+      "from": "access/tenant_member_business_scope",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_member_business_scope-\u003edeviceops/site_management"
       }
     },
     {
@@ -2471,6 +2499,15 @@
       }
     },
     {
+      "id": "site.member_scope_directory",
+      "application": "deviceops/site_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/site.member_scope_directory"
+      }
+    },
+    {
       "id": "site.role_scope_directory",
       "application": "deviceops/site_management",
       "evidence": {
@@ -3229,6 +3266,68 @@
       }
     },
     {
+      "id": "tenant.member.business_scope.get",
+      "application": "access/tenant_member_business_scope",
+      "bindings": [
+        {
+          "operationId": "tenant.member.business_scope.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.business_scope.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.business_scope.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.business_scope.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.business_scope.get"
+      }
+    },
+    {
+      "id": "tenant.member.business_scope.set",
+      "application": "access/tenant_member_business_scope",
+      "bindings": [
+        {
+          "operationId": "tenant.member.business_scope.set",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.business_scope.set/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.business_scope.set",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.business_scope.set/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.business_scope.set"
+      }
+    },
+    {
       "id": "tenant.member.count_quota_usage",
       "application": "access/tenant_member_lifecycle",
       "evidence": {
@@ -3483,6 +3582,37 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/tenant.member.restore"
+      }
+    },
+    {
+      "id": "tenant.member.scope_candidates",
+      "application": "access/tenant_member_business_scope",
+      "bindings": [
+        {
+          "operationId": "tenant.member.scope_candidates",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.scope_candidates/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.scope_candidates",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.scope_candidates/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.scope_candidates"
       }
     },
     {
@@ -4474,6 +4604,15 @@
       }
     },
     {
+      "from": "tenant.member.business_scope.set",
+      "to": "site.member_scope_directory",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.business_scope.set/requiresOperations/site.member_scope_directory"
+      }
+    },
+    {
       "from": "tenant.member.create",
       "to": "tenant.department.assert_member_assignment_allowed",
       "evidence": {
@@ -4516,6 +4655,15 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/tenant.member.restore/requiresOperations/tenant.role.assign_member"
+      }
+    },
+    {
+      "from": "tenant.member.scope_candidates",
+      "to": "site.member_scope_directory",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.scope_candidates/requiresOperations/site.member_scope_directory"
       }
     },
     {
@@ -4636,6 +4784,7 @@
         "access/tenant_delegation_management",
         "access/tenant_department_management",
         "access/tenant_lifecycle",
+        "access/tenant_member_business_scope",
         "access/tenant_member_lifecycle",
         "access/tenant_profile_management",
         "access/tenant_role_permission",
@@ -4729,6 +4878,8 @@
         "tenant.get",
         "tenant.list",
         "tenant.member.activate",
+        "tenant.member.business_scope.get",
+        "tenant.member.business_scope.set",
         "tenant.member.create",
         "tenant.member.get",
         "tenant.member.invite",
@@ -4737,6 +4888,7 @@
         "tenant.member.profile.update",
         "tenant.member.remove",
         "tenant.member.restore",
+        "tenant.member.scope_candidates",
         "tenant.member.suspend",
         "tenant.member.update",
         "tenant.profile.get",
@@ -4773,6 +4925,7 @@
         "commercial.subscription.transition.claim",
         "commercial.subscription.transition.complete",
         "device.assert_owned_by_actor_tenant",
+        "site.member_scope_directory",
         "site.role_scope_directory",
         "site.validate_transfer_target",
         "tenant.assert_active",

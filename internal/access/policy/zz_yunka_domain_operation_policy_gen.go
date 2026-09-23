@@ -22,6 +22,9 @@ func Resolver() authz.StaticResolver {
 	for key, value := range tenantLifecyclePolicies() {
 		policies[key] = value
 	}
+	for key, value := range tenantMemberBusinessScopePolicies() {
+		policies[key] = value
+	}
 	for key, value := range tenantMemberLifecyclePolicies() {
 		policies[key] = value
 	}

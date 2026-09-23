@@ -497,3 +497,179 @@ var TenantMemberLifecycleApplication_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "access/v1/tenant_member.proto",
 }
+
+const (
+	TenantMemberBusinessScopeApplication_ListTenantMemberScopeCandidates_FullMethodName = "/access.v1.TenantMemberBusinessScopeApplication/ListTenantMemberScopeCandidates"
+	TenantMemberBusinessScopeApplication_GetTenantMemberBusinessScope_FullMethodName    = "/access.v1.TenantMemberBusinessScopeApplication/GetTenantMemberBusinessScope"
+	TenantMemberBusinessScopeApplication_SetTenantMemberBusinessScope_FullMethodName    = "/access.v1.TenantMemberBusinessScopeApplication/SetTenantMemberBusinessScope"
+)
+
+// TenantMemberBusinessScopeApplicationClient is the client API for TenantMemberBusinessScopeApplication service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type TenantMemberBusinessScopeApplicationClient interface {
+	ListTenantMemberScopeCandidates(ctx context.Context, in *ListTenantMemberScopeCandidatesRequest, opts ...grpc.CallOption) (*ListTenantMemberScopeCandidatesResponse, error)
+	GetTenantMemberBusinessScope(ctx context.Context, in *GetTenantMemberBusinessScopeRequest, opts ...grpc.CallOption) (*TenantMemberBusinessScopeDTO, error)
+	SetTenantMemberBusinessScope(ctx context.Context, in *SetTenantMemberBusinessScopeRequest, opts ...grpc.CallOption) (*TenantMemberBusinessScopeDTO, error)
+}
+
+type tenantMemberBusinessScopeApplicationClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewTenantMemberBusinessScopeApplicationClient(cc grpc.ClientConnInterface) TenantMemberBusinessScopeApplicationClient {
+	return &tenantMemberBusinessScopeApplicationClient{cc}
+}
+
+func (c *tenantMemberBusinessScopeApplicationClient) ListTenantMemberScopeCandidates(ctx context.Context, in *ListTenantMemberScopeCandidatesRequest, opts ...grpc.CallOption) (*ListTenantMemberScopeCandidatesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTenantMemberScopeCandidatesResponse)
+	err := c.cc.Invoke(ctx, TenantMemberBusinessScopeApplication_ListTenantMemberScopeCandidates_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantMemberBusinessScopeApplicationClient) GetTenantMemberBusinessScope(ctx context.Context, in *GetTenantMemberBusinessScopeRequest, opts ...grpc.CallOption) (*TenantMemberBusinessScopeDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TenantMemberBusinessScopeDTO)
+	err := c.cc.Invoke(ctx, TenantMemberBusinessScopeApplication_GetTenantMemberBusinessScope_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantMemberBusinessScopeApplicationClient) SetTenantMemberBusinessScope(ctx context.Context, in *SetTenantMemberBusinessScopeRequest, opts ...grpc.CallOption) (*TenantMemberBusinessScopeDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TenantMemberBusinessScopeDTO)
+	err := c.cc.Invoke(ctx, TenantMemberBusinessScopeApplication_SetTenantMemberBusinessScope_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TenantMemberBusinessScopeApplicationServer is the server API for TenantMemberBusinessScopeApplication service.
+// All implementations should embed UnimplementedTenantMemberBusinessScopeApplicationServer
+// for forward compatibility.
+type TenantMemberBusinessScopeApplicationServer interface {
+	ListTenantMemberScopeCandidates(context.Context, *ListTenantMemberScopeCandidatesRequest) (*ListTenantMemberScopeCandidatesResponse, error)
+	GetTenantMemberBusinessScope(context.Context, *GetTenantMemberBusinessScopeRequest) (*TenantMemberBusinessScopeDTO, error)
+	SetTenantMemberBusinessScope(context.Context, *SetTenantMemberBusinessScopeRequest) (*TenantMemberBusinessScopeDTO, error)
+}
+
+// UnimplementedTenantMemberBusinessScopeApplicationServer should be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedTenantMemberBusinessScopeApplicationServer struct{}
+
+func (UnimplementedTenantMemberBusinessScopeApplicationServer) ListTenantMemberScopeCandidates(context.Context, *ListTenantMemberScopeCandidatesRequest) (*ListTenantMemberScopeCandidatesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListTenantMemberScopeCandidates not implemented")
+}
+func (UnimplementedTenantMemberBusinessScopeApplicationServer) GetTenantMemberBusinessScope(context.Context, *GetTenantMemberBusinessScopeRequest) (*TenantMemberBusinessScopeDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTenantMemberBusinessScope not implemented")
+}
+func (UnimplementedTenantMemberBusinessScopeApplicationServer) SetTenantMemberBusinessScope(context.Context, *SetTenantMemberBusinessScopeRequest) (*TenantMemberBusinessScopeDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetTenantMemberBusinessScope not implemented")
+}
+func (UnimplementedTenantMemberBusinessScopeApplicationServer) testEmbeddedByValue() {}
+
+// UnsafeTenantMemberBusinessScopeApplicationServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TenantMemberBusinessScopeApplicationServer will
+// result in compilation errors.
+type UnsafeTenantMemberBusinessScopeApplicationServer interface {
+	mustEmbedUnimplementedTenantMemberBusinessScopeApplicationServer()
+}
+
+func RegisterTenantMemberBusinessScopeApplicationServer(s grpc.ServiceRegistrar, srv TenantMemberBusinessScopeApplicationServer) {
+	// If the following call panics, it indicates UnimplementedTenantMemberBusinessScopeApplicationServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&TenantMemberBusinessScopeApplication_ServiceDesc, srv)
+}
+
+func _TenantMemberBusinessScopeApplication_ListTenantMemberScopeCandidates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTenantMemberScopeCandidatesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantMemberBusinessScopeApplicationServer).ListTenantMemberScopeCandidates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantMemberBusinessScopeApplication_ListTenantMemberScopeCandidates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantMemberBusinessScopeApplicationServer).ListTenantMemberScopeCandidates(ctx, req.(*ListTenantMemberScopeCandidatesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantMemberBusinessScopeApplication_GetTenantMemberBusinessScope_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTenantMemberBusinessScopeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantMemberBusinessScopeApplicationServer).GetTenantMemberBusinessScope(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantMemberBusinessScopeApplication_GetTenantMemberBusinessScope_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantMemberBusinessScopeApplicationServer).GetTenantMemberBusinessScope(ctx, req.(*GetTenantMemberBusinessScopeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantMemberBusinessScopeApplication_SetTenantMemberBusinessScope_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetTenantMemberBusinessScopeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantMemberBusinessScopeApplicationServer).SetTenantMemberBusinessScope(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantMemberBusinessScopeApplication_SetTenantMemberBusinessScope_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantMemberBusinessScopeApplicationServer).SetTenantMemberBusinessScope(ctx, req.(*SetTenantMemberBusinessScopeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// TenantMemberBusinessScopeApplication_ServiceDesc is the grpc.ServiceDesc for TenantMemberBusinessScopeApplication service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var TenantMemberBusinessScopeApplication_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "access.v1.TenantMemberBusinessScopeApplication",
+	HandlerType: (*TenantMemberBusinessScopeApplicationServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListTenantMemberScopeCandidates",
+			Handler:    _TenantMemberBusinessScopeApplication_ListTenantMemberScopeCandidates_Handler,
+		},
+		{
+			MethodName: "GetTenantMemberBusinessScope",
+			Handler:    _TenantMemberBusinessScopeApplication_GetTenantMemberBusinessScope_Handler,
+		},
+		{
+			MethodName: "SetTenantMemberBusinessScope",
+			Handler:    _TenantMemberBusinessScopeApplication_SetTenantMemberBusinessScope_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "access/v1/tenant_member.proto",
+}

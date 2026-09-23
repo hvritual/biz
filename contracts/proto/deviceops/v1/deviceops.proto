@@ -164,6 +164,9 @@ service DeviceApplication {
 message SiteScopeDirectoryRequest {
   repeated string site_ids = 1;
   bool resolve = 2;
+  string query = 3;
+  uint32 page = 4;
+  uint32 page_size = 5;
 }
 message SiteScopeDirectoryResponse {
   repeated SiteDTO sites = 1;
@@ -198,6 +201,19 @@ service SiteApplication {
       request_type: "deviceops.v1.SiteScopeDirectoryRequest"
       response_type: "deviceops.v1.SiteScopeDirectoryResponse"
       application_method: "ListAssignableRoleSites"
+    }
+    operations: {
+      id: "site.member_scope_directory"
+      use_case: "list_assignable_member_sites"
+      permissions: "tenant.member.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+      request_type: "deviceops.v1.SiteScopeDirectoryRequest"
+      response_type: "deviceops.v1.SiteScopeDirectoryResponse"
+      application_method: "ListAssignableMemberSites"
     }
       };
 }

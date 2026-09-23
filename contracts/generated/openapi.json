@@ -338,6 +338,15 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.GetTenantDepartmentRequest"
       },
+      "access_v1_GetTenantMemberBusinessScopeRequest": {
+        "properties": {
+          "userId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.GetTenantMemberBusinessScopeRequest"
+      },
       "access_v1_GetTenantMemberRequest": {
         "properties": {
           "userId": {
@@ -517,6 +526,40 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.ListTenantDepartmentsResponse"
+      },
+      "access_v1_ListTenantMemberScopeCandidatesRequest": {
+        "properties": {
+          "page": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "pageSize": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListTenantMemberScopeCandidatesRequest"
+      },
+      "access_v1_ListTenantMemberScopeCandidatesResponse": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/access_v1_TenantMemberScopeCandidateDTO"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListTenantMemberScopeCandidatesResponse"
       },
       "access_v1_ListTenantMembersRequest": {
         "properties": {
@@ -699,6 +742,26 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.RevokeTenantRoleMemberRequest"
+      },
+      "access_v1_SetTenantMemberBusinessScopeRequest": {
+        "properties": {
+          "siteIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.SetTenantMemberBusinessScopeRequest"
       },
       "access_v1_SetTenantRoleDataPolicyRequest": {
         "properties": {
@@ -1051,6 +1114,29 @@
         "type": "string",
         "x-yunka-proto-full-name": "access.v1.TenantMemberActivationMode"
       },
+      "access_v1_TenantMemberBusinessScopeDTO": {
+        "properties": {
+          "siteIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.TenantMemberBusinessScopeDTO"
+      },
       "access_v1_TenantMemberCreationReceipt": {
         "properties": {
           "activationMode": {
@@ -1133,6 +1219,29 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.TenantMemberRoleDTO"
+      },
+      "access_v1_TenantMemberScopeCandidateDTO": {
+        "properties": {
+          "assignable": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unavailableReason": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.TenantMemberScopeCandidateDTO"
       },
       "access_v1_TenantMemberStatus": {
         "enum": [
@@ -5808,6 +5917,55 @@
         "x-yunka-rpc": "/commercial.v1.EntitlementManagementApplication/GetMyEntitlements"
       }
     },
+    "/v1/tenant/member-scope-candidates": {
+      "get": {
+        "operationId": "access.v1.TenantMemberBusinessScopeApplication.ListTenantMemberScopeCandidates",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_ListTenantMemberScopeCandidatesResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberBusinessScopeApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberBusinessScopeApplication/ListTenantMemberScopeCandidates"
+      }
+    },
     "/v1/tenant/members": {
       "get": {
         "operationId": "access.v1.TenantMemberLifecycleApplication.ListTenantMembers",
@@ -6091,6 +6249,76 @@
           "access.v1.TenantMemberLifecycleApplication"
         ],
         "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/ActivateTenantMember"
+      }
+    },
+    "/v1/tenant/members/{user_id}/business-scope": {
+      "get": {
+        "operationId": "access.v1.TenantMemberBusinessScopeApplication.GetTenantMemberBusinessScope",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantMemberBusinessScopeDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberBusinessScopeApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberBusinessScopeApplication/GetTenantMemberBusinessScope"
+      },
+      "put": {
+        "operationId": "access.v1.TenantMemberBusinessScopeApplication.SetTenantMemberBusinessScope",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_SetTenantMemberBusinessScopeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantMemberBusinessScopeDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberBusinessScopeApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberBusinessScopeApplication/SetTenantMemberBusinessScope"
       }
     },
     "/v1/tenant/members/{user_id}/profile": {

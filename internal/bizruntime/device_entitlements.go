@@ -78,6 +78,14 @@ func (w checkedSite) ListAssignableRoleSites(ctx context.Context, r *devicev1.Si
 	return value, enforcement.ExecutionError(ctx, "site.role_scope_directory", err)
 }
 
+func (w checkedSite) ListAssignableMemberSites(ctx context.Context, r *devicev1.SiteScopeDirectoryRequest) (*devicev1.SiteScopeDirectoryResponse, error) {
+	if err := enforcement.RequireExecuted(ctx, "site.member_scope_directory"); err != nil {
+		return nil, err
+	}
+	value, err := w.inner.ListAssignableMemberSites(ctx, r)
+	return value, enforcement.ExecutionError(ctx, "site.member_scope_directory", err)
+}
+
 type checkedTransfer struct {
 	inner deviceapp.DeviceTransferApplication
 }

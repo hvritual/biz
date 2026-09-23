@@ -162,6 +162,10 @@ export interface Access_V1_GetTenantDepartmentRequest {
   departmentId?: string;
 }
 
+export interface Access_V1_GetTenantMemberBusinessScopeRequest {
+  userId?: string;
+}
+
 export interface Access_V1_GetTenantMemberRequest {
   userId?: string;
 }
@@ -230,6 +234,17 @@ export interface Access_V1_ListTenantDepartmentsResponse {
   departments?: readonly Access_V1_TenantDepartmentDTO[];
 }
 
+export interface Access_V1_ListTenantMemberScopeCandidatesRequest {
+  query?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface Access_V1_ListTenantMemberScopeCandidatesResponse {
+  candidates?: readonly Access_V1_TenantMemberScopeCandidateDTO[];
+  total?: string;
+}
+
 export interface Access_V1_ListTenantMembersRequest {
   query?: string;
   roleId?: string;
@@ -295,6 +310,12 @@ export interface Access_V1_RevokeTenantDelegationRequest {
 export interface Access_V1_RevokeTenantRoleMemberRequest {
   roleId?: string;
   userId?: string;
+}
+
+export interface Access_V1_SetTenantMemberBusinessScopeRequest {
+  userId?: string;
+  version?: string;
+  siteIds?: readonly string[];
 }
 
 export interface Access_V1_SetTenantRoleDataPolicyRequest {
@@ -404,6 +425,13 @@ export interface Access_V1_TenantDepartmentDTO {
   version?: string;
 }
 
+export interface Access_V1_TenantMemberBusinessScopeDTO {
+  userId?: string;
+  version?: string;
+  siteIds?: readonly string[];
+  tenantId?: string;
+}
+
 export interface Access_V1_TenantMemberCreationReceipt {
   member?: Access_V1_TenantMemberDTO;
   activationMode?: Access_V1_TenantMemberActivationMode;
@@ -431,6 +459,14 @@ export interface Access_V1_TenantMemberRoleDTO {
   roleId?: string;
   roleName?: string;
   roleStatus?: string;
+}
+
+export interface Access_V1_TenantMemberScopeCandidateDTO {
+  id?: string;
+  name?: string;
+  version?: string;
+  assignable?: boolean;
+  unavailableReason?: string;
 }
 
 export interface Access_V1_TenantProfileDTO {
@@ -1386,6 +1422,33 @@ export const operations = {
       { method: "PATCH", path: "/v1/tenants/{id}", body: "*" },
     ]
   },
+  "access.v1.TenantMemberBusinessScopeApplication.GetTenantMemberBusinessScope": {
+    fullName: "access.v1.TenantMemberBusinessScopeApplication.GetTenantMemberBusinessScope",
+    rpcPath: "/access.v1.TenantMemberBusinessScopeApplication/GetTenantMemberBusinessScope",
+    requestType: "access.v1.GetTenantMemberBusinessScopeRequest",
+    responseType: "access.v1.TenantMemberBusinessScopeDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/members/{user_id}/business-scope" },
+    ]
+  },
+  "access.v1.TenantMemberBusinessScopeApplication.ListTenantMemberScopeCandidates": {
+    fullName: "access.v1.TenantMemberBusinessScopeApplication.ListTenantMemberScopeCandidates",
+    rpcPath: "/access.v1.TenantMemberBusinessScopeApplication/ListTenantMemberScopeCandidates",
+    requestType: "access.v1.ListTenantMemberScopeCandidatesRequest",
+    responseType: "access.v1.ListTenantMemberScopeCandidatesResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/member-scope-candidates" },
+    ]
+  },
+  "access.v1.TenantMemberBusinessScopeApplication.SetTenantMemberBusinessScope": {
+    fullName: "access.v1.TenantMemberBusinessScopeApplication.SetTenantMemberBusinessScope",
+    rpcPath: "/access.v1.TenantMemberBusinessScopeApplication/SetTenantMemberBusinessScope",
+    requestType: "access.v1.SetTenantMemberBusinessScopeRequest",
+    responseType: "access.v1.TenantMemberBusinessScopeDTO",
+    http: [
+      { method: "PUT", path: "/v1/tenant/members/{user_id}/business-scope", body: "*" },
+    ]
+  },
   "access.v1.TenantMemberLifecycleApplication.ActivateTenantMember": {
     fullName: "access.v1.TenantMemberLifecycleApplication.ActivateTenantMember",
     rpcPath: "/access.v1.TenantMemberLifecycleApplication/ActivateTenantMember",
@@ -2195,6 +2258,23 @@ export class Access_V1_TenantLifecycleApplicationClient {
 
   updateTenant(request: Access_V1_UpdateTenantRequest): Promise<Access_V1_TenantDTO> {
     return this.transport.call<Access_V1_UpdateTenantRequest, Access_V1_TenantDTO>(operations["access.v1.TenantLifecycleApplication.UpdateTenant"], request);
+  }
+
+}
+
+export class Access_V1_TenantMemberBusinessScopeApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  getTenantMemberBusinessScope(request: Access_V1_GetTenantMemberBusinessScopeRequest): Promise<Access_V1_TenantMemberBusinessScopeDTO> {
+    return this.transport.call<Access_V1_GetTenantMemberBusinessScopeRequest, Access_V1_TenantMemberBusinessScopeDTO>(operations["access.v1.TenantMemberBusinessScopeApplication.GetTenantMemberBusinessScope"], request);
+  }
+
+  listTenantMemberScopeCandidates(request: Access_V1_ListTenantMemberScopeCandidatesRequest): Promise<Access_V1_ListTenantMemberScopeCandidatesResponse> {
+    return this.transport.call<Access_V1_ListTenantMemberScopeCandidatesRequest, Access_V1_ListTenantMemberScopeCandidatesResponse>(operations["access.v1.TenantMemberBusinessScopeApplication.ListTenantMemberScopeCandidates"], request);
+  }
+
+  setTenantMemberBusinessScope(request: Access_V1_SetTenantMemberBusinessScopeRequest): Promise<Access_V1_TenantMemberBusinessScopeDTO> {
+    return this.transport.call<Access_V1_SetTenantMemberBusinessScopeRequest, Access_V1_TenantMemberBusinessScopeDTO>(operations["access.v1.TenantMemberBusinessScopeApplication.SetTenantMemberBusinessScope"], request);
   }
 
 }

@@ -121,6 +121,8 @@ class RouteTests(unittest.TestCase):
     def test_policy_source_contract_and_reusable_lane_cannot_skip_admission(self):
         for path in [
             "contracts/proto/access/v1/tenant_role.proto",
+            "contracts/proto/access/v1/tenant_member.proto",
+            "contracts/proto/deviceops/v1/deviceops.proto",
             ".github/workflows/enterprise-role-qualification.yml",
             "internal/access/application/tenant_data_policy.go",
             "internal/access/infrastructure/persistence/business_scope.go",

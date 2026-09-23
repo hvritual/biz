@@ -839,6 +839,6 @@ func newTenantMemberRepositoryFactory(database *gorm.DB, contactProtection *Cont
 			}
 			lifecycle = lifecycleValue
 		}
-		return ports.TenantMemberRepositories{Member: member, Activation: activation, Lifecycle: lifecycle}, nil
+		return ports.TenantMemberRepositories{Member: member, BusinessScope: member, Activation: activation, Lifecycle: lifecycle}, nil
 	}), nil
 }

@@ -52,6 +52,17 @@ func (factory applicationFactories) BuildAccessTenantMemberLifecycle(dependencie
 	return checkedMembers{inner: inner}, nil
 }
 
+func (factory applicationFactories) BuildAccessTenantMemberBusinessScope(dependencies generatedassembly.AccessTenantMemberBusinessScopeDependencies) (accessapp.TenantMemberBusinessScopeApplication, error) {
+	if dependencies.DeviceopsSiteManagement == nil {
+		return nil, errors.New("biz access pressure: tenant member business scope site dependency is required")
+	}
+	inner, err := accessapp.NewTenantMemberBusinessScopeService(factory.memberRepositories, dependencies.DeviceopsSiteManagement)
+	if err != nil {
+		return nil, err
+	}
+	return checkedMemberBusinessScope{inner: inner}, nil
+}
+
 func (factory applicationFactories) BuildAccessTenantRolePermission(dependencies generatedassembly.AccessTenantRolePermissionDependencies) (accessapp.TenantRolePermissionApplication, error) {
 	if dependencies.DeviceopsSiteManagement == nil {
 		return nil, errors.New("biz access pressure: tenant data policy site directory dependency is required")
