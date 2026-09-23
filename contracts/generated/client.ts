@@ -62,6 +62,14 @@ export interface Access_V1_CloseTenantRequest {
   version?: string;
 }
 
+export interface Access_V1_CreateTenantDataPolicyRequest {
+  name?: string;
+  siteIds?: readonly string[];
+  notBefore?: string;
+  expiresAt?: string;
+  policyId?: string;
+}
+
 export interface Access_V1_CreateTenantDepartmentRequest {
   name?: string;
   parentId?: string;
@@ -142,6 +150,10 @@ export interface Access_V1_GetTenantAuditRecordRequest {
 export interface Access_V1_GetTenantBrandingRequest {
 }
 
+export interface Access_V1_GetTenantDataPolicyRequest {
+  policyId?: string;
+}
+
 export interface Access_V1_GetTenantDelegationRequest {
   id?: string;
 }
@@ -195,6 +207,13 @@ export interface Access_V1_ListTenantAuditRecordsResponse {
   total?: string;
   page?: number;
   pageSize?: number;
+}
+
+export interface Access_V1_ListTenantDataPoliciesRequest {
+}
+
+export interface Access_V1_ListTenantDataPoliciesResponse {
+  policies?: readonly Access_V1_TenantDataPolicyDTO[];
 }
 
 export interface Access_V1_ListTenantDelegationsRequest {
@@ -263,6 +282,11 @@ export interface Access_V1_RestoreTenantMemberRequest {
   reason?: string;
 }
 
+export interface Access_V1_RevokeTenantDataPolicyRequest {
+  policyId?: string;
+  version?: string;
+}
+
 export interface Access_V1_RevokeTenantDelegationRequest {
   id?: string;
   version?: string;
@@ -271,6 +295,13 @@ export interface Access_V1_RevokeTenantDelegationRequest {
 export interface Access_V1_RevokeTenantRoleMemberRequest {
   roleId?: string;
   userId?: string;
+}
+
+export interface Access_V1_SetTenantRoleDataPolicyRequest {
+  roleId?: string;
+  version?: string;
+  policyId?: string;
+  policyVersion?: string;
 }
 
 export interface Access_V1_SetTenantRolePermissionsRequest {
@@ -326,6 +357,27 @@ export interface Access_V1_TenantDTO {
   name?: string;
   status?: Access_V1_TenantStatus;
   version?: string;
+}
+
+export interface Access_V1_TenantDataPolicyDTO {
+  id?: string;
+  name?: string;
+  status?: string;
+  siteIds?: readonly string[];
+  version?: string;
+  notBefore?: string;
+  expiresAt?: string;
+  effective?: boolean;
+  invalidReason?: string;
+}
+
+export interface Access_V1_TenantDataPolicyReferenceDTO {
+  policyId?: string;
+  policyName?: string;
+  policyVersion?: string;
+  acceptedVersion?: string;
+  effective?: boolean;
+  invalidReason?: string;
 }
 
 export interface Access_V1_TenantDelegationDTO {
@@ -407,12 +459,22 @@ export interface Access_V1_TenantRoleDTO {
   roleCode?: string;
   systemRole?: boolean;
   memberCount?: string;
+  dataPolicy?: Access_V1_TenantDataPolicyReferenceDTO;
 }
 
 export interface Access_V1_UpdateTenantBrandingRequest {
   preset?: string;
   primary?: string;
   version?: string;
+}
+
+export interface Access_V1_UpdateTenantDataPolicyRequest {
+  policyId?: string;
+  version?: string;
+  name?: string;
+  siteIds?: readonly string[];
+  notBefore?: string;
+  expiresAt?: string;
 }
 
 export interface Access_V1_UpdateTenantDepartmentRequest {
@@ -1468,6 +1530,15 @@ export const operations = {
       { method: "POST", path: "/v1/tenant/roles/{role_id}/members", body: "*" },
     ]
   },
+  "access.v1.TenantRolePermissionApplication.CreateTenantDataPolicy": {
+    fullName: "access.v1.TenantRolePermissionApplication.CreateTenantDataPolicy",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/CreateTenantDataPolicy",
+    requestType: "access.v1.CreateTenantDataPolicyRequest",
+    responseType: "access.v1.TenantDataPolicyDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/data-policies", body: "*" },
+    ]
+  },
   "access.v1.TenantRolePermissionApplication.CreateTenantRole": {
     fullName: "access.v1.TenantRolePermissionApplication.CreateTenantRole",
     rpcPath: "/access.v1.TenantRolePermissionApplication/CreateTenantRole",
@@ -1504,6 +1575,15 @@ export const operations = {
       { method: "POST", path: "/v1/tenant/roles/{role_id}/enable", body: "*" },
     ]
   },
+  "access.v1.TenantRolePermissionApplication.GetTenantDataPolicy": {
+    fullName: "access.v1.TenantRolePermissionApplication.GetTenantDataPolicy",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/GetTenantDataPolicy",
+    requestType: "access.v1.GetTenantDataPolicyRequest",
+    responseType: "access.v1.TenantDataPolicyDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/data-policies/{policy_id}" },
+    ]
+  },
   "access.v1.TenantRolePermissionApplication.GetTenantRole": {
     fullName: "access.v1.TenantRolePermissionApplication.GetTenantRole",
     rpcPath: "/access.v1.TenantRolePermissionApplication/GetTenantRole",
@@ -1511,6 +1591,15 @@ export const operations = {
     responseType: "access.v1.TenantRoleDTO",
     http: [
       { method: "GET", path: "/v1/tenant/roles/{role_id}" },
+    ]
+  },
+  "access.v1.TenantRolePermissionApplication.ListTenantDataPolicies": {
+    fullName: "access.v1.TenantRolePermissionApplication.ListTenantDataPolicies",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/ListTenantDataPolicies",
+    requestType: "access.v1.ListTenantDataPoliciesRequest",
+    responseType: "access.v1.ListTenantDataPoliciesResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/data-policies" },
     ]
   },
   "access.v1.TenantRolePermissionApplication.ListTenantRoles": {
@@ -1522,6 +1611,15 @@ export const operations = {
       { method: "GET", path: "/v1/tenant/roles" },
     ]
   },
+  "access.v1.TenantRolePermissionApplication.RevokeTenantDataPolicy": {
+    fullName: "access.v1.TenantRolePermissionApplication.RevokeTenantDataPolicy",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/RevokeTenantDataPolicy",
+    requestType: "access.v1.RevokeTenantDataPolicyRequest",
+    responseType: "access.v1.TenantDataPolicyDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/data-policies/{policy_id}/revoke", body: "*" },
+    ]
+  },
   "access.v1.TenantRolePermissionApplication.RevokeTenantRoleMember": {
     fullName: "access.v1.TenantRolePermissionApplication.RevokeTenantRoleMember",
     rpcPath: "/access.v1.TenantRolePermissionApplication/RevokeTenantRoleMember",
@@ -1531,6 +1629,15 @@ export const operations = {
       { method: "POST", path: "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", body: "*" },
     ]
   },
+  "access.v1.TenantRolePermissionApplication.SetTenantRoleDataPolicy": {
+    fullName: "access.v1.TenantRolePermissionApplication.SetTenantRoleDataPolicy",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/SetTenantRoleDataPolicy",
+    requestType: "access.v1.SetTenantRoleDataPolicyRequest",
+    responseType: "access.v1.TenantRoleDTO",
+    http: [
+      { method: "PUT", path: "/v1/tenant/roles/{role_id}/data-policy", body: "*" },
+    ]
+  },
   "access.v1.TenantRolePermissionApplication.SetTenantRolePermissions": {
     fullName: "access.v1.TenantRolePermissionApplication.SetTenantRolePermissions",
     rpcPath: "/access.v1.TenantRolePermissionApplication/SetTenantRolePermissions",
@@ -1538,6 +1645,15 @@ export const operations = {
     responseType: "access.v1.TenantRoleDTO",
     http: [
       { method: "PUT", path: "/v1/tenant/roles/{role_id}/permissions", body: "*" },
+    ]
+  },
+  "access.v1.TenantRolePermissionApplication.UpdateTenantDataPolicy": {
+    fullName: "access.v1.TenantRolePermissionApplication.UpdateTenantDataPolicy",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/UpdateTenantDataPolicy",
+    requestType: "access.v1.UpdateTenantDataPolicyRequest",
+    responseType: "access.v1.TenantDataPolicyDTO",
+    http: [
+      { method: "PATCH", path: "/v1/tenant/data-policies/{policy_id}", body: "*" },
     ]
   },
   "access.v1.TenantRolePermissionApplication.UpdateTenantRole": {
@@ -2160,6 +2276,10 @@ export class Access_V1_TenantRolePermissionApplicationClient {
     return this.transport.call<Access_V1_AssignTenantRoleMemberRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.AssignTenantRoleMember"], request);
   }
 
+  createTenantDataPolicy(request: Access_V1_CreateTenantDataPolicyRequest): Promise<Access_V1_TenantDataPolicyDTO> {
+    return this.transport.call<Access_V1_CreateTenantDataPolicyRequest, Access_V1_TenantDataPolicyDTO>(operations["access.v1.TenantRolePermissionApplication.CreateTenantDataPolicy"], request);
+  }
+
   createTenantRole(request: Access_V1_CreateTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
     return this.transport.call<Access_V1_CreateTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.CreateTenantRole"], request);
   }
@@ -2176,20 +2296,40 @@ export class Access_V1_TenantRolePermissionApplicationClient {
     return this.transport.call<Access_V1_EnableTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.EnableTenantRole"], request);
   }
 
+  getTenantDataPolicy(request: Access_V1_GetTenantDataPolicyRequest): Promise<Access_V1_TenantDataPolicyDTO> {
+    return this.transport.call<Access_V1_GetTenantDataPolicyRequest, Access_V1_TenantDataPolicyDTO>(operations["access.v1.TenantRolePermissionApplication.GetTenantDataPolicy"], request);
+  }
+
   getTenantRole(request: Access_V1_GetTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
     return this.transport.call<Access_V1_GetTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.GetTenantRole"], request);
+  }
+
+  listTenantDataPolicies(request: Access_V1_ListTenantDataPoliciesRequest): Promise<Access_V1_ListTenantDataPoliciesResponse> {
+    return this.transport.call<Access_V1_ListTenantDataPoliciesRequest, Access_V1_ListTenantDataPoliciesResponse>(operations["access.v1.TenantRolePermissionApplication.ListTenantDataPolicies"], request);
   }
 
   listTenantRoles(request: Access_V1_ListTenantRolesRequest): Promise<Access_V1_ListTenantRolesResponse> {
     return this.transport.call<Access_V1_ListTenantRolesRequest, Access_V1_ListTenantRolesResponse>(operations["access.v1.TenantRolePermissionApplication.ListTenantRoles"], request);
   }
 
+  revokeTenantDataPolicy(request: Access_V1_RevokeTenantDataPolicyRequest): Promise<Access_V1_TenantDataPolicyDTO> {
+    return this.transport.call<Access_V1_RevokeTenantDataPolicyRequest, Access_V1_TenantDataPolicyDTO>(operations["access.v1.TenantRolePermissionApplication.RevokeTenantDataPolicy"], request);
+  }
+
   revokeTenantRoleMember(request: Access_V1_RevokeTenantRoleMemberRequest): Promise<Access_V1_TenantRoleDTO> {
     return this.transport.call<Access_V1_RevokeTenantRoleMemberRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.RevokeTenantRoleMember"], request);
   }
 
+  setTenantRoleDataPolicy(request: Access_V1_SetTenantRoleDataPolicyRequest): Promise<Access_V1_TenantRoleDTO> {
+    return this.transport.call<Access_V1_SetTenantRoleDataPolicyRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.SetTenantRoleDataPolicy"], request);
+  }
+
   setTenantRolePermissions(request: Access_V1_SetTenantRolePermissionsRequest): Promise<Access_V1_TenantRoleDTO> {
     return this.transport.call<Access_V1_SetTenantRolePermissionsRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.SetTenantRolePermissions"], request);
+  }
+
+  updateTenantDataPolicy(request: Access_V1_UpdateTenantDataPolicyRequest): Promise<Access_V1_TenantDataPolicyDTO> {
+    return this.transport.call<Access_V1_UpdateTenantDataPolicyRequest, Access_V1_TenantDataPolicyDTO>(operations["access.v1.TenantRolePermissionApplication.UpdateTenantDataPolicy"], request);
   }
 
   updateTenantRole(request: Access_V1_UpdateTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {

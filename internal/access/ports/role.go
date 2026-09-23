@@ -27,11 +27,13 @@ type TenantRoleRepository interface {
 	Update(context.Context, *domain.Role, uint64) error
 	Delete(context.Context, string, string, uint64) (domain.Role, error)
 	ReplacePermissions(context.Context, *domain.Role, uint64) error
+	SetDataPolicy(context.Context, string, string, uint64, string, uint64, time.Time) (domain.Role, error)
 	AssignMember(context.Context, string, string, string) (domain.Role, error)
 	RevokeMember(context.Context, string, string, string) (domain.Role, error)
 	AssertMemberCanDeactivate(context.Context, string, string) error
 }
 
 type TenantRoleRepositories struct {
-	Role TenantRoleRepository
+	Role       TenantRoleRepository
+	DataPolicy TenantDataPolicyRepository
 }

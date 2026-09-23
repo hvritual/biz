@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "22",
+  "mapping_version": "23",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -766,6 +766,13 @@
       ]
     },
     {
+      "operation_id": "site.role_scope_directory",
+      "classification": "foundation_exempt",
+      "capability_codes": [],
+      "exemption_reason": "Transport-private tenant-bound site resolver used only by the Access Data Policy manager; it grants no independent business capability.",
+      "children": []
+    },
+    {
       "operation_id": "site.validate_transfer_target",
       "classification": "tenant_business",
       "module_code": "device-operations",
@@ -846,6 +853,65 @@
         }
       ],
       "exemption_reason": "平台租户生命周期管理，不是租户可购买操作；保留原有 platform.tenant.* 权限。"
+    },
+    {
+      "operation_id": "tenant.data_policy.create",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [
+        {
+          "operation_id": "site.role_scope_directory",
+          "mode": "conditional",
+          "condition": "site_ids is non-empty and must resolve against current-tenant sites",
+          "source": "internal/access/application/tenant_data_policy.go#CreateTenantDataPolicy"
+        }
+      ]
+    },
+    {
+      "operation_id": "tenant.data_policy.get",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.data_policy.list",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.data_policy.revoke",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.data_policy.update",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": [
+        {
+          "operation_id": "site.role_scope_directory",
+          "mode": "conditional",
+          "condition": "site_ids is non-empty and must resolve against current-tenant sites",
+          "source": "internal/access/application/tenant_data_policy.go#UpdateTenantDataPolicy"
+        }
+      ]
     },
     {
       "operation_id": "tenant.delegation.get",
@@ -1208,7 +1274,7 @@
       "children": []
     },
     {
-      "operation_id": "tenant.role.disable",
+      "operation_id": "tenant.role.delete",
       "classification": "tenant_business",
       "module_code": "access-management",
       "capability_codes": [
@@ -1217,7 +1283,7 @@
       "children": []
     },
     {
-      "operation_id": "tenant.role.delete",
+      "operation_id": "tenant.role.disable",
       "classification": "tenant_business",
       "module_code": "access-management",
       "capability_codes": [
@@ -1254,6 +1320,15 @@
     },
     {
       "operation_id": "tenant.role.revoke_member",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.role.permission"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.role.set_data_policy",
       "classification": "tenant_business",
       "module_code": "access-management",
       "capability_codes": [

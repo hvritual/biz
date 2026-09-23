@@ -70,6 +70,14 @@ func (w checkedSite) ValidateTransferTarget(ctx context.Context, r *devicev1.Val
 	return value, enforcement.ExecutionError(ctx, "site.validate_transfer_target", err)
 }
 
+func (w checkedSite) ListAssignableRoleSites(ctx context.Context, r *devicev1.SiteScopeDirectoryRequest) (*devicev1.SiteScopeDirectoryResponse, error) {
+	if err := enforcement.RequireExecuted(ctx, "site.role_scope_directory"); err != nil {
+		return nil, err
+	}
+	value, err := w.inner.ListAssignableRoleSites(ctx, r)
+	return value, enforcement.ExecutionError(ctx, "site.role_scope_directory", err)
+}
+
 type checkedTransfer struct {
 	inner deviceapp.DeviceTransferApplication
 }

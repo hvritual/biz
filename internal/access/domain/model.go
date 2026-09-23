@@ -217,6 +217,7 @@ type Role struct {
 	MemberCount uint64
 	Status      string
 	Permissions []PermissionGrant
+	DataPolicy  *DataPolicyReference
 	Version     uint64
 	CreatedAt   time.Time
 	UpdatedAt   time.Time

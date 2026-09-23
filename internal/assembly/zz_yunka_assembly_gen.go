@@ -24,7 +24,7 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "4ed6c5a22b87460241fe718a8c3bde391d3ca010513f67fa33bf9a44c6c7ddde"
+const AssemblyPlanDigest = "9babb929302fa7ea4e024eeec106b2df9eaebdcbe3c274789fa4cee32a9c7d37"
 
 type AccessTenantAuditManagementDependencies struct {
 }
@@ -52,6 +52,7 @@ type AccessTenantProfileManagementDependencies struct {
 }
 
 type AccessTenantRolePermissionDependencies struct {
+	DeviceopsSiteManagement accessapplication.TenantRolePermissionToDeviceopsSiteManagementChildCapability
 }
 
 type CommercialEntitlementManagementDependencies struct {
@@ -165,28 +166,6 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	if applications.AccessTenantProfileManagement == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_profile_management")
 	}
-	applications.AccessTenantRolePermission, err = factories.BuildAccessTenantRolePermission(AccessTenantRolePermissionDependencies{})
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_role_permission: %w", err)
-	}
-	if applications.AccessTenantRolePermission == nil {
-		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_role_permission")
-	}
-	accessTenantMemberLifecycleAccessTenantDepartmentManagementCapability, err := accessapplication.NewTenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability(applications.AccessTenantDepartmentManagement, executor)
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_member_lifecycle dependency access/tenant_department_management: %w", err)
-	}
-	accessTenantMemberLifecycleAccessTenantRolePermissionCapability, err := accessapplication.NewTenantMemberLifecycleToAccessTenantRolePermissionChildCapability(applications.AccessTenantRolePermission, executor)
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_member_lifecycle dependency access/tenant_role_permission: %w", err)
-	}
-	applications.AccessTenantMemberLifecycle, err = factories.BuildAccessTenantMemberLifecycle(AccessTenantMemberLifecycleDependencies{AccessTenantDepartmentManagement: accessTenantMemberLifecycleAccessTenantDepartmentManagementCapability, AccessTenantRolePermission: accessTenantMemberLifecycleAccessTenantRolePermissionCapability})
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_member_lifecycle: %w", err)
-	}
-	if applications.AccessTenantMemberLifecycle == nil {
-		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_member_lifecycle")
-	}
 	applications.CommercialModuleCatalog, err = factories.BuildCommercialModuleCatalog(CommercialModuleCatalogDependencies{})
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build application commercial/module_catalog: %w", err)
@@ -230,6 +209,46 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	}
 	if applications.CommercialProvisioning == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/provisioning")
+	}
+	applications.DeviceopsDelegatedDeviceAccess, err = factories.BuildDeviceopsDelegatedDeviceAccess(DeviceopsDelegatedDeviceAccessDependencies{})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application deviceops/delegated_device_access: %w", err)
+	}
+	if applications.DeviceopsDelegatedDeviceAccess == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for deviceops/delegated_device_access")
+	}
+	applications.DeviceopsSiteManagement, err = factories.BuildDeviceopsSiteManagement(DeviceopsSiteManagementDependencies{})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application deviceops/site_management: %w", err)
+	}
+	if applications.DeviceopsSiteManagement == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for deviceops/site_management")
+	}
+	accessTenantRolePermissionDeviceopsSiteManagementCapability, err := accessapplication.NewTenantRolePermissionToDeviceopsSiteManagementChildCapability(applications.DeviceopsSiteManagement, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_role_permission dependency deviceops/site_management: %w", err)
+	}
+	applications.AccessTenantRolePermission, err = factories.BuildAccessTenantRolePermission(AccessTenantRolePermissionDependencies{DeviceopsSiteManagement: accessTenantRolePermissionDeviceopsSiteManagementCapability})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_role_permission: %w", err)
+	}
+	if applications.AccessTenantRolePermission == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_role_permission")
+	}
+	accessTenantMemberLifecycleAccessTenantDepartmentManagementCapability, err := accessapplication.NewTenantMemberLifecycleToAccessTenantDepartmentManagementChildCapability(applications.AccessTenantDepartmentManagement, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_member_lifecycle dependency access/tenant_department_management: %w", err)
+	}
+	accessTenantMemberLifecycleAccessTenantRolePermissionCapability, err := accessapplication.NewTenantMemberLifecycleToAccessTenantRolePermissionChildCapability(applications.AccessTenantRolePermission, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build access/tenant_member_lifecycle dependency access/tenant_role_permission: %w", err)
+	}
+	applications.AccessTenantMemberLifecycle, err = factories.BuildAccessTenantMemberLifecycle(AccessTenantMemberLifecycleDependencies{AccessTenantDepartmentManagement: accessTenantMemberLifecycleAccessTenantDepartmentManagementCapability, AccessTenantRolePermission: accessTenantMemberLifecycleAccessTenantRolePermissionCapability})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application access/tenant_member_lifecycle: %w", err)
+	}
+	if applications.AccessTenantMemberLifecycle == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for access/tenant_member_lifecycle")
 	}
 	commercialSubscriptionManagementAccessTenantMemberLifecycleCapability, err := commercialapplication.NewSubscriptionManagementToAccessTenantMemberLifecycleChildCapability(applications.AccessTenantMemberLifecycle, executor)
 	if err != nil {
@@ -279,20 +298,6 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	}
 	if applications.CommercialEntitlementManagement == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/entitlement_management")
-	}
-	applications.DeviceopsDelegatedDeviceAccess, err = factories.BuildDeviceopsDelegatedDeviceAccess(DeviceopsDelegatedDeviceAccessDependencies{})
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build application deviceops/delegated_device_access: %w", err)
-	}
-	if applications.DeviceopsDelegatedDeviceAccess == nil {
-		return Applications{}, errors.New("yunka assembly: application factory returned nil for deviceops/delegated_device_access")
-	}
-	applications.DeviceopsSiteManagement, err = factories.BuildDeviceopsSiteManagement(DeviceopsSiteManagementDependencies{})
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build application deviceops/site_management: %w", err)
-	}
-	if applications.DeviceopsSiteManagement == nil {
-		return Applications{}, errors.New("yunka assembly: application factory returned nil for deviceops/site_management")
 	}
 	deviceopsDeviceManagementDeviceopsSiteManagementCapability, err := deviceopsapplication.NewDeviceManagementToDeviceopsSiteManagementChildCapability(applications.DeviceopsSiteManagement, executor)
 	if err != nil {
@@ -538,7 +543,7 @@ type BootstrapOptions struct {
 
 func RuntimeInventory() core.RuntimeInventory {
 	return core.RuntimeInventory{
-		Routes:              []string{"/v1/delegated/devices/{id}", "/v1/devices", "/v1/devices/{id}", "/v1/devices/{id}/transfer", "/v1/platform/modules", "/v1/platform/modules/{module_code}", "/v1/platform/modules/{module_code}/sales-status", "/v1/platform/modules/{module_code}/technical-status", "/v1/platform/plans", "/v1/platform/plans/{plan_code}/versions", "/v1/platform/plans/{plan_code}/versions/{version}", "/v1/platform/plans/{plan_code}/versions/{version}/eligibility", "/v1/platform/plans/{plan_code}/versions/{version}/publish", "/v1/platform/plans/{plan_code}/versions/{version}/retire", "/v1/platform/subscription-default-rules", "/v1/platform/subscription-default-rules/{rule_id}", "/v1/platform/tenants/{tenant_id}/entitlement-overrides", "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", "/v1/platform/tenants/{tenant_id}/entitlements", "/v1/platform/tenants/{tenant_id}/provisioning/deliveries", "/v1/platform/tenants/{tenant_id}/provisioning/tasks", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry", "/v1/platform/tenants/{tenant_id}/subscription", "/v1/platform/tenants/{tenant_id}/subscription/change-previews", "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm", "/v1/tenant/audit-logs", "/v1/tenant/audit-logs/exports", "/v1/tenant/audit-logs/{audit_id}", "/v1/tenant/branding", "/v1/tenant/delegations", "/v1/tenant/delegations/devices", "/v1/tenant/delegations/{id}", "/v1/tenant/delegations/{id}:revoke", "/v1/tenant/departments", "/v1/tenant/departments/{department_id}", "/v1/tenant/departments/{department_id}/disable", "/v1/tenant/departments/{department_id}/enable", "/v1/tenant/entitlements", "/v1/tenant/members", "/v1/tenant/members/create", "/v1/tenant/members/removed", "/v1/tenant/members/{user_id}", "/v1/tenant/members/{user_id}/activate", "/v1/tenant/members/{user_id}/profile", "/v1/tenant/members/{user_id}/remove", "/v1/tenant/members/{user_id}/restore", "/v1/tenant/members/{user_id}/suspend", "/v1/tenant/profile", "/v1/tenant/roles", "/v1/tenant/roles/{role_id}", "/v1/tenant/roles/{role_id}/disable", "/v1/tenant/roles/{role_id}/enable", "/v1/tenant/roles/{role_id}/members", "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", "/v1/tenant/roles/{role_id}/permissions", "/v1/tenant/subscription", "/v1/tenant/subscription/change-previews", "/v1/tenant/subscription/change-previews/{change_id}", "/v1/tenant/subscription/change-targets", "/v1/tenant/subscription/changes/{change_id}", "/v1/tenant/subscription/changes/{change_id}/confirm", "/v1/tenant/usage", "/v1/tenants", "/v1/tenants/{id}", "/v1/tenants/{id}/activate", "/v1/tenants/{id}/close", "/v1/tenants/{id}/suspend"},
+		Routes:              []string{"/v1/delegated/devices/{id}", "/v1/devices", "/v1/devices/{id}", "/v1/devices/{id}/transfer", "/v1/platform/modules", "/v1/platform/modules/{module_code}", "/v1/platform/modules/{module_code}/sales-status", "/v1/platform/modules/{module_code}/technical-status", "/v1/platform/plans", "/v1/platform/plans/{plan_code}/versions", "/v1/platform/plans/{plan_code}/versions/{version}", "/v1/platform/plans/{plan_code}/versions/{version}/eligibility", "/v1/platform/plans/{plan_code}/versions/{version}/publish", "/v1/platform/plans/{plan_code}/versions/{version}/retire", "/v1/platform/subscription-default-rules", "/v1/platform/subscription-default-rules/{rule_id}", "/v1/platform/tenants/{tenant_id}/entitlement-overrides", "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", "/v1/platform/tenants/{tenant_id}/entitlements", "/v1/platform/tenants/{tenant_id}/provisioning/deliveries", "/v1/platform/tenants/{tenant_id}/provisioning/tasks", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry", "/v1/platform/tenants/{tenant_id}/subscription", "/v1/platform/tenants/{tenant_id}/subscription/change-previews", "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm", "/v1/tenant/audit-logs", "/v1/tenant/audit-logs/exports", "/v1/tenant/audit-logs/{audit_id}", "/v1/tenant/branding", "/v1/tenant/data-policies", "/v1/tenant/data-policies/{policy_id}", "/v1/tenant/data-policies/{policy_id}/revoke", "/v1/tenant/delegations", "/v1/tenant/delegations/devices", "/v1/tenant/delegations/{id}", "/v1/tenant/delegations/{id}:revoke", "/v1/tenant/departments", "/v1/tenant/departments/{department_id}", "/v1/tenant/departments/{department_id}/disable", "/v1/tenant/departments/{department_id}/enable", "/v1/tenant/entitlements", "/v1/tenant/members", "/v1/tenant/members/create", "/v1/tenant/members/removed", "/v1/tenant/members/{user_id}", "/v1/tenant/members/{user_id}/activate", "/v1/tenant/members/{user_id}/profile", "/v1/tenant/members/{user_id}/remove", "/v1/tenant/members/{user_id}/restore", "/v1/tenant/members/{user_id}/suspend", "/v1/tenant/profile", "/v1/tenant/roles", "/v1/tenant/roles/{role_id}", "/v1/tenant/roles/{role_id}/data-policy", "/v1/tenant/roles/{role_id}/disable", "/v1/tenant/roles/{role_id}/enable", "/v1/tenant/roles/{role_id}/members", "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", "/v1/tenant/roles/{role_id}/permissions", "/v1/tenant/subscription", "/v1/tenant/subscription/change-previews", "/v1/tenant/subscription/change-previews/{change_id}", "/v1/tenant/subscription/change-targets", "/v1/tenant/subscription/changes/{change_id}", "/v1/tenant/subscription/changes/{change_id}/confirm", "/v1/tenant/usage", "/v1/tenants", "/v1/tenants/{id}", "/v1/tenants/{id}/activate", "/v1/tenants/{id}/close", "/v1/tenants/{id}/suspend"},
 		RPCClientConfigured: false,
 		RPCServerCount:      1,
 	}

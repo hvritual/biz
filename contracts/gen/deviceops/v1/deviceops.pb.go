@@ -691,6 +691,113 @@ func (*AssertDeviceOwnedByActorTenantResponse) Descriptor() ([]byte, []int) {
 	return file_deviceops_v1_deviceops_proto_rawDescGZIP(), []int{12}
 }
 
+// SiteApplication declares an internal canonical Operation without exposing a
+// protobuf RPC method. The Operation remains available to typed child
+// capabilities, OperationPlan, and Application Graph only.
+type SiteScopeDirectoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SiteIds       []string               `protobuf:"bytes,1,rep,name=site_ids,json=siteIds,proto3" json:"site_ids,omitempty"`
+	Resolve       bool                   `protobuf:"varint,2,opt,name=resolve,proto3" json:"resolve,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SiteScopeDirectoryRequest) Reset() {
+	*x = SiteScopeDirectoryRequest{}
+	mi := &file_deviceops_v1_deviceops_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SiteScopeDirectoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SiteScopeDirectoryRequest) ProtoMessage() {}
+
+func (x *SiteScopeDirectoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_deviceops_v1_deviceops_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SiteScopeDirectoryRequest.ProtoReflect.Descriptor instead.
+func (*SiteScopeDirectoryRequest) Descriptor() ([]byte, []int) {
+	return file_deviceops_v1_deviceops_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *SiteScopeDirectoryRequest) GetSiteIds() []string {
+	if x != nil {
+		return x.SiteIds
+	}
+	return nil
+}
+
+func (x *SiteScopeDirectoryRequest) GetResolve() bool {
+	if x != nil {
+		return x.Resolve
+	}
+	return false
+}
+
+type SiteScopeDirectoryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sites         []*SiteDTO             `protobuf:"bytes,1,rep,name=sites,proto3" json:"sites,omitempty"`
+	Total         uint64                 `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SiteScopeDirectoryResponse) Reset() {
+	*x = SiteScopeDirectoryResponse{}
+	mi := &file_deviceops_v1_deviceops_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SiteScopeDirectoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SiteScopeDirectoryResponse) ProtoMessage() {}
+
+func (x *SiteScopeDirectoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_deviceops_v1_deviceops_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SiteScopeDirectoryResponse.ProtoReflect.Descriptor instead.
+func (*SiteScopeDirectoryResponse) Descriptor() ([]byte, []int) {
+	return file_deviceops_v1_deviceops_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *SiteScopeDirectoryResponse) GetSites() []*SiteDTO {
+	if x != nil {
+		return x.Sites
+	}
+	return nil
+}
+
+func (x *SiteScopeDirectoryResponse) GetTotal() uint64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
 var File_deviceops_v1_deviceops_proto protoreflect.FileDescriptor
 
 const file_deviceops_v1_deviceops_proto_rawDesc = "" +
@@ -734,7 +841,13 @@ const file_deviceops_v1_deviceops_proto_rawDesc = "" +
 	"\aversion\x18\x03 \x01(\x04R\aversion\"D\n" +
 	"%AssertDeviceOwnedByActorTenantRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"(\n" +
-	"&AssertDeviceOwnedByActorTenantResponse2\xa1\t\n" +
+	"&AssertDeviceOwnedByActorTenantResponse\"P\n" +
+	"\x19SiteScopeDirectoryRequest\x12\x19\n" +
+	"\bsite_ids\x18\x01 \x03(\tR\asiteIds\x12\x18\n" +
+	"\aresolve\x18\x02 \x01(\bR\aresolve\"_\n" +
+	"\x1aSiteScopeDirectoryResponse\x12+\n" +
+	"\x05sites\x18\x01 \x03(\v2\x15.deviceops.v1.SiteDTOR\x05sites\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x04R\x05total2\xa1\t\n" +
 	"\x11DeviceApplication\x12\x9f\x01\n" +
 	"\vListDevices\x12 .deviceops.v1.ListDevicesRequest\x1a!.deviceops.v1.ListDevicesResponse\"K\xe2\xf3\x184\n" +
 	"\vdevice.list\x12\flist_devices\x1a\vdevice.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\r\x12\v/v1/devices\x12\x93\x01\n" +
@@ -749,10 +862,11 @@ const file_deviceops_v1_deviceops_proto_rawDesc = "" +
 	"\fDeleteDevice\x12!.deviceops.v1.DeleteDeviceRequest\x1a\".deviceops.v1.DeleteDeviceResponse\"U\xe2\xf3\x189\n" +
 	"\rdevice.delete\x12\rdelete_device\x1a\rdevice.delete(\x012\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x12*\x10/v1/devices/{id}\x1a\xae\x02\xda\xf3\x18\xa9\x02\n" +
 	"\x11device_management\x12\x19deviceops/site_management\x1a\xf8\x01\n" +
-	"#device.assert_owned_by_actor_tenant\x12#assert_device_owned_by_actor_tenant\x1a\x18tenant.delegation.manage(\x012\x01\x02R\x04\b\x02\x10\x01Z2deviceops.v1.AssertDeviceOwnedByActorTenantRequestb3deviceops.v1.AssertDeviceOwnedByActorTenantResponsej\x1eAssertDeviceOwnedByActorTenant2\xd7\x01\n" +
-	"\x0fSiteApplication\x1a\xc3\x01\xda\xf3\x18\xbe\x01\n" +
+	"#device.assert_owned_by_actor_tenant\x12#assert_device_owned_by_actor_tenant\x1a\x18tenant.delegation.manage(\x012\x01\x02R\x04\b\x02\x10\x01Z2deviceops.v1.AssertDeviceOwnedByActorTenantRequestb3deviceops.v1.AssertDeviceOwnedByActorTenantResponsej\x1eAssertDeviceOwnedByActorTenant2\x9b\x03\n" +
+	"\x0fSiteApplication\x1a\x87\x03\xda\xf3\x18\x82\x03\n" +
 	"\x0fsite_management\x1a\xaa\x01\n" +
-	"\x1dsite.validate_transfer_target\x12\x18validate_transfer_target\x1a\tsite.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01Z*deviceops.v1.ValidateTransferTargetRequestb\x14deviceops.v1.SiteDTOj\x16ValidateTransferTarget2\xde\x02\n" +
+	"\x1dsite.validate_transfer_target\x12\x18validate_transfer_target\x1a\tsite.read(\x012\x02\x02\x04R\x04\b\x02\x10\x01Z*deviceops.v1.ValidateTransferTargetRequestb\x14deviceops.v1.SiteDTOj\x16ValidateTransferTarget\x1a\xc1\x01\n" +
+	"\x19site.role_scope_directory\x12\x1alist_assignable_role_sites\x1a\x12tenant.role.manage(\x012\x02\x02\x04R\x04\b\x02\x10\x01Z&deviceops.v1.SiteScopeDirectoryRequestb'deviceops.v1.SiteScopeDirectoryResponsej\x17ListAssignableRoleSites2\xde\x02\n" +
 	"\x19DeviceTransferApplication\x12\xf1\x01\n" +
 	"\x0eTransferDevice\x12#.deviceops.v1.TransferDeviceRequest\x1a\x17.deviceops.v1.DeviceDTO\"\xa0\x01\xe2\xf3\x18x\n" +
 	"\x0fdevice.transfer\x12\x0ftransfer_device\x1a\tsite.read\x1a\rdevice.update(\x012\x02\x02\x04B\x1dsite.validate_transfer_targetB\rdevice.updateH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x1e:\x01*2\x19/v1/devices/{id}/transfer\x1aM\xda\xf3\x18I\n" +
@@ -771,7 +885,7 @@ func file_deviceops_v1_deviceops_proto_rawDescGZIP() []byte {
 	return file_deviceops_v1_deviceops_proto_rawDescData
 }
 
-var file_deviceops_v1_deviceops_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_deviceops_v1_deviceops_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_deviceops_v1_deviceops_proto_goTypes = []any{
 	(*DeviceDTO)(nil),                              // 0: deviceops.v1.DeviceDTO
 	(*SiteDTO)(nil),                                // 1: deviceops.v1.SiteDTO
@@ -786,26 +900,29 @@ var file_deviceops_v1_deviceops_proto_goTypes = []any{
 	(*TransferDeviceRequest)(nil),                  // 10: deviceops.v1.TransferDeviceRequest
 	(*AssertDeviceOwnedByActorTenantRequest)(nil),  // 11: deviceops.v1.AssertDeviceOwnedByActorTenantRequest
 	(*AssertDeviceOwnedByActorTenantResponse)(nil), // 12: deviceops.v1.AssertDeviceOwnedByActorTenantResponse
+	(*SiteScopeDirectoryRequest)(nil),              // 13: deviceops.v1.SiteScopeDirectoryRequest
+	(*SiteScopeDirectoryResponse)(nil),             // 14: deviceops.v1.SiteScopeDirectoryResponse
 }
 var file_deviceops_v1_deviceops_proto_depIdxs = []int32{
 	0,  // 0: deviceops.v1.ListDevicesResponse.devices:type_name -> deviceops.v1.DeviceDTO
-	2,  // 1: deviceops.v1.DeviceApplication.ListDevices:input_type -> deviceops.v1.ListDevicesRequest
-	4,  // 2: deviceops.v1.DeviceApplication.GetDevice:input_type -> deviceops.v1.GetDeviceRequest
-	5,  // 3: deviceops.v1.DeviceApplication.CreateDevice:input_type -> deviceops.v1.CreateDeviceRequest
-	6,  // 4: deviceops.v1.DeviceApplication.UpdateDevice:input_type -> deviceops.v1.UpdateDeviceRequest
-	7,  // 5: deviceops.v1.DeviceApplication.DeleteDevice:input_type -> deviceops.v1.DeleteDeviceRequest
-	10, // 6: deviceops.v1.DeviceTransferApplication.TransferDevice:input_type -> deviceops.v1.TransferDeviceRequest
-	3,  // 7: deviceops.v1.DeviceApplication.ListDevices:output_type -> deviceops.v1.ListDevicesResponse
-	0,  // 8: deviceops.v1.DeviceApplication.GetDevice:output_type -> deviceops.v1.DeviceDTO
-	0,  // 9: deviceops.v1.DeviceApplication.CreateDevice:output_type -> deviceops.v1.DeviceDTO
-	0,  // 10: deviceops.v1.DeviceApplication.UpdateDevice:output_type -> deviceops.v1.DeviceDTO
-	8,  // 11: deviceops.v1.DeviceApplication.DeleteDevice:output_type -> deviceops.v1.DeleteDeviceResponse
-	0,  // 12: deviceops.v1.DeviceTransferApplication.TransferDevice:output_type -> deviceops.v1.DeviceDTO
-	7,  // [7:13] is the sub-list for method output_type
-	1,  // [1:7] is the sub-list for method input_type
-	1,  // [1:1] is the sub-list for extension type_name
-	1,  // [1:1] is the sub-list for extension extendee
-	0,  // [0:1] is the sub-list for field type_name
+	1,  // 1: deviceops.v1.SiteScopeDirectoryResponse.sites:type_name -> deviceops.v1.SiteDTO
+	2,  // 2: deviceops.v1.DeviceApplication.ListDevices:input_type -> deviceops.v1.ListDevicesRequest
+	4,  // 3: deviceops.v1.DeviceApplication.GetDevice:input_type -> deviceops.v1.GetDeviceRequest
+	5,  // 4: deviceops.v1.DeviceApplication.CreateDevice:input_type -> deviceops.v1.CreateDeviceRequest
+	6,  // 5: deviceops.v1.DeviceApplication.UpdateDevice:input_type -> deviceops.v1.UpdateDeviceRequest
+	7,  // 6: deviceops.v1.DeviceApplication.DeleteDevice:input_type -> deviceops.v1.DeleteDeviceRequest
+	10, // 7: deviceops.v1.DeviceTransferApplication.TransferDevice:input_type -> deviceops.v1.TransferDeviceRequest
+	3,  // 8: deviceops.v1.DeviceApplication.ListDevices:output_type -> deviceops.v1.ListDevicesResponse
+	0,  // 9: deviceops.v1.DeviceApplication.GetDevice:output_type -> deviceops.v1.DeviceDTO
+	0,  // 10: deviceops.v1.DeviceApplication.CreateDevice:output_type -> deviceops.v1.DeviceDTO
+	0,  // 11: deviceops.v1.DeviceApplication.UpdateDevice:output_type -> deviceops.v1.DeviceDTO
+	8,  // 12: deviceops.v1.DeviceApplication.DeleteDevice:output_type -> deviceops.v1.DeleteDeviceResponse
+	0,  // 13: deviceops.v1.DeviceTransferApplication.TransferDevice:output_type -> deviceops.v1.DeviceDTO
+	8,  // [8:14] is the sub-list for method output_type
+	2,  // [2:8] is the sub-list for method input_type
+	2,  // [2:2] is the sub-list for extension type_name
+	2,  // [2:2] is the sub-list for extension extendee
+	0,  // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_deviceops_v1_deviceops_proto_init() }
@@ -819,7 +936,7 @@ func file_deviceops_v1_deviceops_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deviceops_v1_deviceops_proto_rawDesc), len(file_deviceops_v1_deviceops_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   3,
 		},

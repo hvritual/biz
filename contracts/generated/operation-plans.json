@@ -2546,6 +2546,31 @@
       }
     },
     {
+      "operationId": "site.role_scope_directory",
+      "domain": "deviceops",
+      "application": "site_management",
+      "useCase": "list_assignable_role_sites",
+      "requestType": "deviceops.v1.SiteScopeDirectoryRequest",
+      "responseType": "deviceops.v1.SiteScopeDirectoryResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {}
+    },
+    {
       "operationId": "site.validate_transfer_target",
       "domain": "deviceops",
       "application": "site_management",
@@ -2789,6 +2814,205 @@
           {
             "method": "POST",
             "path": "/v1/tenants",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.data_policy.create",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "create_tenant_data_policy",
+      "requestType": "access.v1.CreateTenantDataPolicyRequest",
+      "responseType": "access.v1.TenantDataPolicyDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "site.role_scope_directory"
+        ],
+        "permissionClosure": [
+          "tenant.role.manage"
+        ]
+      },
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/CreateTenantDataPolicy",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/data-policies",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.data_policy.get",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "get_tenant_data_policy",
+      "requestType": "access.v1.GetTenantDataPolicyRequest",
+      "responseType": "access.v1.TenantDataPolicyDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/GetTenantDataPolicy",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/data-policies/{policy_id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.data_policy.list",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "list_tenant_data_policies",
+      "requestType": "access.v1.ListTenantDataPoliciesRequest",
+      "responseType": "access.v1.ListTenantDataPoliciesResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/ListTenantDataPolicies",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/data-policies"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.data_policy.revoke",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "revoke_tenant_data_policy",
+      "requestType": "access.v1.RevokeTenantDataPolicyRequest",
+      "responseType": "access.v1.TenantDataPolicyDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/RevokeTenantDataPolicy",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/data-policies/{policy_id}/revoke",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.data_policy.update",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "update_tenant_data_policy",
+      "requestType": "access.v1.UpdateTenantDataPolicyRequest",
+      "responseType": "access.v1.TenantDataPolicyDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "site.role_scope_directory"
+        ],
+        "permissionClosure": [
+          "tenant.role.manage"
+        ]
+      },
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/UpdateTenantDataPolicy",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/tenant/data-policies/{policy_id}",
             "body": "*"
           }
         ]
@@ -3867,6 +4091,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {}
     },
     {
@@ -3892,6 +4119,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/AssignTenantRoleMember",
         "http": [
@@ -3924,6 +4154,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {}
     },
     {
@@ -3949,6 +4182,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/CreateTenantRole",
         "http": [
@@ -3983,6 +4219,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/DeleteTenantRole",
         "http": [
@@ -4016,6 +4255,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/DisableTenantRole",
         "http": [
@@ -4050,6 +4292,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/EnableTenantRole",
         "http": [
@@ -4084,6 +4329,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/GetTenantRole",
         "http": [
@@ -4117,6 +4365,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/ListTenantRoles",
         "http": [
@@ -4150,12 +4401,52 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/RevokeTenantRoleMember",
         "http": [
           {
             "method": "POST",
             "path": "/v1/tenant/roles/{role_id}/members/{user_id}/revoke",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.role.set_data_policy",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "set_tenant_role_data_policy",
+      "requestType": "access.v1.SetTenantRoleDataPolicyRequest",
+      "responseType": "access.v1.TenantRoleDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/SetTenantRoleDataPolicy",
+        "http": [
+          {
+            "method": "PUT",
+            "path": "/v1/tenant/roles/{role_id}/data-policy",
             "body": "*"
           }
         ]
@@ -4184,6 +4475,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/SetTenantRolePermissions",
         "http": [
@@ -4218,6 +4512,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/UpdateTenantRole",
         "http": [

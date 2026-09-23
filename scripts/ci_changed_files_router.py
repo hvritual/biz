@@ -155,7 +155,30 @@ CE13_GATE_PREFIXES = (
 
 ENTERPRISE_180_PATH_PREFIXES = (
     "integration/enterprise_180_",
+    "internal/access/domain/data_policy",
+    "internal/access/ports/data_policy",
+    "internal/access/infrastructure/persistence/data_policy",
+    "internal/access/application/tenant_data_policy",
+    "internal/access/application/member_business_scope",
+    "web/src/features/enterprise/components/policies/",
+    "web/src/services/enterprise/dataPolicy",
+    "web/e2e/enterprise-data-policy",
 )
+ENTERPRISE_180_FILES = {
+    "contracts/proto/access/v1/tenant_role.proto",
+    ".github/workflows/enterprise-role-qualification.yml",
+    "internal/access/infrastructure/persistence/business_scope.go",
+    "internal/access/infrastructure/persistence/member_business_scope.go",
+    "internal/access/infrastructure/persistence/bootstrap_business_scope.go",
+    "internal/access/infrastructure/persistence/migrations/0016_enterprise_data_policy.sql",
+    "internal/bizruntime/data_policy_errors.go",
+    "internal/deviceops/security/scope.go",
+    "internal/deviceops/infrastructure/persistence/site_directory.go",
+    "internal/deviceops/application/site_scope_directory.go",
+    "internal/deviceops/ports/site_directory.go",
+    "docs/enterprise-center/enterprise180-policy-contract.v1.json",
+    "docs/enterprise-center/enterprise180-policy-negative-examples.md",
+}
 
 ROLE_GRANT_PATH_PREFIXES = (
     "internal/access/authorization/",
@@ -191,6 +214,8 @@ def clean(path: str) -> str:
 
 
 def is_docs_only_path(path: str) -> bool:
+    if path in ENTERPRISE_180_FILES:
+        return False
     if path.startswith("docs/"):
         return True
     if path in DOC_NAMES:
@@ -260,7 +285,7 @@ def route(paths: list[str]) -> dict[str, object]:
     )
 
     enterprise180 = any(
-        any(path.startswith(prefix) for prefix in ENTERPRISE_180_PATH_PREFIXES)
+        path in ENTERPRISE_180_FILES or any(path.startswith(prefix) for prefix in ENTERPRISE_180_PATH_PREFIXES)
         for path in files
     )
 
