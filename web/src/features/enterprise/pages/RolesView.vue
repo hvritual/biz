@@ -14,6 +14,7 @@ import StatusBadge from '@/ui/common/StatusBadge.vue'
 import EmptyState from '@/ui/common/EmptyState.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import RoleEditor from '@/features/enterprise/components/roles/RoleEditor.vue'
+import RoleDataPolicyDialog from '@/features/enterprise/components/roles/RoleDataPolicyDialog.vue'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 const store = useEnterpriseStore(),
   route = useRoute(),
@@ -25,7 +26,8 @@ const query = ref(''),
   target = ref<Role | null>(null),
   deleteTarget = ref<Role | null>(null),
   deleting = ref(false),
-  deleteError = ref('')
+  deleteError = ref(''),
+  policyTarget = ref<Role | null>(null)
 const roleActionsAllowed=(codes:string[])=>store.previewMode||codes.every(currentAuthorizationAllows)
 const canCreateRole = computed(() => roleActionsAllowed([
   'tenant.role.create',
@@ -40,6 +42,8 @@ const canEditRole = computed(() => roleActionsAllowed([
   'tenant.role.disable',
 ]))
 const canDeleteRole = computed(() => roleActionsAllowed(['tenant.role.delete']))
+const canReadDataPolicy = computed(() => roleActionsAllowed(['tenant.data_policy.list', 'tenant.role.get']))
+const canManageDataPolicy = computed(() => roleActionsAllowed(['tenant.data_policy.list', 'tenant.role.get', 'tenant.role.set_data_policy']))
 const filtered = computed(() =>
   store.roles.filter(
     (r) =>
@@ -97,6 +101,15 @@ async function confirmDelete() {
   } finally {
     deleting.value = false
   }
+}
+function openDataPolicy(role: Role) {
+  if (!canReadDataPolicy.value) return
+  policyTarget.value = role
+}
+async function refreshPolicyRole() {
+  await store.queryRoles({ query: query.value, status: status.value })
+  const id = policyTarget.value?.id
+  policyTarget.value = id ? store.roles.find((role) => role.id === id) ?? null : null
 }
 watch(
   () => route.query.action,
@@ -169,6 +182,7 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
               <th>角色类型</th>
               <th>关联成员</th>
               <th>数据范围</th>
+              <th>数据策略</th>
               <th>状态</th>
               <th>更新时间</th>
               <th>操作</th>
@@ -192,12 +206,22 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
               <td class="numeric">{{ memberCount(r) }} 人</td>
               <td>{{ scopeLabels[r.scope] }}</td>
               <td>
+                <div class="policy-cell">
+                  <template v-if="r.dataPolicy">
+                    <strong>{{ r.dataPolicy.policyName || r.dataPolicy.policyId }}</strong>
+                    <small>{{ r.dataPolicy.policyId }} · v{{ r.dataPolicy.policyVersion }}</small>
+                    <StatusBadge :text="r.dataPolicy.effective ? '有效' : '已失效'" :tone="r.dataPolicy.effective ? 'success' : 'danger'" />
+                  </template>
+                  <span v-else class="muted">未绑定</span>
+                </div>
+              </td>
+              <td>
                 <StatusBadge :text="r.enabled ? '启用' : '禁用'" :tone="r.enabled ? 'success' : 'neutral'" />
               </td>
               <td class="muted numeric">{{ r.updatedAt }}</td>
               <td>
                 <div class="table-actions">
-                  <UiButton v-if="r.builtin || canEditRole" class="btn-link" @click="edit(r)">{{ r.builtin ? '查看' : '编辑' }}</UiButton><UiButton v-if="canCreateRole && !r.builtin" class="btn-link" :aria-label="'复制 ' + r.name" @click="copy(r)">复制</UiButton><UiButton
+                  <UiButton v-if="r.builtin || canEditRole" class="btn-link" @click="edit(r)">{{ r.builtin ? '查看' : '编辑' }}</UiButton><UiButton v-if="canReadDataPolicy" class="btn-link" :aria-label="'数据策略 ' + r.name" @click="openDataPolicy(r)">{{ canManageDataPolicy && !r.builtin ? '策略' : '查看策略' }}</UiButton><UiButton v-if="canCreateRole && !r.builtin" class="btn-link" :aria-label="'复制 ' + r.name" @click="copy(r)">复制</UiButton><UiButton
                     v-if="canDeleteRole && !r.builtin"
                     class="btn-link"
                     :disabled="memberCount(r) > 0"
@@ -215,6 +239,13 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
       <div class="role-footer muted">共 {{ filtered.length }} 个角色 · 角色变更将在操作日志中保留记录</div>
     </section>
     <RoleEditor :open="editorOpen" :role="target" @close="editorOpen = false" />
+    <RoleDataPolicyDialog
+      :open="Boolean(policyTarget)"
+      :role="policyTarget"
+      :can-manage="canManageDataPolicy && !policyTarget?.builtin"
+      @close="policyTarget = null"
+      @saved="refreshPolicyRole"
+    />
     <UiDialog
       :open="Boolean(deleteTarget)"
       title="删除角色"
@@ -234,7 +265,26 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
 </template>
 <style scoped>
 .role-table {
-  min-width: 980px;
+  min-width: 1120px;
+}
+.policy-cell {
+  display: grid;
+  gap: 3px;
+  min-width: 170px;
+}
+.policy-cell strong {
+  font-size: 12px;
+}
+.policy-cell small {
+  max-width: 180px;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.policy-cell :deep(.status-badge) {
+  width: max-content;
 }
 .role-icon {
   width: 34px;

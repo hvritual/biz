@@ -215,5 +215,13 @@
   "system/components/settings/SecuritySettings.vue": {
     "scenario": "系统设置 · 领域展示 · SecuritySettings",
     "scope": "仅用于系统设置业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/roles/RoleDataPolicyDialog.vue": {
+    "scenario": "企业中心 · 角色数据策略 · RoleDataPolicyDialog",
+    "scope": "仅用于企业中心角色绑定 Access Data Policy；保留 Grant 数据范围与策略约束的独立语义，写入后必须权威回读。"
+  },
+  "enterprise/components/members/MemberBusinessScopePanel.vue": {
+    "scenario": "企业中心 · 成员数据权限 · MemberBusinessScopePanel",
+    "scope": "仅用于成员详情中的显式业务范围读取与编辑；候选来自当前租户对象权威服务，derived_data_scope 仅作摘要提示。"
   }
 }

@@ -22,6 +22,14 @@ export interface Member {
   mfa: boolean
   note: string
 }
+export interface RoleDataPolicyReference {
+  policyId: string
+  policyName: string
+  policyVersion: number
+  acceptedVersion: number
+  effective: boolean
+  invalidReason: string
+}
 export interface Role {
   id: string
   name: string
@@ -32,6 +40,7 @@ export interface Role {
   scope: DataScope
   permissions: string[]
   memberCount?: number
+  dataPolicy?: RoleDataPolicyReference
   updatedAt: string
   runtimeVersion?: string | number
 }

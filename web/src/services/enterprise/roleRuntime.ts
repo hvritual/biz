@@ -10,12 +10,34 @@ import {
   selectSessionTenant,
   sessionContext,
   type PermissionGrant,
+  type TenantDataPolicyReference,
   type TenantRole,
   type TrustedSession,
 } from '@/services/runtime/api'
 import type { RoleGrantScope } from './rolePermissionCatalog'
 
-export type RoleMutation = 'create' | 'update' | 'enable' | 'disable' | 'delete' | 'permissions' | 'assign' | 'revoke'
+export type RoleMutation = 'create' | 'update' | 'enable' | 'disable' | 'delete' | 'permissions' | 'assign' | 'revoke' | 'data-policy'
+
+export type EnterpriseRoleDataPolicyReference = {
+  policyId: string
+  policyName: string
+  policyVersion: number
+  acceptedVersion: number
+  effective: boolean
+  invalidReason: string
+}
+
+export type EnterpriseDataPolicy = {
+  id: string
+  name: string
+  status: string
+  siteIds: string[]
+  version: number
+  notBefore: string
+  expiresAt: string
+  effective: boolean
+  invalidReason: string
+}
 
 export type EnterpriseTenantRole = TenantRole & {
   permissions: PermissionGrant[]
@@ -25,6 +47,7 @@ export type EnterpriseTenantRole = TenantRole & {
   memberCount: number
   protectedOwner: boolean
   protectedSystem: boolean
+  dataPolicy?: EnterpriseRoleDataPolicyReference
 }
 
 export type EnterpriseRoleDraft = {
@@ -87,6 +110,18 @@ function serverScope(scope: string) {
   }
 }
 
+function policyReferenceSnapshot(value?: TenantDataPolicyReference): EnterpriseRoleDataPolicyReference | undefined {
+  if (!value?.policyId) return undefined
+  return Object.freeze({
+    policyId: value.policyId,
+    policyName: value.policyName ?? '',
+    policyVersion: Number(value.policyVersion ?? 0),
+    acceptedVersion: Number(value.acceptedVersion ?? 0),
+    effective: Boolean(value.effective),
+    invalidReason: value.invalidReason ?? '',
+  })
+}
+
 function roleSnapshot(role: TenantRole): EnterpriseTenantRole {
   const permissions = Array.isArray(role.permissions)
     ? role.permissions.map((grant) => Object.freeze({
@@ -103,6 +138,7 @@ function roleSnapshot(role: TenantRole): EnterpriseTenantRole {
     systemRole,
     memberCount: Number(role.memberCount ?? 0),
     permissions,
+    dataPolicy: policyReferenceSnapshot(role.dataPolicy),
     protectedOwner: roleCode === 'tenant_owner' || (!roleCode && role.name === 'owner'),
     protectedSystem: systemRole || roleCode === 'tenant_owner' || roleCode === 'tenant_admin',
   }) as EnterpriseTenantRole
@@ -110,6 +146,16 @@ function roleSnapshot(role: TenantRole): EnterpriseTenantRole {
 
 export async function readEnterpriseRoleSession() {
   return readSession()
+}
+
+export function sameEnterpriseRoleSession(a: TrustedSession, b: TrustedSession) {
+  return (
+    a.authenticated === b.authenticated &&
+    (a.actor_kind ?? '') === (b.actor_kind ?? '') &&
+    (a.user_id ?? '') === (b.user_id ?? '') &&
+    (a.active_tenant_id ?? '') === (b.active_tenant_id ?? '') &&
+    (a.context_version ?? 0) === (b.context_version ?? 0)
+  )
 }
 
 export async function switchEnterpriseRoleTenant(tenantId: string) {
@@ -135,6 +181,52 @@ export async function getEnterpriseRole(session: TrustedSession, roleId: string)
     headers: headers(session),
   })
   return roleSnapshot(role)
+}
+
+export async function listEnterpriseDataPolicies(session: TrustedSession) {
+  requireTenantSession(session)
+  const result = await request<{ policies?: Array<{
+    id: string
+    name: string
+    status: string
+    siteIds?: string[]
+    version: string | number
+    notBefore?: string
+    expiresAt?: string
+    effective?: boolean
+    invalidReason?: string
+  }> }>('/v1/tenant/data-policies', { headers: headers(session) })
+  return (result.policies ?? []).map((policy) => Object.freeze({
+    id: policy.id,
+    name: policy.name ?? '',
+    status: policy.status ?? '',
+    siteIds: [...(policy.siteIds ?? [])],
+    version: Number(policy.version ?? 0),
+    notBefore: policy.notBefore ?? '',
+    expiresAt: policy.expiresAt ?? '',
+    effective: Boolean(policy.effective),
+    invalidReason: policy.invalidReason ?? '',
+  }) as EnterpriseDataPolicy)
+}
+
+export function setEnterpriseRoleDataPolicy(
+  session: TrustedSession,
+  role: EnterpriseTenantRole,
+  policy: EnterpriseDataPolicy | null,
+  key: string,
+) {
+  return roleMutate(
+    session,
+    `/v1/tenant/roles/${encodeURIComponent(role.id)}/data-policy`,
+    'PUT',
+    {
+      roleId: role.id,
+      version: role.version,
+      policyId: policy?.id ?? '',
+      policyVersion: policy?.version ?? 0,
+    },
+    key,
+  )
 }
 
 async function roleMutate(
