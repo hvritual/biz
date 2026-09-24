@@ -75,6 +75,16 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin "$BASE_SHA" --depth=1
+          python3 -m pip install --disable-pip-version-check -q PyYAML==6.0.3
+          if git cat-file -e "$BASE_SHA:scripts/check_ci_source_safety.py" 2>/dev/null; then
+            git show "$BASE_SHA:scripts/check_ci_source_safety.py" > "$RUNNER_TEMP/base-ci-source-safety.py"
+            python3 "$RUNNER_TEMP/base-ci-source-safety.py" --root "$GITHUB_WORKSPACE" --base-ref "$BASE_SHA"
+          fi
+          python3 scripts/check_ci_source_safety.py --base-ref "$BASE_SHA"
+          python3 scripts/test_ci_access_qualification.py
+          python3 scripts/test_ci_source_safety.py
+          python3 scripts/test_literal_patch.py
+          python3 scripts/test_delivery_progress.py
           python3 scripts/check_ci_topology.py --base-ref "$BASE_SHA"
           python3 scripts/ci_proof_governance.py check --base-ref "$BASE_SHA" --output "$RUNNER_TEMP/ci-proof-contract.json"
           python3 scripts/test_ci_proof_governance.py
