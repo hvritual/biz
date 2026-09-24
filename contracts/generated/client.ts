@@ -143,6 +143,9 @@ export interface Access_V1_ExportTenantAuditRecordsResponse {
   records?: readonly Access_V1_TenantAuditRecordDTO[];
 }
 
+export interface Access_V1_GetMyPersonalProfileRequest {
+}
+
 export interface Access_V1_GetTenantAuditRecordRequest {
   auditId?: string;
 }
@@ -190,6 +193,13 @@ export interface Access_V1_GrantTenantDeviceDelegationRequest {
 
 export interface Access_V1_InviteTenantMemberRequest {
   email?: string;
+}
+
+export interface Access_V1_ListMyPersonalAvatarOptionsRequest {
+}
+
+export interface Access_V1_ListMyPersonalAvatarOptionsResponse {
+  options?: readonly Access_V1_PersonalAvatarOptionDTO[];
 }
 
 export interface Access_V1_ListRemovedTenantMembersRequest {
@@ -283,6 +293,12 @@ export interface Access_V1_PermissionGrantDTO {
 export interface Access_V1_PermissionGrantInput {
   permission?: string;
   scope?: Access_V1_DataScope;
+}
+
+export interface Access_V1_PersonalAvatarOptionDTO {
+  assetRef?: string;
+  name?: string;
+  tone?: string;
 }
 
 export interface Access_V1_RemoveTenantMemberRequest {
@@ -469,6 +485,24 @@ export interface Access_V1_TenantMemberScopeCandidateDTO {
   unavailableReason?: string;
 }
 
+export interface Access_V1_TenantPersonalProfileDTO {
+  userId?: string;
+  username?: string;
+  name?: string;
+  tenantId?: string;
+  tenantName?: string;
+  roles?: readonly Access_V1_TenantMemberRoleDTO[];
+  registeredAt?: string;
+  joinedAt?: string;
+  email?: string;
+  phone?: string;
+  avatarAssetRef?: string;
+  version?: string;
+  employeeId?: string;
+  position?: string;
+  departmentId?: string;
+}
+
 export interface Access_V1_TenantProfileDTO {
   tenantId?: string;
   name?: string;
@@ -496,6 +530,11 @@ export interface Access_V1_TenantRoleDTO {
   systemRole?: boolean;
   memberCount?: string;
   dataPolicy?: Access_V1_TenantDataPolicyReferenceDTO;
+}
+
+export interface Access_V1_UpdateMyPersonalAvatarRequest {
+  version?: string;
+  avatarAssetRef?: string;
 }
 
 export interface Access_V1_UpdateTenantBrandingRequest {
@@ -1467,6 +1506,15 @@ export const operations = {
       { method: "POST", path: "/v1/tenant/members/create", body: "*" },
     ]
   },
+  "access.v1.TenantMemberLifecycleApplication.GetMyPersonalProfile": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.GetMyPersonalProfile",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/GetMyPersonalProfile",
+    requestType: "access.v1.GetMyPersonalProfileRequest",
+    responseType: "access.v1.TenantPersonalProfileDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/me/profile" },
+    ]
+  },
   "access.v1.TenantMemberLifecycleApplication.GetTenantMember": {
     fullName: "access.v1.TenantMemberLifecycleApplication.GetTenantMember",
     rpcPath: "/access.v1.TenantMemberLifecycleApplication/GetTenantMember",
@@ -1483,6 +1531,15 @@ export const operations = {
     responseType: "access.v1.TenantMemberDTO",
     http: [
       { method: "POST", path: "/v1/tenant/members", body: "*" },
+    ]
+  },
+  "access.v1.TenantMemberLifecycleApplication.ListMyPersonalAvatarOptions": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.ListMyPersonalAvatarOptions",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/ListMyPersonalAvatarOptions",
+    requestType: "access.v1.ListMyPersonalAvatarOptionsRequest",
+    responseType: "access.v1.ListMyPersonalAvatarOptionsResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/me/avatar-options" },
     ]
   },
   "access.v1.TenantMemberLifecycleApplication.ListRemovedTenantMembers": {
@@ -1528,6 +1585,15 @@ export const operations = {
     responseType: "access.v1.TenantMemberDTO",
     http: [
       { method: "POST", path: "/v1/tenant/members/{user_id}/suspend", body: "*" },
+    ]
+  },
+  "access.v1.TenantMemberLifecycleApplication.UpdateMyPersonalAvatar": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.UpdateMyPersonalAvatar",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/UpdateMyPersonalAvatar",
+    requestType: "access.v1.UpdateMyPersonalAvatarRequest",
+    responseType: "access.v1.TenantPersonalProfileDTO",
+    http: [
+      { method: "PATCH", path: "/v1/tenant/me/avatar", body: "*" },
     ]
   },
   "access.v1.TenantMemberLifecycleApplication.UpdateTenantMember": {
@@ -2290,12 +2356,20 @@ export class Access_V1_TenantMemberLifecycleApplicationClient {
     return this.transport.call<Access_V1_CreateTenantMemberRequest, Access_V1_TenantMemberCreationReceipt>(operations["access.v1.TenantMemberLifecycleApplication.CreateTenantMember"], request);
   }
 
+  getMyPersonalProfile(request: Access_V1_GetMyPersonalProfileRequest): Promise<Access_V1_TenantPersonalProfileDTO> {
+    return this.transport.call<Access_V1_GetMyPersonalProfileRequest, Access_V1_TenantPersonalProfileDTO>(operations["access.v1.TenantMemberLifecycleApplication.GetMyPersonalProfile"], request);
+  }
+
   getTenantMember(request: Access_V1_GetTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
     return this.transport.call<Access_V1_GetTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.GetTenantMember"], request);
   }
 
   inviteTenantMember(request: Access_V1_InviteTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
     return this.transport.call<Access_V1_InviteTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.InviteTenantMember"], request);
+  }
+
+  listMyPersonalAvatarOptions(request: Access_V1_ListMyPersonalAvatarOptionsRequest): Promise<Access_V1_ListMyPersonalAvatarOptionsResponse> {
+    return this.transport.call<Access_V1_ListMyPersonalAvatarOptionsRequest, Access_V1_ListMyPersonalAvatarOptionsResponse>(operations["access.v1.TenantMemberLifecycleApplication.ListMyPersonalAvatarOptions"], request);
   }
 
   listRemovedTenantMembers(request: Access_V1_ListRemovedTenantMembersRequest): Promise<Access_V1_ListTenantMembersResponse> {
@@ -2316,6 +2390,10 @@ export class Access_V1_TenantMemberLifecycleApplicationClient {
 
   suspendTenantMember(request: Access_V1_SuspendTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
     return this.transport.call<Access_V1_SuspendTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.SuspendTenantMember"], request);
+  }
+
+  updateMyPersonalAvatar(request: Access_V1_UpdateMyPersonalAvatarRequest): Promise<Access_V1_TenantPersonalProfileDTO> {
+    return this.transport.call<Access_V1_UpdateMyPersonalAvatarRequest, Access_V1_TenantPersonalProfileDTO>(operations["access.v1.TenantMemberLifecycleApplication.UpdateMyPersonalAvatar"], request);
   }
 
   updateTenantMember(request: Access_V1_UpdateTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
