@@ -12,6 +12,11 @@ import AvatarMark from '@/ui/common/AvatarMark.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import AppearanceControls from '@/ui/common/AppearanceControls.vue'
 import brand from '@/assets/brand-mark.png'
+import {
+  authorizationApiMode,
+  currentAuthorizationAllows,
+  currentAuthorizationState,
+} from '@/services/runtime/authorization'
 
 const ui = useUiStore()
 const store = useEnterpriseStore()
@@ -39,7 +44,12 @@ async function refreshPersonalProfile() {
     !store.session?.authenticated ||
     store.session.actor_kind !== 'tenant' ||
     !store.session.user_id ||
-    !store.session.active_tenant_id
+    !store.session.active_tenant_id ||
+    (authorizationApiMode() && (
+      currentAuthorizationState.status !== 'ready' ||
+      currentAuthorizationState.snapshot?.tenant_id !== store.session.active_tenant_id ||
+      !currentAuthorizationAllows('tenant.member.personal_profile.get')
+    ))
   ) {
     personal.clear()
     return
@@ -96,6 +106,9 @@ watch(
     store.session?.user_id,
     store.session?.active_tenant_id,
     store.session?.context_version,
+    currentAuthorizationState.status,
+    currentAuthorizationState.snapshot?.tenant_id,
+    currentAuthorizationState.snapshot?.button_codes.join('|'),
   ],
   () => {
     void refreshPersonalProfile()
