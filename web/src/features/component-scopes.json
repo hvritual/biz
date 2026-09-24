@@ -223,5 +223,9 @@
   "enterprise/components/members/MemberBusinessScopePanel.vue": {
     "scenario": "企业中心 · 成员数据权限 · MemberBusinessScopePanel",
     "scope": "仅用于成员详情中的显式业务范围读取与编辑；候选来自当前租户对象权威服务，derived_data_scope 仅作摘要提示。"
+  },
+  "enterprise/components/security/PersonalSecurityPanel.vue": {
+    "scenario": "企业中心 · 本人联系方式安全换绑与本企业账号注销",
+    "scope": "仅用于已登录租户的个人中心；复用已绑定渠道、当前会话与安全验证，不承担登录凭据变更或全局账号删除。"
   }
 }
