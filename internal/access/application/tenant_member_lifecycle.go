@@ -25,6 +25,19 @@ var (
 	ErrTenantContextRequired      = errors.New("access: trusted tenant context is required")
 )
 
+type personalAvatarOption struct {
+	AssetRef string
+	Name     string
+	Tone     string
+}
+
+var personalAvatarOptions = []personalAvatarOption{
+	{AssetRef: "avatar:coffee-blue", Name: "Coffee Blue", Tone: "blue"},
+	{AssetRef: "avatar:coffee-violet", Name: "Coffee Violet", Tone: "violet"},
+	{AssetRef: "avatar:coffee-emerald", Name: "Coffee Emerald", Tone: "emerald"},
+	{AssetRef: "avatar:coffee-amber", Name: "Coffee Amber", Tone: "amber"},
+}
+
 type tenantMemberConflictError struct {
 	cause error
 }
@@ -225,6 +238,48 @@ func (service *TenantMemberLifecycleService) BootstrapTenantOwnerMember(ctx cont
 		return nil, err
 	}
 	return tenantMemberDTO(member), nil
+}
+
+func (service *TenantMemberLifecycleService) GetMyPersonalProfile(ctx context.Context, _ *accessv1.GetMyPersonalProfileRequest) (*accessv1.TenantPersonalProfileDTO, error) {
+	tenantID, userID, err := trustedTenantUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	profile, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (domain.PersonalProfile, error) {
+		return scope.Repositories().Member.GetPersonalProfile(scope.Context(), tenantID, userID)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return tenantPersonalProfileDTO(profile), nil
+}
+
+func (service *TenantMemberLifecycleService) ListMyPersonalAvatarOptions(ctx context.Context, _ *accessv1.ListMyPersonalAvatarOptionsRequest) (*accessv1.ListMyPersonalAvatarOptionsResponse, error) {
+	if _, _, err := trustedTenantUser(ctx); err != nil {
+		return nil, err
+	}
+	response := &accessv1.ListMyPersonalAvatarOptionsResponse{Options: make([]*accessv1.PersonalAvatarOptionDTO, 0, len(personalAvatarOptions))}
+	for _, option := range personalAvatarOptions {
+		response.Options = append(response.Options, &accessv1.PersonalAvatarOptionDTO{AssetRef: option.AssetRef, Name: option.Name, Tone: option.Tone})
+	}
+	return response, nil
+}
+
+func (service *TenantMemberLifecycleService) UpdateMyPersonalAvatar(ctx context.Context, request *accessv1.UpdateMyPersonalAvatarRequest) (*accessv1.TenantPersonalProfileDTO, error) {
+	if request == nil || request.GetVersion() == 0 || !allowedPersonalAvatarRef(request.GetAvatarAssetRef()) {
+		return nil, ErrInvalidTenantMemberRequest
+	}
+	tenantID, userID, err := trustedTenantUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	profile, err := requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantMemberRepositories]) (domain.PersonalProfile, error) {
+		return scope.Repositories().Member.UpdatePersonalAvatar(scope.Context(), tenantID, userID, request.GetVersion(), strings.TrimSpace(request.GetAvatarAssetRef()), time.Now().UTC())
+	})
+	if err != nil {
+		return nil, wrapTenantMemberConflict(err)
+	}
+	return tenantPersonalProfileDTO(profile), nil
 }
 
 func (service *TenantMemberLifecycleService) GetTenantMember(ctx context.Context, request *accessv1.GetTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
@@ -717,6 +772,85 @@ func trustedTenantID(ctx context.Context) (string, error) {
 		return "", ErrTenantContextRequired
 	}
 	return strings.TrimSpace(principal.TenantID), nil
+}
+
+func trustedTenantUser(ctx context.Context) (string, string, error) {
+	principal, ok := identity.FromContext(ctx)
+	if !ok || !principal.Authenticated || strings.TrimSpace(principal.TenantID) == "" || strings.TrimSpace(principal.UserID) == "" {
+		return "", "", ErrTenantContextRequired
+	}
+	return strings.TrimSpace(principal.TenantID), strings.TrimSpace(principal.UserID), nil
+}
+
+func allowedPersonalAvatarRef(value string) bool {
+	value = strings.TrimSpace(value)
+	for _, option := range personalAvatarOptions {
+		if option.AssetRef == value {
+			return true
+		}
+	}
+	return false
+}
+
+func tenantPersonalProfileDTO(profile domain.PersonalProfile) *accessv1.TenantPersonalProfileDTO {
+	member := profile.Member
+	roles := make([]*accessv1.TenantMemberRoleDTO, 0, len(member.Roles))
+	for _, role := range member.Roles {
+		roles = append(roles, &accessv1.TenantMemberRoleDTO{RoleId: role.ID, RoleName: role.Name, RoleStatus: role.Status})
+	}
+	registeredAt := ""
+	if !profile.AccountCreatedAt.IsZero() {
+		registeredAt = profile.AccountCreatedAt.UTC().Format(time.RFC3339Nano)
+	}
+	joinedAt := ""
+	if !member.CreatedAt.IsZero() {
+		joinedAt = member.CreatedAt.UTC().Format(time.RFC3339Nano)
+	}
+	avatarRef := strings.TrimSpace(member.AvatarAssetRef)
+	if avatarRef == "" || !allowedPersonalAvatarRef(avatarRef) {
+		avatarRef = domain.DefaultPersonalAvatarAssetRef
+	}
+	return &accessv1.TenantPersonalProfileDTO{
+		UserId:         member.UserID,
+		Username:       member.Username,
+		Name:           member.Name,
+		TenantId:       member.TenantID,
+		TenantName:     profile.TenantName,
+		Roles:          roles,
+		RegisteredAt:   registeredAt,
+		JoinedAt:       joinedAt,
+		Email:          maskPersonalEmail(member.Email),
+		Phone:          maskPersonalPhone(member.Phone),
+		AvatarAssetRef: avatarRef,
+		Version:        member.Version,
+		EmployeeId:     member.EmployeeID,
+		Position:       member.Position,
+		DepartmentId:   member.DepartmentID,
+	}
+}
+
+func maskPersonalEmail(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" || strings.Contains(value, "***") {
+		return value
+	}
+	parts := strings.Split(value, "@")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return ""
+	}
+	return string([]rune(parts[0])[0]) + "***@" + parts[1]
+}
+
+func maskPersonalPhone(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" || strings.Contains(value, "***") {
+		return value
+	}
+	runes := []rune(value)
+	if len(runes) <= 4 {
+		return "***"
+	}
+	return "***" + string(runes[len(runes)-4:])
 }
 
 func tenantMemberDTO(member domain.Membership) *accessv1.TenantMemberDTO {

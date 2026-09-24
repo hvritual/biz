@@ -297,6 +297,11 @@
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.ExportTenantAuditRecordsResponse"
       },
+      "access_v1_GetMyPersonalProfileRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.GetMyPersonalProfileRequest"
+      },
       "access_v1_GetTenantAuditRecordRequest": {
         "properties": {
           "auditId": {
@@ -410,6 +415,23 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.InviteTenantMemberRequest"
+      },
+      "access_v1_ListMyPersonalAvatarOptionsRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListMyPersonalAvatarOptionsRequest"
+      },
+      "access_v1_ListMyPersonalAvatarOptionsResponse": {
+        "properties": {
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/access_v1_PersonalAvatarOptionDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.ListMyPersonalAvatarOptionsResponse"
       },
       "access_v1_ListRemovedTenantMembersRequest": {
         "properties": {
@@ -668,6 +690,21 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "access.v1.PermissionGrantInput"
+      },
+      "access_v1_PersonalAvatarOptionDTO": {
+        "properties": {
+          "assetRef": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tone": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.PersonalAvatarOptionDTO"
       },
       "access_v1_RemoveTenantMemberRequest": {
         "properties": {
@@ -1254,6 +1291,62 @@
         "type": "string",
         "x-yunka-proto-full-name": "access.v1.TenantMemberStatus"
       },
+      "access_v1_TenantPersonalProfileDTO": {
+        "properties": {
+          "avatarAssetRef": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "employeeId": {
+            "type": "string"
+          },
+          "joinedAt": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "position": {
+            "type": "string"
+          },
+          "registeredAt": {
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/access_v1_TenantMemberRoleDTO"
+            },
+            "type": "array"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "tenantName": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.TenantPersonalProfileDTO"
+      },
       "access_v1_TenantProfileDTO": {
         "properties": {
           "address": {
@@ -1363,6 +1456,20 @@
         ],
         "type": "string",
         "x-yunka-proto-full-name": "access.v1.TenantStatus"
+      },
+      "access_v1_UpdateMyPersonalAvatarRequest": {
+        "properties": {
+          "avatarAssetRef": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "access.v1.UpdateMyPersonalAvatarRequest"
       },
       "access_v1_UpdateTenantBrandingRequest": {
         "properties": {
@@ -5915,6 +6022,79 @@
           "commercial.v1.EntitlementManagementApplication"
         ],
         "x-yunka-rpc": "/commercial.v1.EntitlementManagementApplication/GetMyEntitlements"
+      }
+    },
+    "/v1/tenant/me/avatar": {
+      "patch": {
+        "operationId": "access.v1.TenantMemberLifecycleApplication.UpdateMyPersonalAvatar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/access_v1_UpdateMyPersonalAvatarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantPersonalProfileDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/UpdateMyPersonalAvatar"
+      }
+    },
+    "/v1/tenant/me/avatar-options": {
+      "get": {
+        "operationId": "access.v1.TenantMemberLifecycleApplication.ListMyPersonalAvatarOptions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_ListMyPersonalAvatarOptionsResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/ListMyPersonalAvatarOptions"
+      }
+    },
+    "/v1/tenant/me/profile": {
+      "get": {
+        "operationId": "access.v1.TenantMemberLifecycleApplication.GetMyPersonalProfile",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/access_v1_TenantPersonalProfileDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "access.v1.TenantMemberLifecycleApplication"
+        ],
+        "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/GetMyPersonalProfile"
       }
     },
     "/v1/tenant/member-scope-candidates": {

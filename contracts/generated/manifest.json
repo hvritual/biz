@@ -835,6 +835,14 @@
       }
     },
     {
+      "name": "GetMyPersonalProfileRequest",
+      "fullName": "access.v1.GetMyPersonalProfileRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "GetTenantAuditRecordRequest",
       "fullName": "access.v1.GetTenantAuditRecordRequest",
       "fields": [
@@ -1030,6 +1038,31 @@
       ],
       "dto": {
         "kind": "input"
+      }
+    },
+    {
+      "name": "ListMyPersonalAvatarOptionsRequest",
+      "fullName": "access.v1.ListMyPersonalAvatarOptionsRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListMyPersonalAvatarOptionsResponse",
+      "fullName": "access.v1.ListMyPersonalAvatarOptionsResponse",
+      "fields": [
+        {
+          "name": "options",
+          "jsonName": "options",
+          "number": 1,
+          "kind": "message",
+          "type": "access.v1.PersonalAvatarOptionDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
       }
     },
     {
@@ -1457,6 +1490,36 @@
       ],
       "dto": {
         "kind": "input"
+      }
+    },
+    {
+      "name": "PersonalAvatarOptionDTO",
+      "fullName": "access.v1.PersonalAvatarOptionDTO",
+      "fields": [
+        {
+          "name": "asset_ref",
+          "jsonName": "assetRef",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tone",
+          "jsonName": "tone",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
       }
     },
     {
@@ -2490,6 +2553,121 @@
       }
     },
     {
+      "name": "TenantPersonalProfileDTO",
+      "fullName": "access.v1.TenantPersonalProfileDTO",
+      "fields": [
+        {
+          "name": "user_id",
+          "jsonName": "userId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "username",
+          "jsonName": "username",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_name",
+          "jsonName": "tenantName",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "roles",
+          "jsonName": "roles",
+          "number": 6,
+          "kind": "message",
+          "type": "access.v1.TenantMemberRoleDTO",
+          "repeated": true
+        },
+        {
+          "name": "registered_at",
+          "jsonName": "registeredAt",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "joined_at",
+          "jsonName": "joinedAt",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "email",
+          "jsonName": "email",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "phone",
+          "jsonName": "phone",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "avatar_asset_ref",
+          "jsonName": "avatarAssetRef",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 12,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "employee_id",
+          "jsonName": "employeeId",
+          "number": 13,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "position",
+          "jsonName": "position",
+          "number": 14,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "department_id",
+          "jsonName": "departmentId",
+          "number": 15,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "TenantProfileDTO",
       "fullName": "access.v1.TenantProfileDTO",
       "fields": [
@@ -2667,6 +2845,29 @@
       ],
       "dto": {
         "kind": "output"
+      }
+    },
+    {
+      "name": "UpdateMyPersonalAvatarRequest",
+      "fullName": "access.v1.UpdateMyPersonalAvatarRequest",
+      "fields": [
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 1,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "avatar_asset_ref",
+          "jsonName": "avatarAssetRef",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
       }
     },
     {
@@ -9052,6 +9253,47 @@
           }
         },
         {
+          "name": "GetMyPersonalProfile",
+          "fullName": "access.v1.TenantMemberLifecycleApplication.GetMyPersonalProfile",
+          "request": "access.v1.GetMyPersonalProfileRequest",
+          "response": "access.v1.TenantPersonalProfileDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/me/profile"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.personal_profile.get",
+            "useCase": "get_my_personal_profile",
+            "permissions": [
+              "tenant.personal_profile.self"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.personal_profile.get",
+            "permissions": [
+              "tenant.personal_profile.self"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "GetTenantMember",
           "fullName": "access.v1.TenantMemberLifecycleApplication.GetTenantMember",
           "request": "access.v1.GetTenantMemberRequest",
@@ -9125,6 +9367,47 @@
             "operationId": "tenant.member.invite",
             "permissions": [
               "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListMyPersonalAvatarOptions",
+          "fullName": "access.v1.TenantMemberLifecycleApplication.ListMyPersonalAvatarOptions",
+          "request": "access.v1.ListMyPersonalAvatarOptionsRequest",
+          "response": "access.v1.ListMyPersonalAvatarOptionsResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/me/avatar-options"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.personal_profile.avatar_options",
+            "useCase": "list_my_personal_avatar_options",
+            "permissions": [
+              "tenant.personal_profile.self"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.personal_profile.avatar_options",
+            "permissions": [
+              "tenant.personal_profile.self"
             ],
             "permissionMode": "all",
             "tenantRequired": true,
@@ -9347,6 +9630,48 @@
             "operationId": "tenant.member.suspend",
             "permissions": [
               "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "UpdateMyPersonalAvatar",
+          "fullName": "access.v1.TenantMemberLifecycleApplication.UpdateMyPersonalAvatar",
+          "request": "access.v1.UpdateMyPersonalAvatarRequest",
+          "response": "access.v1.TenantPersonalProfileDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/tenant/me/avatar",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.personal_profile.avatar_update",
+            "useCase": "update_my_personal_avatar",
+            "permissions": [
+              "tenant.personal_profile.self"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.personal_profile.avatar_update",
+            "permissions": [
+              "tenant.personal_profile.self"
             ],
             "permissionMode": "all",
             "tenantRequired": true,

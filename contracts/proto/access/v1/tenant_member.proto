@@ -49,6 +49,45 @@ message TenantMemberDTO {
   string username = 12;
 }
 
+message TenantPersonalProfileDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string user_id = 1;
+  string username = 2;
+  string name = 3;
+  string tenant_id = 4;
+  string tenant_name = 5;
+  repeated TenantMemberRoleDTO roles = 6;
+  string registered_at = 7;
+  string joined_at = 8;
+  string email = 9;
+  string phone = 10;
+  string avatar_asset_ref = 11;
+  uint64 version = 12;
+  string employee_id = 13;
+  string position = 14;
+  string department_id = 15;
+}
+
+message PersonalAvatarOptionDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string asset_ref = 1;
+  string name = 2;
+  string tone = 3;
+}
+
+message GetMyPersonalProfileRequest {}
+
+message ListMyPersonalAvatarOptionsRequest {}
+
+message ListMyPersonalAvatarOptionsResponse {
+  repeated PersonalAvatarOptionDTO options = 1;
+}
+
+message UpdateMyPersonalAvatarRequest {
+  uint64 version = 1;
+  string avatar_asset_ref = 2;
+}
+
 message InviteTenantMemberRequest {
   string email = 1;
 }
@@ -255,6 +294,48 @@ service TenantMemberLifecycleApplication {
       requires_operations: "tenant.department.assert_member_assignment_allowed"
       requires_operations: "tenant.role.assign_member"
       composition: COMPOSITION_LOCAL
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc GetMyPersonalProfile(GetMyPersonalProfileRequest) returns (TenantPersonalProfileDTO) {
+    option (google.api.http) = { get: "/v1/tenant/me/profile" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.personal_profile.get"
+      permissions: "tenant.personal_profile.self"
+      permission_mode: PERMISSION_ALL
+      use_case: "get_my_personal_profile"
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc ListMyPersonalAvatarOptions(ListMyPersonalAvatarOptionsRequest) returns (ListMyPersonalAvatarOptionsResponse) {
+    option (google.api.http) = { get: "/v1/tenant/me/avatar-options" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.personal_profile.avatar_options"
+      permissions: "tenant.personal_profile.self"
+      permission_mode: PERMISSION_ALL
+      use_case: "list_my_personal_avatar_options"
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc UpdateMyPersonalAvatar(UpdateMyPersonalAvatarRequest) returns (TenantPersonalProfileDTO) {
+    option (google.api.http) = { patch: "/v1/tenant/me/avatar" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.member.personal_profile.avatar_update"
+      permissions: "tenant.personal_profile.self"
+      permission_mode: PERMISSION_ALL
+      use_case: "update_my_personal_avatar"
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };
   }

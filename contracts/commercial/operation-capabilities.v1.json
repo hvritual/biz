@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "mapping_version": "24",
+  "mapping_version": "25",
   "retired_capability_codes": [],
   "operations": [
     {
@@ -1154,6 +1154,33 @@
     },
     {
       "operation_id": "tenant.member.list_removed",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.member.personal_profile.avatar_options",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.member.personal_profile.avatar_update",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.member.lifecycle"
+      ],
+      "children": []
+    },
+    {
+      "operation_id": "tenant.member.personal_profile.get",
       "classification": "tenant_business",
       "module_code": "access-management",
       "capability_codes": [

@@ -196,6 +196,18 @@
       ]
     },
     {
+      "path": "/enterprise/personal-profile",
+      "component": "@/features/enterprise/pages/PersonalProfileView.vue",
+      "surface": "tenant",
+      "template": "FormPage",
+      "required_regions": [
+        "page-heading",
+        "form-workspace",
+        "form-actions",
+        "scope"
+      ]
+    },
+    {
       "path": "/enterprise/members",
       "component": "@/features/enterprise/pages/MembersView.vue",
       "surface": "tenant",

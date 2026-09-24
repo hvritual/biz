@@ -3492,6 +3492,99 @@
       }
     },
     {
+      "id": "tenant.member.personal_profile.avatar_options",
+      "application": "access/tenant_member_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.member.personal_profile.avatar_options",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.personal_profile.avatar_options/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.personal_profile.avatar_options",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.personal_profile.avatar_options/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.personal_profile.avatar_options"
+      }
+    },
+    {
+      "id": "tenant.member.personal_profile.avatar_update",
+      "application": "access/tenant_member_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.member.personal_profile.avatar_update",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.personal_profile.avatar_update/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.personal_profile.avatar_update",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.personal_profile.avatar_update/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.personal_profile.avatar_update"
+      }
+    },
+    {
+      "id": "tenant.member.personal_profile.get",
+      "application": "access/tenant_member_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.member.personal_profile.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.personal_profile.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.personal_profile.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.personal_profile.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.personal_profile.get"
+      }
+    },
+    {
       "id": "tenant.member.profile.update",
       "application": "access/tenant_member_lifecycle",
       "bindings": [
@@ -4885,6 +4978,9 @@
         "tenant.member.invite",
         "tenant.member.list",
         "tenant.member.list_removed",
+        "tenant.member.personal_profile.avatar_options",
+        "tenant.member.personal_profile.avatar_update",
+        "tenant.member.personal_profile.get",
         "tenant.member.profile.update",
         "tenant.member.remove",
         "tenant.member.restore",

@@ -61,6 +61,19 @@ func (server *TenantMemberLifecycleOperationServer) CreateTenantMember(ctx conte
 	return response, nil
 }
 
+func (server *TenantMemberLifecycleOperationServer) GetMyPersonalProfile(ctx context.Context, request *accessv1.GetMyPersonalProfileRequest) (*accessv1.TenantPersonalProfileDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleGetMyPersonalProfile(), request, server.application.GetMyPersonalProfile)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *TenantMemberLifecycleOperationServer) GetTenantMember(ctx context.Context, request *accessv1.GetTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
@@ -81,6 +94,19 @@ func (server *TenantMemberLifecycleOperationServer) InviteTenantMember(ctx conte
 		}
 	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleInviteTenantMember(), request, server.application.InviteTenantMember)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *TenantMemberLifecycleOperationServer) ListMyPersonalAvatarOptions(ctx context.Context, request *accessv1.ListMyPersonalAvatarOptionsRequest) (*accessv1.ListMyPersonalAvatarOptionsResponse, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleListMyPersonalAvatarOptions(), request, server.application.ListMyPersonalAvatarOptions)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
@@ -146,6 +172,19 @@ func (server *TenantMemberLifecycleOperationServer) SuspendTenantMember(ctx cont
 		}
 	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleSuspendTenantMember(), request, server.application.SuspendTenantMember)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *TenantMemberLifecycleOperationServer) UpdateMyPersonalAvatar(ctx context.Context, request *accessv1.UpdateMyPersonalAvatarRequest) (*accessv1.TenantPersonalProfileDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantMemberLifecycleUpdateMyPersonalAvatar(), request, server.application.UpdateMyPersonalAvatar)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}

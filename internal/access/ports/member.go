@@ -94,7 +94,13 @@ type TenantMemberListPage struct {
 	Total   uint64
 }
 
+type TenantPersonalProfileRepository interface {
+	GetPersonalProfile(context.Context, string, string) (domain.PersonalProfile, error)
+	UpdatePersonalAvatar(context.Context, string, string, uint64, string, time.Time) (domain.PersonalProfile, error)
+}
+
 type TenantMemberRepository interface {
+	TenantPersonalProfileRepository
 	Invite(context.Context, string, string, string, time.Time) (domain.Membership, error)
 	Create(context.Context, string, TenantMemberCreateInput, time.Time) (domain.Membership, bool, error)
 	Bootstrap(context.Context, string, string, string, time.Time) (domain.Membership, error)
