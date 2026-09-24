@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "suites": [
+    {
+      "id": "tenant-lifecycle",
+      "tests": [
+        {"name": "TestB122TenantLifecycleUsesRootMySQLUnitOfWork", "file": "integration/b12_tenant_lifecycle_mysql_test.go"},
+        {"name": "TestB122SuspendedTenantCredentialFailsAuthentication", "file": "integration/b12_tenant_lifecycle_mysql_test.go"},
+        {"name": "TestB122TenantLifecycleRESTAndGRPCUseUnifiedExecutor", "file": "integration/b12_tenant_runtime_mysql_test.go"}
+      ]
+    },
+    {
+      "id": "personal-profile",
+      "tests": [
+        {"name": "TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled", "file": "integration/enterprise_181_personal_profile_mysql_test.go"}
+      ]
+    },
+    {
+      "id": "tenant-self-security",
+      "tests": [
+        {
+          "name": "TestEnterprise182DeliveredContactChallengeIsIndependentOfNotificationStorage",
+          "file": "integration/enterprise_182_delivery_independence_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise182ContactChangeAndTenantDeletionAreSelfOnlyAtomicAndTenantScoped",
+          "file": "integration/enterprise_182_self_security_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise182ConcurrentContactOTPConsumptionAllowsOneMutation",
+          "file": "integration/enterprise_182_self_security_mysql_test.go"
+        }
+      ]
+    }
+  ]
+}

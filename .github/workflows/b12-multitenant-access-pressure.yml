@@ -246,15 +246,18 @@ jobs:
           test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
 
       - name: Run B12.2 MySQL lifecycle pressure
+        id: access_suite
         shell: bash
         run: |
           set -euo pipefail
-          go -C biz test -count=1 -tags=integration ./integration -run '^TestB122'
-          enterprise181_log="$RUNNER_TEMP/enterprise181-personal-profile.log"
-          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled$' | tee "$enterprise181_log"
-          grep -Fq -- '--- PASS: TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled ' "$enterprise181_log"
-          enterprise182_log="$RUNNER_TEMP/enterprise182-self-security.log"
-          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise182' | tee "$enterprise182_log"
-          grep -Fq -- '--- PASS: TestEnterprise182ContactChangeAndTenantDeletionAreSelfOnlyAtomicAndTenantScoped ' "$enterprise182_log"
-          grep -Fq -- '--- PASS: TestEnterprise182ConcurrentContactOTPConsumptionAllowsOneMutation ' "$enterprise182_log"
+          python3 biz/scripts/ci_access_qualification.py
           test -z "$(git -C biz status --porcelain)"
+
+      - name: Retain Access qualification identities and logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: access-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/access-qualification/
+          if-no-files-found: warn
+          retention-days: 7
