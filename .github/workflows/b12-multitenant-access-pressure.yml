@@ -250,4 +250,7 @@ jobs:
         run: |
           set -euo pipefail
           go -C biz test -count=1 -tags=integration ./integration -run '^TestB122'
+          enterprise181_log="$RUNNER_TEMP/enterprise181-personal-profile.log"
+          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled | tee "$enterprise181_log"
+          grep -Fq -- '--- PASS: TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled ' "$enterprise181_log"
           test -z "$(git -C biz status --porcelain)"
