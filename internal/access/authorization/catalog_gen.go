@@ -4,7 +4,7 @@ package authorization
 
 import "yunka.io/gateway/authz"
 
-const CommercialCapabilityMappingVersion = "24"
+const CommercialCapabilityMappingVersion = "25"
 
 var generatedActions = []Action{
 	{
@@ -741,6 +741,27 @@ var generatedActions = []Action{
 		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.member.manage")}, PermissionMode: "all",
 		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
 		RPC: "/access.v1.TenantMemberLifecycleApplication/ListRemovedTenantMembers", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/members/removed"}},
+	},
+	{
+		Code: "tenant.member.personal_profile.avatar_options", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "list_my_personal_avatar_options",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.personal_profile.self")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
+		RPC: "/access.v1.TenantMemberLifecycleApplication/ListMyPersonalAvatarOptions", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/me/avatar-options"}},
+	},
+	{
+		Code: "tenant.member.personal_profile.avatar_update", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "update_my_personal_avatar",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.personal_profile.self")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
+		RPC: "/access.v1.TenantMemberLifecycleApplication/UpdateMyPersonalAvatar", HTTP: []HTTPBinding{{Method: "PATCH", Path: "/v1/tenant/me/avatar"}},
+	},
+	{
+		Code: "tenant.member.personal_profile.get", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "get_my_personal_profile",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.personal_profile.self")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle"},
+		RPC: "/access.v1.TenantMemberLifecycleApplication/GetMyPersonalProfile", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/me/profile"}},
 	},
 	{
 		Code: "tenant.member.profile.update", Domain: "access", Application: "tenant_member_lifecycle", UseCase: "update_tenant_member_profile",
