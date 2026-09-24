@@ -256,7 +256,7 @@ test('keyboard avatar selection uses trusted CAS write and updates header only a
   const save = page.getByRole('button', { name: '保存头像', exact: true })
   await save.focus()
   await save.press('Enter')
-  await expect(page.getByText('头像已保存并完成服务端回读。', { exact: true })).toBeVisible()
+  await expect(page.getByText('头像已保存，并与当前账号状态同步。', { exact: true })).toBeVisible()
 
   expect(api.writes).toHaveLength(1)
   const write = api.writes[0]!
