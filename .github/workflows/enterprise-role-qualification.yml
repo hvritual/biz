@@ -176,8 +176,165 @@ jobs:
           go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise180DataPolicyAuthorityAndRoleReference$' | tee "$enterprise180_log"
           grep -Fq -- '--- PASS: TestEnterprise180DataPolicyAuthorityAndRoleReference ' "$enterprise180_log"
           enterprise180_member_scope_log="$RUNNER_TEMP/enterprise180-member-business-scope.log"
-          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise180MemberBusinessScopeAuthority$' | tee "$enterprise180_member_scope_log"
+          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise180MemberBusinessScopeAuthority          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise180EffectiveScopeQueryEnforcement$' | tee "$enterprise180_query_log"
+          grep -Fq -- '--- PASS: TestEnterprise180EffectiveScopeQueryEnforcement ' "$enterprise180_query_log"
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestB124TenantRolePermissionsAreTenantScopedAndImmediate$'
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestB124OwnerRoleProtectsRequiredPermissionsAndLastAssignment$'
+          test -z "$(git -C biz status --porcelain)"
+
+  web:
+    needs: admission
+    if: needs.admission.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+        working-directory: web
+
+      - name: Run canonical Web Fast Gate
+        if: ${{ !inputs.skip_fast_check }}
+        run: npm run check
+        working-directory: web
+
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+
+      - name: Run canonical role lifecycle and grant E2E
+        working-directory: web
+        shell: bash
+        run: |
+          set -euo pipefail
+          VITE_DATA_MODE=api npm run build
+          ENTERPRISE_ROLE_REAL_E2E=1 ENTERPRISE_DATA_PERMISSION_REAL_E2E=1 npx playwright test e2e/enterprise-roles-real.spec.ts e2e/enterprise-data-policy-ui.spec.ts
+
+
+      - name: Record permission UI evidence identity
+        if: always()
+        working-directory: web
+        shell: bash
+        run: |
+          mkdir -p test-results
+          python3 - <<'PYTHON'
+          import hashlib, json, pathlib, subprocess
+          root = pathlib.Path('.')
+          shots = sorted((root / 'screenshots/enterprise180-permission-ui').glob('*.png'))
+          manifest = {
+              'candidate_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'candidate_tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(),
+              'suite': 'e2e/enterprise-data-policy-ui.spec.ts',
+              'data_mode': 'mocked-api-browser-contract',
+              'live_backend_evidence': False,
+              'screenshots': [{'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()} for path in shots],
+          }
+          (root / 'test-results/enterprise180-ui-provenance.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          PYTHON
+
+      - name: Retain permission UI screenshots and test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: enterprise180-ui-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            web/screenshots/enterprise180-permission-ui
+            web/test-results
+            web/playwright-report
+          if-no-files-found: error
+          retention-days: 30
+ | tee "$enterprise180_member_scope_log"
           grep -Fq -- '--- PASS: TestEnterprise180MemberBusinessScopeAuthority ' "$enterprise180_member_scope_log"
+          enterprise180_department_log="$RUNNER_TEMP/enterprise180-department-regression.log"
+          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestECIR04TenantDepartmentRESTIsAuthoritativeAndTenantScoped          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise180EffectiveScopeQueryEnforcement$' | tee "$enterprise180_query_log"
+          grep -Fq -- '--- PASS: TestEnterprise180EffectiveScopeQueryEnforcement ' "$enterprise180_query_log"
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestB124TenantRolePermissionsAreTenantScopedAndImmediate$'
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestB124OwnerRoleProtectsRequiredPermissionsAndLastAssignment$'
+          test -z "$(git -C biz status --porcelain)"
+
+  web:
+    needs: admission
+    if: needs.admission.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+        working-directory: web
+
+      - name: Run canonical Web Fast Gate
+        if: ${{ !inputs.skip_fast_check }}
+        run: npm run check
+        working-directory: web
+
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+
+      - name: Run canonical role lifecycle and grant E2E
+        working-directory: web
+        shell: bash
+        run: |
+          set -euo pipefail
+          VITE_DATA_MODE=api npm run build
+          ENTERPRISE_ROLE_REAL_E2E=1 ENTERPRISE_DATA_PERMISSION_REAL_E2E=1 npx playwright test e2e/enterprise-roles-real.spec.ts e2e/enterprise-data-policy-ui.spec.ts
+
+
+      - name: Record permission UI evidence identity
+        if: always()
+        working-directory: web
+        shell: bash
+        run: |
+          mkdir -p test-results
+          python3 - <<'PYTHON'
+          import hashlib, json, pathlib, subprocess
+          root = pathlib.Path('.')
+          shots = sorted((root / 'screenshots/enterprise180-permission-ui').glob('*.png'))
+          manifest = {
+              'candidate_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'candidate_tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(),
+              'suite': 'e2e/enterprise-data-policy-ui.spec.ts',
+              'data_mode': 'mocked-api-browser-contract',
+              'live_backend_evidence': False,
+              'screenshots': [{'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()} for path in shots],
+          }
+          (root / 'test-results/enterprise180-ui-provenance.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          PYTHON
+
+      - name: Retain permission UI screenshots and test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: enterprise180-ui-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            web/screenshots/enterprise180-permission-ui
+            web/test-results
+            web/playwright-report
+          if-no-files-found: error
+          retention-days: 30
+ | tee "$enterprise180_department_log"
+          grep -Fq -- '--- PASS: TestECIR04TenantDepartmentRESTIsAuthoritativeAndTenantScoped ' "$enterprise180_department_log"
           enterprise180_query_log="$RUNNER_TEMP/enterprise180-effective-query-scope.log"
           go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise180EffectiveScopeQueryEnforcement$' | tee "$enterprise180_query_log"
           grep -Fq -- '--- PASS: TestEnterprise180EffectiveScopeQueryEnforcement ' "$enterprise180_query_log"
