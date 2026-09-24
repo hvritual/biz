@@ -302,6 +302,8 @@ service TenantMemberLifecycleApplication {
     option (google.api.http) = { get: "/v1/tenant/me/profile" };
     option (yunka.dsl.v1.operation) = {
       id: "tenant.member.personal_profile.get"
+      permissions: "tenant.personal_profile.self"
+      permission_mode: PERMISSION_ALL
       use_case: "get_my_personal_profile"
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
@@ -314,6 +316,8 @@ service TenantMemberLifecycleApplication {
     option (google.api.http) = { get: "/v1/tenant/me/avatar-options" };
     option (yunka.dsl.v1.operation) = {
       id: "tenant.member.personal_profile.avatar_options"
+      permissions: "tenant.personal_profile.self"
+      permission_mode: PERMISSION_ALL
       use_case: "list_my_personal_avatar_options"
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
@@ -326,6 +330,8 @@ service TenantMemberLifecycleApplication {
     option (google.api.http) = { patch: "/v1/tenant/me/avatar" body: "*" };
     option (yunka.dsl.v1.operation) = {
       id: "tenant.member.personal_profile.avatar_update"
+      permissions: "tenant.personal_profile.self"
+      permission_mode: PERMISSION_ALL
       use_case: "update_my_personal_avatar"
       tenant_required: true
       authentication: AUTHENTICATION_API_KEY
