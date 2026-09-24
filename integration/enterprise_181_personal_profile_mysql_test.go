@@ -224,7 +224,7 @@ func TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled(t
 		token string
 		want  int
 	}{
-		"unauthenticated": {"", http.StatusUnauthorized},
+		"unauthenticated":     {"", http.StatusUnauthorized},
 		"module-not-entitled": {tokenDenied, http.StatusForbidden},
 	} {
 		_, got, body := enterprise181Profile(t, base, tc.token)
@@ -236,10 +236,10 @@ func TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled(t
 	// Unknown user/tenant fields are not part of the write contract and must not
 	// become an alternate identity source.
 	injectedWrite, _ := json.Marshal(map[string]any{
-		"version": afterReplay.GetVersion(),
+		"version":        afterReplay.GetVersion(),
 		"avatarAssetRef": "avatar:coffee-amber",
-		"userId": otherUser,
-		"tenantId": tenantB,
+		"userId":         otherUser,
+		"tenantId":       tenantB,
 	})
 	injectedStatus, _ := enterprise181HTTP(t, http.MethodPatch, base+"/v1/tenant/me/avatar", tokenA, "inject:"+stamp, injectedWrite)
 	if injectedStatus == http.StatusOK {
