@@ -296,6 +296,9 @@ func (repository *TenantMemberRepository) Restore(
 		if locked.Version != expectedVersion || locked.Status != domain.TenantMemberStatusRemoved {
 			return ports.ErrTenantMemberConflict
 		}
+		if locked.SelfDeletedAt != nil {
+			return ErrTenantSelfDeletionIrreversible
+		}
 		if err := tx.Table("biz_member_removed_role_snapshots s").
 			Select("s.role_id").
 			Joins("JOIN biz_roles r ON r.tenant_id = s.tenant_id AND r.id = s.role_id AND r.status = ?", domain.TenantRoleStatusActive).

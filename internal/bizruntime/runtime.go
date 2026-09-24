@@ -292,6 +292,18 @@ func bindRuntimeWithSecurity(
 		return generatedassembly.RuntimeBindings{}, err
 	}
 	var memberAppeals *accesspersistence.MemberAppealService
+	var selfSecurity *accesspersistence.TenantSelfSecurityService
+	if verificationProtection != nil && protection != nil && options.VerificationSecurity.Enabled() {
+		selfSecurity, err = accesspersistence.NewTenantSelfSecurityService(
+			accessDatabase,
+			protection,
+			verificationProtection,
+			options.VerificationSecurity.Policy(),
+		)
+		if err != nil {
+			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: tenant self security service: %w", err)
+		}
+	}
 	if verificationProtection != nil {
 		memberAppeals, err = accesspersistence.NewMemberAppealService(accessDatabase, protection, verificationProtection)
 		if err != nil {
@@ -390,6 +402,7 @@ func bindRuntimeWithSecurity(
 	if options.WebAuth.Enabled() {
 		webAuth.setStore(accessStore)
 		webAuth.setMemberAppeals(memberAppeals)
+		webAuth.setSelfSecurity(selfSecurity)
 		if err := webAuth.bootstrapPlatformIdentity(ctx); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: OIDC platform identity bootstrap: %w", err)
 		}

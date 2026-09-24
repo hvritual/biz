@@ -75,6 +75,7 @@ ACCESS_INTEGRATION_PREFIXES = (
     "enterprise_178_",
     "enterprise_180_",
     "enterprise_181_",
+    "enterprise_182_",
     "ce12_",
     "tenant_branding_",
 )
@@ -186,6 +187,9 @@ ENTERPRISE_180_FILES = {
 ROLE_GRANT_PATH_PREFIXES = (
     "internal/access/authorization/",
     "web/src/features/enterprise/components/roles/",
+    "web/src/features/enterprise/components/security/",
+    "web/src/features/enterprise/composables/usePersonalSecurity",
+    "web/src/services/enterprise/personalSecurity",
 )
 ROLE_GRANT_FILES = {
     ".github/workflows/enterprise-179-role-grant-tree.yml",
@@ -206,6 +210,7 @@ ROLE_GRANT_FILES = {
     "web/src/ui/base/UiInput.vue",
     "web/src/ui/base/controls.spec.ts",
     "web/e2e/enterprise-roles-real.spec.ts",
+    "web/e2e/enterprise-personal-profile-real.spec.ts",
 }
 
 

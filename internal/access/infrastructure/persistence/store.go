@@ -55,25 +55,26 @@ type userRecord struct {
 func (userRecord) TableName() string { return "biz_users" }
 
 type membershipRecord struct {
-	TenantID        string    `gorm:"column:tenant_id;primaryKey;size:64;uniqueIndex:uniq_member_email_lookup,priority:1;uniqueIndex:uniq_member_phone_lookup,priority:1"`
-	UserID          string    `gorm:"column:user_id;primaryKey;size:64"`
-	Status          string    `gorm:"column:status;size:32;not null;index"`
-	Name            string    `gorm:"column:name;size:100;not null;default:''"`
-	Email           string    `gorm:"column:email;size:320;not null;default:''"`
-	EmailCiphertext string    `gorm:"column:email_ciphertext;type:text"`
-	EmailLookupHash *string   `gorm:"column:email_lookup_hash;size:64;uniqueIndex:uniq_member_email_lookup,priority:2"`
-	EmailKeyVersion string    `gorm:"column:email_key_version;size:64;not null;default:''"`
-	Phone           string    `gorm:"column:phone;size:40;not null;default:''"`
-	PhoneCiphertext string    `gorm:"column:phone_ciphertext;type:text"`
-	PhoneLookupHash *string   `gorm:"column:phone_lookup_hash;size:64;uniqueIndex:uniq_member_phone_lookup,priority:2"`
-	PhoneKeyVersion string    `gorm:"column:phone_key_version;size:64;not null;default:''"`
-	EmployeeID      string    `gorm:"column:employee_id;size:64;not null;default:''"`
-	Position        string    `gorm:"column:position;size:100;not null;default:''"`
-	DepartmentID    string    `gorm:"column:department_id;size:64;not null;default:'';index"`
-	AvatarAssetRef  string    `gorm:"column:avatar_asset_ref;size:64;not null;default:'avatar:coffee-blue'"`
-	Version         uint64    `gorm:"column:version;not null;default:1"`
-	CreatedAt       time.Time `gorm:"column:created_at;not null"`
-	UpdatedAt       time.Time `gorm:"column:updated_at;not null"`
+	TenantID        string     `gorm:"column:tenant_id;primaryKey;size:64;uniqueIndex:uniq_member_email_lookup,priority:1;uniqueIndex:uniq_member_phone_lookup,priority:1"`
+	UserID          string     `gorm:"column:user_id;primaryKey;size:64"`
+	Status          string     `gorm:"column:status;size:32;not null;index"`
+	Name            string     `gorm:"column:name;size:100;not null;default:''"`
+	Email           string     `gorm:"column:email;size:320;not null;default:''"`
+	EmailCiphertext string     `gorm:"column:email_ciphertext;type:text"`
+	EmailLookupHash *string    `gorm:"column:email_lookup_hash;size:64;uniqueIndex:uniq_member_email_lookup,priority:2"`
+	EmailKeyVersion string     `gorm:"column:email_key_version;size:64;not null;default:''"`
+	Phone           string     `gorm:"column:phone;size:40;not null;default:''"`
+	PhoneCiphertext string     `gorm:"column:phone_ciphertext;type:text"`
+	PhoneLookupHash *string    `gorm:"column:phone_lookup_hash;size:64;uniqueIndex:uniq_member_phone_lookup,priority:2"`
+	PhoneKeyVersion string     `gorm:"column:phone_key_version;size:64;not null;default:''"`
+	EmployeeID      string     `gorm:"column:employee_id;size:64;not null;default:''"`
+	Position        string     `gorm:"column:position;size:100;not null;default:''"`
+	DepartmentID    string     `gorm:"column:department_id;size:64;not null;default:'';index"`
+	AvatarAssetRef  string     `gorm:"column:avatar_asset_ref;size:64;not null;default:'avatar:coffee-blue'"`
+	SelfDeletedAt   *time.Time `gorm:"column:self_deleted_at;type:datetime(6);index"`
+	Version         uint64     `gorm:"column:version;not null;default:1"`
+	CreatedAt       time.Time  `gorm:"column:created_at;not null"`
+	UpdatedAt       time.Time  `gorm:"column:updated_at;not null"`
 }
 
 func (membershipRecord) TableName() string { return "biz_memberships" }

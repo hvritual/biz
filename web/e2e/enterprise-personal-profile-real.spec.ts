@@ -315,3 +315,184 @@ test('unauthenticated and unauthorized personal profile routes fail closed', asy
   await expect(page.getByRole('heading', { name: '没有访问权限' })).toBeVisible()
   await expect(page.locator('[data-enterprise-page="personal-profile"]')).toHaveCount(0)
 })
+
+// #182 extends the existing API-mode personal-center suite. These fixtures
+// verify browser contracts, not supplier delivery or live backend authority.
+type SecurityApiOptions = { requestError?: string; completeError?: string; failReadback?: boolean; delayed?: boolean }
+async function mockPersonalSecurityApi(page: Page, options: SecurityApiOptions = {}) {
+  const api = await mockPersonalProfileApi(page)
+  const calls: Array<{ path: string; body: Record<string, unknown>; headers: Record<string, string> }> = []
+  let completed = false, release: (() => void) | undefined
+  const delayed = new Promise<void>((resolve) => { release = resolve })
+  await page.route('**/api/auth/personal/**', async (route) => {
+    const path = new URL(route.request().url()).pathname
+    const body = route.request().postDataJSON() as Record<string, unknown>
+    const headers = route.request().headers()
+    calls.push({ path, body, headers })
+    if (path.endsWith('/request')) {
+      if (options.delayed) await delayed
+      if (options.requestError) return json(route, 409, { error: options.requestError })
+      return json(route, 200, {
+        challenge_id: 'challenge-182', flow_id: 'flow-182', masked_destination: body.channel === 'email' ? 'n***@example.invalid' : '***8899',
+        expires_at: '2099-01-01T00:00:00Z', delivery_state: 'PENDING', version: api.profiles[api.activeTenant()]!.version, resend_after_seconds: 60,
+      })
+    }
+    if (options.completeError) return json(route, 409, { error: options.completeError })
+    if (body.otp_code !== '123456') return json(route, 400, { error: 'VERIFICATION_INVALID' })
+    if (completed) return json(route, 409, { error: 'VERIFICATION_CONSUMED' })
+    completed = true
+    const current = api.profiles[api.activeTenant()]!
+    if (path.includes('tenant-deletion')) {
+      return json(route, 200, { tenant_id: current.tenantId, user_id: current.userId, version: current.version + 1,
+        deleted_at: '2026-09-24T00:00:00Z', notification_event_id: 'notice-delete', notification_state: 'PENDING', reauthentication_required: true })
+    }
+    if (body.channel === 'email') current.email = 'n***@example.invalid'
+    else current.phone = '***8899'
+    current.version++
+    return json(route, 200, { tenant_id: current.tenantId, user_id: current.userId, email: current.email, phone: current.phone,
+      version: current.version, notification_event_id: 'notice-contact', notification_state: 'PENDING' })
+  })
+  await page.route('**/api/v1/tenant/me/profile', (route) => options.failReadback && completed
+    ? json(route, 503, { error: 'unavailable' }) : json(route, 200, api.profiles[api.activeTenant()]))
+  return { ...api, calls, release: () => release?.() }
+}
+async function beginContact(page: Page, channel: 'email' | 'sms' = 'email') {
+  await page.getByRole('button', { name: channel === 'email' ? '绑定或更换邮箱' : '绑定或更换手机号', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '验证并更换联系方式' })
+  await dialog.getByLabel(/新的联系方式/).fill(channel === 'email' ? 'new@example.invalid' : '+49170888899')
+  await dialog.getByLabel('当前登录密码', { exact: true }).fill('CoffeePass9A')
+  await dialog.getByRole('button', { name: '获取验证码', exact: true }).click()
+  return dialog
+}
+
+for (const channel of ['email', 'sms'] as const) {
+  test(`#182 ${channel} contact change confirms masked data and clears credentials`, async ({ page }) => {
+    const api = await mockPersonalSecurityApi(page)
+    await openPersonalProfile(page)
+    const dialog = await beginContact(page, channel)
+    await expect(dialog.getByLabel('当前登录密码', { exact: true })).toHaveValue('')
+    await dialog.getByLabel('验证码', { exact: true }).fill('123456')
+    const save = dialog.getByRole('button', { name: '验证并保存', exact: true })
+    await save.focus(); await save.press('Enter')
+    await expect(dialog.getByText('联系方式已更新，并与当前企业资料同步。', { exact: true })).toBeVisible()
+    expect(api.calls).toHaveLength(2)
+    const write = api.calls[1]!
+    expect(write.body.version).toBe(7)
+    expect(write.body).not.toHaveProperty('user_id'); expect(write.body).not.toHaveProperty('tenant_id')
+    expect(write.headers['x-csrf-token']).toBe('csrf-personal-profile')
+    expect(write.headers['x-biz-session-context']).toContain('tenant-a')
+    expect(write.headers['idempotency-key']).toMatch(/^personal-security-complete-/)
+    expect(await page.evaluate(() => JSON.stringify(localStorage) + JSON.stringify(sessionStorage))).not.toMatch(/CoffeePass9A|new@example.invalid|123456/)
+    await expect(dialog.getByLabel('验证码', { exact: true })).toHaveCount(0)
+    await dialog.getByRole('button', { name: '关闭', exact: true }).click()
+    await expect(page.locator('.contact-card')).toContainText(channel === 'email' ? 'n***@example.invalid' : '***8899')
+  })
+}
+
+test('#182 sixty-second resend window follows response and never reports pending notification delivered', async ({ page }) => {
+  await page.clock.install()
+  const api = await mockPersonalSecurityApi(page); await openPersonalProfile(page)
+  const dialog = await beginContact(page)
+  await expect(dialog.getByText('通知正在处理中，尚未确认送达。', { exact: false })).toBeVisible()
+  await dialog.getByLabel('当前登录密码', { exact: true }).fill('CoffeePass9A')
+  await expect(dialog.getByRole('button', { name: /秒后可重新发送/ })).toBeDisabled()
+  await page.clock.fastForward(61000)
+  await dialog.getByRole('button', { name: '重新发送验证码', exact: true }).click()
+  await expect.poll(() => api.calls.length).toBe(2)
+  expect(api.calls[0]!.headers['idempotency-key']).not.toBe(api.calls[1]!.headers['idempotency-key'])
+})
+
+for (const [code, text] of [
+  ['CURRENT_PASSWORD_INVALID', '当前密码不正确，请重新输入。'],
+  ['CONTACT_CONFLICT', '该联系方式已被当前企业的其他账号使用。'],
+] as const) {
+  test(`#182 request rejection ${code} preserves profile`, async ({ page }) => {
+    const api = await mockPersonalSecurityApi(page, { requestError: code }); await openPersonalProfile(page)
+    const dialog = await beginContact(page)
+    await expect(dialog.getByRole('alert')).toHaveText(text)
+    await expect(dialog.getByLabel('验证码', { exact: true })).toHaveCount(0)
+    expect(api.profiles['tenant-a']!.version).toBe(7)
+  })
+}
+
+test('#182 wrong OTP and Owner protection do not report success or leave the page', async ({ page }) => {
+  const options: SecurityApiOptions = {}
+  const api = await mockPersonalSecurityApi(page, options); await openPersonalProfile(page)
+  let dialog = await beginContact(page)
+  await dialog.getByLabel('验证码', { exact: true }).fill('000000')
+  await dialog.getByRole('button', { name: '验证并保存', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toContainText('验证码或验证信息不正确')
+  expect(api.profiles['tenant-a']!.version).toBe(7)
+  await dialog.getByRole('button', { name: '取消', exact: true }).click()
+  options.requestError = 'LAST_OWNER_PROTECTED'
+  await page.getByRole('button', { name: '注销本企业账号', exact: true }).click()
+  dialog = page.getByRole('dialog', { name: '确认注销本企业账号' })
+  await dialog.getByRole('button', { name: '获取验证码', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toContainText('最后一位所有者')
+  await expect(page).toHaveURL(/enterprise\/personal-profile/)
+})
+
+test('#182 accepted change with failed refresh recovers with GET only', async ({ page }) => {
+  const options = { failReadback: true }
+  const api = await mockPersonalSecurityApi(page, options); await openPersonalProfile(page)
+  const dialog = await beginContact(page)
+  await dialog.getByLabel('验证码', { exact: true }).fill('123456')
+  await dialog.getByRole('button', { name: '验证并保存', exact: true }).click()
+  await expect(dialog.getByRole('button', { name: '重新确认最新资料', exact: true })).toBeVisible()
+  await expect(page.locator('.contact-card')).toContainText('a***@example.invalid')
+  await expect(dialog.getByRole('button', { name: '验证并保存', exact: true })).toHaveCount(0)
+  options.failReadback = false
+  await dialog.getByRole('button', { name: '重新确认最新资料', exact: true }).click()
+  await expect(dialog.getByText('联系方式已更新，并与当前企业资料同步。', { exact: true })).toBeVisible()
+  expect(api.calls.filter((c) => c.path.endsWith('/complete'))).toHaveLength(1)
+})
+
+test('#182 deletion requires explicit affected-tenant confirmation and returns to login', async ({ page }) => {
+  const api = await mockPersonalSecurityApi(page); await openPersonalProfile(page)
+  await page.getByRole('button', { name: '注销本企业账号', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '确认注销本企业账号' })
+  await expect(dialog).toContainText('Tenant A')
+  await expect(dialog).toContainText('其他企业中的账号关系和全局登录凭据不受影响')
+  await dialog.getByRole('button', { name: '获取验证码', exact: true }).click()
+  await dialog.getByLabel('验证码', { exact: true }).fill('123456')
+  await expect(dialog.getByRole('button', { name: '确认注销', exact: true })).toBeDisabled()
+  await dialog.getByRole('checkbox').check()
+  await dialog.getByRole('button', { name: '确认注销', exact: true }).click()
+  await expect(page).toHaveURL(/\/api\/auth\/login\?return_to=/)
+  expect(api.calls[1]!.body).toMatchObject({ confirm_tenant_id: 'tenant-a', confirm_irreversible: true, version: 7 })
+  expect(api.calls[1]!.body).not.toHaveProperty('destination')
+  expect(api.profiles['tenant-b']!.version).toBe(4)
+})
+
+test('#182 session invalidation discards late verification response and clears the form', async ({ page }) => {
+  const api = await mockPersonalSecurityApi(page, { delayed: true }); await openPersonalProfile(page)
+  await beginContact(page)
+  await expect.poll(() => api.calls.length).toBe(1)
+  await page.evaluate(() => window.dispatchEvent(new StorageEvent('storage', {
+    key: '__coffeelink_session_context_signal_v1', newValue: JSON.stringify({ type: 'session-context-changed', contextVersion: 12, nonce: 'test-182-session-change' }),
+  })))
+  await expect(page.getByRole('dialog', { name: '验证并更换联系方式' })).toHaveCount(0)
+  api.release()
+  await selectUiOption(page.getByRole('combobox', { name: '切换企业' }), 'tenant-b')
+  await expect(page.locator('[data-ui-region="scope"] h2')).toHaveText('Tenant B')
+  await expect(page.getByRole('button', { name: '注销本企业账号', exact: true })).toBeDisabled()
+  await expect(page.getByText('暂无已绑定的联系方式，请先绑定邮箱或手机号。', { exact: true })).toBeVisible()
+})
+
+test('#182 four viewport contact and deletion review with keyboard cancellation', async ({ page }) => {
+  await mockPersonalSecurityApi(page)
+  mkdirSync('screenshots/enterprise181-personal-profile', { recursive: true })
+  for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1536, height: 1024 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport); await openPersonalProfile(page)
+    const opener = page.getByRole('button', { name: '绑定或更换邮箱', exact: true })
+    await opener.click()
+    await expect(page.getByRole('dialog', { name: '验证并更换联系方式' })).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width)
+    await page.screenshot({ path: `screenshots/enterprise181-personal-profile/enterprise182-contact-${viewport.width}.png`, animations: 'disabled' })
+    await page.keyboard.press('Escape'); await expect(opener).toBeFocused()
+    await page.getByRole('button', { name: '注销本企业账号', exact: true }).click()
+    await expect(page.getByRole('dialog', { name: '确认注销本企业账号' })).toBeVisible()
+    await page.screenshot({ path: `screenshots/enterprise181-personal-profile/enterprise182-deletion-${viewport.width}.png`, animations: 'disabled' })
+    await page.keyboard.press('Escape')
+  }
+})

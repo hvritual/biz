@@ -95,6 +95,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	verificationSecurity, err := verificationSecurityConfigFromEnv()
+	if err != nil {
+		return err
+	}
+	if verificationSecurity.Enabled() && verificationProtection == nil {
+		return errors.New("verification security policy requires verification protection keys")
+	}
 	memberActivationTTL := envDuration("YUNKA_BIZ_MEMBER_ACTIVATION_TTL", 0)
 	memberActivationURL := strings.TrimSpace(os.Getenv("YUNKA_BIZ_MEMBER_ACTIVATION_URL"))
 	if memberActivationTTL > 0 && verificationProtection == nil {
@@ -125,12 +132,13 @@ func run() error {
 		return err
 	}
 	runtimeOptions := bizruntime.Options{
-		DeviceOps:           config,
-		CommercialLifecycle: lifecycle,
-		ProvisioningWorker:  bizruntime.ProvisioningWorkerOptions{Token: workerToken, Automatic: workerToken != ""},
-		WebAuth:             webAuth,
-		MemberActivationTTL: memberActivationTTL,
-		MemberActivationURL: memberActivationURL,
+		DeviceOps:            config,
+		CommercialLifecycle:  lifecycle,
+		ProvisioningWorker:   bizruntime.ProvisioningWorkerOptions{Token: workerToken, Automatic: workerToken != ""},
+		WebAuth:              webAuth,
+		VerificationSecurity: verificationSecurity,
+		MemberActivationTTL:  memberActivationTTL,
+		MemberActivationURL:  memberActivationURL,
 	}
 	var started *bizruntime.Started
 	if verificationProtection != nil {
@@ -220,4 +228,62 @@ func envDuration(name string, fallback time.Duration) time.Duration {
 		return fallback
 	}
 	return parsed
+}
+
+func verificationSecurityConfigFromEnv() (bizruntime.VerificationSecurityConfig, error) {
+	maxSends, err := envOptionalInt("YUNKA_BIZ_VERIFICATION_MAX_SENDS_PER_WINDOW")
+	if err != nil {
+		return bizruntime.VerificationSecurityConfig{}, err
+	}
+	maxTries, err := envOptionalInt("YUNKA_BIZ_VERIFICATION_MAX_TRIES")
+	if err != nil {
+		return bizruntime.VerificationSecurityConfig{}, err
+	}
+	codeDigits, err := envOptionalInt("YUNKA_BIZ_VERIFICATION_CODE_DIGITS")
+	if err != nil {
+		return bizruntime.VerificationSecurityConfig{}, err
+	}
+	config := bizruntime.VerificationSecurityConfig{
+		CodeTTL:              envOptionalDuration("YUNKA_BIZ_VERIFICATION_CODE_TTL"),
+		AuthorizationTTL:     envOptionalDuration("YUNKA_BIZ_VERIFICATION_AUTHORIZATION_TTL"),
+		ResendInterval:       envOptionalDuration("YUNKA_BIZ_VERIFICATION_RESEND_INTERVAL"),
+		SendLimitWindow:      envOptionalDuration("YUNKA_BIZ_VERIFICATION_SEND_LIMIT_WINDOW"),
+		MaxSendsPerWindow:    maxSends,
+		MaxVerificationTries: maxTries,
+		CodeDigits:           codeDigits,
+		Notification: bizruntime.SecurityNotificationProviderConfig{
+			Provider:      strings.TrimSpace(os.Getenv("YUNKA_BIZ_SECURITY_NOTIFICATION_PROVIDER")),
+			Endpoint:      strings.TrimSpace(os.Getenv("YUNKA_BIZ_SECURITY_NOTIFICATION_ENDPOINT")),
+			SenderID:      strings.TrimSpace(os.Getenv("YUNKA_BIZ_SECURITY_NOTIFICATION_SENDER_ID")),
+			CredentialRef: strings.TrimSpace(os.Getenv("YUNKA_BIZ_SECURITY_NOTIFICATION_CREDENTIAL_REF")),
+		},
+	}
+	if err := config.Validate(); err != nil {
+		return bizruntime.VerificationSecurityConfig{}, err
+	}
+	return config, nil
+}
+
+func envOptionalDuration(name string) time.Duration {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return 0
+	}
+	parsed, err := time.ParseDuration(value)
+	if err != nil || parsed < 0 {
+		return -1
+	}
+	return parsed
+}
+
+func envOptionalInt(name string) (int, error) {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return 0, nil
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed < 0 {
+		return 0, fmt.Errorf("invalid %s", name)
+	}
+	return parsed, nil
 }
