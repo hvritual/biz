@@ -251,6 +251,10 @@ jobs:
           set -euo pipefail
           go -C biz test -count=1 -tags=integration ./integration -run '^TestB122'
           enterprise181_log="$RUNNER_TEMP/enterprise181-personal-profile.log"
-          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled$' | tee "$enterprise181_log"
+          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled | tee "$enterprise181_log"
           grep -Fq -- '--- PASS: TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled ' "$enterprise181_log"
+          enterprise182_log="$RUNNER_TEMP/enterprise182-self-security.log"
+          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise182' | tee "$enterprise182_log"
+          grep -Fq -- '--- PASS: TestEnterprise182ContactChangeAndTenantDeletionAreSelfOnlyAtomicAndTenantScoped ' "$enterprise182_log"
+          grep -Fq -- '--- PASS: TestEnterprise182ConcurrentContactOTPConsumptionAllowsOneMutation ' "$enterprise182_log"
           test -z "$(git -C biz status --porcelain)"
