@@ -35,6 +35,8 @@ const (
 	SecurityNotificationRecoveryRequest   SecurityNotificationKind = "recovery_request"
 	SecurityNotificationMemberLifecycle   SecurityNotificationKind = "member_lifecycle"
 	SecurityNotificationMemberAppeal      SecurityNotificationKind = "member_appeal"
+	SecurityNotificationContactChanged    SecurityNotificationKind = "contact_changed"
+	SecurityNotificationTenantDeletion    SecurityNotificationKind = "tenant_deletion"
 )
 
 const (
@@ -99,7 +101,7 @@ func (channel SecurityNotificationChannel) Valid() bool {
 
 func (kind SecurityNotificationKind) Valid() bool {
 	switch kind {
-	case SecurityNotificationVerificationCode, SecurityNotificationLoginLock, SecurityNotificationInitialCredential, SecurityNotificationPasswordReset, SecurityNotificationRecoveryRequest, SecurityNotificationMemberLifecycle, SecurityNotificationMemberAppeal:
+	case SecurityNotificationVerificationCode, SecurityNotificationLoginLock, SecurityNotificationInitialCredential, SecurityNotificationPasswordReset, SecurityNotificationRecoveryRequest, SecurityNotificationMemberLifecycle, SecurityNotificationMemberAppeal, SecurityNotificationContactChanged, SecurityNotificationTenantDeletion:
 		return true
 	default:
 		return false
