@@ -97,7 +97,7 @@ func TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled(t
 		tenant, name, email, phone string
 	}{
 		{tenantA, "Alice A", "alice.a-" + stamp + "@example.invalid", "+491701234567"},
-		{tenantB, "Alice B", "alice.b-" + stamp + "@example.invalid", "+8613800138000"},
+		{tenantB, "Alice B", "bob.b-" + stamp + "@example.invalid", "+8613800138000"},
 		{tenantDenied, "Alice Denied", "alice.denied-" + stamp + "@example.invalid", ""},
 	} {
 		exec("INSERT INTO biz_memberships(tenant_id,user_id,status,name,email,phone,avatar_asset_ref,version,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,NOW(3),NOW(3))", member.tenant, sharedUser, "active", member.name, member.email, member.phone, "avatar:coffee-blue", 1)
@@ -129,7 +129,7 @@ func TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled(t
 	if profileA.GetRegisteredAt() == "" || profileA.GetJoinedAt() == "" || len(profileA.GetRoles()) != 1 {
 		t.Fatalf("personal profile missing account/tenant facts: %+v", profileA)
 	}
-	for label, raw := range map[string]string{"a-email": "alice.a-" + stamp + "@example.invalid", "a-phone": "+491701234567", "b-email": "alice.b-" + stamp + "@example.invalid", "b-phone": "+8613800138000"} {
+	for label, raw := range map[string]string{"a-email": "alice.a-" + stamp + "@example.invalid", "a-phone": "+491701234567", "b-email": "bob.b-" + stamp + "@example.invalid", "b-phone": "+8613800138000"} {
 		if bytes.Contains(bodyA, []byte(raw)) || bytes.Contains(bodyB, []byte(raw)) {
 			t.Fatalf("%s leaked raw contact in personal profile response", label)
 		}

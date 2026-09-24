@@ -508,12 +508,12 @@ func (repository *TenantMemberRepository) List(ctx context.Context, tenantID str
 	}
 
 	type row struct {
-		TenantID, UserID, AccountUsername, AccountEmail, AccountEmailCiphertext, AccountEmailKeyVersion, Status, Name        string
-		AccountEmailLookupHash                                                                                               *string
+		TenantID, UserID, AccountUsername, AccountEmail, AccountEmailCiphertext, AccountEmailKeyVersion, Status, Name                        string
+		AccountEmailLookupHash                                                                                                               *string
 		Email, EmailCiphertext, EmailKeyVersion, Phone, PhoneCiphertext, PhoneKeyVersion, EmployeeID, Position, DepartmentID, AvatarAssetRef string
-		EmailLookupHash, PhoneLookupHash                                                                                     *string
-		Version                                                                                                              uint64
-		CreatedAt, UpdatedAt                                                                                                 time.Time
+		EmailLookupHash, PhoneLookupHash                                                                                                     *string
+		Version                                                                                                                              uint64
+		CreatedAt, UpdatedAt                                                                                                                 time.Time
 	}
 	var rows []row
 	listQuery, err := repository.memberListBaseQuery(ctx, tenantID, filter)

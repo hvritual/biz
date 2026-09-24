@@ -811,21 +811,21 @@ func tenantPersonalProfileDTO(profile domain.PersonalProfile) *accessv1.TenantPe
 		avatarRef = domain.DefaultPersonalAvatarAssetRef
 	}
 	return &accessv1.TenantPersonalProfileDTO{
-		UserId: member.UserID,
-		Username: member.Username,
-		Name: member.Name,
-		TenantId: member.TenantID,
-		TenantName: profile.TenantName,
-		Roles: roles,
-		RegisteredAt: registeredAt,
-		JoinedAt: joinedAt,
-		Email: maskPersonalEmail(member.Email),
-		Phone: maskPersonalPhone(member.Phone),
+		UserId:         member.UserID,
+		Username:       member.Username,
+		Name:           member.Name,
+		TenantId:       member.TenantID,
+		TenantName:     profile.TenantName,
+		Roles:          roles,
+		RegisteredAt:   registeredAt,
+		JoinedAt:       joinedAt,
+		Email:          maskPersonalEmail(member.Email),
+		Phone:          maskPersonalPhone(member.Phone),
 		AvatarAssetRef: avatarRef,
-		Version: member.Version,
-		EmployeeId: member.EmployeeID,
-		Position: member.Position,
-		DepartmentId: member.DepartmentID,
+		Version:        member.Version,
+		EmployeeId:     member.EmployeeID,
+		Position:       member.Position,
+		DepartmentId:   member.DepartmentID,
 	}
 }
 
