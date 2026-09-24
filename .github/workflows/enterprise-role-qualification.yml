@@ -222,3 +222,37 @@ jobs:
           set -euo pipefail
           VITE_DATA_MODE=api npm run build
           ENTERPRISE_ROLE_REAL_E2E=1 ENTERPRISE_DATA_PERMISSION_REAL_E2E=1 npx playwright test e2e/enterprise-roles-real.spec.ts e2e/enterprise-data-policy-ui.spec.ts
+
+
+      - name: Record permission UI evidence identity
+        if: always()
+        working-directory: web
+        shell: bash
+        run: |
+          mkdir -p test-results
+          python3 - <<'PYTHON'
+          import hashlib, json, pathlib, subprocess
+          root = pathlib.Path('.')
+          shots = sorted((root / 'screenshots/enterprise180-permission-ui').glob('*.png'))
+          manifest = {
+              'candidate_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'candidate_tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(),
+              'suite': 'e2e/enterprise-data-policy-ui.spec.ts',
+              'data_mode': 'mocked-api-browser-contract',
+              'live_backend_evidence': False,
+              'screenshots': [{'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()} for path in shots],
+          }
+          (root / 'test-results/enterprise180-ui-provenance.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          PYTHON
+
+      - name: Retain permission UI screenshots and test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: enterprise180-ui-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            web/screenshots/enterprise180-permission-ui
+            web/test-results
+            web/playwright-report
+          if-no-files-found: error
+          retention-days: 30
