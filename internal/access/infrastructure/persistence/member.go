@@ -42,7 +42,7 @@ func (repository *TenantMemberRepository) accountStore() *Store {
 }
 
 func (repository *TenantMemberRepository) newMembershipRecord(member domain.Membership, contactEmail string) (membershipRecord, error) {
-	row := membershipRecord{TenantID: member.TenantID, UserID: member.UserID, Status: member.Status, Version: member.Version, CreatedAt: member.CreatedAt, UpdatedAt: member.UpdatedAt}
+	row := membershipRecord{TenantID: member.TenantID, UserID: member.UserID, Status: member.Status, AvatarAssetRef: domain.DefaultPersonalAvatarAssetRef, Version: member.Version, CreatedAt: member.CreatedAt, UpdatedAt: member.UpdatedAt}
 	contactEmail = strings.TrimSpace(contactEmail)
 	if contactEmail == "" {
 		return row, nil
@@ -422,6 +422,59 @@ func (repository *TenantMemberRepository) Get(ctx context.Context, tenantID, use
 	return repository.memberFromRecord(ctx, row)
 }
 
+func (repository *TenantMemberRepository) GetPersonalProfile(ctx context.Context, tenantID, userID string) (domain.PersonalProfile, error) {
+	if repository == nil || repository.database == nil {
+		return domain.PersonalProfile{}, errors.New("access persistence: tenant personal profile repository unavailable")
+	}
+	tenantID, userID = strings.TrimSpace(tenantID), strings.TrimSpace(userID)
+	if tenantID == "" || userID == "" {
+		return domain.PersonalProfile{}, ports.ErrTenantMemberNotFound
+	}
+	member, err := repository.Get(ctx, tenantID, userID)
+	if err != nil {
+		return domain.PersonalProfile{}, err
+	}
+	var tenant tenantRecord
+	if err := repository.database.WithContext(ctx).Select("id,name").Where("id = ?", tenantID).First(&tenant).Error; err != nil {
+		return domain.PersonalProfile{}, err
+	}
+	var user userRecord
+	if err := repository.database.WithContext(ctx).Select("id,created_at").Where("id = ?", userID).First(&user).Error; err != nil {
+		return domain.PersonalProfile{}, err
+	}
+	if strings.TrimSpace(member.AvatarAssetRef) == "" {
+		member.AvatarAssetRef = domain.DefaultPersonalAvatarAssetRef
+	}
+	return domain.PersonalProfile{Member: member, TenantName: tenant.Name, AccountCreatedAt: user.CreatedAt}, nil
+}
+
+func (repository *TenantMemberRepository) UpdatePersonalAvatar(ctx context.Context, tenantID, userID string, expectedVersion uint64, avatarAssetRef string, now time.Time) (domain.PersonalProfile, error) {
+	if repository == nil || repository.database == nil || expectedVersion == 0 {
+		return domain.PersonalProfile{}, errors.New("access persistence: invalid tenant personal avatar update")
+	}
+	tenantID, userID, avatarAssetRef = strings.TrimSpace(tenantID), strings.TrimSpace(userID), strings.TrimSpace(avatarAssetRef)
+	if tenantID == "" || userID == "" || avatarAssetRef == "" {
+		return domain.PersonalProfile{}, errors.New("access persistence: invalid tenant personal avatar update")
+	}
+	result := repository.database.WithContext(ctx).Model(&membershipRecord{}).
+		Where("tenant_id = ? AND user_id = ? AND status <> ? AND version = ?", tenantID, userID, domain.TenantMemberStatusRemoved, expectedVersion).
+		Updates(map[string]any{"avatar_asset_ref": avatarAssetRef, "updated_at": now, "version": expectedVersion + 1})
+	if result.Error != nil {
+		return domain.PersonalProfile{}, result.Error
+	}
+	if result.RowsAffected != 1 {
+		var count int64
+		if err := repository.database.WithContext(ctx).Model(&membershipRecord{}).Where("tenant_id = ? AND user_id = ?", tenantID, userID).Count(&count).Error; err != nil {
+			return domain.PersonalProfile{}, err
+		}
+		if count == 0 {
+			return domain.PersonalProfile{}, ports.ErrTenantMemberNotFound
+		}
+		return domain.PersonalProfile{}, ports.ErrTenantMemberConflict
+	}
+	return repository.GetPersonalProfile(ctx, tenantID, userID)
+}
+
 func (repository *TenantMemberRepository) List(ctx context.Context, tenantID string, filter ports.TenantMemberListQuery) (ports.TenantMemberListPage, error) {
 	if repository == nil || repository.database == nil {
 		return ports.TenantMemberListPage{}, errors.New("access persistence: tenant member repository unavailable")
@@ -457,7 +510,7 @@ func (repository *TenantMemberRepository) List(ctx context.Context, tenantID str
 	type row struct {
 		TenantID, UserID, AccountUsername, AccountEmail, AccountEmailCiphertext, AccountEmailKeyVersion, Status, Name        string
 		AccountEmailLookupHash                                                                                               *string
-		Email, EmailCiphertext, EmailKeyVersion, Phone, PhoneCiphertext, PhoneKeyVersion, EmployeeID, Position, DepartmentID string
+		Email, EmailCiphertext, EmailKeyVersion, Phone, PhoneCiphertext, PhoneKeyVersion, EmployeeID, Position, DepartmentID, AvatarAssetRef string
 		EmailLookupHash, PhoneLookupHash                                                                                     *string
 		Version                                                                                                              uint64
 		CreatedAt, UpdatedAt                                                                                                 time.Time
@@ -469,7 +522,7 @@ func (repository *TenantMemberRepository) List(ctx context.Context, tenantID str
 	}
 	offset := int((uint64(filter.Page) - 1) * uint64(filter.PageSize))
 	if err := listQuery.
-		Select("m.tenant_id, m.user_id, COALESCE(u.username, '') AS account_username, u.email AS account_email, u.email_ciphertext AS account_email_ciphertext, u.email_lookup_hash AS account_email_lookup_hash, u.email_key_version AS account_email_key_version, m.status, m.name, m.email, m.email_ciphertext, m.email_lookup_hash, m.email_key_version, m.phone, m.phone_ciphertext, m.phone_lookup_hash, m.phone_key_version, m.employee_id, m.position, m.department_id, m.version, m.created_at, m.updated_at").
+		Select("m.tenant_id, m.user_id, COALESCE(u.username, '') AS account_username, u.email AS account_email, u.email_ciphertext AS account_email_ciphertext, u.email_lookup_hash AS account_email_lookup_hash, u.email_key_version AS account_email_key_version, m.status, m.name, m.email, m.email_ciphertext, m.email_lookup_hash, m.email_key_version, m.phone, m.phone_ciphertext, m.phone_lookup_hash, m.phone_key_version, m.employee_id, m.position, m.department_id, m.avatar_asset_ref, m.version, m.created_at, m.updated_at").
 		Order("m.created_at ASC, m.user_id ASC").
 		Limit(int(filter.PageSize)).
 		Offset(offset).
@@ -478,7 +531,7 @@ func (repository *TenantMemberRepository) List(ctx context.Context, tenantID str
 	}
 	members := make([]domain.Membership, 0, len(rows))
 	for _, value := range rows {
-		membershipRow := membershipRecord{TenantID: value.TenantID, UserID: value.UserID, Status: value.Status, Name: value.Name, Email: value.Email, EmailCiphertext: value.EmailCiphertext, EmailLookupHash: value.EmailLookupHash, EmailKeyVersion: value.EmailKeyVersion, Phone: value.Phone, PhoneCiphertext: value.PhoneCiphertext, PhoneLookupHash: value.PhoneLookupHash, PhoneKeyVersion: value.PhoneKeyVersion, EmployeeID: value.EmployeeID, Position: value.Position, DepartmentID: value.DepartmentID, Version: value.Version, CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt}
+		membershipRow := membershipRecord{TenantID: value.TenantID, UserID: value.UserID, Status: value.Status, Name: value.Name, Email: value.Email, EmailCiphertext: value.EmailCiphertext, EmailLookupHash: value.EmailLookupHash, EmailKeyVersion: value.EmailKeyVersion, Phone: value.Phone, PhoneCiphertext: value.PhoneCiphertext, PhoneLookupHash: value.PhoneLookupHash, PhoneKeyVersion: value.PhoneKeyVersion, EmployeeID: value.EmployeeID, Position: value.Position, DepartmentID: value.DepartmentID, AvatarAssetRef: value.AvatarAssetRef, Version: value.Version, CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt}
 		accountRow := userRecord{ID: value.UserID, Email: value.AccountEmail, EmailCiphertext: value.AccountEmailCiphertext, EmailLookupHash: value.AccountEmailLookupHash, EmailKeyVersion: value.AccountEmailKeyVersion}
 		email, err := repository.displayMemberEmail(membershipRow, accountRow)
 		if err != nil {
@@ -488,7 +541,7 @@ func (repository *TenantMemberRepository) List(ctx context.Context, tenantID str
 		if err != nil {
 			return ports.TenantMemberListPage{}, err
 		}
-		members = append(members, domain.Membership{TenantID: value.TenantID, UserID: value.UserID, Username: value.AccountUsername, Email: email, Status: value.Status, Name: value.Name, Phone: phone, EmployeeID: value.EmployeeID, Position: value.Position, DepartmentID: value.DepartmentID, Version: value.Version, DerivedDataScope: domain.DataScopeNone, CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt})
+		members = append(members, domain.Membership{TenantID: value.TenantID, UserID: value.UserID, Username: value.AccountUsername, Email: email, Status: value.Status, Name: value.Name, Phone: phone, EmployeeID: value.EmployeeID, Position: value.Position, DepartmentID: value.DepartmentID, AvatarAssetRef: value.AvatarAssetRef, Version: value.Version, DerivedDataScope: domain.DataScopeNone, CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt})
 	}
 	if err := repository.enrichMemberAccess(ctx, members); err != nil {
 		return ports.TenantMemberListPage{}, err
@@ -680,7 +733,7 @@ func (repository *TenantMemberRepository) memberFromRecord(ctx context.Context, 
 	if err != nil {
 		return domain.Membership{}, err
 	}
-	members := []domain.Membership{{TenantID: row.TenantID, UserID: row.UserID, Username: usernameValue(user.Username), Email: email, Status: row.Status, Name: row.Name, Phone: phone, EmployeeID: row.EmployeeID, Position: row.Position, DepartmentID: row.DepartmentID, Version: row.Version, DerivedDataScope: domain.DataScopeNone, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}}
+	members := []domain.Membership{{TenantID: row.TenantID, UserID: row.UserID, Username: usernameValue(user.Username), Email: email, Status: row.Status, Name: row.Name, Phone: phone, EmployeeID: row.EmployeeID, Position: row.Position, DepartmentID: row.DepartmentID, AvatarAssetRef: row.AvatarAssetRef, Version: row.Version, DerivedDataScope: domain.DataScopeNone, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}}
 	if err := repository.enrichMemberAccess(ctx, members); err != nil {
 		return domain.Membership{}, err
 	}
