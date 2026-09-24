@@ -19,17 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TenantMemberLifecycleApplication_InviteTenantMember_FullMethodName        = "/access.v1.TenantMemberLifecycleApplication/InviteTenantMember"
-	TenantMemberLifecycleApplication_CreateTenantMember_FullMethodName        = "/access.v1.TenantMemberLifecycleApplication/CreateTenantMember"
-	TenantMemberLifecycleApplication_GetTenantMember_FullMethodName           = "/access.v1.TenantMemberLifecycleApplication/GetTenantMember"
-	TenantMemberLifecycleApplication_ListTenantMembers_FullMethodName         = "/access.v1.TenantMemberLifecycleApplication/ListTenantMembers"
-	TenantMemberLifecycleApplication_ListRemovedTenantMembers_FullMethodName  = "/access.v1.TenantMemberLifecycleApplication/ListRemovedTenantMembers"
-	TenantMemberLifecycleApplication_UpdateTenantMemberProfile_FullMethodName = "/access.v1.TenantMemberLifecycleApplication/UpdateTenantMemberProfile"
-	TenantMemberLifecycleApplication_UpdateTenantMember_FullMethodName        = "/access.v1.TenantMemberLifecycleApplication/UpdateTenantMember"
-	TenantMemberLifecycleApplication_ActivateTenantMember_FullMethodName      = "/access.v1.TenantMemberLifecycleApplication/ActivateTenantMember"
-	TenantMemberLifecycleApplication_RestoreTenantMember_FullMethodName       = "/access.v1.TenantMemberLifecycleApplication/RestoreTenantMember"
-	TenantMemberLifecycleApplication_SuspendTenantMember_FullMethodName       = "/access.v1.TenantMemberLifecycleApplication/SuspendTenantMember"
-	TenantMemberLifecycleApplication_RemoveTenantMember_FullMethodName        = "/access.v1.TenantMemberLifecycleApplication/RemoveTenantMember"
+	TenantMemberLifecycleApplication_InviteTenantMember_FullMethodName          = "/access.v1.TenantMemberLifecycleApplication/InviteTenantMember"
+	TenantMemberLifecycleApplication_CreateTenantMember_FullMethodName          = "/access.v1.TenantMemberLifecycleApplication/CreateTenantMember"
+	TenantMemberLifecycleApplication_GetMyPersonalProfile_FullMethodName        = "/access.v1.TenantMemberLifecycleApplication/GetMyPersonalProfile"
+	TenantMemberLifecycleApplication_ListMyPersonalAvatarOptions_FullMethodName = "/access.v1.TenantMemberLifecycleApplication/ListMyPersonalAvatarOptions"
+	TenantMemberLifecycleApplication_UpdateMyPersonalAvatar_FullMethodName      = "/access.v1.TenantMemberLifecycleApplication/UpdateMyPersonalAvatar"
+	TenantMemberLifecycleApplication_GetTenantMember_FullMethodName             = "/access.v1.TenantMemberLifecycleApplication/GetTenantMember"
+	TenantMemberLifecycleApplication_ListTenantMembers_FullMethodName           = "/access.v1.TenantMemberLifecycleApplication/ListTenantMembers"
+	TenantMemberLifecycleApplication_ListRemovedTenantMembers_FullMethodName    = "/access.v1.TenantMemberLifecycleApplication/ListRemovedTenantMembers"
+	TenantMemberLifecycleApplication_UpdateTenantMemberProfile_FullMethodName   = "/access.v1.TenantMemberLifecycleApplication/UpdateTenantMemberProfile"
+	TenantMemberLifecycleApplication_UpdateTenantMember_FullMethodName          = "/access.v1.TenantMemberLifecycleApplication/UpdateTenantMember"
+	TenantMemberLifecycleApplication_ActivateTenantMember_FullMethodName        = "/access.v1.TenantMemberLifecycleApplication/ActivateTenantMember"
+	TenantMemberLifecycleApplication_RestoreTenantMember_FullMethodName         = "/access.v1.TenantMemberLifecycleApplication/RestoreTenantMember"
+	TenantMemberLifecycleApplication_SuspendTenantMember_FullMethodName         = "/access.v1.TenantMemberLifecycleApplication/SuspendTenantMember"
+	TenantMemberLifecycleApplication_RemoveTenantMember_FullMethodName          = "/access.v1.TenantMemberLifecycleApplication/RemoveTenantMember"
 )
 
 // TenantMemberLifecycleApplicationClient is the client API for TenantMemberLifecycleApplication service.
@@ -38,6 +41,9 @@ const (
 type TenantMemberLifecycleApplicationClient interface {
 	InviteTenantMember(ctx context.Context, in *InviteTenantMemberRequest, opts ...grpc.CallOption) (*TenantMemberDTO, error)
 	CreateTenantMember(ctx context.Context, in *CreateTenantMemberRequest, opts ...grpc.CallOption) (*TenantMemberCreationReceipt, error)
+	GetMyPersonalProfile(ctx context.Context, in *GetMyPersonalProfileRequest, opts ...grpc.CallOption) (*TenantPersonalProfileDTO, error)
+	ListMyPersonalAvatarOptions(ctx context.Context, in *ListMyPersonalAvatarOptionsRequest, opts ...grpc.CallOption) (*ListMyPersonalAvatarOptionsResponse, error)
+	UpdateMyPersonalAvatar(ctx context.Context, in *UpdateMyPersonalAvatarRequest, opts ...grpc.CallOption) (*TenantPersonalProfileDTO, error)
 	GetTenantMember(ctx context.Context, in *GetTenantMemberRequest, opts ...grpc.CallOption) (*TenantMemberDTO, error)
 	ListTenantMembers(ctx context.Context, in *ListTenantMembersRequest, opts ...grpc.CallOption) (*ListTenantMembersResponse, error)
 	ListRemovedTenantMembers(ctx context.Context, in *ListRemovedTenantMembersRequest, opts ...grpc.CallOption) (*ListTenantMembersResponse, error)
@@ -71,6 +77,36 @@ func (c *tenantMemberLifecycleApplicationClient) CreateTenantMember(ctx context.
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TenantMemberCreationReceipt)
 	err := c.cc.Invoke(ctx, TenantMemberLifecycleApplication_CreateTenantMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantMemberLifecycleApplicationClient) GetMyPersonalProfile(ctx context.Context, in *GetMyPersonalProfileRequest, opts ...grpc.CallOption) (*TenantPersonalProfileDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TenantPersonalProfileDTO)
+	err := c.cc.Invoke(ctx, TenantMemberLifecycleApplication_GetMyPersonalProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantMemberLifecycleApplicationClient) ListMyPersonalAvatarOptions(ctx context.Context, in *ListMyPersonalAvatarOptionsRequest, opts ...grpc.CallOption) (*ListMyPersonalAvatarOptionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListMyPersonalAvatarOptionsResponse)
+	err := c.cc.Invoke(ctx, TenantMemberLifecycleApplication_ListMyPersonalAvatarOptions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantMemberLifecycleApplicationClient) UpdateMyPersonalAvatar(ctx context.Context, in *UpdateMyPersonalAvatarRequest, opts ...grpc.CallOption) (*TenantPersonalProfileDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TenantPersonalProfileDTO)
+	err := c.cc.Invoke(ctx, TenantMemberLifecycleApplication_UpdateMyPersonalAvatar_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -173,6 +209,9 @@ func (c *tenantMemberLifecycleApplicationClient) RemoveTenantMember(ctx context.
 type TenantMemberLifecycleApplicationServer interface {
 	InviteTenantMember(context.Context, *InviteTenantMemberRequest) (*TenantMemberDTO, error)
 	CreateTenantMember(context.Context, *CreateTenantMemberRequest) (*TenantMemberCreationReceipt, error)
+	GetMyPersonalProfile(context.Context, *GetMyPersonalProfileRequest) (*TenantPersonalProfileDTO, error)
+	ListMyPersonalAvatarOptions(context.Context, *ListMyPersonalAvatarOptionsRequest) (*ListMyPersonalAvatarOptionsResponse, error)
+	UpdateMyPersonalAvatar(context.Context, *UpdateMyPersonalAvatarRequest) (*TenantPersonalProfileDTO, error)
 	GetTenantMember(context.Context, *GetTenantMemberRequest) (*TenantMemberDTO, error)
 	ListTenantMembers(context.Context, *ListTenantMembersRequest) (*ListTenantMembersResponse, error)
 	ListRemovedTenantMembers(context.Context, *ListRemovedTenantMembersRequest) (*ListTenantMembersResponse, error)
@@ -196,6 +235,15 @@ func (UnimplementedTenantMemberLifecycleApplicationServer) InviteTenantMember(co
 }
 func (UnimplementedTenantMemberLifecycleApplicationServer) CreateTenantMember(context.Context, *CreateTenantMemberRequest) (*TenantMemberCreationReceipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateTenantMember not implemented")
+}
+func (UnimplementedTenantMemberLifecycleApplicationServer) GetMyPersonalProfile(context.Context, *GetMyPersonalProfileRequest) (*TenantPersonalProfileDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetMyPersonalProfile not implemented")
+}
+func (UnimplementedTenantMemberLifecycleApplicationServer) ListMyPersonalAvatarOptions(context.Context, *ListMyPersonalAvatarOptionsRequest) (*ListMyPersonalAvatarOptionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListMyPersonalAvatarOptions not implemented")
+}
+func (UnimplementedTenantMemberLifecycleApplicationServer) UpdateMyPersonalAvatar(context.Context, *UpdateMyPersonalAvatarRequest) (*TenantPersonalProfileDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateMyPersonalAvatar not implemented")
 }
 func (UnimplementedTenantMemberLifecycleApplicationServer) GetTenantMember(context.Context, *GetTenantMemberRequest) (*TenantMemberDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTenantMember not implemented")
@@ -276,6 +324,60 @@ func _TenantMemberLifecycleApplication_CreateTenantMember_Handler(srv interface{
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TenantMemberLifecycleApplicationServer).CreateTenantMember(ctx, req.(*CreateTenantMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantMemberLifecycleApplication_GetMyPersonalProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMyPersonalProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantMemberLifecycleApplicationServer).GetMyPersonalProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantMemberLifecycleApplication_GetMyPersonalProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantMemberLifecycleApplicationServer).GetMyPersonalProfile(ctx, req.(*GetMyPersonalProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantMemberLifecycleApplication_ListMyPersonalAvatarOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListMyPersonalAvatarOptionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantMemberLifecycleApplicationServer).ListMyPersonalAvatarOptions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantMemberLifecycleApplication_ListMyPersonalAvatarOptions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantMemberLifecycleApplicationServer).ListMyPersonalAvatarOptions(ctx, req.(*ListMyPersonalAvatarOptionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantMemberLifecycleApplication_UpdateMyPersonalAvatar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateMyPersonalAvatarRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantMemberLifecycleApplicationServer).UpdateMyPersonalAvatar(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantMemberLifecycleApplication_UpdateMyPersonalAvatar_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantMemberLifecycleApplicationServer).UpdateMyPersonalAvatar(ctx, req.(*UpdateMyPersonalAvatarRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -456,6 +558,18 @@ var TenantMemberLifecycleApplication_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateTenantMember",
 			Handler:    _TenantMemberLifecycleApplication_CreateTenantMember_Handler,
+		},
+		{
+			MethodName: "GetMyPersonalProfile",
+			Handler:    _TenantMemberLifecycleApplication_GetMyPersonalProfile_Handler,
+		},
+		{
+			MethodName: "ListMyPersonalAvatarOptions",
+			Handler:    _TenantMemberLifecycleApplication_ListMyPersonalAvatarOptions_Handler,
+		},
+		{
+			MethodName: "UpdateMyPersonalAvatar",
+			Handler:    _TenantMemberLifecycleApplication_UpdateMyPersonalAvatar_Handler,
 		},
 		{
 			MethodName: "GetTenantMember",
