@@ -3873,6 +3873,118 @@
       }
     },
     {
+      "operationId": "tenant.member.personal_profile.avatar_options",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "list_my_personal_avatar_options",
+      "requestType": "access.v1.ListMyPersonalAvatarOptionsRequest",
+      "responseType": "access.v1.ListMyPersonalAvatarOptionsResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.personal_profile.self"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_department_management",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/ListMyPersonalAvatarOptions",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/me/avatar-options"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.member.personal_profile.avatar_update",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "update_my_personal_avatar",
+      "requestType": "access.v1.UpdateMyPersonalAvatarRequest",
+      "responseType": "access.v1.TenantPersonalProfileDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.personal_profile.self"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_department_management",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/UpdateMyPersonalAvatar",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/tenant/me/avatar",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.member.personal_profile.get",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "get_my_personal_profile",
+      "requestType": "access.v1.GetMyPersonalProfileRequest",
+      "responseType": "access.v1.TenantPersonalProfileDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.personal_profile.self"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_department_management",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/GetMyPersonalProfile",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/me/profile"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "tenant.member.profile.update",
       "domain": "access",
       "application": "tenant_member_lifecycle",
