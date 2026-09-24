@@ -70,6 +70,7 @@ type membershipRecord struct {
 	EmployeeID      string    `gorm:"column:employee_id;size:64;not null;default:''"`
 	Position        string    `gorm:"column:position;size:100;not null;default:''"`
 	DepartmentID    string    `gorm:"column:department_id;size:64;not null;default:'';index"`
+	AvatarAssetRef  string    `gorm:"column:avatar_asset_ref;size:64;not null;default:'avatar:coffee-blue'"`
 	Version         uint64    `gorm:"column:version;not null;default:1"`
 	CreatedAt       time.Time `gorm:"column:created_at;not null"`
 	UpdatedAt       time.Time `gorm:"column:updated_at;not null"`
