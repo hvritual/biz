@@ -230,7 +230,7 @@ test('personal profile renders current self data across four CoffeeLink viewport
     await openPersonalProfile(page)
     await expect(page.getByRole('heading', { name: '个人中心', level: 1 })).toBeVisible()
     await expect(page.getByText('Alice A', { exact: true }).first()).toBeVisible()
-    await expect(page.getByText('Tenant A', { exact: true }).first()).toBeVisible()
+    await expect(page.locator('[data-ui-region="scope"] h2')).toHaveText('Tenant A')
     await expect(page.getByText('a***@example.invalid', { exact: true })).toBeVisible()
     await expect(page.getByText('***4567', { exact: true })).toBeVisible()
     await expect(page.getByText(/alice\.a-|\+49170/)).toHaveCount(0)
