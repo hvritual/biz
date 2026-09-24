@@ -45,10 +45,10 @@ func startEnterprise182Runtime(t *testing.T, db *gorm.DB) enterprise182Runtime {
 			return
 		}
 		write := map[string]any{
-			"issuer":                                issuerURL,
-			"authorization_endpoint":                issuerURL + "/authorize",
-			"token_endpoint":                        issuerURL + "/token",
-			"jwks_uri":                              issuerURL + "/jwks",
+			"issuer":                               issuerURL,
+			"authorization_endpoint":               issuerURL + "/authorize",
+			"token_endpoint":                       issuerURL + "/token",
+			"jwks_uri":                             issuerURL + "/jwks",
 			"id_token_signing_alg_values_supported": []string{"RS256"},
 		}
 		writer.Header().Set("Content-Type", "application/json")
@@ -553,11 +553,11 @@ VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,'','',DATE_ADD(UTC_TIMESTAMP(6), INTERV
 	if memberA.Status != accessdomain.TenantMemberStatusActive || memberA.Version != currentAVersion {
 		t.Fatalf("failed deletion left partial membership: %+v", memberA)
 	}
-	var consumedAt *time.Time
-	if err := db.Table("biz_verification_challenges").Select("consumed_at").Where("challenge_id = ?", deleteChallengeID).Scan(&consumedAt).Error; err != nil {
+	var challengeState struct{ ConsumedAt *time.Time }
+	if err := db.Table("biz_verification_challenges").Select("consumed_at").Where("challenge_id = ?", deleteChallengeID).Take(&challengeState).Error; err != nil {
 		t.Fatal(err)
 	}
-	if consumedAt != nil {
+	if challengeState.ConsumedAt != nil {
 		t.Fatal("failed deletion consumed OTP challenge")
 	}
 	if err := db.Table("biz_security_notification_outbox").Where("business_event_id = ?", conflictBusinessEvent).Delete(map[string]any{}).Error; err != nil {
@@ -602,10 +602,10 @@ VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,'','',DATE_ADD(UTC_TIMESTAMP(6), INTERV
 
 	// Self-deleted current tenant is tombstoned, stripped, and cannot use admin restore.
 	var deletedRow struct {
-		Status                                                                                   string
-		Version                                                                                  uint64
+		Status                                                                               string
+		Version                                                                              uint64
 		Name, Email, EmailCiphertext, Phone, PhoneCiphertext, EmployeeID, Position, DepartmentID string
-		SelfDeletedAt                                                                            *time.Time
+		SelfDeletedAt                                                                        *time.Time
 	}
 	if err := db.Table("biz_memberships").Where("tenant_id = ? AND user_id = ?", tenantA, userID).Scan(&deletedRow).Error; err != nil {
 		t.Fatal(err)
