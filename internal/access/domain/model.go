@@ -30,6 +30,8 @@ const (
 	TenantMemberStatusRemoved   = "removed"
 )
 
+const DefaultPersonalAvatarAssetRef = "avatar:coffee-blue"
+
 const (
 	TenantRoleStatusActive   = "active"
 	TenantRoleStatusDisabled = "disabled"
@@ -136,6 +138,7 @@ type Membership struct {
 	EmployeeID       string
 	Position         string
 	DepartmentID     string
+	AvatarAssetRef   string
 	Roles            []MemberRoleSummary
 	DerivedDataScope DataScope
 	CreatedAt        time.Time
