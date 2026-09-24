@@ -33,7 +33,7 @@ type Options = {
   authorizationDenied?: boolean
   readStatus?: number
   mutationStatus?: number
-  readbackStatus?: number
+  confirmationStatus?: number
   delayTenantAProfile?: boolean
 }
 
@@ -52,7 +52,7 @@ async function useZhLocale(page: Page) {
   await page.addInitScript(() => localStorage.setItem('coffeelink.locale', 'zh-CN'))
 }
 
-async function mockPersonalProfileServer(page: Page, options: Options = {}) {
+async function mockPersonalProfileApi(page: Page, options: Options = {}) {
   await installApiFailFast(page)
 
   let activeTenant = 'tenant-a'
@@ -180,7 +180,7 @@ async function mockPersonalProfileServer(page: Page, options: Options = {}) {
       await tenantAGate
     }
     if (options.readStatus) return json(route, options.readStatus, { message: 'personal profile read failed' })
-    if (options.readbackStatus && writes.length > 0) return json(route, options.readbackStatus, { message: 'personal profile readback failed' })
+    if (options.confirmationStatus && writes.length > 0) return json(route, options.confirmationStatus, { message: 'personal profile confirmation failed' })
     return json(route, 200, profiles[requestTenant])
   })
 
@@ -216,8 +216,8 @@ async function openPersonalProfile(page: Page) {
   await expect(page.locator('[data-enterprise-page="personal-profile"]')).toBeVisible()
 }
 
-test('personal profile renders authoritative self data across four CoffeeLink viewports', async ({ page }) => {
-  await mockPersonalProfileServer(page)
+test('personal profile renders current self data across four CoffeeLink viewports', async ({ page }) => {
+  await mockPersonalProfileApi(page)
   mkdirSync('screenshots/enterprise181-personal-profile', { recursive: true })
 
   for (const viewport of [
@@ -244,8 +244,8 @@ test('personal profile renders authoritative self data across four CoffeeLink vi
   }
 })
 
-test('keyboard avatar selection uses trusted CAS write and updates header only after readback', async ({ page }) => {
-  const server = await mockPersonalProfileServer(page)
+test('keyboard avatar selection uses trusted CAS write and updates header only after refresh', async ({ page }) => {
+  const api = await mockPersonalProfileApi(page)
   await openPersonalProfile(page)
 
   const amber = page.getByRole('button', { name: '选择头像 Coffee Amber' })
@@ -258,8 +258,8 @@ test('keyboard avatar selection uses trusted CAS write and updates header only a
   await save.press('Enter')
   await expect(page.getByText('头像已保存并完成服务端回读。', { exact: true })).toBeVisible()
 
-  expect(server.writes).toHaveLength(1)
-  const write = server.writes[0]!
+  expect(api.writes).toHaveLength(1)
+  const write = api.writes[0]!
   expect(write.tenantId).toBe('tenant-a')
   expect(write.body).toEqual({ version: 7, avatarAssetRef: 'avatar:coffee-amber' })
   expect(write.body.userId).toBeUndefined()
@@ -270,8 +270,8 @@ test('keyboard avatar selection uses trusted CAS write and updates header only a
   await expect(page.locator('[aria-label="当前账号"] [data-avatar-ref="avatar:coffee-amber"]')).toBeVisible()
 })
 
-test('successful avatar PATCH without authoritative GET readback never updates the header', async ({ page }) => {
-  await mockPersonalProfileServer(page, { readbackStatus: 500 })
+test('successful avatar PATCH without follow-up profile refresh never updates the header', async ({ page }) => {
+  await mockPersonalProfileApi(page, { confirmationStatus: 500 })
   await openPersonalProfile(page)
 
   await page.getByRole('button', { name: '选择头像 Coffee Amber' }).click()
@@ -284,7 +284,7 @@ test('successful avatar PATCH without authoritative GET readback never updates t
 })
 
 test('tenant switch discards delayed tenant A profile and renders tenant B empty contacts', async ({ page }) => {
-  const server = await mockPersonalProfileServer(page, { delayTenantAProfile: true })
+  const api = await mockPersonalProfileApi(page, { delayTenantAProfile: true })
   await openPersonalProfile(page)
 
   await selectUiOption(page.getByRole('combobox', { name: '切换企业' }), 'tenant-b')
@@ -293,23 +293,23 @@ test('tenant switch discards delayed tenant A profile and renders tenant B empty
   await expect(page.getByText('未绑定', { exact: true })).toHaveCount(2)
   await expect(page.locator('[aria-label="当前账号"] [data-avatar-ref="avatar:coffee-emerald"]')).toBeVisible()
 
-  server.releaseTenantA()
+  api.releaseTenantA()
   await page.waitForTimeout(150)
 
   await expect(page.getByText('Alice B', { exact: true }).first()).toBeVisible()
   await expect(page.getByText('Alice A', { exact: true })).toHaveCount(0)
   await expect(page.locator('[aria-label="当前账号"] [data-avatar-ref="avatar:coffee-emerald"]')).toBeVisible()
-  expect(server.activeTenant()).toBe('tenant-b')
+  expect(api.activeTenant()).toBe('tenant-b')
 })
 
 test('unauthenticated and unauthorized personal profile routes fail closed', async ({ page }) => {
-  await mockPersonalProfileServer(page, { unauthenticated: true })
+  await mockPersonalProfileApi(page, { unauthenticated: true })
   await page.goto('/#/enterprise/personal-profile')
   await expect(page).toHaveURL(/\/api\/auth\/login\?return_to=/)
   await expect(page.locator('[data-enterprise-page="personal-profile"]')).toHaveCount(0)
 
   await page.unrouteAll({ behavior: 'ignoreErrors' })
-  await mockPersonalProfileServer(page, { authorizationDenied: true })
+  await mockPersonalProfileApi(page, { authorizationDenied: true })
   await page.goto('/#/enterprise/personal-profile')
   await expect(page).toHaveURL(/#\/authorization-state/)
   await expect(page.getByRole('heading', { name: '没有访问权限' })).toBeVisible()
