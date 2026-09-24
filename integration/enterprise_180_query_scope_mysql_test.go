@@ -269,7 +269,7 @@ func TestEnterprise180EffectiveScopeQueryEnforcement(t *testing.T) {
 	assertList(siteB) // policies must intersect, not union.
 	assertDetailDenied(siteA)
 
-	dept, e := departments.CreateTenantDepartment(adminCtx(token), &accessv1.CreateTenantDepartmentRequest{Name: "Scope-neutral department", LeaderUserId: reader})
+	deptA, e := departments.CreateTenantDepartment(adminCtx(token), &accessv1.CreateTenantDepartmentRequest{Name: "Scope-neutral department A", LeaderUserId: reader})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -277,10 +277,32 @@ func TestEnterprise180EffectiveScopeQueryEnforcement(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if _, e = members.UpdateTenantMemberProfile(adminCtx(token), &accessv1.UpdateTenantMemberProfileRequest{UserId: reader, Version: member.GetVersion(), DepartmentId: dept.GetDepartmentId(), Name: "Moved reader"}); e != nil {
+	if _, e = members.UpdateTenantMemberProfile(adminCtx(token), &accessv1.UpdateTenantMemberProfileRequest{UserId: reader, Version: member.GetVersion(), DepartmentId: deptA.GetDepartmentId(), Name: "Moved reader"}); e != nil {
 		t.Fatal(e)
 	}
-	assertList(siteB) // moving/leading a department creates no resource grant.
+	assertList(siteB) // joining/leading a department creates no resource grant.
+
+	deptB, e := departments.CreateTenantDepartment(adminCtx(token), &accessv1.CreateTenantDepartmentRequest{Name: "Scope-neutral department B", LeaderUserId: admin})
+	if e != nil {
+		t.Fatal(e)
+	}
+	member, e = members.GetTenantMember(auth(token), &accessv1.GetTenantMemberRequest{UserId: reader})
+	if e != nil {
+		t.Fatal(e)
+	}
+	if _, e = members.UpdateTenantMemberProfile(adminCtx(token), &accessv1.UpdateTenantMemberProfileRequest{UserId: reader, Version: member.GetVersion(), DepartmentId: deptB.GetDepartmentId(), Name: "Cross-department reader"}); e != nil {
+		t.Fatal(e)
+	}
+	assertList(siteB) // moving between departments must not expand effective scope.
+
+	deptB, e = departments.DisableTenantDepartment(adminCtx(token), &accessv1.DisableTenantDepartmentRequest{DepartmentId: deptB.GetDepartmentId(), Version: deptB.GetVersion()})
+	if e != nil {
+		t.Fatal(e)
+	}
+	if deptB.GetStatus() != accessv1.TenantDepartmentStatus_TENANT_DEPARTMENT_STATUS_DISABLED {
+		t.Fatalf("disabled department=%+v", deptB)
+	}
+	assertList(siteB) // department disablement is organization state, not business-data authority.
 
 	policyA = changePolicy(policyA, "", siteA)
 	assertList() // first request after committed policy contraction, old cookie.
