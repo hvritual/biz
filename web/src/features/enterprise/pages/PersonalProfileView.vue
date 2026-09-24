@@ -22,8 +22,8 @@ const draftAvatar = ref('')
 const saveError = ref('')
 
 const profile = computed(() => personal.profile)
-const authoritativeAvatar = computed(() => profile.value?.avatarAssetRef ?? 'avatar:coffee-blue')
-const avatarDirty = computed(() => Boolean(draftAvatar.value) && draftAvatar.value !== authoritativeAvatar.value)
+const savedAvatar = computed(() => profile.value?.avatarAssetRef ?? 'avatar:coffee-blue')
+const avatarDirty = computed(() => Boolean(draftAvatar.value) && draftAvatar.value !== savedAvatar.value)
 const timeZone = computed(() => enterprise.session?.active_tenant_timezone || 'UTC')
 
 function displayDate(value: string) {
@@ -109,7 +109,7 @@ watch(
           <div class="identity-hero">
             <AvatarMark
               :name="profile.name || profile.username || profile.userId"
-              :asset-ref="authoritativeAvatar"
+              :asset-ref="savedAvatar"
               :size="72"
             />
             <div>
@@ -127,7 +127,7 @@ watch(
           </dl>
         </section>
 
-        <section class="card tenant-card" aria-labelledby="personal-profile-tenant">
+        <section class="card tenant-card" data-ui-region="scope" aria-labelledby="personal-profile-tenant">
           <div class="section-heading">
             <div>
               <p class="eyebrow">{{ t('personalProfile.tenantSection') }}</p>
@@ -144,14 +144,14 @@ watch(
         </section>
       </div>
 
-      <section class="card avatar-card" aria-labelledby="personal-profile-avatar">
+      <section class="card avatar-card" data-ui-region="form-workspace" aria-labelledby="personal-profile-avatar">
         <div class="section-heading">
           <div>
             <p class="eyebrow">{{ t('personalProfile.avatarSection') }}</p>
             <h2 id="personal-profile-avatar">{{ t('personalProfile.avatarCurrent') }}</h2>
             <p class="secondary">{{ t('personalProfile.avatarDescription') }}</p>
           </div>
-          <AvatarMark :name="profile.name || profile.username || profile.userId" :asset-ref="draftAvatar || authoritativeAvatar" :size="54" />
+          <AvatarMark :name="profile.name || profile.username || profile.userId" :asset-ref="draftAvatar || savedAvatar" :size="54" />
         </div>
 
         <div class="avatar-options" role="group" :aria-label="t('personalProfile.avatarSection')">
@@ -172,9 +172,9 @@ watch(
             <AppIcon v-if="draftAvatar === option.assetRef" name="check" :size="16" />
           </UiButton>
         </div>
-        <p class="secondary readback-note"><AppIcon name="shield" :size="15" />{{ t('personalProfile.avatarReadback') }}</p>
+        <p class="secondary readback-note"><AppIcon name="shield" :size="15" />{{ t('personalProfile.avatarConfirmNote') }}</p>
         <p v-if="saveError" class="form-error" role="alert">{{ saveError }}</p>
-        <div class="form-footer">
+        <div class="form-footer" data-ui-region="form-actions">
           <UiButton
             class="btn btn-primary"
             :disabled="!avatarDirty || personal.saving"
