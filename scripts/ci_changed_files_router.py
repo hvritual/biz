@@ -230,6 +230,8 @@ def is_docs_only_path(path: str) -> bool:
 
 def classify_path(path: str) -> set[str]:
     result: set[str] = set()
+    if path in {"scripts/ci_access_tests.json", "scripts/ci_access_qualification.py"}:
+        result.add("access")
     if any(path.startswith(prefix) for prefix in WEB_PREFIXES):
         result.add("web")
     if any(path.startswith(prefix) for prefix in ACCESS_PREFIXES):
