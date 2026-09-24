@@ -78,6 +78,37 @@ func (repository *memoryTenantMemberRepository) Get(_ context.Context, tenantID,
 	return member, nil
 }
 
+func (repository *memoryTenantMemberRepository) GetPersonalProfile(_ context.Context, tenantID, userID string) (domain.PersonalProfile, error) {
+	repository.mu.Lock()
+	defer repository.mu.Unlock()
+	member, ok := repository.values[memberKey(tenantID, userID)]
+	if !ok {
+		return domain.PersonalProfile{}, ports.ErrTenantMemberNotFound
+	}
+	if member.AvatarAssetRef == "" {
+		member.AvatarAssetRef = domain.DefaultPersonalAvatarAssetRef
+	}
+	return domain.PersonalProfile{Member: member, TenantName: tenantID, AccountCreatedAt: member.CreatedAt}, nil
+}
+
+func (repository *memoryTenantMemberRepository) UpdatePersonalAvatar(_ context.Context, tenantID, userID string, expectedVersion uint64, avatarAssetRef string, now time.Time) (domain.PersonalProfile, error) {
+	repository.mu.Lock()
+	defer repository.mu.Unlock()
+	key := memberKey(tenantID, userID)
+	member, ok := repository.values[key]
+	if !ok {
+		return domain.PersonalProfile{}, ports.ErrTenantMemberNotFound
+	}
+	if member.Version != expectedVersion || member.Status == domain.TenantMemberStatusRemoved {
+		return domain.PersonalProfile{}, ports.ErrTenantMemberConflict
+	}
+	member.AvatarAssetRef = avatarAssetRef
+	member.UpdatedAt = now
+	member.Version = expectedVersion + 1
+	repository.values[key] = member
+	return domain.PersonalProfile{Member: member, TenantName: tenantID, AccountCreatedAt: member.CreatedAt}, nil
+}
+
 func (repository *memoryTenantMemberRepository) List(_ context.Context, tenantID string, query ports.TenantMemberListQuery) (ports.TenantMemberListPage, error) {
 	repository.mu.Lock()
 	defer repository.mu.Unlock()
