@@ -113,6 +113,15 @@ export type PermissionGrant = {
   scope: string
 }
 
+export type TenantDataPolicyReference = {
+  policyId: string
+  policyName: string
+  policyVersion: string | number
+  acceptedVersion: string | number
+  effective: boolean
+  invalidReason: string
+}
+
 export type TenantRole = {
   id: string
   name: string
@@ -122,6 +131,7 @@ export type TenantRole = {
   memberCount?: string | number
   status: string
   permissions?: PermissionGrant[]
+  dataPolicy?: TenantDataPolicyReference
   version: string | number
 }
 
