@@ -14,9 +14,9 @@ import (
 )
 
 var (
-	ErrTenantSelfSecurityUnavailable = errors.New("access: tenant self security unavailable")
-	ErrTenantSelfContactUnavailable  = errors.New("access: tenant self contact unavailable")
-	ErrTenantSelfContactUnchanged    = errors.New("access: tenant self contact unchanged")
+	ErrTenantSelfSecurityUnavailable  = errors.New("access: tenant self security unavailable")
+	ErrTenantSelfContactUnavailable   = errors.New("access: tenant self contact unavailable")
+	ErrTenantSelfContactUnchanged     = errors.New("access: tenant self contact unchanged")
 	ErrTenantSelfDeletionIrreversible = errors.New("access: self-deleted membership cannot be restored")
 )
 
@@ -85,7 +85,8 @@ func (service *TenantSelfSecurityService) RequestContactChange(
 	}
 	userID, tenantID = strings.TrimSpace(userID), strings.TrimSpace(tenantID)
 	flowID, businessEventID = strings.TrimSpace(flowID), strings.TrimSpace(businessEventID)
-	if userID == "" || tenantID == "" || currentPassword == "" || flowID == "" || businessEventID == "" || !channel.Valid() {
+	if userID == "" || tenantID == "" || currentPassword == "" || flowID == "" || businessEventID == "" || !channel.Valid() ||
+		strings.TrimSpace(destination) == "" || IsMaskedContact(destination) {
 		return TenantSelfChallengeReceipt{}, domain.ErrVerificationInvalid
 	}
 	if err := verifyUserPasswordByID(ctx, service.database, userID, currentPassword); err != nil {
@@ -166,19 +167,19 @@ func (service *TenantSelfSecurityService) RequestTenantDeletion(
 	var member membershipRecord
 	var destination string
 	if err := service.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		roleRepository, err := NewTenantRoleRepository(tx)
+		if err != nil {
+			return err
+		}
+		if err := roleRepository.AssertMemberCanDeactivate(ctx, tenantID, userID); err != nil {
+			return err
+		}
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("tenant_id = ? AND user_id = ? AND status = ?", tenantID, userID, domain.TenantMemberStatusActive).
 			First(&member).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return ports.ErrTenantMemberNotFound
 			}
-			return err
-		}
-		roleRepository, err := NewTenantRoleRepository(tx)
-		if err != nil {
-			return err
-		}
-		if err := roleRepository.AssertMemberCanDeactivate(ctx, tenantID, userID); err != nil {
 			return err
 		}
 		destination, err = service.memberContact(member, channel)
@@ -219,7 +220,7 @@ func (service *TenantSelfSecurityService) CompleteContactChange(
 	ctx context.Context,
 	userID, tenantID string,
 	channel domain.SecurityNotificationChannel,
-	challengeID, flowID, code string,
+	challengeID, flowID, code, destination string,
 	expectedVersion uint64,
 	requestRef string,
 ) (TenantSelfContactChangeReceipt, error) {
@@ -235,7 +236,7 @@ func (service *TenantSelfSecurityService) CompleteContactChange(
 	err := service.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		verified, challengeOutcome, err := service.verifyChallengeTx(
 			ctx, tx, domain.VerificationPurposeContactChange, userID, tenantID,
-			channel, challengeID, flowID, code,
+			channel, challengeID, flowID, code, destination,
 		)
 		if err != nil {
 			return err
@@ -348,15 +349,12 @@ func (service *TenantSelfSecurityService) CompleteTenantDeletion(
 	var receipt TenantSelfDeletionReceipt
 	var outcome error
 	err := service.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		verified, challengeOutcome, err := service.verifyChallengeTx(
-			ctx, tx, domain.VerificationPurposeAccountDeletion, userID, tenantID,
-			channel, challengeID, flowID, code,
-		)
+		roleRepository, err := NewTenantRoleRepository(tx)
 		if err != nil {
 			return err
 		}
-		if challengeOutcome != nil {
-			outcome = challengeOutcome
+		if err := roleRepository.AssertMemberCanDeactivate(ctx, tenantID, userID); err != nil {
+			outcome = err
 			return nil
 		}
 		var member membershipRecord
@@ -380,20 +378,15 @@ func (service *TenantSelfSecurityService) CompleteTenantDeletion(
 			outcome = ErrTenantSelfContactUnavailable
 			return nil
 		}
-		currentHash, _, err := service.verificationProtection.DestinationHash(channel, currentDestination)
+		verified, challengeOutcome, err := service.verifyChallengeTx(
+			ctx, tx, domain.VerificationPurposeAccountDeletion, userID, tenantID,
+			channel, challengeID, flowID, code, currentDestination,
+		)
 		if err != nil {
 			return err
 		}
-		if !constantVerificationEqual(currentHash, verified.Challenge.DestinationHash) {
-			outcome = domain.ErrVerificationInvalid
-			return nil
-		}
-		roleRepository, err := NewTenantRoleRepository(tx)
-		if err != nil {
-			return err
-		}
-		if err := roleRepository.AssertMemberCanDeactivate(ctx, tenantID, userID); err != nil {
-			outcome = err
+		if challengeOutcome != nil {
+			outcome = challengeOutcome
 			return nil
 		}
 		notification, err := service.stageSecurityNotificationTx(ctx, tx, domain.SecurityNotificationRequest{
@@ -486,7 +479,6 @@ func (service *TenantSelfSecurityService) CompleteTenantDeletion(
 
 type tenantVerifiedChallenge struct {
 	Challenge   verificationChallengeRecord
-	Outbox      securityNotificationOutboxRecord
 	Destination string
 	Now         time.Time
 }
@@ -497,15 +489,11 @@ func (service *TenantSelfSecurityService) verifyChallengeTx(
 	purpose domain.VerificationPurpose,
 	userID, tenantID string,
 	channel domain.SecurityNotificationChannel,
-	challengeID, flowID, code string,
+	challengeID, flowID, code, destination string,
 ) (tenantVerifiedChallenge, error, error) {
 	challengeID, flowID, code = strings.TrimSpace(challengeID), strings.TrimSpace(flowID), strings.TrimSpace(code)
 	if challengeID == "" || flowID == "" || code == "" {
 		return tenantVerifiedChallenge{}, domain.ErrVerificationInvalid, nil
-	}
-	now, err := verificationDatabaseNow(ctx, tx)
-	if err != nil {
-		return tenantVerifiedChallenge{}, nil, err
 	}
 	var challenge verificationChallengeRecord
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("challenge_id = ?", challengeID).First(&challenge).Error; err != nil {
@@ -521,20 +509,19 @@ func (service *TenantSelfSecurityService) verifyChallengeTx(
 	if challenge.ConsumedAt != nil {
 		return tenantVerifiedChallenge{}, domain.ErrVerificationConsumed, nil
 	}
+	now, err := verificationDatabaseNow(ctx, tx)
+	if err != nil {
+		return tenantVerifiedChallenge{}, nil, err
+	}
 	if !challenge.ExpiresAt.After(now) {
 		return tenantVerifiedChallenge{}, domain.ErrVerificationExpired, nil
 	}
 	if challenge.Attempts >= challenge.MaxAttempts {
 		return tenantVerifiedChallenge{}, domain.RateLimitError{Reason: "attempt_limit"}, nil
 	}
-	var outbox securityNotificationOutboxRecord
-	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-		Where("challenge_id = ?", challenge.ChallengeID).First(&outbox).Error; err != nil {
-		return tenantVerifiedChallenge{}, nil, err
-	}
-	destination, err := service.verificationProtection.DecryptNotification(outbox.EventID, "destination", outbox.DestinationCiphertext, outbox.KeyVersion)
-	if err != nil {
-		return tenantVerifiedChallenge{}, nil, err
+	// Outbox ciphertext is destroyed on delivery; it is never verification authority.
+	if strings.TrimSpace(destination) == "" || IsMaskedContact(destination) {
+		return tenantVerifiedChallenge{}, domain.ErrVerificationInvalid, nil
 	}
 	destinationHash, normalized, err := service.verificationProtection.DestinationHash(channel, destination)
 	if err != nil {
@@ -556,7 +543,7 @@ func (service *TenantSelfSecurityService) verifyChallengeTx(
 		}
 		return tenantVerifiedChallenge{}, domain.ErrVerificationInvalid, nil
 	}
-	return tenantVerifiedChallenge{Challenge: challenge, Outbox: outbox, Destination: normalized, Now: now}, nil, nil
+	return tenantVerifiedChallenge{Challenge: challenge, Destination: normalized, Now: now}, nil, nil
 }
 
 func (service *TenantSelfSecurityService) consumeVerifiedChallengeTx(ctx context.Context, tx *gorm.DB, verified tenantVerifiedChallenge) error {
@@ -630,7 +617,7 @@ func (service *TenantSelfSecurityService) stageSecurityNotificationTx(
 		Kind: string(request.Kind), Purpose: string(request.Purpose), UserID: strings.TrimSpace(request.UserID),
 		TenantID: strings.TrimSpace(request.TenantID), FlowID: strings.TrimSpace(request.FlowID),
 		Channel: string(request.Channel), DestinationHash: destinationHash,
-		MaskedDestination: service.verificationProtection.MaskDestination(request.Channel, normalizedDestination),
+		MaskedDestination:     service.verificationProtection.MaskDestination(request.Channel, normalizedDestination),
 		DestinationCiphertext: destinationCiphertext, KeyVersion: keyVersion,
 		State: domain.NotificationStatePending, ExpiresAt: canonicalVerificationTime(request.ExpiresAt),
 		CreatedAt: canonicalVerificationTime(now), UpdatedAt: canonicalVerificationTime(now),
@@ -672,11 +659,11 @@ func (service *TenantSelfSecurityService) stageSelfSecurityAuditTx(
 		Risk: domain.AuditRiskHigh, OccurredAt: now,
 	}
 	attempt := base
-	attempt.EventID = "evt-" + TokenHash(auditID+"/attempt")[:40]
+	attempt.EventID = "evt-" + TokenHash(auditID + "/attempt")[:40]
 	attempt.EventType = domain.AuditEventAttempt
 	attempt.Outcome = domain.AuditResultPending
 	outcome := base
-	outcome.EventID = "evt-" + TokenHash(auditID+"/outcome")[:40]
+	outcome.EventID = "evt-" + TokenHash(auditID + "/outcome")[:40]
 	outcome.EventType = domain.AuditEventOutcome
 	outcome.Outcome = domain.AuditResultSuccess
 	if err := tx.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&attempt).Error; err != nil {

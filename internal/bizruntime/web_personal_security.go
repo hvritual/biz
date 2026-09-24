@@ -106,6 +106,7 @@ func (auth *runtimeWebAuth) handlePersonalContactChangeComplete(writer http.Resp
 	}
 	var input struct {
 		Channel     string `json:"channel"`
+		Destination string `json:"destination"`
 		ChallengeID string `json:"challenge_id"`
 		FlowID      string `json:"flow_id"`
 		OTPCode     string `json:"otp_code"`
@@ -128,6 +129,7 @@ func (auth *runtimeWebAuth) handlePersonalContactChangeComplete(writer http.Resp
 		input.ChallengeID,
 		input.FlowID,
 		input.OTPCode,
+		input.Destination,
 		input.Version,
 		accesspersistence.TokenHash(idempotencyKey),
 	)
@@ -244,12 +246,12 @@ func (auth *runtimeWebAuth) handleTenantDeletionComplete(writer http.ResponseWri
 	}
 	auth.clearCookie(writer, auth.sessionCookieName())
 	writeJSON(writer, http.StatusOK, map[string]any{
-		"tenant_id":             receipt.TenantID,
-		"user_id":               receipt.UserID,
-		"version":               receipt.Version,
-		"deleted_at":            receipt.DeletedAt,
-		"notification_event_id": receipt.NotificationEventID,
-		"notification_state":    receipt.NotificationState,
+		"tenant_id":                 receipt.TenantID,
+		"user_id":                   receipt.UserID,
+		"version":                   receipt.Version,
+		"deleted_at":                receipt.DeletedAt,
+		"notification_event_id":     receipt.NotificationEventID,
+		"notification_state":        receipt.NotificationState,
 		"reauthentication_required": true,
 	})
 }

@@ -32,8 +32,8 @@ type enterprise182Runtime struct {
 	contactProtection      *accesspersistence.ContactProtection
 	verificationProtection *accesspersistence.VerificationProtection
 	verificationRepository *accesspersistence.VerificationRepository
-	sender                  *accessnotification.MemorySender
-	issuer                  *httptest.Server
+	sender                 *accessnotification.MemorySender
+	issuer                 *httptest.Server
 }
 
 func startEnterprise182Runtime(t *testing.T, db *gorm.DB) enterprise182Runtime {
@@ -45,10 +45,10 @@ func startEnterprise182Runtime(t *testing.T, db *gorm.DB) enterprise182Runtime {
 			return
 		}
 		write := map[string]any{
-			"issuer": issuerURL,
-			"authorization_endpoint": issuerURL + "/authorize",
-			"token_endpoint": issuerURL + "/token",
-			"jwks_uri": issuerURL + "/jwks",
+			"issuer":                                issuerURL,
+			"authorization_endpoint":                issuerURL + "/authorize",
+			"token_endpoint":                        issuerURL + "/token",
+			"jwks_uri":                              issuerURL + "/jwks",
 			"id_token_signing_alg_values_supported": []string{"RS256"},
 		}
 		writer.Header().Set("Content-Type", "application/json")
@@ -95,23 +95,23 @@ func startEnterprise182Runtime(t *testing.T, db *gorm.DB) enterprise182Runtime {
 	options := bizruntime.Options{
 		DeviceOps: config,
 		WebAuth: bizruntime.WebAuthConfig{
-			IssuerURL: issuerURL,
-			ClientID: "enterprise182-web",
-			RedirectURL: "http://127.0.0.1/auth/callback",
-			Scopes: []string{"openid", "profile", "email"},
-			SessionTTL: time.Hour,
-			FlowTTL: 5 * time.Minute,
+			IssuerURL:    issuerURL,
+			ClientID:     "enterprise182-web",
+			RedirectURL:  "http://127.0.0.1/auth/callback",
+			Scopes:       []string{"openid", "profile", "email"},
+			SessionTTL:   time.Hour,
+			FlowTTL:      5 * time.Minute,
 			CookieSecure: false,
 		},
 		VerificationSecurity: bizruntime.VerificationSecurityConfig{
-			CodeTTL: 5 * time.Minute,
-			AuthorizationTTL: 5 * time.Minute,
-			ResendInterval: time.Minute,
-			SendLimitWindow: 24 * time.Hour,
-			MaxSendsPerWindow: 5,
+			CodeTTL:              5 * time.Minute,
+			AuthorizationTTL:     5 * time.Minute,
+			ResendInterval:       time.Minute,
+			SendLimitWindow:      24 * time.Hour,
+			MaxSendsPerWindow:    5,
 			MaxVerificationTries: 3,
-			CodeDigits: 6,
-			Notification: bizruntime.SecurityNotificationProviderConfig{Provider: "disabled"},
+			CodeDigits:           6,
+			Notification:         bizruntime.SecurityNotificationProviderConfig{Provider: "disabled"},
 		},
 	}
 	started, err := bizruntime.BootstrapWithOptionsAndSecurity(
@@ -145,29 +145,29 @@ func startEnterprise182Runtime(t *testing.T, db *gorm.DB) enterprise182Runtime {
 	}
 	sender := accessnotification.NewMemorySender()
 	return enterprise182Runtime{
-		started: started,
-		store: store,
-		contactProtection: contactProtection,
+		started:                started,
+		store:                  store,
+		contactProtection:      contactProtection,
 		verificationProtection: verificationProtection,
 		verificationRepository: verificationRepository,
-		sender: sender,
-		issuer: issuer,
+		sender:                 sender,
+		issuer:                 issuer,
 	}
 }
 
 func enterprise182SessionHeaders(authentication accesspersistence.WebSessionAuthentication, key string) map[string]string {
 	contextJSON, _ := json.Marshal(map[string]any{
-		"actor_kind": authentication.Session.ActorKind,
+		"actor_kind":       authentication.Session.ActorKind,
 		"platform_subject": authentication.Session.PlatformSubject,
-		"user_id": authentication.Session.UserID,
+		"user_id":          authentication.Session.UserID,
 		"active_tenant_id": authentication.Session.ActiveTenantID,
-		"context_version": authentication.Session.ContextVersion,
+		"context_version":  authentication.Session.ContextVersion,
 	})
 	return map[string]string{
-		"Content-Type": "application/json",
-		"X-CSRF-Token": authentication.Session.CSRFToken,
+		"Content-Type":          "application/json",
+		"X-CSRF-Token":          authentication.Session.CSRFToken,
 		"X-Biz-Session-Context": string(contextJSON),
-		"Idempotency-Key": key,
+		"Idempotency-Key":       key,
 	}
 }
 
@@ -215,6 +215,7 @@ func enterprise182DeliverOTP(t *testing.T, repository *accesspersistence.Verific
 	if _, err := repository.CompleteSecurityNotification(context.Background(), claim, "qualification-delivered", "", true); err != nil {
 		t.Fatal(err)
 	}
+	// Delivery intentionally erases the destination. Completion must not decrypt it.
 	return claim.Secret
 }
 
@@ -252,7 +253,14 @@ func enterprise182SetTenantContacts(
 	if err := repository.Update(context.Background(), &member, member.Version); err != nil {
 		t.Fatal(err)
 	}
-	return member.Version + 1
+	confirmed, err := repository.Get(context.Background(), tenantID, userID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if confirmed.Version != member.Version {
+		t.Fatalf("fixture version disagrees with persisted membership: memory=%d persisted=%d", member.Version, confirmed.Version)
+	}
+	return confirmed.Version
 }
 
 func enterprise182SeedSecondOwner(t *testing.T, db *gorm.DB, tenantID, userID string) {
@@ -286,11 +294,11 @@ func TestEnterprise182ContactChangeAndTenantDeletionAreSelfOnlyAtomicAndTenantSc
 
 	for _, tenant := range []struct{ id, token string }{{tenantA, tokenA}, {tenantB, tokenB}} {
 		if err := runtime.store.Bootstrap(ctx, accesspersistence.Bootstrap{
-			TenantID: tenant.id,
+			TenantID:   tenant.id,
 			TenantName: "Tenant " + tenant.id,
-			UserID: userID,
-			Email: globalEmail,
-			Token: tenant.token,
+			UserID:     userID,
+			Email:      globalEmail,
+			Token:      tenant.token,
 		}, nil); err != nil {
 			t.Fatal(err)
 		}
@@ -332,11 +340,11 @@ func TestEnterprise182ContactChangeAndTenantDeletionAreSelfOnlyAtomicAndTenantSc
 	// Client identity injection is rejected before it can become an alternate identity source.
 	headersA := enterprise182SessionHeaders(sessionA, "e182-inject-"+stamp)
 	status, _ := enterprise182Post(t, base, rawA, "/auth/personal/contact-change/request", headersA, map[string]any{
-		"channel": "email",
-		"destination": "injected-" + stamp + "@example.invalid",
+		"channel":          "email",
+		"destination":      "injected-" + stamp + "@example.invalid",
 		"current_password": password,
-		"user_id": "other-user",
-		"tenant_id": tenantB,
+		"user_id":          "other-user",
+		"tenant_id":        tenantB,
 	})
 	if status != http.StatusBadRequest {
 		t.Fatalf("identity injection status=%d want=%d", status, http.StatusBadRequest)
@@ -349,8 +357,8 @@ func TestEnterprise182ContactChangeAndTenantDeletionAreSelfOnlyAtomicAndTenantSc
 	}
 	headersA = enterprise182SessionHeaders(sessionA, "e182-wrong-password-"+stamp)
 	status, _ = enterprise182Post(t, base, rawA, "/auth/personal/contact-change/request", headersA, map[string]any{
-		"channel": "email",
-		"destination": "new-a-" + stamp + "@example.invalid",
+		"channel":          "email",
+		"destination":      "new-a-" + stamp + "@example.invalid",
 		"current_password": "WrongPassword9A",
 	})
 	if status != http.StatusBadRequest {
@@ -368,8 +376,8 @@ func TestEnterprise182ContactChangeAndTenantDeletionAreSelfOnlyAtomicAndTenantSc
 	newEmailA := "new-a-" + stamp + "@example.invalid"
 	headersA = enterprise182SessionHeaders(sessionA, "e182-email-request-"+stamp)
 	status, body := enterprise182Post(t, base, rawA, "/auth/personal/contact-change/request", headersA, map[string]any{
-		"channel": "email",
-		"destination": newEmailA,
+		"channel":          "email",
+		"destination":      newEmailA,
 		"current_password": password,
 	})
 	if status != http.StatusOK {
@@ -387,6 +395,7 @@ func TestEnterprise182ContactChangeAndTenantDeletionAreSelfOnlyAtomicAndTenantSc
 	status, _ = enterprise182Post(t, base, rawB, "/auth/personal/contact-change/complete", headersB, map[string]any{
 		"channel": "email", "challenge_id": emailChallengeID, "flow_id": emailFlowID,
 		"otp_code": emailOTP, "version": initialBVersion,
+		"destination": newEmailA,
 	})
 	if status == http.StatusOK {
 		t.Fatal("tenant B consumed tenant A contact challenge")
@@ -395,7 +404,8 @@ func TestEnterprise182ContactChangeAndTenantDeletionAreSelfOnlyAtomicAndTenantSc
 	headersA = enterprise182SessionHeaders(sessionA, "e182-email-complete-"+stamp)
 	status, _ = enterprise182Post(t, base, rawA, "/auth/personal/contact-change/complete", headersA, map[string]any{
 		"channel": "email", "challenge_id": emailChallengeID, "flow_id": emailFlowID,
-		"otp_code": "000000", "version": initialAVersion,
+		"otp_code": "not-a-code", "version": initialAVersion,
+		"destination": newEmailA,
 	})
 	if status == http.StatusOK {
 		t.Fatal("wrong contact-change OTP changed member")
@@ -415,6 +425,7 @@ func TestEnterprise182ContactChangeAndTenantDeletionAreSelfOnlyAtomicAndTenantSc
 	status, body = enterprise182Post(t, base, rawA, "/auth/personal/contact-change/complete", headersA, map[string]any{
 		"channel": "email", "challenge_id": emailChallengeID, "flow_id": emailFlowID,
 		"otp_code": emailOTP, "version": initialAVersion,
+		"destination": newEmailA,
 	})
 	if status != http.StatusOK {
 		t.Fatalf("email complete status=%d body=%s", status, body)
@@ -430,6 +441,7 @@ func TestEnterprise182ContactChangeAndTenantDeletionAreSelfOnlyAtomicAndTenantSc
 	status, _ = enterprise182Post(t, base, rawA, "/auth/personal/contact-change/complete", headersReplay, map[string]any{
 		"channel": "email", "challenge_id": emailChallengeID, "flow_id": emailFlowID,
 		"otp_code": emailOTP, "version": emailVersion,
+		"destination": newEmailA,
 	})
 	if status != http.StatusConflict {
 		t.Fatalf("replayed OTP status=%d want=%d", status, http.StatusConflict)
@@ -452,6 +464,7 @@ func TestEnterprise182ContactChangeAndTenantDeletionAreSelfOnlyAtomicAndTenantSc
 	status, body = enterprise182Post(t, base, rawA, "/auth/personal/contact-change/complete", headersPhoneComplete, map[string]any{
 		"channel": "sms", "challenge_id": phoneChallengeID, "flow_id": phoneFlowID,
 		"otp_code": phoneOTP, "version": emailVersion,
+		"destination": newPhoneA,
 	})
 	if status != http.StatusOK {
 		t.Fatalf("phone complete status=%d body=%s", status, body)
@@ -505,7 +518,7 @@ func TestEnterprise182ContactChangeAndTenantDeletionAreSelfOnlyAtomicAndTenantSc
 	}
 	status, _ = enterprise182Post(t, base, rawA, "/auth/personal/tenant-deletion/complete", headersDeleteComplete, map[string]any{
 		"channel": "email", "challenge_id": deleteChallengeID, "flow_id": deleteFlowID,
-		"otp_code": "000000", "version": currentAVersion,
+		"otp_code": "not-a-code", "version": currentAVersion,
 		"confirm_tenant_id": tenantA, "confirm_irreversible": true,
 	})
 	if status == http.StatusOK {
@@ -547,13 +560,8 @@ VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,'','',DATE_ADD(UTC_TIMESTAMP(6), INTERV
 	if consumedAt != nil {
 		t.Fatal("failed deletion consumed OTP challenge")
 	}
-	if err := db.Where("business_event_id = ?", conflictBusinessEvent).Delete(map[string]any{}).Error; err != nil {
-		// GORM cannot infer map table; use raw SQL fallback below.
-		if err := db.Exec("DELETE FROM biz_security_notification_outbox WHERE business_event_id = ?", conflictBusinessEvent).Error; err != nil {
-			t.Fatal(err)
-		}
-	} else {
-		_ = db.Exec("DELETE FROM biz_security_notification_outbox WHERE business_event_id = ?", conflictBusinessEvent).Error
+	if err := db.Table("biz_security_notification_outbox").Where("business_event_id = ?", conflictBusinessEvent).Delete(map[string]any{}).Error; err != nil {
+		t.Fatal(err)
 	}
 
 	status, body = enterprise182Post(t, base, rawA, "/auth/personal/tenant-deletion/complete", headersDeleteComplete, map[string]any{
@@ -594,10 +602,10 @@ VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,'','',DATE_ADD(UTC_TIMESTAMP(6), INTERV
 
 	// Self-deleted current tenant is tombstoned, stripped, and cannot use admin restore.
 	var deletedRow struct {
-		Status string
-		Version uint64
+		Status                                                                                   string
+		Version                                                                                  uint64
 		Name, Email, EmailCiphertext, Phone, PhoneCiphertext, EmployeeID, Position, DepartmentID string
-		SelfDeletedAt *time.Time
+		SelfDeletedAt                                                                            *time.Time
 	}
 	if err := db.Table("biz_memberships").Where("tenant_id = ? AND user_id = ?", tenantA, userID).Scan(&deletedRow).Error; err != nil {
 		t.Fatal(err)
@@ -654,10 +662,10 @@ VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,'','',DATE_ADD(UTC_TIMESTAMP(6), INTERV
 
 	// Audit and persisted public notification fields contain no raw contact or credential.
 	var evidence []struct {
-		Target string
-		Reason string
+		Target        string
+		Reason        string
 		RequestDigest string
-		ReceiptRef string
+		ReceiptRef    string
 	}
 	if err := db.Table("biz_audit_events").Select("target,reason,request_digest,receipt_ref").
 		Where("tenant_id = ? AND actor_user_id = ? AND operation_id IN ?", tenantA, userID, []string{
@@ -728,7 +736,7 @@ func TestEnterprise182ConcurrentContactOTPConsumptionAllowsOneMutation(t *testin
 
 	type outcome struct {
 		receipt accesspersistence.TenantSelfContactChangeReceipt
-		err error
+		err     error
 	}
 	start := make(chan struct{})
 	results := make(chan outcome, 2)
@@ -737,7 +745,7 @@ func TestEnterprise182ConcurrentContactOTPConsumptionAllowsOneMutation(t *testin
 			<-start
 			receipt, err := service.CompleteContactChange(
 				context.Background(), userID, tenantID, accessdomain.SecurityNotificationEmail,
-				challenge.ChallengeID, challenge.FlowID, otp, version, fmt.Sprintf("race-%d-%s", index, stamp),
+				challenge.ChallengeID, challenge.FlowID, otp, newEmail, version, fmt.Sprintf("race-%d-%s", index, stamp),
 			)
 			results <- outcome{receipt: receipt, err: err}
 		}(index)
