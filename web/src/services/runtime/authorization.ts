@@ -73,6 +73,15 @@ export function currentAuthorizationAllows(actionCode: string) {
   return state.snapshot.button_codes.includes(actionCode)
 }
 
+export function currentAuthorizationMatchesSession(session: TrustedSession | null | undefined) {
+  if (!apiMode) return true
+  if (!session?.authenticated || !isTenantUserActor(session.actor_kind) || !session.active_tenant_id) return false
+  const authorizationSession = state.session
+  if (!authorizationSession || sessionKey(authorizationSession) !== sessionKey(session)) return false
+  if (state.status === 'ready') return state.snapshot?.tenant_id === session.active_tenant_id
+  return true
+}
+
 export function currentAuthorizationAllowsAny(actionCodes: readonly string[] = []) {
   if (!apiMode) return true
   if (!actionCodes.length) return false

@@ -132,13 +132,13 @@ func run() error {
 		return err
 	}
 	runtimeOptions := bizruntime.Options{
-		DeviceOps:           config,
-		CommercialLifecycle: lifecycle,
-		ProvisioningWorker:  bizruntime.ProvisioningWorkerOptions{Token: workerToken, Automatic: workerToken != ""},
-		WebAuth:             webAuth,
+		DeviceOps:            config,
+		CommercialLifecycle:  lifecycle,
+		ProvisioningWorker:   bizruntime.ProvisioningWorkerOptions{Token: workerToken, Automatic: workerToken != ""},
+		WebAuth:              webAuth,
 		VerificationSecurity: verificationSecurity,
-		MemberActivationTTL: memberActivationTTL,
-		MemberActivationURL: memberActivationURL,
+		MemberActivationTTL:  memberActivationTTL,
+		MemberActivationURL:  memberActivationURL,
 	}
 	var started *bizruntime.Started
 	if verificationProtection != nil {
@@ -229,7 +229,6 @@ func envDuration(name string, fallback time.Duration) time.Duration {
 	}
 	return parsed
 }
-
 
 func verificationSecurityConfigFromEnv() (bizruntime.VerificationSecurityConfig, error) {
 	maxSends, err := envOptionalInt("YUNKA_BIZ_VERIFICATION_MAX_SENDS_PER_WINDOW")

@@ -60,6 +60,10 @@ async function refreshPersonalProfile() {
 async function changeTenant(event: Event) {
   const tenantId = (event.target as HTMLSelectElement).value
   if (!tenantId) return
+  const recoveryTarget =
+    route.path === '/authorization-state' && typeof route.query.from === 'string' && route.query.from.startsWith('/')
+      ? route.query.from
+      : route.fullPath
   ui.closeMenu()
   search.value = ''
   panel.value = ''
@@ -67,7 +71,7 @@ async function changeTenant(event: Event) {
   try {
     await store.switchTenant(tenantId)
     await refreshPersonalProfile()
-    await router.replace({ path: route.path, query: {} })
+    await router.replace(recoveryTarget)
     ui.toast(store.sourceKind === 'api' ? t('header.tenantSwitchedApi') : t('header.tenantSwitchedPreview'), 'info')
   } catch (error) {
     ui.toast(error instanceof Error ? error.message : t('header.tenantSwitchFailed'), 'error')
