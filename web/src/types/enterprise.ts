@@ -25,8 +25,8 @@ export interface Member {
 export interface RoleDataPolicyReference {
   policyId: string
   policyName: string
-  policyVersion: number
-  acceptedVersion: number
+  policyVersion: string | number
+  acceptedVersion: string | number
   effective: boolean
   invalidReason: string
 }

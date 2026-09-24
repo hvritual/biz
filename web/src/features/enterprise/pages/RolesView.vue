@@ -2,6 +2,7 @@
 import { UiButton, UiOption, UiSelect } from '@/ui/base'
 
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import type { Role } from '@/types/enterprise'
@@ -16,6 +17,7 @@ import UiDialog from '@/ui/common/UiDialog.vue'
 import RoleEditor from '@/features/enterprise/components/roles/RoleEditor.vue'
 import RoleDataPolicyDialog from '@/features/enterprise/components/roles/RoleDataPolicyDialog.vue'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
+const { t } = useI18n()
 const store = useEnterpriseStore(),
   route = useRoute(),
   router = useRouter()
@@ -182,7 +184,7 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
               <th>角色类型</th>
               <th>关联成员</th>
               <th>数据范围</th>
-              <th>数据策略</th>
+              <th>{{ t('dataPermissions.policy') }}</th>
               <th>状态</th>
               <th>更新时间</th>
               <th>操作</th>
@@ -210,9 +212,9 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
                   <template v-if="r.dataPolicy">
                     <strong>{{ r.dataPolicy.policyName || r.dataPolicy.policyId }}</strong>
                     <small>{{ r.dataPolicy.policyId }} · v{{ r.dataPolicy.policyVersion }}</small>
-                    <StatusBadge :text="r.dataPolicy.effective ? '有效' : '已失效'" :tone="r.dataPolicy.effective ? 'success' : 'danger'" />
+                    <StatusBadge :text="r.dataPolicy.effective ? t('dataPermissions.effective') : t('dataPermissions.ineffective')" :tone="r.dataPolicy.effective ? 'success' : 'danger'" />
                   </template>
-                  <span v-else class="muted">未绑定</span>
+                  <span v-else class="muted">{{ t('dataPermissions.unbound') }}</span>
                 </div>
               </td>
               <td>
@@ -221,7 +223,7 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
               <td class="muted numeric">{{ r.updatedAt }}</td>
               <td>
                 <div class="table-actions">
-                  <UiButton v-if="r.builtin || canEditRole" class="btn-link" @click="edit(r)">{{ r.builtin ? '查看' : '编辑' }}</UiButton><UiButton v-if="canReadDataPolicy" class="btn-link" :aria-label="'数据策略 ' + r.name" @click="openDataPolicy(r)">{{ canManageDataPolicy && !r.builtin ? '策略' : '查看策略' }}</UiButton><UiButton v-if="canCreateRole && !r.builtin" class="btn-link" :aria-label="'复制 ' + r.name" @click="copy(r)">复制</UiButton><UiButton
+                  <UiButton v-if="r.builtin || canEditRole" class="btn-link" @click="edit(r)">{{ r.builtin ? '查看' : '编辑' }}</UiButton><UiButton v-if="canReadDataPolicy" class="btn-link" :aria-label="t('dataPermissions.policyFor', { name: r.name })" @click="openDataPolicy(r)">{{ canManageDataPolicy && !r.builtin ? t('dataPermissions.policy') : t('dataPermissions.viewPolicy') }}</UiButton><UiButton v-if="canCreateRole && !r.builtin" class="btn-link" :aria-label="'复制 ' + r.name" @click="copy(r)">复制</UiButton><UiButton
                     v-if="canDeleteRole && !r.builtin"
                     class="btn-link"
                     :disabled="memberCount(r) > 0"

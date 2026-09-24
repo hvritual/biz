@@ -27,7 +27,7 @@ export type EnterpriseMemberScopeCandidate = {
 
 export type EnterpriseMemberBusinessScope = {
   userId: string
-  version: number
+  version: string | number
   siteIds: string[]
   tenantId: string
 }
@@ -267,7 +267,7 @@ export async function listEnterpriseMemberScopeCandidates(
       id: candidate.id,
       name: candidate.name ?? candidate.id,
       version: Number(candidate.version ?? 0),
-      assignable: candidate.assignable !== false,
+      assignable: candidate.assignable === true,
       unavailableReason: candidate.unavailableReason ?? '',
     }) as EnterpriseMemberScopeCandidate),
     total: Number(result.total ?? 0),
@@ -282,7 +282,7 @@ export async function getEnterpriseMemberBusinessScope(session: TrustedSession, 
   )
   return Object.freeze({
     userId: value.userId,
-    version: Number(value.version ?? 0),
+    version: value.version ?? 0,
     siteIds: [...(value.siteIds ?? [])].sort(),
     tenantId: value.tenantId,
   }) as EnterpriseMemberBusinessScope
@@ -303,7 +303,7 @@ export async function setEnterpriseMemberBusinessScope(
   )
   return Object.freeze({
     userId: value.userId,
-    version: Number(value.version ?? 0),
+    version: value.version ?? 0,
     siteIds: [...(value.siteIds ?? [])].sort(),
     tenantId: value.tenantId,
   }) as EnterpriseMemberBusinessScope

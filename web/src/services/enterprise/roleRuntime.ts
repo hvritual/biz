@@ -21,8 +21,8 @@ export type RoleMutation = 'create' | 'update' | 'enable' | 'disable' | 'delete'
 export type EnterpriseRoleDataPolicyReference = {
   policyId: string
   policyName: string
-  policyVersion: number
-  acceptedVersion: number
+  policyVersion: string | number
+  acceptedVersion: string | number
   effective: boolean
   invalidReason: string
 }
@@ -32,7 +32,7 @@ export type EnterpriseDataPolicy = {
   name: string
   status: string
   siteIds: string[]
-  version: number
+  version: string | number
   notBefore: string
   expiresAt: string
   effective: boolean
@@ -115,8 +115,8 @@ function policyReferenceSnapshot(value?: TenantDataPolicyReference): EnterpriseR
   return Object.freeze({
     policyId: value.policyId,
     policyName: value.policyName ?? '',
-    policyVersion: Number(value.policyVersion ?? 0),
-    acceptedVersion: Number(value.acceptedVersion ?? 0),
+    policyVersion: value.policyVersion ?? 0,
+    acceptedVersion: value.acceptedVersion ?? 0,
     effective: Boolean(value.effective),
     invalidReason: value.invalidReason ?? '',
   })
@@ -201,7 +201,7 @@ export async function listEnterpriseDataPolicies(session: TrustedSession) {
     name: policy.name ?? '',
     status: policy.status ?? '',
     siteIds: [...(policy.siteIds ?? [])],
-    version: Number(policy.version ?? 0),
+    version: policy.version ?? 0,
     notBefore: policy.notBefore ?? '',
     expiresAt: policy.expiresAt ?? '',
     effective: Boolean(policy.effective),

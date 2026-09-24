@@ -2,7 +2,7 @@ import { expect, test, type Page, type Route } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 import { selectUiOption } from './ui.helpers'
 
-test.skip(!process.env.ENTERPRISE_DATA_PERMISSION_REAL_E2E, 'runs only against the VITE_DATA_MODE=api build')
+test.skip(!process.env.ENTERPRISE_DATA_PERMISSION_REAL_E2E, 'API-mode browser contract tests use mocked responses; these are not live backend verification')
 
 type PolicyRef = { policyId: string; policyName: string; policyVersion: number; acceptedVersion: number; effective: boolean; invalidReason: string }
 type Policy = { id: string; name: string; status: string; siteIds: string[]; version: number; notBefore: string; expiresAt: string; effective: boolean; invalidReason: string }
@@ -12,7 +12,7 @@ type RoleSummary = { roleId: string; roleName: string; roleStatus: string }
 type Member = { userId: string; username: string; email: string; status: string; version: number; name: string; phone: string; employeeId: string; position: string; departmentId: string; roles: RoleSummary[]; derivedDataScope: string }
 type Scope = { userId: string; version: number; siteIds: string[]; tenantId: string }
 type Write = { path: string; method: string; headers: Record<string,string>; body: unknown }
-type Options = { policyConflict?: boolean; policyReadbackFailOnce?: boolean; scopeConflict?: boolean; scopeReadbackFailOnce?: boolean }
+type Options = { policyConflict?: boolean; policyReadbackFailOnce?: boolean; scopeConflict?: boolean; scopeReadbackFailOnce?: boolean; candidateCount?: number; candidatePageFailure?: number }
 
 const activeRole='TENANT_ROLE_STATUS_ACTIVE'
 const activeMember='TENANT_MEMBER_STATUS_ACTIVE'
@@ -38,6 +38,14 @@ async function mockPermissionServer(page:Page,options:Options={}){
     {id:'site-b',name:'杭州办公点位',version:1,assignable:true,unavailableReason:''},
     {id:'site-retired',name:'已停用点位',version:8,assignable:false,unavailableReason:'点位已不可分配'},
   ]
+  if (options.candidateCount) {
+    while (candidates.length < options.candidateCount) {
+      const id = `site-extra-${String(candidates.length + 1).padStart(3, '0')}`
+      candidates.push({ id, name: `候选点位 ${candidates.length + 1}`, version: 1, assignable: true, unavailableReason: '' })
+    }
+    scope.siteIds = [candidates.at(-1)!.id]
+  }
+  const directoryPages: number[] = []
   const writes:Write[]=[]
   let policyReadbackFailure=Boolean(options.policyReadbackFailOnce)
   let scopeReadbackFailure=Boolean(options.scopeReadbackFailOnce)
@@ -54,7 +62,13 @@ async function mockPermissionServer(page:Page,options:Options={}){
   await page.route(/\/(?:api\/)?auth\/action-catalog(?:\?.*)?$/,async route=>json(route,200,{schema_version:'v1',actions:[],permissions:[]}))
   await page.route(/\/(?:api\/)?v1\/tenant\/data-policies(?:\?.*)?$/,async route=>json(route,200,{policies}))
   await page.route(/\/(?:api\/)?v1\/tenant\/departments(?:\?.*)?$/,async route=>json(route,200,{departments:[{departmentId:'dept-ops',name:'租赁运营部',parentId:'',leaderUserId:'user-admin',email:'',phone:'',status:'TENANT_DEPARTMENT_STATUS_ACTIVE',sort:10,version:1}]}))
-  await page.route(/\/(?:api\/)?v1\/tenant\/member-scope-candidates(?:\?.*)?$/,async route=>json(route,200,{candidates,total:candidates.length}))
+  await page.route(/\/(?:api\/)?v1\/tenant\/member-scope-candidates(?:\?.*)?$/, async route => {
+    const params = new URL(route.request().url()).searchParams
+    const pageNumber = Number(params.get('page') ?? 1), pageSize = Number(params.get('page_size') ?? 100)
+    directoryPages.push(pageNumber)
+    if (pageNumber === options.candidatePageFailure) return json(route, 500, { message: 'page unavailable' })
+    return json(route, 200, { candidates: candidates.slice((pageNumber - 1) * pageSize, pageNumber * pageSize), total: candidates.length })
+  })
   await page.route(/\/(?:api\/)?v1\/tenant\/members\/([^/]+)\/business-scope(?:\?.*)?$/,async route=>{
     const request=route.request()
     if(request.method()==='GET'){
@@ -94,7 +108,7 @@ async function mockPermissionServer(page:Page,options:Options={}){
     }
     return json(route,400,{message:'unsupported role operation'})
   })
-  return{getWrites:()=>writes,getScope:()=>scope,getRoles:()=>roles}
+  return{getWrites:()=>writes,getScope:()=>scope,getRoles:()=>roles,getDirectoryPages:()=>directoryPages}
 }
 async function openRoles(page:Page){await page.goto('/#/enterprise/roles');await expect(page.locator('[data-enterprise-page="roles"]')).toBeVisible()}
 async function openMemberScope(page:Page){
@@ -120,10 +134,16 @@ test('role policy and member explicit scope render at all CoffeeLink acceptance 
     await page.screenshot({path:`screenshots/enterprise180-permission-ui/role-policy-${viewport.width}.png`})
     await policyDialog.getByRole('button',{name:'关闭',exact:true}).click()
     const drawer=await openMemberScope(page)
-    await expect(drawer).toContainText('来源：Access 成员显式范围')
-    await expect(drawer).toContainText('已授权 1 个点位')
+    await expect(drawer).toContainText('单独分配给该成员的点位')
+    await expect(drawer).toContainText('已分配 1 个点位')
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(viewport.width)
     await page.screenshot({path:`screenshots/enterprise180-permission-ui/member-scope-${viewport.width}.png`})
+    await drawer.getByRole('button',{name:'调整范围'}).click()
+    const editor=page.getByRole('dialog',{name:'Alice Chen · 数据权限'})
+    await expect(editor.getByRole('checkbox',{name:'杭州办公点位',exact:true})).toBeVisible()
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(viewport.width)
+    await page.screenshot({path:`screenshots/enterprise180-permission-ui/member-scope-editor-${viewport.width}.png`})
+    await editor.getByRole('button',{name:'取消',exact:true}).click()
   }
 })
 
@@ -131,8 +151,9 @@ test('role policy binding disables invalid policy and confirms authoritative rea
   const server=await mockPermissionServer(page);await openRoles(page)
   await roleRow(page).getByRole('button',{name:'数据策略 运营负责人'}).click()
   const dialog=page.getByRole('dialog',{name:'运营负责人 · 数据策略'})
-  await expect(dialog.getByRole('option',{name:/已撤销策略/})).toBeDisabled()
-  await selectUiOption(dialog.getByLabel('Data Policy 约束'),'policy-core')
+  await dialog.getByLabel('附加数据策略').click()
+  await expect(page.getByRole('option',{name:/已撤销策略/})).toBeDisabled()
+  await page.getByRole('option', {name:/核心经营点位/}).click()
   await dialog.getByRole('button',{name:'保存策略引用'}).click()
   await expect(page.getByRole('status')).toContainText('角色数据策略已保存并确认')
   await expect(roleRow(page)).toContainText('核心经营点位')
@@ -146,11 +167,11 @@ test('role policy write with failed readback stays unconfirmed and recovery does
   const server=await mockPermissionServer(page,{policyReadbackFailOnce:true});await openRoles(page)
   await roleRow(page).getByRole('button',{name:'数据策略 运营负责人'}).click()
   const dialog=page.getByRole('dialog',{name:'运营负责人 · 数据策略'})
-  await selectUiOption(dialog.getByLabel('Data Policy 约束'),'policy-core')
+  await selectUiOption(dialog.getByLabel('附加数据策略'),'policy-core')
   await dialog.getByRole('button',{name:'保存策略引用'}).click()
-  await expect(dialog.getByRole('alert')).toContainText('暂时无法确认最终状态')
+  await expect(dialog.getByRole('alert')).toContainText('保存结果尚未确认')
   await expect(page.getByText('角色数据策略已保存并确认。',{exact:true})).toHaveCount(0)
-  await dialog.getByRole('button',{name:'重新读取服务端状态'}).click()
+  await dialog.getByRole('button',{name:'重新确认保存结果'}).click()
   await expect(page.getByRole('status')).toContainText('角色数据策略已保存并确认')
   expect(server.getWrites().filter(item=>item.path.endsWith('/role-ops/data-policy'))).toHaveLength(1)
 })
@@ -159,10 +180,10 @@ test('role policy CAS conflict refreshes authority and keeps editor open without
   const server=await mockPermissionServer(page,{policyConflict:true});await openRoles(page)
   await roleRow(page).getByRole('button',{name:'数据策略 运营负责人'}).click()
   const dialog=page.getByRole('dialog',{name:'运营负责人 · 数据策略'})
-  await selectUiOption(dialog.getByLabel('Data Policy 约束'),'policy-core')
+  await selectUiOption(dialog.getByLabel('附加数据策略'),'policy-core')
   await dialog.getByRole('button',{name:'保存策略引用'}).click()
-  await expect(dialog.getByRole('alert')).toContainText('已刷新服务端状态')
-  await expect(dialog.getByLabel('Data Policy 约束')).toHaveValue('policy-east')
+  await expect(dialog.getByRole('alert')).toContainText('角色或策略配置已更新')
+  await expect(dialog.getByLabel('附加数据策略')).toContainText('华东运营点位')
   await expect(page.getByText('角色数据策略已保存并确认。',{exact:true})).toHaveCount(0)
   expect(server.getWrites().filter(item=>item.path.endsWith('/role-ops/data-policy'))).toHaveLength(1)
 })
@@ -172,10 +193,9 @@ test('member explicit scope uses current candidates, CAS and authoritative readb
   await drawer.getByRole('button',{name:'调整范围'}).click()
   const dialog=page.getByRole('dialog',{name:'Alice Chen · 数据权限'})
   await expect(dialog.getByText('已停用点位')).toBeVisible()
-  await expect(dialog.getByText('点位已不可分配')).toBeVisible()
-  const retired=dialog.getByText('已停用点位').locator('..').getByRole('checkbox')
+  const retired=dialog.getByRole('checkbox', { name: '已停用点位', exact: true })
   await expect(retired).toBeDisabled()
-  await dialog.getByText('杭州办公点位').locator('..').getByRole('checkbox').check()
+  await dialog.getByRole('checkbox', { name: '杭州办公点位', exact: true }).check()
   await dialog.getByRole('button',{name:'保存数据权限'}).click()
   await expect(page.getByRole('status')).toContainText('成员数据权限已保存并确认')
   expect(server.getScope().siteIds).toEqual(['site-a','site-b'])
@@ -189,19 +209,58 @@ test('member scope readback recovery and CAS conflict never manufacture confirme
   let server=await mockPermissionServer(page,{scopeReadbackFailOnce:true});let drawer=await openMemberScope(page)
   await drawer.getByRole('button',{name:'调整范围'}).click()
   let dialog=page.getByRole('dialog',{name:'Alice Chen · 数据权限'})
-  await dialog.getByText('杭州办公点位').locator('..').getByRole('checkbox').check()
+  await dialog.getByRole('checkbox', { name: '杭州办公点位', exact: true }).check()
   await dialog.getByRole('button',{name:'保存数据权限'}).click()
-  await expect(dialog.getByRole('alert')).toContainText('暂时无法确认最终状态')
-  await dialog.getByRole('button',{name:'重新读取服务端状态'}).click()
+  await expect(dialog.getByRole('alert')).toContainText('保存结果尚未确认')
+  await dialog.getByRole('button',{name:'重新确认保存结果'}).click()
   await expect(page.getByRole('status')).toContainText('成员数据权限已保存并确认')
   expect(server.getWrites().filter(item=>item.path.endsWith('/user-001/business-scope'))).toHaveLength(1)
 
   await page.unrouteAll({behavior:'ignoreErrors'})
   server=await mockPermissionServer(page,{scopeConflict:true});drawer=await openMemberScope(page)
   await drawer.getByRole('button',{name:'调整范围'}).click();dialog=page.getByRole('dialog',{name:'Alice Chen · 数据权限'})
-  await dialog.getByText('杭州办公点位').locator('..').getByRole('checkbox').check()
+  await dialog.getByRole('checkbox', { name: '杭州办公点位', exact: true }).check()
   await dialog.getByRole('button',{name:'保存数据权限'}).click()
-  await expect(dialog.getByRole('alert')).toContainText('已刷新权威范围')
+  await expect(dialog.getByRole('alert')).toContainText('成员配置已更新')
   await expect(page.getByText('成员数据权限已保存并确认。',{exact:true})).toHaveCount(0)
   expect(server.getWrites().filter(item=>item.path.endsWith('/user-001/business-scope'))).toHaveLength(1)
+})
+
+
+test('member scope loads later pages without calling an assigned site unavailable', async ({ page }) => {
+  const server = await mockPermissionServer(page, { candidateCount: 101 })
+  const drawer = await openMemberScope(page)
+  await drawer.getByRole('button', { name: '调整范围' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Alice Chen · 数据权限' })
+  await expect(dialog.getByRole('checkbox', { name: '候选点位 101', exact: true })).toBeChecked()
+  await expect(dialog.getByText('已选点位中有不可分配的对象')).toHaveCount(0)
+  expect(server.getDirectoryPages()).toEqual([1, 2])
+  await dialog.getByRole('textbox', { name: '搜索点位名称或编号' }).fill('上海')
+  await dialog.getByRole('checkbox', { name: '上海旗舰点位', exact: true }).check()
+  await dialog.getByRole('button', { name: '保存数据权限' }).click()
+  await expect(page.getByRole('status')).toContainText('成员数据权限已保存并确认')
+  expect(server.getScope().siteIds).toEqual(['site-a', 'site-extra-101'])
+})
+
+test('a failed later candidate page blocks saving and preserves the assigned selection', async ({ page }) => {
+  const server = await mockPermissionServer(page, { candidateCount: 101, candidatePageFailure: 2 })
+  const drawer = await openMemberScope(page)
+  await drawer.getByRole('button', { name: '调整范围' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Alice Chen · 数据权限' })
+  await expect(dialog.getByRole('alert')).toContainText('点位列表未完整加载')
+  await expect(dialog.getByRole('button', { name: '保存数据权限' })).toBeDisabled()
+  await expect(dialog.getByText('已选点位中有不可分配的对象')).toHaveCount(0)
+  expect(server.getWrites()).toHaveLength(0)
+  expect(server.getScope().siteIds).toEqual(['site-extra-101'])
+})
+
+test('permission dialogs expose English labels when the locale is English', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('coffeelink.locale', 'en-US'))
+  await mockPermissionServer(page)
+  await openRoles(page)
+  await roleRow(page).getByRole('button', { name: 'Data policy for 运营负责人' }).click()
+  const dialog = page.getByRole('dialog', { name: '运营负责人 · Data policy' })
+  await expect(dialog.getByLabel('Additional data policy')).toBeVisible()
+  await expect(dialog.getByRole('button', { name: 'Save policy link' })).toBeDisabled()
+  await expect(dialog).toContainText('Current version v3')
 })
