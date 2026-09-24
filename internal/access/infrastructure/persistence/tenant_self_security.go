@@ -34,6 +34,7 @@ type TenantSelfChallengeReceipt struct {
 	ExpiresAt         time.Time
 	DeliveryState     string
 	MemberVersion     uint64
+	ResendAfter       time.Duration
 }
 
 type TenantSelfContactChangeReceipt struct {
@@ -144,7 +145,7 @@ func (service *TenantSelfSecurityService) RequestContactChange(
 	return TenantSelfChallengeReceipt{
 		ChallengeID: challenge.ChallengeID, FlowID: flowID,
 		MaskedDestination: challenge.MaskedDestination, ExpiresAt: challenge.ExpiresAt,
-		DeliveryState: challenge.DeliveryState, MemberVersion: member.Version,
+		DeliveryState: challenge.DeliveryState, MemberVersion: member.Version, ResendAfter: service.policy.ResendInterval,
 	}, nil
 }
 
@@ -210,7 +211,7 @@ func (service *TenantSelfSecurityService) RequestTenantDeletion(
 	return TenantSelfChallengeReceipt{
 		ChallengeID: challenge.ChallengeID, FlowID: flowID,
 		MaskedDestination: challenge.MaskedDestination, ExpiresAt: challenge.ExpiresAt,
-		DeliveryState: challenge.DeliveryState, MemberVersion: member.Version,
+		DeliveryState: challenge.DeliveryState, MemberVersion: member.Version, ResendAfter: service.policy.ResendInterval,
 	}, nil
 }
 
