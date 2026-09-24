@@ -321,6 +321,390 @@ func (x *TenantMemberDTO) GetUsername() string {
 	return ""
 }
 
+type TenantPersonalProfileDTO struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	UserId         string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Username       string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Name           string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	TenantId       string                 `protobuf:"bytes,4,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	TenantName     string                 `protobuf:"bytes,5,opt,name=tenant_name,json=tenantName,proto3" json:"tenant_name,omitempty"`
+	Roles          []*TenantMemberRoleDTO `protobuf:"bytes,6,rep,name=roles,proto3" json:"roles,omitempty"`
+	RegisteredAt   string                 `protobuf:"bytes,7,opt,name=registered_at,json=registeredAt,proto3" json:"registered_at,omitempty"`
+	JoinedAt       string                 `protobuf:"bytes,8,opt,name=joined_at,json=joinedAt,proto3" json:"joined_at,omitempty"`
+	Email          string                 `protobuf:"bytes,9,opt,name=email,proto3" json:"email,omitempty"`
+	Phone          string                 `protobuf:"bytes,10,opt,name=phone,proto3" json:"phone,omitempty"`
+	AvatarAssetRef string                 `protobuf:"bytes,11,opt,name=avatar_asset_ref,json=avatarAssetRef,proto3" json:"avatar_asset_ref,omitempty"`
+	Version        uint64                 `protobuf:"varint,12,opt,name=version,proto3" json:"version,omitempty"`
+	EmployeeId     string                 `protobuf:"bytes,13,opt,name=employee_id,json=employeeId,proto3" json:"employee_id,omitempty"`
+	Position       string                 `protobuf:"bytes,14,opt,name=position,proto3" json:"position,omitempty"`
+	DepartmentId   string                 `protobuf:"bytes,15,opt,name=department_id,json=departmentId,proto3" json:"department_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *TenantPersonalProfileDTO) Reset() {
+	*x = TenantPersonalProfileDTO{}
+	mi := &file_access_v1_tenant_member_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TenantPersonalProfileDTO) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TenantPersonalProfileDTO) ProtoMessage() {}
+
+func (x *TenantPersonalProfileDTO) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_member_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TenantPersonalProfileDTO.ProtoReflect.Descriptor instead.
+func (*TenantPersonalProfileDTO) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *TenantPersonalProfileDTO) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *TenantPersonalProfileDTO) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *TenantPersonalProfileDTO) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *TenantPersonalProfileDTO) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *TenantPersonalProfileDTO) GetTenantName() string {
+	if x != nil {
+		return x.TenantName
+	}
+	return ""
+}
+
+func (x *TenantPersonalProfileDTO) GetRoles() []*TenantMemberRoleDTO {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
+}
+
+func (x *TenantPersonalProfileDTO) GetRegisteredAt() string {
+	if x != nil {
+		return x.RegisteredAt
+	}
+	return ""
+}
+
+func (x *TenantPersonalProfileDTO) GetJoinedAt() string {
+	if x != nil {
+		return x.JoinedAt
+	}
+	return ""
+}
+
+func (x *TenantPersonalProfileDTO) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *TenantPersonalProfileDTO) GetPhone() string {
+	if x != nil {
+		return x.Phone
+	}
+	return ""
+}
+
+func (x *TenantPersonalProfileDTO) GetAvatarAssetRef() string {
+	if x != nil {
+		return x.AvatarAssetRef
+	}
+	return ""
+}
+
+func (x *TenantPersonalProfileDTO) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *TenantPersonalProfileDTO) GetEmployeeId() string {
+	if x != nil {
+		return x.EmployeeId
+	}
+	return ""
+}
+
+func (x *TenantPersonalProfileDTO) GetPosition() string {
+	if x != nil {
+		return x.Position
+	}
+	return ""
+}
+
+func (x *TenantPersonalProfileDTO) GetDepartmentId() string {
+	if x != nil {
+		return x.DepartmentId
+	}
+	return ""
+}
+
+type PersonalAvatarOptionDTO struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AssetRef      string                 `protobuf:"bytes,1,opt,name=asset_ref,json=assetRef,proto3" json:"asset_ref,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Tone          string                 `protobuf:"bytes,3,opt,name=tone,proto3" json:"tone,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PersonalAvatarOptionDTO) Reset() {
+	*x = PersonalAvatarOptionDTO{}
+	mi := &file_access_v1_tenant_member_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PersonalAvatarOptionDTO) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PersonalAvatarOptionDTO) ProtoMessage() {}
+
+func (x *PersonalAvatarOptionDTO) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_member_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PersonalAvatarOptionDTO.ProtoReflect.Descriptor instead.
+func (*PersonalAvatarOptionDTO) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *PersonalAvatarOptionDTO) GetAssetRef() string {
+	if x != nil {
+		return x.AssetRef
+	}
+	return ""
+}
+
+func (x *PersonalAvatarOptionDTO) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *PersonalAvatarOptionDTO) GetTone() string {
+	if x != nil {
+		return x.Tone
+	}
+	return ""
+}
+
+type GetMyPersonalProfileRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetMyPersonalProfileRequest) Reset() {
+	*x = GetMyPersonalProfileRequest{}
+	mi := &file_access_v1_tenant_member_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetMyPersonalProfileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetMyPersonalProfileRequest) ProtoMessage() {}
+
+func (x *GetMyPersonalProfileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_member_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetMyPersonalProfileRequest.ProtoReflect.Descriptor instead.
+func (*GetMyPersonalProfileRequest) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{4}
+}
+
+type ListMyPersonalAvatarOptionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListMyPersonalAvatarOptionsRequest) Reset() {
+	*x = ListMyPersonalAvatarOptionsRequest{}
+	mi := &file_access_v1_tenant_member_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListMyPersonalAvatarOptionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListMyPersonalAvatarOptionsRequest) ProtoMessage() {}
+
+func (x *ListMyPersonalAvatarOptionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_member_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListMyPersonalAvatarOptionsRequest.ProtoReflect.Descriptor instead.
+func (*ListMyPersonalAvatarOptionsRequest) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{5}
+}
+
+type ListMyPersonalAvatarOptionsResponse struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Options       []*PersonalAvatarOptionDTO `protobuf:"bytes,1,rep,name=options,proto3" json:"options,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListMyPersonalAvatarOptionsResponse) Reset() {
+	*x = ListMyPersonalAvatarOptionsResponse{}
+	mi := &file_access_v1_tenant_member_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListMyPersonalAvatarOptionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListMyPersonalAvatarOptionsResponse) ProtoMessage() {}
+
+func (x *ListMyPersonalAvatarOptionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_member_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListMyPersonalAvatarOptionsResponse.ProtoReflect.Descriptor instead.
+func (*ListMyPersonalAvatarOptionsResponse) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ListMyPersonalAvatarOptionsResponse) GetOptions() []*PersonalAvatarOptionDTO {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+type UpdateMyPersonalAvatarRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Version        uint64                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
+	AvatarAssetRef string                 `protobuf:"bytes,2,opt,name=avatar_asset_ref,json=avatarAssetRef,proto3" json:"avatar_asset_ref,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *UpdateMyPersonalAvatarRequest) Reset() {
+	*x = UpdateMyPersonalAvatarRequest{}
+	mi := &file_access_v1_tenant_member_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateMyPersonalAvatarRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateMyPersonalAvatarRequest) ProtoMessage() {}
+
+func (x *UpdateMyPersonalAvatarRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_access_v1_tenant_member_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateMyPersonalAvatarRequest.ProtoReflect.Descriptor instead.
+func (*UpdateMyPersonalAvatarRequest) Descriptor() ([]byte, []int) {
+	return file_access_v1_tenant_member_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *UpdateMyPersonalAvatarRequest) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *UpdateMyPersonalAvatarRequest) GetAvatarAssetRef() string {
+	if x != nil {
+		return x.AvatarAssetRef
+	}
+	return ""
+}
+
 type InviteTenantMemberRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
