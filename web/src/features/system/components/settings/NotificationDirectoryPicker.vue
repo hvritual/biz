@@ -15,7 +15,7 @@ const options = computed(() => result.value?.items ?? [])
 const currentValue = computed(() => props.multiple ? '' : props.modelValue[0] ?? '')
 const offPage = computed(() => props.modelValue.filter(id => !options.value.some(row => row.id === id)))
 let sequence = 0
-function label(id: string) { return names.value[id] ?? t('notificationConfiguration.unavailableSelection', { id }) }
+function selectionLabel(id: string) { return names.value[id] ?? t('notificationConfiguration.unavailableSelection', { id }) }
 async function load() {
   if (!props.session) return
   const token = ++sequence, session = { ...props.session }, key = sessionContext(session)
@@ -55,11 +55,11 @@ onBeforeUnmount(() => sequence++)
     </div>
     <UiSelect :model-value="currentValue" :aria-label="props.label" :disabled="disabled || busy || Boolean(error)" :placeholder="t('notificationConfiguration.choose')" @update:model-value="select">
       <UiOption value="">{{ t('notificationConfiguration.optional') }}</UiOption>
-      <UiOption v-for="id in offPage" :key="`selected-${id}`" :value="id" disabled>{{ label(id) }}</UiOption>
+      <UiOption v-for="id in offPage" :key="`selected-${id}`" :value="id" disabled>{{ selectionLabel(id) }}</UiOption>
       <UiOption v-for="row in options" :key="row.id" :value="row.id" :disabled="excluded.includes(row.id) || (multiple && modelValue.includes(row.id))">{{ row.name }}</UiOption>
     </UiSelect>
     <div v-if="multiple && modelValue.length" class="selected-recipients">
-      <UiButton v-for="id in modelValue" :key="id" size="sm" variant="outline" :disabled="disabled" :aria-label="t('notificationConfiguration.removeChoice', { name: label(id) })" @click="remove(id)">{{ label(id) }} ×</UiButton>
+      <UiButton v-for="id in modelValue" :key="id" size="sm" variant="outline" :disabled="disabled" :aria-label="t('notificationConfiguration.removeChoice', { name: selectionLabel(id) })" @click="remove(id)">{{ selectionLabel(id) }} ×</UiButton>
     </div>
     <p v-if="error" class="text-danger" role="alert">{{ t(`notificationConfiguration.errors.${error}`) }} <UiButton size="sm" variant="outline" :disabled="disabled || busy" @click="load">{{ t('notificationConfiguration.retry') }}</UiButton></p>
     <div v-else-if="result" class="directory-pagination">
