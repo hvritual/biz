@@ -46,7 +46,8 @@ onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', hi
         </label>
         <div class="preference-value">
           <span>{{ t(snapshot[channel].allowed ? 'notificationPreferences.enabled' : 'notificationPreferences.disabled') }}</span>
-          <UiInput :id="`personal-preference-${channel}`" type="checkbox" role="switch"
+          <UiInput
+            :id="`personal-preference-${channel}`" type="checkbox" role="switch"
             :model-value="draft[channel]" :disabled="!canEdit"
             :aria-label="t(`notificationPreferences.${channel}`)"
             @update:model-value="flow.begin(channel, Boolean($event))" />
@@ -55,7 +56,7 @@ onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', hi
     </template>
     <p class="policy-note">{{ t('notificationPreferences.policyNote') }}</p>
     <div v-if="recovery" class="notice-box warning recovery-box" role="status">
-      <p>{{ t(recovery === 'read' ? 'notificationPreferences.readbackPending' : 'notificationPreferences.uncertain') }}</p>
+      <p>{{ t(recovery === 'read' ? 'notificationPreferences.confirmationPending' : 'notificationPreferences.uncertain') }}</p>
       <UiButton variant="outline" :disabled="busy" @click="flow.recover">{{ t('notificationPreferences.recover') }}</UiButton>
     </div>
     <UiButton v-else-if="!busy && (error || !snapshot)" variant="outline" @click="retry">
@@ -68,7 +69,7 @@ onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', hi
       <p v-if="selected" class="confirmation-impact">{{ t(selected.allowed ? 'notificationPreferences.confirmEnable' : 'notificationPreferences.confirmDisable', { channel: t(`notificationPreferences.${selected.channel}`) }) }}</p>
       <p>{{ t('notificationPreferences.confirmNote') }}</p>
       <p v-if="error" class="notice-box danger" role="alert">{{ t(`notificationPreferences.errors.${error}`) }}</p>
-      <p v-if="recovery" class="notice-box warning">{{ t(recovery === 'read' ? 'notificationPreferences.readbackPending' : 'notificationPreferences.uncertain') }}</p>
+      <p v-if="recovery" class="notice-box warning">{{ t(recovery === 'read' ? 'notificationPreferences.confirmationPending' : 'notificationPreferences.uncertain') }}</p>
       <p v-if="busy" role="status">{{ t('notificationPreferences.saving') }}</p>
     </div>
     <template #footer>

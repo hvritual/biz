@@ -14,7 +14,7 @@ interface Fixture {
 }
 const endpoint = '/auth/personal/notification-preferences'
 const routePattern = '**/api/auth/personal/notification-preferences'
-const savedText = '通知偏好已保存，且已从服务端重新读取确认。'
+const savedText = '通知偏好已保存，最新状态已确认。'
 const panel = (page: Page) => page.locator('[data-ui-region="notification-preferences"]')
 const dialog = (page: Page) => page.getByRole('dialog', { name: '确认修改通知偏好' })
 const smsSwitch = (page: Page) => panel(page).getByRole('switch', { name: '短信通知', exact: true })
@@ -141,7 +141,7 @@ test('TestEnterprise183NotificationPreferencesLiveBrowserMySQLRecoveryAndIsolati
     expect(await readPreferences(context, data)).toEqual(committed)
     expect(persisted(committed)).toEqual(firstRows)
     await expect(smsSwitch(page)).toBeChecked({ checked: committed.sms.allowed })
-    await dialog(page).getByRole('button', { name: '核对原请求结果' }).click()
+    await dialog(page).getByRole('button', { name: '核对本次修改' }).click()
     await expect(panel(page).getByText(savedText, { exact: true })).toBeVisible()
     expect(failedWrites).toHaveLength(2)
     expect(failedWrites[0]?.key).not.toBe('')
@@ -163,13 +163,13 @@ test('TestEnterprise183NotificationPreferencesLiveBrowserMySQLRecoveryAndIsolati
     }
     await page.route(routePattern, handler)
     await confirmSMS(page)
-    await expect(dialog(page)).toContainText('服务端已接收修改，但尚未读回确认')
+    await expect(dialog(page)).toContainText('修改已受理，但最新状态尚未确认')
     const accepted = await readPreferences(context, data)
     expect(accepted.sms.version).toBe(recovered.sms.version + 1)
     expect(accepted.sms.allowed).toBe(!recovered.sms.allowed)
     persisted(accepted)
     await expect(panel(page).getByText(savedText, { exact: true })).toHaveCount(0)
-    await dialog(page).getByRole('button', { name: '核对原请求结果' }).click()
+    await dialog(page).getByRole('button', { name: '核对本次修改' }).click()
     await expect(panel(page).getByText(savedText, { exact: true })).toBeVisible()
     expect(writes).toBe(1)
     expect(await readPreferences(context, data)).toEqual(accepted)
