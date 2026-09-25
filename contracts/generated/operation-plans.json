@@ -2546,6 +2546,306 @@
       }
     },
     {
+      "operationId": "notification.channel.list",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "list_message_channels",
+      "requestType": "notification.v1.ListMessageChannelsRequest",
+      "responseType": "notification.v1.ListMessageChannelsResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageChannels",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/notification/channels"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.configuration.create",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "create_message_configurations",
+      "requestType": "notification.v1.CreateMessageConfigurationsRequest",
+      "responseType": "notification.v1.MessageConfigurationReceipt",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.create"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/CreateMessageConfigurations",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/notification/configurations",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.configuration.delete",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "delete_message_configuration",
+      "requestType": "notification.v1.DeleteMessageConfigurationRequest",
+      "responseType": "notification.v1.MessageConfigurationReceipt",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.delete"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/DeleteMessageConfiguration",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/notification/configurations/{id}/delete",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.configuration.get",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "get_message_configuration",
+      "requestType": "notification.v1.GetMessageConfigurationRequest",
+      "responseType": "notification.v1.MessageConfigurationDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/GetMessageConfiguration",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/notification/configurations/{id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.configuration.list",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "list_message_configurations",
+      "requestType": "notification.v1.ListMessageConfigurationsRequest",
+      "responseType": "notification.v1.ListMessageConfigurationsResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageConfigurations",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/notification/configurations"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.configuration.update",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "update_message_configuration",
+      "requestType": "notification.v1.UpdateMessageConfigurationRequest",
+      "responseType": "notification.v1.MessageConfigurationReceipt",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.update"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/UpdateMessageConfiguration",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/tenant/notification/configurations/{id}",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.group.list",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "list_message_groups",
+      "requestType": "notification.v1.ListMessageDirectoryRequest",
+      "responseType": "notification.v1.ListMessageDirectoryResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageGroups",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/notification/groups"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.recipient.list",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "list_message_recipients",
+      "requestType": "notification.v1.ListMessageDirectoryRequest",
+      "responseType": "notification.v1.ListMessageDirectoryResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageRecipients",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/notification/recipients"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.type.list",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "list_message_types",
+      "requestType": "notification.v1.ListMessageTypesRequest",
+      "responseType": "notification.v1.ListMessageTypesResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageTypes",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/notification/types"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "site.member_scope_directory",
       "domain": "deviceops",
       "application": "site_management",

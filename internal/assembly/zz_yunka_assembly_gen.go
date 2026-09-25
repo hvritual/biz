@@ -15,6 +15,9 @@ import (
 	deviceopsapplication "github.com/hvritual/biz/internal/deviceops/application"
 	deviceopsrest "github.com/hvritual/biz/internal/deviceops/transport/rest"
 	deviceopsrpc "github.com/hvritual/biz/internal/deviceops/transport/rpc"
+	notificationapplication "github.com/hvritual/biz/internal/notification/application"
+	notificationrest "github.com/hvritual/biz/internal/notification/transport/rest"
+	notificationrpc "github.com/hvritual/biz/internal/notification/transport/rpc"
 	grpc "google.golang.org/grpc"
 	http "net/http"
 	"yunka.io/framework/core"
@@ -24,7 +27,7 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "379caf9b92558fe7c8aae7f3c92f367811d53b32bd97dad0b46bc514d3b2b975"
+const AssemblyPlanDigest = "bd09c64bb18b7dcd82e5d83792d8beea996a61d86f9a3f45836b809a0191fa3c"
 
 type AccessTenantAuditManagementDependencies struct {
 }
@@ -100,6 +103,9 @@ type DeviceopsDeviceTransferDependencies struct {
 type DeviceopsSiteManagementDependencies struct {
 }
 
+type NotificationMessageConfigurationDependencies struct {
+}
+
 type ApplicationFactories interface {
 	BuildAccessTenantAuditManagement(AccessTenantAuditManagementDependencies) (accessapplication.TenantAuditManagementApplication, error)
 	BuildAccessTenantDelegationManagement(AccessTenantDelegationManagementDependencies) (accessapplication.TenantDelegationManagementApplication, error)
@@ -119,6 +125,7 @@ type ApplicationFactories interface {
 	BuildDeviceopsDeviceManagement(DeviceopsDeviceManagementDependencies) (deviceopsapplication.DeviceManagementApplication, error)
 	BuildDeviceopsDeviceTransfer(DeviceopsDeviceTransferDependencies) (deviceopsapplication.DeviceTransferApplication, error)
 	BuildDeviceopsSiteManagement(DeviceopsSiteManagementDependencies) (deviceopsapplication.SiteManagementApplication, error)
+	BuildNotificationMessageConfiguration(NotificationMessageConfigurationDependencies) (notificationapplication.MessageConfigurationApplication, error)
 }
 
 type Applications struct {
@@ -140,6 +147,7 @@ type Applications struct {
 	DeviceopsDeviceManagement        deviceopsapplication.DeviceManagementApplication
 	DeviceopsDeviceTransfer          deviceopsapplication.DeviceTransferApplication
 	DeviceopsSiteManagement          deviceopsapplication.SiteManagementApplication
+	NotificationMessageConfiguration notificationapplication.MessageConfigurationApplication
 }
 
 func BuildApplications(factories ApplicationFactories, executor operation.Executor) (Applications, error) {
@@ -357,6 +365,13 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	if applications.DeviceopsDeviceTransfer == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for deviceops/device_transfer")
 	}
+	applications.NotificationMessageConfiguration, err = factories.BuildNotificationMessageConfiguration(NotificationMessageConfigurationDependencies{})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application notification/message_configuration: %w", err)
+	}
+	if applications.NotificationMessageConfiguration == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for notification/message_configuration")
+	}
 	return applications, nil
 }
 
@@ -546,6 +561,15 @@ func RegisterTransports(bindings TransportBindings, applications Applications, e
 	if err := deviceopsrpc.RegisterDeviceTransferOperationExecutor(bindings.RPC, applications.DeviceopsDeviceTransfer, executor); err != nil {
 		return fmt.Errorf("yunka assembly: register gRPC deviceops/device_transfer: %w", err)
 	}
+	if applications.NotificationMessageConfiguration == nil {
+		return errors.New("yunka assembly: application notification/message_configuration is required for transport registration")
+	}
+	if err := notificationrest.RegisterOperationExecutor(bindings.HTTP, applications.NotificationMessageConfiguration, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register HTTP notification/message_configuration: %w", err)
+	}
+	if err := notificationrpc.RegisterOperationExecutor(bindings.RPC, applications.NotificationMessageConfiguration, executor); err != nil {
+		return fmt.Errorf("yunka assembly: register gRPC notification/message_configuration: %w", err)
+	}
 	return nil
 }
 
@@ -569,7 +593,7 @@ type BootstrapOptions struct {
 
 func RuntimeInventory() core.RuntimeInventory {
 	return core.RuntimeInventory{
-		Routes:              []string{"/v1/delegated/devices/{id}", "/v1/devices", "/v1/devices/{id}", "/v1/devices/{id}/transfer", "/v1/platform/modules", "/v1/platform/modules/{module_code}", "/v1/platform/modules/{module_code}/sales-status", "/v1/platform/modules/{module_code}/technical-status", "/v1/platform/plans", "/v1/platform/plans/{plan_code}/versions", "/v1/platform/plans/{plan_code}/versions/{version}", "/v1/platform/plans/{plan_code}/versions/{version}/eligibility", "/v1/platform/plans/{plan_code}/versions/{version}/publish", "/v1/platform/plans/{plan_code}/versions/{version}/retire", "/v1/platform/subscription-default-rules", "/v1/platform/subscription-default-rules/{rule_id}", "/v1/platform/tenants/{tenant_id}/entitlement-overrides", "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", "/v1/platform/tenants/{tenant_id}/entitlements", "/v1/platform/tenants/{tenant_id}/provisioning/deliveries", "/v1/platform/tenants/{tenant_id}/provisioning/tasks", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry", "/v1/platform/tenants/{tenant_id}/subscription", "/v1/platform/tenants/{tenant_id}/subscription/change-previews", "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm", "/v1/tenant/audit-logs", "/v1/tenant/audit-logs/exports", "/v1/tenant/audit-logs/{audit_id}", "/v1/tenant/branding", "/v1/tenant/data-policies", "/v1/tenant/data-policies/{policy_id}", "/v1/tenant/data-policies/{policy_id}/revoke", "/v1/tenant/delegations", "/v1/tenant/delegations/devices", "/v1/tenant/delegations/{id}", "/v1/tenant/delegations/{id}:revoke", "/v1/tenant/departments", "/v1/tenant/departments/{department_id}", "/v1/tenant/departments/{department_id}/disable", "/v1/tenant/departments/{department_id}/enable", "/v1/tenant/entitlements", "/v1/tenant/me/avatar", "/v1/tenant/me/avatar-options", "/v1/tenant/me/profile", "/v1/tenant/member-scope-candidates", "/v1/tenant/members", "/v1/tenant/members/create", "/v1/tenant/members/removed", "/v1/tenant/members/{user_id}", "/v1/tenant/members/{user_id}/activate", "/v1/tenant/members/{user_id}/business-scope", "/v1/tenant/members/{user_id}/profile", "/v1/tenant/members/{user_id}/remove", "/v1/tenant/members/{user_id}/restore", "/v1/tenant/members/{user_id}/suspend", "/v1/tenant/profile", "/v1/tenant/roles", "/v1/tenant/roles/{role_id}", "/v1/tenant/roles/{role_id}/data-policy", "/v1/tenant/roles/{role_id}/disable", "/v1/tenant/roles/{role_id}/enable", "/v1/tenant/roles/{role_id}/members", "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", "/v1/tenant/roles/{role_id}/permissions", "/v1/tenant/subscription", "/v1/tenant/subscription/change-previews", "/v1/tenant/subscription/change-previews/{change_id}", "/v1/tenant/subscription/change-targets", "/v1/tenant/subscription/changes/{change_id}", "/v1/tenant/subscription/changes/{change_id}/confirm", "/v1/tenant/usage", "/v1/tenants", "/v1/tenants/{id}", "/v1/tenants/{id}/activate", "/v1/tenants/{id}/close", "/v1/tenants/{id}/suspend"},
+		Routes:              []string{"/v1/delegated/devices/{id}", "/v1/devices", "/v1/devices/{id}", "/v1/devices/{id}/transfer", "/v1/platform/modules", "/v1/platform/modules/{module_code}", "/v1/platform/modules/{module_code}/sales-status", "/v1/platform/modules/{module_code}/technical-status", "/v1/platform/plans", "/v1/platform/plans/{plan_code}/versions", "/v1/platform/plans/{plan_code}/versions/{version}", "/v1/platform/plans/{plan_code}/versions/{version}/eligibility", "/v1/platform/plans/{plan_code}/versions/{version}/publish", "/v1/platform/plans/{plan_code}/versions/{version}/retire", "/v1/platform/subscription-default-rules", "/v1/platform/subscription-default-rules/{rule_id}", "/v1/platform/tenants/{tenant_id}/entitlement-overrides", "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", "/v1/platform/tenants/{tenant_id}/entitlements", "/v1/platform/tenants/{tenant_id}/provisioning/deliveries", "/v1/platform/tenants/{tenant_id}/provisioning/tasks", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel", "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry", "/v1/platform/tenants/{tenant_id}/subscription", "/v1/platform/tenants/{tenant_id}/subscription/change-previews", "/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm", "/v1/tenant/audit-logs", "/v1/tenant/audit-logs/exports", "/v1/tenant/audit-logs/{audit_id}", "/v1/tenant/branding", "/v1/tenant/data-policies", "/v1/tenant/data-policies/{policy_id}", "/v1/tenant/data-policies/{policy_id}/revoke", "/v1/tenant/delegations", "/v1/tenant/delegations/devices", "/v1/tenant/delegations/{id}", "/v1/tenant/delegations/{id}:revoke", "/v1/tenant/departments", "/v1/tenant/departments/{department_id}", "/v1/tenant/departments/{department_id}/disable", "/v1/tenant/departments/{department_id}/enable", "/v1/tenant/entitlements", "/v1/tenant/me/avatar", "/v1/tenant/me/avatar-options", "/v1/tenant/me/profile", "/v1/tenant/member-scope-candidates", "/v1/tenant/members", "/v1/tenant/members/create", "/v1/tenant/members/removed", "/v1/tenant/members/{user_id}", "/v1/tenant/members/{user_id}/activate", "/v1/tenant/members/{user_id}/business-scope", "/v1/tenant/members/{user_id}/profile", "/v1/tenant/members/{user_id}/remove", "/v1/tenant/members/{user_id}/restore", "/v1/tenant/members/{user_id}/suspend", "/v1/tenant/notification/channels", "/v1/tenant/notification/configurations", "/v1/tenant/notification/configurations/{id}", "/v1/tenant/notification/configurations/{id}/delete", "/v1/tenant/notification/groups", "/v1/tenant/notification/recipients", "/v1/tenant/notification/types", "/v1/tenant/profile", "/v1/tenant/roles", "/v1/tenant/roles/{role_id}", "/v1/tenant/roles/{role_id}/data-policy", "/v1/tenant/roles/{role_id}/disable", "/v1/tenant/roles/{role_id}/enable", "/v1/tenant/roles/{role_id}/members", "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", "/v1/tenant/roles/{role_id}/permissions", "/v1/tenant/subscription", "/v1/tenant/subscription/change-previews", "/v1/tenant/subscription/change-previews/{change_id}", "/v1/tenant/subscription/change-targets", "/v1/tenant/subscription/changes/{change_id}", "/v1/tenant/subscription/changes/{change_id}/confirm", "/v1/tenant/usage", "/v1/tenants", "/v1/tenants/{id}", "/v1/tenants/{id}/activate", "/v1/tenants/{id}/close", "/v1/tenants/{id}/suspend"},
 		RPCClientConfigured: false,
 		RPCServerCount:      1,
 	}

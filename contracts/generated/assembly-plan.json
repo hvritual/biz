@@ -181,6 +181,16 @@
         "source": "manifest.json",
         "ref": "applications/deviceops/site_management"
       }
+    },
+    {
+      "id": "notification/message_configuration",
+      "domain": "notification",
+      "name": "message_configuration",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/notification/message_configuration"
+      }
     }
   ],
   "applicationDependencies": [
@@ -2496,6 +2506,285 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/device.update"
+      }
+    },
+    {
+      "id": "notification.channel.list",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.channel.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.channel.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.channel.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.channel.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.channel.list"
+      }
+    },
+    {
+      "id": "notification.configuration.create",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.configuration.create",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.create/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.configuration.create",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.create/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.configuration.create"
+      }
+    },
+    {
+      "id": "notification.configuration.delete",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.configuration.delete",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.delete/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.configuration.delete",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.delete/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.configuration.delete"
+      }
+    },
+    {
+      "id": "notification.configuration.get",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.configuration.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.configuration.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.configuration.get"
+      }
+    },
+    {
+      "id": "notification.configuration.list",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.configuration.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.configuration.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.configuration.list"
+      }
+    },
+    {
+      "id": "notification.configuration.update",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.configuration.update",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.update/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.configuration.update",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.update/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.configuration.update"
+      }
+    },
+    {
+      "id": "notification.group.list",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.group.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.group.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.group.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.group.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.group.list"
+      }
+    },
+    {
+      "id": "notification.recipient.list",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.recipient.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.recipient.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.recipient.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.recipient.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.recipient.list"
+      }
+    },
+    {
+      "id": "notification.type.list",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.type.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.type.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.type.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.type.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.type.list"
       }
     },
     {
@@ -4890,7 +5179,8 @@
         "deviceops/delegated_device_access",
         "deviceops/device_management",
         "deviceops/device_transfer",
-        "deviceops/site_management"
+        "deviceops/site_management",
+        "notification/message_configuration"
       ],
       "modules": [
         "access",
@@ -4948,6 +5238,15 @@
         "device.list",
         "device.transfer",
         "device.update",
+        "notification.channel.list",
+        "notification.configuration.create",
+        "notification.configuration.delete",
+        "notification.configuration.get",
+        "notification.configuration.list",
+        "notification.configuration.update",
+        "notification.group.list",
+        "notification.recipient.list",
+        "notification.type.list",
         "tenant.activate",
         "tenant.branding.get",
         "tenant.branding.update",

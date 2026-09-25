@@ -4,7 +4,7 @@ package authorization
 
 import "yunka.io/gateway/authz"
 
-const CommercialCapabilityMappingVersion = "25"
+const CommercialCapabilityMappingVersion = "26"
 
 var generatedActions = []Action{
 	{
@@ -482,6 +482,69 @@ var generatedActions = []Action{
 		Permissions: []authz.PermissionKey{authz.PermissionKey("device.update"), authz.PermissionKey("site.read")}, PermissionMode: "all",
 		Classification: "tenant_business", ModuleCode: "device-operations", CapabilityCodes: []string{"device.lifecycle"},
 		RPC: "/deviceops.v1.DeviceApplication/UpdateDevice", HTTP: []HTTPBinding{{Method: "PATCH", Path: "/v1/devices/{id}"}},
+	},
+	{
+		Code: "notification.channel.list", Domain: "notification", Application: "message_configuration", UseCase: "list_message_channels",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.notification.read")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.lifecycle"},
+		RPC: "/notification.v1.MessageConfigurationApplication/ListMessageChannels", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/notification/channels"}},
+	},
+	{
+		Code: "notification.configuration.create", Domain: "notification", Application: "message_configuration", UseCase: "create_message_configurations",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.notification.create")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.lifecycle"},
+		RPC: "/notification.v1.MessageConfigurationApplication/CreateMessageConfigurations", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/tenant/notification/configurations"}},
+	},
+	{
+		Code: "notification.configuration.delete", Domain: "notification", Application: "message_configuration", UseCase: "delete_message_configuration",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.notification.delete")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.lifecycle"},
+		RPC: "/notification.v1.MessageConfigurationApplication/DeleteMessageConfiguration", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/tenant/notification/configurations/{id}/delete"}},
+	},
+	{
+		Code: "notification.configuration.get", Domain: "notification", Application: "message_configuration", UseCase: "get_message_configuration",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.notification.read")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.lifecycle"},
+		RPC: "/notification.v1.MessageConfigurationApplication/GetMessageConfiguration", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/notification/configurations/{id}"}},
+	},
+	{
+		Code: "notification.configuration.list", Domain: "notification", Application: "message_configuration", UseCase: "list_message_configurations",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.notification.read")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.lifecycle"},
+		RPC: "/notification.v1.MessageConfigurationApplication/ListMessageConfigurations", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/notification/configurations"}},
+	},
+	{
+		Code: "notification.configuration.update", Domain: "notification", Application: "message_configuration", UseCase: "update_message_configuration",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.notification.update")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.lifecycle"},
+		RPC: "/notification.v1.MessageConfigurationApplication/UpdateMessageConfiguration", HTTP: []HTTPBinding{{Method: "PATCH", Path: "/v1/tenant/notification/configurations/{id}"}},
+	},
+	{
+		Code: "notification.group.list", Domain: "notification", Application: "message_configuration", UseCase: "list_message_groups",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.notification.read")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.lifecycle"},
+		RPC: "/notification.v1.MessageConfigurationApplication/ListMessageGroups", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/notification/groups"}},
+	},
+	{
+		Code: "notification.recipient.list", Domain: "notification", Application: "message_configuration", UseCase: "list_message_recipients",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.notification.read")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.lifecycle"},
+		RPC: "/notification.v1.MessageConfigurationApplication/ListMessageRecipients", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/notification/recipients"}},
+	},
+	{
+		Code: "notification.type.list", Domain: "notification", Application: "message_configuration", UseCase: "list_message_types",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.notification.read")}, PermissionMode: "all",
+		Classification: "tenant_business", ModuleCode: "access-management", CapabilityCodes: []string{"tenant.lifecycle"},
+		RPC: "/notification.v1.MessageConfigurationApplication/ListMessageTypes", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/notification/types"}},
 	},
 	{
 		Code: "site.member_scope_directory", Domain: "deviceops", Application: "site_management", UseCase: "list_assignable_member_sites",

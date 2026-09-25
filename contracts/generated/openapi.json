@@ -3730,6 +3730,406 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "deviceops.v1.UpdateDeviceRequest"
+      },
+      "notification_v1_CreateMessageConfigurationsRequest": {
+        "properties": {
+          "additionalUserIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "channels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "groupId": {
+            "type": "string"
+          },
+          "levels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "primaryUserId": {
+            "type": "string"
+          },
+          "secondaryUserId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.CreateMessageConfigurationsRequest"
+      },
+      "notification_v1_DeleteMessageConfigurationRequest": {
+        "properties": {
+          "expectedVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.DeleteMessageConfigurationRequest"
+      },
+      "notification_v1_GetMessageConfigurationRequest": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.GetMessageConfigurationRequest"
+      },
+      "notification_v1_ListMessageChannelsRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.ListMessageChannelsRequest"
+      },
+      "notification_v1_ListMessageChannelsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/notification_v1_MessageChannelDTO"
+            },
+            "type": "array"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.ListMessageChannelsResponse"
+      },
+      "notification_v1_ListMessageConfigurationsRequest": {
+        "properties": {
+          "groupId": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "page": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "pageSize": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "recipientId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.ListMessageConfigurationsRequest"
+      },
+      "notification_v1_ListMessageConfigurationsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/notification_v1_MessageConfigurationDTO"
+            },
+            "type": "array"
+          },
+          "page": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "pageSize": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "total": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.ListMessageConfigurationsResponse"
+      },
+      "notification_v1_ListMessageDirectoryRequest": {
+        "properties": {
+          "page": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "pageSize": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.ListMessageDirectoryRequest"
+      },
+      "notification_v1_ListMessageDirectoryResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/notification_v1_MessageDirectoryEntryDTO"
+            },
+            "type": "array"
+          },
+          "page": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "pageSize": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "total": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.ListMessageDirectoryResponse"
+      },
+      "notification_v1_ListMessageTypesRequest": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "page": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "pageSize": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.ListMessageTypesRequest"
+      },
+      "notification_v1_ListMessageTypesResponse": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/notification_v1_MessageLevelCountDTO"
+            },
+            "type": "array"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/notification_v1_MessageTypeDTO"
+            },
+            "type": "array"
+          },
+          "page": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "pageSize": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "total": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.ListMessageTypesResponse"
+      },
+      "notification_v1_MessageChannelDTO": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "configurable": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unavailableReason": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.MessageChannelDTO"
+      },
+      "notification_v1_MessageConfigurationDTO": {
+        "properties": {
+          "additionalUserIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "channels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "groupId": {
+            "type": "string"
+          },
+          "groupName": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "primaryUserId": {
+            "type": "string"
+          },
+          "secondaryUserId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.MessageConfigurationDTO"
+      },
+      "notification_v1_MessageConfigurationReceipt": {
+        "properties": {
+          "configurations": {
+            "items": {
+              "$ref": "#/components/schemas/notification_v1_MessageConfigurationDTO"
+            },
+            "type": "array"
+          },
+          "receiptId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.MessageConfigurationReceipt"
+      },
+      "notification_v1_MessageDirectoryEntryDTO": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.MessageDirectoryEntryDTO"
+      },
+      "notification_v1_MessageLevelCountDTO": {
+        "properties": {
+          "level": {
+            "type": "string"
+          },
+          "total": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.MessageLevelCountDTO"
+      },
+      "notification_v1_MessageTypeDTO": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.MessageTypeDTO"
+      },
+      "notification_v1_UpdateMessageConfigurationRequest": {
+        "properties": {
+          "additionalUserIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "channels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "expectedVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "primaryUserId": {
+            "type": "string"
+          },
+          "secondaryUserId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "notification.v1.UpdateMessageConfigurationRequest"
       }
     }
   },
@@ -6663,6 +7063,395 @@
           "access.v1.TenantMemberLifecycleApplication"
         ],
         "x-yunka-rpc": "/access.v1.TenantMemberLifecycleApplication/SuspendTenantMember"
+      }
+    },
+    "/v1/tenant/notification/channels": {
+      "get": {
+        "operationId": "notification.v1.MessageConfigurationApplication.ListMessageChannels",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notification_v1_ListMessageChannelsResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "notification.v1.MessageConfigurationApplication"
+        ],
+        "x-yunka-rpc": "/notification.v1.MessageConfigurationApplication/ListMessageChannels"
+      }
+    },
+    "/v1/tenant/notification/configurations": {
+      "get": {
+        "operationId": "notification.v1.MessageConfigurationApplication.ListMessageConfigurations",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "groupId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "level",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "recipientId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notification_v1_ListMessageConfigurationsResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "notification.v1.MessageConfigurationApplication"
+        ],
+        "x-yunka-rpc": "/notification.v1.MessageConfigurationApplication/ListMessageConfigurations"
+      },
+      "post": {
+        "operationId": "notification.v1.MessageConfigurationApplication.CreateMessageConfigurations",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/notification_v1_CreateMessageConfigurationsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notification_v1_MessageConfigurationReceipt"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "notification.v1.MessageConfigurationApplication"
+        ],
+        "x-yunka-rpc": "/notification.v1.MessageConfigurationApplication/CreateMessageConfigurations"
+      }
+    },
+    "/v1/tenant/notification/configurations/{id}": {
+      "get": {
+        "operationId": "notification.v1.MessageConfigurationApplication.GetMessageConfiguration",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notification_v1_MessageConfigurationDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "notification.v1.MessageConfigurationApplication"
+        ],
+        "x-yunka-rpc": "/notification.v1.MessageConfigurationApplication/GetMessageConfiguration"
+      },
+      "patch": {
+        "operationId": "notification.v1.MessageConfigurationApplication.UpdateMessageConfiguration",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/notification_v1_UpdateMessageConfigurationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notification_v1_MessageConfigurationReceipt"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "notification.v1.MessageConfigurationApplication"
+        ],
+        "x-yunka-rpc": "/notification.v1.MessageConfigurationApplication/UpdateMessageConfiguration"
+      }
+    },
+    "/v1/tenant/notification/configurations/{id}/delete": {
+      "post": {
+        "operationId": "notification.v1.MessageConfigurationApplication.DeleteMessageConfiguration",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/notification_v1_DeleteMessageConfigurationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notification_v1_MessageConfigurationReceipt"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "notification.v1.MessageConfigurationApplication"
+        ],
+        "x-yunka-rpc": "/notification.v1.MessageConfigurationApplication/DeleteMessageConfiguration"
+      }
+    },
+    "/v1/tenant/notification/groups": {
+      "get": {
+        "operationId": "notification.v1.MessageConfigurationApplication.ListMessageGroups",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notification_v1_ListMessageDirectoryResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "notification.v1.MessageConfigurationApplication"
+        ],
+        "x-yunka-rpc": "/notification.v1.MessageConfigurationApplication/ListMessageGroups"
+      }
+    },
+    "/v1/tenant/notification/recipients": {
+      "get": {
+        "operationId": "notification.v1.MessageConfigurationApplication.ListMessageRecipients",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notification_v1_ListMessageDirectoryResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "notification.v1.MessageConfigurationApplication"
+        ],
+        "x-yunka-rpc": "/notification.v1.MessageConfigurationApplication/ListMessageRecipients"
+      }
+    },
+    "/v1/tenant/notification/types": {
+      "get": {
+        "operationId": "notification.v1.MessageConfigurationApplication.ListMessageTypes",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "code",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "level",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notification_v1_ListMessageTypesResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "notification.v1.MessageConfigurationApplication"
+        ],
+        "x-yunka-rpc": "/notification.v1.MessageConfigurationApplication/ListMessageTypes"
       }
     },
     "/v1/tenant/profile": {
