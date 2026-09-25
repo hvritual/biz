@@ -1,6 +1,6 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 import type { TrustedSession } from '@/services/runtime/api'
-import type { TenantPersonalProfile } from '@/services/enterprise/personalProfileRuntime'
+import { isPersonalProfileSession, type TenantPersonalProfile } from '@/services/enterprise/personalProfileRuntime'
 import { commercialRequestId } from '@/services/commercial/platformCommercial'
 import {
   completeContactChange, completeTenantDeletion, confirmContactReadback, requestSecurityCode,
@@ -39,7 +39,7 @@ export function usePersonalSecurity(options: Options) {
   function begin(nextMode: SecurityMode, nextChannel: SecurityChannel) {
     close()
     const current = options.currentSession(), profile = options.currentProfile()
-    if (!current?.authenticated || current.actor_kind !== 'tenant' || !profile ||
+    if (!isPersonalProfileSession(current) || !profile ||
       profile.tenantId !== current.active_tenant_id || profile.userId !== current.user_id) return
     if (nextMode === 'deletion' && !(nextChannel === 'email' ? profile.email : profile.phone)) return
     session = { ...current }; mode.value = nextMode; channel.value = nextChannel; open.value = true

@@ -55,8 +55,13 @@ export function personalProfileRuntimeError(error: unknown) {
   return error instanceof Error ? error.message : backendErrorFallback('member')
 }
 
+export function isPersonalProfileSession(session: TrustedSession | null | undefined): session is TrustedSession {
+  return Boolean(session?.authenticated && (session.actor_kind === 'user' || session.actor_kind === 'tenant') &&
+    session.user_id && session.active_tenant_id)
+}
+
 function requireTenantSession(session: TrustedSession) {
-  if (!session.authenticated || session.actor_kind !== 'tenant') throw new Error('请先登录业务账号。')
+  if (!isPersonalProfileSession(session)) throw new Error('请先登录业务账号。')
   if (!session.user_id) throw new Error('当前会话缺少可信用户身份。')
   if (!session.active_tenant_id) throw new Error('请选择可访问的租户。')
 }

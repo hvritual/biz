@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { TrustedSession } from '@/services/runtime/api'
 import {
   getMyPersonalProfile,
+  isPersonalProfileSession,
   listMyPersonalAvatarOptions,
   personalProfileRequestId,
   personalProfileRuntimeError,
@@ -49,10 +50,7 @@ export const usePersonalProfileStore = defineStore('personal-profile', () => {
 
   function accepts(session: TrustedSession, value: TenantPersonalProfile) {
     return (
-      session.authenticated &&
-      session.actor_kind === 'tenant' &&
-      Boolean(session.user_id) &&
-      Boolean(session.active_tenant_id) &&
+      isPersonalProfileSession(session) &&
       value.userId === session.user_id &&
       value.tenantId === session.active_tenant_id
     )
@@ -100,12 +98,7 @@ export const usePersonalProfileStore = defineStore('personal-profile', () => {
 
   async function refresh(session?: TrustedSession | null) {
     const trusted = session ?? await readPersonalProfileSession()
-    if (
-      !trusted.authenticated ||
-      trusted.actor_kind !== 'tenant' ||
-      !trusted.user_id ||
-      !trusted.active_tenant_id
-    ) {
+    if (!isPersonalProfileSession(trusted)) {
       clear()
       ready.value = true
       error.value = personalProfileRuntimeError(new Error('请先登录业务账号。'))

@@ -1,6 +1,6 @@
 import { CommercialApiError, mutate } from '@/services/commercial/platformCommercial'
 import { readSession, sessionContext, type TrustedSession } from '@/services/runtime/api'
-import { getMyPersonalProfile, samePersonalProfileSession, type TenantPersonalProfile } from './personalProfileRuntime'
+import { getMyPersonalProfile, isPersonalProfileSession, samePersonalProfileSession, type TenantPersonalProfile } from './personalProfileRuntime'
 
 export type SecurityChannel = 'email' | 'sms'
 export type SecurityMode = 'contact' | 'deletion'
@@ -81,7 +81,7 @@ export function parseSecurityChallenge(value: SecurityChallenge): SecurityChalle
   })
 }
 export async function requirePersonalSecuritySession(expected: TrustedSession) {
-  requireValue(expected.authenticated && expected.actor_kind === 'tenant' && expected.user_id && expected.active_tenant_id, 'signIn')
+  requireValue(isPersonalProfileSession(expected), 'signIn')
   const actual = await readSession()
   requireValue(samePersonalProfileSession(expected, actual), 'sessionChanged')
 }

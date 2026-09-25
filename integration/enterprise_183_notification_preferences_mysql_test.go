@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/hvritual/biz/internal/access/domain"
+	accessnotification "github.com/hvritual/biz/internal/access/infrastructure/notification"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	"github.com/hvritual/biz/internal/access/ports"
 	"gorm.io/gorm"
@@ -260,8 +261,19 @@ func TestEnterprise183NotificationPreferencesMySQLAndHTTP(t *testing.T) {
 		if err != nil || allowed || preference.Version != 1 {
 			t.Fatalf("denied channel allowed: %+v / %v", preference, err)
 		}
-		// This proves only the controlled reader. #185 must bind the reader to
-		// queue admission and pre-delivery checks, including the TOCTOU race.
+		created := 0
+		enqueue := func(context.Context) error { created++; return nil }
+		admitted, err := accessnotification.AdmitOptionalNotification(ctx, reader, ownerB, domain.NotificationPreferenceEmail, enqueue)
+		if err != nil || admitted || created != 0 {
+			t.Fatalf("explicit refusal created an optional task: admitted=%v tasks=%d error=%v", admitted, created, err)
+		}
+		// A's independent, explicitly allowed email remains admissible.
+		admitted, err = accessnotification.AdmitOptionalNotification(ctx, reader, ownerA, domain.NotificationPreferenceEmail, enqueue)
+		if err != nil || !admitted || created != 1 {
+			t.Fatalf("independent allowed channel: admitted=%v tasks=%d error=%v", admitted, created, err)
+		}
+		// #185 binds this seam to its durable outbox and pre-delivery recheck.
+		// This test proves admission, not provider delivery or its TOCTOU boundary.
 	})
 
 	t.Run("HTTP-session-CSRF-body-and-context-negatives", func(t *testing.T) {
