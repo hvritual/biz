@@ -180,8 +180,11 @@ test('TestEnterprise183NotificationPreferencesLiveBrowserMySQLRecoveryAndIsolati
   // Once the app is mounted, switch through its real control. Direct fixture
   // API calls do not run the shell's session/authorization synchronization.
   await selectUiOption(page.getByRole('combobox', { name: '切换企业' }), data.iam_denied_tenant)
-  await expect(smsSwitch(page)).toBeEnabled()
-  await expect(smsSwitch(page)).toBeChecked({ checked: tenantBefore.sms.allowed })
+  // This existing negative fixture deliberately lacks member.lifecycle.
+  // Its intrinsic self grant permits the BFF preference read, but the personal
+  // page is commercially gated. Prove denial rather than bypassing that gate.
+  await expect(page.getByRole('heading', { name: '没有访问权限', exact: true })).toBeVisible()
+  await expect(panel(page)).toHaveCount(0)
   expect(await readPreferences(context, data)).toEqual(tenantBefore)
   persisted(tenantBefore)
   await selectUiOption(page.getByRole('combobox', { name: '切换企业' }), data.allowed_tenant)
