@@ -59,6 +59,23 @@
         {
           "name": "TestEnterprise184NotificationDirectoryUsesCurrentTenantAndRootLocks",
           "file": "integration/enterprise_184_directory_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise184NotificationSiteDirectoryUsesCurrentScopesAndRootLocks",
+          "file": "integration/enterprise_184_site_directory_mysql_test.go"
+        }
+      ]
+    },
+    {
+      "id": "notification-configuration",
+      "tests": [
+        {
+          "name": "TestEnterprise184ConfigurationStorageAndAccessDirectory",
+          "file": "integration/enterprise_184_configuration_storage_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise184NotificationConfigurationRealRuntime",
+          "file": "integration/enterprise_184_notification_runtime_mysql_test.go"
         }
       ]
     }

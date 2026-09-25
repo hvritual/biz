@@ -165,10 +165,10 @@ func (r *ConfigurationRepository) List(ctx context.Context, tenant string, f dom
 	}
 	args = append(args, f.PageSize, (f.Page-1)*f.PageSize)
 	var rows []struct {
-		configurationRecord `gorm:"embedded"`
-		Total               uint64
-		ChannelsJSON        string
-		RecipientsJSON      string
+		Record         configurationRecord `gorm:"embedded"`
+		Total          uint64
+		ChannelsJSON   string
+		RecipientsJSON string
 	}
 	// One statement binds count, page, and relationship collections to one MySQL
 	// snapshot, including READ COMMITTED and pages beyond the last item.
@@ -194,10 +194,11 @@ func (r *ConfigurationRepository) List(ctx context.Context, tenant string, f dom
 		if row.Total != total {
 			return nil, 0, domain.ErrConfigurationUnavailable
 		}
-		if row.ID == "" {
+		record := row.Record
+		if record.ID == "" {
 			continue
 		}
-		c := domain.Configuration{ID: row.ID, TenantID: row.TenantID, GroupID: row.GroupID, Level: domain.MessageLevel(row.Level), PrimaryUserID: row.PrimaryUserID, SecondaryUserID: row.SecondaryUserID, Notes: row.Notes, Version: row.Version, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}
+		c := domain.Configuration{ID: record.ID, TenantID: record.TenantID, GroupID: record.GroupID, Level: domain.MessageLevel(record.Level), PrimaryUserID: record.PrimaryUserID, SecondaryUserID: record.SecondaryUserID, Notes: record.Notes, Version: record.Version, CreatedAt: record.CreatedAt, UpdatedAt: record.UpdatedAt}
 		if err := json.Unmarshal([]byte(row.ChannelsJSON), &c.Channels); err != nil {
 			return nil, 0, domain.ErrConfigurationUnavailable
 		}
