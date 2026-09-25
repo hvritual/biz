@@ -21,7 +21,7 @@ beforeEach(() => {
   vi.mocked(listMessageTypes).mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 10, groups: [{ level: 'urgent', total: 0 }, { level: 'important', total: 0 }, { level: 'general', total: 0 }] })
   vi.mocked(getMessageConfiguration).mockResolvedValue(config()); vi.mocked(submitConfigurationCommand).mockResolvedValue(receipt()); vi.mocked(confirmConfigurationReceipt).mockResolvedValue()
 })
-const make = (current = () => session as TrustedSession | null, allowed = () => true) => useNotificationConfiguration(current, allowed)
+const make = (current = () => session as TrustedSession | null, allowed: (operation: string) => boolean = () => true) => useNotificationConfiguration(current, allowed)
 async function prepare() { const flow = make(); await flow.load(); await flow.startEdit(config()); return flow }
 describe('enterprise message confirmation lifecycle', () => {
   it('loads server facts and cancels a draft without mutation', async () => {
