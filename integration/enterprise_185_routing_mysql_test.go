@@ -28,6 +28,7 @@ func TestEnterprise185BusinessEventRoutingUsesConfigurationRecipientsAndPreferen
 	if err = store.AutoMigrate(ctx); err != nil { t.Fatal(err) }
 	if err = notificationpersistence.MigrateConfigurations(ctx, db); err != nil { t.Fatal(err) }
 	if err = notificationpersistence.MigrateRouting(ctx, db); err != nil { t.Fatal(err) }
+	if err = devicepersistence.AutoMigrate(ctx, db); err != nil { t.Fatal(err) }
 
 	stamp := fmt.Sprint(time.Now().UnixNano())
 	tenant, other := "n185-route-"+stamp, "n185-other-"+stamp
