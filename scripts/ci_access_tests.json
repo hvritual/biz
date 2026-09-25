@@ -78,6 +78,15 @@
           "file": "integration/enterprise_184_notification_runtime_mysql_test.go"
         }
       ]
+    },
+    {
+      "id": "notification-delivery",
+      "tests": [
+        {
+          "name": "TestEnterprise185ReliableSecurityNotificationLeasesRetriesAndRecovery",
+          "file": "integration/enterprise_185_reliable_notification_mysql_test.go"
+        }
+      ]
     }
   ]
 }
