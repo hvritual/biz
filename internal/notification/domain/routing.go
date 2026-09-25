@@ -21,6 +21,7 @@ const (
 	RoutingStatePending = "PENDING"
 	RoutingStateLeased  = "LEASED"
 	RoutingStateRouted  = "ROUTED"
+ExternalTaskStatePending = "PENDING"
 
 	RouteOutcomeInAppCreated       = "IN_APP_CREATED"
 	RouteOutcomeExternalTask       = "EXTERNAL_TASK_CREATED"

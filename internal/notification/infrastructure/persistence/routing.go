@@ -157,7 +157,7 @@ func (r *RoutingRepository) CompleteBusinessEventRoute(ctx context.Context,claim
 				message:=inAppRecord{MessageID:domain.StableRoutingID("in_app",row.TenantID,row.EventID,d.UserID),TenantID:row.TenantID,UserID:d.UserID,EventID:row.EventID,ConfigurationID:d.ConfigurationID,ConfigurationVersion:d.ConfigurationVersion,GroupID:row.GroupID,TypeCode:row.TypeCode,Level:row.Level,TraceID:row.TraceID,ReferenceKind:row.ReferenceKind,ReferenceID:row.ReferenceID,CreatedAt:now}
 				if err:=tx.Clauses(clause.OnConflict{DoNothing:true}).Create(&message).Error;err!=nil{return err}
 			case domain.RouteOutcomeExternalTask:
-				task:=externalTaskRecord{TaskID:domain.StableRoutingID("external",row.TenantID,row.EventID,d.UserID,d.Channel),TenantID:row.TenantID,UserID:d.UserID,EventID:row.EventID,Channel:d.Channel,ConfigurationID:d.ConfigurationID,ConfigurationVersion:d.ConfigurationVersion,GroupID:row.GroupID,TypeCode:row.TypeCode,Level:row.Level,TraceID:row.TraceID,ReferenceKind:row.ReferenceKind,ReferenceID:row.ReferenceID,State:domain.NotificationStatePending,CreatedAt:now}
+				task:=externalTaskRecord{TaskID:domain.StableRoutingID("external",row.TenantID,row.EventID,d.UserID,d.Channel),TenantID:row.TenantID,UserID:d.UserID,EventID:row.EventID,Channel:d.Channel,ConfigurationID:d.ConfigurationID,ConfigurationVersion:d.ConfigurationVersion,GroupID:row.GroupID,TypeCode:row.TypeCode,Level:row.Level,TraceID:row.TraceID,ReferenceKind:row.ReferenceKind,ReferenceID:row.ReferenceID,State:domain.ExternalTaskStatePending,CreatedAt:now}
 				if err:=tx.Clauses(clause.OnConflict{DoNothing:true}).Create(&task).Error;err!=nil{return err}
 			}
 		}
