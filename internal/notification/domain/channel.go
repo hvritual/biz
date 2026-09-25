@@ -12,8 +12,6 @@ var (
 	ErrChannelSelectionDuplicate = errors.New("notification: duplicate channel selection")
 )
 
-// ChannelAvailability is configuration metadata only. Configurable does not
-// mean a provider is healthy, a user opted in, or a notification was delivered.
 type ChannelAvailability string
 
 const (
@@ -21,8 +19,6 @@ const (
 	ChannelNotConfigurable ChannelAvailability = "unavailable"
 )
 
-// Channel describes an explicit server registration. This package deliberately
-// provides no default production channel list or security-message exemption.
 type Channel struct {
 	Code              string
 	Name              string
@@ -49,9 +45,6 @@ func (channel Channel) validate() error {
 	return nil
 }
 
-// ChannelRegistry is a complete immutable registration snapshot. Trusted
-// composition must supply approved registrations; it must not build this
-// registry from a browser request or use it as a grant/recipient authority.
 type ChannelRegistry struct {
 	ready    bool
 	channels []Channel
@@ -78,8 +71,20 @@ func NewChannelRegistry(registrations []Channel) (*ChannelRegistry, error) {
 	return &ChannelRegistry{ready: true, channels: channels, byCode: byCode}, nil
 }
 
-// List includes unavailable registered channels with their reason. A consumer
-// can explain why a channel cannot be selected without inventing a new channel.
+func (registry *ChannelRegistry) Lookup(code string) (Channel, error) {
+	if registry == nil || !registry.ready {
+		return Channel{}, ErrCatalogUnavailable
+	}
+	if !validCode(code) {
+		return Channel{}, ErrCatalogEntryInvalid
+	}
+	channel, ok := registry.byCode[code]
+	if !ok {
+		return Channel{}, fmt.Errorf("%w: %s", ErrChannelUnknown, code)
+	}
+	return channel, nil
+}
+
 func (registry *ChannelRegistry) List() ([]Channel, error) {
 	if registry == nil || !registry.ready {
 		return nil, ErrCatalogUnavailable
@@ -89,10 +94,6 @@ func (registry *ChannelRegistry) List() ([]Channel, error) {
 	return channels, nil
 }
 
-// ResolveSelection validates the entire selection against this snapshot before
-// returning any result. It does not silently drop unavailable or unknown codes.
-// Empty selection is structurally valid here; minimum-recipient/channel rules
-// belong to the approved configuration policy, not this metadata registry.
 func (registry *ChannelRegistry) ResolveSelection(codes []string) ([]Channel, error) {
 	if registry == nil || !registry.ready {
 		return nil, ErrCatalogUnavailable
