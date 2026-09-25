@@ -31,6 +31,15 @@
           "file": "integration/enterprise_182_self_security_mysql_test.go"
         }
       ]
+    },
+    {
+      "id": "personal-notification-preferences",
+      "tests": [
+        {
+          "name": "TestEnterprise183NotificationPreferencesMySQLAndHTTP",
+          "file": "integration/enterprise_183_notification_preferences_mysql_test.go"
+        }
+      ]
     }
   ]
 }

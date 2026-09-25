@@ -118,6 +118,8 @@ func (auth *runtimeWebAuth) register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /auth/action-catalog", auth.handleActionCatalog)
 	mux.HandleFunc("GET /auth/authorization", auth.handleCurrentAuthorization)
 	mux.HandleFunc("POST /auth/password/change", auth.handlePasswordChange)
+	mux.HandleFunc("GET /auth/personal/notification-preferences", auth.handleReadNotificationPreferences)
+	mux.HandleFunc("POST /auth/personal/notification-preferences", auth.handleChangeNotificationPreference)
 	mux.HandleFunc("POST /auth/personal/contact-change/request", auth.handlePersonalContactChangeRequest)
 	mux.HandleFunc("POST /auth/personal/contact-change/complete", auth.handlePersonalContactChangeComplete)
 	mux.HandleFunc("POST /auth/personal/tenant-deletion/request", auth.handleTenantDeletionRequest)
