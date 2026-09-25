@@ -33,8 +33,8 @@
 | Q-010 默认角色 | ACCEPTED | 一期保留两个系统不可变角色：`tenant_owner`（企业所有者）与 `tenant_admin`（企业管理员）。`role_code` 为稳定机器标识且永久不可修改；系统角色不可改名、停用或删除，展示名称由系统/i18n 管理。`tenant_owner` 继续承担最后 Owner 与 self-operation 保护；`tenant_admin` 不具备 Owner 身份语义。其他角色均为租户自定义角色；有成员绑定时不得停用或删除。Q-010 不冻结具体 PermissionGrant 集合，权限继续由 Access 当前授权事实管理。 | #178 #179 |
 | Q-011 数据策略 | ACCEPTED | 一期每个 Role 最多引用一个当前有效 Data Policy，不建设多策略优先级/deny-overrides/继承/DSL。动作权限继续由当前 Grant 集合决定；数据范围采用约束性交集：`applicable_role_policy_scope ∩ member_explicit_scope ∩ current_tenant_assignable_scope`。缺少必需策略时 fail-closed；策略收缩后下一次敏感请求必须基于当前事实重新计算并拒绝越界访问。精确机器合同见 `enterprise180-policy-contract.v1.json`。 | #180 |
 | Q-012 权限生效 | PENDING_HUMAN | 是否主动踢出在线用户；无论选择何种策略，Grant 收缩提交后的新敏感请求不得继续依旧权限放行。 | #171 #179 |
-| Q-013 消息渠道 | PENDING_HUMAN | 一期站内/短信/邮件最终渠道；必要安全消息与可选偏好的关系。 | #184 #185 |
-| Q-014 消息联系人 | PENDING_HUMAN | 第一/第二联系人是否必填及候选来源。 | #184 |
+| Q-013 消息渠道 | ACCEPTED | 2026-09-25 用户委托采用建议：注册 in_app/sms/email；未就绪渠道显示原因且不可新选。等级不豁免可选短信/邮件偏好；必要身份验证沿用既有受控安全流程，不允许普通业务消息自行声明豁免。精确范围见 `notification-configuration-policy.md`；供应商配置/实际送达仍需独立验证。 | #184 #185 的该项产品决策已解除；真实环境资格不在此批准中 |
+| Q-014 消息联系人 | ACCEPTED | 2026-09-25 用户委托采用建议：第一联系人必填；第二联系人选填且不同人；附加接收人至多100名、集合唯一且不与前两者重复；来源仅为当前租户有效 Access 成员。消息 group 一期适配当前可管理资源点位，不由部门/负责人隐式扩权。 | #184 的该项产品决策已解除；API/MySQL/UI验收仍需执行 |
 | Q-015 消息已读 | ACCEPTED | 一期严格只有“全部已读”；单条已读为非目标。 | #186 |
 | Q-016 消息重试 | PENDING_HUMAN | 外部渠道最大重试次数、退避、最终失败处理。 | #185 |
 | Q-017 API 兼容 | PENDING_HUMAN | 是否存在 `/v1/account` `/v1/org` `/v1/message` 真实客户端及迁移期限；无证据不创建永久兼容层。 | #187 |

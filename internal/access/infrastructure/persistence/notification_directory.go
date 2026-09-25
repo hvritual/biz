@@ -40,26 +40,34 @@ func (d *NotificationRecipientDirectory) LockCaller(ctx context.Context, tenant 
 	if err != nil {
 		return err
 	}
-	tx := d.db.WithContext(ctx)
+	query := func() *gorm.DB {
+		tx := d.db.WithContext(ctx)
+		if lock {
+			tx = tx.Clauses(clause.Locking{Strength: "SHARE"})
+		}
+		return tx
+	}
 	if lock {
-		tx = tx.Clauses(clause.Locking{Strength: "SHARE"})
+		if _, ok := d.db.Statement.ConnPool.(gorm.TxCommitter); !ok {
+			return errors.New("access: root transaction required for notification locks")
+		}
 	}
 	var t tenantRecord
-	if err := tx.Select("id", "status").Where("BINARY id = ? AND status = ?", tenant, domain.TenantStatusActive).First(&t).Error; err != nil {
+	if err := query().Select("id", "status").Where("BINARY id = ? AND status = ?", tenant, domain.TenantStatusActive).First(&t).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrUnauthorized
 		}
 		return err
 	}
 	var u userRecord
-	if err := tx.Select("id", "status").Where("BINARY id = ? AND status = ?", p.UserID, "active").First(&u).Error; err != nil {
+	if err := query().Select("id", "status").Where("BINARY id = ? AND status = ?", p.UserID, "active").First(&u).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrUnauthorized
 		}
 		return err
 	}
 	var m membershipRecord
-	if err := tx.Select("tenant_id", "user_id", "status").Where("BINARY tenant_id = ? AND BINARY user_id = ? AND status = ? AND self_deleted_at IS NULL", tenant, p.UserID, domain.TenantMemberStatusActive).First(&m).Error; err != nil {
+	if err := query().Select("tenant_id", "user_id", "status").Where("BINARY tenant_id = ? AND BINARY user_id = ? AND status = ? AND self_deleted_at IS NULL", tenant, p.UserID, domain.TenantMemberStatusActive).First(&m).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrUnauthorized
 		}
@@ -109,6 +117,11 @@ func (d *NotificationRecipientDirectory) List(ctx context.Context, tenant, query
 func (d *NotificationRecipientDirectory) Validate(ctx context.Context, tenant string, ids []string, lock bool) error {
 	if _, err := notificationDirectoryCaller(ctx, tenant); err != nil {
 		return err
+	}
+	if lock {
+		if _, ok := d.db.Statement.ConnPool.(gorm.TxCommitter); !ok {
+			return errors.New("access: root transaction required for notification locks")
+		}
 	}
 	if len(ids) < 1 || len(ids) > 102 {
 		return ErrUnauthorized
