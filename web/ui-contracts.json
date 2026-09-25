@@ -205,7 +205,8 @@
         "form-workspace",
         "form-actions",
         "scope",
-        "personal-security"
+        "personal-security",
+        "notification-preferences"
       ]
     },
     {

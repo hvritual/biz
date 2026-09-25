@@ -157,6 +157,7 @@ func (store *Store) AutoMigrate(ctx context.Context) error {
 		&tenantCreationRecord{}, &tenantRecord{}, &userRecord{}, &membershipRecord{}, &roleRecord{},
 		&memberRoleRecord{}, &permissionGrantRecord{}, &memberSiteRecord{}, &dataPolicyRecord{}, &dataPolicySiteRecord{}, &apiTokenRecord{}, &auditEventRecord{},
 		&memberRemovedRoleSnapshotRecord{}, &memberRemovedSiteSnapshotRecord{}, &memberStatusAppealRecord{},
+		&notificationPreferenceRecord{}, &notificationPreferenceReceiptRecord{},
 	)
 }
 

@@ -1,4 +1,8 @@
 {
+  "enterprise/components/security/PersonalNotificationPreferences.vue": {
+    "scenario": "企业中心 · 当前企业本人的可选短信邮件偏好确认与恢复",
+    "scope": "仅用于现有个人中心；可信会话、真实回执和读回是权威，不提供通知发送或安全消息豁免。"
+  },
   "app-shell/components/AppHeader.vue": {
     "scenario": "应用框架 · 业务布局与导航 · AppHeader",
     "scope": "仅用于应用框架业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"

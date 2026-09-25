@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useUiStore } from '@/stores/ui'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { usePersonalProfileStore } from '@/stores/personalProfile'
+import { isPersonalProfileSession } from '@/services/enterprise/personalProfileRuntime'
 import { useRouter, useRoute } from 'vue-router'
 import { setUiLocale, type UiLocale } from '@/i18n'
 import AppIcon from '@/ui/common/AppIcon.vue'
@@ -41,10 +42,7 @@ function changeLocale(event: Event) {
 async function refreshPersonalProfile() {
   if (
     store.sourceKind !== 'api' ||
-    !store.session?.authenticated ||
-    store.session.actor_kind !== 'tenant' ||
-    !store.session.user_id ||
-    !store.session.active_tenant_id ||
+    !isPersonalProfileSession(store.session) ||
     (authorizationApiMode() && (
       currentAuthorizationState.status !== 'ready' ||
       currentAuthorizationState.snapshot?.tenant_id !== store.session.active_tenant_id ||

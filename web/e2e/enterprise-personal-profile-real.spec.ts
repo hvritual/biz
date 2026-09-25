@@ -29,6 +29,7 @@ type Write = {
 }
 
 type Options = {
+  actorKind?: 'user' | 'tenant'
   unauthenticated?: boolean
   authorizationDenied?: boolean
   readStatus?: number
@@ -108,7 +109,7 @@ async function mockPersonalProfileApi(page: Page, options: Options = {}) {
     if (options.unauthenticated) return json(route, 401, { message: 'unauthenticated' })
     return json(route, 200, {
       authenticated: true,
-      actor_kind: 'tenant',
+      actor_kind: options.actorKind ?? 'tenant',
       user_id: 'user-shared',
       active_tenant_id: activeTenant,
       active_tenant_timezone: 'Asia/Shanghai',
@@ -127,7 +128,7 @@ async function mockPersonalProfileApi(page: Page, options: Options = {}) {
     activeTenant = body.tenant_id
     return json(route, 200, {
       authenticated: true,
-      actor_kind: 'tenant',
+      actor_kind: options.actorKind ?? 'tenant',
       user_id: 'user-shared',
       active_tenant_id: activeTenant,
       active_tenant_timezone: 'Asia/Shanghai',
@@ -151,7 +152,7 @@ async function mockPersonalProfileApi(page: Page, options: Options = {}) {
         ]
     return json(route, 200, {
       authenticated: true,
-      actor_kind: 'tenant',
+      actor_kind: options.actorKind ?? 'tenant',
       user_id: 'user-shared',
       tenant_id: activeTenant,
       tenant_name: profiles[activeTenant]!.tenantName,
@@ -200,6 +201,11 @@ async function mockPersonalProfileApi(page: Page, options: Options = {}) {
       version: profiles[requestTenant]!.version + 1,
     }
     return json(route, 200, profiles[requestTenant])
+  })
+
+  await page.route('**/api/auth/personal/notification-preferences', (route) => {
+    if (route.request().method() !== 'GET') return json(route, 405, { error: 'METHOD_NOT_ALLOWED' })
+    return json(route, 200, notificationPreferenceFixture(activeTenant))
   })
 
   return {
@@ -326,6 +332,7 @@ async function mockPersonalSecurityApi(page: Page, options: SecurityApiOptions =
   const delayed = new Promise<void>((resolve) => { release = resolve })
   await page.route('**/api/auth/personal/**', async (route) => {
     const path = new URL(route.request().url()).pathname
+    if (path.endsWith('/notification-preferences')) return route.fallback()
     const body = route.request().postDataJSON() as Record<string, unknown>
     const headers = route.request().headers()
     calls.push({ path, body, headers })
@@ -495,4 +502,222 @@ test('#182 four viewport contact and deletion review with keyboard cancellation'
     await page.screenshot({ path: `screenshots/enterprise181-personal-profile/enterprise182-deletion-${viewport.width}.png`, animations: 'disabled' })
     await page.keyboard.press('Escape')
   }
+})
+
+
+// #183 browser contracts use the backend's actual actor_kind=user. The
+// legacy tenant fixtures above remain as compatibility regressions. These
+// mocked API scenarios do not replace the separately qualified MySQL suite.
+type PreferenceRow = { channel: 'sms' | 'email'; state: 'default' | 'allow' | 'deny'; allowed: boolean; version: number; updated_at: string | null }
+type PreferenceFixture = { tenant_id: string; user_id: string; policy: string; sms: PreferenceRow; email: PreferenceRow }
+function notificationPreferenceFixture(tenant: string): PreferenceFixture {
+  return { tenant_id: tenant, user_id: 'user-shared', policy: 'optional-notifications-v1',
+    sms: { channel: 'sms', state: 'default', allowed: true, version: 0, updated_at: null },
+    email: { channel: 'email', state: 'default', allowed: true, version: 0, updated_at: null } }
+}
+type PreferenceApiOptions = { failRead?: boolean; failReadback?: boolean; reject?: number; dropResponse?: boolean; delayResponse?: boolean }
+async function mockNotificationPreferencesApi(page: Page, options: PreferenceApiOptions = {}) {
+  const profile = await mockPersonalProfileApi(page, { actorKind: 'user' })
+  const states: Record<string, PreferenceFixture> = {
+    'tenant-a': notificationPreferenceFixture('tenant-a'), 'tenant-b': notificationPreferenceFixture('tenant-b'),
+  }
+  states['tenant-b']!.sms = { channel: 'sms', state: 'deny', allowed: false, version: 2, updated_at: '2026-09-24T12:00:00Z' }
+  const writes: Write[] = [], receipts = new Map<string, { payload: string; receipt: unknown }>()
+  let commits = 0, dropped = false, release: () => void = () => {}
+  const responseGate = new Promise<void>((resolve) => { release = resolve })
+  await page.route('**/api/auth/personal/notification-preferences', async (route) => {
+    const tenantId = profile.activeTenant(), current = states[tenantId]!, request = route.request()
+    if (request.method() === 'GET') {
+      if (options.failRead || (options.failReadback && commits > 0)) return json(route, 503, { error: 'NOTIFICATION_PREFERENCES_UNAVAILABLE' })
+      return json(route, 200, current)
+    }
+    if (request.method() !== 'POST') return json(route, 405, { error: 'METHOD_NOT_ALLOWED' })
+    const body = request.postDataJSON() as Record<string, unknown>, headers = request.headers()
+    writes.push({ tenantId, body, headers })
+    const context = JSON.parse(headers['x-biz-session-context'] ?? '{}') as Record<string, unknown>
+    if (context.actor_kind !== 'user' || context.active_tenant_id !== tenantId || context.user_id !== 'user-shared') return json(route, 409, { error: 'SESSION_CONTEXT_CHANGED' })
+    if (headers['x-csrf-token'] !== 'csrf-personal-profile') return json(route, 403, { error: 'FORBIDDEN' })
+    if (options.reject) return json(route, options.reject, { error: options.reject === 403 ? 'FORBIDDEN' : 'PREFERENCE_VERSION_CONFLICT' })
+    const key = headers['idempotency-key'], channel = body.channel
+    if (!key || (channel !== 'sms' && channel !== 'email') || typeof body.allowed !== 'boolean' ||
+      !Number.isSafeInteger(body.expected_version) || Object.keys(body).sort().join(',') !== 'allowed,channel,expected_version') return json(route, 400, { error: 'INVALID_NOTIFICATION_PREFERENCE' })
+    const receiptKey = `${tenantId}:${key}`, payload = JSON.stringify(body), old = receipts.get(receiptKey)
+    if (old) return json(route, old.payload === payload ? 200 : 409, old.payload === payload ? old.receipt : { error: 'IDEMPOTENCY_CONFLICT' })
+    if (current[channel].version !== body.expected_version) return json(route, 409, { error: 'PREFERENCE_VERSION_CONFLICT' })
+    commits++
+    const preference: PreferenceRow = { channel, allowed: body.allowed, state: body.allowed ? 'allow' : 'deny',
+      version: current[channel].version + 1, updated_at: '2026-09-25T02:00:00Z' }
+    states[tenantId] = { ...current, [channel]: preference }
+    const receipt = { tenant_id: tenantId, user_id: current.user_id, policy: current.policy,
+      receipt_id: commits.toString(16).padStart(64, '0'), preference }
+    receipts.set(receiptKey, { payload, receipt })
+    if (options.dropResponse && !dropped) { dropped = true; return route.abort('failed') }
+    if (options.delayResponse) await responseGate
+    return json(route, 200, receipt)
+  })
+  return { states, writes, commits: () => commits, release, profile }
+}
+function preferencePanel(page: Page) { return page.locator('[data-ui-region="notification-preferences"]') }
+async function startPreferenceChange(page: Page, channel = '短信通知') {
+  const control = preferencePanel(page).getByRole('switch', { name: channel })
+  await expect(control).toBeEnabled()
+  await control.focus()
+  await control.press('Space')
+  const dialog = page.getByRole('dialog', { name: '确认修改通知偏好' })
+  await expect(dialog).toBeVisible()
+  return dialog
+}
+
+test('notification preferences use real user sessions, confirm and cancel without a write', async ({ page }) => {
+  const api = await mockNotificationPreferencesApi(page)
+  await openPersonalProfile(page)
+  const panel = preferencePanel(page), sms = panel.getByRole('switch', { name: '短信通知' })
+  await expect(sms).toBeChecked()
+  await expect(panel.getByText('尚未单独设置，接收状态以当前显示为准。')).toHaveCount(2)
+  const dialog = await startPreferenceChange(page)
+  await expect(dialog).toContainText('Tenant A')
+  await expect(dialog).toContainText('Alice A')
+  await dialog.getByRole('button', { name: '取消修改' }).click()
+  await expect(dialog).toBeHidden()
+  await expect(sms).toBeChecked()
+  await expect(sms).toBeFocused()
+  expect(api.writes).toHaveLength(0)
+})
+
+test('notification preference save survives refresh and keeps email independent', async ({ page }) => {
+  const api = await mockNotificationPreferencesApi(page)
+  await openPersonalProfile(page)
+  const dialog = await startPreferenceChange(page)
+  await dialog.getByRole('button', { name: '确认保存' }).click()
+  const panel = preferencePanel(page)
+  await expect(panel.getByText('通知偏好已保存，最新状态已确认。')).toBeVisible()
+  await expect(panel.getByRole('switch', { name: '短信通知' })).not.toBeChecked()
+  await expect(panel.getByRole('switch', { name: '邮件通知' })).toBeChecked()
+  expect(api.writes[0]!.body).toEqual({ channel: 'sms', allowed: false, expected_version: 0 })
+  expect(api.writes[0]!.headers['x-csrf-token']).toBe('csrf-personal-profile')
+  expect(api.writes[0]!.headers['idempotency-key']).toBeTruthy()
+  await page.reload()
+  await expect(panel.getByRole('switch', { name: '短信通知' })).not.toBeChecked()
+  await expect(panel.getByText('您已明确拒绝此渠道。')).toBeVisible()
+  await (await startPreferenceChange(page)).getByRole('button', { name: '确认保存' }).click()
+  await expect(panel.getByText('您已明确允许此渠道。')).toBeVisible()
+  expect(api.states['tenant-a']!.email.version).toBe(0)
+  expect(api.states['tenant-a']!.sms.version).toBe(2)
+})
+
+for (const reject of [403, 409]) {
+  test(`notification preference ${reject} rolls back the switch and requires fresh read`, async ({ page }) => {
+    const options: PreferenceApiOptions = { reject }, api = await mockNotificationPreferencesApi(page, options)
+    await openPersonalProfile(page)
+    await (await startPreferenceChange(page)).getByRole('button', { name: '确认保存' }).click()
+    const panel = preferencePanel(page), sms = panel.getByRole('switch', { name: '短信通知' })
+    await expect(panel.getByRole('alert')).toBeVisible()
+    await expect(sms).toBeChecked()
+    await expect(sms).toBeDisabled()
+    expect(api.commits()).toBe(0)
+    options.reject = undefined
+    await panel.getByRole('button', { name: '重新读取偏好' }).click()
+    await expect(sms).toBeEnabled()
+    expect(api.writes).toHaveLength(1)
+  })
+}
+
+test('notification preference read failure never invents default switches', async ({ page }) => {
+  const options: PreferenceApiOptions = { failRead: true }
+  await mockNotificationPreferencesApi(page, options)
+  await openPersonalProfile(page)
+  const panel = preferencePanel(page)
+  await expect(panel.getByRole('alert')).toBeVisible()
+  await expect(panel.getByRole('switch')).toHaveCount(0)
+  options.failRead = false
+  await panel.getByRole('button', { name: '重新读取偏好' }).click()
+  await expect(panel.getByRole('switch', { name: '短信通知' })).toBeChecked()
+})
+
+test('accepted preference write recovers through GET only after readback failure', async ({ page }) => {
+  const options: PreferenceApiOptions = { failReadback: true }, api = await mockNotificationPreferencesApi(page, options)
+  await openPersonalProfile(page)
+  const dialog = await startPreferenceChange(page)
+  await dialog.getByRole('button', { name: '确认保存' }).click()
+  await expect(dialog).toContainText('请核对结果，不要再次提交。')
+  await dialog.getByRole('button', { name: '关闭', exact: true }).last().click()
+  const panel = preferencePanel(page)
+  await expect(panel.getByRole('switch', { name: '短信通知' })).toBeChecked()
+  await expect(panel.getByText('通知偏好已保存，最新状态已确认。')).toHaveCount(0)
+  options.failReadback = false
+  await panel.getByRole('button', { name: '核对本次修改' }).click()
+  await expect(panel.getByRole('switch', { name: '短信通知' })).not.toBeChecked()
+  await expect(panel.getByText('通知偏好已保存，最新状态已确认。')).toBeVisible()
+  expect(api.writes).toHaveLength(1)
+})
+
+test('uncertain preference submission reuses the original key and payload', async ({ page }) => {
+  const api = await mockNotificationPreferencesApi(page, { dropResponse: true })
+  await openPersonalProfile(page)
+  const dialog = await startPreferenceChange(page)
+  await dialog.getByRole('button', { name: '确认保存' }).click()
+  await expect(dialog).toContainText('提交结果尚不确定')
+  await dialog.getByRole('button', { name: '核对本次修改' }).click()
+  await expect(preferencePanel(page).getByText('通知偏好已保存，最新状态已确认。')).toBeVisible()
+  expect(api.writes).toHaveLength(2)
+  expect(api.writes[1]!.body).toEqual(api.writes[0]!.body)
+  expect(api.writes[1]!.headers['idempotency-key']).toBe(api.writes[0]!.headers['idempotency-key'])
+  expect(api.commits()).toBe(1)
+})
+
+test('preference session invalidation drops the modal and ignores a late receipt', async ({ page }) => {
+  const api = await mockNotificationPreferencesApi(page, { delayResponse: true })
+  await openPersonalProfile(page)
+  const dialog = await startPreferenceChange(page)
+  await dialog.getByRole('button', { name: '确认保存' }).click()
+  await expect.poll(() => api.commits()).toBe(1)
+  await page.evaluate(() => window.dispatchEvent(new StorageEvent('storage', {
+    key: '__coffeelink_session_context_signal_v1',
+    newValue: JSON.stringify({ type: 'session-context-changed', contextVersion: 12, nonce: 'preference-test-switch' }),
+  })))
+  await expect(dialog).toBeHidden()
+  await selectUiOption(page.getByRole('combobox', { name: '切换企业' }), 'tenant-b')
+  await expect(preferencePanel(page)).toContainText('Tenant B')
+  api.release()
+  await expect(preferencePanel(page).getByRole('switch', { name: '短信通知' })).not.toBeChecked()
+  await expect(preferencePanel(page).getByText('通知偏好已保存，最新状态已确认。')).toHaveCount(0)
+  expect(api.states['tenant-b']!.sms.version).toBe(2)
+})
+
+test('notification preference keyboard confirmation remains readable across four viewports', async ({ page }) => {
+  const api = await mockNotificationPreferencesApi(page)
+  mkdirSync('screenshots/enterprise181-personal-profile', { recursive: true })
+  for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1536, height: 1024 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport)
+    await openPersonalProfile(page)
+    const panel = preferencePanel(page), sms = panel.getByRole('switch', { name: '短信通知' })
+    await expect(sms).toBeEnabled()
+    await panel.scrollIntoViewIfNeeded()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width)
+    await page.screenshot({ path: `screenshots/enterprise181-personal-profile/enterprise183-preferences-${viewport.width}.png` })
+    const dialog = await startPreferenceChange(page)
+    await expect(dialog.getByRole('button', { name: '确认保存' })).toBeVisible()
+    await page.screenshot({ path: `screenshots/enterprise181-personal-profile/enterprise183-confirm-${viewport.width}.png` })
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expect(sms).toBeChecked()
+    await expect(sms).toBeFocused()
+  }
+  expect(api.writes).toHaveLength(0)
+})
+
+
+test('notification preference confirmation switches to English without changing its value', async ({ page }) => {
+  const api = await mockNotificationPreferencesApi(page)
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await openPersonalProfile(page)
+  await selectUiOption(page.getByRole('combobox', { name: '语言' }), 'en-US')
+  const control = preferencePanel(page).getByRole('switch', { name: 'SMS notifications' })
+  await expect(control).toBeChecked()
+  await control.focus(); await control.press('Space')
+  const dialog = page.getByRole('dialog', { name: 'Confirm notification preference' })
+  await expect(dialog).toContainText('Tenant A')
+  await dialog.getByRole('button', { name: 'Cancel change' }).click()
+  await expect(control).toBeChecked()
+  expect(api.writes).toHaveLength(0)
 })

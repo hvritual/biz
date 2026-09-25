@@ -12,6 +12,7 @@ import AvatarMark from '@/ui/common/AvatarMark.vue'
 import PageHeading from '@/ui/common/PageHeading.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import PersonalSecurityPanel from '../components/security/PersonalSecurityPanel.vue'
+import PersonalNotificationPreferences from '../components/security/PersonalNotificationPreferences.vue'
 
 const enterprise = useEnterpriseStore()
 const personal = usePersonalProfileStore()
@@ -205,10 +206,6 @@ watch(
               <span><strong>{{ t('personalProfile.password') }}</strong><small>{{ t('personalProfile.passwordDescription') }}</small></span>
               <UiButton variant="outline" @click="router.push('/system/security')">{{ t('personalProfile.openSecurity') }}</UiButton>
             </div>
-            <div class="security-row">
-              <span><strong>{{ t('personalProfile.preferences') }}</strong><small>{{ t('personalProfile.preferencesDescription') }}</small></span>
-              <UiButton variant="outline" disabled>{{ t('personalProfile.comingSoon') }}</UiButton>
-            </div>
             <div class="security-row sign-out-row">
               <span><strong>{{ t('personalProfile.signOut') }}</strong><small>{{ t('personalProfile.signOutDescription') }}</small></span>
               <UiButton variant="outline" @click="logout">{{ t('personalProfile.signOut') }}</UiButton>
@@ -216,6 +213,7 @@ watch(
           </div>
         </section>
       </div>
+      <div data-ui-region="notification-preferences"><PersonalNotificationPreferences /></div>
       <div data-ui-region="personal-security"><PersonalSecurityPanel /></div>
     </template>
 

@@ -149,5 +149,21 @@ class RouteTests(unittest.TestCase):
         self.assertFalse(result["enterprise180"])
 
 
+    def test_integration_uses_access_lane(self):
+        result = route(["integration/enterprise_183_notification_preferences_mysql_test.go"])
+        self.assertTrue(result["domains"]["access"])
+        self.assertFalse(result["domains"]["core"])
+        self.assertFalse(result["enterprise180"])
+
+    def test_preference_boundary_and_bff_use_access(self):
+        result = route([
+            "internal/access/infrastructure/persistence/notification_preference_session.go",
+            "internal/bizruntime/web_notification_preferences.go",
+        ])
+        self.assertTrue(result["domains"]["access"])
+        self.assertFalse(result["role_grants"])
+        self.assertFalse(result["enterprise180"])
+
+
 if __name__ == "__main__":
     unittest.main()
