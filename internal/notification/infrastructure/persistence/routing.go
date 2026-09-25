@@ -53,21 +53,31 @@ type inAppRecord struct {
 func (inAppRecord) TableName() string { return "biz_notification_in_app" }
 
 type externalTaskRecord struct {
-	TaskID               string    `gorm:"column:task_id;primaryKey;size:64"`
-	TenantID             string    `gorm:"column:tenant_id;type:varbinary(64);not null;uniqueIndex:uq_notification_external,priority:1;index"`
-	UserID               string    `gorm:"column:user_id;type:varbinary(64);not null;uniqueIndex:uq_notification_external,priority:2;index"`
-	EventID              string    `gorm:"column:event_id;type:varbinary(160);not null;uniqueIndex:uq_notification_external,priority:3"`
-	Channel              string    `gorm:"column:channel;size:16;not null;uniqueIndex:uq_notification_external,priority:4"`
-	ConfigurationID      string    `gorm:"column:configuration_id;type:varbinary(64);not null"`
-	ConfigurationVersion uint64    `gorm:"column:configuration_version;not null"`
-	GroupID              string    `gorm:"column:group_id;type:varbinary(64);not null"`
-	TypeCode             string    `gorm:"column:type_code;size:64;not null"`
-	Level                string    `gorm:"column:level;size:16;not null"`
-	TraceID              string    `gorm:"column:trace_id;type:varbinary(160);not null"`
-	ReferenceKind        string    `gorm:"column:reference_kind;size:64;not null"`
-	ReferenceID          string    `gorm:"column:reference_id;type:varbinary(160);not null"`
-	State                string    `gorm:"column:state;size:24;not null;index"`
-	CreatedAt            time.Time `gorm:"column:created_at;type:datetime(6);not null"`
+	TaskID               string     `gorm:"column:task_id;primaryKey;size:64"`
+	TenantID             string     `gorm:"column:tenant_id;type:varbinary(64);not null;uniqueIndex:uq_notification_external,priority:1;index"`
+	UserID               string     `gorm:"column:user_id;type:varbinary(64);not null;uniqueIndex:uq_notification_external,priority:2;index"`
+	EventID              string     `gorm:"column:event_id;type:varbinary(160);not null;uniqueIndex:uq_notification_external,priority:3"`
+	Channel              string     `gorm:"column:channel;size:16;not null;uniqueIndex:uq_notification_external,priority:4"`
+	ConfigurationID      string     `gorm:"column:configuration_id;type:varbinary(64);not null"`
+	ConfigurationVersion uint64     `gorm:"column:configuration_version;not null"`
+	GroupID              string     `gorm:"column:group_id;type:varbinary(64);not null"`
+	TypeCode             string     `gorm:"column:type_code;size:64;not null"`
+	Level                string     `gorm:"column:level;size:16;not null"`
+	TraceID              string     `gorm:"column:trace_id;type:varbinary(160);not null"`
+	ReferenceKind        string     `gorm:"column:reference_kind;size:64;not null"`
+	ReferenceID          string     `gorm:"column:reference_id;type:varbinary(160);not null"`
+	State                string     `gorm:"column:state;size:24;not null;index"`
+	Attempts             uint32     `gorm:"column:attempts;not null;default:0"`
+	LeaseOwner           string     `gorm:"column:lease_owner;size:96;not null;default:''"`
+	LeaseToken           uint64     `gorm:"column:lease_token;not null;default:0"`
+	LeaseUntil           *time.Time `gorm:"column:lease_until;type:datetime(6);index"`
+	NextAttemptAt        *time.Time `gorm:"column:next_attempt_at;type:datetime(6);index"`
+	FailureCode          string     `gorm:"column:failure_code;size:64;not null;default:''"`
+	ProviderReceipt      string     `gorm:"column:provider_receipt;size:200;not null;default:''"`
+	AcceptedAt           *time.Time `gorm:"column:accepted_at;type:datetime(6)"`
+	DeliveredAt          *time.Time `gorm:"column:delivered_at;type:datetime(6)"`
+	CreatedAt            time.Time  `gorm:"column:created_at;type:datetime(6);not null"`
+	UpdatedAt            time.Time  `gorm:"column:updated_at;type:datetime(6);not null"`
 }
 func (externalTaskRecord) TableName() string { return "biz_notification_external_tasks" }
 
@@ -157,7 +167,7 @@ func (r *RoutingRepository) CompleteBusinessEventRoute(ctx context.Context,claim
 				message:=inAppRecord{MessageID:domain.StableRoutingID("in_app",row.TenantID,row.EventID,d.UserID),TenantID:row.TenantID,UserID:d.UserID,EventID:row.EventID,ConfigurationID:d.ConfigurationID,ConfigurationVersion:d.ConfigurationVersion,GroupID:row.GroupID,TypeCode:row.TypeCode,Level:row.Level,TraceID:row.TraceID,ReferenceKind:row.ReferenceKind,ReferenceID:row.ReferenceID,CreatedAt:now}
 				if err:=tx.Clauses(clause.OnConflict{DoNothing:true}).Create(&message).Error;err!=nil{return err}
 			case domain.RouteOutcomeExternalTask:
-				task:=externalTaskRecord{TaskID:domain.StableRoutingID("external",row.TenantID,row.EventID,d.UserID,d.Channel),TenantID:row.TenantID,UserID:d.UserID,EventID:row.EventID,Channel:d.Channel,ConfigurationID:d.ConfigurationID,ConfigurationVersion:d.ConfigurationVersion,GroupID:row.GroupID,TypeCode:row.TypeCode,Level:row.Level,TraceID:row.TraceID,ReferenceKind:row.ReferenceKind,ReferenceID:row.ReferenceID,State:domain.ExternalTaskStatePending,CreatedAt:now}
+				task:=externalTaskRecord{TaskID:domain.StableRoutingID("external",row.TenantID,row.EventID,d.UserID,d.Channel),TenantID:row.TenantID,UserID:d.UserID,EventID:row.EventID,Channel:d.Channel,ConfigurationID:d.ConfigurationID,ConfigurationVersion:d.ConfigurationVersion,GroupID:row.GroupID,TypeCode:row.TypeCode,Level:row.Level,TraceID:row.TraceID,ReferenceKind:row.ReferenceKind,ReferenceID:row.ReferenceID,State:domain.ExternalTaskStatePending,CreatedAt:now,UpdatedAt:now}
 				if err:=tx.Clauses(clause.OnConflict{DoNothing:true}).Create(&task).Error;err!=nil{return err}
 			}
 		}
