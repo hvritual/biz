@@ -158,6 +158,14 @@ export const router = createRouter({
       meta: { title: '操作日志', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage', authorizationActions: ['access.audit.list'] },
     },
     {
+      path: '/system/notifications',
+      component: () => import('@/features/system/pages/SettingsView.vue'),
+      meta: {
+        title: '通知设置', module: 'system', surface: 'tenant', pageTemplate: 'FormPage',
+        settingsSection: 'notifications', authorizationActions: ['notification.configuration.list'],
+      },
+    },
+    {
       path: '/system/:section(general|notifications|security|integrations|dictionary)',
       component: () => import('@/features/system/pages/SettingsView.vue'),
       meta: { title: '系统设置', module: 'system', surface: 'tenant', pageTemplate: 'FormPage' },

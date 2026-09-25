@@ -1,58 +1,113 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
-import AppIcon from '@/ui/common/AppIcon.vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
 import AppPagination from '@/ui/common/AppPagination.vue'
 import EmptyState from '@/ui/common/EmptyState.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
-import { currentAuthorizationAllows } from '@/services/runtime/authorization'
-import {
-  createMessageConfigurations, deleteMessageConfiguration, listMessageChannels, listMessageConfigurations,
-  listMessageGroups, listMessageRecipients, listMessageTypes, notificationConfigurationErrorKey,
-  updateMessageConfiguration, type MessageChannel, type MessageConfiguration, type MessageDirectoryEntry, type MessageType,
-} from '@/services/enterprise/notificationConfigurationRuntime'
-
-const levels=[{value:'urgent',label:'紧急'},{value:'important',label:'重要'},{value:'general',label:'一般'}]
-const configurations=ref<MessageConfiguration[]>([]),types=ref<MessageType[]>([]),channels=ref<MessageChannel[]>([])
-const groups=ref<MessageDirectoryEntry[]>([]),recipients=ref<MessageDirectoryEntry[]>([])
-const total=ref(0),page=ref(1),pageSize=ref(10),busy=ref(false),error=ref(''),notice=ref('')
-const filters=reactive({groupId:'',level:'',recipientId:'',typeCode:'',typeName:''})
-const editorOpen=ref(false),deleteTarget=ref<MessageConfiguration|null>(null),editing=ref<MessageConfiguration|null>(null)
-const draft=reactive({groupId:'',levels:[] as string[],channels:[] as string[],primaryUserId:'',secondaryUserId:'',additionalUserIds:[] as string[],notes:''})
-const canCreate=computed(()=>currentAuthorizationAllows('notification.configuration.create'))
-const canUpdate=computed(()=>currentAuthorizationAllows('notification.configuration.update'))
-const canDelete=computed(()=>currentAuthorizationAllows('notification.configuration.delete'))
-const errorText=computed(()=>({unauthenticated:'登录会话已失效，请重新登录。',forbidden:'当前账号没有企业消息配置权限。',conflict:'配置已被其他操作修改，请刷新后重试。',duplicate:'该点位与消息等级已存在配置。',channelUnavailable:'所选渠道当前不可配置，请重新选择。',invalid:'配置内容无效，请检查点位、联系人和渠道。',notFound:'配置已不存在，请刷新列表。',unavailable:'消息配置服务暂不可用，请稍后重试。'}[error.value]??''))
-
-function resetDraft(){draft.groupId='';draft.levels=[];draft.channels=['in_app'];draft.primaryUserId='';draft.secondaryUserId='';draft.additionalUserIds=[];draft.notes=''}
-async function loadDirectories(){const [c,g,r]=await Promise.all([listMessageChannels(),listMessageGroups('',1,100),listMessageRecipients('',1,100)]);channels.value=c;groups.value=g.items;recipients.value=r.items}
-async function loadTypes(){const result=await listMessageTypes({code:filters.typeCode,name:filters.typeName,level:filters.level,page:1,pageSize:100});types.value=result.items}
-async function loadConfigurations(){busy.value=true;error.value='';try{const result=await listMessageConfigurations({groupId:filters.groupId,level:filters.level,recipientId:filters.recipientId,page:page.value,pageSize:pageSize.value});configurations.value=result.items;total.value=result.total}catch(cause){error.value=notificationConfigurationErrorKey(cause)}finally{busy.value=false}}
-async function refresh(){busy.value=true;error.value='';try{await Promise.all([loadDirectories(),loadTypes()]);await loadConfigurations()}catch(cause){error.value=notificationConfigurationErrorKey(cause);busy.value=false}}
-function openCreate(){editing.value=null;resetDraft();editorOpen.value=true}
-function openEdit(row:MessageConfiguration){editing.value=row;draft.groupId=row.groupId;draft.levels=[row.level];draft.channels=[...row.channels];draft.primaryUserId=row.primaryUserId;draft.secondaryUserId=row.secondaryUserId;draft.additionalUserIds=[...row.additionalUserIds];draft.notes=row.notes;editorOpen.value=true}
-function closeEditor(){if(!busy.value)editorOpen.value=false}
-async function save(){if(busy.value)return;busy.value=true;error.value='';notice.value='';try{const receipt=editing.value?await updateMessageConfiguration(editing.value.id,editing.value.version,draft):await createMessageConfigurations(draft);editorOpen.value=false;notice.value=`已保存 ${receipt.configurations.length} 条配置；此结果仅表示配置持久化，不代表消息已送达。`;await loadConfigurations()}catch(cause){error.value=notificationConfigurationErrorKey(cause)}finally{busy.value=false}}
-async function remove(){const target=deleteTarget.value;if(!target||busy.value)return;busy.value=true;error.value='';notice.value='';try{await deleteMessageConfiguration(target.id,target.version);deleteTarget.value=null;notice.value='配置已删除；接收人关系已由服务端事务同步清理。';await loadConfigurations()}catch(cause){error.value=notificationConfigurationErrorKey(cause)}finally{busy.value=false}}
-function toggleLevel(value:string){draft.levels=draft.levels.includes(value)?draft.levels.filter(item=>item!==value):[...draft.levels,value]}
-function toggleChannel(value:string){const channel=channels.value.find(item=>item.code===value);if(!channel?.configurable)return;draft.channels=draft.channels.includes(value)?draft.channels.filter(item=>item!==value):[...draft.channels,value]}
-function toggleAdditional(value:string){if(value===draft.primaryUserId||value===draft.secondaryUserId)return;draft.additionalUserIds=draft.additionalUserIds.includes(value)?draft.additionalUserIds.filter(item=>item!==value):[...draft.additionalUserIds,value]}
-watch([page,pageSize],()=>void loadConfigurations())
-onMounted(()=>void refresh())
+import AppIcon from '@/ui/common/AppIcon.vue'
+import { useEnterpriseStore } from '@/stores/enterprise'
+import { currentAuthorizationAllows, currentAuthorizationState } from '@/services/runtime/authorization'
+import { sessionContext } from '@/services/runtime/api'
+import { subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
+import { messageLevels } from '@/services/enterprise/notificationConfigurationRuntime'
+import { useNotificationConfiguration } from '../../composables/useNotificationConfiguration'
+import NotificationDirectoryPicker from './NotificationDirectoryPicker.vue'
+import NotificationConfigurationEditor from './NotificationConfigurationEditor.vue'
+const { t } = useI18n(), enterprise = useEnterpriseStore()
+const flow = useNotificationConfiguration(() => enterprise.session, currentAuthorizationAllows)
+const { rows, types, channels, query, typeQuery, draft, selected, pending, lastReceipt, busy, listBusy, typeBusy,
+  loaded, error, listError, typeError, mustReload, outcome, editorOpen, deleteOpen, recovery, canStart } = flow
+const tenantName = computed(() => currentAuthorizationState.snapshot?.tenant_name || enterprise.session?.tenants?.find(item => item.id === enterprise.tenantId)?.name || enterprise.tenantId)
+const canCreate = computed(() => currentAuthorizationAllows('notification.configuration.create'))
+const canUpdate = computed(() => currentAuthorizationAllows('notification.configuration.update'))
+const canDelete = computed(() => currentAuthorizationAllows('notification.configuration.delete'))
+function channelNames(codes: readonly string[]) { return codes.map(code => channels.value.find(channel => channel.code === code)?.name ?? t('notificationConfiguration.unavailableChannel')).join(' / ') }
+function applyList() { query.page = 1; void flow.loadList() }
+function applyTypes() { typeQuery.page = 1; void flow.loadTypes() }
+function retry() { if (error.value === 'signIn' || error.value === 'sessionChanged') window.location.reload(); else void flow.load() }
+watch(() => [enterprise.sourceKind, enterprise.session ? sessionContext(enterprise.session) : ''], () => {
+  flow.invalidate()
+  if (enterprise.sourceKind === 'api' && enterprise.session?.authenticated) void flow.load()
+}, { immediate: true, flush: 'sync' })
+const unsubscribe = subscribeSessionContextChange(() => flow.invalidate('sessionChanged'))
+function invalidatePage() { flow.invalidate() }
+window.addEventListener('pagehide', invalidatePage)
+onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', invalidatePage); flow.invalidate() })
 </script>
 <template>
-  <div class="notification-settings" :aria-busy="busy">
-    <div class="section-heading"><div><h2>企业消息配置</h2><p>按当前企业可管理点位配置消息等级、渠道与接收人。配置保存不代表消息已发送或送达。</p></div><UiButton v-if="canCreate" class="btn btn-primary" @click="openCreate"><AppIcon name="plus" :size="16"/>新建配置</UiButton></div>
-    <div v-if="errorText" class="notice-box danger" role="alert">{{ errorText }} <UiButton variant="outline" :disabled="busy" @click="refresh">重新读取</UiButton></div>
-    <div v-if="notice" class="notice-box success" role="status">{{ notice }}</div>
-    <section class="catalog-panel"><div class="row-between"><div><h3>消息类型目录</h3><p>服务端注册的三级消息类型；等级只表示优先级，不绕过个人通知偏好。</p></div><span>{{ types.length }} 条当前筛选结果</span></div><div class="filter-grid"><UiInput v-model="filters.typeCode" aria-label="类型编码" placeholder="按编码筛选"/><UiInput v-model="filters.typeName" aria-label="类型名称" placeholder="按名称筛选"/><UiButton variant="outline" @click="loadTypes">筛选类型</UiButton></div><div class="type-list"><span v-for="item in types" :key="item.code" class="type-chip">{{ item.name }} · {{ levels.find(level=>level.value===item.level)?.label??item.level }}</span></div></section>
-    <section class="configuration-panel"><div class="filter-grid configuration-filters"><UiSelect v-model="filters.groupId" aria-label="筛选点位"><UiOption value="">全部点位</UiOption><UiOption v-for="item in groups" :key="item.id" :value="item.id">{{ item.name }}</UiOption></UiSelect><UiSelect v-model="filters.level" aria-label="筛选等级"><UiOption value="">全部等级</UiOption><UiOption v-for="level in levels" :key="level.value" :value="level.value">{{ level.label }}</UiOption></UiSelect><UiSelect v-model="filters.recipientId" aria-label="筛选接收人"><UiOption value="">全部接收人</UiOption><UiOption v-for="item in recipients" :key="item.id" :value="item.id">{{ item.name }}</UiOption></UiSelect><UiButton variant="outline" @click="()=>{page=1;loadConfigurations()}">筛选配置</UiButton></div>
-      <div v-if="configurations.length" class="configuration-list"><article v-for="row in configurations" :key="row.id" class="configuration-row"><div class="configuration-main"><strong>{{ row.groupName||row.groupId }} · {{ levels.find(level=>level.value===row.level)?.label??row.level }}</strong><p>{{ row.channels.join(' / ') }} · 第一联系人 {{ recipients.find(item=>item.id===row.primaryUserId)?.name??row.primaryUserId }}</p><small>版本 {{ row.version }} · {{ row.updatedAt }}</small></div><div class="row actions"><UiButton v-if="canUpdate" variant="outline" @click="openEdit(row)">编辑</UiButton><UiButton v-if="canDelete" variant="outline" class="text-danger" @click="deleteTarget=row">删除</UiButton></div></article></div><EmptyState v-else>当前筛选条件下没有企业消息配置。</EmptyState><AppPagination v-model:page="page" v-model:page-size="pageSize" :total="total"/></section>
-    <section class="channel-status"><h3>渠道状态</h3><div v-for="channel in channels" :key="channel.code" class="channel-row"><strong>{{ channel.name }}</strong><span>{{ channel.configurable?'可配置':channel.unavailableReason }}</span></div></section>
+  <div class="notification-settings" data-enterprise-page="notification-settings" :aria-busy="busy || listBusy || typeBusy">
+    <div class="notification-heading"><div><h2>{{ t('notificationConfiguration.title') }}</h2><p>{{ t('notificationConfiguration.description') }}</p></div>
+      <UiButton v-if="canCreate" :disabled="!canStart" @click="flow.startCreate"><AppIcon name="plus" :size="16" />{{ t('notificationConfiguration.create') }}</UiButton>
+    </div>
+    <p class="tenant-scope">{{ t('notificationConfiguration.scope', { tenant: tenantName }) }}</p>
+    <p v-if="enterprise.sourceKind !== 'api'" class="notice-box" role="status">{{ t('notificationConfiguration.preview') }}</p>
+    <template v-else>
+      <p v-if="!loaded && busy" role="status">{{ t('notificationConfiguration.loading') }}</p>
+      <div v-if="error" class="notice-box danger" role="alert">{{ t(`notificationConfiguration.errors.${error}`) }} <UiButton v-if="!pending" variant="outline" :disabled="busy" @click="retry">{{ t('notificationConfiguration.retry') }}</UiButton></div>
+      <div v-if="outcome" class="notice-box" role="status" data-notification-outcome><p>{{ t(`notificationConfiguration.${outcome}`) }}</p><small v-if="lastReceipt">{{ t('notificationConfiguration.receipt', { id: lastReceipt.receiptId }) }}</small></div>
+      <div v-if="recovery" class="notice-box warning" role="status"><p>{{ t(recovery === 'read' ? 'notificationConfiguration.readPending' : 'notificationConfiguration.uncertain') }}</p><UiButton :disabled="busy" @click="flow.recover">{{ t('notificationConfiguration.recover') }}</UiButton></div>
+      <section class="catalog-panel" :aria-label="t('notificationConfiguration.catalog')">
+        <header><h3>{{ t('notificationConfiguration.catalog') }}</h3><span v-if="types">{{ t('notificationConfiguration.total', { total: types.total }) }}</span></header>
+        <div class="type-filters">
+          <UiInput v-model="typeQuery.code" :aria-label="t('notificationConfiguration.typeCode')" :placeholder="t('notificationConfiguration.typeCode')" maxlength="64" @keydown.enter.prevent="applyTypes" />
+          <UiInput v-model="typeQuery.name" :aria-label="t('notificationConfiguration.typeName')" :placeholder="t('notificationConfiguration.typeName')" maxlength="200" @keydown.enter.prevent="applyTypes" />
+          <UiSelect v-model="typeQuery.level" :aria-label="t('notificationConfiguration.level')"><UiOption value="">{{ t('notificationConfiguration.all') }}</UiOption><UiOption v-for="level in messageLevels" :key="level" :value="level">{{ t(`notificationConfiguration.${level}`) }}</UiOption></UiSelect>
+          <UiButton variant="outline" :disabled="typeBusy || !loaded" @click="applyTypes">{{ t('notificationConfiguration.search') }}</UiButton>
+        </div>
+        <p v-if="typeError" role="alert">{{ t(`notificationConfiguration.errors.${typeError}`) }}</p>
+        <template v-else-if="types">
+          <div class="level-totals"><span v-for="group in types.groups" :key="group.level" :class="`level-${group.level}`">{{ t('notificationConfiguration.groupTotal', { level: t(`notificationConfiguration.${group.level}`), total: group.total }) }}</span></div>
+          <div class="table-scroll"><table v-if="types.items.length"><thead><tr><th>{{ t('notificationConfiguration.typeCode') }}</th><th>{{ t('notificationConfiguration.typeName') }}</th><th>{{ t('notificationConfiguration.level') }}</th></tr></thead><tbody><tr v-for="row in types.items" :key="row.code"><td>{{ row.code }}</td><td>{{ row.name }}</td><td>{{ t(`notificationConfiguration.${row.level}`) }}</td></tr></tbody></table></div>
+          <p v-if="!types.items.length">{{ t('notificationConfiguration.emptyTypes') }}</p>
+          <AppPagination :page="typeQuery.page" :page-size="typeQuery.pageSize" :total="types.total" @update:page="typeQuery.page = $event; flow.loadTypes()" @update:page-size="typeQuery.pageSize = $event; applyTypes()" />
+        </template>
+      </section>
+      <section class="configuration-panel" :aria-label="t('notificationConfiguration.configurations')">
+        <header><h3>{{ t('notificationConfiguration.configurations') }}</h3><span v-if="rows">{{ t('notificationConfiguration.total', { total: rows.total }) }}</span></header>
+        <div class="configuration-filters">
+          <NotificationDirectoryPicker kind="groups" :session="enterprise.session" :label="t('notificationConfiguration.group')" :model-value="query.groupId ? [query.groupId] : []" :disabled="Boolean(pending)" @update:model-value="query.groupId = $event[0] ?? ''" />
+          <NotificationDirectoryPicker kind="recipients" :session="enterprise.session" :label="t('notificationConfiguration.recipientFilter')" :model-value="query.recipientId ? [query.recipientId] : []" :disabled="Boolean(pending)" @update:model-value="query.recipientId = $event[0] ?? ''" />
+        </div>
+        <div class="rule-filter-actions"><UiSelect v-model="query.level" :aria-label="t('notificationConfiguration.level')"><UiOption value="">{{ t('notificationConfiguration.all') }}</UiOption><UiOption v-for="level in messageLevels" :key="level" :value="level">{{ t(`notificationConfiguration.${level}`) }}</UiOption></UiSelect><UiButton variant="outline" :disabled="listBusy || Boolean(pending) || !loaded" @click="applyList">{{ t('notificationConfiguration.search') }}</UiButton><UiButton variant="ghost" :disabled="Boolean(pending)" @click="query.groupId = ''; query.recipientId = ''; query.level = ''; applyList()">{{ t('notificationConfiguration.reset') }}</UiButton></div>
+        <p v-if="listError" class="notice-box danger" role="alert">{{ t(`notificationConfiguration.errors.${listError}`) }} <UiButton variant="outline" :disabled="listBusy" @click="flow.loadList">{{ t('notificationConfiguration.retry') }}</UiButton></p>
+        <p v-else-if="listBusy" role="status">{{ t('notificationConfiguration.loading') }}</p>
+        <template v-else-if="rows">
+          <div v-if="rows.items.length" class="table-scroll"><table class="configuration-table"><thead><tr><th>{{ t('notificationConfiguration.group') }}</th><th>{{ t('notificationConfiguration.level') }}</th><th>{{ t('notificationConfiguration.channelLabel') }}</th><th>{{ t('notificationConfiguration.primary') }}</th><th>{{ t('notificationConfiguration.version') }}</th><th>{{ t('notificationConfiguration.action') }}</th></tr></thead><tbody>
+            <tr v-for="row in rows.items" :key="row.id"><td>{{ row.groupName || row.groupId }}</td><td>{{ t(`notificationConfiguration.${row.level}`) }}</td><td>{{ channelNames(row.channels) }}</td><td>{{ row.primaryUserId }}</td><td>{{ row.version }}</td><td class="row-actions"><UiButton v-if="canUpdate" size="sm" variant="outline" :disabled="!canStart" @click="flow.startEdit(row)">{{ t('notificationConfiguration.edit') }}</UiButton><UiButton v-if="canDelete" size="sm" variant="outline" :disabled="!canStart" @click="flow.startEdit(row, 'delete')">{{ t('notificationConfiguration.delete') }}</UiButton></td></tr>
+          </tbody></table></div>
+          <EmptyState v-else :title="t('notificationConfiguration.emptyTitle')" :description="t('notificationConfiguration.emptyDescription')" />
+          <AppPagination :page="query.page" :page-size="query.pageSize" :total="rows.total" @update:page="query.page = $event; flow.loadList()" @update:page-size="query.pageSize = $event; applyList()" />
+        </template>
+      </section>
+      <section class="channel-panel"><h3>{{ t('notificationConfiguration.channels') }}</h3><div v-for="channel in channels" :key="channel.code" class="channel-status"><strong>{{ channel.name }}</strong><span>{{ channel.configurable ? t('notificationConfiguration.available') : channel.unavailableReason }}</span></div><p>{{ t('notificationConfiguration.policyNote') }}</p></section>
+    </template>
   </div>
-  <UiDialog :open="editorOpen" :title="editing?'编辑企业消息配置':'新建企业消息配置'" width="720px" @close="closeEditor"><div class="editor-stack"><label class="field"><span>业务点位</span><UiSelect v-model="draft.groupId" :disabled="Boolean(editing)" aria-label="业务点位"><UiOption value="">请选择点位</UiOption><UiOption v-for="item in groups" :key="item.id" :value="item.id">{{ item.name }}</UiOption></UiSelect></label><fieldset class="choice-group" :disabled="Boolean(editing)"><legend>消息等级</legend><label v-for="level in levels" :key="level.value"><UiInput type="checkbox" :checked="draft.levels.includes(level.value)" @change="toggleLevel(level.value)"/>{{ level.label }}</label></fieldset><fieldset class="choice-group"><legend>通知渠道</legend><label v-for="channel in channels" :key="channel.code" :class="{unavailable:!channel.configurable}"><UiInput type="checkbox" :checked="draft.channels.includes(channel.code)" :disabled="!channel.configurable" @change="toggleChannel(channel.code)"/>{{ channel.name }}<small v-if="!channel.configurable">{{ channel.unavailableReason }}</small></label></fieldset><div class="two-column"><label class="field"><span>第一联系人</span><UiSelect v-model="draft.primaryUserId" aria-label="第一联系人"><UiOption value="">请选择</UiOption><UiOption v-for="item in recipients" :key="item.id" :value="item.id" :disabled="item.id===draft.secondaryUserId">{{ item.name }}</UiOption></UiSelect></label><label class="field"><span>第二联系人（可选）</span><UiSelect v-model="draft.secondaryUserId" aria-label="第二联系人"><UiOption value="">不设置</UiOption><UiOption v-for="item in recipients" :key="item.id" :value="item.id" :disabled="item.id===draft.primaryUserId">{{ item.name }}</UiOption></UiSelect></label></div><fieldset class="choice-group"><legend>其他接收人</legend><label v-for="item in recipients" :key="item.id"><UiInput type="checkbox" :checked="draft.additionalUserIds.includes(item.id)" :disabled="item.id===draft.primaryUserId||item.id===draft.secondaryUserId" @change="toggleAdditional(item.id)"/>{{ item.name }}</label></fieldset><label class="field"><span>备注</span><UiTextarea v-model="draft.notes" maxlength="500" aria-label="备注"/></label><p class="muted">第一联系人必填；第二联系人如设置必须不同。短信和邮件在适配器未配置前不可选择。</p></div><template #footer><UiButton variant="outline" :disabled="busy" @click="closeEditor">取消</UiButton><UiButton :disabled="busy||!draft.groupId||!draft.primaryUserId||!draft.levels.length||!draft.channels.length" @click="save">{{ busy?'保存中…':'保存配置' }}</UiButton></template></UiDialog>
-  <UiDialog :open="Boolean(deleteTarget)" title="删除企业消息配置" width="520px" @close="()=>{if(!busy)deleteTarget=null}"><p>确认删除 {{ deleteTarget?.groupName||deleteTarget?.groupId }} 的 {{ levels.find(level=>level.value===deleteTarget?.level)?.label }} 配置？此操作只删除配置，不代表撤回已产生的消息。</p><template #footer><UiButton variant="outline" :disabled="busy" @click="deleteTarget=null">取消</UiButton><UiButton class="text-danger" :disabled="busy" @click="remove">{{ busy?'删除中…':'确认删除' }}</UiButton></template></UiDialog>
+  <NotificationConfigurationEditor :open="editorOpen" :session="enterprise.session" :draft="draft" :selected="selected" :channels="channels" :busy="busy" :recovery="recovery" :error="error" :must-reload="mustReload" @change="Object.assign(draft, $event)" @close="flow.close" @confirm="flow.confirm(selected ? 'update' : 'create')" @recover="flow.recover" @reload="flow.load" />
+  <UiDialog :open="deleteOpen" :title="t('notificationConfiguration.deleteTitle')" width="540px" @close="flow.close">
+    <p>{{ t('notificationConfiguration.deleteNote', { group: selected?.groupName || selected?.groupId, level: selected ? t(`notificationConfiguration.${selected.level}`) : '' }) }}</p>
+    <p v-if="error" class="notice-box danger" role="alert">{{ t(`notificationConfiguration.errors.${error}`) }}</p>
+    <p v-if="recovery" class="notice-box warning" role="status">{{ t(recovery === 'read' ? 'notificationConfiguration.readPending' : 'notificationConfiguration.uncertain') }}</p>
+    <template #footer><UiButton variant="outline" :disabled="busy" @click="flow.close">{{ t('notificationConfiguration.cancel') }}</UiButton><UiButton v-if="recovery" :disabled="busy" @click="flow.recover">{{ t('notificationConfiguration.recover') }}</UiButton><UiButton v-else-if="mustReload" :disabled="busy" @click="flow.load">{{ t('notificationConfiguration.retry') }}</UiButton><UiButton v-else :disabled="busy" @click="flow.confirm('delete')">{{ t('notificationConfiguration.confirmDelete') }}</UiButton></template>
+  </UiDialog>
 </template>
 <style scoped>
-.notification-settings,.editor-stack{display:flex;flex-direction:column;gap:20px}.section-heading,.configuration-row,.channel-row{display:flex;align-items:center;justify-content:space-between;gap:16px}.section-heading p,.catalog-panel p,.configuration-row p,.configuration-row small,.channel-row span,.muted{color:var(--color-text-secondary);font-size:var(--text-sm);line-height:1.6}.catalog-panel,.configuration-panel,.channel-status{padding:18px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface)}.filter-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;margin-top:14px}.configuration-filters{grid-template-columns:repeat(3,minmax(0,1fr)) auto}.type-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.type-chip{padding:7px 10px;border:1px solid var(--color-border);border-radius:var(--radius-pill);font-size:var(--text-xs);background:var(--color-surface-soft)}.configuration-list{display:flex;flex-direction:column}.configuration-row{padding:16px 0;border-bottom:1px solid var(--color-border)}.configuration-main{min-width:0}.configuration-main p,.configuration-main small{display:block;margin-top:5px;overflow-wrap:anywhere}.actions{flex-shrink:0}.channel-row{padding:12px 0;border-top:1px solid var(--color-border)}.choice-group{display:flex;flex-wrap:wrap;gap:12px;border:0;padding:0}.choice-group legend{width:100%;font-weight:600;margin-bottom:4px}.choice-group label{display:flex;align-items:center;gap:7px;padding:9px 11px;border:1px solid var(--color-border);border-radius:var(--radius-sm)}.choice-group input{width:18px;height:18px;padding:0}.choice-group .unavailable{opacity:.65}.choice-group small{display:block;color:var(--color-text-muted)}.two-column{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field>span{display:block;margin-bottom:7px;font-size:var(--text-sm);font-weight:600}.field textarea{width:100%;min-height:96px;padding:10px}.notice-box .inline-flex{margin-left:10px}@media(max-width:767px){.section-heading,.configuration-row{align-items:stretch;flex-direction:column}.filter-grid,.configuration-filters,.two-column{grid-template-columns:1fr}.actions{width:100%}.actions .inline-flex{flex:1}.catalog-panel,.configuration-panel,.channel-status{padding:14px}}
+.notification-settings { display:flex; flex-direction:column; gap:20px; min-width:0; }
+.notification-heading,header,.channel-status { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+h2 { font-size:20px; } h3 { font-size:16px; } p { font-size:var(--text-sm); color:var(--color-text-secondary); line-height:1.6; }
+.notification-heading p { margin-top:8px; max-width:680px; }.notification-heading button { flex-shrink:0; }
+.tenant-scope { overflow-wrap:anywhere; }
+.catalog-panel,.configuration-panel,.channel-panel { border:1px solid var(--color-border); border-radius:var(--radius-md); padding:18px; min-width:0; }
+header>span { font-size:var(--text-sm); color:var(--color-text-muted); }
+.type-filters { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) 130px auto; gap:10px; margin:16px 0; }
+.configuration-filters { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin:16px 0; }
+.rule-filter-actions { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }.rule-filter-actions>button:first-child { max-width:180px; }
+.level-totals { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; font-size:var(--text-sm); }.level-totals span { padding:5px 9px; border-radius:var(--radius-sm); background:var(--color-surface-soft); }
+.level-urgent { color:var(--color-danger); }.level-important { color:var(--color-warning); }
+.table-scroll { max-width:100%; overflow:auto; } table { width:100%; border-collapse:collapse; font-size:var(--text-sm); } th,td { padding:12px 10px; text-align:left; border-bottom:1px solid var(--color-border); } th { color:var(--color-text-secondary); font-weight:500; background:var(--color-surface-soft); }
+.configuration-table { min-width:680px; } td { overflow-wrap:anywhere; max-width:240px; }.row-actions { white-space:nowrap; }.row-actions button+button { margin-left:6px; }
+.channel-status { padding:12px 0; font-size:var(--text-sm); border-bottom:1px solid var(--color-border); }.channel-status span { color:var(--color-text-secondary); }.channel-panel>p { margin-top:14px; }
+.notice-box { display:block; overflow-wrap:anywhere; }.notice-box button { margin-top:8px; }.notice-box small { display:block; font-size:var(--text-xs); }
+@media(max-width:1050px) { .type-filters { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:640px) { .notification-heading,header { flex-direction:column; } .type-filters,.configuration-filters { grid-template-columns:1fr; } .catalog-panel,.configuration-panel,.channel-panel { padding:12px; }.table-scroll { border:1px solid var(--color-border); } }
 </style>
