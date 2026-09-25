@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import type { NotificationPreferences } from '../../src/services/enterprise/notificationPreferencesRuntime'
 import type { TrustedSession } from '../../src/services/runtime/api'
+import { selectUiOption } from '../../e2e/ui.helpers'
 
 interface Fixture {
   base_url: string
@@ -176,11 +177,17 @@ test('TestEnterprise183NotificationPreferencesLiveBrowserMySQLRecoveryAndIsolati
     await page.unroute(routePattern, handler)
   })
   const final = await readPreferences(context, data)
-  await selectTenant(context, data, data.iam_denied_tenant)
+  // Once the app is mounted, switch through its real control. Direct fixture
+  // API calls do not run the shell's session/authorization synchronization.
+  await selectUiOption(page.getByRole('combobox', { name: '切换企业' }), data.iam_denied_tenant)
+  await expect(smsSwitch(page)).toBeEnabled()
+  await expect(smsSwitch(page)).toBeChecked({ checked: tenantBefore.sms.allowed })
   expect(await readPreferences(context, data)).toEqual(tenantBefore)
   persisted(tenantBefore)
-  await selectTenant(context, data, data.allowed_tenant)
-  await openProfile(page, data)
+  await selectUiOption(page.getByRole('combobox', { name: '切换企业' }), data.allowed_tenant)
+  await expect(smsSwitch(page)).toBeEnabled()
+  await expect(smsSwitch(page)).toBeChecked({ checked: final.sms.allowed })
+  expect(await readPreferences(context, data)).toEqual(final)
 
   await test.step('four viewports preserve confirmation, keyboard focus and persisted values', async () => {
     for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 },
