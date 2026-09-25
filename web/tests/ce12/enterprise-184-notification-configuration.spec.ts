@@ -156,9 +156,14 @@ test('TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewport
   await test.step('four viewports, modal boundaries, Escape and return focus', async () => {
     for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1536, height: 1024 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(viewport); await page.evaluate(() => window.scrollTo(0, 0))
+      await expect(rule(page).getByRole('button', { name: '编辑', exact: true })).toBeEnabled()
+      await expect(panel(page).locator('[aria-busy="true"]')).toHaveCount(0)
       await page.screenshot({ path: `test-results/enterprise184-live-${viewport.width}.png`, fullPage: true })
       const button = rule(page).getByRole('button', { name: '编辑', exact: true }); await button.click()
-      await expect(dialog(page)).toBeVisible(); const bounds = await dialog(page).boundingBox()
+      await expect(dialog(page)).toBeVisible()
+      // Capture the completed controlled-directory state, not a transient load.
+      await expect(dialog(page).locator('[aria-busy="true"]')).toHaveCount(0)
+      const bounds = await dialog(page).boundingBox()
       expect(bounds!.x).toBeGreaterThanOrEqual(0); expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width)
       await page.screenshot({ path: `test-results/enterprise184-live-edit-${viewport.width}.png` })
       await page.keyboard.press('Escape'); await expect(dialog(page)).toBeHidden(); await expect(button).toBeFocused()
