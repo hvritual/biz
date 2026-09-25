@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
 import AppPagination from '@/ui/common/AppPagination.vue'
@@ -10,7 +10,7 @@ import { useEnterpriseStore } from '@/stores/enterprise'
 import { currentAuthorizationAllows, currentAuthorizationState } from '@/services/runtime/authorization'
 import { sessionContext } from '@/services/runtime/api'
 import { subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
-import { messageLevels } from '@/services/enterprise/notificationConfigurationRuntime'
+import { messageLevels, type MessageConfiguration } from '@/services/enterprise/notificationConfigurationRuntime'
 import { useNotificationConfiguration } from '../../composables/useNotificationConfiguration'
 import NotificationDirectoryPicker from './NotificationDirectoryPicker.vue'
 import NotificationConfigurationEditor from './NotificationConfigurationEditor.vue'
@@ -23,11 +23,32 @@ const canCreate = computed(() => currentAuthorizationAllows('notification.config
 const canUpdate = computed(() => currentAuthorizationAllows('notification.configuration.update'))
 const canDelete = computed(() => currentAuthorizationAllows('notification.configuration.delete'))
 function channelNames(codes: readonly string[]) { return codes.map(code => channels.value.find(channel => channel.code === code)?.name ?? t('notificationConfiguration.unavailableChannel')).join(' / ') }
+// Capture the real triggering element before the authoritative GET disables it.
+// UiDialog cannot infer that element once browser focus falls back to body.
+const workspace = ref<HTMLElement | null>(null)
+let returnFocus: HTMLElement | null = null, restoreFocusPending = false
+function beginCreate(event: Event) {
+  returnFocus = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  flow.startCreate()
+}
+function beginEdit(row: MessageConfiguration, kind: 'update' | 'delete', event: Event) {
+  returnFocus = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  void flow.startEdit(row, kind)
+}
+watch([editorOpen, deleteOpen, busy, listBusy], async ([editing, deleting, working, listing], [wasEditing, wasDeleting]) => {
+  if ((wasEditing || wasDeleting) && !editing && !deleting) restoreFocusPending = true
+  if (!restoreFocusPending || editing || deleting || working || listing) return
+  restoreFocusPending = false
+  await nextTick()
+  if (returnFocus?.isConnected && !returnFocus.matches(':disabled')) returnFocus.focus()
+  else workspace.value?.focus()
+  returnFocus = null
+})
 function applyList() { query.page = 1; void flow.loadList() }
 function applyTypes() { typeQuery.page = 1; void flow.loadTypes() }
 function retry() { if (error.value === 'signIn' || error.value === 'sessionChanged') window.location.reload(); else void flow.load() }
 watch(() => [enterprise.sourceKind, enterprise.session ? sessionContext(enterprise.session) : ''], () => {
-  flow.invalidate()
+  returnFocus = null; restoreFocusPending = false; flow.invalidate()
   if (enterprise.sourceKind === 'api' && enterprise.session?.authenticated) void flow.load()
 }, { immediate: true, flush: 'sync' })
 const unsubscribe = subscribeSessionContextChange(() => flow.invalidate('sessionChanged'))
@@ -36,9 +57,9 @@ window.addEventListener('pagehide', invalidatePage)
 onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', invalidatePage); flow.invalidate() })
 </script>
 <template>
-  <div class="notification-settings" data-enterprise-page="notification-settings" :aria-busy="busy || listBusy || typeBusy">
+  <div ref="workspace" tabindex="-1" class="notification-settings" data-enterprise-page="notification-settings" :aria-busy="busy || listBusy || typeBusy">
     <div class="notification-heading"><div><h2>{{ t('notificationConfiguration.title') }}</h2><p>{{ t('notificationConfiguration.description') }}</p></div>
-      <UiButton v-if="canCreate" :disabled="!canStart" @click="flow.startCreate"><AppIcon name="plus" :size="16" />{{ t('notificationConfiguration.create') }}</UiButton>
+      <UiButton v-if="canCreate" :disabled="!canStart" @click="beginCreate"><AppIcon name="plus" :size="16" />{{ t('notificationConfiguration.create') }}</UiButton>
     </div>
     <p class="tenant-scope">{{ t('notificationConfiguration.scope', { tenant: tenantName }) }}</p>
     <p v-if="enterprise.sourceKind !== 'api'" class="notice-box" role="status">{{ t('notificationConfiguration.preview') }}</p>
@@ -74,7 +95,7 @@ onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', in
         <p v-else-if="listBusy" role="status">{{ t('notificationConfiguration.loading') }}</p>
         <template v-else-if="rows">
           <div v-if="rows.items.length" class="table-scroll"><table class="configuration-table"><thead><tr><th>{{ t('notificationConfiguration.group') }}</th><th>{{ t('notificationConfiguration.level') }}</th><th>{{ t('notificationConfiguration.channelLabel') }}</th><th>{{ t('notificationConfiguration.primary') }}</th><th>{{ t('notificationConfiguration.version') }}</th><th>{{ t('notificationConfiguration.action') }}</th></tr></thead><tbody>
-            <tr v-for="row in rows.items" :key="row.id"><td>{{ row.groupName || row.groupId }}</td><td>{{ t(`notificationConfiguration.${row.level}`) }}</td><td>{{ channelNames(row.channels) }}</td><td>{{ row.primaryUserId }}</td><td>{{ row.version }}</td><td class="row-actions"><UiButton v-if="canUpdate" size="sm" variant="outline" :disabled="!canStart" @click="flow.startEdit(row)">{{ t('notificationConfiguration.edit') }}</UiButton><UiButton v-if="canDelete" size="sm" variant="outline" :disabled="!canStart" @click="flow.startEdit(row, 'delete')">{{ t('notificationConfiguration.delete') }}</UiButton></td></tr>
+            <tr v-for="row in rows.items" :key="row.id"><td>{{ row.groupName || row.groupId }}</td><td>{{ t(`notificationConfiguration.${row.level}`) }}</td><td>{{ channelNames(row.channels) }}</td><td>{{ row.primaryUserId }}</td><td>{{ row.version }}</td><td class="row-actions"><UiButton v-if="canUpdate" size="sm" variant="outline" :disabled="!canStart" @click="beginEdit(row, 'update', $event)">{{ t('notificationConfiguration.edit') }}</UiButton><UiButton v-if="canDelete" size="sm" variant="outline" :disabled="!canStart" @click="beginEdit(row, 'delete', $event)">{{ t('notificationConfiguration.delete') }}</UiButton></td></tr>
           </tbody></table></div>
           <EmptyState v-else :title="t('notificationConfiguration.emptyTitle')" :description="t('notificationConfiguration.emptyDescription')" />
           <AppPagination :page="query.page" :page-size="query.pageSize" :total="rows.total" @update:page="query.page = $event; flow.loadList()" @update:page-size="query.pageSize = $event; applyList()" />
