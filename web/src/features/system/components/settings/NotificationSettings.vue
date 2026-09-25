@@ -1,129 +1,58 @@
 <script setup lang="ts">
-import { UiButton, UiInput } from '@/ui/base'
-
-import { ref } from 'vue'
-import { useEnterpriseStore } from '@/stores/enterprise'
-import { useUiStore } from '@/stores/ui'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
 import AppIcon from '@/ui/common/AppIcon.vue'
-const store = useEnterpriseStore(),
-  ui = useUiStore(),
-  draft = ref({ ...store.settings })
-const items = [
-  { key: 'alert', title: '设备告警', description: '关注离线、故障与重要设备事件', icon: 'warning' },
-  { key: 'workorder', title: '工单通知', description: '工单分配、处理进度与完成结果', icon: 'ticket' },
-  { key: 'member', title: '成员与权限变更', description: '邀请、禁用以及角色授权调整', icon: 'users' },
-  { key: 'digest', title: '经营数据摘要', description: '接收周期性运营数据摘要', icon: 'chart' },
-]
-function save() {
-  store.saveSettings(draft.value)
-  ui.toast('通知偏好已保存在本地，未发送外部消息。')
-}
+import AppPagination from '@/ui/common/AppPagination.vue'
+import EmptyState from '@/ui/common/EmptyState.vue'
+import UiDialog from '@/ui/common/UiDialog.vue'
+import { currentAuthorizationAllows } from '@/services/runtime/authorization'
+import {
+  createMessageConfigurations, deleteMessageConfiguration, listMessageChannels, listMessageConfigurations,
+  listMessageGroups, listMessageRecipients, listMessageTypes, notificationConfigurationErrorKey,
+  updateMessageConfiguration, type MessageChannel, type MessageConfiguration, type MessageDirectoryEntry, type MessageType,
+} from '@/services/enterprise/notificationConfigurationRuntime'
+
+const levels=[{value:'urgent',label:'紧急'},{value:'important',label:'重要'},{value:'general',label:'一般'}]
+const configurations=ref<MessageConfiguration[]>([]),types=ref<MessageType[]>([]),channels=ref<MessageChannel[]>([])
+const groups=ref<MessageDirectoryEntry[]>([]),recipients=ref<MessageDirectoryEntry[]>([])
+const total=ref(0),page=ref(1),pageSize=ref(10),busy=ref(false),error=ref(''),notice=ref('')
+const filters=reactive({groupId:'',level:'',recipientId:'',typeCode:'',typeName:''})
+const editorOpen=ref(false),deleteTarget=ref<MessageConfiguration|null>(null),editing=ref<MessageConfiguration|null>(null)
+const draft=reactive({groupId:'',levels:[] as string[],channels:[] as string[],primaryUserId:'',secondaryUserId:'',additionalUserIds:[] as string[],notes:''})
+const canCreate=computed(()=>currentAuthorizationAllows('notification.configuration.create'))
+const canUpdate=computed(()=>currentAuthorizationAllows('notification.configuration.update'))
+const canDelete=computed(()=>currentAuthorizationAllows('notification.configuration.delete'))
+const errorText=computed(()=>({unauthenticated:'登录会话已失效，请重新登录。',forbidden:'当前账号没有企业消息配置权限。',conflict:'配置已被其他操作修改，请刷新后重试。',duplicate:'该点位与消息等级已存在配置。',channelUnavailable:'所选渠道当前不可配置，请重新选择。',invalid:'配置内容无效，请检查点位、联系人和渠道。',notFound:'配置已不存在，请刷新列表。',unavailable:'消息配置服务暂不可用，请稍后重试。'}[error.value]??''))
+
+function resetDraft(){draft.groupId='';draft.levels=[];draft.channels=['in_app'];draft.primaryUserId='';draft.secondaryUserId='';draft.additionalUserIds=[];draft.notes=''}
+async function loadDirectories(){const [c,g,r]=await Promise.all([listMessageChannels(),listMessageGroups('',1,100),listMessageRecipients('',1,100)]);channels.value=c;groups.value=g.items;recipients.value=r.items}
+async function loadTypes(){const result=await listMessageTypes({code:filters.typeCode,name:filters.typeName,level:filters.level,page:1,pageSize:100});types.value=result.items}
+async function loadConfigurations(){busy.value=true;error.value='';try{const result=await listMessageConfigurations({groupId:filters.groupId,level:filters.level,recipientId:filters.recipientId,page:page.value,pageSize:pageSize.value});configurations.value=result.items;total.value=result.total}catch(cause){error.value=notificationConfigurationErrorKey(cause)}finally{busy.value=false}}
+async function refresh(){busy.value=true;error.value='';try{await Promise.all([loadDirectories(),loadTypes()]);await loadConfigurations()}catch(cause){error.value=notificationConfigurationErrorKey(cause);busy.value=false}}
+function openCreate(){editing.value=null;resetDraft();editorOpen.value=true}
+function openEdit(row:MessageConfiguration){editing.value=row;draft.groupId=row.groupId;draft.levels=[row.level];draft.channels=[...row.channels];draft.primaryUserId=row.primaryUserId;draft.secondaryUserId=row.secondaryUserId;draft.additionalUserIds=[...row.additionalUserIds];draft.notes=row.notes;editorOpen.value=true}
+function closeEditor(){if(!busy.value)editorOpen.value=false}
+async function save(){if(busy.value)return;busy.value=true;error.value='';notice.value='';try{const receipt=editing.value?await updateMessageConfiguration(editing.value.id,editing.value.version,draft):await createMessageConfigurations(draft);editorOpen.value=false;notice.value=`已保存 ${receipt.configurations.length} 条配置；此结果仅表示配置持久化，不代表消息已送达。`;await loadConfigurations()}catch(cause){error.value=notificationConfigurationErrorKey(cause)}finally{busy.value=false}}
+async function remove(){const target=deleteTarget.value;if(!target||busy.value)return;busy.value=true;error.value='';notice.value='';try{await deleteMessageConfiguration(target.id,target.version);deleteTarget.value=null;notice.value='配置已删除；接收人关系已由服务端事务同步清理。';await loadConfigurations()}catch(cause){error.value=notificationConfigurationErrorKey(cause)}finally{busy.value=false}}
+function toggleLevel(value:string){draft.levels=draft.levels.includes(value)?draft.levels.filter(item=>item!==value):[...draft.levels,value]}
+function toggleChannel(value:string){const channel=channels.value.find(item=>item.code===value);if(!channel?.configurable)return;draft.channels=draft.channels.includes(value)?draft.channels.filter(item=>item!==value):[...draft.channels,value]}
+function toggleAdditional(value:string){if(value===draft.primaryUserId||value===draft.secondaryUserId)return;draft.additionalUserIds=draft.additionalUserIds.includes(value)?draft.additionalUserIds.filter(item=>item!==value):[...draft.additionalUserIds,value]}
+watch([page,pageSize],()=>void loadConfigurations())
+onMounted(()=>void refresh())
 </script>
 <template>
-  <div>
-    <h2>通知渠道</h2>
-    <p class="muted intro">按业务优先级选择通知类型，避免重复打扰。</p>
-    <div class="channel-grid">
-      <label class="channel-card"
-        ><AppIcon name="bell" :size="26" />
-        <div>
-          <strong>站内通知</strong>
-          <p>在通知中心接收消息</p>
-        </div>
-        <UiInput v-model="draft.notificationInApp" type="checkbox" /></label
-      ><label class="channel-card"
-        ><AppIcon name="mail" :size="26" />
-        <div>
-          <strong>邮件通知</strong>
-          <p>通过已验证邮箱接收</p>
-        </div>
-        <UiInput v-model="draft.notificationEmail" type="checkbox"
-      /></label>
-    </div>
-    <div class="form-section">
-      <h3>通知内容</h3>
-      <div v-for="item in items" :key="item.key" class="notification-row">
-        <span class="notification-icon"><AppIcon :name="item.icon" :size="20" /></span>
-        <div class="flex-1">
-          <strong>{{ item.title }}</strong>
-          <p>{{ item.description }}</p>
-        </div>
-        <UiButton
-          class="switch"
-          role="switch"
-          :aria-label="item.title"
-          :aria-checked="Boolean(draft[item.key])"
-          @click="draft[item.key] = !draft[item.key]"
-        />
-      </div>
-    </div>
-    <div class="notice-box">
-      <AppIcon name="help" />通知订阅保存后按当前可用渠道生效；是否送达以通知记录为准。
-    </div>
-    <div class="form-footer"><UiButton class="btn btn-primary" @click="save">保存通知设置</UiButton></div>
+  <div class="notification-settings" :aria-busy="busy">
+    <div class="section-heading"><div><h2>企业消息配置</h2><p>按当前企业可管理点位配置消息等级、渠道与接收人。配置保存不代表消息已发送或送达。</p></div><UiButton v-if="canCreate" class="btn btn-primary" @click="openCreate"><AppIcon name="plus" :size="16"/>新建配置</UiButton></div>
+    <div v-if="errorText" class="notice-box danger" role="alert">{{ errorText }} <UiButton variant="outline" :disabled="busy" @click="refresh">重新读取</UiButton></div>
+    <div v-if="notice" class="notice-box success" role="status">{{ notice }}</div>
+    <section class="catalog-panel"><div class="row-between"><div><h3>消息类型目录</h3><p>服务端注册的三级消息类型；等级只表示优先级，不绕过个人通知偏好。</p></div><span>{{ types.length }} 条当前筛选结果</span></div><div class="filter-grid"><UiInput v-model="filters.typeCode" aria-label="类型编码" placeholder="按编码筛选"/><UiInput v-model="filters.typeName" aria-label="类型名称" placeholder="按名称筛选"/><UiButton variant="outline" @click="loadTypes">筛选类型</UiButton></div><div class="type-list"><span v-for="item in types" :key="item.code" class="type-chip">{{ item.name }} · {{ levels.find(level=>level.value===item.level)?.label??item.level }}</span></div></section>
+    <section class="configuration-panel"><div class="filter-grid configuration-filters"><UiSelect v-model="filters.groupId" aria-label="筛选点位"><UiOption value="">全部点位</UiOption><UiOption v-for="item in groups" :key="item.id" :value="item.id">{{ item.name }}</UiOption></UiSelect><UiSelect v-model="filters.level" aria-label="筛选等级"><UiOption value="">全部等级</UiOption><UiOption v-for="level in levels" :key="level.value" :value="level.value">{{ level.label }}</UiOption></UiSelect><UiSelect v-model="filters.recipientId" aria-label="筛选接收人"><UiOption value="">全部接收人</UiOption><UiOption v-for="item in recipients" :key="item.id" :value="item.id">{{ item.name }}</UiOption></UiSelect><UiButton variant="outline" @click="()=>{page=1;loadConfigurations()}">筛选配置</UiButton></div>
+      <div v-if="configurations.length" class="configuration-list"><article v-for="row in configurations" :key="row.id" class="configuration-row"><div class="configuration-main"><strong>{{ row.groupName||row.groupId }} · {{ levels.find(level=>level.value===row.level)?.label??row.level }}</strong><p>{{ row.channels.join(' / ') }} · 第一联系人 {{ recipients.find(item=>item.id===row.primaryUserId)?.name??row.primaryUserId }}</p><small>版本 {{ row.version }} · {{ row.updatedAt }}</small></div><div class="row actions"><UiButton v-if="canUpdate" variant="outline" @click="openEdit(row)">编辑</UiButton><UiButton v-if="canDelete" variant="outline" class="text-danger" @click="deleteTarget=row">删除</UiButton></div></article></div><EmptyState v-else>当前筛选条件下没有企业消息配置。</EmptyState><AppPagination v-model:page="page" v-model:page-size="pageSize" :total="total"/></section>
+    <section class="channel-status"><h3>渠道状态</h3><div v-for="channel in channels" :key="channel.code" class="channel-row"><strong>{{ channel.name }}</strong><span>{{ channel.configurable?'可配置':channel.unavailableReason }}</span></div></section>
   </div>
+  <UiDialog :open="editorOpen" :title="editing?'编辑企业消息配置':'新建企业消息配置'" width="720px" @close="closeEditor"><div class="editor-stack"><label class="field"><span>业务点位</span><UiSelect v-model="draft.groupId" :disabled="Boolean(editing)" aria-label="业务点位"><UiOption value="">请选择点位</UiOption><UiOption v-for="item in groups" :key="item.id" :value="item.id">{{ item.name }}</UiOption></UiSelect></label><fieldset class="choice-group" :disabled="Boolean(editing)"><legend>消息等级</legend><label v-for="level in levels" :key="level.value"><UiInput type="checkbox" :checked="draft.levels.includes(level.value)" @change="toggleLevel(level.value)"/>{{ level.label }}</label></fieldset><fieldset class="choice-group"><legend>通知渠道</legend><label v-for="channel in channels" :key="channel.code" :class="{unavailable:!channel.configurable}"><UiInput type="checkbox" :checked="draft.channels.includes(channel.code)" :disabled="!channel.configurable" @change="toggleChannel(channel.code)"/>{{ channel.name }}<small v-if="!channel.configurable">{{ channel.unavailableReason }}</small></label></fieldset><div class="two-column"><label class="field"><span>第一联系人</span><UiSelect v-model="draft.primaryUserId" aria-label="第一联系人"><UiOption value="">请选择</UiOption><UiOption v-for="item in recipients" :key="item.id" :value="item.id" :disabled="item.id===draft.secondaryUserId">{{ item.name }}</UiOption></UiSelect></label><label class="field"><span>第二联系人（可选）</span><UiSelect v-model="draft.secondaryUserId" aria-label="第二联系人"><UiOption value="">不设置</UiOption><UiOption v-for="item in recipients" :key="item.id" :value="item.id" :disabled="item.id===draft.primaryUserId">{{ item.name }}</UiOption></UiSelect></label></div><fieldset class="choice-group"><legend>其他接收人</legend><label v-for="item in recipients" :key="item.id"><UiInput type="checkbox" :checked="draft.additionalUserIds.includes(item.id)" :disabled="item.id===draft.primaryUserId||item.id===draft.secondaryUserId" @change="toggleAdditional(item.id)"/>{{ item.name }}</label></fieldset><label class="field"><span>备注</span><UiTextarea v-model="draft.notes" maxlength="500" aria-label="备注"/></label><p class="muted">第一联系人必填；第二联系人如设置必须不同。短信和邮件在适配器未配置前不可选择。</p></div><template #footer><UiButton variant="outline" :disabled="busy" @click="closeEditor">取消</UiButton><UiButton :disabled="busy||!draft.groupId||!draft.primaryUserId||!draft.levels.length||!draft.channels.length" @click="save">{{ busy?'保存中…':'保存配置' }}</UiButton></template></UiDialog>
+  <UiDialog :open="Boolean(deleteTarget)" title="删除企业消息配置" width="520px" @close="()=>{if(!busy)deleteTarget=null}"><p>确认删除 {{ deleteTarget?.groupName||deleteTarget?.groupId }} 的 {{ levels.find(level=>level.value===deleteTarget?.level)?.label }} 配置？此操作只删除配置，不代表撤回已产生的消息。</p><template #footer><UiButton variant="outline" :disabled="busy" @click="deleteTarget=null">取消</UiButton><UiButton class="text-danger" :disabled="busy" @click="remove">{{ busy?'删除中…':'确认删除' }}</UiButton></template></UiDialog>
 </template>
 <style scoped>
-.intro {
-  font-size: 12px;
-  margin: 8px 0 24px;
-}
-.channel-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 26px;
-}
-.channel-card {
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 13px;
-}
-.channel-card > .icon {
-  color: var(--color-primary);
-}
-.channel-card > div {
-  flex: 1;
-}
-.channel-card strong {
-  font-size: 13px;
-}
-.channel-card p,
-.notification-row p {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  margin-top: 5px;
-}
-.notification-row {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  padding: 20px 0;
-  border-bottom: 1px solid var(--color-border);
-}
-.notification-row:last-child {
-  border-bottom: 0;
-  margin-bottom: 12px;
-}
-.notification-row strong {
-  font-size: 13px;
-  font-weight: 500;
-}
-.notification-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  display: grid;
-  place-items: center;
-}
-@media (max-width: 767px) {
-  .channel-grid {
-    grid-template-columns: 1fr;
-  }
-}
+.notification-settings,.editor-stack{display:flex;flex-direction:column;gap:20px}.section-heading,.configuration-row,.channel-row{display:flex;align-items:center;justify-content:space-between;gap:16px}.section-heading p,.catalog-panel p,.configuration-row p,.configuration-row small,.channel-row span,.muted{color:var(--color-text-secondary);font-size:var(--text-sm);line-height:1.6}.catalog-panel,.configuration-panel,.channel-status{padding:18px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface)}.filter-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;margin-top:14px}.configuration-filters{grid-template-columns:repeat(3,minmax(0,1fr)) auto}.type-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.type-chip{padding:7px 10px;border:1px solid var(--color-border);border-radius:var(--radius-pill);font-size:var(--text-xs);background:var(--color-surface-soft)}.configuration-list{display:flex;flex-direction:column}.configuration-row{padding:16px 0;border-bottom:1px solid var(--color-border)}.configuration-main{min-width:0}.configuration-main p,.configuration-main small{display:block;margin-top:5px;overflow-wrap:anywhere}.actions{flex-shrink:0}.channel-row{padding:12px 0;border-top:1px solid var(--color-border)}.choice-group{display:flex;flex-wrap:wrap;gap:12px;border:0;padding:0}.choice-group legend{width:100%;font-weight:600;margin-bottom:4px}.choice-group label{display:flex;align-items:center;gap:7px;padding:9px 11px;border:1px solid var(--color-border);border-radius:var(--radius-sm)}.choice-group input{width:18px;height:18px;padding:0}.choice-group .unavailable{opacity:.65}.choice-group small{display:block;color:var(--color-text-muted)}.two-column{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field>span{display:block;margin-bottom:7px;font-size:var(--text-sm);font-weight:600}.field textarea{width:100%;min-height:96px;padding:10px}.notice-box .inline-flex{margin-left:10px}@media(max-width:767px){.section-heading,.configuration-row{align-items:stretch;flex-direction:column}.filter-grid,.configuration-filters,.two-column{grid-template-columns:1fr}.actions{width:100%}.actions .inline-flex{flex:1}.catalog-panel,.configuration-panel,.channel-status{padding:14px}}
 </style>
