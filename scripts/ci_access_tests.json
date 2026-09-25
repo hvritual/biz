@@ -4,15 +4,27 @@
     {
       "id": "tenant-lifecycle",
       "tests": [
-        {"name": "TestB122TenantLifecycleUsesRootMySQLUnitOfWork", "file": "integration/b12_tenant_lifecycle_mysql_test.go"},
-        {"name": "TestB122SuspendedTenantCredentialFailsAuthentication", "file": "integration/b12_tenant_lifecycle_mysql_test.go"},
-        {"name": "TestB122TenantLifecycleRESTAndGRPCUseUnifiedExecutor", "file": "integration/b12_tenant_runtime_mysql_test.go"}
+        {
+          "name": "TestB122TenantLifecycleUsesRootMySQLUnitOfWork",
+          "file": "integration/b12_tenant_lifecycle_mysql_test.go"
+        },
+        {
+          "name": "TestB122SuspendedTenantCredentialFailsAuthentication",
+          "file": "integration/b12_tenant_lifecycle_mysql_test.go"
+        },
+        {
+          "name": "TestB122TenantLifecycleRESTAndGRPCUseUnifiedExecutor",
+          "file": "integration/b12_tenant_runtime_mysql_test.go"
+        }
       ]
     },
     {
       "id": "personal-profile",
       "tests": [
-        {"name": "TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled", "file": "integration/enterprise_181_personal_profile_mysql_test.go"}
+        {
+          "name": "TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled",
+          "file": "integration/enterprise_181_personal_profile_mysql_test.go"
+        }
       ]
     },
     {
@@ -38,6 +50,32 @@
         {
           "name": "TestEnterprise183NotificationPreferencesMySQLAndHTTP",
           "file": "integration/enterprise_183_notification_preferences_mysql_test.go"
+        }
+      ]
+    },
+    {
+      "id": "notification-directory",
+      "tests": [
+        {
+          "name": "TestEnterprise184NotificationDirectoryUsesCurrentTenantAndRootLocks",
+          "file": "integration/enterprise_184_directory_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise184NotificationSiteDirectoryUsesCurrentScopesAndRootLocks",
+          "file": "integration/enterprise_184_site_directory_mysql_test.go"
+        }
+      ]
+    },
+    {
+      "id": "notification-configuration",
+      "tests": [
+        {
+          "name": "TestEnterprise184ConfigurationStorageAndAccessDirectory",
+          "file": "integration/enterprise_184_configuration_storage_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise184NotificationConfigurationRealRuntime",
+          "file": "integration/enterprise_184_notification_runtime_mysql_test.go"
         }
       ]
     }

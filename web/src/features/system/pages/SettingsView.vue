@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { currentAuthorizationState, currentAuthorizationAllows } from '@/services/runtime/authorization'
 import { useRoute } from 'vue-router'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { systemNavigation } from '@/router/navigation'
@@ -12,7 +14,11 @@ import IntegrationSettings from '@/features/system/components/settings/Integrati
 import DictionarySettings from '@/features/system/components/settings/DictionarySettings.vue'
 const route = useRoute(),
   store = useEnterpriseStore()
-const section = computed(() => String(route.params.section))
+const { t } = useI18n()
+const section = computed(() => String(route.meta.settingsSection ?? route.params.section))
+const notificationScope = computed(() => section.value === 'notifications' && store.sourceKind === 'api')
+const tenantName = computed(() => currentAuthorizationState.snapshot?.tenant_name || store.session?.tenants?.find(item => item.id === store.tenantId)?.name || store.tenantId)
+const canWriteNotifications = computed(() => ['create', 'update', 'delete'].some(kind => currentAuthorizationAllows(`notification.configuration.${kind}`)))
 const currentSection = computed(() => systemNavigation.find((item) => item.id === section.value) ?? systemNavigation[0])
 const component = computed(
   () =>
@@ -36,22 +42,23 @@ const component = computed(
       <section class="card panel-pad settings-main" data-ui-region="form-workspace"><component :is="component" :key="section" /></section>
       <aside class="side-summary" data-ui-region="scope">
         <section class="card panel-pad">
-          <h2>配置范围</h2>
+          <h2>{{ notificationScope ? t('notificationConfiguration.scopeTitle') : '配置范围' }}</h2>
           <div class="scope-symbol"><AppIcon name="shield" :size="33" /></div>
           <h3 class="scope-title">仅作用于当前企业</h3>
-          <p class="scope-description">{{ store.company.name }}</p>
+          <p class="scope-description">{{ notificationScope ? tenantName : store.company.name }}</p>
           <dl class="detail-list">
             <dt>编辑身份</dt>
-            <dd>企业所有者</dd>
+            <dd>{{ notificationScope ? t('notificationConfiguration.scopeMember') : '企业所有者' }}</dd>
             <dt>环境</dt>
-            <dd>前端界面预览</dd>
+            <dd>{{ notificationScope ? t('notificationConfiguration.server') : '前端界面预览' }}</dd>
             <dt>生效方式</dt>
-            <dd>本地保存</dd>
+            <dd>{{ notificationScope ? t('notificationConfiguration.confirmed') : '本地保存' }}</dd>
+            <template v-if="notificationScope"><dt>{{ t('notificationConfiguration.scopeRights') }}</dt><dd>{{ t(canWriteNotifications ? 'notificationConfiguration.writable' : 'notificationConfiguration.readOnly') }}</dd></template>
           </dl>
           <div class="divider" />
           <p class="scope-tip">平台级租户管理、全局套餐规则与运行参数属于独立管理系统，不在此处开放。</p>
         </section>
-        <section class="card panel-pad">
+        <section v-if="!notificationScope" class="card panel-pad">
           <div class="row-between block-title">
             <h2>最近变更记录</h2>
             <RouterLink class="btn-link" to="/enterprise/logs">更多</RouterLink>

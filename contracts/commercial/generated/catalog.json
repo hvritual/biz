@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "mapping_version": "25",
+  "mapping_version": "26",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "c95437a8e4b7e1863f1df753802066a6001dd0661cd9579b3c4fb10df751195a",
-    "contracts/generated/manifest.json": "c94743687bae9f2e344531bf0fa10516e7cfb92b2f23f5388ff0dd7610dced6b",
-    "contracts/generated/operation-plans.json": "656fc860a705c0ef91e9f003521139be097cdc48820f27483282d8d28f493f56",
+    "contracts/commercial/operation-capabilities.v1.json": "9a4324c7e5a8af0b363771113cc229e004513fd36cd61fec2a17e46b87d13f03",
+    "contracts/generated/manifest.json": "b3cf0ac27255880ba673c911886c79ee355feed6bc96c778717d6f002b3f78ca",
+    "contracts/generated/operation-plans.json": "f6e464cac93684fe4324a2cdcbf7f850873e0fc3a4132926b646f4bdc2e43e08",
     "internal/access/application/member_business_scope.go": "9401a3c99e75c62aeb364d49d21ef6028e32be54d6daf8c75f393e62f09ba76e",
     "internal/access/application/tenant_data_policy.go": "e50a4bbf3ce4b7eca729278a92c5be04676dfa0375d3e73b637b3befefea6cf2",
     "internal/access/application/tenant_delegation.go": "b43e6709e61b7867395bc04a901a19c2a54cf4ec9565e875b354b1622e636589",
@@ -1178,6 +1178,168 @@
       ],
       "always_required_capability_codes": [
         "device.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "notification.channel.list",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageChannels",
+      "required_capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "notification.configuration.create",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/notification.v1.MessageConfigurationApplication/CreateMessageConfigurations",
+      "required_capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "notification.configuration.delete",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/notification.v1.MessageConfigurationApplication/DeleteMessageConfiguration",
+      "required_capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "notification.configuration.get",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/notification.v1.MessageConfigurationApplication/GetMessageConfiguration",
+      "required_capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "notification.configuration.list",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageConfigurations",
+      "required_capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "notification.configuration.update",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/notification.v1.MessageConfigurationApplication/UpdateMessageConfiguration",
+      "required_capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "notification.group.list",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageGroups",
+      "required_capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "notification.recipient.list",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageRecipients",
+      "required_capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.lifecycle"
+      ]
+    },
+    {
+      "operation_id": "notification.type.list",
+      "classification": "tenant_business",
+      "module_code": "access-management",
+      "capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageTypes",
+      "required_capability_codes": [
+        "tenant.lifecycle"
+      ],
+      "always_required_capability_codes": [
+        "tenant.lifecycle"
       ]
     },
     {

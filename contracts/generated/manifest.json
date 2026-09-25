@@ -150,6 +150,16 @@
         "name": "deviceops",
         "version": "v1"
       }
+    },
+    {
+      "name": "contracts/proto/notification/v1/configuration.proto",
+      "package": "notification.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/notification/v1;notificationv1",
+      "domain": {
+        "name": "notification",
+        "version": "v1"
+      }
     }
   ],
   "messages": [
@@ -7792,6 +7802,712 @@
       "dto": {
         "kind": "input"
       }
+    },
+    {
+      "name": "CreateMessageConfigurationsRequest",
+      "fullName": "notification.v1.CreateMessageConfigurationsRequest",
+      "fields": [
+        {
+          "name": "group_id",
+          "jsonName": "groupId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "levels",
+          "jsonName": "levels",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "channels",
+          "jsonName": "channels",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "primary_user_id",
+          "jsonName": "primaryUserId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "secondary_user_id",
+          "jsonName": "secondaryUserId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "additional_user_ids",
+          "jsonName": "additionalUserIds",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "notes",
+          "jsonName": "notes",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "DeleteMessageConfigurationRequest",
+      "fullName": "notification.v1.DeleteMessageConfigurationRequest",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expected_version",
+          "jsonName": "expectedVersion",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "GetMessageConfigurationRequest",
+      "fullName": "notification.v1.GetMessageConfigurationRequest",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListMessageChannelsRequest",
+      "fullName": "notification.v1.ListMessageChannelsRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListMessageChannelsResponse",
+      "fullName": "notification.v1.ListMessageChannelsResponse",
+      "fields": [
+        {
+          "name": "items",
+          "jsonName": "items",
+          "number": 1,
+          "kind": "message",
+          "type": "notification.v1.MessageChannelDTO",
+          "repeated": true
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListMessageConfigurationsRequest",
+      "fullName": "notification.v1.ListMessageConfigurationsRequest",
+      "fields": [
+        {
+          "name": "group_id",
+          "jsonName": "groupId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "level",
+          "jsonName": "level",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "recipient_id",
+          "jsonName": "recipientId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListMessageConfigurationsResponse",
+      "fullName": "notification.v1.ListMessageConfigurationsResponse",
+      "fields": [
+        {
+          "name": "items",
+          "jsonName": "items",
+          "number": 1,
+          "kind": "message",
+          "type": "notification.v1.MessageConfigurationDTO",
+          "repeated": true
+        },
+        {
+          "name": "total",
+          "jsonName": "total",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListMessageDirectoryRequest",
+      "fullName": "notification.v1.ListMessageDirectoryRequest",
+      "fields": [
+        {
+          "name": "query",
+          "jsonName": "query",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListMessageDirectoryResponse",
+      "fullName": "notification.v1.ListMessageDirectoryResponse",
+      "fields": [
+        {
+          "name": "items",
+          "jsonName": "items",
+          "number": 1,
+          "kind": "message",
+          "type": "notification.v1.MessageDirectoryEntryDTO",
+          "repeated": true
+        },
+        {
+          "name": "total",
+          "jsonName": "total",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListMessageTypesRequest",
+      "fullName": "notification.v1.ListMessageTypesRequest",
+      "fields": [
+        {
+          "name": "code",
+          "jsonName": "code",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "level",
+          "jsonName": "level",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListMessageTypesResponse",
+      "fullName": "notification.v1.ListMessageTypesResponse",
+      "fields": [
+        {
+          "name": "items",
+          "jsonName": "items",
+          "number": 1,
+          "kind": "message",
+          "type": "notification.v1.MessageTypeDTO",
+          "repeated": true
+        },
+        {
+          "name": "groups",
+          "jsonName": "groups",
+          "number": 2,
+          "kind": "message",
+          "type": "notification.v1.MessageLevelCountDTO",
+          "repeated": true
+        },
+        {
+          "name": "total",
+          "jsonName": "total",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "MessageChannelDTO",
+      "fullName": "notification.v1.MessageChannelDTO",
+      "fields": [
+        {
+          "name": "code",
+          "jsonName": "code",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "configurable",
+          "jsonName": "configurable",
+          "number": 3,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "unavailable_reason",
+          "jsonName": "unavailableReason",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "MessageConfigurationDTO",
+      "fullName": "notification.v1.MessageConfigurationDTO",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "group_id",
+          "jsonName": "groupId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "group_name",
+          "jsonName": "groupName",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "level",
+          "jsonName": "level",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "channels",
+          "jsonName": "channels",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "primary_user_id",
+          "jsonName": "primaryUserId",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "secondary_user_id",
+          "jsonName": "secondaryUserId",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "additional_user_ids",
+          "jsonName": "additionalUserIds",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "notes",
+          "jsonName": "notes",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 11,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "updated_at",
+          "jsonName": "updatedAt",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "jsonName": "createdAt",
+          "number": 13,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "deleted",
+          "jsonName": "deleted",
+          "number": 14,
+          "kind": "scalar",
+          "type": "bool"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "MessageConfigurationReceipt",
+      "fullName": "notification.v1.MessageConfigurationReceipt",
+      "fields": [
+        {
+          "name": "receipt_id",
+          "jsonName": "receiptId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "configurations",
+          "jsonName": "configurations",
+          "number": 3,
+          "kind": "message",
+          "type": "notification.v1.MessageConfigurationDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "MessageDirectoryEntryDTO",
+      "fullName": "notification.v1.MessageDirectoryEntryDTO",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "MessageLevelCountDTO",
+      "fullName": "notification.v1.MessageLevelCountDTO",
+      "fields": [
+        {
+          "name": "level",
+          "jsonName": "level",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "total",
+          "jsonName": "total",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "MessageTypeDTO",
+      "fullName": "notification.v1.MessageTypeDTO",
+      "fields": [
+        {
+          "name": "code",
+          "jsonName": "code",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "level",
+          "jsonName": "level",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "UpdateMessageConfigurationRequest",
+      "fullName": "notification.v1.UpdateMessageConfigurationRequest",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expected_version",
+          "jsonName": "expectedVersion",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "channels",
+          "jsonName": "channels",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "primary_user_id",
+          "jsonName": "primaryUserId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "secondary_user_id",
+          "jsonName": "secondaryUserId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "additional_user_ids",
+          "jsonName": "additionalUserIds",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "notes",
+          "jsonName": "notes",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
     }
   ],
   "enums": [
@@ -13306,6 +14022,388 @@
         ]
       },
       "methods": null
+    },
+    {
+      "name": "MessageConfigurationApplication",
+      "fullName": "notification.v1.MessageConfigurationApplication",
+      "domain": "notification",
+      "application": {
+        "name": "message_configuration"
+      },
+      "methods": [
+        {
+          "name": "CreateMessageConfigurations",
+          "fullName": "notification.v1.MessageConfigurationApplication.CreateMessageConfigurations",
+          "request": "notification.v1.CreateMessageConfigurationsRequest",
+          "response": "notification.v1.MessageConfigurationReceipt",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/notification/configurations",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "notification.configuration.create",
+            "useCase": "create_message_configurations",
+            "permissions": [
+              "tenant.notification.create"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.configuration.create",
+            "permissions": [
+              "tenant.notification.create"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "DeleteMessageConfiguration",
+          "fullName": "notification.v1.MessageConfigurationApplication.DeleteMessageConfiguration",
+          "request": "notification.v1.DeleteMessageConfigurationRequest",
+          "response": "notification.v1.MessageConfigurationReceipt",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/notification/configurations/{id}/delete",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "notification.configuration.delete",
+            "useCase": "delete_message_configuration",
+            "permissions": [
+              "tenant.notification.delete"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.configuration.delete",
+            "permissions": [
+              "tenant.notification.delete"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "GetMessageConfiguration",
+          "fullName": "notification.v1.MessageConfigurationApplication.GetMessageConfiguration",
+          "request": "notification.v1.GetMessageConfigurationRequest",
+          "response": "notification.v1.MessageConfigurationDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/notification/configurations/{id}"
+            }
+          ],
+          "operation": {
+            "id": "notification.configuration.get",
+            "useCase": "get_message_configuration",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.configuration.get",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListMessageChannels",
+          "fullName": "notification.v1.MessageConfigurationApplication.ListMessageChannels",
+          "request": "notification.v1.ListMessageChannelsRequest",
+          "response": "notification.v1.ListMessageChannelsResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/notification/channels"
+            }
+          ],
+          "operation": {
+            "id": "notification.channel.list",
+            "useCase": "list_message_channels",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.channel.list",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListMessageConfigurations",
+          "fullName": "notification.v1.MessageConfigurationApplication.ListMessageConfigurations",
+          "request": "notification.v1.ListMessageConfigurationsRequest",
+          "response": "notification.v1.ListMessageConfigurationsResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/notification/configurations"
+            }
+          ],
+          "operation": {
+            "id": "notification.configuration.list",
+            "useCase": "list_message_configurations",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.configuration.list",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListMessageGroups",
+          "fullName": "notification.v1.MessageConfigurationApplication.ListMessageGroups",
+          "request": "notification.v1.ListMessageDirectoryRequest",
+          "response": "notification.v1.ListMessageDirectoryResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/notification/groups"
+            }
+          ],
+          "operation": {
+            "id": "notification.group.list",
+            "useCase": "list_message_groups",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.group.list",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListMessageRecipients",
+          "fullName": "notification.v1.MessageConfigurationApplication.ListMessageRecipients",
+          "request": "notification.v1.ListMessageDirectoryRequest",
+          "response": "notification.v1.ListMessageDirectoryResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/notification/recipients"
+            }
+          ],
+          "operation": {
+            "id": "notification.recipient.list",
+            "useCase": "list_message_recipients",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.recipient.list",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListMessageTypes",
+          "fullName": "notification.v1.MessageConfigurationApplication.ListMessageTypes",
+          "request": "notification.v1.ListMessageTypesRequest",
+          "response": "notification.v1.ListMessageTypesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/notification/types"
+            }
+          ],
+          "operation": {
+            "id": "notification.type.list",
+            "useCase": "list_message_types",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.type.list",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "UpdateMessageConfiguration",
+          "fullName": "notification.v1.MessageConfigurationApplication.UpdateMessageConfiguration",
+          "request": "notification.v1.UpdateMessageConfigurationRequest",
+          "response": "notification.v1.MessageConfigurationReceipt",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/tenant/notification/configurations/{id}",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "notification.configuration.update",
+            "useCase": "update_message_configuration",
+            "permissions": [
+              "tenant.notification.update"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.configuration.update",
+            "permissions": [
+              "tenant.notification.update"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        }
+      ]
     }
   ]
 }

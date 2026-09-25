@@ -1280,6 +1280,136 @@ export interface Deviceops_V1_UpdateDeviceRequest {
   version?: string;
 }
 
+export interface Notification_V1_CreateMessageConfigurationsRequest {
+  groupId?: string;
+  levels?: readonly string[];
+  channels?: readonly string[];
+  primaryUserId?: string;
+  secondaryUserId?: string;
+  additionalUserIds?: readonly string[];
+  notes?: string;
+}
+
+export interface Notification_V1_DeleteMessageConfigurationRequest {
+  id?: string;
+  expectedVersion?: string;
+}
+
+export interface Notification_V1_GetMessageConfigurationRequest {
+  id?: string;
+}
+
+export interface Notification_V1_ListMessageChannelsRequest {
+}
+
+export interface Notification_V1_ListMessageChannelsResponse {
+  items?: readonly Notification_V1_MessageChannelDTO[];
+  tenantId?: string;
+}
+
+export interface Notification_V1_ListMessageConfigurationsRequest {
+  groupId?: string;
+  level?: string;
+  recipientId?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface Notification_V1_ListMessageConfigurationsResponse {
+  items?: readonly Notification_V1_MessageConfigurationDTO[];
+  total?: string;
+  page?: number;
+  pageSize?: number;
+  tenantId?: string;
+}
+
+export interface Notification_V1_ListMessageDirectoryRequest {
+  query?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface Notification_V1_ListMessageDirectoryResponse {
+  items?: readonly Notification_V1_MessageDirectoryEntryDTO[];
+  total?: string;
+  page?: number;
+  pageSize?: number;
+  tenantId?: string;
+}
+
+export interface Notification_V1_ListMessageTypesRequest {
+  code?: string;
+  name?: string;
+  level?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface Notification_V1_ListMessageTypesResponse {
+  items?: readonly Notification_V1_MessageTypeDTO[];
+  groups?: readonly Notification_V1_MessageLevelCountDTO[];
+  total?: string;
+  page?: number;
+  pageSize?: number;
+  tenantId?: string;
+}
+
+export interface Notification_V1_MessageChannelDTO {
+  code?: string;
+  name?: string;
+  configurable?: boolean;
+  unavailableReason?: string;
+}
+
+export interface Notification_V1_MessageConfigurationDTO {
+  id?: string;
+  tenantId?: string;
+  groupId?: string;
+  groupName?: string;
+  level?: string;
+  channels?: readonly string[];
+  primaryUserId?: string;
+  secondaryUserId?: string;
+  additionalUserIds?: readonly string[];
+  notes?: string;
+  version?: string;
+  updatedAt?: string;
+  createdAt?: string;
+  deleted?: boolean;
+}
+
+export interface Notification_V1_MessageConfigurationReceipt {
+  receiptId?: string;
+  tenantId?: string;
+  configurations?: readonly Notification_V1_MessageConfigurationDTO[];
+}
+
+export interface Notification_V1_MessageDirectoryEntryDTO {
+  id?: string;
+  name?: string;
+}
+
+export interface Notification_V1_MessageLevelCountDTO {
+  level?: string;
+  total?: string;
+}
+
+export interface Notification_V1_MessageTypeDTO {
+  code?: string;
+  name?: string;
+  level?: string;
+}
+
+export interface Notification_V1_UpdateMessageConfigurationRequest {
+  id?: string;
+  expectedVersion?: string;
+  channels?: readonly string[];
+  primaryUserId?: string;
+  secondaryUserId?: string;
+  additionalUserIds?: readonly string[];
+  notes?: string;
+}
+
 export const operations = {
   "access.v1.TenantAuditManagementApplication.ExportTenantAuditRecords": {
     fullName: "access.v1.TenantAuditManagementApplication.ExportTenantAuditRecords",
@@ -2226,6 +2356,87 @@ export const operations = {
       { method: "PATCH", path: "/v1/devices/{id}/transfer", body: "*" },
     ]
   },
+  "notification.v1.MessageConfigurationApplication.CreateMessageConfigurations": {
+    fullName: "notification.v1.MessageConfigurationApplication.CreateMessageConfigurations",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/CreateMessageConfigurations",
+    requestType: "notification.v1.CreateMessageConfigurationsRequest",
+    responseType: "notification.v1.MessageConfigurationReceipt",
+    http: [
+      { method: "POST", path: "/v1/tenant/notification/configurations", body: "*" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.DeleteMessageConfiguration": {
+    fullName: "notification.v1.MessageConfigurationApplication.DeleteMessageConfiguration",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/DeleteMessageConfiguration",
+    requestType: "notification.v1.DeleteMessageConfigurationRequest",
+    responseType: "notification.v1.MessageConfigurationReceipt",
+    http: [
+      { method: "POST", path: "/v1/tenant/notification/configurations/{id}/delete", body: "*" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.GetMessageConfiguration": {
+    fullName: "notification.v1.MessageConfigurationApplication.GetMessageConfiguration",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/GetMessageConfiguration",
+    requestType: "notification.v1.GetMessageConfigurationRequest",
+    responseType: "notification.v1.MessageConfigurationDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/notification/configurations/{id}" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.ListMessageChannels": {
+    fullName: "notification.v1.MessageConfigurationApplication.ListMessageChannels",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/ListMessageChannels",
+    requestType: "notification.v1.ListMessageChannelsRequest",
+    responseType: "notification.v1.ListMessageChannelsResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/notification/channels" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.ListMessageConfigurations": {
+    fullName: "notification.v1.MessageConfigurationApplication.ListMessageConfigurations",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/ListMessageConfigurations",
+    requestType: "notification.v1.ListMessageConfigurationsRequest",
+    responseType: "notification.v1.ListMessageConfigurationsResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/notification/configurations" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.ListMessageGroups": {
+    fullName: "notification.v1.MessageConfigurationApplication.ListMessageGroups",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/ListMessageGroups",
+    requestType: "notification.v1.ListMessageDirectoryRequest",
+    responseType: "notification.v1.ListMessageDirectoryResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/notification/groups" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.ListMessageRecipients": {
+    fullName: "notification.v1.MessageConfigurationApplication.ListMessageRecipients",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/ListMessageRecipients",
+    requestType: "notification.v1.ListMessageDirectoryRequest",
+    responseType: "notification.v1.ListMessageDirectoryResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/notification/recipients" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.ListMessageTypes": {
+    fullName: "notification.v1.MessageConfigurationApplication.ListMessageTypes",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/ListMessageTypes",
+    requestType: "notification.v1.ListMessageTypesRequest",
+    responseType: "notification.v1.ListMessageTypesResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/notification/types" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.UpdateMessageConfiguration": {
+    fullName: "notification.v1.MessageConfigurationApplication.UpdateMessageConfiguration",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/UpdateMessageConfiguration",
+    requestType: "notification.v1.UpdateMessageConfigurationRequest",
+    responseType: "notification.v1.MessageConfigurationReceipt",
+    http: [
+      { method: "PATCH", path: "/v1/tenant/notification/configurations/{id}", body: "*" },
+    ]
+  },
 } as const satisfies Record<string, RpcOperation>;
 
 export class Access_V1_TenantAuditManagementApplicationClient {
@@ -2729,6 +2940,47 @@ export class Deviceops_V1_DeviceTransferApplicationClient {
 
   transferDevice(request: Deviceops_V1_TransferDeviceRequest): Promise<Deviceops_V1_DeviceDTO> {
     return this.transport.call<Deviceops_V1_TransferDeviceRequest, Deviceops_V1_DeviceDTO>(operations["deviceops.v1.DeviceTransferApplication.TransferDevice"], request);
+  }
+
+}
+
+export class Notification_V1_MessageConfigurationApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  createMessageConfigurations(request: Notification_V1_CreateMessageConfigurationsRequest): Promise<Notification_V1_MessageConfigurationReceipt> {
+    return this.transport.call<Notification_V1_CreateMessageConfigurationsRequest, Notification_V1_MessageConfigurationReceipt>(operations["notification.v1.MessageConfigurationApplication.CreateMessageConfigurations"], request);
+  }
+
+  deleteMessageConfiguration(request: Notification_V1_DeleteMessageConfigurationRequest): Promise<Notification_V1_MessageConfigurationReceipt> {
+    return this.transport.call<Notification_V1_DeleteMessageConfigurationRequest, Notification_V1_MessageConfigurationReceipt>(operations["notification.v1.MessageConfigurationApplication.DeleteMessageConfiguration"], request);
+  }
+
+  getMessageConfiguration(request: Notification_V1_GetMessageConfigurationRequest): Promise<Notification_V1_MessageConfigurationDTO> {
+    return this.transport.call<Notification_V1_GetMessageConfigurationRequest, Notification_V1_MessageConfigurationDTO>(operations["notification.v1.MessageConfigurationApplication.GetMessageConfiguration"], request);
+  }
+
+  listMessageChannels(request: Notification_V1_ListMessageChannelsRequest): Promise<Notification_V1_ListMessageChannelsResponse> {
+    return this.transport.call<Notification_V1_ListMessageChannelsRequest, Notification_V1_ListMessageChannelsResponse>(operations["notification.v1.MessageConfigurationApplication.ListMessageChannels"], request);
+  }
+
+  listMessageConfigurations(request: Notification_V1_ListMessageConfigurationsRequest): Promise<Notification_V1_ListMessageConfigurationsResponse> {
+    return this.transport.call<Notification_V1_ListMessageConfigurationsRequest, Notification_V1_ListMessageConfigurationsResponse>(operations["notification.v1.MessageConfigurationApplication.ListMessageConfigurations"], request);
+  }
+
+  listMessageGroups(request: Notification_V1_ListMessageDirectoryRequest): Promise<Notification_V1_ListMessageDirectoryResponse> {
+    return this.transport.call<Notification_V1_ListMessageDirectoryRequest, Notification_V1_ListMessageDirectoryResponse>(operations["notification.v1.MessageConfigurationApplication.ListMessageGroups"], request);
+  }
+
+  listMessageRecipients(request: Notification_V1_ListMessageDirectoryRequest): Promise<Notification_V1_ListMessageDirectoryResponse> {
+    return this.transport.call<Notification_V1_ListMessageDirectoryRequest, Notification_V1_ListMessageDirectoryResponse>(operations["notification.v1.MessageConfigurationApplication.ListMessageRecipients"], request);
+  }
+
+  listMessageTypes(request: Notification_V1_ListMessageTypesRequest): Promise<Notification_V1_ListMessageTypesResponse> {
+    return this.transport.call<Notification_V1_ListMessageTypesRequest, Notification_V1_ListMessageTypesResponse>(operations["notification.v1.MessageConfigurationApplication.ListMessageTypes"], request);
+  }
+
+  updateMessageConfiguration(request: Notification_V1_UpdateMessageConfigurationRequest): Promise<Notification_V1_MessageConfigurationReceipt> {
+    return this.transport.call<Notification_V1_UpdateMessageConfigurationRequest, Notification_V1_MessageConfigurationReceipt>(operations["notification.v1.MessageConfigurationApplication.UpdateMessageConfiguration"], request);
   }
 
 }

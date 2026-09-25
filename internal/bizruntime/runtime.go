@@ -136,7 +136,7 @@ func bootstrapWithOptions(
 	rootMux.HandleFunc("GET /healthz", health.handle)
 	rootMux.Handle("GET "+diagnosticsPath, diagnosticsEndpoint)
 	webAuth.register(rootMux)
-	rootMux.Handle("/v1/", httpAuthentication(authenticator, webAuth, enforcement.HTTP(apiMux)))
+	rootMux.Handle("/v1/", httpAuthentication(authenticator, webAuth, enforcement.HTTP(notificationHTTP(apiMux))))
 	httpServer := &http.Server{Handler: rootMux, ReadHeaderTimeout: 5 * time.Second}
 	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcAuthentication(authenticator), enforcement.RPC()))
 
@@ -313,6 +313,9 @@ func bindRuntimeWithSecurity(
 	if config.AutoMigrate {
 		if err := accessStore.AutoMigrate(ctx); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: access migrate: %w", err)
+		}
+		if err := migrateNotificationConfigurations(ctx, accessDatabase); err != nil {
+			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: notification configuration migrate: %w", err)
 		}
 		if err := accesspersistence.AutoMigrateTenantDepartment(ctx, accessDatabase); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: tenant department migrate: %w", err)

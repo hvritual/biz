@@ -213,8 +213,8 @@
     "scope": "仅用于系统设置业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
   },
   "system/components/settings/NotificationSettings.vue": {
-    "scenario": "系统设置 · 领域展示 · NotificationSettings",
-    "scope": "仅用于系统设置业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+    "scenario": "系统设置 · 当前企业消息类型、点位配置和回执核对",
+    "scope": "仅用于现有通知设置页；复用当前可信会话与独立动作权限，配置持久化不代表发送或送达。"
   },
   "system/components/settings/SecuritySettings.vue": {
     "scenario": "系统设置 · 领域展示 · SecuritySettings",
@@ -231,5 +231,13 @@
   "enterprise/components/security/PersonalSecurityPanel.vue": {
     "scenario": "企业中心 · 本人联系方式安全换绑与本企业账号注销",
     "scope": "仅用于已登录租户的个人中心；复用已绑定渠道、当前会话与安全验证，不承担登录凭据变更或全局账号删除。"
+  },
+  "system/components/settings/NotificationDirectoryPicker.vue": {
+    "scenario": "企业消息配置 · 可管理点位及有效成员分页选择",
+    "scope": "仅为Notification设置提供当前企业受控候选目录；不加载任意通讯录，不作为服务端授权来源。"
+  },
+  "system/components/settings/NotificationConfigurationEditor.vue": {
+    "scenario": "企业消息配置 · 创建、编辑、确认及不确定结果恢复",
+    "scope": "消费不可变操作与回执；依赖父级流程控制，禁止直接网络访问、跨租户数据保留或重新生成重试幂等键。"
   }
 }

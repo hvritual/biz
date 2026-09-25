@@ -34,7 +34,8 @@
         "application:commercial/plan_management",
         "application:commercial/subscription_management",
         "application:commercial/subscription_changes",
-        "application:commercial/provisioning"
+        "application:commercial/provisioning",
+        "application:notification/message_configuration"
       ],
       "inheritEnv": [
         "PATH",
