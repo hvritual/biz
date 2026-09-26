@@ -18,6 +18,7 @@
 |---|---|
 | PATCH /v1/tenant/members/{id}/profile | 资料实际落库，不生成安全生命周期 outbox，不调用 provider |
 | POST /v1/tenant/members/{id}/suspend /activate /remove /restore | 真实 Action、版本变更、tenant/user/status/version 稳定事件、worker 投递、重放不增加事件；A 操作不改变共享账号在 B 的关系 |
+| 只读角色 POST 成员四种生命周期动作 | 真实读取目标成功，但所有写动作 403；成员状态/版本不变，outbox 与 provider 均无副作用 |
 | Suspend 的 outbox insert 故障 | HTTP 失败，版本和状态及事件均回滚；移除注入后可继续正常操作 |
 | POST /v1/tenant/members/create | 激活链接及短信初始凭据分别真实创建；返回 PENDING 不含凭据；worker 取得正确身份和保护材料；投递完成销毁密文 |
 | POST /idp/member/activate | 通过 test transport 收到的真实激活链接完成 HTTP 激活，重放拒绝；SMS 初始密码仍要求强制更改 |
