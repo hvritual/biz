@@ -129,7 +129,7 @@ func (idp *runtimeFirstPartyIdP) handlePasswordRecoveryComplete(writer http.Resp
 		idp.renderPasswordRecovery(writer, http.StatusUnauthorized, page)
 		return
 	}
-	receipt, err := store.RecoverPasswordWithCode(request.Context(), protection, accessdomain.VerifyChallengeRequest{
+	_, err := store.RecoverPasswordWithCode(request.Context(), protection, accessdomain.VerifyChallengeRequest{
 		ChallengeID: challengeID,
 		FlowID:      flowID,
 		Purpose:     accessdomain.VerificationPurposePasswordRecovery,
@@ -151,19 +151,6 @@ func (idp *runtimeFirstPartyIdP) handlePasswordRecoveryComplete(writer http.Resp
 		}
 		idp.renderPasswordRecovery(writer, http.StatusUnauthorized, page)
 		return
-	}
-	event, queueErr := verification.QueueSecurityNotification(request.Context(), accessdomain.SecurityNotificationRequest{
-		BusinessEventID: "password-reset-complete/" + receipt.ChallengeID,
-		Kind:            accessdomain.SecurityNotificationPasswordReset,
-		Purpose:         accessdomain.VerificationPurposePasswordRecovery,
-		UserID:          resolved.Identity.UserID,
-		FlowID:          flowID,
-		Channel:         resolved.OTPChannel,
-		Destination:     resolved.OTPDestination,
-		ExpiresAt:       time.Now().UTC().Add(idp.config.RecoveryAuthorizationTTL),
-	})
-	if queueErr == nil && event.EventID != "" {
-		_, _ = verification.DeliverSecurityNotification(request.Context(), event.EventID)
 	}
 	idp.clearRecoveryCookie(writer)
 	idp.renderPasswordRecovery(writer, http.StatusOK, firstPartyRecoveryPage{

@@ -93,6 +93,10 @@
         {
           "name": "TestEnterprise185ExternalDeliveryRechecksPreferenceAndProtectedContact",
           "file": "integration/enterprise_185_external_delivery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185IdentityLifecycleOutboxCommitsBeforeReliableWorkerDelivery",
+          "file": "integration/enterprise_185_identity_lifecycle_delivery_mysql_test.go"
         }
       ]
     }

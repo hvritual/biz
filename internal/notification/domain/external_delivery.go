@@ -80,6 +80,7 @@ type ExternalTaskClaim struct {
 	WorkerID             string
 	LeaseToken           uint64
 	LeaseUntil           time.Time
+	RecoveredUnknownOutcome bool
 }
 
 func (claim ExternalTaskClaim) Validate() error {

@@ -41,6 +41,7 @@ func (r *RoutingRepository) ClaimNextExternalTask(
 		if err != nil {
 			return err
 		}
+		recoveredUnknownOutcome := row.State == domain.ExternalTaskStateLeased
 		if row.Attempts >= policy.MaxAttempts {
 			receipt, err = terminalExternalTask(ctx, tx, row, domain.ExternalTaskStateManualReview, "DELIVERY_RETRIES_EXHAUSTED", now)
 			return err
@@ -62,6 +63,7 @@ func (r *RoutingRepository) ClaimNextExternalTask(
 		row.LeaseOwner = worker
 		row.LeaseUntil = &until
 		claim = externalTaskClaim(row)
+		claim.RecoveredUnknownOutcome = recoveredUnknownOutcome
 		receipt = externalTaskReceipt(row)
 		return nil
 	})

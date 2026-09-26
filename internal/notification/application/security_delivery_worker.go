@@ -37,6 +37,17 @@ func (worker SecurityDeliveryWorker) RunOnce(ctx context.Context) (accessdomain.
 		return result, nil
 	}
 	result.EventID, result.Attempt = claim.EventID, claim.Attempt
+	if claim.RecoveredUnknownOutcome {
+		safe, ok := worker.Sender.(accessports.SecurityNotificationRetrySafety)
+		if !ok || !safe.SecurityNotificationIdempotent() {
+			failed, err := worker.Repository.FailReliableSecurityNotification(ctx, claim, "DELIVERY_OUTCOME_UNKNOWN", false, worker.Policy)
+			if err != nil {
+				return result, err
+			}
+			result.State, result.FailureCode = failed.State, failed.FailureCode
+			return result, nil
+		}
+	}
 	sendCtx, cancel := context.WithTimeout(ctx, worker.Policy.SendTimeout)
 	providerReceipt, sendErr := worker.Sender.SendSecurityNotification(sendCtx, claim.SecurityNotificationClaim)
 	cancel()

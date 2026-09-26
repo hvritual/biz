@@ -27,7 +27,7 @@
 - 最终失败清除 destination/secret 可逆密文；
 - 未知结果仅允许幂等 provider 重试。
 
-旧 ClaimSecurityNotification / DeliverSecurityNotification 暂保留兼容 #170 同步调用；#185 worker 走新增 reliable port。后续生命周期事件改为“业务事务只写 outbox，worker 在提交后消费”时，不再依赖同步发送成功。
+旧 `ClaimSecurityNotification` / `DeliverSecurityNotification` 只保留兼容与隔离测试使用。#185 之后验证码、登录锁定、密码重置完成、初始凭据、成员生命周期、申诉、联系方式变更和注销确认的请求路径只提交受保护 outbox；`biz-idp` 可靠 worker 在事务提交后消费。密码重置完成通知与凭据变更在同一数据库事务中落盒，避免“密码已改但通知未入队”。租约恢复若来自 provider 结果未知的旧 `SENDING/LEASED`，只有 provider 明确声明幂等才允许重发，否则进入人工处理。
 
 ## 安全边界
 
@@ -35,13 +35,18 @@
 
 MemorySender 仅声明测试环境的 EventID 幂等行为，不构成真实短信/邮件供应商资格。
 
-## 尚未在本增量完成
+## 当前已形成的链路
 
-- #184 配置驱动的普通业务通知路由；
-- #183 可选短信/邮件偏好在入队和实际投递前的双重校验；
-- 站内未读记录；
-- 登录锁定、初始凭据、成员启停、管理员恢复/申诉、注销确认等全部生命周期事件迁移到可靠 worker；
-- provider webhook/回调、真实测试渠道和生产凭证资格；
-- 60 秒站内生成及时率测量。
+- #184 配置驱动的普通业务通知路由已落地，路由前重查当前点位、配置、成员和 #183 偏好；
+- 外部任务在每次 provider 调用前再次读取 #183 偏好和受保护联系方式；
+- 身份安全通知统一由受保护 outbox + reliable worker 投递，请求事务不做 provider I/O；
+- 站内记录已作为 #185 路由产物持久化，但 #186 才负责未读/已读与小铃铛交互。
+
+## 尚未完成
+
+- provider webhook/callback 与真实测试供应商终态联验；
+- 生产 provider 凭证/配置资格；
+- 60 秒站内生成及时率的 ≥99.9% 批量统计证据；
+- #185 最终 Full Gate、main 验证及 Issue 收口。
 
 这些项继续留在 #185，不能以本次 worker 核心单元测试替代完整验收。

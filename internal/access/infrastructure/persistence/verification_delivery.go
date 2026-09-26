@@ -66,6 +66,7 @@ func (repository *VerificationRepository) ClaimNextSecurityNotification(
 			return err
 		}
 		receipt = notificationReceipt(record)
+		recoveredUnknownOutcome := record.State == domain.NotificationStateSending
 		if !record.ExpiresAt.After(now) {
 			return repository.finalizeSecurityNotification(ctx, tx, record, now, "NOTIFICATION_EXPIRED", &receipt)
 		}
@@ -113,6 +114,7 @@ func (repository *VerificationRepository) ClaimNextSecurityNotification(
 				Secret: secret, ExpiresAt: record.ExpiresAt, Attempt: record.Attempts,
 			},
 			WorkerID: workerID, LeaseToken: token, LeaseUntil: until,
+			RecoveredUnknownOutcome: recoveredUnknownOutcome,
 		}
 		receipt.State = domain.NotificationStateSending
 		receipt.Attempt = record.Attempts

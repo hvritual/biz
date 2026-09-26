@@ -62,6 +62,7 @@ type ReliableSecurityNotificationClaim struct {
 	WorkerID   string
 	LeaseToken uint64
 	LeaseUntil time.Time
+	RecoveredUnknownOutcome bool
 }
 
 func (claim ReliableSecurityNotificationClaim) Validate() error {

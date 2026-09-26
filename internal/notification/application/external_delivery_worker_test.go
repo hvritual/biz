@@ -92,6 +92,21 @@ func TestEnterprise185ExternalWorkerKnownTransientFailureRetries(t *testing.T){
 	if err!=nil||repo.retryable==nil||!*repo.retryable||repo.failureCode!="PROVIDER_TEMPORARY"||receipt.State!=domain.ExternalTaskStateRetryWait{t.Fatalf("receipt=%+v retry=%v code=%s err=%v",receipt,repo.retryable,repo.failureCode,err)}
 }
 
+func TestEnterprise185ExternalRecoveredUnknownOutcomeRequiresIdempotentProvider(t *testing.T){
+	for _,tc:=range []struct{name string;safe bool;wantState string}{{"unsafe",false,domain.ExternalTaskStateManualReview},{"safe",true,domain.ExternalTaskStateProviderAccepted}}{
+		t.Run(tc.name,func(t *testing.T){
+			provider:=&providerFake{result:domain.ExternalProviderResult{ReceiptID:"provider-185",Status:domain.ExternalProviderAccepted},safe:tc.safe}
+			admission:=accessdomain.OptionalNotificationDeliveryAdmission{NotificationPreferenceOwner:accessdomain.NotificationPreferenceOwner{TenantID:"tenant-185",UserID:"user-185"},Channel:accessdomain.NotificationPreferenceEmail,Allowed:true,Destination:"member@example.invalid"}
+			worker,repo,_:=externalWorkerFixture(t,admission,provider)
+			repo.claim.RecoveredUnknownOutcome=true
+			receipt,err:=worker.RunOnce(context.Background())
+			if err!=nil||receipt.State!=tc.wantState{t.Fatalf("receipt=%+v err=%v",receipt,err)}
+			if tc.safe&&provider.calls!=1{t.Fatalf("safe provider calls=%d",provider.calls)}
+			if !tc.safe&&(provider.calls!=0||repo.failureCode!="DELIVERY_OUTCOME_UNKNOWN"){t.Fatalf("unsafe provider calls=%d code=%s",provider.calls,repo.failureCode)}
+		})
+	}
+}
+
 var _ ports.ExternalTaskRepository=(*externalRepoFake)(nil)
 var _ ports.ExternalNotificationProvider=(*providerFake)(nil)
 var _ ports.ExternalNotificationProviderRetrySafety=(*providerFake)(nil)

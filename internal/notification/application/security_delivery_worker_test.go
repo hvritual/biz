@@ -82,5 +82,20 @@ func TestEnterprise185UnclassifiedFailureOnlyRetriesForIdempotentProvider(t *tes
 	}
 }
 
+func TestEnterprise185RecoveredUnknownOutcomeRequiresIdempotentProvider(t *testing.T){
+	for _,tc:=range []struct{name string;safe bool;wantState string}{{"unsafe",false,accessdomain.NotificationStateManualReview},{"idempotent",true,accessdomain.NotificationStateDelivered}}{
+		t.Run(tc.name,func(t *testing.T){
+			claim:=claimFixture()
+			claim.RecoveredUnknownOutcome=true
+			repo:=&workerRepo{claim:claim}
+			w:=SecurityDeliveryWorker{Repository:repo,Sender:workerSender{idempotent:tc.safe},Policy:accessdomain.EnterpriseNotificationRetryPolicy(),WorkerID:"worker-185"}
+			result,err:=w.RunOnce(context.Background())
+			if err!=nil||result.State!=tc.wantState{t.Fatalf("result=%+v err=%v",result,err)}
+			if tc.safe&&!repo.completed{t.Fatal("idempotent provider was not resumed")}
+			if !tc.safe&&(repo.failedRetryable==nil||*repo.failedRetryable||repo.failureCode!="DELIVERY_OUTCOME_UNKNOWN"){t.Fatalf("unsafe recovered outcome was retried: retry=%v code=%s",repo.failedRetryable,repo.failureCode)}
+		})
+	}
+}
+
 var _ accessports.ReliableSecurityNotificationRepository = (*workerRepo)(nil)
 var _ accessports.SecurityNotificationRetrySafety = workerSender{}

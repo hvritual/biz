@@ -39,6 +39,12 @@ func (worker *ExternalDeliveryWorker) RunOnce(ctx context.Context) (domain.Exter
 	if claim.TaskID == "" {
 		return receipt, nil
 	}
+	if claim.RecoveredUnknownOutcome {
+		safe, ok := worker.deps.Provider.(ports.ExternalNotificationProviderRetrySafety)
+		if !ok || !safe.ExternalNotificationIdempotent() {
+			return worker.deps.Tasks.TerminalExternalTask(ctx, claim, domain.ExternalTaskStateManualReview, "DELIVERY_OUTCOME_UNKNOWN")
+		}
+	}
 
 	preferenceChannel, ok := optionalPreferenceChannel(claim.Channel)
 	if !ok {
