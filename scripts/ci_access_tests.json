@@ -97,6 +97,26 @@
         {
           "name": "TestEnterprise185IdentityLifecycleOutboxCommitsBeforeReliableWorkerDelivery",
           "file": "integration/enterprise_185_identity_lifecycle_delivery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185MemberHTTPActionsPublishOnlyLifecycleEvents",
+          "file": "integration/enterprise_185_member_http_delivery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185InitialCredentialHTTPRequestsReachReliableWorker",
+          "file": "integration/enterprise_185_member_http_delivery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185LoginAndRecoveryHTTPEntrypointsReachReliableWorker",
+          "file": "integration/enterprise_185_identity_http_delivery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185ContactAndDeletionBFFEventsReachReliableWorker",
+          "file": "integration/enterprise_185_self_security_http_delivery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185AppealBFFTargetsOnlyCurrentTenantOwners",
+          "file": "integration/enterprise_185_self_security_http_delivery_mysql_test.go"
         }
       ]
     }
