@@ -152,3 +152,50 @@ func (result ExternalProviderResult) Validate() error {
 	}
 	return nil
 }
+
+type ExternalProviderCallbackStatus string
+
+const (
+	ExternalProviderCallbackDelivered ExternalProviderCallbackStatus = "delivered"
+	ExternalProviderCallbackFailed    ExternalProviderCallbackStatus = "failed"
+)
+
+type ExternalProviderCallback struct {
+	TaskID      string
+	ReceiptID   string
+	Status      ExternalProviderCallbackStatus
+	FailureCode string
+}
+
+func (callback ExternalProviderCallback) Validate() error {
+	if !ValidConfigurationID(callback.TaskID, 64) ||
+		strings.TrimSpace(callback.ReceiptID) == "" || len(callback.ReceiptID) > 200 {
+		return ErrExternalDeliveryInvalid
+	}
+	switch callback.Status {
+	case ExternalProviderCallbackDelivered:
+		if strings.TrimSpace(callback.FailureCode) != "" {
+			return ErrExternalDeliveryInvalid
+		}
+	case ExternalProviderCallbackFailed:
+		if !ValidExternalFailureCode(callback.FailureCode) {
+			return ErrExternalDeliveryInvalid
+		}
+	default:
+		return ErrExternalDeliveryInvalid
+	}
+	return nil
+}
+
+func ValidExternalFailureCode(value string) bool {
+	value = strings.TrimSpace(value)
+	if value == "" || len(value) > 64 {
+		return false
+	}
+	for _, char := range value {
+		if (char < 'A' || char > 'Z') && (char < '0' || char > '9') && char != '_' {
+			return false
+		}
+	}
+	return true
+}
