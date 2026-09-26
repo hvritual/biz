@@ -699,8 +699,12 @@ func (service *TenantMemberLifecycleService) mutate(
 		if err := scope.Repositories().Member.Update(scope.Context(), &current, expectedVersion); err != nil {
 			return domain.Membership{}, err
 		}
-		if err := notifyTenantMemberLifecycle(scope.Context(), scope.Repositories(), current, reason); err != nil {
-			return domain.Membership{}, err
+		// Profile edits are not security lifecycle events. Only the explicit
+		// activation/suspension paths may stage this protected notification.
+		if lifecycleEvent {
+			if err := notifyTenantMemberLifecycle(scope.Context(), scope.Repositories(), current, reason); err != nil {
+				return domain.Membership{}, err
+			}
 		}
 		return current, nil
 	})

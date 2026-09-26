@@ -126,6 +126,22 @@ func NewMessageTypeCatalog(registrations []MessageType) (*MessageTypeCatalog, er
 	return &MessageTypeCatalog{ready: true, types: types}, nil
 }
 
+// Lookup resolves one exact registered type code without substring semantics.
+func (catalog *MessageTypeCatalog) Lookup(code string) (MessageType, error) {
+	if catalog == nil || !catalog.ready {
+		return MessageType{}, ErrCatalogUnavailable
+	}
+	if !validCode(code) {
+		return MessageType{}, ErrCatalogEntryInvalid
+	}
+	for _, entry := range catalog.types {
+		if entry.Code == code {
+			return entry, nil
+		}
+	}
+	return MessageType{}, ErrCatalogEntryInvalid
+}
+
 // List groups and counts the same immutable filtered snapshot before applying
 // pagination. Sorting is deterministic: urgent, important, general, then code.
 func (catalog *MessageTypeCatalog) List(query MessageTypeQuery) (MessageTypePage, error) {
@@ -153,8 +169,6 @@ func (catalog *MessageTypeCatalog) List(query MessageTypeQuery) (MessageTypePage
 		result.Groups[levelRank(entry.Level)].Total++
 	}
 	result.Total = len(matches)
-	// Bound multiplication first: even a maximum-int page cannot wrap its
-	// offset and accidentally expose the first page or panic on a slice.
 	if result.Total == 0 || query.Page-1 > result.Total/query.PageSize {
 		return result, nil
 	}
@@ -170,8 +184,6 @@ func (catalog *MessageTypeCatalog) List(query MessageTypeQuery) (MessageTypePage
 	return result, nil
 }
 
-// Codes are canonical lowercase ASCII identifiers. Reject aliases rather than
-// normalize a submitted identifier into a different registration.
 func validCode(value string) bool {
 	if len(value) < 1 || len(value) > 64 || value[0] < 'a' || value[0] > 'z' {
 		return false

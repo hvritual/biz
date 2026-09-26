@@ -50,8 +50,8 @@ func TestEnterprise172LoginLockQueuesSecurityNotificationWithoutLeakingCredentia
 		OTPDestination: "user172@example.invalid",
 	}, "request-172", &blockedUntil)
 
-	if len(spy.queued) != 1 || len(spy.delivered) != 1 {
-		t.Fatalf("lock notification queue/delivery evidence missing: queued=%d delivered=%d", len(spy.queued), len(spy.delivered))
+	if len(spy.queued) != 1 || len(spy.delivered) != 0 {
+		t.Fatalf("lock notification must queue without synchronous provider I/O: queued=%d delivered=%d", len(spy.queued), len(spy.delivered))
 	}
 	request := spy.queued[0]
 	if request.Kind != domain.SecurityNotificationLoginLock || request.Purpose != domain.VerificationPurposeLogin {

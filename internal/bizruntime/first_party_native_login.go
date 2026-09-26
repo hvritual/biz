@@ -279,7 +279,7 @@ func (idp *runtimeFirstPartyIdP) maybeNotifyLoginLock(
 		return
 	}
 	eventID := fmt.Sprintf("idp-login-lock/%s/%d", resolved.Identity.UserID, blockedUntil.UTC().Unix())
-	queued, err := verification.QueueSecurityNotification(ctx, accessdomain.SecurityNotificationRequest{
+	_, _ = verification.QueueSecurityNotification(ctx, accessdomain.SecurityNotificationRequest{
 		BusinessEventID: eventID,
 		Kind:            accessdomain.SecurityNotificationLoginLock,
 		Purpose:         accessdomain.VerificationPurposeLogin,
@@ -289,10 +289,6 @@ func (idp *runtimeFirstPartyIdP) maybeNotifyLoginLock(
 		Destination:     resolved.OTPDestination,
 		ExpiresAt:       blockedUntil.UTC(),
 	})
-	if err != nil || queued.EventID == "" {
-		return
-	}
-	_, _ = verification.DeliverSecurityNotification(ctx, queued.EventID)
 }
 
 func (idp *runtimeFirstPartyIdP) rememberedIdentifier(request *http.Request) string {

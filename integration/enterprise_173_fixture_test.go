@@ -107,6 +107,10 @@ func (fixture enterprise173Fixture) sendRecoveryOTP(t *testing.T, businessEventI
 		Channel:         domain.SecurityNotificationEmail,
 		Destination:     email,
 	})
+	if err != nil || delivery.State != domain.NotificationStatePending {
+		t.Fatalf("recovery OTP was not queued: %+v %v", delivery, err)
+	}
+	delivery, err = fixture.Service.DeliverSecurityNotification(context.Background(), challenge.NotificationEventID)
 	if err != nil || delivery.State != domain.NotificationStateDelivered {
 		t.Fatalf("recovery OTP delivery failed: %+v %v", delivery, err)
 	}
