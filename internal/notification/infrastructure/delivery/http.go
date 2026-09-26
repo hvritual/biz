@@ -50,8 +50,7 @@ func NewHTTPProvider(config HTTPProviderConfig, client *http.Client) (*HTTPProvi
 		return nil, err
 	}
 	token := strings.TrimSpace(config.BearerToken)
-	if token == "" || strings.ContainsAny(token, "
-") {
+	if token == "" || strings.ContainsAny(token, "\\r\\n") {
 		return nil, domain.ErrExternalDeliveryInvalid
 	}
 	if client == nil {
