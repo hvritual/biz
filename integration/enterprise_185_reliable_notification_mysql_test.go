@@ -26,14 +26,14 @@ func TestEnterprise185ReliableSecurityNotificationLeasesRetriesAndRecovery(t *te
 		t.Helper()
 		receipt, err := repository.EnqueueSecurityNotification(ctx, domain.SecurityNotificationRequest{
 			BusinessEventID: "enterprise185-" + suffix + "-" + stamp,
-			Kind: domain.SecurityNotificationMemberLifecycle,
-			Purpose: domain.VerificationPurposeMemberLifecycle,
-			UserID: "user-" + stamp,
-			TenantID: "tenant-" + stamp,
-			FlowID: "flow-" + suffix,
-			Channel: domain.SecurityNotificationEmail,
-			Destination: suffix + "@example.invalid",
-			ExpiresAt: expiry,
+			Kind:            domain.SecurityNotificationMemberLifecycle,
+			Purpose:         domain.VerificationPurposeMemberLifecycle,
+			UserID:          "user-" + stamp,
+			TenantID:        "tenant-" + stamp,
+			FlowID:          "flow-" + suffix,
+			Channel:         domain.SecurityNotificationEmail,
+			Destination:     suffix + "@example.invalid",
+			ExpiresAt:       expiry,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -86,9 +86,9 @@ func TestEnterprise185ReliableSecurityNotificationLeasesRetriesAndRecovery(t *te
 		}
 		var row struct {
 			DestinationCiphertext string
-			SecretCiphertext string
-			LeaseOwner string
-			LeaseUntil *time.Time
+			SecretCiphertext      string
+			LeaseOwner            string
+			LeaseUntil            *time.Time
 		}
 		if err := db.Table("biz_security_notification_outbox").Where("event_id=?", third.EventID).Scan(&row).Error; err != nil {
 			t.Fatal(err)

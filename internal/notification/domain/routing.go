@@ -18,10 +18,10 @@ var (
 )
 
 const (
-	RoutingStatePending = "PENDING"
-	RoutingStateLeased  = "LEASED"
-	RoutingStateRouted  = "ROUTED"
-ExternalTaskStatePending = "PENDING"
+	RoutingStatePending      = "PENDING"
+	RoutingStateLeased       = "LEASED"
+	RoutingStateRouted       = "ROUTED"
+	ExternalTaskStatePending = "PENDING"
 
 	RouteOutcomeInAppCreated       = "IN_APP_CREATED"
 	RouteOutcomeExternalTask       = "EXTERNAL_TASK_CREATED"
@@ -62,7 +62,9 @@ func (event BusinessEvent) Digest() (string, error) {
 	normalized := event
 	normalized.OccurredAt = time.UnixMicro(event.OccurredAt.UTC().UnixMicro()).UTC()
 	data, err := json.Marshal(normalized)
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:]), nil
 }
@@ -76,7 +78,9 @@ type RoutingClaim struct {
 }
 
 func (claim RoutingClaim) Validate() error {
-	if err := claim.Event.Validate(); err != nil { return err }
+	if err := claim.Event.Validate(); err != nil {
+		return err
+	}
 	if !ValidConfigurationID(claim.WorkerID, 96) || claim.LeaseToken == 0 || claim.LeaseUntil.IsZero() || claim.Attempt == 0 {
 		return ErrRoutingLease
 	}
@@ -93,7 +97,9 @@ type RouteDecision struct {
 
 func (decision RouteDecision) Validate() error {
 	if decision.Outcome == RouteOutcomeNoConfiguration || decision.Outcome == RouteOutcomeTypeUnavailable || decision.Outcome == RouteOutcomeGroupUnavailable {
-		if decision.UserID != "" || decision.Channel != "" { return ErrRoutingInvalid }
+		if decision.UserID != "" || decision.Channel != "" {
+			return ErrRoutingInvalid
+		}
 		return nil
 	}
 	if !ValidConfigurationID(decision.ConfigurationID, 64) || decision.ConfigurationVersion == 0 ||
@@ -112,22 +118,32 @@ func (decision RouteDecision) Validate() error {
 type RoutePlan struct{ Decisions []RouteDecision }
 
 func (plan RoutePlan) Canonical() (RoutePlan, error) {
-	if len(plan.Decisions) == 0 || len(plan.Decisions) > 1000 { return RoutePlan{}, ErrRoutingInvalid }
+	if len(plan.Decisions) == 0 || len(plan.Decisions) > 1000 {
+		return RoutePlan{}, ErrRoutingInvalid
+	}
 	out := RoutePlan{Decisions: append([]RouteDecision{}, plan.Decisions...)}
 	seen := map[string]bool{}
 	for _, d := range out.Decisions {
-		if err := d.Validate(); err != nil { return RoutePlan{}, err }
+		if err := d.Validate(); err != nil {
+			return RoutePlan{}, err
+		}
 		key := d.UserID + "\x00" + d.Channel + "\x00" + d.Outcome
-		if seen[key] { return RoutePlan{}, ErrRoutingInvalid }
+		if seen[key] {
+			return RoutePlan{}, ErrRoutingInvalid
+		}
 		seen[key] = true
 	}
 	sort.Slice(out.Decisions, func(i, j int) bool {
-		a,b:=out.Decisions[i],out.Decisions[j]
-		if a.UserID!=b.UserID{return a.UserID<b.UserID}
-		if a.Channel!=b.Channel{return a.Channel<b.Channel}
-		return a.Outcome<b.Outcome
+		a, b := out.Decisions[i], out.Decisions[j]
+		if a.UserID != b.UserID {
+			return a.UserID < b.UserID
+		}
+		if a.Channel != b.Channel {
+			return a.Channel < b.Channel
+		}
+		return a.Outcome < b.Outcome
 	})
-	return out,nil
+	return out, nil
 }
 
 type RoutingResult struct {

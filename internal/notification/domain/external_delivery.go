@@ -63,23 +63,23 @@ func (policy ExternalDeliveryPolicy) NextDelay(attempt uint32) (time.Duration, b
 }
 
 type ExternalTaskClaim struct {
-	TaskID               string
-	TenantID             string
-	UserID               string
-	EventID              string
-	Channel              string
-	ConfigurationID      string
-	ConfigurationVersion uint64
-	GroupID              string
-	TypeCode             string
-	Level                MessageLevel
-	TraceID              string
-	ReferenceKind        string
-	ReferenceID          string
-	Attempt              uint32
-	WorkerID             string
-	LeaseToken           uint64
-	LeaseUntil           time.Time
+	TaskID                  string
+	TenantID                string
+	UserID                  string
+	EventID                 string
+	Channel                 string
+	ConfigurationID         string
+	ConfigurationVersion    uint64
+	GroupID                 string
+	TypeCode                string
+	Level                   MessageLevel
+	TraceID                 string
+	ReferenceKind           string
+	ReferenceID             string
+	Attempt                 uint32
+	WorkerID                string
+	LeaseToken              uint64
+	LeaseUntil              time.Time
 	RecoveredUnknownOutcome bool
 }
 

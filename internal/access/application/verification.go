@@ -31,7 +31,7 @@ func (service *VerificationService) SendVerificationCode(ctx context.Context, re
 	}
 	return challenge, domain.NotificationDeliveryReceipt{
 		EventID: challenge.NotificationEventID,
-		State: challenge.DeliveryState,
+		State:   challenge.DeliveryState,
 	}, nil
 }
 

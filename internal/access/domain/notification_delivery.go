@@ -59,9 +59,9 @@ func (policy NotificationRetryPolicy) NextDelay(attempt uint32) (time.Duration, 
 
 type ReliableSecurityNotificationClaim struct {
 	SecurityNotificationClaim
-	WorkerID   string
-	LeaseToken uint64
-	LeaseUntil time.Time
+	WorkerID                string
+	LeaseToken              uint64
+	LeaseUntil              time.Time
 	RecoveredUnknownOutcome bool
 }
 

@@ -30,7 +30,7 @@ type ExternalNotificationProviderFailure interface {
 }
 
 type ExternalDeliveryDependencies struct {
-	Tasks      ExternalTaskRepository
-	Admission  accessports.OptionalNotificationDeliveryAdmitter
-	Provider   ExternalNotificationProvider
+	Tasks     ExternalTaskRepository
+	Admission accessports.OptionalNotificationDeliveryAdmitter
+	Provider  ExternalNotificationProvider
 }

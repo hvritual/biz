@@ -22,7 +22,7 @@ var _ ports.ExternalNotificationProviderRetrySafety = (*MemoryProvider)(nil)
 func NewMemoryProvider() *MemoryProvider {
 	return &MemoryProvider{
 		requests: map[string]domain.ExternalProviderRequest{},
-		result: domain.ExternalProviderResult{ReceiptID: "memory-accepted", Status: domain.ExternalProviderAccepted},
+		result:   domain.ExternalProviderResult{ReceiptID: "memory-accepted", Status: domain.ExternalProviderAccepted},
 	}
 }
 
