@@ -39,13 +39,15 @@ MemorySender 仅声明测试环境的 EventID 幂等行为，不构成真实短�
 
 - #184 配置驱动的普通业务通知路由已落地，路由前重查当前点位、配置、成员和 #183 偏好；
 - 外部任务在每次 provider 调用前再次读取 #183 偏好和受保护联系方式；
+- 已提供受控 HTTP Provider 适配器：Bearer 认证、稳定 Idempotency-Key、禁止重定向、公网强制 HTTPS，HTTP 仅允许 loopback 测试；
+- 已提供带时间窗的 HMAC-SHA256 callback handler；只允许匹配 task + provider receipt 的受理任务进入最终 DELIVERED 或 MANUAL_REVIEW，重复同结果回调幂等；
 - 身份安全通知统一由受保护 outbox + reliable worker 投递，请求事务不做 provider I/O；
 - 站内记录已作为 #185 路由产物持久化，但 #186 才负责未读/已读与小铃铛交互。
 
 ## 尚未完成
 
-- provider webhook/callback 与真实测试供应商终态联验；
-- 生产 provider 凭证/配置资格；
+- 将 HTTP Provider/callback 接入正式 Notification RuntimeComponent，并用可配置真实测试供应商完成终态联验；
+- 生产 provider endpoint、凭证与 callback HMAC secret 的配置/密钥托管资格；
 - 60 秒站内生成及时率的 ≥99.9% 批量统计证据；
 - #185 最终 Full Gate、main 验证及 Issue 收口。
 
