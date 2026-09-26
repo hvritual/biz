@@ -15,7 +15,8 @@ import (
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	accessports "github.com/hvritual/biz/internal/access/ports"
 	notificationapp "github.com/hvritual/biz/internal/notification/application"
-	"gorm.io/gorm"\n\t"yunka.io/gateway/authz"
+	"gorm.io/gorm"
+	"yunka.io/gateway/authz"
 )
 
 func TestEnterprise185IdentityLifecycleOutboxCommitsBeforeReliableWorkerDelivery(t *testing.T) {
