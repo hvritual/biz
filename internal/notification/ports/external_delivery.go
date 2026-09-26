@@ -29,6 +29,10 @@ type ExternalNotificationProviderFailure interface {
 	OutcomeKnown() bool
 }
 
+type ExternalProviderCallbackStore interface {
+	ApplyExternalProviderCallback(context.Context, domain.ExternalProviderCallback) (domain.ExternalTaskReceipt, error)
+}
+
 type ExternalDeliveryDependencies struct {
 	Tasks     ExternalTaskRepository
 	Admission accessports.OptionalNotificationDeliveryAdmitter
