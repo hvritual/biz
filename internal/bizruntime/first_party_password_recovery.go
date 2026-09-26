@@ -129,7 +129,7 @@ func (idp *runtimeFirstPartyIdP) handlePasswordRecoveryComplete(writer http.Resp
 		idp.renderPasswordRecovery(writer, http.StatusUnauthorized, page)
 		return
 	}
-	_, err := store.RecoverPasswordWithCode(request.Context(), protection, accessdomain.VerifyChallengeRequest{
+	_, err = store.RecoverPasswordWithCode(request.Context(), protection, accessdomain.VerifyChallengeRequest{
 		ChallengeID: challengeID,
 		FlowID:      flowID,
 		Purpose:     accessdomain.VerificationPurposePasswordRecovery,
