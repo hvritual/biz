@@ -65,7 +65,7 @@ func TestEnterprise185IdentityLifecycleOutboxCommitsBeforeReliableWorkerDelivery
 			BusinessEventID: "n185-life-recovery-request",
 			FlowID: "n185-life-recovery-flow",
 			Purpose: accessdomain.VerificationPurposePasswordRecovery,
-			UserID: user, TenantID: tenant,
+			UserID: user,
 			Channel: accessdomain.SecurityNotificationEmail,
 			Destination: email,
 		})
@@ -85,7 +85,7 @@ func TestEnterprise185IdentityLifecycleOutboxCommitsBeforeReliableWorkerDelivery
 			ChallengeID: challenge.ChallengeID,
 			FlowID: "n185-life-recovery-flow",
 			Purpose: accessdomain.VerificationPurposePasswordRecovery,
-			UserID: user, TenantID: tenant,
+			UserID: user,
 			Channel: accessdomain.SecurityNotificationEmail,
 			Destination: email,
 			Code: message.Secret,
