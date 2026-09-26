@@ -201,7 +201,7 @@ func (store *Store) RecoverPasswordWithCode(
 		}
 		if _, err := notificationRepository.EnqueueSecurityNotification(ctx, domain.SecurityNotificationRequest{
 			BusinessEventID: "password-reset-complete/" + challenge.ChallengeID,
-			Kind:            domain.SecurityNotificationPasswordReset,
+			Kind:            domain.SecurityNotificationPasswordResetCompleted,
 			Purpose:         domain.VerificationPurposePasswordRecovery,
 			UserID:          request.UserID,
 			TenantID:        request.TenantID,
