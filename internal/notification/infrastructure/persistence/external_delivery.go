@@ -13,6 +13,7 @@ import (
 )
 
 var _ ports.ExternalTaskRepository = (*RoutingRepository)(nil)
+var _ ports.ExternalProviderCallbackStore = (*RoutingRepository)(nil)
 
 func (r *RoutingRepository) ClaimNextExternalTask(
 	ctx context.Context,
@@ -173,6 +174,77 @@ func (r *RoutingRepository) CompleteExternalTask(
 		row.LeaseOwner = ""
 		row.LeaseUntil = nil
 		row.NextAttemptAt = nil
+		receipt = externalTaskReceipt(row)
+		return nil
+	})
+	return receipt, err
+}
+
+func (r *RoutingRepository) ApplyExternalProviderCallback(
+	ctx context.Context,
+	callback domain.ExternalProviderCallback,
+) (domain.ExternalTaskReceipt, error) {
+	if r == nil || r.db == nil || callback.Validate() != nil {
+		return domain.ExternalTaskReceipt{}, domain.ErrExternalDeliveryInvalid
+	}
+	var receipt domain.ExternalTaskReceipt
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var row externalTaskRecord
+		if err := tx.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("task_id = ?", callback.TaskID).Take(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return domain.ErrExternalDeliveryUnavailable
+			}
+			return err
+		}
+		now, err := routingNow(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if row.ProviderReceipt != callback.ReceiptID {
+			return domain.ErrExternalDeliveryLease
+		}
+		switch callback.Status {
+		case domain.ExternalProviderCallbackDelivered:
+			if row.State == domain.ExternalTaskStateDelivered {
+				receipt = externalTaskReceipt(row)
+				return nil
+			}
+			if row.State != domain.ExternalTaskStateProviderAccepted {
+				return domain.ErrExternalDeliveryLease
+			}
+			if err := tx.Model(&externalTaskRecord{}).Where("task_id = ?", row.TaskID).Updates(map[string]any{
+				"state": domain.ExternalTaskStateDelivered, "failure_code": "",
+				"delivered_at": now, "updated_at": now,
+			}).Error; err != nil {
+				return err
+			}
+			row.State = domain.ExternalTaskStateDelivered
+			row.FailureCode = ""
+			row.DeliveredAt = &now
+		case domain.ExternalProviderCallbackFailed:
+			code := sanitizeExternalFailureCode(callback.FailureCode)
+			if row.State == domain.ExternalTaskStateManualReview {
+				if row.FailureCode != code {
+					return domain.ErrExternalDeliveryLease
+				}
+				receipt = externalTaskReceipt(row)
+				return nil
+			}
+			if row.State != domain.ExternalTaskStateProviderAccepted {
+				return domain.ErrExternalDeliveryLease
+			}
+			if err := tx.Model(&externalTaskRecord{}).Where("task_id = ?", row.TaskID).Updates(map[string]any{
+				"state": domain.ExternalTaskStateManualReview, "failure_code": code,
+				"updated_at": now,
+			}).Error; err != nil {
+				return err
+			}
+			row.State = domain.ExternalTaskStateManualReview
+			row.FailureCode = code
+		default:
+			return domain.ErrExternalDeliveryInvalid
+		}
 		receipt = externalTaskReceipt(row)
 		return nil
 	})
