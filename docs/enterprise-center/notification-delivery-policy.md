@@ -27,7 +27,7 @@
 - 最终失败清除 destination/secret 可逆密文；
 - 未知结果仅允许幂等 provider 重试。
 
-旧 `ClaimSecurityNotification` / `DeliverSecurityNotification` 只保留兼容与隔离测试使用。#185 之后验证码、登录锁定、密码重置完成、初始凭据、成员生命周期、申诉、联系方式变更和注销确认的请求路径只提交受保护 outbox；`biz-idp` 可靠 worker 在事务提交后消费。密码重置完成通知与凭据变更在同一数据库事务中落盒，避免“密码已改但通知未入队”。租约恢复若来自 provider 结果未知的旧 `SENDING/LEASED`，只有 provider 明确声明幂等才允许重发，否则进入人工处理。
+旧 `ClaimSecurityNotification` / `DeliverSecurityNotification` 只保留兼容与隔离测试使用。#185 之后验证码、登录锁定、管理员恢复请求、密码重置完成、初始凭据、成员生命周期、申诉、联系方式变更和注销确认的请求路径只提交受保护 outbox；`biz-idp` 可靠 worker 在事务提交后消费。密码重置完成通知与凭据变更在同一数据库事务中落盒，避免“密码已改但通知未入队”；登录锁定的 throttle/audit/login_lock outbox 同样在一个根事务中提交，避免“已锁定但通知未落盒”。管理员恢复只提交 `recovery_request`，不修改全局 Account 密码或 Session。租约恢复若来自 provider 结果未知的旧 `SENDING/LEASED`，只有 provider 明确声明幂等才允许重发，否则进入人工处理。
 
 ## 安全边界
 
@@ -38,17 +38,20 @@ MemorySender 仅声明测试环境的 EventID 幂等行为，不构成真实短�
 ## 当前已形成的链路
 
 - #184 配置驱动的普通业务通知路由已落地，路由前重查当前点位、配置、成员和 #183 偏好；
+- Notification RuntimeComponent 已接入正式 Biz 生命周期；BusinessEventRouter 在没有外部 Provider 时仍运行，纯站内通知不依赖短信/邮件配置；
 - 外部任务在每次 provider 调用前再次读取 #183 偏好和受保护联系方式；
 - 已提供受控 HTTP Provider 适配器：Bearer 认证、稳定 Idempotency-Key、禁止重定向、公网强制 HTTPS，HTTP 仅允许 loopback 测试；
 - 已提供带时间窗的 HMAC-SHA256 callback handler；只允许匹配 task + provider receipt 的受理任务进入最终 DELIVERED 或 MANUAL_REVIEW，重复同结果回调幂等；
+- 外部 Provider Qualification Harness 已完成并禁止 mock/loopback 冒充真实供应商资格；当前真实第三方执行仍等待 sandbox endpoint、credential、测试 destination 与公网 callback 输入；
 - 身份安全通知统一由受保护 outbox + reliable worker 投递，请求事务不做 provider I/O；
-- 站内记录已作为 #185 路由产物持久化，但 #186 才负责未读/已读与小铃铛交互。
+- 管理员密码恢复入口只触发目标 Account 的 `recovery_request` 自助恢复提示，不接受或返回任何凭据材料；
+- 登录锁定状态、失败 audit 与 `login_lock` outbox 同事务提交；outbox 故障必须回滚阈值锁定；
+- 1000 条纯站内真实 MySQL 样本已在两条独立资格路径达到 100% 在 60 秒内生成，且 0 missing / 0 duplicate / 0 external task；
+- 站内记录由 #185 路由持久化，#186 才负责未读/已读与小铃铛交互。
 
 ## 尚未完成
 
-- 将 HTTP Provider/callback 接入正式 Notification RuntimeComponent，并用可配置真实测试供应商完成终态联验；
-- 生产 provider endpoint、凭证与 callback HMAC secret 的配置/密钥托管资格；
-- 60 秒站内生成及时率的 ≥99.9% 批量统计证据；
-- #185 最终 Full Gate、main 验证及 Issue 收口。
+- 真实第三方 Provider sandbox 终态联验，当前状态为 `BLOCKED_BY_EXTERNAL_QUALIFICATION_INPUT`；该外部输入阻塞不能由 mock 代替；
+- #185 最终 Full Gate、exact merge、Main Qualification / MAIN_VERIFIED 及整体验收收口。
 
-这些项继续留在 #185，不能以本次 worker 核心单元测试替代完整验收。
+这些项继续留在 #185；仓库 Qualification、站内性能证据或 MemorySender 均不能单独替代真实第三方供应商资格。
