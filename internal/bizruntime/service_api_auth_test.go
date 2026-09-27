@@ -2,9 +2,9 @@ package bizruntime
 
 import (
 	"bytes"
-	"errors"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -153,7 +153,6 @@ func TestServiceAPIRouteResolutionUsesCatalogOperation(t *testing.T) {
 		t.Fatal("method tamper resolved to signed operation")
 	}
 }
-
 
 func TestServiceAPIRejectsDuplicateSignedHeadersAndAuthorizationMixing(t *testing.T) {
 	auth, err := newServiceAPIAuthenticator(ServiceAPIAuthConfig{
