@@ -222,10 +222,12 @@ func TestEnterprise185InAppLatency1000Within60Seconds(t *testing.T) {
 	if enterprise185InAppSampleSize > 0 {
 		ratePPM = timely * 1000000 / enterprise185InAppSampleSize
 	}
+	sourceSHA, candidateSHA := enterprise185GitHubSourceIdentity()
 	receipt := map[string]any{
 		"schema_version":             1,
 		"state":                      "PASS",
-		"candidate_sha":              os.Getenv("GITHUB_SHA"),
+		"source_sha":                 sourceSHA,
+		"candidate_sha":              candidateSHA,
 		"run_id":                     os.Getenv("GITHUB_RUN_ID"),
 		"run_attempt":                os.Getenv("GITHUB_RUN_ATTEMPT"),
 		"sample_size":                enterprise185InAppSampleSize,
@@ -318,4 +320,28 @@ func percentileDuration(sorted []time.Duration, quantile float64) time.Duration 
 		index = len(sorted) - 1
 	}
 	return sorted[index]
+}
+
+func enterprise185GitHubSourceIdentity() (string, string) {
+	source := os.Getenv("GITHUB_SHA")
+	candidate := source
+	eventPath := os.Getenv("GITHUB_EVENT_PATH")
+	if eventPath == "" {
+		return source, candidate
+	}
+	data, err := os.ReadFile(eventPath)
+	if err != nil {
+		return source, candidate
+	}
+	var event struct {
+		PullRequest struct {
+			Head struct {
+				SHA string `json:"sha"`
+			} `json:"head"`
+		} `json:"pull_request"`
+	}
+	if json.Unmarshal(data, &event) == nil && len(event.PullRequest.Head.SHA) == 40 {
+		candidate = event.PullRequest.Head.SHA
+	}
+	return source, candidate
 }
