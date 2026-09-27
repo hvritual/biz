@@ -21,7 +21,7 @@ type inboxMarkAllRecord struct {
 	CommandID   string    `gorm:"column:command_id;primaryKey;size:64"`
 	TenantID    string    `gorm:"column:tenant_id;type:varbinary(64);not null;index:idx_notification_inbox_command_owner,priority:1"`
 	UserID      string    `gorm:"column:user_id;type:varbinary(64);not null;index:idx_notification_inbox_command_owner,priority:2"`
-	State       string    `gorm:"column:state;size:16;not null;index"`
+	State       string    `gorm:"column:state;size:16;not null;index:idx_notification_inbox_command_state"`
 	MarkedCount uint64    `gorm:"column:marked_count;not null;default:0"`
 	ReadAt      time.Time `gorm:"column:read_at;type:datetime(6);not null"`
 	CreatedAt   time.Time `gorm:"column:created_at;type:datetime(6);not null"`
