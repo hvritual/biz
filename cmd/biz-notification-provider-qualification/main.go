@@ -93,18 +93,18 @@ func envDuration(name string, fallback time.Duration) (time.Duration, error) {
 
 func writeReceipt(receipt qualification.Receipt) error {
 	document := map[string]any{
-		"schema_version":          receipt.SchemaVersion,
-		"state":                   receipt.State,
-		"provider_id":             receipt.ProviderID,
-		"provider_host":           receipt.ProviderHost,
-		"provider_idempotent":     receipt.ProviderIdempotent,
-		"channel":                 receipt.Channel,
-		"destination_sha256":      receipt.DestinationHash,
-		"task_id":                 receipt.TaskID,
-		"trace_id":                receipt.TraceID,
-		"callback_host":           receipt.CallbackHost,
-		"elapsed_ms":              receipt.ElapsedMillis,
-		"observed_at":             receipt.ObservedAt.UTC().Format(time.RFC3339Nano),
+		"schema_version":      receipt.SchemaVersion,
+		"state":               receipt.State,
+		"provider_id":         receipt.ProviderID,
+		"provider_host":       receipt.ProviderHost,
+		"provider_idempotent": receipt.ProviderIdempotent,
+		"channel":             receipt.Channel,
+		"destination_sha256":  receipt.DestinationHash,
+		"task_id":             receipt.TaskID,
+		"trace_id":            receipt.TraceID,
+		"callback_host":       receipt.CallbackHost,
+		"elapsed_ms":          receipt.ElapsedMillis,
+		"observed_at":         receipt.ObservedAt.UTC().Format(time.RFC3339Nano),
 	}
 	if receipt.ProviderReceiptHash != "" {
 		document["provider_receipt_sha256"] = receipt.ProviderReceiptHash
