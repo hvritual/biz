@@ -55,6 +55,12 @@ func (options NotificationRuntimeOptions) normalized() NotificationRuntimeOption
 
 func (options NotificationRuntimeOptions) Validate() error {
 	options = options.normalized()
+	if options.PollInterval < 10*time.Millisecond || options.PollInterval > time.Minute {
+		return errors.New("notification runtime: invalid poll interval")
+	}
+	if options.RoutingLeaseDuration < 5*time.Second || options.RoutingLeaseDuration > 5*time.Minute {
+		return errors.New("notification runtime: invalid routing lease duration")
+	}
 	if !options.Enabled() {
 		if strings.TrimSpace(options.ProviderBearerToken) != "" || len(options.CallbackHMACSecret) != 0 ||
 			len(options.Channels) != 0 || options.ProviderIdempotent {
@@ -67,12 +73,6 @@ func (options NotificationRuntimeOptions) Validate() error {
 	}
 	if len(options.CallbackHMACSecret) < 32 {
 		return errors.New("notification runtime: callback HMAC secret must be at least 32 bytes")
-	}
-	if options.PollInterval < 10*time.Millisecond || options.PollInterval > time.Minute {
-		return errors.New("notification runtime: invalid poll interval")
-	}
-	if options.RoutingLeaseDuration < 5*time.Second || options.RoutingLeaseDuration > 5*time.Minute {
-		return errors.New("notification runtime: invalid routing lease duration")
 	}
 	if len(options.Channels) < 1 || len(options.Channels) > 2 {
 		return errors.New("notification runtime: at least one explicit external channel is required")
@@ -157,21 +157,22 @@ func newNotificationRuntime(
 	catalogs notificationCatalogSnapshot,
 	protection *accesspersistence.ContactProtection,
 ) (*notificationRuntime, error) {
-	if !options.Enabled() {
-		return nil, nil
-	}
 	options = options.normalized()
 	if err := options.Validate(); err != nil {
 		return nil, err
 	}
-	if protection == nil {
-		return nil, accesspersistence.ErrSensitiveDataKeyUnavailable
-	}
-	provider, err := notificationdelivery.NewHTTPProvider(notificationdelivery.HTTPProviderConfig{
-		Endpoint: options.ProviderEndpoint, BearerToken: options.ProviderBearerToken, Idempotent: options.ProviderIdempotent,
-	}, nil)
-	if err != nil {
-		return nil, err
+	var provider notificationports.ExternalNotificationProvider
+	if options.Enabled() {
+		if protection == nil {
+			return nil, accesspersistence.ErrSensitiveDataKeyUnavailable
+		}
+		httpProvider, err := notificationdelivery.NewHTTPProvider(notificationdelivery.HTTPProviderConfig{
+			Endpoint: options.ProviderEndpoint, BearerToken: options.ProviderBearerToken, Idempotent: options.ProviderIdempotent,
+		}, nil)
+		if err != nil {
+			return nil, err
+		}
+		provider = httpProvider
 	}
 	var nonce [12]byte
 	if _, err := rand.Read(nonce[:]); err != nil {
@@ -182,6 +183,10 @@ func newNotificationRuntime(
 		options: options, catalogs: catalogs, protection: protection, externalProvider: provider,
 		routerWorkerID: "notification-router-" + suffix, externalWorkerID: "notification-external-" + suffix,
 	}, nil
+}
+
+func (runtime *notificationRuntime) providerEnabled() bool {
+	return runtime != nil && runtime.externalProvider != nil
 }
 
 func (runtime *notificationRuntime) bind(
@@ -213,7 +218,12 @@ func (runtime *notificationRuntime) bind(
 			return err
 		}
 	}
-	accessStore, err := accesspersistence.NewWithContactProtection(accessDB, runtime.protection)
+	var accessStore *accesspersistence.Store
+	if runtime.providerEnabled() {
+		accessStore, err = accesspersistence.NewWithContactProtection(accessDB, runtime.protection)
+	} else {
+		accessStore, err = accesspersistence.New(accessDB)
+	}
 	if err != nil {
 		return err
 	}
@@ -235,20 +245,24 @@ func (runtime *notificationRuntime) bind(
 	if err != nil {
 		return err
 	}
-	externalWorker, err := notificationapp.NewExternalDeliveryWorker(
-		notificationports.ExternalDeliveryDependencies{Tasks: routing, Admission: accessStore, Provider: runtime.externalProvider},
-		notificationdomain.EnterpriseExternalDeliveryPolicy(),
-		runtime.externalWorkerID,
-	)
-	if err != nil {
-		return err
-	}
-	callback, err := notificationdelivery.NewHTTPProviderCallbackHandler(
-		routing,
-		notificationdelivery.HTTPProviderCallbackConfig{Secret: runtime.options.CallbackHMACSecret},
-	)
-	if err != nil {
-		return err
+	var externalWorker *notificationapp.ExternalDeliveryWorker
+	var callback http.Handler
+	if runtime.providerEnabled() {
+		externalWorker, err = notificationapp.NewExternalDeliveryWorker(
+			notificationports.ExternalDeliveryDependencies{Tasks: routing, Admission: accessStore, Provider: runtime.externalProvider},
+			notificationdomain.EnterpriseExternalDeliveryPolicy(),
+			runtime.externalWorkerID,
+		)
+		if err != nil {
+			return err
+		}
+		callback, err = notificationdelivery.NewHTTPProviderCallbackHandler(
+			routing,
+			notificationdelivery.HTTPProviderCallbackConfig{Secret: runtime.options.CallbackHMACSecret},
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	runtime.mu.Lock()
@@ -286,7 +300,8 @@ func (runtime *notificationRuntime) start(context.Context) error {
 		return errors.New("notification runtime: unavailable")
 	}
 	runtime.mu.Lock()
-	if runtime.router == nil || runtime.externalWorker == nil || runtime.callback == nil {
+	if runtime.router == nil ||
+		(runtime.providerEnabled() && (runtime.externalWorker == nil || runtime.callback == nil)) {
 		runtime.mu.Unlock()
 		return errors.New("notification runtime: binding incomplete")
 	}
@@ -343,10 +358,13 @@ func (runtime *notificationRuntime) tick(ctx context.Context) (NotificationTick,
 	runtime.mu.RLock()
 	router, externalWorker := runtime.router, runtime.externalWorker
 	runtime.mu.RUnlock()
-	if router == nil || externalWorker == nil {
+	if router == nil {
 		return NotificationTick{}, errors.New("notification runtime: binding incomplete")
 	}
 	routeResult, routeErr := router.RouteOnce(ctx, runtime.routerWorkerID)
+	if externalWorker == nil {
+		return NotificationTick{RoutedEventID: routeResult.EventID}, routeErr
+	}
 	deliveryResult, deliveryErr := externalWorker.RunOnce(ctx)
 	return NotificationTick{
 		RoutedEventID:     routeResult.EventID,
