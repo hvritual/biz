@@ -32,11 +32,13 @@ const (
 	SecurityNotificationLoginLock         SecurityNotificationKind = "login_lock"
 	SecurityNotificationInitialCredential SecurityNotificationKind = "initial_credential"
 	SecurityNotificationPasswordReset     SecurityNotificationKind = "password_reset"
-	SecurityNotificationRecoveryRequest   SecurityNotificationKind = "recovery_request"
-	SecurityNotificationMemberLifecycle   SecurityNotificationKind = "member_lifecycle"
-	SecurityNotificationMemberAppeal      SecurityNotificationKind = "member_appeal"
-	SecurityNotificationContactChanged    SecurityNotificationKind = "contact_changed"
-	SecurityNotificationTenantDeletion    SecurityNotificationKind = "tenant_deletion"
+	// Completion is an informational event, never a carrier for credentials.
+	SecurityNotificationPasswordResetCompleted SecurityNotificationKind = "password_reset_completed"
+	SecurityNotificationRecoveryRequest        SecurityNotificationKind = "recovery_request"
+	SecurityNotificationMemberLifecycle        SecurityNotificationKind = "member_lifecycle"
+	SecurityNotificationMemberAppeal           SecurityNotificationKind = "member_appeal"
+	SecurityNotificationContactChanged         SecurityNotificationKind = "contact_changed"
+	SecurityNotificationTenantDeletion         SecurityNotificationKind = "tenant_deletion"
 )
 
 const (
@@ -101,7 +103,7 @@ func (channel SecurityNotificationChannel) Valid() bool {
 
 func (kind SecurityNotificationKind) Valid() bool {
 	switch kind {
-	case SecurityNotificationVerificationCode, SecurityNotificationLoginLock, SecurityNotificationInitialCredential, SecurityNotificationPasswordReset, SecurityNotificationRecoveryRequest, SecurityNotificationMemberLifecycle, SecurityNotificationMemberAppeal, SecurityNotificationContactChanged, SecurityNotificationTenantDeletion:
+	case SecurityNotificationVerificationCode, SecurityNotificationLoginLock, SecurityNotificationInitialCredential, SecurityNotificationPasswordReset, SecurityNotificationPasswordResetCompleted, SecurityNotificationRecoveryRequest, SecurityNotificationMemberLifecycle, SecurityNotificationMemberAppeal, SecurityNotificationContactChanged, SecurityNotificationTenantDeletion:
 		return true
 	default:
 		return false
@@ -178,6 +180,28 @@ type SecurityNotificationRequest struct {
 	Destination     string
 	Secret          string
 	ExpiresAt       time.Time
+}
+
+// Validate preserves the material requirement for credential-carrying kinds.
+// A password reset completion has a separate kind and must never contain the
+// password, an OTP, or even placeholder material in Secret.
+func (request SecurityNotificationRequest) Validate() error {
+	if strings.TrimSpace(request.BusinessEventID) == "" || !request.Kind.Valid() || !request.Purpose.Valid() ||
+		!request.Channel.Valid() || strings.TrimSpace(request.UserID) == "" ||
+		strings.TrimSpace(request.Destination) == "" || request.ExpiresAt.IsZero() {
+		return ErrVerificationInvalid
+	}
+	switch request.Kind {
+	case SecurityNotificationVerificationCode, SecurityNotificationInitialCredential, SecurityNotificationPasswordReset:
+		if strings.TrimSpace(request.Secret) == "" {
+			return ErrVerificationInvalid
+		}
+	case SecurityNotificationPasswordResetCompleted:
+		if request.Secret != "" || request.Purpose != VerificationPurposePasswordRecovery {
+			return ErrVerificationInvalid
+		}
+	}
+	return nil
 }
 
 type SecurityNotificationClaim struct {

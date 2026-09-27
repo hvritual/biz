@@ -135,9 +135,16 @@ func run() error {
 		}
 	}
 	var verificationService *accessapp.VerificationService
+	var securityNotificationRunner *idpSecurityNotificationRunner
 	sender := qualificationNotificationSender()
 	if sender != nil {
 		verificationService, err = bizruntime.BuildVerificationService(database, verificationConfig, verificationProtection, sender)
+		if err != nil {
+			return err
+		}
+		securityNotificationRunner, err = newIDPSecurityNotificationRunner(
+			database, verificationProtection, sender, envBool("YUNKA_BIZ_IDP_AUTO_MIGRATE", false),
+		)
 		if err != nil {
 			return err
 		}
@@ -164,9 +171,23 @@ func run() error {
 		}
 		errCh <- nil
 	}()
+	var workerErrCh <-chan error
+	if securityNotificationRunner != nil {
+		workerErrors := make(chan error, 1)
+		workerErrCh = workerErrors
+		go func() { workerErrors <- securityNotificationRunner.Run(ctx) }()
+	}
 	select {
 	case err := <-errCh:
 		return err
+	case err := <-workerErrCh:
+		shutdown, done := context.WithTimeout(context.Background(), 10*time.Second)
+		defer done()
+		_ = server.Shutdown(shutdown)
+		if err != nil {
+			return fmt.Errorf("security notification worker: %w", err)
+		}
+		return nil
 	case <-ctx.Done():
 		shutdown, done := context.WithTimeout(context.Background(), 10*time.Second)
 		defer done()

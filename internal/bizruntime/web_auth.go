@@ -26,13 +26,14 @@ const (
 )
 
 type runtimeWebAuth struct {
-	config        WebAuthConfig
-	oidc          *oidcClient
-	mu            sync.RWMutex
-	store         *accesspersistence.Store
-	memberAppeals *accesspersistence.MemberAppealService
-	selfSecurity  *accesspersistence.TenantSelfSecurityService
-	entitlements  currentAuthorizationEntitlementReader
+	config                 WebAuthConfig
+	oidc                   *oidcClient
+	mu                     sync.RWMutex
+	store                  *accesspersistence.Store
+	memberAppeals          *accesspersistence.MemberAppealService
+	selfSecurity           *accesspersistence.TenantSelfSecurityService
+	memberPasswordRecovery *accesspersistence.TenantMemberPasswordRecoveryService
+	entitlements           currentAuthorizationEntitlementReader
 }
 
 func newRuntimeWebAuth(ctx context.Context, config WebAuthConfig) (*runtimeWebAuth, error) {
@@ -77,6 +78,24 @@ func (auth *runtimeWebAuth) currentSelfSecurity() *accesspersistence.TenantSelfS
 	auth.mu.RLock()
 	defer auth.mu.RUnlock()
 	return auth.selfSecurity
+}
+
+func (auth *runtimeWebAuth) setMemberPasswordRecovery(service *accesspersistence.TenantMemberPasswordRecoveryService) {
+	if auth == nil {
+		return
+	}
+	auth.mu.Lock()
+	auth.memberPasswordRecovery = service
+	auth.mu.Unlock()
+}
+
+func (auth *runtimeWebAuth) currentMemberPasswordRecovery() *accesspersistence.TenantMemberPasswordRecoveryService {
+	if auth == nil {
+		return nil
+	}
+	auth.mu.RLock()
+	defer auth.mu.RUnlock()
+	return auth.memberPasswordRecovery
 }
 
 func (auth *runtimeWebAuth) setMemberAppeals(service *accesspersistence.MemberAppealService) {

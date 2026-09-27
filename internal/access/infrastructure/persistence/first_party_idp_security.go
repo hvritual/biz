@@ -3,10 +3,12 @@ package persistence
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"strings"
 	"time"
 
+	"github.com/hvritual/biz/internal/access/domain"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -62,13 +64,49 @@ func (store *Store) AuthenticateFirstPartyLogin(ctx context.Context, identifier,
 }
 
 func (store *Store) AuthenticateFirstPartyLoginWithAudit(ctx context.Context, identifier, password, remoteAddr string, policy FirstPartyLoginPolicy) (LocalUserIdentity, uint64, error) {
+	return store.authenticateFirstPartyLoginWithAudit(ctx, identifier, password, remoteAddr, policy, nil, "")
+}
+
+func (store *Store) AuthenticateFirstPartyLoginWithAuditAndLockNotification(
+	ctx context.Context,
+	identifier, password, remoteAddr string,
+	policy FirstPartyLoginPolicy,
+	protection *VerificationProtection,
+	flowID string,
+) (LocalUserIdentity, uint64, error) {
+	return store.authenticateFirstPartyLoginWithAudit(ctx, identifier, password, remoteAddr, policy, protection, flowID)
+}
+
+func (store *Store) authenticateFirstPartyLoginWithAudit(
+	ctx context.Context,
+	identifier, password, remoteAddr string,
+	policy FirstPartyLoginPolicy,
+	protection *VerificationProtection,
+	flowID string,
+) (LocalUserIdentity, uint64, error) {
+	if store == nil || store.database == nil {
+		return LocalUserIdentity{}, 0, ErrInvalidUserCredentials
+	}
 	if err := policy.Validate(); err != nil {
 		return LocalUserIdentity{}, 0, err
 	}
 	identifier = strings.TrimSpace(identifier)
+	flowID = strings.TrimSpace(flowID)
 	identityHash := LoginIdentifierThrottleHash(identifier)
 	sourceHash := TokenHash(normalizeRemoteHost(remoteAddr))
 	now := time.Now().UTC()
+
+	var notificationTarget *LoginIdentifierResolution
+	if protection != nil && flowID != "" {
+		resolved, resolveErr := store.ResolveLoginIdentifier(ctx, identifier)
+		switch {
+		case resolveErr == nil && resolved.Identity.UserID != "" && resolved.OTPDestination != "":
+			notificationTarget = &resolved
+		case resolveErr != nil && !errors.Is(resolveErr, ErrInvalidUserCredentials):
+			return LocalUserIdentity{}, 0, resolveErr
+		}
+	}
+
 	err := store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var row firstPartyLoginThrottleRecord
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("identity_hash = ?", identityHash).First(&row).Error
@@ -91,7 +129,7 @@ func (store *Store) AuthenticateFirstPartyLoginWithAudit(ctx context.Context, id
 
 	identity, authErr := store.AuthenticateUserPassword(ctx, identifier, password)
 	if authErr != nil {
-		if err := store.recordFirstPartyLoginFailure(ctx, identityHash, sourceHash, now, policy); err != nil {
+		if err := store.recordFirstPartyLoginFailure(ctx, identityHash, sourceHash, now, policy, protection, flowID, notificationTarget); err != nil {
 			return LocalUserIdentity{}, 0, err
 		}
 		return LocalUserIdentity{}, 0, ErrInvalidUserCredentials
@@ -102,33 +140,62 @@ func (store *Store) AuthenticateFirstPartyLoginWithAudit(ctx context.Context, id
 	}
 	return identity, auditID, nil
 }
-func (store *Store) recordFirstPartyLoginFailure(ctx context.Context, identityHash, sourceHash string, now time.Time, policy FirstPartyLoginPolicy) error {
+
+func (store *Store) recordFirstPartyLoginFailure(
+	ctx context.Context,
+	identityHash, sourceHash string,
+	now time.Time,
+	policy FirstPartyLoginPolicy,
+	protection *VerificationProtection,
+	flowID string,
+	notificationTarget *LoginIdentifierResolution,
+) error {
 	return store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var row firstPartyLoginThrottleRecord
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("identity_hash = ?", identityHash).First(&row).Error
+		wasBlocked := false
 		switch {
 		case errors.Is(err, gorm.ErrRecordNotFound):
 			row = firstPartyLoginThrottleRecord{IdentityHash: identityHash, FailureCount: 1, WindowStartedAt: now, UpdatedAt: now}
 		case err != nil:
 			return err
 		default:
+			wasBlocked = row.BlockedUntil != nil && row.BlockedUntil.After(now)
 			if now.Sub(row.WindowStartedAt) >= policy.Window {
 				row.FailureCount = 1
 				row.WindowStartedAt = now
 				row.BlockedUntil = nil
+				wasBlocked = false
 			} else {
 				row.FailureCount++
 			}
 			row.UpdatedAt = now
 		}
-		if row.FailureCount >= policy.MaxFailures {
+		if row.FailureCount >= policy.MaxFailures && !wasBlocked {
 			blockedUntil := now.Add(policy.Lockout)
 			row.BlockedUntil = &blockedUntil
 		}
 		if err := tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "identity_hash"}}, DoUpdates: clause.AssignmentColumns([]string{"failure_count", "window_started_at", "blocked_until", "updated_at"})}).Create(&row).Error; err != nil {
 			return err
 		}
-		return tx.Create(&firstPartyLoginAuditRecord{OccurredAt: now, Outcome: "invalid_credentials", EmailHash: identityHash, SourceHash: sourceHash}).Error
+		if err := tx.Create(&firstPartyLoginAuditRecord{OccurredAt: now, Outcome: "invalid_credentials", EmailHash: identityHash, SourceHash: sourceHash}).Error; err != nil {
+			return err
+		}
+		if row.BlockedUntil == nil || wasBlocked || notificationTarget == nil || protection == nil {
+			return nil
+		}
+		verification := &VerificationRepository{database: tx, protection: protection}
+		_, err = verification.EnqueueSecurityNotification(ctx, domain.SecurityNotificationRequest{
+			BusinessEventID: fmt.Sprintf("idp-login-lock/%s/%d", notificationTarget.Identity.UserID, row.BlockedUntil.UTC().Unix()),
+			Kind:            domain.SecurityNotificationLoginLock,
+			Purpose:         domain.VerificationPurposeLogin,
+			UserID:          notificationTarget.Identity.UserID,
+			FlowID:          flowID,
+			Channel:         notificationTarget.OTPChannel,
+			Destination:     notificationTarget.OTPDestination,
+			ExpiresAt:       row.BlockedUntil.UTC().Add(24 * time.Hour),
+		})
+		return err
 	})
 }
 

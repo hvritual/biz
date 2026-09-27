@@ -264,3 +264,52 @@ func TestB124OwnerRoleProtectsRequiredPermissionsAndLastAssignment(t *testing.T)
 		t.Fatalf("owner assignments=%d want=1", assignments)
 	}
 }
+
+// A read-only role may inspect the target but may not create a security
+// notification as a side effect of an unauthorized lifecycle command.
+func TestEnterprise185ReadOnlyRoleCannotTriggerLifecycleOutbox(t *testing.T) {
+	db := ce08FreshFixtureDB(t)
+	started, protection := startB123Enterprise176Runtime(t, db)
+	base := "http://" + started.HTTPAddress()
+	f := newEnterprise185HTTPDelivery(t, db, protection)
+	stamp := fmt.Sprint(time.Now().UnixNano())
+	tenant, target := "e185-role-"+stamp, "e185-target-"+stamp
+	seedB123TenantAdmin(t, db, tenant, target, target+"@example.invalid", "target-token-"+stamp)
+	reader, token := "e185-reader-"+stamp, "reader-token-"+stamp
+	seedReader(t, db, tenant, reader, token, "", tenant+":readonly", "readonly", "tenant.member.read", "all")
+	before, code, _ := getB123HTTP(t, base, token, target)
+	if code != http.StatusOK || before.GetVersion() != 1 {
+		t.Fatal("read-only fixture cannot inspect the target")
+	}
+	path := "/v1/tenant/members/" + target
+	commands := []struct {
+		name string
+		send func() (int, []byte)
+	}{
+		{"suspend", func() (int, []byte) {
+			return enterprise177Post(t, base, token, "deny-suspend-"+stamp, path+"/suspend", &accessv1.SuspendTenantMemberRequest{UserId: target, Version: 1})
+		}},
+		{"activate", func() (int, []byte) {
+			return enterprise177Post(t, base, token, "deny-activate-"+stamp, path+"/activate", &accessv1.ActivateTenantMemberRequest{UserId: target, Version: 1})
+		}},
+		{"remove", func() (int, []byte) {
+			return enterprise177Post(t, base, token, "deny-remove-"+stamp, path+"/remove", &accessv1.RemoveTenantMemberRequest{UserId: target, Version: 1})
+		}},
+		{"restore", func() (int, []byte) {
+			return enterprise177Post(t, base, token, "deny-restore-"+stamp, path+"/restore", &accessv1.RestoreTenantMemberRequest{UserId: target, Version: 1})
+		}},
+	}
+	for _, command := range commands {
+		t.Run(command.name+"-requires-write-role", func(t *testing.T) {
+			code, _ := command.send()
+			if code != http.StatusForbidden || f.count(t) != 0 || f.sender.Count() != 0 {
+				t.Fatal("unauthorized lifecycle request was not rejected before its outbox effect")
+			}
+		})
+	}
+	after, code, _ := getB123HTTP(t, base, token, target)
+	if code != http.StatusOK || after.GetVersion() != before.GetVersion() || after.GetStatus() != before.GetStatus() {
+		t.Fatal("unauthorized request changed member lifecycle state")
+	}
+	f.idle(t)
+}

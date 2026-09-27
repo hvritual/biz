@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
@@ -99,6 +100,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	notificationRuntime, err := notificationRuntimeConfiguration()
+	if err != nil {
+		return err
+	}
 	if verificationSecurity.Enabled() && verificationProtection == nil {
 		return errors.New("verification security policy requires verification protection keys")
 	}
@@ -137,6 +142,7 @@ func run() error {
 		ProvisioningWorker:   bizruntime.ProvisioningWorkerOptions{Token: workerToken, Automatic: workerToken != ""},
 		WebAuth:              webAuth,
 		VerificationSecurity: verificationSecurity,
+		NotificationRuntime:  notificationRuntime,
 		MemberActivationTTL:  memberActivationTTL,
 		MemberActivationURL:  memberActivationURL,
 	}
@@ -228,6 +234,37 @@ func envDuration(name string, fallback time.Duration) time.Duration {
 		return fallback
 	}
 	return parsed
+}
+
+func notificationRuntimeConfiguration() (bizruntime.NotificationRuntimeOptions, error) {
+	rawSecret := strings.TrimSpace(os.Getenv("YUNKA_BIZ_NOTIFICATION_CALLBACK_HMAC_KEY_B64"))
+	var secret []byte
+	if rawSecret != "" {
+		decoded, err := base64.StdEncoding.DecodeString(rawSecret)
+		if err != nil {
+			return bizruntime.NotificationRuntimeOptions{}, errors.New("invalid YUNKA_BIZ_NOTIFICATION_CALLBACK_HMAC_KEY_B64")
+		}
+		secret = decoded
+	}
+	var channels []string
+	for _, raw := range strings.Split(strings.TrimSpace(os.Getenv("YUNKA_BIZ_NOTIFICATION_CHANNELS")), ",") {
+		if channel := strings.TrimSpace(raw); channel != "" {
+			channels = append(channels, channel)
+		}
+	}
+	config := bizruntime.NotificationRuntimeOptions{
+		ProviderEndpoint:     strings.TrimSpace(os.Getenv("YUNKA_BIZ_NOTIFICATION_PROVIDER_ENDPOINT")),
+		ProviderBearerToken:  os.Getenv("YUNKA_BIZ_NOTIFICATION_PROVIDER_BEARER_TOKEN"),
+		ProviderIdempotent:   envBool("YUNKA_BIZ_NOTIFICATION_PROVIDER_IDEMPOTENT", false),
+		Channels:             channels,
+		CallbackHMACSecret:   secret,
+		PollInterval:         envDuration("YUNKA_BIZ_NOTIFICATION_POLL_INTERVAL", 100*time.Millisecond),
+		RoutingLeaseDuration: envDuration("YUNKA_BIZ_NOTIFICATION_ROUTING_LEASE", time.Minute),
+	}
+	if err := config.Validate(); err != nil {
+		return bizruntime.NotificationRuntimeOptions{}, err
+	}
+	return config, nil
 }
 
 func verificationSecurityConfigFromEnv() (bizruntime.VerificationSecurityConfig, error) {

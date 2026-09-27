@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
@@ -83,19 +84,42 @@ func (auth *runtimeWebAuth) handleTenantMemberPasswordRecovery(writer http.Respo
 		http.Error(writer, "target member required", http.StatusBadRequest)
 		return
 	}
-	exists, err := store.TenantMemberAccountExists(request.Context(), authentication.Session.ActiveTenantID, targetUserID)
-	if err != nil {
-		http.Error(writer, "recovery target unavailable", http.StatusServiceUnavailable)
+	service := auth.currentMemberPasswordRecovery()
+	if service == nil {
+		http.Error(writer, "recovery unavailable", http.StatusServiceUnavailable)
 		return
 	}
-	if !exists {
+	receipt, err := service.Request(
+		request.Context(),
+		authentication.Session.ActiveTenantID,
+		targetUserID,
+		authentication.Session.UserID,
+	)
+	if err == nil {
+		writeJSON(writer, http.StatusAccepted, map[string]any{
+			"accepted":              true,
+			"mode":                  "self_service_recovery",
+			"notification_event_id": receipt.NotificationEventID,
+			"notification_state":    receipt.NotificationState,
+			"requested_at":          receipt.RequestedAt.UTC().Format("2006-01-02T15:04:05.999999Z07:00"),
+		})
+		return
+	}
+	var rateLimited accesspersistence.TenantMemberPasswordRecoveryRateLimitError
+	switch {
+	case errors.As(err, &rateLimited):
+		retry := int(rateLimited.RetryAfter.Seconds())
+		if retry < 1 {
+			retry = 1
+		}
+		writer.Header().Set("Retry-After", strconv.Itoa(retry))
+		writeJSON(writer, http.StatusTooManyRequests, map[string]any{
+			"error":               "PASSWORD_RECOVERY_RATE_LIMITED",
+			"retry_after_seconds": retry,
+		})
+	case errors.Is(err, accesspersistence.ErrTenantMemberPasswordRecoveryNotFound):
 		http.Error(writer, "Not Found", http.StatusNotFound)
-		return
+	default:
+		http.Error(writer, "recovery unavailable", http.StatusServiceUnavailable)
 	}
-	writeJSON(writer, http.StatusConflict, map[string]any{
-		"status":     "POLICY_PENDING",
-		"policy":     "Q-007",
-		"permission": string(tenantMemberPasswordRecoveryPermission),
-		"message":    "管理员直接重置全局 Account 凭据未获批准；请由 Account 本人使用找回密码流程完成身份自证。",
-	})
 }

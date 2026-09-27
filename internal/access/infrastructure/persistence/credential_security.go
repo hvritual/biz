@@ -195,6 +195,23 @@ func (store *Store) RecoverPasswordWithCode(
 			}).Error; err != nil {
 			return err
 		}
+		notificationRepository, err := NewVerificationRepository(tx, protection)
+		if err != nil {
+			return err
+		}
+		if _, err := notificationRepository.EnqueueSecurityNotification(ctx, domain.SecurityNotificationRequest{
+			BusinessEventID: "password-reset-complete/" + challenge.ChallengeID,
+			Kind:            domain.SecurityNotificationPasswordResetCompleted,
+			Purpose:         domain.VerificationPurposePasswordRecovery,
+			UserID:          request.UserID,
+			TenantID:        request.TenantID,
+			FlowID:          request.FlowID,
+			Channel:         request.Channel,
+			Destination:     request.Destination,
+			ExpiresAt:       canonicalVerificationTime(now.Add(authorizationTTL)),
+		}); err != nil {
+			return err
+		}
 		receipt = domain.AuthorizationConsumptionReceipt{ChallengeID: challenge.ChallengeID, ConsumedAt: consumedAt}
 		return nil
 	})
