@@ -95,7 +95,7 @@ func (auth *runtimeWebAuth) handleMarkAllNotificationInboxRead(writer http.Respo
 		writeJSON(writer, http.StatusBadRequest, map[string]any{"error": "INVALID_NOTIFICATION_INBOX_REQUEST"})
 		return
 	}
-	decoder := json.NewDecoder(io.LimitReader(request.Body, 257))
+	decoder := json.NewDecoder(http.MaxBytesReader(writer, request.Body, 256))
 	var body map[string]json.RawMessage
 	if err := decoder.Decode(&body); err != nil || body == nil || len(body) != 0 {
 		writeJSON(writer, http.StatusBadRequest, map[string]any{"error": "INVALID_NOTIFICATION_INBOX_REQUEST"})
