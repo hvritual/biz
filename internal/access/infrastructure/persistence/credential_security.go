@@ -56,6 +56,19 @@ func (store *Store) VerifyUserPassword(ctx context.Context, userID, password str
 }
 
 func (store *Store) ChangeOwnPassword(ctx context.Context, userID, currentPassword, newPassword, confirmation string) error {
+	return store.changeOwnPassword(ctx, "", userID, "", currentPassword, newPassword, confirmation)
+}
+
+func (store *Store) ChangeOwnPasswordAudited(ctx context.Context, tenantID, userID, requestRef, currentPassword, newPassword, confirmation string) error {
+	tenantID = strings.TrimSpace(tenantID)
+	requestRef = strings.TrimSpace(requestRef)
+	if tenantID == "" || requestRef == "" {
+		return ErrInvalidUserCredentials
+	}
+	return store.changeOwnPassword(ctx, tenantID, userID, requestRef, currentPassword, newPassword, confirmation)
+}
+
+func (store *Store) changeOwnPassword(ctx context.Context, tenantID, userID, requestRef, currentPassword, newPassword, confirmation string) error {
 	userID = strings.TrimSpace(userID)
 	if store == nil || store.database == nil || userID == "" {
 		return ErrInvalidUserCredentials
@@ -66,18 +79,64 @@ func (store *Store) ChangeOwnPassword(ctx context.Context, userID, currentPasswo
 	if err := ValidateUserChosenPassword(newPassword); err != nil {
 		return err
 	}
-	return store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	var expectedOutcome error
+	err := store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if tenantID != "" {
+			var count int64
+			if err := tx.Model(&membershipRecord{}).
+				Where("tenant_id = ? AND user_id = ? AND status = ? AND self_deleted_at IS NULL", tenantID, userID, domain.TenantMemberStatusActive).
+				Count(&count).Error; err != nil {
+				return err
+			}
+			if count != 1 {
+				return ErrUnauthorized
+			}
+		}
 		if err := verifyUserPasswordByID(ctx, tx, userID, currentPassword); err != nil {
 			if errors.Is(err, ErrInvalidUserCredentials) {
-				return ErrCurrentPasswordInvalid
+				if tenantID != "" {
+					if auditErr := AppendTrustedAuditPairTx(ctx, tx, TrustedAudit{
+						EventKey: requestRef, OperationID: "identity.password.change", Module: "access",
+						TenantID: tenantID, ActorSubject: "user:" + userID, ActorUserID: userID,
+						AuthMethod: AuthMethodWeb, AuthChannel: "web", RequestID: requestRef, TraceID: requestRef,
+						Target: "account:" + userID, ResourceTenantID: tenantID,
+						DecisionReason: "CURRENT_PASSWORD_INVALID", RequestDigest: TokenHash("password-change/v1"),
+						Reason: "changed_fields=password", Risk: domain.AuditRiskHigh,
+						Outcome: domain.AuditResultFailure, OccurredAt: time.Now().UTC(),
+					}); auditErr != nil {
+						return auditErr
+					}
+				}
+				expectedOutcome = ErrCurrentPasswordInvalid
+				return nil
 			}
 			return err
 		}
 		if err := setUserPassword(ctx, tx, userID, newPassword); err != nil {
 			return err
 		}
-		return revokeWebSessionsForUser(ctx, tx, userID)
+		if err := revokeWebSessionsForUser(ctx, tx, userID); err != nil {
+			return err
+		}
+		if tenantID != "" {
+			if err := AppendTrustedAuditPairTx(ctx, tx, TrustedAudit{
+				EventKey: requestRef, OperationID: "identity.password.change", Module: "access",
+				TenantID: tenantID, ActorSubject: "user:" + userID, ActorUserID: userID,
+				AuthMethod: AuthMethodWeb, AuthChannel: "web", RequestID: requestRef, TraceID: requestRef,
+				Target: "account:" + userID, ResourceTenantID: tenantID,
+				RequestDigest: TokenHash("password-change/v1"), ReceiptRef: "account:" + userID,
+				Reason: "changed_fields=password", Risk: domain.AuditRiskHigh,
+				Outcome: domain.AuditResultSuccess, OccurredAt: time.Now().UTC(),
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
+	if err != nil {
+		return err
+	}
+	return expectedOutcome
 }
 
 func (store *Store) RecoverPasswordWithCode(
