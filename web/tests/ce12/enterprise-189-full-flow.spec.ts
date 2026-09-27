@@ -291,13 +291,27 @@ test('TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout', async ({ br
     await roleDialog.getByRole('button', { name: '保存角色' }).click()
     await expect(ownerPage.getByRole('status')).toContainText('角色配置已保存并更新。')
 
-    await viewerPage.goto(data.ui_base_url + '/#/enterprise/members')
+    const revokedSession = await readSession(viewerContext, data)
+    const revokedMemberList = await viewerContext.request.get(data.base_url + '/v1/tenant/members', {
+      headers: { 'X-Biz-Session-Context': trustedContext(revokedSession) },
+    })
+    expect(revokedMemberList.status(), await revokedMemberList.text()).toBe(403)
+
+    // The target tab is already on this exact hash route. page.goto() to the
+    // same URL is not a reliable full refresh, so explicitly reload to prove
+    // #175's browser contract after #179's next-request revocation.
+    await viewerPage.reload()
     await expect(viewerPage.locator('[data-authorization-state]')).toBeVisible()
     await expect(viewerPage.getByRole('heading', { name: '没有访问权限', exact: true })).toBeVisible()
     await expect(viewerPage.locator('[data-enterprise-page="members"]')).toHaveCount(0)
 
     await ensureViewerReadPermission(ownerContext, data)
-    await viewerPage.goto(data.ui_base_url + '/#/enterprise/members')
+    const restoredSession = await readSession(viewerContext, data)
+    const restoredMemberList = await viewerContext.request.get(data.base_url + '/v1/tenant/members', {
+      headers: { 'X-Biz-Session-Context': trustedContext(restoredSession) },
+    })
+    expect(restoredMemberList.status(), await restoredMemberList.text()).toBe(200)
+    await viewerPage.reload()
     await expect(viewerPage.locator('[data-enterprise-page="members"]')).toBeVisible()
 
     await ownerPage.goto(data.ui_base_url + '/#/enterprise/personal-profile')
