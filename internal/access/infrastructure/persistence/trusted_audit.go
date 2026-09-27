@@ -17,6 +17,7 @@ import (
 type TrustedAudit struct {
 	EventKey          string
 	OperationID       string
+	Module            string
 	TenantID          string
 	ActorSubject      string
 	ActorUserID       string
@@ -43,6 +44,7 @@ func AppendTrustedAuditPairTx(ctx context.Context, tx *gorm.DB, input TrustedAud
 	}
 	input.EventKey = strings.TrimSpace(input.EventKey)
 	input.OperationID = strings.TrimSpace(input.OperationID)
+	input.Module = strings.TrimSpace(input.Module)
 	input.TenantID = strings.TrimSpace(input.TenantID)
 	input.ActorSubject = strings.TrimSpace(input.ActorSubject)
 	input.ActorUserID = strings.TrimSpace(input.ActorUserID)
@@ -64,6 +66,9 @@ func AppendTrustedAuditPairTx(ctx context.Context, tx *gorm.DB, input TrustedAud
 	}
 	if input.Target == "" {
 		input.Target = "tenant:" + input.ResourceTenantID
+	}
+	if input.Module == "" {
+		input.Module = "access"
 	}
 	if input.Risk == "" {
 		input.Risk = domain.AuditRiskMedium
@@ -92,7 +97,7 @@ func AppendTrustedAuditPairTx(ctx context.Context, tx *gorm.DB, input TrustedAud
 		ActorSubject: input.ActorSubject, ActorUserID: input.ActorUserID,
 		AuthMethod: input.AuthMethod, AuthChannel: input.AuthChannel, SessionRef: input.SessionRef,
 		RequestID: input.RequestID, TraceID: input.TraceID, IdempotencyRef: input.IdempotencyRef,
-		OperationID: input.OperationID, Module: "access", Target: input.Target,
+		OperationID: input.OperationID, Module: input.Module, Target: input.Target,
 		ResourceTenantID: input.ResourceTenantID, DecisionReason: input.DecisionReason,
 		RequestDigest: input.RequestDigest, ReceiptRef: input.ReceiptRef, Reason: input.Reason,
 		Risk: input.Risk, OccurredAt: input.OccurredAt,
