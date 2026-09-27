@@ -21,26 +21,11 @@ import (
 // Notification configuration shares the existing root Executor and its GORM
 // transaction. No module acquires another database or opens a nested UoW.
 func (factory applicationFactories) BuildNotificationMessageConfiguration(generatedassembly.NotificationMessageConfigurationDependencies) (notificationapp.MessageConfigurationApplication, error) {
-	types, err := notificationdomain.NewMessageTypeCatalog([]notificationdomain.MessageType{
-		{Code: "device.fault", Name: "设备故障", Level: notificationdomain.LevelUrgent},
-		{Code: "device.offline", Name: "设备通信离线", Level: notificationdomain.LevelImportant},
-		{Code: "service.maintenance_due", Name: "维护到期提醒", Level: notificationdomain.LevelImportant},
-		{Code: "device.connection_recovered", Name: "设备通信恢复", Level: notificationdomain.LevelGeneral},
-		{Code: "system.announcement", Name: "企业系统通知", Level: notificationdomain.LevelGeneral},
-	})
-	if err != nil {
-		return nil, err
+	if factory.notificationCatalogs.types == nil || factory.notificationCatalogs.channels == nil {
+		return nil, notificationdomain.ErrCatalogUnavailable
 	}
-	// Registered/configurable is not a delivery status. Transport adapters and
-	// event mappings belong to #185; do not expose fake email/SMS enable switches.
-	channels, err := notificationdomain.NewChannelRegistry([]notificationdomain.Channel{
-		{Code: "in_app", Name: "站内消息", Availability: notificationdomain.ChannelConfigurable},
-		{Code: "sms", Name: "短信", Availability: notificationdomain.ChannelNotConfigurable, UnavailableReason: "短信投递适配器尚未配置"},
-		{Code: "email", Name: "邮件", Availability: notificationdomain.ChannelNotConfigurable, UnavailableReason: "邮件投递适配器尚未配置"},
-	})
-	if err != nil {
-		return nil, err
-	}
+	types := factory.notificationCatalogs.types
+	channels := factory.notificationCatalogs.channels
 	repositories := requestscope.GORMRepositories(buildNotificationRepositories)
 	service, err := notificationapp.NewConfigurationService(repositories, types, channels)
 	if err != nil {
