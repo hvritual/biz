@@ -326,6 +326,7 @@ func bindRuntimeWithSecurity(
 	}
 	var memberAppeals *accesspersistence.MemberAppealService
 	var selfSecurity *accesspersistence.TenantSelfSecurityService
+	var memberPasswordRecovery *accesspersistence.TenantMemberPasswordRecoveryService
 	if verificationProtection != nil && protection != nil && options.VerificationSecurity.Enabled() {
 		selfSecurity, err = accesspersistence.NewTenantSelfSecurityService(
 			accessDatabase,
@@ -341,6 +342,10 @@ func bindRuntimeWithSecurity(
 		memberAppeals, err = accesspersistence.NewMemberAppealService(accessDatabase, protection, verificationProtection)
 		if err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: member appeal service: %w", err)
+		}
+		memberPasswordRecovery, err = accesspersistence.NewTenantMemberPasswordRecoveryService(accessDatabase, protection, verificationProtection)
+		if err != nil {
+			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: tenant member password recovery service: %w", err)
 		}
 	}
 	if config.AutoMigrate {
@@ -439,6 +444,7 @@ func bindRuntimeWithSecurity(
 		webAuth.setStore(accessStore)
 		webAuth.setMemberAppeals(memberAppeals)
 		webAuth.setSelfSecurity(selfSecurity)
+		webAuth.setMemberPasswordRecovery(memberPasswordRecovery)
 		if err := webAuth.bootstrapPlatformIdentity(ctx); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: OIDC platform identity bootstrap: %w", err)
 		}
