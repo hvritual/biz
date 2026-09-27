@@ -86,6 +86,7 @@ func TestEnterprise173PasswordRecoveryReplayExpiryAndConcurrentConsumption(t *te
 		}, 5*time.Minute, "ExpiredNew9A", "ExpiredNew9A"); !errors.Is(err, domain.ErrVerificationExpired) {
 			t.Fatalf("expired recovery accepted: %v", err)
 		}
+		enterprise188RequireAuditOutcome(t, fixture.DB, "tenant-173-expired", "identity.password.recover", "failure", 1)
 	})
 
 	t.Run("concurrent single consumption", func(t *testing.T) {
@@ -122,5 +123,7 @@ func TestEnterprise173PasswordRecoveryReplayExpiryAndConcurrentConsumption(t *te
 		if success.Load() != 1 || consumed.Load() != 1 || other.Load() != 0 {
 			t.Fatalf("concurrent recovery: success=%d consumed=%d other=%d", success.Load(), consumed.Load(), other.Load())
 		}
+		enterprise188RequireAuditOutcome(t, fixture.DB, "tenant-173-concurrent", "identity.password.recover", "success", 1)
+		enterprise188RequireAuditOutcome(t, fixture.DB, "tenant-173-concurrent", "identity.password.recover", "failure", 1)
 	})
 }
