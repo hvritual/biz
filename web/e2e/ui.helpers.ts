@@ -13,9 +13,12 @@ export async function selectUiOption(control: Locator, value: string | number) {
 }
 
 export async function installApiFailFast(page: Page) {
-  // The global AppHeader always reads the #186 in-app unread count in API
-  // mode. Keep that infrastructure request explicit in unrelated browser
-  // fixtures while still failing every other unhandled auth/v1 request.
+  await page.route(/\/(?:api\/)?(?:auth|v1)\//, async (route) => {
+    const request = route.request()
+    throw new Error(`Unhandled API request: ${request.method()} ${new URL(request.url()).pathname}`)
+  })
+  // Registered after fail-fast so Playwright's LIFO route order lets this
+  // global AppHeader infrastructure read through in unrelated API fixtures.
   await page.route('**/api/auth/personal/in-app-notifications', async (route) => {
     const request = route.request()
     if (request.method() !== 'GET') {
@@ -42,10 +45,6 @@ export async function installApiFailFast(page: Page) {
         as_of: '2026-09-27T00:00:00Z',
       }),
     })
-  })
-  await page.route(/\/(?:api\/)?(?:auth|v1)\//, async (route) => {
-    const request = route.request()
-    throw new Error(`Unhandled API request: ${request.method()} ${new URL(request.url()).pathname}`)
   })
 }
 
