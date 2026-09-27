@@ -100,7 +100,7 @@ func TestServiceAPIConfigRejectsWeakOrWronglyScopedCredentials(t *testing.T) {
 		ClockSkew: time.Minute,
 		Credentials: []ServiceAPICredentialConfig{{
 			KeyID: "service-a", Subject: "platform-service:a",
-			Secret: []byte(strings.Repeat("s", 32)),
+			Secret:     []byte(strings.Repeat("s", 32)),
 			Operations: []string{"commercial.plan.discover"},
 		}},
 	}
@@ -135,7 +135,7 @@ func TestServiceAPIRouteResolutionUsesCatalogOperation(t *testing.T) {
 		ClockSkew: time.Minute,
 		Credentials: []ServiceAPICredentialConfig{{
 			KeyID: "service-a", Subject: "platform-service:a",
-			Secret: []byte(strings.Repeat("s", 32)),
+			Secret:     []byte(strings.Repeat("s", 32)),
 			Operations: []string{"commercial.plan.discover"},
 		}},
 	})
@@ -159,7 +159,7 @@ func TestServiceAPIRejectsDuplicateSignedHeadersAndAuthorizationMixing(t *testin
 		ClockSkew: time.Minute,
 		Credentials: []ServiceAPICredentialConfig{{
 			KeyID: "service-a", Subject: "platform-service:a",
-			Secret: []byte(strings.Repeat("s", 32)),
+			Secret:     []byte(strings.Repeat("s", 32)),
 			Operations: []string{"commercial.plan.discover"},
 		}},
 	})
