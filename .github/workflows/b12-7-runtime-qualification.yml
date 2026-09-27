@@ -145,7 +145,13 @@ jobs:
           grep -Fq 'DEV READY' "$RUNNER_TEMP/b12-7-dev.stderr"
 
           curl --fail --silent --show-error http://127.0.0.1:8080/__yunka/diagnostics > "$RUNNER_TEMP/b12-7-diagnostics.json"
-          jq -e '
+          expected_components='["grpc-server","http-server"]'
+          if test -f internal/bizruntime/notification_runtime.go; then
+            grep -Fq 'Name:         "notification-runtime"' internal/bizruntime/notification_runtime.go
+            grep -Fq 'components = append(components, notificationRunner.component())' internal/bizruntime/runtime.go
+            expected_components='["grpc-server","http-server","notification-runtime"]'
+          fi
+          jq --argjson expected_components "$expected_components" -e '
             .schemaVersion == 1 and
             .core.schemaVersion == 1 and
             .core.state == "ready" and
@@ -153,7 +159,7 @@ jobs:
             .core.runtime.rpcServerCount == 1 and
             .core.runtime.routeCount >= 20 and
             ((.core.modules | map(.name) | sort) == (["access", "deviceops"] | sort)) and
-            ((.core.components | map(.name) | sort) == (["grpc-server", "http-server"] | sort)) and
+            ((.core.components | map(.name) | sort) == ($expected_components | sort)) and
             (.core.routes | index("/v1/tenants")) != null and
             (.core.routes | index("/v1/tenant/members")) != null and
             (.core.routes | index("/v1/tenant/roles")) != null and
