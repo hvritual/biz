@@ -60,5 +60,4 @@ func TestEnterprise185NotificationCatalogIsSingleRuntimeSnapshot(t *testing.T) {
 	if _, err := enabled.types.Lookup("device.fault"); err != nil {
 		t.Fatal(err)
 	}
-
 }
