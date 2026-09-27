@@ -133,6 +133,10 @@
         {
           "name": "TestEnterprise185InAppLatency1000Within60Seconds",
           "file": "integration/enterprise_185_in_app_latency_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185AdminPasswordRecoveryRequestQueuesOnlySelfServiceNotification",
+          "file": "integration/enterprise_185_admin_recovery_mysql_test.go"
         }
       ]
     }
