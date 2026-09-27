@@ -22,10 +22,29 @@ func TestEnterprise185AdminPasswordRecoveryRequestQueuesOnlySelfServiceNotificat
 	tenantA, tenantB := "e185-admin-recovery-a-"+stamp, "e185-admin-recovery-b-"+stamp
 	admin := "e185-admin-recovery-actor-" + stamp
 
-	sessionA, sessionB := fixture.bootstrapAccount(t, target, tenantA, email, password)
+	if err := fixture.Store.Bootstrap(ctx, accesspersistence.Bootstrap{
+		TenantID: tenantA, TenantName: tenantA, UserID: target, Email: email, Token: "admin-recovery-a-token-" + stamp,
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
 	if err := fixture.Store.Bootstrap(ctx, accesspersistence.Bootstrap{
 		TenantID: tenantB, TenantName: tenantB, UserID: target, Email: email, Token: "admin-recovery-b-token-" + stamp,
 	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := fixture.Store.SetUserPassword(ctx, target, password); err != nil {
+		t.Fatal(err)
+	}
+	webIdentity, err := fixture.Store.ResolveOrBindOIDCIdentity(ctx, "https://issuer.example.invalid", "sub-"+target, email, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sessionA, _, err := fixture.Store.CreateWebSession(ctx, webIdentity, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sessionB, _, err := fixture.Store.CreateWebSession(ctx, webIdentity, time.Hour)
+	if err != nil {
 		t.Fatal(err)
 	}
 	foreign := "e185-admin-recovery-foreign-" + stamp
