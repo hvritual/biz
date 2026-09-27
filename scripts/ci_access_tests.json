@@ -152,6 +152,31 @@
           "file": "integration/enterprise_187_service_api_hmac_mysql_test.go"
         }
       ]
+    },
+    {
+      "id": "enterprise-audit-coverage",
+      "tests": [
+        {
+          "name": "TestEnterprise188AuditCoverageContractAndTenantAPI",
+          "file": "integration/enterprise_188_audit_coverage_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise169PrivacyConsentEvidenceAndVersionPolicy",
+          "file": "integration/enterprise_169_privacy_consent_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise173SelfPasswordChangeAtomicAndRevokesSessions",
+          "file": "integration/enterprise_173_self_change_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise173PasswordRecoveryReplayExpiryAndConcurrentConsumption",
+          "file": "integration/enterprise_173_recovery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise177AppealIsSelfOnlyRateLimitedAndNotificationFailureDoesNotGrantAccess",
+          "file": "integration/enterprise_177_member_lifecycle_mysql_test.go"
+        }
+      ]
     }
   ]
 }
