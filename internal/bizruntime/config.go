@@ -249,6 +249,8 @@ type Options struct {
 	WebAuth                 WebAuthConfig
 	FirstPartyIdP           FirstPartyIdPConfig
 	VerificationSecurity    VerificationSecurityConfig
+	NotificationRuntime     NotificationRuntimeOptions
+	notificationCatalogs    notificationCatalogSnapshot
 	// MemberActivationTTL is explicit runtime policy for #176 activation links
 	// and one-time initial passwords. Zero keeps member creation disabled.
 	MemberActivationTTL time.Duration
@@ -275,6 +277,9 @@ func (options Options) Validate() error {
 		return err
 	}
 	if err := options.VerificationSecurity.Validate(); err != nil {
+		return err
+	}
+	if err := options.NotificationRuntime.Validate(); err != nil {
 		return err
 	}
 	if options.MemberActivationTTL < 0 {
