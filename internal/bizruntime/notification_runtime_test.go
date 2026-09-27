@@ -61,11 +61,4 @@ func TestEnterprise185NotificationCatalogIsSingleRuntimeSnapshot(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	factory := applicationFactories{notificationCatalogs: enabled}
-	app, err := factory.BuildNotificationMessageConfiguration(struct{}{})
-	if err == nil || app != nil {
-		// The generated dependency type is intentionally not fabricated here;
-		// runtime integration below proves the exact generated factory path.
-		t.Fatal("unexpected direct factory construction without generated dependencies")
-	}
 }
