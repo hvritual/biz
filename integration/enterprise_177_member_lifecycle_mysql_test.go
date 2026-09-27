@@ -578,6 +578,8 @@ func TestEnterprise177AppealIsSelfOnlyRateLimitedAndNotificationFailureDoesNotGr
 			t.Fatalf("unexpected appeal rate limit: %v", err)
 		}
 	}
+	enterprise188RequireAuditOutcome(t, db, tenantA, "tenant.member.appeal.submit", "success", 1)
+	enterprise188RequireAuditOutcome(t, db, tenantA, "tenant.member.appeal.submit", "failure", 1)
 
 	claim, _, err := verification.ClaimSecurityNotification(ctx, receipt.NotificationEventIDs[0])
 	if err != nil {
