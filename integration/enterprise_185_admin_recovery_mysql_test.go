@@ -112,6 +112,8 @@ func TestEnterprise185AdminPasswordRecoveryRequestQueuesOnlySelfServiceNotificat
 			t.Fatalf("admin recovery rate limit err=%v outbox=%d", err, delivery.count(t))
 		}
 	}
+	enterprise188RequireAuditOutcome(t, fixture.DB, tenantA, "tenant.member.password_recovery.request", "success", 1)
+	enterprise188RequireAuditOutcome(t, fixture.DB, tenantA, "tenant.member.password_recovery.request", "failure", 1)
 	if _, err := service.Request(ctx, tenantA, foreign, admin); !errors.Is(err, accesspersistence.ErrTenantMemberPasswordRecoveryNotFound) {
 		t.Fatalf("foreign tenant recovery err=%v", err)
 	}
