@@ -368,7 +368,7 @@ func terminalExternalTask(
 	row.LeaseOwner = ""
 	row.LeaseUntil = nil
 	row.NextAttemptAt = nil
-	if err := appendExternalDeliveryAuditTx(ctx, tx, row, "notification.delivery."+state, accessdomain.AuditResultFailure, code, now); err != nil {
+	if err := appendExternalDeliveryAuditTx(ctx, tx, row, "notification.delivery."+strings.ToLower(state), accessdomain.AuditResultFailure, code, now); err != nil {
 		return domain.ExternalTaskReceipt{}, err
 	}
 	return externalTaskReceipt(row), nil
