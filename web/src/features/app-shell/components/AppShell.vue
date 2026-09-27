@@ -152,6 +152,7 @@ onBeforeUnmount(() => {
     }"
     data-business-ui
   >
+    <a href="#main-content" class="skip-link">{{ t('shell.skipToContent', '跳到主要内容') }}</a>
     <AppHeader />
     <UiButton
       v-if="expanded || ui.mobileOpen"
@@ -164,7 +165,7 @@ onBeforeUnmount(() => {
       <PrimaryNavigation />
       <ModulePanel v-if="ui.module" />
     </aside>
-    <main class="main-content" :inert="expanded || ui.mobileOpen" data-testid="main-content">
+    <main id="main-content" class="main-content" :inert="expanded || ui.mobileOpen" data-testid="main-content" tabindex="-1">
       <RouterView v-if="authorizationRenderable" :key="routeKey" />
       <div v-else class="authorization-loading" role="status">{{ t('shell.authorizationChecking') }}</div>
     </main>

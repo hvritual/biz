@@ -2,8 +2,15 @@
 import { computed } from 'vue'
 
 const props = withDefaults(
-  defineProps<{ name: string; size?: number; tone?: string; assetRef?: string }>(),
-  { size: 36, tone: 'blue', assetRef: '' },
+  defineProps<{
+    name: string
+    src?: string
+    size?: number
+    tone?: string
+    assetRef?: string
+    status?: 'online' | 'offline' | 'busy' | 'away' | ''
+  }>(),
+  { src: '', size: 36, tone: 'blue', assetRef: '', status: '' },
 )
 
 const assetTone = computed(() => {
@@ -16,16 +23,21 @@ const assetTone = computed(() => {
   }
 })
 const initial = computed(() => props.name.trim().slice(0, 1) || 'U')
+const showImage = computed(() => Boolean(props.src))
 </script>
 <template>
   <span
     class="avatar-mark"
-    :class="[tone, assetTone]"
+    :class="[tone, assetTone, status ? `status-${status}` : '']"
     :data-avatar-ref="assetRef || undefined"
     :style="{ width: size + 'px', height: size + 'px', fontSize: Math.max(14, size * 0.4) + 'px' }"
-    aria-hidden="true"
-    >{{ initial }}</span
+    :role="name ? 'img' : undefined"
+    :aria-label="name || undefined"
   >
+    <img v-if="showImage" :src="src" :alt="name" class="avatar-image" />
+    <template v-else>{{ initial }}</template>
+    <span v-if="status" class="avatar-status" aria-hidden="true" />
+  </span>
 </template>
 <style scoped>
 .avatar-mark {
@@ -36,7 +48,15 @@ const initial = computed(() => props.name.trim().slice(0, 1) || 'U')
   border-radius: 50%;
   background: linear-gradient(135deg, var(--color-primary-soft), var(--color-border));
   color: var(--color-primary);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
+  position: relative;
+  overflow: visible;
+}
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
 }
 .avatar-mark.solid {
   background: linear-gradient(135deg, var(--color-gradient-end), var(--color-primary));
@@ -59,4 +79,19 @@ const initial = computed(() => props.name.trim().slice(0, 1) || 'U')
   background: var(--color-warning-soft);
   color: var(--color-warning);
 }
+.avatar-status {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 30%;
+  height: 30%;
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--color-surface);
+}
+.avatar-mark.status-online .avatar-status { background: var(--color-success); }
+.avatar-mark.status-offline .avatar-status { background: var(--color-text-muted); }
+.avatar-mark.status-busy .avatar-status { background: var(--color-danger); }
+.avatar-mark.status-away .avatar-status { background: var(--color-warning); }
 </style>

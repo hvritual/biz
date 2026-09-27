@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown } from 'lucide-vue-next'
+import { ChevronDown, X } from 'lucide-vue-next'
 import { computed, useAttrs } from 'vue'
 import { SelectContent, SelectIcon, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from 'reka-ui'
 import { cn } from '@/lib/utils'
@@ -13,13 +13,16 @@ const props = withDefaults(
     modelModifiers?: ModelModifiers
     placeholder?: string
     disabled?: boolean
+    clearable?: boolean
+    error?: boolean
     value?: SelectModelValue
   }>(),
-  { placeholder: '请选择', disabled: false, modelValue: undefined, modelModifiers: undefined, value: undefined },
+  { placeholder: '请选择', disabled: false, clearable: false, error: false, modelValue: undefined, modelModifiers: undefined, value: undefined },
 )
 const emit = defineEmits<{
   'update:modelValue': [value: SelectModelValue]
   change: [event: Event]
+  clear: []
 }>()
 const attrs = useAttrs()
 const emptyValue = '__coffeelink_empty__'
@@ -31,6 +34,8 @@ const internalValue = computed(() => {
   const value = props.modelValue !== undefined ? props.modelValue : props.value
   return value === '' || value == null ? emptyValue : String(value)
 })
+const hasValue = computed(() => internalValue.value !== emptyValue)
+const canClear = computed(() => props.clearable && hasValue.value && !props.disabled)
 const explicitAriaLabel = computed(() =>
   attrs['aria-label'] == null ? undefined : String(attrs['aria-label']),
 )
@@ -39,7 +44,8 @@ const triggerAttrs = computed(() =>
 )
 const triggerClass = computed(() =>
   cn(
-    'flex h-[var(--control-height)] w-full items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-input bg-background px-3 text-[var(--text-sm)] text-foreground outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50',
+    'flex h-[var(--control-height)] w-full items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-input bg-background px-3 text-[var(--text-sm)] text-foreground outline-none focus-visible:border-primary focus-visible:outline-[var(--focus-ring-width)] focus-visible:outline-offset-[var(--focus-ring-offset)] disabled:cursor-not-allowed disabled:opacity-50',
+    props.error && 'border-[var(--color-danger)] focus-visible:border-[var(--color-danger)]',
     attrs.class,
   ),
 )
@@ -55,6 +61,13 @@ function handleUpdate(value: unknown) {
   emit('update:modelValue', next)
   emit('change', toLegacyChangeEvent(next))
 }
+function clear(event: Event) {
+  event.preventDefault()
+  event.stopPropagation()
+  emit('update:modelValue', '')
+  emit('clear')
+  emit('change', toLegacyChangeEvent(''))
+}
 </script>
 <template>
   <SelectRoot :model-value="internalValue" :disabled="disabled" @update:model-value="handleUpdate">
@@ -63,9 +76,22 @@ function handleUpdate(value: unknown) {
       data-slot="select-trigger"
       :class="triggerClass"
       :aria-label="explicitAriaLabel"
+      :aria-invalid="error || undefined"
     >
       <SelectValue :placeholder="placeholder" />
-      <SelectIcon><ChevronDown class="size-4 opacity-60" /></SelectIcon>
+      <span class="flex items-center gap-1.5">
+        <button
+          v-if="canClear"
+          type="button"
+          class="select-clear"
+          aria-label="清除选择"
+          tabindex="-1"
+          @click="clear"
+        >
+          <X :size="14" />
+        </button>
+        <SelectIcon as-child><ChevronDown class="size-4 opacity-60" /></SelectIcon>
+      </span>
     </SelectTrigger>
     <SelectPortal>
       <SelectContent
@@ -78,3 +104,22 @@ function handleUpdate(value: unknown) {
     </SelectPortal>
   </SelectRoot>
 </template>
+<style scoped>
+.select-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color var(--duration-base) var(--ease-standard);
+}
+.select-clear:hover {
+  color: var(--color-text);
+}
+</style>

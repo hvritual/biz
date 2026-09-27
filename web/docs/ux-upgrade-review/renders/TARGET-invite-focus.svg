@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1200" viewBox="0 0 1920 1200">
+  <defs>
+    <style>
+      text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+      .ink{fill:#1f2937}.muted{fill:#53657c}.h{fill:#152844;font-size:32px;font-weight:700}
+      .section{fill:#152844;font-size:23px;font-weight:650}.body{font-size:18px}
+      .line{fill:#fff;stroke:#c6d3e5;stroke-width:2}.focus{fill:none;stroke:#1252b4;stroke-width:3}
+      .caption{font-size:16px;fill:#52637b}
+    </style>
+    <filter id="shadow"><feDropShadow dx="0" dy="12" stdDeviation="23" flood-color="#123053" flood-opacity=".12"/></filter>
+  </defs>
+  <rect width="1920" height="1200" fill="#eef3f9"/>
+  <text x="68" y="72" class="h">邀请成员 · 表单任务与焦点反馈</text>
+  <text x="68" y="109" class="muted body">TARGET / 仅用于评审；左侧是目标交互表单，右侧展示重点组件的聚焦与错误状态。</text>
+  <rect x="60" y="146" width="1120" height="988" rx="19" fill="#fff" filter="url(#shadow)"/>
+  <text x="104" y="205" class="section">邀请成员</text><text x="920" y="205" class="muted body">步骤 1 / 2    × 关闭</text>
+  <path d="M60 236h1120" stroke="#dbe5f0" stroke-width="2"/>
+  <rect x="104" y="268" width="1026" height="65" rx="10" fill="#eff6ff"/>
+  <text x="130" y="308" fill="#174b92" class="body">填写基本信息 → 设置组织与角色 → 核对并创建邀请</text>
+  <text x="104" y="388" class="section">01  基本信息</text>
+  <text x="105" y="439" class="ink body">登录账号 <tspan fill="#c42b31">*</tspan></text>
+  <text x="631" y="439" class="ink body">姓名 <tspan fill="#c42b31">*</tspan></text>
+  <rect x="104" y="457" width="478" height="54" rx="8" class="line"/>
+  <rect x="101" y="454" width="484" height="60" rx="10" class="focus"/>
+  <text x="124" y="491" class="ink body">member_zhang</text>
+  <rect x="630" y="457" width="500" height="54" rx="8" class="line"/>
+  <text x="652" y="492" class="muted body">请输入成员姓名</text>
+  <text x="105" y="547" class="ink body">邮箱 <tspan fill="#c42b31">*</tspan></text>
+  <text x="631" y="547" class="ink body">手机号</text>
+  <rect x="104" y="564" width="478" height="54" rx="8" fill="#fff" stroke="#c42b31" stroke-width="2"/>
+  <rect x="101" y="561" width="484" height="60" rx="10" class="focus"/>
+  <text x="123" y="601" class="ink body">invalid-email</text>
+  <text x="106" y="646" fill="#b4232d" class="caption">邮箱格式不正确，请填写可接收邀请的邮箱</text>
+  <rect x="630" y="564" width="500" height="54" rx="8" class="line"/>
+  <text x="652" y="599" class="muted body">选填 · 用于联系成员</text>
+  <path d="M104 696h1026" stroke="#e2e9f3" stroke-width="2"/>
+  <text x="104" y="748" class="section">02  组织与权限</text>
+  <text x="105" y="800" class="ink body">所属部门 <tspan fill="#c42b31">*</tspan></text>
+  <text x="631" y="800" class="ink body">初始角色 <tspan fill="#c42b31">*</tspan></text>
+  <rect x="104" y="820" width="478" height="54" rx="8" class="line"/>
+  <text x="126" y="855" class="ink body">产品研发部   ▾</text>
+  <rect x="630" y="820" width="500" height="54" rx="8" class="line"/>
+  <text x="652" y="855" class="ink body">普通成员   ▾</text>
+  <text x="105" y="923" class="muted body">角色权限会影响成员可访问的业务范围，请在提交前核对。</text>
+  <path d="M60 992h1120" stroke="#dbe5f0" stroke-width="2"/>
+  <text x="104" y="1049" class="muted body">当前未提交；错误字段在提交时获焦点并被读出</text>
+  <rect x="861" y="1012" width="115" height="55" rx="9" class="line"/>
+  <text x="899" y="1047" class="ink body">取消</text>
+  <rect x="990" y="1012" width="139" height="55" rx="9" fill="#2563eb"/>
+  <text x="1010" y="1047" fill="#fff" class="body">检查并继续</text>
+  <rect x="1214" y="146" width="646" height="988" rx="19" fill="#fff" filter="url(#shadow)"/>
+  <text x="1254" y="206" class="section">聚焦态 / 可访问性标注</text>
+  <text x="1254" y="245" class="muted body">键盘聚焦不与悬停、选中、错误状态混淆</text>
+  <text x="1254" y="303" class="ink body">01  输入框：可见环 + 输入光标</text>
+  <rect x="1254" y="325" width="548" height="53" rx="9" class="line"/>
+  <rect x="1251" y="322" width="554" height="59" rx="11" class="focus"/>
+  <text x="1276" y="359" class="ink body">member_zhang  |</text>
+  <text x="1254" y="436" class="ink body">02  下拉框：触发点聚焦 + 打开态</text>
+  <rect x="1254" y="460" width="548" height="53" rx="9" class="line"/>
+  <rect x="1251" y="457" width="554" height="59" rx="11" class="focus"/>
+  <text x="1278" y="496" class="ink body">请选择角色</text><text x="1769" y="496" class="ink body">⌃</text>
+  <rect x="1261" y="525" width="532" height="105" rx="9" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+  <rect x="1271" y="536" width="510" height="37" rx="6" fill="#eaf2ff"/>
+  <text x="1291" y="562" fill="#154a9a" class="body">普通成员  ·  当前键盘高亮</text>
+  <text x="1291" y="611" class="ink body">部门管理员</text>
+  <text x="1254" y="682" class="ink body">03  按钮：环不被容器裁切</text>
+  <rect x="1254" y="706" width="190" height="56" rx="8" fill="#2563eb"/>
+  <rect x="1251" y="703" width="196" height="62" rx="11" class="focus"/>
+  <text x="1284" y="742" fill="#fff" class="body">创建邀请</text>
+  <text x="1254" y="821" class="ink body">04  错误：聚焦环 + 错误文字并存</text>
+  <rect x="1254" y="844" width="548" height="52" rx="8" fill="#fff" stroke="#c42b31" stroke-width="2"/>
+  <rect x="1251" y="841" width="554" height="58" rx="11" class="focus"/>
+  <text x="1275" y="879" class="ink body">invalid-email</text>
+  <text x="1254" y="929" fill="#b4232d" class="caption">错误说明需与控件关联，不能只改变边框颜色</text>
+  <path d="M1254 982h548" stroke="#e2e9f3" stroke-width="2"/>
+  <text x="1254" y="1024" class="caption">Tab / Shift+Tab 顺序可预测；Esc 返回触发点。</text>
+  <text x="1254" y="1059" class="caption">焦点环最终颜色须实测浅色、暗色和品牌主题。</text>
+</svg>

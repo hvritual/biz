@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1800" height="1680" viewBox="0 0 1800 1680">
+  <defs>
+    <style>
+      text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+      .title{fill:#14243e;font-size:38px;font-weight:700}.sub{fill:#52637b;font-size:18px}
+      .card{fill:#fff;stroke:#dce5f2;stroke-width:2}.name{fill:#152845;font-size:23px;font-weight:700}
+      .note{fill:#40526d;font-size:17px}.tag{fill:#1550ad;font-size:16px;font-weight:700}
+      .step{fill:#fff;font-size:21px;font-weight:700}.line{fill:none;stroke:#a9c4ee;stroke-width:4;stroke-dasharray:9 8}
+    </style>
+  </defs>
+  <rect width="1800" height="1680" fill="#f2f6fc"/>
+  <rect width="1800" height="10" fill="#2563eb"/>
+  <text x="72" y="77" class="title">企业成员管理 · 端到端用户旅程评审板</text>
+  <text x="72" y="113" class="sub">CURRENT 截图来自本地 demo；蓝色注释为 TARGET 设计意图，尚未实施或验证。基线 1440×900 CSS px / 2× 采样。</text>
+  <path class="line" d="M590 442h38 M1170 442h38 M590 1135h38 M1170 1135h38"/>
+  <g transform="translate(52 154)">
+    <rect class="card" width="548" height="626" rx="20"/><rect width="548" height="50" rx="20" fill="#194f9d"/>
+    <text class="step" x="20" y="34">01 发现与进入</text>
+    <image x="18" y="69" width="512" height="320" xlink:href="screenshots/01-members-list-current.png"/>
+    <text class="name" x="24" y="433">成员列表 / 导航入口</text>
+    <text class="note" x="24" y="472">现状：列表信息密集，导航与主操作已有约束。</text>
+    <text class="tag" x="24" y="513">目标变化  A1</text><text class="note" x="24" y="544">突出任务入口、保留表格层级；明确键盘焦点。</text>
+    <text class="note" x="24" y="576">预期：首次定位更快，当前焦点可辨识。</text>
+  </g>
+  <g transform="translate(626 154)">
+    <rect class="card" width="548" height="626" rx="20"/><rect width="548" height="50" rx="20" fill="#194f9d"/>
+    <text class="step" x="20" y="34">02 检索与缩小范围</text>
+    <image x="18" y="69" width="512" height="320" xlink:href="screenshots/02-members-filter-current.png"/>
+    <text class="name" x="24" y="433">筛选 / 查询结果</text>
+    <text class="note" x="24" y="472">现状：草稿条件需点击查询才应用。</text>
+    <text class="tag" x="24" y="513">目标变化  A2</text><text class="note" x="24" y="544">区分待应用与已应用条件，结果数可感知。</text>
+    <text class="note" x="24" y="576">预期：减少“为什么结果没变”的疑惑。</text>
+  </g>
+  <g transform="translate(1200 154)">
+    <rect class="card" width="548" height="626" rx="20"/><rect width="548" height="50" rx="20" fill="#194f9d"/>
+    <text class="step" x="20" y="34">03 查看与核对</text>
+    <image x="18" y="69" width="512" height="320" xlink:href="screenshots/03-members-detail-current.png"/>
+    <text class="name" x="24" y="433">成员详情 / 角色与范围</text>
+    <text class="note" x="24" y="472">现状：详情关闭会返回触发点并保留筛选。</text>
+    <text class="tag" x="24" y="513">目标变化  A3</text><text class="note" x="24" y="544">突出详情 Tab 焦点、当前项及只读权限。</text>
+    <text class="note" x="24" y="576">预期：阅读顺序与键盘定位更清楚。</text>
+  </g>
+  <g transform="translate(52 820)">
+    <rect class="card" width="548" height="626" rx="20"/><rect width="548" height="50" rx="20" fill="#194f9d"/>
+    <text class="step" x="20" y="34">04 发起邀请</text>
+    <image x="18" y="69" width="512" height="320" xlink:href="screenshots/04-members-invite-current.png"/>
+    <text class="name" x="24" y="433">邀请表单 / 激活与部门</text>
+    <text class="note" x="24" y="472">现状：表单较长，底部操作固定可见。</text>
+    <text class="tag" x="24" y="513">目标变化  A4</text><text class="note" x="24" y="544">必填、错误、说明关联；错误聚焦到字段。</text>
+    <text class="note" x="24" y="576">预期：键盘操作更稳定，纠错成本更低。</text>
+  </g>
+  <g transform="translate(626 820)">
+    <rect class="card" width="548" height="626" rx="20"/><rect width="548" height="50" rx="20" fill="#194f9d"/>
+    <text class="step" x="20" y="34">05 校验角色</text>
+    <image x="18" y="69" width="512" height="320" xlink:href="screenshots/05-roles-current.png"/>
+    <text class="name" x="24" y="433">角色权限 / 范围确认</text>
+    <text class="note" x="24" y="472">现状：独立角色页可核查权限配置。</text>
+    <text class="tag" x="24" y="513">目标变化  A5</text><text class="note" x="24" y="544">聚焦项展示权限影响，危险动作二次核对。</text>
+    <text class="note" x="24" y="576">预期：降低错配及误授权风险。</text>
+  </g>
+  <g transform="translate(1200 820)">
+    <rect class="card" width="548" height="626" rx="20"/><rect width="548" height="50" rx="20" fill="#194f9d"/>
+    <text class="step" x="20" y="34">06 结果与审计</text>
+    <image x="18" y="69" width="512" height="320" xlink:href="screenshots/06-audit-current.png"/>
+    <text class="name" x="24" y="433">回到列表 / 审计追溯</text>
+    <text class="note" x="24" y="472">现状：有审计入口；真实写入必须服务端读回。</text>
+    <text class="tag" x="24" y="513">目标变化  A6</text><text class="note" x="24" y="544">成功/失败/冲突明确回执及下一步入口。</text>
+    <text class="note" x="24" y="576">预期：用户能确认结果并追踪处理。</text>
+  </g>
+  <text x="72" y="1500" class="name">跨链路安全边界</text>
+  <text x="72" y="1536" class="note">平台租户管理在无可信会话时显示未登录状态，详见 screenshots/07-platform-unauth-current.png；不得用演示数据冒充真实回执。</text>
+  <text x="72" y="1586" class="sub">A1–A6 为目标注释，不表示当前页面缺陷已通过用户研究证实；优先级与指标需由产品 Owner 评审确认。</text>
+  <text x="72" y="1636" class="sub">2026-09-27  ·  CoffeeLink  ·  评审稿 v0.1  ·  不作为正式上线视觉基线</text>
+</svg>

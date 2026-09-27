@@ -2,30 +2,41 @@
 withDefaults(
   defineProps<{
     text: string
-    tone?: 'success' | 'warning' | 'danger' | 'neutral' | 'primary'
+    tone?: 'success' | 'warning' | 'danger' | 'neutral' | 'primary' | 'info'
     dot?: boolean
+    size?: 'sm' | 'md'
   }>(),
-  { tone: 'success', dot: true },
+  { tone: 'success', dot: true, size: 'sm' },
 )
 </script>
 <template>
-  <span class="status-badge" :class="tone"><i v-if="dot" />{{ text }}</span>
+  <span class="status-badge" :class="[tone, `size-${size}`]">
+    <i v-if="dot" />{{ text }}
+  </span>
 </template>
 <style scoped>
 .status-badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  white-space: nowrap;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+}
+.size-sm {
   font-size: var(--text-xs);
   padding: 2px 7px;
-  border-radius: 5px;
-  white-space: nowrap;
+}
+.size-md {
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-2);
 }
 .status-badge i {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: currentColor;
+  flex-shrink: 0;
 }
 .success {
   color: var(--color-success);
@@ -46,5 +57,9 @@ withDefaults(
 .primary {
   color: var(--color-primary);
   background: var(--color-primary-soft);
+}
+.info {
+  color: var(--color-info);
+  background: var(--color-info-soft);
 }
 </style>

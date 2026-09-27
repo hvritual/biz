@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import coffee from '@/assets/coffee-banner.webp'
+import UiBreadcrumb, { type BreadcrumbItem } from './UiBreadcrumb.vue'
 
 const props = defineProps<{
   title: string
@@ -14,6 +15,10 @@ const props = defineProps<{
 const route = useRoute()
 const isPlatform = computed(() => route.meta.surface === 'platform')
 const effectiveBreadcrumb = computed(() => props.breadcrumb || (isPlatform.value ? '平台管理' : '企业中心'))
+const breadcrumbItems = computed<BreadcrumbItem[]>(() => [
+  { label: effectiveBreadcrumb.value },
+  { label: props.title },
+])
 const showBanner = computed(() => isPlatform.value || props.banner)
 const effectiveBannerTitle = computed(() =>
   props.bannerTitle || (isPlatform.value ? '让租户能力配置更清晰、更可控' : '优秀的团队，成就更好的咖啡体验'),
@@ -26,9 +31,7 @@ const effectiveBannerDescription = computed(() =>
 <template>
   <header class="page-heading" data-ui-region="page-heading">
     <div class="heading-main">
-      <div class="breadcrumbs">
-        <span>{{ effectiveBreadcrumb }}</span><span>/</span><strong>{{ title }}</strong>
-      </div>
+      <UiBreadcrumb :items="breadcrumbItems" class="page-breadcrumbs" />
       <h1>{{ title }}</h1>
       <p v-if="description">{{ description }}</p>
     </div>
@@ -59,17 +62,8 @@ const effectiveBannerDescription = computed(() =>
   flex: 1;
   padding-bottom: 5px;
 }
-.breadcrumbs {
-  display: flex;
-  gap: 9px;
-  align-items: center;
+.page-breadcrumbs {
   margin-bottom: 14px;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-.breadcrumbs strong {
-  font-weight: 500;
-  color: var(--color-text);
 }
 .heading-main > p {
   max-width: 720px;
@@ -137,11 +131,11 @@ const effectiveBannerDescription = computed(() =>
   .page-heading { min-height: 96px; }
   .heading-side { display: block; }
   .coffee-hero { display: none; }
-  .breadcrumbs { margin-bottom: 11px; }
+  .page-breadcrumbs { margin-bottom: 11px; }
 }
 @media (max-height: 830px) and (min-width: 851px) {
   .page-heading { min-height: 82px; }
-  .breadcrumbs { margin-bottom: 9px; }
+  .page-breadcrumbs { margin-bottom: 9px; }
   .coffee-hero { height: 82px; }
   .coffee-hero img { width: 198px; height: 82px; }
   .coffee-hero h2 { font-size: 15px; }

@@ -22,6 +22,9 @@
   --color-warning-soft: #fffbeb;
   --color-violet: #7c3aed;
   --color-violet-soft: #f5f3ff;
+  /* D6: info semantic color */
+  --color-info: #0ea5e9;
+  --color-info-soft: #f0f9ff;
   --color-overlay: rgb(51 65 85 / 18%);
   --color-shadow: rgb(15 23 42 / 12%);
   --color-gradient-end: #93c5fd;
@@ -49,6 +52,11 @@
 
   --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  /* D4: font weight tokens */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
   --text-xs: 12px;
   --text-sm: 13px;
   --text-base: 14px;
@@ -56,6 +64,10 @@
   --text-xl: 20px;
   --text-title: 24px;
   --text-metric: 32px;
+  /* D3: line-height tokens */
+  --leading-tight: 1.3;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.7;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -78,6 +90,22 @@
   --table-row-height: 64px;
   --shadow-panel: 0 4px 20px rgb(15 23 42 / 6%);
   --shadow-menu: 18px 20px 52px var(--color-shadow);
+  /* D8: shadow scale */
+  --shadow-sm: 0 1px 3px rgb(15 23 42 / 8%);
+  --shadow-lg: 0 24px 80px var(--color-shadow);
+  /* D1: motion tokens */
+  --duration-fast: 0.1s;
+  --duration-base: 0.15s;
+  --duration-slow: 0.25s;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  /* D2: focus ring tokens */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-primary);
+  /* D9: touch target minimum (WCAG 2.5.5) */
+  --touch-target-min: 44px;
   --z-header: 20;
   --z-member-detail: 30;
   --z-scrim: 35;
@@ -105,9 +133,13 @@
   --color-warning-soft: #392b0e;
   --color-violet: #a78bfa;
   --color-violet-soft: #2f2350;
+  --color-info: #38bdf8;
+  --color-info-soft: #0c2331;
   --color-overlay: rgb(2 6 23 / 62%);
   --color-shadow: rgb(0 0 0 / 42%);
   --shadow-panel: 0 4px 24px rgb(0 0 0 / 24%);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 32%);
+  --shadow-lg: 0 24px 80px var(--color-shadow);
 }
 
 :root[data-ui-density='compact'] {

@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1200" viewBox="0 0 1920 1200">
+  <defs>
+    <style>
+      text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+      .head{font-size:30px;font-weight:700;fill:#192b46}.section{font-size:21px;font-weight:650;fill:#213550}
+      .body{font-size:18px;fill:#31425b}.muted{font-size:16px;fill:#596b84}
+      .panel{fill:#fff;stroke:#dce5f0;stroke-width:2}.focus{fill:none;stroke:#1252b4;stroke-width:3}
+    </style>
+  </defs>
+  <rect width="1920" height="1200" fill="#f2f6fc"/>
+  <rect width="1920" height="12" fill="#2563eb"/>
+  <text x="70" y="79" class="head">角色核对 → 审计追溯</text>
+  <text x="70" y="116" class="muted">TARGET 概念渲染 · 展示链路后半段与关键焦点态，不代表真实授权结果或已实现页面</text>
+  <rect x="70" y="158" width="865" height="950" rx="18" class="panel"/>
+  <rect x="985" y="158" width="865" height="950" rx="18" class="panel"/>
+  <text x="110" y="221" class="head">角色权限</text><text x="110" y="259" class="muted">核对角色影响，再确认成员可访问范围</text>
+  <rect x="110" y="304" width="782" height="80" rx="9" fill="#f2f7fe"/>
+  <text x="137" y="354" class="section">已分配角色：普通成员</text>
+  <text x="110" y="435" class="section">权限分组</text><text x="110" y="483" class="muted">选择下方分组即可查看该角色可执行的操作</text>
+  <rect x="107" y="514" width="350" height="66" rx="10" class="focus"/>
+  <rect x="111" y="518" width="342" height="58" rx="8" fill="#eaf2ff"/>
+  <text x="141" y="556" fill="#194d9a" font-size="18" font-weight="600">客户资料  ·  当前焦点</text>
+  <rect x="470" y="518" width="400" height="58" rx="8" fill="#f7f9fc"/>
+  <text x="493" y="555" class="body">成员管理</text>
+  <rect x="110" y="613" width="782" height="299" rx="10" fill="#fff" stroke="#dce5f0" stroke-width="2"/>
+  <text x="138" y="659" class="section">客户资料权限</text>
+  <text x="138" y="711" class="body">✓  查看客户资料</text>
+  <text x="138" y="762" class="body">✓  修改所属客户</text>
+  <text x="138" y="813" class="muted">权限变化会影响成员后续访问，请再次核对。</text>
+  <rect x="680" y="955" width="210" height="54" rx="8" fill="#2563eb"/>
+  <text x="720" y="991" fill="#fff" font-size="18">继续核对</text>
+  <text x="1025" y="221" class="head">操作日志</text>
+  <text x="1025" y="259" class="muted">按成员、操作、时间追溯，显示可理解的结果</text>
+  <rect x="1025" y="304" width="782" height="77" rx="10" fill="#f6f9fd"/>
+  <text x="1050" y="352" class="body">姓名或账号         操作类型 ▾         时间范围 ▾        查询</text>
+  <rect x="1025" y="420" width="782" height="145" rx="10" fill="#f0f8f4" stroke="#bad6c6"/>
+  <text x="1053" y="469" class="section">✓  已完成 · 邀请已创建</text>
+  <text x="1053" y="515" class="body">可在成员列表中查看成员状态；无法确认时显示处理中。</text>
+  <text x="1025" y="624" class="section">处理记录</text>
+  <rect x="1025" y="657" width="782" height="282" rx="9" fill="#fff" stroke="#dce5f0" stroke-width="2"/>
+  <text x="1054" y="707" class="muted">时间                         对象                 操作                 结果</text>
+  <path d="M1043 729h747M1043 812h747" stroke="#e1e8f1" stroke-width="2"/>
+  <text x="1054" y="779" class="body">2026-09-27 09:30        演示成员           创建邀请           已完成</text>
+  <text x="1054" y="864" class="body">2026-09-27 09:16        演示成员           更新角色           待确认</text>
+  <rect x="1704" y="744" width="91" height="54" rx="10" class="focus"/>
+  <text x="1025" y="997" class="muted">真实数据模式以服务端读回为准；错误、权限不足、冲突有单独状态。</text>
+  <text x="70" y="1161" class="muted">焦点不被表格裁切，状态不只用颜色表达；具体文案和字段需由产品 Owner 确认。</text>
+</svg>
