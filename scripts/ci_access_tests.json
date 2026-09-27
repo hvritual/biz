@@ -129,6 +129,10 @@
         {
           "name": "TestEnterprise185NotificationRuntimeComponentRoutesDeliversAndCallbacks",
           "file": "integration/enterprise_185_notification_runtime_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185InAppLatency1000Within60Seconds",
+          "file": "integration/enterprise_185_in_app_latency_mysql_test.go"
         }
       ]
     }
