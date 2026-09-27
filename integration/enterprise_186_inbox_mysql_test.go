@@ -236,6 +236,53 @@ func TestEnterprise186InAppUnreadInboxMySQLAndHTTP(t *testing.T) {
 		}
 	})
 
+	t.Run("prepared-snapshot-survives-interrupted-apply-and-later-message", func(t *testing.T) {
+		resumeUser := "e186-resume-" + stamp
+		owner := notificationdomain.InboxOwner{TenantID: tenantA, UserID: resumeUser}
+		key := "e186-resume-key-" + stamp
+		commandID, err := notificationdomain.InboxMarkAllCommandID(owner, key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		oldMessage := seed(tenantA, resumeUser, "e186-resume-old-"+stamp, "device.fault", "resume-old", created.Add(4*time.Second), nil)
+		preparedAt := created.Add(5 * time.Second)
+		if err := db.Exec(`INSERT INTO biz_notification_inbox_mark_all
+			(command_id,tenant_id,user_id,state,marked_count,read_at,created_at,updated_at)
+			VALUES (?,?,?,?,?,?,?,?)`,
+			commandID, tenantA, resumeUser, "prepared", 0, preparedAt, preparedAt, preparedAt,
+		).Error; err != nil {
+			t.Fatal(err)
+		}
+		if err := db.Exec(`INSERT INTO biz_notification_inbox_mark_all_items (command_id,message_id) VALUES (?,?)`, commandID, oldMessage).Error; err != nil {
+			t.Fatal(err)
+		}
+		newMessage := seed(tenantA, resumeUser, "e186-resume-new-"+stamp, "device.offline", "resume-new", created.Add(6*time.Second), nil)
+
+		routing, err := notificationpersistence.NewRoutingRepository(db)
+		if err != nil {
+			t.Fatal(err)
+		}
+		service, err := notificationapp.NewInboxService(routing)
+		if err != nil {
+			t.Fatal(err)
+		}
+		receipt, err := service.MarkAllRead(ctx, owner, key)
+		if err != nil || receipt.ReceiptID != commandID || receipt.MarkedCount != 1 {
+			t.Fatalf("resume receipt=%+v err=%v", receipt, err)
+		}
+		snapshot, err := service.ReadUnread(ctx, owner)
+		if err != nil || snapshot.UnreadCount != 1 || len(snapshot.Messages) != 1 || snapshot.Messages[0].MessageID != newMessage {
+			t.Fatalf("prepared boundary expanded on retry: %+v / %v", snapshot, err)
+		}
+		var remaining int64
+		if err := db.Table("biz_notification_inbox_mark_all_items").Where("command_id=?", commandID).Count(&remaining).Error; err != nil {
+			t.Fatal(err)
+		}
+		if remaining != 0 {
+			t.Fatalf("applied snapshot items were not compacted: %d", remaining)
+		}
+	})
+
 	t.Run("tenant-switch-rejects-old-context-and-reads-new-owner", func(t *testing.T) {
 		sessionB, err := runtime.store.SwitchWebSessionTenant(ctx, rawSession, tenantB)
 		if err != nil {
