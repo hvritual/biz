@@ -13,14 +13,14 @@ import (
 	"time"
 
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
-	accessmodule "github.com/hvritual/biz/modules/access"
-	"github.com/hvritual/biz/modules/deviceops"
+	devicepersistence "github.com/hvritual/biz/internal/deviceops/infrastructure/persistence"
 	notificationapp "github.com/hvritual/biz/internal/notification/application"
 	notificationdomain "github.com/hvritual/biz/internal/notification/domain"
 	notificationdelivery "github.com/hvritual/biz/internal/notification/infrastructure/delivery"
 	notificationpersistence "github.com/hvritual/biz/internal/notification/infrastructure/persistence"
 	notificationports "github.com/hvritual/biz/internal/notification/ports"
-	devicepersistence "github.com/hvritual/biz/internal/deviceops/infrastructure/persistence"
+	accessmodule "github.com/hvritual/biz/modules/access"
+	"github.com/hvritual/biz/modules/deviceops"
 	"yunka.io/framework/core"
 	"yunka.io/framework/platform"
 )
@@ -28,13 +28,13 @@ import (
 const notificationProviderCallbackPath = "/callbacks/notification/provider"
 
 type NotificationRuntimeOptions struct {
-	ProviderEndpoint       string
-	ProviderBearerToken    string
-	ProviderIdempotent     bool
-	Channels               []string
-	CallbackHMACSecret     []byte
-	PollInterval           time.Duration
-	RoutingLeaseDuration   time.Duration
+	ProviderEndpoint     string
+	ProviderBearerToken  string
+	ProviderIdempotent   bool
+	Channels             []string
+	CallbackHMACSecret   []byte
+	PollInterval         time.Duration
+	RoutingLeaseDuration time.Duration
 }
 
 func (options NotificationRuntimeOptions) Enabled() bool {
@@ -127,29 +127,29 @@ func buildNotificationCatalogSnapshot(options NotificationRuntimeOptions) (notif
 }
 
 type NotificationTick struct {
-	RoutedEventID    string
-	ExternalTaskID   string
+	RoutedEventID     string
+	ExternalTaskID    string
 	ExternalTaskState string
 }
 
 type notificationRuntime struct {
-	options           NotificationRuntimeOptions
-	catalogs          notificationCatalogSnapshot
-	protection        *accesspersistence.ContactProtection
-	externalProvider  notificationports.ExternalNotificationProvider
-	routerWorkerID    string
-	externalWorkerID  string
+	options          NotificationRuntimeOptions
+	catalogs         notificationCatalogSnapshot
+	protection       *accesspersistence.ContactProtection
+	externalProvider notificationports.ExternalNotificationProvider
+	routerWorkerID   string
+	externalWorkerID string
 
-	runMu sync.Mutex
-	mu    sync.RWMutex
+	runMu            sync.Mutex
+	mu               sync.RWMutex
 
-	router         *notificationapp.BusinessEventRouter
-	externalWorker *notificationapp.ExternalDeliveryWorker
-	callback       http.Handler
-	cancel         context.CancelFunc
-	done           chan struct{}
-	started        bool
-	lastError      error
+	router           *notificationapp.BusinessEventRouter
+	externalWorker   *notificationapp.ExternalDeliveryWorker
+	callback         http.Handler
+	cancel           context.CancelFunc
+	done             chan struct{}
+	started          bool
+	lastError        error
 }
 
 func newNotificationRuntime(
@@ -261,9 +261,9 @@ func (runtime *notificationRuntime) bind(
 
 func (runtime *notificationRuntime) component() core.RuntimeComponent {
 	return core.RuntimeComponent{
-		Name: "notification-runtime",
-		StartFunc: runtime.start,
-		HealthFunc: runtime.health,
+		Name:         "notification-runtime",
+		StartFunc:    runtime.start,
+		HealthFunc:   runtime.health,
 		ShutdownFunc: runtime.shutdown,
 	}
 }
@@ -349,8 +349,8 @@ func (runtime *notificationRuntime) tick(ctx context.Context) (NotificationTick,
 	routeResult, routeErr := router.RouteOnce(ctx, runtime.routerWorkerID)
 	deliveryResult, deliveryErr := externalWorker.RunOnce(ctx)
 	return NotificationTick{
-		RoutedEventID: routeResult.EventID,
-		ExternalTaskID: deliveryResult.TaskID,
+		RoutedEventID:     routeResult.EventID,
+		ExternalTaskID:    deliveryResult.TaskID,
 		ExternalTaskState: deliveryResult.State,
 	}, errors.Join(routeErr, deliveryErr)
 }
