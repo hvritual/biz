@@ -141,6 +141,7 @@ func (service *MemberAppealService) Submit(
 		return MemberAppealReceipt{}, ErrMemberAppealNotEligible
 	}
 	var receipt MemberAppealReceipt
+	var expectedOutcome error
 	err := service.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		now := time.Now().UTC()
 		var membership membershipRecord
@@ -163,7 +164,21 @@ func (service *MemberAppealService) Submit(
 		case existingFound:
 			nextAllowed := existing.SubmittedAt.Add(memberAppealInterval)
 			if nextAllowed.After(now) {
-				return MemberAppealRateLimitError{RetryAfter: nextAllowed.Sub(now)}
+				if err := AppendTrustedAuditPairTx(ctx, tx, TrustedAudit{
+					EventKey:    fmt.Sprintf("member-appeal-rate/%s/%s/%d", tenantID, userID, now.UnixNano()),
+					OperationID: "tenant.member.appeal.submit", Module: "access",
+					TenantID: tenantID, ActorSubject: "user:" + userID, ActorUserID: userID,
+					AuthMethod: AuthMethodWeb, AuthChannel: "web",
+					Target: "membership:" + userID, ResourceTenantID: tenantID,
+					DecisionReason: "MEMBER_APPEAL_RATE_LIMITED",
+					RequestDigest:  TokenHash("member-appeal/v1"),
+					Reason:         "changed_fields=appeal_state", Risk: domain.AuditRiskMedium,
+					Outcome: domain.AuditResultFailure, OccurredAt: now,
+				}); err != nil {
+					return err
+				}
+				expectedOutcome = MemberAppealRateLimitError{RetryAfter: nextAllowed.Sub(now)}
+				return nil
 			}
 		case errors.Is(existingErr, gorm.ErrRecordNotFound):
 		default:
@@ -246,7 +261,25 @@ func (service *MemberAppealService) Submit(
 			AppealID: appealID, TenantID: tenantID, Status: membership.Status,
 			State: MemberAppealStatePending, SubmittedAt: now, NotificationEventIDs: eventIDs,
 		}
+		if err := AppendTrustedAuditPairTx(ctx, tx, TrustedAudit{
+			EventKey:    appealID,
+			OperationID: "tenant.member.appeal.submit", Module: "access",
+			TenantID: tenantID, ActorSubject: "user:" + userID, ActorUserID: userID,
+			AuthMethod: AuthMethodWeb, AuthChannel: "web",
+			Target: "membership:" + userID, ResourceTenantID: tenantID,
+			RequestDigest: TokenHash("member-appeal/v1"),
+			ReceiptRef:    "appeal:" + appealID, Reason: "changed_fields=appeal_state",
+			Risk: domain.AuditRiskMedium, Outcome: domain.AuditResultSuccess, OccurredAt: now,
+		}); err != nil {
+			return err
+		}
 		return nil
 	})
-	return receipt, err
+	if err != nil {
+		return MemberAppealReceipt{}, err
+	}
+	if expectedOutcome != nil {
+		return MemberAppealReceipt{}, expectedOutcome
+	}
+	return receipt, nil
 }

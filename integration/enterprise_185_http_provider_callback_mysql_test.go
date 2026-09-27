@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	"github.com/hvritual/biz/internal/notification/domain"
 	notificationdelivery "github.com/hvritual/biz/internal/notification/infrastructure/delivery"
 	notificationpersistence "github.com/hvritual/biz/internal/notification/infrastructure/persistence"
@@ -26,6 +27,13 @@ func TestEnterprise185HTTPProviderCallbackPersistsExactTerminalState(t *testing.
 	db := ce08FreshFixtureDB(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
+	store, err := accesspersistence.New(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.AutoMigrate(ctx); err != nil {
+		t.Fatal(err)
+	}
 	if err := notificationpersistence.MigrateRouting(ctx, db); err != nil {
 		t.Fatal(err)
 	}
@@ -128,6 +136,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		if state != domain.ExternalTaskStateDelivered {
 			t.Fatalf("conflicting callback changed terminal state=%s", state)
 		}
+		enterprise188RequireAuditOutcome(t, db, "callback-tenant-"+stamp, "notification.delivery.delivered", "success", 1)
 	})
 
 	t.Run("signed-provider-failure-enters-manual-review", func(t *testing.T) {
@@ -153,5 +162,6 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		if status := sendCallback(secret, conflict); status != http.StatusConflict {
 			t.Fatalf("conflicting terminal failure status=%d", status)
 		}
+		enterprise188RequireAuditOutcome(t, db, "callback-tenant-"+stamp, "notification.delivery.manual_review", "failure", 1)
 	})
 }

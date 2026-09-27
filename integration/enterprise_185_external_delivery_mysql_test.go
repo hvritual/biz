@@ -122,6 +122,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		if strings.Contains(taskDump, email) || strings.Contains(taskDump, "+491701234567") {
 			t.Fatal("notification task persisted a plaintext contact")
 		}
+		enterprise188RequireAuditOutcome(t, db, tenant, "notification.delivery.provider_accepted", "success", 1)
 	})
 
 	t.Run("retry-rechecks-new-deny-before-second-provider-call", func(t *testing.T) {
@@ -147,6 +148,8 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		if _, ok := provider.Request(id); ok {
 			t.Fatal("second attempt reached provider after preference deny")
 		}
+		enterprise188RequireAuditOutcome(t, db, tenant, "notification.delivery.retry", "failure", 1)
+		enterprise188RequireAuditOutcome(t, db, tenant, "notification.delivery.cancelled", "failure", 1)
 	})
 
 	t.Run("missing-sms-contact-is-explicit-manual-review", func(t *testing.T) {
@@ -165,5 +168,6 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		if err != nil || receipt.State != domain.ExternalTaskStateManualReview || receipt.FailureCode != "CONTACT_UNAVAILABLE" {
 			t.Fatalf("missing contact receipt=%+v err=%v", receipt, err)
 		}
+		enterprise188RequireAuditOutcome(t, db, tenant, "notification.delivery.manual_review", "failure", 1)
 	})
 }

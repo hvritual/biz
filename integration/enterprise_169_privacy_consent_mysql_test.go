@@ -131,6 +131,9 @@ func TestEnterprise169PrivacyConsentEvidenceAndVersionPolicy(t *testing.T) {
 	if satisfied, err := store.PrivacyConsentSatisfies(ctx, userID, "v1", false); err != nil || satisfied {
 		t.Fatalf("withdrawn consent remained active: %v %v", satisfied, err)
 	}
+	enterprise188RequireAuditOutcome(t, db, "enterprise-169-tenant", "identity.login.password", "success", 1)
+	enterprise188RequireAuditOutcome(t, db, "enterprise-169-tenant", "identity.privacy_consent.accept", "success", 1)
+	enterprise188RequireAuditOutcome(t, db, "enterprise-169-tenant", "identity.privacy_consent.withdraw", "success", 1)
 
 	expiredID, expiredBrowser, expiredCSRF, err := store.CreateFirstPartyAuthorizationRequest(ctx, accesspersistence.FirstPartyAuthorizationRequestInput{
 		ClientID: "biz-web", RedirectURI: "http://127.0.0.1:18080/auth/callback",
