@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -98,7 +100,7 @@ func TestServiceAPIConfigRejectsWeakOrWronglyScopedCredentials(t *testing.T) {
 		ClockSkew: time.Minute,
 		Credentials: []ServiceAPICredentialConfig{{
 			KeyID: "service-a", Subject: "platform-service:a",
-			Secret: []byte(strings.Repeat("s", 32)),
+			Secret:     []byte(strings.Repeat("s", 32)),
 			Operations: []string{"commercial.plan.discover"},
 		}},
 	}
@@ -133,7 +135,7 @@ func TestServiceAPIRouteResolutionUsesCatalogOperation(t *testing.T) {
 		ClockSkew: time.Minute,
 		Credentials: []ServiceAPICredentialConfig{{
 			KeyID: "service-a", Subject: "platform-service:a",
-			Secret: []byte(strings.Repeat("s", 32)),
+			Secret:     []byte(strings.Repeat("s", 32)),
 			Operations: []string{"commercial.plan.discover"},
 		}},
 	})
@@ -150,4 +152,46 @@ func TestServiceAPIRouteResolutionUsesCatalogOperation(t *testing.T) {
 	if _, err := auth.resolveRoute(http.MethodPost, "/v1/platform/plans"); err == nil {
 		t.Fatal("method tamper resolved to signed operation")
 	}
+}
+
+func TestServiceAPIRejectsDuplicateSignedHeadersAndAuthorizationMixing(t *testing.T) {
+	auth, err := newServiceAPIAuthenticator(ServiceAPIAuthConfig{
+		ClockSkew: time.Minute,
+		Credentials: []ServiceAPICredentialConfig{{
+			KeyID: "service-a", Subject: "platform-service:a",
+			Secret:     []byte(strings.Repeat("s", 32)),
+			Operations: []string{"commercial.plan.discover"},
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	baseRequest := func() *http.Request {
+		request, err := http.NewRequest(http.MethodGet, "https://example.invalid/v1/platform/plans", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Header.Set(serviceAPIKeyIDHeader, "service-a")
+		request.Header.Set(serviceAPITimestampHeader, strconv.FormatInt(time.Now().Unix(), 10))
+		request.Header.Set(serviceAPINonceHeader, "nonce-duplicate-000001")
+		request.Header.Set(serviceAPISignatureHeader, strings.Repeat("a", 64))
+		return request
+	}
+
+	t.Run("duplicate-header", func(t *testing.T) {
+		request := baseRequest()
+		request.Header.Add(serviceAPIKeyIDHeader, "service-b")
+		if _, err := auth.authenticate(request); !errors.Is(err, errServiceAPIInvalidRequest) {
+			t.Fatalf("duplicate service header error=%v", err)
+		}
+	})
+
+	t.Run("authorization-mixed-with-signed-request", func(t *testing.T) {
+		request := baseRequest()
+		request.Header.Set("Authorization", "Basic opaque")
+		if _, err := auth.authenticate(request); !errors.Is(err, errServiceAPIInvalidRequest) {
+			t.Fatalf("mixed Authorization error=%v", err)
+		}
+	})
 }

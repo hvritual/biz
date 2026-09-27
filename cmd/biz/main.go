@@ -331,7 +331,6 @@ func envOptionalInt(name string) (int, error) {
 	return parsed, nil
 }
 
-
 type serviceAPICredentialEnv struct {
 	KeyID      string   `json:"key_id"`
 	Subject    string   `json:"subject"`

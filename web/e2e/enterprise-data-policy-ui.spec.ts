@@ -55,6 +55,10 @@ async function mockPermissionServer(page:Page,options:Options={}){
   await page.route(/\/(?:api\/)?(?:auth|v1)\//,async route=>{throw new Error(`Unhandled permission UI request: ${route.request().method()} ${new URL(route.request().url()).pathname}`)})
   await page.route(/\/(?:api\/)?auth\/login(?:\?.*)?$/,async route=>route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Login</title>'}))
   await page.route(/\/(?:api\/)?auth\/session(?:\?.*)?$/,async route=>json(route,200,{authenticated:true,actor_kind:'tenant',user_id:'user-admin',active_tenant_id:'tenant-001',context_version:11,csrf_token:'csrf-data-permission',tenants:[{id:'tenant-001',name:'CoffeeLink 测试租户'}]}))
+  await page.route(/\/(?:api\/)?auth\/personal\/in-app-notifications(?:\?.*)?$/,async route=>{
+    if(route.request().method()!=='GET') return json(route,405,{error:'METHOD_NOT_ALLOWED'})
+    return json(route,200,{tenant_id:'tenant-001',user_id:'user-admin',unread_count:0,messages:[],as_of:'2026-09-27T00:00:00Z'})
+  })
   await page.route(/\/(?:api\/)?auth\/authorization(?:\?.*)?$/,async route=>{
     const buttonCodes=['tenant.role.list','tenant.role.get','tenant.role.update','tenant.role.set_permissions','tenant.data_policy.list','tenant.role.set_data_policy','tenant.member.list','tenant.member.get','tenant.member.business_scope.get','tenant.member.business_scope.set','tenant.member.scope_candidates','tenant.department.list']
     return json(route,200,{authenticated:true,actor_kind:'tenant',user_id:'user-admin',tenant_id:'tenant-001',roles:['owner'],grants:[{permission:'tenant.role.manage',role_id:'tenant-001:owner',role_name:'owner',scope:'all'}],data_policies:[],site_ids:[],permission_version:'sha256:data-permission-ui',modules:[{code:'access-management',allowed:true,reason:'allowed',actions:buttonCodes}],actions:buttonCodes.map(code=>({code,permissions:[],permission_mode:'all'})),button_codes:buttonCodes})
