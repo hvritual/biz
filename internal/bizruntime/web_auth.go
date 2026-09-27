@@ -34,6 +34,7 @@ type runtimeWebAuth struct {
 	selfSecurity           *accesspersistence.TenantSelfSecurityService
 	memberPasswordRecovery *accesspersistence.TenantMemberPasswordRecoveryService
 	entitlements           currentAuthorizationEntitlementReader
+	notificationInbox      webNotificationInbox
 }
 
 func newRuntimeWebAuth(ctx context.Context, config WebAuthConfig) (*runtimeWebAuth, error) {
@@ -139,6 +140,8 @@ func (auth *runtimeWebAuth) register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /auth/password/change", auth.handlePasswordChange)
 	mux.HandleFunc("GET /auth/personal/notification-preferences", auth.handleReadNotificationPreferences)
 	mux.HandleFunc("POST /auth/personal/notification-preferences", auth.handleChangeNotificationPreference)
+	mux.HandleFunc("GET /auth/personal/in-app-notifications", auth.handleReadNotificationInbox)
+	mux.HandleFunc("POST /auth/personal/in-app-notifications/read-all", auth.handleMarkAllNotificationInboxRead)
 	mux.HandleFunc("POST /auth/personal/contact-change/request", auth.handlePersonalContactChangeRequest)
 	mux.HandleFunc("POST /auth/personal/contact-change/complete", auth.handlePersonalContactChangeComplete)
 	mux.HandleFunc("POST /auth/personal/tenant-deletion/request", auth.handleTenantDeletionRequest)

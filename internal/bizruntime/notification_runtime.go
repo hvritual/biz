@@ -144,6 +144,7 @@ type notificationRuntime struct {
 	mu    sync.RWMutex
 
 	router         *notificationapp.BusinessEventRouter
+	inbox          *notificationapp.InboxService
 	externalWorker *notificationapp.ExternalDeliveryWorker
 	callback       http.Handler
 	cancel         context.CancelFunc
@@ -245,6 +246,10 @@ func (runtime *notificationRuntime) bind(
 	if err != nil {
 		return err
 	}
+	inbox, err := notificationapp.NewInboxService(routing)
+	if err != nil {
+		return err
+	}
 	var externalWorker *notificationapp.ExternalDeliveryWorker
 	var callback http.Handler
 	if runtime.providerEnabled() {
@@ -267,10 +272,20 @@ func (runtime *notificationRuntime) bind(
 
 	runtime.mu.Lock()
 	runtime.router = router
+	runtime.inbox = inbox
 	runtime.externalWorker = externalWorker
 	runtime.callback = callback
 	runtime.mu.Unlock()
 	return nil
+}
+
+func (runtime *notificationRuntime) inboxService() *notificationapp.InboxService {
+	if runtime == nil {
+		return nil
+	}
+	runtime.mu.RLock()
+	defer runtime.mu.RUnlock()
+	return runtime.inbox
 }
 
 func (runtime *notificationRuntime) component() core.RuntimeComponent {
@@ -300,7 +315,7 @@ func (runtime *notificationRuntime) start(context.Context) error {
 		return errors.New("notification runtime: unavailable")
 	}
 	runtime.mu.Lock()
-	if runtime.router == nil ||
+	if runtime.router == nil || runtime.inbox == nil ||
 		(runtime.providerEnabled() && (runtime.externalWorker == nil || runtime.callback == nil)) {
 		runtime.mu.Unlock()
 		return errors.New("notification runtime: binding incomplete")

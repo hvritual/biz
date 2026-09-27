@@ -36,9 +36,9 @@ type routingEventRecord struct {
 func (routingEventRecord) TableName() string { return "biz_notification_events" }
 
 type inAppRecord struct {
-	MessageID            string     `gorm:"column:message_id;primaryKey;size:64"`
-	TenantID             string     `gorm:"column:tenant_id;type:varbinary(64);not null;uniqueIndex:uq_notification_inapp,priority:1;index"`
-	UserID               string     `gorm:"column:user_id;type:varbinary(64);not null;uniqueIndex:uq_notification_inapp,priority:2;index"`
+	MessageID            string     `gorm:"column:message_id;primaryKey;size:64;index:idx_notification_inapp_unread,priority:5,sort:desc"`
+	TenantID             string     `gorm:"column:tenant_id;type:varbinary(64);not null;uniqueIndex:uq_notification_inapp,priority:1;index;index:idx_notification_inapp_unread,priority:1"`
+	UserID               string     `gorm:"column:user_id;type:varbinary(64);not null;uniqueIndex:uq_notification_inapp,priority:2;index;index:idx_notification_inapp_unread,priority:2"`
 	EventID              string     `gorm:"column:event_id;type:varbinary(160);not null;uniqueIndex:uq_notification_inapp,priority:3"`
 	ConfigurationID      string     `gorm:"column:configuration_id;type:varbinary(64);not null"`
 	ConfigurationVersion uint64     `gorm:"column:configuration_version;not null"`
@@ -48,8 +48,8 @@ type inAppRecord struct {
 	TraceID              string     `gorm:"column:trace_id;type:varbinary(160);not null"`
 	ReferenceKind        string     `gorm:"column:reference_kind;size:64;not null"`
 	ReferenceID          string     `gorm:"column:reference_id;type:varbinary(160);not null"`
-	CreatedAt            time.Time  `gorm:"column:created_at;type:datetime(6);not null;index"`
-	ReadAt               *time.Time `gorm:"column:read_at;type:datetime(6);index"`
+	CreatedAt            time.Time  `gorm:"column:created_at;type:datetime(6);not null;index;index:idx_notification_inapp_unread,priority:4,sort:desc"`
+	ReadAt               *time.Time `gorm:"column:read_at;type:datetime(6);index;index:idx_notification_inapp_unread,priority:3"`
 }
 
 func (inAppRecord) TableName() string { return "biz_notification_in_app" }
@@ -155,7 +155,7 @@ func MigrateRouting(ctx context.Context, db *gorm.DB) error {
 	if db == nil {
 		return domain.ErrRoutingUnavailable
 	}
-	return db.WithContext(ctx).AutoMigrate(&routingEventRecord{}, &inAppRecord{}, &externalTaskRecord{}, &routeOutcomeRecord{})
+	return db.WithContext(ctx).AutoMigrate(&routingEventRecord{}, &inAppRecord{}, &externalTaskRecord{}, &routeOutcomeRecord{}, &inboxMarkAllRecord{}, &inboxMarkAllItemRecord{})
 }
 func routingNow(ctx context.Context, db *gorm.DB) (time.Time, error) {
 	var row struct {

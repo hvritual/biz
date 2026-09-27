@@ -184,6 +184,7 @@ func bootstrapWithOptions(
 				if err := notificationRunner.bind(bindCtx, prepared, config.AutoMigrate); err != nil {
 					return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: notification runtime bind: %w", err)
 				}
+				webAuth.setNotificationInbox(notificationRunner.inboxService())
 			}
 			return bindings, nil
 		},
