@@ -116,20 +116,22 @@ func TestEnterprise186InAppUnreadInboxMySQLAndHTTP(t *testing.T) {
 		noKey := cloneHeaders186(headersA)
 		delete(noKey, "Idempotency-Key")
 		cases := []struct {
-			name, method, path, session string
-			headers                     map[string]string
-			want                        int
+			name, method, path, session, body string
+			headers                           map[string]string
+			want                              int
 		}{
-			{"no-session", http.MethodGet, endpoint, "", headersA, 401},
-			{"no-context", http.MethodGet, endpoint, rawSession, noContext, 409},
-			{"forged-context", http.MethodGet, endpoint, rawSession, forged, 409},
-			{"query-tenant", http.MethodGet, endpoint + "?tenant_id=" + tenantB, rawSession, headersA, 400},
-			{"mark-no-csrf", http.MethodPost, endpoint + "/read-all", rawSession, noCSRF, 403},
-			{"mark-no-idempotency", http.MethodPost, endpoint + "/read-all", rawSession, noKey, 400},
+			{"no-session", http.MethodGet, endpoint, "", "", headersA, 401},
+			{"no-context", http.MethodGet, endpoint, rawSession, "", noContext, 409},
+			{"forged-context", http.MethodGet, endpoint, rawSession, "", forged, 409},
+			{"query-tenant", http.MethodGet, endpoint + "?tenant_id=" + tenantB, rawSession, "", headersA, 400},
+			{"mark-no-csrf", http.MethodPost, endpoint + "/read-all", rawSession, `{}`, noCSRF, 403},
+			{"mark-no-idempotency", http.MethodPost, endpoint + "/read-all", rawSession, `{}`, noKey, 400},
+			{"mark-client-selected-tenant", http.MethodPost, endpoint + "/read-all", rawSession, `{"tenant_id":"` + tenantB + `"}`, headersA, 400},
+			{"mark-client-selected-user", http.MethodPost, endpoint + "/read-all", rawSession, `{"user_id":"other"}`, headersA, 400},
 		}
 		for _, test := range cases {
 			t.Run(test.name, func(t *testing.T) {
-				status, _ := notificationInboxHTTP(t, base, test.method, test.path, test.session, test.headers, `{}`)
+				status, _ := notificationInboxHTTP(t, base, test.method, test.path, test.session, test.headers, test.body)
 				if status != test.want {
 					t.Fatalf("status=%d want=%d", status, test.want)
 				}
