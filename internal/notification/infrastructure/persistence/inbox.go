@@ -36,13 +36,13 @@ func (r *RoutingRepository) ReadUnreadInbox(ctx context.Context, owner domain.In
 		}
 		var count int64
 		if err := tx.WithContext(ctx).Model(&inAppRecord{}).
-			Where("BINARY tenant_id=? AND BINARY user_id=? AND read_at IS NULL", owner.TenantID, owner.UserID).
+			Where("tenant_id=? AND user_id=? AND read_at IS NULL", owner.TenantID, owner.UserID).
 			Count(&count).Error; err != nil {
 			return err
 		}
 		var rows []inAppRecord
 		if err := tx.WithContext(ctx).
-			Where("BINARY tenant_id=? AND BINARY user_id=? AND read_at IS NULL", owner.TenantID, owner.UserID).
+			Where("tenant_id=? AND user_id=? AND read_at IS NULL", owner.TenantID, owner.UserID).
 			Order("created_at DESC,message_id DESC").Limit(limit).Find(&rows).Error; err != nil {
 			return err
 		}
@@ -88,7 +88,7 @@ func (r *RoutingRepository) MarkAllRead(ctx context.Context, owner domain.InboxO
 		// request even if the client later retries with the same idempotency key.
 		var messageIDs []string
 		if err := tx.WithContext(ctx).Model(&inAppRecord{}).Select("message_id").
-			Where("BINARY tenant_id=? AND BINARY user_id=? AND read_at IS NULL", owner.TenantID, owner.UserID).
+			Where("tenant_id=? AND user_id=? AND read_at IS NULL", owner.TenantID, owner.UserID).
 			Order("created_at ASC,message_id ASC").Pluck("message_id", &messageIDs).Error; err != nil {
 			return err
 		}
@@ -119,7 +119,7 @@ func (r *RoutingRepository) MarkAllRead(ctx context.Context, owner domain.InboxO
 		for start := 0; start < len(messageIDs); start += markAllBatchSize {
 			end := min(start+markAllBatchSize, len(messageIDs))
 			updated := tx.WithContext(ctx).Model(&inAppRecord{}).
-				Where("BINARY tenant_id=? AND BINARY user_id=? AND read_at IS NULL AND message_id IN ?", owner.TenantID, owner.UserID, messageIDs[start:end]).
+				Where("tenant_id=? AND user_id=? AND read_at IS NULL AND message_id IN ?", owner.TenantID, owner.UserID, messageIDs[start:end]).
 				Update("read_at", now)
 			if updated.Error != nil {
 				return updated.Error
