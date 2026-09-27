@@ -97,6 +97,9 @@ func (config ServiceAPIAuthConfig) Validate() error {
 			if !ok || !containsExact(action.Authentication, "api-key") || len(action.HTTP) == 0 {
 				return fmt.Errorf("biz runtime: service api operation %q is not an HTTP api-key operation", operation)
 			}
+			if action.TenantRequired {
+				return fmt.Errorf("biz runtime: service api operation %q requires a user tenant principal and cannot be assigned to a service credential", operation)
+			}
 			if strings.TrimSpace(credential.TenantID) != "" && !actionHTTPHasTenantParameter(action) {
 				return fmt.Errorf("biz runtime: tenant-scoped service api key %q cannot bind operation %q without tenant_id path authority", keyID, operation)
 			}
@@ -220,14 +223,15 @@ func (auth *serviceAPIAuthenticator) authenticate(request *http.Request) (identi
 	if auth == nil || request == nil {
 		return identity.Principal{}, errServiceAPIUnavailable
 	}
-	if parseBearer(request.Header.Get("Authorization")) != "" {
+	if strings.TrimSpace(request.Header.Get("Authorization")) != "" {
 		return identity.Principal{}, errServiceAPIInvalidRequest
 	}
-	keyID := strings.TrimSpace(request.Header.Get(serviceAPIKeyIDHeader))
-	timestampRaw := strings.TrimSpace(request.Header.Get(serviceAPITimestampHeader))
-	nonce := strings.TrimSpace(request.Header.Get(serviceAPINonceHeader))
-	signature := strings.TrimSpace(request.Header.Get(serviceAPISignatureHeader))
-	if !validServiceAPIIdentifier(keyID, 1, 128) || !validServiceAPIIdentifier(nonce, 16, 128) || !validLowerHex(signature, 64) {
+	keyID, keyOK := singleServiceAPIHeader(request, serviceAPIKeyIDHeader)
+	timestampRaw, timestampOK := singleServiceAPIHeader(request, serviceAPITimestampHeader)
+	nonce, nonceOK := singleServiceAPIHeader(request, serviceAPINonceHeader)
+	signature, signatureOK := singleServiceAPIHeader(request, serviceAPISignatureHeader)
+	if !keyOK || !timestampOK || !nonceOK || !signatureOK ||
+		!validServiceAPIIdentifier(keyID, 1, 128) || !validServiceAPIIdentifier(nonce, 16, 128) || !validLowerHex(signature, 64) {
 		return identity.Principal{}, errServiceAPIInvalidRequest
 	}
 	credential, ok := auth.credentials[keyID]
@@ -438,6 +442,18 @@ func matchServiceAPIRoute(template, requestPath string) (map[string]string, bool
 		}
 	}
 	return params, true
+}
+
+func singleServiceAPIHeader(request *http.Request, name string) (string, bool) {
+	if request == nil {
+		return "", false
+	}
+	values := request.Header.Values(name)
+	if len(values) != 1 {
+		return "", false
+	}
+	value := strings.TrimSpace(values[0])
+	return value, value != ""
 }
 
 func validServiceAPIIdentifier(value string, min, max int) bool {
