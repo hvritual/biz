@@ -137,6 +137,10 @@
         {
           "name": "TestEnterprise185AdminPasswordRecoveryRequestQueuesOnlySelfServiceNotification",
           "file": "integration/enterprise_185_admin_recovery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise186InAppUnreadInboxMySQLAndHTTP",
+          "file": "integration/enterprise_186_inbox_mysql_test.go"
         }
       ]
     }
