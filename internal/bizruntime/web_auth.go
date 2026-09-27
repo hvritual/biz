@@ -26,14 +26,14 @@ const (
 )
 
 type runtimeWebAuth struct {
-	config        WebAuthConfig
-	oidc          *oidcClient
-	mu            sync.RWMutex
-	store         *accesspersistence.Store
-	memberAppeals *accesspersistence.MemberAppealService
-	selfSecurity          *accesspersistence.TenantSelfSecurityService
+	config                 WebAuthConfig
+	oidc                   *oidcClient
+	mu                     sync.RWMutex
+	store                  *accesspersistence.Store
+	memberAppeals          *accesspersistence.MemberAppealService
+	selfSecurity           *accesspersistence.TenantSelfSecurityService
 	memberPasswordRecovery *accesspersistence.TenantMemberPasswordRecoveryService
-	entitlements          currentAuthorizationEntitlementReader
+	entitlements           currentAuthorizationEntitlementReader
 }
 
 func newRuntimeWebAuth(ctx context.Context, config WebAuthConfig) (*runtimeWebAuth, error) {
