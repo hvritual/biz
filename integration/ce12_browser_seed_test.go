@@ -342,6 +342,32 @@ func TestCE12BrowserSeed(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// #189 extends the same real authorization intersection to the role-management
+	// surface. Owner IAM already carries tenant.role.read/manage; without this
+	// Commercial capability the router must correctly deny /enterprise/roles.
+	// Grant the real capability instead of bypassing current authorization.
+	var roleCapabilityVersion uint64
+	if err := db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", allowed).Scan(&roleCapabilityVersion).Error; err != nil {
+		t.Fatal(err)
+	}
+	if roleCapabilityVersion == 0 {
+		t.Fatal("authorization allowed tenant has no source version for role capability")
+	}
+	_, err = entitlements.CreateEntitlementOverride(ce04Context(platformToken, "ce12-access-role-permission"), &commercialv1.CreateEntitlementOverrideRequest{
+		RequestId:       "ce12-access-role-permission",
+		TenantId:        allowed,
+		ExpectedVersion: roleCapabilityVersion,
+		ModuleCode:      "access-management",
+		Target:          commercialv1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY,
+		Key:             "tenant.role.permission",
+		Effect:          commercialv1.EntitlementEffect_ENTITLEMENT_EFFECT_GRANT,
+		EffectiveAt:     time.Now().UTC().Add(-time.Minute).Format(time.RFC3339),
+		Reason:          "CE12 #189 proves role management through the real IAM and Commercial intersection",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	var sourceVersion uint64
 	if err := db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", entitlementDenied).Scan(&sourceVersion).Error; err != nil {
 		t.Fatal(err)
