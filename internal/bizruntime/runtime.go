@@ -138,7 +138,13 @@ func bootstrapWithOptions(
 		return nil, fmt.Errorf("biz runtime: gRPC listen: %w", err)
 	}
 
-	authenticator := &runtimeAuthenticator{}
+	serviceAuthenticator, err := newServiceAPIAuthenticator(options.ServiceAPIAuth)
+	if err != nil {
+		_ = httpListener.Close()
+		_ = grpcListener.Close()
+		return nil, err
+	}
+	authenticator := &runtimeAuthenticator{service: serviceAuthenticator}
 	health := &runtimeHealth{}
 	diagnosticsEndpoint := &runtimeDiagnostics{}
 	apiMux := http.NewServeMux()
@@ -580,7 +586,9 @@ func bindRuntimeWithSecurity(
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
-	authenticator.set(accessStore)
+	if err := authenticator.set(ctx, accessStore); err != nil {
+		return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: service api authentication bind: %w", err)
+	}
 	var worker *provisioningRunner
 	if len(workers) == 1 {
 		worker = workers[0]
@@ -610,14 +618,21 @@ func bindRuntimeWithSecurity(
 }
 
 type runtimeAuthenticator struct {
-	mu    sync.RWMutex
-	store *accesspersistence.Store
+	mu      sync.RWMutex
+	store   *accesspersistence.Store
+	service *serviceAPIAuthenticator
 }
 
-func (authenticator *runtimeAuthenticator) set(store *accesspersistence.Store) {
+func (authenticator *runtimeAuthenticator) set(ctx context.Context, store *accesspersistence.Store) error {
+	if authenticator.service != nil {
+		if err := authenticator.service.bind(ctx, store); err != nil {
+			return err
+		}
+	}
 	authenticator.mu.Lock()
 	authenticator.store = store
 	authenticator.mu.Unlock()
+	return nil
 }
 
 func (authenticator *runtimeAuthenticator) authenticate(ctx context.Context, raw string) (identity.Principal, error) {
@@ -672,8 +687,18 @@ func httpAuthentication(authenticator *runtimeAuthenticator, webAuth *runtimeWeb
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		var principal identity.Principal
 		var err error
-		if raw := parseBearer(request.Header.Get("Authorization")); raw != "" {
+		serviceHeaders := serviceAPISignedHeadersPresent(request)
+		if serviceHeaders {
+			if authenticator == nil || authenticator.service == nil {
+				writeServiceAPIAuthenticationFailure(writer, errServiceAPIUnavailable)
+				return
+			}
+			principal, err = authenticator.service.authenticate(request)
+		} else if raw := parseBearer(request.Header.Get("Authorization")); raw != "" {
 			principal, err = authenticator.authenticate(request.Context(), raw)
+			if err == nil && principal.TenantID == "" && principal.UserID == "" && authenticator.service != nil && authenticator.service.requiresSignature(request) {
+				err = errServiceAPIMissingSignature
+			}
 		} else if webAuth != nil && webAuth.enabled() {
 			principal, err = webAuth.authenticateAPI(request)
 		} else {
@@ -684,6 +709,10 @@ func httpAuthentication(authenticator *runtimeAuthenticator, webAuth *runtimeWeb
 			return
 		}
 		if err != nil {
+			if serviceHeaders || errors.Is(err, errServiceAPIMissingSignature) || errors.Is(err, errServiceAPIInvalidRequest) || errors.Is(err, errServiceAPIStaleRequest) || errors.Is(err, errServiceAPIReplay) || errors.Is(err, errServiceAPIUnavailable) {
+				writeServiceAPIAuthenticationFailure(writer, err)
+				return
+			}
 			http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
