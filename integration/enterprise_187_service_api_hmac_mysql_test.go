@@ -33,6 +33,7 @@ type enterprise187Environment struct {
 	db            *gorm.DB
 	store         *accesspersistence.Store
 	legacyToken   string
+	allowedSubject string
 	allowedKey    string
 	allowedSecret []byte
 	rotatedKey    string
@@ -135,7 +136,7 @@ func startEnterprise187Runtime(t *testing.T) enterprise187Environment {
 		}
 	}
 	return enterprise187Environment{
-		started: started, db: db, store: store, legacyToken: legacyToken,
+		started: started, db: db, store: store, legacyToken: legacyToken, allowedSubject: allowedSubject,
 		allowedKey: allowedKey, allowedSecret: allowedSecret,
 		rotatedKey: rotatedKey, rotatedSecret: rotatedSecret,
 		deniedKey: deniedKey, deniedSecret: deniedSecret,
@@ -266,7 +267,7 @@ func TestEnterprise187ServiceAPIHMACReplayAndScope(t *testing.T) {
 			{"method", http.MethodPost, "/v1/platform/plans", "/v1/platform/plans", nil, nil},
 			{"path", http.MethodGet, "/v1/platform/plans/extra", "/v1/platform/plans", nil, nil},
 			{"query", http.MethodGet, "/v1/platform/plans?page_size=1", "/v1/platform/plans", nil, nil},
-			{"body", http.MethodGet, "/v1/platform/plans", "/v1/platform/plans", []byte("{}"), nil},
+			{"body", http.MethodGet, "/v1/platform/plans", "/v1/platform/plans", []byte("{}"), []byte{}},
 		}
 		for index, test := range tests {
 			t.Run(test.name, func(t *testing.T) {
@@ -321,11 +322,9 @@ func TestEnterprise187ServiceAPIHMACReplayAndScope(t *testing.T) {
 			t.Fatalf("revoked key status=%d body=%s", oldStatus, body)
 		}
 		if err := e.store.BootstrapServiceAPICredentials(context.Background(), []accesspersistence.ServiceAPICredentialBootstrap{{
-			KeyID: e.allowedKey, Subject: strings.TrimPrefix(strings.TrimSpace("e187-service-allowed-placeholder"), "placeholder"),
+			KeyID: e.allowedKey, Subject: e.allowedSubject,
 			SecretDigest: accesspersistence.ServiceAPISecretDigest(e.allowedSecret), Operations: []string{"commercial.plan.discover"},
 		}}); err != nil {
-			// Bootstrap requires a subject, but its exact configured value is irrelevant
-			// to this safety assertion: the persisted disabled flag must remain authority.
 			t.Fatal(err)
 		}
 		var disabled bool
