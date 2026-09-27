@@ -208,6 +208,17 @@ async function mockPersonalProfileApi(page: Page, options: Options = {}) {
     return json(route, 200, notificationPreferenceFixture(activeTenant))
   })
 
+  await page.route('**/api/auth/personal/in-app-notifications', (route) => {
+    if (route.request().method() !== 'GET') return json(route, 405, { error: 'METHOD_NOT_ALLOWED' })
+    return json(route, 200, {
+      tenant_id: activeTenant,
+      user_id: profiles[activeTenant]!.userId,
+      unread_count: 0,
+      messages: [],
+      as_of: '2026-09-27T00:00:00Z',
+    })
+  })
+
   return {
     profiles,
     writes,
@@ -332,7 +343,7 @@ async function mockPersonalSecurityApi(page: Page, options: SecurityApiOptions =
   const delayed = new Promise<void>((resolve) => { release = resolve })
   await page.route('**/api/auth/personal/**', async (route) => {
     const path = new URL(route.request().url()).pathname
-    if (path.endsWith('/notification-preferences')) return route.fallback()
+    if (path.endsWith('/notification-preferences') || path.endsWith('/in-app-notifications')) return route.fallback()
     const body = route.request().postDataJSON() as Record<string, unknown>
     const headers = route.request().headers()
     calls.push({ path, body, headers })
