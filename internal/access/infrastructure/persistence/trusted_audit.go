@@ -57,11 +57,11 @@ func AppendTrustedUserAuditPairsTx(ctx context.Context, tx *gorm.DB, userID stri
 		item := input
 		item.TenantID = tenantID
 		item.ResourceTenantID = tenantID
-		if item.ActorUserID == "" {
-			item.ActorUserID = userID
-		}
-		if item.ActorSubject == "" {
+		if item.ActorSubject == "" && item.ActorUserID == "" {
 			item.ActorSubject = "user:" + userID
+			item.ActorUserID = userID
+		} else if item.ActorSubject == "" {
+			item.ActorSubject = "user:" + item.ActorUserID
 		}
 		if err := AppendTrustedAuditPairTx(ctx, tx, item); err != nil {
 			return count, err
