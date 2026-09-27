@@ -38,6 +38,39 @@ type TrustedAudit struct {
 	OccurredAt        time.Time
 }
 
+func AppendTrustedUserAuditPairsTx(ctx context.Context, tx *gorm.DB, userID string, input TrustedAudit) (int, error) {
+	if tx == nil {
+		return 0, errors.New("access audit: root transaction is required")
+	}
+	userID = strings.TrimSpace(userID)
+	if userID == "" {
+		return 0, errors.New("access audit: trusted user identity is required")
+	}
+	var tenants []string
+	if err := tx.WithContext(ctx).Model(&membershipRecord{}).
+		Where("user_id = ? AND status = ? AND self_deleted_at IS NULL", userID, domain.TenantMemberStatusActive).
+		Order("tenant_id ASC").Pluck("tenant_id", &tenants).Error; err != nil {
+		return 0, err
+	}
+	count := 0
+	for _, tenantID := range tenants {
+		item := input
+		item.TenantID = tenantID
+		item.ResourceTenantID = tenantID
+		if item.ActorUserID == "" {
+			item.ActorUserID = userID
+		}
+		if item.ActorSubject == "" {
+			item.ActorSubject = "user:" + userID
+		}
+		if err := AppendTrustedAuditPairTx(ctx, tx, item); err != nil {
+			return count, err
+		}
+		count++
+	}
+	return count, nil
+}
+
 func AppendTrustedAuditPairTx(ctx context.Context, tx *gorm.DB, input TrustedAudit) error {
 	if tx == nil {
 		return errors.New("access audit: root transaction is required")
