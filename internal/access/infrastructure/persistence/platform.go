@@ -39,7 +39,10 @@ func (store *Store) EnsurePlatformSchema(ctx context.Context) error {
 	if store == nil || store.database == nil {
 		return errors.New("access: platform schema store unavailable")
 	}
-	return store.database.WithContext(ctx).AutoMigrate(&platformCredentialRecord{}, &platformPermissionGrantRecord{})
+	return store.database.WithContext(ctx).AutoMigrate(
+		&platformCredentialRecord{}, &platformPermissionGrantRecord{},
+		&serviceAPICredentialRecord{}, &serviceAPIOperationRecord{}, &serviceAPINonceRecord{},
+	)
 }
 
 func (store *Store) BootstrapPlatform(ctx context.Context, bootstrap PlatformBootstrap) error {
@@ -105,7 +108,13 @@ func (store *Store) AuthenticatePlatformSubject(ctx context.Context, subject, au
 		return identity.Principal{}, err
 	}
 	if count == 0 {
-		return identity.Principal{}, ErrUnauthorized
+		available, err := store.serviceAPIPrincipalAvailable(ctx, subject, time.Now().UTC())
+		if err != nil {
+			return identity.Principal{}, err
+		}
+		if !available {
+			return identity.Principal{}, ErrUnauthorized
+		}
 	}
 	return identity.Principal{
 		Subject: strings.TrimSpace(subject), AuthMethod: authMethod, Authenticated: true,

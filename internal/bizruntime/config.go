@@ -246,6 +246,7 @@ type Options struct {
 	DisableEntitlementCache bool
 	DeviceOps               deviceops.Config
 	PlatformBootstrap       PlatformBootstrap
+	ServiceAPIAuth          ServiceAPIAuthConfig
 	WebAuth                 WebAuthConfig
 	FirstPartyIdP           FirstPartyIdPConfig
 	VerificationSecurity    VerificationSecurityConfig
@@ -268,6 +269,9 @@ func (options Options) Validate() error {
 		return err
 	}
 	if err := options.PlatformBootstrap.Validate(); err != nil {
+		return err
+	}
+	if err := options.ServiceAPIAuth.Validate(); err != nil {
 		return err
 	}
 	if err := options.WebAuth.Validate(); err != nil {

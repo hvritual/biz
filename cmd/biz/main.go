@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -104,6 +105,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	serviceAPIAuth, err := serviceAPIAuthConfiguration()
+	if err != nil {
+		return err
+	}
 	if verificationSecurity.Enabled() && verificationProtection == nil {
 		return errors.New("verification security policy requires verification protection keys")
 	}
@@ -139,6 +144,7 @@ func run() error {
 	runtimeOptions := bizruntime.Options{
 		DeviceOps:            config,
 		CommercialLifecycle:  lifecycle,
+		ServiceAPIAuth:       serviceAPIAuth,
 		ProvisioningWorker:   bizruntime.ProvisioningWorkerOptions{Token: workerToken, Automatic: workerToken != ""},
 		WebAuth:              webAuth,
 		VerificationSecurity: verificationSecurity,
@@ -323,4 +329,65 @@ func envOptionalInt(name string) (int, error) {
 		return 0, fmt.Errorf("invalid %s", name)
 	}
 	return parsed, nil
+}
+
+
+type serviceAPICredentialEnv struct {
+	KeyID      string   `json:"key_id"`
+	Subject    string   `json:"subject"`
+	TenantID   string   `json:"tenant_id,omitempty"`
+	SecretB64  string   `json:"secret_b64"`
+	Operations []string `json:"operations"`
+	NotBefore  string   `json:"not_before,omitempty"`
+	ExpiresAt  string   `json:"expires_at,omitempty"`
+}
+
+func serviceAPIAuthConfiguration() (bizruntime.ServiceAPIAuthConfig, error) {
+	raw := strings.TrimSpace(os.Getenv("YUNKA_BIZ_SERVICE_API_CREDENTIALS_JSON"))
+	if raw == "" {
+		return bizruntime.ServiceAPIAuthConfig{}, nil
+	}
+	var values []serviceAPICredentialEnv
+	if err := json.Unmarshal([]byte(raw), &values); err != nil {
+		return bizruntime.ServiceAPIAuthConfig{}, errors.New("invalid YUNKA_BIZ_SERVICE_API_CREDENTIALS_JSON")
+	}
+	config := bizruntime.ServiceAPIAuthConfig{
+		ClockSkew: envOptionalDuration("YUNKA_BIZ_SERVICE_API_CLOCK_SKEW"),
+	}
+	for _, value := range values {
+		secret, err := base64.StdEncoding.DecodeString(strings.TrimSpace(value.SecretB64))
+		if err != nil {
+			return bizruntime.ServiceAPIAuthConfig{}, errors.New("invalid service api secret_b64")
+		}
+		notBefore, err := optionalRFC3339(value.NotBefore)
+		if err != nil {
+			return bizruntime.ServiceAPIAuthConfig{}, fmt.Errorf("invalid service api not_before: %w", err)
+		}
+		expiresAt, err := optionalRFC3339(value.ExpiresAt)
+		if err != nil {
+			return bizruntime.ServiceAPIAuthConfig{}, fmt.Errorf("invalid service api expires_at: %w", err)
+		}
+		config.Credentials = append(config.Credentials, bizruntime.ServiceAPICredentialConfig{
+			KeyID: strings.TrimSpace(value.KeyID), Subject: strings.TrimSpace(value.Subject),
+			TenantID: strings.TrimSpace(value.TenantID), Secret: secret,
+			Operations: append([]string(nil), value.Operations...), NotBefore: notBefore, ExpiresAt: expiresAt,
+		})
+	}
+	if err := config.Validate(); err != nil {
+		return bizruntime.ServiceAPIAuthConfig{}, err
+	}
+	return config, nil
+}
+
+func optionalRFC3339(raw string) (*time.Time, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
+	}
+	value, err := time.Parse(time.RFC3339, raw)
+	if err != nil {
+		return nil, err
+	}
+	value = value.UTC()
+	return &value, nil
 }
