@@ -19,9 +19,10 @@ func TestEnterprise173SelfPasswordChangeAtomicAndRevokesSessions(t *testing.T) {
 		oldPassword = "LegacyPass9A"
 		newPassword = "Coffee88A"
 	)
-	sessionA, sessionB := fixture.bootstrapAccount(t, userID, "tenant-173-change", email, oldPassword)
+	const tenantID = "tenant-173-change"
+	sessionA, sessionB := fixture.bootstrapAccount(t, userID, tenantID, email, oldPassword)
 
-	if err := fixture.Store.ChangeOwnPassword(ctx, userID, "wrong-password", newPassword, newPassword); !errors.Is(err, accesspersistence.ErrCurrentPasswordInvalid) {
+	if err := fixture.Store.ChangeOwnPasswordAudited(ctx, tenantID, userID, "enterprise173-change-wrong", "wrong-password", newPassword, newPassword); !errors.Is(err, accesspersistence.ErrCurrentPasswordInvalid) {
 		t.Fatalf("wrong current password accepted: %v", err)
 	}
 	if _, err := fixture.Store.AuthenticateUserPassword(ctx, email, oldPassword); err != nil {
@@ -33,9 +34,11 @@ func TestEnterprise173SelfPasswordChangeAtomicAndRevokesSessions(t *testing.T) {
 	if err := fixture.Store.ChangeOwnPassword(ctx, userID, oldPassword, newPassword, "Different9A"); !errors.Is(err, accesspersistence.ErrPasswordMismatch) {
 		t.Fatalf("mismatched password accepted: %v", err)
 	}
-	if err := fixture.Store.ChangeOwnPassword(ctx, userID, oldPassword, newPassword, newPassword); err != nil {
+	if err := fixture.Store.ChangeOwnPasswordAudited(ctx, tenantID, userID, "enterprise173-change-success", oldPassword, newPassword, newPassword); err != nil {
 		t.Fatal(err)
 	}
+	enterprise188RequireAuditOutcome(t, fixture.DB, tenantID, "identity.password.change", "failure", 1)
+	enterprise188RequireAuditOutcome(t, fixture.DB, tenantID, "identity.password.change", "success", 1)
 	if _, err := fixture.Store.AuthenticateUserPassword(ctx, email, oldPassword); !errors.Is(err, accesspersistence.ErrInvalidUserCredentials) {
 		t.Fatalf("old password still works: %v", err)
 	}
