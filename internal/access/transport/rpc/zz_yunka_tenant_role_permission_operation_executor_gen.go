@@ -48,6 +48,19 @@ func (server *TenantRolePermissionOperationServer) AssignTenantRoleMember(ctx co
 	return response, nil
 }
 
+func (server *TenantRolePermissionOperationServer) CreateTenantDataPolicy(ctx context.Context, request *accessv1.CreateTenantDataPolicyRequest) (*accessv1.TenantDataPolicyDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantRolePermissionCreateTenantDataPolicy(), request, server.application.CreateTenantDataPolicy)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *TenantRolePermissionOperationServer) CreateTenantRole(ctx context.Context, request *accessv1.CreateTenantRoleRequest) (*accessv1.TenantRoleDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
@@ -100,6 +113,19 @@ func (server *TenantRolePermissionOperationServer) EnableTenantRole(ctx context.
 	return response, nil
 }
 
+func (server *TenantRolePermissionOperationServer) GetTenantDataPolicy(ctx context.Context, request *accessv1.GetTenantDataPolicyRequest) (*accessv1.TenantDataPolicyDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantRolePermissionGetTenantDataPolicy(), request, server.application.GetTenantDataPolicy)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *TenantRolePermissionOperationServer) GetTenantRole(ctx context.Context, request *accessv1.GetTenantRoleRequest) (*accessv1.TenantRoleDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
@@ -107,6 +133,19 @@ func (server *TenantRolePermissionOperationServer) GetTenantRole(ctx context.Con
 		}
 	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantRolePermissionGetTenantRole(), request, server.application.GetTenantRole)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *TenantRolePermissionOperationServer) ListTenantDataPolicies(ctx context.Context, request *accessv1.ListTenantDataPoliciesRequest) (*accessv1.ListTenantDataPoliciesResponse, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantRolePermissionListTenantDataPolicies(), request, server.application.ListTenantDataPolicies)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
@@ -126,6 +165,19 @@ func (server *TenantRolePermissionOperationServer) ListTenantRoles(ctx context.C
 	return response, nil
 }
 
+func (server *TenantRolePermissionOperationServer) RevokeTenantDataPolicy(ctx context.Context, request *accessv1.RevokeTenantDataPolicyRequest) (*accessv1.TenantDataPolicyDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantRolePermissionRevokeTenantDataPolicy(), request, server.application.RevokeTenantDataPolicy)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *TenantRolePermissionOperationServer) RevokeTenantRoleMember(ctx context.Context, request *accessv1.RevokeTenantRoleMemberRequest) (*accessv1.TenantRoleDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
@@ -139,6 +191,19 @@ func (server *TenantRolePermissionOperationServer) RevokeTenantRoleMember(ctx co
 	return response, nil
 }
 
+func (server *TenantRolePermissionOperationServer) SetTenantRoleDataPolicy(ctx context.Context, request *accessv1.SetTenantRoleDataPolicyRequest) (*accessv1.TenantRoleDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantRolePermissionSetTenantRoleDataPolicy(), request, server.application.SetTenantRoleDataPolicy)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *TenantRolePermissionOperationServer) SetTenantRolePermissions(ctx context.Context, request *accessv1.SetTenantRolePermissionsRequest) (*accessv1.TenantRoleDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
@@ -146,6 +211,19 @@ func (server *TenantRolePermissionOperationServer) SetTenantRolePermissions(ctx 
 		}
 	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantRolePermissionSetTenantRolePermissions(), request, server.application.SetTenantRolePermissions)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *TenantRolePermissionOperationServer) UpdateTenantDataPolicy(ctx context.Context, request *accessv1.UpdateTenantDataPolicyRequest) (*accessv1.TenantDataPolicyDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanTenantRolePermissionUpdateTenantDataPolicy(), request, server.application.UpdateTenantDataPolicy)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}

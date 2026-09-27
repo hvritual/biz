@@ -107,6 +107,17 @@ describe('current authorization runtime', () => {
     expect(auth.currentAuthorizationModuleAllowed('access-management')).toBe(true)
   })
 
+  it('exposes whether authorization belongs to the current trusted session context', async () => {
+    mocks.readSession.mockResolvedValue(session)
+    mocks.readCurrentAuthorization.mockResolvedValue(snapshot())
+    const auth = await runtime()
+
+    await auth.ensureCurrentAuthorization()
+
+    expect(auth.currentAuthorizationMatchesSession(session)).toBe(true)
+    expect(auth.currentAuthorizationMatchesSession({ ...session, active_tenant_id: 'tenant-b', context_version: 4 })).toBe(false)
+  })
+
   it('fails closed when the aggregate tenant does not match the trusted session', async () => {
     mocks.readSession.mockResolvedValue(session)
     mocks.readCurrentAuthorization.mockResolvedValue(snapshot({ tenant_id: 'tenant-b' }))

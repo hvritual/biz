@@ -210,6 +210,10 @@ func TestEnterprise170VerificationHappyPathReplayTamperAndAtomicConsumption(t *t
 		Channel: domain.SecurityNotificationEmail, Destination: "auth.expiry@example.invalid",
 	}
 	expiryChallenge, expiryDelivery, err := service.SendVerificationCode(ctx, expiryRequest)
+	if err != nil || expiryDelivery.State != domain.NotificationStatePending {
+		t.Fatalf("authorization expiry fixture was not queued: %+v %v", expiryDelivery, err)
+	}
+	expiryDelivery, err = service.DeliverSecurityNotification(ctx, expiryChallenge.NotificationEventID)
 	if err != nil || expiryDelivery.State != domain.NotificationStateDelivered {
 		t.Fatalf("authorization expiry fixture delivery failed: %+v %v", expiryDelivery, err)
 	}
@@ -322,6 +326,10 @@ func TestEnterprise170LimitsFailureIdempotencyRollbackAndExpiry(t *testing.T) {
 		Channel: domain.SecurityNotificationEmail, Destination: "expiry@example.invalid",
 	}
 	expiryChallenge, expiryDelivery, err := service.SendVerificationCode(ctx, expiryRequest)
+	if err != nil || expiryDelivery.State != domain.NotificationStatePending {
+		t.Fatalf("expiry fixture was not queued: %+v %v", expiryDelivery, err)
+	}
+	expiryDelivery, err = service.DeliverSecurityNotification(ctx, expiryChallenge.NotificationEventID)
 	if err != nil || expiryDelivery.State != domain.NotificationStateDelivered {
 		t.Fatalf("expiry fixture delivery failed: %+v %v", expiryDelivery, err)
 	}
@@ -347,6 +355,10 @@ func TestEnterprise170LimitsFailureIdempotencyRollbackAndExpiry(t *testing.T) {
 		Purpose: domain.VerificationPurposeLogin, UserID: "failure-user",
 		Channel: domain.SecurityNotificationEmail, Destination: "failure@example.invalid",
 	})
+	if sendErr != nil || failureDelivery.State != domain.NotificationStatePending {
+		t.Fatalf("failed-channel fixture was not queued: challenge=%+v delivery=%+v err=%v", failureChallenge, failureDelivery, sendErr)
+	}
+	failureDelivery, sendErr = failingService.DeliverSecurityNotification(ctx, failureChallenge.NotificationEventID)
 	if sendErr == nil || failureDelivery.State != domain.NotificationStateFailed || failureDelivery.FailureCode != "DELIVERY_FAILED" {
 		t.Fatalf("failed channel reported sent: challenge=%+v delivery=%+v err=%v", failureChallenge, failureDelivery, sendErr)
 	}

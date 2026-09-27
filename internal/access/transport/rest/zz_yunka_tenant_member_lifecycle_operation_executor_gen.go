@@ -41,10 +41,16 @@ func RegisterTenantMemberLifecycleOperationExecutor(mux *http.ServeMux, applicat
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/members/create", handler.handleOperationCreateTenantMember); err != nil {
 		return err
 	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenant/me/profile", handler.handleOperationGetMyPersonalProfile); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "GET", "/v1/tenant/members/{user_id}", handler.handleOperationGetTenantMember); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/members", handler.handleOperationInviteTenantMember); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenant/me/avatar-options", handler.handleOperationListMyPersonalAvatarOptions); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "GET", "/v1/tenant/members/removed", handler.handleOperationListRemovedTenantMembers); err != nil {
@@ -60,6 +66,9 @@ func RegisterTenantMemberLifecycleOperationExecutor(mux *http.ServeMux, applicat
 		return err
 	}
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/members/{user_id}/suspend", handler.handleOperationSuspendTenantMember); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "PATCH", "/v1/tenant/me/avatar", handler.handleOperationUpdateMyPersonalAvatar); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "PATCH", "/v1/tenant/members/{user_id}", handler.handleOperationUpdateTenantMember); err != nil {
@@ -157,6 +166,23 @@ func (handler *TenantMemberLifecycleOperationHandler) handleOperationCreateTenan
 	_, _ = writer.Write(payload)
 }
 
+func (handler *TenantMemberLifecycleOperationHandler) handleOperationGetMyPersonalProfile(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.GetMyPersonalProfileRequest{}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleGetMyPersonalProfile(), wire, handler.application.GetMyPersonalProfile)
+	if err != nil {
+		writeTenantMemberLifecycleOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
 func (handler *TenantMemberLifecycleOperationHandler) handleOperationGetTenantMember(writer http.ResponseWriter, request *http.Request) {
 	wire := &accessv1.GetTenantMemberRequest{}
 	wire.UserId = request.PathValue("user_id")
@@ -190,6 +216,23 @@ func (handler *TenantMemberLifecycleOperationHandler) handleOperationInviteTenan
 	}
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleInviteTenantMember(), wire, handler.application.InviteTenantMember)
+	if err != nil {
+		writeTenantMemberLifecycleOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *TenantMemberLifecycleOperationHandler) handleOperationListMyPersonalAvatarOptions(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.ListMyPersonalAvatarOptionsRequest{}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleListMyPersonalAvatarOptions(), wire, handler.application.ListMyPersonalAvatarOptions)
 	if err != nil {
 		writeTenantMemberLifecycleOperationError(writer, err)
 		return
@@ -352,6 +395,34 @@ func (handler *TenantMemberLifecycleOperationHandler) handleOperationSuspendTena
 	wire.UserId = request.PathValue("user_id")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleSuspendTenantMember(), wire, handler.application.SuspendTenantMember)
+	if err != nil {
+		writeTenantMemberLifecycleOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *TenantMemberLifecycleOperationHandler) handleOperationUpdateMyPersonalAvatar(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.UpdateMyPersonalAvatarRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantMemberLifecycleUpdateMyPersonalAvatar(), wire, handler.application.UpdateMyPersonalAvatar)
 	if err != nil {
 		writeTenantMemberLifecycleOperationError(writer, err)
 		return

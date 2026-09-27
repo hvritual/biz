@@ -273,10 +273,6 @@ var DeviceApplication_ServiceDesc = grpc.ServiceDesc{
 // SiteApplicationClient is the client API for SiteApplication service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// SiteApplication declares an internal canonical Operation without exposing a
-// protobuf RPC method. The Operation remains available to typed child
-// capabilities, OperationPlan, and Application Graph only.
 type SiteApplicationClient interface {
 }
 
@@ -291,10 +287,6 @@ func NewSiteApplicationClient(cc grpc.ClientConnInterface) SiteApplicationClient
 // SiteApplicationServer is the server API for SiteApplication service.
 // All implementations should embed UnimplementedSiteApplicationServer
 // for forward compatibility.
-//
-// SiteApplication declares an internal canonical Operation without exposing a
-// protobuf RPC method. The Operation remains available to typed child
-// capabilities, OperationPlan, and Application Graph only.
 type SiteApplicationServer interface {
 }
 

@@ -387,11 +387,8 @@ func (repository *VerificationRepository) EnqueueSecurityNotification(ctx contex
 	if repository == nil || repository.database == nil || repository.protection == nil {
 		return domain.NotificationDeliveryReceipt{}, domain.ErrNotificationUnavailable
 	}
-	if strings.TrimSpace(request.BusinessEventID) == "" || !request.Kind.Valid() || !request.Purpose.Valid() || !request.Channel.Valid() || strings.TrimSpace(request.UserID) == "" || strings.TrimSpace(request.Destination) == "" || request.ExpiresAt.IsZero() {
-		return domain.NotificationDeliveryReceipt{}, domain.ErrVerificationInvalid
-	}
-	if notificationKindRequiresSecret(request.Kind) && strings.TrimSpace(request.Secret) == "" {
-		return domain.NotificationDeliveryReceipt{}, domain.ErrVerificationInvalid
+	if err := request.Validate(); err != nil {
+		return domain.NotificationDeliveryReceipt{}, err
 	}
 	destinationHash, normalizedDestination, err := repository.protection.DestinationHash(request.Channel, request.Destination)
 	if err != nil {
@@ -680,15 +677,6 @@ func constantVerificationEqual(left, right string) bool {
 		return false
 	}
 	return subtle.ConstantTimeCompare([]byte(left), []byte(right)) == 1
-}
-
-func notificationKindRequiresSecret(kind domain.SecurityNotificationKind) bool {
-	switch kind {
-	case domain.SecurityNotificationVerificationCode, domain.SecurityNotificationInitialCredential, domain.SecurityNotificationPasswordReset:
-		return true
-	default:
-		return false
-	}
 }
 
 func sanitizeFailureCode(value string) string {

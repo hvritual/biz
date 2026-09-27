@@ -55,37 +55,41 @@ type userRecord struct {
 func (userRecord) TableName() string { return "biz_users" }
 
 type membershipRecord struct {
-	TenantID        string    `gorm:"column:tenant_id;primaryKey;size:64;uniqueIndex:uniq_member_email_lookup,priority:1;uniqueIndex:uniq_member_phone_lookup,priority:1"`
-	UserID          string    `gorm:"column:user_id;primaryKey;size:64"`
-	Status          string    `gorm:"column:status;size:32;not null;index"`
-	Name            string    `gorm:"column:name;size:100;not null;default:''"`
-	Email           string    `gorm:"column:email;size:320;not null;default:''"`
-	EmailCiphertext string    `gorm:"column:email_ciphertext;type:text"`
-	EmailLookupHash *string   `gorm:"column:email_lookup_hash;size:64;uniqueIndex:uniq_member_email_lookup,priority:2"`
-	EmailKeyVersion string    `gorm:"column:email_key_version;size:64;not null;default:''"`
-	Phone           string    `gorm:"column:phone;size:40;not null;default:''"`
-	PhoneCiphertext string    `gorm:"column:phone_ciphertext;type:text"`
-	PhoneLookupHash *string   `gorm:"column:phone_lookup_hash;size:64;uniqueIndex:uniq_member_phone_lookup,priority:2"`
-	PhoneKeyVersion string    `gorm:"column:phone_key_version;size:64;not null;default:''"`
-	EmployeeID      string    `gorm:"column:employee_id;size:64;not null;default:''"`
-	Position        string    `gorm:"column:position;size:100;not null;default:''"`
-	DepartmentID    string    `gorm:"column:department_id;size:64;not null;default:'';index"`
-	Version         uint64    `gorm:"column:version;not null;default:1"`
-	CreatedAt       time.Time `gorm:"column:created_at;not null"`
-	UpdatedAt       time.Time `gorm:"column:updated_at;not null"`
+	TenantID        string     `gorm:"column:tenant_id;primaryKey;size:64;uniqueIndex:uniq_member_email_lookup,priority:1;uniqueIndex:uniq_member_phone_lookup,priority:1"`
+	UserID          string     `gorm:"column:user_id;primaryKey;size:64"`
+	Status          string     `gorm:"column:status;size:32;not null;index"`
+	Name            string     `gorm:"column:name;size:100;not null;default:''"`
+	Email           string     `gorm:"column:email;size:320;not null;default:''"`
+	EmailCiphertext string     `gorm:"column:email_ciphertext;type:text"`
+	EmailLookupHash *string    `gorm:"column:email_lookup_hash;size:64;uniqueIndex:uniq_member_email_lookup,priority:2"`
+	EmailKeyVersion string     `gorm:"column:email_key_version;size:64;not null;default:''"`
+	Phone           string     `gorm:"column:phone;size:40;not null;default:''"`
+	PhoneCiphertext string     `gorm:"column:phone_ciphertext;type:text"`
+	PhoneLookupHash *string    `gorm:"column:phone_lookup_hash;size:64;uniqueIndex:uniq_member_phone_lookup,priority:2"`
+	PhoneKeyVersion string     `gorm:"column:phone_key_version;size:64;not null;default:''"`
+	EmployeeID      string     `gorm:"column:employee_id;size:64;not null;default:''"`
+	Position        string     `gorm:"column:position;size:100;not null;default:''"`
+	DepartmentID    string     `gorm:"column:department_id;size:64;not null;default:'';index"`
+	AvatarAssetRef  string     `gorm:"column:avatar_asset_ref;size:64;not null;default:'avatar:coffee-blue'"`
+	SelfDeletedAt   *time.Time `gorm:"column:self_deleted_at;type:datetime(6);index"`
+	Version         uint64     `gorm:"column:version;not null;default:1"`
+	CreatedAt       time.Time  `gorm:"column:created_at;not null"`
+	UpdatedAt       time.Time  `gorm:"column:updated_at;not null"`
 }
 
 func (membershipRecord) TableName() string { return "biz_memberships" }
 
 type roleRecord struct {
-	ID          string  `gorm:"column:id;primaryKey;size:160"`
-	TenantID    string  `gorm:"column:tenant_id;size:64;not null;index:idx_role_tenant;uniqueIndex:uniq_role_name,priority:1;uniqueIndex:uniq_role_code,priority:1"`
-	Name        string  `gorm:"column:name;size:100;not null;uniqueIndex:uniq_role_name,priority:2"`
-	Description string  `gorm:"column:description;size:120;not null;default:''"`
-	RoleCode    *string `gorm:"column:role_code;size:64;uniqueIndex:uniq_role_code,priority:2"`
-	SystemRole  bool    `gorm:"column:system_role;not null;default:false"`
-	Status      string  `gorm:"column:status;size:32;not null"`
-	Version     uint64  `gorm:"column:version;not null;default:1"`
+	ID                        string  `gorm:"column:id;primaryKey;size:160"`
+	TenantID                  string  `gorm:"column:tenant_id;size:64;not null;index:idx_role_tenant;uniqueIndex:uniq_role_name,priority:1;uniqueIndex:uniq_role_code,priority:1"`
+	Name                      string  `gorm:"column:name;size:100;not null;uniqueIndex:uniq_role_name,priority:2"`
+	Description               string  `gorm:"column:description;size:120;not null;default:''"`
+	RoleCode                  *string `gorm:"column:role_code;size:64;uniqueIndex:uniq_role_code,priority:2"`
+	SystemRole                bool    `gorm:"column:system_role;not null;default:false"`
+	DataPolicyID              *string `gorm:"column:data_policy_id;size:160;index"`
+	DataPolicyAcceptedVersion *uint64 `gorm:"column:data_policy_accepted_version"`
+	Status                    string  `gorm:"column:status;size:32;not null"`
+	Version                   uint64  `gorm:"column:version;not null;default:1"`
 }
 
 func (roleRecord) TableName() string { return "biz_roles" }
@@ -151,8 +155,10 @@ func NewWithContactProtection(database *gorm.DB, protection *ContactProtection) 
 func (store *Store) AutoMigrate(ctx context.Context) error {
 	return store.database.WithContext(ctx).AutoMigrate(
 		&tenantCreationRecord{}, &tenantRecord{}, &userRecord{}, &membershipRecord{}, &roleRecord{},
-		&memberRoleRecord{}, &permissionGrantRecord{}, &memberSiteRecord{}, &apiTokenRecord{}, &auditEventRecord{},
+		&memberRoleRecord{}, &permissionGrantRecord{}, &memberSiteRecord{}, &dataPolicyRecord{}, &dataPolicySiteRecord{}, &apiTokenRecord{}, &auditEventRecord{},
 		&memberRemovedRoleSnapshotRecord{}, &memberRemovedSiteSnapshotRecord{}, &memberStatusAppealRecord{},
+		&notificationPreferenceRecord{}, &notificationPreferenceReceiptRecord{},
+		&serviceAPICredentialRecord{}, &serviceAPIOperationRecord{}, &serviceAPINonceRecord{},
 	)
 }
 

@@ -121,6 +121,14 @@ export function projectRole(value: EnterpriseTenantRole): Role {
     scope: strongestRoleScope(value),
     permissions: value.permissions.map((grant) => grant.permission),
     memberCount: value.memberCount,
+    dataPolicy: value.dataPolicy ? {
+      policyId: value.dataPolicy.policyId,
+      policyName: value.dataPolicy.policyName,
+      policyVersion: value.dataPolicy.policyVersion,
+      acceptedVersion: value.dataPolicy.acceptedVersion,
+      effective: value.dataPolicy.effective,
+      invalidReason: value.dataPolicy.invalidReason,
+    } : undefined,
     updatedAt: '',
     runtimeVersion: value.version,
   }

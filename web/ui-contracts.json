@@ -142,6 +142,17 @@
       ]
     },
     {
+      "path": "/system/notifications",
+      "component": "@/features/system/pages/SettingsView.vue",
+      "surface": "tenant",
+      "template": "FormPage",
+      "required_regions": [
+        "page-heading",
+        "form-workspace",
+        "scope"
+      ]
+    },
+    {
       "path": "/system/:section(general|notifications|security|integrations|dictionary)",
       "component": "@/features/system/pages/SettingsView.vue",
       "surface": "tenant",
@@ -193,6 +204,20 @@
         "change-workspace",
         "decisions",
         "overrides"
+      ]
+    },
+    {
+      "path": "/enterprise/personal-profile",
+      "component": "@/features/enterprise/pages/PersonalProfileView.vue",
+      "surface": "tenant",
+      "template": "FormPage",
+      "required_regions": [
+        "page-heading",
+        "form-workspace",
+        "form-actions",
+        "scope",
+        "personal-security",
+        "notification-preferences"
       ]
     },
     {

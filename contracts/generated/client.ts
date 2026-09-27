@@ -62,6 +62,14 @@ export interface Access_V1_CloseTenantRequest {
   version?: string;
 }
 
+export interface Access_V1_CreateTenantDataPolicyRequest {
+  name?: string;
+  siteIds?: readonly string[];
+  notBefore?: string;
+  expiresAt?: string;
+  policyId?: string;
+}
+
 export interface Access_V1_CreateTenantDepartmentRequest {
   name?: string;
   parentId?: string;
@@ -135,11 +143,18 @@ export interface Access_V1_ExportTenantAuditRecordsResponse {
   records?: readonly Access_V1_TenantAuditRecordDTO[];
 }
 
+export interface Access_V1_GetMyPersonalProfileRequest {
+}
+
 export interface Access_V1_GetTenantAuditRecordRequest {
   auditId?: string;
 }
 
 export interface Access_V1_GetTenantBrandingRequest {
+}
+
+export interface Access_V1_GetTenantDataPolicyRequest {
+  policyId?: string;
 }
 
 export interface Access_V1_GetTenantDelegationRequest {
@@ -148,6 +163,10 @@ export interface Access_V1_GetTenantDelegationRequest {
 
 export interface Access_V1_GetTenantDepartmentRequest {
   departmentId?: string;
+}
+
+export interface Access_V1_GetTenantMemberBusinessScopeRequest {
+  userId?: string;
 }
 
 export interface Access_V1_GetTenantMemberRequest {
@@ -176,6 +195,13 @@ export interface Access_V1_InviteTenantMemberRequest {
   email?: string;
 }
 
+export interface Access_V1_ListMyPersonalAvatarOptionsRequest {
+}
+
+export interface Access_V1_ListMyPersonalAvatarOptionsResponse {
+  options?: readonly Access_V1_PersonalAvatarOptionDTO[];
+}
+
 export interface Access_V1_ListRemovedTenantMembersRequest {
   page?: number;
   pageSize?: number;
@@ -197,6 +223,13 @@ export interface Access_V1_ListTenantAuditRecordsResponse {
   pageSize?: number;
 }
 
+export interface Access_V1_ListTenantDataPoliciesRequest {
+}
+
+export interface Access_V1_ListTenantDataPoliciesResponse {
+  policies?: readonly Access_V1_TenantDataPolicyDTO[];
+}
+
 export interface Access_V1_ListTenantDelegationsRequest {
 }
 
@@ -209,6 +242,17 @@ export interface Access_V1_ListTenantDepartmentsRequest {
 
 export interface Access_V1_ListTenantDepartmentsResponse {
   departments?: readonly Access_V1_TenantDepartmentDTO[];
+}
+
+export interface Access_V1_ListTenantMemberScopeCandidatesRequest {
+  query?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface Access_V1_ListTenantMemberScopeCandidatesResponse {
+  candidates?: readonly Access_V1_TenantMemberScopeCandidateDTO[];
+  total?: string;
 }
 
 export interface Access_V1_ListTenantMembersRequest {
@@ -251,6 +295,12 @@ export interface Access_V1_PermissionGrantInput {
   scope?: Access_V1_DataScope;
 }
 
+export interface Access_V1_PersonalAvatarOptionDTO {
+  assetRef?: string;
+  name?: string;
+  tone?: string;
+}
+
 export interface Access_V1_RemoveTenantMemberRequest {
   userId?: string;
   version?: string;
@@ -263,6 +313,11 @@ export interface Access_V1_RestoreTenantMemberRequest {
   reason?: string;
 }
 
+export interface Access_V1_RevokeTenantDataPolicyRequest {
+  policyId?: string;
+  version?: string;
+}
+
 export interface Access_V1_RevokeTenantDelegationRequest {
   id?: string;
   version?: string;
@@ -271,6 +326,19 @@ export interface Access_V1_RevokeTenantDelegationRequest {
 export interface Access_V1_RevokeTenantRoleMemberRequest {
   roleId?: string;
   userId?: string;
+}
+
+export interface Access_V1_SetTenantMemberBusinessScopeRequest {
+  userId?: string;
+  version?: string;
+  siteIds?: readonly string[];
+}
+
+export interface Access_V1_SetTenantRoleDataPolicyRequest {
+  roleId?: string;
+  version?: string;
+  policyId?: string;
+  policyVersion?: string;
 }
 
 export interface Access_V1_SetTenantRolePermissionsRequest {
@@ -328,6 +396,27 @@ export interface Access_V1_TenantDTO {
   version?: string;
 }
 
+export interface Access_V1_TenantDataPolicyDTO {
+  id?: string;
+  name?: string;
+  status?: string;
+  siteIds?: readonly string[];
+  version?: string;
+  notBefore?: string;
+  expiresAt?: string;
+  effective?: boolean;
+  invalidReason?: string;
+}
+
+export interface Access_V1_TenantDataPolicyReferenceDTO {
+  policyId?: string;
+  policyName?: string;
+  policyVersion?: string;
+  acceptedVersion?: string;
+  effective?: boolean;
+  invalidReason?: string;
+}
+
 export interface Access_V1_TenantDelegationDTO {
   id?: string;
   ownerTenantId?: string;
@@ -350,6 +439,13 @@ export interface Access_V1_TenantDepartmentDTO {
   status?: Access_V1_TenantDepartmentStatus;
   sort?: number;
   version?: string;
+}
+
+export interface Access_V1_TenantMemberBusinessScopeDTO {
+  userId?: string;
+  version?: string;
+  siteIds?: readonly string[];
+  tenantId?: string;
 }
 
 export interface Access_V1_TenantMemberCreationReceipt {
@@ -381,6 +477,32 @@ export interface Access_V1_TenantMemberRoleDTO {
   roleStatus?: string;
 }
 
+export interface Access_V1_TenantMemberScopeCandidateDTO {
+  id?: string;
+  name?: string;
+  version?: string;
+  assignable?: boolean;
+  unavailableReason?: string;
+}
+
+export interface Access_V1_TenantPersonalProfileDTO {
+  userId?: string;
+  username?: string;
+  name?: string;
+  tenantId?: string;
+  tenantName?: string;
+  roles?: readonly Access_V1_TenantMemberRoleDTO[];
+  registeredAt?: string;
+  joinedAt?: string;
+  email?: string;
+  phone?: string;
+  avatarAssetRef?: string;
+  version?: string;
+  employeeId?: string;
+  position?: string;
+  departmentId?: string;
+}
+
 export interface Access_V1_TenantProfileDTO {
   tenantId?: string;
   name?: string;
@@ -407,12 +529,27 @@ export interface Access_V1_TenantRoleDTO {
   roleCode?: string;
   systemRole?: boolean;
   memberCount?: string;
+  dataPolicy?: Access_V1_TenantDataPolicyReferenceDTO;
+}
+
+export interface Access_V1_UpdateMyPersonalAvatarRequest {
+  version?: string;
+  avatarAssetRef?: string;
 }
 
 export interface Access_V1_UpdateTenantBrandingRequest {
   preset?: string;
   primary?: string;
   version?: string;
+}
+
+export interface Access_V1_UpdateTenantDataPolicyRequest {
+  policyId?: string;
+  version?: string;
+  name?: string;
+  siteIds?: readonly string[];
+  notBefore?: string;
+  expiresAt?: string;
 }
 
 export interface Access_V1_UpdateTenantDepartmentRequest {
@@ -1143,6 +1280,136 @@ export interface Deviceops_V1_UpdateDeviceRequest {
   version?: string;
 }
 
+export interface Notification_V1_CreateMessageConfigurationsRequest {
+  groupId?: string;
+  levels?: readonly string[];
+  channels?: readonly string[];
+  primaryUserId?: string;
+  secondaryUserId?: string;
+  additionalUserIds?: readonly string[];
+  notes?: string;
+}
+
+export interface Notification_V1_DeleteMessageConfigurationRequest {
+  id?: string;
+  expectedVersion?: string;
+}
+
+export interface Notification_V1_GetMessageConfigurationRequest {
+  id?: string;
+}
+
+export interface Notification_V1_ListMessageChannelsRequest {
+}
+
+export interface Notification_V1_ListMessageChannelsResponse {
+  items?: readonly Notification_V1_MessageChannelDTO[];
+  tenantId?: string;
+}
+
+export interface Notification_V1_ListMessageConfigurationsRequest {
+  groupId?: string;
+  level?: string;
+  recipientId?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface Notification_V1_ListMessageConfigurationsResponse {
+  items?: readonly Notification_V1_MessageConfigurationDTO[];
+  total?: string;
+  page?: number;
+  pageSize?: number;
+  tenantId?: string;
+}
+
+export interface Notification_V1_ListMessageDirectoryRequest {
+  query?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface Notification_V1_ListMessageDirectoryResponse {
+  items?: readonly Notification_V1_MessageDirectoryEntryDTO[];
+  total?: string;
+  page?: number;
+  pageSize?: number;
+  tenantId?: string;
+}
+
+export interface Notification_V1_ListMessageTypesRequest {
+  code?: string;
+  name?: string;
+  level?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface Notification_V1_ListMessageTypesResponse {
+  items?: readonly Notification_V1_MessageTypeDTO[];
+  groups?: readonly Notification_V1_MessageLevelCountDTO[];
+  total?: string;
+  page?: number;
+  pageSize?: number;
+  tenantId?: string;
+}
+
+export interface Notification_V1_MessageChannelDTO {
+  code?: string;
+  name?: string;
+  configurable?: boolean;
+  unavailableReason?: string;
+}
+
+export interface Notification_V1_MessageConfigurationDTO {
+  id?: string;
+  tenantId?: string;
+  groupId?: string;
+  groupName?: string;
+  level?: string;
+  channels?: readonly string[];
+  primaryUserId?: string;
+  secondaryUserId?: string;
+  additionalUserIds?: readonly string[];
+  notes?: string;
+  version?: string;
+  updatedAt?: string;
+  createdAt?: string;
+  deleted?: boolean;
+}
+
+export interface Notification_V1_MessageConfigurationReceipt {
+  receiptId?: string;
+  tenantId?: string;
+  configurations?: readonly Notification_V1_MessageConfigurationDTO[];
+}
+
+export interface Notification_V1_MessageDirectoryEntryDTO {
+  id?: string;
+  name?: string;
+}
+
+export interface Notification_V1_MessageLevelCountDTO {
+  level?: string;
+  total?: string;
+}
+
+export interface Notification_V1_MessageTypeDTO {
+  code?: string;
+  name?: string;
+  level?: string;
+}
+
+export interface Notification_V1_UpdateMessageConfigurationRequest {
+  id?: string;
+  expectedVersion?: string;
+  channels?: readonly string[];
+  primaryUserId?: string;
+  secondaryUserId?: string;
+  additionalUserIds?: readonly string[];
+  notes?: string;
+}
+
 export const operations = {
   "access.v1.TenantAuditManagementApplication.ExportTenantAuditRecords": {
     fullName: "access.v1.TenantAuditManagementApplication.ExportTenantAuditRecords",
@@ -1324,6 +1591,33 @@ export const operations = {
       { method: "PATCH", path: "/v1/tenants/{id}", body: "*" },
     ]
   },
+  "access.v1.TenantMemberBusinessScopeApplication.GetTenantMemberBusinessScope": {
+    fullName: "access.v1.TenantMemberBusinessScopeApplication.GetTenantMemberBusinessScope",
+    rpcPath: "/access.v1.TenantMemberBusinessScopeApplication/GetTenantMemberBusinessScope",
+    requestType: "access.v1.GetTenantMemberBusinessScopeRequest",
+    responseType: "access.v1.TenantMemberBusinessScopeDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/members/{user_id}/business-scope" },
+    ]
+  },
+  "access.v1.TenantMemberBusinessScopeApplication.ListTenantMemberScopeCandidates": {
+    fullName: "access.v1.TenantMemberBusinessScopeApplication.ListTenantMemberScopeCandidates",
+    rpcPath: "/access.v1.TenantMemberBusinessScopeApplication/ListTenantMemberScopeCandidates",
+    requestType: "access.v1.ListTenantMemberScopeCandidatesRequest",
+    responseType: "access.v1.ListTenantMemberScopeCandidatesResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/member-scope-candidates" },
+    ]
+  },
+  "access.v1.TenantMemberBusinessScopeApplication.SetTenantMemberBusinessScope": {
+    fullName: "access.v1.TenantMemberBusinessScopeApplication.SetTenantMemberBusinessScope",
+    rpcPath: "/access.v1.TenantMemberBusinessScopeApplication/SetTenantMemberBusinessScope",
+    requestType: "access.v1.SetTenantMemberBusinessScopeRequest",
+    responseType: "access.v1.TenantMemberBusinessScopeDTO",
+    http: [
+      { method: "PUT", path: "/v1/tenant/members/{user_id}/business-scope", body: "*" },
+    ]
+  },
   "access.v1.TenantMemberLifecycleApplication.ActivateTenantMember": {
     fullName: "access.v1.TenantMemberLifecycleApplication.ActivateTenantMember",
     rpcPath: "/access.v1.TenantMemberLifecycleApplication/ActivateTenantMember",
@@ -1342,6 +1636,15 @@ export const operations = {
       { method: "POST", path: "/v1/tenant/members/create", body: "*" },
     ]
   },
+  "access.v1.TenantMemberLifecycleApplication.GetMyPersonalProfile": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.GetMyPersonalProfile",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/GetMyPersonalProfile",
+    requestType: "access.v1.GetMyPersonalProfileRequest",
+    responseType: "access.v1.TenantPersonalProfileDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/me/profile" },
+    ]
+  },
   "access.v1.TenantMemberLifecycleApplication.GetTenantMember": {
     fullName: "access.v1.TenantMemberLifecycleApplication.GetTenantMember",
     rpcPath: "/access.v1.TenantMemberLifecycleApplication/GetTenantMember",
@@ -1358,6 +1661,15 @@ export const operations = {
     responseType: "access.v1.TenantMemberDTO",
     http: [
       { method: "POST", path: "/v1/tenant/members", body: "*" },
+    ]
+  },
+  "access.v1.TenantMemberLifecycleApplication.ListMyPersonalAvatarOptions": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.ListMyPersonalAvatarOptions",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/ListMyPersonalAvatarOptions",
+    requestType: "access.v1.ListMyPersonalAvatarOptionsRequest",
+    responseType: "access.v1.ListMyPersonalAvatarOptionsResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/me/avatar-options" },
     ]
   },
   "access.v1.TenantMemberLifecycleApplication.ListRemovedTenantMembers": {
@@ -1403,6 +1715,15 @@ export const operations = {
     responseType: "access.v1.TenantMemberDTO",
     http: [
       { method: "POST", path: "/v1/tenant/members/{user_id}/suspend", body: "*" },
+    ]
+  },
+  "access.v1.TenantMemberLifecycleApplication.UpdateMyPersonalAvatar": {
+    fullName: "access.v1.TenantMemberLifecycleApplication.UpdateMyPersonalAvatar",
+    rpcPath: "/access.v1.TenantMemberLifecycleApplication/UpdateMyPersonalAvatar",
+    requestType: "access.v1.UpdateMyPersonalAvatarRequest",
+    responseType: "access.v1.TenantPersonalProfileDTO",
+    http: [
+      { method: "PATCH", path: "/v1/tenant/me/avatar", body: "*" },
     ]
   },
   "access.v1.TenantMemberLifecycleApplication.UpdateTenantMember": {
@@ -1468,6 +1789,15 @@ export const operations = {
       { method: "POST", path: "/v1/tenant/roles/{role_id}/members", body: "*" },
     ]
   },
+  "access.v1.TenantRolePermissionApplication.CreateTenantDataPolicy": {
+    fullName: "access.v1.TenantRolePermissionApplication.CreateTenantDataPolicy",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/CreateTenantDataPolicy",
+    requestType: "access.v1.CreateTenantDataPolicyRequest",
+    responseType: "access.v1.TenantDataPolicyDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/data-policies", body: "*" },
+    ]
+  },
   "access.v1.TenantRolePermissionApplication.CreateTenantRole": {
     fullName: "access.v1.TenantRolePermissionApplication.CreateTenantRole",
     rpcPath: "/access.v1.TenantRolePermissionApplication/CreateTenantRole",
@@ -1504,6 +1834,15 @@ export const operations = {
       { method: "POST", path: "/v1/tenant/roles/{role_id}/enable", body: "*" },
     ]
   },
+  "access.v1.TenantRolePermissionApplication.GetTenantDataPolicy": {
+    fullName: "access.v1.TenantRolePermissionApplication.GetTenantDataPolicy",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/GetTenantDataPolicy",
+    requestType: "access.v1.GetTenantDataPolicyRequest",
+    responseType: "access.v1.TenantDataPolicyDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/data-policies/{policy_id}" },
+    ]
+  },
   "access.v1.TenantRolePermissionApplication.GetTenantRole": {
     fullName: "access.v1.TenantRolePermissionApplication.GetTenantRole",
     rpcPath: "/access.v1.TenantRolePermissionApplication/GetTenantRole",
@@ -1511,6 +1850,15 @@ export const operations = {
     responseType: "access.v1.TenantRoleDTO",
     http: [
       { method: "GET", path: "/v1/tenant/roles/{role_id}" },
+    ]
+  },
+  "access.v1.TenantRolePermissionApplication.ListTenantDataPolicies": {
+    fullName: "access.v1.TenantRolePermissionApplication.ListTenantDataPolicies",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/ListTenantDataPolicies",
+    requestType: "access.v1.ListTenantDataPoliciesRequest",
+    responseType: "access.v1.ListTenantDataPoliciesResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/data-policies" },
     ]
   },
   "access.v1.TenantRolePermissionApplication.ListTenantRoles": {
@@ -1522,6 +1870,15 @@ export const operations = {
       { method: "GET", path: "/v1/tenant/roles" },
     ]
   },
+  "access.v1.TenantRolePermissionApplication.RevokeTenantDataPolicy": {
+    fullName: "access.v1.TenantRolePermissionApplication.RevokeTenantDataPolicy",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/RevokeTenantDataPolicy",
+    requestType: "access.v1.RevokeTenantDataPolicyRequest",
+    responseType: "access.v1.TenantDataPolicyDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/data-policies/{policy_id}/revoke", body: "*" },
+    ]
+  },
   "access.v1.TenantRolePermissionApplication.RevokeTenantRoleMember": {
     fullName: "access.v1.TenantRolePermissionApplication.RevokeTenantRoleMember",
     rpcPath: "/access.v1.TenantRolePermissionApplication/RevokeTenantRoleMember",
@@ -1531,6 +1888,15 @@ export const operations = {
       { method: "POST", path: "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", body: "*" },
     ]
   },
+  "access.v1.TenantRolePermissionApplication.SetTenantRoleDataPolicy": {
+    fullName: "access.v1.TenantRolePermissionApplication.SetTenantRoleDataPolicy",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/SetTenantRoleDataPolicy",
+    requestType: "access.v1.SetTenantRoleDataPolicyRequest",
+    responseType: "access.v1.TenantRoleDTO",
+    http: [
+      { method: "PUT", path: "/v1/tenant/roles/{role_id}/data-policy", body: "*" },
+    ]
+  },
   "access.v1.TenantRolePermissionApplication.SetTenantRolePermissions": {
     fullName: "access.v1.TenantRolePermissionApplication.SetTenantRolePermissions",
     rpcPath: "/access.v1.TenantRolePermissionApplication/SetTenantRolePermissions",
@@ -1538,6 +1904,15 @@ export const operations = {
     responseType: "access.v1.TenantRoleDTO",
     http: [
       { method: "PUT", path: "/v1/tenant/roles/{role_id}/permissions", body: "*" },
+    ]
+  },
+  "access.v1.TenantRolePermissionApplication.UpdateTenantDataPolicy": {
+    fullName: "access.v1.TenantRolePermissionApplication.UpdateTenantDataPolicy",
+    rpcPath: "/access.v1.TenantRolePermissionApplication/UpdateTenantDataPolicy",
+    requestType: "access.v1.UpdateTenantDataPolicyRequest",
+    responseType: "access.v1.TenantDataPolicyDTO",
+    http: [
+      { method: "PATCH", path: "/v1/tenant/data-policies/{policy_id}", body: "*" },
     ]
   },
   "access.v1.TenantRolePermissionApplication.UpdateTenantRole": {
@@ -1981,6 +2356,87 @@ export const operations = {
       { method: "PATCH", path: "/v1/devices/{id}/transfer", body: "*" },
     ]
   },
+  "notification.v1.MessageConfigurationApplication.CreateMessageConfigurations": {
+    fullName: "notification.v1.MessageConfigurationApplication.CreateMessageConfigurations",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/CreateMessageConfigurations",
+    requestType: "notification.v1.CreateMessageConfigurationsRequest",
+    responseType: "notification.v1.MessageConfigurationReceipt",
+    http: [
+      { method: "POST", path: "/v1/tenant/notification/configurations", body: "*" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.DeleteMessageConfiguration": {
+    fullName: "notification.v1.MessageConfigurationApplication.DeleteMessageConfiguration",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/DeleteMessageConfiguration",
+    requestType: "notification.v1.DeleteMessageConfigurationRequest",
+    responseType: "notification.v1.MessageConfigurationReceipt",
+    http: [
+      { method: "POST", path: "/v1/tenant/notification/configurations/{id}/delete", body: "*" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.GetMessageConfiguration": {
+    fullName: "notification.v1.MessageConfigurationApplication.GetMessageConfiguration",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/GetMessageConfiguration",
+    requestType: "notification.v1.GetMessageConfigurationRequest",
+    responseType: "notification.v1.MessageConfigurationDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/notification/configurations/{id}" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.ListMessageChannels": {
+    fullName: "notification.v1.MessageConfigurationApplication.ListMessageChannels",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/ListMessageChannels",
+    requestType: "notification.v1.ListMessageChannelsRequest",
+    responseType: "notification.v1.ListMessageChannelsResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/notification/channels" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.ListMessageConfigurations": {
+    fullName: "notification.v1.MessageConfigurationApplication.ListMessageConfigurations",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/ListMessageConfigurations",
+    requestType: "notification.v1.ListMessageConfigurationsRequest",
+    responseType: "notification.v1.ListMessageConfigurationsResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/notification/configurations" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.ListMessageGroups": {
+    fullName: "notification.v1.MessageConfigurationApplication.ListMessageGroups",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/ListMessageGroups",
+    requestType: "notification.v1.ListMessageDirectoryRequest",
+    responseType: "notification.v1.ListMessageDirectoryResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/notification/groups" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.ListMessageRecipients": {
+    fullName: "notification.v1.MessageConfigurationApplication.ListMessageRecipients",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/ListMessageRecipients",
+    requestType: "notification.v1.ListMessageDirectoryRequest",
+    responseType: "notification.v1.ListMessageDirectoryResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/notification/recipients" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.ListMessageTypes": {
+    fullName: "notification.v1.MessageConfigurationApplication.ListMessageTypes",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/ListMessageTypes",
+    requestType: "notification.v1.ListMessageTypesRequest",
+    responseType: "notification.v1.ListMessageTypesResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/notification/types" },
+    ]
+  },
+  "notification.v1.MessageConfigurationApplication.UpdateMessageConfiguration": {
+    fullName: "notification.v1.MessageConfigurationApplication.UpdateMessageConfiguration",
+    rpcPath: "/notification.v1.MessageConfigurationApplication/UpdateMessageConfiguration",
+    requestType: "notification.v1.UpdateMessageConfigurationRequest",
+    responseType: "notification.v1.MessageConfigurationReceipt",
+    http: [
+      { method: "PATCH", path: "/v1/tenant/notification/configurations/{id}", body: "*" },
+    ]
+  },
 } as const satisfies Record<string, RpcOperation>;
 
 export class Access_V1_TenantAuditManagementApplicationClient {
@@ -2083,6 +2539,23 @@ export class Access_V1_TenantLifecycleApplicationClient {
 
 }
 
+export class Access_V1_TenantMemberBusinessScopeApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  getTenantMemberBusinessScope(request: Access_V1_GetTenantMemberBusinessScopeRequest): Promise<Access_V1_TenantMemberBusinessScopeDTO> {
+    return this.transport.call<Access_V1_GetTenantMemberBusinessScopeRequest, Access_V1_TenantMemberBusinessScopeDTO>(operations["access.v1.TenantMemberBusinessScopeApplication.GetTenantMemberBusinessScope"], request);
+  }
+
+  listTenantMemberScopeCandidates(request: Access_V1_ListTenantMemberScopeCandidatesRequest): Promise<Access_V1_ListTenantMemberScopeCandidatesResponse> {
+    return this.transport.call<Access_V1_ListTenantMemberScopeCandidatesRequest, Access_V1_ListTenantMemberScopeCandidatesResponse>(operations["access.v1.TenantMemberBusinessScopeApplication.ListTenantMemberScopeCandidates"], request);
+  }
+
+  setTenantMemberBusinessScope(request: Access_V1_SetTenantMemberBusinessScopeRequest): Promise<Access_V1_TenantMemberBusinessScopeDTO> {
+    return this.transport.call<Access_V1_SetTenantMemberBusinessScopeRequest, Access_V1_TenantMemberBusinessScopeDTO>(operations["access.v1.TenantMemberBusinessScopeApplication.SetTenantMemberBusinessScope"], request);
+  }
+
+}
+
 export class Access_V1_TenantMemberLifecycleApplicationClient {
   constructor(private readonly transport: RpcTransport) {}
 
@@ -2094,12 +2567,20 @@ export class Access_V1_TenantMemberLifecycleApplicationClient {
     return this.transport.call<Access_V1_CreateTenantMemberRequest, Access_V1_TenantMemberCreationReceipt>(operations["access.v1.TenantMemberLifecycleApplication.CreateTenantMember"], request);
   }
 
+  getMyPersonalProfile(request: Access_V1_GetMyPersonalProfileRequest): Promise<Access_V1_TenantPersonalProfileDTO> {
+    return this.transport.call<Access_V1_GetMyPersonalProfileRequest, Access_V1_TenantPersonalProfileDTO>(operations["access.v1.TenantMemberLifecycleApplication.GetMyPersonalProfile"], request);
+  }
+
   getTenantMember(request: Access_V1_GetTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
     return this.transport.call<Access_V1_GetTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.GetTenantMember"], request);
   }
 
   inviteTenantMember(request: Access_V1_InviteTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
     return this.transport.call<Access_V1_InviteTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.InviteTenantMember"], request);
+  }
+
+  listMyPersonalAvatarOptions(request: Access_V1_ListMyPersonalAvatarOptionsRequest): Promise<Access_V1_ListMyPersonalAvatarOptionsResponse> {
+    return this.transport.call<Access_V1_ListMyPersonalAvatarOptionsRequest, Access_V1_ListMyPersonalAvatarOptionsResponse>(operations["access.v1.TenantMemberLifecycleApplication.ListMyPersonalAvatarOptions"], request);
   }
 
   listRemovedTenantMembers(request: Access_V1_ListRemovedTenantMembersRequest): Promise<Access_V1_ListTenantMembersResponse> {
@@ -2120,6 +2601,10 @@ export class Access_V1_TenantMemberLifecycleApplicationClient {
 
   suspendTenantMember(request: Access_V1_SuspendTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
     return this.transport.call<Access_V1_SuspendTenantMemberRequest, Access_V1_TenantMemberDTO>(operations["access.v1.TenantMemberLifecycleApplication.SuspendTenantMember"], request);
+  }
+
+  updateMyPersonalAvatar(request: Access_V1_UpdateMyPersonalAvatarRequest): Promise<Access_V1_TenantPersonalProfileDTO> {
+    return this.transport.call<Access_V1_UpdateMyPersonalAvatarRequest, Access_V1_TenantPersonalProfileDTO>(operations["access.v1.TenantMemberLifecycleApplication.UpdateMyPersonalAvatar"], request);
   }
 
   updateTenantMember(request: Access_V1_UpdateTenantMemberRequest): Promise<Access_V1_TenantMemberDTO> {
@@ -2160,6 +2645,10 @@ export class Access_V1_TenantRolePermissionApplicationClient {
     return this.transport.call<Access_V1_AssignTenantRoleMemberRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.AssignTenantRoleMember"], request);
   }
 
+  createTenantDataPolicy(request: Access_V1_CreateTenantDataPolicyRequest): Promise<Access_V1_TenantDataPolicyDTO> {
+    return this.transport.call<Access_V1_CreateTenantDataPolicyRequest, Access_V1_TenantDataPolicyDTO>(operations["access.v1.TenantRolePermissionApplication.CreateTenantDataPolicy"], request);
+  }
+
   createTenantRole(request: Access_V1_CreateTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
     return this.transport.call<Access_V1_CreateTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.CreateTenantRole"], request);
   }
@@ -2176,20 +2665,40 @@ export class Access_V1_TenantRolePermissionApplicationClient {
     return this.transport.call<Access_V1_EnableTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.EnableTenantRole"], request);
   }
 
+  getTenantDataPolicy(request: Access_V1_GetTenantDataPolicyRequest): Promise<Access_V1_TenantDataPolicyDTO> {
+    return this.transport.call<Access_V1_GetTenantDataPolicyRequest, Access_V1_TenantDataPolicyDTO>(operations["access.v1.TenantRolePermissionApplication.GetTenantDataPolicy"], request);
+  }
+
   getTenantRole(request: Access_V1_GetTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
     return this.transport.call<Access_V1_GetTenantRoleRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.GetTenantRole"], request);
+  }
+
+  listTenantDataPolicies(request: Access_V1_ListTenantDataPoliciesRequest): Promise<Access_V1_ListTenantDataPoliciesResponse> {
+    return this.transport.call<Access_V1_ListTenantDataPoliciesRequest, Access_V1_ListTenantDataPoliciesResponse>(operations["access.v1.TenantRolePermissionApplication.ListTenantDataPolicies"], request);
   }
 
   listTenantRoles(request: Access_V1_ListTenantRolesRequest): Promise<Access_V1_ListTenantRolesResponse> {
     return this.transport.call<Access_V1_ListTenantRolesRequest, Access_V1_ListTenantRolesResponse>(operations["access.v1.TenantRolePermissionApplication.ListTenantRoles"], request);
   }
 
+  revokeTenantDataPolicy(request: Access_V1_RevokeTenantDataPolicyRequest): Promise<Access_V1_TenantDataPolicyDTO> {
+    return this.transport.call<Access_V1_RevokeTenantDataPolicyRequest, Access_V1_TenantDataPolicyDTO>(operations["access.v1.TenantRolePermissionApplication.RevokeTenantDataPolicy"], request);
+  }
+
   revokeTenantRoleMember(request: Access_V1_RevokeTenantRoleMemberRequest): Promise<Access_V1_TenantRoleDTO> {
     return this.transport.call<Access_V1_RevokeTenantRoleMemberRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.RevokeTenantRoleMember"], request);
   }
 
+  setTenantRoleDataPolicy(request: Access_V1_SetTenantRoleDataPolicyRequest): Promise<Access_V1_TenantRoleDTO> {
+    return this.transport.call<Access_V1_SetTenantRoleDataPolicyRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.SetTenantRoleDataPolicy"], request);
+  }
+
   setTenantRolePermissions(request: Access_V1_SetTenantRolePermissionsRequest): Promise<Access_V1_TenantRoleDTO> {
     return this.transport.call<Access_V1_SetTenantRolePermissionsRequest, Access_V1_TenantRoleDTO>(operations["access.v1.TenantRolePermissionApplication.SetTenantRolePermissions"], request);
+  }
+
+  updateTenantDataPolicy(request: Access_V1_UpdateTenantDataPolicyRequest): Promise<Access_V1_TenantDataPolicyDTO> {
+    return this.transport.call<Access_V1_UpdateTenantDataPolicyRequest, Access_V1_TenantDataPolicyDTO>(operations["access.v1.TenantRolePermissionApplication.UpdateTenantDataPolicy"], request);
   }
 
   updateTenantRole(request: Access_V1_UpdateTenantRoleRequest): Promise<Access_V1_TenantRoleDTO> {
@@ -2431,6 +2940,47 @@ export class Deviceops_V1_DeviceTransferApplicationClient {
 
   transferDevice(request: Deviceops_V1_TransferDeviceRequest): Promise<Deviceops_V1_DeviceDTO> {
     return this.transport.call<Deviceops_V1_TransferDeviceRequest, Deviceops_V1_DeviceDTO>(operations["deviceops.v1.DeviceTransferApplication.TransferDevice"], request);
+  }
+
+}
+
+export class Notification_V1_MessageConfigurationApplicationClient {
+  constructor(private readonly transport: RpcTransport) {}
+
+  createMessageConfigurations(request: Notification_V1_CreateMessageConfigurationsRequest): Promise<Notification_V1_MessageConfigurationReceipt> {
+    return this.transport.call<Notification_V1_CreateMessageConfigurationsRequest, Notification_V1_MessageConfigurationReceipt>(operations["notification.v1.MessageConfigurationApplication.CreateMessageConfigurations"], request);
+  }
+
+  deleteMessageConfiguration(request: Notification_V1_DeleteMessageConfigurationRequest): Promise<Notification_V1_MessageConfigurationReceipt> {
+    return this.transport.call<Notification_V1_DeleteMessageConfigurationRequest, Notification_V1_MessageConfigurationReceipt>(operations["notification.v1.MessageConfigurationApplication.DeleteMessageConfiguration"], request);
+  }
+
+  getMessageConfiguration(request: Notification_V1_GetMessageConfigurationRequest): Promise<Notification_V1_MessageConfigurationDTO> {
+    return this.transport.call<Notification_V1_GetMessageConfigurationRequest, Notification_V1_MessageConfigurationDTO>(operations["notification.v1.MessageConfigurationApplication.GetMessageConfiguration"], request);
+  }
+
+  listMessageChannels(request: Notification_V1_ListMessageChannelsRequest): Promise<Notification_V1_ListMessageChannelsResponse> {
+    return this.transport.call<Notification_V1_ListMessageChannelsRequest, Notification_V1_ListMessageChannelsResponse>(operations["notification.v1.MessageConfigurationApplication.ListMessageChannels"], request);
+  }
+
+  listMessageConfigurations(request: Notification_V1_ListMessageConfigurationsRequest): Promise<Notification_V1_ListMessageConfigurationsResponse> {
+    return this.transport.call<Notification_V1_ListMessageConfigurationsRequest, Notification_V1_ListMessageConfigurationsResponse>(operations["notification.v1.MessageConfigurationApplication.ListMessageConfigurations"], request);
+  }
+
+  listMessageGroups(request: Notification_V1_ListMessageDirectoryRequest): Promise<Notification_V1_ListMessageDirectoryResponse> {
+    return this.transport.call<Notification_V1_ListMessageDirectoryRequest, Notification_V1_ListMessageDirectoryResponse>(operations["notification.v1.MessageConfigurationApplication.ListMessageGroups"], request);
+  }
+
+  listMessageRecipients(request: Notification_V1_ListMessageDirectoryRequest): Promise<Notification_V1_ListMessageDirectoryResponse> {
+    return this.transport.call<Notification_V1_ListMessageDirectoryRequest, Notification_V1_ListMessageDirectoryResponse>(operations["notification.v1.MessageConfigurationApplication.ListMessageRecipients"], request);
+  }
+
+  listMessageTypes(request: Notification_V1_ListMessageTypesRequest): Promise<Notification_V1_ListMessageTypesResponse> {
+    return this.transport.call<Notification_V1_ListMessageTypesRequest, Notification_V1_ListMessageTypesResponse>(operations["notification.v1.MessageConfigurationApplication.ListMessageTypes"], request);
+  }
+
+  updateMessageConfiguration(request: Notification_V1_UpdateMessageConfigurationRequest): Promise<Notification_V1_MessageConfigurationReceipt> {
+    return this.transport.call<Notification_V1_UpdateMessageConfigurationRequest, Notification_V1_MessageConfigurationReceipt>(operations["notification.v1.MessageConfigurationApplication.UpdateMessageConfiguration"], request);
   }
 
 }

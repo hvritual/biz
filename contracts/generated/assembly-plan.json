@@ -43,6 +43,16 @@
       }
     },
     {
+      "id": "access/tenant_member_business_scope",
+      "domain": "access",
+      "name": "tenant_member_business_scope",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_member_business_scope"
+      }
+    },
+    {
       "id": "access/tenant_member_lifecycle",
       "domain": "access",
       "name": "tenant_member_lifecycle",
@@ -171,6 +181,16 @@
         "source": "manifest.json",
         "ref": "applications/deviceops/site_management"
       }
+    },
+    {
+      "id": "notification/message_configuration",
+      "domain": "notification",
+      "name": "message_configuration",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/notification/message_configuration"
+      }
     }
   ],
   "applicationDependencies": [
@@ -220,6 +240,15 @@
       }
     },
     {
+      "from": "access/tenant_member_business_scope",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_member_business_scope/requires/deviceops/site_management"
+      }
+    },
+    {
       "from": "access/tenant_member_lifecycle",
       "to": "access/tenant_department_management",
       "evidence": {
@@ -235,6 +264,15 @@
         "ownership": "reused",
         "source": "manifest.json",
         "ref": "applications/access/tenant_member_lifecycle/requires/access/tenant_role_permission"
+      }
+    },
+    {
+      "from": "access/tenant_role_permission",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "manifest.json",
+        "ref": "applications/access/tenant_role_permission/requires/deviceops/site_management"
       }
     },
     {
@@ -474,6 +512,24 @@
       }
     },
     {
+      "from": "access/tenant_lifecycle",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_lifecycle-\u003edeviceops/site_management"
+      }
+    },
+    {
+      "from": "access/tenant_member_business_scope",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_member_business_scope-\u003edeviceops/site_management"
+      }
+    },
+    {
       "from": "access/tenant_member_lifecycle",
       "to": "access/tenant_department_management",
       "evidence": {
@@ -489,6 +545,24 @@
         "ownership": "derived",
         "source": "application-dependency-closure",
         "ref": "access/tenant_member_lifecycle-\u003eaccess/tenant_role_permission"
+      }
+    },
+    {
+      "from": "access/tenant_member_lifecycle",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_member_lifecycle-\u003edeviceops/site_management"
+      }
+    },
+    {
+      "from": "access/tenant_role_permission",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "access/tenant_role_permission-\u003edeviceops/site_management"
       }
     },
     {
@@ -552,6 +626,15 @@
         "ownership": "derived",
         "source": "application-dependency-closure",
         "ref": "commercial/entitlement_management-\u003ecommercial/subscription_management"
+      }
+    },
+    {
+      "from": "commercial/entitlement_management",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/entitlement_management-\u003edeviceops/site_management"
       }
     },
     {
@@ -651,6 +734,15 @@
         "ownership": "derived",
         "source": "application-dependency-closure",
         "ref": "commercial/subscription_management-\u003ecommercial/plan_management"
+      }
+    },
+    {
+      "from": "commercial/subscription_management",
+      "to": "deviceops/site_management",
+      "evidence": {
+        "ownership": "derived",
+        "source": "application-dependency-closure",
+        "ref": "commercial/subscription_management-\u003edeviceops/site_management"
       }
     },
     {
@@ -2417,6 +2509,303 @@
       }
     },
     {
+      "id": "notification.channel.list",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.channel.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.channel.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.channel.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.channel.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.channel.list"
+      }
+    },
+    {
+      "id": "notification.configuration.create",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.configuration.create",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.create/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.configuration.create",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.create/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.configuration.create"
+      }
+    },
+    {
+      "id": "notification.configuration.delete",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.configuration.delete",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.delete/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.configuration.delete",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.delete/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.configuration.delete"
+      }
+    },
+    {
+      "id": "notification.configuration.get",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.configuration.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.configuration.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.configuration.get"
+      }
+    },
+    {
+      "id": "notification.configuration.list",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.configuration.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.configuration.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.configuration.list"
+      }
+    },
+    {
+      "id": "notification.configuration.update",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.configuration.update",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.update/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.configuration.update",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.configuration.update/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.configuration.update"
+      }
+    },
+    {
+      "id": "notification.group.list",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.group.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.group.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.group.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.group.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.group.list"
+      }
+    },
+    {
+      "id": "notification.recipient.list",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.recipient.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.recipient.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.recipient.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.recipient.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.recipient.list"
+      }
+    },
+    {
+      "id": "notification.type.list",
+      "application": "notification/message_configuration",
+      "bindings": [
+        {
+          "operationId": "notification.type.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.type.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "notification.type.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/notification.type.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/notification.type.list"
+      }
+    },
+    {
+      "id": "site.member_scope_directory",
+      "application": "deviceops/site_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/site.member_scope_directory"
+      }
+    },
+    {
+      "id": "site.role_scope_directory",
+      "application": "deviceops/site_management",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/site.role_scope_directory"
+      }
+    },
+    {
       "id": "site.validate_transfer_target",
       "application": "deviceops/site_management",
       "evidence": {
@@ -2587,6 +2976,161 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/tenant.create"
+      }
+    },
+    {
+      "id": "tenant.data_policy.create",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.data_policy.create",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.data_policy.create/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.data_policy.create",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.data_policy.create/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.data_policy.create"
+      }
+    },
+    {
+      "id": "tenant.data_policy.get",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.data_policy.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.data_policy.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.data_policy.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.data_policy.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.data_policy.get"
+      }
+    },
+    {
+      "id": "tenant.data_policy.list",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.data_policy.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.data_policy.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.data_policy.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.data_policy.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.data_policy.list"
+      }
+    },
+    {
+      "id": "tenant.data_policy.revoke",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.data_policy.revoke",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.data_policy.revoke/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.data_policy.revoke",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.data_policy.revoke/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.data_policy.revoke"
+      }
+    },
+    {
+      "id": "tenant.data_policy.update",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.data_policy.update",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.data_policy.update/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.data_policy.update",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.data_policy.update/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.data_policy.update"
       }
     },
     {
@@ -3011,6 +3555,68 @@
       }
     },
     {
+      "id": "tenant.member.business_scope.get",
+      "application": "access/tenant_member_business_scope",
+      "bindings": [
+        {
+          "operationId": "tenant.member.business_scope.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.business_scope.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.business_scope.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.business_scope.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.business_scope.get"
+      }
+    },
+    {
+      "id": "tenant.member.business_scope.set",
+      "application": "access/tenant_member_business_scope",
+      "bindings": [
+        {
+          "operationId": "tenant.member.business_scope.set",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.business_scope.set/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.business_scope.set",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.business_scope.set/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.business_scope.set"
+      }
+    },
+    {
       "id": "tenant.member.count_quota_usage",
       "application": "access/tenant_member_lifecycle",
       "evidence": {
@@ -3175,6 +3781,99 @@
       }
     },
     {
+      "id": "tenant.member.personal_profile.avatar_options",
+      "application": "access/tenant_member_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.member.personal_profile.avatar_options",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.personal_profile.avatar_options/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.personal_profile.avatar_options",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.personal_profile.avatar_options/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.personal_profile.avatar_options"
+      }
+    },
+    {
+      "id": "tenant.member.personal_profile.avatar_update",
+      "application": "access/tenant_member_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.member.personal_profile.avatar_update",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.personal_profile.avatar_update/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.personal_profile.avatar_update",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.personal_profile.avatar_update/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.personal_profile.avatar_update"
+      }
+    },
+    {
+      "id": "tenant.member.personal_profile.get",
+      "application": "access/tenant_member_lifecycle",
+      "bindings": [
+        {
+          "operationId": "tenant.member.personal_profile.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.personal_profile.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.personal_profile.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.personal_profile.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.personal_profile.get"
+      }
+    },
+    {
       "id": "tenant.member.profile.update",
       "application": "access/tenant_member_lifecycle",
       "bindings": [
@@ -3265,6 +3964,37 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/tenant.member.restore"
+      }
+    },
+    {
+      "id": "tenant.member.scope_candidates",
+      "application": "access/tenant_member_business_scope",
+      "bindings": [
+        {
+          "operationId": "tenant.member.scope_candidates",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.scope_candidates/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.member.scope_candidates",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.member.scope_candidates/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.scope_candidates"
       }
     },
     {
@@ -3655,6 +4385,37 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/tenant.role.revoke_member"
+      }
+    },
+    {
+      "id": "tenant.role.set_data_policy",
+      "application": "access/tenant_role_permission",
+      "bindings": [
+        {
+          "operationId": "tenant.role.set_data_policy",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.set_data_policy/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "tenant.role.set_data_policy",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/tenant.role.set_data_policy/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.role.set_data_policy"
       }
     },
     {
@@ -4189,6 +4950,24 @@
       }
     },
     {
+      "from": "tenant.data_policy.create",
+      "to": "site.role_scope_directory",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.data_policy.create/requiresOperations/site.role_scope_directory"
+      }
+    },
+    {
+      "from": "tenant.data_policy.update",
+      "to": "site.role_scope_directory",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.data_policy.update/requiresOperations/site.role_scope_directory"
+      }
+    },
+    {
       "from": "tenant.delegation.grant_device",
       "to": "device.assert_owned_by_actor_tenant",
       "evidence": {
@@ -4204,6 +4983,15 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/tenant.delegation.grant_device/requiresOperations/tenant.assert_active"
+      }
+    },
+    {
+      "from": "tenant.member.business_scope.set",
+      "to": "site.member_scope_directory",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.business_scope.set/requiresOperations/site.member_scope_directory"
       }
     },
     {
@@ -4249,6 +5037,15 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/tenant.member.restore/requiresOperations/tenant.role.assign_member"
+      }
+    },
+    {
+      "from": "tenant.member.scope_candidates",
+      "to": "site.member_scope_directory",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/tenant.member.scope_candidates/requiresOperations/site.member_scope_directory"
       }
     },
     {
@@ -4369,6 +5166,7 @@
         "access/tenant_delegation_management",
         "access/tenant_department_management",
         "access/tenant_lifecycle",
+        "access/tenant_member_business_scope",
         "access/tenant_member_lifecycle",
         "access/tenant_profile_management",
         "access/tenant_role_permission",
@@ -4381,7 +5179,8 @@
         "deviceops/delegated_device_access",
         "deviceops/device_management",
         "deviceops/device_transfer",
-        "deviceops/site_management"
+        "deviceops/site_management",
+        "notification/message_configuration"
       ],
       "modules": [
         "access",
@@ -4439,11 +5238,25 @@
         "device.list",
         "device.transfer",
         "device.update",
+        "notification.channel.list",
+        "notification.configuration.create",
+        "notification.configuration.delete",
+        "notification.configuration.get",
+        "notification.configuration.list",
+        "notification.configuration.update",
+        "notification.group.list",
+        "notification.recipient.list",
+        "notification.type.list",
         "tenant.activate",
         "tenant.branding.get",
         "tenant.branding.update",
         "tenant.close",
         "tenant.create",
+        "tenant.data_policy.create",
+        "tenant.data_policy.get",
+        "tenant.data_policy.list",
+        "tenant.data_policy.revoke",
+        "tenant.data_policy.update",
         "tenant.delegation.get",
         "tenant.delegation.grant_device",
         "tenant.delegation.list",
@@ -4457,14 +5270,20 @@
         "tenant.get",
         "tenant.list",
         "tenant.member.activate",
+        "tenant.member.business_scope.get",
+        "tenant.member.business_scope.set",
         "tenant.member.create",
         "tenant.member.get",
         "tenant.member.invite",
         "tenant.member.list",
         "tenant.member.list_removed",
+        "tenant.member.personal_profile.avatar_options",
+        "tenant.member.personal_profile.avatar_update",
+        "tenant.member.personal_profile.get",
         "tenant.member.profile.update",
         "tenant.member.remove",
         "tenant.member.restore",
+        "tenant.member.scope_candidates",
         "tenant.member.suspend",
         "tenant.member.update",
         "tenant.profile.get",
@@ -4477,6 +5296,7 @@
         "tenant.role.get",
         "tenant.role.list",
         "tenant.role.revoke_member",
+        "tenant.role.set_data_policy",
         "tenant.role.set_permissions",
         "tenant.role.update",
         "tenant.suspend",
@@ -4500,6 +5320,8 @@
         "commercial.subscription.transition.claim",
         "commercial.subscription.transition.complete",
         "device.assert_owned_by_actor_tenant",
+        "site.member_scope_directory",
+        "site.role_scope_directory",
         "site.validate_transfer_target",
         "tenant.assert_active",
         "tenant.department.assert_member_assignment_allowed",

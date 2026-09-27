@@ -14,8 +14,23 @@ import {
   type TrustedSession,
 } from '@/services/runtime/api'
 
-export type MemberMutation = 'create' | 'update' | 'invite' | 'activate' | 'suspend' | 'remove' | 'restore' | 'profile' | 'roles'
+export type MemberMutation = 'create' | 'update' | 'invite' | 'activate' | 'suspend' | 'remove' | 'restore' | 'profile' | 'roles' | 'scope'
 export type MemberRoleMutation = 'assign' | 'revoke'
+
+export type EnterpriseMemberScopeCandidate = {
+  id: string
+  name: string
+  version: number
+  assignable: boolean
+  unavailableReason: string
+}
+
+export type EnterpriseMemberBusinessScope = {
+  userId: string
+  version: string | number
+  siteIds: string[]
+  tenantId: string
+}
 
 export type EnterpriseMemberRole = {
   roleId: string
@@ -232,6 +247,66 @@ export async function getEnterpriseMember(session: TrustedSession, userId: strin
     { headers: readHeaders(session) },
   )
   return memberSnapshot(member)
+}
+
+export async function listEnterpriseMemberScopeCandidates(
+  session: TrustedSession,
+  input: { query?: string; page?: number; pageSize?: number } = {},
+) {
+  requireTenantSession(session)
+  const params = new URLSearchParams()
+  if (input.query?.trim()) params.set('query', input.query.trim())
+  params.set('page', String(Math.max(1, Math.trunc(input.page ?? 1))))
+  params.set('page_size', String(Math.max(1, Math.min(100, Math.trunc(input.pageSize ?? 100)))))
+  const result = await request<{
+    candidates?: Array<{ id: string; name?: string; version?: string | number; assignable?: boolean; unavailableReason?: string }>
+    total?: string | number
+  }>(`/v1/tenant/member-scope-candidates?${params.toString()}`, { headers: readHeaders(session) })
+  return {
+    candidates: (result.candidates ?? []).map((candidate) => Object.freeze({
+      id: candidate.id,
+      name: candidate.name ?? candidate.id,
+      version: Number(candidate.version ?? 0),
+      assignable: candidate.assignable === true,
+      unavailableReason: candidate.unavailableReason ?? '',
+    }) as EnterpriseMemberScopeCandidate),
+    total: Number(result.total ?? 0),
+  }
+}
+
+export async function getEnterpriseMemberBusinessScope(session: TrustedSession, userId: string) {
+  requireTenantSession(session)
+  const value = await request<{ userId: string; version: string | number; siteIds?: string[]; tenantId: string }>(
+    `/v1/tenant/members/${encodeURIComponent(userId)}/business-scope`,
+    { headers: readHeaders(session) },
+  )
+  return Object.freeze({
+    userId: value.userId,
+    version: value.version ?? 0,
+    siteIds: [...(value.siteIds ?? [])].sort(),
+    tenantId: value.tenantId,
+  }) as EnterpriseMemberBusinessScope
+}
+
+export async function setEnterpriseMemberBusinessScope(
+  session: TrustedSession,
+  current: EnterpriseMemberBusinessScope,
+  siteIds: string[],
+  idempotencyKey: string,
+) {
+  requireTenantSession(session)
+  const value = await mutate<{ userId: string; version: string | number; siteIds?: string[]; tenantId: string }>(
+    `/v1/tenant/members/${encodeURIComponent(current.userId)}/business-scope`,
+    'PUT',
+    { userId: current.userId, version: current.version, siteIds: [...new Set(siteIds)].sort() },
+    { idempotencyKey, sessionContext: sessionContext(session) },
+  )
+  return Object.freeze({
+    userId: value.userId,
+    version: value.version ?? 0,
+    siteIds: [...(value.siteIds ?? [])].sort(),
+    tenantId: value.tenantId,
+  }) as EnterpriseMemberBusinessScope
 }
 
 export async function listEnterpriseRoles(session: TrustedSession) {

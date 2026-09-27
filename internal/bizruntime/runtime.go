@@ -44,6 +44,7 @@ import (
 
 type Started struct {
 	provisioningRunner *provisioningRunner
+	notificationRunner *notificationRuntime
 	App                *core.App
 	Applications       generatedassembly.Applications
 	httpAddress        string
@@ -105,6 +106,15 @@ func bootstrapWithOptions(
 	if err := options.Validate(); err != nil {
 		return nil, err
 	}
+	catalogs, err := buildNotificationCatalogSnapshot(options.NotificationRuntime)
+	if err != nil {
+		return nil, err
+	}
+	options.notificationCatalogs = catalogs
+	notificationRunner, err := newNotificationRuntime(options.NotificationRuntime, catalogs, protection)
+	if err != nil {
+		return nil, err
+	}
 	config := options.DeviceOps
 	if ctx == nil {
 		ctx = context.Background()
@@ -128,15 +138,24 @@ func bootstrapWithOptions(
 		return nil, fmt.Errorf("biz runtime: gRPC listen: %w", err)
 	}
 
-	authenticator := &runtimeAuthenticator{}
+	serviceAuthenticator, err := newServiceAPIAuthenticator(options.ServiceAPIAuth)
+	if err != nil {
+		_ = httpListener.Close()
+		_ = grpcListener.Close()
+		return nil, err
+	}
+	authenticator := &runtimeAuthenticator{service: serviceAuthenticator}
 	health := &runtimeHealth{}
 	diagnosticsEndpoint := &runtimeDiagnostics{}
 	apiMux := http.NewServeMux()
 	rootMux := http.NewServeMux()
 	rootMux.HandleFunc("GET /healthz", health.handle)
 	rootMux.Handle("GET "+diagnosticsPath, diagnosticsEndpoint)
+	if notificationRunner != nil && notificationRunner.providerEnabled() {
+		rootMux.Handle("POST "+notificationProviderCallbackPath, notificationRunner.callbackHandler())
+	}
 	webAuth.register(rootMux)
-	rootMux.Handle("/v1/", httpAuthentication(authenticator, webAuth, enforcement.HTTP(apiMux)))
+	rootMux.Handle("/v1/", httpAuthentication(authenticator, webAuth, enforcement.HTTP(notificationHTTP(apiMux))))
 	httpServer := &http.Server{Handler: rootMux, ReadHeaderTimeout: 5 * time.Second}
 	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcAuthentication(authenticator), enforcement.RPC()))
 
@@ -157,10 +176,23 @@ func bootstrapWithOptions(
 	if options.ProvisioningWorker.Token != "" {
 		components = append(components, worker.component())
 	}
+	if notificationRunner != nil {
+		components = append(components, notificationRunner.component())
+	}
 	result, err := generatedassembly.Bootstrap(ctx, generatedassembly.BootstrapOptions{
 		Platform: provider,
 		BindRuntime: func(bindCtx context.Context, prepared *platform.Provider) (generatedassembly.RuntimeBindings, error) {
-			return bindRuntimeWithSecurity(bindCtx, prepared, options, authenticator, webAuth, protection, verificationProtection, worker)
+			bindings, err := bindRuntimeWithSecurity(bindCtx, prepared, options, authenticator, webAuth, protection, verificationProtection, worker)
+			if err != nil {
+				return generatedassembly.RuntimeBindings{}, err
+			}
+			if notificationRunner != nil {
+				if err := notificationRunner.bind(bindCtx, prepared, config.AutoMigrate); err != nil {
+					return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: notification runtime bind: %w", err)
+				}
+				webAuth.setNotificationInbox(notificationRunner.inboxService())
+			}
+			return bindings, nil
 		},
 		Transports:        generatedassembly.TransportBindings{HTTP: apiMux, RPC: grpcServer},
 		RuntimeComponents: components,
@@ -177,7 +209,7 @@ func bootstrapWithOptions(
 		_ = result.App.Shutdown(ctx)
 		return nil, fmt.Errorf("biz runtime: diagnostics: %w", err)
 	}
-	return &Started{provisioningRunner: worker, App: result.App, Applications: result.Applications, httpAddress: httpListener.Addr().String(), grpcAddress: grpcListener.Addr().String()}, nil
+	return &Started{provisioningRunner: worker, notificationRunner: notificationRunner, App: result.App, Applications: result.Applications, httpAddress: httpListener.Addr().String(), grpcAddress: grpcListener.Addr().String()}, nil
 }
 
 type applicationFactories struct {
@@ -199,6 +231,7 @@ type applicationFactories struct {
 	roleRepositories            requestscope.RepositoryFactory[accessports.TenantRoleRepositories]
 	delegatedDeviceRepositories requestscope.RepositoryFactory[deviceports.DelegatedRepositories]
 	delegationRepositories      requestscope.RepositoryFactory[accessports.TenantDelegationRepositories]
+	notificationCatalogs        notificationCatalogSnapshot
 }
 
 var _ generatedassembly.ApplicationFactories = applicationFactories{}
@@ -260,6 +293,13 @@ func bindRuntimeWithSecurity(
 	workers ...*provisioningRunner,
 ) (generatedassembly.RuntimeBindings, error) {
 	config := options.DeviceOps
+	if options.notificationCatalogs.types == nil || options.notificationCatalogs.channels == nil {
+		catalogs, err := buildNotificationCatalogSnapshot(options.NotificationRuntime)
+		if err != nil {
+			return generatedassembly.RuntimeBindings{}, err
+		}
+		options.notificationCatalogs = catalogs
+	}
 	deviceContext, err := provider.ForModule(deviceops.GeneratedDescriptor())
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: deviceops capabilities: %w", err)
@@ -292,15 +332,35 @@ func bindRuntimeWithSecurity(
 		return generatedassembly.RuntimeBindings{}, err
 	}
 	var memberAppeals *accesspersistence.MemberAppealService
+	var selfSecurity *accesspersistence.TenantSelfSecurityService
+	var memberPasswordRecovery *accesspersistence.TenantMemberPasswordRecoveryService
+	if verificationProtection != nil && protection != nil && options.VerificationSecurity.Enabled() {
+		selfSecurity, err = accesspersistence.NewTenantSelfSecurityService(
+			accessDatabase,
+			protection,
+			verificationProtection,
+			options.VerificationSecurity.Policy(),
+		)
+		if err != nil {
+			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: tenant self security service: %w", err)
+		}
+	}
 	if verificationProtection != nil {
 		memberAppeals, err = accesspersistence.NewMemberAppealService(accessDatabase, protection, verificationProtection)
 		if err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: member appeal service: %w", err)
 		}
+		memberPasswordRecovery, err = accesspersistence.NewTenantMemberPasswordRecoveryService(accessDatabase, protection, verificationProtection)
+		if err != nil {
+			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: tenant member password recovery service: %w", err)
+		}
 	}
 	if config.AutoMigrate {
 		if err := accessStore.AutoMigrate(ctx); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: access migrate: %w", err)
+		}
+		if err := migrateNotificationConfigurations(ctx, accessDatabase); err != nil {
+			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: notification configuration migrate: %w", err)
 		}
 		if err := accesspersistence.AutoMigrateTenantDepartment(ctx, accessDatabase); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: tenant department migrate: %w", err)
@@ -390,6 +450,8 @@ func bindRuntimeWithSecurity(
 	if options.WebAuth.Enabled() {
 		webAuth.setStore(accessStore)
 		webAuth.setMemberAppeals(memberAppeals)
+		webAuth.setSelfSecurity(selfSecurity)
+		webAuth.setMemberPasswordRecovery(memberPasswordRecovery)
 		if err := webAuth.bootstrapPlatformIdentity(ctx); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: OIDC platform identity bootstrap: %w", err)
 		}
@@ -524,7 +586,9 @@ func bindRuntimeWithSecurity(
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
-	authenticator.set(accessStore)
+	if err := authenticator.set(ctx, accessStore); err != nil {
+		return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: service api authentication bind: %w", err)
+	}
 	var worker *provisioningRunner
 	if len(workers) == 1 {
 		worker = workers[0]
@@ -547,20 +611,28 @@ func bindRuntimeWithSecurity(
 			roleRepositories:            roleRepositories,
 			delegatedDeviceRepositories: delegatedDeviceRepositories,
 			delegationRepositories:      delegationRepositories,
+			notificationCatalogs:        options.notificationCatalogs,
 		},
 		Executor: executor,
 	}, nil
 }
 
 type runtimeAuthenticator struct {
-	mu    sync.RWMutex
-	store *accesspersistence.Store
+	mu      sync.RWMutex
+	store   *accesspersistence.Store
+	service *serviceAPIAuthenticator
 }
 
-func (authenticator *runtimeAuthenticator) set(store *accesspersistence.Store) {
+func (authenticator *runtimeAuthenticator) set(ctx context.Context, store *accesspersistence.Store) error {
+	if authenticator.service != nil {
+		if err := authenticator.service.bind(ctx, store); err != nil {
+			return err
+		}
+	}
 	authenticator.mu.Lock()
 	authenticator.store = store
 	authenticator.mu.Unlock()
+	return nil
 }
 
 func (authenticator *runtimeAuthenticator) authenticate(ctx context.Context, raw string) (identity.Principal, error) {
@@ -615,8 +687,18 @@ func httpAuthentication(authenticator *runtimeAuthenticator, webAuth *runtimeWeb
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		var principal identity.Principal
 		var err error
-		if raw := parseBearer(request.Header.Get("Authorization")); raw != "" {
+		serviceHeaders := serviceAPISignedHeadersPresent(request)
+		if serviceHeaders {
+			if authenticator == nil || authenticator.service == nil {
+				writeServiceAPIAuthenticationFailure(writer, errServiceAPIInvalidRequest)
+				return
+			}
+			principal, err = authenticator.service.authenticate(request)
+		} else if raw := parseBearer(request.Header.Get("Authorization")); raw != "" {
 			principal, err = authenticator.authenticate(request.Context(), raw)
+			if err == nil && principal.TenantID == "" && principal.UserID == "" && authenticator.service != nil && authenticator.service.requiresSignature(request) {
+				err = errServiceAPIMissingSignature
+			}
 		} else if webAuth != nil && webAuth.enabled() {
 			principal, err = webAuth.authenticateAPI(request)
 		} else {
@@ -627,6 +709,10 @@ func httpAuthentication(authenticator *runtimeAuthenticator, webAuth *runtimeWeb
 			return
 		}
 		if err != nil {
+			if serviceHeaders || errors.Is(err, errServiceAPIMissingSignature) || errors.Is(err, errServiceAPIInvalidRequest) || errors.Is(err, errServiceAPIStaleRequest) || errors.Is(err, errServiceAPIReplay) || errors.Is(err, errServiceAPIUnavailable) {
+				writeServiceAPIAuthenticationFailure(writer, err)
+				return
+			}
 			http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 			return
 		}

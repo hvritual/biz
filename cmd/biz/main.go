@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -95,6 +97,21 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	verificationSecurity, err := verificationSecurityConfigFromEnv()
+	if err != nil {
+		return err
+	}
+	notificationRuntime, err := notificationRuntimeConfiguration()
+	if err != nil {
+		return err
+	}
+	serviceAPIAuth, err := serviceAPIAuthConfiguration()
+	if err != nil {
+		return err
+	}
+	if verificationSecurity.Enabled() && verificationProtection == nil {
+		return errors.New("verification security policy requires verification protection keys")
+	}
 	memberActivationTTL := envDuration("YUNKA_BIZ_MEMBER_ACTIVATION_TTL", 0)
 	memberActivationURL := strings.TrimSpace(os.Getenv("YUNKA_BIZ_MEMBER_ACTIVATION_URL"))
 	if memberActivationTTL > 0 && verificationProtection == nil {
@@ -125,12 +142,15 @@ func run() error {
 		return err
 	}
 	runtimeOptions := bizruntime.Options{
-		DeviceOps:           config,
-		CommercialLifecycle: lifecycle,
-		ProvisioningWorker:  bizruntime.ProvisioningWorkerOptions{Token: workerToken, Automatic: workerToken != ""},
-		WebAuth:             webAuth,
-		MemberActivationTTL: memberActivationTTL,
-		MemberActivationURL: memberActivationURL,
+		DeviceOps:            config,
+		CommercialLifecycle:  lifecycle,
+		ServiceAPIAuth:       serviceAPIAuth,
+		ProvisioningWorker:   bizruntime.ProvisioningWorkerOptions{Token: workerToken, Automatic: workerToken != ""},
+		WebAuth:              webAuth,
+		VerificationSecurity: verificationSecurity,
+		NotificationRuntime:  notificationRuntime,
+		MemberActivationTTL:  memberActivationTTL,
+		MemberActivationURL:  memberActivationURL,
 	}
 	var started *bizruntime.Started
 	if verificationProtection != nil {
@@ -220,4 +240,153 @@ func envDuration(name string, fallback time.Duration) time.Duration {
 		return fallback
 	}
 	return parsed
+}
+
+func notificationRuntimeConfiguration() (bizruntime.NotificationRuntimeOptions, error) {
+	rawSecret := strings.TrimSpace(os.Getenv("YUNKA_BIZ_NOTIFICATION_CALLBACK_HMAC_KEY_B64"))
+	var secret []byte
+	if rawSecret != "" {
+		decoded, err := base64.StdEncoding.DecodeString(rawSecret)
+		if err != nil {
+			return bizruntime.NotificationRuntimeOptions{}, errors.New("invalid YUNKA_BIZ_NOTIFICATION_CALLBACK_HMAC_KEY_B64")
+		}
+		secret = decoded
+	}
+	var channels []string
+	for _, raw := range strings.Split(strings.TrimSpace(os.Getenv("YUNKA_BIZ_NOTIFICATION_CHANNELS")), ",") {
+		if channel := strings.TrimSpace(raw); channel != "" {
+			channels = append(channels, channel)
+		}
+	}
+	config := bizruntime.NotificationRuntimeOptions{
+		ProviderEndpoint:     strings.TrimSpace(os.Getenv("YUNKA_BIZ_NOTIFICATION_PROVIDER_ENDPOINT")),
+		ProviderBearerToken:  os.Getenv("YUNKA_BIZ_NOTIFICATION_PROVIDER_BEARER_TOKEN"),
+		ProviderIdempotent:   envBool("YUNKA_BIZ_NOTIFICATION_PROVIDER_IDEMPOTENT", false),
+		Channels:             channels,
+		CallbackHMACSecret:   secret,
+		PollInterval:         envDuration("YUNKA_BIZ_NOTIFICATION_POLL_INTERVAL", 100*time.Millisecond),
+		RoutingLeaseDuration: envDuration("YUNKA_BIZ_NOTIFICATION_ROUTING_LEASE", time.Minute),
+	}
+	if err := config.Validate(); err != nil {
+		return bizruntime.NotificationRuntimeOptions{}, err
+	}
+	return config, nil
+}
+
+func verificationSecurityConfigFromEnv() (bizruntime.VerificationSecurityConfig, error) {
+	maxSends, err := envOptionalInt("YUNKA_BIZ_VERIFICATION_MAX_SENDS_PER_WINDOW")
+	if err != nil {
+		return bizruntime.VerificationSecurityConfig{}, err
+	}
+	maxTries, err := envOptionalInt("YUNKA_BIZ_VERIFICATION_MAX_TRIES")
+	if err != nil {
+		return bizruntime.VerificationSecurityConfig{}, err
+	}
+	codeDigits, err := envOptionalInt("YUNKA_BIZ_VERIFICATION_CODE_DIGITS")
+	if err != nil {
+		return bizruntime.VerificationSecurityConfig{}, err
+	}
+	config := bizruntime.VerificationSecurityConfig{
+		CodeTTL:              envOptionalDuration("YUNKA_BIZ_VERIFICATION_CODE_TTL"),
+		AuthorizationTTL:     envOptionalDuration("YUNKA_BIZ_VERIFICATION_AUTHORIZATION_TTL"),
+		ResendInterval:       envOptionalDuration("YUNKA_BIZ_VERIFICATION_RESEND_INTERVAL"),
+		SendLimitWindow:      envOptionalDuration("YUNKA_BIZ_VERIFICATION_SEND_LIMIT_WINDOW"),
+		MaxSendsPerWindow:    maxSends,
+		MaxVerificationTries: maxTries,
+		CodeDigits:           codeDigits,
+		Notification: bizruntime.SecurityNotificationProviderConfig{
+			Provider:      strings.TrimSpace(os.Getenv("YUNKA_BIZ_SECURITY_NOTIFICATION_PROVIDER")),
+			Endpoint:      strings.TrimSpace(os.Getenv("YUNKA_BIZ_SECURITY_NOTIFICATION_ENDPOINT")),
+			SenderID:      strings.TrimSpace(os.Getenv("YUNKA_BIZ_SECURITY_NOTIFICATION_SENDER_ID")),
+			CredentialRef: strings.TrimSpace(os.Getenv("YUNKA_BIZ_SECURITY_NOTIFICATION_CREDENTIAL_REF")),
+		},
+	}
+	if err := config.Validate(); err != nil {
+		return bizruntime.VerificationSecurityConfig{}, err
+	}
+	return config, nil
+}
+
+func envOptionalDuration(name string) time.Duration {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return 0
+	}
+	parsed, err := time.ParseDuration(value)
+	if err != nil || parsed < 0 {
+		return -1
+	}
+	return parsed
+}
+
+func envOptionalInt(name string) (int, error) {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return 0, nil
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed < 0 {
+		return 0, fmt.Errorf("invalid %s", name)
+	}
+	return parsed, nil
+}
+
+type serviceAPICredentialEnv struct {
+	KeyID      string   `json:"key_id"`
+	Subject    string   `json:"subject"`
+	TenantID   string   `json:"tenant_id,omitempty"`
+	SecretB64  string   `json:"secret_b64"`
+	Operations []string `json:"operations"`
+	NotBefore  string   `json:"not_before,omitempty"`
+	ExpiresAt  string   `json:"expires_at,omitempty"`
+}
+
+func serviceAPIAuthConfiguration() (bizruntime.ServiceAPIAuthConfig, error) {
+	raw := strings.TrimSpace(os.Getenv("YUNKA_BIZ_SERVICE_API_CREDENTIALS_JSON"))
+	if raw == "" {
+		return bizruntime.ServiceAPIAuthConfig{}, nil
+	}
+	var values []serviceAPICredentialEnv
+	if err := json.Unmarshal([]byte(raw), &values); err != nil {
+		return bizruntime.ServiceAPIAuthConfig{}, errors.New("invalid YUNKA_BIZ_SERVICE_API_CREDENTIALS_JSON")
+	}
+	config := bizruntime.ServiceAPIAuthConfig{
+		ClockSkew: envOptionalDuration("YUNKA_BIZ_SERVICE_API_CLOCK_SKEW"),
+	}
+	for _, value := range values {
+		secret, err := base64.StdEncoding.DecodeString(strings.TrimSpace(value.SecretB64))
+		if err != nil {
+			return bizruntime.ServiceAPIAuthConfig{}, errors.New("invalid service api secret_b64")
+		}
+		notBefore, err := optionalRFC3339(value.NotBefore)
+		if err != nil {
+			return bizruntime.ServiceAPIAuthConfig{}, fmt.Errorf("invalid service api not_before: %w", err)
+		}
+		expiresAt, err := optionalRFC3339(value.ExpiresAt)
+		if err != nil {
+			return bizruntime.ServiceAPIAuthConfig{}, fmt.Errorf("invalid service api expires_at: %w", err)
+		}
+		config.Credentials = append(config.Credentials, bizruntime.ServiceAPICredentialConfig{
+			KeyID: strings.TrimSpace(value.KeyID), Subject: strings.TrimSpace(value.Subject),
+			TenantID: strings.TrimSpace(value.TenantID), Secret: secret,
+			Operations: append([]string(nil), value.Operations...), NotBefore: notBefore, ExpiresAt: expiresAt,
+		})
+	}
+	if err := config.Validate(); err != nil {
+		return bizruntime.ServiceAPIAuthConfig{}, err
+	}
+	return config, nil
+}
+
+func optionalRFC3339(raw string) (*time.Time, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
+	}
+	value, err := time.Parse(time.RFC3339, raw)
+	if err != nil {
+		return nil, err
+	}
+	value = value.UTC()
+	return &value, nil
 }

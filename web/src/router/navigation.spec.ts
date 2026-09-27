@@ -38,14 +38,15 @@ describe('primary navigation information architecture', () => {
   })
 
   it('keeps enterprise center aligned with the approved functional entries and terminology', () => {
-    expect(enterpriseNavigation.map((item) => item.id)).toEqual(['members', 'roles', 'organization', 'plan', 'company', 'branding', 'logs'])
-    expect(enterpriseNavigation.map((item) => item.label)).toEqual(['成员管理', '角色权限', '组织架构', '套餐额度', '企业信息', '品牌与主题', '操作日志'])
+    expect(enterpriseNavigation.map((item) => item.id)).toEqual(['personal', 'members', 'roles', 'organization', 'plan', 'company', 'branding', 'logs'])
+    expect(enterpriseNavigation.map((item) => item.label)).toEqual(['个人中心', '成员管理', '角色权限', '组织架构', '套餐额度', '企业信息', '品牌与主题', '操作日志'])
   })
 
 
   it('binds every enterprise route and quick action to stable server action codes', () => {
     expect(enterpriseNavigation.every((item) => item.authorizationActions?.length === 1)).toBe(true)
     expect(enterpriseNavigation.map((item) => [item.id, item.authorizationActions?.[0]])).toEqual([
+      ['personal', 'tenant.member.personal_profile.get'],
       ['members', 'tenant.member.list'],
       ['roles', 'tenant.role.list'],
       ['organization', 'tenant.department.list'],

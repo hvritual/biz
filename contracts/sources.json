@@ -19,7 +19,8 @@
         "commercial/v1/subscription.proto",
         "commercial/v1/subscription_change.proto",
         "deviceops/v1/delegated_device_access.proto",
-        "deviceops/v1/deviceops.proto"
+        "deviceops/v1/deviceops.proto",
+        "notification/v1/configuration.proto"
       ],
       "protoPaths": [
         "contracts/third_party"

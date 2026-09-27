@@ -118,6 +118,11 @@ export const router = createRouter({
       meta: { title: '商业审计', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', lifecycleKey: 'audit' },
     },
     {
+      path: '/enterprise/personal-profile',
+      component: () => import('@/features/enterprise/pages/PersonalProfileView.vue'),
+      meta: { title: '个人中心', module: 'enterprise', surface: 'tenant', pageTemplate: 'FormPage', authorizationActions: ['tenant.member.personal_profile.get'] },
+    },
+    {
       path: '/enterprise/members',
       component: () => import('@/features/enterprise/pages/MembersView.vue'),
       meta: { title: '成员管理', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage', authorizationActions: ['tenant.member.list'] },
@@ -151,6 +156,14 @@ export const router = createRouter({
       path: '/enterprise/logs',
       component: () => import('@/features/enterprise/pages/AuditLogsView.vue'),
       meta: { title: '操作日志', module: 'enterprise', surface: 'tenant', pageTemplate: 'ListPage', authorizationActions: ['access.audit.list'] },
+    },
+    {
+      path: '/system/notifications',
+      component: () => import('@/features/system/pages/SettingsView.vue'),
+      meta: {
+        title: '通知设置', module: 'system', surface: 'tenant', pageTemplate: 'FormPage',
+        settingsSection: 'notifications', authorizationActions: ['notification.configuration.list'],
+      },
     },
     {
       path: '/system/:section(general|notifications|security|integrations|dictionary)',

@@ -29,6 +29,8 @@ jobs:
       ce_receipts: ${{ steps.route.outputs.ce_receipts }}
       web_e2e_harness: ${{ steps.route.outputs.web_e2e_harness }}
       web_product: ${{ steps.route.outputs.web_product }}
+      coffeelink_governance: ${{ steps.route.outputs.coffeelink_governance }}
+      ce13_governance: ${{ steps.route.outputs.ce13_governance }}
       role_grants: ${{ steps.route.outputs.role_grants }}
       enterprise180: ${{ steps.route.outputs.enterprise180 }}
     steps:
@@ -73,9 +75,23 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin "$BASE_SHA" --depth=1
+          python3 -m pip install --disable-pip-version-check -q PyYAML==6.0.3
+          if git cat-file -e "$BASE_SHA:scripts/check_ci_source_safety.py" 2>/dev/null; then
+            git show "$BASE_SHA:scripts/check_ci_source_safety.py" > "$RUNNER_TEMP/base-ci-source-safety.py"
+            python3 "$RUNNER_TEMP/base-ci-source-safety.py" --root "$GITHUB_WORKSPACE" --base-ref "$BASE_SHA"
+          fi
+          python3 scripts/check_ci_source_safety.py --base-ref "$BASE_SHA"
+          python3 scripts/test_ci_access_qualification.py
+          python3 scripts/test_ci_source_safety.py
+          python3 scripts/test_literal_patch.py
+          python3 scripts/test_delivery_progress.py
           python3 scripts/check_ci_topology.py --base-ref "$BASE_SHA"
           python3 scripts/ci_proof_governance.py check --base-ref "$BASE_SHA" --output "$RUNNER_TEMP/ci-proof-contract.json"
           python3 scripts/test_ci_proof_governance.py
+          python3 scripts/ci_commercial_runtime.py check
+          python3 scripts/test_ci_commercial_runtime.py
+          python3 scripts/check_ci_ce13.py
+          python3 scripts/test_ci_ce13_runtime.py
           python3 scripts/delivery_execution.py validate-contract
           python3 scripts/test_delivery_execution.py
           python3 scripts/candidate_lifecycle.py validate-contract
@@ -109,6 +125,27 @@ jobs:
         with:
           name: enterprise180-admission-pr-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/enterprise180-admission.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Preserve exact candidate source for reproducible review
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          mkdir -p "$RUNNER_TEMP/delivery-source"
+          git archive --format=tar.gz --output="$RUNNER_TEMP/delivery-source/candidate-source.tar.gz" HEAD
+          git ls-tree -r HEAD > "$RUNNER_TEMP/delivery-source/tree.txt"
+          printf 'candidate_sha=%s\ncandidate_tree=%s\n' "$CANDIDATE_SHA" "$(git rev-parse HEAD^{tree})" > "$RUNNER_TEMP/delivery-source/provenance.txt"
+          (cd "$RUNNER_TEMP/delivery-source" && sha256sum candidate-source.tar.gz tree.txt provenance.txt > SHA256SUMS)
+
+      - name: Retain tracked candidate source only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: delivery-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/delivery-source/
           if-no-files-found: error
           retention-days: 30
 
@@ -165,11 +202,11 @@ jobs:
 
   web-product:
     needs: [route, governance, fast-web]
-    if: needs.route.outputs.web_product == 'true' || startsWith(github.head_ref, 'chore/ci-coffeelink-')
+    if: needs.route.outputs.web_product == 'true' || needs.route.outputs.coffeelink_governance == 'true' || startsWith(github.head_ref, 'chore/ci-coffeelink-')
     uses: ./.github/workflows/coffeelink-web.yml
     with:
       skip_fast_check: true
-      enforce_performance: ${{ startsWith(github.head_ref, 'chore/ci-coffeelink-') }}
+      enforce_performance: ${{ needs.route.outputs.coffeelink_governance == 'true' || startsWith(github.head_ref, 'chore/ci-coffeelink-') }}
       performance_target_seconds: 180
       performance_hard_seconds: 240
 
@@ -185,6 +222,24 @@ jobs:
     with:
       enforce_performance: true
       performance_target_seconds: 150
+      performance_hard_seconds: 180
+
+  commercial-batch-ce13-plan:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.ce13_governance == 'true' || startsWith(github.head_ref, 'chore/ci-proof-ce13-')
+    uses: ./.github/workflows/ce13-plan-catalog-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
+      performance_hard_seconds: 180
+
+  commercial-batch-ce13-session:
+    needs: [route, governance, fast-web]
+    if: needs.route.outputs.ce13_governance == 'true' || startsWith(github.head_ref, 'chore/ci-proof-ce13-')
+    uses: ./.github/workflows/ce13-platform-web-session.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
       performance_hard_seconds: 180
 
   core-static:
@@ -215,3 +270,39 @@ jobs:
       enforce_performance: ${{ startsWith(github.head_ref, 'chore/ci-evolution-') }}
       performance_target_seconds: 240
       performance_hard_seconds: 300
+
+  commercial-batch-ce04:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-proof-commercial-')
+    uses: ./.github/workflows/ce04-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
+      performance_hard_seconds: 150
+
+  commercial-batch-ce05:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-proof-commercial-')
+    uses: ./.github/workflows/ce05-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
+      performance_hard_seconds: 180
+
+  commercial-batch-ce06:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-proof-commercial-')
+    uses: ./.github/workflows/ce06-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
+      performance_hard_seconds: 180
+
+  commercial-batch-ce07:
+    needs: [route, governance, fast-web]
+    if: startsWith(github.head_ref, 'chore/ci-proof-commercial-')
+    uses: ./.github/workflows/ce07-qualification.yml
+    with:
+      enforce_performance: true
+      performance_target_seconds: 120
+      performance_hard_seconds: 180

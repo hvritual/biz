@@ -14,17 +14,18 @@ func (err tenantMemberSpecificConflict) Error() string { return err.message }
 func (tenantMemberSpecificConflict) Unwrap() error     { return ErrTenantMemberConflict }
 
 var (
-	ErrTenantMemberNotFound              = errors.New("access: tenant member not found")
-	ErrTenantMemberConflict              = errors.New("access: tenant member version conflict")
-	ErrTenantMemberExists                = errors.New("access: tenant member already exists")
-	ErrTenantMemberUsernameConflict      = tenantMemberSpecificConflict{message: "access: tenant member username conflicts with another account"}
-	ErrTenantMemberContactConflict       = tenantMemberSpecificConflict{message: "access: tenant member contact conflicts with another account"}
-	ErrTenantMemberActivationUnavailable = errors.New("access: tenant member activation is unavailable")
-	ErrTenantMemberExistingAccountSMS    = errors.New("access: existing account must not receive a new initial password")
-	ErrTenantMemberActivationPending     = errors.New("access: member must complete pending activation")
-	ErrTenantMemberSelfDeactivation      = errors.New("access: member must not deactivate own membership")
-	ErrTenantMemberProtectedOwner        = errors.New("access: protected owner requires owner actor")
-	ErrTenantMemberRestoreUnavailable    = errors.New("access: removed member cannot be restored safely")
+	ErrTenantMemberNotFound                 = errors.New("access: tenant member not found")
+	ErrTenantMemberConflict                 = errors.New("access: tenant member version conflict")
+	ErrTenantMemberExists                   = errors.New("access: tenant member already exists")
+	ErrTenantMemberUsernameConflict         = tenantMemberSpecificConflict{message: "access: tenant member username conflicts with another account"}
+	ErrTenantMemberContactConflict          = tenantMemberSpecificConflict{message: "access: tenant member contact conflicts with another account"}
+	ErrTenantMemberActivationUnavailable    = errors.New("access: tenant member activation is unavailable")
+	ErrTenantMemberExistingAccountSMS       = errors.New("access: existing account must not receive a new initial password")
+	ErrTenantMemberActivationPending        = errors.New("access: member must complete pending activation")
+	ErrTenantMemberSelfDeactivation         = errors.New("access: member must not deactivate own membership")
+	ErrTenantMemberProtectedOwner           = errors.New("access: protected owner requires owner actor")
+	ErrTenantMemberRestoreUnavailable       = errors.New("access: removed member cannot be restored safely")
+	ErrTenantMemberBusinessScopeUnavailable = errors.New("access: tenant member business scope is unavailable")
 )
 
 type tenantMemberListStatusQueryKey struct{}
@@ -93,7 +94,13 @@ type TenantMemberListPage struct {
 	Total   uint64
 }
 
+type TenantPersonalProfileRepository interface {
+	GetPersonalProfile(context.Context, string, string) (domain.PersonalProfile, error)
+	UpdatePersonalAvatar(context.Context, string, string, uint64, string, time.Time) (domain.PersonalProfile, error)
+}
+
 type TenantMemberRepository interface {
+	TenantPersonalProfileRepository
 	Invite(context.Context, string, string, string, time.Time) (domain.Membership, error)
 	Create(context.Context, string, TenantMemberCreateInput, time.Time) (domain.Membership, bool, error)
 	Bootstrap(context.Context, string, string, string, time.Time) (domain.Membership, error)
@@ -106,6 +113,11 @@ type TenantMemberRepository interface {
 	Restore(context.Context, *domain.Membership, uint64) ([]string, error)
 }
 
+type TenantMemberBusinessScopeRepository interface {
+	GetBusinessScope(context.Context, string, string) (domain.MemberBusinessScope, error)
+	ReplaceBusinessScope(context.Context, string, string, uint64, []string, time.Time) (domain.MemberBusinessScope, error)
+}
+
 type TenantMemberLifecycleNotificationRepository interface {
 	Notify(context.Context, TenantMemberLifecycleNotificationInput) (domain.NotificationDeliveryReceipt, error)
 }
@@ -116,7 +128,8 @@ type TenantMemberActivationRepository interface {
 }
 
 type TenantMemberRepositories struct {
-	Member     TenantMemberRepository
-	Activation TenantMemberActivationRepository
-	Lifecycle  TenantMemberLifecycleNotificationRepository
+	Member        TenantMemberRepository
+	BusinessScope TenantMemberBusinessScopeRepository
+	Activation    TenantMemberActivationRepository
+	Lifecycle     TenantMemberLifecycleNotificationRepository
 }

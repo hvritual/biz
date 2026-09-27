@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "suites": [
+    {
+      "id": "tenant-lifecycle",
+      "tests": [
+        {
+          "name": "TestB122TenantLifecycleUsesRootMySQLUnitOfWork",
+          "file": "integration/b12_tenant_lifecycle_mysql_test.go"
+        },
+        {
+          "name": "TestB122SuspendedTenantCredentialFailsAuthentication",
+          "file": "integration/b12_tenant_lifecycle_mysql_test.go"
+        },
+        {
+          "name": "TestB122TenantLifecycleRESTAndGRPCUseUnifiedExecutor",
+          "file": "integration/b12_tenant_runtime_mysql_test.go"
+        }
+      ]
+    },
+    {
+      "id": "personal-profile",
+      "tests": [
+        {
+          "name": "TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled",
+          "file": "integration/enterprise_181_personal_profile_mysql_test.go"
+        }
+      ]
+    },
+    {
+      "id": "tenant-self-security",
+      "tests": [
+        {
+          "name": "TestEnterprise182DeliveredContactChallengeIsIndependentOfNotificationStorage",
+          "file": "integration/enterprise_182_delivery_independence_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise182ContactChangeAndTenantDeletionAreSelfOnlyAtomicAndTenantScoped",
+          "file": "integration/enterprise_182_self_security_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise182ConcurrentContactOTPConsumptionAllowsOneMutation",
+          "file": "integration/enterprise_182_self_security_mysql_test.go"
+        }
+      ]
+    },
+    {
+      "id": "personal-notification-preferences",
+      "tests": [
+        {
+          "name": "TestEnterprise183NotificationPreferencesMySQLAndHTTP",
+          "file": "integration/enterprise_183_notification_preferences_mysql_test.go"
+        }
+      ]
+    },
+    {
+      "id": "notification-directory",
+      "tests": [
+        {
+          "name": "TestEnterprise184NotificationDirectoryUsesCurrentTenantAndRootLocks",
+          "file": "integration/enterprise_184_directory_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise184NotificationSiteDirectoryUsesCurrentScopesAndRootLocks",
+          "file": "integration/enterprise_184_site_directory_mysql_test.go"
+        }
+      ]
+    },
+    {
+      "id": "notification-configuration",
+      "tests": [
+        {
+          "name": "TestEnterprise184ConfigurationStorageAndAccessDirectory",
+          "file": "integration/enterprise_184_configuration_storage_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise184NotificationConfigurationRealRuntime",
+          "file": "integration/enterprise_184_notification_runtime_mysql_test.go"
+        }
+      ]
+    },
+    {
+      "id": "notification-delivery",
+      "tests": [
+        {
+          "name": "TestEnterprise185ReliableSecurityNotificationLeasesRetriesAndRecovery",
+          "file": "integration/enterprise_185_reliable_notification_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185BusinessEventRoutingUsesConfigurationRecipientsAndPreferences",
+          "file": "integration/enterprise_185_routing_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185ExternalDeliveryRechecksPreferenceAndProtectedContact",
+          "file": "integration/enterprise_185_external_delivery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185IdentityLifecycleOutboxCommitsBeforeReliableWorkerDelivery",
+          "file": "integration/enterprise_185_identity_lifecycle_delivery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185MemberHTTPActionsPublishOnlyLifecycleEvents",
+          "file": "integration/enterprise_185_member_http_delivery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185InitialCredentialHTTPRequestsReachReliableWorker",
+          "file": "integration/enterprise_185_member_http_delivery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185LoginAndRecoveryHTTPEntrypointsReachReliableWorker",
+          "file": "integration/enterprise_185_identity_http_delivery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185ContactAndDeletionBFFEventsReachReliableWorker",
+          "file": "integration/enterprise_185_self_security_http_delivery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185AppealBFFTargetsOnlyCurrentTenantOwners",
+          "file": "integration/enterprise_185_self_security_http_delivery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185ReadOnlyRoleCannotTriggerLifecycleOutbox",
+          "file": "integration/b12_role_runtime_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185HTTPProviderCallbackPersistsExactTerminalState",
+          "file": "integration/enterprise_185_http_provider_callback_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185NotificationRuntimeComponentRoutesDeliversAndCallbacks",
+          "file": "integration/enterprise_185_notification_runtime_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185InAppLatency1000Within60Seconds",
+          "file": "integration/enterprise_185_in_app_latency_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185AdminPasswordRecoveryRequestQueuesOnlySelfServiceNotification",
+          "file": "integration/enterprise_185_admin_recovery_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise186InAppUnreadInboxMySQLAndHTTP",
+          "file": "integration/enterprise_186_inbox_mysql_test.go"
+        }
+      ]
+    },
+    {
+      "id": "service-api-security",
+      "tests": [
+        {
+          "name": "TestEnterprise187ServiceAPIHMACReplayAndScope",
+          "file": "integration/enterprise_187_service_api_hmac_mysql_test.go"
+        }
+      ]
+    }
+  ]
+}

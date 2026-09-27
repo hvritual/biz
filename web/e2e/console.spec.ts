@@ -16,6 +16,20 @@ async function ready(page: Page, path = '/enterprise/members') {
   await page.evaluate(() => document.fonts.ready)
 }
 
+async function ensurePrimaryNavigationCollapsed(page: Page, collapsed: boolean) {
+  const collapse = page.getByRole('button', { name: '收起一级菜单', exact: true })
+  const expand = page.getByRole('button', { name: '展开一级菜单', exact: true })
+  if (collapsed) {
+    if (await collapse.isVisible()) await collapse.click()
+    await expect(expand).toBeVisible()
+    expect(Math.round((await page.locator('.primary-nav').boundingBox())?.width ?? 0)).toBe(68)
+    return
+  }
+  if (await expand.isVisible()) await expand.click()
+  await expect(collapse).toBeVisible()
+  expect(Math.round((await page.locator('.primary-nav').boundingBox())?.width ?? 0)).toBeGreaterThan(68)
+}
+
 test('480px flyout is joined, overlays without reflow, no submenu arrows, and supports Escape', async ({
   page,
 }) => {
@@ -197,11 +211,13 @@ test('visual gallery: native viewport, menu, collapsed and all implemented pages
   await openMenu(page)
   await page.screenshot({ path: `${screenDir}/02-overlay-menu-480.png` })
   await page.keyboard.press('Escape')
-  await page.getByRole('button', { name: '收起一级菜单', exact: true }).click()
+  // fullPage screenshots can temporarily cross the responsive breakpoint in Chromium.
+  // Normalize the intended state instead of assuming the rail stayed expanded.
+  await ensurePrimaryNavigationCollapsed(page, true)
   await openMenu(page)
   await page.screenshot({ path: `${screenDir}/03-collapsed-menu.png` })
   await page.keyboard.press('Escape')
-  await page.getByRole('button', { name: '展开一级菜单', exact: true }).click()
+  await ensurePrimaryNavigationCollapsed(page, false)
   for (const [path, file] of [
     ['/dashboard', '04-workbench'],
     ['/enterprise/roles', '05-roles'],

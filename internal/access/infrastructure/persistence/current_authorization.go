@@ -101,6 +101,13 @@ func (store *Store) ResolveCurrentGrants(ctx context.Context, tenantID, userID s
 		}
 		result = append(result, implicit...)
 	}
+	if currentGrantRequestsPermission(permissions, "tenant.personal_profile.self") {
+		implicit, err := store.resolvePersonalProfileSelfGrant(ctx, tenantID, userID)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, implicit...)
+	}
 	sort.Slice(result, func(i, j int) bool {
 		if result[i].Permission == result[j].Permission {
 			return result[i].RoleID < result[j].RoleID
@@ -108,6 +115,27 @@ func (store *Store) ResolveCurrentGrants(ctx context.Context, tenantID, userID s
 		return result[i].Permission < result[j].Permission
 	})
 	return result, nil
+}
+
+func (store *Store) resolvePersonalProfileSelfGrant(ctx context.Context, tenantID, userID string) ([]authz.Grant, error) {
+	tenantID, userID = strings.TrimSpace(tenantID), strings.TrimSpace(userID)
+	if tenantID == "" || userID == "" {
+		return nil, nil
+	}
+	var count int64
+	err := store.database.WithContext(ctx).Table("biz_memberships AS m").
+		Joins("JOIN biz_tenants AS t ON t.id = m.tenant_id AND t.status = ?", accessdomain.TenantStatusActive).
+		Joins("JOIN biz_users AS u ON u.id = m.user_id AND u.status = ?", "active").
+		Where("m.tenant_id = ? AND m.user_id = ? AND m.status = ?", tenantID, userID, accessdomain.TenantMemberStatusActive).
+		Count(&count).Error
+	if err != nil || count != 1 {
+		return nil, err
+	}
+	return []authz.Grant{{
+		Permission: "tenant.personal_profile.self",
+		RoleID:     "membership:" + tenantID + ":" + userID,
+		Scope:      "self",
+	}}, nil
 }
 
 func currentGrantRequestsPermission(permissions []authz.PermissionKey, expected authz.PermissionKey) bool {

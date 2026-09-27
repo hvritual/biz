@@ -12,6 +12,16 @@ import (
 )
 
 func applyDeviceDataScope(query *gorm.DB, scope devicesecurity.Scope) *gorm.DB {
+	// The policy ceiling is ANDed before the legacy ALL/SELF/SITES union.
+	// Site existence/tenant ownership is checked here by its owning domain,
+	// including sites retired after a policy/member assignment was saved.
+	if scope.PolicyBound {
+		if scope.TenantID == "" || len(scope.PolicySiteIDs) == 0 {
+			return query.Where("1 = 0")
+		}
+		query = query.Where("site_id IN ?", scope.PolicySiteIDs).
+			Where("site_id IN (SELECT id FROM biz_deviceops_site WHERE tenant_id = ?)", scope.TenantID)
+	}
 	if scope.All {
 		return query
 	}

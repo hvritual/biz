@@ -15,6 +15,7 @@ import {
   authorizationApiMode,
   currentAuthorizationAllows,
   currentAuthorizationAllowsAny,
+  currentAuthorizationMatchesSession,
   currentAuthorizationState,
   redirectToTrustedLogin,
 } from '@/services/runtime/authorization'
@@ -34,16 +35,23 @@ const protectedActions = computed(() =>
     : [],
 )
 const protectedRoute = computed(() => authorizationApiMode() && protectedActions.value.length > 0)
-const authorizationRenderable = computed(() => !protectedRoute.value || currentAuthorizationState.status === 'ready')
+const authorizationContextCurrent = computed(() => currentAuthorizationMatchesSession(store.session))
+const authorizationRenderable = computed(() =>
+  !protectedRoute.value || (currentAuthorizationState.status === 'ready' && authorizationContextCurrent.value),
+)
 
 watch(
-  [() => currentAuthorizationState.status, protectedActions] as const,
-  ([status, required]) => {
+  [() => currentAuthorizationState.status, protectedActions, authorizationContextCurrent] as const,
+  ([status, required, contextCurrent]) => {
     if (!authorizationApiMode() || !required.length) return
     if (status === 'unauthenticated') {
       redirectToTrustedLogin()
       return
     }
+    // During a tenant/session transition, authorization for the previous
+    // context may finish after the shell already moved on. It must never
+    // terminalize the route for the new trusted context.
+    if (!contextCurrent) return
     if (status === 'error') {
       void router.replace({ path: '/authorization-state', query: { reason: 'unavailable', from: route.fullPath } })
       return

@@ -41,6 +41,30 @@ func (w checkedMembers) CreateTenantMember(ctx context.Context, r *accessv1.Crea
 	v, err := w.inner.CreateTenantMember(ctx, r)
 	return v, enforcement.ExecutionError(ctx, "tenant.member.create", err)
 }
+func (w checkedMembers) GetMyPersonalProfile(ctx context.Context, r *accessv1.GetMyPersonalProfileRequest) (*accessv1.TenantPersonalProfileDTO, error) {
+	if err := enforcement.RequireExecuted(ctx, "tenant.member.personal_profile.get"); err != nil {
+		return nil, err
+	}
+	v, err := w.inner.GetMyPersonalProfile(ctx, r)
+	return v, enforcement.ExecutionError(ctx, "tenant.member.personal_profile.get", err)
+}
+
+func (w checkedMembers) ListMyPersonalAvatarOptions(ctx context.Context, r *accessv1.ListMyPersonalAvatarOptionsRequest) (*accessv1.ListMyPersonalAvatarOptionsResponse, error) {
+	if err := enforcement.RequireExecuted(ctx, "tenant.member.personal_profile.avatar_options"); err != nil {
+		return nil, err
+	}
+	v, err := w.inner.ListMyPersonalAvatarOptions(ctx, r)
+	return v, enforcement.ExecutionError(ctx, "tenant.member.personal_profile.avatar_options", err)
+}
+
+func (w checkedMembers) UpdateMyPersonalAvatar(ctx context.Context, r *accessv1.UpdateMyPersonalAvatarRequest) (*accessv1.TenantPersonalProfileDTO, error) {
+	if err := enforcement.RequireExecuted(ctx, "tenant.member.personal_profile.avatar_update"); err != nil {
+		return nil, err
+	}
+	v, err := w.inner.UpdateMyPersonalAvatar(ctx, r)
+	return v, enforcement.ExecutionError(ctx, "tenant.member.personal_profile.avatar_update", err)
+}
+
 func (w checkedMembers) GetTenantMember(ctx context.Context, r *accessv1.GetTenantMemberRequest) (*accessv1.TenantMemberDTO, error) {
 	if err := enforcement.RequireExecuted(ctx, "tenant.member.get"); err != nil {
 		return nil, err

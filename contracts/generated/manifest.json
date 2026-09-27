@@ -150,6 +150,16 @@
         "name": "deviceops",
         "version": "v1"
       }
+    },
+    {
+      "name": "contracts/proto/notification/v1/configuration.proto",
+      "package": "notification.v1",
+      "syntax": "proto3",
+      "goPackage": "github.com/hvritual/biz/contracts/gen/notification/v1;notificationv1",
+      "domain": {
+        "name": "notification",
+        "version": "v1"
+      }
     }
   ],
   "messages": [
@@ -406,6 +416,51 @@
       ],
       "dto": {
         "kind": "output"
+      }
+    },
+    {
+      "name": "CreateTenantDataPolicyRequest",
+      "fullName": "access.v1.CreateTenantDataPolicyRequest",
+      "fields": [
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "site_ids",
+          "jsonName": "siteIds",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "not_before",
+          "jsonName": "notBefore",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "jsonName": "expiresAt",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "policy_id",
+          "jsonName": "policyId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
       }
     },
     {
@@ -790,6 +845,14 @@
       }
     },
     {
+      "name": "GetMyPersonalProfileRequest",
+      "fullName": "access.v1.GetMyPersonalProfileRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "GetTenantAuditRecordRequest",
       "fullName": "access.v1.GetTenantAuditRecordRequest",
       "fields": [
@@ -809,6 +872,22 @@
       "name": "GetTenantBrandingRequest",
       "fullName": "access.v1.GetTenantBrandingRequest",
       "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "GetTenantDataPolicyRequest",
+      "fullName": "access.v1.GetTenantDataPolicyRequest",
+      "fields": [
+        {
+          "name": "policy_id",
+          "jsonName": "policyId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
       "dto": {
         "kind": "input"
       }
@@ -836,6 +915,22 @@
         {
           "name": "department_id",
           "jsonName": "departmentId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "GetTenantMemberBusinessScopeRequest",
+      "fullName": "access.v1.GetTenantMemberBusinessScopeRequest",
+      "fields": [
+        {
+          "name": "user_id",
+          "jsonName": "userId",
           "number": 1,
           "kind": "scalar",
           "type": "string"
@@ -956,6 +1051,31 @@
       }
     },
     {
+      "name": "ListMyPersonalAvatarOptionsRequest",
+      "fullName": "access.v1.ListMyPersonalAvatarOptionsRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListMyPersonalAvatarOptionsResponse",
+      "fullName": "access.v1.ListMyPersonalAvatarOptionsResponse",
+      "fields": [
+        {
+          "name": "options",
+          "jsonName": "options",
+          "number": 1,
+          "kind": "message",
+          "type": "access.v1.PersonalAvatarOptionDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "ListRemovedTenantMembersRequest",
       "fullName": "access.v1.ListRemovedTenantMembersRequest",
       "fields": [
@@ -1068,6 +1188,31 @@
       }
     },
     {
+      "name": "ListTenantDataPoliciesRequest",
+      "fullName": "access.v1.ListTenantDataPoliciesRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListTenantDataPoliciesResponse",
+      "fullName": "access.v1.ListTenantDataPoliciesResponse",
+      "fields": [
+        {
+          "name": "policies",
+          "jsonName": "policies",
+          "number": 1,
+          "kind": "message",
+          "type": "access.v1.TenantDataPolicyDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "ListTenantDelegationsRequest",
       "fullName": "access.v1.ListTenantDelegationsRequest",
       "fields": null,
@@ -1111,6 +1256,60 @@
           "kind": "message",
           "type": "access.v1.TenantDepartmentDTO",
           "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListTenantMemberScopeCandidatesRequest",
+      "fullName": "access.v1.ListTenantMemberScopeCandidatesRequest",
+      "fields": [
+        {
+          "name": "query",
+          "jsonName": "query",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListTenantMemberScopeCandidatesResponse",
+      "fullName": "access.v1.ListTenantMemberScopeCandidatesResponse",
+      "fields": [
+        {
+          "name": "candidates",
+          "jsonName": "candidates",
+          "number": 1,
+          "kind": "message",
+          "type": "access.v1.TenantMemberScopeCandidateDTO",
+          "repeated": true
+        },
+        {
+          "name": "total",
+          "jsonName": "total",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
         }
       ],
       "dto": {
@@ -1304,6 +1503,36 @@
       }
     },
     {
+      "name": "PersonalAvatarOptionDTO",
+      "fullName": "access.v1.PersonalAvatarOptionDTO",
+      "fields": [
+        {
+          "name": "asset_ref",
+          "jsonName": "assetRef",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tone",
+          "jsonName": "tone",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "RemoveTenantMemberRequest",
       "fullName": "access.v1.RemoveTenantMemberRequest",
       "fields": [
@@ -1364,6 +1593,29 @@
       }
     },
     {
+      "name": "RevokeTenantDataPolicyRequest",
+      "fullName": "access.v1.RevokeTenantDataPolicyRequest",
+      "fields": [
+        {
+          "name": "policy_id",
+          "jsonName": "policyId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "RevokeTenantDelegationRequest",
       "fullName": "access.v1.RevokeTenantDelegationRequest",
       "fields": [
@@ -1403,6 +1655,74 @@
           "number": 2,
           "kind": "scalar",
           "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "SetTenantMemberBusinessScopeRequest",
+      "fullName": "access.v1.SetTenantMemberBusinessScopeRequest",
+      "fields": [
+        {
+          "name": "user_id",
+          "jsonName": "userId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "site_ids",
+          "jsonName": "siteIds",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "SetTenantRoleDataPolicyRequest",
+      "fullName": "access.v1.SetTenantRoleDataPolicyRequest",
+      "fields": [
+        {
+          "name": "role_id",
+          "jsonName": "roleId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "policy_id",
+          "jsonName": "policyId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "policy_version",
+          "jsonName": "policyVersion",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
         }
       ],
       "dto": {
@@ -1724,6 +2044,130 @@
       }
     },
     {
+      "name": "TenantDataPolicyDTO",
+      "fullName": "access.v1.TenantDataPolicyDTO",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "jsonName": "status",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "site_ids",
+          "jsonName": "siteIds",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "not_before",
+          "jsonName": "notBefore",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "jsonName": "expiresAt",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "effective",
+          "jsonName": "effective",
+          "number": 8,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "invalid_reason",
+          "jsonName": "invalidReason",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "TenantDataPolicyReferenceDTO",
+      "fullName": "access.v1.TenantDataPolicyReferenceDTO",
+      "fields": [
+        {
+          "name": "policy_id",
+          "jsonName": "policyId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "policy_name",
+          "jsonName": "policyName",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "policy_version",
+          "jsonName": "policyVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "accepted_version",
+          "jsonName": "acceptedVersion",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "effective",
+          "jsonName": "effective",
+          "number": 5,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "invalid_reason",
+          "jsonName": "invalidReason",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "TenantDelegationDTO",
       "fullName": "access.v1.TenantDelegationDTO",
       "fields": [
@@ -1862,6 +2306,44 @@
           "number": 9,
           "kind": "scalar",
           "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "TenantMemberBusinessScopeDTO",
+      "fullName": "access.v1.TenantMemberBusinessScopeDTO",
+      "fields": [
+        {
+          "name": "user_id",
+          "jsonName": "userId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "site_ids",
+          "jsonName": "siteIds",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
@@ -2037,6 +2519,165 @@
       }
     },
     {
+      "name": "TenantMemberScopeCandidateDTO",
+      "fullName": "access.v1.TenantMemberScopeCandidateDTO",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "assignable",
+          "jsonName": "assignable",
+          "number": 4,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "unavailable_reason",
+          "jsonName": "unavailableReason",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "TenantPersonalProfileDTO",
+      "fullName": "access.v1.TenantPersonalProfileDTO",
+      "fields": [
+        {
+          "name": "user_id",
+          "jsonName": "userId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "username",
+          "jsonName": "username",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_name",
+          "jsonName": "tenantName",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "roles",
+          "jsonName": "roles",
+          "number": 6,
+          "kind": "message",
+          "type": "access.v1.TenantMemberRoleDTO",
+          "repeated": true
+        },
+        {
+          "name": "registered_at",
+          "jsonName": "registeredAt",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "joined_at",
+          "jsonName": "joinedAt",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "email",
+          "jsonName": "email",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "phone",
+          "jsonName": "phone",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "avatar_asset_ref",
+          "jsonName": "avatarAssetRef",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 12,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "employee_id",
+          "jsonName": "employeeId",
+          "number": 13,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "position",
+          "jsonName": "position",
+          "number": 14,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "department_id",
+          "jsonName": "departmentId",
+          "number": 15,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "TenantProfileDTO",
       "fullName": "access.v1.TenantProfileDTO",
       "fields": [
@@ -2203,10 +2844,40 @@
           "number": 9,
           "kind": "scalar",
           "type": "uint64"
+        },
+        {
+          "name": "data_policy",
+          "jsonName": "dataPolicy",
+          "number": 10,
+          "kind": "message",
+          "type": "access.v1.TenantDataPolicyReferenceDTO"
         }
       ],
       "dto": {
         "kind": "output"
+      }
+    },
+    {
+      "name": "UpdateMyPersonalAvatarRequest",
+      "fullName": "access.v1.UpdateMyPersonalAvatarRequest",
+      "fields": [
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 1,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "avatar_asset_ref",
+          "jsonName": "avatarAssetRef",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
       }
     },
     {
@@ -2233,6 +2904,58 @@
           "number": 3,
           "kind": "scalar",
           "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "UpdateTenantDataPolicyRequest",
+      "fullName": "access.v1.UpdateTenantDataPolicyRequest",
+      "fields": [
+        {
+          "name": "policy_id",
+          "jsonName": "policyId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "site_ids",
+          "jsonName": "siteIds",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "not_before",
+          "jsonName": "notBefore",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "jsonName": "expiresAt",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
@@ -6899,6 +7622,75 @@
       }
     },
     {
+      "name": "SiteScopeDirectoryRequest",
+      "fullName": "deviceops.v1.SiteScopeDirectoryRequest",
+      "fields": [
+        {
+          "name": "site_ids",
+          "jsonName": "siteIds",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "resolve",
+          "jsonName": "resolve",
+          "number": 2,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "query",
+          "jsonName": "query",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "SiteScopeDirectoryResponse",
+      "fullName": "deviceops.v1.SiteScopeDirectoryResponse",
+      "fields": [
+        {
+          "name": "sites",
+          "jsonName": "sites",
+          "number": 1,
+          "kind": "message",
+          "type": "deviceops.v1.SiteDTO",
+          "repeated": true
+        },
+        {
+          "name": "total",
+          "jsonName": "total",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "TransferDeviceRequest",
       "fullName": "deviceops.v1.TransferDeviceRequest",
       "fields": [
@@ -7003,6 +7795,712 @@
           "name": "site_id",
           "jsonName": "siteId",
           "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "CreateMessageConfigurationsRequest",
+      "fullName": "notification.v1.CreateMessageConfigurationsRequest",
+      "fields": [
+        {
+          "name": "group_id",
+          "jsonName": "groupId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "levels",
+          "jsonName": "levels",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "channels",
+          "jsonName": "channels",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "primary_user_id",
+          "jsonName": "primaryUserId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "secondary_user_id",
+          "jsonName": "secondaryUserId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "additional_user_ids",
+          "jsonName": "additionalUserIds",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "notes",
+          "jsonName": "notes",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "DeleteMessageConfigurationRequest",
+      "fullName": "notification.v1.DeleteMessageConfigurationRequest",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expected_version",
+          "jsonName": "expectedVersion",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "GetMessageConfigurationRequest",
+      "fullName": "notification.v1.GetMessageConfigurationRequest",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListMessageChannelsRequest",
+      "fullName": "notification.v1.ListMessageChannelsRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListMessageChannelsResponse",
+      "fullName": "notification.v1.ListMessageChannelsResponse",
+      "fields": [
+        {
+          "name": "items",
+          "jsonName": "items",
+          "number": 1,
+          "kind": "message",
+          "type": "notification.v1.MessageChannelDTO",
+          "repeated": true
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListMessageConfigurationsRequest",
+      "fullName": "notification.v1.ListMessageConfigurationsRequest",
+      "fields": [
+        {
+          "name": "group_id",
+          "jsonName": "groupId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "level",
+          "jsonName": "level",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "recipient_id",
+          "jsonName": "recipientId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListMessageConfigurationsResponse",
+      "fullName": "notification.v1.ListMessageConfigurationsResponse",
+      "fields": [
+        {
+          "name": "items",
+          "jsonName": "items",
+          "number": 1,
+          "kind": "message",
+          "type": "notification.v1.MessageConfigurationDTO",
+          "repeated": true
+        },
+        {
+          "name": "total",
+          "jsonName": "total",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListMessageDirectoryRequest",
+      "fullName": "notification.v1.ListMessageDirectoryRequest",
+      "fields": [
+        {
+          "name": "query",
+          "jsonName": "query",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListMessageDirectoryResponse",
+      "fullName": "notification.v1.ListMessageDirectoryResponse",
+      "fields": [
+        {
+          "name": "items",
+          "jsonName": "items",
+          "number": 1,
+          "kind": "message",
+          "type": "notification.v1.MessageDirectoryEntryDTO",
+          "repeated": true
+        },
+        {
+          "name": "total",
+          "jsonName": "total",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "ListMessageTypesRequest",
+      "fullName": "notification.v1.ListMessageTypesRequest",
+      "fields": [
+        {
+          "name": "code",
+          "jsonName": "code",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "level",
+          "jsonName": "level",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint32"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListMessageTypesResponse",
+      "fullName": "notification.v1.ListMessageTypesResponse",
+      "fields": [
+        {
+          "name": "items",
+          "jsonName": "items",
+          "number": 1,
+          "kind": "message",
+          "type": "notification.v1.MessageTypeDTO",
+          "repeated": true
+        },
+        {
+          "name": "groups",
+          "jsonName": "groups",
+          "number": 2,
+          "kind": "message",
+          "type": "notification.v1.MessageLevelCountDTO",
+          "repeated": true
+        },
+        {
+          "name": "total",
+          "jsonName": "total",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "page",
+          "jsonName": "page",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "page_size",
+          "jsonName": "pageSize",
+          "number": 5,
+          "kind": "scalar",
+          "type": "uint32"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "MessageChannelDTO",
+      "fullName": "notification.v1.MessageChannelDTO",
+      "fields": [
+        {
+          "name": "code",
+          "jsonName": "code",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "configurable",
+          "jsonName": "configurable",
+          "number": 3,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "unavailable_reason",
+          "jsonName": "unavailableReason",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "MessageConfigurationDTO",
+      "fullName": "notification.v1.MessageConfigurationDTO",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "group_id",
+          "jsonName": "groupId",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "group_name",
+          "jsonName": "groupName",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "level",
+          "jsonName": "level",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "channels",
+          "jsonName": "channels",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "primary_user_id",
+          "jsonName": "primaryUserId",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "secondary_user_id",
+          "jsonName": "secondaryUserId",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "additional_user_ids",
+          "jsonName": "additionalUserIds",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "notes",
+          "jsonName": "notes",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 11,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "updated_at",
+          "jsonName": "updatedAt",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "jsonName": "createdAt",
+          "number": 13,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "deleted",
+          "jsonName": "deleted",
+          "number": 14,
+          "kind": "scalar",
+          "type": "bool"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "MessageConfigurationReceipt",
+      "fullName": "notification.v1.MessageConfigurationReceipt",
+      "fields": [
+        {
+          "name": "receipt_id",
+          "jsonName": "receiptId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "jsonName": "tenantId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "configurations",
+          "jsonName": "configurations",
+          "number": 3,
+          "kind": "message",
+          "type": "notification.v1.MessageConfigurationDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "MessageDirectoryEntryDTO",
+      "fullName": "notification.v1.MessageDirectoryEntryDTO",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "MessageLevelCountDTO",
+      "fullName": "notification.v1.MessageLevelCountDTO",
+      "fields": [
+        {
+          "name": "level",
+          "jsonName": "level",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "total",
+          "jsonName": "total",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "MessageTypeDTO",
+      "fullName": "notification.v1.MessageTypeDTO",
+      "fields": [
+        {
+          "name": "code",
+          "jsonName": "code",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "level",
+          "jsonName": "level",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "UpdateMessageConfigurationRequest",
+      "fullName": "notification.v1.UpdateMessageConfigurationRequest",
+      "fields": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expected_version",
+          "jsonName": "expectedVersion",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "channels",
+          "jsonName": "channels",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "primary_user_id",
+          "jsonName": "primaryUserId",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "secondary_user_id",
+          "jsonName": "secondaryUserId",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "additional_user_ids",
+          "jsonName": "additionalUserIds",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        },
+        {
+          "name": "notes",
+          "jsonName": "notes",
+          "number": 7,
           "kind": "scalar",
           "type": "string"
         }
@@ -8183,6 +9681,151 @@
       ]
     },
     {
+      "name": "TenantMemberBusinessScopeApplication",
+      "fullName": "access.v1.TenantMemberBusinessScopeApplication",
+      "domain": "access",
+      "application": {
+        "name": "tenant_member_business_scope",
+        "requires": [
+          "deviceops/site_management"
+        ]
+      },
+      "methods": [
+        {
+          "name": "GetTenantMemberBusinessScope",
+          "fullName": "access.v1.TenantMemberBusinessScopeApplication.GetTenantMemberBusinessScope",
+          "request": "access.v1.GetTenantMemberBusinessScopeRequest",
+          "response": "access.v1.TenantMemberBusinessScopeDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/members/{user_id}/business-scope"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.business_scope.get",
+            "useCase": "get_tenant_member_business_scope",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.business_scope.get",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListTenantMemberScopeCandidates",
+          "fullName": "access.v1.TenantMemberBusinessScopeApplication.ListTenantMemberScopeCandidates",
+          "request": "access.v1.ListTenantMemberScopeCandidatesRequest",
+          "response": "access.v1.ListTenantMemberScopeCandidatesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/member-scope-candidates"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.scope_candidates",
+            "useCase": "list_tenant_member_scope_candidates",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "site.member_scope_directory"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.scope_candidates",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "SetTenantMemberBusinessScope",
+          "fullName": "access.v1.TenantMemberBusinessScopeApplication.SetTenantMemberBusinessScope",
+          "request": "access.v1.SetTenantMemberBusinessScopeRequest",
+          "response": "access.v1.TenantMemberBusinessScopeDTO",
+          "http": [
+            {
+              "method": "PUT",
+              "path": "/v1/tenant/members/{user_id}/business-scope",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.business_scope.set",
+            "useCase": "set_tenant_member_business_scope",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "site.member_scope_directory"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.business_scope.set",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "TenantMemberLifecycleApplication",
       "fullName": "access.v1.TenantMemberLifecycleApplication",
       "domain": "access",
@@ -8326,6 +9969,47 @@
           }
         },
         {
+          "name": "GetMyPersonalProfile",
+          "fullName": "access.v1.TenantMemberLifecycleApplication.GetMyPersonalProfile",
+          "request": "access.v1.GetMyPersonalProfileRequest",
+          "response": "access.v1.TenantPersonalProfileDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/me/profile"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.personal_profile.get",
+            "useCase": "get_my_personal_profile",
+            "permissions": [
+              "tenant.personal_profile.self"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.personal_profile.get",
+            "permissions": [
+              "tenant.personal_profile.self"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "GetTenantMember",
           "fullName": "access.v1.TenantMemberLifecycleApplication.GetTenantMember",
           "request": "access.v1.GetTenantMemberRequest",
@@ -8399,6 +10083,47 @@
             "operationId": "tenant.member.invite",
             "permissions": [
               "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListMyPersonalAvatarOptions",
+          "fullName": "access.v1.TenantMemberLifecycleApplication.ListMyPersonalAvatarOptions",
+          "request": "access.v1.ListMyPersonalAvatarOptionsRequest",
+          "response": "access.v1.ListMyPersonalAvatarOptionsResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/me/avatar-options"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.personal_profile.avatar_options",
+            "useCase": "list_my_personal_avatar_options",
+            "permissions": [
+              "tenant.personal_profile.self"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.personal_profile.avatar_options",
+            "permissions": [
+              "tenant.personal_profile.self"
             ],
             "permissionMode": "all",
             "tenantRequired": true,
@@ -8621,6 +10346,48 @@
             "operationId": "tenant.member.suspend",
             "permissions": [
               "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "UpdateMyPersonalAvatar",
+          "fullName": "access.v1.TenantMemberLifecycleApplication.UpdateMyPersonalAvatar",
+          "request": "access.v1.UpdateMyPersonalAvatarRequest",
+          "response": "access.v1.TenantPersonalProfileDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/tenant/me/avatar",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.member.personal_profile.avatar_update",
+            "useCase": "update_my_personal_avatar",
+            "permissions": [
+              "tenant.personal_profile.self"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.member.personal_profile.avatar_update",
+            "permissions": [
+              "tenant.personal_profile.self"
             ],
             "permissionMode": "all",
             "tenantRequired": true,
@@ -8910,6 +10677,9 @@
       "domain": "access",
       "application": {
         "name": "tenant_role_permission",
+        "requires": [
+          "deviceops/site_management"
+        ],
         "operations": [
           {
             "id": "tenant.role.assert_member_deactivation_allowed",
@@ -8983,6 +10753,52 @@
           },
           "authorization": {
             "operationId": "tenant.role.assign_member",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "CreateTenantDataPolicy",
+          "fullName": "access.v1.TenantRolePermissionApplication.CreateTenantDataPolicy",
+          "request": "access.v1.CreateTenantDataPolicyRequest",
+          "response": "access.v1.TenantDataPolicyDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/data-policies",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.data_policy.create",
+            "useCase": "create_tenant_data_policy",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "site.role_scope_directory"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.data_policy.create",
             "permissions": [
               "tenant.role.manage"
             ],
@@ -9162,6 +10978,47 @@
           }
         },
         {
+          "name": "GetTenantDataPolicy",
+          "fullName": "access.v1.TenantRolePermissionApplication.GetTenantDataPolicy",
+          "request": "access.v1.GetTenantDataPolicyRequest",
+          "response": "access.v1.TenantDataPolicyDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/data-policies/{policy_id}"
+            }
+          ],
+          "operation": {
+            "id": "tenant.data_policy.get",
+            "useCase": "get_tenant_data_policy",
+            "permissions": [
+              "tenant.role.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.data_policy.get",
+            "permissions": [
+              "tenant.role.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "GetTenantRole",
           "fullName": "access.v1.TenantRolePermissionApplication.GetTenantRole",
           "request": "access.v1.GetTenantRoleRequest",
@@ -9191,6 +11048,47 @@
           },
           "authorization": {
             "operationId": "tenant.role.get",
+            "permissions": [
+              "tenant.role.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListTenantDataPolicies",
+          "fullName": "access.v1.TenantRolePermissionApplication.ListTenantDataPolicies",
+          "request": "access.v1.ListTenantDataPoliciesRequest",
+          "response": "access.v1.ListTenantDataPoliciesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/data-policies"
+            }
+          ],
+          "operation": {
+            "id": "tenant.data_policy.list",
+            "useCase": "list_tenant_data_policies",
+            "permissions": [
+              "tenant.role.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.data_policy.list",
             "permissions": [
               "tenant.role.read"
             ],
@@ -9244,6 +11142,48 @@
           }
         },
         {
+          "name": "RevokeTenantDataPolicy",
+          "fullName": "access.v1.TenantRolePermissionApplication.RevokeTenantDataPolicy",
+          "request": "access.v1.RevokeTenantDataPolicyRequest",
+          "response": "access.v1.TenantDataPolicyDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/data-policies/{policy_id}/revoke",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.data_policy.revoke",
+            "useCase": "revoke_tenant_data_policy",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.data_policy.revoke",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "RevokeTenantRoleMember",
           "fullName": "access.v1.TenantRolePermissionApplication.RevokeTenantRoleMember",
           "request": "access.v1.RevokeTenantRoleMemberRequest",
@@ -9286,6 +11226,48 @@
           }
         },
         {
+          "name": "SetTenantRoleDataPolicy",
+          "fullName": "access.v1.TenantRolePermissionApplication.SetTenantRoleDataPolicy",
+          "request": "access.v1.SetTenantRoleDataPolicyRequest",
+          "response": "access.v1.TenantRoleDTO",
+          "http": [
+            {
+              "method": "PUT",
+              "path": "/v1/tenant/roles/{role_id}/data-policy",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.role.set_data_policy",
+            "useCase": "set_tenant_role_data_policy",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.role.set_data_policy",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "SetTenantRolePermissions",
           "fullName": "access.v1.TenantRolePermissionApplication.SetTenantRolePermissions",
           "request": "access.v1.SetTenantRolePermissionsRequest",
@@ -9316,6 +11298,52 @@
           },
           "authorization": {
             "operationId": "tenant.role.set_permissions",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "UpdateTenantDataPolicy",
+          "fullName": "access.v1.TenantRolePermissionApplication.UpdateTenantDataPolicy",
+          "request": "access.v1.UpdateTenantDataPolicyRequest",
+          "response": "access.v1.TenantDataPolicyDTO",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/tenant/data-policies/{policy_id}",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "tenant.data_policy.update",
+            "useCase": "update_tenant_data_policy",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "site.role_scope_directory"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "tenant.data_policy.update",
             "permissions": [
               "tenant.role.manage"
             ],
@@ -11932,6 +13960,46 @@
         "name": "site_management",
         "operations": [
           {
+            "id": "site.member_scope_directory",
+            "useCase": "list_assignable_member_sites",
+            "permissions": [
+              "tenant.member.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "deviceops.v1.SiteScopeDirectoryRequest",
+            "responseType": "deviceops.v1.SiteScopeDirectoryResponse",
+            "applicationMethod": "ListAssignableMemberSites"
+          },
+          {
+            "id": "site.role_scope_directory",
+            "useCase": "list_assignable_role_sites",
+            "permissions": [
+              "tenant.role.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "deviceops.v1.SiteScopeDirectoryRequest",
+            "responseType": "deviceops.v1.SiteScopeDirectoryResponse",
+            "applicationMethod": "ListAssignableRoleSites"
+          },
+          {
             "id": "site.validate_transfer_target",
             "useCase": "validate_transfer_target",
             "permissions": [
@@ -11954,6 +14022,388 @@
         ]
       },
       "methods": null
+    },
+    {
+      "name": "MessageConfigurationApplication",
+      "fullName": "notification.v1.MessageConfigurationApplication",
+      "domain": "notification",
+      "application": {
+        "name": "message_configuration"
+      },
+      "methods": [
+        {
+          "name": "CreateMessageConfigurations",
+          "fullName": "notification.v1.MessageConfigurationApplication.CreateMessageConfigurations",
+          "request": "notification.v1.CreateMessageConfigurationsRequest",
+          "response": "notification.v1.MessageConfigurationReceipt",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/notification/configurations",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "notification.configuration.create",
+            "useCase": "create_message_configurations",
+            "permissions": [
+              "tenant.notification.create"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.configuration.create",
+            "permissions": [
+              "tenant.notification.create"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "DeleteMessageConfiguration",
+          "fullName": "notification.v1.MessageConfigurationApplication.DeleteMessageConfiguration",
+          "request": "notification.v1.DeleteMessageConfigurationRequest",
+          "response": "notification.v1.MessageConfigurationReceipt",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/notification/configurations/{id}/delete",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "notification.configuration.delete",
+            "useCase": "delete_message_configuration",
+            "permissions": [
+              "tenant.notification.delete"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.configuration.delete",
+            "permissions": [
+              "tenant.notification.delete"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "GetMessageConfiguration",
+          "fullName": "notification.v1.MessageConfigurationApplication.GetMessageConfiguration",
+          "request": "notification.v1.GetMessageConfigurationRequest",
+          "response": "notification.v1.MessageConfigurationDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/notification/configurations/{id}"
+            }
+          ],
+          "operation": {
+            "id": "notification.configuration.get",
+            "useCase": "get_message_configuration",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.configuration.get",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListMessageChannels",
+          "fullName": "notification.v1.MessageConfigurationApplication.ListMessageChannels",
+          "request": "notification.v1.ListMessageChannelsRequest",
+          "response": "notification.v1.ListMessageChannelsResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/notification/channels"
+            }
+          ],
+          "operation": {
+            "id": "notification.channel.list",
+            "useCase": "list_message_channels",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.channel.list",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListMessageConfigurations",
+          "fullName": "notification.v1.MessageConfigurationApplication.ListMessageConfigurations",
+          "request": "notification.v1.ListMessageConfigurationsRequest",
+          "response": "notification.v1.ListMessageConfigurationsResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/notification/configurations"
+            }
+          ],
+          "operation": {
+            "id": "notification.configuration.list",
+            "useCase": "list_message_configurations",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.configuration.list",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListMessageGroups",
+          "fullName": "notification.v1.MessageConfigurationApplication.ListMessageGroups",
+          "request": "notification.v1.ListMessageDirectoryRequest",
+          "response": "notification.v1.ListMessageDirectoryResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/notification/groups"
+            }
+          ],
+          "operation": {
+            "id": "notification.group.list",
+            "useCase": "list_message_groups",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.group.list",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListMessageRecipients",
+          "fullName": "notification.v1.MessageConfigurationApplication.ListMessageRecipients",
+          "request": "notification.v1.ListMessageDirectoryRequest",
+          "response": "notification.v1.ListMessageDirectoryResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/notification/recipients"
+            }
+          ],
+          "operation": {
+            "id": "notification.recipient.list",
+            "useCase": "list_message_recipients",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.recipient.list",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListMessageTypes",
+          "fullName": "notification.v1.MessageConfigurationApplication.ListMessageTypes",
+          "request": "notification.v1.ListMessageTypesRequest",
+          "response": "notification.v1.ListMessageTypesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/notification/types"
+            }
+          ],
+          "operation": {
+            "id": "notification.type.list",
+            "useCase": "list_message_types",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.type.list",
+            "permissions": [
+              "tenant.notification.read"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "UpdateMessageConfiguration",
+          "fullName": "notification.v1.MessageConfigurationApplication.UpdateMessageConfiguration",
+          "request": "notification.v1.UpdateMessageConfigurationRequest",
+          "response": "notification.v1.MessageConfigurationReceipt",
+          "http": [
+            {
+              "method": "PATCH",
+              "path": "/v1/tenant/notification/configurations/{id}",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "notification.configuration.update",
+            "useCase": "update_message_configuration",
+            "permissions": [
+              "tenant.notification.update"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "notification.configuration.update",
+            "permissions": [
+              "tenant.notification.update"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        }
+      ]
     }
   ]
 }

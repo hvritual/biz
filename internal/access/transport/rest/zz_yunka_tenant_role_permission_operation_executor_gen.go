@@ -38,6 +38,9 @@ func RegisterTenantRolePermissionOperationExecutor(mux *http.ServeMux, applicati
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/roles/{role_id}/members", handler.handleOperationAssignTenantRoleMember); err != nil {
 		return err
 	}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenant/data-policies", handler.handleOperationCreateTenantDataPolicy); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/roles", handler.handleOperationCreateTenantRole); err != nil {
 		return err
 	}
@@ -50,16 +53,31 @@ func RegisterTenantRolePermissionOperationExecutor(mux *http.ServeMux, applicati
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/roles/{role_id}/enable", handler.handleOperationEnableTenantRole); err != nil {
 		return err
 	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenant/data-policies/{policy_id}", handler.handleOperationGetTenantDataPolicy); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "GET", "/v1/tenant/roles/{role_id}", handler.handleOperationGetTenantRole); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenant/data-policies", handler.handleOperationListTenantDataPolicies); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "GET", "/v1/tenant/roles", handler.handleOperationListTenantRoles); err != nil {
 		return err
 	}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenant/data-policies/{policy_id}/revoke", handler.handleOperationRevokeTenantDataPolicy); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/roles/{role_id}/members/{user_id}/revoke", handler.handleOperationRevokeTenantRoleMember); err != nil {
 		return err
 	}
+	if err := httpbinding.Register(mux, "PUT", "/v1/tenant/roles/{role_id}/data-policy", handler.handleOperationSetTenantRoleDataPolicy); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "PUT", "/v1/tenant/roles/{role_id}/permissions", handler.handleOperationSetTenantRolePermissions); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "PATCH", "/v1/tenant/data-policies/{policy_id}", handler.handleOperationUpdateTenantDataPolicy); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "PATCH", "/v1/tenant/roles/{role_id}", handler.handleOperationUpdateTenantRole); err != nil {
@@ -113,6 +131,34 @@ func (handler *TenantRolePermissionOperationHandler) handleOperationAssignTenant
 	wire.RoleId = request.PathValue("role_id")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantRolePermissionAssignTenantRoleMember(), wire, handler.application.AssignTenantRoleMember)
+	if err != nil {
+		writeTenantRolePermissionOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *TenantRolePermissionOperationHandler) handleOperationCreateTenantDataPolicy(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.CreateTenantDataPolicyRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantRolePermissionCreateTenantDataPolicy(), wire, handler.application.CreateTenantDataPolicy)
 	if err != nil {
 		writeTenantRolePermissionOperationError(writer, err)
 		return
@@ -238,11 +284,46 @@ func (handler *TenantRolePermissionOperationHandler) handleOperationEnableTenant
 	_, _ = writer.Write(payload)
 }
 
+func (handler *TenantRolePermissionOperationHandler) handleOperationGetTenantDataPolicy(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.GetTenantDataPolicyRequest{}
+	wire.PolicyId = request.PathValue("policy_id")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantRolePermissionGetTenantDataPolicy(), wire, handler.application.GetTenantDataPolicy)
+	if err != nil {
+		writeTenantRolePermissionOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
 func (handler *TenantRolePermissionOperationHandler) handleOperationGetTenantRole(writer http.ResponseWriter, request *http.Request) {
 	wire := &accessv1.GetTenantRoleRequest{}
 	wire.RoleId = request.PathValue("role_id")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantRolePermissionGetTenantRole(), wire, handler.application.GetTenantRole)
+	if err != nil {
+		writeTenantRolePermissionOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *TenantRolePermissionOperationHandler) handleOperationListTenantDataPolicies(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.ListTenantDataPoliciesRequest{}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantRolePermissionListTenantDataPolicies(), wire, handler.application.ListTenantDataPolicies)
 	if err != nil {
 		writeTenantRolePermissionOperationError(writer, err)
 		return
@@ -263,6 +344,35 @@ func (handler *TenantRolePermissionOperationHandler) handleOperationListTenantRo
 	}
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantRolePermissionListTenantRoles(), wire, handler.application.ListTenantRoles)
+	if err != nil {
+		writeTenantRolePermissionOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *TenantRolePermissionOperationHandler) handleOperationRevokeTenantDataPolicy(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.RevokeTenantDataPolicyRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	wire.PolicyId = request.PathValue("policy_id")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantRolePermissionRevokeTenantDataPolicy(), wire, handler.application.RevokeTenantDataPolicy)
 	if err != nil {
 		writeTenantRolePermissionOperationError(writer, err)
 		return
@@ -306,6 +416,35 @@ func (handler *TenantRolePermissionOperationHandler) handleOperationRevokeTenant
 	_, _ = writer.Write(payload)
 }
 
+func (handler *TenantRolePermissionOperationHandler) handleOperationSetTenantRoleDataPolicy(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.SetTenantRoleDataPolicyRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	wire.RoleId = request.PathValue("role_id")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantRolePermissionSetTenantRoleDataPolicy(), wire, handler.application.SetTenantRoleDataPolicy)
+	if err != nil {
+		writeTenantRolePermissionOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
 func (handler *TenantRolePermissionOperationHandler) handleOperationSetTenantRolePermissions(writer http.ResponseWriter, request *http.Request) {
 	wire := &accessv1.SetTenantRolePermissionsRequest{}
 	body, err := io.ReadAll(request.Body)
@@ -322,6 +461,35 @@ func (handler *TenantRolePermissionOperationHandler) handleOperationSetTenantRol
 	wire.RoleId = request.PathValue("role_id")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantRolePermissionSetTenantRolePermissions(), wire, handler.application.SetTenantRolePermissions)
+	if err != nil {
+		writeTenantRolePermissionOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *TenantRolePermissionOperationHandler) handleOperationUpdateTenantDataPolicy(writer http.ResponseWriter, request *http.Request) {
+	wire := &accessv1.UpdateTenantDataPolicyRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	wire.PolicyId = request.PathValue("policy_id")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanTenantRolePermissionUpdateTenantDataPolicy(), wire, handler.application.UpdateTenantDataPolicy)
 	if err != nil {
 		writeTenantRolePermissionOperationError(writer, err)
 		return

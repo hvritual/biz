@@ -253,17 +253,16 @@ func (idp *runtimeFirstPartyIdP) handleLogin(writer http.ResponseWriter, request
 		http.Error(writer, "invalid login request", http.StatusUnauthorized)
 		return
 	}
-	identity, loginAuditID, err := store.AuthenticateFirstPartyLoginWithAudit(
+	identity, loginAuditID, err := store.AuthenticateFirstPartyLoginWithAuditAndLockNotification(
 		request.Context(), identifier, password, request.RemoteAddr, accesspersistence.DefaultFirstPartyLoginPolicy(),
+		idp.currentVerificationProtection(), requestID,
 	)
 	if err != nil {
 		message := "账号或凭据错误。"
 		blocked, blockedUntil, stateErr := store.FirstPartyLoginThrottleState(request.Context(), identifier)
 		if stateErr == nil && blocked {
 			message = "登录暂时受限，请稍后重试。"
-			if resolved, resolveErr := store.ResolveLoginIdentifier(request.Context(), identifier); resolveErr == nil {
-				idp.maybeNotifyLoginLock(request.Context(), resolved, requestID, blockedUntil)
-			}
+			_ = blockedUntil
 		}
 		idp.renderLoginState(writer, http.StatusUnauthorized, firstPartyLoginPage{
 			RequestID: requestID, CSRF: csrf, Identifier: identifier, Message: message,

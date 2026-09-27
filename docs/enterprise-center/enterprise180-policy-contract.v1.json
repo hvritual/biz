@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "contract_id": "enterprise180-policy-v1",
+  "issue_number": 180,
+  "status": "ACCEPTED",
+  "accepted_decisions": [
+    "Q-009",
+    "Q-011"
+  ],
+  "q009_business_scope_binding": {
+    "assignment_mode": "explicit",
+    "candidate_authority": "authoritative_resource_domain",
+    "current_adapter": "site_membership",
+    "tenant_bound": true,
+    "assignable_only": true,
+    "authoritative_readback": true,
+    "organization_relation_grants_access": false,
+    "derived_data_scope_authoritative": false,
+    "direct_api_injection_rejected": true,
+    "invalid_or_disabled_candidate_rejected": true
+  },
+  "q011_data_policy_composition": {
+    "role_policy_cardinality": "zero_or_one",
+    "multiple_policies_per_role": false,
+    "action_authorization_operator": "union_of_current_grants",
+    "effective_scope_operator": "intersection",
+    "effective_scope_dimensions": [
+      "applicable_role_policy_scope",
+      "member_explicit_scope",
+      "current_tenant_assignable_scope"
+    ],
+    "missing_required_policy_behavior": "deny",
+    "policy_contraction_behavior": "next_sensitive_request_must_re_evaluate_and_deny_if_out_of_scope",
+    "unsupported_phase1": [
+      "policy_priority",
+      "explicit_deny_rules",
+      "deny_overrides",
+      "policy_inheritance",
+      "department_policy_inheritance",
+      "expression_language",
+      "abac_condition_dsl",
+      "arbitrary_multi_policy_union",
+      "policy_nesting"
+    ],
+    "applicable_role_policy_scope_aggregation": "intersection_of_current_policies_on_roles_granting_action"
+  },
+  "invariants": [
+    "department_membership_or_manager_status_never_creates_business_data_access_by_itself",
+    "adding_or_moving_department_membership_must_not_implicitly_expand_effective_scope",
+    "member_scope_cannot_expand_role_policy_scope",
+    "role_policy_scope_cannot_escape_current_tenant_assignable_scope",
+    "derived_data_scope_is_projection_only_and_never_authorization_authority",
+    "cross_tenant_policy_or_object_reference_is_rejected",
+    "policy_version_is_resource_version_not_global_authorization_version"
+  ],
+  "required_negative_examples": [
+    "tenant_a_object_to_tenant_b_member_rejected",
+    "unassignable_object_direct_api_injection_rejected",
+    "expired_revoked_or_cross_tenant_policy_rejected",
+    "department_move_does_not_expand_scope",
+    "broader_second_role_does_not_bypass_member_explicit_scope",
+    "policy_contraction_denies_next_sensitive_request"
+  ]
+}

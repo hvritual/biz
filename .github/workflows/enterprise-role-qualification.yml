@@ -122,11 +122,39 @@ jobs:
           make -C yunka.io rpc-tools
           echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
 
-      - name: Verify canonical generation, formatting and unit regression
+      - name: Generate canonical contracts with recoverable source evidence
         shell: bash
         run: |
           set -euo pipefail
           make -C biz generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
+
+      - name: Retain canonical generated diff without modifying the candidate
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$RUNNER_TEMP/canonical-generation"
+          mkdir -p "$output"
+          # Include new generated paths in the diff; never commit or push from CI.
+          git -C biz add --intent-to-add -- contracts/gen contracts/generated internal modules
+          git -C biz diff --binary > "$output/generated.patch"
+          printf 'candidate_sha=%s\ncandidate_tree=%s\n' "$(git -C biz rev-parse HEAD)" "$(git -C biz rev-parse HEAD^{tree})" > "$output/provenance.txt"
+          sha256sum yunka.io/tools/toolchain.env > "$output/toolchain.sha256"
+          (cd "$output" && sha256sum generated.patch provenance.txt toolchain.sha256 > SHA256SUMS)
+
+      - name: Upload canonical generation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: enterprise-role-generated-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/canonical-generation/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Verify canonical generation, formatting and unit regression
+        shell: bash
+        run: |
+          set -euo pipefail
           git -C biz diff --exit-code
           mapfile -t changed < <(git -C biz diff --name-only origin/main...HEAD -- '*.go')
           if ((${#changed[@]})); then
@@ -144,6 +172,18 @@ jobs:
           set -euo pipefail
           go -C biz test -count=1 -tags=integration ./integration -run '^TestEnterprise178'
           go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise179'
+          enterprise180_log="$RUNNER_TEMP/enterprise180-data-policy.log"
+          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise180DataPolicyAuthorityAndRoleReference$' | tee "$enterprise180_log"
+          grep -Fq -- '--- PASS: TestEnterprise180DataPolicyAuthorityAndRoleReference ' "$enterprise180_log"
+          enterprise180_member_scope_log="$RUNNER_TEMP/enterprise180-member-business-scope.log"
+          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise180MemberBusinessScopeAuthority$' | tee "$enterprise180_member_scope_log"
+          grep -Fq -- '--- PASS: TestEnterprise180MemberBusinessScopeAuthority ' "$enterprise180_member_scope_log"
+          enterprise180_department_log="$RUNNER_TEMP/enterprise180-department-regression.log"
+          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestECIR04TenantDepartmentRESTIsAuthoritativeAndTenantScoped$' | tee "$enterprise180_department_log"
+          grep -Fq -- '--- PASS: TestECIR04TenantDepartmentRESTIsAuthoritativeAndTenantScoped ' "$enterprise180_department_log"
+          enterprise180_query_log="$RUNNER_TEMP/enterprise180-effective-query-scope.log"
+          go -C biz test -v -count=1 -tags=integration ./integration -run '^TestEnterprise180EffectiveScopeQueryEnforcement$' | tee "$enterprise180_query_log"
+          grep -Fq -- '--- PASS: TestEnterprise180EffectiveScopeQueryEnforcement ' "$enterprise180_query_log"
           go -C biz test -count=1 -tags=integration ./integration -run '^TestB124TenantRolePermissionsAreTenantScopedAndImmediate$'
           go -C biz test -count=1 -tags=integration ./integration -run '^TestB124OwnerRoleProtectsRequiredPermissionsAndLastAssignment$'
           test -z "$(git -C biz status --porcelain)"
@@ -184,4 +224,70 @@ jobs:
         run: |
           set -euo pipefail
           VITE_DATA_MODE=api npm run build
-          ENTERPRISE_ROLE_REAL_E2E=1 npx playwright test e2e/enterprise-roles-real.spec.ts
+          ENTERPRISE_ROLE_REAL_E2E=1 ENTERPRISE_DATA_PERMISSION_REAL_E2E=1 ENTERPRISE_PERSONAL_PROFILE_REAL_E2E=1 npx playwright test e2e/enterprise-roles-real.spec.ts e2e/enterprise-data-policy-ui.spec.ts e2e/enterprise-personal-profile-real.spec.ts
+
+
+      - name: Record Enterprise181 personal profile UI evidence
+        if: always()
+        working-directory: web
+        shell: bash
+        run: |
+          mkdir -p test-results
+          python3 - <<'PYTHON'
+          import hashlib, json, pathlib, subprocess
+          root = pathlib.Path('.')
+          shots = sorted((root / 'screenshots/enterprise181-personal-profile').glob('*.png'))
+          manifest = {
+              'candidate_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'candidate_tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(),
+              'suite': 'e2e/enterprise-personal-profile-real.spec.ts',
+              'data_mode': 'mocked-api-browser-contract',
+              'live_backend_evidence': False,
+              'screenshots': [{'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()} for path in shots],
+          }
+          (root / 'test-results/enterprise181-ui-provenance.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          PYTHON
+
+      - name: Retain Enterprise181 personal profile UI evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: enterprise181-ui-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            web/screenshots/enterprise181-personal-profile
+            web/test-results/enterprise181-ui-provenance.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Record permission UI evidence identity
+        if: always()
+        working-directory: web
+        shell: bash
+        run: |
+          mkdir -p test-results
+          python3 - <<'PYTHON'
+          import hashlib, json, pathlib, subprocess
+          root = pathlib.Path('.')
+          shots = sorted((root / 'screenshots/enterprise180-permission-ui').glob('*.png'))
+          manifest = {
+              'candidate_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'candidate_tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(),
+              'suite': 'e2e/enterprise-data-policy-ui.spec.ts',
+              'data_mode': 'mocked-api-browser-contract',
+              'live_backend_evidence': False,
+              'screenshots': [{'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()} for path in shots],
+          }
+          (root / 'test-results/enterprise180-ui-provenance.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          PYTHON
+
+      - name: Retain permission UI screenshots and test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: enterprise180-ui-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            web/screenshots/enterprise180-permission-ui
+            web/test-results
+            web/playwright-report
+          if-no-files-found: error
+          retention-days: 30

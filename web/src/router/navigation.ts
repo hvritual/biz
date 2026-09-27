@@ -29,6 +29,7 @@ export const primaryNavigation: NavigationItem[] = [
     icon: 'company',
     authorizationModule: 'access-management',
     authorizationActions: [
+      'tenant.member.personal_profile.get',
       'tenant.member.list',
       'tenant.role.list',
       'tenant.department.list',
@@ -39,10 +40,11 @@ export const primaryNavigation: NavigationItem[] = [
     ],
   },
   { id: 'platform-commercial', label: '平台管理', icon: 'crown' },
-  { id: 'system', label: '系统设置', icon: 'settings' },
+  { id: 'system', label: '系统设置', icon: 'settings', authorizationModule: 'access-management', authorizationActions: ['notification.configuration.list'] },
 ]
 
 export const enterpriseNavigation: NavigationItem[] = [
+  { id: 'personal', label: '个人中心', icon: 'user', path: '/enterprise/personal-profile', authorizationActions: ['tenant.member.personal_profile.get'] },
   { id: 'members', label: '成员管理', icon: 'users', path: '/enterprise/members', authorizationActions: ['tenant.member.list'] },
   { id: 'roles', label: '角色权限', icon: 'shield', path: '/enterprise/roles', authorizationActions: ['tenant.role.list'] },
   { id: 'organization', label: '组织架构', icon: 'organization', path: '/enterprise/organization', authorizationActions: ['tenant.department.list'] },
@@ -80,7 +82,7 @@ export const platformCommercialQuickActions = [
 export const systemNavigation: NavigationItem[] = [
   { id: 'general', label: '基础设置', icon: 'settings', path: '/system/general' },
   { id: 'security', label: '安全设置', icon: 'shield', path: '/system/security' },
-  { id: 'notifications', label: '通知设置', icon: 'bell', path: '/system/notifications' },
+  { id: 'notifications', label: '通知设置', icon: 'bell', path: '/system/notifications', authorizationActions: ['notification.configuration.list'] },
   { id: 'integrations', label: '接口与集成', icon: 'link', path: '/system/integrations' },
   { id: 'dictionary', label: '数据字典', icon: 'database', path: '/system/dictionary' },
 ]
@@ -88,7 +90,7 @@ export const systemNavigation: NavigationItem[] = [
 export const systemQuickActions = [
   { label: '打开基础设置', icon: 'settings', path: '/system/general' },
   { label: '打开安全设置', icon: 'shield', path: '/system/security' },
-  { label: '打开通知设置', icon: 'bell', path: '/system/notifications' },
+  { label: '打开通知设置', icon: 'bell', path: '/system/notifications', authorizationActions: ['notification.configuration.list'] },
   { label: '打开接口与集成', icon: 'link', path: '/system/integrations' },
 ]
 

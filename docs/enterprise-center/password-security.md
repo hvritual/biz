@@ -51,13 +51,13 @@ BFF 提供：
 
 Web 的“修改我的密码”表单只使用组件内存，不写入 Pinia/localStorage。
 
-## Q-007 管理员重置
+## Q-007 管理员恢复
 
-Q-007 仍为 `PENDING_HUMAN`：
+Q-007 在 #185 按“不得由单租户管理员直接旋转全局 Account 凭据”的边界收口为：
 
-> 一次性初始密码 vs 激活链接尚未决定；租户管理员不得直接重置跨企业全局 Account 密码。
+> 管理员可以发起目标成员的自助恢复请求，但不能指定、读取或接收新密码、OTP、临时密码或恢复授权；最终凭据变更仍必须由 Account 本人通过第一方 IdP 的 `password_recovery` 自证流程完成。
 
-因此 #173 冻结一个受控恢复入口：
+受控入口：
 
 `POST /auth/tenant/members/{user_id}/password-recovery`
 
@@ -73,13 +73,28 @@ Q-007 仍为 `PENDING_HUMAN`：
 
 - 无独立权限：403；
 - target 不属于当前 active tenant：404；
-- target 属于当前 tenant 且有权限：409 `POLICY_PENDING / Q-007`；
-- 不接受新密码；
+- target 属于当前 tenant 且有权限：202 `self_service_recovery`；
+- 成功只提交 `recovery_request` 安全通知到可靠 outbox，响应仅返回 notification event/state；
+- 同一 tenant + target 五分钟内重复请求：429；
+- 不接受新密码、OTP、challenge 或临时凭据；
 - 不调用 `RotateUserPassword`；
-- 不生成临时密码或未批准激活链接；
-- 共享 Account 在其他 tenant 的凭据与 Session 不被管理员路径改变。
+- 不撤销目标 Account 的现有 Session；
+- 共享 Account 在其他 tenant 的凭据与 Session 不被管理员路径改变；
+- target 收到恢复提示后仍需进入第一方 IdP 本人找回流程完成 OTP 自证和最终密码更新。
 
-等 Q-007 有 Human 接受证据后，后续实现必须把该入口接到批准的 Account 自助恢复/激活方式，而不是放开底层全局 rotate。
+管理员恢复请求与可靠 outbox 在同一数据库事务中提交；outbox 写入失败时请求失败且不留下可被误认为已受理的恢复事件。
+
+## 登录锁定原子性
+
+密码登录达到锁定阈值时，以下写入属于同一个根 MySQL 事务：
+
+- `biz_idp_login_throttles` 的 failure_count / blocked_until；
+- 对应登录失败 audit；
+- 一条 tenantless `login_lock` security notification outbox。
+
+只有从“未锁定”变为“锁定”时生成一次 `login_lock`。已经锁定后的重复登录不会再次产生逻辑通知。
+
+若 outbox insert 失败，锁定阈值那次 failure_count、blocked_until 与 audit 一并回滚；系统不得进入“账号已锁定但通知未落盒”的半提交状态。Provider I/O 继续由事务提交后的可靠 worker 异步完成。
 
 ## 错误语义
 
@@ -87,7 +102,7 @@ Q-007 仍为 `PENDING_HUMAN`：
 - 401：找回验证码/授权无效；
 - 403：管理员恢复权限不足；
 - 404：管理员恢复 target 不属于当前 tenant；
-- 409：管理员恢复策略仍被 Q-007 阻断；
+- 429：管理员恢复请求触发同目标限流；
 - 422：弱密码或两次输入不一致；
 - 5xx：数据库/通知依赖失败。
 
@@ -98,5 +113,5 @@ Q-007 仍为 `PENDING_HUMAN`：
 - 并发找回只能一个提交成功；
 - 数据库故障时 password / authorization / challenge / Session 撤销全部回滚；
 - 找回和本人修改成功后旧 Session 不可复活；
-- 管理员 403/404/Q-007 与共享 Account 不被接管有真实浏览器/DB 证据；
+- 管理员 403/404/202/429、自助恢复边界、共享 Account 不被接管及 login-lock/outbox 原子性有真实浏览器/DB 证据；
 - #168～#172、真实 IdP/BFF/PKCE/state/nonce 回归必须继续通过。

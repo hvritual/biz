@@ -29,8 +29,10 @@ func (service *VerificationService) SendVerificationCode(ctx context.Context, re
 	if err != nil {
 		return domain.VerificationChallengeReceipt{}, domain.NotificationDeliveryReceipt{}, err
 	}
-	delivery, err := service.DeliverSecurityNotification(ctx, challenge.NotificationEventID)
-	return challenge, delivery, err
+	return challenge, domain.NotificationDeliveryReceipt{
+		EventID: challenge.NotificationEventID,
+		State:   challenge.DeliveryState,
+	}, nil
 }
 
 func (service *VerificationService) VerifyCode(ctx context.Context, request domain.VerifyChallengeRequest) (domain.OneTimeAuthorization, error) {

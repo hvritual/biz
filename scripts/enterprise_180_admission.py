@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Enterprise #180 delivery admission.
-
-This gate is deliberately semantic-free. It only checks whether the Human-owned
-policy decisions required by #180 are ACCEPTED. It must not infer or implement
-Data Policy behavior.
-"""
+"""Validate the approved #180 admission contract, never authorize business data."""
 from __future__ import annotations
 
 import argparse
@@ -13,169 +8,165 @@ import json
 import os
 import pathlib
 import re
-import sys
+import subprocess
 from datetime import datetime, timezone
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DECISIONS = ROOT / "docs/enterprise-center/decisions.md"
 CONTRACTS = ROOT / "docs/enterprise-center/contracts.md"
+POLICY_CONTRACT = ROOT / "docs/enterprise-center/enterprise180-policy-contract.v1.json"
 RECEIPT = "enterprise180-admission.json"
-
+# Accepted v1 semantic digest, not a second copy of its policy rules. A future
+# contract version needs explicit review, a new identity and new qualification.
+ACCEPTED_POLICY_DIGEST = "71409857293a1a55fb1345ebdffc321b49e80b8dccce6c73ffd9d4fcc6a5fcd9"
 REQUIRED = {
-    "Q-009": {
-        "reason": "BUSINESS_SCOPE_CONTRACT_NOT_ACCEPTED",
-        "description": "成员范围绑定合同尚未由 Human 接受",
-    },
-    "Q-011": {
-        "reason": "DATA_POLICY_COMPOSITION_NOT_ACCEPTED",
-        "description": "多 Data Policy 组合/冲突语义尚未由 Human 接受",
-    },
+    "Q-009": "BUSINESS_SCOPE_CONTRACT_NOT_ACCEPTED",
+    "Q-011": "DATA_POLICY_COMPOSITION_NOT_ACCEPTED",
 }
+MAX_AUTHORITY_BYTES = 1024 * 1024
 
 
-def sha256(path: pathlib.Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def blocker(identity, reason, status="INVALID"):
+    return {"id": identity, "status": status, "reason": reason}
 
 
-def parse_decisions(text: str) -> dict[str, list[str]]:
-    found: dict[str, list[str]] = {}
-    for raw in text.splitlines():
-        if not raw.startswith("|"):
-            continue
-        cells = [cell.strip() for cell in raw.strip().strip("|").split("|")]
-        if len(cells) < 2:
+def semantic_digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
+                                     ensure_ascii=False, allow_nan=False).encode()).hexdigest()
+
+
+def unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON key: " + key)
+        result[key] = value
+    return result
+
+
+def read_authority(path):
+    with path.open("rb") as handle:
+        raw = handle.read(MAX_AUTHORITY_BYTES + 1)
+    if len(raw) > MAX_AUTHORITY_BYTES:
+        raise ValueError("authority exceeds size limit")
+    return raw
+
+
+def parse_decisions(text):
+    found = {}
+    for line in text.splitlines():
+        cells = [value.strip() for value in line.strip().strip("|").split("|")]
+        if not line.lstrip().startswith("|") or len(cells) < 2:
             continue
         match = re.match(r"^(Q-\d{3})(?:\s|$)", cells[0])
-        if not match:
-            continue
-        found.setdefault(match.group(1), []).append(cells[1])
+        if match:
+            found.setdefault(match.group(1), []).append(cells[1])
     return found
 
 
-def evaluate(text: str, required: bool) -> tuple[str, list[dict[str, str]]]:
+def validate_policy_contract(payload):
+    if payload is None:
+        return [blocker("POLICY_CONTRACT", "POLICY_CONTRACT_MISSING", "MISSING")]
+    if not isinstance(payload, dict):
+        return [blocker("POLICY_CONTRACT", "POLICY_CONTRACT_SCHEMA_INVALID")]
+    try:
+        matched = semantic_digest(payload) == ACCEPTED_POLICY_DIGEST
+    except (TypeError, ValueError):
+        matched = False
+    return [] if matched else [blocker("POLICY_CONTRACT", "POLICY_CONTRACT_APPROVED_VERSION_MISMATCH")]
+
+
+def evaluate(text, required, policy_contract=None):
     if not required:
         return "NOT_APPLICABLE", []
-
-    decisions = parse_decisions(text)
-    blockers: list[dict[str, str]] = []
-    for decision_id, rule in REQUIRED.items():
-        statuses = decisions.get(decision_id, [])
-        if not statuses:
-            blockers.append({
-                "id": decision_id,
-                "status": "MISSING",
-                "reason": "DECISION_RECORD_MISSING",
-                "description": f"{decision_id} 决策记录缺失",
-            })
-            continue
-        if len(statuses) != 1:
-            blockers.append({
-                "id": decision_id,
-                "status": "AMBIGUOUS",
-                "reason": "DECISION_RECORD_AMBIGUOUS",
-                "description": f"{decision_id} 存在重复或冲突记录",
-            })
-            continue
-        if statuses[0] != "ACCEPTED":
-            blockers.append({
-                "id": decision_id,
-                "status": statuses[0],
-                "reason": rule["reason"],
-                "description": rule["description"],
-            })
-
+    decisions, blockers = parse_decisions(text), []
+    for identity, reason in REQUIRED.items():
+        values = decisions.get(identity, [])
+        if not values:
+            blockers.append(blocker(identity, "DECISION_RECORD_MISSING", "MISSING"))
+        elif len(values) != 1:
+            blockers.append(blocker(identity, "DECISION_RECORD_AMBIGUOUS", "AMBIGUOUS"))
+        elif values[0] != "ACCEPTED":
+            blockers.append(blocker(identity, reason, values[0]))
+    blockers.extend(validate_policy_contract(policy_contract))
     return ("BLOCKED" if blockers else "ADMITTED"), blockers
 
 
-def receipt(required: bool) -> dict[str, object]:
-    decisions_text = DECISIONS.read_text(encoding="utf-8")
-    state, blockers = evaluate(decisions_text, required)
-    return {
-        "schema_version": 1,
-        "gate": "enterprise180_delivery_admission",
-        "issue_number": 180,
-        "state": state,
+def receipt(required):
+    report = {
+        "schema_version": 1, "gate": "enterprise180_delivery_admission",
+        "issue_number": 180, "scope": "admission_only", "state": "BLOCKED",
+        "required": required, "semantics_implemented": False,
+        "repository": os.getenv("GITHUB_REPOSITORY"),
         "candidate_sha": os.getenv("CANDIDATE_SHA") or os.getenv("GITHUB_SHA"),
-        "pr_number": int(os.getenv("PR_NUMBER", "0") or 0) or None,
-        "required": required,
-        "semantics_implemented": False,
-        "authority": {
-            "decisions_path": str(DECISIONS.relative_to(ROOT)),
-            "decisions_sha256": sha256(DECISIONS),
-            "contracts_path": str(CONTRACTS.relative_to(ROOT)),
-            "contracts_sha256": sha256(CONTRACTS),
-        },
-        "blockers": blockers,
-        "next_action": (
-            "Human 接受并固化 Q-009 与 Q-011 的精确合同后，重新运行同一候选资格；"
-            "本 gate 不得自行补写 Data Policy 语义。"
-            if state == "BLOCKED"
-            else "continue_delivery_control_plane"
-        ),
+        "pr_number": os.getenv("PR_NUMBER") or None,
+        "run_id": os.getenv("GITHUB_RUN_ID"), "run_attempt": os.getenv("GITHUB_RUN_ATTEMPT"),
+        "evidence_source": "github_actions" if os.getenv("GITHUB_ACTIONS") == "true" else "local",
+        "authority": {}, "blockers": [],
         "observed_at": datetime.now(timezone.utc).isoformat(),
     }
+    if not required:
+        report.update(state="NOT_APPLICABLE", next_action="continue_delivery_control_plane")
+        return report
+    try:
+        if report["pr_number"] is not None:
+            report["pr_number"] = int(report["pr_number"])
+        if report["evidence_source"] == "github_actions":
+            head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT,
+                                           text=True, timeout=10).strip()
+            if head != report["candidate_sha"] or not all(report[key] for key in ("repository", "run_id", "run_attempt")):
+                raise ValueError("candidate or workflow identity missing/mismatched")
+            report["candidate_tree"] = subprocess.check_output(
+                ["git", "rev-parse", "HEAD^{tree}"], cwd=ROOT, text=True, timeout=10).strip()
+        texts = {}
+        for label, path in (("decisions", DECISIONS), ("contracts", CONTRACTS), ("policy_contract", POLICY_CONTRACT)):
+            raw = read_authority(path)
+            texts[label] = raw.decode("utf-8")
+            report["authority"][label + "_path"] = str(path.relative_to(ROOT))
+            report["authority"][label + "_sha256"] = hashlib.sha256(raw).hexdigest()
+        policy = json.loads(texts["policy_contract"], object_pairs_hook=unique_object,
+                            parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
+        state, blockers = evaluate(texts["decisions"], True, policy)
+        report.update(state=state, blockers=blockers)
+        report["authority"]["policy_semantic_sha256"] = semantic_digest(policy)
+    except (OSError, UnicodeError, ValueError, subprocess.SubprocessError) as error:
+        report["blockers"] = [blocker("ADMISSION_AUTHORITY", "ADMISSION_AUTHORITY_INVALID", type(error).__name__)]
+    report["next_action"] = (
+        "continue_delivery_control_plane" if report["state"] == "ADMITTED"
+        else "resolve_recorded_authority_blockers_and_qualify_a_new_candidate"
+    )
+    return report
 
 
-def write_report(report: dict[str, object], output: pathlib.Path) -> None:
-    output.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps(report, ensure_ascii=False, sort_keys=True))
-    summary = os.getenv("GITHUB_STEP_SUMMARY")
-    if summary:
-        with open(summary, "a", encoding="utf-8") as handle:
-            handle.write("\n## Enterprise #180 Delivery Admission\n\n")
-            handle.write(f"- state: **{report['state']}**\n")
-            handle.write(f"- candidate: \`{report.get('candidate_sha')}\`\n")
-            if report["blockers"]:
-                for blocker in report["blockers"]:
-                    handle.write(
-                        f"- blocker: \`{blocker['id']}\` / \`{blocker['status']}\` / "
-                        f"\`{blocker['reason']}\`\n"
-                    )
-            handle.write("- Data Policy semantics implemented by this gate: **false**\n")
+def write_report(report, output):
+    output.parent.mkdir(parents=True, exist_ok=True)
+    content = json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    temporary = output.with_suffix(output.suffix + ".tmp")
+    temporary.write_text(content, encoding="utf-8")
+    temporary.replace(output)
+    print(content, end="")
+    if os.getenv("GITHUB_STEP_SUMMARY"):
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
+            handle.write("\n## Enterprise180 Delivery Admission\n\n```json\n" + content + "```\n")
 
 
-def bool_arg(value: str) -> bool:
-    lowered = value.strip().lower()
-    if lowered in {"1", "true", "yes"}:
+def bool_arg(value):
+    if value.lower() in ("true", "1", "yes"):
         return True
-    if lowered in {"0", "false", "no"}:
+    if value.lower() in ("false", "0", "no"):
         return False
-    raise argparse.ArgumentTypeError("expected true/false")
+    raise argparse.ArgumentTypeError("expected true or false")
 
 
-def main() -> int:
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=["check"])
     parser.add_argument("--required", type=bool_arg, default=True)
-    parser.add_argument(
-        "--output",
-        default=str(pathlib.Path(os.getenv("RUNNER_TEMP", ".")) / RECEIPT),
-    )
+    parser.add_argument("--output", default=str(pathlib.Path(os.getenv("RUNNER_TEMP", ".")) / RECEIPT))
     args = parser.parse_args()
-
-    try:
-        report = receipt(args.required)
-    except FileNotFoundError as error:
-        report = {
-            "schema_version": 1,
-            "gate": "enterprise180_delivery_admission",
-            "issue_number": 180,
-            "state": "BLOCKED",
-            "candidate_sha": os.getenv("CANDIDATE_SHA") or os.getenv("GITHUB_SHA"),
-            "required": args.required,
-            "semantics_implemented": False,
-            "blockers": [{
-                "id": "ADMISSION_AUTHORITY",
-                "status": "MISSING",
-                "reason": "ADMISSION_AUTHORITY_MISSING",
-                "description": str(error),
-            }],
-            "next_action": "restore canonical decision authority before qualification",
-            "observed_at": datetime.now(timezone.utc).isoformat(),
-        }
-
+    report = receipt(args.required)
     write_report(report, pathlib.Path(args.output))
-    return 0 if report["state"] in {"ADMITTED", "NOT_APPLICABLE"} else 2
+    return 0 if report["state"] in ("ADMITTED", "NOT_APPLICABLE") else 2
 
 
 if __name__ == "__main__":

@@ -47,6 +47,7 @@ message TenantRoleDTO {
   string role_code = 7;
   bool system_role = 8;
   uint64 member_count = 9;
+  TenantDataPolicyReferenceDTO data_policy = 10;
 }
 
 message CreateTenantRoleRequest {
@@ -116,9 +117,57 @@ message AssertTenantMemberDeactivationAllowedRequest {
 
 message AssertTenantMemberDeactivationAllowedResponse {}
 
+// Data Policy is a resource-versioned Access constraint, never an action grant.
+message TenantDataPolicyDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string id = 1;
+  string name = 2;
+  string status = 3;
+  repeated string site_ids = 4;
+  uint64 version = 5;
+  string not_before = 6;
+  string expires_at = 7;
+  bool effective = 8;
+  string invalid_reason = 9;
+}
+message TenantDataPolicyReferenceDTO {
+  string policy_id = 1;
+  string policy_name = 2;
+  uint64 policy_version = 3;
+  uint64 accepted_version = 4;
+  bool effective = 5;
+  string invalid_reason = 6;
+}
+message ListTenantDataPoliciesRequest {}
+message ListTenantDataPoliciesResponse { repeated TenantDataPolicyDTO policies = 1; }
+message GetTenantDataPolicyRequest { string policy_id = 1; }
+message CreateTenantDataPolicyRequest {
+  string name = 1;
+  repeated string site_ids = 2;
+  string not_before = 3;
+  string expires_at = 4;
+  // Optional client-generated UUID enables authoritative recovery after a timeout.
+  string policy_id = 5;
+}
+message UpdateTenantDataPolicyRequest {
+  string policy_id = 1;
+  uint64 version = 2;
+  string name = 3;
+  repeated string site_ids = 4;
+  string not_before = 5;
+  string expires_at = 6;
+}
+message RevokeTenantDataPolicyRequest { string policy_id = 1; uint64 version = 2; }
+message SetTenantRoleDataPolicyRequest {
+  string role_id = 1;
+  uint64 version = 2;
+  string policy_id = 3;
+  uint64 policy_version = 4;
+}
 service TenantRolePermissionApplication {
   option (yunka.dsl.v1.application) = {
     name: "tenant_role_permission"
+    requires: "deviceops/site_management"
     operations: {
       id: "tenant.role.bootstrap_owner"
       use_case: "bootstrap_tenant_owner_role"
@@ -285,4 +334,93 @@ service TenantRolePermissionApplication {
       execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
     };
   }
-}
+
+  rpc ListTenantDataPolicies(ListTenantDataPoliciesRequest) returns (ListTenantDataPoliciesResponse) {
+    option (google.api.http) = { get: "/v1/tenant/data-policies" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.data_policy.list"
+      use_case: "list_tenant_data_policies"
+      permissions: "tenant.role.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc GetTenantDataPolicy(GetTenantDataPolicyRequest) returns (TenantDataPolicyDTO) {
+    option (google.api.http) = { get: "/v1/tenant/data-policies/{policy_id}" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.data_policy.get"
+      use_case: "get_tenant_data_policy"
+      permissions: "tenant.role.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+    };
+  }
+
+  rpc CreateTenantDataPolicy(CreateTenantDataPolicyRequest) returns (TenantDataPolicyDTO) {
+    option (google.api.http) = { post: "/v1/tenant/data-policies" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.data_policy.create"
+      use_case: "create_tenant_data_policy"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      requires_operations: "site.role_scope_directory"
+      composition: COMPOSITION_LOCAL
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc UpdateTenantDataPolicy(UpdateTenantDataPolicyRequest) returns (TenantDataPolicyDTO) {
+    option (google.api.http) = { patch: "/v1/tenant/data-policies/{policy_id}" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.data_policy.update"
+      use_case: "update_tenant_data_policy"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      requires_operations: "site.role_scope_directory"
+      composition: COMPOSITION_LOCAL
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc RevokeTenantDataPolicy(RevokeTenantDataPolicyRequest) returns (TenantDataPolicyDTO) {
+    option (google.api.http) = { post: "/v1/tenant/data-policies/{policy_id}/revoke" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.data_policy.revoke"
+      use_case: "revoke_tenant_data_policy"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+  rpc SetTenantRoleDataPolicy(SetTenantRoleDataPolicyRequest) returns (TenantRoleDTO) {
+    option (google.api.http) = { put: "/v1/tenant/roles/{role_id}/data-policy" body: "*" };
+    option (yunka.dsl.v1.operation) = {
+      id: "tenant.role.set_data_policy"
+      use_case: "set_tenant_role_data_policy"
+      permissions: "tenant.role.manage"
+      permission_mode: PERMISSION_ALL
+      tenant_required: true
+      authentication: AUTHENTICATION_API_KEY
+      authentication: AUTHENTICATION_WEB_SESSION
+      execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+    };
+  }
+
+        }

@@ -29,14 +29,14 @@
 | Q-006 隐私撤回 | PENDING_HUMAN | 撤回可选处理同意后的具体行为；不能与必要身份处理混为一个开关。 | #169 #182 #183 |
 | Q-007 初始凭据 | ACCEPTED | 新成员创建时由创建人二选一：① `ACTIVATION_LINK`：发送激活链接，由成员自助设置最终密码；② `SMS_INITIAL_PASSWORD`：短信发送全局唯一 username + 一次性初始密码。一次性初始密码不得进入页面/日志/审计/普通 API 回执，首次使用后必须由成员设置最终密码。两种方式都不能允许租户管理员直接 rotate 共享 Account 的最终全局密码。 | #170 #173 #176 |
 | Q-008 删除恢复 | PENDING_HUMAN | 是否提供回收站、恢复权限以及恢复角色/范围关系的规则。 | #177 |
-| Q-009 范围绑定 | PENDING_HUMAN | 一期采用业务分组、部门策略、设备清单中的哪种已确认合同。 | #180 |
+| Q-009 范围绑定 | ACCEPTED | 一期采用**显式业务对象范围绑定**。候选对象必须由当前资源域的权威目录按当前 tenant 返回；一期通过既有 site membership 适配。Department 归属、负责人、组织上下级本身不产生业务数据权限；`derived_data_scope` 仅是投影。只允许当前 tenant、当前可分配对象，越界/停用/不可分配对象无论 UI 还是直调 API 均拒绝；保存后必须权威回读。精确机器合同见 `enterprise180-policy-contract.v1.json`。 | #180 |
 | Q-010 默认角色 | ACCEPTED | 一期保留两个系统不可变角色：`tenant_owner`（企业所有者）与 `tenant_admin`（企业管理员）。`role_code` 为稳定机器标识且永久不可修改；系统角色不可改名、停用或删除，展示名称由系统/i18n 管理。`tenant_owner` 继续承担最后 Owner 与 self-operation 保护；`tenant_admin` 不具备 Owner 身份语义。其他角色均为租户自定义角色；有成员绑定时不得停用或删除。Q-010 不冻结具体 PermissionGrant 集合，权限继续由 Access 当前授权事实管理。 | #178 #179 |
-| Q-011 数据策略 | PENDING_HUMAN | 是否允许多策略并存及冲突/组合语义。 | #180 |
+| Q-011 数据策略 | ACCEPTED | 一期每个 Role 最多引用一个当前有效 Data Policy，不建设多策略优先级/deny-overrides/继承/DSL。动作权限继续由当前 Grant 集合决定；数据范围采用约束性交集：`applicable_role_policy_scope ∩ member_explicit_scope ∩ current_tenant_assignable_scope`。缺少必需策略时 fail-closed；策略收缩后下一次敏感请求必须基于当前事实重新计算并拒绝越界访问。精确机器合同见 `enterprise180-policy-contract.v1.json`。 | #180 |
 | Q-012 权限生效 | PENDING_HUMAN | 是否主动踢出在线用户；无论选择何种策略，Grant 收缩提交后的新敏感请求不得继续依旧权限放行。 | #171 #179 |
-| Q-013 消息渠道 | PENDING_HUMAN | 一期站内/短信/邮件最终渠道；必要安全消息与可选偏好的关系。 | #184 #185 |
-| Q-014 消息联系人 | PENDING_HUMAN | 第一/第二联系人是否必填及候选来源。 | #184 |
+| Q-013 消息渠道 | ACCEPTED | 2026-09-25 用户委托采用建议：注册 in_app/sms/email；未就绪渠道显示原因且不可新选。等级不豁免可选短信/邮件偏好；必要身份验证沿用既有受控安全流程，不允许普通业务消息自行声明豁免。精确范围见 `notification-configuration-policy.md`；供应商配置/实际送达仍需独立验证。 | #184 #185 的该项产品决策已解除；真实环境资格不在此批准中 |
+| Q-014 消息联系人 | ACCEPTED | 2026-09-25 用户委托采用建议：第一联系人必填；第二联系人选填且不同人；附加接收人至多100名、集合唯一且不与前两者重复；来源仅为当前租户有效 Access 成员。消息 group 一期适配当前可管理资源点位，不由部门/负责人隐式扩权。 | #184 的该项产品决策已解除；API/MySQL/UI验收仍需执行 |
 | Q-015 消息已读 | ACCEPTED | 一期严格只有“全部已读”；单条已读为非目标。 | #186 |
-| Q-016 消息重试 | PENDING_HUMAN | 外部渠道最大重试次数、退避、最终失败处理。 | #185 |
+| Q-016 消息重试 | ACCEPTED | 2026-09-25 用户此前授权企业消息待决项采用建议：外部渠道最多5次尝试（含首次），失败后退避30秒→2分钟→10分钟→30分钟；达到上限、明确不可重试或安全材料无法覆盖下一退避窗口进入人工处理。超时/结果未知仅在provider明确支持同一逻辑事件幂等时自动重试；provider受理不等于最终送达。精确边界见 `notification-delivery-policy.md`。 | #185 产品策略已解除；真实供应商资格仍单独验收 |
 | Q-017 API 兼容 | PENDING_HUMAN | 是否存在 `/v1/account` `/v1/org` `/v1/message` 真实客户端及迁移期限；无证据不创建永久兼容层。 | #187 |
 | Q-018 Query Token | PENDING_HUMAN | 是否存在旧客户端、下线窗口和截止日；新实现禁止 Query Token。 | #187 |
 | Q-019 SSO | ACCEPTED | 一期非目标：企业 SSO/LDAP/SAML 不实施；已有 OIDC 基础不等于新增企业 SSO 产品。 | 路线边界 |

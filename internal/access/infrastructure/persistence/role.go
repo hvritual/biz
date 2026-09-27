@@ -406,6 +406,11 @@ func (repository *TenantRoleRepository) roleFromRecord(ctx context.Context, row 
 		return domain.Role{}, err
 	}
 	role := domain.Role{ID: row.ID, TenantID: row.TenantID, Name: row.Name, Description: row.Description, Code: roleCodeValue(row.RoleCode), System: row.SystemRole, Status: row.Status, Version: row.Version}
+	policy, err := repository.roleDataPolicyReference(ctx, row)
+	if err != nil {
+		return domain.Role{}, err
+	}
+	role.DataPolicy = policy
 	count, err := repository.memberCount(ctx, row.TenantID, row.ID)
 	if err != nil {
 		return domain.Role{}, err
@@ -483,6 +488,10 @@ func NewTenantRoleRepositoryFactory(database *gorm.DB) (requestscope.RepositoryF
 		if err != nil {
 			return ports.TenantRoleRepositories{}, err
 		}
-		return ports.TenantRoleRepositories{Role: role}, nil
+		policies, err := NewTenantDataPolicyRepository(transaction)
+		if err != nil {
+			return ports.TenantRoleRepositories{}, err
+		}
+		return ports.TenantRoleRepositories{Role: role, DataPolicy: policies}, nil
 	}), nil
 }

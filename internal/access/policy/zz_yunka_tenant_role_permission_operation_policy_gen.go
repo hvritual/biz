@@ -5,14 +5,20 @@ package policy
 import "yunka.io/gateway/authz"
 
 const OperationTenantRolePermissionAssignTenantRoleMember authz.OperationID = "tenant.role.assign_member"
+const OperationTenantRolePermissionCreateTenantDataPolicy authz.OperationID = "tenant.data_policy.create"
 const OperationTenantRolePermissionCreateTenantRole authz.OperationID = "tenant.role.create"
 const OperationTenantRolePermissionDeleteTenantRole authz.OperationID = "tenant.role.delete"
 const OperationTenantRolePermissionDisableTenantRole authz.OperationID = "tenant.role.disable"
 const OperationTenantRolePermissionEnableTenantRole authz.OperationID = "tenant.role.enable"
+const OperationTenantRolePermissionGetTenantDataPolicy authz.OperationID = "tenant.data_policy.get"
 const OperationTenantRolePermissionGetTenantRole authz.OperationID = "tenant.role.get"
+const OperationTenantRolePermissionListTenantDataPolicies authz.OperationID = "tenant.data_policy.list"
 const OperationTenantRolePermissionListTenantRoles authz.OperationID = "tenant.role.list"
+const OperationTenantRolePermissionRevokeTenantDataPolicy authz.OperationID = "tenant.data_policy.revoke"
 const OperationTenantRolePermissionRevokeTenantRoleMember authz.OperationID = "tenant.role.revoke_member"
+const OperationTenantRolePermissionSetTenantRoleDataPolicy authz.OperationID = "tenant.role.set_data_policy"
 const OperationTenantRolePermissionSetTenantRolePermissions authz.OperationID = "tenant.role.set_permissions"
+const OperationTenantRolePermissionUpdateTenantDataPolicy authz.OperationID = "tenant.data_policy.update"
 const OperationTenantRolePermissionUpdateTenantRole authz.OperationID = "tenant.role.update"
 
 func TenantRolePermissionPermissions() []authz.PermissionKey {
@@ -26,14 +32,20 @@ func TenantRolePermissionResolver() authz.StaticResolver {
 func tenantRolePermissionPolicies() map[string]authz.Policy {
 	return map[string]authz.Policy{
 		"/access.v1.TenantRolePermissionApplication/AssignTenantRoleMember":   {Operation: OperationTenantRolePermissionAssignTenantRoleMember, Permissions: []authz.PermissionKey{"tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/access.v1.TenantRolePermissionApplication/CreateTenantDataPolicy":   {Operation: OperationTenantRolePermissionCreateTenantDataPolicy, Permissions: []authz.PermissionKey{"tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantRolePermissionApplication/CreateTenantRole":         {Operation: OperationTenantRolePermissionCreateTenantRole, Permissions: []authz.PermissionKey{"tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantRolePermissionApplication/DeleteTenantRole":         {Operation: OperationTenantRolePermissionDeleteTenantRole, Permissions: []authz.PermissionKey{"tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantRolePermissionApplication/DisableTenantRole":        {Operation: OperationTenantRolePermissionDisableTenantRole, Permissions: []authz.PermissionKey{"tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantRolePermissionApplication/EnableTenantRole":         {Operation: OperationTenantRolePermissionEnableTenantRole, Permissions: []authz.PermissionKey{"tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/access.v1.TenantRolePermissionApplication/GetTenantDataPolicy":      {Operation: OperationTenantRolePermissionGetTenantDataPolicy, Permissions: []authz.PermissionKey{"tenant.role.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantRolePermissionApplication/GetTenantRole":            {Operation: OperationTenantRolePermissionGetTenantRole, Permissions: []authz.PermissionKey{"tenant.role.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/access.v1.TenantRolePermissionApplication/ListTenantDataPolicies":   {Operation: OperationTenantRolePermissionListTenantDataPolicies, Permissions: []authz.PermissionKey{"tenant.role.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantRolePermissionApplication/ListTenantRoles":          {Operation: OperationTenantRolePermissionListTenantRoles, Permissions: []authz.PermissionKey{"tenant.role.read"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/access.v1.TenantRolePermissionApplication/RevokeTenantDataPolicy":   {Operation: OperationTenantRolePermissionRevokeTenantDataPolicy, Permissions: []authz.PermissionKey{"tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantRolePermissionApplication/RevokeTenantRoleMember":   {Operation: OperationTenantRolePermissionRevokeTenantRoleMember, Permissions: []authz.PermissionKey{"tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/access.v1.TenantRolePermissionApplication/SetTenantRoleDataPolicy":  {Operation: OperationTenantRolePermissionSetTenantRoleDataPolicy, Permissions: []authz.PermissionKey{"tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantRolePermissionApplication/SetTenantRolePermissions": {Operation: OperationTenantRolePermissionSetTenantRolePermissions, Permissions: []authz.PermissionKey{"tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/access.v1.TenantRolePermissionApplication/UpdateTenantDataPolicy":   {Operation: OperationTenantRolePermissionUpdateTenantDataPolicy, Permissions: []authz.PermissionKey{"tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/access.v1.TenantRolePermissionApplication/UpdateTenantRole":         {Operation: OperationTenantRolePermissionUpdateTenantRole, Permissions: []authz.PermissionKey{"tenant.role.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 	}
 }

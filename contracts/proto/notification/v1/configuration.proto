@@ -1,0 +1,116 @@
+syntax = "proto3";
+package notification.v1;
+import "google/api/annotations.proto";
+import "yunka/dsl/v1/options.proto";
+option go_package = "github.com/hvritual/biz/contracts/gen/notification/v1;notificationv1";
+option (yunka.dsl.v1.domain) = { name: "notification" version: "v1" };
+
+message MessageTypeDTO { option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT }; string code = 1; string name = 2; string level = 3; }
+message MessageLevelCountDTO { string level = 1; uint64 total = 2; }
+message ListMessageTypesRequest { string code = 1; string name = 2; string level = 3; uint32 page = 4; uint32 page_size = 5; }
+message ListMessageTypesResponse { repeated MessageTypeDTO items = 1; repeated MessageLevelCountDTO groups = 2; uint64 total = 3; uint32 page = 4; uint32 page_size = 5; string tenant_id = 6; }
+message MessageChannelDTO { option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT }; string code = 1; string name = 2; bool configurable = 3; string unavailable_reason = 4; }
+message ListMessageChannelsRequest {}
+message ListMessageChannelsResponse { repeated MessageChannelDTO items = 1; string tenant_id = 2; }
+message MessageDirectoryEntryDTO { option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT }; string id = 1; string name = 2; }
+message ListMessageDirectoryRequest { string query = 1; uint32 page = 2; uint32 page_size = 3; }
+message ListMessageDirectoryResponse { repeated MessageDirectoryEntryDTO items = 1; uint64 total = 2; uint32 page = 3; uint32 page_size = 4; string tenant_id = 5; }
+message MessageConfigurationDTO {
+ option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+ string id = 1; string tenant_id = 2; string group_id = 3; string group_name = 4; string level = 5;
+ repeated string channels = 6; string primary_user_id = 7; string secondary_user_id = 8;
+ repeated string additional_user_ids = 9; string notes = 10; uint64 version = 11;
+ string updated_at = 12; string created_at = 13; bool deleted = 14;
+}
+message ListMessageConfigurationsRequest { string group_id = 1; string level = 2; string recipient_id = 3; uint32 page = 4; uint32 page_size = 5; }
+message ListMessageConfigurationsResponse { repeated MessageConfigurationDTO items = 1; uint64 total = 2; uint32 page = 3; uint32 page_size = 4; string tenant_id = 5; }
+message GetMessageConfigurationRequest { string id = 1; }
+message CreateMessageConfigurationsRequest { string group_id = 1; repeated string levels = 2; repeated string channels = 3; string primary_user_id = 4; string secondary_user_id = 5; repeated string additional_user_ids = 6; string notes = 7; }
+message MessageConfigurationReceipt { string receipt_id = 1; string tenant_id = 2; repeated MessageConfigurationDTO configurations = 3; }
+message UpdateMessageConfigurationRequest { string id = 1; uint64 expected_version = 2; repeated string channels = 3; string primary_user_id = 4; string secondary_user_id = 5; repeated string additional_user_ids = 6; string notes = 7; }
+message DeleteMessageConfigurationRequest { string id = 1; uint64 expected_version = 2; }
+
+service MessageConfigurationApplication {
+ option (yunka.dsl.v1.application) = { name: "message_configuration" };
+ rpc ListMessageTypes(ListMessageTypesRequest) returns (ListMessageTypesResponse) {
+  option (google.api.http) = { get: "/v1/tenant/notification/types" };
+  option (yunka.dsl.v1.operation) = {
+   id: "notification.type.list" use_case: "list_message_types" permissions: "tenant.notification.read"
+   permission_mode: PERMISSION_ALL tenant_required: true
+   authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION
+   execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+  };
+ }
+ rpc ListMessageChannels(ListMessageChannelsRequest) returns (ListMessageChannelsResponse) {
+  option (google.api.http) = { get: "/v1/tenant/notification/channels" };
+  option (yunka.dsl.v1.operation) = {
+   id: "notification.channel.list" use_case: "list_message_channels" permissions: "tenant.notification.read"
+   permission_mode: PERMISSION_ALL tenant_required: true
+   authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION
+   execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+  };
+ }
+ rpc ListMessageGroups(ListMessageDirectoryRequest) returns (ListMessageDirectoryResponse) {
+  option (google.api.http) = { get: "/v1/tenant/notification/groups" };
+  option (yunka.dsl.v1.operation) = {
+   id: "notification.group.list" use_case: "list_message_groups" permissions: "tenant.notification.read"
+   permission_mode: PERMISSION_ALL tenant_required: true
+   authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION
+   execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+  };
+ }
+ rpc ListMessageRecipients(ListMessageDirectoryRequest) returns (ListMessageDirectoryResponse) {
+  option (google.api.http) = { get: "/v1/tenant/notification/recipients" };
+  option (yunka.dsl.v1.operation) = {
+   id: "notification.recipient.list" use_case: "list_message_recipients" permissions: "tenant.notification.read"
+   permission_mode: PERMISSION_ALL tenant_required: true
+   authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION
+   execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+  };
+ }
+ rpc ListMessageConfigurations(ListMessageConfigurationsRequest) returns (ListMessageConfigurationsResponse) {
+  option (google.api.http) = { get: "/v1/tenant/notification/configurations" };
+  option (yunka.dsl.v1.operation) = {
+   id: "notification.configuration.list" use_case: "list_message_configurations" permissions: "tenant.notification.read"
+   permission_mode: PERMISSION_ALL tenant_required: true
+   authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION
+   execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+  };
+ }
+ rpc GetMessageConfiguration(GetMessageConfigurationRequest) returns (MessageConfigurationDTO) {
+  option (google.api.http) = { get: "/v1/tenant/notification/configurations/{id}" };
+  option (yunka.dsl.v1.operation) = {
+   id: "notification.configuration.get" use_case: "get_message_configuration" permissions: "tenant.notification.read"
+   permission_mode: PERMISSION_ALL tenant_required: true
+   authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION
+   execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+  };
+ }
+ rpc CreateMessageConfigurations(CreateMessageConfigurationsRequest) returns (MessageConfigurationReceipt) {
+  option (google.api.http) = { post: "/v1/tenant/notification/configurations" body: "*" };
+  option (yunka.dsl.v1.operation) = {
+   id: "notification.configuration.create" use_case: "create_message_configurations" permissions: "tenant.notification.create"
+   permission_mode: PERMISSION_ALL tenant_required: true
+   authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION
+   execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+  };
+ }
+ rpc UpdateMessageConfiguration(UpdateMessageConfigurationRequest) returns (MessageConfigurationReceipt) {
+  option (google.api.http) = { patch: "/v1/tenant/notification/configurations/{id}" body: "*" };
+  option (yunka.dsl.v1.operation) = {
+   id: "notification.configuration.update" use_case: "update_message_configuration" permissions: "tenant.notification.update"
+   permission_mode: PERMISSION_ALL tenant_required: true
+   authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION
+   execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+  };
+ }
+ rpc DeleteMessageConfiguration(DeleteMessageConfigurationRequest) returns (MessageConfigurationReceipt) {
+  option (google.api.http) = { post: "/v1/tenant/notification/configurations/{id}/delete" body: "*" };
+  option (yunka.dsl.v1.operation) = {
+   id: "notification.configuration.delete" use_case: "delete_message_configuration" permissions: "tenant.notification.delete"
+   permission_mode: PERMISSION_ALL tenant_required: true
+   authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION
+   execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED }
+  };
+ }
+}

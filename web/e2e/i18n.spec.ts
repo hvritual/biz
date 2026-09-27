@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
+import { installUnauthenticatedSession } from './ui.helpers'
+
+test.beforeEach(async ({ page }) => {
+  await installUnauthenticatedSession(page)
+})
 
 const viewports = [
   { width: 1366, height: 768 },

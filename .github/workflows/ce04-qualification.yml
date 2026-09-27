@@ -2,6 +2,19 @@ name: CE-04 qualification
 
 on:
   workflow_call:
+    inputs:
+      enforce_performance:
+        type: boolean
+        required: false
+        default: false
+      performance_target_seconds:
+        type: number
+        required: false
+        default: 120
+      performance_hard_seconds:
+        type: number
+        required: false
+        default: 150
   workflow_dispatch:
 permissions:
   contents: read
@@ -10,37 +23,37 @@ env:
 jobs:
   qualify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
     env:
       PYTHONDONTWRITEBYTECODE: '1'
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       YUNKA_SHA: 9ee6640f5e19777b4c04d9e4937a93e2035eacda
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce04?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
-    services:
-      mysql:
-        image: mysql:8.4
-        env: {MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: biz_ce04}
-        ports: ['3306:3306']
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
-          --health-interval=5s --health-timeout=5s --health-retries=30
     steps:
+      - name: Start CE04 performance clock
+        run: date +%s > "$RUNNER_TEMP/ce04.started"
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with: {path: biz, ref: '${{ github.sha }}', fetch-depth: 0, persist-credentials: false}
+        with: {path: biz, ref: '${{ env.CANDIDATE_SHA }}', fetch-depth: 0, persist-credentials: false}
+      - name: Start workflow-owned durable MySQL
+        run: bash biz/scripts/ci_commercial_mysql.sh start ce04
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with: {repository: hvritual/yunka.io, ref: '${{ env.YUNKA_SHA }}', path: yunka.io, persist-credentials: false}
       - id: lock
         name: Lock toolchain and source
         run: |
           set -euo pipefail
-          test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C biz rev-parse HEAD)" = "$CANDIDATE_SHA"
           test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
           source yunka.io/tools/toolchain.env
           echo "go_version=$GO_VERSION" >> "$GITHUB_OUTPUT"
           echo "protoc_release=$PROTOC_RELEASE" >> "$GITHUB_OUTPUT"
           echo "protoc_sha=$PROTOC_LINUX_X86_64_SHA256" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
-        with: {go-version: '${{ steps.lock.outputs.go_version }}', cache: false}
+        with:
+          go-version: '${{ steps.lock.outputs.go_version }}'
+          cache: true
+          cache-dependency-path: biz/go.sum
       - name: Install locked protobuf generators
         env: {RELEASE: '${{ steps.lock.outputs.protoc_release }}', CHECKSUM: '${{ steps.lock.outputs.protoc_sha }}'}
         run: |
@@ -52,8 +65,30 @@ jobs:
           make -C yunka.io rpc-tools
           echo "$GITHUB_WORKSPACE/yunka.io/.yunka/bin" >> "$GITHUB_PATH"
       - name: Qualify sources, endpoints, rollback and real database restart
-        env: {MYSQL_CONTAINER_ID: '${{ job.services.mysql.id }}'}
         run: bash biz/scripts/ce04_qualify.sh
+      - name: Write ce04 performance receipt
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          ENFORCE_PERFORMANCE: ${{ inputs.enforce_performance }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(
+            --surface ce04
+            --lane qualify
+            --started-file "$RUNNER_TEMP/ce04.started"
+            --target-seconds "${{ inputs.performance_target_seconds || 120 }}"
+            --hard-seconds "${{ inputs.performance_hard_seconds || 150 }}"
+            --candidate-sha "$CANDIDATE_SHA"
+            --job-status "$JOB_STATUS"
+            --output "$RUNNER_TEMP/ce04/performance.json"
+          )
+          if [ "$ENFORCE_PERFORMANCE" = "true" ]; then args+=(--enforce); fi
+          python3 biz/scripts/ci_performance_receipt.py "${args[@]}"
+      - name: Stop workflow-owned MySQL
+        if: always()
+        run: bash biz/scripts/ci_commercial_mysql.sh stop ce04
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
-        with: {name: 'ce04-${{ github.sha }}', path: '${{ runner.temp }}/ce04', retention-days: 30, if-no-files-found: error}
+        with: {name: 'ce04-${{ env.CANDIDATE_SHA }}', path: '${{ runner.temp }}/ce04', retention-days: 30, if-no-files-found: error}

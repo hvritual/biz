@@ -2,9 +2,13 @@ package bizruntime
 
 import (
 	"context"
+	"errors"
 	devicev1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
 	"github.com/hvritual/biz/internal/commercial/enforcement"
 	deviceapp "github.com/hvritual/biz/internal/deviceops/application"
+	deviceports "github.com/hvritual/biz/internal/deviceops/ports"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"yunka.io/gateway/authz"
 )
 
@@ -34,6 +38,9 @@ func (w checkedDevice) GetDevice(ctx context.Context, r *devicev1.GetDeviceReque
 		return nil, err
 	}
 	value, err := w.inner.GetDevice(ctx, r)
+	if errors.Is(err, deviceports.ErrNotFound) {
+		err = status.Error(codes.NotFound, err.Error())
+	}
 	return value, enforcement.ExecutionError(ctx, "device.get", err)
 }
 func (w checkedDevice) CreateDevice(ctx context.Context, r *devicev1.CreateDeviceRequest) (*devicev1.DeviceDTO, error) {
@@ -68,6 +75,22 @@ func (w checkedSite) ValidateTransferTarget(ctx context.Context, r *devicev1.Val
 	}
 	value, err := w.inner.ValidateTransferTarget(ctx, r)
 	return value, enforcement.ExecutionError(ctx, "site.validate_transfer_target", err)
+}
+
+func (w checkedSite) ListAssignableRoleSites(ctx context.Context, r *devicev1.SiteScopeDirectoryRequest) (*devicev1.SiteScopeDirectoryResponse, error) {
+	if err := enforcement.RequireExecuted(ctx, "site.role_scope_directory"); err != nil {
+		return nil, err
+	}
+	value, err := w.inner.ListAssignableRoleSites(ctx, r)
+	return value, enforcement.ExecutionError(ctx, "site.role_scope_directory", err)
+}
+
+func (w checkedSite) ListAssignableMemberSites(ctx context.Context, r *devicev1.SiteScopeDirectoryRequest) (*devicev1.SiteScopeDirectoryResponse, error) {
+	if err := enforcement.RequireExecuted(ctx, "site.member_scope_directory"); err != nil {
+		return nil, err
+	}
+	value, err := w.inner.ListAssignableMemberSites(ctx, r)
+	return value, enforcement.ExecutionError(ctx, "site.member_scope_directory", err)
 }
 
 type checkedTransfer struct {

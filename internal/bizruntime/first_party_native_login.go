@@ -3,7 +3,6 @@ package bizruntime
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -266,33 +265,6 @@ func (idp *runtimeFirstPartyIdP) continueVerifiedLogin(
 		return
 	}
 	idp.finishAuthorization(writer, request, code, authorization)
-}
-
-func (idp *runtimeFirstPartyIdP) maybeNotifyLoginLock(
-	ctx context.Context,
-	resolved accesspersistence.LoginIdentifierResolution,
-	requestID string,
-	blockedUntil *time.Time,
-) {
-	verification := idp.currentVerification()
-	if verification == nil || blockedUntil == nil || resolved.Identity.UserID == "" || resolved.OTPDestination == "" {
-		return
-	}
-	eventID := fmt.Sprintf("idp-login-lock/%s/%d", resolved.Identity.UserID, blockedUntil.UTC().Unix())
-	queued, err := verification.QueueSecurityNotification(ctx, accessdomain.SecurityNotificationRequest{
-		BusinessEventID: eventID,
-		Kind:            accessdomain.SecurityNotificationLoginLock,
-		Purpose:         accessdomain.VerificationPurposeLogin,
-		UserID:          resolved.Identity.UserID,
-		FlowID:          requestID,
-		Channel:         resolved.OTPChannel,
-		Destination:     resolved.OTPDestination,
-		ExpiresAt:       blockedUntil.UTC(),
-	})
-	if err != nil || queued.EventID == "" {
-		return
-	}
-	_, _ = verification.DeliverSecurityNotification(ctx, queued.EventID)
 }
 
 func (idp *runtimeFirstPartyIdP) rememberedIdentifier(request *http.Request) string {

@@ -80,6 +80,29 @@ class RouteTests(unittest.TestCase):
         self.assertFalse(result["web_e2e_harness"])
         self.assertTrue(result["web_product"])
 
+    def test_coffeelink_gate_change_runs_targeted_product_performance(self):
+        result = route([".github/workflows/coffeelink-web.yml"])
+        self.assertTrue(result["domains"]["core"])
+        self.assertTrue(result["web_product"])
+        self.assertTrue(result["coffeelink_governance"])
+
+    def test_coffeelink_core_stability_spec_runs_product_and_e2e_gates(self):
+        result = route(["web/e2e/console.spec.ts"])
+        self.assertTrue(result["domains"]["web"])
+        self.assertTrue(result["web_e2e_harness"])
+        self.assertTrue(result["web_product"])
+        self.assertTrue(result["coffeelink_governance"])
+
+    def test_ce13_gate_change_runs_targeted_ce13_batch(self):
+        result = route([".github/workflows/ce13-plan-catalog-qualification.yml"])
+        self.assertTrue(result["domains"]["core"])
+        self.assertTrue(result["ce13_governance"])
+
+    def test_ce13_browser_test_change_runs_targeted_ce13_batch(self):
+        result = route(["web/tests/ce13-platform/session.spec.ts"])
+        self.assertTrue(result["domains"]["web"])
+        self.assertTrue(result["ce13_governance"])
+
     def test_role_grant_change_uses_role_grant_gate(self):
         result = route([
             "internal/bizruntime/role_entitlements.go",
@@ -95,6 +118,23 @@ class RouteTests(unittest.TestCase):
         self.assertTrue(result["role_grants"])
         self.assertTrue(result["enterprise180"])
 
+    def test_policy_source_contract_and_reusable_lane_cannot_skip_admission(self):
+        for path in [
+            "contracts/proto/access/v1/tenant_role.proto",
+            "contracts/proto/access/v1/tenant_member.proto",
+            "contracts/proto/deviceops/v1/deviceops.proto",
+            ".github/workflows/enterprise-role-qualification.yml",
+            "internal/access/application/tenant_data_policy.go",
+            "internal/access/infrastructure/persistence/business_scope.go",
+            "web/src/features/enterprise/components/policies/RoleDataPolicyDialog.vue",
+            "docs/enterprise-center/enterprise180-policy-contract.v1.json",
+        ]:
+            with self.subTest(path=path):
+                result = route([path])
+                self.assertTrue(result["enterprise180"])
+                self.assertTrue(result["role_grants"])
+                self.assertFalse(result["docs_only"])
+
     def test_admission_infrastructure_does_not_impersonate_business_candidate(self):
         result = route([
             "scripts/enterprise_180_admission.py",
@@ -104,6 +144,22 @@ class RouteTests(unittest.TestCase):
 
     def test_unrelated_member_change_does_not_use_role_grant_gate(self):
         result = route(["internal/access/application/tenant_member_lifecycle.go"])
+        self.assertTrue(result["domains"]["access"])
+        self.assertFalse(result["role_grants"])
+        self.assertFalse(result["enterprise180"])
+
+
+    def test_integration_uses_access_lane(self):
+        result = route(["integration/enterprise_183_notification_preferences_mysql_test.go"])
+        self.assertTrue(result["domains"]["access"])
+        self.assertFalse(result["domains"]["core"])
+        self.assertFalse(result["enterprise180"])
+
+    def test_preference_boundary_and_bff_use_access(self):
+        result = route([
+            "internal/access/infrastructure/persistence/notification_preference_session.go",
+            "internal/bizruntime/web_notification_preferences.go",
+        ])
         self.assertTrue(result["domains"]["access"])
         self.assertFalse(result["role_grants"])
         self.assertFalse(result["enterprise180"])

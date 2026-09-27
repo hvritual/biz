@@ -2546,6 +2546,356 @@
       }
     },
     {
+      "operationId": "notification.channel.list",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "list_message_channels",
+      "requestType": "notification.v1.ListMessageChannelsRequest",
+      "responseType": "notification.v1.ListMessageChannelsResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageChannels",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/notification/channels"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.configuration.create",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "create_message_configurations",
+      "requestType": "notification.v1.CreateMessageConfigurationsRequest",
+      "responseType": "notification.v1.MessageConfigurationReceipt",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.create"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/CreateMessageConfigurations",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/notification/configurations",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.configuration.delete",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "delete_message_configuration",
+      "requestType": "notification.v1.DeleteMessageConfigurationRequest",
+      "responseType": "notification.v1.MessageConfigurationReceipt",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.delete"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/DeleteMessageConfiguration",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/notification/configurations/{id}/delete",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.configuration.get",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "get_message_configuration",
+      "requestType": "notification.v1.GetMessageConfigurationRequest",
+      "responseType": "notification.v1.MessageConfigurationDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/GetMessageConfiguration",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/notification/configurations/{id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.configuration.list",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "list_message_configurations",
+      "requestType": "notification.v1.ListMessageConfigurationsRequest",
+      "responseType": "notification.v1.ListMessageConfigurationsResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageConfigurations",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/notification/configurations"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.configuration.update",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "update_message_configuration",
+      "requestType": "notification.v1.UpdateMessageConfigurationRequest",
+      "responseType": "notification.v1.MessageConfigurationReceipt",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.update"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/UpdateMessageConfiguration",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/tenant/notification/configurations/{id}",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.group.list",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "list_message_groups",
+      "requestType": "notification.v1.ListMessageDirectoryRequest",
+      "responseType": "notification.v1.ListMessageDirectoryResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageGroups",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/notification/groups"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.recipient.list",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "list_message_recipients",
+      "requestType": "notification.v1.ListMessageDirectoryRequest",
+      "responseType": "notification.v1.ListMessageDirectoryResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageRecipients",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/notification/recipients"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "notification.type.list",
+      "domain": "notification",
+      "application": "message_configuration",
+      "useCase": "list_message_types",
+      "requestType": "notification.v1.ListMessageTypesRequest",
+      "responseType": "notification.v1.ListMessageTypesResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.notification.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/notification.v1.MessageConfigurationApplication/ListMessageTypes",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/notification/types"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "site.member_scope_directory",
+      "domain": "deviceops",
+      "application": "site_management",
+      "useCase": "list_assignable_member_sites",
+      "requestType": "deviceops.v1.SiteScopeDirectoryRequest",
+      "responseType": "deviceops.v1.SiteScopeDirectoryResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.member.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {}
+    },
+    {
+      "operationId": "site.role_scope_directory",
+      "domain": "deviceops",
+      "application": "site_management",
+      "useCase": "list_assignable_role_sites",
+      "requestType": "deviceops.v1.SiteScopeDirectoryRequest",
+      "responseType": "deviceops.v1.SiteScopeDirectoryResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {}
+    },
+    {
       "operationId": "site.validate_transfer_target",
       "domain": "deviceops",
       "application": "site_management",
@@ -2789,6 +3139,205 @@
           {
             "method": "POST",
             "path": "/v1/tenants",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.data_policy.create",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "create_tenant_data_policy",
+      "requestType": "access.v1.CreateTenantDataPolicyRequest",
+      "responseType": "access.v1.TenantDataPolicyDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "site.role_scope_directory"
+        ],
+        "permissionClosure": [
+          "tenant.role.manage"
+        ]
+      },
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/CreateTenantDataPolicy",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/data-policies",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.data_policy.get",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "get_tenant_data_policy",
+      "requestType": "access.v1.GetTenantDataPolicyRequest",
+      "responseType": "access.v1.TenantDataPolicyDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/GetTenantDataPolicy",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/data-policies/{policy_id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.data_policy.list",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "list_tenant_data_policies",
+      "requestType": "access.v1.ListTenantDataPoliciesRequest",
+      "responseType": "access.v1.ListTenantDataPoliciesResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/ListTenantDataPolicies",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/data-policies"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.data_policy.revoke",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "revoke_tenant_data_policy",
+      "requestType": "access.v1.RevokeTenantDataPolicyRequest",
+      "responseType": "access.v1.TenantDataPolicyDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/RevokeTenantDataPolicy",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/data-policies/{policy_id}/revoke",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.data_policy.update",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "update_tenant_data_policy",
+      "requestType": "access.v1.UpdateTenantDataPolicyRequest",
+      "responseType": "access.v1.TenantDataPolicyDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "site.role_scope_directory"
+        ],
+        "permissionClosure": [
+          "tenant.role.manage"
+        ]
+      },
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/UpdateTenantDataPolicy",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/tenant/data-policies/{policy_id}",
             "body": "*"
           }
         ]
@@ -3316,6 +3865,87 @@
       "bindings": {}
     },
     {
+      "operationId": "tenant.member.business_scope.get",
+      "domain": "access",
+      "application": "tenant_member_business_scope",
+      "useCase": "get_tenant_member_business_scope",
+      "requestType": "access.v1.GetTenantMemberBusinessScopeRequest",
+      "responseType": "access.v1.TenantMemberBusinessScopeDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.member.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberBusinessScopeApplication/GetTenantMemberBusinessScope",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/members/{user_id}/business-scope"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.member.business_scope.set",
+      "domain": "access",
+      "application": "tenant_member_business_scope",
+      "useCase": "set_tenant_member_business_scope",
+      "requestType": "access.v1.SetTenantMemberBusinessScopeRequest",
+      "responseType": "access.v1.TenantMemberBusinessScopeDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.member.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "site.member_scope_directory"
+        ],
+        "permissionClosure": [
+          "tenant.member.manage"
+        ]
+      },
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberBusinessScopeApplication/SetTenantMemberBusinessScope",
+        "http": [
+          {
+            "method": "PUT",
+            "path": "/v1/tenant/members/{user_id}/business-scope",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "tenant.member.count_quota_usage",
       "domain": "access",
       "application": "tenant_member_lifecycle",
@@ -3543,6 +4173,118 @@
       }
     },
     {
+      "operationId": "tenant.member.personal_profile.avatar_options",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "list_my_personal_avatar_options",
+      "requestType": "access.v1.ListMyPersonalAvatarOptionsRequest",
+      "responseType": "access.v1.ListMyPersonalAvatarOptionsResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.personal_profile.self"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_department_management",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/ListMyPersonalAvatarOptions",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/me/avatar-options"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.member.personal_profile.avatar_update",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "update_my_personal_avatar",
+      "requestType": "access.v1.UpdateMyPersonalAvatarRequest",
+      "responseType": "access.v1.TenantPersonalProfileDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.personal_profile.self"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_department_management",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/UpdateMyPersonalAvatar",
+        "http": [
+          {
+            "method": "PATCH",
+            "path": "/v1/tenant/me/avatar",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.member.personal_profile.get",
+      "domain": "access",
+      "application": "tenant_member_lifecycle",
+      "useCase": "get_my_personal_profile",
+      "requestType": "access.v1.GetMyPersonalProfileRequest",
+      "responseType": "access.v1.TenantPersonalProfileDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.personal_profile.self"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "access/tenant_department_management",
+        "access/tenant_role_permission"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberLifecycleApplication/GetMyPersonalProfile",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/me/profile"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "tenant.member.profile.update",
       "domain": "access",
       "application": "tenant_member_lifecycle",
@@ -3677,6 +4419,50 @@
             "method": "POST",
             "path": "/v1/tenant/members/{user_id}/restore",
             "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.member.scope_candidates",
+      "domain": "access",
+      "application": "tenant_member_business_scope",
+      "useCase": "list_tenant_member_scope_candidates",
+      "requestType": "access.v1.ListTenantMemberScopeCandidatesRequest",
+      "responseType": "access.v1.ListTenantMemberScopeCandidatesResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.member.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "site.member_scope_directory"
+        ],
+        "permissionClosure": [
+          "tenant.member.manage"
+        ]
+      },
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantMemberBusinessScopeApplication/ListTenantMemberScopeCandidates",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/member-scope-candidates"
           }
         ]
       }
@@ -3867,6 +4653,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {}
     },
     {
@@ -3892,6 +4681,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/AssignTenantRoleMember",
         "http": [
@@ -3924,6 +4716,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {}
     },
     {
@@ -3949,6 +4744,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/CreateTenantRole",
         "http": [
@@ -3983,6 +4781,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/DeleteTenantRole",
         "http": [
@@ -4016,6 +4817,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/DisableTenantRole",
         "http": [
@@ -4050,6 +4854,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/EnableTenantRole",
         "http": [
@@ -4084,6 +4891,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/GetTenantRole",
         "http": [
@@ -4117,6 +4927,9 @@
         "idempotency": "none"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/ListTenantRoles",
         "http": [
@@ -4150,12 +4963,52 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/RevokeTenantRoleMember",
         "http": [
           {
             "method": "POST",
             "path": "/v1/tenant/roles/{role_id}/members/{user_id}/revoke",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "tenant.role.set_data_policy",
+      "domain": "access",
+      "application": "tenant_role_permission",
+      "useCase": "set_tenant_role_data_policy",
+      "requestType": "access.v1.SetTenantRoleDataPolicyRequest",
+      "responseType": "access.v1.TenantRoleDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.role.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
+      "bindings": {
+        "rpc": "/access.v1.TenantRolePermissionApplication/SetTenantRoleDataPolicy",
+        "http": [
+          {
+            "method": "PUT",
+            "path": "/v1/tenant/roles/{role_id}/data-policy",
             "body": "*"
           }
         ]
@@ -4184,6 +5037,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/SetTenantRolePermissions",
         "http": [
@@ -4218,6 +5074,9 @@
         "idempotency": "required"
       },
       "composition": {},
+      "applicationRequires": [
+        "deviceops/site_management"
+      ],
       "bindings": {
         "rpc": "/access.v1.TenantRolePermissionApplication/UpdateTenantRole",
         "http": [
