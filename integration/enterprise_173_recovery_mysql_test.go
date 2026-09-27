@@ -66,6 +66,8 @@ func TestEnterprise173PasswordRecoveryReplayExpiryAndConcurrentConsumption(t *te
 		}, 5*time.Minute, "AgainPass9A", "AgainPass9A"); !errors.Is(err, domain.ErrVerificationConsumed) {
 			t.Fatalf("recovery replay accepted: %v", err)
 		}
+		enterprise188RequireAuditOutcome(t, fixture.DB, "tenant-173-recovery", "identity.password.recover", "success", 1)
+		enterprise188RequireAuditOutcome(t, fixture.DB, "tenant-173-recovery", "identity.password.recover", "failure", 2)
 	})
 
 	t.Run("expired", func(t *testing.T) {
