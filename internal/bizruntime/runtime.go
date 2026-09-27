@@ -44,6 +44,7 @@ import (
 
 type Started struct {
 	provisioningRunner *provisioningRunner
+	notificationRunner *notificationRuntime
 	App                *core.App
 	Applications       generatedassembly.Applications
 	httpAddress        string
@@ -105,6 +106,15 @@ func bootstrapWithOptions(
 	if err := options.Validate(); err != nil {
 		return nil, err
 	}
+	catalogs, err := buildNotificationCatalogSnapshot(options.NotificationRuntime)
+	if err != nil {
+		return nil, err
+	}
+	options.notificationCatalogs = catalogs
+	notificationRunner, err := newNotificationRuntime(options.NotificationRuntime, catalogs, protection)
+	if err != nil {
+		return nil, err
+	}
 	config := options.DeviceOps
 	if ctx == nil {
 		ctx = context.Background()
@@ -135,6 +145,9 @@ func bootstrapWithOptions(
 	rootMux := http.NewServeMux()
 	rootMux.HandleFunc("GET /healthz", health.handle)
 	rootMux.Handle("GET "+diagnosticsPath, diagnosticsEndpoint)
+	if notificationRunner != nil {
+		rootMux.Handle("POST "+notificationProviderCallbackPath, notificationRunner.callbackHandler())
+	}
 	webAuth.register(rootMux)
 	rootMux.Handle("/v1/", httpAuthentication(authenticator, webAuth, enforcement.HTTP(notificationHTTP(apiMux))))
 	httpServer := &http.Server{Handler: rootMux, ReadHeaderTimeout: 5 * time.Second}
@@ -157,10 +170,22 @@ func bootstrapWithOptions(
 	if options.ProvisioningWorker.Token != "" {
 		components = append(components, worker.component())
 	}
+	if notificationRunner != nil {
+		components = append(components, notificationRunner.component())
+	}
 	result, err := generatedassembly.Bootstrap(ctx, generatedassembly.BootstrapOptions{
 		Platform: provider,
 		BindRuntime: func(bindCtx context.Context, prepared *platform.Provider) (generatedassembly.RuntimeBindings, error) {
-			return bindRuntimeWithSecurity(bindCtx, prepared, options, authenticator, webAuth, protection, verificationProtection, worker)
+			bindings, err := bindRuntimeWithSecurity(bindCtx, prepared, options, authenticator, webAuth, protection, verificationProtection, worker)
+			if err != nil {
+				return generatedassembly.RuntimeBindings{}, err
+			}
+			if notificationRunner != nil {
+				if err := notificationRunner.bind(bindCtx, prepared, config.AutoMigrate); err != nil {
+					return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: notification runtime bind: %w", err)
+				}
+			}
+			return bindings, nil
 		},
 		Transports:        generatedassembly.TransportBindings{HTTP: apiMux, RPC: grpcServer},
 		RuntimeComponents: components,
@@ -177,7 +202,7 @@ func bootstrapWithOptions(
 		_ = result.App.Shutdown(ctx)
 		return nil, fmt.Errorf("biz runtime: diagnostics: %w", err)
 	}
-	return &Started{provisioningRunner: worker, App: result.App, Applications: result.Applications, httpAddress: httpListener.Addr().String(), grpcAddress: grpcListener.Addr().String()}, nil
+	return &Started{provisioningRunner: worker, notificationRunner: notificationRunner, App: result.App, Applications: result.Applications, httpAddress: httpListener.Addr().String(), grpcAddress: grpcListener.Addr().String()}, nil
 }
 
 type applicationFactories struct {
@@ -199,6 +224,7 @@ type applicationFactories struct {
 	roleRepositories            requestscope.RepositoryFactory[accessports.TenantRoleRepositories]
 	delegatedDeviceRepositories requestscope.RepositoryFactory[deviceports.DelegatedRepositories]
 	delegationRepositories      requestscope.RepositoryFactory[accessports.TenantDelegationRepositories]
+	notificationCatalogs       notificationCatalogSnapshot
 }
 
 var _ generatedassembly.ApplicationFactories = applicationFactories{}
@@ -260,6 +286,13 @@ func bindRuntimeWithSecurity(
 	workers ...*provisioningRunner,
 ) (generatedassembly.RuntimeBindings, error) {
 	config := options.DeviceOps
+	if options.notificationCatalogs.types == nil || options.notificationCatalogs.channels == nil {
+		catalogs, err := buildNotificationCatalogSnapshot(options.NotificationRuntime)
+		if err != nil {
+			return generatedassembly.RuntimeBindings{}, err
+		}
+		options.notificationCatalogs = catalogs
+	}
 	deviceContext, err := provider.ForModule(deviceops.GeneratedDescriptor())
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: deviceops capabilities: %w", err)
@@ -563,6 +596,7 @@ func bindRuntimeWithSecurity(
 			roleRepositories:            roleRepositories,
 			delegatedDeviceRepositories: delegatedDeviceRepositories,
 			delegationRepositories:      delegationRepositories,
+			notificationCatalogs:         options.notificationCatalogs,
 		},
 		Executor: executor,
 	}, nil
