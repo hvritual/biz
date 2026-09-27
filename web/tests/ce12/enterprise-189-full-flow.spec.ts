@@ -311,7 +311,10 @@ test('TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout', async ({ br
       headers: { 'X-Biz-Session-Context': trustedContext(restoredSession) },
     })
     expect(restoredMemberList.status(), await restoredMemberList.text()).toBe(200)
-    await viewerPage.reload()
+    // The denied refresh intentionally moved this tab to /authorization-state.
+    // After authority is restored, navigate back to the original protected
+    // route so the router re-evaluates the fresh authorization snapshot.
+    await viewerPage.goto(data.ui_base_url + '/#/enterprise/members')
     await expect(viewerPage.locator('[data-enterprise-page="members"]')).toBeVisible()
 
     await ownerPage.goto(data.ui_base_url + '/#/enterprise/personal-profile')
