@@ -596,7 +596,7 @@ func bindRuntimeWithSecurity(
 			roleRepositories:            roleRepositories,
 			delegatedDeviceRepositories: delegatedDeviceRepositories,
 			delegationRepositories:      delegationRepositories,
-			notificationCatalogs:         options.notificationCatalogs,
+			notificationCatalogs:        options.notificationCatalogs,
 		},
 		Executor: executor,
 	}, nil
