@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	auditOperationDeliveryProviderAccepted = auditOperationDeliveryProviderAccepted
-	auditOperationDeliveryDelivered        = auditOperationDeliveryDelivered
-	auditOperationDeliveryRetry            = auditOperationDeliveryRetry
-	auditOperationDeliveryManualReview     = auditOperationDeliveryManualReview
+	auditOperationDeliveryProviderAccepted = "notification.delivery.provider_accepted"
+	auditOperationDeliveryDelivered        = "notification.delivery.delivered"
+	auditOperationDeliveryRetry            = "notification.delivery.retry"
+	auditOperationDeliveryManualReview     = "notification.delivery.manual_review"
 	auditOperationDeliveryCancelled        = "notification.delivery.cancelled"
 )
 
