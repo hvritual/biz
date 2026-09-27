@@ -15,6 +15,14 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+const (
+	auditOperationDeliveryProviderAccepted = auditOperationDeliveryProviderAccepted
+	auditOperationDeliveryDelivered        = auditOperationDeliveryDelivered
+	auditOperationDeliveryRetry            = auditOperationDeliveryRetry
+	auditOperationDeliveryManualReview     = auditOperationDeliveryManualReview
+	auditOperationDeliveryCancelled        = "notification.delivery.cancelled"
+)
+
 var _ ports.ExternalTaskRepository = (*RoutingRepository)(nil)
 var _ ports.ExternalProviderCallbackStore = (*RoutingRepository)(nil)
 
@@ -178,9 +186,9 @@ func (r *RoutingRepository) CompleteExternalTask(
 		row.LeaseUntil = nil
 		row.NextAttemptAt = nil
 		receipt = externalTaskReceipt(row)
-		operationID := "notification.delivery.provider_accepted"
+		operationID := auditOperationDeliveryProviderAccepted
 		if state == domain.ExternalTaskStateDelivered {
-			operationID = "notification.delivery.delivered"
+			operationID = auditOperationDeliveryDelivered
 		}
 		if err := appendExternalDeliveryAuditTx(ctx, tx, row, operationID, accessdomain.AuditResultSuccess, "", now); err != nil {
 			return err
@@ -258,11 +266,11 @@ func (r *RoutingRepository) ApplyExternalProviderCallback(
 		receipt = externalTaskReceipt(row)
 		auditOutcome := accessdomain.AuditResultSuccess
 		decision := ""
-		operationID := "notification.delivery.delivered"
+		operationID := auditOperationDeliveryDelivered
 		if row.State == domain.ExternalTaskStateManualReview {
 			auditOutcome = accessdomain.AuditResultFailure
 			decision = row.FailureCode
-			operationID = "notification.delivery.manual_review"
+			operationID = auditOperationDeliveryManualReview
 		}
 		if err := appendExternalDeliveryAuditTx(ctx, tx, row, operationID, auditOutcome, decision, now); err != nil {
 			return err
@@ -308,7 +316,7 @@ func (r *RoutingRepository) FailExternalTask(
 			row.LeaseUntil = nil
 			row.NextAttemptAt = &next
 			receipt = externalTaskReceipt(row)
-			if err := appendExternalDeliveryAuditTx(ctx, tx, row, "notification.delivery.retry", accessdomain.AuditResultFailure, code, now); err != nil {
+			if err := appendExternalDeliveryAuditTx(ctx, tx, row, auditOperationDeliveryRetry, accessdomain.AuditResultFailure, code, now); err != nil {
 				return err
 			}
 			return nil
@@ -368,7 +376,11 @@ func terminalExternalTask(
 	row.LeaseOwner = ""
 	row.LeaseUntil = nil
 	row.NextAttemptAt = nil
-	if err := appendExternalDeliveryAuditTx(ctx, tx, row, "notification.delivery."+strings.ToLower(state), accessdomain.AuditResultFailure, code, now); err != nil {
+	operationID := auditOperationDeliveryManualReview
+	if state == domain.ExternalTaskStateCancelled {
+		operationID = auditOperationDeliveryCancelled
+	}
+	if err := appendExternalDeliveryAuditTx(ctx, tx, row, operationID, accessdomain.AuditResultFailure, code, now); err != nil {
 		return domain.ExternalTaskReceipt{}, err
 	}
 	return externalTaskReceipt(row), nil
