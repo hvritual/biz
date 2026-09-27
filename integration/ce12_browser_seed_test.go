@@ -155,7 +155,17 @@ func TestCE12BrowserSeed(t *testing.T) {
 	entitlementDenied := ce12CreateActiveTenant(t, tenants, platformToken, "CE12 Entitlement Denied", "ce12-entitlement-owner", "ce12.entitlement.owner@example.invalid")
 
 	browserReadPermissions := append([]authz.PermissionKey{}, devicepolicy.Permissions()...)
-	browserReadPermissions = append(browserReadPermissions, "tenant.entitlement.read", "commercial.catalog.read", "tenant.branding.read")
+	browserReadPermissions = append(browserReadPermissions,
+		"tenant.entitlement.read",
+		"commercial.catalog.read",
+		"tenant.branding.read",
+		// #189 uses the primary CE12 identity as the real full-flow administrator.
+		// Role UI admission is the intersection of current IAM and Commercial facts,
+		// so this fixture needs the actual role permissions as well as the
+		// tenant.role.permission capability granted below.
+		"tenant.role.read",
+		"tenant.role.manage",
+	)
 	if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
 		TenantID: allowed, TenantName: "CE12 Allowed", UserID: userID, Email: email, Token: "ce12-setup-allowed",
 	}, browserReadPermissions); err != nil {
@@ -343,9 +353,9 @@ func TestCE12BrowserSeed(t *testing.T) {
 	}
 
 	// #189 extends the same real authorization intersection to the role-management
-	// surface. Owner IAM already carries tenant.role.read/manage; without this
-	// Commercial capability the router must correctly deny /enterprise/roles.
-	// Grant the real capability instead of bypassing current authorization.
+	// surface. The primary CE12 full-flow identity receives role IAM permissions
+	// above, while this override supplies the matching Commercial capability.
+	// Both facts are required; neither side is treated as a bypass.
 	var roleCapabilityVersion uint64
 	if err := db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", allowed).Scan(&roleCapabilityVersion).Error; err != nil {
 		t.Fatal(err)
