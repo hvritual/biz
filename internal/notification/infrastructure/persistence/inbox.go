@@ -115,14 +115,18 @@ func (r *RoutingRepository) MarkAllRead(ctx context.Context, owner domain.InboxO
 			return nil
 		}
 
-		if len(messageIDs) > 0 {
+		const markAllBatchSize = 500
+		for start := 0; start < len(messageIDs); start += markAllBatchSize {
+			end := min(start+markAllBatchSize, len(messageIDs))
 			updated := tx.WithContext(ctx).Model(&inAppRecord{}).
-				Where("BINARY tenant_id=? AND BINARY user_id=? AND read_at IS NULL AND message_id IN ?", owner.TenantID, owner.UserID, messageIDs).
+				Where("BINARY tenant_id=? AND BINARY user_id=? AND read_at IS NULL AND message_id IN ?", owner.TenantID, owner.UserID, messageIDs[start:end]).
 				Update("read_at", now)
 			if updated.Error != nil {
 				return updated.Error
 			}
-			command.MarkedCount = uint64(updated.RowsAffected)
+			command.MarkedCount += uint64(updated.RowsAffected)
+		}
+		if len(messageIDs) > 0 {
 			if err := tx.WithContext(ctx).Model(&inboxMarkAllRecord{}).Where("command_id=?", commandID).
 				Update("marked_count", command.MarkedCount).Error; err != nil {
 				return err
