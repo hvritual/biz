@@ -224,26 +224,26 @@ func TestEnterprise185InAppLatency1000Within60Seconds(t *testing.T) {
 	}
 	sourceSHA, candidateSHA := enterprise185GitHubSourceIdentity()
 	receipt := map[string]any{
-		"schema_version":             1,
-		"state":                      "PASS",
-		"source_sha":                 sourceSHA,
-		"candidate_sha":              candidateSHA,
-		"run_id":                     os.Getenv("GITHUB_RUN_ID"),
-		"run_attempt":                os.Getenv("GITHUB_RUN_ATTEMPT"),
-		"sample_size":                enterprise185InAppSampleSize,
-		"generated_count":            len(latencies),
-		"timely_count":               timely,
-		"timely_rate_ppm":            ratePPM,
-		"required_rate_ppm":          enterprise185InAppThresholdPPM,
-		"threshold_ms":               enterprise185InAppThreshold.Milliseconds(),
-		"missing_count":              missing,
-		"duplicate_count":            duplicateCount,
-		"external_task_count":        externalTasks,
-		"publish_transaction_ms":     publishMillis,
+		"schema_version":                1,
+		"state":                         "PASS",
+		"source_sha":                    sourceSHA,
+		"candidate_sha":                 candidateSHA,
+		"run_id":                        os.Getenv("GITHUB_RUN_ID"),
+		"run_attempt":                   os.Getenv("GITHUB_RUN_ATTEMPT"),
+		"sample_size":                   enterprise185InAppSampleSize,
+		"generated_count":               len(latencies),
+		"timely_count":                  timely,
+		"timely_rate_ppm":               ratePPM,
+		"required_rate_ppm":             enterprise185InAppThresholdPPM,
+		"threshold_ms":                  enterprise185InAppThreshold.Milliseconds(),
+		"missing_count":                 missing,
+		"duplicate_count":               duplicateCount,
+		"external_task_count":           externalTasks,
+		"publish_transaction_ms":        publishMillis,
 		"all_generated_after_commit_ms": observedAt.Sub(committedAt).Milliseconds(),
-		"measurement_basis":          "biz_notification_events.created_at_to_biz_notification_in_app.created_at",
-		"measurement_is_conservative": true,
-		"observed_at":                observedAt.UTC().Format(time.RFC3339Nano),
+		"measurement_basis":             "biz_notification_events.created_at_to_biz_notification_in_app.created_at",
+		"measurement_is_conservative":   true,
+		"observed_at":                   observedAt.UTC().Format(time.RFC3339Nano),
 	}
 	if len(latencies) > 0 {
 		receipt["p50_ms"] = percentileDuration(latencies, 0.50).Milliseconds()
@@ -277,11 +277,11 @@ func createInAppConfiguration(
 ) {
 	t.Helper()
 	body, err := json.Marshal(map[string]any{
-		"groupId": site,
-		"levels": []string{"general"},
-		"channels": []string{"in_app"},
+		"groupId":       site,
+		"levels":        []string{"general"},
+		"channels":      []string{"in_app"},
 		"primaryUserId": user,
-		"notes": "1000-message in-app latency qualification",
+		"notes":         "1000-message in-app latency qualification",
 	})
 	if err != nil {
 		t.Fatal(err)
