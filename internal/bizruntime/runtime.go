@@ -690,7 +690,7 @@ func httpAuthentication(authenticator *runtimeAuthenticator, webAuth *runtimeWeb
 		serviceHeaders := serviceAPISignedHeadersPresent(request)
 		if serviceHeaders {
 			if authenticator == nil || authenticator.service == nil {
-				writeServiceAPIAuthenticationFailure(writer, errServiceAPIUnavailable)
+				writeServiceAPIAuthenticationFailure(writer, errServiceAPIInvalidRequest)
 				return
 			}
 			principal, err = authenticator.service.authenticate(request)
