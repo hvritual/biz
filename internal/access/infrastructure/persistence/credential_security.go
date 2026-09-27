@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/base64"
+	"fmt"
 	"errors"
 	"strings"
 	"time"
@@ -183,14 +184,23 @@ func (store *Store) RecoverPasswordWithCode(
 			return nil
 		}
 		if challenge.ConsumedAt != nil {
+			if err := auditPasswordRecoveryFailureTx(ctx, tx, challenge, "VERIFICATION_CONSUMED", fmt.Sprintf("challenge/%s/consumed", challenge.ChallengeID), now); err != nil {
+				return err
+			}
 			outcome = domain.ErrVerificationConsumed
 			return nil
 		}
 		if !challenge.ExpiresAt.After(now) {
+			if err := auditPasswordRecoveryFailureTx(ctx, tx, challenge, "VERIFICATION_EXPIRED", fmt.Sprintf("challenge/%s/expired", challenge.ChallengeID), now); err != nil {
+				return err
+			}
 			outcome = domain.ErrVerificationExpired
 			return nil
 		}
 		if challenge.Attempts >= challenge.MaxAttempts {
+			if err := auditPasswordRecoveryFailureTx(ctx, tx, challenge, "VERIFICATION_ATTEMPT_LIMIT", fmt.Sprintf("challenge/%s/attempt-limit", challenge.ChallengeID), now); err != nil {
+				return err
+			}
 			outcome = domain.RateLimitError{Reason: "attempt_limit"}
 			return nil
 		}
@@ -199,10 +209,15 @@ func (store *Store) RecoverPasswordWithCode(
 			if err := tx.Model(&verificationChallengeRecord{}).Where("challenge_id = ?", challenge.ChallengeID).Update("attempts", challenge.Attempts).Error; err != nil {
 				return err
 			}
+			decision := "VERIFICATION_INVALID"
 			if challenge.Attempts >= challenge.MaxAttempts {
+				decision = "VERIFICATION_ATTEMPT_LIMIT"
 				outcome = domain.RateLimitError{Reason: "attempt_limit"}
 			} else {
 				outcome = domain.ErrVerificationInvalid
+			}
+			if err := auditPasswordRecoveryFailureTx(ctx, tx, challenge, decision, fmt.Sprintf("challenge/%s/attempt/%d", challenge.ChallengeID, challenge.Attempts), now); err != nil {
+				return err
 			}
 			return nil
 		}
@@ -258,16 +273,29 @@ func (store *Store) RecoverPasswordWithCode(
 		if err != nil {
 			return err
 		}
-		if _, err := notificationRepository.EnqueueSecurityNotification(ctx, domain.SecurityNotificationRequest{
+		delivery, err := notificationRepository.EnqueueSecurityNotification(ctx, domain.SecurityNotificationRequest{
 			BusinessEventID: "password-reset-complete/" + challenge.ChallengeID,
 			Kind:            domain.SecurityNotificationPasswordResetCompleted,
 			Purpose:         domain.VerificationPurposePasswordRecovery,
-			UserID:          request.UserID,
-			TenantID:        request.TenantID,
-			FlowID:          request.FlowID,
-			Channel:         request.Channel,
+			UserID:          challenge.UserID,
+			TenantID:        challenge.TenantID,
+			FlowID:          challenge.FlowID,
+			Channel:         domain.SecurityNotificationChannel(challenge.Channel),
 			Destination:     request.Destination,
 			ExpiresAt:       canonicalVerificationTime(now.Add(authorizationTTL)),
+		})
+		if err != nil {
+			return err
+		}
+		if _, err := AppendTrustedUserAuditPairsTx(ctx, tx, challenge.UserID, TrustedAudit{
+			EventKey: "password-recovery/" + challenge.ChallengeID + "/success",
+			OperationID: "identity.password.recover", Module: "access",
+			ActorSubject: "user:" + challenge.UserID, ActorUserID: challenge.UserID,
+			AuthMethod: "otp", AuthChannel: "first-party-idp",
+			Target: "account:" + challenge.UserID,
+			RequestDigest: TokenHash("password-recovery/v1"), ReceiptRef: delivery.EventID,
+			Reason: "changed_fields=password", Risk: domain.AuditRiskHigh,
+			Outcome: domain.AuditResultSuccess, OccurredAt: now,
 		}); err != nil {
 			return err
 		}
@@ -324,10 +352,16 @@ func (store *Store) ResetPasswordWithAuthorization(
 			return nil
 		}
 		if authorization.ConsumedAt != nil {
+			if err := auditPasswordAuthorizationFailureTx(ctx, tx, authorization, "AUTHORIZATION_CONSUMED", "authorization/"+authorization.ChallengeID+"/consumed", now); err != nil {
+				return err
+			}
 			outcome = domain.ErrVerificationConsumed
 			return nil
 		}
 		if !authorization.ExpiresAt.After(now) {
+			if err := auditPasswordAuthorizationFailureTx(ctx, tx, authorization, "AUTHORIZATION_EXPIRED", "authorization/"+authorization.ChallengeID+"/expired", now); err != nil {
+				return err
+			}
 			outcome = domain.ErrVerificationExpired
 			return nil
 		}
@@ -348,6 +382,18 @@ func (store *Store) ResetPasswordWithAuthorization(
 			outcome = domain.ErrVerificationConsumed
 			return nil
 		}
+		if _, err := AppendTrustedUserAuditPairsTx(ctx, tx, authorization.UserID, TrustedAudit{
+			EventKey: "password-authorization/" + authorization.ChallengeID + "/success",
+			OperationID: "identity.password.recover", Module: "access",
+			ActorSubject: "user:" + authorization.UserID, ActorUserID: authorization.UserID,
+			AuthMethod: "one-time-authorization", AuthChannel: "first-party-idp",
+			Target: "account:" + authorization.UserID,
+			RequestDigest: TokenHash("password-recovery/v1"), ReceiptRef: "challenge:" + authorization.ChallengeID,
+			Reason: "changed_fields=password", Risk: domain.AuditRiskHigh,
+			Outcome: domain.AuditResultSuccess, OccurredAt: now,
+		}); err != nil {
+			return err
+		}
 		receipt = domain.AuthorizationConsumptionReceipt{ChallengeID: authorization.ChallengeID, ConsumedAt: consumedAt}
 		return nil
 	})
@@ -358,6 +404,32 @@ func (store *Store) ResetPasswordWithAuthorization(
 		return domain.AuthorizationConsumptionReceipt{}, outcome
 	}
 	return receipt, nil
+}
+
+func auditPasswordRecoveryFailureTx(ctx context.Context, tx *gorm.DB, challenge verificationChallengeRecord, decision, eventKey string, now time.Time) error {
+	_, err := AppendTrustedUserAuditPairsTx(ctx, tx, challenge.UserID, TrustedAudit{
+		EventKey: eventKey, OperationID: "identity.password.recover", Module: "access",
+		ActorSubject: "user:" + challenge.UserID, ActorUserID: challenge.UserID,
+		AuthMethod: "otp", AuthChannel: "first-party-idp",
+		Target: "account:" + challenge.UserID, DecisionReason: decision,
+		RequestDigest: TokenHash("password-recovery/v1"),
+		Reason: "changed_fields=password", Risk: domain.AuditRiskHigh,
+		Outcome: domain.AuditResultFailure, OccurredAt: now,
+	})
+	return err
+}
+
+func auditPasswordAuthorizationFailureTx(ctx context.Context, tx *gorm.DB, authorization oneTimeAuthorizationRecord, decision, eventKey string, now time.Time) error {
+	_, err := AppendTrustedUserAuditPairsTx(ctx, tx, authorization.UserID, TrustedAudit{
+		EventKey: eventKey, OperationID: "identity.password.recover", Module: "access",
+		ActorSubject: "user:" + authorization.UserID, ActorUserID: authorization.UserID,
+		AuthMethod: "one-time-authorization", AuthChannel: "first-party-idp",
+		Target: "account:" + authorization.UserID, DecisionReason: decision,
+		RequestDigest: TokenHash("password-recovery/v1"),
+		Reason: "changed_fields=password", Risk: domain.AuditRiskHigh,
+		Outcome: domain.AuditResultFailure, OccurredAt: now,
+	})
+	return err
 }
 
 func (store *Store) TenantMemberAccountExists(ctx context.Context, tenantID, userID string) (bool, error) {
