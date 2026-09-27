@@ -224,7 +224,7 @@ type applicationFactories struct {
 	roleRepositories            requestscope.RepositoryFactory[accessports.TenantRoleRepositories]
 	delegatedDeviceRepositories requestscope.RepositoryFactory[deviceports.DelegatedRepositories]
 	delegationRepositories      requestscope.RepositoryFactory[accessports.TenantDelegationRepositories]
-	notificationCatalogs       notificationCatalogSnapshot
+	notificationCatalogs        notificationCatalogSnapshot
 }
 
 var _ generatedassembly.ApplicationFactories = applicationFactories{}
