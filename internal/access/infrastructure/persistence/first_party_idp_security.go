@@ -181,11 +181,24 @@ func (store *Store) recordFirstPartyLoginFailure(
 		if err := tx.Create(&firstPartyLoginAuditRecord{OccurredAt: now, Outcome: "invalid_credentials", EmailHash: identityHash, SourceHash: sourceHash}).Error; err != nil {
 			return err
 		}
+		if notificationTarget != nil && notificationTarget.Identity.UserID != "" {
+			if _, err := AppendTrustedUserAuditPairsTx(ctx, tx, notificationTarget.Identity.UserID, TrustedAudit{
+				EventKey: "login-failure/" + identityHash + "/" + fmt.Sprint(now.UnixNano()),
+				OperationID: "identity.login.password", Module: "access",
+				ActorSubject: "account:" + notificationTarget.Identity.UserID, ActorUserID: notificationTarget.Identity.UserID,
+				AuthMethod: "password", AuthChannel: "first-party-idp",
+				Target: "account:" + notificationTarget.Identity.UserID,
+				DecisionReason: "INVALID_CREDENTIALS", RequestDigest: identityHash,
+				Risk: domain.AuditRiskHigh, Outcome: domain.AuditResultFailure, OccurredAt: now,
+			}); err != nil {
+				return err
+			}
+		}
 		if row.BlockedUntil == nil || wasBlocked || notificationTarget == nil || protection == nil {
 			return nil
 		}
 		verification := &VerificationRepository{database: tx, protection: protection}
-		_, err = verification.EnqueueSecurityNotification(ctx, domain.SecurityNotificationRequest{
+		delivery, err := verification.EnqueueSecurityNotification(ctx, domain.SecurityNotificationRequest{
 			BusinessEventID: fmt.Sprintf("idp-login-lock/%s/%d", notificationTarget.Identity.UserID, row.BlockedUntil.UTC().Unix()),
 			Kind:            domain.SecurityNotificationLoginLock,
 			Purpose:         domain.VerificationPurposeLogin,
@@ -194,6 +207,18 @@ func (store *Store) recordFirstPartyLoginFailure(
 			Channel:         notificationTarget.OTPChannel,
 			Destination:     notificationTarget.OTPDestination,
 			ExpiresAt:       row.BlockedUntil.UTC().Add(24 * time.Hour),
+		})
+		if err != nil {
+			return err
+		}
+		_, err = AppendTrustedUserAuditPairsTx(ctx, tx, notificationTarget.Identity.UserID, TrustedAudit{
+			EventKey: "login-lock/" + notificationTarget.Identity.UserID + "/" + fmt.Sprint(row.BlockedUntil.UTC().Unix()),
+			OperationID: "identity.login.lock", Module: "access",
+			ActorSubject: "system:login-throttle", AuthMethod: "system", AuthChannel: "first-party-idp",
+			Target: "account:" + notificationTarget.Identity.UserID,
+			DecisionReason: "FAILURE_THRESHOLD_REACHED", ReceiptRef: delivery.EventID,
+			Reason: "changed_fields=login_lock", Risk: domain.AuditRiskHigh,
+			Outcome: domain.AuditResultSuccess, OccurredAt: now,
 		})
 		return err
 	})
@@ -206,7 +231,19 @@ func (store *Store) recordFirstPartyLoginSuccess(ctx context.Context, identityHa
 			return err
 		}
 		audit = firstPartyLoginAuditRecord{OccurredAt: now, Outcome: "success", UserID: userID, EmailHash: identityHash, SourceHash: sourceHash}
-		return tx.Create(&audit).Error
+		if err := tx.Create(&audit).Error; err != nil {
+			return err
+		}
+		_, err := AppendTrustedUserAuditPairsTx(ctx, tx, userID, TrustedAudit{
+			EventKey: "login-success/" + fmt.Sprint(audit.ID),
+			OperationID: "identity.login.password", Module: "access",
+			ActorSubject: "user:" + userID, ActorUserID: userID,
+			AuthMethod: "password", AuthChannel: "first-party-idp",
+			Target: "account:" + userID, RequestDigest: identityHash,
+			ReceiptRef: "login-audit:" + fmt.Sprint(audit.ID),
+			Risk: domain.AuditRiskHigh, Outcome: domain.AuditResultSuccess, OccurredAt: now,
+		})
+		return err
 	})
 	if err != nil {
 		return 0, err
