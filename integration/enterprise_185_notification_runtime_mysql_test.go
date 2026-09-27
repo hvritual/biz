@@ -121,6 +121,9 @@ func TestEnterprise185NotificationRuntimeComponentRoutesDeliversAndCallbacks(t *
 	}, permissions); err != nil {
 		t.Fatal(err)
 	}
+	if err := db.Exec("INSERT IGNORE INTO biz_member_sites (tenant_id,user_id,site_id) VALUES (?,?,?)", tenant, user, site).Error; err != nil {
+		t.Fatal(err)
+	}
 	enterprise182SetTenantContacts(t, db, protection, tenant, user, email, "+491701234567")
 
 	base := "http://" + started.HTTPAddress()
