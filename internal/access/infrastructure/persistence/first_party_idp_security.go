@@ -123,7 +123,25 @@ func (store *Store) authenticateFirstPartyLoginWithAudit(
 			return LocalUserIdentity{}, 0, err
 		}
 		consumeDummyPasswordWork(password)
-		_ = store.recordFirstPartyLoginAudit(ctx, now, "throttled", "", identityHash, sourceHash)
+		if auditErr := store.recordFirstPartyLoginAudit(ctx, now, "throttled", "", identityHash, sourceHash); auditErr != nil {
+			return LocalUserIdentity{}, 0, auditErr
+		}
+		if notificationTarget != nil && notificationTarget.Identity.UserID != "" {
+			if auditErr := store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+				_, err := AppendTrustedUserAuditPairsTx(ctx, tx, notificationTarget.Identity.UserID, TrustedAudit{
+					EventKey: "login-throttled/" + identityHash + "/" + fmt.Sprint(now.UnixNano()),
+					OperationID: "identity.login.password", Module: "access",
+					ActorSubject: "account:" + notificationTarget.Identity.UserID, ActorUserID: notificationTarget.Identity.UserID,
+					AuthMethod: "password", AuthChannel: "first-party-idp",
+					Target: "account:" + notificationTarget.Identity.UserID,
+					DecisionReason: "LOGIN_LOCKED", RequestDigest: identityHash,
+					Risk: domain.AuditRiskHigh, Outcome: domain.AuditResultFailure, OccurredAt: now,
+				})
+				return err
+			}); auditErr != nil {
+				return LocalUserIdentity{}, 0, auditErr
+			}
+		}
 		return LocalUserIdentity{}, 0, ErrInvalidUserCredentials
 	}
 
@@ -134,7 +152,7 @@ func (store *Store) authenticateFirstPartyLoginWithAudit(
 		}
 		return LocalUserIdentity{}, 0, ErrInvalidUserCredentials
 	}
-	auditID, err := store.recordFirstPartyLoginSuccess(ctx, identityHash, sourceHash, identity.UserID, now)
+	auditID, err := store.recordFirstPartyLoginSuccess(ctx, identityHash, sourceHash, identity.UserID, "identity.login.password", "password", now)
 	if err != nil {
 		return LocalUserIdentity{}, 0, err
 	}
@@ -224,7 +242,7 @@ func (store *Store) recordFirstPartyLoginFailure(
 	})
 }
 
-func (store *Store) recordFirstPartyLoginSuccess(ctx context.Context, identityHash, sourceHash, userID string, now time.Time) (uint64, error) {
+func (store *Store) recordFirstPartyLoginSuccess(ctx context.Context, identityHash, sourceHash, userID, operationID, authMethod string, now time.Time) (uint64, error) {
 	var audit firstPartyLoginAuditRecord
 	err := store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("identity_hash = ?", identityHash).Delete(&firstPartyLoginThrottleRecord{}).Error; err != nil {
@@ -236,9 +254,9 @@ func (store *Store) recordFirstPartyLoginSuccess(ctx context.Context, identityHa
 		}
 		_, err := AppendTrustedUserAuditPairsTx(ctx, tx, userID, TrustedAudit{
 			EventKey: "login-success/" + fmt.Sprint(audit.ID),
-			OperationID: "identity.login.password", Module: "access",
+			OperationID: operationID, Module: "access",
 			ActorSubject: "user:" + userID, ActorUserID: userID,
-			AuthMethod: "password", AuthChannel: "first-party-idp",
+			AuthMethod: authMethod, AuthChannel: "first-party-idp",
 			Target: "account:" + userID, RequestDigest: identityHash,
 			ReceiptRef: "login-audit:" + fmt.Sprint(audit.ID),
 			Risk: domain.AuditRiskHigh, Outcome: domain.AuditResultSuccess, OccurredAt: now,
@@ -284,6 +302,8 @@ func (store *Store) RecordFirstPartyVerifiedLogin(ctx context.Context, identifie
 		LoginIdentifierThrottleHash(identifier),
 		TokenHash(normalizeRemoteHost(remoteAddr)),
 		userID,
+		"identity.login.otp",
+		"otp",
 		time.Now().UTC(),
 	)
 }
