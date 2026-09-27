@@ -140,16 +140,16 @@ type notificationRuntime struct {
 	routerWorkerID   string
 	externalWorkerID string
 
-	runMu            sync.Mutex
-	mu               sync.RWMutex
+	runMu sync.Mutex
+	mu    sync.RWMutex
 
-	router           *notificationapp.BusinessEventRouter
-	externalWorker   *notificationapp.ExternalDeliveryWorker
-	callback         http.Handler
-	cancel           context.CancelFunc
-	done             chan struct{}
-	started          bool
-	lastError        error
+	router         *notificationapp.BusinessEventRouter
+	externalWorker *notificationapp.ExternalDeliveryWorker
+	callback       http.Handler
+	cancel         context.CancelFunc
+	done           chan struct{}
+	started        bool
+	lastError      error
 }
 
 func newNotificationRuntime(
