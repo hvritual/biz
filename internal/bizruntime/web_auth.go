@@ -34,7 +34,7 @@ type runtimeWebAuth struct {
 	selfSecurity           *accesspersistence.TenantSelfSecurityService
 	memberPasswordRecovery *accesspersistence.TenantMemberPasswordRecoveryService
 	entitlements           currentAuthorizationEntitlementReader
-	notificationInbox     webNotificationInbox
+	notificationInbox      webNotificationInbox
 }
 
 func newRuntimeWebAuth(ctx context.Context, config WebAuthConfig) (*runtimeWebAuth, error) {
