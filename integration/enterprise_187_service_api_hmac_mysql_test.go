@@ -8,6 +8,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -229,29 +230,37 @@ func TestEnterprise187ServiceAPIHMACReplayAndScope(t *testing.T) {
 		}
 	})
 
-	t.Run("same-nonce-concurrently-allows-exactly-one-request", func(t *testing.T) {
+	t.Run("exact-request-replay-is-rejected", func(t *testing.T) {
+		nonce := "nonce-http-replay-000001"
+		first, _, _ := enterprise187Do(t, base, http.MethodGet, "/v1/platform/plans", "/v1/platform/plans", nil, nil, e.rotatedKey, e.rotatedSecret, now, nonce)
+		second, _, headers := enterprise187Do(t, base, http.MethodGet, "/v1/platform/plans", "/v1/platform/plans", nil, nil, e.rotatedKey, e.rotatedSecret, now, nonce)
+		if first != http.StatusOK || second != http.StatusUnauthorized || headers.Get("X-Biz-Auth-Failure") != "replay_rejected" {
+			t.Fatalf("replay first=%d second=%d failure=%s", first, second, headers.Get("X-Biz-Auth-Failure"))
+		}
+	})
+
+	t.Run("same-nonce-concurrently-allows-exactly-one-persistent-consumer", func(t *testing.T) {
 		const workers = 8
-		statuses := make(chan int, workers)
+		results := make(chan error, workers)
 		var wg sync.WaitGroup
 		for index := 0; index < workers; index++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				status, _, _ := enterprise187Do(t, base, http.MethodGet, "/v1/platform/plans", "/v1/platform/plans", nil, nil, e.rotatedKey, e.rotatedSecret, now, "nonce-race-000000000001")
-				statuses <- status
+				results <- e.store.ConsumeServiceAPINonce(context.Background(), e.rotatedKey, "nonce-race-000000000001", now.Add(time.Minute))
 			}()
 		}
 		wg.Wait()
-		close(statuses)
+		close(results)
 		okCount, replayCount := 0, 0
-		for status := range statuses {
-			switch status {
-			case http.StatusOK:
+		for err := range results {
+			switch {
+			case err == nil:
 				okCount++
-			case http.StatusUnauthorized:
+			case errors.Is(err, accesspersistence.ErrServiceAPIReplay):
 				replayCount++
 			default:
-				t.Fatalf("unexpected concurrent status=%d", status)
+				t.Fatalf("unexpected concurrent nonce error=%v", err)
 			}
 		}
 		if okCount != 1 || replayCount != workers-1 {
