@@ -95,14 +95,14 @@ func (service *TenantMemberPasswordRecoveryService) Request(
 			nextAllowed := latest.CreatedAt.Add(tenantMemberPasswordRecoveryInterval)
 			if nextAllowed.After(now) {
 				if err := AppendTrustedAuditPairTx(ctx, tx, TrustedAudit{
-					EventKey: fmt.Sprintf("admin-recovery-rate/%s/%s/%s/%d", tenantID, targetUserID, actorUserID, now.UnixNano()),
+					EventKey:    fmt.Sprintf("admin-recovery-rate/%s/%s/%s/%d", tenantID, targetUserID, actorUserID, now.UnixNano()),
 					OperationID: "tenant.member.password_recovery.request", Module: "access",
 					TenantID: tenantID, ActorSubject: "user:" + actorUserID, ActorUserID: actorUserID,
 					AuthMethod: AuthMethodWeb, AuthChannel: "web",
 					Target: "user_id:" + targetUserID, ResourceTenantID: tenantID,
 					DecisionReason: "PASSWORD_RECOVERY_RATE_LIMITED",
-					RequestDigest: TokenHash("password-recovery-request/v1"),
-					Reason: "changed_fields=password_recovery_request", Risk: domain.AuditRiskHigh,
+					RequestDigest:  TokenHash("password-recovery-request/v1"),
+					Reason:         "changed_fields=password_recovery_request", Risk: domain.AuditRiskHigh,
 					Outcome: domain.AuditResultFailure, OccurredAt: now,
 				}); err != nil {
 					return err
@@ -144,13 +144,13 @@ func (service *TenantMemberPasswordRecoveryService) Request(
 			RequestedAt:         now,
 		}
 		if err := AppendTrustedAuditPairTx(ctx, tx, TrustedAudit{
-			EventKey: businessEventID,
+			EventKey:    businessEventID,
 			OperationID: "tenant.member.password_recovery.request", Module: "access",
 			TenantID: tenantID, ActorSubject: "user:" + actorUserID, ActorUserID: actorUserID,
 			AuthMethod: AuthMethodWeb, AuthChannel: "web",
 			Target: "user_id:" + targetUserID, ResourceTenantID: tenantID,
 			RequestDigest: TokenHash("password-recovery-request/v1"),
-			ReceiptRef: delivery.EventID, Reason: "changed_fields=password_recovery_request",
+			ReceiptRef:    delivery.EventID, Reason: "changed_fields=password_recovery_request",
 			Risk: domain.AuditRiskHigh, Outcome: domain.AuditResultSuccess, OccurredAt: now,
 		}); err != nil {
 			return err

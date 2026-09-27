@@ -288,11 +288,11 @@ func (store *Store) RecoverPasswordWithCode(
 			return err
 		}
 		if _, err := AppendTrustedUserAuditPairsTx(ctx, tx, challenge.UserID, TrustedAudit{
-			EventKey: "password-recovery/" + challenge.ChallengeID + "/success",
+			EventKey:    "password-recovery/" + challenge.ChallengeID + "/success",
 			OperationID: "identity.password.recover", Module: "access",
 			ActorSubject: "user:" + challenge.UserID, ActorUserID: challenge.UserID,
 			AuthMethod: "otp", AuthChannel: "first-party-idp",
-			Target: "account:" + challenge.UserID,
+			Target:        "account:" + challenge.UserID,
 			RequestDigest: TokenHash("password-recovery/v1"), ReceiptRef: delivery.EventID,
 			Reason: "changed_fields=password", Risk: domain.AuditRiskHigh,
 			Outcome: domain.AuditResultSuccess, OccurredAt: now,
@@ -383,11 +383,11 @@ func (store *Store) ResetPasswordWithAuthorization(
 			return nil
 		}
 		if _, err := AppendTrustedUserAuditPairsTx(ctx, tx, authorization.UserID, TrustedAudit{
-			EventKey: "password-authorization/" + authorization.ChallengeID + "/success",
+			EventKey:    "password-authorization/" + authorization.ChallengeID + "/success",
 			OperationID: "identity.password.recover", Module: "access",
 			ActorSubject: "user:" + authorization.UserID, ActorUserID: authorization.UserID,
 			AuthMethod: "one-time-authorization", AuthChannel: "first-party-idp",
-			Target: "account:" + authorization.UserID,
+			Target:        "account:" + authorization.UserID,
 			RequestDigest: TokenHash("password-recovery/v1"), ReceiptRef: "challenge:" + authorization.ChallengeID,
 			Reason: "changed_fields=password", Risk: domain.AuditRiskHigh,
 			Outcome: domain.AuditResultSuccess, OccurredAt: now,
@@ -413,7 +413,7 @@ func auditPasswordRecoveryFailureTx(ctx context.Context, tx *gorm.DB, challenge 
 		AuthMethod: "otp", AuthChannel: "first-party-idp",
 		Target: "account:" + challenge.UserID, DecisionReason: decision,
 		RequestDigest: TokenHash("password-recovery/v1"),
-		Reason: "changed_fields=password", Risk: domain.AuditRiskHigh,
+		Reason:        "changed_fields=password", Risk: domain.AuditRiskHigh,
 		Outcome: domain.AuditResultFailure, OccurredAt: now,
 	})
 	return err
@@ -426,7 +426,7 @@ func auditPasswordAuthorizationFailureTx(ctx context.Context, tx *gorm.DB, autho
 		AuthMethod: "one-time-authorization", AuthChannel: "first-party-idp",
 		Target: "account:" + authorization.UserID, DecisionReason: decision,
 		RequestDigest: TokenHash("password-recovery/v1"),
-		Reason: "changed_fields=password", Risk: domain.AuditRiskHigh,
+		Reason:        "changed_fields=password", Risk: domain.AuditRiskHigh,
 		Outcome: domain.AuditResultFailure, OccurredAt: now,
 	})
 	return err

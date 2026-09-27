@@ -165,14 +165,14 @@ func (service *MemberAppealService) Submit(
 			nextAllowed := existing.SubmittedAt.Add(memberAppealInterval)
 			if nextAllowed.After(now) {
 				if err := AppendTrustedAuditPairTx(ctx, tx, TrustedAudit{
-					EventKey: fmt.Sprintf("member-appeal-rate/%s/%s/%d", tenantID, userID, now.UnixNano()),
+					EventKey:    fmt.Sprintf("member-appeal-rate/%s/%s/%d", tenantID, userID, now.UnixNano()),
 					OperationID: "tenant.member.appeal.submit", Module: "access",
 					TenantID: tenantID, ActorSubject: "user:" + userID, ActorUserID: userID,
 					AuthMethod: AuthMethodWeb, AuthChannel: "web",
 					Target: "membership:" + userID, ResourceTenantID: tenantID,
 					DecisionReason: "MEMBER_APPEAL_RATE_LIMITED",
-					RequestDigest: TokenHash("member-appeal/v1"),
-					Reason: "changed_fields=appeal_state", Risk: domain.AuditRiskMedium,
+					RequestDigest:  TokenHash("member-appeal/v1"),
+					Reason:         "changed_fields=appeal_state", Risk: domain.AuditRiskMedium,
 					Outcome: domain.AuditResultFailure, OccurredAt: now,
 				}); err != nil {
 					return err
@@ -262,13 +262,13 @@ func (service *MemberAppealService) Submit(
 			State: MemberAppealStatePending, SubmittedAt: now, NotificationEventIDs: eventIDs,
 		}
 		if err := AppendTrustedAuditPairTx(ctx, tx, TrustedAudit{
-			EventKey: appealID,
+			EventKey:    appealID,
 			OperationID: "tenant.member.appeal.submit", Module: "access",
 			TenantID: tenantID, ActorSubject: "user:" + userID, ActorUserID: userID,
 			AuthMethod: AuthMethodWeb, AuthChannel: "web",
 			Target: "membership:" + userID, ResourceTenantID: tenantID,
 			RequestDigest: TokenHash("member-appeal/v1"),
-			ReceiptRef: "appeal:" + appealID, Reason: "changed_fields=appeal_state",
+			ReceiptRef:    "appeal:" + appealID, Reason: "changed_fields=appeal_state",
 			Risk: domain.AuditRiskMedium, Outcome: domain.AuditResultSuccess, OccurredAt: now,
 		}); err != nil {
 			return err

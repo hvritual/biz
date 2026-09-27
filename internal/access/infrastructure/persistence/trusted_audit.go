@@ -15,27 +15,27 @@ import (
 // already been resolved from server authority. Callers must never copy tenant
 // or actor identity from an unauthenticated request into this structure.
 type TrustedAudit struct {
-	EventKey          string
-	OperationID       string
-	Module            string
-	TenantID          string
-	ActorSubject      string
-	ActorUserID       string
-	AuthMethod        string
-	AuthChannel       string
-	SessionRef        string
-	RequestID         string
-	TraceID           string
-	IdempotencyRef    string
-	Target            string
-	ResourceTenantID  string
-	DecisionReason    string
-	RequestDigest     string
-	ReceiptRef        string
-	Reason            string
-	Risk              string
-	Outcome           string
-	OccurredAt        time.Time
+	EventKey         string
+	OperationID      string
+	Module           string
+	TenantID         string
+	ActorSubject     string
+	ActorUserID      string
+	AuthMethod       string
+	AuthChannel      string
+	SessionRef       string
+	RequestID        string
+	TraceID          string
+	IdempotencyRef   string
+	Target           string
+	ResourceTenantID string
+	DecisionReason   string
+	RequestDigest    string
+	ReceiptRef       string
+	Reason           string
+	Risk             string
+	Outcome          string
+	OccurredAt       time.Time
 }
 
 func AppendTrustedUserAuditPairsTx(ctx context.Context, tx *gorm.DB, userID string, input TrustedAudit) (int, error) {

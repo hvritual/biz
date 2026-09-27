@@ -97,7 +97,7 @@ func (store *Store) WithdrawPrivacyConsent(ctx context.Context, userID, agreemen
 			return ErrPrivacyConsentNotFound
 		}
 		_, err := AppendTrustedUserAuditPairsTx(ctx, tx, userID, TrustedAudit{
-			EventKey: "privacy-withdraw/" + TokenHash(userID+"/"+agreementVersion+"/"+source),
+			EventKey:    "privacy-withdraw/" + TokenHash(userID+"/"+agreementVersion+"/"+source),
 			OperationID: "identity.privacy_consent.withdraw", Module: "access",
 			ActorUserID: userID, ActorSubject: "user:" + userID,
 			AuthMethod: AuthMethodWeb, AuthChannel: "web",
@@ -259,15 +259,15 @@ func (store *Store) AcceptPrivacyConsentAndIssueAuthorizationCode(ctx context.Co
 		request = firstPartyRequestFromRecord(row)
 		consent = privacyConsentFromRecord(consentRow)
 		if _, err := AppendTrustedUserAuditPairsTx(ctx, tx, row.AuthenticatedUserID, TrustedAudit{
-			EventKey: "privacy-accept/" + row.RequestHash + "/" + input.ExpectedVersion,
+			EventKey:    "privacy-accept/" + row.RequestHash + "/" + input.ExpectedVersion,
 			OperationID: "identity.privacy_consent.accept", Module: "access",
 			ActorUserID: row.AuthenticatedUserID, ActorSubject: "user:" + row.AuthenticatedUserID,
 			AuthMethod: "first-party-idp", AuthChannel: "web",
 			RequestID: row.RequestHash, TraceID: row.RequestHash,
-			Target: "account:" + row.AuthenticatedUserID,
+			Target:        "account:" + row.AuthenticatedUserID,
 			RequestDigest: TokenHash("agreement_version:" + input.ExpectedVersion),
-			ReceiptRef: "login-audit:" + fmt.Sprint(row.LoginAuditID),
-			Reason: "changed_fields=consent_state,agreement_version", Risk: domain.AuditRiskHigh,
+			ReceiptRef:    "login-audit:" + fmt.Sprint(row.LoginAuditID),
+			Reason:        "changed_fields=consent_state,agreement_version", Risk: domain.AuditRiskHigh,
 			Outcome: domain.AuditResultSuccess, OccurredAt: now,
 		}); err != nil {
 			return err

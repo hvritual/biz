@@ -406,8 +406,8 @@ func appendExternalDeliveryAuditTx(
 		TraceID: row.TraceID, Target: "notification_task:" + row.TaskID,
 		ResourceTenantID: row.TenantID, DecisionReason: decision,
 		RequestDigest: accesspersistence.TokenHash(strings.Join([]string{row.EventID, row.Channel, row.TypeCode}, "/")),
-		ReceiptRef: "task:" + row.TaskID,
-		Reason: "changed_fields=delivery_state", Risk: accessdomain.AuditRiskMedium,
+		ReceiptRef:    "task:" + row.TaskID,
+		Reason:        "changed_fields=delivery_state", Risk: accessdomain.AuditRiskMedium,
 		Outcome: outcome, OccurredAt: now,
 	})
 }
