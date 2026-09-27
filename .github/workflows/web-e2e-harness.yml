@@ -45,6 +45,7 @@ jobs:
           ENTERPRISE_BRANDING_REAL_E2E: '1'
           ENTERPRISE_COMPANY_REAL_E2E: '1'
           ENTERPRISE_MEMBER_REAL_E2E: '1'
+          ENTERPRISE_NOTIFICATION_INBOX_REAL_E2E: '1'
           ENTERPRISE_ORGANIZATION_REAL_E2E: '1'
           ENTERPRISE_PLAN_CHANGE_E2E: '1'
           ENTERPRISE_PLAN_REAL_E2E: '1'
@@ -55,6 +56,7 @@ jobs:
             e2e/enterprise-branding-real.spec.ts \
             e2e/enterprise-company-real.spec.ts \
             e2e/enterprise-members-real.spec.ts \
+            e2e/enterprise-notification-inbox-real.spec.ts \
             e2e/enterprise-organization-real.spec.ts \
             e2e/enterprise-plan-change-real.spec.ts \
             e2e/enterprise-plan-real.spec.ts \
