@@ -155,7 +155,7 @@ func MigrateRouting(ctx context.Context, db *gorm.DB) error {
 	if db == nil {
 		return domain.ErrRoutingUnavailable
 	}
-	return db.WithContext(ctx).AutoMigrate(&routingEventRecord{}, &inAppRecord{}, &externalTaskRecord{}, &routeOutcomeRecord{}, &inboxMarkAllRecord{})
+	return db.WithContext(ctx).AutoMigrate(&routingEventRecord{}, &inAppRecord{}, &externalTaskRecord{}, &routeOutcomeRecord{}, &inboxMarkAllRecord{}, &inboxMarkAllItemRecord{})
 }
 func routingNow(ctx context.Context, db *gorm.DB) (time.Time, error) {
 	var row struct {
