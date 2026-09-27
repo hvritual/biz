@@ -145,7 +145,7 @@ func bootstrapWithOptions(
 	rootMux := http.NewServeMux()
 	rootMux.HandleFunc("GET /healthz", health.handle)
 	rootMux.Handle("GET "+diagnosticsPath, diagnosticsEndpoint)
-	if notificationRunner != nil {
+	if notificationRunner != nil && notificationRunner.providerEnabled() {
 		rootMux.Handle("POST "+notificationProviderCallbackPath, notificationRunner.callbackHandler())
 	}
 	webAuth.register(rootMux)
