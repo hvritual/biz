@@ -243,10 +243,10 @@ func (store *Store) RecoverPasswordWithCode(
 		if err := tx.Create(&authorization).Error; err != nil {
 			return err
 		}
-		if err := setUserPassword(ctx, tx, request.UserID, newPassword); err != nil {
+		if err := setUserPassword(ctx, tx, challenge.UserID, newPassword); err != nil {
 			return err
 		}
-		if err := revokeWebSessionsForUser(ctx, tx, request.UserID); err != nil {
+		if err := revokeWebSessionsForUser(ctx, tx, challenge.UserID); err != nil {
 			return err
 		}
 		result := tx.Model(&verificationChallengeRecord{}).
@@ -280,7 +280,7 @@ func (store *Store) RecoverPasswordWithCode(
 			UserID:          challenge.UserID,
 			TenantID:        challenge.TenantID,
 			FlowID:          challenge.FlowID,
-			Channel:         domain.SecurityNotificationChannel(challenge.Channel),
+			Channel:         request.Channel,
 			Destination:     request.Destination,
 			ExpiresAt:       canonicalVerificationTime(now.Add(authorizationTTL)),
 		})
@@ -365,10 +365,10 @@ func (store *Store) ResetPasswordWithAuthorization(
 			outcome = domain.ErrVerificationExpired
 			return nil
 		}
-		if err := setUserPassword(ctx, tx, request.UserID, newPassword); err != nil {
+		if err := setUserPassword(ctx, tx, authorization.UserID, newPassword); err != nil {
 			return err
 		}
-		if err := revokeWebSessionsForUser(ctx, tx, request.UserID); err != nil {
+		if err := revokeWebSessionsForUser(ctx, tx, authorization.UserID); err != nil {
 			return err
 		}
 		consumedAt := now
