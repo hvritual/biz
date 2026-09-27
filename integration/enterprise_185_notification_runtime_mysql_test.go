@@ -56,7 +56,7 @@ func TestEnterprise185NotificationRuntimeComponentRoutesDeliversAndCallbacks(t *
 			return
 		}
 		writer.Header().Set("Content-Type", "application/json")
-		_, _ = writer.Write([]byte("{"receipt_id":"runtime-provider-receipt","status":"accepted"}"))
+		_, _ = writer.Write([]byte(`{"receipt_id":"runtime-provider-receipt","status":"accepted"}`))
 	}))
 	defer providerServer.Close()
 
