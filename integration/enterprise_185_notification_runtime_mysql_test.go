@@ -43,7 +43,7 @@ func TestEnterprise185NotificationRuntimeComponentRoutesDeliversAndCallbacks(t *
 	var providerMu sync.Mutex
 	var providerCalls int
 	var providerPayload map[string]string
-	var providerIdempotency, providerAuthorization string
+	var providerIdempotency, providerAuthorization, providerDecodeError string
 	providerServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		providerMu.Lock()
 		defer providerMu.Unlock()
@@ -51,7 +51,9 @@ func TestEnterprise185NotificationRuntimeComponentRoutesDeliversAndCallbacks(t *
 		providerIdempotency = request.Header.Get("Idempotency-Key")
 		providerAuthorization = request.Header.Get("Authorization")
 		if err := json.NewDecoder(request.Body).Decode(&providerPayload); err != nil {
-			t.Fatal(err)
+			providerDecodeError = err.Error()
+			http.Error(writer, "invalid provider request", http.StatusBadRequest)
+			return
 		}
 		writer.Header().Set("Content-Type", "application/json")
 		_, _ = writer.Write([]byte("{"receipt_id":"runtime-provider-receipt","status":"accepted"}"))
@@ -218,9 +220,12 @@ func TestEnterprise185NotificationRuntimeComponentRoutesDeliversAndCallbacks(t *
 	}
 
 	providerMu.Lock()
-	calls, idempotency, authorization := providerCalls, providerIdempotency, providerAuthorization
+	calls, idempotency, authorization, decodeError := providerCalls, providerIdempotency, providerAuthorization, providerDecodeError
 	payload := providerPayload
 	providerMu.Unlock()
+	if decodeError != "" {
+		t.Fatalf("provider decode error=%s", decodeError)
+	}
 	if calls != 1 || idempotency != taskID || authorization != "Bearer runtime-provider-token" ||
 		payload["task_id"] != taskID || payload["destination"] != email {
 		t.Fatalf("provider calls=%d idempotency=%s auth=%s payload=%v", calls, idempotency, authorization, payload)
