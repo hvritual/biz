@@ -61,3 +61,27 @@ func TestEnterprise185NotificationCatalogIsSingleRuntimeSnapshot(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestEnterprise185InAppRuntimeDoesNotRequireExternalProvider(t *testing.T) {
+	options := NotificationRuntimeOptions{
+		PollInterval: 10 * time.Millisecond, RoutingLeaseDuration: 5 * time.Second,
+	}
+	if err := options.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	catalogs, err := buildNotificationCatalogSnapshot(options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runtime, err := newNotificationRuntime(options, catalogs, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if runtime == nil || runtime.providerEnabled() {
+		t.Fatalf("providerless in-app runtime=%v provider_enabled=%v", runtime, runtime != nil && runtime.providerEnabled())
+	}
+	inApp, err := catalogs.channels.Lookup("in_app")
+	if err != nil || inApp.Availability != notificationdomain.ChannelConfigurable {
+		t.Fatalf("in-app channel=%+v err=%v", inApp, err)
+	}
+}
