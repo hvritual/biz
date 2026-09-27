@@ -3,9 +3,12 @@ package persistence
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
+	accessdomain "github.com/hvritual/biz/internal/access/domain"
+	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	"github.com/hvritual/biz/internal/notification/domain"
 	"github.com/hvritual/biz/internal/notification/ports"
 	"gorm.io/gorm"
@@ -175,6 +178,13 @@ func (r *RoutingRepository) CompleteExternalTask(
 		row.LeaseUntil = nil
 		row.NextAttemptAt = nil
 		receipt = externalTaskReceipt(row)
+		operationID := "notification.delivery.provider_accepted"
+		if state == domain.ExternalTaskStateDelivered {
+			operationID = "notification.delivery.delivered"
+		}
+		if err := appendExternalDeliveryAuditTx(ctx, tx, row, operationID, accessdomain.AuditResultSuccess, "", now); err != nil {
+			return err
+		}
 		return nil
 	})
 	return receipt, err
@@ -246,6 +256,17 @@ func (r *RoutingRepository) ApplyExternalProviderCallback(
 			return domain.ErrExternalDeliveryInvalid
 		}
 		receipt = externalTaskReceipt(row)
+		auditOutcome := accessdomain.AuditResultSuccess
+		decision := ""
+		operationID := "notification.delivery.delivered"
+		if row.State == domain.ExternalTaskStateManualReview {
+			auditOutcome = accessdomain.AuditResultFailure
+			decision = row.FailureCode
+			operationID = "notification.delivery.manual_review"
+		}
+		if err := appendExternalDeliveryAuditTx(ctx, tx, row, operationID, auditOutcome, decision, now); err != nil {
+			return err
+		}
 		return nil
 	})
 	return receipt, err
@@ -287,6 +308,9 @@ func (r *RoutingRepository) FailExternalTask(
 			row.LeaseUntil = nil
 			row.NextAttemptAt = &next
 			receipt = externalTaskReceipt(row)
+			if err := appendExternalDeliveryAuditTx(ctx, tx, row, "notification.delivery.retry", accessdomain.AuditResultFailure, code, now); err != nil {
+				return err
+			}
 			return nil
 		}
 		terminalCode := code
@@ -344,7 +368,44 @@ func terminalExternalTask(
 	row.LeaseOwner = ""
 	row.LeaseUntil = nil
 	row.NextAttemptAt = nil
+	if err := appendExternalDeliveryAuditTx(ctx, tx, row, "notification.delivery."+state, accessdomain.AuditResultFailure, code, now); err != nil {
+		return domain.ExternalTaskReceipt{}, err
+	}
 	return externalTaskReceipt(row), nil
+}
+
+func appendExternalDeliveryAuditTx(
+	ctx context.Context,
+	tx *gorm.DB,
+	row externalTaskRecord,
+	operationID, outcome, decision string,
+	now time.Time,
+) error {
+	eventKey := strings.Join([]string{
+		row.TaskID,
+		operationID,
+		fmt.Sprint(row.Attempts),
+		auditProviderReceiptRef(row.ProviderReceipt),
+	}, "/")
+	return accesspersistence.AppendTrustedAuditPairTx(ctx, tx, accesspersistence.TrustedAudit{
+		EventKey: eventKey, OperationID: operationID, Module: "notification",
+		TenantID: row.TenantID, ActorSubject: "service:notification-delivery",
+		AuthMethod: "system", AuthChannel: "worker",
+		TraceID: row.TraceID, Target: "notification_task:" + row.TaskID,
+		ResourceTenantID: row.TenantID, DecisionReason: decision,
+		RequestDigest: accesspersistence.TokenHash(strings.Join([]string{row.EventID, row.Channel, row.TypeCode}, "/")),
+		ReceiptRef: "task:" + row.TaskID,
+		Reason: "changed_fields=delivery_state", Risk: accessdomain.AuditRiskMedium,
+		Outcome: outcome, OccurredAt: now,
+	})
+}
+
+func auditProviderReceiptRef(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "none"
+	}
+	return accesspersistence.TokenHash(raw)[:24]
 }
 
 func sanitizeExternalFailureCode(value string) string {
