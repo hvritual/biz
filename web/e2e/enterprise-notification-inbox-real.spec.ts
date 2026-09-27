@@ -196,7 +196,7 @@ test('#186 bell renders real current-owner unread messages across four viewports
     await expect(inbox).toBeVisible()
     await expect(inbox.getByText('设备故障', { exact: true })).toBeVisible()
     await expect(inbox.getByText('设备通信离线', { exact: true })).toBeVisible()
-    await expect(inbox.getByText('<img src=x onerror="globalThis.__inbox_xss=1">', { exact: true })).toBeVisible()
+    await expect(inbox).toContainText('<img src=x onerror="globalThis.__inbox_xss=1">')
     await expect(page.locator('img[src="x"]')).toHaveCount(0)
     expect(await page.evaluate(() => (globalThis as typeof globalThis & { __inbox_xss?: number }).__inbox_xss)).toBeUndefined()
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width)
@@ -206,7 +206,7 @@ test('#186 bell renders real current-owner unread messages across four viewports
       fullPage: false,
       animations: 'disabled',
     })
-    await page.getByRole('button', { name: '关闭', exact: true }).click()
+    await page.getByRole('button', { name: '关闭弹窗', exact: true }).click()
   }
 })
 
