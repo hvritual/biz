@@ -125,6 +125,10 @@
         {
           "name": "TestEnterprise185HTTPProviderCallbackPersistsExactTerminalState",
           "file": "integration/enterprise_185_http_provider_callback_mysql_test.go"
+        },
+        {
+          "name": "TestEnterprise185NotificationRuntimeComponentRoutesDeliversAndCallbacks",
+          "file": "integration/enterprise_185_notification_runtime_mysql_test.go"
         }
       ]
     }
