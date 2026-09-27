@@ -177,14 +177,18 @@ test('TestEnterprise173AdminRecoveryIsPermissionedScopedAndPolicyBlocked', async
 
   const admin = await login(browser, data, data.security_admin_email, data.security_admin_password)
   try {
-    const pending = await admin.context.request.post(
+    const recovery = await admin.context.request.post(
       data.base_url + '/auth/tenant/members/' + encodeURIComponent(data.shared_target_user_id) + '/password-recovery',
       { headers: { 'X-CSRF-Token': admin.session.csrf_token ?? '' }, maxRedirects: 0 },
     )
-    expect(pending.status()).toBe(409)
-    const payload = await pending.json()
-    expect(payload.status).toBe('POLICY_PENDING')
-    expect(payload.policy).toBe('Q-007')
+    expect(recovery.status()).toBe(202)
+    const payload = await recovery.json()
+    expect(payload.accepted).toBe(true)
+    expect(payload.mode).toBe('self_service_recovery')
+    expect(payload.notification_event_id).toEqual(expect.any(String))
+    expect(payload.notification_state).toBe('PENDING')
+    expect(payload).not.toHaveProperty('challenge_id')
+    expect(payload).not.toHaveProperty('otp')
     expect(payload).not.toHaveProperty('temporary_password')
     expect(payload).not.toHaveProperty('new_password')
     expect(payload).not.toHaveProperty('credential')
