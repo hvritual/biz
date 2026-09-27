@@ -229,6 +229,11 @@ jobs:
           export YUNKA_BIZ_OIDC_POST_LOGOUT_REDIRECT_URL="http://127.0.0.1:18080/"
           export YUNKA_BIZ_OIDC_COOKIE_SECURE="false"
           export YUNKA_BIZ_OIDC_SCOPES="openid profile email"
+          verification_key="$(printf 'KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK' | base64 -w0)"
+          verification_hmac="$(printf 'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH' | base64 -w0)"
+          export YUNKA_BIZ_VERIFICATION_ACTIVE_KEY_VERSION="v1"
+          export YUNKA_BIZ_VERIFICATION_KEYS_JSON="{\"v1\":\"$verification_key\"}"
+          export YUNKA_BIZ_VERIFICATION_HMAC_KEY_B64="$verification_hmac"
           nohup "$RUNNER_TEMP/ce12-biz" >"$RUNNER_TEMP/ce12-biz.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/ce12-biz.pid"
           for attempt in $(seq 1 60); do
