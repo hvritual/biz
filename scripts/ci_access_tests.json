@@ -143,6 +143,15 @@
           "file": "integration/enterprise_186_inbox_mysql_test.go"
         }
       ]
+    },
+    {
+      "id": "service-api-security",
+      "tests": [
+        {
+          "name": "TestEnterprise187ServiceAPIHMACReplayAndScope",
+          "file": "integration/enterprise_187_service_api_hmac_mysql_test.go"
+        }
+      ]
     }
   ]
 }
