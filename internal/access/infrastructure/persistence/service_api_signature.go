@@ -97,8 +97,10 @@ func (store *Store) BootstrapServiceAPICredentials(ctx context.Context, values [
 			}
 			if err := tx.Clauses(clause.OnConflict{
 				Columns: []clause.Column{{Name: "key_id"}},
+				// A persisted revoke is authority. Reloading trusted process configuration
+				// may rotate metadata/secret material, but must never resurrect a disabled key.
 				DoUpdates: clause.AssignmentColumns([]string{
-					"subject", "tenant_id", "secret_digest", "disabled", "not_before", "expires_at", "updated_at",
+					"subject", "tenant_id", "secret_digest", "not_before", "expires_at", "updated_at",
 				}),
 			}).Create(&record).Error; err != nil {
 				return err
