@@ -16,7 +16,7 @@ const tenantMemberPasswordRecoveryInterval = 5 * time.Minute
 
 var (
 	ErrTenantMemberPasswordRecoveryUnavailable = errors.New("access: tenant member password recovery unavailable")
-	ErrTenantMemberPasswordRecoveryNotFound     = errors.New("access: tenant member password recovery target not found")
+	ErrTenantMemberPasswordRecoveryNotFound    = errors.New("access: tenant member password recovery target not found")
 )
 
 type TenantMemberPasswordRecoveryRateLimitError struct {
@@ -115,7 +115,7 @@ func (service *TenantMemberPasswordRecoveryService) Request(
 			Purpose:         domain.VerificationPurposePasswordRecovery,
 			UserID:          targetUserID,
 			TenantID:        tenantID,
-			FlowID:          "admin-recovery/" + TokenHash(actorUserID+"/"+targetUserID)[:32],
+			FlowID:          "admin-recovery/" + TokenHash(actorUserID + "/" + targetUserID)[:32],
 			Channel:         channel,
 			Destination:     destination,
 			ExpiresAt:       now.Add(24 * time.Hour),
