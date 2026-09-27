@@ -2,7 +2,9 @@ package bizruntime
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 
@@ -87,6 +89,21 @@ func (auth *runtimeWebAuth) handleMarkAllNotificationInboxRead(writer http.Respo
 	keys := request.Header.Values("Idempotency-Key")
 	if len(keys) != 1 || strings.TrimSpace(keys[0]) == "" {
 		writeJSON(writer, http.StatusBadRequest, map[string]any{"error": "IDEMPOTENCY_KEY_REQUIRED"})
+		return
+	}
+	if request.ContentLength > 256 {
+		writeJSON(writer, http.StatusBadRequest, map[string]any{"error": "INVALID_NOTIFICATION_INBOX_REQUEST"})
+		return
+	}
+	decoder := json.NewDecoder(io.LimitReader(request.Body, 257))
+	var body map[string]json.RawMessage
+	if err := decoder.Decode(&body); err != nil || body == nil || len(body) != 0 {
+		writeJSON(writer, http.StatusBadRequest, map[string]any{"error": "INVALID_NOTIFICATION_INBOX_REQUEST"})
+		return
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		writeJSON(writer, http.StatusBadRequest, map[string]any{"error": "INVALID_NOTIFICATION_INBOX_REQUEST"})
 		return
 	}
 	receipt, err := service.MarkAllRead(request.Context(), owner, keys[0])
