@@ -221,6 +221,28 @@ func TestCE12BrowserSeed(t *testing.T) {
 	if err := store.SetUserPassword(ctx, privacyUserID, privacyPassword); err != nil {
 		t.Fatal(err)
 	}
+
+	// #189 reuses the privacy identity for a real member-appeal 429 proof.
+	// Keep the existing allowed membership active, add one suspended membership
+	// plus another active membership, and avoid changing the allowed tenant UI.
+	for _, tenant := range []struct {
+		id   string
+		name string
+	}{
+		{iamDenied, "CE12 IAM Denied"},
+		{entitlementDenied, "CE12 Entitlement Denied"},
+	} {
+		if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
+			TenantID: tenant.id, TenantName: tenant.name, UserID: privacyUserID, Email: privacyEmail, Token: "ce12-appeal-" + tenant.id,
+		}, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.Table("biz_memberships").
+		Where("tenant_id = ? AND user_id = ?", iamDenied, privacyUserID).
+		Update("status", "suspended").Error; err != nil {
+		t.Fatal(err)
+	}
 	for _, account := range []struct {
 		userID   string
 		email    string
