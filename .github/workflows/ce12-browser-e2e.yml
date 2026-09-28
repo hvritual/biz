@@ -294,29 +294,90 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx playwright test --config playwright.ce12.config.ts
+
+          # These lanes use disjoint mutable fixtures. Keep #189 last because it
+          # intentionally mutates the Security Viewer role and Notification tenant.
+          mapfile -t core_specs < <(
+            find tests/ce12 -maxdepth 1 -type f -name '*.spec.ts' \
+              ! -name 'enterprise-169-consent.spec.ts' \
+              ! -name 'enterprise-174-authorization.spec.ts' \
+              ! -name 'enterprise-175-authorization-ui.spec.ts' \
+              ! -name 'enterprise-184-notification-configuration.spec.ts' \
+              ! -name 'enterprise-189-full-flow.spec.ts' \
+              | sort
+          )
+          test "${#core_specs[@]}" -gt 0
+          aux_specs=(
+            tests/ce12/enterprise-169-consent.spec.ts
+            tests/ce12/enterprise-174-authorization.spec.ts
+            tests/ce12/enterprise-175-authorization-ui.spec.ts
+            tests/ce12/enterprise-184-notification-configuration.spec.ts
+          )
+
+          CE12_PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/ce12-core-results.json \
+            npx playwright test --config playwright.ce12.config.ts \
+              --output=test-results/ce12-core-output "${core_specs[@]}" &
+          core_pid=$!
+
+          CE12_PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/ce12-aux-results.json \
+            npx playwright test --config playwright.ce12.config.ts \
+              --output=test-results/ce12-aux-output "${aux_specs[@]}" &
+          aux_pid=$!
+
+          core_status=0
+          aux_status=0
+          wait "$core_pid" || core_status=$?
+          wait "$aux_pid" || aux_status=$?
+          if [ "$core_status" -ne 0 ] || [ "$aux_status" -ne 0 ]; then
+            echo "CE12 parallel lanes failed: core=$core_status aux=$aux_status" >&2
+            exit 1
+          fi
+
+          CE12_PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/ce12-full-flow-results.json \
+            npx playwright test --config playwright.ce12.config.ts \
+              --output=test-results/ce12-full-flow-output \
+              tests/ce12/enterprise-189-full-flow.spec.ts
+
           python3 - <<'PY'
           import json
           from pathlib import Path
-          result = json.loads(Path('test-results/ce12-results.json').read_text())
-          stats = result['stats']
-          assert stats.get('unexpected', 0) == 0, stats
-          serialized = json.dumps(result)
+
+          paths = [
+              Path('test-results/ce12-core-results.json'),
+              Path('test-results/ce12-aux-results.json'),
+              Path('test-results/ce12-full-flow-results.json'),
+          ]
+          results = [json.loads(path.read_text()) for path in paths]
+          stats = [result['stats'] for result in results]
+          assert sum(item.get('unexpected', 0) for item in stats) == 0, stats
+          assert sum(item.get('flaky', 0) for item in stats) == 0, stats
+          assert sum(item.get('skipped', 0) for item in stats) == 0, stats
+
+          serialized = json.dumps(results)
           required = [
               'TestCE12BrowserRealIdPToSessionTenantIAMEntitlement',
               'TestCE12BrowserRealTenantBrandAppearanceAndStaleReadback',
+              'TestEnterprise169BrowserPrivacyConsentGate',
               'TestEnterprise171CrossTabTenantIsolationBackNavigationAndStaleContext',
               'TestEnterprise172UsernamePhoneEmailPasswordOTPMatrix',
+              'TestEnterprise172ClientValidationAntiEnumerationAndRememberIdentifier',
               'TestEnterprise173PasswordRecoveryRevokesSessionsAndChangesCredential',
               'TestEnterprise173SelfPasswordChangeUIRevokesCurrentSession',
               'TestEnterprise173AdminRecoveryIsPermissionedScopedAndPolicyBlocked',
+              'TestEnterprise174CurrentAuthorizationAndActionCatalogAreSameSource',
               'TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed',
+              'TestEnterprise183NotificationPreferencesLiveBrowserMySQLRecoveryAndIsolation',
+              'TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports',
+              'TestEnterprise184ReadOnlyNavigationAndIndependentServerWriteDenial',
+              'TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout',
+              'TestEnterprise189ControlledEventRoutesToUnreadAndMarkAllRead',
           ]
           for title in required:
               assert title in serialized, f'CE-12 browser acceptance evidence missing: {title}'
-          assert stats.get('expected', 0) >= len(required), stats
+          assert sum(item.get('expected', 0) for item in stats) >= len(required), stats
           print('CE12_BROWSER_AUTHORITY_CHAIN=PASS')
           print('CE12_THEME_APPEARANCE_AUTHORITY=PASS')
+          print('CE12_ENTERPRISE189_FULL_FLOW=PASS')
           PY
 
       - name: Write CE12 browser performance receipt
