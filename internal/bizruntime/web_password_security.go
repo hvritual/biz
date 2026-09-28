@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	"yunka.io/gateway/authz"
 )
@@ -33,7 +34,16 @@ func (auth *runtimeWebAuth) handlePasswordChange(writer http.ResponseWriter, req
 		http.Error(writer, "invalid password change request", http.StatusBadRequest)
 		return
 	}
-	err = store.ChangeOwnPassword(request.Context(), authentication.Session.UserID, input.CurrentPassword, input.NewPassword, input.ConfirmPassword)
+	requestRef := "password-change-" + uuid.NewString()
+	err = store.ChangeOwnPasswordAudited(
+		request.Context(),
+		authentication.Session.ActiveTenantID,
+		authentication.Session.UserID,
+		requestRef,
+		input.CurrentPassword,
+		input.NewPassword,
+		input.ConfirmPassword,
+	)
 	switch {
 	case err == nil:
 		auth.clearCookie(writer, auth.sessionCookieName())

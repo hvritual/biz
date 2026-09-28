@@ -3,9 +3,11 @@ package persistence
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
+	"github.com/hvritual/biz/internal/access/domain"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -83,17 +85,28 @@ func (store *Store) WithdrawPrivacyConsent(ctx context.Context, userID, agreemen
 	if store == nil || store.database == nil || userID == "" || agreementVersion == "" || source == "" {
 		return ErrPrivacyConsentNotFound
 	}
-	now := time.Now().UTC()
-	result := store.database.WithContext(ctx).Model(&privacyConsentRecord{}).
-		Where("user_id = ? AND agreement_version = ? AND withdrawn_at IS NULL", userID, agreementVersion).
-		Updates(map[string]any{"withdrawn_at": now, "withdrawn_source": source, "updated_at": now})
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected != 1 {
-		return ErrPrivacyConsentNotFound
-	}
-	return nil
+	return store.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		now := time.Now().UTC()
+		result := tx.Model(&privacyConsentRecord{}).
+			Where("user_id = ? AND agreement_version = ? AND withdrawn_at IS NULL", userID, agreementVersion).
+			Updates(map[string]any{"withdrawn_at": now, "withdrawn_source": source, "updated_at": now})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return ErrPrivacyConsentNotFound
+		}
+		_, err := AppendTrustedUserAuditPairsTx(ctx, tx, userID, TrustedAudit{
+			EventKey:    "privacy-withdraw/" + TokenHash(userID+"/"+agreementVersion+"/"+source),
+			OperationID: "identity.privacy_consent.withdraw", Module: "access",
+			ActorUserID: userID, ActorSubject: "user:" + userID,
+			AuthMethod: AuthMethodWeb, AuthChannel: "web",
+			Target: "account:" + userID, RequestDigest: TokenHash("agreement_version:" + agreementVersion),
+			Reason: "changed_fields=consent_state", Risk: domain.AuditRiskHigh,
+			Outcome: domain.AuditResultSuccess, OccurredAt: now,
+		})
+		return err
+	})
 }
 
 func (store *Store) BindFirstPartyAuthorizationIdentity(ctx context.Context, requestID, browserSecret, csrf, userID string, loginAuditID uint64) error {
@@ -245,6 +258,20 @@ func (store *Store) AcceptPrivacyConsentAndIssueAuthorizationCode(ctx context.Co
 		}
 		request = firstPartyRequestFromRecord(row)
 		consent = privacyConsentFromRecord(consentRow)
+		if _, err := AppendTrustedUserAuditPairsTx(ctx, tx, row.AuthenticatedUserID, TrustedAudit{
+			EventKey:    "privacy-accept/" + row.RequestHash + "/" + input.ExpectedVersion,
+			OperationID: "identity.privacy_consent.accept", Module: "access",
+			ActorUserID: row.AuthenticatedUserID, ActorSubject: "user:" + row.AuthenticatedUserID,
+			AuthMethod: "first-party-idp", AuthChannel: "web",
+			RequestID: row.RequestHash, TraceID: row.RequestHash,
+			Target:        "account:" + row.AuthenticatedUserID,
+			RequestDigest: TokenHash("agreement_version:" + input.ExpectedVersion),
+			ReceiptRef:    "login-audit:" + fmt.Sprint(row.LoginAuditID),
+			Reason:        "changed_fields=consent_state,agreement_version", Risk: domain.AuditRiskHigh,
+			Outcome: domain.AuditResultSuccess, OccurredAt: now,
+		}); err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {

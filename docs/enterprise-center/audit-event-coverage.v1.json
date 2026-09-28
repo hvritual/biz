@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "authority": "biz_audit_events",
+  "account_wide_projection": "Account-level identity events that occur before tenant selection are copied only to the account's server-resolved active memberships; request tenant/actor fields are never authority.",
+  "events": [
+    {
+      "class": "login",
+      "operation_ids": [
+        "identity.login.password",
+        "identity.login.otp"
+      ],
+      "source": "transactional_projection",
+      "evidence": [
+        "internal/access/infrastructure/persistence/first_party_idp_security.go"
+      ]
+    },
+    {
+      "class": "login_lock",
+      "operation_ids": [
+        "identity.login.lock"
+      ],
+      "source": "transactional_projection",
+      "evidence": [
+        "internal/access/infrastructure/persistence/first_party_idp_security.go"
+      ]
+    },
+    {
+      "class": "privacy_consent",
+      "operation_ids": [
+        "identity.privacy_consent.accept",
+        "identity.privacy_consent.withdraw"
+      ],
+      "source": "transactional_projection",
+      "evidence": [
+        "internal/access/infrastructure/persistence/privacy_consent.go"
+      ]
+    },
+    {
+      "class": "password",
+      "operation_ids": [
+        "identity.password.change",
+        "identity.password.recover",
+        "tenant.member.password_recovery.request"
+      ],
+      "source": "transactional_projection",
+      "evidence": [
+        "internal/access/infrastructure/persistence/credential_security.go",
+        "internal/access/infrastructure/persistence/tenant_member_password_recovery.go"
+      ]
+    },
+    {
+      "class": "contact_and_self_deletion",
+      "operation_ids": [
+        "tenant.personal.contact_change",
+        "tenant.membership.self_delete"
+      ],
+      "source": "existing_transactional_projection",
+      "evidence": [
+        "internal/access/infrastructure/persistence/tenant_self_security.go"
+      ]
+    },
+    {
+      "class": "member_lifecycle",
+      "operation_ids": [
+        "tenant.member.create",
+        "tenant.member.update",
+        "tenant.member.activate",
+        "tenant.member.suspend",
+        "tenant.member.remove",
+        "tenant.member.restore"
+      ],
+      "source": "operation_runtime",
+      "evidence": [
+        "contracts/generated/operation-plans.json",
+        "internal/bizruntime/audit.go"
+      ]
+    },
+    {
+      "class": "member_appeal",
+      "operation_ids": [
+        "tenant.member.appeal.submit"
+      ],
+      "source": "transactional_projection",
+      "evidence": [
+        "internal/access/infrastructure/persistence/member_appeal.go"
+      ]
+    },
+    {
+      "class": "role_authorization",
+      "operation_ids": [
+        "tenant.role.create",
+        "tenant.role.update",
+        "tenant.role.delete",
+        "tenant.role.disable",
+        "tenant.role.enable",
+        "tenant.role.set_permissions",
+        "tenant.role.set_data_policy",
+        "tenant.role.assign_member",
+        "tenant.role.revoke_member"
+      ],
+      "source": "operation_runtime",
+      "evidence": [
+        "contracts/generated/operation-plans.json",
+        "internal/bizruntime/audit.go"
+      ]
+    },
+    {
+      "class": "message_configuration",
+      "operation_ids": [
+        "notification.configuration.create",
+        "notification.configuration.update",
+        "notification.configuration.delete"
+      ],
+      "source": "operation_runtime",
+      "evidence": [
+        "contracts/generated/operation-plans.json",
+        "internal/bizruntime/audit.go"
+      ]
+    },
+    {
+      "class": "message_delivery",
+      "operation_ids": [
+        "notification.delivery.provider_accepted",
+        "notification.delivery.delivered",
+        "notification.delivery.retry",
+        "notification.delivery.manual_review",
+        "notification.delivery.cancelled"
+      ],
+      "source": "transactional_projection",
+      "evidence": [
+        "internal/notification/infrastructure/persistence/external_delivery.go"
+      ]
+    }
+  ],
+  "sensitive_data_forbidden": [
+    "password",
+    "otp_code",
+    "authorization_code",
+    "session_token",
+    "api_token",
+    "full_email",
+    "full_phone",
+    "notification_destination"
+  ],
+  "required_audit_fields": [
+    "operation_id",
+    "actor_subject",
+    "tenant_id",
+    "resource_tenant_id",
+    "target",
+    "outcome",
+    "decision_reason",
+    "trace_id",
+    "idempotency_ref_or_receipt_ref",
+    "occurred_at"
+  ]
+}

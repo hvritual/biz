@@ -71,6 +71,7 @@ func (service *TenantMemberPasswordRecoveryService) Request(
 	}
 
 	var receipt TenantMemberPasswordRecoveryReceipt
+	var expectedOutcome error
 	err := service.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		now, err := verificationDatabaseNow(ctx, tx)
 		if err != nil {
@@ -93,7 +94,21 @@ func (service *TenantMemberPasswordRecoveryService) Request(
 		case latestErr == nil:
 			nextAllowed := latest.CreatedAt.Add(tenantMemberPasswordRecoveryInterval)
 			if nextAllowed.After(now) {
-				return TenantMemberPasswordRecoveryRateLimitError{RetryAfter: nextAllowed.Sub(now)}
+				if err := AppendTrustedAuditPairTx(ctx, tx, TrustedAudit{
+					EventKey:    fmt.Sprintf("admin-recovery-rate/%s/%s/%s/%d", tenantID, targetUserID, actorUserID, now.UnixNano()),
+					OperationID: "tenant.member.password_recovery.request", Module: "access",
+					TenantID: tenantID, ActorSubject: "user:" + actorUserID, ActorUserID: actorUserID,
+					AuthMethod: AuthMethodWeb, AuthChannel: "web",
+					Target: "user_id:" + targetUserID, ResourceTenantID: tenantID,
+					DecisionReason: "PASSWORD_RECOVERY_RATE_LIMITED",
+					RequestDigest:  TokenHash("password-recovery-request/v1"),
+					Reason:         "changed_fields=password_recovery_request", Risk: domain.AuditRiskHigh,
+					Outcome: domain.AuditResultFailure, OccurredAt: now,
+				}); err != nil {
+					return err
+				}
+				expectedOutcome = TenantMemberPasswordRecoveryRateLimitError{RetryAfter: nextAllowed.Sub(now)}
+				return nil
 			}
 		case errors.Is(latestErr, gorm.ErrRecordNotFound):
 		default:
@@ -128,7 +143,25 @@ func (service *TenantMemberPasswordRecoveryService) Request(
 			NotificationState:   delivery.State,
 			RequestedAt:         now,
 		}
+		if err := AppendTrustedAuditPairTx(ctx, tx, TrustedAudit{
+			EventKey:    businessEventID,
+			OperationID: "tenant.member.password_recovery.request", Module: "access",
+			TenantID: tenantID, ActorSubject: "user:" + actorUserID, ActorUserID: actorUserID,
+			AuthMethod: AuthMethodWeb, AuthChannel: "web",
+			Target: "user_id:" + targetUserID, ResourceTenantID: tenantID,
+			RequestDigest: TokenHash("password-recovery-request/v1"),
+			ReceiptRef:    delivery.EventID, Reason: "changed_fields=password_recovery_request",
+			Risk: domain.AuditRiskHigh, Outcome: domain.AuditResultSuccess, OccurredAt: now,
+		}); err != nil {
+			return err
+		}
 		return nil
 	})
-	return receipt, err
+	if err != nil {
+		return TenantMemberPasswordRecoveryReceipt{}, err
+	}
+	if expectedOutcome != nil {
+		return TenantMemberPasswordRecoveryReceipt{}, expectedOutcome
+	}
+	return receipt, nil
 }
