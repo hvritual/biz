@@ -105,7 +105,7 @@ jobs:
           bad="$(gofmt -l             biz/internal/access/infrastructure/persistence/first_party_idp.go             biz/internal/access/infrastructure/persistence/first_party_idp_security.go             biz/internal/access/infrastructure/persistence/login_identifier.go             biz/internal/access/infrastructure/persistence/login_identifier_test.go             biz/internal/access/infrastructure/persistence/web_session.go             biz/internal/bizruntime/config.go             biz/internal/bizruntime/first_party_idp.go             biz/internal/bizruntime/first_party_idp_hardening_test.go             biz/internal/bizruntime/first_party_idp_server.go             biz/internal/bizruntime/first_party_native_login.go             biz/internal/bizruntime/oidc_static.go             biz/internal/bizruntime/web_auth.go             biz/integration/ce12_browser_seed_test.go             biz/cmd/biz-idp/main.go             biz/cmd/biz-idp/notification_sender.go             biz/cmd/biz-idp/notification_sender_qualification.go             biz/cmd/biz-idp-credential/main.go)"
           test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
 
-      - name: Prepare CE12 runtime and browser dependencies
+      - name: Build CE12 browser runtime binaries
         shell: bash
         run: |
           set -euo pipefail
@@ -145,6 +145,17 @@ jobs:
             exit 1
           fi
           echo "CE12_PARALLEL_PREP_SECONDS=$(( $(date +%s) - started ))"
+
+      - name: Install browser E2E dependencies
+        working-directory: biz/web
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d node_modules
+          test -x node_modules/.bin/playwright
+          node -e "require('@playwright/test')"
+          npx playwright install --dry-run chromium >/dev/null
+          fc-list :lang=zh family | grep -qi "Noto Sans CJK\|Noto Serif CJK"
 
       - name: Wait for CE12 MySQL
         shell: bash
