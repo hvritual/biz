@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { UiButton, UiOption, UiSelect } from '@/ui/base'
+import { UiButton, UiOption, UiSelect, UiTag } from '@/ui/base'
 
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -191,10 +191,10 @@ watch([page, pageSize], () => (selected.value = []))
             :disabled="!selected.length"
             @click="actions.open('assign', 'work', selected)"
           >
-            批量分配</UiButton><span v-if="scopeLabel" class="pill">{{ scopeLabel }}</span
-          ><span v-if="route.query.customer" class="pill">{{
+            批量分配</UiButton><UiTag v-if="scopeLabel" tone="primary">{{ scopeLabel }}</UiTag
+          ><UiTag v-if="route.query.customer" tone="primary">{{
             store.customerName(String(route.query.customer))
-          }}</span>
+          }}</UiTag>
         </div>
         <div class="row wrap">
           <UiSelect

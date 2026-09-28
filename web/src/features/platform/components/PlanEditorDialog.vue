@@ -237,7 +237,6 @@ function submit() {
 .plan-editor-grid label > span, .module-head label > span { font-size: 12px; color: var(--color-text-secondary); }
 .plan-editor-grid .wide { grid-column: 1 / -1; }
 .input { width: 100%; min-height: 36px; border: 1px solid var(--color-border); border-radius: 7px; padding: 7px 10px; background: var(--color-surface); color: var(--color-text-primary); font: inherit; }
-.input:focus { outline: 2px solid var(--color-primary-soft); border-color: var(--color-primary); }
 .editor-section { padding: 16px 0; border-top: 1px solid var(--color-border); }
 .section-head { align-items: flex-start; margin-bottom: 10px; }
 .section-head h3 { margin: 0; font-size: 13px; }

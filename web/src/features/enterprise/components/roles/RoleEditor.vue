@@ -16,6 +16,7 @@ import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
+import Notice from '@/ui/common/Notice.vue'
 
 const props = defineProps<{ open: boolean; role: Role | null }>()
 const emit = defineEmits<{ close: [] }>()
@@ -198,13 +199,13 @@ async function save() {
     @close="emit('close')"
   >
     <div class="page-stack">
-      <div v-if="readonly" class="notice-box">
+      <Notice v-if="readonly">
         <AppIcon name="shield" />内置角色只读。企业所有者拥有受保护的管理能力，不能通过此页面修改或禁用。
-      </div>
-      <div v-if="apiMode" class="notice-box">
+      </Notice>
+      <Notice v-if="apiMode">
         <AppIcon name="help" />当前可配置权限以系统权限目录为准；角色只能选择已开放的权限项。
-      </div>
-      <div v-if="apiMode && catalogBusy" class="notice-box">正在读取可配置权限…</div>
+      </Notice>
+      <Notice v-if="apiMode && catalogBusy">正在读取可配置权限…</Notice>
 
       <div class="form-grid">
         <label class="field">
@@ -307,9 +308,9 @@ async function save() {
           </label>
         </section>
       </div>
-      <div v-if="apiMode && catalogReady && !permissionGroups.length" class="notice-box">
+      <Notice v-if="apiMode && catalogReady && !permissionGroups.length">
         当前企业暂无可配置权限。
-      </div>
+      </Notice>
 
       <label class="option-line">
         <UiInput v-model="draft.enabled" type="checkbox" :disabled="readonly" />启用此角色

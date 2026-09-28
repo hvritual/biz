@@ -14,6 +14,7 @@ import AppIcon from '@/ui/common/AppIcon.vue'
 import AvatarMark from '@/ui/common/AvatarMark.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import AppearanceControls from '@/ui/common/AppearanceControls.vue'
+import Notice from '@/ui/common/Notice.vue'
 import brand from '@/assets/brand-mark.png'
 import {
   authorizationApiMode,
@@ -218,9 +219,10 @@ onBeforeUnmount(() => {
     </div>
 
     <form v-if="!live" class="global-search" role="search" @submit.prevent="globalSearch">
-      <AppIcon name="search" :size="16" />
-      <UiInput v-model="search" :aria-label="t('header.globalSearch')" :placeholder="t('header.searchPlaceholder')" />
-      <span>⌘ K</span>
+      <UiInput v-model="search" :aria-label="t('header.globalSearch')" :placeholder="t('header.searchPlaceholder')">
+        <template #prefix><AppIcon name="search" :size="16" /></template>
+        <template #suffix><kbd class="global-search-shortcut">⌘ K</kbd></template>
+      </UiInput>
     </form>
 
     <div class="header-actions">
@@ -259,10 +261,10 @@ onBeforeUnmount(() => {
 
   <UiDialog :open="Boolean(panel)" :title="panel" @close="panel = ''">
     <div class="page-stack">
-      <div v-if="showPanelNotice" class="notice-box">
+      <Notice v-if="showPanelNotice">
         <AppIcon name="help" />
         {{ t('header.panelNotice') }}
-      </div>
+      </Notice>
       <template v-if="panel === t('header.help')">
         <h3>{{ t('shell.companyGuide') }}</h3>
         <p class="secondary">{{ t('header.helpDescription') }}</p>
@@ -284,16 +286,16 @@ onBeforeUnmount(() => {
             </UiButton>
           </div>
 
-          <p v-if="store.sourceKind !== 'api'" class="notice-box warning">
+          <Notice v-if="store.sourceKind !== 'api'" tone="warning">
             {{ t('header.notificationsUnavailable') }}
-          </p>
+          </Notice>
           <p v-else-if="inbox.loading && !inbox.ready" class="secondary" role="status">
             {{ t('notificationInbox.loading') }}
           </p>
-          <div v-if="notificationError" class="notice-box danger notification-inbox-error" role="alert">
+          <Notice v-if="notificationError" tone="danger" class="notification-inbox-error" role="alert">
             <span>{{ notificationError }}</span>
             <UiButton variant="outline" size="sm" @click="refreshNotificationInbox">{{ t('notificationInbox.retry') }}</UiButton>
-          </div>
+          </Notice>
 
           <div
             v-if="store.sourceKind === 'api' && inbox.ready && inbox.snapshot && inbox.snapshot.messages.length === 0 && !notificationError"
@@ -357,10 +359,11 @@ onBeforeUnmount(() => {
 .header-company { display: flex; align-items: center; gap: 9px; white-space: nowrap; }
 .header-company > .icon { color: var(--color-success); }
 .header-company select { border: 0; background: transparent; font-size: 12px; font-weight: 600; max-width: 190px; outline-offset: 4px; }
-.global-search { display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 36px; border: 1px solid var(--color-border); border-radius: 9px; background: var(--color-surface-soft); margin: 0 auto; max-width: 470px; flex: 1; min-width: 100px; color: var(--color-text-muted); }
-.global-search input { border: 0; background: none; outline: 0; min-width: 0; flex: 1; font-size: 12px; }
-.global-search input::placeholder { color: var(--color-text-muted); }
-.global-search > span { font-size: 11px; white-space: nowrap; }
+.global-search { margin: 0 auto; max-width: 470px; flex: 1; min-width: 100px; }
+.global-search :deep([data-slot='input-wrapper']) { height: 36px; gap: 8px; border-color: var(--color-border); border-radius: 9px; background: var(--color-surface-soft); color: var(--color-text-muted); }
+.global-search :deep([data-slot='input']) { min-width: 0; font-size: 12px; }
+.global-search :deep([data-slot='input'])::placeholder { color: var(--color-text-muted); }
+.global-search-shortcut { color: inherit; font: inherit; font-size: 11px; white-space: nowrap; }
 .header-actions { display: flex; align-items: center; gap: 8px; }
 .locale-select { width: 96px; min-width: 96px; font-size: 11px; }
 .header-link { display: flex; align-items: center; gap: 6px; white-space: nowrap; padding: 0; font-size: 12px; }

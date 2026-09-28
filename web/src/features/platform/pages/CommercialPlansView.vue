@@ -405,7 +405,6 @@ onMounted(loadModules)
 .lookup-row { display: grid; grid-template-columns: auto minmax(220px, 420px) auto; gap: 10px; align-items: center; margin-top: 18px; }
 .lookup-row label, .eligibility-body label > span { font-size: 12px; color: var(--color-text-secondary); }
 .input { width: 100%; min-height: 36px; border: 1px solid var(--color-border); border-radius: 7px; padding: 7px 10px; background: var(--color-surface); color: var(--color-text-primary); font: inherit; }
-.input:focus { outline: 2px solid var(--color-primary-soft); border-color: var(--color-primary); }
 .scope-note { margin: 10px 0 0; font-size: 11px; color: var(--color-text-muted); }
 .notice { padding: 10px 13px; border: 1px solid var(--color-border); border-radius: 8px; font-size: 13px; }
 .notice.success { border-color: var(--color-success, var(--color-fixed-a93dc7bf)); }

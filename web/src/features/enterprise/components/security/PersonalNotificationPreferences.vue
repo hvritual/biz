@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { UiButton, UiInput } from '@/ui/base'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
+import Notice from '@/ui/common/Notice.vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { usePersonalProfileStore } from '@/stores/personalProfile'
 import { sessionContext } from '@/services/runtime/api'
@@ -36,8 +37,8 @@ onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', hi
     </div>
     <p class="scope-note">{{ t('notificationPreferences.scope', { tenant: personal.profile?.tenantName, user: personal.profile?.name || personal.profile?.username }) }}</p>
     <p v-if="busy && !snapshot" role="status">{{ t('notificationPreferences.loading') }}</p>
-    <p v-if="error" class="notice-box danger" role="alert">{{ t(`notificationPreferences.errors.${error}`) }}</p>
-    <p v-if="success" class="notice-box success" role="status">{{ t('notificationPreferences.saved') }}</p>
+    <Notice v-if="error" tone="danger">{{ t(`notificationPreferences.errors.${error}`) }}</Notice>
+    <Notice v-if="success" tone="success">{{ t('notificationPreferences.saved') }}</Notice>
     <template v-if="snapshot">
       <div v-for="channel in channels" :key="channel" class="preference-row">
         <label :for="`personal-preference-${channel}`">
@@ -55,10 +56,10 @@ onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', hi
       </div>
     </template>
     <p class="policy-note">{{ t('notificationPreferences.policyNote') }}</p>
-    <div v-if="recovery" class="notice-box warning recovery-box" role="status">
+    <Notice v-if="recovery" class="recovery-box" tone="warning">
       <p>{{ t(recovery === 'read' ? 'notificationPreferences.confirmationPending' : 'notificationPreferences.uncertain') }}</p>
       <UiButton variant="outline" :disabled="busy" @click="flow.recover">{{ t('notificationPreferences.recover') }}</UiButton>
-    </div>
+    </Notice>
     <UiButton v-else-if="!busy && (error || !snapshot)" variant="outline" @click="retry">
       {{ t(reloadRequired ? 'notificationPreferences.reload' : 'notificationPreferences.retry') }}
     </UiButton>
@@ -68,8 +69,8 @@ onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', hi
       <p>{{ t('notificationPreferences.scope', { tenant: personal.profile?.tenantName, user: personal.profile?.name || personal.profile?.username }) }}</p>
       <p v-if="selected" class="confirmation-impact">{{ t(selected.allowed ? 'notificationPreferences.confirmEnable' : 'notificationPreferences.confirmDisable', { channel: t(`notificationPreferences.${selected.channel}`) }) }}</p>
       <p>{{ t('notificationPreferences.confirmNote') }}</p>
-      <p v-if="error" class="notice-box danger" role="alert">{{ t(`notificationPreferences.errors.${error}`) }}</p>
-      <p v-if="recovery" class="notice-box warning">{{ t(recovery === 'read' ? 'notificationPreferences.confirmationPending' : 'notificationPreferences.uncertain') }}</p>
+      <Notice v-if="error" tone="danger">{{ t(`notificationPreferences.errors.${error}`) }}</Notice>
+      <Notice v-if="recovery" tone="warning">{{ t(recovery === 'read' ? 'notificationPreferences.confirmationPending' : 'notificationPreferences.uncertain') }}</Notice>
       <p v-if="busy" role="status">{{ t('notificationPreferences.saving') }}</p>
     </div>
     <template #footer>

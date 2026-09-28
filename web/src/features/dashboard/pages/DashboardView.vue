@@ -5,6 +5,7 @@ import PageHeading from '@/ui/common/PageHeading.vue'
 import MetricCard from '@/ui/common/MetricCard.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
+import Notice from '@/ui/common/Notice.vue'
 import { quickActions } from '@/router/navigation'
 const store = useEnterpriseStore()
 const groups = computed(() => [
@@ -125,9 +126,9 @@ const donutBackground = computed(() => {
         ><RouterLink class="todo-row" to="/system/security"
           ><span><AppIcon name="key" />检查企业安全策略</span><AppIcon name="right" :size="15"
         /></RouterLink>
-        <div class="notice-box workbench-notice">
+        <Notice class="workbench-notice">
           <AppIcon name="help" />设备、订单与出杯数据尚未接入，此工作台不展示虚构的实时设备指标。
-        </div>
+        </Notice>
       </section>
     </div>
   </div>

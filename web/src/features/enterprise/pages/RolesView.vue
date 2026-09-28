@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { UiButton, UiOption, UiSelect } from '@/ui/base'
+import { UiButton, UiOption, UiSelect, UiTag } from '@/ui/base'
 
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -203,7 +203,7 @@ onMounted(() => void store.ensureDomains(['roles', 'members']).catch(() => undef
                 </div>
               </td>
               <td>
-                <span class="pill">{{ r.builtin ? '内置角色' : '自定义角色' }}</span>
+                <UiTag tone="primary">{{ r.builtin ? '内置角色' : '自定义角色' }}</UiTag>
               </td>
               <td class="numeric">{{ memberCount(r) }} 人</td>
               <td>{{ scopeLabels[r.scope] }}</td>

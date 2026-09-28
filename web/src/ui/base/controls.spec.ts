@@ -36,6 +36,35 @@ describe('base control compatibility', () => {
     expect(trimInput.emitted('update:modelValue')?.at(-1)).toEqual(['coffee'])
   })
 
+  it('renders prefix and suffix slots inside one external input frame without changing input events', async () => {
+    const onInput = vi.fn()
+    const wrapper = mount(UiInput, {
+      props: { value: 'before' },
+      attrs: { onInput },
+      slots: {
+        prefix: '<span>搜索</span>',
+        suffix: '<kbd>⌘ K</kbd>',
+      },
+    })
+
+    const frame = wrapper.get('[data-slot="input-wrapper"]')
+    expect(frame.get('[data-slot="input-prefix"]').text()).toBe('搜索')
+    expect(frame.get('[data-slot="input-suffix"]').text()).toBe('⌘ K')
+
+    await frame.get('input').setValue('after')
+    expect(onInput).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps text-input focus treatment on the wrapper instead of the inner input', () => {
+    const wrapper = mount(UiInput, { props: { value: 'value' } })
+    const frame = wrapper.get('[data-slot="input-wrapper"]')
+    const input = wrapper.get('input')
+
+    expect(frame.attributes('data-slot')).toBe('input-wrapper')
+    expect(input.attributes('data-ui-input-inner')).toBeDefined()
+    expect(input.classes()).toContain('outline-none')
+  })
+
   it('keeps legacy textarea value and input events controlled by the caller', async () => {
     const onInput = vi.fn()
     const wrapper = mount(UiTextarea, {

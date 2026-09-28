@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import AppIcon from '@/ui/common/AppIcon.vue'
+import Notice from '@/ui/common/Notice.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
@@ -31,10 +32,10 @@ function save() {
       <h2>开放接口与系统集成</h2>
       <StatusBadge text="未接入" tone="neutral" />
     </div>
-    <div class="notice-box warning">
+    <Notice tone="warning">
       <AppIcon name="lock" />当前仅完成前端复刻。没有生成 API 密钥，没有开放真实接口，也没有执行 Webhook
       投递。
-    </div>
+    </Notice>
     <section class="integration-card">
       <span><AppIcon name="key" :size="25" /></span>
       <div>

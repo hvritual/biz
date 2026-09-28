@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { UiButton, UiOption, UiSelect } from '@/ui/base'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
+import Notice from '@/ui/common/Notice.vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import type { Role } from '@/types/enterprise'
@@ -153,7 +154,7 @@ onBeforeUnmount(() => { disposed = true; epoch += 1 })
 <template>
   <UiDialog :open="open" :title="t('dataPermissions.policyTitle', { name: role?.name ?? '' })" width="620px" @close="close">
     <div class="policy-stack" data-role-data-policy-dialog :aria-busy="loading || busy">
-      <div class="notice-box">{{ t('dataPermissions.policyHint') }}</div>
+      <Notice>{{ t('dataPermissions.policyHint') }}</Notice>
       <p v-if="loading">{{ t('dataPermissions.loadingPolicy') }}</p>
       <section v-else-if="ready" class="policy-current">
         <div class="row-between"><strong>{{ t('dataPermissions.currentPolicy') }}</strong>

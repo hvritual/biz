@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { UiButton, UiOption, UiSelect, UiTextarea } from '@/ui/base'
+import { UiButton, UiOption, UiSelect, UiTabTrigger, UiTabs, UiTextarea } from '@/ui/base'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useEnterpriseStore } from '@/stores/enterprise'
@@ -9,6 +9,7 @@ import PageHeading from '@/ui/common/PageHeading.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
+import Notice from '@/ui/common/Notice.vue'
 import PlanChangeLifecycle from '@/features/enterprise/components/PlanChangeLifecycle.vue'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 
@@ -149,11 +150,13 @@ function submitDemoChange() {
       />
 
       <section class="card panel-pad" data-ui-region="workspace">
-        <div class="tabs">
-          <UiButton v-for="item in ['套餐概览', '功能权益', '使用额度', '变更记录']" :key="item" :class="['tab', { active: tab === item }]" @click="tab = item">
-            {{ item }}
-          </UiButton>
-        </div>
+        <UiTabs :model-value="tab" @update:model-value="(v: string) => (tab = v)">
+          <template #list>
+            <UiTabTrigger v-for="item in ['套餐概览', '功能权益', '使用额度', '变更记录']" :key="item" :value="item">
+              {{ item }}
+            </UiTabTrigger>
+          </template>
+        </UiTabs>
 
         <template v-if="tab === '套餐概览' || tab === '功能权益'">
           <div class="row-between plan-section-heading">
@@ -174,9 +177,9 @@ function submitDemoChange() {
         </template>
 
         <template v-else-if="tab === '使用额度'">
-          <div v-if="plan.error && plan.model" class="notice-box quota-warning">
+          <Notice v-if="plan.error && plan.model" class="quota-warning">
             <AppIcon name="help" />额度信息暂不可用，请稍后重试。
-          </div>
+          </Notice>
           <div class="table-scroll quota-table">
             <table class="data-table">
               <thead>
@@ -224,7 +227,7 @@ function submitDemoChange() {
 
     <UiDialog :open="requestOpen" title="申请套餐调整" @close="requestOpen = false">
       <div class="page-stack">
-        <div class="notice-box"><AppIcon name="help" />此操作仅用于演示申请流程，不会购买服务、变更实际订阅或扣费。</div>
+        <Notice><AppIcon name="help" />此操作仅用于演示申请流程，不会购买服务、变更实际订阅或扣费。</Notice>
         <label class="field"><span>意向套餐</span><UiSelect v-model="targetPlan" class="select"><UiOption>企业版</UiOption><UiOption>标准版扩容</UiOption><UiOption>联系商务定制</UiOption></UiSelect></label>
         <label class="field"><span>需求说明</span><UiTextarea v-model="note" class="textarea" maxlength="500" placeholder="描述所需成员、点位、设备或功能额度" /></label>
       </div>

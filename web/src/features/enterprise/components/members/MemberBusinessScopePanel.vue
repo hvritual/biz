@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { UiButton, UiInput } from '@/ui/base'
 import UiDialog from '@/ui/common/UiDialog.vue'
+import Notice from '@/ui/common/Notice.vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import type { Member } from '@/types/enterprise'
@@ -186,8 +187,8 @@ onBeforeUnmount(() => { disposed = true; epoch += 1 })
 </script>
 <template>
   <div class="scope-panel" data-member-business-scope>
-    <template v-if="store.previewMode"><h3>{{ t('dataPermissions.currentScope') }}</h3><p class="notice-box">{{ t('dataPermissions.preview') }}</p></template>
-    <p v-else-if="!canRead" class="notice-box">{{ t('dataPermissions.noReadAccess') }}</p>
+    <template v-if="store.previewMode"><h3>{{ t('dataPermissions.currentScope') }}</h3><Notice>{{ t('dataPermissions.preview') }}</Notice></template>
+    <Notice v-else-if="!canRead">{{ t('dataPermissions.noReadAccess') }}</Notice>
     <template v-else>
       <div class="row-between"><h3>{{ t('dataPermissions.scopeHeading') }}</h3>
         <UiButton v-if="canEdit && member.status !== 'removed'" class="btn-link" :disabled="loading || busy" @click="openEditor">{{ t('dataPermissions.adjustScope') }}</UiButton>
@@ -205,7 +206,7 @@ onBeforeUnmount(() => { disposed = true; epoch += 1 })
     </template>
     <UiDialog :open="editorOpen" :title="t('dataPermissions.scopeTitle', { name: member.name })" width="680px" @close="() => { if (!busy) editorOpen = false }">
       <div class="scope-editor" data-member-scope-dialog :aria-busy="loading || directoryLoading || busy">
-        <div class="notice-box">{{ t('dataPermissions.scopeRules') }}</div>
+        <Notice>{{ t('dataPermissions.scopeRules') }}</Notice>
         <p v-if="loading">{{ t('dataPermissions.loadingScope') }}</p>
         <p v-if="directoryLoading">{{ t('dataPermissions.directoryLoading') }}</p>
         <div v-if="unavailableIds.length" class="warning-box">

@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import { statusLabels, scopeLabels } from '@/types/enterprise'
 import SearchField from '@/ui/common/SearchField.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
+import Notice from '@/ui/common/Notice.vue'
 const query = ref(''),
   group = ref('status')
 const source = computed(() => (group.value === 'status' ? statusLabels : scopeLabels))
@@ -15,9 +16,9 @@ const entries = computed(() =>
 <template>
   <div class="page-stack">
     <h2>系统数据字典</h2>
-    <div class="notice-box">
+    <Notice>
       <AppIcon name="database" />成员状态与数据范围是业务契约的一部分，不能通过展示字典改变状态机或授权规则。
-    </div>
+    </Notice>
     <div class="query-bar">
       <SearchField v-model="query" placeholder="搜索字典键或名称…" /><UiSelect
         v-model="group"

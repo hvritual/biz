@@ -43,7 +43,7 @@ a {
 }
 button:focus-visible,
 a:focus-visible,
-input:focus-visible,
+input:not([data-ui-input-inner]):focus-visible,
 select:focus-visible,
 textarea:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);

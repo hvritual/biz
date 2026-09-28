@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { UiButton, UiOption, UiSelect } from '@/ui/base'
+import { UiButton, UiOption, UiSelect, UiTag } from '@/ui/base'
 
 import { computed, ref } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
@@ -37,7 +37,7 @@ function exportResults() {
     <section class="card data-panel">
       <div class="row-between wrap">
         <div class="row wrap">
-          <strong>2026 年 9 月到期批次</strong><span class="pill">当前租户 · 示例快照</span>
+          <strong>2026 年 9 月到期批次</strong><UiTag tone="primary">当前租户 · 示例快照</UiTag>
         </div>
         <span class="customer-help">金额 CNY · 时区 Asia/Shanghai · 结果随本地验收更新</span>
       </div>

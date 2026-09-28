@@ -11,6 +11,7 @@ import AppIcon from '@/ui/common/AppIcon.vue'
 import AvatarMark from '@/ui/common/AvatarMark.vue'
 import PageHeading from '@/ui/common/PageHeading.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
+import Notice from '@/ui/common/Notice.vue'
 import PersonalSecurityPanel from '../components/security/PersonalSecurityPanel.vue'
 import PersonalNotificationPreferences from '../components/security/PersonalNotificationPreferences.vue'
 
@@ -93,17 +94,17 @@ watch(
   <div class="page-stack personal-profile-page" data-enterprise-page="personal-profile" data-ui-template="FormPage">
     <PageHeading :title="t('personalProfile.title')" :description="t('personalProfile.description')" />
 
-    <p v-if="enterprise.sourceKind !== 'api'" class="notice-box warning" role="note">
+    <Notice v-if="enterprise.sourceKind !== 'api'" tone="warning">
       <AppIcon name="lock" :size="16" />
       {{ t('personalProfile.apiOnly') }}
-    </p>
-    <p v-else-if="personal.loading && !personal.ready" class="notice-box" role="status">
+    </Notice>
+    <Notice v-else-if="personal.loading && !personal.ready">
       {{ t('personalProfile.loading') }}
-    </p>
-    <div v-if="personal.error" class="notice-box danger profile-error" role="alert">
+    </Notice>
+    <Notice v-if="personal.error" class="profile-error" tone="danger">
       <span>{{ personal.error }}</span>
       <UiButton variant="outline" size="sm" @click="load">{{ t('personalProfile.retry') }}</UiButton>
-    </div>
+    </Notice>
 
     <template v-if="profile">
       <div class="profile-layout">

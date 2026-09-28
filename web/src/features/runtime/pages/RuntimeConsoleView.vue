@@ -5,6 +5,7 @@ import { computed, onBeforeUnmount, ref, toRaw, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import PageHeading from '@/ui/common/PageHeading.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
+import Notice from '@/ui/common/Notice.vue'
 import {
   loginUrl,
   logoutSession,
@@ -185,8 +186,8 @@ onBeforeUnmount(() => {
       ><a v-else class="btn primary" :href="loginUrl()">登录业务账号</a>
       <UiButton class="btn" :disabled="busy" @click="refresh">刷新</UiButton>
     </section>
-    <p v-if="error" role="alert" class="notice-box">{{ error }}</p>
-    <p v-if="notice" role="status" class="notice-box">{{ notice }}</p>
+    <Notice v-if="error" role="alert">{{ error }}</Notice>
+    <Notice v-if="notice" role="status">{{ notice }}</Notice>
     <p v-if="!session.authenticated" class="card panel-pad">请先登录。这里不展示示例业务数据。</p>
     <p v-else-if="!canRead" class="card panel-pad">
       {{ resource === 'tenants' ? '租户管理需要平台身份。' : '请选择可访问的租户。' }}

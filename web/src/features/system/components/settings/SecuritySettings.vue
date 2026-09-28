@@ -3,8 +3,9 @@ import { ref } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import { changeOwnPassword, PasswordChangeError } from '@/services/runtime/accountSecurity'
-import { UiButton, UiInput } from '@/ui/base'
+import { UiButton, UiInput, UiSwitch } from '@/ui/base'
 import AppIcon from '@/ui/common/AppIcon.vue'
+import Notice from '@/ui/common/Notice.vue'
 
 const store = useEnterpriseStore()
 const ui = useUiStore()
@@ -94,9 +95,9 @@ async function submitPasswordChange() {
 <template>
   <div class="page-stack">
     <h2>登录与认证策略</h2>
-    <div class="notice-box">
+    <Notice>
       <AppIcon name="shield" />此处企业策略仍是预览；账号密码修改属于本人全局 Account 安全动作，由后端身份服务执行。
-    </div>
+    </Notice>
 
     <section class="security-setting">
       <h3>修改我的密码</h3>
@@ -129,10 +130,10 @@ async function submitPasswordChange() {
           {{ changingPassword ? '修改中…' : '修改密码' }}
         </UiButton>
       </div>
-      <div v-else class="notice-box success-box" role="status">
+      <Notice v-else class="success-box" role="status">
         密码已修改，旧会话已全部撤销。
         <a class="btn-link security-link" href="/auth/login?return_to=/">重新登录</a>
-      </div>
+      </Notice>
     </section>
 
     <section class="security-setting">
@@ -141,7 +142,7 @@ async function submitPasswordChange() {
           <h3>要求多因素认证</h3>
           <p>敏感角色登录时增加独立验证因素。</p>
         </div>
-        <UiButton class="switch" role="switch" aria-label="要求多因素认证" :aria-checked="Boolean(draft.mfa)" @click="draft.mfa = !draft.mfa" />
+        <UiSwitch :model-value="Boolean(draft.mfa)" label="要求多因素认证" @update:model-value="(v: boolean) => (draft.mfa = v)" />
       </div>
     </section>
 
@@ -151,7 +152,7 @@ async function submitPasswordChange() {
           <h3>登录失败保护</h3>
           <p>连续认证失败时触发限速或临时锁定。</p>
         </div>
-        <UiButton class="switch" role="switch" aria-label="登录失败保护" :aria-checked="Boolean(draft.loginLock)" @click="draft.loginLock = !draft.loginLock" />
+        <UiSwitch :model-value="Boolean(draft.loginLock)" label="登录失败保护" @update:model-value="(v: boolean) => (draft.loginLock = v)" />
       </div>
       <label class="field inline-field">
         <span>连续失败次数</span>

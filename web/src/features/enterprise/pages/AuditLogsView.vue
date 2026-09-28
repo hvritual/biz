@@ -11,6 +11,8 @@ import AvatarMark from '@/ui/common/AvatarMark.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import EmptyState from '@/ui/common/EmptyState.vue'
 import AppPagination from '@/ui/common/AppPagination.vue'
+import Notice from '@/ui/common/Notice.vue'
+import DescriptionList from '@/ui/common/DescriptionList.vue'
 import { useAuditLogs } from '../composables/useAuditLogs'
 
 const {
@@ -75,8 +77,8 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
         </template>
       </section>
 
-      <p v-if="serverError" class="notice-box audit-error" role="alert">{{ serverError }}</p>
-      <p v-if="serverNotice" class="notice-box" role="status">{{ serverNotice }}</p>
+      <Notice v-if="serverError" class="audit-error" tone="danger">{{ serverError }}</Notice>
+      <Notice v-if="serverNotice">{{ serverNotice }}</Notice>
 
       <template v-if="canReadServer">
         <div class="metric-grid">
@@ -141,9 +143,9 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
           <AppPagination v-model:page="serverPage" v-model:page-size="serverPageSize" :total="serverTotal" />
         </section>
 
-        <div class="notice-box">
+        <Notice>
           <AppIcon name="shield" />操作日志仅支持查看和导出，不支持修改或删除；导出操作也会记录在日志中。
-        </div>
+        </Notice>
       </template>
       <section v-else-if="serverSession.authenticated" class="card panel-pad">
         请选择可访问企业。
@@ -215,9 +217,9 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
         <EmptyState v-else />
         <AppPagination v-model:page="demoPage" v-model:page-size="demoPageSize" :total="demoFiltered.length" />
       </section>
-      <div class="notice-box">
+      <Notice>
         <AppIcon name="shield" />操作日志仅支持查询和导出，不支持修改或删除。
-      </div>
+      </Notice>
     </template>
 
     <UiDialog
@@ -234,7 +236,7 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
           <div><h2>{{ moduleLabel(selectedServer.module) }}</h2><p>{{ operationLabel(selectedServer.operationId) }} · {{ formatTime(selectedServer.occurredAt) }}</p></div>
           <StatusBadge :text="serverRiskLabels[selectedServer.risk]" :tone="riskTone(selectedServer.risk)" />
         </div>
-        <dl class="detail-list">
+        <DescriptionList>
           <dt>操作编号</dt><dd class="mono">{{ selectedServer.auditId }}</dd>
           <dt>操作人</dt><dd>{{ actorLabel(selectedServer) }}</dd>
           <dt>所属模块</dt><dd>{{ moduleLabel(selectedServer.module) }}</dd>
@@ -242,10 +244,10 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
           <dt>执行结果</dt><dd><StatusBadge :text="resultLabels[selectedServer.result]" :tone="resultTone(selectedServer.result)" /></dd>
           <dt>风险等级</dt><dd>{{ serverRiskLabels[selectedServer.risk] }}</dd>
           <dt>操作原因</dt><dd>{{ selectedServer.reason || '未填写' }}</dd>
-        </dl>
-        <div class="notice-box compact-notice">
+        </DescriptionList>
+        <Notice class="compact-notice">
           此处仅展示已记录的操作信息，没有记录的变更详情不会补充展示。
-        </div>
+        </Notice>
       </div>
     </UiDialog>
 
@@ -264,14 +266,14 @@ const canExportServer = computed(() => !apiMode || currentAuthorizationAllows('a
           <StatusBadge :text="demoRiskLabels[selectedDemo.risk]" :tone="selectedDemo.risk === 'high' ? 'danger' : 'warning'" />
         </div>
         <h3>操作详情</h3>
-        <dl class="detail-list">
+        <DescriptionList>
           <dt>操作人</dt><dd>{{ selectedDemo.actor }}</dd>
           <dt>所属模块</dt><dd>{{ selectedDemo.module }}</dd>
           <dt>操作对象</dt><dd>{{ selectedDemo.target }}</dd>
           <dt>执行结果</dt><dd><StatusBadge :text="selectedDemo.result === 'success' ? '成功' : '失败'" /></dd>
           <dt>操作来源</dt><dd>网页端</dd>
           <dt>操作原因</dt><dd>{{ selectedDemo.reason || '未填写' }}</dd>
-        </dl>
+        </DescriptionList>
         <div class="divider" />
         <h3>变更内容</h3>
         <div class="diff-block"><h4>变更前</h4><pre>{{ pretty(selectedDemo.before) }}</pre></div>

@@ -8,6 +8,7 @@ import { sessionContext } from '@/services/runtime/api'
 import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
+import Notice from '@/ui/common/Notice.vue'
 import { usePersonalSecurity } from '../../composables/usePersonalSecurity'
 
 const enterprise = useEnterpriseStore(), personal = usePersonalProfileStore()
@@ -64,16 +65,16 @@ onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', pa
         <div><dt>{{ t('personalSecurity.currentTenant') }}</dt><dd>{{ profile?.tenantName }} <small>{{ profile?.tenantId }}</small></dd></div>
         <div><dt>{{ t('personalSecurity.currentAccount') }}</dt><dd>{{ profile?.name || profile?.username }} <small>{{ profile?.userId }}</small></dd></div>
       </dl>
-      <div v-if="mode === 'deletion'" class="notice-box warning" role="note">
+      <Notice v-if="mode === 'deletion'" tone="warning">
         <p>{{ t('personalSecurity.deletionScope') }}</p><p>{{ t('personalSecurity.otherTenants') }}</p>
-      </div>
+      </Notice>
       <p v-else class="secondary">{{ t('personalSecurity.contactScope') }}</p>
 
-      <p v-if="error" class="notice-box danger" role="alert">{{ t(`personalSecurity.errors.${error}`) }}</p>
-      <p v-if="success" class="notice-box success" role="status">{{ t('personalSecurity.saved') }}</p>
-      <p v-if="uncertain" class="notice-box warning" role="status">{{ t('personalSecurity.uncertain') }}</p>
+      <Notice v-if="error" tone="danger">{{ t(`personalSecurity.errors.${error}`) }}</Notice>
+      <Notice v-if="success" tone="success">{{ t('personalSecurity.saved') }}</Notice>
+      <Notice v-if="uncertain" tone="warning">{{ t('personalSecurity.uncertain') }}</Notice>
       <template v-if="confirmationPending">
-        <p class="notice-box warning" role="status">{{ t('personalSecurity.confirmNote') }}</p>
+        <Notice tone="warning">{{ t('personalSecurity.confirmNote') }}</Notice>
         <UiButton :disabled="busy" @click="flow.recover">{{ busy ? t('personalSecurity.checking') : t('personalSecurity.checkAgain') }}</UiButton>
       </template>
       <p v-if="receipt || challenge" class="secondary" role="status">{{ t('personalSecurity.notification') }} · {{ t(`personalSecurity.${deliveryKey}`) }}</p>
@@ -104,7 +105,7 @@ onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', pa
       <form v-if="challenge && !success && !confirmationPending && !uncertain" class="security-form" @submit.prevent="flow.complete">
         <p class="secondary">{{ t('personalSecurity.codeAccepted') }}</p>
         <p>{{ t('personalSecurity.destination') }}：{{ challenge.masked_destination }}</p>
-        <p v-if="expired" class="notice-box warning" role="status">{{ t('personalSecurity.expired') }}</p>
+        <Notice v-if="expired" tone="warning">{{ t('personalSecurity.expired') }}</Notice>
         <label for="self-security-code">{{ t('personalSecurity.otp') }}</label>
         <UiInput id="self-security-code" v-model="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" :disabled="busy || expired" required />
         <label v-if="mode === 'deletion'" class="confirmation-label" for="self-security-confirmation">

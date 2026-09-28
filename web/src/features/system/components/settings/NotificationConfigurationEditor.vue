@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { UiButton, UiInput, UiTextarea } from '@/ui/base'
 import UiDialog from '@/ui/common/UiDialog.vue'
+import Notice from '@/ui/common/Notice.vue'
 import NotificationDirectoryPicker from './NotificationDirectoryPicker.vue'
 import type { TrustedSession } from '@/services/runtime/api'
 import { messageLevels, type ConfigurationDraft, type MessageChannel, type MessageConfiguration } from '@/services/enterprise/notificationConfigurationRuntime'
@@ -19,8 +20,8 @@ function toggle(field: 'levels' | 'channels', value: string, checked: boolean) {
 <template>
   <UiDialog :open="open" :title="t(selected ? 'notificationConfiguration.editTitle' : 'notificationConfiguration.createTitle')" width="780px" @close="emit('close')">
     <div class="notification-editor" :aria-busy="busy">
-      <p v-if="error" class="notice-box danger" role="alert">{{ t(`notificationConfiguration.errors.${error}`) }}</p>
-      <p v-if="recovery" class="notice-box warning" role="status">{{ t(recovery === 'read' ? 'notificationConfiguration.readPending' : 'notificationConfiguration.uncertain') }}</p>
+      <Notice v-if="error" tone="danger" role="alert">{{ t(`notificationConfiguration.errors.${error}`) }}</Notice>
+      <Notice v-if="recovery" tone="warning" role="status">{{ t(recovery === 'read' ? 'notificationConfiguration.readPending' : 'notificationConfiguration.uncertain') }}</Notice>
       <fieldset :disabled="busy || Boolean(recovery) || mustReload" class="editor-fields">
         <div v-if="selected" class="fixed-scope"><strong>{{ selected.groupName || selected.groupId }} · {{ t(`notificationConfiguration.${selected.level}`) }}</strong><p>{{ t('notificationConfiguration.identityNote') }}</p></div>
         <NotificationDirectoryPicker v-else kind="groups" :session="session" :model-value="draft.groupId ? [draft.groupId] : []" :label="t('notificationConfiguration.group')" :disabled="busy || Boolean(recovery) || mustReload" @update:model-value="change({ groupId: $event[0] ?? '' })" />

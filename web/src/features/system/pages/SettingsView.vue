@@ -7,6 +7,7 @@ import { useEnterpriseStore } from '@/stores/enterprise'
 import { systemNavigation } from '@/router/navigation'
 import PageHeading from '@/ui/common/PageHeading.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
+import DescriptionList from '@/ui/common/DescriptionList.vue'
 import GeneralSettings from '@/features/system/components/settings/GeneralSettings.vue'
 import NotificationSettings from '@/features/system/components/settings/NotificationSettings.vue'
 import SecuritySettings from '@/features/system/components/settings/SecuritySettings.vue'
@@ -46,7 +47,7 @@ const component = computed(
           <div class="scope-symbol"><AppIcon name="shield" :size="33" /></div>
           <h3 class="scope-title">仅作用于当前企业</h3>
           <p class="scope-description">{{ notificationScope ? tenantName : store.company.name }}</p>
-          <dl class="detail-list">
+          <DescriptionList>
             <dt>编辑身份</dt>
             <dd>{{ notificationScope ? t('notificationConfiguration.scopeMember') : '企业所有者' }}</dd>
             <dt>环境</dt>
@@ -54,7 +55,7 @@ const component = computed(
             <dt>生效方式</dt>
             <dd>{{ notificationScope ? t('notificationConfiguration.confirmed') : '本地保存' }}</dd>
             <template v-if="notificationScope"><dt>{{ t('notificationConfiguration.scopeRights') }}</dt><dd>{{ t(canWriteNotifications ? 'notificationConfiguration.writable' : 'notificationConfiguration.readOnly') }}</dd></template>
-          </dl>
+          </DescriptionList>
           <div class="divider" />
           <p class="scope-tip">平台级租户管理、全局套餐规则与运行参数属于独立管理系统，不在此处开放。</p>
         </section>
@@ -102,7 +103,7 @@ const component = computed(
   color: var(--color-text-muted);
   margin: 8px 0 24px;
 }
-.detail-list {
+.description-list {
   grid-template-columns: 70px 1fr;
   font-size: 12px;
 }

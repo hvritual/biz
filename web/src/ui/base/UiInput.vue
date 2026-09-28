@@ -59,15 +59,15 @@ const canClear = computed(() => {
 })
 const wrapperClasses = computed(() =>
   cn(
-    'flex h-[var(--control-height)] w-full min-w-0 items-center gap-2 rounded-[var(--radius-sm)] border border-input bg-background px-3 text-[var(--text-sm)] text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground focus-within:border-primary focus-within:outline-[var(--focus-ring-width)] focus-within:outline-[var(--focus-ring-color)] focus-within:outline-offset-[var(--focus-ring-offset)] disabled:cursor-not-allowed disabled:opacity-50',
-    props.error && 'border-[var(--color-danger)] focus-within:border-[var(--color-danger)] focus-within:outline-[var(--color-danger)]',
+    'flex h-[var(--control-height)] w-full min-w-0 items-center gap-2 rounded-[var(--radius-sm)] border border-input bg-background px-3 text-[var(--text-sm)] text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50',
+    props.error && 'border-[var(--color-danger)]',
     attrs.class,
   ),
 )
 const bareInputClasses = computed(() =>
   cn(
-    'flex h-[var(--control-height)] w-full min-w-0 rounded-[var(--radius-sm)] border border-input bg-background px-3 text-[var(--text-sm)] text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-[var(--focus-ring-width)] focus-visible:outline-offset-[var(--focus-ring-offset)] disabled:cursor-not-allowed disabled:opacity-50 file:border-0 file:bg-transparent file:text-sm file:font-medium',
-    props.error && 'border-[var(--color-danger)] focus-visible:border-[var(--color-danger)]',
+    'flex h-[var(--control-height)] w-full min-w-0 rounded-[var(--radius-sm)] border border-input bg-background px-3 text-[var(--text-sm)] text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 file:border-0 file:bg-transparent file:text-sm file:font-medium',
+    props.error && 'border-[var(--color-danger)]',
     attrs.class,
   ),
 )
@@ -129,9 +129,12 @@ function clear() {
     :class="wrapperClasses"
     :aria-invalid="error || undefined"
   >
-    <slot name="prefix" />
+    <span v-if="$slots.prefix" data-slot="input-prefix" class="input-affix">
+      <slot name="prefix" />
+    </span>
     <input
       data-slot="input"
+      data-ui-input-inner
       v-bind="innerAttrs"
       :class="innerInputClasses"
       :value="displayValue"
@@ -148,7 +151,9 @@ function clear() {
     >
       <X :size="14" />
     </button>
-    <slot name="suffix" />
+    <span v-if="$slots.suffix" data-slot="input-suffix" class="input-affix">
+      <slot name="suffix" />
+    </span>
   </div>
 </template>
 <style scoped>
@@ -168,5 +173,28 @@ function clear() {
 }
 .clear-button:hover {
   color: var(--color-text);
+}
+.input-affix {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+[data-slot='input-wrapper']:focus-within {
+  border-color: var(--color-primary);
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+[data-slot='input-wrapper'][aria-invalid='true']:focus-within {
+  border-color: var(--color-danger);
+  outline-color: var(--color-danger);
+}
+input[data-slot='input']:not([data-ui-input-inner]):focus-visible {
+  border-color: var(--color-primary);
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+input[data-slot='input'][aria-invalid='true']:not([data-ui-input-inner]):focus-visible {
+  border-color: var(--color-danger);
+  outline-color: var(--color-danger);
 }
 </style>

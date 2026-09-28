@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
+import { UiButton, UiInput, UiOption, UiSelect, UiTag, UiTextarea } from '@/ui/base'
 
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -15,6 +15,7 @@ import AvatarMark from '@/ui/common/AvatarMark.vue'
 import DepartmentTree from '@/features/enterprise/components/organization/DepartmentTree.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import AppPagination from '@/ui/common/AppPagination.vue'
+import Notice from '@/ui/common/Notice.vue'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 const store = useEnterpriseStore(),
   ui = useUiStore(),
@@ -105,13 +106,13 @@ onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).ca
 <template>
   <div class="page-stack" data-enterprise-page="organization" data-ui-template="WorkbenchPage">
     <PageHeading title="组织架构" description="管理部门与汇报关系，让组织协作与数据边界保持清晰" />
-    <div v-if="store.sourceError" class="notice-box organization-access-state" role="alert">
+    <Notice v-if="store.sourceError" class="organization-access-state" tone="danger">
       <AppIcon name="warning" :size="18" />
       <div>
         <strong>组织架构暂不可用</strong>
         <p>{{ store.sourceError }}</p>
       </div>
-    </div>
+    </Notice>
     <template v-else>
     <div class="metric-grid">
       <MetricCard
@@ -215,7 +216,7 @@ onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).ca
                 <td>{{ m.position }}</td>
                 <td>{{ store.departmentName(m.departmentId) }}</td>
                 <td>
-                  <span class="pill">{{ m.roleIds.map(store.roleName).join('、') }}</span>
+                  <UiTag tone="primary">{{ m.roleIds.map(store.roleName).join('、') }}</UiTag>
                 </td>
                 <td class="muted">{{ m.joinedAt }}</td>
               </tr>
@@ -258,9 +259,9 @@ onMounted(() => void store.ensureDomains(['departments', 'members', 'roles']).ca
           ><UiTextarea v-model="draft.description" class="textarea" maxlength="300" :readonly="store.sourceKind === 'api'" :placeholder="store.sourceKind === 'api' ? '当前暂不支持编辑部门职责' : ''" /></label
         ><label class="option-line"><UiInput v-model="draft.enabled" type="checkbox" />启用部门</label>
       </div>
-      <div class="notice-box department-notice">
+      <Notice class="department-notice">
         <AppIcon name="help" />组织调整可能影响“所属部门及下级”的数据范围，请在保存前确认相关成员权限。
-      </div>
+      </Notice>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
       <template #footer
         ><UiButton class="btn" @click="editOpen = false">取消</UiButton><UiButton class="btn btn-primary" @click="save">保存部门</UiButton></template

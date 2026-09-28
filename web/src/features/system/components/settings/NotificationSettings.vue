@@ -6,6 +6,7 @@ import AppPagination from '@/ui/common/AppPagination.vue'
 import EmptyState from '@/ui/common/EmptyState.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
+import Notice from '@/ui/common/Notice.vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { currentAuthorizationAllows, currentAuthorizationState } from '@/services/runtime/authorization'
 import { sessionContext } from '@/services/runtime/api'
@@ -62,12 +63,12 @@ onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', in
       <UiButton v-if="canCreate" :disabled="!canStart" @click="beginCreate"><AppIcon name="plus" :size="16" />{{ t('notificationConfiguration.create') }}</UiButton>
     </div>
     <p class="tenant-scope">{{ t('notificationConfiguration.scope', { tenant: tenantName }) }}</p>
-    <p v-if="enterprise.sourceKind !== 'api'" class="notice-box" role="status">{{ t('notificationConfiguration.preview') }}</p>
+    <Notice v-if="enterprise.sourceKind !== 'api'" role="status">{{ t('notificationConfiguration.preview') }}</Notice>
     <template v-else>
       <p v-if="!loaded && busy" role="status">{{ t('notificationConfiguration.loading') }}</p>
-      <div v-if="error" class="notice-box danger" role="alert">{{ t(`notificationConfiguration.errors.${error}`) }} <UiButton v-if="!pending" variant="outline" :disabled="busy" @click="retry">{{ t('notificationConfiguration.retry') }}</UiButton></div>
-      <div v-if="outcome" class="notice-box" role="status" data-notification-outcome><p>{{ t(`notificationConfiguration.${outcome}`) }}</p><small v-if="lastReceipt">{{ t('notificationConfiguration.receipt', { id: lastReceipt.receiptId }) }}</small></div>
-      <div v-if="recovery" class="notice-box warning" role="status"><p>{{ t(recovery === 'read' ? 'notificationConfiguration.readPending' : 'notificationConfiguration.uncertain') }}</p><UiButton :disabled="busy" @click="flow.recover">{{ t('notificationConfiguration.recover') }}</UiButton></div>
+      <Notice v-if="error" tone="danger" role="alert">{{ t(`notificationConfiguration.errors.${error}`) }} <UiButton v-if="!pending" variant="outline" :disabled="busy" @click="retry">{{ t('notificationConfiguration.retry') }}</UiButton></Notice>
+      <Notice v-if="outcome" role="status" data-notification-outcome><p>{{ t(`notificationConfiguration.${outcome}`) }}</p><small v-if="lastReceipt">{{ t('notificationConfiguration.receipt', { id: lastReceipt.receiptId }) }}</small></Notice>
+      <Notice v-if="recovery" tone="warning" role="status"><p>{{ t(recovery === 'read' ? 'notificationConfiguration.readPending' : 'notificationConfiguration.uncertain') }}</p><UiButton :disabled="busy" @click="flow.recover">{{ t('notificationConfiguration.recover') }}</UiButton></Notice>
       <section class="catalog-panel" :aria-label="t('notificationConfiguration.catalog')">
         <header><h3>{{ t('notificationConfiguration.catalog') }}</h3><span v-if="types">{{ t('notificationConfiguration.total', { total: types.total }) }}</span></header>
         <div class="type-filters">
@@ -91,7 +92,7 @@ onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', in
           <NotificationDirectoryPicker kind="recipients" :session="enterprise.session" :label="t('notificationConfiguration.recipientFilter')" :model-value="query.recipientId ? [query.recipientId] : []" :disabled="Boolean(pending)" @update:model-value="query.recipientId = $event[0] ?? ''" />
         </div>
         <div class="rule-filter-actions"><UiSelect v-model="query.level" :aria-label="t('notificationConfiguration.level')"><UiOption value="">{{ t('notificationConfiguration.all') }}</UiOption><UiOption v-for="level in messageLevels" :key="level" :value="level">{{ t(`notificationConfiguration.${level}`) }}</UiOption></UiSelect><UiButton variant="outline" :disabled="listBusy || Boolean(pending) || !loaded" @click="applyList">{{ t('notificationConfiguration.search') }}</UiButton><UiButton variant="ghost" :disabled="Boolean(pending)" @click="query.groupId = ''; query.recipientId = ''; query.level = ''; applyList()">{{ t('notificationConfiguration.reset') }}</UiButton></div>
-        <p v-if="listError" class="notice-box danger" role="alert">{{ t(`notificationConfiguration.errors.${listError}`) }} <UiButton variant="outline" :disabled="listBusy" @click="flow.loadList">{{ t('notificationConfiguration.retry') }}</UiButton></p>
+        <Notice v-if="listError" tone="danger" role="alert">{{ t(`notificationConfiguration.errors.${listError}`) }} <UiButton variant="outline" :disabled="listBusy" @click="flow.loadList">{{ t('notificationConfiguration.retry') }}</UiButton></Notice>
         <p v-else-if="listBusy" role="status">{{ t('notificationConfiguration.loading') }}</p>
         <template v-else-if="rows">
           <div v-if="rows.items.length" class="table-scroll"><table class="configuration-table"><thead><tr><th>{{ t('notificationConfiguration.group') }}</th><th>{{ t('notificationConfiguration.level') }}</th><th>{{ t('notificationConfiguration.channelLabel') }}</th><th>{{ t('notificationConfiguration.primary') }}</th><th>{{ t('notificationConfiguration.version') }}</th><th>{{ t('notificationConfiguration.action') }}</th></tr></thead><tbody>
@@ -107,8 +108,8 @@ onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', in
   <NotificationConfigurationEditor :open="editorOpen" :session="enterprise.session" :draft="draft" :selected="selected" :channels="channels" :busy="busy" :recovery="recovery" :error="error" :must-reload="mustReload" @change="Object.assign(draft, $event)" @close="flow.close" @confirm="flow.confirm(selected ? 'update' : 'create')" @recover="flow.recover" @reload="flow.load" />
   <UiDialog :open="deleteOpen" :title="t('notificationConfiguration.deleteTitle')" width="540px" @close="flow.close">
     <p>{{ t('notificationConfiguration.deleteNote', { group: selected?.groupName || selected?.groupId, level: selected ? t(`notificationConfiguration.${selected.level}`) : '' }) }}</p>
-    <p v-if="error" class="notice-box danger" role="alert">{{ t(`notificationConfiguration.errors.${error}`) }}</p>
-    <p v-if="recovery" class="notice-box warning" role="status">{{ t(recovery === 'read' ? 'notificationConfiguration.readPending' : 'notificationConfiguration.uncertain') }}</p>
+    <Notice v-if="error" tone="danger" role="alert">{{ t(`notificationConfiguration.errors.${error}`) }}</Notice>
+    <Notice v-if="recovery" tone="warning" role="status">{{ t(recovery === 'read' ? 'notificationConfiguration.readPending' : 'notificationConfiguration.uncertain') }}</Notice>
     <template #footer><UiButton variant="outline" :disabled="busy" @click="flow.close">{{ t('notificationConfiguration.cancel') }}</UiButton><UiButton v-if="recovery" :disabled="busy" @click="flow.recover">{{ t('notificationConfiguration.recover') }}</UiButton><UiButton v-else-if="mustReload" :disabled="busy" @click="flow.load">{{ t('notificationConfiguration.retry') }}</UiButton><UiButton v-else :disabled="busy" @click="flow.confirm('delete')">{{ t('notificationConfiguration.confirmDelete') }}</UiButton></template>
   </UiDialog>
 </template>

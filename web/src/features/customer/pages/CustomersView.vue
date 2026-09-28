@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { UiButton, UiOption, UiSelect } from '@/ui/base'
+import { UiButton, UiOption, UiSelect, UiTag } from '@/ui/base'
 
 import { computed, ref, watch } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
@@ -127,9 +127,9 @@ watch(tab, () => (page.value = 1))
       <div class="customer-view-toolbar">
         <div class="customer-filter-chips" style="padding: 0">
           <span class="customer-help">已生效条件：</span
-          ><span class="pill">{{ applied.lifecycle || '全部生命周期' }}</span
-          ><span class="pill">{{ applied.owner || '全部负责人' }}</span
-          ><span v-if="applied.search" class="pill">{{ applied.search }}</span>
+          ><UiTag tone="primary">{{ applied.lifecycle || '全部生命周期' }}</UiTag
+          ><UiTag tone="primary">{{ applied.owner || '全部负责人' }}</UiTag
+          ><UiTag v-if="applied.search" tone="primary">{{ applied.search }}</UiTag>
         </div>
         <UiButton class="btn-link" @click="exportList">
           <AppIcon name="download" :size="16" />导出当前结果

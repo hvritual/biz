@@ -7,6 +7,8 @@ import { useUiStore } from '@/stores/ui'
 import PageHeading from '@/ui/common/PageHeading.vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
+import Notice from '@/ui/common/Notice.vue'
+import DescriptionList from '@/ui/common/DescriptionList.vue'
 import brand from '@/assets/brand-mark.png'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 const store = useEnterpriseStore(),
@@ -60,22 +62,22 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
 <template>
   <div class="page-stack" data-enterprise-page="company" data-ui-template="FormPage">
     <PageHeading title="企业信息" description="维护企业基本资料与联系信息，统一团队的身份与展示" />
-    <div v-if="store.sourceError" class="notice-box company-access-state" role="alert">
+    <Notice v-if="store.sourceError" class="company-access-state" tone="danger">
       <AppIcon name="warning" :size="18" />
       <div>
         <strong>企业信息暂不可用</strong>
         <p>{{ store.sourceError }}</p>
       </div>
-    </div>
+    </Notice>
     <div v-else class="split-layout">
       <form data-ui-region="form-workspace" class="card panel-pad company-form" :inert="!canManageCompany" @submit.prevent="save">
         <div class="row-between block-title">
           <h2>基本信息</h2>
           <StatusBadge text="企业正常" />
         </div>
-        <div v-if="!canManageCompany" class="notice-box" role="status">
+        <Notice v-if="!canManageCompany">
           <AppIcon name="shield" :size="16" />你可以查看当前企业资料，但没有编辑权限。
-        </div>
+        </Notice>
         <div class="form-grid">
           <label class="field"
             ><span class="required">企业名称</span
@@ -168,18 +170,18 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
             <h3>{{ store.company.name }}</h3>
             <p>{{ store.company.industry }}</p>
           </div>
-          <dl class="detail-list">
+          <DescriptionList>
             <dt>企业编号</dt>
             <dd class="mono">{{ store.tenantId }}</dd>
             <dt>当前套餐</dt>
             <dd>{{ store.sourceKind === 'api' ? '请在套餐额度中查看' : '标准版' }}</dd>
             <dt>企业成员</dt>
             <dd>{{ store.members.filter((m) => m.status !== 'removed').length }} 人</dd>
-          </dl>
+          </DescriptionList>
           <div class="divider" />
-          <div class="notice-box">
+          <Notice>
             <AppIcon name="help" :size="16" />企业认证资料暂不在此页面维护。
-          </div>
+          </Notice>
         </section>
         <section class="card panel-pad">
           <div class="row-between block-title">
@@ -271,7 +273,7 @@ onMounted(() => void store.ensureDomains(['company']).catch(() => undefined))
   color: var(--color-text-muted);
   margin-top: 8px;
 }
-.side-summary .detail-list {
+.side-summary .description-list {
   grid-template-columns: 85px 1fr;
 }
 .side-summary .notice-box {

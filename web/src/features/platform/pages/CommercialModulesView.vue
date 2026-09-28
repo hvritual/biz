@@ -4,6 +4,7 @@ import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
 import { computed, onMounted, ref } from 'vue'
 import { backendErrorFallback, backendTermLabel } from '@/i18n/backend-terms'
 import AppIcon from '@/ui/common/AppIcon.vue'
+import Notice from '@/ui/common/Notice.vue'
 import PageHeading from '@/ui/common/PageHeading.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
@@ -335,8 +336,8 @@ onMounted(loadModules)
         </section>
 
         <label class="field"><span>变更原因</span><UiTextarea v-model="reason" class="textarea" maxlength="500" placeholder="说明本次模块配置或状态调整原因" /></label>
-        <div v-if="actionError" class="notice-box error" role="alert">{{ actionError }}</div>
-        <div v-if="actionMessage" class="notice-box" role="status">{{ actionMessage }}</div>
+        <Notice v-if="actionError" tone="danger" role="alert">{{ actionError }}</Notice>
+        <Notice v-if="actionMessage" role="status">{{ actionMessage }}</Notice>
       </div>
       <template #footer>
         <UiButton class="btn" type="button" @click="detailOpen = false">关闭</UiButton>

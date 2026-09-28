@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { UiButton, UiInput, UiOption, UiSelect } from '@/ui/base'
+import { UiButton, UiInput, UiOption, UiSelect, UiTag } from '@/ui/base'
 
 import { ref } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
@@ -65,7 +65,7 @@ function save() {
           <strong>列表密度</strong>
           <p>统一的表格行高与间距，不单独缩小文字。</p>
         </div>
-        <span class="pill">标准</span>
+        <UiTag tone="primary">标准</UiTag>
       </div>
     </section>
     <div class="form-footer">
