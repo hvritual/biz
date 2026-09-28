@@ -15,8 +15,11 @@ export default defineConfig({
     locale: "zh-CN",
     timezoneId: "Asia/Shanghai",
     screenshot: "only-on-failure",
-    trace: "retain-on-failure",
-    video: "retain-on-failure",
+    // Passing CE12 journeys already persist explicit acceptance screenshots.
+    // Record heavyweight trace/video only on the retry after an initial
+    // failure, preserving diagnostics without taxing every successful test.
+    trace: "on-first-retry",
+    video: "on-first-retry",
     launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
       ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
       : {},
