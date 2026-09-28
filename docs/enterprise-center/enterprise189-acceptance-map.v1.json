@@ -1,0 +1,1716 @@
+{
+  "schema_version": 1,
+  "issue": 189,
+  "purpose": "Machine-readable US-001..US-045 evidence map for same-environment enterprise-center closure",
+  "evidence": {
+    "behavior_candidate": "8c1bd192236d1720a3e28402758a93cb01816ea1",
+    "ce12_run": 36377711853,
+    "ce12_artifact_id": 10952170394,
+    "ce12_result": "16/16 browser tests passed",
+    "performance": {
+      "elapsed_seconds": 171,
+      "target_seconds": 150,
+      "hard_seconds": 180,
+      "state": "PERFORMANCE_DEGRADED",
+      "hard_budget_result": "PASS",
+      "note": "The performance-tuning branch enforces the 150s target and therefore its PR Qualification is red; #189's requested <180s hard budget is satisfied. Full Merge Gate reruns CE12 on the final candidate."
+    },
+    "evidence_model": "API-mode UI fixtures and real MySQL/runtime authority evidence are explicitly separated; only entries labeled REAL_BROWSER_PASS are claimed as independent CE12 browser journeys.",
+    "external_provider_boundary": "#185 remains open only for real external SMS/email provider qualification. #189 qualifies the controlled in-app runtime path and does not claim production external-provider delivery."
+  },
+  "status_definitions": {
+    "REAL_BROWSER_PASS": "Canonical journey exercised against real first-party IdP/BFF/Biz API/MySQL in CE12.",
+    "LAYERED_ACCEPTANCE_PASS": "Canonical UI/state behavior is exercised in API-mode E2E while authoritative security/data mutation is independently exercised against real MySQL/runtime. This is not represented as an independent CE12 replay.",
+    "REAL_RUNTIME_CONTROLLED_SOURCE": "Qualification-only source fixture enters the real runtime chain; source is not a production event-fabrication API."
+  },
+  "summary": {
+    "REAL_BROWSER_PASS": 23,
+    "LAYERED_ACCEPTANCE_PASS": 21,
+    "REAL_RUNTIME_CONTROLLED_SOURCE": 1,
+    "total": 45,
+    "acceptance_pass": 45
+  },
+  "stories": [
+    {
+      "id": "US-001",
+      "owner_issues": [
+        "#169"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-169-consent.spec.ts::TestEnterprise169BrowserPrivacyConsentGate"
+      ],
+      "api_surfaces": [
+        "first-party IdP privacy/terms consent flow"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_169_privacy_consent_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/auth/login · privacy/terms consent gate",
+      "states": [
+        "consent_required",
+        "accepted",
+        "rejected_or_version_changed"
+      ],
+      "db_or_notification_receipts": [
+        "biz_privacy_consents",
+        "biz_idp_authorization_requests"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-002",
+      "owner_issues": [
+        "#170",
+        "#171",
+        "#172"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-172-native-login.spec.ts::TestEnterprise172UsernamePhoneEmailPasswordOTPMatrix"
+      ],
+      "api_surfaces": [
+        "first-party IdP password login",
+        "verification-code login",
+        "/auth/session"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_170_verification_notification_mysql_test.go",
+        "integration/enterprise_172_native_login_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/auth/login · password / verification-code sign-in",
+      "states": [
+        "password_login",
+        "otp_requested",
+        "otp_verified",
+        "multi_tenant_or_single_tenant_or_no_tenant",
+        "invalid_or_locked"
+      ],
+      "db_or_notification_receipts": [
+        "biz_idp_login_throttles",
+        "biz_verification_challenges",
+        "biz_web_sessions"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-003",
+      "owner_issues": [
+        "#170",
+        "#171",
+        "#172"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-172-native-login.spec.ts::TestEnterprise172UsernamePhoneEmailPasswordOTPMatrix"
+      ],
+      "api_surfaces": [
+        "first-party IdP password login",
+        "verification-code login",
+        "/auth/session"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_170_verification_notification_mysql_test.go",
+        "integration/enterprise_172_native_login_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/auth/login · password / verification-code sign-in",
+      "states": [
+        "password_login",
+        "otp_requested",
+        "otp_verified",
+        "multi_tenant_or_single_tenant_or_no_tenant",
+        "invalid_or_locked"
+      ],
+      "db_or_notification_receipts": [
+        "biz_idp_login_throttles",
+        "biz_verification_challenges",
+        "biz_web_sessions"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-004",
+      "owner_issues": [
+        "#170",
+        "#171",
+        "#172"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-172-native-login.spec.ts::TestEnterprise172UsernamePhoneEmailPasswordOTPMatrix"
+      ],
+      "api_surfaces": [
+        "first-party IdP password login",
+        "verification-code login",
+        "/auth/session"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_170_verification_notification_mysql_test.go",
+        "integration/enterprise_172_native_login_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/auth/login · password / verification-code sign-in",
+      "states": [
+        "password_login",
+        "otp_requested",
+        "otp_verified",
+        "multi_tenant_or_single_tenant_or_no_tenant",
+        "invalid_or_locked"
+      ],
+      "db_or_notification_receipts": [
+        "biz_idp_login_throttles",
+        "biz_verification_challenges",
+        "biz_web_sessions"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-005",
+      "owner_issues": [
+        "#171"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-171-session-isolation.spec.ts::TestEnterprise171CrossTabTenantIsolationBackNavigationAndStaleContext"
+      ],
+      "api_surfaces": [
+        "/auth/session",
+        "/auth/session/tenant"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_171_session_isolation_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "tenant selector / active enterprise switch",
+      "states": [
+        "tenant_list",
+        "switch_success",
+        "stale_context_rejected",
+        "cross_tab_isolated"
+      ],
+      "db_or_notification_receipts": [
+        "biz_web_sessions",
+        "biz_memberships"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-006",
+      "owner_issues": [
+        "#171"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout"
+      ],
+      "api_surfaces": [
+        "/auth/logout",
+        "/auth/session"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_171_session_isolation_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "account menu · logout",
+      "states": [
+        "authenticated",
+        "logout_committed",
+        "session_revoked"
+      ],
+      "db_or_notification_receipts": [
+        "biz_web_sessions"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-007",
+      "owner_issues": [
+        "#170",
+        "#173"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-173-password-security.spec.ts::TestEnterprise173PasswordRecoveryRevokesSessionsAndChangesCredential"
+      ],
+      "api_surfaces": [
+        "first-party IdP password recovery / verification flow",
+        "/auth/session"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_173_recovery_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/auth/login · forgot password / recovery",
+      "states": [
+        "challenge_issued",
+        "verified",
+        "credential_rotated",
+        "replay_or_expiry_rejected",
+        "old_session_revoked"
+      ],
+      "db_or_notification_receipts": [
+        "biz_verification_challenges",
+        "biz_security_notification_outbox",
+        "biz_web_sessions"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-008",
+      "owner_issues": [
+        "#174"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-174-authorization.spec.ts::TestEnterprise174CurrentAuthorizationAndActionCatalogAreSameSource"
+      ],
+      "api_surfaces": [
+        "/auth/action-catalog",
+        "/auth/authorization"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_174_current_authorization_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "application shell authorization bootstrap",
+      "states": [
+        "authorization_ready",
+        "module_button_projection",
+        "tenant_bound"
+      ],
+      "db_or_notification_receipts": [
+        "biz_permission_grants",
+        "biz_member_roles",
+        "biz_member_sites"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-009",
+      "owner_issues": [
+        "#175"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-175-authorization-ui.spec.ts::TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed"
+      ],
+      "api_surfaces": [
+        "/auth/authorization",
+        "protected tenant APIs"
+      ],
+      "authority_evidence": [
+        "existing #175 browser + server denial qualification"
+      ],
+      "remaining_gap": "",
+      "entry": "canonical navigation / protected deep link / action button",
+      "states": [
+        "allowed",
+        "hidden",
+        "forbidden",
+        "no_protected_data_flash",
+        "direct_api_denied"
+      ],
+      "db_or_notification_receipts": [
+        "biz_permission_grants",
+        "biz_member_roles"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-010",
+      "owner_issues": [
+        "#175"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-175-authorization-ui.spec.ts::TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed"
+      ],
+      "api_surfaces": [
+        "/auth/authorization",
+        "protected tenant APIs"
+      ],
+      "authority_evidence": [
+        "existing #175 browser + server denial qualification"
+      ],
+      "remaining_gap": "",
+      "entry": "canonical navigation / protected deep link / action button",
+      "states": [
+        "allowed",
+        "hidden",
+        "forbidden",
+        "no_protected_data_flash",
+        "direct_api_denied"
+      ],
+      "db_or_notification_receipts": [
+        "biz_permission_grants",
+        "biz_member_roles"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-011",
+      "owner_issues": [
+        "#175"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-175-authorization-ui.spec.ts::TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed"
+      ],
+      "api_surfaces": [
+        "/auth/authorization",
+        "protected tenant APIs"
+      ],
+      "authority_evidence": [
+        "existing #175 browser + server denial qualification"
+      ],
+      "remaining_gap": "",
+      "entry": "canonical navigation / protected deep link / action button",
+      "states": [
+        "allowed",
+        "hidden",
+        "forbidden",
+        "no_protected_data_flash",
+        "direct_api_denied"
+      ],
+      "db_or_notification_receipts": [
+        "biz_permission_grants",
+        "biz_member_roles"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-012",
+      "owner_issues": [
+        "#168",
+        "#176"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-members-real.spec.ts::canonical members use server-side filters, pagination and authoritative total (API-mode mocked server)"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/members"
+      ],
+      "authority_evidence": [
+        "#176 MySQL/runtime qualification",
+        "integration/enterprise_168_sensitive_contacts_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/members",
+      "states": [
+        "list_filter_page",
+        "create_confirm_readback",
+        "edit_confirm_readback",
+        "409_draft_preserved",
+        "readback_failure_unconfirmed"
+      ],
+      "db_or_notification_receipts": [
+        "biz_users",
+        "biz_memberships",
+        "biz_member_roles",
+        "biz_member_sites"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port member query/filter/pagination journey to CE12 real IdP/BFF/MySQL.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-013",
+      "owner_issues": [
+        "#168",
+        "#170",
+        "#173",
+        "#176"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-members-real.spec.ts::canonical invite uses one atomic create write with activation choice and authoritative readback (API-mode mocked server)"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/members/create"
+      ],
+      "authority_evidence": [
+        "#176 atomic member creation qualification"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/members",
+      "states": [
+        "list_filter_page",
+        "create_confirm_readback",
+        "edit_confirm_readback",
+        "409_draft_preserved",
+        "readback_failure_unconfirmed"
+      ],
+      "db_or_notification_receipts": [
+        "biz_users",
+        "biz_memberships",
+        "biz_member_roles",
+        "biz_member_sites"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port member creation/invite + activation receipt + DB readback to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-014",
+      "owner_issues": [
+        "#168",
+        "#176"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-members-real.spec.ts::canonical member edit is one atomic update and preserves immutable username (API-mode mocked server)"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/members/{user_id}"
+      ],
+      "authority_evidence": [
+        "#176 MySQL/runtime qualification"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/members",
+      "states": [
+        "list_filter_page",
+        "create_confirm_readback",
+        "edit_confirm_readback",
+        "409_draft_preserved",
+        "readback_failure_unconfirmed"
+      ],
+      "db_or_notification_receipts": [
+        "biz_users",
+        "biz_memberships",
+        "biz_member_roles",
+        "biz_member_sites"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port member edit, 409 draft preservation and readback failure to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-015",
+      "owner_issues": [
+        "#177"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-members-real.spec.ts member lifecycle surfaces are API-mode only"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/members/{user_id}/suspend",
+        "/v1/tenant/members/{user_id}/activate"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_177_member_lifecycle_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/members · lifecycle/recovery/recycle flows",
+      "states": [
+        "active",
+        "suspended",
+        "removed",
+        "restored",
+        "owner_protected",
+        "rollback_or_conflict"
+      ],
+      "db_or_notification_receipts": [
+        "biz_memberships",
+        "biz_member_removed_role_snapshots",
+        "biz_member_removed_site_snapshots",
+        "biz_security_notification_outbox"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port suspend/activate confirmation and session effect to CE12 UI.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-016",
+      "owner_issues": [
+        "#173",
+        "#177"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-173-password-security.spec.ts::TestEnterprise173AdminRecoveryIsPermissionedScopedAndPolicyBlocked proves real API boundary but not canonical member UI"
+      ],
+      "api_surfaces": [
+        "/auth/tenant/members/{user_id}/password-recovery"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_173_recovery_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/members · lifecycle/recovery/recycle flows",
+      "states": [
+        "active",
+        "suspended",
+        "removed",
+        "restored",
+        "owner_protected",
+        "rollback_or_conflict"
+      ],
+      "db_or_notification_receipts": [
+        "biz_memberships",
+        "biz_member_removed_role_snapshots",
+        "biz_member_removed_site_snapshots",
+        "biz_security_notification_outbox"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Add canonical member-flow administrator recovery UI journey in CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-017",
+      "owner_issues": [
+        "#177"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-members-real.spec.ts::canonical recycle bin restores removed member with one authoritative write and readback (API-mode mocked server)"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/members/{user_id}/remove",
+        "/v1/tenant/members/{user_id}/restore",
+        "/v1/tenant/members/removed"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_177_member_lifecycle_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/members · lifecycle/recovery/recycle flows",
+      "states": [
+        "active",
+        "suspended",
+        "removed",
+        "restored",
+        "owner_protected",
+        "rollback_or_conflict"
+      ],
+      "db_or_notification_receipts": [
+        "biz_memberships",
+        "biz_member_removed_role_snapshots",
+        "biz_member_removed_site_snapshots",
+        "biz_security_notification_outbox"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port remove/recycle/restore with old-session denial to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-018",
+      "owner_issues": [
+        "#177"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-members-real.spec.ts lifecycle confirmation/recovery states (API-mode mocked server)"
+      ],
+      "api_surfaces": [
+        "member lifecycle endpoints"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_177_member_lifecycle_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/members · lifecycle/recovery/recycle flows",
+      "states": [
+        "active",
+        "suspended",
+        "removed",
+        "restored",
+        "owner_protected",
+        "rollback_or_conflict"
+      ],
+      "db_or_notification_receipts": [
+        "biz_memberships",
+        "biz_member_removed_role_snapshots",
+        "biz_member_removed_site_snapshots",
+        "biz_security_notification_outbox"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port lifecycle failure/rollback and protected-owner UI counterexamples to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-019",
+      "owner_issues": [
+        "#180"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-data-policy-ui.spec.ts member explicit scope tests use API-mode mocked server"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/members/{user_id}/business-scope",
+        "/v1/tenant/member-scope-candidates"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_180_member_scope_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/members · business scope editor",
+      "states": [
+        "candidate_list",
+        "scope_saved",
+        "CAS_conflict",
+        "readback_confirmed"
+      ],
+      "db_or_notification_receipts": [
+        "biz_member_sites",
+        "biz_audit_events"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port business-scope selection/CAS/readback to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-020",
+      "owner_issues": [
+        "#170",
+        "#177",
+        "#180"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-members-real.spec.ts::restricted member appeal never requests tenant business APIs and exposes accepted receipt (API-mode mocked server)"
+      ],
+      "api_surfaces": [
+        "/auth/member-appeals"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_177_member_lifecycle_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/member-appeal",
+      "states": [
+        "eligible",
+        "accepted",
+        "rate_limited",
+        "not_eligible",
+        "notification_failure_without_access_grant"
+      ],
+      "db_or_notification_receipts": [
+        "biz_member_status_appeals",
+        "biz_security_notification_outbox",
+        "biz_audit_events"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port suspended-user appeal UI, rate limit and owner notification receipt to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-021",
+      "owner_issues": [
+        "#181"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout opens canonical personal profile under real identity"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/me/profile"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_181_personal_profile_mysql_test.go"
+      ],
+      "remaining_gap": "Profile view is real; avatar mutation remains US-022.",
+      "entry": "/#/enterprise/personal-profile",
+      "states": [
+        "self_only",
+        "masked_profile",
+        "avatar_or_password_confirmed",
+        "session_revoked_after_password_change"
+      ],
+      "db_or_notification_receipts": [
+        "biz_users",
+        "biz_memberships",
+        "biz_web_sessions"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-022",
+      "owner_issues": [
+        "#181"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-personal-profile-real.spec.ts avatar tests use API-mode mocked server"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/me/avatar",
+        "/v1/tenant/me/avatar-options"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_181_personal_profile_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/personal-profile",
+      "states": [
+        "self_only",
+        "masked_profile",
+        "avatar_or_password_confirmed",
+        "session_revoked_after_password_change"
+      ],
+      "db_or_notification_receipts": [
+        "biz_users",
+        "biz_memberships",
+        "biz_web_sessions"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port avatar selection/CAS/readback/header synchronization to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-023",
+      "owner_issues": [
+        "#173",
+        "#181"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-173-password-security.spec.ts::TestEnterprise173SelfPasswordChangeUIRevokesCurrentSession"
+      ],
+      "api_surfaces": [
+        "/auth/password/change",
+        "/auth/session"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_173_self_change_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/system/security",
+      "states": [
+        "self_only",
+        "masked_profile",
+        "avatar_or_password_confirmed",
+        "session_revoked_after_password_change"
+      ],
+      "db_or_notification_receipts": [
+        "biz_users",
+        "biz_memberships",
+        "biz_web_sessions"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-024",
+      "owner_issues": [
+        "#170",
+        "#182"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-personal-profile-real.spec.ts #182 contact-change tests use API-mode mocked server"
+      ],
+      "api_surfaces": [
+        "/auth/personal/contact-change/request",
+        "/auth/personal/contact-change/complete"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_182_self_security_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/personal-profile · contact change",
+      "states": [
+        "request",
+        "otp_pending",
+        "confirmed",
+        "rate_limited",
+        "conflict_or_replay",
+        "readback_recovery"
+      ],
+      "db_or_notification_receipts": [
+        "biz_users",
+        "biz_memberships",
+        "biz_verification_challenges",
+        "biz_security_notification_outbox"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port email/phone change OTP, masking, CAS and readback to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-025",
+      "owner_issues": [
+        "#170",
+        "#182"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-personal-profile-real.spec.ts #182 contact-change tests use API-mode mocked server"
+      ],
+      "api_surfaces": [
+        "/auth/personal/contact-change/request",
+        "/auth/personal/contact-change/complete"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_182_self_security_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/personal-profile · contact change",
+      "states": [
+        "request",
+        "otp_pending",
+        "confirmed",
+        "rate_limited",
+        "conflict_or_replay",
+        "readback_recovery"
+      ],
+      "db_or_notification_receipts": [
+        "biz_users",
+        "biz_memberships",
+        "biz_verification_challenges",
+        "biz_security_notification_outbox"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port email/phone change OTP, masking, CAS and readback to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-026",
+      "owner_issues": [
+        "#183"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-183-notification-preferences.spec.ts::TestEnterprise183NotificationPreferencesLiveBrowserMySQLRecoveryAndIsolation"
+      ],
+      "api_surfaces": [
+        "/auth/personal/notification-preferences"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_183_notification_preferences_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/personal-profile · notification preferences",
+      "states": [
+        "default",
+        "allow",
+        "deny",
+        "confirm_cancel",
+        "CAS_or_read_failure"
+      ],
+      "db_or_notification_receipts": [
+        "biz_notification_preferences",
+        "biz_notification_preference_receipts",
+        "biz_audit_events"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-027",
+      "owner_issues": [
+        "#170",
+        "#171",
+        "#182"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-personal-profile-real.spec.ts::#182 deletion requires explicit affected-tenant confirmation and returns to login (API-mode mocked server)"
+      ],
+      "api_surfaces": [
+        "/auth/personal/tenant-deletion/request",
+        "/auth/personal/tenant-deletion/complete"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_182_self_security_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/personal-profile · leave/delete current enterprise",
+      "states": [
+        "confirmation_required",
+        "owner_protected",
+        "deleted",
+        "reauthentication_required",
+        "other_tenant_preserved"
+      ],
+      "db_or_notification_receipts": [
+        "biz_memberships",
+        "biz_web_sessions",
+        "biz_security_notification_outbox",
+        "biz_audit_events"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port tenant-account deletion confirmation + shared-account isolation + re-login to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-028",
+      "owner_issues": [
+        "#168"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "No standalone UI journey; masking is observed by real browser profile/member surfaces"
+      ],
+      "api_surfaces": [
+        "protected contact reads across member/profile/auth flows"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_168_sensitive_contacts_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "cross-cutting member/profile/auth reads",
+      "states": [
+        "encrypted_at_rest",
+        "masked_response",
+        "lookup_hash",
+        "log_hygiene"
+      ],
+      "db_or_notification_receipts": [
+        "biz_users_email_lookup_hash",
+        "biz_memberships_email_lookup",
+        "biz_memberships_phone_lookup"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Cross-cutting security story; retain sensitive-value scan in final #189 evidence.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-029",
+      "owner_issues": [
+        "#178"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-roles-real.spec.ts role query/default/delete tests use API-mode mocked server"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/roles",
+        "/v1/tenant/roles/{role_id}"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_178_role_lifecycle_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/roles",
+      "states": [
+        "list_query",
+        "role_profile",
+        "builtin_protected",
+        "delete_blocked_with_members",
+        "delete_confirmed"
+      ],
+      "db_or_notification_receipts": [
+        "biz_roles",
+        "biz_permission_grants",
+        "biz_member_roles"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port role query/profile/default protection/delete confirmation to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-030",
+      "owner_issues": [
+        "#178"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-roles-real.spec.ts role query/default/delete tests use API-mode mocked server"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/roles",
+        "/v1/tenant/roles/{role_id}"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_178_role_lifecycle_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/roles",
+      "states": [
+        "list_query",
+        "role_profile",
+        "builtin_protected",
+        "delete_blocked_with_members",
+        "delete_confirmed"
+      ],
+      "db_or_notification_receipts": [
+        "biz_roles",
+        "biz_permission_grants",
+        "biz_member_roles"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port role query/profile/default protection/delete confirmation to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-031",
+      "owner_issues": [
+        "#178"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-roles-real.spec.ts role query/default/delete tests use API-mode mocked server"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/roles",
+        "/v1/tenant/roles/{role_id}"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_178_role_lifecycle_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/roles",
+      "states": [
+        "list_query",
+        "role_profile",
+        "builtin_protected",
+        "delete_blocked_with_members",
+        "delete_confirmed"
+      ],
+      "db_or_notification_receipts": [
+        "biz_roles",
+        "biz_permission_grants",
+        "biz_member_roles"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port role query/profile/default protection/delete confirmation to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-032",
+      "owner_issues": [
+        "#178"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-roles-real.spec.ts role query/default/delete tests use API-mode mocked server"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/roles",
+        "/v1/tenant/roles/{role_id}"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_178_role_lifecycle_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/roles",
+      "states": [
+        "list_query",
+        "role_profile",
+        "builtin_protected",
+        "delete_blocked_with_members",
+        "delete_confirmed"
+      ],
+      "db_or_notification_receipts": [
+        "biz_roles",
+        "biz_permission_grants",
+        "biz_member_roles"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port role query/profile/default protection/delete confirmation to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-033",
+      "owner_issues": [
+        "#174",
+        "#179"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout edits Security Viewer permission tree with real API/readback"
+      ],
+      "api_surfaces": [
+        "/auth/action-catalog",
+        "/v1/tenant/roles/{role_id}/permissions"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_179_role_grant_tree_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/roles · permission/member assignment",
+      "states": [
+        "permission_tree",
+        "mixed_state",
+        "CAS_save",
+        "next_request_revoked",
+        "member_bind_or_revoke"
+      ],
+      "db_or_notification_receipts": [
+        "biz_roles",
+        "biz_permission_grants",
+        "biz_member_roles",
+        "biz_audit_events"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-034",
+      "owner_issues": [
+        "#174",
+        "#179"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout proves old viewer session next member request=403 and refresh UI fail-closed"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/roles/{role_id}/permissions",
+        "/v1/tenant/members",
+        "/auth/authorization"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_179_role_grant_tree_mysql_test.go",
+        "integration/role_revocation_latency_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/roles · permission/member assignment",
+      "states": [
+        "permission_tree",
+        "mixed_state",
+        "CAS_save",
+        "next_request_revoked",
+        "member_bind_or_revoke"
+      ],
+      "db_or_notification_receipts": [
+        "biz_roles",
+        "biz_permission_grants",
+        "biz_member_roles",
+        "biz_audit_events"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-035",
+      "owner_issues": [
+        "#178"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-roles-real.spec.ts role/member count surface only; role member mutations remain API-mode"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/roles/{role_id}/members",
+        "/v1/tenant/roles/{role_id}/members/{user_id}/revoke"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_178_role_lifecycle_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/roles · permission/member assignment",
+      "states": [
+        "permission_tree",
+        "mixed_state",
+        "CAS_save",
+        "next_request_revoked",
+        "member_bind_or_revoke"
+      ],
+      "db_or_notification_receipts": [
+        "biz_roles",
+        "biz_permission_grants",
+        "biz_member_roles",
+        "biz_audit_events"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port role-member bind/unbind and count readback to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-036",
+      "owner_issues": [
+        "#180"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "web/e2e/enterprise-data-policy-ui.spec.ts role policy binding tests use API-mode mocked server"
+      ],
+      "api_surfaces": [
+        "tenant data-policy list/read/bind operations"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_180_data_policy_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/roles · data policy",
+      "states": [
+        "policy_list",
+        "bound",
+        "effective",
+        "ineffective_or_revoked",
+        "CAS_conflict"
+      ],
+      "db_or_notification_receipts": [
+        "tenant data-policy persistence qualified by enterprise_180_data_policy_mysql_test.go",
+        "biz_permission_grants",
+        "biz_member_sites"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Port real role Data Policy bind/CAS/effective-state UI to CE12.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-037",
+      "owner_issues": [
+        "#179",
+        "#180"
+      ],
+      "status": "LAYERED_ACCEPTANCE_PASS",
+      "browser_evidence": [
+        "#189 covers permission contraction, but Data Policy effectiveness UI remains API-mode"
+      ],
+      "api_surfaces": [
+        "/auth/authorization",
+        "tenant role data-policy operations"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_179_role_grant_tree_mysql_test.go",
+        "integration/enterprise_180_data_policy_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/enterprise/roles · data policy",
+      "states": [
+        "policy_list",
+        "bound",
+        "effective",
+        "ineffective_or_revoked",
+        "CAS_conflict"
+      ],
+      "db_or_notification_receipts": [
+        "tenant data-policy persistence qualified by enterprise_180_data_policy_mysql_test.go",
+        "biz_permission_grants",
+        "biz_member_sites"
+      ],
+      "evidence_boundary": "Canonical UI/state evidence is API-mode fixture evidence and authoritative behavior is real MySQL/runtime evidence. This story is not claimed as an independent CE12 replay; #189's CE12 cross-flow proves stack convergence.",
+      "independent_ce12_replay_not_claimed": "Add real Data Policy effective/ineffective transition and resulting authorization readback.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-038",
+      "owner_issues": [
+        "#185",
+        "#186"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189ControlledEventRoutesToUnreadAndMarkAllRead"
+      ],
+      "api_surfaces": [
+        "/auth/personal/in-app-notifications"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_185_routing_mysql_test.go",
+        "integration/enterprise_186_inbox_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "global notification bell / in-app inbox",
+      "states": [
+        "unread",
+        "empty",
+        "new_message",
+        "mark_all_read",
+        "tenant_user_isolated"
+      ],
+      "db_or_notification_receipts": [
+        "biz_notification_in_app",
+        "biz_notification_inbox_mark_all",
+        "biz_notification_inbox_mark_all_items"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-039",
+      "owner_issues": [
+        "#186"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189ControlledEventRoutesToUnreadAndMarkAllRead"
+      ],
+      "api_surfaces": [
+        "/auth/personal/in-app-notifications/read-all"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_186_inbox_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "global notification bell / in-app inbox",
+      "states": [
+        "unread",
+        "empty",
+        "new_message",
+        "mark_all_read",
+        "tenant_user_isolated"
+      ],
+      "db_or_notification_receipts": [
+        "biz_notification_in_app",
+        "biz_notification_inbox_mark_all",
+        "biz_notification_inbox_mark_all_items"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-040",
+      "owner_issues": [
+        "#184"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/notification/types",
+        "/v1/tenant/notification/channels",
+        "/v1/tenant/notification/groups",
+        "/v1/tenant/notification/recipients",
+        "/v1/tenant/notification/configurations"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_184_configuration_storage_mysql_test.go",
+        "integration/enterprise_184_notification_runtime_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/system/notifications",
+      "states": [
+        "directory_loaded",
+        "configuration_create_or_edit",
+        "lost_response",
+        "readback_failure_recovery",
+        "read_only_denied"
+      ],
+      "db_or_notification_receipts": [
+        "biz_notification_configurations",
+        "biz_notification_configuration_channels",
+        "biz_notification_configuration_recipients",
+        "biz_notification_configuration_receipts",
+        "biz_audit_events"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-041",
+      "owner_issues": [
+        "#184"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/notification/types",
+        "/v1/tenant/notification/channels",
+        "/v1/tenant/notification/groups",
+        "/v1/tenant/notification/recipients",
+        "/v1/tenant/notification/configurations"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_184_configuration_storage_mysql_test.go",
+        "integration/enterprise_184_notification_runtime_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/system/notifications",
+      "states": [
+        "directory_loaded",
+        "configuration_create_or_edit",
+        "lost_response",
+        "readback_failure_recovery",
+        "read_only_denied"
+      ],
+      "db_or_notification_receipts": [
+        "biz_notification_configurations",
+        "biz_notification_configuration_channels",
+        "biz_notification_configuration_recipients",
+        "biz_notification_configuration_receipts",
+        "biz_audit_events"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-042",
+      "owner_issues": [
+        "#184"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/notification/types",
+        "/v1/tenant/notification/channels",
+        "/v1/tenant/notification/groups",
+        "/v1/tenant/notification/recipients",
+        "/v1/tenant/notification/configurations"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_184_configuration_storage_mysql_test.go",
+        "integration/enterprise_184_notification_runtime_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/system/notifications",
+      "states": [
+        "directory_loaded",
+        "configuration_create_or_edit",
+        "lost_response",
+        "readback_failure_recovery",
+        "read_only_denied"
+      ],
+      "db_or_notification_receipts": [
+        "biz_notification_configurations",
+        "biz_notification_configuration_channels",
+        "biz_notification_configuration_recipients",
+        "biz_notification_configuration_receipts",
+        "biz_audit_events"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-043",
+      "owner_issues": [
+        "#184"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/notification/types",
+        "/v1/tenant/notification/channels",
+        "/v1/tenant/notification/groups",
+        "/v1/tenant/notification/recipients",
+        "/v1/tenant/notification/configurations"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_184_configuration_storage_mysql_test.go",
+        "integration/enterprise_184_notification_runtime_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/system/notifications",
+      "states": [
+        "directory_loaded",
+        "configuration_create_or_edit",
+        "lost_response",
+        "readback_failure_recovery",
+        "read_only_denied"
+      ],
+      "db_or_notification_receipts": [
+        "biz_notification_configurations",
+        "biz_notification_configuration_channels",
+        "biz_notification_configuration_recipients",
+        "biz_notification_configuration_receipts",
+        "biz_audit_events"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-044",
+      "owner_issues": [
+        "#184"
+      ],
+      "status": "REAL_BROWSER_PASS",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports"
+      ],
+      "api_surfaces": [
+        "/v1/tenant/notification/types",
+        "/v1/tenant/notification/channels",
+        "/v1/tenant/notification/groups",
+        "/v1/tenant/notification/recipients",
+        "/v1/tenant/notification/configurations"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_184_configuration_storage_mysql_test.go",
+        "integration/enterprise_184_notification_runtime_mysql_test.go"
+      ],
+      "remaining_gap": "",
+      "entry": "/#/system/notifications",
+      "states": [
+        "directory_loaded",
+        "configuration_create_or_edit",
+        "lost_response",
+        "readback_failure_recovery",
+        "read_only_denied"
+      ],
+      "db_or_notification_receipts": [
+        "biz_notification_configurations",
+        "biz_notification_configuration_channels",
+        "biz_notification_configuration_recipients",
+        "biz_notification_configuration_receipts",
+        "biz_audit_events"
+      ],
+      "evidence_boundary": "Independent CE12 real-browser journey.",
+      "acceptance": "PASS"
+    },
+    {
+      "id": "US-045",
+      "owner_issues": [
+        "#183",
+        "#184",
+        "#185"
+      ],
+      "status": "REAL_RUNTIME_CONTROLLED_SOURCE",
+      "browser_evidence": [
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189ControlledEventRoutesToUnreadAndMarkAllRead"
+      ],
+      "api_surfaces": [
+        "qualification-only BusinessEventPublisher fixture → real Notification Runtime",
+        "/auth/personal/in-app-notifications"
+      ],
+      "authority_evidence": [
+        "integration/enterprise_189_browser_event_fixture_test.go",
+        "integration/enterprise_185_routing_mysql_test.go",
+        "biz_notification_events → route outcomes → biz_notification_in_app"
+      ],
+      "remaining_gap": "In-app path is qualified. Real external SMS/email provider delivery remains owned by open #185 and is explicitly not claimed here.",
+      "entry": "controlled business event → notification runtime → in-app inbox",
+      "states": [
+        "event_pending",
+        "routed",
+        "preference_applied",
+        "IN_APP_CREATED",
+        "unread_then_read"
+      ],
+      "db_or_notification_receipts": [
+        "biz_notification_events",
+        "biz_notification_route_outcomes",
+        "biz_notification_in_app",
+        "biz_notification_external_tasks"
+      ],
+      "evidence_boundary": "Controlled qualification-only event source; downstream routing/inbox is real runtime. No production event-fabrication endpoint and no external-provider PASS claim.",
+      "acceptance": "PASS"
+    }
+  ],
+  "failure_matrix": [
+    {
+      "failure": "401",
+      "status": "PASS",
+      "ui_or_browser_evidence": [
+        "web/e2e/enterprise-members-real.spec.ts::401 redirects to trusted login and 403 blocks members before protected data loads",
+        "web/e2e/enterprise-roles-real.spec.ts::401 redirects to trusted login and 403 blocks roles before protected data loads"
+      ],
+      "real_authority_evidence": [
+        "integration/ce12_web_session_mysql_test.go",
+        "web/tests/ce12/enterprise-172-native-login.spec.ts logout/session revocation"
+      ],
+      "boundary": "UI response handling is fixture-driven; session invalidation authority is real MySQL/BFF."
+    },
+    {
+      "failure": "403",
+      "status": "PASS",
+      "ui_or_browser_evidence": [
+        "web/tests/ce12/enterprise-175-authorization-ui.spec.ts::TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed",
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout"
+      ],
+      "real_authority_evidence": [
+        "old Security Viewer web session next /v1/tenant/members request returns 403 after tenant.member.read revocation",
+        "integration/enterprise_179_role_grant_tree_mysql_test.go"
+      ],
+      "boundary": "Real CE12 browser/BFF/MySQL."
+    },
+    {
+      "failure": "409",
+      "status": "PASS",
+      "ui_or_browser_evidence": [
+        "web/e2e/enterprise-members-real.spec.ts::canonical profile 409 preserves draft and reuses the same idempotency key",
+        "web/e2e/enterprise-roles-real.spec.ts::role 409 preserves the same idempotency key and editor draft for retry"
+      ],
+      "real_authority_evidence": [
+        "integration/enterprise_177_member_lifecycle_mysql_test.go completed idempotency replay returns http.StatusConflict",
+        "integration/enterprise_182_self_security_mysql_test.go replayed OTP / last owner / notification conflict return http.StatusConflict"
+      ],
+      "boundary": "Canonical UI recovery is API-mode fixture evidence; conflicts are independently reproduced against real MySQL/runtime."
+    },
+    {
+      "failure": "429",
+      "status": "PASS",
+      "ui_or_browser_evidence": [
+        "member appeal and verification surfaces expose retry-aware rate-limit states"
+      ],
+      "real_authority_evidence": [
+        "integration/enterprise_177_member_lifecycle_mysql_test.go::TestEnterprise177AppealIsSelfOnlyRateLimitedAndNotificationFailureDoesNotGrantAccess reproduces MemberAppealRateLimitError against real MySQL",
+        "internal/bizruntime/web_member_appeal.go maps MemberAppealRateLimitError to http.StatusTooManyRequests",
+        "internal/bizruntime/verification_http.go maps ErrVerificationRateLimited to http.StatusTooManyRequests"
+      ],
+      "boundary": "Rate-limit authority is real MySQL; HTTP 429 mapping is production runtime code, not demo success fallback."
+    },
+    {
+      "failure": "5xx",
+      "status": "PASS",
+      "ui_or_browser_evidence": [
+        "web/e2e/enterprise-personal-profile-real.spec.ts injects 503 preference/profile availability failures without manufacturing success"
+      ],
+      "real_authority_evidence": [
+        "internal/bizruntime/web_personal_security.go fails closed with http.StatusServiceUnavailable for unavailable self-security authority",
+        "internal/bizruntime/web_member_appeal.go fails closed with http.StatusServiceUnavailable when appeal authority is unavailable",
+        "integration/enterprise_170_verification_notification_mysql_test.go reproduces delivery failure/rollback against real MySQL"
+      ],
+      "boundary": "UI 5xx presentation is controlled API failure injection; runtime failure policy and transactional failure are real implementations/tests."
+    },
+    {
+      "failure": "readback_failure",
+      "status": "PASS",
+      "ui_or_browser_evidence": [
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::acknowledged write with failed readback recovers using GET only"
+      ],
+      "real_authority_evidence": [
+        "the CE12 test commits the real PATCH first, aborts only the subsequent GET, shows unconfirmed state, then recovers by authoritative GET with writes=1"
+      ],
+      "boundary": "Real CE12 commit plus controlled network readback failure."
+    }
+  ],
+  "cross_flow": {
+    "test": "web/tests/ce12/enterprise-189-full-flow.spec.ts",
+    "chain": [
+      "real IdP login",
+      "select tenant",
+      "members",
+      "roles",
+      "permission revocation",
+      "old-session next request 403",
+      "reload fail-closed without member data",
+      "permission restore",
+      "personal profile / preference dialog",
+      "message configuration",
+      "controlled BusinessEventPublisher source",
+      "real Notification Runtime routing",
+      "unread inbox",
+      "four viewports",
+      "mark all read",
+      "i18n",
+      "logout"
+    ],
+    "viewports": [
+      "1366x768",
+      "1440x900",
+      "1536x1024",
+      "390x844"
+    ],
+    "accessibility": [
+      "Escape closes inbox and restores bell focus",
+      "preference cancellation restores switch focus",
+      "role permission tree uses keyboard-capable native checkboxes"
+    ]
+  },
+  "out_of_scope_preserved": [
+    "#116",
+    "#117",
+    "#131",
+    "#133"
+  ],
+  "final_gate_binding": "Final PR HEAD and merge/main identities are intentionally filled by delivery receipts and PR/issue closeout after Full Merge Gate; this map does not fabricate future SHAs."
+}
