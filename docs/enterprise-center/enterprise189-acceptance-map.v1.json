@@ -1,0 +1,1667 @@
+{
+  "schema_version": 1,
+  "issue": "#189",
+  "title": "Enterprise Center US-001..US-045 full-runtime acceptance map",
+  "scope": "US-001..US-045",
+  "authoritative_mapping": "docs/enterprise-center/requirements-map.md",
+  "runtime_environment": {
+    "identity": "first-party OIDC IdP",
+    "session": "Biz BFF server-side Web Session",
+    "business_api": "Biz API",
+    "persistence": "isolated MySQL",
+    "notification": "Notification Runtime; in-app path always real; external provider qualification is separate #185 boundary"
+  },
+  "evidence_boundaries": {
+    "browser": "CE-12 uses real IdP/BFF/Biz API/MySQL; ordinary web/e2e tests are UI contract evidence and are not relabeled as CE-12.",
+    "event_source": "US-045 business-event ingress is qualification-only TestEnterprise189AppendControlledBusinessEvent using the production BusinessEventPublisher contract. Production exposes no browser event-fabrication endpoint.",
+    "external_provider": "Third-party SMS/email provider sandbox qualification is not claimed here; #185 remains BLOCKED_BY_EXTERNAL_QUALIFICATION_INPUT for that external dependency.",
+    "performance": "#189 is Full Runtime integration and explicitly does not replace later full security/performance qualification; #191 owns aggregate performance qualification."
+  },
+  "negative_contracts": [
+    {
+      "case": "401/403",
+      "evidence": [
+        "web/tests/ce12/enterprise-175-authorization-ui.spec.ts",
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts",
+        "web/e2e/enterprise-members-real.spec.ts",
+        "web/e2e/enterprise-roles-real.spec.ts"
+      ],
+      "claim": "protected routes fail closed; direct API remains server-authorized; #189 proves old viewer session receives 403 on the next member request after revocation"
+    },
+    {
+      "case": "409",
+      "evidence": [
+        "integration/enterprise_171_session_isolation_mysql_test.go",
+        "integration/enterprise_177_member_lifecycle_mysql_test.go",
+        "integration/enterprise_182_self_security_mysql_test.go",
+        "web/e2e/enterprise-members-real.spec.ts",
+        "web/e2e/enterprise-roles-real.spec.ts"
+      ],
+      "claim": "stale session/CAS/replay/protected lifecycle conflicts are explicit and do not fabricate success"
+    },
+    {
+      "case": "429",
+      "evidence": [
+        "internal/bizruntime/web_member_appeal.go",
+        "integration/enterprise_177_member_lifecycle_mysql_test.go::TestEnterprise177AppealIsSelfOnlyRateLimitedAndNotificationFailureDoesNotGrantAccess"
+      ],
+      "claim": "member appeal rate limit returns HTTP 429 with Retry-After from the real BFF handler"
+    },
+    {
+      "case": "5xx/provider failure",
+      "evidence": [
+        "integration/enterprise_170_verification_notification_mysql_test.go",
+        "integration/enterprise_185_external_delivery_mysql_test.go",
+        "integration/enterprise_185_http_provider_callback_mysql_test.go"
+      ],
+      "claim": "controlled real persistence/provider failure paths retain explicit failed state/rollback; no demo-success fallback"
+    },
+    {
+      "case": "readback failure",
+      "evidence": [
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts",
+        "web/e2e/enterprise-members-real.spec.ts",
+        "web/e2e/enterprise-roles-real.spec.ts",
+        "web/e2e/enterprise-personal-profile-real.spec.ts"
+      ],
+      "claim": "acknowledged writes remain unconfirmed until authoritative GET recovery; uncertain retry reuses identity/idempotency rather than reporting fake success"
+    }
+  ],
+  "cross_cutting": [
+    {
+      "requirement": "viewports",
+      "evidence": [
+        "1366x768",
+        "1440x900",
+        "1536x1024",
+        "390x844"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-169-consent.spec.ts",
+        "web/tests/ce12/enterprise-183-notification-preferences.spec.ts",
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts",
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts"
+      ]
+    },
+    {
+      "requirement": "keyboard/focus/mobile notification",
+      "tests": [
+        "web/tests/ce12/enterprise-183-notification-preferences.spec.ts",
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts",
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts"
+      ]
+    },
+    {
+      "requirement": "i18n",
+      "tests": [
+        "web/e2e/enterprise-data-policy-ui.spec.ts",
+        "web/e2e/enterprise-personal-profile-real.spec.ts",
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts"
+      ]
+    },
+    {
+      "requirement": "non-regression",
+      "tests": [
+        "PR Qualification web-product/core",
+        "PR Qualification web-product/site-rental",
+        "PR Merge Gate full lanes"
+      ],
+      "note": "#116/#117/#131/#133 remain outside #189; this map does not claim their implementation."
+    }
+  ],
+  "user_stories": [
+    {
+      "id": "US-001",
+      "owner_issues": [
+        "#169"
+      ],
+      "range_contract": "privacy consent + login precondition",
+      "entry": "/auth/login → first-party IdP consent gate",
+      "states": [
+        "first consent required",
+        "refuse/no Biz session",
+        "accept/versioned evidence",
+        "repeat login with current consent"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-169-consent.spec.ts::TestEnterprise169BrowserPrivacyConsentGate",
+        "integration/enterprise_169_privacy_consent_mysql_test.go::TestEnterprise169PrivacyConsentEvidenceAndVersionPolicy"
+      ],
+      "api": [
+        "GET /auth/login",
+        "GET|POST /idp/consent",
+        "GET /auth/session"
+      ],
+      "persistence_or_receipt": [
+        "biz_privacy_consents",
+        "biz_idp_authorization_requests"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-002",
+      "owner_issues": [
+        "#170",
+        "#171",
+        "#172"
+      ],
+      "range_contract": "account/contact/password/OTP session entry",
+      "entry": "/auth/login → first-party IdP password or OTP tabs",
+      "states": [
+        "username/phone/email identifier",
+        "password login",
+        "OTP request/verify",
+        "single/multiple/no-tenant session",
+        "invalid identifier anti-enumeration"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-172-native-login.spec.ts::TestEnterprise172UsernamePhoneEmailPasswordOTPMatrix",
+        "web/tests/ce12/enterprise-172-native-login.spec.ts::TestEnterprise172ClientValidationAntiEnumerationAndRememberIdentifier",
+        "integration/enterprise_172_native_login_mysql_test.go"
+      ],
+      "api": [
+        "POST /idp/login",
+        "POST /idp/login/otp/request",
+        "POST /idp/login/otp/verify",
+        "GET /auth/session"
+      ],
+      "persistence_or_receipt": [
+        "protected login identifier lookup facts",
+        "biz_idp_login_throttles",
+        "biz_verification_challenges",
+        "biz_web_sessions"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-003",
+      "owner_issues": [
+        "#170",
+        "#171",
+        "#172"
+      ],
+      "range_contract": "account/contact/password/OTP session entry",
+      "entry": "/auth/login → first-party IdP password or OTP tabs",
+      "states": [
+        "username/phone/email identifier",
+        "password login",
+        "OTP request/verify",
+        "single/multiple/no-tenant session",
+        "invalid identifier anti-enumeration"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-172-native-login.spec.ts::TestEnterprise172UsernamePhoneEmailPasswordOTPMatrix",
+        "web/tests/ce12/enterprise-172-native-login.spec.ts::TestEnterprise172ClientValidationAntiEnumerationAndRememberIdentifier",
+        "integration/enterprise_172_native_login_mysql_test.go"
+      ],
+      "api": [
+        "POST /idp/login",
+        "POST /idp/login/otp/request",
+        "POST /idp/login/otp/verify",
+        "GET /auth/session"
+      ],
+      "persistence_or_receipt": [
+        "protected login identifier lookup facts",
+        "biz_idp_login_throttles",
+        "biz_verification_challenges",
+        "biz_web_sessions"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-004",
+      "owner_issues": [
+        "#170",
+        "#171",
+        "#172"
+      ],
+      "range_contract": "account/contact/password/OTP session entry",
+      "entry": "/auth/login → first-party IdP password or OTP tabs",
+      "states": [
+        "username/phone/email identifier",
+        "password login",
+        "OTP request/verify",
+        "single/multiple/no-tenant session",
+        "invalid identifier anti-enumeration"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-172-native-login.spec.ts::TestEnterprise172UsernamePhoneEmailPasswordOTPMatrix",
+        "web/tests/ce12/enterprise-172-native-login.spec.ts::TestEnterprise172ClientValidationAntiEnumerationAndRememberIdentifier",
+        "integration/enterprise_172_native_login_mysql_test.go"
+      ],
+      "api": [
+        "POST /idp/login",
+        "POST /idp/login/otp/request",
+        "POST /idp/login/otp/verify",
+        "GET /auth/session"
+      ],
+      "persistence_or_receipt": [
+        "protected login identifier lookup facts",
+        "biz_idp_login_throttles",
+        "biz_verification_challenges",
+        "biz_web_sessions"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-005",
+      "owner_issues": [
+        "#171"
+      ],
+      "range_contract": "tenant switch/logout/session revocation",
+      "entry": "tenant selector + account menu",
+      "states": [
+        "allowed tenant switch",
+        "cross-tenant denial",
+        "multi-tab stale context rejection",
+        "logout revokes old session"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-171-session-isolation.spec.ts::TestEnterprise171CrossTabTenantIsolationBackNavigationAndStaleContext",
+        "integration/enterprise_171_session_isolation_mysql_test.go"
+      ],
+      "api": [
+        "GET /auth/session",
+        "GET /auth/session/tenants",
+        "POST /auth/session/tenant",
+        "POST /auth/logout"
+      ],
+      "persistence_or_receipt": [
+        "biz_web_sessions",
+        "biz_memberships"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-006",
+      "owner_issues": [
+        "#171"
+      ],
+      "range_contract": "tenant switch/logout/session revocation",
+      "entry": "tenant selector + account menu",
+      "states": [
+        "allowed tenant switch",
+        "cross-tenant denial",
+        "multi-tab stale context rejection",
+        "logout revokes old session"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-171-session-isolation.spec.ts::TestEnterprise171CrossTabTenantIsolationBackNavigationAndStaleContext",
+        "integration/enterprise_171_session_isolation_mysql_test.go"
+      ],
+      "api": [
+        "GET /auth/session",
+        "GET /auth/session/tenants",
+        "POST /auth/session/tenant",
+        "POST /auth/logout"
+      ],
+      "persistence_or_receipt": [
+        "biz_web_sessions",
+        "biz_memberships"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-007",
+      "owner_issues": [
+        "#170",
+        "#173"
+      ],
+      "range_contract": "recovery OTP + one-time authorization + password rotate",
+      "entry": "/idp/password/recovery",
+      "states": [
+        "request",
+        "OTP verify/consume",
+        "expiry/replay rejection",
+        "new password works",
+        "old session/credential revoked"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-173-password-security.spec.ts::TestEnterprise173PasswordRecoveryRevokesSessionsAndChangesCredential",
+        "integration/enterprise_173_recovery_mysql_test.go::TestEnterprise173PasswordRecoveryReplayExpiryAndConcurrentConsumption"
+      ],
+      "api": [
+        "GET /idp/password/recovery",
+        "POST /idp/password/recovery/request",
+        "POST /idp/password/recovery/complete"
+      ],
+      "persistence_or_receipt": [
+        "biz_verification_challenges",
+        "biz_web_sessions",
+        "security notification outbox/receipt"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-008",
+      "owner_issues": [
+        "#174"
+      ],
+      "range_contract": "current-user authorization aggregate",
+      "entry": "authenticated tenant shell authorization bootstrap",
+      "states": [
+        "current user/tenant facts",
+        "module/button facts",
+        "same-source action catalog",
+        "permission contraction"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-174-authorization.spec.ts::TestEnterprise174CurrentAuthorizationAndActionCatalogAreSameSource",
+        "integration/enterprise_174_current_authorization_mysql_test.go"
+      ],
+      "api": [
+        "GET /auth/authorization",
+        "GET /auth/action-catalog"
+      ],
+      "persistence_or_receipt": [
+        "biz_permission_grants",
+        "biz_member_roles",
+        "biz_member_sites",
+        "principal-specific PermissionVersion projection"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-009",
+      "owner_issues": [
+        "#175"
+      ],
+      "range_contract": "canonical routes + menu/button/deep-link consumption",
+      "entry": "CoffeeLink canonical tenant routes/navigation",
+      "states": [
+        "authorized visible",
+        "unauthorized menu/button hidden",
+        "deep-link fail-closed before data",
+        "direct API still server-denied"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-175-authorization-ui.spec.ts::TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed",
+        "web/e2e/enterprise-members-real.spec.ts::401 redirects to trusted login and 403 blocks members before protected data loads",
+        "web/e2e/enterprise-roles-real.spec.ts::401 redirects to trusted login and 403 blocks roles before protected data loads"
+      ],
+      "api": [
+        "GET /auth/authorization",
+        "GET /v1/tenant/members",
+        "GET /v1/tenant/roles"
+      ],
+      "persistence_or_receipt": [
+        "current Access grants + Commercial capability intersection",
+        "no client-side grant source"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-010",
+      "owner_issues": [
+        "#175"
+      ],
+      "range_contract": "canonical routes + menu/button/deep-link consumption",
+      "entry": "CoffeeLink canonical tenant routes/navigation",
+      "states": [
+        "authorized visible",
+        "unauthorized menu/button hidden",
+        "deep-link fail-closed before data",
+        "direct API still server-denied"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-175-authorization-ui.spec.ts::TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed",
+        "web/e2e/enterprise-members-real.spec.ts::401 redirects to trusted login and 403 blocks members before protected data loads",
+        "web/e2e/enterprise-roles-real.spec.ts::401 redirects to trusted login and 403 blocks roles before protected data loads"
+      ],
+      "api": [
+        "GET /auth/authorization",
+        "GET /v1/tenant/members",
+        "GET /v1/tenant/roles"
+      ],
+      "persistence_or_receipt": [
+        "current Access grants + Commercial capability intersection",
+        "no client-side grant source"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-011",
+      "owner_issues": [
+        "#175"
+      ],
+      "range_contract": "canonical routes + menu/button/deep-link consumption",
+      "entry": "CoffeeLink canonical tenant routes/navigation",
+      "states": [
+        "authorized visible",
+        "unauthorized menu/button hidden",
+        "deep-link fail-closed before data",
+        "direct API still server-denied"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-175-authorization-ui.spec.ts::TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed",
+        "web/e2e/enterprise-members-real.spec.ts::401 redirects to trusted login and 403 blocks members before protected data loads",
+        "web/e2e/enterprise-roles-real.spec.ts::401 redirects to trusted login and 403 blocks roles before protected data loads"
+      ],
+      "api": [
+        "GET /auth/authorization",
+        "GET /v1/tenant/members",
+        "GET /v1/tenant/roles"
+      ],
+      "persistence_or_receipt": [
+        "current Access grants + Commercial capability intersection",
+        "no client-side grant source"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-012",
+      "owner_issues": [
+        "#168",
+        "#176"
+      ],
+      "range_contract": "protected identity/contact + member query/create/update",
+      "entry": "/#/enterprise/members",
+      "states": [
+        "server query/filter/page",
+        "atomic create",
+        "atomic edit/role change",
+        "masked protected contact",
+        "CAS/readback failure"
+      ],
+      "tests": [
+        "web/e2e/enterprise-members-real.spec.ts",
+        "integration/b12_member_runtime_mysql_test.go",
+        "integration/enterprise_168_sensitive_contacts_mysql_test.go"
+      ],
+      "api": [
+        "GET /v1/tenant/members",
+        "POST /v1/tenant/members/create",
+        "PATCH /v1/tenant/members/{user_id}",
+        "PATCH /v1/tenant/members/{user_id}/profile"
+      ],
+      "persistence_or_receipt": [
+        "biz_users",
+        "biz_memberships",
+        "protected email/phone lookup columns",
+        "member write receipt/readback"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-013",
+      "owner_issues": [
+        "#168",
+        "#176"
+      ],
+      "range_contract": "protected identity/contact + member query/create/update",
+      "entry": "/#/enterprise/members",
+      "states": [
+        "server query/filter/page",
+        "atomic create",
+        "atomic edit/role change",
+        "masked protected contact",
+        "CAS/readback failure"
+      ],
+      "tests": [
+        "web/e2e/enterprise-members-real.spec.ts",
+        "integration/b12_member_runtime_mysql_test.go",
+        "integration/enterprise_168_sensitive_contacts_mysql_test.go"
+      ],
+      "api": [
+        "GET /v1/tenant/members",
+        "POST /v1/tenant/members/create",
+        "PATCH /v1/tenant/members/{user_id}",
+        "PATCH /v1/tenant/members/{user_id}/profile"
+      ],
+      "persistence_or_receipt": [
+        "biz_users",
+        "biz_memberships",
+        "protected email/phone lookup columns",
+        "member write receipt/readback"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-014",
+      "owner_issues": [
+        "#168",
+        "#176"
+      ],
+      "range_contract": "protected identity/contact + member query/create/update",
+      "entry": "/#/enterprise/members",
+      "states": [
+        "server query/filter/page",
+        "atomic create",
+        "atomic edit/role change",
+        "masked protected contact",
+        "CAS/readback failure"
+      ],
+      "tests": [
+        "web/e2e/enterprise-members-real.spec.ts",
+        "integration/b12_member_runtime_mysql_test.go",
+        "integration/enterprise_168_sensitive_contacts_mysql_test.go"
+      ],
+      "api": [
+        "GET /v1/tenant/members",
+        "POST /v1/tenant/members/create",
+        "PATCH /v1/tenant/members/{user_id}",
+        "PATCH /v1/tenant/members/{user_id}/profile"
+      ],
+      "persistence_or_receipt": [
+        "biz_users",
+        "biz_memberships",
+        "protected email/phone lookup columns",
+        "member write receipt/readback"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-015",
+      "owner_issues": [
+        "#173",
+        "#177"
+      ],
+      "range_contract": "member lifecycle/recovery/admin recovery",
+      "entry": "member row lifecycle actions + admin recovery entry",
+      "states": [
+        "suspend",
+        "activate",
+        "soft remove",
+        "restore",
+        "Owner/self protection",
+        "admin recovery accepted without account takeover",
+        "relogin boundary"
+      ],
+      "tests": [
+        "integration/enterprise_177_member_lifecycle_mysql_test.go",
+        "web/tests/ce12/enterprise-173-password-security.spec.ts::TestEnterprise173AdminRecoveryIsPermissionedScopedAndPolicyBlocked",
+        "web/e2e/enterprise-members-real.spec.ts"
+      ],
+      "api": [
+        "POST /v1/tenant/members/{user_id}/suspend",
+        "POST /v1/tenant/members/{user_id}/activate",
+        "POST /v1/tenant/members/{user_id}/remove",
+        "POST /v1/tenant/members/{user_id}/restore",
+        "POST /auth/tenant/members/{user_id}/password-recovery"
+      ],
+      "persistence_or_receipt": [
+        "biz_memberships",
+        "biz_member_removed_role_snapshots",
+        "biz_member_removed_site_snapshots",
+        "biz_web_sessions",
+        "biz_security_notification_outbox"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-016",
+      "owner_issues": [
+        "#173",
+        "#177"
+      ],
+      "range_contract": "member lifecycle/recovery/admin recovery",
+      "entry": "member row lifecycle actions + admin recovery entry",
+      "states": [
+        "suspend",
+        "activate",
+        "soft remove",
+        "restore",
+        "Owner/self protection",
+        "admin recovery accepted without account takeover",
+        "relogin boundary"
+      ],
+      "tests": [
+        "integration/enterprise_177_member_lifecycle_mysql_test.go",
+        "web/tests/ce12/enterprise-173-password-security.spec.ts::TestEnterprise173AdminRecoveryIsPermissionedScopedAndPolicyBlocked",
+        "web/e2e/enterprise-members-real.spec.ts"
+      ],
+      "api": [
+        "POST /v1/tenant/members/{user_id}/suspend",
+        "POST /v1/tenant/members/{user_id}/activate",
+        "POST /v1/tenant/members/{user_id}/remove",
+        "POST /v1/tenant/members/{user_id}/restore",
+        "POST /auth/tenant/members/{user_id}/password-recovery"
+      ],
+      "persistence_or_receipt": [
+        "biz_memberships",
+        "biz_member_removed_role_snapshots",
+        "biz_member_removed_site_snapshots",
+        "biz_web_sessions",
+        "biz_security_notification_outbox"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-017",
+      "owner_issues": [
+        "#173",
+        "#177"
+      ],
+      "range_contract": "member lifecycle/recovery/admin recovery",
+      "entry": "member row lifecycle actions + admin recovery entry",
+      "states": [
+        "suspend",
+        "activate",
+        "soft remove",
+        "restore",
+        "Owner/self protection",
+        "admin recovery accepted without account takeover",
+        "relogin boundary"
+      ],
+      "tests": [
+        "integration/enterprise_177_member_lifecycle_mysql_test.go",
+        "web/tests/ce12/enterprise-173-password-security.spec.ts::TestEnterprise173AdminRecoveryIsPermissionedScopedAndPolicyBlocked",
+        "web/e2e/enterprise-members-real.spec.ts"
+      ],
+      "api": [
+        "POST /v1/tenant/members/{user_id}/suspend",
+        "POST /v1/tenant/members/{user_id}/activate",
+        "POST /v1/tenant/members/{user_id}/remove",
+        "POST /v1/tenant/members/{user_id}/restore",
+        "POST /auth/tenant/members/{user_id}/password-recovery"
+      ],
+      "persistence_or_receipt": [
+        "biz_memberships",
+        "biz_member_removed_role_snapshots",
+        "biz_member_removed_site_snapshots",
+        "biz_web_sessions",
+        "biz_security_notification_outbox"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-018",
+      "owner_issues": [
+        "#173",
+        "#177"
+      ],
+      "range_contract": "member lifecycle/recovery/admin recovery",
+      "entry": "member row lifecycle actions + admin recovery entry",
+      "states": [
+        "suspend",
+        "activate",
+        "soft remove",
+        "restore",
+        "Owner/self protection",
+        "admin recovery accepted without account takeover",
+        "relogin boundary"
+      ],
+      "tests": [
+        "integration/enterprise_177_member_lifecycle_mysql_test.go",
+        "web/tests/ce12/enterprise-173-password-security.spec.ts::TestEnterprise173AdminRecoveryIsPermissionedScopedAndPolicyBlocked",
+        "web/e2e/enterprise-members-real.spec.ts"
+      ],
+      "api": [
+        "POST /v1/tenant/members/{user_id}/suspend",
+        "POST /v1/tenant/members/{user_id}/activate",
+        "POST /v1/tenant/members/{user_id}/remove",
+        "POST /v1/tenant/members/{user_id}/restore",
+        "POST /auth/tenant/members/{user_id}/password-recovery"
+      ],
+      "persistence_or_receipt": [
+        "biz_memberships",
+        "biz_member_removed_role_snapshots",
+        "biz_member_removed_site_snapshots",
+        "biz_web_sessions",
+        "biz_security_notification_outbox"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-019",
+      "owner_issues": [
+        "#170",
+        "#177",
+        "#180"
+      ],
+      "range_contract": "business scope + recovery appeal",
+      "entry": "member business-scope editor + /#/member-appeal",
+      "states": [
+        "assignable site scope",
+        "effective query ceiling",
+        "self-only appeal",
+        "not-eligible conflict",
+        "rate limit",
+        "notification failure does not grant access"
+      ],
+      "tests": [
+        "integration/enterprise_180_member_scope_mysql_test.go::TestEnterprise180MemberBusinessScopeAuthority",
+        "integration/enterprise_180_query_scope_mysql_test.go",
+        "integration/enterprise_177_member_lifecycle_mysql_test.go::TestEnterprise177AppealIsSelfOnlyRateLimitedAndNotificationFailureDoesNotGrantAccess",
+        "web/e2e/enterprise-members-real.spec.ts::restricted member appeal never requests tenant business APIs and exposes accepted receipt"
+      ],
+      "api": [
+        "GET /v1/tenant/members/{user_id}/business-scope",
+        "PUT /v1/tenant/members/{user_id}/business-scope",
+        "GET /v1/tenant/member-scope-candidates",
+        "GET /auth/member-appeals",
+        "POST /auth/member-appeals"
+      ],
+      "persistence_or_receipt": [
+        "biz_member_sites",
+        "biz_member_status_appeals",
+        "biz_audit_events",
+        "security notification receipt"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-020",
+      "owner_issues": [
+        "#170",
+        "#177",
+        "#180"
+      ],
+      "range_contract": "business scope + recovery appeal",
+      "entry": "member business-scope editor + /#/member-appeal",
+      "states": [
+        "assignable site scope",
+        "effective query ceiling",
+        "self-only appeal",
+        "not-eligible conflict",
+        "rate limit",
+        "notification failure does not grant access"
+      ],
+      "tests": [
+        "integration/enterprise_180_member_scope_mysql_test.go::TestEnterprise180MemberBusinessScopeAuthority",
+        "integration/enterprise_180_query_scope_mysql_test.go",
+        "integration/enterprise_177_member_lifecycle_mysql_test.go::TestEnterprise177AppealIsSelfOnlyRateLimitedAndNotificationFailureDoesNotGrantAccess",
+        "web/e2e/enterprise-members-real.spec.ts::restricted member appeal never requests tenant business APIs and exposes accepted receipt"
+      ],
+      "api": [
+        "GET /v1/tenant/members/{user_id}/business-scope",
+        "PUT /v1/tenant/members/{user_id}/business-scope",
+        "GET /v1/tenant/member-scope-candidates",
+        "GET /auth/member-appeals",
+        "POST /auth/member-appeals"
+      ],
+      "persistence_or_receipt": [
+        "biz_member_sites",
+        "biz_member_status_appeals",
+        "biz_audit_events",
+        "security notification receipt"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-021",
+      "owner_issues": [
+        "#173",
+        "#181"
+      ],
+      "range_contract": "self profile/avatar/password",
+      "entry": "/#/enterprise/personal-profile + /#/system/security",
+      "states": [
+        "self-only profile",
+        "controlled avatar",
+        "password change",
+        "masked contacts",
+        "session revocation after password change"
+      ],
+      "tests": [
+        "web/e2e/enterprise-personal-profile-real.spec.ts",
+        "integration/enterprise_181_personal_profile_mysql_test.go::TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled",
+        "web/tests/ce12/enterprise-173-password-security.spec.ts::TestEnterprise173SelfPasswordChangeUIRevokesCurrentSession"
+      ],
+      "api": [
+        "GET /v1/tenant/me/profile",
+        "GET /v1/tenant/me/avatar-options",
+        "PATCH /v1/tenant/me/avatar",
+        "POST /auth/password/change"
+      ],
+      "persistence_or_receipt": [
+        "biz_users",
+        "biz_memberships",
+        "biz_web_sessions",
+        "personal-profile CAS/readback"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-022",
+      "owner_issues": [
+        "#173",
+        "#181"
+      ],
+      "range_contract": "self profile/avatar/password",
+      "entry": "/#/enterprise/personal-profile + /#/system/security",
+      "states": [
+        "self-only profile",
+        "controlled avatar",
+        "password change",
+        "masked contacts",
+        "session revocation after password change"
+      ],
+      "tests": [
+        "web/e2e/enterprise-personal-profile-real.spec.ts",
+        "integration/enterprise_181_personal_profile_mysql_test.go::TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled",
+        "web/tests/ce12/enterprise-173-password-security.spec.ts::TestEnterprise173SelfPasswordChangeUIRevokesCurrentSession"
+      ],
+      "api": [
+        "GET /v1/tenant/me/profile",
+        "GET /v1/tenant/me/avatar-options",
+        "PATCH /v1/tenant/me/avatar",
+        "POST /auth/password/change"
+      ],
+      "persistence_or_receipt": [
+        "biz_users",
+        "biz_memberships",
+        "biz_web_sessions",
+        "personal-profile CAS/readback"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-023",
+      "owner_issues": [
+        "#173",
+        "#181"
+      ],
+      "range_contract": "self profile/avatar/password",
+      "entry": "/#/enterprise/personal-profile + /#/system/security",
+      "states": [
+        "self-only profile",
+        "controlled avatar",
+        "password change",
+        "masked contacts",
+        "session revocation after password change"
+      ],
+      "tests": [
+        "web/e2e/enterprise-personal-profile-real.spec.ts",
+        "integration/enterprise_181_personal_profile_mysql_test.go::TestEnterprise181PersonalProfileIsSelfOnlyTenantScopedAndAvatarControlled",
+        "web/tests/ce12/enterprise-173-password-security.spec.ts::TestEnterprise173SelfPasswordChangeUIRevokesCurrentSession"
+      ],
+      "api": [
+        "GET /v1/tenant/me/profile",
+        "GET /v1/tenant/me/avatar-options",
+        "PATCH /v1/tenant/me/avatar",
+        "POST /auth/password/change"
+      ],
+      "persistence_or_receipt": [
+        "biz_users",
+        "biz_memberships",
+        "biz_web_sessions",
+        "personal-profile CAS/readback"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-024",
+      "owner_issues": [
+        "#170",
+        "#182",
+        "#183"
+      ],
+      "range_contract": "contact rotation/preferences/account exit",
+      "entry": "personal profile contact/security/preference panels",
+      "states": [
+        "contact change request/complete",
+        "OTP single consume",
+        "notification preferences",
+        "tenant-only account exit",
+        "Owner protection",
+        "tenant isolation"
+      ],
+      "tests": [
+        "integration/enterprise_182_self_security_mysql_test.go",
+        "web/tests/ce12/enterprise-183-notification-preferences.spec.ts::TestEnterprise183NotificationPreferencesLiveBrowserMySQLRecoveryAndIsolation",
+        "web/e2e/enterprise-personal-profile-real.spec.ts"
+      ],
+      "api": [
+        "POST /auth/personal/contact-change/request",
+        "POST /auth/personal/contact-change/complete",
+        "GET|POST /auth/personal/notification-preferences",
+        "POST /auth/personal/tenant-deletion/request",
+        "POST /auth/personal/tenant-deletion/complete"
+      ],
+      "persistence_or_receipt": [
+        "biz_verification_challenges",
+        "biz_notification_preferences",
+        "biz_notification_preference_receipts",
+        "biz_audit_events",
+        "biz_memberships"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-025",
+      "owner_issues": [
+        "#170",
+        "#182",
+        "#183"
+      ],
+      "range_contract": "contact rotation/preferences/account exit",
+      "entry": "personal profile contact/security/preference panels",
+      "states": [
+        "contact change request/complete",
+        "OTP single consume",
+        "notification preferences",
+        "tenant-only account exit",
+        "Owner protection",
+        "tenant isolation"
+      ],
+      "tests": [
+        "integration/enterprise_182_self_security_mysql_test.go",
+        "web/tests/ce12/enterprise-183-notification-preferences.spec.ts::TestEnterprise183NotificationPreferencesLiveBrowserMySQLRecoveryAndIsolation",
+        "web/e2e/enterprise-personal-profile-real.spec.ts"
+      ],
+      "api": [
+        "POST /auth/personal/contact-change/request",
+        "POST /auth/personal/contact-change/complete",
+        "GET|POST /auth/personal/notification-preferences",
+        "POST /auth/personal/tenant-deletion/request",
+        "POST /auth/personal/tenant-deletion/complete"
+      ],
+      "persistence_or_receipt": [
+        "biz_verification_challenges",
+        "biz_notification_preferences",
+        "biz_notification_preference_receipts",
+        "biz_audit_events",
+        "biz_memberships"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-026",
+      "owner_issues": [
+        "#170",
+        "#182",
+        "#183"
+      ],
+      "range_contract": "contact rotation/preferences/account exit",
+      "entry": "personal profile contact/security/preference panels",
+      "states": [
+        "contact change request/complete",
+        "OTP single consume",
+        "notification preferences",
+        "tenant-only account exit",
+        "Owner protection",
+        "tenant isolation"
+      ],
+      "tests": [
+        "integration/enterprise_182_self_security_mysql_test.go",
+        "web/tests/ce12/enterprise-183-notification-preferences.spec.ts::TestEnterprise183NotificationPreferencesLiveBrowserMySQLRecoveryAndIsolation",
+        "web/e2e/enterprise-personal-profile-real.spec.ts"
+      ],
+      "api": [
+        "POST /auth/personal/contact-change/request",
+        "POST /auth/personal/contact-change/complete",
+        "GET|POST /auth/personal/notification-preferences",
+        "POST /auth/personal/tenant-deletion/request",
+        "POST /auth/personal/tenant-deletion/complete"
+      ],
+      "persistence_or_receipt": [
+        "biz_verification_challenges",
+        "biz_notification_preferences",
+        "biz_notification_preference_receipts",
+        "biz_audit_events",
+        "biz_memberships"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-027",
+      "owner_issues": [
+        "#170",
+        "#182",
+        "#183"
+      ],
+      "range_contract": "contact rotation/preferences/account exit",
+      "entry": "personal profile contact/security/preference panels",
+      "states": [
+        "contact change request/complete",
+        "OTP single consume",
+        "notification preferences",
+        "tenant-only account exit",
+        "Owner protection",
+        "tenant isolation"
+      ],
+      "tests": [
+        "integration/enterprise_182_self_security_mysql_test.go",
+        "web/tests/ce12/enterprise-183-notification-preferences.spec.ts::TestEnterprise183NotificationPreferencesLiveBrowserMySQLRecoveryAndIsolation",
+        "web/e2e/enterprise-personal-profile-real.spec.ts"
+      ],
+      "api": [
+        "POST /auth/personal/contact-change/request",
+        "POST /auth/personal/contact-change/complete",
+        "GET|POST /auth/personal/notification-preferences",
+        "POST /auth/personal/tenant-deletion/request",
+        "POST /auth/personal/tenant-deletion/complete"
+      ],
+      "persistence_or_receipt": [
+        "biz_verification_challenges",
+        "biz_notification_preferences",
+        "biz_notification_preference_receipts",
+        "biz_audit_events",
+        "biz_memberships"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-028",
+      "owner_issues": [
+        "#168"
+      ],
+      "range_contract": "field encryption/masking/log hygiene",
+      "entry": "member/profile/login protected identity read/write paths",
+      "states": [
+        "encrypted at rest",
+        "masked response",
+        "lookup by protected hash",
+        "legacy backfill idempotent",
+        "OIDC email cleared"
+      ],
+      "tests": [
+        "integration/enterprise_168_sensitive_contacts_mysql_test.go::TestEnterprise168ProtectedContactsAreEncryptedMaskedAndTenantScoped",
+        "integration/enterprise_168_sensitive_contacts_mysql_test.go::TestEnterprise168LegacyBackfillIsBoundedIdempotentAndKeepsLogin",
+        "integration/enterprise_168_sensitive_contacts_mysql_test.go::TestEnterprise168VersionedMigrationAddsProtectedColumnsAndClearsOIDCEmail"
+      ],
+      "api": [
+        "member/profile/login APIs consume protected persistence; no raw secret API"
+      ],
+      "persistence_or_receipt": [
+        "biz_users",
+        "biz_memberships",
+        "biz_users_email_lookup_hash",
+        "biz_memberships_email_lookup",
+        "biz_memberships_phone_lookup",
+        "biz_web_identities"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-029",
+      "owner_issues": [
+        "#178"
+      ],
+      "range_contract": "role query/profile/default protection/delete",
+      "entry": "/#/enterprise/roles",
+      "states": [
+        "query/read",
+        "custom create/edit",
+        "system/Owner read-only",
+        "member-bound delete blocked",
+        "unbound delete receipt"
+      ],
+      "tests": [
+        "web/e2e/enterprise-roles-real.spec.ts",
+        "integration/enterprise_178_role_lifecycle_mysql_test.go::TestEnterprise178RoleMetadataQueryProtectionAndDelete"
+      ],
+      "api": [
+        "GET /v1/tenant/roles",
+        "GET /v1/tenant/roles/{role_id}",
+        "POST /v1/tenant/roles",
+        "PATCH /v1/tenant/roles/{role_id}",
+        "DELETE /v1/tenant/roles/{role_id}"
+      ],
+      "persistence_or_receipt": [
+        "biz_roles",
+        "biz_permission_grants",
+        "role CAS/version + audit"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-030",
+      "owner_issues": [
+        "#178"
+      ],
+      "range_contract": "role query/profile/default protection/delete",
+      "entry": "/#/enterprise/roles",
+      "states": [
+        "query/read",
+        "custom create/edit",
+        "system/Owner read-only",
+        "member-bound delete blocked",
+        "unbound delete receipt"
+      ],
+      "tests": [
+        "web/e2e/enterprise-roles-real.spec.ts",
+        "integration/enterprise_178_role_lifecycle_mysql_test.go::TestEnterprise178RoleMetadataQueryProtectionAndDelete"
+      ],
+      "api": [
+        "GET /v1/tenant/roles",
+        "GET /v1/tenant/roles/{role_id}",
+        "POST /v1/tenant/roles",
+        "PATCH /v1/tenant/roles/{role_id}",
+        "DELETE /v1/tenant/roles/{role_id}"
+      ],
+      "persistence_or_receipt": [
+        "biz_roles",
+        "biz_permission_grants",
+        "role CAS/version + audit"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-031",
+      "owner_issues": [
+        "#178"
+      ],
+      "range_contract": "role query/profile/default protection/delete",
+      "entry": "/#/enterprise/roles",
+      "states": [
+        "query/read",
+        "custom create/edit",
+        "system/Owner read-only",
+        "member-bound delete blocked",
+        "unbound delete receipt"
+      ],
+      "tests": [
+        "web/e2e/enterprise-roles-real.spec.ts",
+        "integration/enterprise_178_role_lifecycle_mysql_test.go::TestEnterprise178RoleMetadataQueryProtectionAndDelete"
+      ],
+      "api": [
+        "GET /v1/tenant/roles",
+        "GET /v1/tenant/roles/{role_id}",
+        "POST /v1/tenant/roles",
+        "PATCH /v1/tenant/roles/{role_id}",
+        "DELETE /v1/tenant/roles/{role_id}"
+      ],
+      "persistence_or_receipt": [
+        "biz_roles",
+        "biz_permission_grants",
+        "role CAS/version + audit"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-032",
+      "owner_issues": [
+        "#178"
+      ],
+      "range_contract": "role query/profile/default protection/delete",
+      "entry": "/#/enterprise/roles",
+      "states": [
+        "query/read",
+        "custom create/edit",
+        "system/Owner read-only",
+        "member-bound delete blocked",
+        "unbound delete receipt"
+      ],
+      "tests": [
+        "web/e2e/enterprise-roles-real.spec.ts",
+        "integration/enterprise_178_role_lifecycle_mysql_test.go::TestEnterprise178RoleMetadataQueryProtectionAndDelete"
+      ],
+      "api": [
+        "GET /v1/tenant/roles",
+        "GET /v1/tenant/roles/{role_id}",
+        "POST /v1/tenant/roles",
+        "PATCH /v1/tenant/roles/{role_id}",
+        "DELETE /v1/tenant/roles/{role_id}"
+      ],
+      "persistence_or_receipt": [
+        "biz_roles",
+        "biz_permission_grants",
+        "role CAS/version + audit"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-033",
+      "owner_issues": [
+        "#174",
+        "#179"
+      ],
+      "range_contract": "action catalog + role menu/button/member grants",
+      "entry": "role permission editor + trusted action catalog",
+      "states": [
+        "server catalog",
+        "mixed/full/none tree",
+        "grant diff",
+        "CAS",
+        "immediate revocation",
+        "restoration"
+      ],
+      "tests": [
+        "integration/enterprise_179_role_grant_tree_mysql_test.go::TestEnterprise179RoleGrantTreeRejectsInjectionAndRevokesNextRequest",
+        "integration/role_revocation_latency_mysql_test.go::TestEnterprise179RoleRevocationLatencyP95",
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout",
+        "web/e2e/enterprise-roles-real.spec.ts"
+      ],
+      "api": [
+        "GET /auth/action-catalog",
+        "PUT /v1/tenant/roles/{role_id}/permissions",
+        "GET /v1/tenant/members"
+      ],
+      "persistence_or_receipt": [
+        "biz_permission_grants",
+        "biz_member_roles",
+        "biz_audit_events",
+        "next-request 403 evidence"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-034",
+      "owner_issues": [
+        "#174",
+        "#179"
+      ],
+      "range_contract": "action catalog + role menu/button/member grants",
+      "entry": "role permission editor + trusted action catalog",
+      "states": [
+        "server catalog",
+        "mixed/full/none tree",
+        "grant diff",
+        "CAS",
+        "immediate revocation",
+        "restoration"
+      ],
+      "tests": [
+        "integration/enterprise_179_role_grant_tree_mysql_test.go::TestEnterprise179RoleGrantTreeRejectsInjectionAndRevokesNextRequest",
+        "integration/role_revocation_latency_mysql_test.go::TestEnterprise179RoleRevocationLatencyP95",
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout",
+        "web/e2e/enterprise-roles-real.spec.ts"
+      ],
+      "api": [
+        "GET /auth/action-catalog",
+        "PUT /v1/tenant/roles/{role_id}/permissions",
+        "GET /v1/tenant/members"
+      ],
+      "persistence_or_receipt": [
+        "biz_permission_grants",
+        "biz_member_roles",
+        "biz_audit_events",
+        "next-request 403 evidence"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-035",
+      "owner_issues": [
+        "#174",
+        "#179"
+      ],
+      "range_contract": "action catalog + role menu/button/member grants",
+      "entry": "role permission editor + trusted action catalog",
+      "states": [
+        "server catalog",
+        "mixed/full/none tree",
+        "grant diff",
+        "CAS",
+        "immediate revocation",
+        "restoration"
+      ],
+      "tests": [
+        "integration/enterprise_179_role_grant_tree_mysql_test.go::TestEnterprise179RoleGrantTreeRejectsInjectionAndRevokesNextRequest",
+        "integration/role_revocation_latency_mysql_test.go::TestEnterprise179RoleRevocationLatencyP95",
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout",
+        "web/e2e/enterprise-roles-real.spec.ts"
+      ],
+      "api": [
+        "GET /auth/action-catalog",
+        "PUT /v1/tenant/roles/{role_id}/permissions",
+        "GET /v1/tenant/members"
+      ],
+      "persistence_or_receipt": [
+        "biz_permission_grants",
+        "biz_member_roles",
+        "biz_audit_events",
+        "next-request 403 evidence"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-036",
+      "owner_issues": [
+        "#179",
+        "#180"
+      ],
+      "range_contract": "effective Data Policy ref + current authorization",
+      "entry": "role data-policy dialog + member explicit business scope",
+      "states": [
+        "policy list/read",
+        "bind/revoke/CAS",
+        "effective reference",
+        "site ceiling",
+        "permission contraction blocks next request"
+      ],
+      "tests": [
+        "web/e2e/enterprise-data-policy-ui.spec.ts",
+        "integration/enterprise_180_data_policy_mysql_test.go",
+        "integration/enterprise_180_member_scope_mysql_test.go",
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout"
+      ],
+      "api": [
+        "GET /v1/tenant/data-policies",
+        "GET /v1/tenant/data-policies/{policy_id}",
+        "PUT /v1/tenant/roles/{role_id}/data-policy",
+        "GET|PUT /v1/tenant/members/{user_id}/business-scope"
+      ],
+      "persistence_or_receipt": [
+        "data-policy versions/effective reference",
+        "biz_member_sites",
+        "biz_permission_grants",
+        "authorization readback"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-037",
+      "owner_issues": [
+        "#179",
+        "#180"
+      ],
+      "range_contract": "effective Data Policy ref + current authorization",
+      "entry": "role data-policy dialog + member explicit business scope",
+      "states": [
+        "policy list/read",
+        "bind/revoke/CAS",
+        "effective reference",
+        "site ceiling",
+        "permission contraction blocks next request"
+      ],
+      "tests": [
+        "web/e2e/enterprise-data-policy-ui.spec.ts",
+        "integration/enterprise_180_data_policy_mysql_test.go",
+        "integration/enterprise_180_member_scope_mysql_test.go",
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout"
+      ],
+      "api": [
+        "GET /v1/tenant/data-policies",
+        "GET /v1/tenant/data-policies/{policy_id}",
+        "PUT /v1/tenant/roles/{role_id}/data-policy",
+        "GET|PUT /v1/tenant/members/{user_id}/business-scope"
+      ],
+      "persistence_or_receipt": [
+        "data-policy versions/effective reference",
+        "biz_member_sites",
+        "biz_permission_grants",
+        "authorization readback"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-038",
+      "owner_issues": [
+        "#185",
+        "#186"
+      ],
+      "range_contract": "in-app unread + mark-all-read",
+      "entry": "global notification bell/inbox",
+      "states": [
+        "unread count/list",
+        "tenant/user isolation",
+        "concurrent-new-message preservation",
+        "mark all read",
+        "empty state"
+      ],
+      "tests": [
+        "integration/enterprise_186_inbox_mysql_test.go::TestEnterprise186InAppUnreadInboxMySQLAndHTTP",
+        "web/e2e/enterprise-notification-inbox-real.spec.ts",
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189ControlledEventRoutesToUnreadAndMarkAllRead"
+      ],
+      "api": [
+        "GET /auth/personal/in-app-notifications",
+        "POST /auth/personal/in-app-notifications/read-all"
+      ],
+      "persistence_or_receipt": [
+        "biz_notification_in_app",
+        "biz_notification_inbox_mark_all",
+        "biz_notification_inbox_mark_all_items"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-039",
+      "owner_issues": [
+        "#185",
+        "#186"
+      ],
+      "range_contract": "in-app unread + mark-all-read",
+      "entry": "global notification bell/inbox",
+      "states": [
+        "unread count/list",
+        "tenant/user isolation",
+        "concurrent-new-message preservation",
+        "mark all read",
+        "empty state"
+      ],
+      "tests": [
+        "integration/enterprise_186_inbox_mysql_test.go::TestEnterprise186InAppUnreadInboxMySQLAndHTTP",
+        "web/e2e/enterprise-notification-inbox-real.spec.ts",
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189ControlledEventRoutesToUnreadAndMarkAllRead"
+      ],
+      "api": [
+        "GET /auth/personal/in-app-notifications",
+        "POST /auth/personal/in-app-notifications/read-all"
+      ],
+      "persistence_or_receipt": [
+        "biz_notification_in_app",
+        "biz_notification_inbox_mark_all",
+        "biz_notification_inbox_mark_all_items"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-040",
+      "owner_issues": [
+        "#184"
+      ],
+      "range_contract": "message type/channel/configuration",
+      "entry": "/#/system/notifications",
+      "states": [
+        "type/channel/group/recipient directories",
+        "create",
+        "filter",
+        "update/CAS/readback",
+        "delete/confirmation",
+        "read-only 403",
+        "four viewports/focus"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports",
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184ReadOnlyNavigationAndIndependentServerWriteDenial",
+        "integration/enterprise_184_configuration_storage_mysql_test.go::TestEnterprise184ConfigurationStorageAndAccessDirectory"
+      ],
+      "api": [
+        "GET /v1/tenant/notification/types",
+        "GET /v1/tenant/notification/channels",
+        "GET /v1/tenant/notification/groups",
+        "GET /v1/tenant/notification/recipients",
+        "GET|POST /v1/tenant/notification/configurations",
+        "GET|PATCH /v1/tenant/notification/configurations/{id}",
+        "POST /v1/tenant/notification/configurations/{id}/delete"
+      ],
+      "persistence_or_receipt": [
+        "biz_notification_configurations",
+        "biz_notification_configuration_channels",
+        "biz_notification_configuration_recipients",
+        "biz_notification_configuration_receipts",
+        "biz_audit_events"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-041",
+      "owner_issues": [
+        "#184"
+      ],
+      "range_contract": "message type/channel/configuration",
+      "entry": "/#/system/notifications",
+      "states": [
+        "type/channel/group/recipient directories",
+        "create",
+        "filter",
+        "update/CAS/readback",
+        "delete/confirmation",
+        "read-only 403",
+        "four viewports/focus"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports",
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184ReadOnlyNavigationAndIndependentServerWriteDenial",
+        "integration/enterprise_184_configuration_storage_mysql_test.go::TestEnterprise184ConfigurationStorageAndAccessDirectory"
+      ],
+      "api": [
+        "GET /v1/tenant/notification/types",
+        "GET /v1/tenant/notification/channels",
+        "GET /v1/tenant/notification/groups",
+        "GET /v1/tenant/notification/recipients",
+        "GET|POST /v1/tenant/notification/configurations",
+        "GET|PATCH /v1/tenant/notification/configurations/{id}",
+        "POST /v1/tenant/notification/configurations/{id}/delete"
+      ],
+      "persistence_or_receipt": [
+        "biz_notification_configurations",
+        "biz_notification_configuration_channels",
+        "biz_notification_configuration_recipients",
+        "biz_notification_configuration_receipts",
+        "biz_audit_events"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-042",
+      "owner_issues": [
+        "#184"
+      ],
+      "range_contract": "message type/channel/configuration",
+      "entry": "/#/system/notifications",
+      "states": [
+        "type/channel/group/recipient directories",
+        "create",
+        "filter",
+        "update/CAS/readback",
+        "delete/confirmation",
+        "read-only 403",
+        "four viewports/focus"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports",
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184ReadOnlyNavigationAndIndependentServerWriteDenial",
+        "integration/enterprise_184_configuration_storage_mysql_test.go::TestEnterprise184ConfigurationStorageAndAccessDirectory"
+      ],
+      "api": [
+        "GET /v1/tenant/notification/types",
+        "GET /v1/tenant/notification/channels",
+        "GET /v1/tenant/notification/groups",
+        "GET /v1/tenant/notification/recipients",
+        "GET|POST /v1/tenant/notification/configurations",
+        "GET|PATCH /v1/tenant/notification/configurations/{id}",
+        "POST /v1/tenant/notification/configurations/{id}/delete"
+      ],
+      "persistence_or_receipt": [
+        "biz_notification_configurations",
+        "biz_notification_configuration_channels",
+        "biz_notification_configuration_recipients",
+        "biz_notification_configuration_receipts",
+        "biz_audit_events"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-043",
+      "owner_issues": [
+        "#184"
+      ],
+      "range_contract": "message type/channel/configuration",
+      "entry": "/#/system/notifications",
+      "states": [
+        "type/channel/group/recipient directories",
+        "create",
+        "filter",
+        "update/CAS/readback",
+        "delete/confirmation",
+        "read-only 403",
+        "four viewports/focus"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports",
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184ReadOnlyNavigationAndIndependentServerWriteDenial",
+        "integration/enterprise_184_configuration_storage_mysql_test.go::TestEnterprise184ConfigurationStorageAndAccessDirectory"
+      ],
+      "api": [
+        "GET /v1/tenant/notification/types",
+        "GET /v1/tenant/notification/channels",
+        "GET /v1/tenant/notification/groups",
+        "GET /v1/tenant/notification/recipients",
+        "GET|POST /v1/tenant/notification/configurations",
+        "GET|PATCH /v1/tenant/notification/configurations/{id}",
+        "POST /v1/tenant/notification/configurations/{id}/delete"
+      ],
+      "persistence_or_receipt": [
+        "biz_notification_configurations",
+        "biz_notification_configuration_channels",
+        "biz_notification_configuration_recipients",
+        "biz_notification_configuration_receipts",
+        "biz_audit_events"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-044",
+      "owner_issues": [
+        "#184"
+      ],
+      "range_contract": "message type/channel/configuration",
+      "entry": "/#/system/notifications",
+      "states": [
+        "type/channel/group/recipient directories",
+        "create",
+        "filter",
+        "update/CAS/readback",
+        "delete/confirmation",
+        "read-only 403",
+        "four viewports/focus"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports",
+        "web/tests/ce12/enterprise-184-notification-configuration.spec.ts::TestEnterprise184ReadOnlyNavigationAndIndependentServerWriteDenial",
+        "integration/enterprise_184_configuration_storage_mysql_test.go::TestEnterprise184ConfigurationStorageAndAccessDirectory"
+      ],
+      "api": [
+        "GET /v1/tenant/notification/types",
+        "GET /v1/tenant/notification/channels",
+        "GET /v1/tenant/notification/groups",
+        "GET /v1/tenant/notification/recipients",
+        "GET|POST /v1/tenant/notification/configurations",
+        "GET|PATCH /v1/tenant/notification/configurations/{id}",
+        "POST /v1/tenant/notification/configurations/{id}/delete"
+      ],
+      "persistence_or_receipt": [
+        "biz_notification_configurations",
+        "biz_notification_configuration_channels",
+        "biz_notification_configuration_recipients",
+        "biz_notification_configuration_receipts",
+        "biz_audit_events"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "id": "US-045",
+      "owner_issues": [
+        "#183",
+        "#184",
+        "#185"
+      ],
+      "range_contract": "event → configuration → preference → delivery",
+      "entry": "controlled BusinessEvent fixture → real Notification Runtime → inbox",
+      "states": [
+        "transactional event append",
+        "configuration match",
+        "preference evaluation",
+        "route claim",
+        "in-app creation",
+        "unread UI",
+        "mark-all read",
+        "routing outcome receipt"
+      ],
+      "tests": [
+        "web/tests/ce12/enterprise-189-full-flow.spec.ts::TestEnterprise189ControlledEventRoutesToUnreadAndMarkAllRead",
+        "integration/enterprise_189_browser_event_fixture_test.go::TestEnterprise189AppendControlledBusinessEvent",
+        "integration/enterprise_185_notification_runtime_mysql_test.go",
+        "integration/enterprise_185_in_app_latency_mysql_test.go"
+      ],
+      "api": [
+        "GET /v1/tenant/notification/configurations",
+        "GET /auth/personal/in-app-notifications",
+        "POST /auth/personal/in-app-notifications/read-all"
+      ],
+      "persistence_or_receipt": [
+        "biz_notification_events",
+        "biz_notification_route_outcomes",
+        "biz_notification_in_app",
+        "enterprise189-full-runtime-evidence.json"
+      ],
+      "status": "COVERED_CONTROLLED_CHANNEL",
+      "note": "Source is explicitly CONTROLLED_FIXTURE. Downstream IdP/BFF/Biz API/MySQL/Notification Runtime/inbox are real. External SMS/email provider qualification remains #185 BLOCKED_BY_EXTERNAL_QUALIFICATION_INPUT and is not claimed by #189."
+    }
+  ]
+}
