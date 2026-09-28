@@ -105,41 +105,46 @@ jobs:
           bad="$(gofmt -l             biz/internal/access/infrastructure/persistence/first_party_idp.go             biz/internal/access/infrastructure/persistence/first_party_idp_security.go             biz/internal/access/infrastructure/persistence/login_identifier.go             biz/internal/access/infrastructure/persistence/login_identifier_test.go             biz/internal/access/infrastructure/persistence/web_session.go             biz/internal/bizruntime/config.go             biz/internal/bizruntime/first_party_idp.go             biz/internal/bizruntime/first_party_idp_hardening_test.go             biz/internal/bizruntime/first_party_idp_server.go             biz/internal/bizruntime/first_party_native_login.go             biz/internal/bizruntime/oidc_static.go             biz/internal/bizruntime/web_auth.go             biz/integration/ce12_browser_seed_test.go             biz/cmd/biz-idp/main.go             biz/cmd/biz-idp/notification_sender.go             biz/cmd/biz-idp/notification_sender_qualification.go             biz/cmd/biz-idp-credential/main.go)"
           test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
 
-      - name: Build CE12 browser runtime binaries
+      - name: Prepare CE12 runtime and browser dependencies
         shell: bash
         run: |
           set -euo pipefail
           started="$(date +%s)"
-          # The qualification IdP and Biz API binaries are independent build
-          # roots. Build them concurrently to reduce CE12 wall-clock time
-          # without skipping work, changing tags, or weakening the gate.
-          go -C biz build -tags=qualification -o "$RUNNER_TEMP/ce12-idp-qualification" ./cmd/biz-idp >"$RUNNER_TEMP/ce12-build-idp.log" 2>&1 &
-          idp_pid=$!
-          go -C biz build -o "$RUNNER_TEMP/ce12-biz" ./cmd/biz >"$RUNNER_TEMP/ce12-build-biz.log" 2>&1 &
-          biz_pid=$!
 
-          idp_status=0
-          biz_status=0
-          wait "$idp_pid" || idp_status=$?
-          wait "$biz_pid" || biz_status=$?
-          if [ "$idp_status" -ne 0 ] || [ "$biz_status" -ne 0 ]; then
-            echo "CE12 runtime build failed: idp=$idp_status biz=$biz_status" >&2
+          (
+            set -euo pipefail
+            build_started="$(date +%s)"
+            go -C biz build -tags=qualification -o "$RUNNER_TEMP/ce12-idp-qualification" ./cmd/biz-idp >"$RUNNER_TEMP/ce12-build-idp.log" 2>&1
+            go -C biz build -o "$RUNNER_TEMP/ce12-biz" ./cmd/biz >"$RUNNER_TEMP/ce12-build-biz.log" 2>&1
+            echo "CE12_RUNTIME_BUILD_SECONDS=$(( $(date +%s) - build_started ))" >"$RUNNER_TEMP/ce12-runtime-build-timing.log"
+          ) &
+          build_pid=$!
+
+          (
+            set -euo pipefail
+            deps_started="$(date +%s)"
+            cd biz/web
+            npm ci
+            npx playwright install --with-deps --only-shell chromium
+            sudo apt-get install -y fonts-noto-cjk
+            echo "CE12_BROWSER_DEPS_SECONDS=$(( $(date +%s) - deps_started ))" >"$RUNNER_TEMP/ce12-browser-deps-timing.log"
+          ) &
+          deps_pid=$!
+
+          build_status=0
+          deps_status=0
+          wait "$build_pid" || build_status=$?
+          wait "$deps_pid" || deps_status=$?
+
+          cat "$RUNNER_TEMP/ce12-runtime-build-timing.log" 2>/dev/null || true
+          cat "$RUNNER_TEMP/ce12-browser-deps-timing.log" 2>/dev/null || true
+          if [ "$build_status" -ne 0 ] || [ "$deps_status" -ne 0 ]; then
+            echo "CE12 preparation failed: build=$build_status browser_deps=$deps_status" >&2
             cat "$RUNNER_TEMP/ce12-build-idp.log" >&2 || true
             cat "$RUNNER_TEMP/ce12-build-biz.log" >&2 || true
             exit 1
           fi
-          echo "CE12_RUNTIME_BUILD_SECONDS=$(( $(date +%s) - started ))"
-
-      - name: Install browser E2E dependencies
-        working-directory: biz/web
-        shell: bash
-        run: |
-          set -euo pipefail
-          started="$(date +%s)"
-          npm ci
-          npx playwright install --with-deps --only-shell chromium
-          sudo apt-get install -y fonts-noto-cjk
-          echo "CE12_BROWSER_DEPS_SECONDS=$(( $(date +%s) - started ))"
+          echo "CE12_PARALLEL_PREP_SECONDS=$(( $(date +%s) - started ))"
 
       - name: Wait for CE12 MySQL
         shell: bash
