@@ -154,7 +154,9 @@ jobs:
           test -d node_modules
           test -x node_modules/.bin/playwright
           node -e "require('@playwright/test')"
-          npx playwright install --dry-run chromium >/dev/null
+          browser_root="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"
+          test -d "$browser_root"
+          find "$browser_root" -maxdepth 1 -type d -name 'chromium_headless_shell-*' -print -quit | grep -q .
           fc-list :lang=zh family | grep -qi "Noto Sans CJK\|Noto Serif CJK"
 
       - name: Wait for CE12 MySQL
