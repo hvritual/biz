@@ -27,6 +27,9 @@ interface Fixture {
   password: string
   security_viewer_email: string
   security_viewer_password: string
+  privacy_email: string
+  privacy_password: string
+  iam_denied_tenant: string
   allowed_tenant: string
   notification: NotificationFixture
 }
@@ -341,6 +344,44 @@ test('TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout', async ({ br
     }
     await ownerContext.close()
     await viewerContext.close()
+  }
+})
+
+
+test('TestEnterprise189RealHTTP429AppealRateLimit', async ({ browser }) => {
+  test.setTimeout(60_000)
+  const data = fixture()
+  const context = await browser.newContext({ locale: 'zh-CN', timezoneId: 'Asia/Shanghai' })
+  const page = await context.newPage()
+
+  try {
+    await login(page, data, data.privacy_email, data.privacy_password)
+    const session = await readSession(context, data)
+    expect(session.authenticated).toBe(true)
+
+    const eligible = await context.request.get(data.base_url + '/auth/member-appeals')
+    expect(eligible.status(), await eligible.text()).toBe(200)
+    const eligibleBody = await eligible.json() as { eligible?: Array<{ tenant_id?: string; status?: string }> }
+    expect(eligibleBody.eligible?.some((item) => item.tenant_id === data.iam_denied_tenant)).toBe(true)
+
+    const first = await context.request.post(data.base_url + '/auth/member-appeals', {
+      headers: { 'X-CSRF-Token': session.csrf_token ?? '' },
+      data: { tenant_id: data.iam_denied_tenant, reason: '#189 real HTTP rate-limit proof' },
+    })
+    expect(first.status(), await first.text()).toBe(202)
+
+    const secondSession = await readSession(context, data)
+    const second = await context.request.post(data.base_url + '/auth/member-appeals', {
+      headers: { 'X-CSRF-Token': secondSession.csrf_token ?? '' },
+      data: { tenant_id: data.iam_denied_tenant, reason: '#189 repeated appeal must rate-limit' },
+    })
+    expect(second.status(), await second.text()).toBe(429)
+    expect(Number(second.headers()['retry-after'] ?? '0')).toBeGreaterThan(0)
+    const body = await second.json() as { error?: string; retry_after_seconds?: number }
+    expect(body.error).toBe('APPEAL_RATE_LIMITED')
+    expect(body.retry_after_seconds ?? 0).toBeGreaterThan(0)
+  } finally {
+    await context.close()
   }
 })
 
