@@ -155,7 +155,17 @@ func TestCE12BrowserSeed(t *testing.T) {
 	entitlementDenied := ce12CreateActiveTenant(t, tenants, platformToken, "CE12 Entitlement Denied", "ce12-entitlement-owner", "ce12.entitlement.owner@example.invalid")
 
 	browserReadPermissions := append([]authz.PermissionKey{}, devicepolicy.Permissions()...)
-	browserReadPermissions = append(browserReadPermissions, "tenant.entitlement.read", "commercial.catalog.read", "tenant.branding.read")
+	browserReadPermissions = append(browserReadPermissions,
+		"tenant.entitlement.read",
+		"commercial.catalog.read",
+		"tenant.branding.read",
+		// #189 uses the primary CE12 identity as the real full-flow administrator.
+		// Role UI admission is the intersection of current IAM and Commercial facts,
+		// so this fixture needs the actual role permissions as well as the
+		// tenant.role.permission capability granted below.
+		"tenant.role.read",
+		"tenant.role.manage",
+	)
 	if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
 		TenantID: allowed, TenantName: "CE12 Allowed", UserID: userID, Email: email, Token: "ce12-setup-allowed",
 	}, browserReadPermissions); err != nil {
@@ -209,6 +219,28 @@ func TestCE12BrowserSeed(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := store.SetUserPassword(ctx, privacyUserID, privacyPassword); err != nil {
+		t.Fatal(err)
+	}
+
+	// #189 reuses the privacy identity for a real member-appeal 429 proof.
+	// Keep the existing allowed membership active, add one suspended membership
+	// plus another active membership, and avoid changing the allowed tenant UI.
+	for _, tenant := range []struct {
+		id   string
+		name string
+	}{
+		{iamDenied, "CE12 IAM Denied"},
+		{entitlementDenied, "CE12 Entitlement Denied"},
+	} {
+		if err := store.Bootstrap(ctx, accesspersistence.Bootstrap{
+			TenantID: tenant.id, TenantName: tenant.name, UserID: privacyUserID, Email: privacyEmail, Token: "ce12-appeal-" + tenant.id,
+		}, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.Table("biz_memberships").
+		Where("tenant_id = ? AND user_id = ?", iamDenied, privacyUserID).
+		Update("status", "suspended").Error; err != nil {
 		t.Fatal(err)
 	}
 	for _, account := range []struct {
@@ -337,6 +369,32 @@ func TestCE12BrowserSeed(t *testing.T) {
 		Effect:          commercialv1.EntitlementEffect_ENTITLEMENT_EFFECT_GRANT,
 		EffectiveAt:     time.Now().UTC().Add(-time.Minute).Format(time.RFC3339),
 		Reason:          "CE12 #174 proves member read action requires current IAM and Commercial authorization",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// #189 extends the same real authorization intersection to the role-management
+	// surface. The primary CE12 full-flow identity receives role IAM permissions
+	// above, while this override supplies the matching Commercial capability.
+	// Both facts are required; neither side is treated as a bypass.
+	var roleCapabilityVersion uint64
+	if err := db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", allowed).Scan(&roleCapabilityVersion).Error; err != nil {
+		t.Fatal(err)
+	}
+	if roleCapabilityVersion == 0 {
+		t.Fatal("authorization allowed tenant has no source version for role capability")
+	}
+	_, err = entitlements.CreateEntitlementOverride(ce04Context(platformToken, "ce12-access-role-permission"), &commercialv1.CreateEntitlementOverrideRequest{
+		RequestId:       "ce12-access-role-permission",
+		TenantId:        allowed,
+		ExpectedVersion: roleCapabilityVersion,
+		ModuleCode:      "access-management",
+		Target:          commercialv1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY,
+		Key:             "tenant.role.permission",
+		Effect:          commercialv1.EntitlementEffect_ENTITLEMENT_EFFECT_GRANT,
+		EffectiveAt:     time.Now().UTC().Add(-time.Minute).Format(time.RFC3339),
+		Reason:          "CE12 #189 proves role management through the real IAM and Commercial intersection",
 	})
 	if err != nil {
 		t.Fatal(err)

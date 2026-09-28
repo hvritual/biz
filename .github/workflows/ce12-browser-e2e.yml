@@ -110,20 +110,54 @@ jobs:
         run: |
           set -euo pipefail
           started="$(date +%s)"
-          go -C biz build -tags=qualification -o "$RUNNER_TEMP/ce12-idp-qualification" ./cmd/biz-idp >"$RUNNER_TEMP/ce12-build-idp.log" 2>&1
-          go -C biz build -o "$RUNNER_TEMP/ce12-biz" ./cmd/biz >"$RUNNER_TEMP/ce12-build-biz.log" 2>&1
-          echo "CE12_RUNTIME_BUILD_SECONDS=$(( $(date +%s) - started ))"
+
+          (
+            set -euo pipefail
+            build_started="$(date +%s)"
+            go -C biz build -tags=qualification -o "$RUNNER_TEMP/ce12-idp-qualification" ./cmd/biz-idp >"$RUNNER_TEMP/ce12-build-idp.log" 2>&1
+            go -C biz build -o "$RUNNER_TEMP/ce12-biz" ./cmd/biz >"$RUNNER_TEMP/ce12-build-biz.log" 2>&1
+            echo "CE12_RUNTIME_BUILD_SECONDS=$(( $(date +%s) - build_started ))" >"$RUNNER_TEMP/ce12-runtime-build-timing.log"
+          ) &
+          build_pid=$!
+
+          (
+            set -euo pipefail
+            deps_started="$(date +%s)"
+            cd biz/web
+            npm ci
+            npx playwright install --with-deps --only-shell chromium
+            sudo apt-get install -y fonts-noto-cjk
+            echo "CE12_BROWSER_DEPS_SECONDS=$(( $(date +%s) - deps_started ))" >"$RUNNER_TEMP/ce12-browser-deps-timing.log"
+          ) &
+          deps_pid=$!
+
+          build_status=0
+          deps_status=0
+          wait "$build_pid" || build_status=$?
+          wait "$deps_pid" || deps_status=$?
+
+          cat "$RUNNER_TEMP/ce12-runtime-build-timing.log" 2>/dev/null || true
+          cat "$RUNNER_TEMP/ce12-browser-deps-timing.log" 2>/dev/null || true
+          if [ "$build_status" -ne 0 ] || [ "$deps_status" -ne 0 ]; then
+            echo "CE12 preparation failed: build=$build_status browser_deps=$deps_status" >&2
+            cat "$RUNNER_TEMP/ce12-build-idp.log" >&2 || true
+            cat "$RUNNER_TEMP/ce12-build-biz.log" >&2 || true
+            exit 1
+          fi
+          echo "CE12_PARALLEL_PREP_SECONDS=$(( $(date +%s) - started ))"
 
       - name: Install browser E2E dependencies
         working-directory: biz/web
         shell: bash
         run: |
           set -euo pipefail
-          started="$(date +%s)"
-          npm ci
-          npx playwright install --with-deps --only-shell chromium
-          sudo apt-get install -y fonts-noto-cjk
-          echo "CE12_BROWSER_DEPS_SECONDS=$(( $(date +%s) - started ))"
+          test -d node_modules
+          test -x node_modules/.bin/playwright
+          node -e "require('@playwright/test')"
+          browser_root="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"
+          test -d "$browser_root"
+          find "$browser_root" -maxdepth 1 -type d -name 'chromium_headless_shell-*' -print -quit | grep -q .
+          fc-list :lang=zh family | grep -qi "Noto Sans CJK\|Noto Serif CJK"
 
       - name: Wait for CE12 MySQL
         shell: bash
@@ -260,29 +294,120 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx playwright test --config playwright.ce12.config.ts
+
+          # These lanes use disjoint mutable fixtures. Keep #189 last because it
+          # intentionally mutates the Security Viewer role and Notification tenant.
+          mapfile -t core_specs < <(
+            find tests/ce12 -maxdepth 1 -type f -name '*.spec.ts' \
+              ! -name 'enterprise-169-consent.spec.ts' \
+              ! -name 'enterprise-174-authorization.spec.ts' \
+              ! -name 'enterprise-175-authorization-ui.spec.ts' \
+              ! -name 'enterprise-184-notification-configuration.spec.ts' \
+              ! -name 'enterprise-189-full-flow.spec.ts' \
+              | sort
+          )
+          test "${#core_specs[@]}" -gt 0
+          aux_specs=(
+            tests/ce12/enterprise-169-consent.spec.ts
+            tests/ce12/enterprise-174-authorization.spec.ts
+            tests/ce12/enterprise-175-authorization-ui.spec.ts
+            tests/ce12/enterprise-184-notification-configuration.spec.ts
+          )
+
+          CE12_PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/ce12-core-results.json \
+            npx playwright test --config playwright.ce12.config.ts \
+              --output=test-results/ce12-core-output "${core_specs[@]}" &
+          core_pid=$!
+
+          CE12_PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/ce12-aux-results.json \
+            npx playwright test --config playwright.ce12.config.ts \
+              --output=test-results/ce12-aux-output "${aux_specs[@]}" &
+          aux_pid=$!
+
+          core_status=0
+          aux_status=0
+          wait "$core_pid" || core_status=$?
+          wait "$aux_pid" || aux_status=$?
+          if [ "$core_status" -ne 0 ] || [ "$aux_status" -ne 0 ]; then
+            echo "CE12 parallel lanes failed: core=$core_status aux=$aux_status" >&2
+            exit 1
+          fi
+
+          CE12_PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/ce12-189-authorization-results.json \
+            npx playwright test --config playwright.ce12.config.ts \
+              --output=test-results/ce12-189-authorization-output \
+              tests/ce12/enterprise-189-full-flow.spec.ts \
+              --grep 'TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout' &
+          enterprise189_auth_pid=$!
+
+          CE12_PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/ce12-189-notification-results.json \
+            npx playwright test --config playwright.ce12.config.ts \
+              --output=test-results/ce12-189-notification-output \
+              tests/ce12/enterprise-189-full-flow.spec.ts \
+              --grep 'TestEnterprise189ControlledEventRoutesToUnreadAndMarkAllRead' &
+          enterprise189_notification_pid=$!
+
+          CE12_PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/ce12-189-rate-limit-results.json \
+            npx playwright test --config playwright.ce12.config.ts \
+              --output=test-results/ce12-189-rate-limit-output \
+              tests/ce12/enterprise-189-full-flow.spec.ts \
+              --grep 'TestEnterprise189RealHTTP429AppealRateLimit' &
+          enterprise189_rate_limit_pid=$!
+
+          enterprise189_auth_status=0
+          enterprise189_notification_status=0
+          enterprise189_rate_limit_status=0
+          wait "$enterprise189_auth_pid" || enterprise189_auth_status=$?
+          wait "$enterprise189_notification_pid" || enterprise189_notification_status=$?
+          wait "$enterprise189_rate_limit_pid" || enterprise189_rate_limit_status=$?
+          if [ "$enterprise189_auth_status" -ne 0 ] || [ "$enterprise189_notification_status" -ne 0 ] || [ "$enterprise189_rate_limit_status" -ne 0 ]; then
+            echo "CE12 #189 parallel lanes failed: authorization=$enterprise189_auth_status notification=$enterprise189_notification_status rate_limit=$enterprise189_rate_limit_status" >&2
+            exit 1
+          fi
+
           python3 - <<'PY'
           import json
           from pathlib import Path
-          result = json.loads(Path('test-results/ce12-results.json').read_text())
-          stats = result['stats']
-          assert stats.get('unexpected', 0) == 0, stats
-          serialized = json.dumps(result)
+
+          paths = [
+              Path('test-results/ce12-core-results.json'),
+              Path('test-results/ce12-aux-results.json'),
+              Path('test-results/ce12-189-authorization-results.json'),
+              Path('test-results/ce12-189-notification-results.json'),
+              Path('test-results/ce12-189-rate-limit-results.json'),
+          ]
+          results = [json.loads(path.read_text()) for path in paths]
+          stats = [result['stats'] for result in results]
+          assert sum(item.get('unexpected', 0) for item in stats) == 0, stats
+          assert sum(item.get('flaky', 0) for item in stats) == 0, stats
+          assert sum(item.get('skipped', 0) for item in stats) == 0, stats
+
+          serialized = json.dumps(results)
           required = [
               'TestCE12BrowserRealIdPToSessionTenantIAMEntitlement',
               'TestCE12BrowserRealTenantBrandAppearanceAndStaleReadback',
+              'TestEnterprise169BrowserPrivacyConsentGate',
               'TestEnterprise171CrossTabTenantIsolationBackNavigationAndStaleContext',
               'TestEnterprise172UsernamePhoneEmailPasswordOTPMatrix',
+              'TestEnterprise172ClientValidationAntiEnumerationAndRememberIdentifier',
               'TestEnterprise173PasswordRecoveryRevokesSessionsAndChangesCredential',
               'TestEnterprise173SelfPasswordChangeUIRevokesCurrentSession',
               'TestEnterprise173AdminRecoveryIsPermissionedScopedAndPolicyBlocked',
+              'TestEnterprise174CurrentAuthorizationAndActionCatalogAreSameSource',
               'TestEnterprise175AuthorizedNavigationButtonsAndDeepLinksFailClosed',
+              'TestEnterprise183NotificationPreferencesLiveBrowserMySQLRecoveryAndIsolation',
+              'TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports',
+              'TestEnterprise184ReadOnlyNavigationAndIndependentServerWriteDenial',
+              'TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout',
+              'TestEnterprise189ControlledEventRoutesToUnreadAndMarkAllRead',
+              'TestEnterprise189RealHTTP429AppealRateLimit',
           ]
           for title in required:
               assert title in serialized, f'CE-12 browser acceptance evidence missing: {title}'
-          assert stats.get('expected', 0) >= len(required), stats
+          assert sum(item.get('expected', 0) for item in stats) >= len(required), stats
           print('CE12_BROWSER_AUTHORITY_CHAIN=PASS')
           print('CE12_THEME_APPEARANCE_AUTHORITY=PASS')
+          print('CE12_ENTERPRISE189_FULL_FLOW=PASS')
           PY
 
       - name: Write CE12 browser performance receipt
