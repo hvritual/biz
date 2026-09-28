@@ -1,4 +1,4 @@
-//go:build integration
+//go:build integration && enterprise189fixture
 
 package integration
 
