@@ -311,12 +311,13 @@ test('TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout', async ({ br
       headers: { 'X-Biz-Session-Context': trustedContext(restoredSession) },
     })
     expect(restoredMemberList.status(), await restoredMemberList.text()).toBe(200)
-    // The denied refresh intentionally moved this tab to /authorization-state
-    // and retained the fail-closed authorization snapshot for this SPA
-    // instance. Refresh the document to rebuild authorization from the
-    // authoritative server state before returning to the protected route.
-    await viewerPage.reload()
-    await viewerPage.goto(data.ui_base_url + '/#/enterprise/members')
+    // The denied refresh intentionally moved this tab to /authorization-state.
+    // Force a new document (not a same-SPA hash transition) so the router
+    // rebuilds authorization from the restored authoritative server facts.
+    const restoredURL = new URL(data.ui_base_url + '/')
+    restoredURL.searchParams.set('enterprise189-restored', Date.now().toString())
+    restoredURL.hash = '/enterprise/members'
+    await viewerPage.goto(restoredURL.toString())
     await expect(viewerPage.locator('[data-enterprise-page="members"]')).toBeVisible()
 
     await ownerPage.goto(data.ui_base_url + '/#/enterprise/personal-profile')
