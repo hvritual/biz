@@ -110,8 +110,24 @@ jobs:
         run: |
           set -euo pipefail
           started="$(date +%s)"
-          go -C biz build -tags=qualification -o "$RUNNER_TEMP/ce12-idp-qualification" ./cmd/biz-idp >"$RUNNER_TEMP/ce12-build-idp.log" 2>&1
-          go -C biz build -o "$RUNNER_TEMP/ce12-biz" ./cmd/biz >"$RUNNER_TEMP/ce12-build-biz.log" 2>&1
+          # The qualification IdP and Biz API binaries are independent build
+          # roots. Build them concurrently to reduce CE12 wall-clock time
+          # without skipping work, changing tags, or weakening the gate.
+          go -C biz build -tags=qualification -o "$RUNNER_TEMP/ce12-idp-qualification" ./cmd/biz-idp >"$RUNNER_TEMP/ce12-build-idp.log" 2>&1 &
+          idp_pid=$!
+          go -C biz build -o "$RUNNER_TEMP/ce12-biz" ./cmd/biz >"$RUNNER_TEMP/ce12-build-biz.log" 2>&1 &
+          biz_pid=$!
+
+          idp_status=0
+          biz_status=0
+          wait "$idp_pid" || idp_status=$?
+          wait "$biz_pid" || biz_status=$?
+          if [ "$idp_status" -ne 0 ] || [ "$biz_status" -ne 0 ]; then
+            echo "CE12 runtime build failed: idp=$idp_status biz=$biz_status" >&2
+            cat "$RUNNER_TEMP/ce12-build-idp.log" >&2 || true
+            cat "$RUNNER_TEMP/ce12-build-biz.log" >&2 || true
+            exit 1
+          fi
           echo "CE12_RUNTIME_BUILD_SECONDS=$(( $(date +%s) - started ))"
 
       - name: Install browser E2E dependencies
