@@ -347,12 +347,21 @@ jobs:
               --grep 'TestEnterprise189ControlledEventRoutesToUnreadAndMarkAllRead' &
           enterprise189_notification_pid=$!
 
+          CE12_PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/ce12-189-rate-limit-results.json \
+            npx playwright test --config playwright.ce12.config.ts \
+              --output=test-results/ce12-189-rate-limit-output \
+              tests/ce12/enterprise-189-full-flow.spec.ts \
+              --grep 'TestEnterprise189RealHTTP429AppealRateLimit' &
+          enterprise189_rate_limit_pid=$!
+
           enterprise189_auth_status=0
           enterprise189_notification_status=0
+          enterprise189_rate_limit_status=0
           wait "$enterprise189_auth_pid" || enterprise189_auth_status=$?
           wait "$enterprise189_notification_pid" || enterprise189_notification_status=$?
-          if [ "$enterprise189_auth_status" -ne 0 ] || [ "$enterprise189_notification_status" -ne 0 ]; then
-            echo "CE12 #189 parallel lanes failed: authorization=$enterprise189_auth_status notification=$enterprise189_notification_status" >&2
+          wait "$enterprise189_rate_limit_pid" || enterprise189_rate_limit_status=$?
+          if [ "$enterprise189_auth_status" -ne 0 ] || [ "$enterprise189_notification_status" -ne 0 ] || [ "$enterprise189_rate_limit_status" -ne 0 ]; then
+            echo "CE12 #189 parallel lanes failed: authorization=$enterprise189_auth_status notification=$enterprise189_notification_status rate_limit=$enterprise189_rate_limit_status" >&2
             exit 1
           fi
 
@@ -365,6 +374,7 @@ jobs:
               Path('test-results/ce12-aux-results.json'),
               Path('test-results/ce12-189-authorization-results.json'),
               Path('test-results/ce12-189-notification-results.json'),
+              Path('test-results/ce12-189-rate-limit-results.json'),
           ]
           results = [json.loads(path.read_text()) for path in paths]
           stats = [result['stats'] for result in results]
@@ -390,6 +400,7 @@ jobs:
               'TestEnterprise184ReadOnlyNavigationAndIndependentServerWriteDenial',
               'TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout',
               'TestEnterprise189ControlledEventRoutesToUnreadAndMarkAllRead',
+              'TestEnterprise189RealHTTP429AppealRateLimit',
           ]
           for title in required:
               assert title in serialized, f'CE-12 browser acceptance evidence missing: {title}'
