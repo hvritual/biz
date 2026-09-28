@@ -8,7 +8,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  reporter: [["list"], ["json", { outputFile: "test-results/ce12-results.json" }]],
+  reporter: [["list"], ["json", { outputFile: process.env.CE12_PLAYWRIGHT_JSON_OUTPUT_FILE ?? "test-results/ce12-results.json" }]],
   use: {
     baseURL: process.env.CE12_BIZ_BASE_URL ?? "http://127.0.0.1:18080",
     viewport: { width: 1366, height: 768 },
