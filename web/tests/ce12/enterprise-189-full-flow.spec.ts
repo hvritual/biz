@@ -206,7 +206,7 @@ async function readInbox(context: BrowserContext, data: Fixture): Promise<InboxV
 function injectControlledEvent(data: Fixture, eventID: string) {
   execFileSync(
     'go',
-    ['test', '-count=1', '-tags=integration,ce12fixture', './integration', '-run', '^TestEnterprise189AppendControlledBusinessEvent
+    ['test', '-count=1', '-tags=integration,ce12fixture', './integration', '-run', '^TestEnterprise189AppendControlledBusinessEvent$'],
     {
       cwd: resolve(process.cwd(), '..'),
       encoding: 'utf8',
