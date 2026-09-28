@@ -203,7 +203,467 @@ async function readInbox(context: BrowserContext, data: Fixture): Promise<InboxV
 function injectControlledEvent(data: Fixture, eventID: string) {
   execFileSync(
     'go',
-    ['test', '-count=1', '-tags=integration,enterprise189fixture', './integration', '-run', '^TestEnterprise189AppendControlledBusinessEvent,
+    ['test', '-count=1', '-tags=integration,enterprise189fixture', './integration', '-run', '^TestEnterprise189AppendControlledBusinessEvent
+    {
+      cwd: resolve(process.cwd(), '..'),
+      encoding: 'utf8',
+      timeout: 45_000,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        ENTERPRISE189_EVENT_TENANT: data.notification.tenant_a,
+        ENTERPRISE189_EVENT_GROUP: data.notification.site_id,
+        ENTERPRISE189_EVENT_ID: eventID,
+        ENTERPRISE189_EVENT_REFERENCE: data.notification.site_id,
+      },
+    },
+  )
+}
+
+function readRoutingEvidence(eventID: string) {
+  if (!/^[A-Za-z0-9_.:-]+$/.test(eventID)) throw new Error('unsafe event id')
+  const container = process.env.CE12_MYSQL_CONTAINER
+  if (!container || !/^ce12-browser-\d+-\d+$/.test(container)) throw new Error('isolated CE12 MySQL container required')
+  const sql = [
+    "SELECT state,attempts,COALESCE(failure_code,'') FROM biz_notification_events WHERE event_id='" + eventID + "';",
+    "SELECT COUNT(*),SUM(read_at IS NOT NULL) FROM biz_notification_in_app WHERE event_id='" + eventID + "';",
+    "SELECT outcome,COUNT(*) FROM biz_notification_route_outcomes WHERE event_id='" + eventID + "' GROUP BY outcome ORDER BY outcome;",
+  ].join(' ')
+  return execFileSync(
+    'docker',
+    ['exec', container, 'mysql', '-uroot', '-proot', '--batch', '--skip-column-names', 'biz_ce12_browser', '-e', sql],
+    { encoding: 'utf8', timeout: 10_000, stdio: ['ignore', 'pipe', 'pipe'] },
+  ).trim()
+}
+
+async function logoutFromUI(page: Page, context: BrowserContext, data: Fixture) {
+  await page.getByRole('button', { name: '当前账号', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '当前账号' })
+  await dialog.getByRole('button', { name: '退出登录', exact: true }).click()
+  await expect.poll(async () => (await readSession(context, data)).authenticated).toBe(false)
+}
+
+test('TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout', async ({ browser }) => {
+  test.setTimeout(120_000)
+  const data = fixture()
+  const ownerContext = await browser.newContext({ locale: 'zh-CN', timezoneId: 'Asia/Shanghai' })
+  const viewerContext = await browser.newContext({ locale: 'zh-CN', timezoneId: 'Asia/Shanghai' })
+  const ownerPage = await ownerContext.newPage()
+  const viewerPage = await viewerContext.newPage()
+  const pageErrors: string[] = []
+  ownerPage.on('pageerror', (error) => pageErrors.push(error.message))
+
+  let ownerLoggedOut = false
+  try {
+    await login(viewerPage, data, data.security_viewer_email, data.security_viewer_password)
+    await viewerPage.goto(data.ui_base_url + '/#/enterprise/members')
+    await expect(viewerPage.locator('[data-enterprise-page="members"]')).toBeVisible()
+
+    await login(ownerPage, data, data.email, data.password)
+    await selectTenant(ownerContext, data, data.allowed_tenant)
+
+    for (const viewport of [
+      { width: 1366, height: 768 },
+      { width: 1440, height: 900 },
+      { width: 1536, height: 1024 },
+      { width: 390, height: 844 },
+    ]) {
+      await ownerPage.setViewportSize(viewport)
+      await ownerPage.goto(data.ui_base_url + '/#/enterprise/members')
+      await expect(ownerPage.locator('[data-enterprise-page="members"]')).toBeVisible()
+      expect(await ownerPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+      await ownerPage.screenshot({
+        path: 'test-results/enterprise189-members-' + viewport.width + '.png',
+        fullPage: true,
+      })
+    }
+
+    await ownerPage.setViewportSize({ width: 1366, height: 768 })
+    await ownerPage.goto(data.ui_base_url + '/#/enterprise/roles')
+    await expect(ownerPage.locator('[data-enterprise-page="roles"]')).toBeVisible()
+    const roleRow = ownerPage.locator('tbody tr').filter({ hasText: 'Security Viewer' })
+    await expect(roleRow).toBeVisible()
+    await roleRow.getByRole('button', { name: '编辑', exact: true }).click()
+    const roleDialog = ownerPage.getByRole('dialog', { name: '编辑角色权限' })
+    const memberRead = roleDialog.locator('[data-role-permission-leaf="tenant.member.read"] input')
+    await expect(memberRead).toBeChecked()
+    await memberRead.uncheck()
+    await roleDialog.getByRole('button', { name: '保存角色' }).click()
+    await expect(ownerPage.getByRole('status')).toContainText('角色配置已保存并更新。')
+
+    const revokedSession = await readSession(viewerContext, data)
+    const revokedMemberList = await viewerContext.request.get(data.base_url + '/v1/tenant/members', {
+      headers: { 'X-Biz-Session-Context': trustedContext(revokedSession) },
+    })
+    expect(revokedMemberList.status(), await revokedMemberList.text()).toBe(403)
+
+    // The target tab is already on this exact hash route. page.goto() to the
+    // same URL is not a reliable full refresh, so explicitly reload to prove
+    // #175's browser contract after #179's next-request revocation.
+    await viewerPage.reload()
+    await expect(viewerPage.locator('[data-authorization-state]')).toBeVisible()
+    await expect(viewerPage.getByRole('heading', { name: '没有访问权限', exact: true })).toBeVisible()
+    await expect(viewerPage.locator('[data-enterprise-page="members"]')).toHaveCount(0)
+
+    await ensureViewerReadPermission(ownerContext, data)
+    const restoredSession = await readSession(viewerContext, data)
+    const restoredMemberList = await viewerContext.request.get(data.base_url + '/v1/tenant/members', {
+      headers: { 'X-Biz-Session-Context': trustedContext(restoredSession) },
+    })
+    expect(restoredMemberList.status(), await restoredMemberList.text()).toBe(200)
+    // The denied refresh intentionally moved this tab to /authorization-state
+    // and retained the fail-closed authorization snapshot for this SPA
+    // instance. Refresh the document to rebuild authorization from the
+    // authoritative server state before returning to the protected route.
+    await viewerPage.reload()
+    await viewerPage.goto(data.ui_base_url + '/#/enterprise/members')
+    await expect(viewerPage.locator('[data-enterprise-page="members"]')).toBeVisible()
+
+    await ownerPage.goto(data.ui_base_url + '/#/enterprise/personal-profile')
+    await expect(ownerPage.locator('[data-enterprise-page="personal-profile"]')).toBeVisible()
+    const preferences = ownerPage.locator('[data-ui-region="notification-preferences"]')
+    await expect(preferences).toBeVisible()
+    const sms = preferences.getByRole('switch', { name: '短信通知', exact: true })
+    await expect(sms).toBeEnabled()
+    await sms.click()
+    const preferenceDialog = ownerPage.getByRole('dialog', { name: '确认修改通知偏好' })
+    await expect(preferenceDialog).toBeVisible()
+    await preferenceDialog.getByRole('button', { name: '取消修改', exact: true }).click()
+    await expect(sms).toBeFocused()
+
+    await logoutFromUI(ownerPage, ownerContext, data)
+    ownerLoggedOut = true
+    expect(pageErrors).toEqual([])
+  } finally {
+    if (!ownerLoggedOut) {
+      try { await ensureViewerReadPermission(ownerContext, data) } catch { /* retain original assertion failure */ }
+    }
+    await ownerContext.close()
+    await viewerContext.close()
+  }
+})
+
+test('TestEnterprise189ControlledEventRoutesToUnreadAndMarkAllRead', async ({ browser }) => {
+  test.setTimeout(120_000)
+  const data = fixture()
+  const context = await browser.newContext({ locale: 'zh-CN', timezoneId: 'Asia/Shanghai' })
+  const page = await context.newPage()
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+
+  try {
+    await login(page, data, data.notification.email, data.notification.password)
+    await selectTenant(context, data, data.notification.tenant_a)
+    const configuration = await ensureGeneralInAppConfiguration(page, context, data)
+
+    const eventID = 'enterprise189-' + Date.now().toString(36)
+    const before = await readInbox(context, data)
+    injectControlledEvent(data, eventID)
+
+    await expect.poll(async () => (await readInbox(context, data)).unread_count, { timeout: 20_000 })
+      .toBeGreaterThan(before.unread_count)
+
+    const afterRoute = await readInbox(context, data)
+    expect(afterRoute.messages.some((message) =>
+      message.type_code === 'system.announcement' &&
+      message.reference_id === data.notification.site_id,
+    )).toBe(true)
+
+    await page.goto(data.ui_base_url + '/#/system/notifications')
+    for (const viewport of [
+      { width: 1366, height: 768 },
+      { width: 1440, height: 900 },
+      { width: 1536, height: 1024 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport)
+      const bell = page.locator('button.notification')
+      await expect(bell).toBeVisible()
+      await bell.click()
+      const inbox = page.locator('[data-notification-inbox]')
+      await expect(inbox).toBeVisible()
+      await expect(inbox).toContainText('企业系统通知')
+      await expect(inbox).toContainText(data.notification.site_id)
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+      await page.screenshot({
+        path: 'test-results/enterprise189-inbox-' + viewport.width + '.png',
+        fullPage: viewport.width >= 768,
+      })
+      await page.keyboard.press('Escape')
+      await expect(inbox).toBeHidden()
+      await expect(bell).toBeFocused()
+    }
+
+    await page.setViewportSize({ width: 1366, height: 768 })
+    const bell = page.locator('button.notification')
+    await bell.click()
+    const inbox = page.locator('[data-notification-inbox]')
+    await inbox.getByRole('button', { name: '全部已读', exact: true }).click()
+    await expect(inbox.getByText('暂无未读消息', { exact: true })).toBeVisible()
+    await expect.poll(async () => (await readInbox(context, data)).unread_count).toBe(0)
+
+    const routingEvidence = readRoutingEvidence(eventID)
+    expect(routingEvidence).toContain('ROUTED')
+    expect(routingEvidence).toContain('IN_APP_CREATED')
+
+    await page.keyboard.press('Escape')
+    await selectUiOption(page.getByRole('combobox', { name: '语言' }), 'en-US')
+    await bell.click()
+    await expect(page.locator('[data-notification-inbox]')).toContainText('No unread notifications')
+    await page.keyboard.press('Escape')
+    await selectUiOption(page.getByRole('combobox', { name: 'Language' }), 'zh-CN')
+
+    writeFileSync('test-results/enterprise189-full-runtime-evidence.json', JSON.stringify({
+      candidate_sha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+      candidate_tree: execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim(),
+      source_kind: 'controlled_fixture_to_real_runtime',
+      source_boundary: 'qualification-only BusinessEventPublisher fixture; no production event fabrication endpoint',
+      event_id: eventID,
+      configuration,
+      unread_before: before.unread_count,
+      unread_after_route: afterRoute.unread_count,
+      unread_after_mark_all: (await readInbox(context, data)).unread_count,
+      mysql_routing_evidence: routingEvidence,
+      application_errors: pageErrors,
+    }, null, 2) + '\n')
+
+    expect(pageErrors).toEqual([])
+    await logoutFromUI(page, context, data)
+  } finally {
+    await context.close()
+  }
+})
+],
+    {
+      cwd: resolve(process.cwd(), '..'),
+      encoding: 'utf8',
+      timeout: 45_000,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        ENTERPRISE189_EVENT_TENANT: data.notification.tenant_a,
+        ENTERPRISE189_EVENT_GROUP: data.notification.site_id,
+        ENTERPRISE189_EVENT_ID: eventID,
+        ENTERPRISE189_EVENT_REFERENCE: data.notification.site_id,
+      },
+    },
+  )
+}
+
+function readRoutingEvidence(eventID: string) {
+  if (!/^[A-Za-z0-9_.:-]+$/.test(eventID)) throw new Error('unsafe event id')
+  const container = process.env.CE12_MYSQL_CONTAINER
+  if (!container || !/^ce12-browser-\d+-\d+$/.test(container)) throw new Error('isolated CE12 MySQL container required')
+  const sql = [
+    "SELECT state,attempts,COALESCE(failure_code,'') FROM biz_notification_events WHERE event_id='" + eventID + "';",
+    "SELECT COUNT(*),SUM(read_at IS NOT NULL) FROM biz_notification_in_app WHERE event_id='" + eventID + "';",
+    "SELECT outcome,COUNT(*) FROM biz_notification_route_outcomes WHERE event_id='" + eventID + "' GROUP BY outcome ORDER BY outcome;",
+  ].join(' ')
+  return execFileSync(
+    'docker',
+    ['exec', container, 'mysql', '-uroot', '-proot', '--batch', '--skip-column-names', 'biz_ce12_browser', '-e', sql],
+    { encoding: 'utf8', timeout: 10_000, stdio: ['ignore', 'pipe', 'pipe'] },
+  ).trim()
+}
+
+async function logoutFromUI(page: Page, context: BrowserContext, data: Fixture) {
+  await page.getByRole('button', { name: '当前账号', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '当前账号' })
+  await dialog.getByRole('button', { name: '退出登录', exact: true }).click()
+  await expect.poll(async () => (await readSession(context, data)).authenticated).toBe(false)
+}
+
+test('TestEnterprise189RealIdentityRoleRevocationPersonalAndLogout', async ({ browser }) => {
+  test.setTimeout(120_000)
+  const data = fixture()
+  const ownerContext = await browser.newContext({ locale: 'zh-CN', timezoneId: 'Asia/Shanghai' })
+  const viewerContext = await browser.newContext({ locale: 'zh-CN', timezoneId: 'Asia/Shanghai' })
+  const ownerPage = await ownerContext.newPage()
+  const viewerPage = await viewerContext.newPage()
+  const pageErrors: string[] = []
+  ownerPage.on('pageerror', (error) => pageErrors.push(error.message))
+
+  let ownerLoggedOut = false
+  try {
+    await login(viewerPage, data, data.security_viewer_email, data.security_viewer_password)
+    await viewerPage.goto(data.ui_base_url + '/#/enterprise/members')
+    await expect(viewerPage.locator('[data-enterprise-page="members"]')).toBeVisible()
+
+    await login(ownerPage, data, data.email, data.password)
+    await selectTenant(ownerContext, data, data.allowed_tenant)
+
+    for (const viewport of [
+      { width: 1366, height: 768 },
+      { width: 1440, height: 900 },
+      { width: 1536, height: 1024 },
+      { width: 390, height: 844 },
+    ]) {
+      await ownerPage.setViewportSize(viewport)
+      await ownerPage.goto(data.ui_base_url + '/#/enterprise/members')
+      await expect(ownerPage.locator('[data-enterprise-page="members"]')).toBeVisible()
+      expect(await ownerPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+      await ownerPage.screenshot({
+        path: 'test-results/enterprise189-members-' + viewport.width + '.png',
+        fullPage: true,
+      })
+    }
+
+    await ownerPage.setViewportSize({ width: 1366, height: 768 })
+    await ownerPage.goto(data.ui_base_url + '/#/enterprise/roles')
+    await expect(ownerPage.locator('[data-enterprise-page="roles"]')).toBeVisible()
+    const roleRow = ownerPage.locator('tbody tr').filter({ hasText: 'Security Viewer' })
+    await expect(roleRow).toBeVisible()
+    await roleRow.getByRole('button', { name: '编辑', exact: true }).click()
+    const roleDialog = ownerPage.getByRole('dialog', { name: '编辑角色权限' })
+    const memberRead = roleDialog.locator('[data-role-permission-leaf="tenant.member.read"] input')
+    await expect(memberRead).toBeChecked()
+    await memberRead.uncheck()
+    await roleDialog.getByRole('button', { name: '保存角色' }).click()
+    await expect(ownerPage.getByRole('status')).toContainText('角色配置已保存并更新。')
+
+    const revokedSession = await readSession(viewerContext, data)
+    const revokedMemberList = await viewerContext.request.get(data.base_url + '/v1/tenant/members', {
+      headers: { 'X-Biz-Session-Context': trustedContext(revokedSession) },
+    })
+    expect(revokedMemberList.status(), await revokedMemberList.text()).toBe(403)
+
+    // The target tab is already on this exact hash route. page.goto() to the
+    // same URL is not a reliable full refresh, so explicitly reload to prove
+    // #175's browser contract after #179's next-request revocation.
+    await viewerPage.reload()
+    await expect(viewerPage.locator('[data-authorization-state]')).toBeVisible()
+    await expect(viewerPage.getByRole('heading', { name: '没有访问权限', exact: true })).toBeVisible()
+    await expect(viewerPage.locator('[data-enterprise-page="members"]')).toHaveCount(0)
+
+    await ensureViewerReadPermission(ownerContext, data)
+    const restoredSession = await readSession(viewerContext, data)
+    const restoredMemberList = await viewerContext.request.get(data.base_url + '/v1/tenant/members', {
+      headers: { 'X-Biz-Session-Context': trustedContext(restoredSession) },
+    })
+    expect(restoredMemberList.status(), await restoredMemberList.text()).toBe(200)
+    // The denied refresh intentionally moved this tab to /authorization-state
+    // and retained the fail-closed authorization snapshot for this SPA
+    // instance. Refresh the document to rebuild authorization from the
+    // authoritative server state before returning to the protected route.
+    await viewerPage.reload()
+    await viewerPage.goto(data.ui_base_url + '/#/enterprise/members')
+    await expect(viewerPage.locator('[data-enterprise-page="members"]')).toBeVisible()
+
+    await ownerPage.goto(data.ui_base_url + '/#/enterprise/personal-profile')
+    await expect(ownerPage.locator('[data-enterprise-page="personal-profile"]')).toBeVisible()
+    const preferences = ownerPage.locator('[data-ui-region="notification-preferences"]')
+    await expect(preferences).toBeVisible()
+    const sms = preferences.getByRole('switch', { name: '短信通知', exact: true })
+    await expect(sms).toBeEnabled()
+    await sms.click()
+    const preferenceDialog = ownerPage.getByRole('dialog', { name: '确认修改通知偏好' })
+    await expect(preferenceDialog).toBeVisible()
+    await preferenceDialog.getByRole('button', { name: '取消修改', exact: true }).click()
+    await expect(sms).toBeFocused()
+
+    await logoutFromUI(ownerPage, ownerContext, data)
+    ownerLoggedOut = true
+    expect(pageErrors).toEqual([])
+  } finally {
+    if (!ownerLoggedOut) {
+      try { await ensureViewerReadPermission(ownerContext, data) } catch { /* retain original assertion failure */ }
+    }
+    await ownerContext.close()
+    await viewerContext.close()
+  }
+})
+
+test('TestEnterprise189ControlledEventRoutesToUnreadAndMarkAllRead', async ({ browser }) => {
+  test.setTimeout(120_000)
+  const data = fixture()
+  const context = await browser.newContext({ locale: 'zh-CN', timezoneId: 'Asia/Shanghai' })
+  const page = await context.newPage()
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+
+  try {
+    await login(page, data, data.notification.email, data.notification.password)
+    await selectTenant(context, data, data.notification.tenant_a)
+    const configuration = await ensureGeneralInAppConfiguration(page, context, data)
+
+    const eventID = 'enterprise189-' + Date.now().toString(36)
+    const before = await readInbox(context, data)
+    injectControlledEvent(data, eventID)
+
+    await expect.poll(async () => (await readInbox(context, data)).unread_count, { timeout: 20_000 })
+      .toBeGreaterThan(before.unread_count)
+
+    const afterRoute = await readInbox(context, data)
+    expect(afterRoute.messages.some((message) =>
+      message.type_code === 'system.announcement' &&
+      message.reference_id === data.notification.site_id,
+    )).toBe(true)
+
+    await page.goto(data.ui_base_url + '/#/system/notifications')
+    for (const viewport of [
+      { width: 1366, height: 768 },
+      { width: 1440, height: 900 },
+      { width: 1536, height: 1024 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport)
+      const bell = page.locator('button.notification')
+      await expect(bell).toBeVisible()
+      await bell.click()
+      const inbox = page.locator('[data-notification-inbox]')
+      await expect(inbox).toBeVisible()
+      await expect(inbox).toContainText('企业系统通知')
+      await expect(inbox).toContainText(data.notification.site_id)
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+      await page.screenshot({
+        path: 'test-results/enterprise189-inbox-' + viewport.width + '.png',
+        fullPage: viewport.width >= 768,
+      })
+      await page.keyboard.press('Escape')
+      await expect(inbox).toBeHidden()
+      await expect(bell).toBeFocused()
+    }
+
+    await page.setViewportSize({ width: 1366, height: 768 })
+    const bell = page.locator('button.notification')
+    await bell.click()
+    const inbox = page.locator('[data-notification-inbox]')
+    await inbox.getByRole('button', { name: '全部已读', exact: true }).click()
+    await expect(inbox.getByText('暂无未读消息', { exact: true })).toBeVisible()
+    await expect.poll(async () => (await readInbox(context, data)).unread_count).toBe(0)
+
+    const routingEvidence = readRoutingEvidence(eventID)
+    expect(routingEvidence).toContain('ROUTED')
+    expect(routingEvidence).toContain('IN_APP_CREATED')
+
+    await page.keyboard.press('Escape')
+    await selectUiOption(page.getByRole('combobox', { name: '语言' }), 'en-US')
+    await bell.click()
+    await expect(page.locator('[data-notification-inbox]')).toContainText('No unread notifications')
+    await page.keyboard.press('Escape')
+    await selectUiOption(page.getByRole('combobox', { name: 'Language' }), 'zh-CN')
+
+    writeFileSync('test-results/enterprise189-full-runtime-evidence.json', JSON.stringify({
+      candidate_sha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+      candidate_tree: execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim(),
+      source_kind: 'controlled_fixture_to_real_runtime',
+      source_boundary: 'qualification-only BusinessEventPublisher fixture; no production event fabrication endpoint',
+      event_id: eventID,
+      configuration,
+      unread_before: before.unread_count,
+      unread_after_route: afterRoute.unread_count,
+      unread_after_mark_all: (await readInbox(context, data)).unread_count,
+      mysql_routing_evidence: routingEvidence,
+      application_errors: pageErrors,
+    }, null, 2) + '\n')
+
+    expect(pageErrors).toEqual([])
+    await logoutFromUI(page, context, data)
+  } finally {
+    await context.close()
+  }
+})
+],
     {
       cwd: resolve(process.cwd(), '..'),
       encoding: 'utf8',
