@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "modules": [
+    {
+      "module_code": "access-management",
+      "ui_routes": [
+        "/enterprise/personal-profile",
+        "/enterprise/members",
+        "/enterprise/roles",
+        "/enterprise/organization",
+        "/enterprise/company",
+        "/enterprise/branding",
+        "/enterprise/logs",
+        "/system/notifications",
+        "/workspace/:resource(members|roles)"
+      ],
+      "acceptance": [
+        {
+          "scenario": "allow",
+          "kind": "mysql_source",
+          "source": "integration/ce05_enforcement_mysql_test.go",
+          "name": "TestCE05MySQLNoImplicitAccessManagementOrExpiredGrant"
+        },
+        {
+          "scenario": "deny_entitlement",
+          "kind": "mysql_source",
+          "source": "integration/ce05_enforcement_mysql_test.go",
+          "name": "TestCE05MySQLNoImplicitAccessManagementOrExpiredGrant"
+        },
+        {
+          "scenario": "deny_iam",
+          "kind": "mysql_source",
+          "source": "integration/b12_role_runtime_mysql_test.go",
+          "name": "TestB124TenantRolePermissionsAreTenantScopedAndImmediate"
+        }
+      ]
+    },
+    {
+      "module_code": "device-operations",
+      "ui_routes": [
+        "/workspace/:resource(devices)"
+      ],
+      "acceptance": [
+        {
+          "scenario": "allow",
+          "kind": "mysql_source",
+          "source": "integration/ce05_enforcement_mysql_test.go",
+          "name": "TestCE05MySQLRESTGRPCGrantAndDeny"
+        },
+        {
+          "scenario": "deny_entitlement",
+          "kind": "mysql_source",
+          "source": "integration/ce05_enforcement_mysql_test.go",
+          "name": "TestCE05MySQLRESTGRPCGrantAndDeny"
+        },
+        {
+          "scenario": "deny_iam",
+          "kind": "mysql_source",
+          "source": "integration/ce05_enforcement_mysql_test.go",
+          "name": "TestCE05MySQLIAMAndDataScopeStillRequired"
+        }
+      ]
+    }
+  ]
+}

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -13,6 +14,7 @@ func run() error {
 	root := flag.String("root", ".", "Biz repository root")
 	write := flag.Bool("write", false, "write deterministic derived artifacts after validation")
 	baseline := flag.String("baseline", "", "previous published catalog.json, obtained from trusted main")
+	onboarding := flag.Bool("onboarding", false, "check module/IAM/test references; not runtime or sales certification")
 	flag.Parse()
 	if flag.NArg() != 0 {
 		return fmt.Errorf("unexpected positional arguments")
@@ -36,6 +38,17 @@ func run() error {
 	}
 	if err := capabilitymap.SyncArtifacts(*root, document, *write); err != nil {
 		return err
+	}
+	if *onboarding {
+		report, checkErr := capabilitymap.BuildOnboardingRepository(*root, document)
+		data, marshalErr := json.Marshal(report)
+		if marshalErr != nil {
+			return marshalErr
+		}
+		fmt.Printf("COMMERCIAL_ONBOARDING=%s\n", data)
+		if checkErr != nil {
+			return checkErr
+		}
 	}
 	fmt.Printf("CE03_MAP_CHECK=PASS mapping_version=%s operations=%d capabilities=%d write=%t\n", document.MappingVersion, len(document.Operations), len(document.Capabilities), *write)
 	return nil

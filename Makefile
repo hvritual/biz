@@ -58,7 +58,7 @@ commercial-generate:
 	@go run ./cmd/commercial-catalog --root $(CURDIR) --write --baseline "$(COMMERCIAL_BASELINE)"
 
 commercial-check:
-	@go run ./cmd/commercial-catalog --root $(CURDIR) --baseline "$(COMMERCIAL_BASELINE)"
+	@go run ./cmd/commercial-catalog --root $(CURDIR) --baseline "$(COMMERCIAL_BASELINE)" --onboarding
 
 
 .PHONY: authorization-generate authorization-check
