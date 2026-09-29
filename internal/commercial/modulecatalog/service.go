@@ -61,7 +61,10 @@ func platformActor(ctx context.Context) (string, error) {
 }
 func runtimeVerifier(ctx context.Context) (string, error) {
 	p, ok := identity.FromContext(ctx)
-	if !ok || !p.Authenticated || p.Subject == "" || p.TenantID != "" || p.AuthMethod != identity.AuthMethodServiceToken {
+	// Runtime admission is deliberately narrower than a generic service token.
+	// The HTTP authenticator verifies the credential signature; this namespace
+	// confines the resulting principal to the controlled CI verifier identity.
+	if !ok || !p.Authenticated || !strings.HasPrefix(p.Subject, "ci-verifier:") || p.TenantID != "" || p.AuthMethod != identity.AuthMethodServiceToken {
 		return "", ErrRuntimeVerifierRequired
 	}
 	return p.Subject, nil

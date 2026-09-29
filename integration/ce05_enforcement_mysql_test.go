@@ -107,13 +107,26 @@ func TestCE294MySQLDeviceCreateIAMEntitlementMatrix(t *testing.T) {
 			t.Fatalf("denied device create persisted %d row(s) for %q", got, serial)
 		}
 	}
+	assertHTTPDeniedWithoutWrite := func(token, serial string) {
+		t.Helper()
+		status, _ := ce05HTTP(t, e, "POST", "/v1/devices", token, []byte(`{"siteId":"`+e.siteA+`","name":"CE294 HTTP matrix","serial":"`+serial+`"}`))
+		if status != http.StatusForbidden {
+			t.Fatalf("HTTP matrix denied status=%d serial=%q", status, serial)
+		}
+		if got := count(serial); got != 0 {
+			t.Fatalf("HTTP denied device create persisted %d row(s) for %q", got, serial)
+		}
+	}
 
 	// IAM runs first: neither access right may reveal or bypass the other.
 	assertDeniedWithoutWrite(noIAMToken, "ce294-neither-"+ce04Random(t), "")
 	assertDeniedWithoutWrite(e.tokenA, "ce294-entitlement-"+ce04Random(t), "MODULE_NOT_ENTITLED")
+	assertHTTPDeniedWithoutWrite(noIAMToken, "ce294-http-neither-"+ce04Random(t))
+	assertHTTPDeniedWithoutWrite(e.tokenA, "ce294-http-entitlement-"+ce04Random(t))
 
 	e.grant(commercialv1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY, "device.lifecycle", 0)
 	assertDeniedWithoutWrite(noIAMToken, "ce294-iam-"+ce04Random(t), "")
+	assertHTTPDeniedWithoutWrite(noIAMToken, "ce294-http-iam-"+ce04Random(t))
 
 	allowedSerial := "ce294-allow-" + ce04Random(t)
 	if err := create(e.tokenA, allowedSerial); err != nil {
