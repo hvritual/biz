@@ -45,19 +45,19 @@
           "scenario": "allow",
           "kind": "mysql_source",
           "source": "integration/ce05_enforcement_mysql_test.go",
-          "name": "TestCE05MySQLRESTGRPCGrantAndDeny"
+          "name": "TestCE294MySQLDeviceCreateIAMEntitlementMatrix"
         },
         {
           "scenario": "deny_entitlement",
           "kind": "mysql_source",
           "source": "integration/ce05_enforcement_mysql_test.go",
-          "name": "TestCE05MySQLRESTGRPCGrantAndDeny"
+          "name": "TestCE294MySQLDeviceCreateIAMEntitlementMatrix"
         },
         {
           "scenario": "deny_iam",
           "kind": "mysql_source",
           "source": "integration/ce05_enforcement_mysql_test.go",
-          "name": "TestCE05MySQLIAMAndDataScopeStillRequired"
+          "name": "TestCE294MySQLDeviceCreateIAMEntitlementMatrix"
         }
       ]
     }
