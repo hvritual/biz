@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { formatDateTime } from '@/i18n'
 import { useEnterpriseStore } from '@/stores/enterprise'
@@ -9,20 +8,20 @@ import { useUiStore } from '@/stores/ui'
 import { UiButton } from '@/ui/base'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import AvatarMark from '@/ui/common/AvatarMark.vue'
-import PageHeading from '@/ui/common/PageHeading.vue'
-import StatusBadge from '@/ui/common/StatusBadge.vue'
 import Notice from '@/ui/common/Notice.vue'
 import PersonalSecurityPanel from '../components/security/PersonalSecurityPanel.vue'
 import PersonalNotificationPreferences from '../components/security/PersonalNotificationPreferences.vue'
+import PersonalPasswordDialog from '../components/security/PersonalPasswordDialog.vue'
 
 const enterprise = useEnterpriseStore()
 const personal = usePersonalProfileStore()
 const ui = useUiStore()
-const router = useRouter()
 const { t } = useI18n()
 
 const draftAvatar = ref('')
 const saveError = ref('')
+const avatarEditorOpen = ref(false)
+const passwordDialogOpen = ref(false)
 
 const profile = computed(() => personal.profile)
 const savedAvatar = computed(() => profile.value?.avatarAssetRef ?? 'avatar:coffee-blue')
@@ -59,12 +58,6 @@ async function saveAvatar() {
   }
 }
 
-async function logout() {
-  personal.clear()
-  await enterprise.logout()
-  window.location.assign(enterprise.loginHref())
-}
-
 watch(
   () => [
     enterprise.sourceKind,
@@ -92,8 +85,6 @@ watch(
 
 <template>
   <div class="page-stack personal-profile-page" data-enterprise-page="personal-profile" data-ui-template="FormPage">
-    <PageHeading :title="t('personalProfile.title')" :description="t('personalProfile.description')" />
-
     <Notice v-if="enterprise.sourceKind !== 'api'" tone="warning">
       <AppIcon name="lock" :size="16" />
       {{ t('personalProfile.apiOnly') }}
@@ -107,115 +98,47 @@ watch(
     </Notice>
 
     <template v-if="profile">
-      <div class="profile-layout">
-        <section class="card identity-card" aria-labelledby="personal-profile-identity">
-          <div class="identity-hero">
-            <AvatarMark
-              :name="profile.name || profile.username || profile.userId"
-              :asset-ref="savedAvatar"
-              :size="72"
-            />
-            <div>
-              <p class="eyebrow">{{ t('personalProfile.accountSection') }}</p>
-              <h2 id="personal-profile-identity">{{ profile.name || profile.username || profile.userId }}</h2>
-              <p class="secondary">{{ profile.username || profile.userId }}</p>
+      <section class="profile-welcome" data-ui-region="page-heading" aria-labelledby="personal-profile-welcome">
+        <h1 id="personal-profile-welcome">{{ t('personalProfile.welcomeBack', { name: profile.name || profile.username || profile.userId }) }}</h1>
+        <p>{{ t('personalProfile.welcomeDescription') }}</p>
+
+        <section class="card basic-information" data-ui-region="form-workspace" aria-labelledby="personal-profile-information">
+          <h2 id="personal-profile-information">{{ t('personalProfile.basicInformation') }}</h2>
+          <div class="basic-information-body">
+            <div class="profile-identity">
+              <AvatarMark :name="profile.name || profile.username || profile.userId" :asset-ref="savedAvatar" :size="84" />
+              <div><strong>{{ profile.name || profile.username || profile.userId }}</strong><small>{{ profile.username || profile.userId }}</small></div>
             </div>
+            <dl class="profile-facts" data-ui-region="scope">
+              <div><dt>{{ t('personalProfile.username') }}</dt><dd>{{ profile.username || t('common.unknown') }}</dd></div>
+              <div><dt>{{ t('personalProfile.accountRole') }}</dt><dd class="role-list"><span v-for="role in profile.roles" :key="role.roleId" class="role-chip">{{ role.roleName || role.roleId }}</span><span v-if="!profile.roles.length">{{ t('personalProfile.emptyRoles') }}</span></dd></div>
+              <div><dt>{{ t('personalProfile.enterpriseName') }}</dt><dd>{{ profile.tenantName || profile.tenantId }}</dd></div>
+              <div><dt>{{ t('personalProfile.phone') }}</dt><dd>{{ profile.phone || t('personalProfile.unbound') }}</dd></div>
+              <div><dt>{{ t('personalProfile.email') }}</dt><dd>{{ profile.email || t('personalProfile.unbound') }}</dd></div>
+              <div><dt>{{ t('personalProfile.registeredAt') }}</dt><dd>{{ displayDate(profile.registeredAt) }}</dd></div>
+            </dl>
           </div>
-
-          <dl class="detail-grid">
-            <div><dt>{{ t('personalProfile.username') }}</dt><dd>{{ profile.username || t('common.unknown') }}</dd></div>
-            <div><dt>{{ t('personalProfile.userId') }}</dt><dd class="mono">{{ profile.userId }}</dd></div>
-            <div><dt>{{ t('personalProfile.registeredAt') }}</dt><dd>{{ displayDate(profile.registeredAt) }}</dd></div>
-            <div><dt>{{ t('personalProfile.joinedAt') }}</dt><dd>{{ displayDate(profile.joinedAt) }}</dd></div>
-          </dl>
-        </section>
-
-        <section class="card tenant-card" data-ui-region="scope" aria-labelledby="personal-profile-tenant">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">{{ t('personalProfile.tenantSection') }}</p>
-              <h2 id="personal-profile-tenant">{{ profile.tenantName || profile.tenantId }}</h2>
+          <div class="avatar-actions" data-ui-region="form-actions">
+            <UiButton variant="outline" @click="avatarEditorOpen = !avatarEditorOpen">{{ t('personalProfile.avatarSection') }}</UiButton>
+          </div>
+          <div v-if="avatarEditorOpen" class="avatar-editor" aria-labelledby="personal-profile-avatar">
+            <p id="personal-profile-avatar" class="secondary">{{ t('personalProfile.avatarDescription') }}</p>
+            <div class="avatar-options" role="group" :aria-label="t('personalProfile.avatarSection')">
+              <UiButton v-for="option in personal.avatarOptions" :key="option.assetRef" type="button" variant="outline" class="avatar-option" :class="{ selected: draftAvatar === option.assetRef }" :aria-label="t('personalProfile.avatarOption', { name: option.name })" :aria-pressed="draftAvatar === option.assetRef" :disabled="personal.saving" @click="draftAvatar = option.assetRef">
+                <AvatarMark :name="profile.name || profile.username || profile.userId" :asset-ref="option.assetRef" :size="40" />
+                <span><strong>{{ option.name }}</strong><small>{{ option.assetRef }}</small></span>
+                <AppIcon v-if="draftAvatar === option.assetRef" name="check" :size="16" />
+              </UiButton>
             </div>
-            <StatusBadge :text="enterprise.tenantId" tone="primary" :dot="false" />
+            <p class="secondary confirm-note"><AppIcon name="shield" :size="15" />{{ t('personalProfile.avatarConfirmNote') }}</p>
+            <p v-if="saveError" class="form-error" role="alert">{{ saveError }}</p>
+            <div class="form-footer"><UiButton class="btn btn-primary" :disabled="!avatarDirty || personal.saving" @click="saveAvatar"><AppIcon name="check" :size="15" />{{ personal.saving ? t('personalProfile.savingAvatar') : t('personalProfile.saveAvatar') }}</UiButton></div>
           </div>
-          <dl class="detail-grid">
-            <div><dt>{{ t('personalProfile.roles') }}</dt><dd class="role-list"><span v-for="role in profile.roles" :key="role.roleId" class="role-chip">{{ role.roleName || role.roleId }}</span><span v-if="!profile.roles.length" class="secondary">{{ t('personalProfile.emptyRoles') }}</span></dd></div>
-            <div><dt>{{ t('personalProfile.employeeId') }}</dt><dd>{{ profile.employeeId || t('common.unknown') }}</dd></div>
-            <div><dt>{{ t('personalProfile.position') }}</dt><dd>{{ profile.position || t('common.unknown') }}</dd></div>
-            <div><dt>{{ t('personalProfile.departmentId') }}</dt><dd class="mono">{{ profile.departmentId || t('common.unknown') }}</dd></div>
-          </dl>
         </section>
-      </div>
-
-      <section class="card avatar-card" data-ui-region="form-workspace" aria-labelledby="personal-profile-avatar">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">{{ t('personalProfile.avatarSection') }}</p>
-            <h2 id="personal-profile-avatar">{{ t('personalProfile.avatarCurrent') }}</h2>
-            <p class="secondary">{{ t('personalProfile.avatarDescription') }}</p>
-          </div>
-          <AvatarMark :name="profile.name || profile.username || profile.userId" :asset-ref="draftAvatar || savedAvatar" :size="54" />
-        </div>
-
-        <div class="avatar-options" role="group" :aria-label="t('personalProfile.avatarSection')">
-          <UiButton
-            v-for="option in personal.avatarOptions"
-            :key="option.assetRef"
-            type="button"
-            variant="outline"
-            class="avatar-option"
-            :class="{ selected: draftAvatar === option.assetRef }"
-            :aria-label="t('personalProfile.avatarOption', { name: option.name })"
-            :aria-pressed="draftAvatar === option.assetRef"
-            :disabled="personal.saving"
-            @click="draftAvatar = option.assetRef"
-          >
-            <AvatarMark :name="profile.name || profile.username || profile.userId" :asset-ref="option.assetRef" :size="44" />
-            <span><strong>{{ option.name }}</strong><small>{{ option.assetRef }}</small></span>
-            <AppIcon v-if="draftAvatar === option.assetRef" name="check" :size="16" />
-          </UiButton>
-        </div>
-        <p class="secondary confirm-note"><AppIcon name="shield" :size="15" />{{ t('personalProfile.avatarConfirmNote') }}</p>
-        <p v-if="saveError" class="form-error" role="alert">{{ saveError }}</p>
-        <div class="form-footer" data-ui-region="form-actions">
-          <UiButton
-            class="btn btn-primary"
-            :disabled="!avatarDirty || personal.saving"
-            @click="saveAvatar"
-          >
-            <AppIcon name="check" :size="15" />
-            {{ personal.saving ? t('personalProfile.savingAvatar') : t('personalProfile.saveAvatar') }}
-          </UiButton>
-        </div>
       </section>
-
-      <div class="profile-layout lower-grid">
-        <section class="card contact-card" aria-labelledby="personal-profile-contact">
-          <p class="eyebrow">{{ t('personalProfile.contactSection') }}</p>
-          <h2 id="personal-profile-contact">{{ t('personalProfile.contactSection') }}</h2>
-          <dl class="detail-grid">
-            <div><dt>{{ t('personalProfile.email') }}</dt><dd>{{ profile.email || t('personalProfile.unbound') }}</dd></div>
-            <div><dt>{{ t('personalProfile.phone') }}</dt><dd>{{ profile.phone || t('personalProfile.unbound') }}</dd></div>
-          </dl>
-        </section>
-
-        <section class="card security-card" aria-labelledby="personal-profile-security">
-          <p class="eyebrow">{{ t('personalProfile.securitySection') }}</p>
-          <h2 id="personal-profile-security">{{ t('personalProfile.securitySection') }}</h2>
-          <div class="security-actions">
-            <div class="security-row">
-              <span><strong>{{ t('personalProfile.password') }}</strong><small>{{ t('personalProfile.passwordDescription') }}</small></span>
-              <UiButton variant="outline" @click="router.push('/system/security')">{{ t('personalProfile.openSecurity') }}</UiButton>
-            </div>
-            <div class="security-row sign-out-row">
-              <span><strong>{{ t('personalProfile.signOut') }}</strong><small>{{ t('personalProfile.signOutDescription') }}</small></span>
-              <UiButton variant="outline" @click="logout">{{ t('personalProfile.signOut') }}</UiButton>
-            </div>
-          </div>
-        </section>
-      </div>
+      <div data-ui-region="personal-security"><PersonalSecurityPanel @password="passwordDialogOpen = true" /></div>
       <div data-ui-region="notification-preferences"><PersonalNotificationPreferences /></div>
-      <div data-ui-region="personal-security"><PersonalSecurityPanel /></div>
+      <PersonalPasswordDialog :open="passwordDialogOpen" @close="passwordDialogOpen = false" />
     </template>
 
     <div v-else-if="personal.ready && !personal.loading && enterprise.sourceKind === 'api' && !personal.error" class="card empty-state" role="status">
@@ -226,5 +149,5 @@ watch(
 </template>
 
 <style scoped>
-.personal-profile-page{gap:16px}.profile-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}.identity-card,.tenant-card,.contact-card,.security-card,.avatar-card{padding:22px}.identity-hero,.section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}.identity-hero{justify-content:flex-start}.identity-hero h2,.section-heading h2,.contact-card h2,.security-card h2{font-size:18px;letter-spacing:-.2px}.eyebrow{margin-bottom:5px;color:var(--color-primary);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.secondary{color:var(--color-text-secondary);font-size:var(--text-sm);line-height:1.6}.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px;margin-top:22px}.detail-grid>div{min-width:0;padding-top:12px;border-top:1px solid var(--color-border)}.detail-grid dt{color:var(--color-text-muted);font-size:var(--text-xs)}.detail-grid dd{margin-top:6px;overflow-wrap:anywhere;font-size:var(--text-sm);font-weight:600}.role-list{display:flex;gap:6px;flex-wrap:wrap}.role-chip{display:inline-flex;padding:3px 7px;border-radius:999px;background:var(--color-primary-soft);color:var(--color-primary);font-size:11px;font-weight:650}.avatar-card{display:flex;flex-direction:column;gap:18px}.avatar-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.avatar-option{min-height:70px;height:auto;justify-content:flex-start;padding:10px;text-align:left}.avatar-option.selected{border-color:var(--color-primary);background:var(--color-primary-soft)}.avatar-option>span:nth-child(2){display:flex;min-width:0;flex:1;flex-direction:column;align-items:flex-start}.avatar-option strong{font-size:12px}.avatar-option small{max-width:100%;overflow:hidden;color:var(--color-text-muted);font-size:10px;text-overflow:ellipsis}.confirm-note{display:flex;align-items:center;gap:7px}.form-footer{display:flex;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--color-border)}.security-actions{display:flex;flex-direction:column;margin-top:14px}.security-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 0;border-top:1px solid var(--color-border)}.security-row span{min-width:0}.security-row strong,.security-row small{display:block}.security-row strong{font-size:var(--text-sm)}.security-row small{margin-top:4px;color:var(--color-text-muted);font-size:var(--text-xs);line-height:1.5}.sign-out-row{margin-top:3px}.profile-error{display:flex;align-items:center;justify-content:space-between;gap:12px}.empty-state{display:flex;align-items:center;gap:12px;padding:24px;color:var(--color-text-secondary)}.mono{font-family:var(--font-mono,ui-monospace,SFMono-Regular,Menlo,monospace)}@media(max-width:1100px){.avatar-options{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:900px){.profile-layout{grid-template-columns:1fr}}@media(max-width:600px){.identity-card,.tenant-card,.contact-card,.security-card,.avatar-card{padding:18px}.identity-hero,.section-heading{align-items:flex-start}.detail-grid{grid-template-columns:1fr;gap:10px}.avatar-options{grid-template-columns:1fr}.security-row{align-items:stretch;flex-direction:column}.security-row .inline-flex{width:100%}.form-footer .btn{width:100%}.profile-error{align-items:stretch;flex-direction:column}}
+.personal-profile-page{gap:16px}.profile-welcome{padding:26px 18px 18px;border-radius:var(--radius-md);background:linear-gradient(108deg,var(--color-primary-soft),var(--color-surface-soft))}.profile-welcome>h1{font-size:26px;letter-spacing:-.5px}.profile-welcome>p{margin-top:8px;color:var(--color-text-secondary);font-size:var(--text-sm)}.basic-information{margin-top:22px;padding:20px}.basic-information>h2{font-size:18px}.basic-information-body{display:grid;grid-template-columns:minmax(210px,.8fr) minmax(0,2.2fr);align-items:center;gap:24px;margin-top:18px}.profile-identity{display:flex;align-items:center;gap:16px}.profile-identity strong,.profile-identity small{display:block}.profile-identity strong{font-size:var(--text-lg)}.profile-identity small{margin-top:5px;color:var(--color-text-secondary);font-size:var(--text-sm)}.profile-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 28px}.profile-facts>div{min-width:0}.profile-facts dt{color:var(--color-text-secondary);font-size:var(--text-sm)}.profile-facts dd{margin-top:6px;overflow-wrap:anywhere;font-size:var(--text-sm);font-weight:600}.role-list{display:flex;gap:6px;flex-wrap:wrap}.role-chip{display:inline-flex;padding:3px 7px;border-radius:999px;background:var(--color-primary-soft);color:var(--color-primary);font-size:11px;font-weight:650}.avatar-actions{display:flex;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--color-border)}.avatar-editor{display:flex;flex-direction:column;gap:14px;margin-top:14px;padding-top:16px;border-top:1px solid var(--color-border)}.secondary{color:var(--color-text-secondary);font-size:var(--text-sm);line-height:1.6}.avatar-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.avatar-option{min-height:66px;height:auto;justify-content:flex-start;padding:10px;text-align:left}.avatar-option.selected{border-color:var(--color-primary);background:var(--color-primary-soft)}.avatar-option>span:nth-child(2){display:flex;min-width:0;flex:1;flex-direction:column;align-items:flex-start}.avatar-option strong{font-size:12px}.avatar-option small{max-width:100%;overflow:hidden;color:var(--color-text-muted);font-size:10px;text-overflow:ellipsis}.confirm-note{display:flex;align-items:center;gap:7px}.form-footer{display:flex;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--color-border)}.profile-error{display:flex;align-items:center;justify-content:space-between;gap:12px}.empty-state{display:flex;align-items:center;gap:12px;padding:24px;color:var(--color-text-secondary)}@media(max-width:980px){.basic-information-body{grid-template-columns:1fr}.profile-facts{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.profile-welcome{padding:20px 14px 14px}.profile-welcome>h1{font-size:22px}.basic-information{margin-top:16px;padding:16px}.profile-facts,.avatar-options{grid-template-columns:1fr}.avatar-actions .inline-flex,.form-footer .inline-flex{width:100%}.profile-error{align-items:stretch;flex-direction:column}}
 </style>

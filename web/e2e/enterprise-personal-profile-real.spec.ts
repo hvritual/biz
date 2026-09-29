@@ -245,9 +245,9 @@ test('personal profile renders current self data across four CoffeeLink viewport
   ]) {
     await page.setViewportSize(viewport)
     await openPersonalProfile(page)
-    await expect(page.getByRole('heading', { name: '个人中心', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '欢迎回来，Alice A', level: 1 })).toBeVisible()
     await expect(page.getByText('Alice A', { exact: true }).first()).toBeVisible()
-    await expect(page.locator('[data-ui-region="scope"] h2')).toHaveText('Tenant A')
+    await expect(page.locator('[data-ui-region="scope"]')).toContainText('Tenant A')
     await expect(page.getByText('a***@example.invalid', { exact: true })).toBeVisible()
     await expect(page.getByText('***4567', { exact: true })).toBeVisible()
     await expect(page.getByText(/alice\.a-|\+49170/)).toHaveCount(0)
@@ -259,6 +259,22 @@ test('personal profile renders current self data across four CoffeeLink viewport
       animations: 'disabled',
     })
   }
+})
+
+test('personal profile opens a password-only dialog from the security action', async ({ page }) => {
+  await mockPersonalProfileApi(page)
+  await openPersonalProfile(page)
+  await page.getByRole('button', { name: '修改密码', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '修改密码', exact: true })
+  await expect(dialog.getByLabel('当前密码', { exact: true })).toBeVisible()
+  await expect(dialog.getByLabel('新密码', { exact: true })).toBeVisible()
+  await expect(dialog.getByLabel('确认新密码', { exact: true })).toBeVisible()
+  await expect(dialog.getByRole('button', { name: '确认修改', exact: true })).toBeVisible()
+  const currentPassword = dialog.getByLabel('当前密码', { exact: true })
+  await expect(currentPassword).toHaveAttribute('type', 'password')
+  await dialog.getByRole('button', { name: '显示密码', exact: true }).first().click()
+  await expect(currentPassword).toHaveAttribute('type', 'text')
+  await expect(dialog.getByText('手机号', { exact: true })).toHaveCount(0)
 })
 
 test('keyboard avatar selection uses trusted CAS write and updates header only after refresh', async ({ page }) => {
@@ -457,7 +473,7 @@ test('#182 accepted change with failed refresh recovers with GET only', async ({
   await dialog.getByLabel('验证码', { exact: true }).fill('123456')
   await dialog.getByRole('button', { name: '验证并保存', exact: true }).click()
   await expect(dialog.getByRole('button', { name: '重新确认最新资料', exact: true })).toBeVisible()
-  await expect(page.locator('.contact-card')).toContainText('a***@example.invalid')
+  await expect(page.locator('[data-ui-region="scope"]')).toContainText('a***@example.invalid')
   await expect(dialog.getByRole('button', { name: '验证并保存', exact: true })).toHaveCount(0)
   options.failReadback = false
   await dialog.getByRole('button', { name: '重新确认最新资料', exact: true }).click()

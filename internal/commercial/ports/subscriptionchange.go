@@ -24,6 +24,7 @@ type SubscriptionChangeRepository interface {
 type SubscriptionChangeRepositories struct {
 	Tasks        ProvisioningRepository
 	Events       OutboxRepository
+	Payments     PaymentOrderRepository
 	Changes      SubscriptionChangeRepository
 	Entitlements EntitlementRepository
 	Transitions  TimeTransitionRepository

@@ -106,4 +106,15 @@ describe('member selection operations', () => {
     expect(store.logs).toHaveLength(before)
     mock.mockRestore()
   })
+  it('copies selected members’ roles without copying their profile or data scope', async () => {
+    const store = useEnterpriseStore()
+    const source = store.members.find((member) => member.id === 'member-2')!
+    const target = store.members.find((member) => member.id === 'member-3')!
+    const profile = { email: target.email, phone: target.phone, scope: target.scope }
+    await store.copyMemberPermissions(source.id, [{ id: target.id, version: target.version }])
+    const updated = store.members.find((member) => member.id === target.id)!
+    expect(updated.roleIds).toEqual(source.roleIds)
+    expect({ email: updated.email, phone: updated.phone, scope: updated.scope }).toEqual(profile)
+    expect(store.logs[0]).toMatchObject({ action: '复制成员角色权限', target: updated.name, risk: 'high' })
+  })
 })

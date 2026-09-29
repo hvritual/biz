@@ -24,6 +24,8 @@ const (
 	SubscriptionChangesApplication_GetMySubscriptionChangePreview_FullMethodName  = "/commercial.v1.SubscriptionChangesApplication/GetMySubscriptionChangePreview"
 	SubscriptionChangesApplication_ConfirmMySubscriptionChange_FullMethodName     = "/commercial.v1.SubscriptionChangesApplication/ConfirmMySubscriptionChange"
 	SubscriptionChangesApplication_GetMySubscriptionChangeReceipt_FullMethodName  = "/commercial.v1.SubscriptionChangesApplication/GetMySubscriptionChangeReceipt"
+	SubscriptionChangesApplication_CreateMyPaymentOrder_FullMethodName            = "/commercial.v1.SubscriptionChangesApplication/CreateMyPaymentOrder"
+	SubscriptionChangesApplication_GetMyPaymentOrder_FullMethodName               = "/commercial.v1.SubscriptionChangesApplication/GetMyPaymentOrder"
 	SubscriptionChangesApplication_PreviewSubscriptionChange_FullMethodName       = "/commercial.v1.SubscriptionChangesApplication/PreviewSubscriptionChange"
 	SubscriptionChangesApplication_ConfirmSubscriptionChange_FullMethodName       = "/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange"
 	SubscriptionChangesApplication_GetSubscriptionChangePreview_FullMethodName    = "/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangePreview"
@@ -46,6 +48,8 @@ type SubscriptionChangesApplicationClient interface {
 	// the existing platform commercial/payment approval path.
 	ConfirmMySubscriptionChange(ctx context.Context, in *ConfirmMySubscriptionChangeRequest, opts ...grpc.CallOption) (*SubscriptionChangeReceiptDTO, error)
 	GetMySubscriptionChangeReceipt(ctx context.Context, in *ReadMySubscriptionChangeReceiptRequest, opts ...grpc.CallOption) (*SubscriptionChangeReceiptDTO, error)
+	CreateMyPaymentOrder(ctx context.Context, in *CreateMyPaymentOrderRequest, opts ...grpc.CallOption) (*PaymentOrderDTO, error)
+	GetMyPaymentOrder(ctx context.Context, in *GetMyPaymentOrderRequest, opts ...grpc.CallOption) (*PaymentOrderDTO, error)
 	PreviewSubscriptionChange(ctx context.Context, in *PreviewSubscriptionChangeRequest, opts ...grpc.CallOption) (*SubscriptionChangePreviewDTO, error)
 	ConfirmSubscriptionChange(ctx context.Context, in *ConfirmSubscriptionChangeRequest, opts ...grpc.CallOption) (*SubscriptionChangeReceiptDTO, error)
 	GetSubscriptionChangePreview(ctx context.Context, in *ReadSubscriptionChangeRequest, opts ...grpc.CallOption) (*SubscriptionChangePreviewDTO, error)
@@ -110,6 +114,26 @@ func (c *subscriptionChangesApplicationClient) GetMySubscriptionChangeReceipt(ct
 	return out, nil
 }
 
+func (c *subscriptionChangesApplicationClient) CreateMyPaymentOrder(ctx context.Context, in *CreateMyPaymentOrderRequest, opts ...grpc.CallOption) (*PaymentOrderDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PaymentOrderDTO)
+	err := c.cc.Invoke(ctx, SubscriptionChangesApplication_CreateMyPaymentOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *subscriptionChangesApplicationClient) GetMyPaymentOrder(ctx context.Context, in *GetMyPaymentOrderRequest, opts ...grpc.CallOption) (*PaymentOrderDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PaymentOrderDTO)
+	err := c.cc.Invoke(ctx, SubscriptionChangesApplication_GetMyPaymentOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *subscriptionChangesApplicationClient) PreviewSubscriptionChange(ctx context.Context, in *PreviewSubscriptionChangeRequest, opts ...grpc.CallOption) (*SubscriptionChangePreviewDTO, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SubscriptionChangePreviewDTO)
@@ -166,6 +190,8 @@ type SubscriptionChangesApplicationServer interface {
 	// the existing platform commercial/payment approval path.
 	ConfirmMySubscriptionChange(context.Context, *ConfirmMySubscriptionChangeRequest) (*SubscriptionChangeReceiptDTO, error)
 	GetMySubscriptionChangeReceipt(context.Context, *ReadMySubscriptionChangeReceiptRequest) (*SubscriptionChangeReceiptDTO, error)
+	CreateMyPaymentOrder(context.Context, *CreateMyPaymentOrderRequest) (*PaymentOrderDTO, error)
+	GetMyPaymentOrder(context.Context, *GetMyPaymentOrderRequest) (*PaymentOrderDTO, error)
 	PreviewSubscriptionChange(context.Context, *PreviewSubscriptionChangeRequest) (*SubscriptionChangePreviewDTO, error)
 	ConfirmSubscriptionChange(context.Context, *ConfirmSubscriptionChangeRequest) (*SubscriptionChangeReceiptDTO, error)
 	GetSubscriptionChangePreview(context.Context, *ReadSubscriptionChangeRequest) (*SubscriptionChangePreviewDTO, error)
@@ -193,6 +219,12 @@ func (UnimplementedSubscriptionChangesApplicationServer) ConfirmMySubscriptionCh
 }
 func (UnimplementedSubscriptionChangesApplicationServer) GetMySubscriptionChangeReceipt(context.Context, *ReadMySubscriptionChangeReceiptRequest) (*SubscriptionChangeReceiptDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetMySubscriptionChangeReceipt not implemented")
+}
+func (UnimplementedSubscriptionChangesApplicationServer) CreateMyPaymentOrder(context.Context, *CreateMyPaymentOrderRequest) (*PaymentOrderDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateMyPaymentOrder not implemented")
+}
+func (UnimplementedSubscriptionChangesApplicationServer) GetMyPaymentOrder(context.Context, *GetMyPaymentOrderRequest) (*PaymentOrderDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetMyPaymentOrder not implemented")
 }
 func (UnimplementedSubscriptionChangesApplicationServer) PreviewSubscriptionChange(context.Context, *PreviewSubscriptionChangeRequest) (*SubscriptionChangePreviewDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method PreviewSubscriptionChange not implemented")
@@ -316,6 +348,42 @@ func _SubscriptionChangesApplication_GetMySubscriptionChangeReceipt_Handler(srv 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SubscriptionChangesApplication_CreateMyPaymentOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateMyPaymentOrderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionChangesApplicationServer).CreateMyPaymentOrder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionChangesApplication_CreateMyPaymentOrder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionChangesApplicationServer).CreateMyPaymentOrder(ctx, req.(*CreateMyPaymentOrderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SubscriptionChangesApplication_GetMyPaymentOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMyPaymentOrderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionChangesApplicationServer).GetMyPaymentOrder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionChangesApplication_GetMyPaymentOrder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionChangesApplicationServer).GetMyPaymentOrder(ctx, req.(*GetMyPaymentOrderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SubscriptionChangesApplication_PreviewSubscriptionChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PreviewSubscriptionChangeRequest)
 	if err := dec(in); err != nil {
@@ -414,6 +482,14 @@ var SubscriptionChangesApplication_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetMySubscriptionChangeReceipt",
 			Handler:    _SubscriptionChangesApplication_GetMySubscriptionChangeReceipt_Handler,
+		},
+		{
+			MethodName: "CreateMyPaymentOrder",
+			Handler:    _SubscriptionChangesApplication_CreateMyPaymentOrder_Handler,
+		},
+		{
+			MethodName: "GetMyPaymentOrder",
+			Handler:    _SubscriptionChangesApplication_GetMyPaymentOrder_Handler,
 		},
 		{
 			MethodName: "PreviewSubscriptionChange",

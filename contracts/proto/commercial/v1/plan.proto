@@ -13,8 +13,13 @@ message PlanTerms {
  repeated string sales_scope = 2;
  string validity_mode = 3;
  uint32 validity_days = 4;
- // Opaque pricing-owner reference, not a paid flag or amount.
+ // Stable external pricing reference; payment authorization is still derived
+ // only from the immutable price facts below, never from browser input.
  string price_ref = 5;
+ // Immutable settlement facts for a paid plan version. `amount_minor` is in
+ // the smallest currency unit and is authoritative for order creation.
+ string currency = 6;
+ uint64 amount_minor = 7;
 }
 message PlanVersionDTO {
  string plan_code = 1; uint64 version = 2; uint64 revision = 3; uint64 plan_revision = 4;

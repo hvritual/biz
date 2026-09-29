@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
+import { UiButton, UiInput, UiOption, UiSelect, UiTabTrigger, UiTabs } from '@/ui/base'
 
 import { computed, ref, watch } from 'vue'
 import type { Role, DataScope } from '@/types/enterprise'
@@ -27,7 +27,7 @@ const busy = ref(false)
 const catalogBusy = ref(false)
 const catalogReady = ref(false)
 const catalogRevision = ref(0)
-const groupAnchors = ref<Record<string, HTMLElement | null>>({})
+const permissionFilter = ref<'all' | 'assigned'>('all')
 
 const draft = ref<Role>({
   id: '',
@@ -69,6 +69,14 @@ const permissionGroups = computed(() => {
     })),
   }))
 })
+const selectedPermissionGroups = computed(() => permissionGroups.value.map((group) => ({
+  ...group,
+  items: group.items.filter((item) => draft.value.permissions.includes(item.key)),
+})).filter((group) => group.items.length > 0))
+const totalPermissionCount = computed(() => permissionGroups.value.reduce((count, group) => count + group.items.length, 0))
+const visiblePermissionGroups = computed(() => permissionFilter.value === 'all'
+  ? permissionGroups.value
+  : selectedPermissionGroups.value)
 
 async function loadServerPermissionCatalog() {
   if (!apiMode.value || !props.open) {
@@ -96,6 +104,7 @@ watch(
   () => [props.open, props.role, store.sourceKind] as const,
   () => {
     error.value = ''
+    permissionFilter.value = 'all'
     draft.value = props.role
       ? (JSON.parse(JSON.stringify(props.role)) as Role)
       : {
@@ -147,16 +156,6 @@ function toggleGroup(group: (typeof permissionGroups.value)[number], event: Even
   ])]
 }
 
-function setGroupAnchor(key: string, element: unknown) {
-  groupAnchors.value[key] = element instanceof HTMLElement ? element : null
-}
-
-function focusGroup(key: string) {
-  const element = groupAnchors.value[key]
-  element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  element?.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus()
-}
-
 async function revalidatePermissionSelection() {
   if (!apiMode.value) return
   const catalog = await readActionCatalog()
@@ -195,7 +194,7 @@ async function save() {
   <UiDialog
     :open="open"
     :title="readonly ? '内置角色详情' : role ? '编辑角色权限' : '新建角色'"
-    width="850px"
+    width="1080px"
     @close="emit('close')"
   >
     <div class="page-stack">
@@ -233,81 +232,42 @@ async function save() {
             </template>
           </UiSelect>
         </label>
-        <label class="field full-width">
-          <span>角色说明</span>
-          <UiTextarea
-            v-model="draft.description"
-            class="textarea"
-            rows="2"
-            :readonly="readonly"
-            maxlength="120"
-            placeholder="描述该角色的职责和授权边界（最多 120 字）"
-          />
-        </label>
       </div>
 
-      <div class="row-between">
-        <h3>功能权限</h3>
-        <span class="muted">已选 {{ draft.permissions.length }} 项</span>
-      </div>
-      <div
-        v-if="permissionGroups.length"
-        class="permission-nav"
-        aria-label="权限分组快捷定位"
-      >
-        <UiButton
-          v-for="group in permissionGroups"
-          :key="`nav-${group.key}`"
-          class="permission-nav-button"
-          type="button"
-          @click="focusGroup(group.key)"
-        >
-          {{ group.name }}
-        </UiButton>
-      </div>
-      <div class="permission-groups" data-role-permission-tree>
-        <section
-          v-for="group in permissionGroups"
-          :key="group.key"
-          :ref="(element) => setGroupAnchor(group.key, element)"
-          class="permission-group"
-          :data-role-permission-group="group.key"
-        >
-          <label class="permission-group-header">
-            <UiInput
-              type="checkbox"
-              :aria-label="`${group.name} 全选`"
-              :checked="groupChecked(group)"
-              :indeterminate="groupMixed(group)"
-              :disabled="readonly || group.items.length === 0"
-              :data-role-group-state="groupMixed(group) ? 'mixed' : groupChecked(group) ? 'checked' : 'unchecked'"
-              @change="toggleGroup(group, $event)"
-            />
-            <span>
-              <strong>{{ group.name }}</strong>
-              <small>{{ selectedInGroup(group) }} / {{ group.items.length }}</small>
-            </span>
-          </label>
-          <label
-            v-for="item in group.items"
-            :key="item.key"
-            class="permission-item"
-            :data-role-permission-leaf="item.key"
-          >
-            <UiInput
-              type="checkbox"
-              :aria-label="`${group.name} ${item.label}`"
-              :checked="draft.permissions.includes(item.key)"
-              :disabled="readonly"
-              @change="toggle(item.key)"
-            />
-            <span>
-              <strong>{{ item.label }}</strong>
-              <small>{{ item.description }}</small>
-            </span>
-          </label>
-        </section>
-      </div>
+      <section class="role-permission-workspace" aria-label="功能权限">
+        <div class="permission-explorer">
+          <div class="permission-workspace-heading"><div><h3>选择权限</h3><p>按业务域勾选，勾选结果会同步显示在右侧。</p></div><div class="permission-statistics"><span>总权限 {{ totalPermissionCount }}</span><strong>已分配 {{ draft.permissions.length }}</strong></div></div>
+          <UiTabs :model-value="permissionFilter" label="权限筛选" class="permission-filter" @update:model-value="(value: string) => permissionFilter = value as 'all' | 'assigned'"><template #list><UiTabTrigger value="all">全部（{{ totalPermissionCount }}）</UiTabTrigger><UiTabTrigger value="assigned">已分配（{{ draft.permissions.length }}）</UiTabTrigger></template></UiTabs>
+          <div class="permission-tree" data-role-permission-tree>
+            <div v-if="visiblePermissionGroups.length" class="permission-groups">
+              <section v-for="group in visiblePermissionGroups" :key="group.key" class="permission-group" :class="{ selected: selectedInGroup(group) > 0 }" :data-role-permission-group="group.key">
+                <label class="permission-group-header">
+                  <UiInput type="checkbox" :aria-label="`${group.name} 全选`" :checked="groupChecked(group)" :indeterminate="groupMixed(group)" :disabled="readonly || group.items.length === 0" :data-role-group-state="groupMixed(group) ? 'mixed' : groupChecked(group) ? 'checked' : 'unchecked'" @change="toggleGroup(group, $event)" />
+                  <AppIcon name="folder" :size="18" />
+                  <span><strong>{{ group.name }}</strong><small>{{ selectedInGroup(group) }} / {{ group.items.length }}</small></span>
+                </label>
+                <label v-for="item in group.items" :key="item.key" class="permission-item" :class="{ selected: draft.permissions.includes(item.key) }" :data-role-permission-leaf="item.key">
+                  <UiInput type="checkbox" :aria-label="`${group.name} ${item.label}`" :checked="draft.permissions.includes(item.key)" :disabled="readonly" @change="toggle(item.key)" />
+                  <span><strong>{{ item.label }}</strong><small>{{ item.description }}</small></span>
+                </label>
+              </section>
+            </div>
+            <div v-else class="permission-filter-empty"><AppIcon name="shield" :size="22" /><p>暂无已分配权限</p><UiButton variant="outline" size="sm" @click="permissionFilter = 'all'">查看全部权限</UiButton></div>
+          </div>
+        </div>
+        <aside class="selected-permission-panel" data-role-selected-permissions aria-label="已选权限">
+          <header><div><h3>已选权限</h3><p>当前角色将拥有以下权限。</p></div><strong>{{ draft.permissions.length }}</strong></header>
+          <div v-if="selectedPermissionGroups.length" class="selected-permission-groups">
+            <section v-for="group in selectedPermissionGroups" :key="`selected-${group.key}`" class="selected-permission-group">
+              <div class="selected-group-heading"><AppIcon name="folder" :size="17" /><strong>{{ group.name }}</strong><span>{{ group.items.length }}</span></div>
+              <ul>
+                <li v-for="item in group.items" :key="`selected-${item.key}`"><AppIcon name="check" :size="14" /><div><strong>{{ item.label }}</strong><small>{{ item.description }}</small></div></li>
+              </ul>
+            </section>
+          </div>
+          <div v-else class="selected-permission-empty"><AppIcon name="shield" :size="24" /><p>尚未选择权限</p><small>从左侧权限树选择后会显示在这里。</small></div>
+        </aside>
+      </section>
       <Notice v-if="apiMode && catalogReady && !permissionGroups.length">
         当前企业暂无可配置权限。
       </Notice>
@@ -328,73 +288,54 @@ async function save() {
 </template>
 
 <style scoped>
-.permission-nav {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-.permission-nav-button {
-  width: auto;
-  min-width: max-content;
-}
-.permission-groups {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  max-height: 360px;
-  overflow: auto;
-}
-.permission-group {
-  border: 1px solid var(--color-border);
-  border-radius: 9px;
-  padding: 14px;
-}
-.permission-group-header {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--color-border);
-}
-.permission-group-header > [data-slot="input"],
-.permission-item > [data-slot="input"] {
-  width: 18px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0;
-}
-.permission-group-header strong,
-.permission-group-header small {
-  display: block;
-}
-.permission-group-header strong {
-  font-size: 13px;
-}
-.permission-group-header small {
-  margin-top: 2px;
-  color: var(--color-text-muted);
-  font-size: 10px;
-}
-.permission-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  padding: 8px 0;
-}
-.permission-item strong,
-.permission-item small {
-  display: block;
-}
-.permission-item strong {
-  font-size: 12px;
-}
-.permission-item small {
-  margin-top: 3px;
-  color: var(--color-text-muted);
-  font-size: 10px;
-}
-@media (max-width: 767px) {
-  .permission-groups { grid-template-columns: 1fr; }
-}
+.role-permission-workspace { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(300px, .88fr); gap: 16px; }
+.permission-explorer, .selected-permission-panel { box-sizing: border-box; min-width: 0; height: 480px; max-height: 480px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.permission-explorer { display: grid; grid-template-rows: auto auto minmax(0, 1fr); padding: 16px; }
+.permission-workspace-heading, .selected-permission-panel header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.permission-workspace-heading h3, .selected-permission-panel h3 { font-size: var(--text-base); }
+.permission-workspace-heading p, .selected-permission-panel header p { margin-top: 4px; color: var(--color-text-secondary); font-size: var(--text-xs); line-height: 1.5; }
+.permission-statistics { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; color: var(--color-text-secondary); font-size: var(--text-xs); }
+.permission-statistics strong { padding: 4px 7px; border-radius: 999px; background: var(--color-primary-soft); color: var(--color-primary); font-weight: 600; }
+.permission-filter { flex-shrink: 0; margin-top: 10px; }
+.permission-filter :deep(.tabs-root) { gap: 0; }
+.permission-filter :deep(.tabs-list) { gap: 16px; }
+.permission-filter :deep(.tab-trigger) { height: 34px; }
+.permission-tree { min-height: 0; }
+.permission-group-header .icon { color: var(--color-primary); }
+.permission-filter-empty { display: grid; min-height: 0; align-content: center; justify-items: center; gap: 8px; padding: 24px; color: var(--color-text-muted); text-align: center; }
+.permission-filter-empty .icon { color: var(--color-primary); }
+.permission-filter-empty p { color: var(--color-text-secondary); font-size: var(--text-sm); }
+.permission-groups { display: block; height: 100%; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+.permission-group { display: block; margin-bottom: 8px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); overflow: hidden; }
+.permission-group.selected { border-color: var(--color-primary); }
+.permission-group-header { display: grid; grid-template-columns: 18px 18px minmax(0, 1fr); align-items: center; gap: 9px; padding: 12px; background: var(--color-surface-soft); }
+.permission-group.selected .permission-group-header, .permission-item.selected { background: var(--color-primary-soft); }
+.permission-group-header > [data-slot="input"], .permission-item > [data-slot="input"] { width: 18px; min-width: 18px; height: 18px; padding: 0; }
+.permission-group-header > span { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 8px; }
+.permission-group-header strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.permission-group-header small { flex-shrink: 0; color: var(--color-text-muted); font-size: 10px; }
+.permission-item { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: flex-start; gap: 9px; padding: 10px 12px 10px 42px; border-top: 1px solid var(--color-border); }
+.permission-item strong, .permission-item small { display: block; }
+.permission-item strong { font-size: 12px; }
+.permission-item small { margin-top: 3px; color: var(--color-text-muted); font-size: 10px; }
+.selected-permission-panel { display: grid; min-height: 0; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
+.selected-permission-panel header { flex-shrink: 0; padding: 16px; border-bottom: 1px solid var(--color-border); background: var(--color-surface-soft); }
+.selected-permission-panel header > strong { display: grid; min-width: 28px; height: 28px; place-items: center; border-radius: 999px; background: var(--color-primary-soft); color: var(--color-primary); font-size: var(--text-sm); }
+.selected-permission-groups { display: block; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+.selected-permission-group { display: block; border-bottom: 1px solid var(--color-border); }
+.selected-group-heading { display: flex; align-items: center; gap: 8px; padding: 12px 16px; }
+.selected-group-heading .icon { color: var(--color-primary); }
+.selected-group-heading strong { flex: 1; font-size: var(--text-sm); }
+.selected-group-heading span { color: var(--color-text-muted); font-size: var(--text-xs); }
+.selected-permission-group ul { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0 16px 14px; list-style: none; }
+.selected-permission-group li { display: flex; align-items: flex-start; gap: 8px; }
+.selected-permission-group li > .icon { margin-top: 2px; color: var(--color-success); }
+.selected-permission-group li strong, .selected-permission-group li small { display: block; }
+.selected-permission-group li strong { font-size: var(--text-xs); }
+.selected-permission-group li small { margin-top: 2px; color: var(--color-text-muted); font-size: 10px; line-height: 1.45; }
+.selected-permission-empty { display: grid; min-height: 0; align-content: center; justify-items: center; gap: 6px; padding: 32px 18px; text-align: center; color: var(--color-text-muted); }
+.selected-permission-empty .icon { color: var(--color-primary); }
+.selected-permission-empty p { color: var(--color-text-secondary); font-size: var(--text-sm); font-weight: 600; }
+.selected-permission-empty small { font-size: var(--text-xs); line-height: 1.5; }
+@media (max-width: 767px) { .role-permission-workspace { grid-template-columns: 1fr; } }
 </style>

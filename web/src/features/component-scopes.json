@@ -3,6 +3,10 @@
     "scenario": "企业中心 · 当前企业本人的可选短信邮件偏好确认与恢复",
     "scope": "仅用于现有个人中心；可信会话、真实回执和读回是权威，不提供通知发送或安全消息豁免。"
   },
+  "enterprise/components/security/PersonalPasswordDialog.vue": {
+    "scenario": "企业中心 · 本人密码修改弹窗",
+    "scope": "仅用于已登录账号修改自身密码；调用服务端身份接口，密码不进入企业资料、通知或审计展示状态。"
+  },
   "app-shell/components/AppHeader.vue": {
     "scenario": "应用框架 · 业务布局与导航 · AppHeader",
     "scope": "仅用于应用框架业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
@@ -103,6 +107,18 @@
     "scenario": "企业中心 · 套餐变更生命周期 · PlanChangeLifecycle",
     "scope": "仅用于企业中心租户套餐目标发现、权威预览、审批边界、确认与回执展示；跨业务复用必须下沉 ui/common，不得绕过 ui/base 或直接访问网络。"
   },
+  "enterprise/components/PlanChangeReceipt.vue": {
+    "scenario": "企业中心 · 套餐变更 · 开通结果同步",
+    "scope": "仅展示当前租户套餐变更回执并请求刷新；不创建订单、不传递租户身份且不自行改变权益。"
+  },
+  "enterprise/components/PlanChangeConfirmDialog.vue": {
+    "scenario": "企业中心 · 套餐变更 · 最终确认",
+    "scope": "仅确认已生成预览的套餐变更摘要；不创建预览、订单或支付状态，实际确认必须由父流程通过可信会话提交。"
+  },
+  "enterprise/components/PlanTargetDetails.vue": {
+    "scenario": "企业中心 · 套餐变更 · 已选套餐条款",
+    "scope": "仅展示服务端返回的已发布套餐条款；不持有租户身份、支付状态或写入逻辑，跨业务复用必须下沉 ui/common。"
+  },
   "enterprise/components/members/MemberActionDialog.vue": {
     "scenario": "企业中心 · 业务操作弹窗 · MemberActionDialog",
     "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
@@ -110,6 +126,10 @@
   "enterprise/components/members/MemberBulkDialog.vue": {
     "scenario": "企业中心 · 业务操作弹窗 · MemberBulkDialog",
     "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
+  },
+  "enterprise/components/members/MemberPermissionCopyDialog.vue": {
+    "scenario": "企业中心 · 成员角色权限复制 · MemberPermissionCopyDialog",
+    "scope": "仅用于当前企业内从一个成员向显式目标成员复制角色绑定；不得复制身份、安全凭据、通知偏好或成员级业务范围，写入必须由 Enterprise store 的可信会话与读回处理。"
   },
   "enterprise/components/members/MemberDetailDrawer.vue": {
     "scenario": "企业中心 · 详情展示 · MemberDetailDrawer",

@@ -71,7 +71,7 @@ func ce07New(t *testing.T) *ce07Environment {
 	return &ce07Environment{e, v1.NewPlanManagementApplicationClient(conn)}
 }
 func ce07Terms() *v1.PlanTerms {
-	return &v1.PlanTerms{Modules: []*v1.PlanModule{{ModuleCode: "device-operations", CapabilityCodes: []string{"device.lifecycle", "device.transfer"}, Quotas: []*v1.PlanQuota{{Key: "tenant.devices", Value: 10}}, Fields: []*v1.PlanField{{Key: "device.identity", Action: "read", Mode: "allow"}}}}, SalesScope: []string{"domestic"}, ValidityMode: "fixed_days", ValidityDays: 30, PriceRef: "price-version-1"}
+	return &v1.PlanTerms{Modules: []*v1.PlanModule{{ModuleCode: "device-operations", CapabilityCodes: []string{"device.lifecycle", "device.transfer"}, Quotas: []*v1.PlanQuota{{Key: "tenant.devices", Value: 10}}, Fields: []*v1.PlanField{{Key: "device.identity", Action: "read", Mode: "allow"}}}}, SalesScope: []string{"domestic"}, ValidityMode: "fixed_days", ValidityDays: 30, PriceRef: "price-version-1", Currency: "CNY", AmountMinor: 19900}
 }
 func (e *ce07Environment) ctx() context.Context { return ce04Context(e.token, ce04Random(e.t)) }
 func (e *ce07Environment) draft() *v1.PlanVersionDTO {

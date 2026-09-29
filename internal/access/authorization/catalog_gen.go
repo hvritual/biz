@@ -393,6 +393,20 @@ var generatedActions = []Action{
 		RPC: "/commercial.v1.SubscriptionManagementApplication/GetMyTenantUsage", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/usage"}},
 	},
 	{
+		Code: "commercial.subscription.payment.order.create_my", Domain: "commercial", Application: "subscription_changes", UseCase: "create_my_payment_order",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("commercial.catalog.read"), authz.PermissionKey("tenant.subscription.manage")}, PermissionMode: "all",
+		Classification: "recovery", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "/commercial.v1.SubscriptionChangesApplication/CreateMyPaymentOrder", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/tenant/subscription/payment-orders"}},
+	},
+	{
+		Code: "commercial.subscription.payment.order.get_my", Domain: "commercial", Application: "subscription_changes", UseCase: "get_my_payment_order",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.subscription.manage")}, PermissionMode: "all",
+		Classification: "recovery", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "/commercial.v1.SubscriptionChangesApplication/GetMyPaymentOrder", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/subscription/payment-orders/{order_id}"}},
+	},
+	{
 		Code: "commercial.subscription.rule.list", Domain: "commercial", Application: "subscription_management", UseCase: "list_default_subscription_rules",
 		TenantRequired: false, Authentication: []string{"api-key"},
 		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.subscription.read")}, PermissionMode: "all",

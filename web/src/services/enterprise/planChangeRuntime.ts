@@ -7,6 +7,7 @@ import {
   type PlanVersionDTO,
   type SubscriptionChangePreviewDTO,
   type SubscriptionChangeReceiptDTO,
+  type PaymentOrderDTO,
 } from '@/services/commercial/platformCommercial'
 import { sessionContext, type TrustedSession } from '@/services/runtime/api'
 
@@ -103,6 +104,30 @@ export function getMySubscriptionChangeReceipt(session: TrustedSession, changeId
   )
 }
 
+export type TenantPaymentProvider = 'WECHAT_NATIVE' | 'ALIPAY_PAGE'
+
+export function createMyPaymentOrder(
+  session: TrustedSession,
+  preview: SubscriptionChangePreviewDTO,
+  provider: TenantPaymentProvider,
+  requestId = createTenantChangeRequestId('tenant-payment-order'),
+) {
+  requireTenantSession(session)
+  return mutate<PaymentOrderDTO>(
+    '/v1/tenant/subscription/payment-orders',
+    'POST',
+    { requestId, changeId: preview.changeId, previewHash: preview.previewHash, provider },
+    { idempotencyKey: requestId, sessionContext: sessionContext(session) },
+  )
+}
+
+export function getMyPaymentOrder(session: TrustedSession, orderId: string) {
+  return request<PaymentOrderDTO>(
+    `/v1/tenant/subscription/payment-orders/${encodeURIComponent(orderId)}`,
+    { headers: trustedHeaders(session) },
+  )
+}
+
 export function needsExternalCommercialApproval(preview: SubscriptionChangePreviewDTO | null) {
   return Boolean(preview && preview.pricingBasis && preview.pricingBasis !== 'NO_PRICE_REFERENCE')
 }
@@ -111,7 +136,6 @@ export function tenantChangeRuntimeError(error: unknown) {
   if (error instanceof CommercialApiError) {
     if (error.code === 'unauthenticated') return '登录会话已失效，请重新登录。'
     if (error.code === 'forbidden') return '当前账号没有变更套餐的权限。'
-    if (error.code === 'conflict') return '套餐状态已变化，请重新生成变更方案。'
     if (error.message.includes('SUBSCRIPTION_CHANGE_EXTERNAL_APPROVAL_REQUIRED')) {
       return '该套餐存在价格引用，需要先完成外部商业或支付审批，当前页面不会绕过审批直接生效。'
     }
@@ -121,6 +145,7 @@ export function tenantChangeRuntimeError(error: unknown) {
     if (error.message.includes('SUBSCRIPTION_CHANGE_QUOTA_VALIDATION_REQUIRED')) {
       return '当前额度状态需要重新核对，暂不能确认此次变更。'
     }
+    if (error.code === 'conflict') return '套餐状态已变化，请重新生成变更方案。'
     return backendErrorFallback('planChange')
   }
   return error instanceof Error ? error.message : backendErrorFallback('planChange')

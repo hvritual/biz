@@ -60,6 +60,7 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
   const error = ref('')
   const model = ref<EnterprisePlanReadModel | null>(null)
   const demoRequestCount = ref(0)
+  let loadGeneration = 0
 
   const isServerBacked = computed(() => enterprise.sourceKind === 'api')
   const currentPlan = computed(() => model.value ? backendTermLabel('plan', model.value.subscription.planCode) : '标准版')
@@ -126,22 +127,32 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
   })
 
   async function load() {
+    const generation = ++loadGeneration
     if (!isServerBacked.value) {
-      model.value = null
-      error.value = ''
-      return
+      if (generation === loadGeneration) {
+        model.value = null
+        error.value = ''
+      }
+      return false
     }
     loading.value = true
     error.value = ''
     try {
-      model.value = await loadEnterprisePlanReadModel()
-      if (model.value.usageError) error.value = '额度使用信息暂不可用，请稍后重试。'
+      const next = await loadEnterprisePlanReadModel()
+      if (
+        generation !== loadGeneration ||
+        (enterprise.tenantId && next.session.active_tenant_id !== enterprise.tenantId)
+      ) return false
+      model.value = next
+      if (next.usageError) error.value = '额度使用信息暂不可用，请稍后重试。'
+      return true
     } catch (cause) {
+      if (generation !== loadGeneration) return false
       model.value = null
       error.value = enterprisePlanRuntimeError(cause)
       throw cause
     } finally {
-      loading.value = false
+      if (generation === loadGeneration) loading.value = false
     }
   }
 
@@ -165,7 +176,12 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
 
   watch(
     () => enterprise.tenantId,
-    () => void load().catch(() => undefined),
+    () => {
+      loadGeneration += 1
+      model.value = null
+      error.value = ''
+      void load().catch(() => undefined)
+    },
     { immediate: true },
   )
 

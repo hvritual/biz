@@ -13,6 +13,7 @@ import { usePersonalSecurity } from '../../composables/usePersonalSecurity'
 
 const enterprise = useEnterpriseStore(), personal = usePersonalProfileStore()
 const { t } = useI18n()
+const emit = defineEmits<{ password: [] }>()
 const profile = computed(() => personal.profile)
 const hasBoundContact = computed(() => Boolean(profile.value?.email || profile.value?.phone))
 const flow = usePersonalSecurity({
@@ -44,13 +45,23 @@ onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', pa
 
 <template>
   <section class="card personal-security-panel" aria-labelledby="personal-security-heading">
-    <div class="security-heading">
-      <AppIcon name="shield" :size="22" />
-      <div><h2 id="personal-security-heading">{{ t('personalSecurity.title') }}</h2><p>{{ t('personalSecurity.description') }}</p></div>
-    </div>
-    <div class="security-command-row">
-      <UiButton variant="outline" :disabled="!profile" @click="flow.begin('contact', 'email')">{{ t('personalSecurity.changeEmail') }}</UiButton>
-      <UiButton variant="outline" :disabled="!profile" @click="flow.begin('contact', 'sms')">{{ t('personalSecurity.changePhone') }}</UiButton>
+    <div class="security-heading"><h2 id="personal-security-heading">{{ t('personalProfile.securitySection') }}</h2></div>
+    <div class="security-list">
+      <div class="security-row">
+        <span class="security-icon"><AppIcon name="key" :size="20" /></span>
+        <div class="security-copy"><strong>{{ t('personalProfile.password') }}</strong><small>{{ t('personalProfile.passwordDescription') }}</small></div>
+        <UiButton variant="outline" @click="emit('password')">{{ t('personalProfile.changePassword') }}</UiButton>
+      </div>
+      <div class="security-row">
+        <span class="security-icon"><AppIcon name="phone" :size="20" /></span>
+        <div class="security-copy"><strong>{{ t('personalSecurity.sms') }}</strong><small>{{ profile?.phone || t('personalProfile.unbound') }}</small></div>
+        <UiButton variant="outline" :disabled="!profile" @click="flow.begin('contact', 'sms')">{{ t('personalProfile.change') }}</UiButton>
+      </div>
+      <div class="security-row">
+        <span class="security-icon"><AppIcon name="mail" :size="20" /></span>
+        <div class="security-copy"><strong>{{ t('personalSecurity.email') }}</strong><small>{{ profile?.email || t('personalProfile.unbound') }}</small></div>
+        <UiButton variant="outline" :disabled="!profile" @click="flow.begin('contact', 'email')">{{ profile?.email ? t('personalProfile.change') : t('personalProfile.bind') }}</UiButton>
+      </div>
     </div>
     <div class="deletion-row">
       <div><strong>{{ t('personalSecurity.deletion') }}</strong><p>{{ t('personalSecurity.ownerHint') }}</p></div>
@@ -122,12 +133,18 @@ onBeforeUnmount(() => { unsubscribe(); window.removeEventListener('pagehide', pa
 </template>
 
 <style scoped>
-.personal-security-panel { padding: 22px; }
+.personal-security-panel { padding: 18px 20px; }
 .security-heading { display: flex; align-items: flex-start; gap: 12px; }
 h2 { font-size: 18px; }
 p, small, dt { color: var(--color-text-secondary); font-size: var(--text-sm); line-height: 1.6; }
-.security-command-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
-.deletion-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid var(--color-border); margin-top: 20px; padding-top: 18px; }
+.security-list { display: flex; flex-direction: column; margin-top: 12px; }
+.security-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 16px 0; border-top: 1px solid var(--color-border); }
+.security-icon { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 50%; background: var(--color-surface-soft); color: var(--color-text-secondary); }
+.security-copy { min-width: 0; }
+.security-copy strong, .security-copy small { display: block; }
+.security-copy strong { font-size: var(--text-sm); }
+.security-copy small { margin-top: 3px; overflow-wrap: anywhere; }
+.deletion-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid var(--color-border); margin-top: 2px; padding-top: 16px; }
 .deletion-row strong { color: var(--color-danger); }
 .security-dialog, .security-form { display: flex; flex-direction: column; gap: 12px; }
 .security-form { border-top: 1px solid var(--color-border); padding-top: 16px; }
@@ -138,5 +155,5 @@ p, small, dt { color: var(--color-text-secondary); font-size: var(--text-sm); li
 .notice-box { display: block; }
 .confirmation-label { display: flex; align-items: flex-start; gap: 10px; }
 .confirmation-label input { width: 18px; height: 18px; flex: 0 0 18px; margin-top: 3px; }
-@media(max-width:600px) { .personal-security-panel { padding:18px; } .deletion-row { align-items:stretch; flex-direction:column; gap:12px; } .scope-summary { grid-template-columns:1fr; } .security-command-row { flex-direction:column; } }
+@media(max-width:600px) { .personal-security-panel { padding:18px; } .security-row { grid-template-columns:40px minmax(0,1fr); } .security-row .inline-flex { grid-column:2; width:100%; } .deletion-row { align-items:stretch; flex-direction:column; gap:12px; } .scope-summary { grid-template-columns:1fr; } }
 </style>

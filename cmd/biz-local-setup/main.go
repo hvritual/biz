@@ -279,7 +279,21 @@ func ensureTenant(tenants accessv1.TenantLifecycleApplicationClient, call func(s
 	if tenant.GetStatus() != accessv1.TenantStatus_TENANT_STATUS_PENDING {
 		return nil, errors.New("local tenant exists in an unsupported state")
 	}
-	return tenants.ActivateTenant(call("local-tenant-activate"), &accessv1.ActivateTenantRequest{Id: tenant.GetId(), Version: tenant.GetVersion()})
+	activated, err := tenants.ActivateTenant(call("local-tenant-activate"), &accessv1.ActivateTenantRequest{Id: tenant.GetId(), Version: tenant.GetVersion()})
+	if status.Code(err) != codes.AlreadyExists {
+		return activated, err
+	}
+	// A previous local setup can have committed this deterministic activation
+	// request before its process exited. Read the authoritative tenant instead
+	// of treating that idempotency receipt as a failed local login setup.
+	confirmed, readErr := tenants.GetTenant(call("local-tenant-activate-readback"), &accessv1.GetTenantRequest{Id: tenant.GetId()})
+	if readErr != nil || confirmed.GetStatus() != accessv1.TenantStatus_TENANT_STATUS_ACTIVE {
+		if readErr != nil {
+			return nil, readErr
+		}
+		return nil, errors.New("local tenant activation receipt did not produce an active tenant")
+	}
+	return confirmed, nil
 }
 
 func ensureModule(ctx context.Context, catalog commercialv1.ModuleCatalogApplicationClient, call func(string) context.Context, code, name string) error {

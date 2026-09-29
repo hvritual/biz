@@ -259,12 +259,18 @@ test('role permission tree preserves mixed full and none parent states and autho
   let dialog = page.getByRole('dialog', { name: '编辑角色权限' })
   const memberGroup = dialog.locator('[data-role-permission-group="member"]')
   const parent = memberGroup.getByLabel('企业成员 全选')
+  const selectedPanel = dialog.locator('[data-role-selected-permissions]')
 
   await expect(parent).toHaveAttribute('aria-checked', 'mixed')
+  await expect(selectedPanel).toContainText('查看成员')
   await parent.check()
   await expect(parent).toBeChecked()
   await expect(memberGroup.locator('[data-role-permission-leaf="tenant.member.read"] input')).toBeChecked()
   await expect(memberGroup.locator('[data-role-permission-leaf="tenant.member.manage"] input')).toBeChecked()
+  await expect(selectedPanel).toContainText('管理成员')
+  await dialog.getByRole('tab', { name: '已分配（2）', exact: true }).click()
+  await expect(dialog.locator('[data-role-permission-group="member"]')).toBeVisible()
+  await expect(dialog.locator('[data-role-permission-leaf="tenant.member.read"]')).toBeVisible()
 
   await dialog.getByRole('button', { name: '保存角色' }).click()
   await expect(page.getByRole('status')).toContainText('角色配置已保存并更新。')
@@ -283,8 +289,7 @@ test('role permission tree preserves mixed full and none parent states and autho
   await expect(reopenedParent).not.toBeChecked()
   await expect(reopenedGroup.locator('input[type="checkbox"]:checked')).toHaveCount(0)
 
-  await dialog.getByRole('button', { name: '角色权限' }).focus()
-  await dialog.getByRole('button', { name: '企业成员' }).click()
+  await reopenedParent.focus()
   await expect(reopenedParent).toBeFocused()
 })
 
@@ -410,4 +415,3 @@ test('unbound custom role deletion requires confirmation and server receipt', as
   expect(writes).toHaveLength(1)
   expect(writes[0]?.headers['idempotency-key']).toMatch(/^enterprise-role-delete-/)
 })
-

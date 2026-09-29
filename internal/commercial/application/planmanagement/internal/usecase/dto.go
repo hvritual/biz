@@ -10,7 +10,7 @@ func fromTerms(t *v1.PlanTerms) (plan.Terms, error) {
 	if t == nil {
 		return plan.Terms{}, plan.ErrInvalid
 	}
-	out := plan.Terms{SalesScope: append([]string(nil), t.SalesScope...), ValidityMode: t.ValidityMode, ValidityDays: t.ValidityDays, PriceRef: t.PriceRef}
+	out := plan.Terms{SalesScope: append([]string(nil), t.SalesScope...), ValidityMode: t.ValidityMode, ValidityDays: t.ValidityDays, PriceRef: t.PriceRef, Currency: t.Currency, AmountMinor: t.AmountMinor}
 	for _, m := range t.Modules {
 		if m == nil {
 			return out, plan.ErrInvalid
@@ -39,7 +39,7 @@ func stamp(t *time.Time) string {
 	return t.UTC().Format(time.RFC3339Nano)
 }
 func dto(v plan.Version) *v1.PlanVersionDTO {
-	t := &v1.PlanTerms{SalesScope: append([]string(nil), v.Terms.SalesScope...), ValidityMode: v.Terms.ValidityMode, ValidityDays: v.Terms.ValidityDays, PriceRef: v.Terms.PriceRef}
+	t := &v1.PlanTerms{SalesScope: append([]string(nil), v.Terms.SalesScope...), ValidityMode: v.Terms.ValidityMode, ValidityDays: v.Terms.ValidityDays, PriceRef: v.Terms.PriceRef, Currency: v.Terms.Currency, AmountMinor: v.Terms.AmountMinor}
 	for _, m := range v.Terms.Modules {
 		n := &v1.PlanModule{ModuleCode: m.Code, CapabilityCodes: append([]string(nil), m.Capabilities...)}
 		for _, q := range m.Quotas {

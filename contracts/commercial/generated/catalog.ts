@@ -56,6 +56,8 @@ export const operationIds = [
   "commercial.subscription.get",
   "commercial.subscription.get_my",
   "commercial.subscription.get_my_usage",
+  "commercial.subscription.payment.order.create_my",
+  "commercial.subscription.payment.order.get_my",
   "commercial.subscription.rule.list",
   "commercial.subscription.rule.put",
   "commercial.subscription.transition.claim",

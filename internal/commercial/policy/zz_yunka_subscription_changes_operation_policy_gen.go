@@ -6,6 +6,8 @@ import "yunka.io/gateway/authz"
 
 const OperationSubscriptionChangesConfirmMySubscriptionChange authz.OperationID = "commercial.subscription.change.confirm_my"
 const OperationSubscriptionChangesConfirmSubscriptionChange authz.OperationID = "commercial.subscription.change.confirm"
+const OperationSubscriptionChangesCreateMyPaymentOrder authz.OperationID = "commercial.subscription.payment.order.create_my"
+const OperationSubscriptionChangesGetMyPaymentOrder authz.OperationID = "commercial.subscription.payment.order.get_my"
 const OperationSubscriptionChangesGetMySubscriptionChangePreview authz.OperationID = "commercial.subscription.change.preview_my.get"
 const OperationSubscriptionChangesGetMySubscriptionChangeReceipt authz.OperationID = "commercial.subscription.change.get_my"
 const OperationSubscriptionChangesGetSubscriptionChangePreview authz.OperationID = "commercial.subscription.change.preview.get"
@@ -26,6 +28,8 @@ func subscriptionChangesPolicies() map[string]authz.Policy {
 	return map[string]authz.Policy{
 		"/commercial.v1.SubscriptionChangesApplication/ConfirmMySubscriptionChange":     {Operation: OperationSubscriptionChangesConfirmMySubscriptionChange, Permissions: []authz.PermissionKey{"commercial.catalog.read", "tenant.subscription.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.SubscriptionChangesApplication/ConfirmSubscriptionChange":       {Operation: OperationSubscriptionChangesConfirmSubscriptionChange, Permissions: []authz.PermissionKey{"commercial.catalog.read", "platform.plan.read", "platform.subscription.confirm", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.SubscriptionChangesApplication/CreateMyPaymentOrder":            {Operation: OperationSubscriptionChangesCreateMyPaymentOrder, Permissions: []authz.PermissionKey{"commercial.catalog.read", "tenant.subscription.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.SubscriptionChangesApplication/GetMyPaymentOrder":               {Operation: OperationSubscriptionChangesGetMyPaymentOrder, Permissions: []authz.PermissionKey{"tenant.subscription.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.SubscriptionChangesApplication/GetMySubscriptionChangePreview":  {Operation: OperationSubscriptionChangesGetMySubscriptionChangePreview, Permissions: []authz.PermissionKey{"tenant.subscription.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.SubscriptionChangesApplication/GetMySubscriptionChangeReceipt":  {Operation: OperationSubscriptionChangesGetMySubscriptionChangeReceipt, Permissions: []authz.PermissionKey{"tenant.subscription.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangePreview":    {Operation: OperationSubscriptionChangesGetSubscriptionChangePreview, Permissions: []authz.PermissionKey{"platform.subscription.read", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},

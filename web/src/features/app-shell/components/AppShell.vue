@@ -142,30 +142,22 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    class="app-shell"
-    :class="{
-      collapsed: ui.collapsed,
-      'module-open': expanded,
-      'mobile-nav-open': ui.mobileOpen,
-      'platform-surface': platformSurface,
-    }"
-    data-business-ui
-  >
+  <div class="app-shell" :class="{
+    collapsed: ui.collapsed,
+    'module-open': expanded,
+    'mobile-nav-open': ui.mobileOpen,
+    'platform-surface': platformSurface,
+  }" data-business-ui>
     <a href="#main-content" class="skip-link">{{ t('shell.skipToContent', '跳到主要内容') }}</a>
     <AppHeader />
-    <UiButton
-      v-if="expanded || ui.mobileOpen"
-      class="navigation-scrim"
-      aria-label="关闭悬浮菜单"
-      tabindex="-1"
-      @click="ui.closeMenu()"
-    />
+    <UiButton v-if="expanded || ui.mobileOpen" class="navigation-scrim" aria-label="关闭悬浮菜单" tabindex="-1"
+      @click="ui.closeMenu()" />
     <aside ref="frame" class="side-frame" :class="{ joined: expanded }">
       <PrimaryNavigation />
       <ModulePanel v-if="ui.module" />
     </aside>
-    <main id="main-content" class="main-content" :inert="expanded || ui.mobileOpen" data-testid="main-content" tabindex="-1">
+    <main id="main-content" class="main-content" :inert="expanded || ui.mobileOpen" data-testid="main-content"
+      tabindex="-1">
       <RouterView v-if="authorizationRenderable" :key="routeKey" />
       <div v-else class="authorization-loading" role="status">{{ t('shell.authorizationChecking') }}</div>
     </main>
@@ -185,9 +177,11 @@ onBeforeUnmount(() => {
 .app-shell {
   --current-rail: var(--rail-width);
 }
+
 .app-shell.collapsed {
   --current-rail: var(--rail-collapsed-width);
 }
+
 .side-frame {
   position: fixed;
   left: 8px;
@@ -196,22 +190,24 @@ onBeforeUnmount(() => {
   z-index: var(--z-nav);
   display: flex;
   align-items: stretch;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-panel);
   width: var(--current-rail);
 }
+
 .side-frame :deep(.primary-nav) {
   width: var(--current-rail);
   flex: 0 0 var(--current-rail);
 }
+
 .side-frame.joined {
   width: calc(var(--current-rail) + var(--module-width));
   background: var(--color-surface);
   box-shadow: var(--shadow-menu);
 }
+
 .side-frame.joined :deep(.primary-nav) {
   border-radius: var(--radius-lg) 0 0 var(--radius-lg);
 }
+
 .main-content {
   margin-left: calc(var(--current-rail) + 8px);
   margin-top: var(--header-height);
@@ -221,6 +217,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   min-height: 100vh;
 }
+
 .authorization-loading {
   min-height: 240px;
   display: grid;
@@ -228,30 +225,37 @@ onBeforeUnmount(() => {
   color: var(--color-text-muted);
   font-size: var(--text-sm);
 }
+
 .platform-surface .main-content {
   background: var(--color-canvas);
   border-radius: 0;
 }
+
 .platform-surface .main-content :deep(.page-stack) {
   gap: 14px;
 }
+
 .platform-surface .main-content :deep(.card) {
   border-color: var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: none;
 }
+
 .platform-surface .main-content :deep([data-ui-region='data'].card),
 .platform-surface .main-content :deep([data-ui-region='history'].card),
 .platform-surface .main-content :deep(.tenant-data-panel),
 .platform-surface .main-content :deep(.versions-card) {
   box-shadow: var(--shadow-panel);
 }
+
 .platform-surface .main-content :deep([data-ui-region='metrics'] .card) {
   min-height: 96px;
 }
+
 .platform-surface .main-content :deep([data-ui-region='query'].card) {
   background: var(--color-surface);
 }
+
 .navigation-scrim {
   position: fixed;
   inset: var(--header-height) 0 0 calc(var(--current-rail) + 8px);
@@ -265,6 +269,7 @@ onBeforeUnmount(() => {
   background: var(--color-overlay);
   cursor: default;
 }
+
 .toast {
   position: fixed;
   top: 80px;
@@ -282,20 +287,25 @@ onBeforeUnmount(() => {
   box-shadow: var(--shadow-menu);
   font-size: var(--text-sm);
 }
-.toast.success > .icon {
+
+.toast.success>.icon {
   color: var(--color-success);
 }
-.toast.error > .icon {
+
+.toast.error>.icon {
   color: var(--color-danger);
 }
-.toast.info > .icon {
+
+.toast.info>.icon {
   color: var(--color-primary);
 }
+
 @media (max-width: 767px) {
   .main-content {
     margin-left: 0;
     padding-top: calc(var(--header-height) + 14px);
   }
+
   .side-frame {
     display: none;
     top: var(--header-height);
@@ -303,27 +313,34 @@ onBeforeUnmount(() => {
     bottom: 0;
     border-radius: 0;
   }
+
   .mobile-nav-open .side-frame,
   .module-open .side-frame {
     display: flex;
   }
+
   .side-frame.joined {
     width: 100vw;
   }
+
   .side-frame :deep(.primary-nav) {
     width: var(--rail-collapsed-width);
     flex-basis: var(--rail-collapsed-width);
     border-radius: 0 !important;
   }
+
   .navigation-scrim {
     left: 0;
   }
+
   .side-frame :deep(.module-panel) {
     border-radius: 0;
   }
+
   .toast {
     top: 74px;
   }
+
   .app-shell {
     --current-rail: var(--rail-collapsed-width);
   }

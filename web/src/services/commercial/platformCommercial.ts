@@ -48,6 +48,8 @@ export interface PlanTerms {
   validityMode: string
   validityDays: number
   priceRef: string
+  currency: string
+  amountMinor: string | number
 }
 
 export interface PlanVersionDTO {
@@ -307,6 +309,23 @@ export interface SubscriptionChangeReceiptDTO {
   pricingAuthority: string
   quotaImpacts: SubscriptionChangeQuotaImpact[]
   provisioningTaskId: string
+}
+
+export interface PaymentOrderDTO {
+  orderId: string
+  changeId: string
+  planCode: string
+  planVersion: string | number
+  priceRef: string
+  currency: string
+  amountMinor: string | number
+  provider: string
+  state: string
+  revision: string | number
+  providerTransactionId: string
+  createdAt: string
+  expiresAt: string
+  paidAt: string
 }
 
 export interface PreviewSubscriptionChangeInput {

@@ -3968,6 +3968,43 @@
       }
     },
     {
+      "name": "CreateMyPaymentOrderRequest",
+      "fullName": "commercial.v1.CreateMyPaymentOrderRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "preview_hash",
+          "jsonName": "previewHash",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "provider",
+          "jsonName": "provider",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "CreatePlanDraftRequest",
       "fullName": "commercial.v1.CreatePlanDraftRequest",
       "fields": [
@@ -4698,6 +4735,22 @@
       }
     },
     {
+      "name": "GetMyPaymentOrderRequest",
+      "fullName": "commercial.v1.GetMyPaymentOrderRequest",
+      "fields": [
+        {
+          "name": "order_id",
+          "jsonName": "orderId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "GetMySubscriptionRequest",
       "fullName": "commercial.v1.GetMySubscriptionRequest",
       "fields": null,
@@ -5269,6 +5322,113 @@
       }
     },
     {
+      "name": "PaymentOrderDTO",
+      "fullName": "commercial.v1.PaymentOrderDTO",
+      "fields": [
+        {
+          "name": "order_id",
+          "jsonName": "orderId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "change_id",
+          "jsonName": "changeId",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_code",
+          "jsonName": "planCode",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "plan_version",
+          "jsonName": "planVersion",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "price_ref",
+          "jsonName": "priceRef",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "currency",
+          "jsonName": "currency",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "amount_minor",
+          "jsonName": "amountMinor",
+          "number": 7,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "provider",
+          "jsonName": "provider",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "jsonName": "state",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "revision",
+          "jsonName": "revision",
+          "number": 10,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "provider_transaction_id",
+          "jsonName": "providerTransactionId",
+          "number": 11,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "jsonName": "createdAt",
+          "number": 12,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "jsonName": "expiresAt",
+          "number": 13,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "paid_at",
+          "jsonName": "paidAt",
+          "number": 14,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "PlanCatalogEntryDTO",
       "fullName": "commercial.v1.PlanCatalogEntryDTO",
       "fields": [
@@ -5518,6 +5678,20 @@
           "number": 5,
           "kind": "scalar",
           "type": "string"
+        },
+        {
+          "name": "currency",
+          "jsonName": "currency",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "amount_minor",
+          "jsonName": "amountMinor",
+          "number": 7,
+          "kind": "scalar",
+          "type": "uint64"
         }
       ],
       "dto": {
@@ -12982,6 +13156,95 @@
               "platform.tenant.read"
             ],
             "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "CreateMyPaymentOrder",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.CreateMyPaymentOrder",
+          "request": "commercial.v1.CreateMyPaymentOrderRequest",
+          "response": "commercial.v1.PaymentOrderDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/tenant/subscription/payment-orders",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.payment.order.create_my",
+            "useCase": "create_my_payment_order",
+            "permissions": [
+              "commercial.catalog.read",
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "requiresOperations": [
+              "commercial.plan.subscription_snapshot"
+            ],
+            "composition": "local",
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.payment.order.create_my",
+            "permissions": [
+              "commercial.catalog.read",
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "GetMyPaymentOrder",
+          "fullName": "commercial.v1.SubscriptionChangesApplication.GetMyPaymentOrder",
+          "request": "commercial.v1.GetMyPaymentOrderRequest",
+          "response": "commercial.v1.PaymentOrderDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/tenant/subscription/payment-orders/{order_id}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.subscription.payment.order.get_my",
+            "useCase": "get_my_payment_order",
+            "permissions": [
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.subscription.payment.order.get_my",
+            "permissions": [
+              "tenant.subscription.manage"
+            ],
+            "permissionMode": "all",
+            "tenantRequired": true,
             "authentication": [
               "api-key",
               "web-session"

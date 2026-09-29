@@ -47,6 +47,12 @@ describe('backend term presentation', () => {
     expect(backendTermLabel('memberStatus', 'TENANT_MEMBER_STATUS_FUTURE')).toBe('成员状态待确认')
   })
 
+  it('translates payment states without exposing provider enums', () => {
+    expect(backendTermLabel('paymentState', 'PENDING')).toBe('待支付')
+    expect(backendTermLabel('paymentState', 'PAYMENT_STATE_FUTURE')).toBe('支付状态待确认')
+    expect(backendTermLabel('paymentState', 'PAYMENT_STATE_FUTURE')).not.toContain('PAYMENT_STATE_FUTURE')
+  })
+
   it('provides localized safe fallbacks for unknown backend errors', () => {
     expect(backendErrorFallback('member')).toBe('成员信息暂不可用，请稍后重试。')
     i18n.global.locale.value = 'en-US'
@@ -57,5 +63,11 @@ describe('backend term presentation', () => {
     expect(backendBusinessText('客户合同专项能力')).toBe('客户合同专项能力')
     expect(backendBusinessText('plan grant')).toBe('当前套餐已包含')
     expect(backendBusinessText('resolver_version')).toBe('按当前业务规则计算')
+  })
+
+  it('projects known package-change impacts into product language', () => {
+    expect(backendBusinessText('Existing tenant data is preserved; this operation never deletes resources.')).toBe('现有租户数据将被保留，本次操作不会删除资源。')
+    i18n.global.locale.value = 'en-US'
+    expect(backendBusinessText('Scheduled intent only: existing rights remain unchanged until a future validated executor applies it.')).toBe('This is a scheduled change; current rights take effect after validation at the planned time.')
   })
 })

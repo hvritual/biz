@@ -68,7 +68,7 @@ func NewSubscriptionChangeRepositoryFactory() requestscope.RepositoryFactory[por
 			return ports.SubscriptionChangeRepositories{}, errors.New("subscription changes: root transaction required")
 		}
 		t := tx.Session(&gorm.Session{SkipDefaultTransaction: true})
-		return ports.SubscriptionChangeRepositories{Changes: &subscriptionChangeRepository{tx: t}, Entitlements: &entitlementRepository{tx: t}, Tasks: &provisioningRepository{tx: t}, Events: &outboxRepository{tx: t}}, nil
+		return ports.SubscriptionChangeRepositories{Changes: &subscriptionChangeRepository{tx: t}, Entitlements: &entitlementRepository{tx: t}, Tasks: &provisioningRepository{tx: t}, Events: &outboxRepository{tx: t}, Payments: &paymentOrderRepository{tx: t}}, nil
 	})
 }
 func (r *subscriptionChangeRepository) Now(ctx context.Context) (time.Time, error) {

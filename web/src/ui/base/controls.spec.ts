@@ -65,6 +65,22 @@ describe('base control compatibility', () => {
     expect(input.classes()).toContain('outline-none')
   })
 
+  it('keeps password inputs hidden by default and toggles their visibility inside the input frame', async () => {
+    const wrapper = mount(UiInput, {
+      props: { modelValue: 'Coffee2026' },
+      attrs: { type: 'password', 'aria-label': '当前密码' },
+    })
+    const input = wrapper.get('input')
+    const toggle = wrapper.get('[data-slot="password-visibility-toggle"]')
+
+    expect(input.attributes('type')).toBe('password')
+    expect(toggle.attributes('aria-label')).toBe('显示密码')
+    await toggle.trigger('click')
+    expect(input.attributes('type')).toBe('text')
+    expect(toggle.attributes('aria-label')).toBe('隐藏密码')
+    expect((input.element as HTMLInputElement).value).toBe('Coffee2026')
+  })
+
   it('keeps legacy textarea value and input events controlled by the caller', async () => {
     const onInput = vi.fn()
     const wrapper = mount(UiTextarea, {

@@ -1,11 +1,46 @@
 package plan
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
 	"math"
 	"testing"
 	"time"
 )
+
+func TestCE22ZeroSettlementFieldsPreserveLegacyPlanHash(t *testing.T) {
+	terms := testTerms().Canonical()
+	legacy := struct {
+		Name  string `json:"name"`
+		Terms struct {
+			Modules      []Module `json:"modules"`
+			SalesScope   []string `json:"sales_scope"`
+			ValidityMode string   `json:"validity_mode"`
+			ValidityDays uint32   `json:"validity_days"`
+			PriceRef     string   `json:"price_ref"`
+		} `json:"terms"`
+	}{Name: "legacy-free"}
+	legacy.Terms.Modules = terms.Modules
+	legacy.Terms.SalesScope = terms.SalesScope
+	legacy.Terms.ValidityMode = terms.ValidityMode
+	legacy.Terms.ValidityDays = terms.ValidityDays
+	legacy.Terms.PriceRef = terms.PriceRef
+	encoded, err := json.Marshal(legacy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest := sha256.Sum256(encoded)
+	if Hash("legacy-free", terms) != hex.EncodeToString(digest[:]) {
+		t.Fatal("zero settlement fields changed legacy plan hash")
+	}
+	paid := terms
+	paid.PriceRef, paid.Currency, paid.AmountMinor = "price-paid", "CNY", 19900
+	if Hash("legacy-free", paid) == Hash("legacy-free", terms) {
+		t.Fatal("paid settlement fields must affect plan hash")
+	}
+}
 
 func testCatalog() Catalog {
 	return Catalog{
@@ -144,4 +179,41 @@ func TestCE07IntegrityAndEligibility(t *testing.T) {
 	if v.Integrity() != ErrCorrupt {
 		t.Fatal("corruption not detected")
 	}
+}
+
+func TestCE22PaidTermsRequireCanonicalPrice(t *testing.T) {
+
+	t.Run("free offer has no price facts", func(t *testing.T) {
+		terms := testTerms()
+		if err := terms.Validate(testCatalog()); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("settlement facts must be a complete canonical pair", func(t *testing.T) {
+		terms := testTerms()
+		terms.PriceRef = "price-growth-monthly"
+		terms.Currency = "CNY"
+		terms.AmountMinor = 19900
+		if err := terms.Validate(testCatalog()); err != nil {
+			t.Fatal(err)
+		}
+
+		terms.Currency = "cny"
+		if err := terms.Validate(testCatalog()); err == nil {
+			t.Fatal("non-canonical currency accepted")
+		}
+
+		terms.Currency = "CNY"
+		terms.AmountMinor = 0
+		if err := terms.Validate(testCatalog()); err == nil {
+			t.Fatal("zero paid amount accepted")
+		}
+
+		terms.Currency = ""
+		terms.AmountMinor = 19900
+		if err := terms.Validate(testCatalog()); err == nil {
+			t.Fatal("amount without currency accepted")
+		}
+	})
 }

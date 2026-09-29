@@ -15,6 +15,8 @@ type SubscriptionChangesApplication interface {
 	CompletePreparedSubscriptionChange(context.Context, *commercialv1.PreparedSubscriptionChangeRequest) (*commercialv1.ProvisioningCompletionDTO, error)
 	ConfirmMySubscriptionChange(context.Context, *commercialv1.ConfirmMySubscriptionChangeRequest) (*commercialv1.SubscriptionChangeReceiptDTO, error)
 	ConfirmSubscriptionChange(context.Context, *commercialv1.ConfirmSubscriptionChangeRequest) (*commercialv1.SubscriptionChangeReceiptDTO, error)
+	CreateMyPaymentOrder(context.Context, *commercialv1.CreateMyPaymentOrderRequest) (*commercialv1.PaymentOrderDTO, error)
+	GetMyPaymentOrder(context.Context, *commercialv1.GetMyPaymentOrderRequest) (*commercialv1.PaymentOrderDTO, error)
 	GetMySubscriptionChangePreview(context.Context, *commercialv1.ReadMySubscriptionChangePreviewRequest) (*commercialv1.SubscriptionChangePreviewDTO, error)
 	GetMySubscriptionChangeReceipt(context.Context, *commercialv1.ReadMySubscriptionChangeReceiptRequest) (*commercialv1.SubscriptionChangeReceiptDTO, error)
 	GetSubscriptionChangePreview(context.Context, *commercialv1.ReadSubscriptionChangeRequest) (*commercialv1.SubscriptionChangePreviewDTO, error)

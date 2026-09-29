@@ -2063,6 +2063,90 @@
       }
     },
     {
+      "operationId": "commercial.subscription.payment.order.create_my",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "create_my_payment_order",
+      "requestType": "commercial.v1.CreateMyPaymentOrderRequest",
+      "responseType": "commercial.v1.PaymentOrderDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "commercial.catalog.read",
+          "tenant.subscription.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {
+        "boundary": "local",
+        "requiresOperations": [
+          "commercial.plan.subscription_snapshot"
+        ],
+        "permissionClosure": [
+          "tenant.subscription.manage"
+        ]
+      },
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionChangesApplication/CreateMyPaymentOrder",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/tenant/subscription/payment-orders",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.subscription.payment.order.get_my",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "get_my_payment_order",
+      "requestType": "commercial.v1.GetMyPaymentOrderRequest",
+      "responseType": "commercial.v1.PaymentOrderDTO",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.subscription.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionChangesApplication/GetMyPaymentOrder",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/subscription/payment-orders/{order_id}"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "commercial.subscription.rule.list",
       "domain": "commercial",
       "application": "subscription_management",

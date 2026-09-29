@@ -8,7 +8,7 @@ import {
   type EnterpriseDomain,
   type EnterpriseSourceState,
 } from '@/services/enterprise/dataSource'
-import { applyStatusAction, memberActionError, prepareMemberStatusBatch } from '@/services/memberPolicy'
+import { applyStatusAction, memberActionError, prepareMemberPermissionCopy, prepareMemberStatusBatch } from '@/services/memberPolicy'
 import { departmentMoveAllowed } from '@/utils/organization'
 import { timestamp } from '@/utils/format'
 import type { Member, MemberAction, Role, AuditRecord, Company, Department, DataScope } from '@/types/enterprise'
@@ -913,6 +913,75 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     if (failure) throw failure
   }
 
+  async function copyMemberPermissions(sourceId: string, targets: { id: string; version: number }[]) {
+    const source = members.value.find((member) => member.id === sourceId)
+    const copied = prepareMemberPermissionCopy(members.value, roles.value, sourceId, targets)
+    if (!source) throw new Error('请选择存在的权限来源成员。')
+
+    if (previewMode) {
+      const records = targets.flatMap((target) => {
+        const previous = members.value.find((member) => member.id === target.id)
+        const next = copied.find((member) => member.id === target.id)
+        if (!previous || !next) return []
+        const id = crypto.randomUUID()
+        return [{
+          id,
+          time: timestamp(),
+          actor: '张三',
+          module: '成员管理',
+          action: '复制成员角色权限',
+          target: next.name,
+          result: 'success' as const,
+          risk: 'high' as const,
+          requestId: `demo-${id}`,
+          before: JSON.stringify({ roles: previous.roleIds.map(roleName) }),
+          after: JSON.stringify({ source: source.name, roles: next.roleIds.map(roleName) }),
+          reason: '按成员权限复制操作',
+        }]
+      })
+      snapshot.value.members = copied
+      snapshot.value.logs.unshift(...records)
+      persist()
+      return
+    }
+
+    const sourceRoles = [...source.roleIds]
+    const trusted = await stableMemberSession()
+    const failures: string[] = []
+    for (const target of targets) {
+      const current = members.value.find((member) => member.id === target.id)
+      if (!current) {
+        failures.push(`${target.id}：成员已不存在`)
+        continue
+      }
+      if (current.version !== target.version) {
+        failures.push(`${current.name}：成员状态已变化，请重新选择后再复制`)
+        continue
+      }
+      try {
+        const receipt = await updateEnterpriseMember(
+          trusted,
+          asServerMember(current),
+          {
+            email: current.email,
+            phone: current.phone,
+            name: current.name,
+            employeeId: current.employeeId,
+            position: current.position,
+            departmentId: current.departmentId,
+            roleIds: sourceRoles,
+          },
+          memberRequestId('roles'),
+        )
+        await getEnterpriseMember(trusted, receipt.userId)
+      } catch (error) {
+        failures.push(`${current.name}：${memberRuntimeError(error)}`)
+      }
+    }
+    await refreshMemberQuery()
+    if (failures.length) throw new Error(`部分成员未完成权限复制：${failures.join('；')}`)
+  }
+
   function asServerRole(role: Role): EnterpriseTenantRole {
     return {
       id: role.id,
@@ -1248,6 +1317,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     saveMember,
     changeStatus,
     changeStatuses,
+    copyMemberPermissions,
     queryRoles,
     saveRole,
     deleteRole,

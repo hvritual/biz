@@ -44,7 +44,6 @@ export const primaryNavigation: NavigationItem[] = [
 ]
 
 export const enterpriseNavigation: NavigationItem[] = [
-  { id: 'personal', label: '个人中心', icon: 'user', path: '/enterprise/personal-profile', authorizationActions: ['tenant.member.personal_profile.get'] },
   { id: 'members', label: '成员管理', icon: 'users', path: '/enterprise/members', authorizationActions: ['tenant.member.list'] },
   { id: 'roles', label: '角色权限', icon: 'shield', path: '/enterprise/roles', authorizationActions: ['tenant.role.list'] },
   { id: 'organization', label: '组织架构', icon: 'organization', path: '/enterprise/organization', authorizationActions: ['tenant.department.list'] },

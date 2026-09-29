@@ -40,6 +40,12 @@ func RegisterSubscriptionChangesOperationExecutor(mux *http.ServeMux, applicatio
 	if err := httpbinding.Register(mux, "POST", "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm", handler.handleOperationConfirmSubscriptionChange); err != nil {
 		return err
 	}
+	if err := httpbinding.Register(mux, "POST", "/v1/tenant/subscription/payment-orders", handler.handleOperationCreateMyPaymentOrder); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenant/subscription/payment-orders/{order_id}", handler.handleOperationGetMyPaymentOrder); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "GET", "/v1/tenant/subscription/change-previews/{change_id}", handler.handleOperationGetMySubscriptionChangePreview); err != nil {
 		return err
 	}
@@ -139,6 +145,52 @@ func (handler *SubscriptionChangesOperationHandler) handleOperationConfirmSubscr
 	wire.ChangeId = request.PathValue("change_id")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionChangesConfirmSubscriptionChange(), wire, handler.application.ConfirmSubscriptionChange)
+	if err != nil {
+		writeSubscriptionChangesOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *SubscriptionChangesOperationHandler) handleOperationCreateMyPaymentOrder(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.CreateMyPaymentOrderRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionChangesCreateMyPaymentOrder(), wire, handler.application.CreateMyPaymentOrder)
+	if err != nil {
+		writeSubscriptionChangesOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *SubscriptionChangesOperationHandler) handleOperationGetMyPaymentOrder(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.GetMyPaymentOrderRequest{}
+	wire.OrderId = request.PathValue("order_id")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionChangesGetMyPaymentOrder(), wire, handler.application.GetMyPaymentOrder)
 	if err != nil {
 		writeSubscriptionChangesOperationError(writer, err)
 		return

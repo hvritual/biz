@@ -24,7 +24,7 @@ const localError = ref('')
 const editor = reactive({ planCode: '', name: '', reason: '', terms: emptyTerms() })
 
 function emptyTerms(): PlanTerms {
-  return { modules: [], salesScope: [], validityMode: 'unlimited', validityDays: 0, priceRef: '' }
+  return { modules: [], salesScope: [], validityMode: 'unlimited', validityDays: 0, priceRef: '', currency: '', amountMinor: 0 }
 }
 
 function copyTerms(terms?: Partial<PlanTerms>): PlanTerms {
@@ -41,6 +41,8 @@ function copyTerms(terms?: Partial<PlanTerms>): PlanTerms {
     validityMode: terms?.validityMode || 'unlimited',
     validityDays: Number(terms?.validityDays || 0),
     priceRef: terms?.priceRef || '',
+    currency: terms?.currency || '',
+    amountMinor: terms?.amountMinor || 0,
   }
 }
 
@@ -113,6 +115,8 @@ function normalizedTerms(): PlanTerms {
     validityMode: editor.terms.validityMode,
     validityDays: editor.terms.validityMode === 'fixed_days' ? Number(editor.terms.validityDays || 0) : 0,
     priceRef: editor.terms.priceRef.trim(),
+    currency: editor.terms.currency.trim(),
+    amountMinor: Number(editor.terms.amountMinor || 0),
   }
 }
 
@@ -130,6 +134,14 @@ function submit() {
   }
   if (terms.validityMode === 'fixed_days' && (!Number.isInteger(terms.validityDays) || terms.validityDays < 1 || terms.validityDays > 36500)) {
     localError.value = '固定有效期必须是 1～36500 天。'
+    return
+  }
+  if (terms.priceRef && (!/^[A-Z]{3}$/.test(terms.currency) || !Number.isSafeInteger(Number(terms.amountMinor)) || Number(terms.amountMinor) < 1)) {
+    localError.value = '收费套餐必须填写三位大写币种和正的最小货币单位金额。'
+    return
+  }
+  if (!terms.priceRef && (terms.currency || Number(terms.amountMinor) !== 0)) {
+    localError.value = '免费套餐不能填写币种或金额。'
     return
   }
   emit('submit', {
@@ -158,6 +170,8 @@ function submit() {
         <label><span>有效期模式</span><UiSelect v-model="editor.terms.validityMode" class="input"><UiOption value="unlimited">unlimited</UiOption><UiOption value="fixed_days">fixed_days</UiOption></UiSelect></label>
         <label v-if="editor.terms.validityMode === 'fixed_days'"><span>有效天数</span><UiInput v-model.number="editor.terms.validityDays" class="input" type="number" min="1" max="36500" /></label>
         <label><span>价格引用 price_ref</span><UiInput v-model="editor.terms.priceRef" class="input" autocomplete="off" /></label>
+        <label><span>币种</span><UiInput v-model="editor.terms.currency" class="input" maxlength="3" placeholder="CNY" autocomplete="off" /></label>
+        <label><span>金额（最小货币单位）</span><UiInput v-model="editor.terms.amountMinor" class="input" type="number" min="0" aria-label="套餐价格最小货币单位" /></label>
         <label class="wide"><span>变更原因</span><UiInput v-model="editor.reason" class="input" autocomplete="off" /></label>
       </div>
 

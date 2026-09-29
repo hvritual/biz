@@ -1850,6 +1850,24 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.CreateModuleRequest"
       },
+      "commercial_v1_CreateMyPaymentOrderRequest": {
+        "properties": {
+          "changeId": {
+            "type": "string"
+          },
+          "previewHash": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.CreateMyPaymentOrderRequest"
+      },
       "commercial_v1_CreatePlanDraftRequest": {
         "properties": {
           "name": {
@@ -2243,6 +2261,15 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.GetMyEntitlementsRequest"
       },
+      "commercial_v1_GetMyPaymentOrderRequest": {
+        "properties": {
+          "orderId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.GetMyPaymentOrderRequest"
+      },
       "commercial_v1_GetMySubscriptionRequest": {
         "properties": {},
         "type": "object",
@@ -2591,6 +2618,60 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.MutateProvisioningTaskRequest"
       },
+      "commercial_v1_PaymentOrderDTO": {
+        "properties": {
+          "amountMinor": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "changeId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "orderId": {
+            "type": "string"
+          },
+          "paidAt": {
+            "type": "string"
+          },
+          "planCode": {
+            "type": "string"
+          },
+          "planVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "priceRef": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "providerTransactionId": {
+            "type": "string"
+          },
+          "revision": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.PaymentOrderDTO"
+      },
       "commercial_v1_PlanCatalogEntryDTO": {
         "properties": {
           "createdAt": {
@@ -2712,6 +2793,14 @@
       },
       "commercial_v1_PlanTerms": {
         "properties": {
+          "amountMinor": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "currency": {
+            "type": "string"
+          },
           "modules": {
             "items": {
               "$ref": "#/components/schemas/commercial_v1_PlanModule"
@@ -8109,6 +8198,68 @@
           "commercial.v1.SubscriptionChangesApplication"
         ],
         "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/ConfirmMySubscriptionChange"
+      }
+    },
+    "/v1/tenant/subscription/payment-orders": {
+      "post": {
+        "operationId": "commercial.v1.SubscriptionChangesApplication.CreateMyPaymentOrder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_CreateMyPaymentOrderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_PaymentOrderDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionChangesApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/CreateMyPaymentOrder"
+      }
+    },
+    "/v1/tenant/subscription/payment-orders/{order_id}": {
+      "get": {
+        "operationId": "commercial.v1.SubscriptionChangesApplication.GetMyPaymentOrder",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_PaymentOrderDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionChangesApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/GetMyPaymentOrder"
       }
     },
     "/v1/tenant/usage": {

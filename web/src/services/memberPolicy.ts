@@ -61,3 +61,45 @@ export function prepareMemberStatusBatch(
   }
   return updated
 }
+
+/**
+ * Validates a permission-copy operation against one consistent member snapshot.
+ * Only role bindings are copied: personal profile, authentication state and data
+ * scope remain owned by each target member.
+ */
+export function prepareMemberPermissionCopy(
+  members: Member[],
+  roles: Role[],
+  sourceId: string,
+  targets: { id: string; version: number }[],
+): Member[] {
+  const source = members.find((member) => member.id === sourceId)
+  if (!source) throw new Error('请选择存在的权限来源成员。')
+  if (source.status === 'removed') throw new Error('已移除成员不能作为权限来源。')
+  if (!source.roleIds.length) throw new Error('权限来源成员没有可复制的角色。')
+  if (!targets.length) throw new Error('请至少选择一名目标成员。')
+  if (new Set(targets.map((target) => target.id)).size !== targets.length) {
+    throw new Error('不能重复选择同一目标成员。')
+  }
+  if (targets.some((target) => target.id === sourceId)) {
+    throw new Error('权限来源成员不能同时作为复制目标。')
+  }
+
+  const roleIds = [...new Set(source.roleIds)]
+  if (roleIds.some((id) => !roles.some((role) => role.id === id && role.enabled))) {
+    throw new Error('权限来源包含已停用或不存在的角色，不能复制。')
+  }
+
+  const updated = members.map((member) => ({ ...member, roleIds: [...member.roleIds] }))
+  for (const target of targets) {
+    const current = updated.find((member) => member.id === target.id)
+    if (!current || current.version !== target.version) {
+      throw new Error('目标成员状态已变化，请重新选择后再复制。')
+    }
+    const policy = memberActionError('role', current, updated, roles, roleIds)
+    if (policy) throw new Error(`${current.name}：${policy}`)
+    current.roleIds = [...roleIds]
+    current.version += 1
+  }
+  return updated
+}

@@ -666,6 +666,13 @@ export interface Commercial_V1_CreateModuleRequest {
   reason?: string;
 }
 
+export interface Commercial_V1_CreateMyPaymentOrderRequest {
+  requestId?: string;
+  changeId?: string;
+  previewHash?: string;
+  provider?: string;
+}
+
 export interface Commercial_V1_CreatePlanDraftRequest {
   requestId?: string;
   planCode?: string;
@@ -790,6 +797,10 @@ export interface Commercial_V1_GetMyEntitlementsRequest {
   capabilityCodes?: readonly string[];
 }
 
+export interface Commercial_V1_GetMyPaymentOrderRequest {
+  orderId?: string;
+}
+
 export interface Commercial_V1_GetMySubscriptionRequest {
 }
 
@@ -905,6 +916,23 @@ export interface Commercial_V1_MutateProvisioningTaskRequest {
   reason?: string;
 }
 
+export interface Commercial_V1_PaymentOrderDTO {
+  orderId?: string;
+  changeId?: string;
+  planCode?: string;
+  planVersion?: string;
+  priceRef?: string;
+  currency?: string;
+  amountMinor?: string;
+  provider?: string;
+  state?: string;
+  revision?: string;
+  providerTransactionId?: string;
+  createdAt?: string;
+  expiresAt?: string;
+  paidAt?: string;
+}
+
 export interface Commercial_V1_PlanCatalogEntryDTO {
   planCode?: string;
   name?: string;
@@ -949,6 +977,8 @@ export interface Commercial_V1_PlanTerms {
   validityMode?: string;
   validityDays?: number;
   priceRef?: string;
+  currency?: string;
+  amountMinor?: string;
 }
 
 export interface Commercial_V1_PlanVersionDTO {
@@ -2176,6 +2206,24 @@ export const operations = {
       { method: "POST", path: "/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm", body: "*" },
     ]
   },
+  "commercial.v1.SubscriptionChangesApplication.CreateMyPaymentOrder": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.CreateMyPaymentOrder",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/CreateMyPaymentOrder",
+    requestType: "commercial.v1.CreateMyPaymentOrderRequest",
+    responseType: "commercial.v1.PaymentOrderDTO",
+    http: [
+      { method: "POST", path: "/v1/tenant/subscription/payment-orders", body: "*" },
+    ]
+  },
+  "commercial.v1.SubscriptionChangesApplication.GetMyPaymentOrder": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.GetMyPaymentOrder",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/GetMyPaymentOrder",
+    requestType: "commercial.v1.GetMyPaymentOrderRequest",
+    responseType: "commercial.v1.PaymentOrderDTO",
+    http: [
+      { method: "GET", path: "/v1/tenant/subscription/payment-orders/{order_id}" },
+    ]
+  },
   "commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangePreview": {
     fullName: "commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangePreview",
     rpcPath: "/commercial.v1.SubscriptionChangesApplication/GetMySubscriptionChangePreview",
@@ -2840,6 +2888,14 @@ export class Commercial_V1_SubscriptionChangesApplicationClient {
 
   confirmSubscriptionChange(request: Commercial_V1_ConfirmSubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangeReceiptDTO> {
     return this.transport.call<Commercial_V1_ConfirmSubscriptionChangeRequest, Commercial_V1_SubscriptionChangeReceiptDTO>(operations["commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange"], request);
+  }
+
+  createMyPaymentOrder(request: Commercial_V1_CreateMyPaymentOrderRequest): Promise<Commercial_V1_PaymentOrderDTO> {
+    return this.transport.call<Commercial_V1_CreateMyPaymentOrderRequest, Commercial_V1_PaymentOrderDTO>(operations["commercial.v1.SubscriptionChangesApplication.CreateMyPaymentOrder"], request);
+  }
+
+  getMyPaymentOrder(request: Commercial_V1_GetMyPaymentOrderRequest): Promise<Commercial_V1_PaymentOrderDTO> {
+    return this.transport.call<Commercial_V1_GetMyPaymentOrderRequest, Commercial_V1_PaymentOrderDTO>(operations["commercial.v1.SubscriptionChangesApplication.GetMyPaymentOrder"], request);
   }
 
   getMySubscriptionChangePreview(request: Commercial_V1_ReadMySubscriptionChangePreviewRequest): Promise<Commercial_V1_SubscriptionChangePreviewDTO> {

@@ -31,6 +31,7 @@ const (
 )
 
 var code = regexp.MustCompile(`^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$`)
+var currency = regexp.MustCompile(`^[A-Z]{3}$`)
 
 func Code(v string) bool { return len(v) > 0 && len(v) <= 96 && code.MatchString(v) }
 
@@ -56,6 +57,12 @@ type Terms struct {
 	ValidityMode string   `json:"validity_mode"`
 	ValidityDays uint32   `json:"validity_days"`
 	PriceRef     string   `json:"price_ref"`
+	// Currency and AmountMinor are server-owned commercial facts for a paid
+	// plan version. AmountMinor is always expressed in the currency's smallest
+	// unit, so neither a browser nor a payment provider can reinterpret a
+	// floating-point display value as settlement authority.
+	Currency    string `json:"currency,omitempty"`
+	AmountMinor uint64 `json:"amount_minor,omitempty"`
 }
 type Version struct {
 	PlanCode      string     `json:"plan_code"`
@@ -101,6 +108,15 @@ func allowedScope(scopes []string, target string) bool {
 func (t Terms) Validate(c Catalog) error {
 	if len(t.Modules) == 0 || len(t.Modules) > 100 || len(t.SalesScope) == 0 || len(t.SalesScope) > 64 || len(t.PriceRef) > 128 || strings.TrimSpace(t.PriceRef) != t.PriceRef {
 		return ErrInvalid
+	}
+	// Older published versions may retain an opaque PriceRef without settlement
+	// facts. They remain readable/eligible but are deliberately not eligible for
+	// self-service payment. Once either settlement fact is supplied, both must
+	// be present and price_ref must identify the immutable price owner.
+	if t.Currency != "" || t.AmountMinor != 0 {
+		if t.PriceRef == "" || !currency.MatchString(t.Currency) || t.AmountMinor == 0 || t.AmountMinor > uint64(^uint(0)>>1) {
+			return ErrInvalid
+		}
 	}
 	if !((t.ValidityMode == "unlimited" && t.ValidityDays == 0) || (t.ValidityMode == "fixed_days" && t.ValidityDays >= 1 && t.ValidityDays <= 36500)) {
 		return ErrInvalid

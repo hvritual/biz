@@ -15,9 +15,6 @@ const error = ref('')
 const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
-const showCurrent = ref(false)
-const showNew = ref(false)
-const showConfirm = ref(false)
 const changingPassword = ref(false)
 const passwordError = ref('')
 const passwordChanged = ref(false)
@@ -105,24 +102,15 @@ async function submitPasswordChange() {
       <div v-if="!passwordChanged" class="password-form">
         <label class="field">
           <span>当前密码</span>
-          <div class="password-row">
-            <UiInput v-model="currentPassword" aria-label="当前密码" :type="showCurrent ? 'text' : 'password'" autocomplete="current-password" />
-            <UiButton class="btn" type="button" @click="showCurrent = !showCurrent">{{ showCurrent ? '隐藏' : '显示' }}</UiButton>
-          </div>
+          <UiInput v-model="currentPassword" aria-label="当前密码" type="password" autocomplete="current-password" />
         </label>
         <label class="field">
           <span>新密码</span>
-          <div class="password-row">
-            <UiInput v-model="newPassword" aria-label="新密码" :type="showNew ? 'text' : 'password'" autocomplete="new-password" maxlength="16" />
-            <UiButton class="btn" type="button" @click="showNew = !showNew">{{ showNew ? '隐藏' : '显示' }}</UiButton>
-          </div>
+          <UiInput v-model="newPassword" aria-label="新密码" type="password" autocomplete="new-password" maxlength="16" />
         </label>
         <label class="field">
           <span>确认新密码</span>
-          <div class="password-row">
-            <UiInput v-model="confirmPassword" aria-label="确认新密码" :type="showConfirm ? 'text' : 'password'" autocomplete="new-password" maxlength="16" />
-            <UiButton class="btn" type="button" @click="showConfirm = !showConfirm">{{ showConfirm ? '隐藏' : '显示' }}</UiButton>
-          </div>
+          <UiInput v-model="confirmPassword" aria-label="确认新密码" type="password" autocomplete="new-password" maxlength="16" />
         </label>
         <small>8–16 位，至少包含一个大写字母和一个数字。</small>
         <p v-if="passwordError" class="form-error" role="alert">{{ passwordError }}</p>
@@ -191,10 +179,5 @@ async function submitPasswordChange() {
 .security-link { margin-top: 15px; }
 .form-footer { margin-top: 0; padding-top: 8px; border: 0; }
 .password-form { max-width: 560px; margin-top: 16px; }
-.password-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
-.password-row .btn { min-width: 68px; }
 .success-box { margin-top: 16px; }
-@media (max-width: 767px) {
-  .password-row { grid-template-columns: 1fr; }
-}
 </style>

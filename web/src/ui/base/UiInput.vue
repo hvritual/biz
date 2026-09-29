@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { X } from 'lucide-vue-next'
-import { computed, useAttrs } from 'vue'
+import { Eye, EyeOff, X } from 'lucide-vue-next'
+import { computed, ref, useAttrs, watch } from 'vue'
 import { cn } from '@/lib/utils'
 
 defineOptions({ inheritAttrs: false })
@@ -15,6 +15,9 @@ const props = withDefaults(
     indeterminate?: boolean
     error?: boolean
     clearable?: boolean
+    passwordToggle?: boolean
+    showPasswordLabel?: string
+    hidePasswordLabel?: string
   }>(),
   {
     modelValue: undefined,
@@ -24,6 +27,9 @@ const props = withDefaults(
     indeterminate: false,
     error: false,
     clearable: false,
+    passwordToggle: true,
+    showPasswordLabel: '显示密码',
+    hidePasswordLabel: '隐藏密码',
   },
 )
 const emit = defineEmits<{
@@ -37,6 +43,9 @@ const inputType = computed(() => String(attrs.type ?? 'text'))
 const checkable = computed(() => inputType.value === 'checkbox' || inputType.value === 'radio')
 const isFile = computed(() => inputType.value === 'file')
 const useWrapper = computed(() => !checkable.value && !isFile.value)
+const passwordVisible = ref(false)
+const canTogglePassword = computed(() => inputType.value === 'password' && props.passwordToggle)
+const renderedInputType = computed(() => canTogglePassword.value && passwordVisible.value ? 'text' : inputType.value)
 const innerAttrs = computed(() =>
   Object.fromEntries(Object.entries(attrs).filter(([key]) => key !== 'class')),
 )
@@ -106,6 +115,8 @@ function clear() {
   emit('update:modelValue', '')
   emit('clear')
 }
+function togglePasswordVisibility() { passwordVisible.value = !passwordVisible.value }
+watch(canTogglePassword, (available) => { if (!available) passwordVisible.value = false })
 </script>
 <template>
   <!-- Checkable / file: single input, no wrapper -->
@@ -137,10 +148,23 @@ function clear() {
       data-ui-input-inner
       v-bind="innerAttrs"
       :class="innerInputClasses"
+      :type="renderedInputType"
       :value="displayValue"
       @input="handleInput"
       @change="handleChange"
     />
+    <button
+      v-if="canTogglePassword"
+      type="button"
+      data-slot="password-visibility-toggle"
+      class="password-visibility-toggle"
+      :aria-label="passwordVisible ? hidePasswordLabel : showPasswordLabel"
+      :title="passwordVisible ? hidePasswordLabel : showPasswordLabel"
+      @click="togglePasswordVisibility"
+    >
+      <EyeOff v-if="passwordVisible" :size="16" aria-hidden="true" />
+      <Eye v-else :size="16" aria-hidden="true" />
+    </button>
     <button
       v-if="canClear"
       type="button"
@@ -171,6 +195,22 @@ function clear() {
   cursor: pointer;
   transition: color var(--duration-base) var(--ease-standard);
 }
+.password-visibility-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.password-visibility-toggle:hover { color: var(--color-text); }
+.password-visibility-toggle:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: var(--focus-ring-offset); }
 .clear-button:hover {
   color: var(--color-text);
 }

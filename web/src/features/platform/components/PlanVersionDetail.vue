@@ -41,6 +41,13 @@ function validityLabel(terms?: PlanTerms) {
   return terms.validityMode === 'unlimited' ? '长期有效' : terms.validityMode || '—'
 }
 
+function priceLabel(terms?: PlanTerms) {
+  if (!terms?.priceRef) return '免费'
+  const amount = Number(terms.amountMinor)
+  if (!Number.isFinite(amount) || !terms.currency) return '价格配置无效'
+  return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: terms.currency }).format(amount / 100)
+}
+
 function moduleName(code: string) {
   return props.modules.find((item) => item.moduleCode === code)?.name || code
 }
@@ -67,6 +74,7 @@ function moduleName(code: string) {
 
     <dl class="facts">
       <div><dt>有效期</dt><dd>{{ validityLabel(version.terms) }}</dd></div>
+      <div><dt>价格</dt><dd>{{ priceLabel(version.terms) }}</dd></div>
       <div><dt>价格引用</dt><dd>{{ version.terms?.priceRef || '—' }}</dd></div>
       <div><dt>内容 SHA256</dt><dd class="mono break-all">{{ version.contentSha256 || '草稿未固定' }}</dd></div>
       <div><dt>创建时间</dt><dd>{{ formatTime(version.createdAt) }}</dd></div>

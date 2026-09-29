@@ -61,6 +61,32 @@ func (server *SubscriptionChangesOperationServer) ConfirmSubscriptionChange(ctx 
 	return response, nil
 }
 
+func (server *SubscriptionChangesOperationServer) CreateMyPaymentOrder(ctx context.Context, request *commercialv1.CreateMyPaymentOrderRequest) (*commercialv1.PaymentOrderDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanSubscriptionChangesCreateMyPaymentOrder(), request, server.application.CreateMyPaymentOrder)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *SubscriptionChangesOperationServer) GetMyPaymentOrder(ctx context.Context, request *commercialv1.GetMyPaymentOrderRequest) (*commercialv1.PaymentOrderDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanSubscriptionChangesGetMyPaymentOrder(), request, server.application.GetMyPaymentOrder)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *SubscriptionChangesOperationServer) GetMySubscriptionChangePreview(ctx context.Context, request *commercialv1.ReadMySubscriptionChangePreviewRequest) (*commercialv1.SubscriptionChangePreviewDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {

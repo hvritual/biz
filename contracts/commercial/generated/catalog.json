@@ -2,9 +2,9 @@
   "schema_version": 1,
   "mapping_version": "26",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "9a4324c7e5a8af0b363771113cc229e004513fd36cd61fec2a17e46b87d13f03",
-    "contracts/generated/manifest.json": "b3cf0ac27255880ba673c911886c79ee355feed6bc96c778717d6f002b3f78ca",
-    "contracts/generated/operation-plans.json": "f6e464cac93684fe4324a2cdcbf7f850873e0fc3a4132926b646f4bdc2e43e08",
+    "contracts/commercial/operation-capabilities.v1.json": "496bc0b04539e799fc99936136a25f7853f9f5201ff1adb176c5013c98a4b1e9",
+    "contracts/generated/manifest.json": "048b24487ca4f626eb0e5042d99f8cb831f8e13ccfcfd4f8ef94483c43e36322",
+    "contracts/generated/operation-plans.json": "3073afa3f40124e22bfbf89be77e1634f85827eaf6bc27b514ff3cf3a3b2f945",
     "internal/access/application/member_business_scope.go": "9401a3c99e75c62aeb364d49d21ef6028e32be54d6daf8c75f393e62f09ba76e",
     "internal/access/application/tenant_data_policy.go": "e50a4bbf3ce4b7eca729278a92c5be04676dfa0375d3e73b637b3befefea6cf2",
     "internal/access/application/tenant_delegation.go": "b43e6709e61b7867395bc04a901a19c2a54cf4ec9565e875b354b1622e636589",
@@ -16,6 +16,7 @@
     "internal/commercial/application/provisioning/internal/usecase/service.go": "92437abf3396ad9a5e3942998cd73940935949f2d06e9d366488448752273341",
     "internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go": "4d96448de0576930278aee623dac140c30ab0183c3d9a238ee54d4b834461758",
     "internal/commercial/application/subscriptionchanges/internal/usecase/context.go": "87947d1cdf3a7e5f7b868d7718a15da4d5a2f3ee611fb2fe2e86a4423eb540c5",
+    "internal/commercial/application/subscriptionchanges/internal/usecase/payment.go": "4a26c0aa4798670fa635bdf3a8940c3a8453ee9176716cd04a59f7faf23c0079",
     "internal/commercial/application/subscriptionchanges/internal/usecase/selfservice.go": "253afeea62fe46e3974ffb8c7bd93f1a2a95bc4944b5b9fe9b668b21c9617a25",
     "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go": "7e6d141af2e12741b0ffe40b9a009a24d5928ab36499cd02bacd0bd30cf5b446",
     "internal/commercial/application/subscriptionmanagement/internal/usecase/usage.go": "1f685e5e93b210d3adf881d02acf811adbfe5dc2c8688bde4ce4f569e6a33c0c",
@@ -924,6 +925,36 @@
       "consumer_type": "tenant",
       "tenant_required": true,
       "rpc": "/commercial.v1.SubscriptionManagementApplication/GetMyTenantUsage",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.payment.order.create_my",
+      "classification": "recovery",
+      "capability_codes": [],
+      "exemption_reason": "CE-22 tenant payment-order creation reads only the caller-owned preview and immutable server price facts; it never accepts browser amount, currency, plan or payment success.",
+      "children": [
+        {
+          "operation_id": "commercial.plan.subscription_snapshot",
+          "mode": "always",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/payment.go#CreateMyPaymentOrder"
+        }
+      ],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/commercial.v1.SubscriptionChangesApplication/CreateMyPaymentOrder",
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
+      "operation_id": "commercial.subscription.payment.order.get_my",
+      "classification": "recovery",
+      "capability_codes": [],
+      "exemption_reason": "CE-22 tenant payment-order readback is scoped to the trusted tenant and performs no entitlement mutation.",
+      "children": [],
+      "consumer_type": "tenant",
+      "tenant_required": true,
+      "rpc": "/commercial.v1.SubscriptionChangesApplication/GetMyPaymentOrder",
       "required_capability_codes": [],
       "always_required_capability_codes": []
     },

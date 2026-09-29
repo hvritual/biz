@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createSeed } from './demo/seed'
-import { memberActionError, applyStatusAction } from './memberPolicy'
+import { memberActionError, applyStatusAction, prepareMemberPermissionCopy } from './memberPolicy'
 const data = createSeed('shanghai'),
   owner = data.members[0]!,
   member = data.members[1]!
@@ -51,4 +51,21 @@ describe('membership policy', () => {
         data.roles,
       ),
     ).not.toBeNull())
+  it('copies only roles after validating every selected target', () => {
+    const source = data.members[1]!, target = data.members[2]!
+    const copied = prepareMemberPermissionCopy(data.members, data.roles, source.id, [{ id: target.id, version: target.version }])
+    const next = copied.find((member) => member.id === target.id)!
+    expect(next.roleIds).toEqual(source.roleIds)
+    expect(next.scope).toBe(target.scope)
+    expect(next.email).toBe(target.email)
+    expect(next.version).toBe(target.version + 1)
+    expect(data.members.find((member) => member.id === target.id)).toEqual(target)
+  })
+  it('blocks unsafe or stale member permission copies before changing any target', () => {
+    const source = data.members[1]!, ownerTarget = data.members[0]!, target = data.members[2]!
+    expect(() => prepareMemberPermissionCopy(data.members, data.roles, source.id, [{ id: ownerTarget.id, version: ownerTarget.version }])).toThrow('最后一位')
+    expect(() => prepareMemberPermissionCopy(data.members, data.roles, source.id, [{ id: target.id, version: 0 }])).toThrow('状态已变化')
+    expect(() => prepareMemberPermissionCopy(data.members, data.roles, source.id, [{ id: source.id, version: source.version }])).toThrow('来源成员')
+    expect(data.members.find((member) => member.id === target.id)).toEqual(target)
+  })
 })

@@ -217,8 +217,13 @@ type PlanTerms struct {
 	SalesScope   []string               `protobuf:"bytes,2,rep,name=sales_scope,json=salesScope,proto3" json:"sales_scope,omitempty"`
 	ValidityMode string                 `protobuf:"bytes,3,opt,name=validity_mode,json=validityMode,proto3" json:"validity_mode,omitempty"`
 	ValidityDays uint32                 `protobuf:"varint,4,opt,name=validity_days,json=validityDays,proto3" json:"validity_days,omitempty"`
-	// Opaque pricing-owner reference, not a paid flag or amount.
-	PriceRef      string `protobuf:"bytes,5,opt,name=price_ref,json=priceRef,proto3" json:"price_ref,omitempty"`
+	// Stable external pricing reference; payment authorization is still derived
+	// only from the immutable price facts below, never from browser input.
+	PriceRef string `protobuf:"bytes,5,opt,name=price_ref,json=priceRef,proto3" json:"price_ref,omitempty"`
+	// Immutable settlement facts for a paid plan version. `amount_minor` is in
+	// the smallest currency unit and is authoritative for order creation.
+	Currency      string `protobuf:"bytes,6,opt,name=currency,proto3" json:"currency,omitempty"`
+	AmountMinor   uint64 `protobuf:"varint,7,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -286,6 +291,20 @@ func (x *PlanTerms) GetPriceRef() string {
 		return x.PriceRef
 	}
 	return ""
+}
+
+func (x *PlanTerms) GetCurrency() string {
+	if x != nil {
+		return x.Currency
+	}
+	return ""
+}
+
+func (x *PlanTerms) GetAmountMinor() uint64 {
+	if x != nil {
+		return x.AmountMinor
+	}
+	return 0
 }
 
 type PlanVersionDTO struct {
@@ -1421,14 +1440,16 @@ const file_commercial_v1_plan_proto_rawDesc = "" +
 	"moduleCode\x12)\n" +
 	"\x10capability_codes\x18\x02 \x03(\tR\x0fcapabilityCodes\x120\n" +
 	"\x06quotas\x18\x03 \x03(\v2\x18.commercial.v1.PlanQuotaR\x06quotas\x120\n" +
-	"\x06fields\x18\x04 \x03(\v2\x18.commercial.v1.PlanFieldR\x06fields\"\xc8\x01\n" +
+	"\x06fields\x18\x04 \x03(\v2\x18.commercial.v1.PlanFieldR\x06fields\"\x87\x02\n" +
 	"\tPlanTerms\x123\n" +
 	"\amodules\x18\x01 \x03(\v2\x19.commercial.v1.PlanModuleR\amodules\x12\x1f\n" +
 	"\vsales_scope\x18\x02 \x03(\tR\n" +
 	"salesScope\x12#\n" +
 	"\rvalidity_mode\x18\x03 \x01(\tR\fvalidityMode\x12#\n" +
 	"\rvalidity_days\x18\x04 \x01(\rR\fvalidityDays\x12\x1b\n" +
-	"\tprice_ref\x18\x05 \x01(\tR\bpriceRef\"\x9d\x03\n" +
+	"\tprice_ref\x18\x05 \x01(\tR\bpriceRef\x12\x1a\n" +
+	"\bcurrency\x18\x06 \x01(\tR\bcurrency\x12!\n" +
+	"\famount_minor\x18\a \x01(\x04R\vamountMinor\"\x9d\x03\n" +
 	"\x0ePlanVersionDTO\x12\x1b\n" +
 	"\tplan_code\x18\x01 \x01(\tR\bplanCode\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\x04R\aversion\x12\x1a\n" +

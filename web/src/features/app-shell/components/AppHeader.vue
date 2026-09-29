@@ -33,6 +33,8 @@ const { t, locale } = useI18n()
 const live = computed(() => route.meta.surface === 'platform' || route.meta.surface === 'runtime')
 const search = ref('')
 const panel = ref('')
+const profileMenuOpen = ref(false)
+const profileMenuRoot = ref<HTMLElement | null>(null)
 const headerName = computed(() =>
   personal.profile?.name || personal.profile?.username || store.session?.user_id || 'User',
 )
@@ -144,13 +146,33 @@ function globalSearch() {
 }
 
 function openPersonalProfile() {
-  panel.value = ''
+  profileMenuOpen.value = false
   ui.closeMenu()
   void router.push('/enterprise/personal-profile')
 }
 
+function openVersionChange() {
+  profileMenuOpen.value = false
+  ui.closeMenu()
+  void router.push('/enterprise/plan?action=upgrade')
+}
+
+function closeProfileMenuIfOutside(event: FocusEvent) {
+  const menu = event.currentTarget
+  const next = event.relatedTarget
+  if (!(menu instanceof HTMLElement) || !(next instanceof Node) || !menu.contains(next)) {
+    profileMenuOpen.value = false
+  }
+}
+
+function closeProfileMenuOnOutsidePointer(event: PointerEvent) {
+  if (profileMenuRoot.value?.contains(event.target as Node)) return
+  profileMenuOpen.value = false
+}
+
 async function logout() {
   panel.value = ''
+  profileMenuOpen.value = false
   personal.clear()
   inbox.clear()
   try {
@@ -189,10 +211,12 @@ let inboxTimer: number | undefined
 onMounted(() => {
   inboxTimer = window.setInterval(refreshVisibleInbox, 30_000)
   document.addEventListener('visibilitychange', refreshVisibleInbox)
+  document.addEventListener('pointerdown', closeProfileMenuOnOutsidePointer)
 })
 onBeforeUnmount(() => {
   if (inboxTimer !== undefined) window.clearInterval(inboxTimer)
   document.removeEventListener('visibilitychange', refreshVisibleInbox)
+  document.removeEventListener('pointerdown', closeProfileMenuOnOutsidePointer)
   inbox.clear()
 })
 </script>
@@ -242,19 +266,39 @@ onBeforeUnmount(() => {
         </UiButton>
         <UiButton class="header-link" @click="panel = t('header.help')"><AppIcon name="help" />{{ t('header.help') }}</UiButton>
         <UiButton class="header-link" @click="panel = t('header.downloads')"><AppIcon name="download" />{{ t('header.downloads') }}</UiButton>
-        <UiButton class="profile" :aria-label="t('header.currentAccount')" @click="panel = t('header.currentAccount')">
-          <AvatarMark
-            :name="headerName"
-            :asset-ref="headerAvatarRef"
-            :size="36"
-            :tone="headerAvatarRef ? 'blue' : 'solid'"
-          />
-          <span>
-            {{ headerName }}
-            <small>{{ headerTenant || (store.sourceKind === 'api' ? t('header.currentLogin') : t('header.superAdmin')) }}</small>
-          </span>
-          <AppIcon name="down" :size="14" />
-        </UiButton>
+        <div
+          ref="profileMenuRoot"
+          class="account-menu"
+          @mouseenter="profileMenuOpen = true"
+          @focusin="profileMenuOpen = true"
+          @focusout="closeProfileMenuIfOutside"
+          @keydown.esc="profileMenuOpen = false"
+        >
+          <UiButton
+            class="profile"
+            :aria-label="t('header.currentAccount')"
+            aria-controls="account-menu-popover"
+            :aria-expanded="profileMenuOpen"
+            @click="profileMenuOpen = !profileMenuOpen"
+          >
+            <AvatarMark
+              :name="headerName"
+              :asset-ref="headerAvatarRef"
+              :size="36"
+              :tone="headerAvatarRef ? 'blue' : 'solid'"
+            />
+            <span>
+              {{ headerName }}
+              <small>{{ headerTenant || (store.sourceKind === 'api' ? t('header.currentLogin') : t('header.superAdmin')) }}</small>
+            </span>
+            <AppIcon name="down" :size="14" />
+          </UiButton>
+          <div v-if="profileMenuOpen" id="account-menu-popover" class="account-menu-popover" role="menu" :aria-label="t('personalProfile.accountMenu')">
+            <UiButton role="menuitem" variant="ghost" @click="openPersonalProfile"><AppIcon name="user" :size="16" />{{ t('personalProfile.navigation') }}</UiButton>
+            <UiButton role="menuitem" variant="ghost" @click="openVersionChange"><AppIcon name="refresh" :size="16" />{{ t('personalProfile.versionChange') }}</UiButton>
+            <UiButton role="menuitem" variant="ghost" class="account-menu-logout" @click="logout"><AppIcon name="logout" :size="16" />{{ t('common.logout') }}</UiButton>
+          </div>
+        </div>
       </template>
     </div>
   </header>
@@ -384,8 +428,12 @@ onBeforeUnmount(() => {
 .notification-item > p { margin: 5px 0 0; overflow-wrap: anywhere; color: var(--color-text-secondary); font-size: var(--text-xs); line-height: 1.5; }
 .notification-empty { display: grid; justify-items: center; gap: 7px; padding: 28px 16px; text-align: center; color: var(--color-text-secondary); }
 .notification-empty p { max-width: 360px; margin: 0; font-size: var(--text-xs); line-height: 1.6; }
+.account-menu { position: relative; }
 .profile { display: flex; align-items: center; gap: 10px; text-align: left; padding: 0 0 0 12px; border-left: 1px solid var(--color-border); font-size: 13px; }
 .profile small { display: block; max-width: 180px; overflow: hidden; color: var(--color-text-muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.account-menu-popover { position: absolute; top: calc(100% + 8px); right: 0; z-index: var(--z-dialog); display: flex; min-width: 180px; flex-direction: column; gap: 3px; padding: 6px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-menu); }
+.account-menu-popover .inline-flex { justify-content: flex-start; gap: 9px; }
+.account-menu-logout { color: var(--color-danger); }
 .account-summary { display: flex; align-items: center; gap: 12px; }
 .account-summary strong, .account-summary small { display: block; }
 .account-summary small { margin-top: 4px; color: var(--color-text-muted); font-size: var(--text-xs); }
@@ -393,5 +441,5 @@ onBeforeUnmount(() => {
 .mobile-toggle { display: none; }
 @media (max-width: 1250px) { .header-link { display: none; } .header-company select { max-width: 155px; } .header-actions { gap: 6px; } .app-header { gap: 14px; } }
 @media (max-width: 900px) { .locale-select { display: none; } }
-@media (max-width: 767px) { .notification-inbox { min-width: 0; max-height: 66vh; } .notification-inbox-head { align-items: stretch; flex-direction: column; } .notification-inbox-head .inline-flex { width: 100%; } .app-header { padding: 0 14px; gap: 8px; } .brand { width: auto; flex: 1; } .brand strong { font-size: 19px; } .brand img { height: 37px; width: 31px; } .brand small { font-size: 10px; } .header-company, .global-search, .profile > span:not(.avatar-mark), .profile > .icon { display: none; } .profile { padding-left: 5px; border: 0; } .mobile-toggle { display: flex; order: -1; } .header-actions { gap: 2px; } .account-actions { flex-direction: column; } .account-actions .btn { width: 100%; } }
+@media (max-width: 767px) { .notification-inbox { min-width: 0; max-height: 66vh; } .notification-inbox-head { align-items: stretch; flex-direction: column; } .notification-inbox-head .inline-flex { width: 100%; } .app-header { padding: 0 14px; gap: 8px; } .brand { width: auto; flex: 1; } .brand strong { font-size: 19px; } .brand img { height: 37px; width: 31px; } .brand small { font-size: 10px; } .header-company, .global-search, .profile > span:not(.avatar-mark), .profile > .icon { display: none; } .profile { padding-left: 5px; border: 0; } .account-menu-popover { position: fixed; top: calc(var(--header-height) - 2px); right: 12px; min-width: min(260px, calc(100vw - 24px)); } .mobile-toggle { display: flex; order: -1; } .header-actions { gap: 2px; } .account-actions { flex-direction: column; } .account-actions .btn { width: 100%; } }
 </style>

@@ -156,6 +156,7 @@ func NewSubscriptionChangeTimeRepositoryFactory(config ...string) requestscope.R
 			Entitlements: &entitlementRepository{tx: t},
 			Tasks:        &provisioningRepository{tx: t},
 			Events:       &outboxRepository{tx: t},
+			Payments:     &paymentOrderRepository{tx: t},
 			Transitions:  transitions,
 		}, nil
 	})

@@ -84,6 +84,7 @@ export const backendTermCatalog = {
   },
   effectiveMode: { IMMEDIATE: 'immediate', SCHEDULED: 'scheduled', PROVISIONING: 'provisioning' },
   receiptStatus: { APPLIED: 'applied', SCHEDULED: 'scheduled', PROVISIONING: 'provisioning', FAILED: 'failed', PENDING: 'pending' },
+  paymentState: { PENDING: 'pending', PAID: 'paid', CANCELLED: 'cancelled', EXPIRED: 'expired' },
   changeAction: { SWITCH: 'switch', RENEW: 'renew', STOP_RENEWAL: 'stopRenewal' },
   salesScope: { rental: 'rental', office: 'office', default: 'default', enterprise: 'enterprise' },
   technicalStatus: {
@@ -198,9 +199,23 @@ export function backendErrorFallback(scope: BackendErrorScope) {
 
 const engineeringText = /(?:^[A-Z][A-Z0-9_]{2,}$|[a-z0-9]+(?:[._-][a-z0-9]+){1,}|\b(?:server|readback|preview|receipt|resolver|catalog|idempotency|runtime)\b)/i
 
+const planChangeImpactPrefixes: ReadonlyArray<readonly [string, string]> = [
+  ['Existing tenant data is preserved;', 'changeDataPreserved'],
+  ['Projected rights include existing overrides', 'changeRightsProjected'],
+  ['No resource consumption', 'changeNoNewEnforcement'],
+  ['Tenant self-service preview only:', 'changeConfirmationRequired'],
+  ['This target carries a price reference.', 'changePaymentApprovalRequired'],
+  ['Scheduled intent only:', 'changeScheduled'],
+  ['Quota usage is unknown or over target:', 'changeQuotaRevalidation'],
+  ['Stops renewal intent only;', 'changeStopRenewal'],
+  ['External preparation is required.', 'changePreparationRequired'],
+]
+
 export function backendBusinessText(value: unknown) {
   const raw = rawValue(value)
   if (!raw) return backendTermLabel('reason', raw)
+  const knownImpact = planChangeImpactPrefixes.find(([prefix]) => raw.startsWith(prefix))
+  if (knownImpact) return t(`backendTerms.reason.${knownImpact[1]}`)
   if (backendTermKnown('reason', raw)) return backendTermLabel('reason', raw)
   if (!engineeringText.test(raw) && (/\s/.test(raw) || /[\u3400-\u9fff]/u.test(raw))) return raw
   return backendTermLabel('reason', raw)

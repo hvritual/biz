@@ -74,7 +74,7 @@ async function main() {
       if ((session.active_tenant_id ?? "") !== "" || !session.platform_subject) throw new Error("platform session is not tenantless");
       if ((await api(platform.page, "/v1/tenants")).status !== 200) throw new Error("platform API unavailable");
       await platform.page.goto(`${webBase}/#/platform/commercial/modules`, { waitUntil: "networkidle" });
-      await platform.page.getByRole("heading", { name: "平台商业管理" }).waitFor();
+      await platform.page.getByRole("heading", { name: "模块目录", level: 1, exact: true }).waitFor();
       await platform.page.screenshot({ path: join(screenshots, "platform.png"), fullPage: true });
     } finally { await platform.context.close(); }
 
