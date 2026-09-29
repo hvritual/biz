@@ -128,6 +128,17 @@ func TestServiceAPIConfigRejectsWeakOrWronglyScopedCredentials(t *testing.T) {
 	if err := unknown.Validate(); err == nil {
 		t.Fatal("unknown operation accepted")
 	}
+
+	runtimeVerifier := base
+	runtimeVerifier.Credentials = append([]ServiceAPICredentialConfig(nil), base.Credentials...)
+	runtimeVerifier.Credentials[0].Operations = []string{"commercial.module.runtime.verify"}
+	if err := runtimeVerifier.Validate(); err == nil {
+		t.Fatal("non-CI service subject accepted for runtime verification")
+	}
+	runtimeVerifier.Credentials[0].Subject = "ci-verifier:release"
+	if err := runtimeVerifier.Validate(); err != nil {
+		t.Fatalf("controlled CI verifier rejected: %v", err)
+	}
 }
 
 func TestServiceAPIRouteResolutionUsesCatalogOperation(t *testing.T) {
