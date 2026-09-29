@@ -5,6 +5,7 @@ import AuthorityPicker from '@/features/platform/components/AuthorityPicker.vue'
 import { computed, onMounted, ref } from 'vue'
 import PageHeading from '@/ui/common/PageHeading.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
+import { backendStateTone, backendTermLabel } from '@/i18n/backend-terms'
 import PlanEditorDialog from '@/features/platform/components/PlanEditorDialog.vue'
 import PlanVersionDetail from '@/features/platform/components/PlanVersionDetail.vue'
 import {
@@ -65,14 +66,11 @@ function versionKey(version: PlanVersionDTO) {
 }
 
 function statusLabel(state: string) {
-  const labels: Record<string, string> = { DRAFT: '草稿', PUBLISHED: '已发布', RETIRED: '已停售' }
-  return labels[state] || state || '未知'
+  return backendTermLabel('planState', state)
 }
 
-function statusTone(state: string): 'success' | 'warning' | 'neutral' {
-  if (state === 'PUBLISHED') return 'success'
-  if (state === 'DRAFT') return 'warning'
-  return 'neutral'
+function statusTone(state: string) {
+  return backendStateTone('planState', state)
 }
 
 function formatTime(value: string) {
@@ -406,7 +404,7 @@ onMounted(loadModules)
 .lookup-row label, .eligibility-body label > span { font-size: 12px; color: var(--color-text-secondary); }
 .input { width: 100%; min-height: 36px; border: 1px solid var(--color-border); border-radius: 7px; padding: 7px 10px; background: var(--color-surface); color: var(--color-text-primary); font: inherit; }
 .input:focus { outline: 2px solid var(--color-primary-soft); border-color: var(--color-primary); }
-.scope-note { margin: 10px 0 0; font-size: 11px; color: var(--color-text-muted); }
+.scope-note { margin: 10px 0 0; font-size: var(--text-xs); line-height: 1.5; color: var(--color-text-muted); }
 .notice { padding: 10px 13px; border: 1px solid var(--color-border); border-radius: 8px; font-size: 13px; }
 .notice.success { border-color: var(--color-success, var(--color-fixed-a93dc7bf)); }
 .notice.danger { border-color: var(--color-danger, var(--color-fixed-ecee5ee9)); }
@@ -417,7 +415,7 @@ onMounted(loadModules)
 .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .metric { padding: 16px; }
 .metric span, .metric small { display: block; color: var(--color-text-muted); font-size: 12px; }
-.metric strong { display: block; margin: 6px 0 2px; font-size: 23px; }
+.metric strong { display: block; margin: 6px 0 2px; font-size: 23px; font-variant-numeric: tabular-nums; }
 .plan-layout { display: grid; grid-template-columns: minmax(520px, 1.1fr) minmax(420px, .9fr); gap: 14px; align-items: start; }
 .versions-card { overflow: hidden; }
 .section-header { padding: 18px 20px; border-bottom: 1px solid var(--color-border); }
@@ -439,6 +437,7 @@ onMounted(loadModules)
 @media (max-width: 760px) {
   .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lookup-row { grid-template-columns: 1fr; }
+  .input { font-size: var(--text-lg); }
   .workspace-title, .section-header { align-items: flex-start; flex-wrap: wrap; }
   .eligibility-backdrop { padding: 8px; }
 }

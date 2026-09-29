@@ -1,6 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { installApiFailFast } from './ui.helpers'
 import { mkdirSync } from 'node:fs'
+import { qualifyCommercialStateZoom } from './commercial-state-zoom.helpers'
 
 test.skip(!process.env.ENTERPRISE_PLAN_REAL_E2E, 'runs only against the VITE_DATA_MODE=api build')
 
@@ -10,6 +11,7 @@ type Options = {
   entitlementStatus?: number
   usageStatus?: number
   memberUsed?: number
+  subscriptionState?: string
 }
 
 type Captured = {
@@ -74,7 +76,7 @@ async function mockPlanServer(page: Page, options: Options = {}): Promise<Captur
       subscriptionId: 'sub-authoritative-001',
       tenantId: 'tenant-001',
       kind: 'base',
-      state: 'active',
+      state: options.subscriptionState ?? 'active',
       planCode: 'rental-growth-2026',
       planVersion: 3,
       salesScope: 'rental',
@@ -238,4 +240,53 @@ test('entitlement authority failure stays visible instead of substituting previe
   await expect(page.locator('.state-card.error-state[role="alert"]')).toContainText('套餐与权益暂不可用，请稍后重试。')
   await expect(page.getByText('成员账号', { exact: true })).toHaveCount(0)
   await expect(page.getByText('500 GB', { exact: true })).toHaveCount(0)
+})
+
+
+// Presentation contract fixtures, not proof of an actual subscription change.
+for (const sample of [
+  { code: 'TRIAL', zh: '试用', en: 'Trial', tone: 'warning' },
+  { code: 'ACTIVE', zh: '有效', en: 'Active', tone: 'success' },
+  { code: 'GRACE', zh: '宽限期', en: 'Grace period', tone: 'warning' },
+  { code: 'RESTRICTED', zh: '受限', en: 'Restricted', tone: 'danger' },
+  { code: 'ENDED', zh: '已结束', en: 'Ended', tone: 'neutral' },
+]) {
+  test(`commercial status projection (API fixture): ${sample.code} has truthful bilingual text and tone`, async ({ page }) => {
+    await mockPlanServer(page, { subscriptionState: sample.code })
+    await openRealPlan(page)
+    const badge = page.locator('.current-plan .status-badge')
+    await expect(badge).toHaveText(sample.zh)
+    await expect(badge).toHaveClass(new RegExp(`\\b${sample.tone}\\b`))
+    await page.evaluate(() => localStorage.setItem('coffeelink.locale', 'en-US'))
+    await page.reload()
+    await expect(badge).toHaveText(sample.en)
+    await expect(badge).toHaveClass(new RegExp(`\\b${sample.tone}\\b`))
+  })
+}
+
+test('commercial status typography (API fixture): unknown long values remain neutral and readable at four viewports', async ({ page }) => {
+  await mockPlanServer(page, { subscriptionState: 'FUTURE_UNRECOGNIZED_'.repeat(12) })
+  mkdirSync('screenshots', { recursive: true })
+  for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1536, height: 1024 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport)
+    await openRealPlan(page)
+    const badge = page.locator('.current-plan .status-badge')
+    await expect(badge).toHaveText('未知状态')
+    await expect(badge).toHaveClass(/\bneutral\b/)
+    await expect(page.getByText(/FUTURE_UNRECOGNIZED_/)).toHaveCount(0)
+    const metrics = await badge.evaluate((element) => {
+      const style = getComputedStyle(element)
+      return { fontSize: parseFloat(style.fontSize), fits: element.scrollWidth <= element.clientWidth + 1 }
+    })
+    expect(metrics.fontSize).toBeGreaterThanOrEqual(12)
+    expect(metrics.fits).toBe(true)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
+    await page.screenshot({ path: `screenshots/commercial-status-unknown-${viewport.width}.png`, fullPage: false })
+  }
+})
+
+test('commercial status typography (API fixture): actual 200 percent browser zoom preserves bilingual state and quota navigation', async ({ browserName }, info) => {
+  test.setTimeout(90000)
+  expect(browserName).toBe('chromium')
+  await qualifyCommercialStateZoom(info, (page) => mockPlanServer(page, { subscriptionState: 'GRACE' }))
 })

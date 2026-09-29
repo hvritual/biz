@@ -7,7 +7,7 @@ import {
   type EnterprisePlanReadModel,
 } from '@/services/enterprise/planRuntime'
 import type { EntitlementDecisionDTO } from '@/services/commercial/platformCommercial'
-import { backendTermLabel } from '@/i18n/backend-terms'
+import { backendStateTone, backendTermLabel } from '@/i18n/backend-terms'
 
 export type EnterprisePlanFeature = {
   key: string
@@ -67,6 +67,7 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
   const periodEnd = computed(() => model.value?.subscription.periodEnd || '2027-09-07')
   const cycle = computed(() => model.value ? '按订阅有效期' : '按年')
   const subscriptionState = computed(() => model.value ? backendTermLabel('subscriptionState', model.value.subscription.state) : '使用中')
+  const subscriptionTone = computed(() => model.value ? backendStateTone('subscriptionState', model.value.subscription.state) : 'success')
   const serverChangeContext = computed(() => model.value ? { session: model.value.session, subscription: model.value.subscription } : null)
 
   const features = computed<EnterprisePlanFeature[]>(() => {
@@ -179,6 +180,7 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
     periodEnd,
     cycle,
     subscriptionState,
+    subscriptionTone,
     serverChangeContext,
     features,
     quotas,
