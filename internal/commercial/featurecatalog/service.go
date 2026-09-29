@@ -101,8 +101,14 @@ func (s *Service) CompleteMigration(ctx context.Context, code string, command Co
 	return s.mutate(ctx, code, command, "complete_migration", func(feature Feature) (Feature, error) { return feature.CompleteMigration() })
 }
 
-func (s *Service) Retire(ctx context.Context, code string, references ReferenceImpact, command Command) (Feature, error) {
-	return s.mutate(ctx, code, command, "retire", func(feature Feature) (Feature, error) { return feature.Retire(references) })
+func (s *Service) Retire(ctx context.Context, code string, command Command) (Feature, error) {
+	return s.mutate(ctx, code, command, "retire", func(feature Feature) (Feature, error) {
+		references, err := s.store.ReferenceImpact(ctx, feature)
+		if err != nil {
+			return Feature{}, err
+		}
+		return feature.Retire(references)
+	})
 }
 
 func (s *Service) mutate(ctx context.Context, code string, command Command, action string, transition func(Feature) (Feature, error)) (Feature, error) {
