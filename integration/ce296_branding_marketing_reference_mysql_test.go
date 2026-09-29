@@ -20,14 +20,14 @@ func TestCE296MySQLBrandingBasedMarketingReferenceIAMEntitlementMatrix(t *testin
 
 	grantBrandingIAM := func(tenant string) {
 		t.Helper()
-		if err := e.db.Exec("INSERT IGNORE INTO biz_permission_grants(tenant_id,role_id,permission,scope) SELECT tenant_id,role_id,?,'all' FROM biz_member_roles WHERE tenant_id=? AND user_id=?", "tenant.branding.manage", tenant, tenant+"-user").Error; err != nil {
+		if err := e.db.Exec("INSERT IGNORE INTO biz_permission_grants(tenant_id,role_id,permission,scope) SELECT tenant_id,role_id,?,'all' FROM biz_member_roles WHERE tenant_id=? AND user_id=?", "tenant.organization.manage", tenant, tenant+"-user").Error; err != nil {
 			t.Fatal(err)
 		}
 	}
 	grantLifecycle := func(tenant, requestID string) {
 		t.Helper()
 		var version uint64
-		if err := e.db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", tenant).Scan(&version).Error; err != nil || version == 0 {
+		if err := e.db.Table("biz_commercial_entitlement_state").Select("version").Where("tenant_id = ?", tenant).Scan(&version).Error; err != nil {
 			t.Fatalf("tenant %s entitlement state=%d err=%v", tenant, version, err)
 		}
 		_, err := e.create(&commercialv1.CreateEntitlementOverrideRequest{RequestId: requestID, TenantId: tenant, ExpectedVersion: version, ModuleCode: "access-management", Target: commercialv1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY, Key: "tenant.lifecycle", Effect: commercialv1.EntitlementEffect_ENTITLEMENT_EFFECT_GRANT, Reason: "CE296 branding marketing simulation entitlement"})

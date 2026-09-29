@@ -43,13 +43,13 @@ func TestCE290MySQLFeatureLifecyclePreservesRunningTenantsUntilMigrationComplete
 	if err != nil || feature.Product != featurecatalog.ProductDeprecated {
 		t.Fatalf("sunset=%+v err=%v", feature, err)
 	}
-	_, err = service.Retire(ctx, feature.Code, featurecatalog.ReferenceImpact{PublishedPlans: 1}, featurecatalog.Command{RequestID: "ce290-retire-blocked", Version: feature.Version, Reason: "must block"})
-	if !errors.Is(err, featurecatalog.ErrReferences) {
-		t.Fatalf("retire with reference err=%v", err)
-	}
 	feature, err = service.CompleteMigration(ctx, feature.Code, featurecatalog.Command{RequestID: "ce290-migration-complete", Version: feature.Version, Reason: "all tenants migrated"})
 	if err != nil {
 		t.Fatal(err)
+	}
+	_, err = service.Retire(ctx, feature.Code, featurecatalog.ReferenceImpact{PublishedPlans: 1}, featurecatalog.Command{RequestID: "ce290-retire-blocked", Version: feature.Version, Reason: "must block"})
+	if !errors.Is(err, featurecatalog.ErrReferences) {
+		t.Fatalf("retire with reference err=%v", err)
 	}
 	feature, err = service.Retire(ctx, feature.Code, featurecatalog.ReferenceImpact{}, featurecatalog.Command{RequestID: "ce290-retire", Version: feature.Version, Reason: "archive complete feature"})
 	if err != nil || feature.Product != featurecatalog.ProductEOL || feature.Runtime != featurecatalog.RuntimeStopped {

@@ -275,14 +275,20 @@ func (s *Service) mutate(ctx context.Context, requestID, code, reason string, ve
 			row.SalesStatus = string(SalesRetired)
 		}
 		now := time.Now().UTC()
-		res := tx.Model(&moduleRow{}).Where("module_code = ? AND version = ?", code, version).Updates(map[string]any{"name": row.Name, "category": row.Category, "sales_scope_json": row.SalesScopeJSON, "technical_status": row.TechnicalStatus, "sales_status": row.SalesStatus, "version": gorm.Expr("version + 1"), "updated_at": now})
+		updates := map[string]any{"name": row.Name, "category": row.Category, "sales_scope_json": row.SalesScopeJSON, "technical_status": row.TechnicalStatus, "sales_status": row.SalesStatus, "updated_at": now}
+		if op != "sales_status" {
+			updates["version"] = gorm.Expr("version + 1")
+		}
+		res := tx.Model(&moduleRow{}).Where("module_code = ? AND version = ?", code, version).Updates(updates)
 		if res.Error != nil {
 			return res.Error
 		}
 		if res.RowsAffected != 1 {
 			return ErrConflict
 		}
-		row.Version = version + 1
+		if op != "sales_status" {
+			row.Version = version + 1
+		}
 		row.UpdatedAt = now
 		out = rowToModule(row, def)
 		if err := writeAudit(tx, code, actor, op, before, out, reason, requestID); err != nil {
