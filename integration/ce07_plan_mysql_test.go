@@ -9,6 +9,7 @@ import (
 	"fmt"
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	access "github.com/hvritual/biz/internal/access/infrastructure/persistence"
+	"github.com/hvritual/biz/internal/commercial/modulecatalog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -22,6 +23,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"yunka.io/framework/core/identity"
 	"yunka.io/framework/execution"
 	"yunka.io/gateway/authz"
 )
@@ -43,6 +45,15 @@ func ce07New(t *testing.T) *ce07Environment {
 		t.Fatal(err)
 	}
 	e.token = token
+	moduleStore, err := modulecatalog.NewStore(e.db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	moduleService, err := modulecatalog.NewService(moduleStore, modulecatalog.ProductionRegistry())
+	if err != nil {
+		t.Fatal(err)
+	}
+	verifier := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:ce07", Authenticated: true, AuthMethod: identity.AuthMethodServiceToken})
 	conn, err := grpc.DialContext(context.Background(), e.runtime.GRPCAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatal(err)
@@ -51,6 +62,9 @@ func ce07New(t *testing.T) *ce07Environment {
 	for _, code := range []string{"device-operations", "access-management"} {
 		m, err := e.catalog.GetModule(ce04Context(token, ""), &v1.GetModuleRequest{ModuleCode: code})
 		if err != nil {
+			t.Fatal(err)
+		}
+		if err := moduleService.RecordRuntimeVerification(verifier, modulecatalog.RuntimeVerificationCommand{ModuleCode: code, ModuleVersion: m.Version, EvidenceDigest: strings.Repeat("a", 64), SourceTree: strings.Repeat("b", 64)}); err != nil {
 			t.Fatal(err)
 		}
 		if m.SalesStatus != v1.ModuleSalesStatus_MODULE_SALES_STATUS_SELLABLE {

@@ -33,6 +33,13 @@ func (s *Service) ListPlanCatalogInScope(ctx context.Context) ([]Module, error) 
 			if !d.ImplementationReady {
 				m.TechnicalStatus = TechnicalNotReady
 			}
+			verified, err := runtimeVerified(db, m.Code, m.Version)
+			if err != nil {
+				return nil, err
+			}
+			if !verified {
+				m.SalesStatus = SalesRetired
+			}
 			out = append(out, m)
 		}
 		return out, nil
