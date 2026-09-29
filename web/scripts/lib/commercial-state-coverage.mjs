@@ -84,7 +84,7 @@ export function goConstants(source, required = true) {
 
 export function protoEnum(source, name) {
   const clean = uncomment(source)
-  const match = new RegExp(`\\benum\\s+${name}\\s*\\{`).exec(clean)
+  const match = new RegExp(`\\benum\\s+${name}\\s*\\{`).exec(maskLiterals(clean))
   if (!match) throw new Error(`Missing Proto enum ${name}`)
   const body = delimited(clean, match.index + match[0].lastIndexOf('{'), '{', '}')
   const rows = body.split(';').map((row) => row.trim()).filter(Boolean)
@@ -99,7 +99,7 @@ export function protoEnum(source, name) {
 
 function functionBody(source, name) {
   const clean = uncomment(source)
-  const match = new RegExp(`^func\\s+(?:\\([^\\n]+?\\)\\s+)?${name}\\([^\\n]*\\)\\s+[^\\n{]+\\{`, 'm').exec(clean)
+  const match = new RegExp(`^func\\s+(?:\\([^\\n]+?\\)\\s+)?${name}\\([^\\n]*\\)\\s+[^\\n{]+\\{`, 'm').exec(maskLiterals(clean))
   if (!match) throw new Error(`Missing canonical function ${name}`)
   return delimited(clean, match.index + match[0].lastIndexOf('{'), '{', '}')
 }

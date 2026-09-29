@@ -107,3 +107,14 @@ test('nonliteral state returns fail closed without counting nested helper return
   assert.deepEqual(literalReturns(source, 'State'), ['ACTIVE'])
   assert.throws(() => literalReturns(source.replace('return "ACTIVE"', 'return nextState'), 'State'), /Unsupported state return/)
 })
+
+
+test('quoted Proto documentation cannot shadow the actual enum', () => {
+  const source = 'option note = "enum Example { FAKE = 0; }";\nenum Example { REAL = 0; NEW = 1; }'
+  assert.deepEqual(protoEnum(source, 'Example'), ['REAL', 'NEW'])
+})
+
+test('quoted Go documentation cannot shadow the actual state method', () => {
+  const source = 'var note = `\nfunc State() string { return "FAKE" }\n`\nfunc State() string { return "ACTIVE" }'
+  assert.deepEqual(literalReturns(source, 'State'), ['ACTIVE'])
+})
