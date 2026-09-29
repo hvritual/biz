@@ -75,12 +75,12 @@ toolchain-check:
 # Reference consistency only; never a substitute for business acceptance.
 .PHONY: commercial-delivery-check
 commercial-delivery-check:
-	@python3 docs/commercial-entitlements/tools/check_plan.py
-	@python3 scripts/check_commercial_delivery.py
-	@python3 -m unittest discover -s scripts -p 'test_commercial_delivery.py' -v
+	@python3 -B docs/commercial-entitlements/tools/check_plan.py
+	@python3 -B scripts/check_commercial_delivery.py
+	@python3 -B -m unittest discover -s scripts -p 'test_commercial_delivery*.py' -v
 
 # Agent documentation provenance only; rendered typography requires UI evidence.
 .PHONY: ui-skill-check
 ui-skill-check:
-	@python3 scripts/check_ui_skill_source.py
-	@python3 -m unittest discover -s scripts -p 'test_ui_skill_source.py' -v
+	@python3 -B scripts/check_ui_skill_source.py
+	@python3 -B -m unittest discover -s scripts -p 'test_ui_skill_source.py' -v
