@@ -84,6 +84,7 @@ func (r ReferenceImpact) HasActiveReferences() bool {
 type Feature struct {
 	Code            string
 	Name            string
+	Version         uint64
 	ModuleRefs      []ModuleReference
 	Product         ProductState
 	Sales           SalesState
