@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/json"
 	"errors"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -18,14 +19,16 @@ var migrationFS embed.FS
 type Store struct{ db *gorm.DB }
 
 type featureRow struct {
-	Code            string `gorm:"column:feature_code;primaryKey;size:96"`
-	Name            string `gorm:"size:160;not null"`
-	Product         string `gorm:"column:product_state;size:32;not null"`
-	Sales           string `gorm:"column:sales_state;size:32;not null"`
-	Runtime         string `gorm:"column:runtime_state;size:32;not null"`
-	Migration       string `gorm:"column:migration_state;size:32;not null"`
-	ReplacementCode string `gorm:"column:replacement_feature_code;size:96;not null"`
-	Version         uint64 `gorm:"not null"`
+	Code            string    `gorm:"column:feature_code;primaryKey;size:96"`
+	Name            string    `gorm:"size:160;not null"`
+	Product         string    `gorm:"column:product_state;size:32;not null"`
+	Sales           string    `gorm:"column:sales_state;size:32;not null"`
+	Runtime         string    `gorm:"column:runtime_state;size:32;not null"`
+	Migration       string    `gorm:"column:migration_state;size:32;not null"`
+	ReplacementCode string    `gorm:"column:replacement_feature_code;size:96;not null"`
+	Version         uint64    `gorm:"not null"`
+	CreatedAt       time.Time `gorm:"column:created_at;not null"`
+	UpdatedAt       time.Time `gorm:"column:updated_at;not null"`
 }
 
 func (featureRow) TableName() string { return "biz_commercial_features" }
@@ -39,14 +42,15 @@ type featureModuleRow struct {
 func (featureModuleRow) TableName() string { return "biz_commercial_feature_modules" }
 
 type featureAuditRow struct {
-	ID        uint64 `gorm:"primaryKey;autoIncrement"`
-	Feature   string `gorm:"column:feature_code;size:96;not null"`
-	Actor     string `gorm:"size:160;not null"`
-	Action    string `gorm:"size:64;not null"`
-	Before    string `gorm:"column:before_json;type:text"`
-	After     string `gorm:"column:after_json;type:text"`
-	Reason    string `gorm:"size:512;not null"`
-	RequestID string `gorm:"column:request_id;size:128;not null"`
+	ID        uint64    `gorm:"primaryKey;autoIncrement"`
+	Feature   string    `gorm:"column:feature_code;size:96;not null"`
+	Actor     string    `gorm:"size:160;not null"`
+	Action    string    `gorm:"size:64;not null"`
+	Before    string    `gorm:"column:before_json;type:text"`
+	After     string    `gorm:"column:after_json;type:text"`
+	Reason    string    `gorm:"size:512;not null"`
+	RequestID string    `gorm:"column:request_id;size:128;not null"`
+	CreatedAt time.Time `gorm:"column:created_at;not null"`
 }
 
 func (featureAuditRow) TableName() string { return "biz_commercial_feature_audit" }

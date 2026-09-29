@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -55,6 +56,8 @@ func (s *Service) Create(ctx context.Context, definition Definition, command Com
 			return err
 		}
 		row := featureToRow(feature)
+		now := time.Now().UTC()
+		row.CreatedAt, row.UpdatedAt = now, now
 		if err := tx.Create(&row).Error; err != nil {
 			return err
 		}
@@ -133,7 +136,9 @@ func (s *Service) mutate(ctx context.Context, code string, command Command, acti
 			return err
 		}
 		after.Version++
-		if err := tx.Model(&featureRow{}).Where("feature_code = ? AND version = ?", code, command.Version).Updates(featureToRow(after)).Error; err != nil {
+		afterRow := featureToRow(after)
+		afterRow.UpdatedAt = time.Now().UTC()
+		if err := tx.Model(&featureRow{}).Where("feature_code = ? AND version = ?", code, command.Version).Updates(afterRow).Error; err != nil {
 			return err
 		}
 		if err := writeAudit(tx, actor, action, before, after, command); err != nil {
@@ -161,7 +166,7 @@ func saveReferences(tx *gorm.DB, feature Feature) error {
 func writeAudit(tx *gorm.DB, actor, action string, before, after Feature, command Command) error {
 	beforeJSON, _ := json.Marshal(before)
 	afterJSON, _ := json.Marshal(after)
-	return tx.Create(&featureAuditRow{Feature: after.Code, Actor: actor, Action: action, Before: string(beforeJSON), After: string(afterJSON), Reason: command.Reason, RequestID: command.RequestID}).Error
+	return tx.Create(&featureAuditRow{Feature: after.Code, Actor: actor, Action: action, Before: string(beforeJSON), After: string(afterJSON), Reason: command.Reason, RequestID: command.RequestID, CreatedAt: time.Now().UTC()}).Error
 }
 
 func loadReplay(tx *gorm.DB, requestID, operation, code string) (Feature, bool, error) {
