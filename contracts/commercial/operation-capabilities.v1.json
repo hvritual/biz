@@ -1,4 +1,4 @@
-{"schema_version":1,"mapping_version":"26","retired_capability_codes":[],"operations":[
+{"schema_version":1,"mapping_version":"27","retired_capability_codes":[],"operations":[
 {"operation_id":"notification.channel.list","classification":"tenant_business","module_code":"access-management","capability_codes":["tenant.lifecycle"],"children":[]},
 {"operation_id":"notification.configuration.create","classification":"tenant_business","module_code":"access-management","capability_codes":["tenant.lifecycle"],"children":[]},
 {"operation_id":"notification.configuration.delete","classification":"tenant_business","module_code":"access-management","capability_codes":["tenant.lifecycle"],"children":[]},
