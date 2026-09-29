@@ -88,6 +88,16 @@ class MemberBrowserSetupTest(unittest.TestCase):
         self.assertIn('ENTERPRISE_MEMBER_REAL_E2E=1 npx playwright test e2e/enterprise-members-real.spec.ts', source)
         self.assertNotIn('playwright install --with-deps chromium', source)
 
+    def test_organization_keeps_e2e_and_four_viewport_evidence(self):
+        source = (ROOT / '.github/workflows/ec-ri-04-web-qualification.yml').read_text()
+        self.assertIn('python3 -B scripts/test_ci_member_browser.py', source)
+        self.assertIn('bash scripts/ci_member_browser.sh', source)
+        self.assertIn('ENTERPRISE_ORGANIZATION_REAL_E2E=1 npx playwright test e2e/enterprise-organization-real.spec.ts', source)
+        self.assertIn('for width, height in [(1366, 768), (1440, 900), (1536, 1024), (390, 844)]', source)
+        self.assertIn('assert got == (width, height)', source)
+        self.assertNotIn('playwright install --with-deps', source)
+        self.assertNotIn('apt-get install -y fonts-noto-cjk', source)
+
 
 if __name__ == '__main__':
     unittest.main()
