@@ -23,7 +23,6 @@ export type TenantChangePreviewInput = Readonly<{
   targetPlanCode?: string
   targetPlanVersion?: string | number
   effectiveAt?: string
-  reason: string
 }>
 
 function requireTenantSession(session: TrustedSession) {
@@ -61,7 +60,6 @@ export function previewMySubscriptionChange(
       targetPlanCode: input.action === 'SWITCH' ? String(input.targetPlanCode ?? '').trim() : '',
       targetPlanVersion: input.action === 'SWITCH' ? String(input.targetPlanVersion ?? '') : '0',
       effectiveAt: input.action === 'STOP_RENEWAL' ? '' : String(input.effectiveAt ?? '').trim(),
-      reason: input.reason.trim(),
     },
     { idempotencyKey: requestId, sessionContext: sessionContext(session) },
   )
@@ -80,7 +78,6 @@ export function getMySubscriptionChangePreview(
 export function confirmMySubscriptionChange(
   session: TrustedSession,
   preview: SubscriptionChangePreviewDTO,
-  reason: string,
   requestId = createTenantChangeRequestId('tenant-plan-confirm'),
 ) {
   requireTenantSession(session)
@@ -91,7 +88,6 @@ export function confirmMySubscriptionChange(
       changeId: preview.changeId,
       requestId,
       previewHash: preview.previewHash,
-      reason: reason.trim(),
     },
     { idempotencyKey: requestId, sessionContext: sessionContext(session) },
   )

@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
@@ -12,6 +11,8 @@ import (
 	"yunka.io/framework/core/identity"
 	"yunka.io/framework/requestscope"
 )
+
+const tenantSelfServiceReason = "TENANT_SELF_SERVICE"
 
 func tenantChangeActor(ctx context.Context) (identity.Principal, error) {
 	principal, ok := identity.FromContext(ctx)
@@ -99,7 +100,7 @@ func (s *service) ConfirmMySubscriptionChange(ctx context.Context, request *v1.C
 	if request == nil {
 		return nil, expose(change.ErrInvalid)
 	}
-	return s.confirm(ctx, principal.Subject, principal.TenantID, request.ChangeId, request.RequestId, request.PreviewHash, request.Reason, true)
+	return s.confirm(ctx, principal.Subject, principal.TenantID, request.ChangeId, request.RequestId, request.PreviewHash, tenantSelfServiceReason, true)
 }
 
 func (s *service) GetMySubscriptionChangeReceipt(ctx context.Context, request *v1.ReadMySubscriptionChangeReceiptRequest) (*v1.SubscriptionChangeReceiptDTO, error) {
@@ -135,7 +136,7 @@ func tenantPreviewInput(tenantID string, request *v1.PreviewMySubscriptionChange
 		Action:            request.Action,
 		TargetPlanCode:    request.TargetPlanCode,
 		TargetPlanVersion: request.TargetPlanVersion,
-		Reason:            strings.TrimSpace(request.Reason),
+		Reason:            tenantSelfServiceReason,
 	}
 	if request.EffectiveAt != "" {
 		value, err := time.Parse(time.RFC3339Nano, request.EffectiveAt)
