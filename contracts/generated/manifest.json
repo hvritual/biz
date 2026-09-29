@@ -6679,6 +6679,96 @@
       }
     },
     {
+      "name": "SubscriptionChangeImpact",
+      "fullName": "commercial.v1.SubscriptionChangeImpact",
+      "fields": [
+        {
+          "name": "code",
+          "jsonName": "code",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "severity",
+          "jsonName": "severity",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "subject",
+          "jsonName": "subject",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "before",
+          "jsonName": "before",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "after",
+          "jsonName": "after",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "usage_known",
+          "jsonName": "usageKnown",
+          "number": 6,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "current_usage",
+          "jsonName": "currentUsage",
+          "number": 7,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "blocking",
+          "jsonName": "blocking",
+          "number": 8,
+          "kind": "scalar",
+          "type": "bool"
+        },
+        {
+          "name": "action_required",
+          "jsonName": "actionRequired",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "message_key",
+          "jsonName": "messageKey",
+          "number": 10,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "message_parameters",
+          "jsonName": "messageParameters",
+          "number": 11,
+          "kind": "map",
+          "type": "map",
+          "map": true,
+          "mapKeyType": "string",
+          "mapValueKind": "scalar",
+          "mapValueType": "string"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "SubscriptionChangePreviewDTO",
       "fullName": "commercial.v1.SubscriptionChangePreviewDTO",
       "fields": [
@@ -6866,6 +6956,14 @@
           "number": 26,
           "kind": "message",
           "type": "commercial.v1.ProvisioningRequirementDTO",
+          "repeated": true
+        },
+        {
+          "name": "impact_details",
+          "jsonName": "impactDetails",
+          "number": 27,
+          "kind": "message",
+          "type": "commercial.v1.SubscriptionChangeImpact",
           "repeated": true
         }
       ],

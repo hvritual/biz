@@ -11,6 +11,7 @@ import PlanChangeConfirmDialog from '@/features/enterprise/components/PlanChange
 import type {
   PlanVersionDTO,
   PaymentOrderDTO,
+  SubscriptionChangeImpact,
   SubscriptionChangePreviewDTO,
   SubscriptionChangeReceiptDTO,
   TenantSubscriptionDTO,
@@ -84,6 +85,7 @@ const targetEntitlementSummary = computed(() => ({
   quotas: targetModules.value.reduce((total, module) => total + module.quotaCount, 0),
   fields: targetModules.value.reduce((total, module) => total + module.fieldCount, 0),
 }))
+const structuredImpacts = computed(() => preview.value?.impactDetails ?? [])
 
 watch(action, () => {
   selectedTarget.value = null
@@ -114,6 +116,37 @@ function validityLabel(target: PlanVersionDTO | undefined) {
 function moduleLabel(code: string) { return backendTermLabel('module', code) }
 function planLabel(kind: BackendTermKind, values?: string[]) {
   return values?.length ? values.map((value) => backendTermLabel(kind, value)).join(' · ') : '未声明适用范围'
+}
+function impactTitle(impact: SubscriptionChangeImpact) {
+  const labels: Record<string, string> = {
+    DATA_PRESERVED: '现有数据保留',
+    ENTITLEMENT_PROJECTION: '权益将按方案重新核对',
+    NO_NEW_ENFORCEMENT: '本次不新增资源限制',
+    SELF_SERVICE_CONFIRMATION: '确认后才会提交变更',
+    EXTERNAL_COMMERCIAL_APPROVAL: '需要完成商业或支付审批',
+    SCHEDULED_EFFECTIVE_TIME: '将在预约时间生效',
+    QUOTA_REVALIDATION: '需要重新核对额度',
+    AUTO_RENEWAL_DISABLED: '自动续费将关闭',
+    EXTERNAL_PREPARATION: '需要完成开通准备',
+  }
+  return labels[impact.code] ?? '套餐变更影响'
+}
+function impactDescription(impact: SubscriptionChangeImpact) {
+  const descriptions: Record<string, string> = {
+    DATA_PRESERVED: '已有业务数据不会因本次套餐变更被删除。',
+    ENTITLEMENT_PROJECTION: '套餐、专项授权和安全限制将由服务端以当前事实重新计算。',
+    NO_NEW_ENFORCEMENT: '本次预览不会把展示用量当作新的资源执行限制。',
+    SELF_SERVICE_CONFIRMATION: '当前仅为预览；在完成确认前，套餐与权益不会改变。',
+    EXTERNAL_COMMERCIAL_APPROVAL: '该套餐包含价格事实，必须先取得外部商业或支付审批。',
+    SCHEDULED_EFFECTIVE_TIME: '当前权益保持有效，服务端会在预约时间再次核对后执行。',
+    QUOTA_REVALIDATION: '当前用量未知或超出目标，需要先满足额度要求。',
+    AUTO_RENEWAL_DISABLED: '当前权益将持续至到期日，之后不会自动续订。',
+    EXTERNAL_PREPARATION: '服务端已保留处理意图，实际权益要等待准备完成后才会生效。',
+  }
+  return descriptions[impact.code] ?? '请根据当前套餐变更结果确认后续操作。'
+}
+function impactTone(impact: SubscriptionChangeImpact) {
+  return impact.severity === 'DANGER' ? 'danger' : impact.severity === 'WARNING' ? 'warning' : 'neutral'
 }
 
 async function createPaymentOrder(provider: TenantPaymentProvider) {
@@ -426,7 +459,18 @@ async function confirmPreview() {
 
         <div class="impact-card impacts">
           <h4>变更影响</h4>
-          <ul><li v-for="impact in preview.impacts" :key="impact">{{ backendBusinessText(impact) }}</li></ul>
+          <div v-if="structuredImpacts.length" class="structured-impact-list">
+            <article v-for="impact in structuredImpacts" :key="impact.code" :class="['structured-impact', { blocking: impact.blocking }]">
+              <StatusBadge :text="impact.blocking ? '需要处理' : '已说明'" :tone="impactTone(impact)" :dot="false" />
+              <div>
+                <strong>{{ impactTitle(impact) }}</strong>
+                <p>{{ impactDescription(impact) }}</p>
+                <small v-if="impact.usageKnown">当前用量：{{ impact.currentUsage }}</small>
+                <small v-if="impact.actionRequired" class="impact-action">下一步：{{ impactTitle(impact) }}</small>
+              </div>
+            </article>
+          </div>
+          <ul v-else><li v-for="impact in preview.impacts" :key="impact">{{ backendBusinessText(impact) }}</li></ul>
         </div>
 
         <div class="action-row">
@@ -516,6 +560,13 @@ async function confirmPreview() {
 .impact-list small { grid-column: 1 / -1; color: var(--color-text-muted); }
 .impacts { margin-top: 14px; }
 .impacts ul { margin: 0; padding-left: 18px; }
+.structured-impact-list { display: grid; gap: 8px; }
+.structured-impact { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface-soft); }
+.structured-impact.blocking { border-color: var(--color-warning); }
+.structured-impact strong, .structured-impact p, .structured-impact small { display: block; }
+.structured-impact p { margin-top: 3px; color: var(--color-text-secondary); font-size: var(--text-xs); line-height: 1.5; }
+.structured-impact small { margin-top: 4px; color: var(--color-text-muted); font-size: var(--text-xs); }
+.structured-impact .impact-action { color: var(--color-text-secondary); }
 .result-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; background: var(--color-primary); color: var(--color-on-primary); }
 .result-note { margin-top: 14px; margin-bottom: 0; flex-direction: column; gap: 3px; }
 .muted { color: var(--color-text-muted); font-size: 12px; }

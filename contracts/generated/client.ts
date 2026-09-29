@@ -1109,6 +1109,20 @@ export interface Commercial_V1_SubscriptionChangeDependency {
   requiresModules?: readonly string[];
 }
 
+export interface Commercial_V1_SubscriptionChangeImpact {
+  code?: string;
+  severity?: string;
+  subject?: string;
+  before?: string;
+  after?: string;
+  usageKnown?: boolean;
+  currentUsage?: string;
+  blocking?: boolean;
+  actionRequired?: string;
+  messageKey?: string;
+  messageParameters?: Record<string, string>;
+}
+
 export interface Commercial_V1_SubscriptionChangePreviewDTO {
   changeId?: string;
   tenantId?: string;
@@ -1136,6 +1150,7 @@ export interface Commercial_V1_SubscriptionChangePreviewDTO {
   pricingBasis?: string;
   quotaValidationRequired?: boolean;
   provisioningRequirements?: readonly Commercial_V1_ProvisioningRequirementDTO[];
+  impactDetails?: readonly Commercial_V1_SubscriptionChangeImpact[];
 }
 
 export interface Commercial_V1_SubscriptionChangeQuotaImpact {
