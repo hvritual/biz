@@ -277,6 +277,11 @@ class MainProofTests(unittest.TestCase):
     def setUp(self):
         self.receipt = ControlTests().receipt()
         self.receipt['repository'] = 'hvritual/biz'
+        self.receipt['dependency_preparation'] = {'artifact_state': 'READY', 'artifact_id': 112}
+        self.receipt['frozen_main_sha'] = 'c' * 40
+        recovery = patch('ci_dependency_recovery.verify_run', return_value=self.receipt['dependency_preparation'])
+        recovery.start()
+        self.addCleanup(recovery.stop)
         self.api = MainFacts(self.receipt)
 
     def verify(self):
@@ -369,7 +374,10 @@ class MergedRunBindingTests(unittest.TestCase):
         for item in api.items:
             item['pull_requests'] = []
             item['referenced_workflows'] = self.refs()
-        result = d.verify_main(api, CONTRACT, 'contract', 'hvritual/biz', 'd'*40, ['full-01-one'])
+        receipt['frozen_main_sha'] = 'c' * 40
+        receipt['dependency_preparation'] = {'artifact_state': 'READY', 'artifact_id': 112}
+        with patch('ci_dependency_recovery.verify_run', return_value=receipt['dependency_preparation']):
+            result = d.verify_main(api, CONTRACT, 'contract', 'hvritual/biz', 'd'*40, ['full-01-one'])
         self.assertEqual(result['state'], 'MAIN_VERIFIED')
 
 

@@ -270,6 +270,9 @@ def verify_main(api, contract, contract_hash, repository, main_sha, expected):
     receipt = read_receipt_zip(data, limit)
     require(receipt.get("repository") == repository, "RECEIPT_REPOSITORY_MISMATCH")
     verify_receipt(receipt, contract_hash, candidate, tree, pr, merge_run, qualification, expected)
+    from ci_dependency_recovery import verify_run
+    recovery = verify_run(api, ROOT, repository, candidate, tree, pr, merge_run, receipt["frozen_main_sha"])
+    require(receipt.get("dependency_preparation") == recovery, "RECOVERY_PROOF_EXECUTION_DRIFT")
     require(api.get("/git/ref/heads/main")["object"]["sha"] == main_sha, "MAIN_TIP_CHANGED")
     return {**receipt, "state": "MAIN_VERIFIED", "main_sha": main_sha, "merge_receipt_artifact_id": artifact["id"]}
 
@@ -296,8 +299,27 @@ def validate_contract(contract):
                 require(original.returncode == 0 and original.stdout == (ROOT / path).read_bytes(), "DELIVERY_CONTROL_CHANGE_REQUIRES_GOVERNANCE", path)
 
 
+def require_proof_receipt(path, bound, run_id, attempt, repository):
+    require(path is not None and pathlib.Path(path).is_file(), "PROOF_RECEIPT_MISSING")
+    from ci_dependency_recovery import strict_json
+    proof = strict_json(pathlib.Path(path).read_bytes())
+    require(proof.get("state") == "VERIFIED", "PROOF_AUDIT_BLOCKED", proof.get("reason"))
+    fields = {"schema_version": 1, "stage": "audit-run", "repository": repository,
+              "candidate_sha": bound["candidate_sha"], "candidate_tree": bound["candidate_tree"],
+              "frozen_main_sha": bound["frozen_main_sha"], "pr_number": bound["pr_number"],
+              "run_id": str(run_id), "run_attempt": attempt, "canonical_units": 35,
+              "contract_sha256": digest((ROOT / "scripts/ci_proof_contract.json").read_bytes()),
+              "topology_sha256": digest((ROOT / "scripts/ci_topology_contract.json").read_bytes())}
+    for key, value in fields.items():
+        require(type(proof.get(key)) is type(value) and proof[key] == value, "PROOF_RECEIPT_BINDING_MISMATCH", key)
+    require(proof.get("hard_violations") == [] and proof.get("dependency_preparation", {}).get("artifact_state") in {"READY", "RECOVERED"},
+            "PROOF_RECOVERY_OR_PERFORMANCE_INVALID")
+    return proof["dependency_preparation"]
+
+
 def emit(report, output):
     report["observed_at"] = datetime.now(timezone.utc).isoformat()
+    pathlib.Path(output).parent.mkdir(parents=True, exist_ok=True)
     pathlib.Path(output).write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(json.dumps(report, sort_keys=True))
     if os.getenv("GITHUB_STEP_SUMMARY"):
@@ -309,6 +331,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=["validate-contract", "wait-qualification", "merge-ready", "verify-main"])
     parser.add_argument("--output", default=str(pathlib.Path(os.getenv("RUNNER_TEMP", ".")) / RECEIPT))
+    parser.add_argument("--proof-receipt", type=pathlib.Path)
     args = parser.parse_args()
     report = {"schema_version": 1, "state": "BLOCKED", "repository": os.getenv("GITHUB_REPOSITORY"),
               "candidate_sha": os.getenv("CANDIDATE_SHA"), "owner": os.getenv("GITHUB_ACTOR", "repository-maintainer"),
@@ -336,6 +359,7 @@ def main():
                         handle.write(f"qualification_run_id={report['qualification_run']['id']}\nqualification_attempt={report['qualification_run']['run_attempt']}\nfrozen_main_sha={report['frozen_main_sha']}\n")
             else:
                 report.update(bound_refs(api, pr, candidate))
+                report["dependency_preparation"] = require_proof_receipt(args.proof_receipt, report, run_id, attempt, report["repository"])
                 needs = json.loads(os.environ["FULL_RESULTS"])
                 jobs = api.jobs({"id": run_id, "run_attempt": attempt})
                 report["root_cause_signatures"] = root_causes(jobs)

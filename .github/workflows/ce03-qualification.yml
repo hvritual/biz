@@ -6,6 +6,8 @@ on:
 
 permissions:
   contents: read
+  actions: read
+  pull-requests: read
 
 env:
   YUNKA_TEST_RESET_FIXTURES: "1"
@@ -74,6 +76,18 @@ jobs:
             echo 'FIRST_RELEASE_NO_PREVIOUS_CATALOG' | tee -a "$RUNNER_TEMP/ce03/baseline.log"
             echo 'path=' >> "$GITHUB_OUTPUT"
           fi
+      - name: Prepare locked Go dependencies
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 biz/scripts/ci_dependency_recovery.py --output "$RUNNER_TEMP/ce03-dependencies"
+      - name: Retain dependency recovery evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ci-dependency-ce03-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ce03-dependencies
+          retention-days: 30
+          if-no-files-found: error
       - name: Check and regenerate without drift
         env: {COMMERCIAL_BASELINE: '${{ steps.baseline.outputs.path }}'}
         run: |

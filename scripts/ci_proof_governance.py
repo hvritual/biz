@@ -30,7 +30,8 @@ PROTECTED = (CONTRACT, 'scripts/ci_proof_governance.py', 'scripts/test_ci_proof_
              'scripts/test_ci_commercial_runtime.py', 'scripts/check_ci_commercial.py',
              'scripts/ci_commercial_mysql.sh', 'scripts/ci_ce13_mysql.sh',
              'scripts/ci_ce13_browser.sh', 'scripts/check_ci_ce13.py',
-             'scripts/test_ci_ce13_runtime.py')
+             'scripts/test_ci_ce13_runtime.py', 'scripts/ci_dependency_recovery.json',
+             'scripts/ci_dependency_recovery.py', 'scripts/test_ci_dependency_recovery.py')
 RUNTIMES = {'go-mysql', 'go', 'browser', 'mixed', 'static'}
 RULES = {'go.all.test', 'go.all.vet', 'go.all.build', 'generation.check',
          'generation.generate', 'web.fast', 'bootstrap.go-cache-disabled',
@@ -231,6 +232,8 @@ def check_base(root, base_ref, contract):
 
 
 def hook_check(root):
+    from ci_dependency_recovery import policy
+    policy(root)
     hooks = {'pr-qualification.yml': ['ci_proof_governance.py check', 'test_ci_proof_governance.py'],
              'pr-merge-gate.yml': ['ci_proof_governance.py audit-run', 'ci-proof-execution.json'],
              'main-receipt.yml': ['ci_proof_governance.py verify-main']}
@@ -327,8 +330,10 @@ def api_audit(api, contract, topology, repository, candidate, pr, run_id, attemp
         require(api.get('/git/commits/' + ref)['tree']['sha'] == bound['candidate_tree'], 'WORKFLOW_SOURCE_TREE_MISMATCH')
     print('CI_PROOF_PROGRESS=verify_all_expanded_jobs', flush=True)
     rows = audit_jobs(contract, topology, api.jobs(run), run_id, attempt, candidate)
+    from ci_dependency_recovery import verify_run
+    recovery = verify_run(api, ROOT, repository, candidate, bound['candidate_tree'], pr, run, bound['frozen_main_sha'])
     require(bound_refs(api, pr, candidate) == bound, 'FROZEN_BINDING_CHANGED_DURING_AUDIT')
-    return {**bound, 'repository': repository, 'evidence_source': 'github_api', 'run_id': str(run_id),
+    return {**bound, 'dependency_preparation': recovery, 'repository': repository, 'evidence_source': 'github_api', 'run_id': str(run_id),
             'run_attempt': attempt, 'qualification_run_id': str(qualification['id']),
             'qualification_run_attempt': qualification['run_attempt'], 'jobs': rows,
             'canonical_units': 35, 'expanded_jobs': len(rows),
@@ -363,6 +368,9 @@ def verify_main(api, contract, topology, repository, main_sha, contract_hash, to
     verify_binding(receipt, repository, contract_hash, topology_hash, candidate, tree, pr, run, qualification)
     rows = audit_jobs(contract, topology, api.jobs(run), run['id'], run['run_attempt'], candidate)
     require(receipt.get('jobs') == rows and not any(r['performance'] == 'HARD_EXCEEDED' for r in rows), 'PROOF_EXECUTION_DRIFT')
+    from ci_dependency_recovery import verify_run
+    recovery = verify_run(api, ROOT, repository, candidate, tree, pr, run, receipt['frozen_main_sha'])
+    require(receipt.get('dependency_preparation') == recovery, 'RECOVERY_PROOF_EXECUTION_DRIFT')
     require(api.get('/git/ref/heads/main')['object']['sha'] == main_sha, 'MAIN_TIP_CHANGED')
     return {**receipt, 'state': 'MAIN_VERIFIED', 'main_sha': main_sha, 'artifact_id': artifact['id']}
 
