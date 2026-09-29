@@ -49,6 +49,7 @@ const errorMessage = ref('')
 const receiptRefreshing = ref(false)
 const confirmationOpen = ref(false)
 let receiptTimer: ReturnType<typeof setInterval> | undefined
+let restoredPendingKey = ''
 
 const actionLabel = computed(() => backendTermLabel('changeAction', action.value))
 const stage = computed(() => receipt.value ? 'receipt' : preview.value ? 'preview' : 'select')
@@ -176,6 +177,35 @@ function resetLifecycle() {
 function receiptNeedsSync(value: SubscriptionChangeReceiptDTO | null) { return value?.status === 'SCHEDULED' || value?.status === 'PROVISIONING' }
 function stopReceiptSync() { if (receiptTimer) clearInterval(receiptTimer); receiptTimer = undefined }
 function startReceiptSync() { stopReceiptSync(); if (receiptNeedsSync(receipt.value)) receiptTimer = setInterval(() => { void refreshReceipt() }, 15_000) }
+
+async function restorePendingChange() {
+  const changeId = String(props.subscription.pendingChangeId ?? '').trim()
+  const activeTenant = String(props.session.active_tenant_id ?? '').trim()
+  const subscriptionTenant = String(props.subscription.tenantId ?? '').trim()
+  const key = `${activeTenant}:${subscriptionTenant}:${changeId}`
+  if (!changeId || !activeTenant || activeTenant !== subscriptionTenant || key === restoredPendingKey || receiptRefreshing.value) return
+  restoredPendingKey = key
+  opened.value = true
+  receiptRefreshing.value = true
+  errorMessage.value = ''
+  try {
+    const recovered = await getMySubscriptionChangeReceipt(props.session, changeId)
+    if (recovered.changeId !== changeId || recovered.tenantId !== activeTenant) {
+      throw new Error('套餐变更回执与当前企业不一致。')
+    }
+    receipt.value = recovered
+    preview.value = null
+    paymentOrder.value = null
+    if (receiptNeedsSync(recovered)) startReceiptSync()
+    else emit('changed')
+  } catch (error) {
+    restoredPendingKey = ''
+    errorMessage.value = tenantChangeRuntimeError(error)
+  } finally {
+    receiptRefreshing.value = false
+  }
+}
+
 async function refreshReceipt() {
   if (!receipt.value || receiptRefreshing.value) return
   receiptRefreshing.value = true
@@ -190,6 +220,12 @@ async function refreshReceipt() {
   }
 }
 onBeforeUnmount(stopReceiptSync)
+
+watch(
+  () => [props.session.active_tenant_id, props.subscription.tenantId, props.subscription.pendingChangeId].join(':'),
+  () => { void restorePendingChange() },
+  { immediate: true },
+)
 
 async function createPreview() {
   if (!canPreview.value) return

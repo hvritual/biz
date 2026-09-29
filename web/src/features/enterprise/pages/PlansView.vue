@@ -42,6 +42,14 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => plan.serverChangeContext?.subscription.pendingChangeId,
+  (pendingChangeId) => {
+    if (plan.isServerBacked && String(pendingChangeId ?? '').trim()) lifecycleOpen.value = true
+  },
+  { immediate: true },
+)
+
 function formatDate(value: string) {
   if (!value) return '—'
   const date = new Date(value)

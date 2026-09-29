@@ -9,6 +9,7 @@ type Options = {
   paid?: boolean
   receiptStatus?: ReceiptStatus
   readbackStatus?: ReceiptStatus
+  pendingStatus?: ReceiptStatus
   quotaValidationRequired?: boolean
   confirmError?: string
 }
@@ -201,8 +202,8 @@ async function mockServer(page: Page, options: Options = {}): Promise<Captured> 
     })
   })
   await page.route('**/api/v1/tenant/subscription', (route) => {
-    const pending = confirmed && status !== 'APPLIED' ? 'chg-tenant-preview-001' : ''
-    return json(route, 200, subscription(pending, confirmed && status === 'APPLIED'))
+    const pending = options.pendingStatus ?? (confirmed && status !== 'APPLIED' ? status : undefined)
+    return json(route, 200, subscription(pending && pending !== 'APPLIED' ? 'chg-tenant-preview-001' : '', confirmed && status === 'APPLIED'))
   })
   await page.route('**/api/v1/tenant/entitlements', (route) => json(route, 200, entitlements()))
   await page.route('**/api/v1/tenant/usage', (route) => json(route, 200, {
@@ -229,7 +230,7 @@ async function mockServer(page: Page, options: Options = {}): Promise<Captured> 
   })
   await page.route('**/api/v1/tenant/subscription/changes/chg-tenant-preview-001', (route) => {
     captured.receiptReads.push(route.request().method())
-    return json(route, 200, receiptBody(options.readbackStatus ?? status))
+    return json(route, 200, receiptBody(options.readbackStatus ?? options.pendingStatus ?? status))
   })
   return captured
 }
@@ -349,6 +350,16 @@ test('tenant refreshes a scheduled result until the applied receipt is read back
   await expect(receipt).toContainText('已预约')
   await receipt.locator('[data-plan-change-receipt-refresh]').click()
   await expect(receipt).toContainText('已生效')
+  expect(captured.receiptReads).toEqual(['GET'])
+})
+
+test('tenant restores a pending change from trusted subscription state after reload', async ({ page }) => {
+  const captured = await mockServer(page, { pendingStatus: 'SCHEDULED' })
+  await page.goto('/#/enterprise/plan')
+  const lifecycle = page.locator('[data-plan-change-lifecycle]')
+  const receipt = lifecycle.locator('[data-plan-change-receipt]')
+  await expect(receipt).toContainText('已预约')
+  await expect(receipt).toContainText('chg-tenant-preview-001')
   expect(captured.receiptReads).toEqual(['GET'])
 })
 
