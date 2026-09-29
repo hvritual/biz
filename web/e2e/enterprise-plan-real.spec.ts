@@ -10,6 +10,7 @@ type Options = {
   entitlementStatus?: number
   usageStatus?: number
   memberUsed?: number
+  subscriptionState?: string | null
 }
 
 type Captured = {
@@ -74,7 +75,7 @@ async function mockPlanServer(page: Page, options: Options = {}): Promise<Captur
       subscriptionId: 'sub-authoritative-001',
       tenantId: 'tenant-001',
       kind: 'base',
-      state: 'active',
+      state: options.subscriptionState === null ? undefined : options.subscriptionState ?? 'active',
       planCode: 'rental-growth-2026',
       planVersion: 3,
       salesScope: 'rental',
@@ -239,3 +240,58 @@ test('entitlement authority failure stays visible instead of substituting previe
   await expect(page.getByText('成员账号', { exact: true })).toHaveCount(0)
   await expect(page.getByText('500 GB', { exact: true })).toHaveCount(0)
 })
+
+
+// Presentation evidence uses the existing API-shaped mock, not a server authorization proof.
+for (const [state, label, tone] of [
+  ['ACTIVE', '有效', 'success'], ['TRIAL', '试用', 'primary'],
+  ['GRACE', '宽限期', 'warning'], ['RESTRICTED', '使用受限', 'danger'],
+  ['ENDED', '已结束', 'neutral'], ['FUTURE_STATE', '状态未知，请刷新', 'neutral'],
+] as const) {
+  test(`commercial subscription status ${state} is explicit and has the correct tone`, async ({ page }) => {
+    await mockPlanServer(page, { subscriptionState: state })
+    await openRealPlan(page)
+    const badge = page.locator('.current-plan .status-badge')
+    await expect(badge).toHaveText(label)
+    await expect(badge).toHaveClass(new RegExp(`\\b${tone}\\b`))
+    if (tone !== 'success') await expect(badge).not.toHaveClass(/\bsuccess\b/)
+  })
+}
+
+for (const locale of ['zh-CN', 'en-US'] as const) {
+  test(`commercial status typography remains readable for ${locale} at four viewports`, async ({ page }) => {
+    await page.addInitScript((value) => window.localStorage.setItem('coffeelink.locale', value), locale)
+    await mockPlanServer(page, { subscriptionState: 'FUTURE_STATE_WITH_A_LONG_UNTRUSTED_VALUE', memberUsed: 999999 })
+    mkdirSync('screenshots', { recursive: true })
+    for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1536, height: 1024 }, { width: 390, height: 844 }]) {
+      await page.setViewportSize(viewport)
+      await openRealPlan(page)
+      const badge = page.locator('.current-plan .status-badge')
+      await expect(badge).toHaveText(locale === 'zh-CN' ? '状态未知，请刷新' : 'Unknown status; refresh to check')
+      await expect(badge).toHaveClass(/\bneutral\b/)
+      const measured = await page.locator('.current-plan').evaluate((card) => {
+        const heading = card.querySelector('h2')!
+        const badge = card.querySelector('.status-badge')!
+        const notice = card.querySelector('.preview-plan')!
+        const number = document.querySelector('.quota-item strong')!
+        const box = card.getBoundingClientRect(), stateBox = badge.getBoundingClientRect()
+        return {
+          heading: parseFloat(getComputedStyle(heading).fontSize),
+          pageHeading: parseFloat(getComputedStyle(document.querySelector('h1')!).fontSize),
+          badge: parseFloat(getComputedStyle(badge).fontSize),
+          notice: parseFloat(getComputedStyle(notice).fontSize),
+          badgeFits: stateBox.left >= box.left && stateBox.right <= box.right,
+          numeric: getComputedStyle(number).fontVariantNumeric,
+          overflow: document.documentElement.scrollWidth > window.innerWidth,
+        }
+      })
+      expect(measured.heading).toBeLessThan(measured.pageHeading)
+      expect(measured.badge).toBeGreaterThanOrEqual(12)
+      expect(measured.notice).toBeGreaterThanOrEqual(12)
+      expect(measured.badgeFits).toBe(true)
+      expect(measured.overflow).toBe(false)
+      expect(measured.numeric).toContain('tabular-nums')
+      await page.screenshot({ path: `screenshots/commercial-status-${locale}-${viewport.width}.png` })
+    }
+  })
+}

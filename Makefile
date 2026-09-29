@@ -13,8 +13,9 @@ generate: toolchain-check
 	@go mod tidy
 	@$(MAKE) commercial-generate
 	@$(MAKE) authorization-generate
+	@$(MAKE) commercial-state-generate
 
-check: toolchain-check commercial-delivery-check ui-skill-check
+check: toolchain-check commercial-delivery-check ui-skill-check commercial-state-check
 	@cd $(YUNKA_APP) && go run ./cmd check --root $(CURDIR) --protoc $(PROTOC)
 	@$(MAKE) commercial-check
 	@$(MAKE) authorization-check
@@ -84,3 +85,10 @@ commercial-delivery-check:
 ui-skill-check:
 	@python3 -B scripts/check_ui_skill_source.py
 	@python3 -B -m unittest discover -s scripts -p 'test_ui_skill_source.py' -v
+
+.PHONY: commercial-state-generate commercial-state-check
+commercial-state-generate:
+	@go run ./cmd/commercial-state-vocabulary --root $(CURDIR) --write
+
+commercial-state-check:
+	@go run ./cmd/commercial-state-vocabulary --root $(CURDIR)

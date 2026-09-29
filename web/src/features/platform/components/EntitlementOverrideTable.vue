@@ -21,7 +21,7 @@ function sourceState(source: EntitlementOverrideDTO) {
   const now = Date.now()
   const starts = source.effectiveAt ? new Date(source.effectiveAt).valueOf() : Number.NEGATIVE_INFINITY
   const ends = source.expiresAt ? new Date(source.expiresAt).valueOf() : Number.POSITIVE_INFINITY
-  if (Number.isFinite(starts) && starts > now) return { text: backendTermLabel('sourceState', 'PENDING'), tone: 'warning' as const }
+  if (Number.isFinite(starts) && starts > now) return { text: backendTermLabel('sourceState', 'SCHEDULED'), tone: 'warning' as const }
   if (Number.isFinite(ends) && ends <= now) return { text: backendTermLabel('sourceState', 'EXPIRED'), tone: 'neutral' as const }
   return { text: backendTermLabel('sourceState', 'ACTIVE'), tone: 'success' as const }
 }

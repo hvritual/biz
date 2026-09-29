@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { backendTermLabel } from '@/i18n/backend-terms'
 import { UiButton } from '@/ui/base'
 
 import StatusBadge from '@/ui/common/StatusBadge.vue'
@@ -19,8 +20,7 @@ const emit = defineEmits<{
 }>()
 
 function statusLabel(state: string) {
-  const labels: Record<string, string> = { DRAFT: '草稿', PUBLISHED: '已发布', RETIRED: '已停售' }
-  return labels[state] || state || '未知'
+  return backendTermLabel('planState', state)
 }
 
 function statusTone(state: string): 'success' | 'warning' | 'neutral' {

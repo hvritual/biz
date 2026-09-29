@@ -1,6 +1,9 @@
 import { t } from './index'
+import { commercialStateTerms } from './commercial-state-terms'
+import { commercialStateVocabulary, type CommercialStateCode, type CommercialStateKind } from '@/services/commercial/state-vocabulary.generated'
 
 export const backendTermCatalog = {
+  ...commercialStateTerms,
   plan: {
     'rental-growth-2026': 'rentalGrowth2026',
     'rental-pro-2026': 'rentalPro2026',
@@ -43,14 +46,6 @@ export const backendTermCatalog = {
     crm: 'crm',
     growth: 'growth',
   },
-  subscriptionState: {
-    ACTIVE: 'active', active: 'active',
-    TRIAL: 'trial', trial: 'trial',
-    GRACE_PERIOD: 'gracePeriod', grace_period: 'gracePeriod',
-    SUSPENDED: 'suspended', suspended: 'suspended',
-    EXPIRED: 'expired', expired: 'expired',
-    TERMINATED: 'terminated', terminated: 'terminated',
-  },
   entitlementTarget: {
     ENTITLEMENT_TARGET_MODULE: 'module',
     ENTITLEMENT_TARGET_CAPABILITY: 'capability',
@@ -67,36 +62,8 @@ export const backendTermCatalog = {
     GRANT: 'grant', ALLOW: 'grant', DENY: 'deny',
   },
   fieldAction: { read: 'read', write: 'write', export: 'export' },
-  sourceKind: {
-    override: 'override', plan: 'plan', addon: 'addon', 'add-on': 'addon', subscription: 'subscription',
-  },
-  sourceState: {
-    ACTIVE: 'active', active: 'active',
-    REVOKED: 'revoked', revoked: 'revoked',
-    EXPIRED: 'expired', expired: 'expired',
-    PENDING: 'pending', pending: 'pending',
-    SCHEDULED: 'scheduled', scheduled: 'scheduled',
-  },
   disposition: { applied: 'applied', effective: 'effective', used: 'used', ignored: 'ignored', skipped: 'skipped' },
-  decisionKind: { capability: 'capability', quota: 'quota', field: 'field', module: 'module' },
-  changeClassification: {
-    UPGRADE: 'upgrade', DOWNGRADE: 'downgrade', RENEWAL: 'renewal', STOP_RENEWAL: 'stopRenewal', SWITCH: 'switch',
-  },
-  effectiveMode: { IMMEDIATE: 'immediate', SCHEDULED: 'scheduled', PROVISIONING: 'provisioning' },
-  receiptStatus: { APPLIED: 'applied', SCHEDULED: 'scheduled', PROVISIONING: 'provisioning', FAILED: 'failed', PENDING: 'pending' },
-  changeAction: { SWITCH: 'switch', RENEW: 'renew', STOP_RENEWAL: 'stopRenewal' },
   salesScope: { rental: 'rental', office: 'office', default: 'default', enterprise: 'enterprise' },
-  technicalStatus: {
-    MODULE_TECHNICAL_STATUS_READY: 'ready',
-    MODULE_TECHNICAL_STATUS_NOT_READY: 'notReady',
-    MODULE_TECHNICAL_STATUS_DISABLED: 'disabled',
-    MODULE_TECHNICAL_STATUS_UNSPECIFIED: 'unspecified',
-  },
-  salesStatus: {
-    MODULE_SALES_STATUS_SELLABLE: 'sellable',
-    MODULE_SALES_STATUS_RETIRED: 'retired',
-    MODULE_SALES_STATUS_UNSPECIFIED: 'unspecified',
-  },
   memberStatus: {
     TENANT_MEMBER_STATUS_INVITED: 'invited', invited: 'invited',
     TENANT_MEMBER_STATUS_ACTIVE: 'active', active: 'active',
@@ -177,15 +144,49 @@ function rawValue(value: unknown) {
   return String(value ?? '').trim()
 }
 
+/** Accept case-only spelling differences; unsupported historical names stay unknown. */
+export function commercialStateCode<K extends CommercialStateKind>(kind: K, value: unknown): CommercialStateCode<K> | null {
+  if (typeof value !== 'string') return null
+  const raw = value.trim()
+  const candidates: readonly string[] = commercialStateVocabulary[kind]
+  const found = candidates.find((candidate) => candidate === raw)
+    ?? candidates.find((candidate) => candidate.toLowerCase() === raw.toLowerCase())
+  return (found as CommercialStateCode<K> | undefined) ?? null
+}
+
+function normalizedTerm(kind: BackendTermKind, value: unknown) {
+  if (Object.hasOwn(commercialStateVocabulary, kind)) return commercialStateCode(kind as CommercialStateKind, value) ?? ''
+  return rawValue(value)
+}
+
 export function backendTermKnown(kind: BackendTermKind, value: unknown) {
-  const raw = rawValue(value)
+  const raw = normalizedTerm(kind, value)
   return Boolean(raw && Object.hasOwn(backendTermCatalog[kind], raw))
 }
 
 export function backendTermKey(kind: BackendTermKind, value: unknown) {
-  const raw = rawValue(value)
-  const semantic = raw ? (backendTermCatalog[kind] as Record<string, string>)[raw] : undefined
+  const raw = normalizedTerm(kind, value)
+  const semantic = raw && Object.hasOwn(backendTermCatalog[kind], raw)
+    ? (backendTermCatalog[kind] as Record<string, string>)[raw] : undefined
   return semantic ? `backendTerms.${kind}.${semantic}` : `backendTerms.fallback.${kind}`
+}
+
+// Diagnostics are separate from user copy and never authorize an operation.
+export function commercialStateDiagnostic<K extends CommercialStateKind>(kind: K, value: unknown) {
+  const canonical = commercialStateCode(kind, value)
+  return canonical === null
+    ? { known: false as const, code: 'UNKNOWN_COMMERCIAL_STATE' as const, kind, raw: typeof value === 'string' ? value.slice(0,128) : null }
+    : { known: true as const, kind, canonical }
+}
+
+export type CommercialStatusTone = 'success' | 'warning' | 'danger' | 'neutral'
+const subscriptionTones = {
+  ACTIVE: 'success', TRIAL: 'primary', GRACE: 'warning', RESTRICTED: 'danger', ENDED: 'neutral',
+} as const satisfies Record<CommercialStateCode<'subscriptionState'>, CommercialStatusTone | 'primary'>
+
+export function subscriptionStateTone(value: unknown) {
+  const code = commercialStateCode('subscriptionState', value)
+  return code ? subscriptionTones[code] : 'neutral'
 }
 
 export function backendTermLabel(kind: BackendTermKind, value: unknown) {
