@@ -1,4 +1,4 @@
-import { chromium, expect, type Page, type TestInfo } from '@playwright/test'
+import { chromium, expect, type BrowserContext, type Page, type TestInfo } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -30,14 +30,18 @@ export async function qualifyCommercialStateZoom(info: TestInfo, setup: (page: P
 
   // A persistent full Chromium context is required for the actual browser
   // tabs.setZoom API. This is not CSS zoom or deviceScaleFactor emulation.
-  const context = await chromium.launchPersistentContext(info.outputPath('browser-profile'), {
-    channel: 'chromium', headless: true, viewport: null,
-    baseURL: 'http://127.0.0.1:4173', locale: 'zh-CN', timezoneId: 'Asia/Shanghai',
-    args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`, '--window-size=1440,1000'],
-  })
+  let context: BrowserContext | undefined
   const pageErrors: string[] = []
   const consoleErrors: string[] = []
   try {
+    context = await chromium.launchPersistentContext(info.outputPath('browser-profile'), {
+      channel: 'chromium', headless: true, viewport: null,
+      // Desktop Chrome's project defaults otherwise re-introduce emulation.
+      // Native zoom requires an unmanaged CSS viewport, not a simulated DPR.
+      deviceScaleFactor: undefined, isMobile: undefined,
+      baseURL: 'http://127.0.0.1:4173', locale: 'zh-CN', timezoneId: 'Asia/Shanghai',
+      args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`, '--window-size=1440,1000'],
+    })
     const worker = context.serviceWorkers()[0] ?? await context.waitForEvent('serviceworker', { timeout: 15000 })
     const page = await context.newPage()
     page.on('pageerror', (error) => pageErrors.push(error.message))
@@ -101,8 +105,11 @@ export async function qualifyCommercialStateZoom(info: TestInfo, setup: (page: P
       }, null, 2)), contentType: 'application/json',
     })
   } finally {
-    await context.close()
-    rmSync(info.outputPath('browser-profile'), { recursive: true, force: true })
-    rmSync(extension, { recursive: true, force: true })
+    try {
+      await context?.close()
+    } finally {
+      rmSync(info.outputPath('browser-profile'), { recursive: true, force: true })
+      rmSync(extension, { recursive: true, force: true })
+    }
   }
 }
