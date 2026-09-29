@@ -14,7 +14,7 @@ generate: toolchain-check
 	@$(MAKE) commercial-generate
 	@$(MAKE) authorization-generate
 
-check: toolchain-check
+check: toolchain-check commercial-delivery-check
 	@cd $(YUNKA_APP) && go run ./cmd check --root $(CURDIR) --protoc $(PROTOC)
 	@$(MAKE) commercial-check
 	@$(MAKE) authorization-check
@@ -71,3 +71,10 @@ authorization-check:
 .PHONY: toolchain-check
 toolchain-check:
 	@YUNKA_ROOT="$(YUNKA_ROOT)" PROTOC="$(PROTOC)" ./scripts/check-toolchain.sh
+
+# Reference consistency only; never a substitute for business acceptance.
+.PHONY: commercial-delivery-check
+commercial-delivery-check:
+	@python3 docs/commercial-entitlements/tools/check_plan.py
+	@python3 scripts/check_commercial_delivery.py
+	@python3 -m unittest discover -s scripts -p 'test_commercial_delivery.py' -v
