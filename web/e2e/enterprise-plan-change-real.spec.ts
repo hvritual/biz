@@ -8,6 +8,10 @@ type ReceiptStatus = 'APPLIED' | 'SCHEDULED' | 'PROVISIONING'
 type Options = {
   paid?: boolean
   receiptStatus?: ReceiptStatus
+  readbackStatus?: ReceiptStatus
+  pendingStatus?: ReceiptStatus
+  quotaValidationRequired?: boolean
+  confirmError?: string
 }
 type Captured = {
   previewBodies: Array<Record<string, unknown>>
@@ -15,6 +19,7 @@ type Captured = {
   confirmBodies: Array<Record<string, unknown>>
   confirmHeaders: Array<Record<string, string>>
   targetPaths: string[]
+  receiptReads: string[]
 }
 
 function json(route: Route, status: number, body: unknown) {
@@ -75,6 +80,8 @@ function target(paid = false) {
       validityMode: 'fixed_days',
       validityDays: 365,
       priceRef: paid ? 'price-rental-pro-annual' : '',
+      currency: paid ? 'CNY' : '',
+      amountMinor: paid ? 19900 : 0,
     },
     contentSha256: 'target-content-sha-001',
     createdAt: '2026-08-01T00:00:00Z',
@@ -128,7 +135,7 @@ function previewBody(options: Options = {}) {
       ...(options.paid ? ['This target carries a price reference. Tenant confirmation requires external commercial/payment approval.'] : []),
     ],
     pricingBasis: options.paid ? 'PLATFORM_MANUAL_APPROVAL_REQUIRED' : 'NO_PRICE_REFERENCE',
-    quotaValidationRequired: false,
+    quotaValidationRequired: Boolean(options.quotaValidationRequired),
     provisioningRequirements: provisioning ? [{ code: 'external-license', adapter: 'license-adapter', version: 'v1', maxAttempts: 3 }] : [],
   }
 }
@@ -163,7 +170,7 @@ function receiptBody(status: ReceiptStatus) {
 
 async function mockServer(page: Page, options: Options = {}): Promise<Captured> {
   await installApiFailFast(page)
-  const captured: Captured = { previewBodies: [], previewHeaders: [], confirmBodies: [], confirmHeaders: [], targetPaths: [] }
+  const captured: Captured = { previewBodies: [], previewHeaders: [], confirmBodies: [], confirmHeaders: [], targetPaths: [], receiptReads: [] }
   let confirmed = false
   const status = options.receiptStatus ?? 'APPLIED'
 
@@ -195,8 +202,8 @@ async function mockServer(page: Page, options: Options = {}): Promise<Captured> 
     })
   })
   await page.route('**/api/v1/tenant/subscription', (route) => {
-    const pending = confirmed && status !== 'APPLIED' ? 'chg-tenant-preview-001' : ''
-    return json(route, 200, subscription(pending, confirmed && status === 'APPLIED'))
+    const pending = options.pendingStatus ?? (confirmed && status !== 'APPLIED' ? status : undefined)
+    return json(route, 200, subscription(pending && pending !== 'APPLIED' ? 'chg-tenant-preview-001' : '', confirmed && status === 'APPLIED'))
   })
   await page.route('**/api/v1/tenant/entitlements', (route) => json(route, 200, entitlements()))
   await page.route('**/api/v1/tenant/usage', (route) => json(route, 200, {
@@ -217,10 +224,14 @@ async function mockServer(page: Page, options: Options = {}): Promise<Captured> 
     captured.confirmBodies.push(request.postDataJSON() as Record<string, unknown>)
     captured.confirmHeaders.push(request.headers())
     if (options.paid) return json(route, 412, { message: 'SUBSCRIPTION_CHANGE_EXTERNAL_APPROVAL_REQUIRED' })
+    if (options.confirmError) return json(route, 409, { message: options.confirmError })
     confirmed = true
     return json(route, 200, receiptBody(status))
   })
-  await page.route('**/api/v1/tenant/subscription/changes/chg-tenant-preview-001', (route) => json(route, 200, receiptBody(status)))
+  await page.route('**/api/v1/tenant/subscription/changes/chg-tenant-preview-001', (route) => {
+    captured.receiptReads.push(route.request().method())
+    return json(route, 200, receiptBody(options.readbackStatus ?? options.pendingStatus ?? status))
+  })
   return captured
 }
 
@@ -258,6 +269,23 @@ test('tenant change target selection is trusted-tenant scoped and screenshotable
   await page.screenshot({ path: screenshot('enterprise-plan-change-targets-1440'), fullPage: false })
 })
 
+test('tenant can inspect selectable plan core terms before creating a preview', async ({ page }) => {
+  await mockServer(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const lifecycle = await openFlow(page)
+  const target = lifecycle.getByRole('button', { name: /专业版/ })
+  await expect(target).toContainText('免费开通')
+  await expect(target).toContainText('365 天')
+  await expect(target).toContainText('2 个模块')
+  await target.click()
+  const terms = lifecycle.locator('[data-plan-target-details]')
+  await expect(terms).toContainText('成员与权限')
+  await expect(terms).toContainText('设备管理')
+  await expect(terms).toContainText('成员生命周期')
+  await expect(terms).toContainText('成员额度：30')
+  await expect(terms).toContainText('设备生命周期')
+})
+
 test('tenant preview carries no tenant authority fields and renders quota impact', async ({ page }) => {
   const captured = await mockServer(page)
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -271,6 +299,8 @@ test('tenant preview carries no tenant authority fields and renders quota impact
   expect(captured.previewHeaders[0]?.['x-csrf-token']).toBe('csrf-plan-change')
   expect(captured.previewHeaders[0]?.['idempotency-key']).toBeTruthy()
   await expect(page.getByText('已用 6')).toBeVisible()
+  await expect(page.getByText('现有租户数据将被保留，本次操作不会删除资源。')).toBeVisible()
+  await expect(page.getByText('Existing tenant data is preserved; this operation never deletes resources.')).toHaveCount(0)
   await page.locator('[data-plan-change-lifecycle]').scrollIntoViewIfNeeded()
   await page.screenshot({ path: screenshot('enterprise-plan-change-preview-1440'), fullPage: false })
 })
@@ -287,6 +317,66 @@ test('paid target fails closed at external commercial approval boundary', async 
   await page.screenshot({ path: screenshot('enterprise-plan-change-external-approval-1440'), fullPage: false })
 })
 
+test('tenant cannot submit a change while quota revalidation is required', async ({ page }) => {
+  await mockServer(page, { quotaValidationRequired: true })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await openFlow(page)
+  await selectTargetAndPreview(page)
+  const lifecycle = page.locator('[data-plan-change-lifecycle]')
+  await expect(lifecycle).toContainText('确认前需要复核')
+  await expect(lifecycle.locator('[data-plan-change-confirm]')).toBeDisabled()
+})
+
+test('tenant sees a recoverable prompt when the preview has expired', async ({ page }) => {
+  const captured = await mockServer(page, { confirmError: 'SUBSCRIPTION_CHANGE_PREVIEW_EXPIRED' })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await openFlow(page)
+  await selectTargetAndPreview(page)
+  await page.locator('[data-plan-change-confirm]').click()
+  await page.locator('[data-plan-change-confirm-dialog-submit]').click()
+  await expect(page.locator('[data-plan-change-lifecycle]')).toContainText('变更方案已过期，请重新生成方案。')
+  expect(captured.confirmBodies).toHaveLength(1)
+  await expect(page.locator('[data-plan-change-receipt]')).toHaveCount(0)
+})
+
+test('tenant refreshes a scheduled result until the applied receipt is read back', async ({ page }) => {
+  const captured = await mockServer(page, { receiptStatus: 'SCHEDULED', readbackStatus: 'APPLIED' })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await openFlow(page)
+  await selectTargetAndPreview(page)
+  await page.locator('[data-plan-change-confirm]').click()
+  await page.locator('[data-plan-change-confirm-dialog-submit]').click()
+  const receipt = page.locator('[data-plan-change-receipt]')
+  await expect(receipt).toContainText('已预约')
+  await receipt.locator('[data-plan-change-receipt-refresh]').click()
+  await expect(receipt).toContainText('已生效')
+  expect(captured.receiptReads).toEqual(['GET'])
+})
+
+test('tenant restores a pending change from trusted subscription state after reload', async ({ page }) => {
+  const captured = await mockServer(page, { pendingStatus: 'SCHEDULED' })
+  await page.goto('/#/enterprise/plan')
+  const lifecycle = page.locator('[data-plan-change-lifecycle]')
+  const receipt = lifecycle.locator('[data-plan-change-receipt]')
+  await expect(receipt).toContainText('已预约')
+  await expect(receipt).toContainText('chg-tenant-preview-001')
+  expect(captured.receiptReads).toEqual(['GET'])
+})
+
+test('tenant confirms the selected preview in a final summary dialog', async ({ page }) => {
+  const captured = await mockServer(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await openFlow(page)
+  await selectTargetAndPreview(page)
+  await page.locator('[data-plan-change-confirm]').click()
+  const dialog = page.locator('[data-plan-change-confirm-dialog]')
+  await expect(dialog).toContainText('专业版')
+  await expect(dialog).toContainText('免费开通')
+  expect(captured.confirmBodies).toHaveLength(0)
+  await page.locator('[data-plan-change-confirm-dialog-submit]').click()
+  await expect(page.locator('[data-plan-change-receipt]')).toContainText('已生效')
+})
+
 for (const [status, displayStatus] of [
   ['APPLIED', '已生效'],
   ['SCHEDULED', '已预约'],
@@ -298,6 +388,7 @@ for (const [status, displayStatus] of [
     await openFlow(page)
     await selectTargetAndPreview(page)
     await page.locator('[data-plan-change-confirm]').click()
+    await page.locator('[data-plan-change-confirm-dialog-submit]').click()
     await expect(page.locator('[data-plan-change-receipt]')).toContainText(displayStatus)
     await expect.poll(() => captured.confirmBodies.length).toBe(1)
     expect(captured.confirmBodies[0]?.tenantId).toBeUndefined()
