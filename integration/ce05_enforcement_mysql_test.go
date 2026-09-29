@@ -10,6 +10,7 @@ import (
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	devicev1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
+	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -78,6 +79,63 @@ func (e *ce05Environment) createDevice() *devicev1.DeviceDTO {
 	}
 	return v
 }
+
+func TestCE294MySQLDeviceCreateIAMEntitlementMatrix(t *testing.T) {
+	e := ce05New(t)
+	store, err := accesspersistence.New(e.db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	noIAMToken := "ce294-no-iam-" + ce04Random(t)
+	if err := store.Bootstrap(context.Background(), accesspersistence.Bootstrap{
+		TenantID: e.tenantA, TenantName: e.tenantA,
+		UserID: "ce294-no-iam-user-" + ce04Random(t),
+		Email:  "ce294-no-iam-" + ce04Random(t) + "@example.invalid",
+		Token:  noIAMToken,
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	count := func(serial string) int64 {
+		t.Helper()
+		var found int64
+		if err := e.db.Table("biz_deviceops_device").Where("tenant_id = ? AND serial = ?", e.tenantA, serial).Count(&found).Error; err != nil {
+			t.Fatal(err)
+		}
+		return found
+	}
+	create := func(token, serial string) error {
+		t.Helper()
+		_, err := e.devices.CreateDevice(ce04Context(token, ce04Random(t)), &devicev1.CreateDeviceRequest{
+			SiteId: e.siteA, Name: "CE294 matrix", Serial: serial,
+		})
+		return err
+	}
+	assertDeniedWithoutWrite := func(token, serial, entitlementReason string) {
+		t.Helper()
+		err := create(token, serial)
+		ce05RPCDenied(t, err, codes.PermissionDenied, entitlementReason)
+		if got := count(serial); got != 0 {
+			t.Fatalf("denied device create persisted %d row(s) for %q", got, serial)
+		}
+	}
+
+	// IAM runs first: neither access right may reveal or bypass the other.
+	assertDeniedWithoutWrite(noIAMToken, "ce294-neither-"+ce04Random(t), "")
+	assertDeniedWithoutWrite(e.tokenA, "ce294-entitlement-"+ce04Random(t), "MODULE_NOT_ENTITLED")
+
+	e.grant(commercialv1.EntitlementTarget_ENTITLEMENT_TARGET_CAPABILITY, "device.lifecycle", 0)
+	assertDeniedWithoutWrite(noIAMToken, "ce294-iam-"+ce04Random(t), "")
+
+	allowedSerial := "ce294-allow-" + ce04Random(t)
+	if err := create(e.tokenA, allowedSerial); err != nil {
+		t.Fatalf("IAM and entitlement grant should allow device create: %v", err)
+	}
+	if got := count(allowedSerial); got != 1 {
+		t.Fatalf("allowed device create persisted %d row(s), want 1", got)
+	}
+}
+
 func TestCE05MySQLRESTGRPCGrantAndDeny(t *testing.T) {
 	e := ce05New(t)
 	_, err := e.devices.ListDevices(ce04Context(e.tokenA, ""), &devicev1.ListDevicesRequest{})
