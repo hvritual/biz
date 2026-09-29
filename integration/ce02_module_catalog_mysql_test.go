@@ -79,6 +79,14 @@ func TestCE02MySQLCreateUpdateRetireAndIdempotency(t *testing.T) {
 	if _, err := svc.Update(ctx, modulecatalog.UpdateCommand{RequestID: "ce02-stale", Code: m.Code, Name: "stale", Version: 1, Reason: "stale"}); !errors.Is(err, modulecatalog.ErrConflict) {
 		t.Fatalf("stale err=%v", err)
 	}
+	verifier := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:ce02", Authenticated: true, AuthMethod: identity.AuthMethodServiceToken})
+	if err := svc.RecordRuntimeVerification(verifier, modulecatalog.RuntimeVerificationCommand{ModuleCode: m.Code, ModuleVersion: m.Version, EvidenceDigest: strings.Repeat("a", 64), SourceTree: strings.Repeat("b", 64)}); err != nil {
+		t.Fatal(err)
+	}
+	m, err = svc.SetSalesStatus(ctx, modulecatalog.StatusCommand{RequestID: "ce02-sell", Code: m.Code, Version: m.Version, Sales: modulecatalog.SalesSellable, Reason: "verified release"})
+	if err != nil || m.SalesStatus != modulecatalog.SalesSellable {
+		t.Fatalf("sales admission=%#v err=%v", m, err)
+	}
 	m, err = svc.SetSalesStatus(ctx, modulecatalog.StatusCommand{RequestID: "ce02-retire", Code: m.Code, Version: m.Version, Sales: modulecatalog.SalesRetired, Reason: "stop new sales"})
 	if err != nil {
 		t.Fatal(err)
@@ -90,8 +98,8 @@ func TestCE02MySQLCreateUpdateRetireAndIdempotency(t *testing.T) {
 	if err := db.Table("biz_commercial_module_audit").Where("module_code = ?", m.Code).Count(&count).Error; err != nil {
 		t.Fatal(err)
 	}
-	if count != 3 {
-		t.Fatalf("audit rows=%d want 3", count)
+	if count != 4 {
+		t.Fatalf("audit rows=%d want 4", count)
 	}
 	var audit struct{ Actor, Action, BeforeJSON, AfterJSON, Reason, RequestID string }
 	if err := db.Table("biz_commercial_module_audit").Where("module_code = ? AND action = ?", m.Code, "sales_status").First(&audit).Error; err != nil {
