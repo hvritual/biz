@@ -57,6 +57,30 @@ test('TestCE13PlatformCommercialReusesJoinedCoffeeLinkNavigation', async ({ page
   await expect(page.getByText('平台管理').first()).toBeVisible()
 })
 
+test('TestCE289CommercialAuthorityGateHidesPreviewNavigationAndLabelsDirectPreview', async ({ page }) => {
+  await page.goto('/#/dashboard')
+  await page.getByRole('button', { name: '平台管理', exact: true }).click()
+  const drawer = page.getByRole('dialog', { name: '平台管理导航' })
+  await expect(drawer).toBeVisible()
+  for (const label of ['平台总览', '租户管理', '模块目录', '套餐版本', '租户权益']) {
+    await expect(drawer.getByRole('button', { name: label, exact: true })).toBeVisible()
+  }
+  for (const label of ['商业功能', '增购项', '租户订阅', '套餐变更', '到期与宽限', '授权诊断', '额度管理', '专项授权', '用量计费', '商业审计']) {
+    await expect(drawer.getByRole('button', { name: label, exact: true })).toHaveCount(0)
+  }
+  await expect(drawer.getByRole('button', { name: '查看用量计费', exact: true })).toHaveCount(0)
+
+  await page.keyboard.press('Escape')
+  await expect(drawer).toBeHidden()
+  await page.goto('/#/platform/commercial/features')
+  await expect(page.getByText('设计预览 · 不显示真实业务数据', { exact: true })).toBeVisible()
+  await expect(page.getByRole('table').getByText('设计验证场景 1', { exact: true })).toBeVisible()
+  await expect(page.getByText('¥1,200', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('上海咖啡科技有限公司', { exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: '查看交互说明', exact: true }).click()
+  await expect(page.getByText('商业功能交互说明', { exact: true })).toBeVisible()
+})
+
 test('TestCE13ModuleSalesStatusUsesTrustedSessionCsrfAndServerVersion', async ({ page }) => {
   await mockModules(page)
   await page.route('**/api/auth/session', (route) => fulfillJson(route, {
