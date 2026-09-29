@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "strategy": "same_job_locked_download",
+  "workflow": ".github/workflows/ce03-qualification.yml",
+  "job": "qualify",
+  "step": "Prepare locked Go dependencies",
+  "artifact_prefix": "ci-dependency-ce03",
+  "max_attempts": 2,
+  "window_seconds": 90,
+  "process_seconds": 60,
+  "max_output_bytes": 2097152,
+  "proxy": "https://proxy.golang.org",
+  "lock_files": ["go.mod", "go.sum", "go.work", "go.work.sum", ".yunka/source.env"],
+  "authorization_sources": ["scripts/ci_dependency_recovery.json", "scripts/ci_dependency_recovery.py", ".github/workflows/ce03-qualification.yml"]
+}
