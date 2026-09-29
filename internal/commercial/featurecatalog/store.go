@@ -14,8 +14,7 @@ import (
 var migrationFS embed.FS
 
 // Store is the single persistence adapter for CommercialFeature lifecycle
-// facts. Plan, add-on, subscription and entitlement references remain owned by
-// their existing repositories and are supplied as ReferenceImpact at Retire.
+// facts. Retirement reads reference facts from their existing authorities.
 type Store struct{ db *gorm.DB }
 
 type featureRow struct {
@@ -102,4 +101,37 @@ func (s *Store) Migrate(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// ReferenceImpact obtains conservative retirement blockers from the actual
+// plan, subscription and entitlement authorities. A historical subscription
+// remains a blocker until an explicit migration has removed its module ref.
+func (s *Store) ReferenceImpact(ctx context.Context, feature Feature) (ReferenceImpact, error) {
+	modules := make([]string, 0, len(feature.ModuleRefs))
+	for _, reference := range feature.ModuleRefs {
+		modules = append(modules, reference.ModuleCode)
+	}
+	if len(modules) == 0 {
+		return ReferenceImpact{}, ErrInvalid
+	}
+	impact := ReferenceImpact{}
+	var publishedPlans, activeSubscriptions, entitlementSources int64
+	if err := s.db.WithContext(ctx).Table("biz_commercial_plan_versions AS v").
+		Joins("JOIN biz_commercial_plan_module_refs AS r ON r.plan_code = v.plan_code AND r.version = v.version").
+		Where("v.state = ? AND r.module_code IN ?", "PUBLISHED", modules).
+		Distinct("v.plan_code", "v.version").Count(&publishedPlans).Error; err != nil {
+		return ReferenceImpact{}, err
+	}
+	if err := s.db.WithContext(ctx).Table("biz_commercial_subscriptions AS s").
+		Joins("JOIN biz_commercial_plan_module_refs AS r ON r.plan_code = s.plan_code AND r.version = s.plan_version").
+		Where("r.module_code IN ?", modules).Distinct("s.tenant_id").Count(&activeSubscriptions).Error; err != nil {
+		return ReferenceImpact{}, err
+	}
+	if err := s.db.WithContext(ctx).Table("biz_commercial_entitlement_sources").Where("module_code IN ?", modules).Count(&entitlementSources).Error; err != nil {
+		return ReferenceImpact{}, err
+	}
+	impact.PublishedPlans = uint64(publishedPlans)
+	impact.ActiveSubscriptions = uint64(activeSubscriptions)
+	impact.EntitlementSources = uint64(entitlementSources)
+	return impact, nil
 }

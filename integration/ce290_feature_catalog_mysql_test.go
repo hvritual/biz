@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/hvritual/biz/internal/commercial/featurecatalog"
+	commercialpersistence "github.com/hvritual/biz/internal/commercial/infrastructure/persistence"
+	"github.com/hvritual/biz/internal/commercial/modulecatalog"
 )
 
 func TestCE290MySQLFeatureLifecyclePreservesRunningTenantsUntilMigrationCompletes(t *testing.T) {
@@ -17,6 +19,23 @@ func TestCE290MySQLFeatureLifecyclePreservesRunningTenantsUntilMigrationComplete
 		t.Fatal(err)
 	}
 	if err := store.Migrate(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if err := commercialpersistence.MigrateEntitlements(context.Background(), db); err != nil {
+		t.Fatal(err)
+	}
+	if err := commercialpersistence.MigratePlans(context.Background(), db); err != nil {
+		t.Fatal(err)
+	}
+	moduleStore, err := modulecatalog.NewStore(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	moduleService, err := modulecatalog.NewService(moduleStore, modulecatalog.ProductionRegistry())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := moduleService.Create(ce02Platform(), modulecatalog.CreateCommand{RequestID: "ce290-device-module", Code: "device-operations", Name: "Device", Reason: "feature reference fixture"}); err != nil {
 		t.Fatal(err)
 	}
 	service, err := featurecatalog.NewService(store)
@@ -47,11 +66,23 @@ func TestCE290MySQLFeatureLifecyclePreservesRunningTenantsUntilMigrationComplete
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = service.Retire(ctx, feature.Code, featurecatalog.ReferenceImpact{PublishedPlans: 1}, featurecatalog.Command{RequestID: "ce290-retire-blocked", Version: feature.Version, Reason: "must block"})
+	if err := db.Exec("INSERT INTO biz_commercial_plans(plan_code,revision,latest_version) VALUES(?,?,?)", "ce290-reference", 1, 1).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("INSERT INTO biz_commercial_plan_versions(plan_code,version,revision,state,content_sha256,payload) VALUES(?,?,?,?,?,?)", "ce290-reference", 1, 1, "PUBLISHED", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", `{}`).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("INSERT INTO biz_commercial_plan_module_refs(plan_code,version,module_code) VALUES(?,?,?)", "ce290-reference", 1, "device-operations").Error; err != nil {
+		t.Fatal(err)
+	}
+	_, err = service.Retire(ctx, feature.Code, featurecatalog.Command{RequestID: "ce290-retire-blocked", Version: feature.Version, Reason: "must block"})
 	if !errors.Is(err, featurecatalog.ErrReferences) {
 		t.Fatalf("retire with reference err=%v", err)
 	}
-	feature, err = service.Retire(ctx, feature.Code, featurecatalog.ReferenceImpact{}, featurecatalog.Command{RequestID: "ce290-retire", Version: feature.Version, Reason: "archive complete feature"})
+	if err := db.Exec("DELETE FROM biz_commercial_plan_module_refs WHERE plan_code=? AND version=?", "ce290-reference", 1).Error; err != nil {
+		t.Fatal(err)
+	}
+	feature, err = service.Retire(ctx, feature.Code, featurecatalog.Command{RequestID: "ce290-retire", Version: feature.Version, Reason: "archive complete feature"})
 	if err != nil || feature.Product != featurecatalog.ProductEOL || feature.Runtime != featurecatalog.RuntimeStopped {
 		t.Fatalf("retire=%+v err=%v", feature, err)
 	}
