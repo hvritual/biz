@@ -21,6 +21,7 @@ type Captured = {
   confirmHeaders: Array<Record<string, string>>
   targetPaths: string[]
   receiptReads: string[]
+  historyReads: string[]
 }
 
 function json(route: Route, status: number, body: unknown) {
@@ -175,7 +176,7 @@ function receiptBody(status: ReceiptStatus) {
 
 async function mockServer(page: Page, options: Options = {}): Promise<Captured> {
   await installApiFailFast(page)
-  const captured: Captured = { previewBodies: [], previewHeaders: [], confirmBodies: [], confirmHeaders: [], targetPaths: [], receiptReads: [] }
+  const captured: Captured = { previewBodies: [], previewHeaders: [], confirmBodies: [], confirmHeaders: [], targetPaths: [], receiptReads: [], historyReads: [] }
   let confirmed = false
   const status = options.receiptStatus ?? 'APPLIED'
 
@@ -236,6 +237,10 @@ async function mockServer(page: Page, options: Options = {}): Promise<Captured> 
   await page.route('**/api/v1/tenant/subscription/changes/chg-tenant-preview-001', (route) => {
     captured.receiptReads.push(route.request().method())
     return json(route, 200, receiptBody(options.readbackStatus ?? options.pendingStatus ?? status))
+  })
+  await page.route(/\/api\/v1\/tenant\/subscription\/changes(?:\?.*)?$/, (route) => {
+    captured.historyReads.push(route.request().method())
+    return json(route, 200, { receipts: [receiptBody('APPLIED')], nextBeforeConfirmedAt: '', nextBeforeChangeId: '' })
   })
   return captured
 }
@@ -319,6 +324,15 @@ test('tenant renders structured impacts instead of legacy free-text impact strin
   await expect(lifecycle.getByText('需要重新核对额度', { exact: true })).toBeVisible()
   await expect(lifecycle.getByText('当前用量：6', { exact: true })).toBeVisible()
   await expect(lifecycle.getByText('Existing tenant data is preserved; this operation never deletes resources.')).toHaveCount(0)
+})
+
+test('tenant history renders receipt facts from the tenant-scoped history authority', async ({ page }) => {
+  const captured = await mockServer(page)
+  await page.goto('/#/enterprise/plan')
+  await page.getByRole('tab', { name: '变更记录', exact: true }).click()
+  await expect(page.getByText('切换套餐 · 已生效', { exact: true })).toBeVisible()
+  await expect(page.getByText('chg-tenant-preview-001', { exact: false })).toBeVisible()
+  expect(captured.historyReads).toEqual(['GET'])
 })
 
 test('paid target fails closed at external commercial approval boundary', async ({ page }) => {

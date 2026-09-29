@@ -11,6 +11,7 @@ const OperationSubscriptionChangesGetMySubscriptionChangeReceipt authz.Operation
 const OperationSubscriptionChangesGetSubscriptionChangePreview authz.OperationID = "commercial.subscription.change.preview.get"
 const OperationSubscriptionChangesGetSubscriptionChangeReceipt authz.OperationID = "commercial.subscription.change.get"
 const OperationSubscriptionChangesListMySubscriptionChangeTargets authz.OperationID = "commercial.subscription.change.targets_my"
+const OperationSubscriptionChangesListMySubscriptionChanges authz.OperationID = "commercial.subscription.change.list_my"
 const OperationSubscriptionChangesPreviewMySubscriptionChange authz.OperationID = "commercial.subscription.change.preview_my"
 const OperationSubscriptionChangesPreviewSubscriptionChange authz.OperationID = "commercial.subscription.change.preview"
 
@@ -31,6 +32,7 @@ func subscriptionChangesPolicies() map[string]authz.Policy {
 		"/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangePreview":    {Operation: OperationSubscriptionChangesGetSubscriptionChangePreview, Permissions: []authz.PermissionKey{"platform.subscription.read", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.SubscriptionChangesApplication/GetSubscriptionChangeReceipt":    {Operation: OperationSubscriptionChangesGetSubscriptionChangeReceipt, Permissions: []authz.PermissionKey{"platform.subscription.read", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.SubscriptionChangesApplication/ListMySubscriptionChangeTargets": {Operation: OperationSubscriptionChangesListMySubscriptionChangeTargets, Permissions: []authz.PermissionKey{"commercial.catalog.read", "tenant.subscription.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.SubscriptionChangesApplication/ListMySubscriptionChanges":       {Operation: OperationSubscriptionChangesListMySubscriptionChanges, Permissions: []authz.PermissionKey{"tenant.subscription.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.SubscriptionChangesApplication/PreviewMySubscriptionChange":     {Operation: OperationSubscriptionChangesPreviewMySubscriptionChange, Permissions: []authz.PermissionKey{"commercial.catalog.read", "tenant.subscription.manage"}, Mode: authz.PermissionAll, TenantRequired: true, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.SubscriptionChangesApplication/PreviewSubscriptionChange":       {Operation: OperationSubscriptionChangesPreviewSubscriptionChange, Permissions: []authz.PermissionKey{"commercial.catalog.read", "platform.plan.read", "platform.subscription.manage", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
 	}

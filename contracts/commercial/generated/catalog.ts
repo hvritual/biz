@@ -47,6 +47,7 @@ export const operationIds = [
   "commercial.subscription.change.confirm_my",
   "commercial.subscription.change.get",
   "commercial.subscription.change.get_my",
+  "commercial.subscription.change.list_my",
   "commercial.subscription.change.preparation.cancel",
   "commercial.subscription.change.prepared",
   "commercial.subscription.change.preview",

@@ -330,6 +330,13 @@ var generatedActions = []Action{
 		RPC: "/commercial.v1.SubscriptionChangesApplication/GetMySubscriptionChangeReceipt", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/subscription/changes/{change_id}"}},
 	},
 	{
+		Code: "commercial.subscription.change.list_my", Domain: "commercial", Application: "subscription_changes", UseCase: "list_my_subscription_changes",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.subscription.manage")}, PermissionMode: "all",
+		Classification: "recovery", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "/commercial.v1.SubscriptionChangesApplication/ListMySubscriptionChanges", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/subscription/changes"}},
+	},
+	{
 		Code: "commercial.subscription.change.preparation.cancel", Domain: "commercial", Application: "subscription_changes", UseCase: "cancel_prepared_subscription_change",
 		TenantRequired: false, Authentication: []string{"api-key"},
 		Permissions: []authz.PermissionKey{authz.PermissionKey("commercial.catalog.read"), authz.PermissionKey("platform.plan.read"), authz.PermissionKey("platform.provisioning.cancel")}, PermissionMode: "all",

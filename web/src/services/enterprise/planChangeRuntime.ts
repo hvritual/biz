@@ -16,6 +16,12 @@ export type TenantChangeTargets = Readonly<{
   targets: PlanVersionDTO[]
 }>
 
+export type TenantChangeHistory = Readonly<{
+  receipts: SubscriptionChangeReceiptDTO[]
+  nextBeforeConfirmedAt?: string
+  nextBeforeChangeId?: string
+}>
+
 export type TenantChangeAction = SubscriptionChangeAction
 
 export type TenantChangePreviewInput = Readonly<{
@@ -41,6 +47,13 @@ export function createTenantChangeRequestId(prefix = 'tenant-plan-change') {
 
 export function listMySubscriptionChangeTargets(session: TrustedSession) {
   return request<TenantChangeTargets>('/v1/tenant/subscription/change-targets', {
+    headers: trustedHeaders(session),
+  })
+}
+
+export function listMySubscriptionChanges(session: TrustedSession, pageSize = 20) {
+  const size = Math.max(1, Math.min(100, Math.trunc(pageSize) || 20))
+  return request<TenantChangeHistory>(`/v1/tenant/subscription/changes?pageSize=${size}`, {
     headers: trustedHeaders(session),
   })
 }

@@ -126,6 +126,44 @@ func (s *service) GetMySubscriptionChangeReceipt(ctx context.Context, request *v
 	return receiptDTO(*receipt), nil
 }
 
+func (s *service) ListMySubscriptionChanges(ctx context.Context, request *v1.ListMySubscriptionChangesRequest) (*v1.ListMySubscriptionChangesResponse, error) {
+	principal, err := tenantChangeActor(ctx)
+	if err != nil {
+		return nil, expose(err)
+	}
+	if request == nil || request.PageSize > 100 || (request.BeforeConfirmedAt == "") != (request.BeforeChangeId == "") {
+		return nil, expose(change.ErrInvalid)
+	}
+	limit := int(request.PageSize)
+	if limit == 0 {
+		limit = 20
+	}
+	var before time.Time
+	if request.BeforeConfirmedAt != "" {
+		before, err = time.Parse(time.RFC3339Nano, request.BeforeConfirmedAt)
+		if err != nil || !change.Key(request.BeforeChangeId) {
+			return nil, expose(change.ErrInvalid)
+		}
+	}
+	values, err := requestscope.JoinValue(ctx, s.repositories, func(scope *requestscope.View[ports.SubscriptionChangeRepositories]) ([]change.Receipt, error) {
+		return scope.Repositories().Changes.ListReceipts(scope.Context(), principal.TenantID, before, request.BeforeChangeId, limit+1)
+	})
+	if err != nil {
+		return nil, expose(err)
+	}
+	out := &v1.ListMySubscriptionChangesResponse{}
+	if len(values) > limit {
+		values = values[:limit]
+		last := values[len(values)-1]
+		out.NextBeforeConfirmedAt = last.ConfirmedAt.UTC().Format(time.RFC3339Nano)
+		out.NextBeforeChangeId = last.ChangeID
+	}
+	for _, value := range values {
+		out.Receipts = append(out.Receipts, receiptDTO(value))
+	}
+	return out, nil
+}
+
 func tenantPreviewInput(tenantID string, request *v1.PreviewMySubscriptionChangeRequest) (change.Input, error) {
 	if request == nil || !change.Tenant(tenantID) {
 		return change.Input{}, change.ErrInvalid

@@ -1685,6 +1685,43 @@
       }
     },
     {
+      "operationId": "commercial.subscription.change.list_my",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "list_my_subscription_changes",
+      "requestType": "commercial.v1.ListMySubscriptionChangesRequest",
+      "responseType": "commercial.v1.ListMySubscriptionChangesResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.subscription.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionChangesApplication/ListMySubscriptionChanges",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/subscription/changes"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "commercial.subscription.change.preparation.cancel",
       "domain": "commercial",
       "application": "subscription_changes",
