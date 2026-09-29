@@ -120,7 +120,7 @@ func ce10OnDBLifecycle(t *testing.T, db *gorm.DB, token string, policy *ce10Test
 			t.Errorf("runtime shutdown: %v", err)
 		}
 	})
-	seedB122DefaultSubscription(t, s, token)
+	seedB122DefaultSubscription(t, s, db, token)
 	conn, err := grpc.DialContext(context.Background(), s.GRPCAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatal(err)

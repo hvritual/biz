@@ -41,7 +41,7 @@ func TestCE293MySQLSignedRuntimeVerificationIsExactVersionSalesAdmission(t *test
 		t.Fatal(err)
 	}
 	feature, err = service.SetSalesStatus(ce02Platform(), modulecatalog.StatusCommand{RequestID: "ce293-sell", Code: feature.Code, Version: feature.Version, Sales: modulecatalog.SalesSellable, Reason: "verified release"})
-	if err != nil || feature.SalesStatus != modulecatalog.SalesSellable {
+	if err != nil || feature.SalesStatus != modulecatalog.SalesSellable || feature.Version != proof.ModuleVersion {
 		t.Fatalf("sell=%+v err=%v", feature, err)
 	}
 	feature, err = service.Update(ce02Platform(), modulecatalog.UpdateCommand{RequestID: "ce293-version-change", Code: feature.Code, Name: "Device v2", Category: "ops", Version: feature.Version, Reason: "new runtime candidate"})

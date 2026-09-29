@@ -10,7 +10,6 @@ import (
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	devicev1 "github.com/hvritual/biz/contracts/gen/deviceops/v1"
-	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -82,19 +81,8 @@ func (e *ce05Environment) createDevice() *devicev1.DeviceDTO {
 
 func TestCE294MySQLDeviceCreateIAMEntitlementMatrix(t *testing.T) {
 	e := ce05New(t)
-	store, err := accesspersistence.New(e.db)
-	if err != nil {
-		t.Fatal(err)
-	}
 	noIAMToken := "ce294-no-iam-" + ce04Random(t)
-	if err := store.Bootstrap(context.Background(), accesspersistence.Bootstrap{
-		TenantID: e.tenantA, TenantName: e.tenantA,
-		UserID: "ce294-no-iam-user-" + ce04Random(t),
-		Email:  "ce294-no-iam-" + ce04Random(t) + "@example.invalid",
-		Token:  noIAMToken,
-	}, nil); err != nil {
-		t.Fatal(err)
-	}
+	seedReader(t, e.db, e.tenantA, "ce294-no-iam-user-"+ce04Random(t), noIAMToken, e.siteA, "ce294-no-iam-role-"+ce04Random(t), "CE294 no IAM", "tenant.branding.read", "all")
 
 	count := func(serial string) int64 {
 		t.Helper()
