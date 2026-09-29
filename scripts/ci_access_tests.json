@@ -145,6 +145,15 @@
       ]
     },
     {
+      "id": "commercial-access",
+      "tests": [
+        {
+          "name": "TestCE294MySQLDeviceCreateIAMEntitlementMatrix",
+          "file": "integration/ce05_enforcement_mysql_test.go"
+        }
+      ]
+    },
+    {
       "id": "service-api-security",
       "tests": [
         {

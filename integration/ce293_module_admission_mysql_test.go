@@ -34,6 +34,10 @@ func TestCE293MySQLSignedRuntimeVerificationIsExactVersionSalesAdmission(t *test
 	if err := service.RecordRuntimeVerification(ce02Platform(), proof); !errors.Is(err, modulecatalog.ErrRuntimeVerifierRequired) {
 		t.Fatalf("platform self-verification err=%v", err)
 	}
+	nonCIService := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "automation:release", Authenticated: true, AuthMethod: identity.AuthMethodServiceToken})
+	if err := service.RecordRuntimeVerification(nonCIService, proof); !errors.Is(err, modulecatalog.ErrRuntimeVerifierRequired) {
+		t.Fatalf("non-CI service verification err=%v", err)
+	}
 	if _, err := service.SetSalesStatus(ce02Platform(), modulecatalog.StatusCommand{RequestID: "ce293-sell-without-proof", Code: feature.Code, Version: feature.Version, Sales: modulecatalog.SalesSellable, Reason: "must reject"}); !errors.Is(err, modulecatalog.ErrRuntimeAdmissionRequired) {
 		t.Fatalf("sell without proof err=%v", err)
 	}
