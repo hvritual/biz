@@ -93,6 +93,9 @@ func (config ServiceAPIAuthConfig) Validate() error {
 			return fmt.Errorf("biz runtime: service api key %q requires at least one operation", keyID)
 		}
 		for _, operation := range operations {
+			if operation == "commercial.module.runtime.verify" && !strings.HasPrefix(subject, "ci-verifier:") {
+				return fmt.Errorf("biz runtime: runtime verification service api key %q requires a controlled ci-verifier subject", keyID)
+			}
 			action, ok := actions[operation]
 			if !ok || !containsExact(action.Authentication, "api-key") || len(action.HTTP) == 0 {
 				return fmt.Errorf("biz runtime: service api operation %q is not an HTTP api-key operation", operation)
