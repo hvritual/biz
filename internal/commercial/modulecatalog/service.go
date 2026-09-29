@@ -12,6 +12,11 @@ import (
 	"yunka.io/framework/core/identity"
 )
 
+type RuntimeVerificationCommand struct {
+	ModuleCode, EvidenceDigest, SourceTree string
+	ModuleVersion                          uint64
+}
+
 type Service struct {
 	store    *Store
 	registry Registry
@@ -51,6 +56,13 @@ func platformActor(ctx context.Context) (string, error) {
 	p, ok := identity.FromContext(ctx)
 	if !ok || !p.Authenticated || p.Subject == "" || p.TenantID != "" {
 		return "", ErrPlatformPrincipalRequired
+	}
+	return p.Subject, nil
+}
+func runtimeVerifier(ctx context.Context) (string, error) {
+	p, ok := identity.FromContext(ctx)
+	if !ok || !p.Authenticated || p.Subject == "" || p.TenantID != "" || p.AuthMethod != identity.AuthMethodServiceToken {
+		return "", ErrRuntimeVerifierRequired
 	}
 	return p.Subject, nil
 }
@@ -161,6 +173,46 @@ func (s *Service) SetSalesStatus(ctx context.Context, c StatusCommand) (Module, 
 		return Module{}, ErrInvalidRequest
 	}
 	return s.mutate(ctx, c.RequestID, c.Code, c.Reason, c.Version, "sales_status", func(row *moduleRow, _ Definition) error { row.SalesStatus = string(c.Sales); return nil })
+}
+
+// RecordRuntimeVerification is intentionally service-token-only. A human
+// platform principal can still manage catalog metadata but cannot turn a
+// source report or UI assertion into sales admission.
+func (s *Service) RecordRuntimeVerification(ctx context.Context, c RuntimeVerificationCommand) error {
+	actor, err := runtimeVerifier(ctx)
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(c.ModuleCode) == "" || c.ModuleVersion == 0 || len(c.EvidenceDigest) != 64 || len(c.SourceTree) != 64 {
+		return ErrInvalidRequest
+	}
+	if _, ok := s.registry.Definition(c.ModuleCode); !ok {
+		return ErrUnknownDefinition
+	}
+	return s.transact(ctx, func(tx *gorm.DB) error {
+		var row moduleRow
+		if err := tx.Where("module_code = ?", c.ModuleCode).First(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrNotFound
+			}
+			return err
+		}
+		if row.Version != c.ModuleVersion {
+			return ErrConflict
+		}
+		var prior runtimeVerificationRow
+		err := tx.Where("module_code = ? AND module_version = ?", c.ModuleCode, c.ModuleVersion).First(&prior).Error
+		if err == nil {
+			if prior.EvidenceDigest != c.EvidenceDigest || prior.SourceTree != c.SourceTree || prior.Actor != actor {
+				return ErrInvalidRequest
+			}
+			return nil
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		return tx.Create(&runtimeVerificationRow{ModuleCode: c.ModuleCode, ModuleVersion: c.ModuleVersion, EvidenceDigest: c.EvidenceDigest, SourceTree: c.SourceTree, Actor: actor, CreatedAt: time.Now().UTC()}).Error
+	})
 }
 func (s *Service) SetTechnicalStatus(ctx context.Context, c StatusCommand) (Module, error) {
 	if c.Technical != TechnicalNotReady && c.Technical != TechnicalReady && c.Technical != TechnicalDisabled {
