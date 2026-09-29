@@ -6609,6 +6609,50 @@
       }
     },
     {
+      "name": "RecordModuleRuntimeVerificationRequest",
+      "fullName": "commercial.v1.RecordModuleRuntimeVerificationRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_version",
+          "jsonName": "moduleVersion",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "evidence_digest",
+          "jsonName": "evidenceDigest",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "source_tree",
+          "jsonName": "sourceTree",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "RecordProvisioningWorkRequest",
       "fullName": "commercial.v1.RecordProvisioningWorkRequest",
       "fields": [
@@ -12122,6 +12166,44 @@
             "authentication": [
               "api-key",
               "web-session"
+            ]
+          }
+        },
+        {
+          "name": "RecordModuleRuntimeVerification",
+          "fullName": "commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification",
+          "request": "commercial.v1.RecordModuleRuntimeVerificationRequest",
+          "response": "commercial.v1.ModuleDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/internal/commercial/modules/{module_code}/runtime-verifications",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.module.runtime.verify",
+            "useCase": "record_module_runtime_verification",
+            "permissions": [
+              "platform.module.runtime.verify"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.module.runtime.verify",
+            "permissions": [
+              "platform.module.runtime.verify"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
             ]
           }
         },

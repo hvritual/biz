@@ -1165,6 +1165,37 @@
       }
     },
     {
+      "id": "commercial.module.runtime.verify",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.module.runtime.verify",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.runtime.verify/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.module.runtime.verify",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.module.runtime.verify/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.module.runtime.verify"
+      }
+    },
+    {
       "id": "commercial.module.set_sales_status",
       "application": "commercial/module_catalog",
       "bindings": [
@@ -5270,6 +5301,7 @@
         "commercial.module.delete",
         "commercial.module.get",
         "commercial.module.list",
+        "commercial.module.runtime.verify",
         "commercial.module.set_sales_status",
         "commercial.module.set_technical_status",
         "commercial.module.update",

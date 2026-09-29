@@ -3214,6 +3214,29 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.ReadSubscriptionChangeRequest"
       },
+      "commercial_v1_RecordModuleRuntimeVerificationRequest": {
+        "properties": {
+          "evidenceDigest": {
+            "type": "string"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "moduleVersion": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "sourceTree": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.RecordModuleRuntimeVerificationRequest"
+      },
       "commercial_v1_RevokeEntitlementOverrideRequest": {
         "properties": {
           "expectedVersion": {
@@ -4546,6 +4569,47 @@
           "deviceops.v1.DeviceTransferApplication"
         ],
         "x-yunka-rpc": "/deviceops.v1.DeviceTransferApplication/TransferDevice"
+      }
+    },
+    "/v1/internal/commercial/modules/{module_code}/runtime-verifications": {
+      "post": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moduleCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_RecordModuleRuntimeVerificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ModuleDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/RecordModuleRuntimeVerification"
       }
     },
     "/v1/platform/modules": {

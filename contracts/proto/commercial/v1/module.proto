@@ -45,6 +45,15 @@ message SetModuleSalesStatusRequest { string request_id = 1; string module_code 
 message SetModuleTechnicalStatusRequest { string request_id = 1; string module_code = 2; ModuleTechnicalStatus technical_status = 3; uint64 version = 4; string reason = 5; }
 message DeleteModuleRequest { string request_id = 1; string module_code = 2; uint64 version = 3; string reason = 4; }
 message DeleteModuleResponse { string module_code = 1; bool deleted = 2; }
+// Only a signed CI service principal can write this record. It binds runtime
+// execution evidence to the exact catalog module version before sales entry.
+message RecordModuleRuntimeVerificationRequest {
+  string request_id = 1;
+  string module_code = 2;
+  uint64 module_version = 3;
+  string evidence_digest = 4;
+  string source_tree = 5;
+}
 
 service ModuleCatalogApplication {
   option (yunka.dsl.v1.application) = {
@@ -102,5 +111,9 @@ service ModuleCatalogApplication {
   rpc DeleteModule(DeleteModuleRequest) returns (DeleteModuleResponse) {
     option (google.api.http) = { delete: "/v1/platform/modules/{module_code}" };
     option (yunka.dsl.v1.operation) = { id: "commercial.module.delete" use_case: "delete_module" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  }
+  rpc RecordModuleRuntimeVerification(RecordModuleRuntimeVerificationRequest) returns (ModuleDTO) {
+    option (google.api.http) = { post: "/v1/internal/commercial/modules/{module_code}/runtime-verifications" body: "*" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.module.runtime.verify" use_case: "record_module_runtime_verification" permissions: "platform.module.runtime.verify" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
   }
 }

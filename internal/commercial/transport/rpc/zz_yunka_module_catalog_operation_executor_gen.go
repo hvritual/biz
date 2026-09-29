@@ -87,6 +87,19 @@ func (server *ModuleCatalogOperationServer) ListModules(ctx context.Context, req
 	return response, nil
 }
 
+func (server *ModuleCatalogOperationServer) RecordModuleRuntimeVerification(ctx context.Context, request *commercialv1.RecordModuleRuntimeVerificationRequest) (*commercialv1.ModuleDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogRecordModuleRuntimeVerification(), request, server.application.RecordModuleRuntimeVerification)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *ModuleCatalogOperationServer) SetModuleSalesStatus(ctx context.Context, request *commercialv1.SetModuleSalesStatusRequest) (*commercialv1.ModuleDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {

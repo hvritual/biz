@@ -1110,6 +1110,14 @@ export interface Commercial_V1_ReadSubscriptionChangeRequest {
   changeId?: string;
 }
 
+export interface Commercial_V1_RecordModuleRuntimeVerificationRequest {
+  requestId?: string;
+  moduleCode?: string;
+  moduleVersion?: string;
+  evidenceDigest?: string;
+  sourceTree?: string;
+}
+
 export interface Commercial_V1_RevokeEntitlementOverrideRequest {
   requestId?: string;
   tenantId?: string;
@@ -2050,6 +2058,15 @@ export const operations = {
       { method: "GET", path: "/v1/platform/modules" },
     ]
   },
+  "commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification": {
+    fullName: "commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/RecordModuleRuntimeVerification",
+    requestType: "commercial.v1.RecordModuleRuntimeVerificationRequest",
+    responseType: "commercial.v1.ModuleDTO",
+    http: [
+      { method: "POST", path: "/v1/internal/commercial/modules/{module_code}/runtime-verifications", body: "*" },
+    ]
+  },
   "commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus": {
     fullName: "commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus",
     rpcPath: "/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus",
@@ -2812,6 +2829,10 @@ export class Commercial_V1_ModuleCatalogApplicationClient {
 
   listModules(request: Commercial_V1_ListModulesRequest): Promise<Commercial_V1_ListModulesResponse> {
     return this.transport.call<Commercial_V1_ListModulesRequest, Commercial_V1_ListModulesResponse>(operations["commercial.v1.ModuleCatalogApplication.ListModules"], request);
+  }
+
+  recordModuleRuntimeVerification(request: Commercial_V1_RecordModuleRuntimeVerificationRequest): Promise<Commercial_V1_ModuleDTO> {
+    return this.transport.call<Commercial_V1_RecordModuleRuntimeVerificationRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification"], request);
   }
 
   setModuleSalesStatus(request: Commercial_V1_SetModuleSalesStatusRequest): Promise<Commercial_V1_ModuleDTO> {

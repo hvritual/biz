@@ -820,6 +820,84 @@ func (x *DeleteModuleResponse) GetDeleted() bool {
 	return false
 }
 
+// Only a signed CI service principal can write this record. It binds runtime
+// execution evidence to the exact catalog module version before sales entry.
+type RecordModuleRuntimeVerificationRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	RequestId      string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	ModuleCode     string                 `protobuf:"bytes,2,opt,name=module_code,json=moduleCode,proto3" json:"module_code,omitempty"`
+	ModuleVersion  uint64                 `protobuf:"varint,3,opt,name=module_version,json=moduleVersion,proto3" json:"module_version,omitempty"`
+	EvidenceDigest string                 `protobuf:"bytes,4,opt,name=evidence_digest,json=evidenceDigest,proto3" json:"evidence_digest,omitempty"`
+	SourceTree     string                 `protobuf:"bytes,5,opt,name=source_tree,json=sourceTree,proto3" json:"source_tree,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *RecordModuleRuntimeVerificationRequest) Reset() {
+	*x = RecordModuleRuntimeVerificationRequest{}
+	mi := &file_commercial_v1_module_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecordModuleRuntimeVerificationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecordModuleRuntimeVerificationRequest) ProtoMessage() {}
+
+func (x *RecordModuleRuntimeVerificationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_module_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecordModuleRuntimeVerificationRequest.ProtoReflect.Descriptor instead.
+func (*RecordModuleRuntimeVerificationRequest) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_module_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *RecordModuleRuntimeVerificationRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *RecordModuleRuntimeVerificationRequest) GetModuleCode() string {
+	if x != nil {
+		return x.ModuleCode
+	}
+	return ""
+}
+
+func (x *RecordModuleRuntimeVerificationRequest) GetModuleVersion() uint64 {
+	if x != nil {
+		return x.ModuleVersion
+	}
+	return 0
+}
+
+func (x *RecordModuleRuntimeVerificationRequest) GetEvidenceDigest() string {
+	if x != nil {
+		return x.EvidenceDigest
+	}
+	return ""
+}
+
+func (x *RecordModuleRuntimeVerificationRequest) GetSourceTree() string {
+	if x != nil {
+		return x.SourceTree
+	}
+	return ""
+}
+
 var File_commercial_v1_module_proto protoreflect.FileDescriptor
 
 const file_commercial_v1_module_proto_rawDesc = "" +
@@ -893,7 +971,16 @@ const file_commercial_v1_module_proto_rawDesc = "" +
 	"\x14DeleteModuleResponse\x12\x1f\n" +
 	"\vmodule_code\x18\x01 \x01(\tR\n" +
 	"moduleCode\x12\x18\n" +
-	"\adeleted\x18\x02 \x01(\bR\adeleted*\xb0\x01\n" +
+	"\adeleted\x18\x02 \x01(\bR\adeleted\"\xd9\x01\n" +
+	"&RecordModuleRuntimeVerificationRequest\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12\x1f\n" +
+	"\vmodule_code\x18\x02 \x01(\tR\n" +
+	"moduleCode\x12%\n" +
+	"\x0emodule_version\x18\x03 \x01(\x04R\rmoduleVersion\x12'\n" +
+	"\x0fevidence_digest\x18\x04 \x01(\tR\x0eevidenceDigest\x12\x1f\n" +
+	"\vsource_tree\x18\x05 \x01(\tR\n" +
+	"sourceTree*\xb0\x01\n" +
 	"\x15ModuleTechnicalStatus\x12'\n" +
 	"#MODULE_TECHNICAL_STATUS_UNSPECIFIED\x10\x00\x12%\n" +
 	"!MODULE_TECHNICAL_STATUS_NOT_READY\x10\x01\x12!\n" +
@@ -902,7 +989,7 @@ const file_commercial_v1_module_proto_rawDesc = "" +
 	"\x11ModuleSalesStatus\x12#\n" +
 	"\x1fMODULE_SALES_STATUS_UNSPECIFIED\x10\x00\x12 \n" +
 	"\x1cMODULE_SALES_STATUS_SELLABLE\x10\x01\x12\x1f\n" +
-	"\x1bMODULE_SALES_STATUS_RETIRED\x10\x022\x9b\x0f\n" +
+	"\x1bMODULE_SALES_STATUS_RETIRED\x10\x022\xd4\x11\n" +
 	"\x18ModuleCatalogApplication\x12\xbc\x01\n" +
 	"\fCreateModule\x12\".commercial.v1.CreateModuleRequest\x1a\x18.commercial.v1.ModuleDTO\"n\xe2\xf3\x18K\n" +
 	"\x18commercial.module.create\x12\rcreate_module\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/platform/modules\x12\xb9\x01\n" +
@@ -918,7 +1005,9 @@ const file_commercial_v1_module_proto_rawDesc = "" +
 	"\x18SetModuleTechnicalStatus\x12..commercial.v1.SetModuleTechnicalStatusRequest\x1a\x18.commercial.v1.ModuleDTO\"\xb3\x01\xe2\xf3\x18q\n" +
 	"&commercial.module.set_technical_status\x12\x1bset_module_technical_status\x1a platform.module.technical.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x028:\x01*\"3/v1/platform/modules/{module_code}/technical-status\x12\xd2\x01\n" +
 	"\fDeleteModule\x12\".commercial.v1.DeleteModuleRequest\x1a#.commercial.v1.DeleteModuleResponse\"y\xe2\xf3\x18K\n" +
-	"\x18commercial.module.delete\x12\rdelete_module\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02$*\"/v1/platform/modules/{module_code}\x1a\x86\x03\xda\xf3\x18\x81\x03\n" +
+	"\x18commercial.module.delete\x12\rdelete_module\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02$*\"/v1/platform/modules/{module_code}\x12\xb6\x02\n" +
+	"\x1fRecordModuleRuntimeVerification\x125.commercial.v1.RecordModuleRuntimeVerificationRequest\x1a\x18.commercial.v1.ModuleDTO\"\xc1\x01\xe2\xf3\x18o\n" +
+	" commercial.module.runtime.verify\x12\"record_module_runtime_verification\x1a\x1eplatform.module.runtime.verify2\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02H:\x01*\"C/v1/internal/commercial/modules/{module_code}/runtime-verifications\x1a\x86\x03\xda\xf3\x18\x81\x03\n" +
 	"\x0emodule_catalog\x1a\xab\x01\n" +
 	"\x1ecommercial.module.plan_catalog\x12\x11read_plan_catalog\x1a\x17commercial.catalog.read2\x01\x02R\x04\b\x02\x10\x01Z commercial.v1.ListModulesRequestb!commercial.v1.ListModulesResponsej\x0fReadPlanCatalog\x1a\xc0\x01\n" +
 	"%commercial.module.entitlement_catalog\x12\x18read_entitlement_catalog\x1a\x17commercial.catalog.read2\x01\x02R\x04\b\x02\x10\x01Z commercial.v1.ListModulesRequestb!commercial.v1.ListModulesResponsej\x16ReadEntitlementCatalogBV\xca\xf3\x18\x10\n" +
@@ -938,20 +1027,21 @@ func file_commercial_v1_module_proto_rawDescGZIP() []byte {
 }
 
 var file_commercial_v1_module_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_commercial_v1_module_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_commercial_v1_module_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_commercial_v1_module_proto_goTypes = []any{
-	(ModuleTechnicalStatus)(0),              // 0: commercial.v1.ModuleTechnicalStatus
-	(ModuleSalesStatus)(0),                  // 1: commercial.v1.ModuleSalesStatus
-	(*ModuleDTO)(nil),                       // 2: commercial.v1.ModuleDTO
-	(*CreateModuleRequest)(nil),             // 3: commercial.v1.CreateModuleRequest
-	(*GetModuleRequest)(nil),                // 4: commercial.v1.GetModuleRequest
-	(*ListModulesRequest)(nil),              // 5: commercial.v1.ListModulesRequest
-	(*ListModulesResponse)(nil),             // 6: commercial.v1.ListModulesResponse
-	(*UpdateModuleRequest)(nil),             // 7: commercial.v1.UpdateModuleRequest
-	(*SetModuleSalesStatusRequest)(nil),     // 8: commercial.v1.SetModuleSalesStatusRequest
-	(*SetModuleTechnicalStatusRequest)(nil), // 9: commercial.v1.SetModuleTechnicalStatusRequest
-	(*DeleteModuleRequest)(nil),             // 10: commercial.v1.DeleteModuleRequest
-	(*DeleteModuleResponse)(nil),            // 11: commercial.v1.DeleteModuleResponse
+	(ModuleTechnicalStatus)(0),                     // 0: commercial.v1.ModuleTechnicalStatus
+	(ModuleSalesStatus)(0),                         // 1: commercial.v1.ModuleSalesStatus
+	(*ModuleDTO)(nil),                              // 2: commercial.v1.ModuleDTO
+	(*CreateModuleRequest)(nil),                    // 3: commercial.v1.CreateModuleRequest
+	(*GetModuleRequest)(nil),                       // 4: commercial.v1.GetModuleRequest
+	(*ListModulesRequest)(nil),                     // 5: commercial.v1.ListModulesRequest
+	(*ListModulesResponse)(nil),                    // 6: commercial.v1.ListModulesResponse
+	(*UpdateModuleRequest)(nil),                    // 7: commercial.v1.UpdateModuleRequest
+	(*SetModuleSalesStatusRequest)(nil),            // 8: commercial.v1.SetModuleSalesStatusRequest
+	(*SetModuleTechnicalStatusRequest)(nil),        // 9: commercial.v1.SetModuleTechnicalStatusRequest
+	(*DeleteModuleRequest)(nil),                    // 10: commercial.v1.DeleteModuleRequest
+	(*DeleteModuleResponse)(nil),                   // 11: commercial.v1.DeleteModuleResponse
+	(*RecordModuleRuntimeVerificationRequest)(nil), // 12: commercial.v1.RecordModuleRuntimeVerificationRequest
 }
 var file_commercial_v1_module_proto_depIdxs = []int32{
 	0,  // 0: commercial.v1.ModuleDTO.technical_status:type_name -> commercial.v1.ModuleTechnicalStatus
@@ -966,15 +1056,17 @@ var file_commercial_v1_module_proto_depIdxs = []int32{
 	8,  // 9: commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus:input_type -> commercial.v1.SetModuleSalesStatusRequest
 	9,  // 10: commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus:input_type -> commercial.v1.SetModuleTechnicalStatusRequest
 	10, // 11: commercial.v1.ModuleCatalogApplication.DeleteModule:input_type -> commercial.v1.DeleteModuleRequest
-	2,  // 12: commercial.v1.ModuleCatalogApplication.CreateModule:output_type -> commercial.v1.ModuleDTO
-	2,  // 13: commercial.v1.ModuleCatalogApplication.GetModule:output_type -> commercial.v1.ModuleDTO
-	6,  // 14: commercial.v1.ModuleCatalogApplication.ListModules:output_type -> commercial.v1.ListModulesResponse
-	2,  // 15: commercial.v1.ModuleCatalogApplication.UpdateModule:output_type -> commercial.v1.ModuleDTO
-	2,  // 16: commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus:output_type -> commercial.v1.ModuleDTO
-	2,  // 17: commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus:output_type -> commercial.v1.ModuleDTO
-	11, // 18: commercial.v1.ModuleCatalogApplication.DeleteModule:output_type -> commercial.v1.DeleteModuleResponse
-	12, // [12:19] is the sub-list for method output_type
-	5,  // [5:12] is the sub-list for method input_type
+	12, // 12: commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification:input_type -> commercial.v1.RecordModuleRuntimeVerificationRequest
+	2,  // 13: commercial.v1.ModuleCatalogApplication.CreateModule:output_type -> commercial.v1.ModuleDTO
+	2,  // 14: commercial.v1.ModuleCatalogApplication.GetModule:output_type -> commercial.v1.ModuleDTO
+	6,  // 15: commercial.v1.ModuleCatalogApplication.ListModules:output_type -> commercial.v1.ListModulesResponse
+	2,  // 16: commercial.v1.ModuleCatalogApplication.UpdateModule:output_type -> commercial.v1.ModuleDTO
+	2,  // 17: commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus:output_type -> commercial.v1.ModuleDTO
+	2,  // 18: commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus:output_type -> commercial.v1.ModuleDTO
+	11, // 19: commercial.v1.ModuleCatalogApplication.DeleteModule:output_type -> commercial.v1.DeleteModuleResponse
+	2,  // 20: commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification:output_type -> commercial.v1.ModuleDTO
+	13, // [13:21] is the sub-list for method output_type
+	5,  // [5:13] is the sub-list for method input_type
 	5,  // [5:5] is the sub-list for extension type_name
 	5,  // [5:5] is the sub-list for extension extendee
 	0,  // [0:5] is the sub-list for field type_name
@@ -991,7 +1083,7 @@ func file_commercial_v1_module_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_commercial_v1_module_proto_rawDesc), len(file_commercial_v1_module_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
