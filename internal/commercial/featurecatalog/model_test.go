@@ -51,3 +51,14 @@ func TestCommercialFeatureRejectsNameBasedModuleReferenceAndInvalidSunset(t *tes
 		t.Fatal("draft feature accepted sunset")
 	}
 }
+
+func TestCommercialFeatureRejectsUnknownPersistedLifecycleState(t *testing.T) {
+	feature, err := New(Definition{Code: "marketing", Name: "Marketing", ModuleRefs: []ModuleReference{{ModuleCode: "device-operations", CapabilityCodes: []string{"device.lifecycle"}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	feature.Product = "UNKNOWN"
+	if feature.Validate() == nil {
+		t.Fatal("unknown persisted product state accepted")
+	}
+}

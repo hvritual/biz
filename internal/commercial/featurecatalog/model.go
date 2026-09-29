@@ -127,6 +127,9 @@ func (f Feature) Validate() error {
 			seenCapabilities[capability] = true
 		}
 	}
+	if !validProductState(f.Product) || !validSalesState(f.Sales) || !validRuntimeState(f.Runtime) || !validMigrationState(f.Migration) {
+		return ErrInvalid
+	}
 	if f.Product == ProductEOL && f.Runtime != RuntimeStopped {
 		return ErrInvalid
 	}
@@ -134,6 +137,22 @@ func (f Feature) Validate() error {
 		return ErrInvalid
 	}
 	return nil
+}
+
+func validProductState(state ProductState) bool {
+	return state == ProductDraft || state == ProductPilot || state == ProductPublished || state == ProductDeprecated || state == ProductEOL
+}
+
+func validSalesState(state SalesState) bool {
+	return state == SalesStopped || state == SalesSellable
+}
+
+func validRuntimeState(state RuntimeState) bool {
+	return state == RuntimeContinuing || state == RuntimeRestricted || state == RuntimeStopped
+}
+
+func validMigrationState(state MigrationState) bool {
+	return state == MigrationNone || state == MigrationRecommended || state == MigrationRequired || state == MigrationComplete
 }
 
 func (f Feature) Publish() (Feature, error) {
