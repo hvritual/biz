@@ -40,7 +40,6 @@ const action = ref<TenantChangeAction>('SWITCH')
 const targets = ref<PlanVersionDTO[]>([])
 const targetsLoading = ref(false)
 const selectedTarget = ref<PlanVersionDTO | null>(null)
-const reason = ref('租户自服务套餐变更')
 const effectiveAt = ref('')
 const preview = ref<SubscriptionChangePreviewDTO | null>(null)
 const receipt = ref<SubscriptionChangeReceiptDTO | null>(null)
@@ -57,7 +56,6 @@ const stage = computed(() => receipt.value ? 'receipt' : preview.value ? 'previe
 const requiresTarget = computed(() => action.value === 'SWITCH')
 const approvalRequired = computed(() => needsExternalCommercialApproval(preview.value))
 const canPreview = computed(() => {
-  if (!reason.value.trim()) return false
   if (requiresTarget.value && !selectedTarget.value) return false
   return true
 })
@@ -271,7 +269,6 @@ async function createPreview() {
       targetPlanCode: selectedTarget.value?.planCode,
       targetPlanVersion: selectedTarget.value?.version,
       effectiveAt: effectiveAtIso(),
-      reason: reason.value,
     })
   } catch (error) {
     preview.value = null
@@ -287,7 +284,7 @@ async function confirmPreview() {
   errorMessage.value = ''
   try {
     confirmationOpen.value = false
-    receipt.value = await confirmMySubscriptionChange(props.session, preview.value, reason.value)
+    receipt.value = await confirmMySubscriptionChange(props.session, preview.value)
     if (receiptNeedsSync(receipt.value)) startReceiptSync()
     else emit('changed')
   } catch (error) {
@@ -367,10 +364,6 @@ async function confirmPreview() {
         </div>
 
         <div class="form-grid">
-          <label class="form-field">
-            <span class="field-label">变更原因</span>
-            <UiInput v-model="reason" placeholder="请输入本次变更原因" />
-          </label>
           <label v-if="action !== 'STOP_RENEWAL'" class="form-field">
             <span class="field-label">计划生效时间 <small>可选</small></span>
             <UiInput v-model="effectiveAt" type="datetime-local" />
