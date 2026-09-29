@@ -14,7 +14,7 @@ generate: toolchain-check
 	@$(MAKE) commercial-generate
 	@$(MAKE) authorization-generate
 
-check: toolchain-check commercial-delivery-check
+check: toolchain-check commercial-delivery-check ui-skill-check
 	@cd $(YUNKA_APP) && go run ./cmd check --root $(CURDIR) --protoc $(PROTOC)
 	@$(MAKE) commercial-check
 	@$(MAKE) authorization-check
@@ -78,3 +78,9 @@ commercial-delivery-check:
 	@python3 docs/commercial-entitlements/tools/check_plan.py
 	@python3 scripts/check_commercial_delivery.py
 	@python3 -m unittest discover -s scripts -p 'test_commercial_delivery.py' -v
+
+# Agent documentation provenance only; rendered typography requires UI evidence.
+.PHONY: ui-skill-check
+ui-skill-check:
+	@python3 scripts/check_ui_skill_source.py
+	@python3 -m unittest discover -s scripts -p 'test_ui_skill_source.py' -v

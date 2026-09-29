@@ -22,7 +22,7 @@ The files named `enterprise-plan-real.spec.ts` and `enterprise-plan-change-real.
 
 `make commercial-delivery-check` runs the existing structural plan validator, the new reference checker and its isolated negative tests. `python3 scripts/check_commercial_delivery.py --report <outside-repository-output.json>` emits a deterministic input-hash inventory tied to the current HEAD. Use a complete Git checkout; missing commit objects fail with a fetch-depth diagnostic rather than silently skipping verification.
 
-`make check` includes this check without changing its existing toolchain, generation or authorization gates. The dedicated read-only Actions workflow runs the focused governance checks against an exact candidate SHA, keeps reports as Actions artifacts, and does not access a database or deploy anything.
+`make check` includes this check without changing its existing toolchain, generation or authorization gates. The existing CE round receipts workflow runs these checks against the exact candidate SHA, retains the original CE receipt checks, keeps reports as Actions artifacts, and does not access a database or deploy anything. No new pull-request or main-push entrypoint is introduced.
 
 ## What a PASS means
 

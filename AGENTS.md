@@ -15,3 +15,9 @@
 - Before publishing a candidate, run `python3 scripts/check_ci_source_safety.py --base-ref <base>` and the focused Python tests. For source substitutions, use `scripts/literal_patch.py` with expected blob SHA. Never use JavaScript replacement-string interpolation for shell/code text containing `$` tokens; use literal bytes or a replacement callback.
 - Report progress for an explicit Issue + PR + candidate SHA + latest run attempt. Use `scripts/delivery_progress.py` for a fresh read-only observation. Distinguish inherited main UI, uncommitted work, committed UI and verified acceptance. Never infer UI work from an unrelated prior issue.
 - A completed failed run is terminal: inspect its job/log evidence and repair the cause; do not continue polling it or rerun a new SHA without an identified change. Qualification success, MERGE_READY and MAIN_VERIFIED each require the next action printed by the report, subject to the task's authorized scope. Do not close a business issue merely because it has merged; review its acceptance evidence separately.
+
+## UI typography skill
+
+- Before UI implementation or review, read `.agents/skills/better-typography/PROJECT-INTEGRATION.md`, its `SKILL.md`, and the relevant bundled references. The source is pinned and MIT-licensed; this is a repository Agent Skill, not a runtime dependency.
+- Preserve the current approved CoffeeLink contracts/tokens and system font stack. The current `web/ui-contracts.json` declares V1.2; older roadmap wording does not authorize a downgrade or replacement. Do not add font binaries or run unpinned skill installers in CI.
+- Run `make ui-skill-check` to verify source provenance. For actual UI changes, record the typography review, four viewports, 200% browser zoom and long-text/numeric cases required by #296. Source hash checks do not constitute visual approval; report unexecuted checks as Not verified.
