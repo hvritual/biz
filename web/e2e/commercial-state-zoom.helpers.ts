@@ -76,6 +76,7 @@ export async function qualifyCommercialStateZoom(info: TestInfo, setup: (page: P
     expect(after.cssZoom).toBe(before.cssZoom)
     expect(after.horizontalOverflow).toBe(false)
     mkdirSync('screenshots', { recursive: true })
+    const devtools = await context.newCDPSession(page)
     const samples = []
     for (const sample of [{ locale: 'zh-CN', label: '宽限期' }, { locale: 'en-US', label: 'Grace period' }]) {
       await page.evaluate((locale) => localStorage.setItem('coffeelink.locale', locale), sample.locale)
@@ -89,11 +90,21 @@ export async function qualifyCommercialStateZoom(info: TestInfo, setup: (page: P
       expect(rendered.fontSize).toBeGreaterThanOrEqual(12)
       expect(rendered.fits).toBe(true)
       expect((await metrics()).horizontalOverflow).toBe(false)
-      await page.screenshot({ path: `screenshots/commercial-status-200-percent-${sample.locale}.png`, fullPage: false })
+      await badge.scrollIntoViewIfNeeded()
+      await expect(badge).toBeInViewport()
+      // Capture the native surface without a CSS-sized clip. At true browser
+      // zoom, a CSS clip can silently crop the physical screenshot in half.
+      const capture = await devtools.send('Page.captureScreenshot', {
+        format: 'png', fromSurface: true, captureBeyondViewport: false,
+      })
+      const png = Buffer.from(capture.data, 'base64')
+      const screenshot = { width: png.readUInt32BE(16), height: png.readUInt32BE(20) }
+      expect(Math.abs(screenshot.width - after.width * after.dpr)).toBeLessThanOrEqual(2)
+      writeFileSync(`screenshots/commercial-status-200-percent-${sample.locale}.png`, png)
       await page.getByRole('button', { name: '使用额度', exact: true }).click()
       await expect(page.getByRole('row').filter({ hasText: sample.locale === 'zh-CN' ? '成员额度' : 'Member quota' })).toBeVisible()
       await page.getByRole('button', { name: '套餐概览', exact: true }).click()
-      samples.push({ locale: sample.locale, ...rendered, ...await metrics() })
+      samples.push({ locale: sample.locale, ...rendered, screenshot, ...await metrics() })
     }
     expect(pageErrors).toEqual([])
     expect(consoleErrors).toEqual([])
