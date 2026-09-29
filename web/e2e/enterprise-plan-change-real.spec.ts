@@ -10,6 +10,7 @@ type Options = {
   receiptStatus?: ReceiptStatus
   readbackStatus?: ReceiptStatus
   pendingStatus?: ReceiptStatus
+  structuredImpacts?: boolean
   quotaValidationRequired?: boolean
   confirmError?: string
 }
@@ -134,6 +135,10 @@ function previewBody(options: Options = {}) {
       scheduled ? 'Scheduled intent only: existing rights remain unchanged until execution.' : 'Immediate change is revalidated at confirmation.',
       ...(options.paid ? ['This target carries a price reference. Tenant confirmation requires external commercial/payment approval.'] : []),
     ],
+    impactDetails: options.structuredImpacts ? [
+      { code: 'DATA_PRESERVED', severity: 'INFO', subject: 'tenant_data', before: '', after: '', usageKnown: false, currentUsage: '0', blocking: false, actionRequired: '', messageKey: 'subscription_change.data_preserved', messageParameters: {} },
+      { code: 'QUOTA_REVALIDATION', severity: 'WARNING', subject: 'quota', before: '10', after: '30', usageKnown: true, currentUsage: '6', blocking: true, actionRequired: 'REVALIDATE_QUOTA', messageKey: 'subscription_change.quota_revalidation', messageParameters: {} },
+    ] : [],
     pricingBasis: options.paid ? 'PLATFORM_MANUAL_APPROVAL_REQUIRED' : 'NO_PRICE_REFERENCE',
     quotaValidationRequired: Boolean(options.quotaValidationRequired),
     provisioningRequirements: provisioning ? [{ code: 'external-license', adapter: 'license-adapter', version: 'v1', maxAttempts: 3 }] : [],
@@ -303,6 +308,16 @@ test('tenant preview carries no tenant authority fields and renders quota impact
   await expect(page.getByText('Existing tenant data is preserved; this operation never deletes resources.')).toHaveCount(0)
   await page.locator('[data-plan-change-lifecycle]').scrollIntoViewIfNeeded()
   await page.screenshot({ path: screenshot('enterprise-plan-change-preview-1440'), fullPage: false })
+})
+
+test('tenant renders structured impacts instead of legacy free-text impact strings', async ({ page }) => {
+  await mockServer(page, { structuredImpacts: true })
+  const lifecycle = await openFlow(page)
+  await selectTargetAndPreview(page)
+  await expect(lifecycle.getByText('现有数据保留', { exact: true })).toBeVisible()
+  await expect(lifecycle.getByText('需要重新核对额度', { exact: true })).toBeVisible()
+  await expect(lifecycle.getByText('当前用量：6', { exact: true })).toBeVisible()
+  await expect(lifecycle.getByText('Existing tenant data is preserved; this operation never deletes resources.')).toHaveCount(0)
 })
 
 test('paid target fails closed at external commercial approval boundary', async ({ page }) => {

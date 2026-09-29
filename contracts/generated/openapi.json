@@ -3298,6 +3298,50 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.SubscriptionChangeDependency"
       },
+      "commercial_v1_SubscriptionChangeImpact": {
+        "properties": {
+          "actionRequired": {
+            "type": "string"
+          },
+          "after": {
+            "type": "string"
+          },
+          "before": {
+            "type": "string"
+          },
+          "blocking": {
+            "type": "boolean"
+          },
+          "code": {
+            "type": "string"
+          },
+          "currentUsage": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "messageKey": {
+            "type": "string"
+          },
+          "messageParameters": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "usageKnown": {
+            "type": "boolean"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.SubscriptionChangeImpact"
+      },
       "commercial_v1_SubscriptionChangePreviewDTO": {
         "properties": {
           "action": {
@@ -3345,6 +3389,12 @@
           },
           "expiresAt": {
             "type": "string"
+          },
+          "impactDetails": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_SubscriptionChangeImpact"
+            },
+            "type": "array"
           },
           "impacts": {
             "items": {

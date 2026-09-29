@@ -39,6 +39,23 @@ func TestCE09ClassificationIsConservativeAndZeroIsNotUnlimited(t *testing.T) {
 		t.Fatal("zero/unlimited order lost")
 	}
 }
+
+func TestImpactRequiresStableIdentityAndBlockingRecoveryAction(t *testing.T) {
+	valid := Impact{Code: "QUOTA_REVALIDATION", Severity: "WARNING", Subject: "quota", Blocking: true, ActionRequired: "REVALIDATE_QUOTA", MessageKey: "subscription_change.quota_revalidation", MessageParameters: map[string]string{"current_usage": "6"}}
+	if !valid.Valid() {
+		t.Fatal("valid structured impact rejected")
+	}
+	for _, impact := range []Impact{
+		{Code: "", Severity: "WARNING", Subject: "quota", MessageKey: "subscription_change.quota_revalidation"},
+		{Code: "QUOTA_REVALIDATION", Severity: "UNKNOWN", Subject: "quota", MessageKey: "subscription_change.quota_revalidation"},
+		{Code: "QUOTA_REVALIDATION", Severity: "WARNING", Subject: "quota", Blocking: true, MessageKey: "subscription_change.quota_revalidation"},
+		{Code: "QUOTA_REVALIDATION", Severity: "WARNING", Subject: "quota", MessageKey: "subscription_change.quota_revalidation", MessageParameters: map[string]string{"not valid": "6"}},
+	} {
+		if impact.Valid() {
+			t.Fatalf("invalid structured impact accepted: %#v", impact)
+		}
+	}
+}
 func TestCE09PeriodsRequireRealCycleAndRespectExplicitTime(t *testing.T) {
 	now := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
 	end := now.AddDate(0, 0, 8)

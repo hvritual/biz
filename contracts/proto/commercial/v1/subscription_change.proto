@@ -78,6 +78,16 @@ message SubscriptionChangeQuotaImpact {
  bool usage_known = 5; uint64 used = 6; bool over_limit = 7;
  string policy = 8; string evidence = 9;
 }
+// A structured, user-actionable preview fact. Legacy impacts remains a
+// compatibility projection; clients must not infer blocking from free text.
+message SubscriptionChangeImpact {
+ string code = 1; string severity = 2; string subject = 3;
+ string before = 4; string after = 5;
+ bool usage_known = 6; uint64 current_usage = 7;
+ bool blocking = 8; string action_required = 9;
+ string message_key = 10;
+ map<string, string> message_parameters = 11;
+}
 message SubscriptionChangePreviewDTO {
  string change_id = 1; string tenant_id = 2; string actor_id = 3;
  string request_id = 4; string action = 5; string classification = 6;
@@ -96,6 +106,7 @@ message SubscriptionChangePreviewDTO {
  repeated string impacts = 23; string pricing_basis = 24;
  bool quota_validation_required = 25;
  repeated ProvisioningRequirementDTO provisioning_requirements = 26;
+ repeated SubscriptionChangeImpact impact_details = 27;
 }
 message SubscriptionChangeReceiptDTO {
  string change_id = 1; string tenant_id = 2; string actor_id = 3;

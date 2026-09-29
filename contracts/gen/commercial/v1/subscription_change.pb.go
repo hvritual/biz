@@ -999,6 +999,132 @@ func (x *SubscriptionChangeQuotaImpact) GetEvidence() string {
 	return ""
 }
 
+// A structured, user-actionable preview fact. Legacy impacts remains a
+// compatibility projection; clients must not infer blocking from free text.
+type SubscriptionChangeImpact struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Code              string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	Severity          string                 `protobuf:"bytes,2,opt,name=severity,proto3" json:"severity,omitempty"`
+	Subject           string                 `protobuf:"bytes,3,opt,name=subject,proto3" json:"subject,omitempty"`
+	Before            string                 `protobuf:"bytes,4,opt,name=before,proto3" json:"before,omitempty"`
+	After             string                 `protobuf:"bytes,5,opt,name=after,proto3" json:"after,omitempty"`
+	UsageKnown        bool                   `protobuf:"varint,6,opt,name=usage_known,json=usageKnown,proto3" json:"usage_known,omitempty"`
+	CurrentUsage      uint64                 `protobuf:"varint,7,opt,name=current_usage,json=currentUsage,proto3" json:"current_usage,omitempty"`
+	Blocking          bool                   `protobuf:"varint,8,opt,name=blocking,proto3" json:"blocking,omitempty"`
+	ActionRequired    string                 `protobuf:"bytes,9,opt,name=action_required,json=actionRequired,proto3" json:"action_required,omitempty"`
+	MessageKey        string                 `protobuf:"bytes,10,opt,name=message_key,json=messageKey,proto3" json:"message_key,omitempty"`
+	MessageParameters map[string]string      `protobuf:"bytes,11,rep,name=message_parameters,json=messageParameters,proto3" json:"message_parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SubscriptionChangeImpact) Reset() {
+	*x = SubscriptionChangeImpact{}
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubscriptionChangeImpact) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubscriptionChangeImpact) ProtoMessage() {}
+
+func (x *SubscriptionChangeImpact) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubscriptionChangeImpact.ProtoReflect.Descriptor instead.
+func (*SubscriptionChangeImpact) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *SubscriptionChangeImpact) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *SubscriptionChangeImpact) GetSeverity() string {
+	if x != nil {
+		return x.Severity
+	}
+	return ""
+}
+
+func (x *SubscriptionChangeImpact) GetSubject() string {
+	if x != nil {
+		return x.Subject
+	}
+	return ""
+}
+
+func (x *SubscriptionChangeImpact) GetBefore() string {
+	if x != nil {
+		return x.Before
+	}
+	return ""
+}
+
+func (x *SubscriptionChangeImpact) GetAfter() string {
+	if x != nil {
+		return x.After
+	}
+	return ""
+}
+
+func (x *SubscriptionChangeImpact) GetUsageKnown() bool {
+	if x != nil {
+		return x.UsageKnown
+	}
+	return false
+}
+
+func (x *SubscriptionChangeImpact) GetCurrentUsage() uint64 {
+	if x != nil {
+		return x.CurrentUsage
+	}
+	return 0
+}
+
+func (x *SubscriptionChangeImpact) GetBlocking() bool {
+	if x != nil {
+		return x.Blocking
+	}
+	return false
+}
+
+func (x *SubscriptionChangeImpact) GetActionRequired() string {
+	if x != nil {
+		return x.ActionRequired
+	}
+	return ""
+}
+
+func (x *SubscriptionChangeImpact) GetMessageKey() string {
+	if x != nil {
+		return x.MessageKey
+	}
+	return ""
+}
+
+func (x *SubscriptionChangeImpact) GetMessageParameters() map[string]string {
+	if x != nil {
+		return x.MessageParameters
+	}
+	return nil
+}
+
 type SubscriptionChangePreviewDTO struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	ChangeId             string                 `protobuf:"bytes,1,opt,name=change_id,json=changeId,proto3" json:"change_id,omitempty"`
@@ -1029,13 +1155,14 @@ type SubscriptionChangePreviewDTO struct {
 	PricingBasis             string                           `protobuf:"bytes,24,opt,name=pricing_basis,json=pricingBasis,proto3" json:"pricing_basis,omitempty"`
 	QuotaValidationRequired  bool                             `protobuf:"varint,25,opt,name=quota_validation_required,json=quotaValidationRequired,proto3" json:"quota_validation_required,omitempty"`
 	ProvisioningRequirements []*ProvisioningRequirementDTO    `protobuf:"bytes,26,rep,name=provisioning_requirements,json=provisioningRequirements,proto3" json:"provisioning_requirements,omitempty"`
+	ImpactDetails            []*SubscriptionChangeImpact      `protobuf:"bytes,27,rep,name=impact_details,json=impactDetails,proto3" json:"impact_details,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
 
 func (x *SubscriptionChangePreviewDTO) Reset() {
 	*x = SubscriptionChangePreviewDTO{}
-	mi := &file_commercial_v1_subscription_change_proto_msgTypes[14]
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1047,7 +1174,7 @@ func (x *SubscriptionChangePreviewDTO) String() string {
 func (*SubscriptionChangePreviewDTO) ProtoMessage() {}
 
 func (x *SubscriptionChangePreviewDTO) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_subscription_change_proto_msgTypes[14]
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1060,7 +1187,7 @@ func (x *SubscriptionChangePreviewDTO) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscriptionChangePreviewDTO.ProtoReflect.Descriptor instead.
 func (*SubscriptionChangePreviewDTO) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{14}
+	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *SubscriptionChangePreviewDTO) GetChangeId() string {
@@ -1245,6 +1372,13 @@ func (x *SubscriptionChangePreviewDTO) GetProvisioningRequirements() []*Provisio
 	return nil
 }
 
+func (x *SubscriptionChangePreviewDTO) GetImpactDetails() []*SubscriptionChangeImpact {
+	if x != nil {
+		return x.ImpactDetails
+	}
+	return nil
+}
+
 type SubscriptionChangeReceiptDTO struct {
 	state                    protoimpl.MessageState           `protogen:"open.v1"`
 	ChangeId                 string                           `protobuf:"bytes,1,opt,name=change_id,json=changeId,proto3" json:"change_id,omitempty"`
@@ -1275,7 +1409,7 @@ type SubscriptionChangeReceiptDTO struct {
 
 func (x *SubscriptionChangeReceiptDTO) Reset() {
 	*x = SubscriptionChangeReceiptDTO{}
-	mi := &file_commercial_v1_subscription_change_proto_msgTypes[15]
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1287,7 +1421,7 @@ func (x *SubscriptionChangeReceiptDTO) String() string {
 func (*SubscriptionChangeReceiptDTO) ProtoMessage() {}
 
 func (x *SubscriptionChangeReceiptDTO) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_subscription_change_proto_msgTypes[15]
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1300,7 +1434,7 @@ func (x *SubscriptionChangeReceiptDTO) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscriptionChangeReceiptDTO.ProtoReflect.Descriptor instead.
 func (*SubscriptionChangeReceiptDTO) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{15}
+	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SubscriptionChangeReceiptDTO) GetChangeId() string {
@@ -1467,7 +1601,7 @@ type ClaimCommercialTimeTransitionRequest struct {
 
 func (x *ClaimCommercialTimeTransitionRequest) Reset() {
 	*x = ClaimCommercialTimeTransitionRequest{}
-	mi := &file_commercial_v1_subscription_change_proto_msgTypes[16]
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1479,7 +1613,7 @@ func (x *ClaimCommercialTimeTransitionRequest) String() string {
 func (*ClaimCommercialTimeTransitionRequest) ProtoMessage() {}
 
 func (x *ClaimCommercialTimeTransitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_subscription_change_proto_msgTypes[16]
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1492,7 +1626,7 @@ func (x *ClaimCommercialTimeTransitionRequest) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use ClaimCommercialTimeTransitionRequest.ProtoReflect.Descriptor instead.
 func (*ClaimCommercialTimeTransitionRequest) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{16}
+	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ClaimCommercialTimeTransitionRequest) GetWorkerId() string {
@@ -1527,7 +1661,7 @@ type CommercialTimeTransitionDTO struct {
 
 func (x *CommercialTimeTransitionDTO) Reset() {
 	*x = CommercialTimeTransitionDTO{}
-	mi := &file_commercial_v1_subscription_change_proto_msgTypes[17]
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1539,7 +1673,7 @@ func (x *CommercialTimeTransitionDTO) String() string {
 func (*CommercialTimeTransitionDTO) ProtoMessage() {}
 
 func (x *CommercialTimeTransitionDTO) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_subscription_change_proto_msgTypes[17]
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1552,7 +1686,7 @@ func (x *CommercialTimeTransitionDTO) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommercialTimeTransitionDTO.ProtoReflect.Descriptor instead.
 func (*CommercialTimeTransitionDTO) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{17}
+	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *CommercialTimeTransitionDTO) GetTransitionId() string {
@@ -1636,7 +1770,7 @@ type ClaimCommercialTimeTransitionResponse struct {
 
 func (x *ClaimCommercialTimeTransitionResponse) Reset() {
 	*x = ClaimCommercialTimeTransitionResponse{}
-	mi := &file_commercial_v1_subscription_change_proto_msgTypes[18]
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1648,7 +1782,7 @@ func (x *ClaimCommercialTimeTransitionResponse) String() string {
 func (*ClaimCommercialTimeTransitionResponse) ProtoMessage() {}
 
 func (x *ClaimCommercialTimeTransitionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_subscription_change_proto_msgTypes[18]
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1661,7 +1795,7 @@ func (x *ClaimCommercialTimeTransitionResponse) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use ClaimCommercialTimeTransitionResponse.ProtoReflect.Descriptor instead.
 func (*ClaimCommercialTimeTransitionResponse) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{18}
+	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ClaimCommercialTimeTransitionResponse) GetFound() bool {
@@ -1696,7 +1830,7 @@ type CompleteCommercialTimeTransitionRequest struct {
 
 func (x *CompleteCommercialTimeTransitionRequest) Reset() {
 	*x = CompleteCommercialTimeTransitionRequest{}
-	mi := &file_commercial_v1_subscription_change_proto_msgTypes[19]
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1708,7 +1842,7 @@ func (x *CompleteCommercialTimeTransitionRequest) String() string {
 func (*CompleteCommercialTimeTransitionRequest) ProtoMessage() {}
 
 func (x *CompleteCommercialTimeTransitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_subscription_change_proto_msgTypes[19]
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1721,7 +1855,7 @@ func (x *CompleteCommercialTimeTransitionRequest) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use CompleteCommercialTimeTransitionRequest.ProtoReflect.Descriptor instead.
 func (*CompleteCommercialTimeTransitionRequest) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{19}
+	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *CompleteCommercialTimeTransitionRequest) GetTransitionId() string {
@@ -1760,7 +1894,7 @@ type CompleteCommercialTimeTransitionResponse struct {
 
 func (x *CompleteCommercialTimeTransitionResponse) Reset() {
 	*x = CompleteCommercialTimeTransitionResponse{}
-	mi := &file_commercial_v1_subscription_change_proto_msgTypes[20]
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1772,7 +1906,7 @@ func (x *CompleteCommercialTimeTransitionResponse) String() string {
 func (*CompleteCommercialTimeTransitionResponse) ProtoMessage() {}
 
 func (x *CompleteCommercialTimeTransitionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_commercial_v1_subscription_change_proto_msgTypes[20]
+	mi := &file_commercial_v1_subscription_change_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1785,7 +1919,7 @@ func (x *CompleteCommercialTimeTransitionResponse) ProtoReflect() protoreflect.M
 
 // Deprecated: Use CompleteCommercialTimeTransitionResponse.ProtoReflect.Descriptor instead.
 func (*CompleteCommercialTimeTransitionResponse) Descriptor() ([]byte, []int) {
-	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{20}
+	return file_commercial_v1_subscription_change_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *CompleteCommercialTimeTransitionResponse) GetTransitionId() string {
@@ -1927,7 +2061,26 @@ const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\n" +
 	"over_limit\x18\a \x01(\bR\toverLimit\x12\x16\n" +
 	"\x06policy\x18\b \x01(\tR\x06policy\x12\x1a\n" +
-	"\bevidence\x18\t \x01(\tR\bevidence\"\xfe\t\n" +
+	"\bevidence\x18\t \x01(\tR\bevidence\"\xf3\x03\n" +
+	"\x18SubscriptionChangeImpact\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\x12\x1a\n" +
+	"\bseverity\x18\x02 \x01(\tR\bseverity\x12\x18\n" +
+	"\asubject\x18\x03 \x01(\tR\asubject\x12\x16\n" +
+	"\x06before\x18\x04 \x01(\tR\x06before\x12\x14\n" +
+	"\x05after\x18\x05 \x01(\tR\x05after\x12\x1f\n" +
+	"\vusage_known\x18\x06 \x01(\bR\n" +
+	"usageKnown\x12#\n" +
+	"\rcurrent_usage\x18\a \x01(\x04R\fcurrentUsage\x12\x1a\n" +
+	"\bblocking\x18\b \x01(\bR\bblocking\x12'\n" +
+	"\x0faction_required\x18\t \x01(\tR\x0eactionRequired\x12\x1f\n" +
+	"\vmessage_key\x18\n" +
+	" \x01(\tR\n" +
+	"messageKey\x12m\n" +
+	"\x12message_parameters\x18\v \x03(\v2>.commercial.v1.SubscriptionChangeImpact.MessageParametersEntryR\x11messageParameters\x1aD\n" +
+	"\x16MessageParametersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xce\n" +
+	"\n" +
 	"\x1cSubscriptionChangePreviewDTO\x12\x1b\n" +
 	"\tchange_id\x18\x01 \x01(\tR\bchangeId\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x19\n" +
@@ -1958,7 +2111,8 @@ const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\aimpacts\x18\x17 \x03(\tR\aimpacts\x12#\n" +
 	"\rpricing_basis\x18\x18 \x01(\tR\fpricingBasis\x12:\n" +
 	"\x19quota_validation_required\x18\x19 \x01(\bR\x17quotaValidationRequired\x12f\n" +
-	"\x19provisioning_requirements\x18\x1a \x03(\v2).commercial.v1.ProvisioningRequirementDTOR\x18provisioningRequirements\"\xd5\a\n" +
+	"\x19provisioning_requirements\x18\x1a \x03(\v2).commercial.v1.ProvisioningRequirementDTOR\x18provisioningRequirements\x12N\n" +
+	"\x0eimpact_details\x18\x1b \x03(\v2'.commercial.v1.SubscriptionChangeImpactR\rimpactDetails\"\xd5\a\n" +
 	"\x1cSubscriptionChangeReceiptDTO\x12\x1b\n" +
 	"\tchange_id\x18\x01 \x01(\tR\bchangeId\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x19\n" +
@@ -2062,7 +2216,7 @@ func file_commercial_v1_subscription_change_proto_rawDescGZIP() []byte {
 	return file_commercial_v1_subscription_change_proto_rawDescData
 }
 
-var file_commercial_v1_subscription_change_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_commercial_v1_subscription_change_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_commercial_v1_subscription_change_proto_goTypes = []any{
 	(*PreviewSubscriptionChangeRequest)(nil),         // 0: commercial.v1.PreviewSubscriptionChangeRequest
 	(*ConfirmSubscriptionChangeRequest)(nil),         // 1: commercial.v1.ConfirmSubscriptionChangeRequest
@@ -2078,61 +2232,65 @@ var file_commercial_v1_subscription_change_proto_goTypes = []any{
 	(*PaymentOrderDTO)(nil),                          // 11: commercial.v1.PaymentOrderDTO
 	(*SubscriptionChangeDependency)(nil),             // 12: commercial.v1.SubscriptionChangeDependency
 	(*SubscriptionChangeQuotaImpact)(nil),            // 13: commercial.v1.SubscriptionChangeQuotaImpact
-	(*SubscriptionChangePreviewDTO)(nil),             // 14: commercial.v1.SubscriptionChangePreviewDTO
-	(*SubscriptionChangeReceiptDTO)(nil),             // 15: commercial.v1.SubscriptionChangeReceiptDTO
-	(*ClaimCommercialTimeTransitionRequest)(nil),     // 16: commercial.v1.ClaimCommercialTimeTransitionRequest
-	(*CommercialTimeTransitionDTO)(nil),              // 17: commercial.v1.CommercialTimeTransitionDTO
-	(*ClaimCommercialTimeTransitionResponse)(nil),    // 18: commercial.v1.ClaimCommercialTimeTransitionResponse
-	(*CompleteCommercialTimeTransitionRequest)(nil),  // 19: commercial.v1.CompleteCommercialTimeTransitionRequest
-	(*CompleteCommercialTimeTransitionResponse)(nil), // 20: commercial.v1.CompleteCommercialTimeTransitionResponse
-	(*PlanVersionDTO)(nil),                           // 21: commercial.v1.PlanVersionDTO
-	(*EntitlementLimit)(nil),                         // 22: commercial.v1.EntitlementLimit
-	(*TenantSubscriptionDTO)(nil),                    // 23: commercial.v1.TenantSubscriptionDTO
-	(*EntitlementView)(nil),                          // 24: commercial.v1.EntitlementView
-	(*ProvisioningRequirementDTO)(nil),               // 25: commercial.v1.ProvisioningRequirementDTO
+	(*SubscriptionChangeImpact)(nil),                 // 14: commercial.v1.SubscriptionChangeImpact
+	(*SubscriptionChangePreviewDTO)(nil),             // 15: commercial.v1.SubscriptionChangePreviewDTO
+	(*SubscriptionChangeReceiptDTO)(nil),             // 16: commercial.v1.SubscriptionChangeReceiptDTO
+	(*ClaimCommercialTimeTransitionRequest)(nil),     // 17: commercial.v1.ClaimCommercialTimeTransitionRequest
+	(*CommercialTimeTransitionDTO)(nil),              // 18: commercial.v1.CommercialTimeTransitionDTO
+	(*ClaimCommercialTimeTransitionResponse)(nil),    // 19: commercial.v1.ClaimCommercialTimeTransitionResponse
+	(*CompleteCommercialTimeTransitionRequest)(nil),  // 20: commercial.v1.CompleteCommercialTimeTransitionRequest
+	(*CompleteCommercialTimeTransitionResponse)(nil), // 21: commercial.v1.CompleteCommercialTimeTransitionResponse
+	nil,                                // 22: commercial.v1.SubscriptionChangeImpact.MessageParametersEntry
+	(*PlanVersionDTO)(nil),             // 23: commercial.v1.PlanVersionDTO
+	(*EntitlementLimit)(nil),           // 24: commercial.v1.EntitlementLimit
+	(*TenantSubscriptionDTO)(nil),      // 25: commercial.v1.TenantSubscriptionDTO
+	(*EntitlementView)(nil),            // 26: commercial.v1.EntitlementView
+	(*ProvisioningRequirementDTO)(nil), // 27: commercial.v1.ProvisioningRequirementDTO
 }
 var file_commercial_v1_subscription_change_proto_depIdxs = []int32{
-	21, // 0: commercial.v1.ListMySubscriptionChangeTargetsResponse.targets:type_name -> commercial.v1.PlanVersionDTO
-	22, // 1: commercial.v1.SubscriptionChangeQuotaImpact.before_limit:type_name -> commercial.v1.EntitlementLimit
-	22, // 2: commercial.v1.SubscriptionChangeQuotaImpact.after_limit:type_name -> commercial.v1.EntitlementLimit
-	23, // 3: commercial.v1.SubscriptionChangePreviewDTO.before:type_name -> commercial.v1.TenantSubscriptionDTO
-	21, // 4: commercial.v1.SubscriptionChangePreviewDTO.target:type_name -> commercial.v1.PlanVersionDTO
-	24, // 5: commercial.v1.SubscriptionChangePreviewDTO.current_entitlements:type_name -> commercial.v1.EntitlementView
-	24, // 6: commercial.v1.SubscriptionChangePreviewDTO.projected_entitlements:type_name -> commercial.v1.EntitlementView
-	12, // 7: commercial.v1.SubscriptionChangePreviewDTO.dependencies:type_name -> commercial.v1.SubscriptionChangeDependency
-	13, // 8: commercial.v1.SubscriptionChangePreviewDTO.quota_impacts:type_name -> commercial.v1.SubscriptionChangeQuotaImpact
-	25, // 9: commercial.v1.SubscriptionChangePreviewDTO.provisioning_requirements:type_name -> commercial.v1.ProvisioningRequirementDTO
-	23, // 10: commercial.v1.SubscriptionChangeReceiptDTO.before:type_name -> commercial.v1.TenantSubscriptionDTO
-	23, // 11: commercial.v1.SubscriptionChangeReceiptDTO.after:type_name -> commercial.v1.TenantSubscriptionDTO
-	13, // 12: commercial.v1.SubscriptionChangeReceiptDTO.quota_impacts:type_name -> commercial.v1.SubscriptionChangeQuotaImpact
-	17, // 13: commercial.v1.ClaimCommercialTimeTransitionResponse.transition:type_name -> commercial.v1.CommercialTimeTransitionDTO
-	3,  // 14: commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChangeTargets:input_type -> commercial.v1.ListMySubscriptionChangeTargetsRequest
-	5,  // 15: commercial.v1.SubscriptionChangesApplication.PreviewMySubscriptionChange:input_type -> commercial.v1.PreviewMySubscriptionChangeRequest
-	6,  // 16: commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangePreview:input_type -> commercial.v1.ReadMySubscriptionChangePreviewRequest
-	7,  // 17: commercial.v1.SubscriptionChangesApplication.ConfirmMySubscriptionChange:input_type -> commercial.v1.ConfirmMySubscriptionChangeRequest
-	8,  // 18: commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangeReceipt:input_type -> commercial.v1.ReadMySubscriptionChangeReceiptRequest
-	9,  // 19: commercial.v1.SubscriptionChangesApplication.CreateMyPaymentOrder:input_type -> commercial.v1.CreateMyPaymentOrderRequest
-	10, // 20: commercial.v1.SubscriptionChangesApplication.GetMyPaymentOrder:input_type -> commercial.v1.GetMyPaymentOrderRequest
-	0,  // 21: commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange:input_type -> commercial.v1.PreviewSubscriptionChangeRequest
-	1,  // 22: commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange:input_type -> commercial.v1.ConfirmSubscriptionChangeRequest
-	2,  // 23: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview:input_type -> commercial.v1.ReadSubscriptionChangeRequest
-	2,  // 24: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt:input_type -> commercial.v1.ReadSubscriptionChangeRequest
-	4,  // 25: commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChangeTargets:output_type -> commercial.v1.ListMySubscriptionChangeTargetsResponse
-	14, // 26: commercial.v1.SubscriptionChangesApplication.PreviewMySubscriptionChange:output_type -> commercial.v1.SubscriptionChangePreviewDTO
-	14, // 27: commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangePreview:output_type -> commercial.v1.SubscriptionChangePreviewDTO
-	15, // 28: commercial.v1.SubscriptionChangesApplication.ConfirmMySubscriptionChange:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
-	15, // 29: commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangeReceipt:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
-	11, // 30: commercial.v1.SubscriptionChangesApplication.CreateMyPaymentOrder:output_type -> commercial.v1.PaymentOrderDTO
-	11, // 31: commercial.v1.SubscriptionChangesApplication.GetMyPaymentOrder:output_type -> commercial.v1.PaymentOrderDTO
-	14, // 32: commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange:output_type -> commercial.v1.SubscriptionChangePreviewDTO
-	15, // 33: commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
-	14, // 34: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview:output_type -> commercial.v1.SubscriptionChangePreviewDTO
-	15, // 35: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
-	25, // [25:36] is the sub-list for method output_type
-	14, // [14:25] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	23, // 0: commercial.v1.ListMySubscriptionChangeTargetsResponse.targets:type_name -> commercial.v1.PlanVersionDTO
+	24, // 1: commercial.v1.SubscriptionChangeQuotaImpact.before_limit:type_name -> commercial.v1.EntitlementLimit
+	24, // 2: commercial.v1.SubscriptionChangeQuotaImpact.after_limit:type_name -> commercial.v1.EntitlementLimit
+	22, // 3: commercial.v1.SubscriptionChangeImpact.message_parameters:type_name -> commercial.v1.SubscriptionChangeImpact.MessageParametersEntry
+	25, // 4: commercial.v1.SubscriptionChangePreviewDTO.before:type_name -> commercial.v1.TenantSubscriptionDTO
+	23, // 5: commercial.v1.SubscriptionChangePreviewDTO.target:type_name -> commercial.v1.PlanVersionDTO
+	26, // 6: commercial.v1.SubscriptionChangePreviewDTO.current_entitlements:type_name -> commercial.v1.EntitlementView
+	26, // 7: commercial.v1.SubscriptionChangePreviewDTO.projected_entitlements:type_name -> commercial.v1.EntitlementView
+	12, // 8: commercial.v1.SubscriptionChangePreviewDTO.dependencies:type_name -> commercial.v1.SubscriptionChangeDependency
+	13, // 9: commercial.v1.SubscriptionChangePreviewDTO.quota_impacts:type_name -> commercial.v1.SubscriptionChangeQuotaImpact
+	27, // 10: commercial.v1.SubscriptionChangePreviewDTO.provisioning_requirements:type_name -> commercial.v1.ProvisioningRequirementDTO
+	14, // 11: commercial.v1.SubscriptionChangePreviewDTO.impact_details:type_name -> commercial.v1.SubscriptionChangeImpact
+	25, // 12: commercial.v1.SubscriptionChangeReceiptDTO.before:type_name -> commercial.v1.TenantSubscriptionDTO
+	25, // 13: commercial.v1.SubscriptionChangeReceiptDTO.after:type_name -> commercial.v1.TenantSubscriptionDTO
+	13, // 14: commercial.v1.SubscriptionChangeReceiptDTO.quota_impacts:type_name -> commercial.v1.SubscriptionChangeQuotaImpact
+	18, // 15: commercial.v1.ClaimCommercialTimeTransitionResponse.transition:type_name -> commercial.v1.CommercialTimeTransitionDTO
+	3,  // 16: commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChangeTargets:input_type -> commercial.v1.ListMySubscriptionChangeTargetsRequest
+	5,  // 17: commercial.v1.SubscriptionChangesApplication.PreviewMySubscriptionChange:input_type -> commercial.v1.PreviewMySubscriptionChangeRequest
+	6,  // 18: commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangePreview:input_type -> commercial.v1.ReadMySubscriptionChangePreviewRequest
+	7,  // 19: commercial.v1.SubscriptionChangesApplication.ConfirmMySubscriptionChange:input_type -> commercial.v1.ConfirmMySubscriptionChangeRequest
+	8,  // 20: commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangeReceipt:input_type -> commercial.v1.ReadMySubscriptionChangeReceiptRequest
+	9,  // 21: commercial.v1.SubscriptionChangesApplication.CreateMyPaymentOrder:input_type -> commercial.v1.CreateMyPaymentOrderRequest
+	10, // 22: commercial.v1.SubscriptionChangesApplication.GetMyPaymentOrder:input_type -> commercial.v1.GetMyPaymentOrderRequest
+	0,  // 23: commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange:input_type -> commercial.v1.PreviewSubscriptionChangeRequest
+	1,  // 24: commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange:input_type -> commercial.v1.ConfirmSubscriptionChangeRequest
+	2,  // 25: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview:input_type -> commercial.v1.ReadSubscriptionChangeRequest
+	2,  // 26: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt:input_type -> commercial.v1.ReadSubscriptionChangeRequest
+	4,  // 27: commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChangeTargets:output_type -> commercial.v1.ListMySubscriptionChangeTargetsResponse
+	15, // 28: commercial.v1.SubscriptionChangesApplication.PreviewMySubscriptionChange:output_type -> commercial.v1.SubscriptionChangePreviewDTO
+	15, // 29: commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangePreview:output_type -> commercial.v1.SubscriptionChangePreviewDTO
+	16, // 30: commercial.v1.SubscriptionChangesApplication.ConfirmMySubscriptionChange:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
+	16, // 31: commercial.v1.SubscriptionChangesApplication.GetMySubscriptionChangeReceipt:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
+	11, // 32: commercial.v1.SubscriptionChangesApplication.CreateMyPaymentOrder:output_type -> commercial.v1.PaymentOrderDTO
+	11, // 33: commercial.v1.SubscriptionChangesApplication.GetMyPaymentOrder:output_type -> commercial.v1.PaymentOrderDTO
+	15, // 34: commercial.v1.SubscriptionChangesApplication.PreviewSubscriptionChange:output_type -> commercial.v1.SubscriptionChangePreviewDTO
+	16, // 35: commercial.v1.SubscriptionChangesApplication.ConfirmSubscriptionChange:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
+	15, // 36: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangePreview:output_type -> commercial.v1.SubscriptionChangePreviewDTO
+	16, // 37: commercial.v1.SubscriptionChangesApplication.GetSubscriptionChangeReceipt:output_type -> commercial.v1.SubscriptionChangeReceiptDTO
+	27, // [27:38] is the sub-list for method output_type
+	16, // [16:27] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_commercial_v1_subscription_change_proto_init() }
@@ -2150,7 +2308,7 @@ func file_commercial_v1_subscription_change_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_commercial_v1_subscription_change_proto_rawDesc), len(file_commercial_v1_subscription_change_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
