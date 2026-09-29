@@ -107,6 +107,14 @@
     "scenario": "企业中心 · 套餐变更生命周期 · PlanChangeLifecycle",
     "scope": "仅用于企业中心租户套餐目标发现、权威预览、审批边界、确认与回执展示；跨业务复用必须下沉 ui/common，不得绕过 ui/base 或直接访问网络。"
   },
+  "enterprise/components/PlanChangeImpactList.vue": {
+    "scenario": "企业中心 · 套餐变更 · 结构化影响展示",
+    "scope": "仅展示服务端返回的套餐变更影响事实和兼容文案；不创建预览、确认变更或读取租户身份。"
+  },
+  "enterprise/components/PlanChangePreparationImpact.vue": {
+    "scenario": "企业中心 · 套餐变更 · 额度与准备影响展示",
+    "scope": "仅展示服务端返回的额度、依赖和开通准备影响；不创建预览、确认变更或执行额度操作。"
+  },
   "enterprise/components/PlanChangeReceipt.vue": {
     "scenario": "企业中心 · 套餐变更 · 开通结果同步",
     "scope": "仅展示当前租户套餐变更回执并请求刷新；不创建订单、不传递租户身份且不自行改变权益。"
