@@ -17,7 +17,7 @@
     "internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go": "4d96448de0576930278aee623dac140c30ab0183c3d9a238ee54d4b834461758",
     "internal/commercial/application/subscriptionchanges/internal/usecase/context.go": "87947d1cdf3a7e5f7b868d7718a15da4d5a2f3ee611fb2fe2e86a4423eb540c5",
     "internal/commercial/application/subscriptionchanges/internal/usecase/payment.go": "4a26c0aa4798670fa635bdf3a8940c3a8453ee9176716cd04a59f7faf23c0079",
-    "internal/commercial/application/subscriptionchanges/internal/usecase/selfservice.go": "5ab7c4d5856ed88246de31fa21124d53237335fc1796c1a1d5dbd822b253a595",
+    "internal/commercial/application/subscriptionchanges/internal/usecase/selfservice.go": "03f65f299498dc1f26b00d0583acbce3587d06a60c67e6960b02295739f66e81",
     "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go": "7e6d141af2e12741b0ffe40b9a009a24d5928ab36499cd02bacd0bd30cf5b446",
     "internal/commercial/application/subscriptionmanagement/internal/usecase/usage.go": "1f685e5e93b210d3adf881d02acf811adbfe5dc2c8688bde4ce4f569e6a33c0c",
     "internal/deviceops/application/cross_application_transfer.go": "bffaca1f1be420371bfcb770c5ccfd79f18553938ca92de0584f5e921460d9d8",
