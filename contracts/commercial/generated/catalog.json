@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "mapping_version": "26",
+  "mapping_version": "27",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "b1a0e66468d57019ed5ac00aba16a313dc1a4211983c3515af934db72e40fbb6",
+    "contracts/commercial/operation-capabilities.v1.json": "45d09d25703d5a4497e8a548e3cdc8115032873374271015f29f8f3752660dc2",
     "contracts/generated/manifest.json": "40b4cf71e9aa82028877de0c903050361957fb2ac21bed74d2c166733dd70a41",
     "contracts/generated/operation-plans.json": "9ef6e071c103e9e5bb39681b5482d4b641e9139ab192ef73368106713a9b6ccb",
     "internal/access/application/member_business_scope.go": "9401a3c99e75c62aeb364d49d21ef6028e32be54d6daf8c75f393e62f09ba76e",
