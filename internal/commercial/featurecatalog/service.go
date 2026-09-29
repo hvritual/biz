@@ -86,6 +86,10 @@ func (s *Service) StopSell(ctx context.Context, code string, command Command) (F
 	return s.mutate(ctx, code, command, "stop_sell", func(feature Feature) (Feature, error) { return feature.StopSell() })
 }
 
+func (s *Service) Publish(ctx context.Context, code string, command Command) (Feature, error) {
+	return s.mutate(ctx, code, command, "publish", func(feature Feature) (Feature, error) { return feature.Publish() })
+}
+
 func (s *Service) PlanSunset(ctx context.Context, code string, plan SunsetPlan, command Command) (Feature, error) {
 	return s.mutate(ctx, code, command, "plan_sunset", func(feature Feature) (Feature, error) { return feature.PlanSunset(plan) })
 }
