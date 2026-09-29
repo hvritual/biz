@@ -94,6 +94,7 @@ jobs:
           python3 scripts/test_ci_ce13_runtime.py
           python3 scripts/delivery_execution.py validate-contract
           python3 scripts/test_delivery_execution.py
+          python3 scripts/test_ci_dependency_recovery.py
           python3 scripts/candidate_lifecycle.py validate-contract
           python3 scripts/check_ci_qualification_governance.py
           python3 scripts/test_ci_changed_files_router.py
@@ -180,6 +181,10 @@ jobs:
   commercial-map:
     needs: [route, governance, fast-web]
     if: needs.route.outputs.commercial == 'true'
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
     uses: ./.github/workflows/ce03-qualification.yml
 
   commercial-runtime:

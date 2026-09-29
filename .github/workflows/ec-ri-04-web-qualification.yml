@@ -29,11 +29,10 @@ jobs:
         working-directory: web
       - run: npm run check
         working-directory: web
-      - name: Install Chromium and Chinese fonts
-        working-directory: web
-        run: |
-          npx playwright install --with-deps chromium
-          sudo apt-get install -y fonts-noto-cjk
+      - name: Verify bounded browser setup
+        run: python3 -B scripts/test_ci_member_browser.py
+      - name: Prepare headless Chromium and verify Chinese font coverage
+        run: bash scripts/ci_member_browser.sh
       - name: Run organization API-mode E2E
         working-directory: web
         shell: bash

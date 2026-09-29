@@ -2,6 +2,7 @@
 import { UiButton } from '@/ui/base'
 
 import StatusBadge from '@/ui/common/StatusBadge.vue'
+import { backendStateTone, backendTermLabel } from '@/i18n/backend-terms'
 import type { ModuleDTO, PlanTerms, PlanVersionDTO } from '@/services/commercial/platformCommercial'
 
 const props = defineProps<{
@@ -19,14 +20,11 @@ const emit = defineEmits<{
 }>()
 
 function statusLabel(state: string) {
-  const labels: Record<string, string> = { DRAFT: '草稿', PUBLISHED: '已发布', RETIRED: '已停售' }
-  return labels[state] || state || '未知'
+  return backendTermLabel('planState', state)
 }
 
-function statusTone(state: string): 'success' | 'warning' | 'neutral' {
-  if (state === 'PUBLISHED') return 'success'
-  if (state === 'DRAFT') return 'warning'
-  return 'neutral'
+function statusTone(state: string) {
+  return backendStateTone('planState', state)
 }
 
 function formatTime(value: string) {
@@ -124,13 +122,13 @@ function moduleName(code: string) {
 .btn.primary { background: var(--color-primary); border-color: var(--color-primary); color: white; }
 .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; padding: 16px 20px; gap: 14px 20px; border-bottom: 1px solid var(--color-border); }
 .facts div { min-width: 0; }
-.facts dt { font-size: 11px; color: var(--color-text-muted); }
+.facts dt { font-size: var(--text-xs); color: var(--color-text-muted); }
 .facts dd { margin: 4px 0 0; font-size: 13px; }
 .terms { padding: 16px 20px; border-bottom: 1px solid var(--color-border); }
 .terms:last-child { border-bottom: 0; }
 .terms h3 { margin: 0 0 10px; font-size: 13px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { display: inline-flex; padding: 3px 7px; border-radius: 999px; background: var(--color-primary-soft); font-size: 11px; }
+.chip { display: inline-flex; padding: 3px 7px; border-radius: 999px; background: var(--color-primary-soft); font-size: var(--text-xs); overflow-wrap: anywhere; }
 .module-term { padding: 12px 0; border-top: 1px solid var(--color-border); }
 .module-term:first-of-type { border-top: 0; padding-top: 0; }
 .module-title { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }

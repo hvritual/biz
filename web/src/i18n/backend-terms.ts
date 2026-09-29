@@ -43,21 +43,33 @@ export const backendTermCatalog = {
     crm: 'crm',
     growth: 'growth',
   },
+  planState: { DRAFT: 'draft', PUBLISHED: 'published', RETIRED: 'retired' },
   subscriptionState: {
     ACTIVE: 'active', active: 'active',
     TRIAL: 'trial', trial: 'trial',
+    GRACE: 'grace', grace: 'grace',
+    RESTRICTED: 'restricted', restricted: 'restricted',
+    ENDED: 'ended', ended: 'ended',
+    // Display-only legacy aliases; they never determine subscription behavior.
+    // Compatibility owner: #288; read-only aliases retained through 2026-12-31.
+    // Removal requires an audited consumer migration, never a backend-state rewrite.
     GRACE_PERIOD: 'gracePeriod', grace_period: 'gracePeriod',
     SUSPENDED: 'suspended', suspended: 'suspended',
     EXPIRED: 'expired', expired: 'expired',
     TERMINATED: 'terminated', terminated: 'terminated',
   },
   entitlementTarget: {
+    ENTITLEMENT_TARGET_UNSPECIFIED: 'unspecified',
+    module: 'module', capability: 'capability', quota: 'quota', field: 'field',
     ENTITLEMENT_TARGET_MODULE: 'module',
     ENTITLEMENT_TARGET_CAPABILITY: 'capability',
     ENTITLEMENT_TARGET_QUOTA: 'quota',
     ENTITLEMENT_TARGET_FIELD: 'field',
   },
   entitlementEffect: {
+    ENTITLEMENT_EFFECT_UNSPECIFIED: 'unspecified',
+    grant: 'grant', deny: 'deny', quota_add: 'quotaAdd', quota_replace: 'quotaReplace',
+    safety_deny: 'safetyDeny', safety_mask: 'safetyMask',
     ENTITLEMENT_EFFECT_GRANT: 'grant',
     ENTITLEMENT_EFFECT_DENY: 'deny',
     ENTITLEMENT_EFFECT_QUOTA_ADD: 'quotaAdd',
@@ -80,7 +92,8 @@ export const backendTermCatalog = {
   disposition: { applied: 'applied', effective: 'effective', used: 'used', ignored: 'ignored', skipped: 'skipped' },
   decisionKind: { capability: 'capability', quota: 'quota', field: 'field', module: 'module' },
   changeClassification: {
-    UPGRADE: 'upgrade', DOWNGRADE: 'downgrade', RENEWAL: 'renewal', STOP_RENEWAL: 'stopRenewal', SWITCH: 'switch',
+    UPGRADE: 'upgrade', DOWNGRADE: 'downgrade', SAME_TIER: 'sameTier',
+    RENEW: 'renewal', RENEWAL: 'renewal', STOP_RENEWAL: 'stopRenewal', SWITCH: 'switch',
   },
   effectiveMode: { IMMEDIATE: 'immediate', SCHEDULED: 'scheduled', PROVISIONING: 'provisioning' },
   receiptStatus: { APPLIED: 'applied', SCHEDULED: 'scheduled', PROVISIONING: 'provisioning', FAILED: 'failed', PENDING: 'pending' },
@@ -88,12 +101,14 @@ export const backendTermCatalog = {
   changeAction: { SWITCH: 'switch', RENEW: 'renew', STOP_RENEWAL: 'stopRenewal' },
   salesScope: { rental: 'rental', office: 'office', default: 'default', enterprise: 'enterprise' },
   technicalStatus: {
+    ready: 'ready', not_ready: 'notReady', disabled: 'disabled',
     MODULE_TECHNICAL_STATUS_READY: 'ready',
     MODULE_TECHNICAL_STATUS_NOT_READY: 'notReady',
     MODULE_TECHNICAL_STATUS_DISABLED: 'disabled',
     MODULE_TECHNICAL_STATUS_UNSPECIFIED: 'unspecified',
   },
   salesStatus: {
+    sellable: 'sellable', retired: 'retired',
     MODULE_SALES_STATUS_SELLABLE: 'sellable',
     MODULE_SALES_STATUS_RETIRED: 'retired',
     MODULE_SALES_STATUS_UNSPECIFIED: 'unspecified',
@@ -172,25 +187,51 @@ export const backendTermCatalog = {
 } as const
 
 export type BackendTermKind = keyof typeof backendTermCatalog
+export type BackendTermValue<K extends BackendTermKind> = keyof (typeof backendTermCatalog)[K] & string
+// Responses may carry a future wire value. Recognition is explicit, never a grant.
+export type BackendWireTerm<K extends BackendTermKind> = BackendTermValue<K> | (string & { readonly unknownBackendTerm?: never })
+export type BackendStateKind = 'planState' | 'subscriptionState' | 'technicalStatus' | 'salesStatus' | 'sourceState' | 'receiptStatus'
+export type BackendStateTone = 'success' | 'warning' | 'danger' | 'neutral'
 export type BackendErrorScope = 'profile' | 'branding' | 'member' | 'role' | 'department' | 'audit' | 'planChange' | 'planRead' | 'commercial'
 
 function rawValue(value: unknown) {
-  return String(value ?? '').trim()
+  return typeof value === 'string' || typeof value === 'number' ? String(value).trim() : ''
 }
 
-export function backendTermKnown(kind: BackendTermKind, value: unknown) {
+export function backendTermKnown(kind: BackendTermKind, value: unknown): boolean {
   const raw = rawValue(value)
   return Boolean(raw && Object.hasOwn(backendTermCatalog[kind], raw))
 }
 
 export function backendTermKey(kind: BackendTermKind, value: unknown) {
   const raw = rawValue(value)
-  const semantic = raw ? (backendTermCatalog[kind] as Record<string, string>)[raw] : undefined
+  const semantic = backendTermKnown(kind, raw) ? (backendTermCatalog[kind] as Record<string, string>)[raw] : undefined
   return semantic ? `backendTerms.${kind}.${semantic}` : `backendTerms.fallback.${kind}`
 }
 
 export function backendTermLabel(kind: BackendTermKind, value: unknown) {
   return t(backendTermKey(kind, value))
+}
+
+/** Presentation only: this helper cannot grant access or make a write eligible. */
+export function backendStateTone(kind: BackendStateKind, value: unknown): BackendStateTone {
+  if (!backendTermKnown(kind, value)) return 'neutral'
+  const semantic = (backendTermCatalog[kind] as Record<string, string>)[rawValue(value)]
+  if (['active', 'ready', 'sellable', 'published', 'applied'].includes(semantic ?? '')) return 'success'
+  if (['trial', 'grace', 'gracePeriod', 'draft', 'notReady', 'pending', 'scheduled', 'provisioning'].includes(semantic ?? '')) return 'warning'
+  if (['restricted', 'suspended', 'disabled', 'failed'].includes(semantic ?? '')) return 'danger'
+  return 'neutral'
+}
+
+/** Bounded diagnostic metadata, never rendered or automatically logged. */
+export function backendTermDiagnostic(kind: BackendTermKind, value: unknown) {
+  if (backendTermKnown(kind, value)) return null
+  const raw = rawValue(value)
+  return {
+    code: 'UNKNOWN_BACKEND_TERM' as const,
+    kind,
+    value: /^[A-Za-z0-9_.:-]{1,96}$/.test(raw) ? raw : null,
+  }
 }
 
 export function backendErrorFallback(scope: BackendErrorScope) {

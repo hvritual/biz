@@ -98,7 +98,7 @@ function submitDemoChange() {
             <span class="plan-crown"><AppIcon name="crown" :size="30" /></span>
             <div>
               <small class="muted">当前套餐</small>
-              <h2>{{ plan.currentPlan }} <StatusBadge :text="plan.subscriptionState" /></h2>
+              <h2>{{ plan.currentPlan }} <StatusBadge :text="plan.subscriptionState" :tone="plan.subscriptionTone" /></h2>
             </div>
           </div>
           <p>{{ plan.isServerBacked ? '查看当前套餐、功能权益与可用额度。' : '适用于多点位运营团队，统一管理设备、成员与服务。' }}</p>
@@ -243,12 +243,12 @@ function submitDemoChange() {
 .plan-top { display: grid; grid-template-columns: 1fr 1.05fr; gap: 16px; }
 .current-plan { padding: 28px; background: linear-gradient(125deg, var(--color-primary-soft), var(--color-surface) 68%); }
 .plan-crown { width: 62px; height: 62px; display: grid; place-items: center; background: linear-gradient(130deg, var(--color-gradient-end), var(--color-primary)); color: var(--color-on-primary); border-radius: 50%; }
-.current-plan h2 { font-size: 24px; margin-top: 4px; display: flex; align-items: center; gap: 12px; overflow-wrap: anywhere; }
+.current-plan h2 { font-size: 24px; margin-top: 4px; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; overflow-wrap: anywhere; }
 .current-plan > p { font-size: 13px; color: var(--color-text-secondary); margin-top: 18px; }
 .plan-dates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 25px 0; }
 .plan-dates span { display: block; color: var(--color-text-muted); font-size: 12px; margin-bottom: 7px; }
 .plan-dates strong { font-size: 14px; font-weight: 500; }
-.preview-plan { display: block; color: var(--color-text-muted); font-size: 10px; margin-top: 18px; }
+.preview-plan { display: block; color: var(--color-text-muted); font-size: var(--text-xs); line-height: 1.5; text-wrap: pretty; margin-top: 18px; }
 .quota-overview { padding: 28px; }
 .quota-overview > .row-between > span { font-size: 12px; }
 .quota-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 27px 24px; margin-top: 26px; }
@@ -272,7 +272,7 @@ function submitDemoChange() {
   .current-plan, .quota-overview { padding: 20px; }
   .current-plan > .row { flex-wrap: wrap; }
   .plan-dates { grid-template-columns: 1fr; }
-  .feature-row p { font-size: 11px; }
+  .feature-row p { font-size: var(--text-xs); line-height: 1.5; }
   .quota-cards { grid-template-columns: 1fr; }
 }
 </style>

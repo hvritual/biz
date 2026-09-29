@@ -39,6 +39,7 @@ jobs:
           python3 scripts/test_ci_proof_governance.py
           python3 scripts/delivery_execution.py validate-contract
           python3 scripts/test_delivery_execution.py
+          python3 scripts/test_ci_dependency_recovery.py
           python3 scripts/check_ci_qualification_governance.py
           python3 scripts/test_ci_changed_files_router.py
           python3 scripts/test_candidate_lifecycle.py

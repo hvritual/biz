@@ -1,13 +1,7 @@
-export type ModuleTechnicalStatus =
-  | 'MODULE_TECHNICAL_STATUS_UNSPECIFIED'
-  | 'MODULE_TECHNICAL_STATUS_NOT_READY'
-  | 'MODULE_TECHNICAL_STATUS_READY'
-  | 'MODULE_TECHNICAL_STATUS_DISABLED'
+import type { BackendTermValue, BackendWireTerm } from '@/i18n/backend-terms'
 
-export type ModuleSalesStatus =
-  | 'MODULE_SALES_STATUS_UNSPECIFIED'
-  | 'MODULE_SALES_STATUS_SELLABLE'
-  | 'MODULE_SALES_STATUS_RETIRED'
+export type ModuleTechnicalStatus = Extract<BackendTermValue<'technicalStatus'>, `MODULE_TECHNICAL_STATUS_${string}`>
+export type ModuleSalesStatus = Extract<BackendTermValue<'salesStatus'>, `MODULE_SALES_STATUS_${string}`>
 
 export interface ModuleDTO {
   moduleCode: string
@@ -57,7 +51,7 @@ export interface PlanVersionDTO {
   version: string | number
   revision: string | number
   planRevision: string | number
-  state: string
+  state: BackendWireTerm<'planState'>
   name: string
   terms: PlanTerms
   contentSha256: string
@@ -129,16 +123,16 @@ export interface EntitlementLimit {
 
 export interface EntitlementSourceExplanation {
   id: string
-  sourceKind: string
-  effect: string
-  state: string
-  disposition: string
+  sourceKind: BackendWireTerm<'sourceKind'>
+  effect: BackendWireTerm<'entitlementEffect'>
+  state: BackendWireTerm<'sourceState'>
+  disposition: BackendWireTerm<'disposition'>
   reason: string
   actorId: string
 }
 
 export interface EntitlementDecisionDTO {
-  kind: string
+  kind: BackendWireTerm<'decisionKind'>
   moduleCode: string
   key: string
   fieldAction: string
@@ -215,7 +209,7 @@ export interface TenantSubscriptionDTO {
   subscriptionId: string
   tenantId: string
   kind: string
-  state: string
+  state: BackendWireTerm<'subscriptionState'>
   planCode: string
   planVersion: string | number
   ruleId: string
@@ -231,7 +225,7 @@ export interface TenantSubscriptionDTO {
   pendingChangeId: string
 }
 
-export type SubscriptionChangeAction = 'SWITCH' | 'RENEW' | 'STOP_RENEWAL'
+export type SubscriptionChangeAction = BackendTermValue<'changeAction'>
 
 export interface ProvisioningRequirementDTO {
   code: string
@@ -263,8 +257,8 @@ export interface SubscriptionChangePreviewDTO {
   actorId: string
   requestId: string
   action: SubscriptionChangeAction | string
-  classification: string
-  mode: string
+  classification: BackendWireTerm<'changeClassification'>
+  mode: BackendWireTerm<'effectiveMode'>
   previewHash: string
   before?: TenantSubscriptionDTO
   target?: PlanVersionDTO
@@ -293,8 +287,8 @@ export interface SubscriptionChangeReceiptDTO {
   requestId: string
   previewHash: string
   action: SubscriptionChangeAction | string
-  status: string
-  mode: string
+  status: BackendWireTerm<'receiptStatus'>
+  mode: BackendWireTerm<'effectiveMode'>
   confirmedAt: string
   effectiveAt: string
   entitlementExpiresAt: string

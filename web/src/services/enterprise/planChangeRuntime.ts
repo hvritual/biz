@@ -5,6 +5,7 @@ import {
   mutate,
   request,
   type PlanVersionDTO,
+  type SubscriptionChangeAction,
   type SubscriptionChangePreviewDTO,
   type SubscriptionChangeReceiptDTO,
   type PaymentOrderDTO,
@@ -16,7 +17,7 @@ export type TenantChangeTargets = Readonly<{
   targets: PlanVersionDTO[]
 }>
 
-export type TenantChangeAction = 'SWITCH' | 'RENEW' | 'STOP_RENEWAL'
+export type TenantChangeAction = SubscriptionChangeAction
 
 export type TenantChangePreviewInput = Readonly<{
   action: TenantChangeAction

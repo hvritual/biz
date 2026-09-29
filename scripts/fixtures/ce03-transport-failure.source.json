@@ -1,0 +1,15 @@
+{
+  "repository": "hvritual/biz",
+  "pr_number": 298,
+  "candidate_sha": "c60874138bf5baeeb2665c098cde6fd1bb06e4eb",
+  "checkout_sha": "5e0a6b67d66894f6c751db3f543f260326f22861",
+  "run_id": 36577101214,
+  "run_attempt": 1,
+  "job_id": 109435663876,
+  "step": "Check and regenerate without drift",
+  "artifact_id": 11037458645,
+  "archive_sha256": "44deaf168114109fea43c29290e09182895226711bccf901e711dacd57de4e1a",
+  "original_path": "generate-1.log",
+  "log_sha256": "b9e9a0da8dc856f9315769763f3a2216f1c6436b8d2f7fb429c6e695a45bbd9d",
+  "purpose": "Historical diagnosis only. This is not a download-only recovery receipt or a grant."
+}

@@ -4,6 +4,8 @@ import {
   backendBusinessText,
   backendErrorFallback,
   backendTermKnown,
+  backendStateTone,
+  backendTermDiagnostic,
   backendTermLabel,
 } from './backend-terms'
 
@@ -12,6 +14,40 @@ afterEach(() => {
 })
 
 describe('backend term presentation', () => {
+  it.each([
+    ['TRIAL', '试用', 'Trial', 'warning'],
+    ['ACTIVE', '有效', 'Active', 'success'],
+    ['GRACE', '宽限期', 'Grace period', 'warning'],
+    ['RESTRICTED', '受限', 'Restricted', 'danger'],
+    ['ENDED', '已结束', 'Ended', 'neutral'],
+  ])('projects %s without a fallback or an incorrect success badge', (code, zh, en, tone) => {
+    i18n.global.locale.value = 'zh-CN'
+    expect(backendTermLabel('subscriptionState', code)).toBe(zh)
+    expect(backendStateTone('subscriptionState', code)).toBe(tone)
+    i18n.global.locale.value = 'en-US'
+    expect(backendTermLabel('subscriptionState', code)).toBe(en)
+  })
+
+  it('does not turn unknown states or prototype keys into success', () => {
+    for (const value of ['FUTURE', '__proto__', 'constructor', 'toString', '', undefined, {}]) {
+      expect(backendTermKnown('subscriptionState', value)).toBe(false)
+      expect(backendTermLabel('subscriptionState', value)).toBe('未知状态')
+      expect(backendStateTone('subscriptionState', value)).toBe('neutral')
+    }
+    expect(backendTermLabel('sourceState', 'FUTURE')).toBe('未知状态')
+    expect(backendTermLabel('receiptStatus', 'FUTURE')).toBe('未知状态')
+    expect(backendTermDiagnostic('subscriptionState', 'FUTURE')).toEqual({ code: 'UNKNOWN_BACKEND_TERM', kind: 'subscriptionState', value: 'FUTURE' })
+    expect(backendTermDiagnostic('subscriptionState', 'ACTIVE')).toBeNull()
+    expect(backendTermDiagnostic('subscriptionState', '<script>secret</script>')?.value).toBeNull()
+  })
+
+  it('recognizes actual same-tier and renew classifications', () => {
+    expect(backendTermLabel('changeClassification', 'SAME_TIER')).toBe('同级调整')
+    expect(backendTermLabel('changeClassification', 'RENEW')).toBe('续订')
+    expect(backendTermLabel('planState', 'PUBLISHED')).toBe('已发布')
+    expect(backendTermLabel('planState', 'FUTURE')).toBe('未知状态')
+  })
+
   it('translates backend enums through the active locale', () => {
     i18n.global.locale.value = 'zh-CN'
     expect(backendTermLabel('entitlementEffect', 'ENTITLEMENT_EFFECT_DENY')).toBe('拒绝')
@@ -24,7 +60,7 @@ describe('backend term presentation', () => {
   it('never falls back to an unknown raw engineering code', () => {
     const raw = 'ENTITLEMENT_EFFECT_FUTURE_MODE'
     expect(backendTermKnown('entitlementEffect', raw)).toBe(false)
-    expect(backendTermLabel('entitlementEffect', raw)).toBe('已应用')
+    expect(backendTermLabel('entitlementEffect', raw)).toBe('未知授权效果')
     expect(backendTermLabel('entitlementEffect', raw)).not.toContain(raw)
   })
 

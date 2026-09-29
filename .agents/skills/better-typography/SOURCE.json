@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "repository": "jakubkrehel/skills",
+  "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e",
+  "upstream_directory": "skills/better-typography",
+  "license": "MIT",
+  "files": {
+    "SKILL.md": "3334cc4173666ba27710a0a0ced04c47228b4204",
+    "choosing-fonts.md": "0dfcfa13b220c37b578f005b474242cd6afe4c18",
+    "css-cheat-sheet.md": "3233aa17bbf688548950106c56a5b4d359af2f82",
+    "details-and-accessibility.md": "74c2eef1363cf221527fab5223a382547107ba25",
+    "spacing-and-sizing.md": "a69dddb322f9ffc2ef2f5142b3f0210eee33ba54",
+    "variable-fonts-and-opentype.md": "9a8742352eb1391f0b8ea54fc3a9a62975e1a867",
+    "wrapping-and-punctuation.md": "751deeb9798e87dce5f410438bbe8ab8516a5dd4",
+    "LICENSE": "6a067e906e1346e640a0cda6ed37c5fb793104e4"
+  },
+  "project_integration": "PROJECT-INTEGRATION.md",
+  "scope": "Agent documentation only; no fonts, executables or Web runtime dependency. Upstream agents/openai.yaml is not required by this repository integration."
+}
