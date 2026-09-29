@@ -55,6 +55,8 @@ message ConfirmMySubscriptionChangeRequest {
  string reason = 4;
 }
 message ReadMySubscriptionChangeReceiptRequest { string change_id = 1; }
+message ListMySubscriptionChangesRequest { uint32 page_size = 1; string before_confirmed_at = 2; string before_change_id = 3; }
+message ListMySubscriptionChangesResponse { repeated SubscriptionChangeReceiptDTO receipts = 1; string next_before_confirmed_at = 2; string next_before_change_id = 3; }
 
 message CreateMyPaymentOrderRequest {
  string request_id = 1;
@@ -157,10 +159,14 @@ service SubscriptionChangesApplication {
   option (google.api.http) = { post: "/v1/tenant/subscription/changes/{change_id}/confirm" body: "*" };
   option (yunka.dsl.v1.operation) = { id: "commercial.subscription.change.confirm_my" use_case: "confirm_my_subscription_change" permissions: "tenant.subscription.manage" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION requires_operations: "commercial.plan.subscription_snapshot" requires_operations: "commercial.plan.change_target.resolve" requires_operations: "commercial.module.plan_catalog" composition: COMPOSITION_LOCAL execution: {transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED} };
  }
- rpc GetMySubscriptionChangeReceipt(ReadMySubscriptionChangeReceiptRequest) returns (SubscriptionChangeReceiptDTO) {
+  rpc GetMySubscriptionChangeReceipt(ReadMySubscriptionChangeReceiptRequest) returns (SubscriptionChangeReceiptDTO) {
   option (google.api.http) = {get: "/v1/tenant/subscription/changes/{change_id}"};
   option (yunka.dsl.v1.operation) = {id: "commercial.subscription.change.get_my" use_case: "get_my_subscription_change_receipt" permissions: "tenant.subscription.manage" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: {transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE}};
- }
+  }
+  rpc ListMySubscriptionChanges(ListMySubscriptionChangesRequest) returns (ListMySubscriptionChangesResponse) {
+   option (google.api.http) = {get: "/v1/tenant/subscription/changes"};
+   option (yunka.dsl.v1.operation) = {id: "commercial.subscription.change.list_my" use_case: "list_my_subscription_changes" permissions: "tenant.subscription.manage" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: {transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE}};
+  }
  rpc CreateMyPaymentOrder(CreateMyPaymentOrderRequest) returns (PaymentOrderDTO) {
   option (google.api.http) = { post: "/v1/tenant/subscription/payment-orders" body: "*" };
   option (yunka.dsl.v1.operation) = { id: "commercial.subscription.payment.order.create_my" use_case: "create_my_payment_order" permissions: "tenant.subscription.manage" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION requires_operations: "commercial.plan.subscription_snapshot" composition: COMPOSITION_LOCAL execution: {transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED} };

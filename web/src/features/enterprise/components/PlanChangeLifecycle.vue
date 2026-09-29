@@ -132,14 +132,14 @@ function impactTitle(impact: SubscriptionChangeImpact) {
 function impactDescription(impact: SubscriptionChangeImpact) {
   const descriptions: Record<string, string> = {
     DATA_PRESERVED: '已有业务数据不会因本次套餐变更被删除。',
-    ENTITLEMENT_PROJECTION: '套餐、专项授权和安全限制将由服务端以当前事实重新计算。',
+    ENTITLEMENT_PROJECTION: '套餐、专项授权和安全限制将按当前事实重新计算。',
     NO_NEW_ENFORCEMENT: '本次预览不会把展示用量当作新的资源执行限制。',
     SELF_SERVICE_CONFIRMATION: '当前仅为预览；在完成确认前，套餐与权益不会改变。',
     EXTERNAL_COMMERCIAL_APPROVAL: '该套餐包含价格事实，必须先取得外部商业或支付审批。',
-    SCHEDULED_EFFECTIVE_TIME: '当前权益保持有效，服务端会在预约时间再次核对后执行。',
+    SCHEDULED_EFFECTIVE_TIME: '当前权益保持有效，系统会在预约时间再次核对后执行。',
     QUOTA_REVALIDATION: '当前用量未知或超出目标，需要先满足额度要求。',
     AUTO_RENEWAL_DISABLED: '当前权益将持续至到期日，之后不会自动续订。',
-    EXTERNAL_PREPARATION: '服务端已保留处理意图，实际权益要等待准备完成后才会生效。',
+    EXTERNAL_PREPARATION: '系统已保留处理意图，实际权益要等待准备完成后才会生效。',
   }
   return descriptions[impact.code] ?? '请根据当前套餐变更结果确认后续操作。'
 }

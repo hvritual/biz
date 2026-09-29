@@ -2395,6 +2395,40 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.ListMySubscriptionChangeTargetsResponse"
       },
+      "commercial_v1_ListMySubscriptionChangesRequest": {
+        "properties": {
+          "beforeChangeId": {
+            "type": "string"
+          },
+          "beforeConfirmedAt": {
+            "type": "string"
+          },
+          "pageSize": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListMySubscriptionChangesRequest"
+      },
+      "commercial_v1_ListMySubscriptionChangesResponse": {
+        "properties": {
+          "nextBeforeChangeId": {
+            "type": "string"
+          },
+          "nextBeforeConfirmedAt": {
+            "type": "string"
+          },
+          "receipts": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_SubscriptionChangeReceiptDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListMySubscriptionChangesResponse"
+      },
       "commercial_v1_ListPlanVersionsRequest": {
         "properties": {
           "afterVersion": {
@@ -8240,6 +8274,54 @@
           "commercial.v1.SubscriptionChangesApplication"
         ],
         "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/ListMySubscriptionChangeTargets"
+      }
+    },
+    "/v1/tenant/subscription/changes": {
+      "get": {
+        "operationId": "commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChanges",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "beforeConfirmedAt",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "beforeChangeId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ListMySubscriptionChangesResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.SubscriptionChangesApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.SubscriptionChangesApplication/ListMySubscriptionChanges"
       }
     },
     "/v1/tenant/subscription/changes/{change_id}": {

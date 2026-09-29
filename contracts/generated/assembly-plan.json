@@ -1937,6 +1937,37 @@
       }
     },
     {
+      "id": "commercial.subscription.change.list_my",
+      "application": "commercial/subscription_changes",
+      "bindings": [
+        {
+          "operationId": "commercial.subscription.change.list_my",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.subscription.change.list_my/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.subscription.change.list_my",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.subscription.change.list_my/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.subscription.change.list_my"
+      }
+    },
+    {
       "id": "commercial.subscription.change.preparation.cancel",
       "application": "commercial/subscription_changes",
       "evidence": {
@@ -5323,6 +5354,7 @@
         "commercial.subscription.change.confirm_my",
         "commercial.subscription.change.get",
         "commercial.subscription.change.get_my",
+        "commercial.subscription.change.list_my",
         "commercial.subscription.change.preview",
         "commercial.subscription.change.preview.get",
         "commercial.subscription.change.preview_my",

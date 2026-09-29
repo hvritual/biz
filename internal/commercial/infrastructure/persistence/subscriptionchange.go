@@ -131,6 +131,25 @@ func (r *subscriptionChangeRepository) Receipt(ctx context.Context, tenant, id s
 	}
 	return decodeChangeReceipt(row)
 }
+func (r *subscriptionChangeRepository) ListReceipts(ctx context.Context, tenant string, before time.Time, beforeID string, limit int) ([]change.Receipt, error) {
+	db := r.tx.WithContext(ctx).Where("tenant_id = ?", tenant)
+	if !before.IsZero() {
+		db = db.Where("confirmed_at < ? OR (confirmed_at = ? AND change_id < ?)", before, before, beforeID)
+	}
+	var rows []changeReceiptRow
+	if err := db.Order("confirmed_at DESC").Order("change_id DESC").Limit(limit).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	result := make([]change.Receipt, 0, len(rows))
+	for _, row := range rows {
+		receipt, err := decodeChangeReceipt(row)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, *receipt)
+	}
+	return result, nil
+}
 func (r *subscriptionChangeRepository) ReceiptForRequest(ctx context.Context, tenant, actor, key, fp string) (*change.Receipt, error) {
 	var row changeReceiptRow
 	err := r.tx.WithContext(ctx).Clauses(clause.Locking{Strength: "SHARE"}).Where("actor_id=? AND request_id=?", actor, key).First(&row).Error

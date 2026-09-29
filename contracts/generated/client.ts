@@ -851,6 +851,18 @@ export interface Commercial_V1_ListMySubscriptionChangeTargetsResponse {
   targets?: readonly Commercial_V1_PlanVersionDTO[];
 }
 
+export interface Commercial_V1_ListMySubscriptionChangesRequest {
+  pageSize?: number;
+  beforeConfirmedAt?: string;
+  beforeChangeId?: string;
+}
+
+export interface Commercial_V1_ListMySubscriptionChangesResponse {
+  receipts?: readonly Commercial_V1_SubscriptionChangeReceiptDTO[];
+  nextBeforeConfirmedAt?: string;
+  nextBeforeChangeId?: string;
+}
+
 export interface Commercial_V1_ListPlanVersionsRequest {
   planCode?: string;
   afterVersion?: string;
@@ -2301,6 +2313,15 @@ export const operations = {
       { method: "GET", path: "/v1/tenant/subscription/change-targets" },
     ]
   },
+  "commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChanges": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChanges",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/ListMySubscriptionChanges",
+    requestType: "commercial.v1.ListMySubscriptionChangesRequest",
+    responseType: "commercial.v1.ListMySubscriptionChangesResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/subscription/changes" },
+    ]
+  },
   "commercial.v1.SubscriptionChangesApplication.PreviewMySubscriptionChange": {
     fullName: "commercial.v1.SubscriptionChangesApplication.PreviewMySubscriptionChange",
     rpcPath: "/commercial.v1.SubscriptionChangesApplication/PreviewMySubscriptionChange",
@@ -2952,6 +2973,10 @@ export class Commercial_V1_SubscriptionChangesApplicationClient {
 
   listMySubscriptionChangeTargets(request: Commercial_V1_ListMySubscriptionChangeTargetsRequest): Promise<Commercial_V1_ListMySubscriptionChangeTargetsResponse> {
     return this.transport.call<Commercial_V1_ListMySubscriptionChangeTargetsRequest, Commercial_V1_ListMySubscriptionChangeTargetsResponse>(operations["commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChangeTargets"], request);
+  }
+
+  listMySubscriptionChanges(request: Commercial_V1_ListMySubscriptionChangesRequest): Promise<Commercial_V1_ListMySubscriptionChangesResponse> {
+    return this.transport.call<Commercial_V1_ListMySubscriptionChangesRequest, Commercial_V1_ListMySubscriptionChangesResponse>(operations["commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChanges"], request);
   }
 
   previewMySubscriptionChange(request: Commercial_V1_PreviewMySubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangePreviewDTO> {

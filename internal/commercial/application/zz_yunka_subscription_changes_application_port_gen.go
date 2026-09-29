@@ -22,6 +22,7 @@ type SubscriptionChangesApplication interface {
 	GetSubscriptionChangePreview(context.Context, *commercialv1.ReadSubscriptionChangeRequest) (*commercialv1.SubscriptionChangePreviewDTO, error)
 	GetSubscriptionChangeReceipt(context.Context, *commercialv1.ReadSubscriptionChangeRequest) (*commercialv1.SubscriptionChangeReceiptDTO, error)
 	ListMySubscriptionChangeTargets(context.Context, *commercialv1.ListMySubscriptionChangeTargetsRequest) (*commercialv1.ListMySubscriptionChangeTargetsResponse, error)
+	ListMySubscriptionChanges(context.Context, *commercialv1.ListMySubscriptionChangesRequest) (*commercialv1.ListMySubscriptionChangesResponse, error)
 	PreviewMySubscriptionChange(context.Context, *commercialv1.PreviewMySubscriptionChangeRequest) (*commercialv1.SubscriptionChangePreviewDTO, error)
 	PreviewSubscriptionChange(context.Context, *commercialv1.PreviewSubscriptionChangeRequest) (*commercialv1.SubscriptionChangePreviewDTO, error)
 }
