@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ModuleCatalogApplication_CreateModule_FullMethodName             = "/commercial.v1.ModuleCatalogApplication/CreateModule"
-	ModuleCatalogApplication_GetModule_FullMethodName                = "/commercial.v1.ModuleCatalogApplication/GetModule"
-	ModuleCatalogApplication_ListModules_FullMethodName              = "/commercial.v1.ModuleCatalogApplication/ListModules"
-	ModuleCatalogApplication_UpdateModule_FullMethodName             = "/commercial.v1.ModuleCatalogApplication/UpdateModule"
-	ModuleCatalogApplication_SetModuleSalesStatus_FullMethodName     = "/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus"
-	ModuleCatalogApplication_SetModuleTechnicalStatus_FullMethodName = "/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus"
-	ModuleCatalogApplication_DeleteModule_FullMethodName             = "/commercial.v1.ModuleCatalogApplication/DeleteModule"
+	ModuleCatalogApplication_CreateModule_FullMethodName                    = "/commercial.v1.ModuleCatalogApplication/CreateModule"
+	ModuleCatalogApplication_GetModule_FullMethodName                       = "/commercial.v1.ModuleCatalogApplication/GetModule"
+	ModuleCatalogApplication_ListModules_FullMethodName                     = "/commercial.v1.ModuleCatalogApplication/ListModules"
+	ModuleCatalogApplication_UpdateModule_FullMethodName                    = "/commercial.v1.ModuleCatalogApplication/UpdateModule"
+	ModuleCatalogApplication_SetModuleSalesStatus_FullMethodName            = "/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus"
+	ModuleCatalogApplication_SetModuleTechnicalStatus_FullMethodName        = "/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus"
+	ModuleCatalogApplication_DeleteModule_FullMethodName                    = "/commercial.v1.ModuleCatalogApplication/DeleteModule"
+	ModuleCatalogApplication_RecordModuleRuntimeVerification_FullMethodName = "/commercial.v1.ModuleCatalogApplication/RecordModuleRuntimeVerification"
 )
 
 // ModuleCatalogApplicationClient is the client API for ModuleCatalogApplication service.
@@ -39,6 +40,7 @@ type ModuleCatalogApplicationClient interface {
 	SetModuleSalesStatus(ctx context.Context, in *SetModuleSalesStatusRequest, opts ...grpc.CallOption) (*ModuleDTO, error)
 	SetModuleTechnicalStatus(ctx context.Context, in *SetModuleTechnicalStatusRequest, opts ...grpc.CallOption) (*ModuleDTO, error)
 	DeleteModule(ctx context.Context, in *DeleteModuleRequest, opts ...grpc.CallOption) (*DeleteModuleResponse, error)
+	RecordModuleRuntimeVerification(ctx context.Context, in *RecordModuleRuntimeVerificationRequest, opts ...grpc.CallOption) (*ModuleDTO, error)
 }
 
 type moduleCatalogApplicationClient struct {
@@ -119,6 +121,16 @@ func (c *moduleCatalogApplicationClient) DeleteModule(ctx context.Context, in *D
 	return out, nil
 }
 
+func (c *moduleCatalogApplicationClient) RecordModuleRuntimeVerification(ctx context.Context, in *RecordModuleRuntimeVerificationRequest, opts ...grpc.CallOption) (*ModuleDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ModuleDTO)
+	err := c.cc.Invoke(ctx, ModuleCatalogApplication_RecordModuleRuntimeVerification_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ModuleCatalogApplicationServer is the server API for ModuleCatalogApplication service.
 // All implementations should embed UnimplementedModuleCatalogApplicationServer
 // for forward compatibility.
@@ -130,6 +142,7 @@ type ModuleCatalogApplicationServer interface {
 	SetModuleSalesStatus(context.Context, *SetModuleSalesStatusRequest) (*ModuleDTO, error)
 	SetModuleTechnicalStatus(context.Context, *SetModuleTechnicalStatusRequest) (*ModuleDTO, error)
 	DeleteModule(context.Context, *DeleteModuleRequest) (*DeleteModuleResponse, error)
+	RecordModuleRuntimeVerification(context.Context, *RecordModuleRuntimeVerificationRequest) (*ModuleDTO, error)
 }
 
 // UnimplementedModuleCatalogApplicationServer should be embedded to have
@@ -159,6 +172,9 @@ func (UnimplementedModuleCatalogApplicationServer) SetModuleTechnicalStatus(cont
 }
 func (UnimplementedModuleCatalogApplicationServer) DeleteModule(context.Context, *DeleteModuleRequest) (*DeleteModuleResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteModule not implemented")
+}
+func (UnimplementedModuleCatalogApplicationServer) RecordModuleRuntimeVerification(context.Context, *RecordModuleRuntimeVerificationRequest) (*ModuleDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecordModuleRuntimeVerification not implemented")
 }
 func (UnimplementedModuleCatalogApplicationServer) testEmbeddedByValue() {}
 
@@ -306,6 +322,24 @@ func _ModuleCatalogApplication_DeleteModule_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ModuleCatalogApplication_RecordModuleRuntimeVerification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordModuleRuntimeVerificationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModuleCatalogApplicationServer).RecordModuleRuntimeVerification(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModuleCatalogApplication_RecordModuleRuntimeVerification_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModuleCatalogApplicationServer).RecordModuleRuntimeVerification(ctx, req.(*RecordModuleRuntimeVerificationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ModuleCatalogApplication_ServiceDesc is the grpc.ServiceDesc for ModuleCatalogApplication service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -340,6 +374,10 @@ var ModuleCatalogApplication_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteModule",
 			Handler:    _ModuleCatalogApplication_DeleteModule_Handler,
+		},
+		{
+			MethodName: "RecordModuleRuntimeVerification",
+			Handler:    _ModuleCatalogApplication_RecordModuleRuntimeVerification_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

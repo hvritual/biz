@@ -15,6 +15,7 @@ export const operationIds = [
   "commercial.module.get",
   "commercial.module.list",
   "commercial.module.plan_catalog",
+  "commercial.module.runtime.verify",
   "commercial.module.set_sales_status",
   "commercial.module.set_technical_status",
   "commercial.module.update",

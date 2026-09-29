@@ -106,6 +106,13 @@ var generatedActions = []Action{
 		RPC: "", HTTP: []HTTPBinding{},
 	},
 	{
+		Code: "commercial.module.runtime.verify", Domain: "commercial", Application: "module_catalog", UseCase: "record_module_runtime_verification",
+		TenantRequired: false, Authentication: []string{"api-key"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.module.runtime.verify")}, PermissionMode: "all",
+		Classification: "platform_management", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "/commercial.v1.ModuleCatalogApplication/RecordModuleRuntimeVerification", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/internal/commercial/modules/{module_code}/runtime-verifications"}},
+	},
+	{
 		Code: "commercial.module.set_sales_status", Domain: "commercial", Application: "module_catalog", UseCase: "set_module_sales_status",
 		TenantRequired: false, Authentication: []string{"api-key", "web-session"},
 		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.module.manage")}, PermissionMode: "all",
