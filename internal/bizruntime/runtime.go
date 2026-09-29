@@ -17,6 +17,7 @@ import (
 	"github.com/hvritual/biz/internal/commercial/application/entitlementmanagement"
 	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	"github.com/hvritual/biz/internal/commercial/enforcement"
+	"github.com/hvritual/biz/internal/commercial/featurecatalog"
 	commercialpersistence "github.com/hvritual/biz/internal/commercial/infrastructure/persistence"
 	"github.com/hvritual/biz/internal/commercial/modulecatalog"
 	commercialports "github.com/hvritual/biz/internal/commercial/ports"
@@ -331,6 +332,10 @@ func bindRuntimeWithSecurity(
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
+	featureStore, err := featurecatalog.NewStore(accessDatabase)
+	if err != nil {
+		return generatedassembly.RuntimeBindings{}, err
+	}
 	var memberAppeals *accesspersistence.MemberAppealService
 	var selfSecurity *accesspersistence.TenantSelfSecurityService
 	var memberPasswordRecovery *accesspersistence.TenantMemberPasswordRecoveryService
@@ -398,6 +403,9 @@ func bindRuntimeWithSecurity(
 		}
 		if err := commercialStore.Migrate(ctx); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: commercial module catalog migrate: %w", err)
+		}
+		if err := featureStore.Migrate(ctx); err != nil {
+			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: commercial feature catalog migrate: %w", err)
 		}
 		if err := commercialpersistence.MigrateEntitlements(ctx, accessDatabase); err != nil {
 			return generatedassembly.RuntimeBindings{}, fmt.Errorf("biz runtime: entitlement sources migrate: %w", err)
