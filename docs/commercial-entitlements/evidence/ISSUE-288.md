@@ -21,7 +21,7 @@ Bounded source selection: `StatusBadge`, `PlansView`, `CommercialPlansView`, `Pl
 
 Read `.agents/skills/better-typography/PROJECT-INTEGRATION.md`, `SKILL.md`, spacing/sizing and wrapping references at pinned upstream `267330e1adfc66a718fb65fa6918c1f06d0a689e`. CoffeeLink V1.2 remains authoritative. Preserve the existing system font, caption token and nowrap status label; never shrink text to conceal overflow.
 
-The added Playwright cases explicitly use API fixtures. They exercise five true subscription states in Chinese/English and long unknown identifiers at 1366x768, 1440x900, 1536x1024 and 390x844. They do not prove a real subscription transition. Screenshots remain Actions artifacts, not committed assets.
+The added Playwright cases explicitly use API fixtures. A further qualification helper uses an ephemeral, loopback-only extension and `chrome.tabs.setZoom/getZoom` to request and read back 200% actual browser zoom. It also checks the unchanged outer window, doubled device-pixel ratio, halved CSS viewport and unchanged CSS zoom, verifies quota-tab interaction in both locales, and re-runs the source-derived Registry selection. Temporary browser profiles/extensions are removed; they are never shipped in product assets. These additional cases still require their own executed candidate evidence. They exercise five true subscription states in Chinese/English and long unknown identifiers at 1366x768, 1440x900, 1536x1024 and 390x844. They do not prove a real subscription transition. Screenshots remain Actions artifacts, not committed assets.
 
 ## Verification status at implementation
 
@@ -35,3 +35,9 @@ The added Playwright cases explicitly use API fixtures. They exercise five true 
 ## Exit and recovery
 
 Keep #288 open until its actual candidate qualification, rendered checks, full merge gate and main receipt are verified. Record run/attempt and candidate SHA in the PR, not guessed hashes in this source document. On failure, inspect the terminal evidence and repair the cause without deleting assertions or weakening gates. A revert restores only presentation/check changes; backend commercial facts remain unchanged.
+
+## Additional qualification boundary
+
+The first candidate `76a6b1fde6b2ea3eb6bf82ffc44c999e525b7dc4` passed PR Qualification `36570010531` attempt 1, including the full Web Fast Gate and product browser regression. That result does not certify later commits. The API-mode subscription-state and native zoom cases require the dedicated plan-read qualification.
+
+A local browser probe encountered managed extension/URL restrictions. It was stopped without changing browser policy. No local browser PASS is claimed; the repository's existing GitHub Actions browser environment remains the qualification runner. The new browser helper follows Chrome Tabs API and Playwright persistent Chromium APIs, not a CSS scaling approximation.

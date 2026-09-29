@@ -1,6 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { installApiFailFast } from './ui.helpers'
 import { mkdirSync } from 'node:fs'
+import { qualifyCommercialStateZoom } from './commercial-state-zoom.helpers'
 
 test.skip(!process.env.ENTERPRISE_PLAN_REAL_E2E, 'runs only against the VITE_DATA_MODE=api build')
 
@@ -282,4 +283,10 @@ test('commercial status typography (API fixture): unknown long values remain neu
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width)
     await page.screenshot({ path: `screenshots/commercial-status-unknown-${viewport.width}.png`, fullPage: false })
   }
+})
+
+test('commercial status typography (API fixture): actual 200 percent browser zoom preserves bilingual state and quota navigation', async ({ browserName }, info) => {
+  test.setTimeout(90000)
+  expect(browserName).toBe('chromium')
+  await qualifyCommercialStateZoom(info, (page) => mockPlanServer(page, { subscriptionState: 'GRACE' }))
 })
