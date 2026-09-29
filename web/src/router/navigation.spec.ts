@@ -3,11 +3,13 @@ import { customerDomains } from './customerNavigation'
 import {
   enterpriseNavigation,
   isPrimaryNavigationActive,
+  platformCommercialQuickActions,
   platformCommercialNavigation,
   primaryNavigation,
   systemNavigation,
   systemQuickActions,
   quickActions,
+  visiblePlatformCommercialNavigation,
 } from './navigation'
 
 function groups(domain: string) {
@@ -119,6 +121,18 @@ describe('primary navigation information architecture', () => {
       '总览', '租户生命周期', '产品与定价', '权益与授权', '计量与治理',
     ])
     expect(platformCommercialNavigation.every((item) => item.path?.startsWith('/platform/'))).toBe(true)
+  })
+
+  it('exposes only real commercial authority in production navigation and quick actions', () => {
+    expect(visiblePlatformCommercialNavigation().map((item) => item.id)).toEqual([
+      'overview', 'tenants', 'modules', 'plans', 'tenant-entitlements',
+    ])
+    const authorityByPath = new Map(platformCommercialNavigation.map((item) => [item.path, item.commercialAuthority]))
+    expect(platformCommercialQuickActions.every((item) => authorityByPath.get(item.path) === 'real')).toBe(true)
+    expect(platformCommercialNavigation
+      .filter((item) => item.commercialAuthority === 'preview')
+      .every((item) => !visiblePlatformCommercialNavigation().some((visible) => visible.id === item.id)))
+      .toBe(true)
   })
 
   it('keeps system settings tenant-scoped and free of platform or enterprise shortcuts', () => {

@@ -1,5 +1,6 @@
 const templates = new Set(['ListPage', 'WorkbenchPage', 'FormPage', 'MetricsPage'])
 const surfaces = new Set(['platform', 'tenant', 'runtime'])
+const commercialAuthorities = new Set(['real', 'preview', 'planned'])
 const flags = [
   'platform_surface_forbids_runtime_console', 'navigation_overlay_must_not_push_content',
   'screenshots_are_acceptance_evidence', 'navigation_section_groups_required',
@@ -77,13 +78,17 @@ export function validateUiContract(contract) {
   if (!Array.isArray(contract.routes) || !contract.routes.length) throw new Error('$.routes: expected non-empty array')
   const paths = new Set()
   for (const page of contract.routes) {
-    object(page, '$.routes[]', ['path', 'component', 'surface', 'template', 'required_regions', 'states', 'purpose', 'exceptions'])
+    object(page, '$.routes[]', ['path', 'component', 'surface', 'template', 'commercial_authority', 'required_regions', 'states', 'purpose', 'exceptions'])
     for (const key of ['path', 'component', 'surface', 'template']) text(page[key], `route.${key}`)
     if (!page.path.startsWith('/') || !page.component.startsWith('@/')) throw new Error(`Invalid route/component reference: ${page.path}`)
     if (paths.has(page.path)) throw new Error(`Duplicate page contract: ${page.path}`)
     paths.add(page.path)
     if (!surfaces.has(page.surface)) throw new Error(`Unknown surface: ${page.surface}`)
     if (!templates.has(page.template)) throw new Error(`Unknown page template: ${page.template}`)
+    const commercialRoute = page.path.startsWith('/platform/commercial/')
+    if (commercialRoute && !commercialAuthorities.has(page.commercial_authority)) throw new Error(`${page.path}: commercial_authority must be real, preview or planned`)
+    if (!commercialRoute && page.commercial_authority !== undefined) throw new Error(`${page.path}: commercial_authority belongs only to platform commercial routes`)
+    if (page.commercial_authority === 'preview' && !page.required_regions?.includes('preview')) throw new Error(`${page.path}: preview authority requires a preview region`)
     strings(page.required_regions, `${page.path}.required_regions`, true)
     if (page.states !== undefined) strings(page.states, `${page.path}.states`)
     if (page.purpose !== undefined) text(page.purpose, `${page.path}.purpose`)

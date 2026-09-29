@@ -211,6 +211,8 @@ export function checkUiModel(root) {
   const routes = reader.router(resolve(root, 'src/router/index.ts'))
   const navigationFile = resolve(root, 'src/router/navigation.ts')
   const primary = reader.exported(navigationFile, 'primaryNavigation')
+  const platformCommercial = reader.exported(navigationFile, 'platformCommercialNavigation')
+  const platformCommercialQuickActions = reader.exported(navigationFile, 'platformCommercialQuickActions')
   const domains = reader.exported(resolve(root, 'src/router/customerNavigation.ts'), 'customerDomains')
   const failures = []
   const same = (actual, expected) => JSON.stringify(actual) === JSON.stringify(expected)
@@ -250,6 +252,7 @@ export function checkUiModel(root) {
   if (componentFile(rentalRoot?.component) !== reader.file('@/features/customer/pages/CustomerAreaView.vue')) failures.push('Rental collection must preserve its CustomerArea action context')
 
   const pageContracts = new Map(contract.routes.map((page) => [page.path, page]))
+  const commercialNavigationByPath = new Map(platformCommercial.map((item) => [item.path, item]))
   const leafPaths = new Set()
   for (const route of routes.filter((item) => !item.branch)) {
     if (leafPaths.has(route.path)) failures.push(`Duplicate concrete route: ${route.path}`)
@@ -272,6 +275,30 @@ export function checkUiModel(root) {
     if (route.meta.surface !== page.surface) failures.push(`${page.path}: surface must be ${page.surface}`)
     if (route.meta.pageTemplate !== page.template) failures.push(`${page.path}: pageTemplate must be ${page.template}`)
     failures.push(...verifyPageSource(reader, page, componentFile(route.component)))
+    if (!page.path.startsWith('/platform/commercial/')) continue
+    const authority = page.commercial_authority
+    if (route.meta.commercialAuthority !== authority) failures.push(`${page.path}: route commercialAuthority must match the page contract`)
+    const navigation = commercialNavigationByPath.get(page.path)
+    if (!navigation || navigation.commercialAuthority !== authority) failures.push(`${page.path}: navigation commercialAuthority must match the page contract`)
+    const component = componentFile(route.component)
+    const lifecyclePreview = component === reader.file('@/features/platform/pages/LifecycleManagementView.vue')
+    if (lifecyclePreview && authority !== 'preview') failures.push(`${page.path}: LifecycleManagementView is preview-only`)
+    if (authority === 'real' && lifecyclePreview) failures.push(`${page.path}: real commercial route cannot use LifecycleManagementView`)
+    if (authority === 'preview') {
+      if (!page.required_regions.includes('preview')) failures.push(`${page.path}: preview route must expose its preview identity`)
+      if (component && /@\/services\//.test(readFileSync(component, 'utf8'))) failures.push(`${page.path}: preview route cannot import a business service`)
+    }
+  }
+  if (!readFileSync(resolve(root, 'src/features/app-shell/components/ModulePanel.vue'), 'utf8').includes('visiblePlatformCommercialNavigation')) {
+    failures.push('ModulePanel must consume the production commercial authority projection')
+  }
+  for (const item of platformCommercial) {
+    if (!item.path?.startsWith('/platform/commercial/')) continue
+    if (!['real', 'preview', 'planned'].includes(item.commercialAuthority)) failures.push(`${item.path}: commercial navigation requires an authority level`)
+  }
+  for (const action of platformCommercialQuickActions) {
+    const target = commercialNavigationByPath.get(action.path)
+    if (target && target.commercialAuthority !== 'real') failures.push(`${action.path}: commercial quick action cannot bypass non-real authority`)
   }
   failures.push(...productLanguageFailures(root))
   failures.push(...backendProjectionFailures(root, contract))

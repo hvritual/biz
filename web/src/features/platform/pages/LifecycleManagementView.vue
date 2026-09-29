@@ -14,17 +14,27 @@ const selectedId = ref('')
 const showAction = ref(false)
 const fallbackConfig = platformLifecyclePages.features as LifecyclePageConfig
 const config = computed<LifecyclePageConfig>(() => platformLifecyclePages[String(route.meta.lifecycleKey ?? 'features')] ?? fallbackConfig)
-const statuses = computed(() => Array.from(new Set(config.value.rows.map((row) => row.status))))
+const previewMetrics = computed(() => config.value.metrics.map((metric) => ({ ...metric, value: '—', caption: '仅用于验证信息层级，不代表经营统计。' })))
+const previewRows = computed<LifecycleRow[]>(() => config.value.rows.map((_, index) => ({
+  id: `preview-${index + 1}`,
+  name: `设计验证场景 ${index + 1}`,
+  status: '示例',
+  tone: 'neutral',
+  cells: config.value.columns.map(() => '仅作展示'),
+  summary: '此处仅用于验证列表、详情和响应式布局，不代表租户、套餐、金额或处理结果。',
+  evidence: ['不包含真实业务数据', '不执行写入操作', '正式能力开放后将由对应服务替换'],
+})))
+const statuses = computed(() => Array.from(new Set(previewRows.value.map((row) => row.status))))
 const filteredRows = computed(() => {
   const keyword = query.value.trim().toLowerCase()
-  return config.value.rows.filter((row) => {
+  return previewRows.value.filter((row) => {
     const matchesStatus = status.value === 'all' || row.status === status.value
     const haystack = [row.name, row.status, row.summary, ...row.cells].join(' ').toLowerCase()
     return matchesStatus && (!keyword || haystack.includes(keyword))
   })
 })
 const selectedRow = computed<LifecycleRow | undefined>(() =>
-  config.value.rows.find((row) => row.id === selectedId.value) ?? filteredRows.value[0] ?? config.value.rows[0],
+  previewRows.value.find((row) => row.id === selectedId.value) ?? filteredRows.value[0] ?? previewRows.value[0],
 )
 
 const valueLabels: Record<string, string> = {
@@ -61,7 +71,7 @@ watch(
   () => {
     query.value = ''
     status.value = 'all'
-    selectedId.value = config.value.rows[0]?.id ?? ''
+    selectedId.value = previewRows.value[0]?.id ?? ''
     showAction.value = false
   },
   { immediate: true },
@@ -84,12 +94,12 @@ watch(
         <div><strong>平台管理</strong><StatusBadge text="部分能力待开放" tone="warning" /></div>
         <p>{{ config.authority }}</p>
       </div>
-      <span class="preview-label">只读设计预览</span>
+      <StatusBadge text="设计预览 · 不显示真实业务数据" tone="warning" />
     </section>
 
     <section class="card overview-panel" aria-label="生命周期概览">
       <div class="metrics-strip" data-ui-region="metrics">
-        <article v-for="metric in config.metrics" :key="metric.label" class="metric-item">
+        <article v-for="metric in previewMetrics" :key="metric.label" class="metric-item">
           <span :class="['metric-icon', metric.tone || 'blue']"><AppIcon :name="metric.icon" :size="21" /></span>
           <div>
             <span>{{ metric.label }}</span>
@@ -116,7 +126,7 @@ watch(
     <section v-if="showAction" class="card action-preview" aria-label="操作流程说明">
       <div>
         <span class="section-kicker">操作流程</span>
-        <h2>{{ config.primaryAction }}</h2>
+        <h2>{{ config.title }}交互说明</h2>
         <p>该操作暂未开放；当前仅展示处理步骤和可能影响。</p>
       </div>
       <div class="action-steps">
@@ -150,13 +160,13 @@ watch(
       <div class="data-pane" data-ui-region="data">
         <div class="data-toolbar">
           <div>
-            <span class="section-kicker">管理记录</span>
-            <h2>{{ config.title }}记录</h2>
-            <p>按当前筛选条件展示管理对象；示例记录不代表真实业务结果。</p>
+            <span class="section-kicker">设计验证场景</span>
+            <h2>{{ config.title }}交互布局</h2>
+            <p>筛选、列表和详情只用于验证信息架构；不显示经营事实或处理结果。</p>
           </div>
           <div class="toolbar-actions">
-            <StatusBadge text="示例记录" tone="neutral" />
-            <UiButton @click="showAction = !showAction"><AppIcon name="plus" :size="15" />{{ config.primaryAction }}</UiButton>
+            <StatusBadge text="仅作展示" tone="neutral" />
+            <UiButton @click="showAction = !showAction"><AppIcon name="plus" :size="15" />查看交互说明</UiButton>
           </div>
         </div>
 
@@ -205,7 +215,6 @@ watch(
 .integration-copy { flex: 1; min-width: 0; }
 .integration-copy > div { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
 .integration-copy p { margin-top: 3px; color: var(--color-text-secondary); font-size: var(--text-xs); line-height: 1.55; }
-.preview-label { color: var(--color-text-muted); font-size: var(--text-xs); white-space: nowrap; }
 .overview-panel { overflow: hidden; }
 .metrics-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .metric-item { display: flex; align-items: flex-start; gap: 12px; min-width: 0; padding: 17px 18px; border-right: 1px solid var(--color-border); }

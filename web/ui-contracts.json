@@ -168,6 +168,7 @@
       "component": "@/features/platform/pages/CommercialModulesView.vue",
       "surface": "platform",
       "template": "ListPage",
+      "commercial_authority": "real",
       "required_regions": [
         "page-heading",
         "metrics",
@@ -180,6 +181,7 @@
       "component": "@/features/platform/pages/CommercialPlansView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
+      "commercial_authority": "real",
       "required_regions": [
         "page-heading",
         "authority",
@@ -195,6 +197,7 @@
       "component": "@/features/platform/pages/CommercialTenantEntitlementsView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
+      "commercial_authority": "real",
       "required_regions": [
         "page-heading",
         "authority",
@@ -297,6 +300,7 @@
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
+      "commercial_authority": "preview",
       "required_regions": [
         "page-heading",
         "preview",
@@ -312,6 +316,7 @@
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
+      "commercial_authority": "preview",
       "required_regions": [
         "page-heading",
         "preview",
@@ -327,6 +332,7 @@
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
+      "commercial_authority": "preview",
       "required_regions": [
         "page-heading",
         "preview",
@@ -342,6 +348,7 @@
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
+      "commercial_authority": "preview",
       "required_regions": [
         "page-heading",
         "preview",
@@ -357,6 +364,7 @@
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
+      "commercial_authority": "preview",
       "required_regions": [
         "page-heading",
         "preview",
@@ -372,6 +380,7 @@
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
+      "commercial_authority": "preview",
       "required_regions": [
         "page-heading",
         "preview",
@@ -387,6 +396,7 @@
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
+      "commercial_authority": "preview",
       "required_regions": [
         "page-heading",
         "preview",
@@ -402,6 +412,7 @@
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
+      "commercial_authority": "preview",
       "required_regions": [
         "page-heading",
         "preview",
@@ -417,6 +428,7 @@
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
+      "commercial_authority": "preview",
       "required_regions": [
         "page-heading",
         "preview",
@@ -432,6 +444,7 @@
       "component": "@/features/platform/pages/LifecycleManagementView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
+      "commercial_authority": "preview",
       "required_regions": [
         "page-heading",
         "preview",
