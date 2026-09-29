@@ -72,7 +72,7 @@ func TestCE09DeclaredChangeSecurityAndTransportAreExact(t *testing.T) {
 		case "commercial.subscription.change.preview", "commercial.subscription.change.confirm", "commercial.subscription.change.preview.get", "commercial.subscription.change.get":
 			platformSeen[op.ID] = true
 			assertCE09PlatformOperation(t, op)
-		case "commercial.subscription.change.targets_my", "commercial.subscription.change.preview_my", "commercial.subscription.change.preview_my.get", "commercial.subscription.change.confirm_my", "commercial.subscription.change.get_my":
+		case "commercial.subscription.change.targets_my", "commercial.subscription.change.preview_my", "commercial.subscription.change.preview_my.get", "commercial.subscription.change.confirm_my", "commercial.subscription.change.get_my", "commercial.subscription.change.list_my":
 			tenantSeen[op.ID] = true
 			assertCE09TenantOperation(t, op)
 		default:
@@ -85,13 +85,13 @@ func TestCE09DeclaredChangeSecurityAndTransportAreExact(t *testing.T) {
 	if len(platformSeen) != 4 {
 		t.Fatalf("platform change operations=%d", len(platformSeen))
 	}
-	if len(tenantSeen) != 5 {
+	if len(tenantSeen) != 6 {
 		t.Fatalf("tenant change operations=%d", len(tenantSeen))
 	}
 
 	descriptor := v1.File_commercial_v1_subscription_change_proto.Services().ByName("SubscriptionChangesApplication")
-	if descriptor == nil || descriptor.Methods().Len() != 11 {
-		t.Fatalf("subscription change RPC count=%v, want 11", func() int {
+	if descriptor == nil || descriptor.Methods().Len() != 12 {
+		t.Fatalf("subscription change RPC count=%v, want 12", func() int {
 			if descriptor == nil {
 				return -1
 			}
@@ -117,6 +117,7 @@ func TestCE09DeclaredChangeSecurityAndTransportAreExact(t *testing.T) {
 		(&v1.ReadMySubscriptionChangePreviewRequest{}).ProtoReflect().Descriptor(),
 		(&v1.ConfirmMySubscriptionChangeRequest{}).ProtoReflect().Descriptor(),
 		(&v1.ReadMySubscriptionChangeReceiptRequest{}).ProtoReflect().Descriptor(),
+		(&v1.ListMySubscriptionChangesRequest{}).ProtoReflect().Descriptor(),
 	}
 	for _, message := range tenantMessages {
 		assertNoCE09AuthorityFields(t, message, true)

@@ -71,6 +71,7 @@ func TestCE13PlatformCommercialWebSessionContract(t *testing.T) {
 		"commercial.subscription.change.preview_my.get":   {},
 		"commercial.subscription.change.confirm_my":       {},
 		"commercial.subscription.change.get_my":           {},
+		"commercial.subscription.change.list_my":          {},
 		"commercial.subscription.payment.order.create_my": {},
 		"commercial.subscription.payment.order.get_my":    {},
 	}
