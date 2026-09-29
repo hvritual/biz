@@ -111,7 +111,7 @@ func (s *Service) Create(ctx context.Context, c CreateCommand) (Module, error) {
 		if def.ImplementationReady {
 			tech = TechnicalReady
 		}
-		row := moduleRow{Code: c.Code, Name: c.Name, Category: c.Category, SalesScopeJSON: encode(normalized(c.SalesScope)), TechnicalStatus: string(tech), SalesStatus: string(SalesSellable), Version: 1, CreatedAt: now, UpdatedAt: now}
+		row := moduleRow{Code: c.Code, Name: c.Name, Category: c.Category, SalesScopeJSON: encode(normalized(c.SalesScope)), TechnicalStatus: string(tech), SalesStatus: string(SalesRetired), Version: 1, CreatedAt: now, UpdatedAt: now}
 		if err := tx.Create(&row).Error; err != nil {
 			return err
 		}
@@ -158,7 +158,7 @@ func (s *Service) List(ctx context.Context) ([]Module, error) {
 }
 
 func (s *Service) Update(ctx context.Context, c UpdateCommand) (Module, error) {
-	return s.mutate(ctx, c.RequestID, c.Code, c.Reason, c.Version, "update", func(row *moduleRow, def Definition) error {
+	return s.mutate(ctx, c.RequestID, c.Code, c.Reason, c.Version, "update", false, func(row *moduleRow, def Definition) error {
 		if strings.TrimSpace(c.Name) == "" {
 			return ErrInvalidRequest
 		}
@@ -172,7 +172,7 @@ func (s *Service) SetSalesStatus(ctx context.Context, c StatusCommand) (Module, 
 	if c.Sales != SalesSellable && c.Sales != SalesRetired {
 		return Module{}, ErrInvalidRequest
 	}
-	return s.mutate(ctx, c.RequestID, c.Code, c.Reason, c.Version, "sales_status", func(row *moduleRow, _ Definition) error { row.SalesStatus = string(c.Sales); return nil })
+	return s.mutate(ctx, c.RequestID, c.Code, c.Reason, c.Version, "sales_status", c.Sales == SalesSellable, func(row *moduleRow, _ Definition) error { row.SalesStatus = string(c.Sales); return nil })
 }
 
 // RecordRuntimeVerification is intentionally service-token-only. A human
@@ -218,7 +218,7 @@ func (s *Service) SetTechnicalStatus(ctx context.Context, c StatusCommand) (Modu
 	if c.Technical != TechnicalNotReady && c.Technical != TechnicalReady && c.Technical != TechnicalDisabled {
 		return Module{}, ErrInvalidRequest
 	}
-	return s.mutate(ctx, c.RequestID, c.Code, c.Reason, c.Version, "technical_status", func(row *moduleRow, d Definition) error {
+	return s.mutate(ctx, c.RequestID, c.Code, c.Reason, c.Version, "technical_status", false, func(row *moduleRow, d Definition) error {
 		if c.Technical == TechnicalReady && !d.ImplementationReady {
 			return ErrImplementationUnavailable
 		}
@@ -226,7 +226,7 @@ func (s *Service) SetTechnicalStatus(ctx context.Context, c StatusCommand) (Modu
 		return nil
 	})
 }
-func (s *Service) mutate(ctx context.Context, requestID, code, reason string, version uint64, op string, change func(*moduleRow, Definition) error) (Module, error) {
+func (s *Service) mutate(ctx context.Context, requestID, code, reason string, version uint64, op string, requireRuntimeAdmission bool, change func(*moduleRow, Definition) error) (Module, error) {
 	actor, err := platformActor(ctx)
 	if err != nil {
 		return Module{}, err
@@ -256,9 +256,23 @@ func (s *Service) mutate(ctx context.Context, requestID, code, reason string, ve
 		if row.Version != version {
 			return ErrConflict
 		}
+		if requireRuntimeAdmission {
+			verified, err := runtimeVerified(tx, code, version)
+			if err != nil {
+				return err
+			}
+			if !verified {
+				return ErrRuntimeAdmissionRequired
+			}
+		}
 		before := rowToModule(row, def)
 		if err := change(&row, def); err != nil {
 			return err
+		}
+		if op == "update" || op == "technical_status" {
+			// A changed catalog version has no matching runtime receipt. It remains
+			// technically available but cannot stay sellable until CI re-verifies it.
+			row.SalesStatus = string(SalesRetired)
 		}
 		now := time.Now().UTC()
 		res := tx.Model(&moduleRow{}).Where("module_code = ? AND version = ?", code, version).Updates(map[string]any{"name": row.Name, "category": row.Category, "sales_scope_json": row.SalesScopeJSON, "technical_status": row.TechnicalStatus, "sales_status": row.SalesStatus, "version": gorm.Expr("version + 1"), "updated_at": now})
@@ -277,6 +291,14 @@ func (s *Service) mutate(ctx context.Context, requestID, code, reason string, ve
 		return saveIdempotent(tx, requestID, op, code, out)
 	})
 	return out, err
+}
+
+func runtimeVerified(tx *gorm.DB, code string, version uint64) (bool, error) {
+	var count int64
+	if err := tx.Model(&runtimeVerificationRow{}).Where("module_code = ? AND module_version = ?", code, version).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count == 1, nil
 }
 
 func (s *Service) Delete(ctx context.Context, c DeleteCommand) error {
