@@ -23,7 +23,6 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-	"yunka.io/framework/core/identity"
 	"yunka.io/framework/execution"
 	"yunka.io/gateway/authz"
 )
@@ -53,7 +52,7 @@ func ce07New(t *testing.T) *ce07Environment {
 	if err != nil {
 		t.Fatal(err)
 	}
-	verifier := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:ce07", Roles: []string{"signed-service-api"}, Authenticated: true, AuthMethod: identity.AuthMethodAPIKey})
+	verifier := ce04RuntimeVerifier()
 	conn, err := grpc.DialContext(context.Background(), e.runtime.GRPCAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatal(err)
@@ -64,14 +63,17 @@ func ce07New(t *testing.T) *ce07Environment {
 		if err != nil {
 			t.Fatal(err)
 		}
+		if m.Version == 0 {
+			t.Fatalf("catalog get omitted authoritative version for %s: %+v", code, m)
+		}
 		if err := moduleService.RecordRuntimeVerification(verifier, modulecatalog.RuntimeVerificationCommand{ModuleCode: code, ModuleVersion: m.Version, EvidenceDigest: strings.Repeat("a", 64), SourceTree: strings.Repeat("b", 64)}); err != nil {
-			t.Fatal(err)
+			t.Fatalf("record runtime verification for %s v%d: %v", code, m.Version, err)
 		}
 		if m.SalesStatus != v1.ModuleSalesStatus_MODULE_SALES_STATUS_SELLABLE {
 			k := ce04Random(t)
 			m, err = e.catalog.SetModuleSalesStatus(ce04Context(token, k), &v1.SetModuleSalesStatusRequest{RequestId: k, ModuleCode: code, Version: m.Version, SalesStatus: v1.ModuleSalesStatus_MODULE_SALES_STATUS_SELLABLE, Reason: "CE07 isolated fixture restoration"})
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("set sellable status for %s v%d after runtime verification: %v", code, m.Version, err)
 			}
 		}
 		if len(m.SalesScope) > 0 {

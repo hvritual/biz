@@ -22,7 +22,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
 	"gorm.io/gorm"
-	"yunka.io/framework/core/identity"
 	"yunka.io/framework/platform"
 	"yunka.io/gateway/authz"
 	"yunka.io/pkg/logExt"
@@ -118,7 +117,7 @@ func seedB122DefaultSubscription(t *testing.T, started *bizruntime.Started, db *
 	if err != nil {
 		t.Fatal(err)
 	}
-	verifier := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:b12", Roles: []string{"signed-service-api"}, Authenticated: true, AuthMethod: identity.AuthMethodAPIKey})
+	verifier := ce04RuntimeVerifier()
 	if err := moduleService.RecordRuntimeVerification(verifier, modulecatalog.RuntimeVerificationCommand{ModuleCode: module.GetModuleCode(), ModuleVersion: module.GetVersion(), EvidenceDigest: strings.Repeat("a", 64), SourceTree: strings.Repeat("b", 64)}); err != nil {
 		t.Fatal(err)
 	}
