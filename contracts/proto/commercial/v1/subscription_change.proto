@@ -58,20 +58,6 @@ message ReadMySubscriptionChangeReceiptRequest { string change_id = 1; }
 message ListMySubscriptionChangesRequest { uint32 page_size = 1; string before_confirmed_at = 2; string before_change_id = 3; }
 message ListMySubscriptionChangesResponse { repeated SubscriptionChangeReceiptDTO receipts = 1; string next_before_confirmed_at = 2; string next_before_change_id = 3; }
 
-message CreateMyPaymentOrderRequest {
- string request_id = 1;
- string change_id = 2;
- string preview_hash = 3;
- // WECHAT_NATIVE for PC QR payment, ALIPAY_PAGE for PC redirect payment.
- string provider = 4;
-}
-message GetMyPaymentOrderRequest { string order_id = 1; }
-message PaymentOrderDTO {
- string order_id = 1; string change_id = 2; string plan_code = 3; uint64 plan_version = 4;
- string price_ref = 5; string currency = 6; uint64 amount_minor = 7; string provider = 8;
- string state = 9; uint64 revision = 10; string provider_transaction_id = 11;
- string created_at = 12; string expires_at = 13; string paid_at = 14;
-}
 
 message SubscriptionChangeDependency { string module_code = 1; repeated string requires_modules = 2; }
 message SubscriptionChangeQuotaImpact {
@@ -167,14 +153,6 @@ service SubscriptionChangesApplication {
    option (google.api.http) = {get: "/v1/tenant/subscription/changes"};
    option (yunka.dsl.v1.operation) = {id: "commercial.subscription.change.list_my" use_case: "list_my_subscription_changes" permissions: "tenant.subscription.manage" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: {transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE}};
   }
- rpc CreateMyPaymentOrder(CreateMyPaymentOrderRequest) returns (PaymentOrderDTO) {
-  option (google.api.http) = { post: "/v1/tenant/subscription/payment-orders" body: "*" };
-  option (yunka.dsl.v1.operation) = { id: "commercial.subscription.payment.order.create_my" use_case: "create_my_payment_order" permissions: "tenant.subscription.manage" permissions: "commercial.catalog.read" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION requires_operations: "commercial.plan.subscription_snapshot" composition: COMPOSITION_LOCAL execution: {transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED} };
- }
- rpc GetMyPaymentOrder(GetMyPaymentOrderRequest) returns (PaymentOrderDTO) {
-  option (google.api.http) = { get: "/v1/tenant/subscription/payment-orders/{order_id}" };
-  option (yunka.dsl.v1.operation) = { id: "commercial.subscription.payment.order.get_my" use_case: "get_my_payment_order" permissions: "tenant.subscription.manage" permission_mode: PERMISSION_ALL tenant_required: true authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: {transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE} };
- }
 
  rpc PreviewSubscriptionChange(PreviewSubscriptionChangeRequest) returns (SubscriptionChangePreviewDTO) {
   option (google.api.http) = { post: "/v1/platform/tenants/{tenant_id}/subscription/change-previews" body: "*" };
