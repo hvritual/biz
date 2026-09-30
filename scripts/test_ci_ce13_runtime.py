@@ -54,14 +54,14 @@ class SourceContractTests(unittest.TestCase):
 
     def test_plan_browser_prep_after_generation_rejected(self):
         block = (
-            "      - name: Start CE13 browser dependency preparation\\n"
-            "        run: bash biz/scripts/ci_ce13_browser.sh start plan\\n\\n"
+            "      - name: Start CE13 browser dependency preparation\n"
+            "        run: bash biz/scripts/ci_ce13_browser.sh start plan\n\n"
         )
         self.mutated(
             ".github/workflows/ce13-plan-catalog-qualification.yml",
             lambda s: s.replace(block, "", 1).replace(
-                "      - name: Wait for workflow-owned CE13 MySQL\\n",
-                block + "      - name: Wait for workflow-owned CE13 MySQL\\n",
+                "      - name: Wait for workflow-owned CE13 MySQL\n",
+                block + "      - name: Wait for workflow-owned CE13 MySQL\n",
                 1,
             ),
         )
