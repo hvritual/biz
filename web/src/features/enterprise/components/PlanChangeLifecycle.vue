@@ -5,14 +5,10 @@ import { currentUiLocale } from '@/i18n'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import { UiButton, UiInput } from '@/ui/base'
-import PlanTargetDetails from '@/features/enterprise/components/PlanTargetDetails.vue'
-import PlanChangeReceipt from '@/features/enterprise/components/PlanChangeReceipt.vue'
-import PlanChangeConfirmDialog from '@/features/enterprise/components/PlanChangeConfirmDialog.vue'
 import PlanChangeImpactList from '@/features/enterprise/components/PlanChangeImpactList.vue'
 import PlanChangePreparationImpact from '@/features/enterprise/components/PlanChangePreparationImpact.vue'
 import type {
   PlanVersionDTO,
-  PaymentOrderDTO,
   SubscriptionChangePreviewDTO,
   SubscriptionChangeReceiptDTO,
   TenantSubscriptionDTO,
@@ -20,14 +16,12 @@ import type {
 import type { TrustedSession } from '@/services/runtime/api'
 import {
   confirmMySubscriptionChange,
-  createMyPaymentOrder,
   getMySubscriptionChangeReceipt,
   listMySubscriptionChangeTargets,
   needsExternalCommercialApproval,
   previewMySubscriptionChange,
   tenantChangeRuntimeError,
   type TenantChangeAction,
-  type TenantPaymentProvider,
 } from '@/services/enterprise/planChangeRuntime'
 
 const props = defineProps<{
@@ -44,11 +38,9 @@ const selectedTarget = ref<PlanVersionDTO | null>(null)
 const effectiveAt = ref('')
 const preview = ref<SubscriptionChangePreviewDTO | null>(null)
 const receipt = ref<SubscriptionChangeReceiptDTO | null>(null)
-const paymentOrder = ref<PaymentOrderDTO | null>(null)
 const working = ref(false)
 const errorMessage = ref('')
 const receiptRefreshing = ref(false)
-const confirmationOpen = ref(false)
 let receiptTimer: ReturnType<typeof setInterval> | undefined
 let restoredPendingKey = ''
 
@@ -90,7 +82,6 @@ watch(action, () => {
   preview.value = null
   receipt.value = null
   stopReceiptSync()
-  paymentOrder.value = null
   errorMessage.value = ''
   if (action.value === 'STOP_RENEWAL') effectiveAt.value = ''
 })
@@ -98,10 +89,7 @@ watch(action, () => {
 function priceLabel(target: PlanVersionDTO | undefined) {
   const terms = target?.terms
   if (!String(terms?.priceRef ?? '').trim()) return '免费开通'
-  const amount = Number(terms?.amountMinor)
-  const currency = String(terms?.currency ?? '')
-  if (!Number.isSafeInteger(amount) || amount < 1 || !/^[A-Z]{3}$/.test(currency)) return '价格待确认'
-  return new Intl.NumberFormat(currentUiLocale(), { style: 'currency', currency }).format(amount / 100)
+  return '费用按销售方案确认'
 }
 
 function validityLabel(target: PlanVersionDTO | undefined) {
@@ -116,19 +104,6 @@ function planLabel(kind: BackendTermKind, values?: string[]) {
   return values?.length ? values.map((value) => backendTermLabel(kind, value)).join(' · ') : '未声明适用范围'
 }
 
-async function createPaymentOrder(provider: TenantPaymentProvider) {
-  if (!preview.value) return
-  working.value = true
-  errorMessage.value = ''
-  try {
-    paymentOrder.value = await createMyPaymentOrder(props.session, preview.value, provider)
-  } catch (error) {
-    paymentOrder.value = null
-    errorMessage.value = tenantChangeRuntimeError(error)
-  } finally {
-    working.value = false
-  }
-}
 
 function classificationLabel(value?: string) {
   return backendTermLabel('changeClassification', value)
@@ -168,7 +143,6 @@ async function openLifecycle() {
 
 function resetLifecycle() {
   stopReceiptSync()
-  confirmationOpen.value = false
   preview.value = null
   receipt.value = null
   errorMessage.value = ''
@@ -195,7 +169,6 @@ async function restorePendingChange() {
     }
     receipt.value = recovered
     preview.value = null
-    paymentOrder.value = null
     if (receiptNeedsSync(recovered)) startReceiptSync()
     else emit('changed')
   } catch (error) {
@@ -252,7 +225,6 @@ async function confirmPreview() {
   working.value = true
   errorMessage.value = ''
   try {
-    confirmationOpen.value = false
     receipt.value = await confirmMySubscriptionChange(props.session, preview.value)
     if (receiptNeedsSync(receipt.value)) startReceiptSync()
     else emit('changed')
@@ -329,7 +301,6 @@ async function confirmPreview() {
             </UiButton>
             <div v-if="targets.length === 0" class="empty-target">当前销售范围没有其他可切换的已发布套餐。</div>
           </div>
-          <PlanTargetDetails v-if="selectedTarget" :target="selectedTarget" />
         </div>
 
         <div class="form-grid">
@@ -384,20 +355,7 @@ async function confirmPreview() {
           </div>
         </section>
 
-        <div v-if="approvalRequired" class="approval-card" data-plan-change-external-approval>
-          <AppIcon name="shield" :size="20" />
-          <div class="flex-1"><strong>选择支付方式并生成订单</strong><p>系统会以当前预览锁定的套餐版本、币种与金额创建订单；支付成功前不会开通新权益。</p>
-            <div v-if="!paymentOrder" class="payment-actions">
-              <UiButton class="btn" :disabled="working" @click="createPaymentOrder('WECHAT_NATIVE')">微信扫码支付</UiButton>
-              <UiButton class="btn" :disabled="working" @click="createPaymentOrder('ALIPAY_PAGE')">支付宝支付</UiButton>
-            </div>
-            <div v-else class="payment-order" data-payment-order>
-              <strong>订单已创建：{{ paymentOrder.orderId }}</strong>
-              <span>{{ paymentOrder.provider === 'WECHAT_NATIVE' ? '微信扫码' : '支付宝网页' }} · {{ paymentOrder.currency }} {{ Number(paymentOrder.amountMinor) / 100 }}</span>
-              <small>订单状态：{{ backendTermLabel('paymentState', paymentOrder.state) }}。完成支付核验后才可进入开通确认；本页不会把创建订单视为已支付或已开通。</small>
-            </div>
-          </div>
-        </div>
+        <div v-if="approvalRequired" class="approval-card" data-plan-change-external-approval><AppIcon name="shield" :size="20" /><div class="flex-1"><strong>需要进一步确认费用</strong><p>该套餐涉及额外费用；本页面不会创建支付订单或把任何浏览器输入视为支付成功。</p></div></div>
 
         <PlanChangePreparationImpact :preview="preview" />
 
@@ -409,15 +367,14 @@ async function confirmPreview() {
             class="btn primary"
             :disabled="working || approvalRequired || preview.quotaValidationRequired"
             data-plan-change-confirm
-            @click="confirmationOpen = true"
+            @click="confirmPreview"
           >
             {{ approvalRequired ? '等待外部审批' : working ? '正在确认…' : '确认变更' }}
           </UiButton>
         </div>
       </template>
 
-      <PlanChangeReceipt v-else-if="stage === 'receipt' && receipt" :receipt="receipt" :refreshing="receiptRefreshing" @refresh="refreshReceipt" @reset="resetLifecycle" />
-      <PlanChangeConfirmDialog v-if="preview" :open="confirmationOpen" :preview="preview" :pending="working" @close="confirmationOpen = false" @confirm="confirmPreview" />
+      <div v-else-if="stage === 'receipt' && receipt" class="result-hero" data-plan-change-receipt><span class="result-icon"><AppIcon name="check" :size="28" /></span><div><span class="field-label">套餐变更结果</span><h3>{{ backendTermLabel('receiptStatus', receipt.status) }}</h3><p>确认时间 {{ formatDate(receipt.confirmedAt) }} · 生效时间 {{ formatDate(receipt.effectiveAt) }}</p></div><StatusBadge :text="backendTermLabel('receiptStatus', receipt.status)" :dot="false" /><UiButton class="btn" @click="resetLifecycle">发起其他变更</UiButton></div>
     </div>
   </section>
 </template>
