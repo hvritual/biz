@@ -101,6 +101,9 @@ jobs:
           GOBIN="$RUNNER_TEMP/protobuf-bin" go install "google.golang.org/grpc/cmd/protoc-gen-go-grpc@${{ steps.lock.outputs.protoc_gen_go_grpc_version }}"
           echo "$RUNNER_TEMP/protobuf-bin" >> "$GITHUB_PATH"
 
+      - name: Start CE13 browser dependency preparation
+        run: bash biz/scripts/ci_ce13_browser.sh start plan
+
       - name: Verify deterministic contract generation
         shell: bash
         run: |
@@ -112,9 +115,6 @@ jobs:
           make -C biz check YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
           make -C biz generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
           test -z "$(git -C biz status --porcelain)" || { git -C biz status --short; git -C biz diff --stat; exit 1; }
-
-      - name: Start CE13 browser dependency preparation
-        run: bash biz/scripts/ci_ce13_browser.sh start plan
 
       - name: Wait for workflow-owned CE13 MySQL
         run: bash biz/scripts/ci_ce13_mysql.sh wait plan
@@ -195,10 +195,10 @@ jobs:
         run: bash biz/scripts/ci_ce13_browser.sh wait plan
 
       - name: Run plan catalog browser authority chain
-        working-directory: biz/web
         shell: bash
         run: |
           set -euo pipefail
+          cd "$RUNNER_TEMP/ce13-plan/web"
           npx playwright test --config playwright.ce13-plan-catalog.config.ts
           python3 - <<'PY'
           import json
@@ -238,6 +238,7 @@ jobs:
         run: |
           set +e
           mkdir -p biz/web/test-results
+          cp -a "$RUNNER_TEMP/ce13-plan/web/test-results/." biz/web/test-results/ 2>/dev/null || true
           cp "$RUNNER_TEMP/ce13-catalog-idp.log" biz/web/test-results/ce13-catalog-idp.log 2>/dev/null
           cp "$RUNNER_TEMP/ce13-catalog-biz.log" biz/web/test-results/ce13-catalog-biz.log 2>/dev/null
           cp "$RUNNER_TEMP/ce13-plan/mysql-launch.log" biz/web/test-results/ce13-plan-mysql-launch.log 2>/dev/null

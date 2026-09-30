@@ -17,7 +17,17 @@ start)
   ;;
 prepare)
   trap 'rc=$?; echo "$rc" > "$out/browser-prep.exit"' EXIT
-  cd "${GITHUB_WORKSPACE:?}/biz/web"
+  source_web="${GITHUB_WORKSPACE:?}/biz/web"
+  isolated_web="$out/web"
+  rm -rf "$isolated_web"
+  mkdir -p "$isolated_web"
+  tar -C "$source_web" \
+    --exclude='./node_modules' \
+    --exclude='./test-results' \
+    --exclude='./playwright-report' \
+    --exclude='./dist' \
+    -cf - . | tar -C "$isolated_web" -xf -
+  cd "$isolated_web"
   npm ci
   npx playwright install --with-deps --only-shell chromium
   if ! fc-match "Noto Sans CJK SC" | grep -qi 'Noto Sans CJK'; then
