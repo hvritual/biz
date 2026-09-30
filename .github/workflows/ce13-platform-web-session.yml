@@ -198,10 +198,10 @@ jobs:
         run: bash biz/scripts/ci_ce13_browser.sh wait session
 
       - name: Start Vue console proxy
-        working-directory: biz/web
         shell: bash
         run: |
           set -euo pipefail
+          cd "$RUNNER_TEMP/ce13-session/web"
           VITE_DATA_MODE=api BIZ_DEV_API_TARGET="http://127.0.0.1:18080" nohup node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 14183 >"$RUNNER_TEMP/ce13-vite.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/ce13-vite.pid"
           for attempt in $(seq 1 60); do
@@ -211,10 +211,10 @@ jobs:
           curl -fsS http://127.0.0.1:14183/ >/dev/null
 
       - name: Run trusted platform browser authority chain
-        working-directory: biz/web
         shell: bash
         run: |
           set -euo pipefail
+          cd "$RUNNER_TEMP/ce13-session/web"
           npx playwright test --config playwright.ce13-platform.config.ts
           python3 - <<'PY'
           import json
@@ -256,6 +256,7 @@ jobs:
         run: |
           set +e
           mkdir -p biz/web/test-results
+          cp -a "$RUNNER_TEMP/ce13-session/web/test-results/." biz/web/test-results/ 2>/dev/null || true
           cp "$RUNNER_TEMP/ce13-idp.log" biz/web/test-results/ce13-idp.log 2>/dev/null
           cp "$RUNNER_TEMP/ce13-biz.log" biz/web/test-results/ce13-biz.log 2>/dev/null
           cp "$RUNNER_TEMP/ce13-vite.log" biz/web/test-results/ce13-vite.log 2>/dev/null

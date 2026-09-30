@@ -41,10 +41,17 @@ def check(root=ROOT):
                 f"ci_ce13_mysql.sh wait {lane}" in text and
                 f"ci_ce13_mysql.sh stop {lane}" in text,
                 "CE13_OWNED_MYSQL_REQUIRED:" + lane)
-        require(f"ci_ce13_browser.sh start {lane}" in text and
+        browser_start = f"ci_ce13_browser.sh start {lane}"
+        require(browser_start in text and
                 f"ci_ce13_browser.sh wait {lane}" in text and
                 f"ci_ce13_browser.sh stop {lane}" in text,
                 "CE13_BROWSER_PREP_REQUIRED:" + lane)
+        require(text.index(browser_start) < text.index("make -C biz generate"),
+                "CE13_BROWSER_PREP_PARALLELISM_REQUIRED:" + lane)
+        isolated_root = f'cd "$RUNNER_TEMP/ce13-{lane}/web"'
+        required_isolated_uses = 2 if lane == "session" else 1
+        require(text.count(isolated_root) >= required_isolated_uses,
+                "CE13_BROWSER_ISOLATED_WORKSPACE_REQUIRED:" + lane)
         require("go -C biz run" not in text, "CE13_GO_RUN_RECOMPILE_REINTRODUCED:" + lane)
         for marker in spec["builds"]:
             require(marker in text, "CE13_PREBUILT_RUNTIME_MISSING:" + lane + ":" + marker)
@@ -72,6 +79,13 @@ def check(root=ROOT):
             "CE13_BROWSER_OWNERSHIP_GUARD_MISSING")
     require("npx playwright install --with-deps --only-shell chromium" in browser_helper,
             "CE13_HEADLESS_ONLY_REQUIRED")
+    require('source_web="${GITHUB_WORKSPACE:?}/biz/web"' in browser_helper and
+            'isolated_web="$out/web"' in browser_helper and
+            'tar -C "$source_web"' in browser_helper and
+            'cd "$isolated_web"' in browser_helper,
+            "CE13_BROWSER_ISOLATION_MISSING")
+    require('cd "${GITHUB_WORKSPACE:?}/biz/web"' not in browser_helper,
+            "CE13_BROWSER_SOURCE_TREE_WRITE_REINTRODUCED")
     require('fc-match "Noto Sans CJK SC"' in browser_helper,
             "CE13_FONT_PROBE_REQUIRED")
 
