@@ -40,6 +40,14 @@ type planRefRow struct {
 
 func (planRefRow) TableName() string { return "biz_commercial_plan_module_refs" }
 
+type planFeatureRefRow struct {
+	PlanCode    string `gorm:"column:plan_code;primaryKey"`
+	Version     uint64 `gorm:"primaryKey"`
+	FeatureCode string `gorm:"column:feature_code;primaryKey"`
+}
+
+func (planFeatureRefRow) TableName() string { return "biz_commercial_plan_feature_refs" }
+
 type planReceiptRow struct {
 	PlanCode    string `gorm:"column:plan_code;primaryKey"`
 	RequestID   string `gorm:"column:request_id;primaryKey"`
@@ -222,6 +230,14 @@ func (r *planRepository) Save(ctx context.Context, head ports.PlanHead, before *
 		}
 		for _, m := range v.Terms.Modules {
 			if err := db.Create(&planRefRow{PlanCode: v.PlanCode, Version: v.Number, ModuleCode: m.Code}).Error; err != nil {
+				return err
+			}
+		}
+		if err := db.Where("plan_code=? AND version=?", v.PlanCode, v.Number).Delete(&planFeatureRefRow{}).Error; err != nil {
+			return err
+		}
+		for _, feature := range v.Terms.FeatureCodes {
+			if err := db.Create(&planFeatureRefRow{PlanCode: v.PlanCode, Version: v.Number, FeatureCode: feature}).Error; err != nil {
 				return err
 			}
 		}

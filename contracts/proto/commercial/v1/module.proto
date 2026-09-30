@@ -126,6 +126,18 @@ service ModuleCatalogApplication {
       response_type: "commercial.v1.ListModulesResponse"
       application_method: "ReadEntitlementCatalog"
     }
+    operations: {
+      id: "commercial.feature.plan_catalog"
+      use_case: "read_plan_feature_catalog"
+      permissions: "commercial.catalog.read"
+      permission_mode: PERMISSION_ALL
+      tenant_required: false
+      authentication: AUTHENTICATION_API_KEY
+      execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE }
+      request_type: "commercial.v1.ListCommercialFeaturesRequest"
+      response_type: "commercial.v1.ListCommercialFeaturesResponse"
+      application_method: "ReadPlanFeatureCatalog"
+    }
   };
 
   rpc CreateModule(CreateModuleRequest) returns (ModuleDTO) {

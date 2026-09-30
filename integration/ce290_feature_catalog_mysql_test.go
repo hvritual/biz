@@ -27,6 +27,13 @@ func TestCE290MySQLCommercialFeaturePlatformAuthorityAndReferenceImpact(t *testi
 	if err != nil || created.ProductState != "DRAFT" || created.Version != 1 {
 		t.Fatalf("create=%+v err=%v", created, err)
 	}
+	draftCode := "marketing-draft-" + ce04Random(t)[:8]
+	if _, err := e.catalog.CreateCommercialFeature(e.ctx(), &v1.CreateCommercialFeatureRequest{RequestId: ce04Random(t), FeatureCode: draftCode, Name: "未发布营销功能", Reason: "CE290 publish boundary", ModuleRefs: []*v1.CommercialFeatureModuleReference{{ModuleCode: "access-management", CapabilityCodes: []string{"tenant.lifecycle"}}}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.plans.CreatePlanDraft(e.ctx(), &v1.CreatePlanDraftRequest{RequestId: ce04Random(t), PlanCode: "ce290-draft-feature-" + ce04Random(t), Name: "must reject unpublished feature", Terms: &v1.PlanTerms{Modules: []*v1.PlanModule{{ModuleCode: "access-management", CapabilityCodes: []string{"tenant.lifecycle"}}}, FeatureCodes: []string{draftCode}, SalesScope: []string{"domestic"}, ValidityMode: "unlimited"}, Reason: "CE290 unpublished feature must not sell"}); err == nil {
+		t.Fatal("unpublished commercial feature entered plan draft")
+	}
 	published, err := e.catalog.PublishCommercialFeature(e.ctx(), &v1.CommercialFeatureLifecycleRequest{RequestId: ce04Random(t), FeatureCode: code, Version: created.Version, Reason: "CE290 publish feature"})
 	if err != nil || published.ProductState != "PUBLISHED" || published.SalesState != "SELLABLE" {
 		t.Fatalf("publish=%+v err=%v", published, err)
@@ -42,7 +49,7 @@ func TestCE290MySQLCommercialFeaturePlatformAuthorityAndReferenceImpact(t *testi
 	// UI-maintained feature count.
 	plan, err := e.plans.CreatePlanDraft(e.ctx(), &v1.CreatePlanDraftRequest{
 		RequestId: ce04Random(t), PlanCode: "ce290-access-" + ce04Random(t), Name: "CE290 access reference",
-		Terms:  &v1.PlanTerms{Modules: []*v1.PlanModule{{ModuleCode: "access-management", CapabilityCodes: []string{"tenant.lifecycle"}}}, SalesScope: []string{"domestic"}, ValidityMode: "unlimited"},
+		Terms:  &v1.PlanTerms{Modules: []*v1.PlanModule{{ModuleCode: "access-management", CapabilityCodes: []string{"tenant.lifecycle"}}}, FeatureCodes: []string{code}, SalesScope: []string{"domestic"}, ValidityMode: "unlimited"},
 		Reason: "CE290 reference impact fixture",
 	})
 	if err != nil {
@@ -68,9 +75,15 @@ func TestCE290MySQLCommercialFeaturePlatformAuthorityAndReferenceImpact(t *testi
 		t.Fatalf("REST=%d body=%s err=%v", response.StatusCode, body, readErr)
 	}
 	var list v1.ListCommercialFeaturesResponse
-	if err := protojson.Unmarshal(body, &list); err != nil || len(list.Features) != 1 || list.Features[0].FeatureCode != code {
+	if err := protojson.Unmarshal(body, &list); err != nil {
 		t.Fatalf("REST list=%+v err=%v", &list, err)
 	}
+	for _, feature := range list.Features {
+		if feature.FeatureCode == code {
+			return
+		}
+	}
+	t.Fatalf("REST list omitted published feature %s: %+v", code, &list)
 }
 
 func TestCE290MySQLFeatureLifecyclePreservesRunningTenantsUntilMigrationCompletes(t *testing.T) {
@@ -136,11 +149,17 @@ func TestCE290MySQLFeatureLifecyclePreservesRunningTenantsUntilMigrationComplete
 	if err := db.Exec("INSERT INTO biz_commercial_plan_module_refs(plan_code,version,module_code) VALUES(?,?,?)", "ce290-reference", 1, "device-operations").Error; err != nil {
 		t.Fatal(err)
 	}
+	if err := db.Exec("INSERT INTO biz_commercial_plan_feature_refs(plan_code,version,feature_code) VALUES(?,?,?)", "ce290-reference", 1, feature.Code).Error; err != nil {
+		t.Fatal(err)
+	}
 	_, err = service.Retire(ctx, feature.Code, featurecatalog.Command{RequestID: "ce290-retire-blocked", Version: feature.Version, Reason: "must block"})
 	if !errors.Is(err, featurecatalog.ErrReferences) {
 		t.Fatalf("retire with reference err=%v", err)
 	}
 	if err := db.Exec("DELETE FROM biz_commercial_plan_module_refs WHERE plan_code=? AND version=?", "ce290-reference", 1).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("DELETE FROM biz_commercial_plan_feature_refs WHERE plan_code=? AND version=?", "ce290-reference", 1).Error; err != nil {
 		t.Fatal(err)
 	}
 	feature, err = service.Retire(ctx, feature.Code, featurecatalog.Command{RequestID: "ce290-retire", Version: feature.Version, Reason: "archive complete feature"})

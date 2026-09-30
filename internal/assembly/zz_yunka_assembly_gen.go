@@ -27,7 +27,7 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "ba53166b39a8c828a05f5f122c411d69864c50f1a8855cf3eb1483a77e5e17e3"
+const AssemblyPlanDigest = "32f2a15a7ed1828ef8d599ee6d1ab68a9b1e9bdb4122017b4794f7a925a7e154"
 
 type AccessTenantAuditManagementDependencies struct {
 }

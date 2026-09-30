@@ -2904,6 +2904,12 @@
       },
       "commercial_v1_PlanTerms": {
         "properties": {
+          "featureCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "modules": {
             "items": {
               "$ref": "#/components/schemas/commercial_v1_PlanModule"

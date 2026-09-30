@@ -1,17 +1,17 @@
 {
   "schema_version": 1,
-  "mapping_version": "28",
+  "mapping_version": "29",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "8e2317a6609aa3cb989b67ab80a35d7f2c6eb4cf58e348cf0fba1f758a0d2ad8",
-    "contracts/generated/manifest.json": "dd3047e011faa6bf067681d2fdb3171a034c0c5caebb9f8e3239d2b71ec55696",
-    "contracts/generated/operation-plans.json": "bf1a1f275e89a1445c78b774f1e7c36f4d0dc4eb9fabe45174a75f8ac052bf1d",
+    "contracts/commercial/operation-capabilities.v1.json": "03b5e88c8b95b0ca714667418d2d40b344da642a4d7ba20a00c624e6fb7509c3",
+    "contracts/generated/manifest.json": "40b3592c77e41ff58eae981df56f96b0bb8369ec34a447a59cef0342555450e8",
+    "contracts/generated/operation-plans.json": "44cb96c4f6ec9802f6cff9e712d48c8452faf2e6eba4e4e82f54656ee7aaedd3",
     "internal/access/application/member_business_scope.go": "9401a3c99e75c62aeb364d49d21ef6028e32be54d6daf8c75f393e62f09ba76e",
     "internal/access/application/tenant_data_policy.go": "e50a4bbf3ce4b7eca729278a92c5be04676dfa0375d3e73b637b3befefea6cf2",
     "internal/access/application/tenant_delegation.go": "b43e6709e61b7867395bc04a901a19c2a54cf4ec9565e875b354b1622e636589",
     "internal/access/application/tenant_member_lifecycle.go": "778632a62d24f2b2f483d516221c0f5bcff17e1a93ecedadf5974825d3cdcf1d",
     "internal/access/application/tenantlifecycle/internal/usecase/service.go": "63e3eba06691d15fa88041b660431b48e87640bfaf35954774595db9880e5d29",
     "internal/commercial/application/entitlementmanagement/internal/usecase/service.go": "6cbcb31645f67104b8089b6c8559a2ff0ba5d6f5eb3b49e6fa56f238040f046c",
-    "internal/commercial/application/planmanagement/internal/usecase/service.go": "3534687bf60f71d844144840891ba957fab28f8452df31fa40940c6c69e221a6",
+    "internal/commercial/application/planmanagement/internal/usecase/service.go": "363fbef037c5ec8049eca198626449d97c87a76a0bd2c77f7c9904a263d40702",
     "internal/commercial/application/planmanagement/internal/usecase/tenant_change.go": "13e38c0942b14e4a8fe35cfdb8965bdb6ea76b9c30de0f7a354f85941eb8b16f",
     "internal/commercial/application/provisioning/internal/usecase/service.go": "92437abf3396ad9a5e3942998cd73940935949f2d06e9d366488448752273341",
     "internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go": "4d96448de0576930278aee623dac140c30ab0183c3d9a238ee54d4b834461758",
@@ -249,6 +249,17 @@
       "always_required_capability_codes": []
     },
     {
+      "operation_id": "commercial.feature.plan_catalog",
+      "classification": "foundation_exempt",
+      "capability_codes": [],
+      "exemption_reason": "Plan 发布链内部读取已发布且可销售的 CommercialFeature；仅能由已认证平台 Plan 根操作组合调用，不能授予租户业务能力。",
+      "children": [],
+      "consumer_type": "internal_child",
+      "tenant_required": false,
+      "required_capability_codes": [],
+      "always_required_capability_codes": []
+    },
+    {
       "operation_id": "commercial.feature.plan_sunset",
       "classification": "platform_management",
       "capability_codes": [],
@@ -455,6 +466,11 @@
       "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
       "children": [
         {
+          "operation_id": "commercial.feature.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        },
+        {
           "operation_id": "commercial.module.plan_catalog",
           "mode": "always",
           "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
@@ -472,6 +488,11 @@
       "capability_codes": [],
       "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
       "children": [
+        {
+          "operation_id": "commercial.feature.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        },
         {
           "operation_id": "commercial.module.plan_catalog",
           "mode": "always",
@@ -545,6 +566,11 @@
       "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
       "children": [
         {
+          "operation_id": "commercial.feature.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        },
+        {
           "operation_id": "commercial.module.plan_catalog",
           "mode": "always",
           "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
@@ -591,6 +617,11 @@
       "capability_codes": [],
       "exemption_reason": "CE-07 platform offer authoring; requires explicit platform.plan permissions and tenantless principal, never grants tenant business access.",
       "children": [
+        {
+          "operation_id": "commercial.feature.plan_catalog",
+          "mode": "always",
+          "source": "internal/commercial/application/planmanagement/internal/usecase/service.go#catalog"
+        },
         {
           "operation_id": "commercial.module.plan_catalog",
           "mode": "always",
