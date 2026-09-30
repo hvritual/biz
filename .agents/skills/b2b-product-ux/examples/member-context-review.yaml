@@ -5,6 +5,7 @@ status: draft
 task_ref:
   issue: '#310'
   baseline_commit: fad8dd14f1b7cc33b5432dbb108b03e0596f1ee6
+  candidate_commit: null
   name: 找到成员，查看后返回原列表（设计示例，未执行）
 classification:
   type: ui_interaction
@@ -206,6 +207,9 @@ handoff:
     status: not_run
 review:
   reviewer: null
+  actor_kind: null
+  scope: null
+  reference: null
   reviewed_at: null
   candidate_sha: null
   decision: not_reviewed

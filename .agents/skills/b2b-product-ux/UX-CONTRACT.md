@@ -13,7 +13,7 @@
 | `schema_version` | 当前为 1；格式变更须有明确迁移和审查 |
 | `artifact_kind` | `template`、`analysis` 或 `example`；template/example 不能充当已执行证据 |
 | `status` | `draft`、`ready_for_review` 或 `reviewed`；独立 reviewer 未记录不能置为 reviewed |
-| `task_ref` | 对应 Issue/用户任务和分析基线；例子不创造已接入的 operation ID |
+| `task_ref` | 对应 Issue/用户任务、`baseline_commit` 与待验证对象版本 `candidate_commit`；例子不创造已接入的 operation ID |
 | `classification` | 八维参考中的任务类型、理由和业务/授权/异步影响；未知项不默认 false |
 | `context` | role/task/entity/workflow/state/action/risk/decision；每项 summary + source_refs |
 | `sources` | ID、kind、path/URI、commit/版本、定位、支持的 claim；引用当前权威，不复制实现 |
@@ -23,9 +23,9 @@
 | `acceptance` | 场景、自动检查、人工检查和测量方法；包括适用失败/权限/异步路径 |
 | `open_questions` | 缺口、是否阻塞、需哪个角色确认；没有答案不能伪装完成 |
 | `handoff` | 允许/禁止文件、需复用来源、gate 与结果；不是自动执行授权 |
-| `review` | 真实 reviewer、日期、候选 SHA 和结论；作者不能代签 |
+| `review` | reviewer、actor_kind、scope、reference、日期、候选 SHA 和结论；引用真实审阅记录，作者不能代签 |
 
-`source_refs` 必须引用 `sources.id`。sources.kind 区分 `repository_contract`、`implementation`、`user_requirement`、`validated_runbook`、`hypothesis`；假设可以支持设计建议，不能证明生产能力。历史文档来源写明日期/commit，若描述与当前源码不同需标冲突。
+`source_refs` 必须引用 `sources.id`。sources.kind 区分 `repository_contract`、`implementation`、`user_requirement`、`validated_runbook`、`hypothesis`；假设可以支持设计建议，不能证明生产能力。历史文档来源写明日期/commit，若描述与当前源码不同需标冲突。`outcome.result_contract_refs` 与 `outcome.recovery_contract_refs` 也必须解析为 `sources.id`，不能只检查 context 中的引用。
 
 ## 九维的稳定键
 
@@ -43,6 +43,20 @@
 
 `evidence_types` 可用 `source_review`、`static_check`、`browser_test`、`api_test`、`user_test`、`independent_review`。`evidence` 每条至少含 type、reference、candidate_sha、scope、result；失败/未运行也诚实记录。语义理解、人类耗时需 user_test；对真实 API 的声明需要 API 证据；所有适用证据未满足前不能给该维综合 pass。
 
+## 证据绑定与审阅状态
+
+`task_ref.candidate_commit` 是本分析所验证的产品/实现快照，不是必须包含该分析文档的提交，避免文档自包含 SHA 的循环。未知时保留 null；`baseline_commit` 只表示分析起点，不能替代目标候选。关联 PR/head 或测试回执必须可核对；候选发生变化后，旧证据保留为历史，不自动延用为新候选 PASS。
+
+每条 evidence 的 candidate_sha 必须与该目标候选一致，type 必须为约定枚举，scope 必须覆盖本维的具体义务；reference 指向可核验记录。result 只允许 pass、fail、not_run。某维声明 pass 时，全部要求的 evidence_types 必须有针对当前义务/候选的通过证据，且没有尚未处置的失败；用静态检查代替用户测试、把失败结果改称通过、仅填一个存在的链接都不成立。重复执行的旧失败可以保留，但必须在引用记录中说明修复、重验和被替代关系，不能删除失败来制造全绿。
+
+模板和本目录示例只允许 draft；applicability 可分析，但 verification 只能是 not_verified 或有理由的 not_applicable。要记录执行证据，另在当前任务已授权的位置使用 artifact_kind: analysis，不能把教学示例转成生产验收回执。
+
+review.decision 使用 not_reviewed、approved、changes_requested；actor_kind 使用 human、automated 或 null；scope 明确审阅的是文档/设计还是实际任务体验。reference 必须指向真实审阅提交/评论/记录，并与 reviewer、日期和候选一致。身份字段非空不证明有独立审阅，实施 Agent 不能自己填写另一个名字。
+
+status: reviewed 只表示所声明范围的审阅已完成，decision 必须是 approved 或 changes_requested；它不自动表示业务完成或所有九维通过。approved 不能带有该 scope 内未解决的 blocking 问题；有阻塞可以记录 changes_requested。draft/ready_for_review 对应 not_reviewed，review 字段默认 null。人工 UX 批准需要 human 及对应范围的真实记录；自动审查不能冒充人工批准。设计分析可以在执行测试尚未开展时获得“设计范围”审阅，但未测量维度仍保留 not_verified。
+
+本次是在首版合并前补齐 v1 草案字段；旧草案补入 candidate_commit 和 review 的 actor_kind/scope/reference 为 null，再按真实记录填写，不自动迁移成已验收。后续已发布格式的变化仍须按版本迁移审查。
+
 ## 写操作的条件义务
 
 存在业务写操作时，context.action/risk 与 outcome 至少引用：允许执行的前提和作用域、操作前影响、真实受理/进度/结果、适用幂等/并发规则、失败/结果未知的处理路径及权威回读。引用缺失则记录阻塞，不允许在模板中写虚构实现。
@@ -53,7 +67,7 @@
 
 ## 测量
 
-每个 metric 记录 ID、定义/起止点、角色/任务/设备条件、baseline、target、observed、unit、sample_size、失败/放弃口径及 evidence_ref。未测量数值使用 null，不用 0；sample_size 的 0 只表示确实尚无样本。
+每个 metric 记录 ID、定义/起止点、角色/任务/设备条件、baseline、target、observed、unit、sample_size、失败/放弃口径及 evidence_ref。未测量数值使用 null，不用 0；sample_size 的 0 只表示确实尚无样本。observed 非 null 时必须有正整数 sample_size 和可核验 evidence_ref，且证据对应当前候选、metric 和 conditions；不能只把 sample_size 改成 1 就声称测过。失败/放弃、基线和当前样本分别说明，证据不能指向空记录。
 
 历史例子中的 3 秒、5 秒、两次跳转不预填为目标。先确认能测什么；Playwright 速度不等于真人 TTI/TTA。没有基线不写效率改善百分比。
 

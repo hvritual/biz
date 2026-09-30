@@ -5,6 +5,7 @@ status: draft
 task_ref:
   issue: null
   baseline_commit: null
+  candidate_commit: null
   name: null
 classification:
   type: unknown
@@ -127,6 +128,9 @@ handoff:
   gates: []
 review:
   reviewer: null
+  actor_kind: null
+  scope: null
+  reference: null
   reviewed_at: null
   candidate_sha: null
   decision: not_reviewed
