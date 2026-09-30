@@ -40,7 +40,7 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin "$BASE_SHA" --depth=1
-          git diff --name-only "$BASE_SHA" "$HEAD_SHA" | python3 scripts/ci_changed_files_router.py --github-output "$GITHUB_OUTPUT"
+          git diff --no-renames --name-only "$BASE_SHA" "$HEAD_SHA" | python3 scripts/ci_changed_files_router.py --github-output "$GITHUB_OUTPUT"
 
   freeze-candidate:
     needs: route
