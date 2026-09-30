@@ -12,6 +12,12 @@ class RouteTests(unittest.TestCase):
         self.assertFalse(result["merge_gate_required"])
 
 
+    def test_empty_change_set_is_fail_closed_product_change(self):
+        result = route([])
+        self.assertEqual(result["change_class"], "product_change")
+        self.assertTrue(result["product_change"])
+        self.assertTrue(result["merge_gate_required"])
+
     def test_skill_only_routes_to_lightweight_skill_lane(self):
         result = route([
             ".agents/skills/b2b-product-ux/SKILL.md",
