@@ -38,6 +38,25 @@ class ProgressTests(unittest.TestCase):
         self.assertFalse(result['merge_gate_required'])
         self.assertEqual(result['state'], 'LIGHTWEIGHT_QUALIFIED')
 
+    def test_removed_runtime_plus_skill_escalates_to_product_change(self):
+        self.files = [
+            {'filename': '.agents/skills/b2b-product-ux/SKILL.md', 'status': 'modified'},
+            {'filename': 'internal/access/application/runtime.go', 'status': 'removed'},
+        ]
+        result = derive(self.pull, self.files, [self.q], self.jobs, 182, ui_required=False)
+        self.assertEqual(result['change_class'], 'product_change')
+        self.assertTrue(result['merge_gate_required'])
+        self.assertEqual(result['state'], 'QUALIFIED')
+
+    def test_renamed_runtime_into_skill_uses_previous_filename(self):
+        self.files = [
+            {'filename': '.agents/skills/b2b-product-ux/runtime.go', 'previous_filename': 'Makefile',
+             'status': 'renamed'},
+        ]
+        result = derive(self.pull, self.files, [self.q], self.jobs, 182, ui_required=False)
+        self.assertEqual(result['change_class'], 'product_change')
+        self.assertTrue(result['merge_gate_required'])
+
     def test_skill_only_uses_lightweight_gate_without_ui_requirement(self):
         self.files = [
             {'filename': '.agents/skills/b2b-product-ux/SKILL.md', 'status': 'modified'},
