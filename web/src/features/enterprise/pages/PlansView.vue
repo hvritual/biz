@@ -182,8 +182,8 @@ function submitDemoChange() {
       />
 
       <section class="card panel-pad" data-ui-region="workspace">
-        <div class="tabs">
-          <UiButton v-for="item in ['套餐概览', '功能权益', '使用额度', '变更记录']" :key="item" :class="['tab', { active: tab === item }]" @click="tab = item">
+        <div class="tabs" role="tablist" aria-label="套餐信息">
+          <UiButton v-for="item in ['套餐概览', '功能权益', '使用额度', '变更记录']" :key="item" role="tab" :aria-selected="tab === item" :class="['tab', { active: tab === item }]" @click="tab = item">
             {{ item }}
           </UiButton>
         </div>
