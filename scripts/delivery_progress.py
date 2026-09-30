@@ -21,9 +21,16 @@ def derive(pull, files, runs, jobs, issue, ui_required=True):
     require(re.search(r'(?im)^\s*(?:refs|fixes|closes|resolves)\s+#' + str(issue) + r'\b', pull.get('body') or ''), 'ISSUE_PR_BINDING_MISSING')
     candidate = pull['head']['sha']
     changed = sorted(f['filename'] for f in files if f.get('status') != 'removed')
+    routing_files = []
+    for item in files:
+        if item.get('filename'):
+            routing_files.append(item['filename'])
+        if item.get('previous_filename'):
+            routing_files.append(item['previous_filename'])
+    routing_files = sorted(set(routing_files))
     ui = [p for p in changed if p.startswith('web/src/features/') and p.endswith('.vue')]
     ui_tests = [p for p in changed if p.startswith(('web/e2e/', 'web/tests/')) and p.endswith(('.spec.ts', '.test.ts'))]
-    routing = route_changes(changed)
+    routing = route_changes(routing_files)
     report = {
         'issue': issue, 'pr': pull['number'], 'candidate_sha': candidate,
         'base_sha': pull['base']['sha'], 'changed_files': changed,
