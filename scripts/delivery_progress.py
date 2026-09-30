@@ -48,7 +48,7 @@ def derive(pull, files, runs, jobs, issue, ui_required=True):
                 'root_causes': root_causes(jobs.get(q['id'], []))}
     if not jobs.get(q['id']):
         return {**report, 'state': 'QUALIFICATION_EVIDENCE_MISSING', 'next_action': 'fetch_actual_jobs_not_assume_success'}
-    if ui_required and not routing['skill_only'] and not routing['design_governance'] and (not ui or not ui_tests):
+    if ui_required and routing['merge_gate_required'] and (not ui or not ui_tests):
         return {**report, 'state': 'BACKEND_QUALIFIED_UI_INCOMPLETE', 'next_action': 'implement_missing_ui_and_acceptance'}
     full = matching_runs(runs, MERGE, candidate, pull['number'])
     if not routing['merge_gate_required']:
