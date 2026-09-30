@@ -12,6 +12,7 @@ import (
 
 type PlanManagementToCommercialModuleCatalogChildCapability interface {
 	ReadPlanCatalog(context.Context, *commercialv1.ListModulesRequest) (*commercialv1.ListModulesResponse, error)
+	ReadPlanFeatureCatalog(context.Context, *commercialv1.ListCommercialFeaturesRequest) (*commercialv1.ListCommercialFeaturesResponse, error)
 }
 
 type c9PlanManagementToCommercialModuleCatalogChildCapability struct {
@@ -31,6 +32,10 @@ func NewPlanManagementToCommercialModuleCatalogChildCapability(application Modul
 
 func (capability *c9PlanManagementToCommercialModuleCatalogChildCapability) ReadPlanCatalog(ctx context.Context, request *commercialv1.ListModulesRequest) (*commercialv1.ListModulesResponse, error) {
 	return operation.ExecuteChildTyped(ctx, capability.executor, commercialpolicy.OperationPlanModuleCatalogReadPlanCatalog(), request, capability.application.ReadPlanCatalog)
+}
+
+func (capability *c9PlanManagementToCommercialModuleCatalogChildCapability) ReadPlanFeatureCatalog(ctx context.Context, request *commercialv1.ListCommercialFeaturesRequest) (*commercialv1.ListCommercialFeaturesResponse, error) {
+	return operation.ExecuteChildTyped(ctx, capability.executor, commercialpolicy.OperationPlanModuleCatalogReadPlanFeatureCatalog(), request, capability.application.ReadPlanFeatureCatalog)
 }
 
 // PlanManagementCapabilities exposes edge-owned C9 child-Operation wrappers for declared operation dependencies.

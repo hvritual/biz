@@ -107,29 +107,26 @@ func (s *Store) Migrate(ctx context.Context) error {
 // plan, subscription and entitlement authorities. A historical subscription
 // remains a blocker until an explicit migration has removed its module ref.
 func (s *Store) ReferenceImpact(ctx context.Context, feature Feature) (ReferenceImpact, error) {
-	modules := make([]string, 0, len(feature.ModuleRefs))
-	for _, reference := range feature.ModuleRefs {
-		modules = append(modules, reference.ModuleCode)
-	}
-	if len(modules) == 0 {
+	if feature.Code == "" {
 		return ReferenceImpact{}, ErrInvalid
 	}
 	impact := ReferenceImpact{}
 	var publishedPlans, activeSubscriptions, entitlementSources int64
 	if err := s.db.WithContext(ctx).Table("biz_commercial_plan_versions AS v").
-		Joins("JOIN biz_commercial_plan_module_refs AS r ON r.plan_code = v.plan_code AND r.version = v.version").
-		Where("v.state = ? AND r.module_code IN ?", "PUBLISHED", modules).
+		Joins("JOIN biz_commercial_plan_feature_refs AS r ON r.plan_code = v.plan_code AND r.version = v.version").
+		Where("v.state = ? AND r.feature_code = ?", "PUBLISHED", feature.Code).
 		Distinct("v.plan_code", "v.version").Count(&publishedPlans).Error; err != nil {
 		return ReferenceImpact{}, err
 	}
 	if err := s.db.WithContext(ctx).Table("biz_commercial_subscriptions AS s").
-		Joins("JOIN biz_commercial_plan_module_refs AS r ON r.plan_code = s.plan_code AND r.version = s.plan_version").
-		Where("r.module_code IN ?", modules).Distinct("s.tenant_id").Count(&activeSubscriptions).Error; err != nil {
+		Joins("JOIN biz_commercial_plan_feature_refs AS r ON r.plan_code = s.plan_code AND r.version = s.plan_version").
+		Where("r.feature_code = ?", feature.Code).Distinct("s.tenant_id").Count(&activeSubscriptions).Error; err != nil {
 		return ReferenceImpact{}, err
 	}
-	if err := s.db.WithContext(ctx).Table("biz_commercial_entitlement_sources").Where("module_code IN ?", modules).Count(&entitlementSources).Error; err != nil {
-		return ReferenceImpact{}, err
-	}
+	// Entitlement sources currently retain their Module-level provenance. A
+	// Plan Feature reference still gives exact Plan/subscription impact; source
+	// migration will add feature provenance before this counter is populated.
+	entitlementSources = 0
 	impact.PublishedPlans = uint64(publishedPlans)
 	impact.ActiveSubscriptions = uint64(activeSubscriptions)
 	impact.EntitlementSources = uint64(entitlementSources)

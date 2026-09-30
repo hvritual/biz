@@ -218,7 +218,9 @@ type PlanTerms struct {
 	ValidityMode string                 `protobuf:"bytes,3,opt,name=validity_mode,json=validityMode,proto3" json:"validity_mode,omitempty"`
 	ValidityDays uint32                 `protobuf:"varint,4,opt,name=validity_days,json=validityDays,proto3" json:"validity_days,omitempty"`
 	// Opaque pricing-owner reference, not a paid flag or amount.
-	PriceRef      string `protobuf:"bytes,5,opt,name=price_ref,json=priceRef,proto3" json:"price_ref,omitempty"`
+	PriceRef string `protobuf:"bytes,5,opt,name=price_ref,json=priceRef,proto3" json:"price_ref,omitempty"`
+	// Customer-facing commercial functions included by this immutable version.
+	FeatureCodes  []string `protobuf:"bytes,6,rep,name=feature_codes,json=featureCodes,proto3" json:"feature_codes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -286,6 +288,13 @@ func (x *PlanTerms) GetPriceRef() string {
 		return x.PriceRef
 	}
 	return ""
+}
+
+func (x *PlanTerms) GetFeatureCodes() []string {
+	if x != nil {
+		return x.FeatureCodes
+	}
+	return nil
 }
 
 type PlanVersionDTO struct {
@@ -1421,14 +1430,15 @@ const file_commercial_v1_plan_proto_rawDesc = "" +
 	"moduleCode\x12)\n" +
 	"\x10capability_codes\x18\x02 \x03(\tR\x0fcapabilityCodes\x120\n" +
 	"\x06quotas\x18\x03 \x03(\v2\x18.commercial.v1.PlanQuotaR\x06quotas\x120\n" +
-	"\x06fields\x18\x04 \x03(\v2\x18.commercial.v1.PlanFieldR\x06fields\"\xc8\x01\n" +
+	"\x06fields\x18\x04 \x03(\v2\x18.commercial.v1.PlanFieldR\x06fields\"\xed\x01\n" +
 	"\tPlanTerms\x123\n" +
 	"\amodules\x18\x01 \x03(\v2\x19.commercial.v1.PlanModuleR\amodules\x12\x1f\n" +
 	"\vsales_scope\x18\x02 \x03(\tR\n" +
 	"salesScope\x12#\n" +
 	"\rvalidity_mode\x18\x03 \x01(\tR\fvalidityMode\x12#\n" +
 	"\rvalidity_days\x18\x04 \x01(\rR\fvalidityDays\x12\x1b\n" +
-	"\tprice_ref\x18\x05 \x01(\tR\bpriceRef\"\x9d\x03\n" +
+	"\tprice_ref\x18\x05 \x01(\tR\bpriceRef\x12#\n" +
+	"\rfeature_codes\x18\x06 \x03(\tR\ffeatureCodes\"\x9d\x03\n" +
 	"\x0ePlanVersionDTO\x12\x1b\n" +
 	"\tplan_code\x18\x01 \x01(\tR\bplanCode\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\x04R\aversion\x12\x1a\n" +
@@ -1525,16 +1535,16 @@ const file_commercial_v1_plan_proto_rawDesc = "" +
 	"\tplan_code\x18\x01 \x01(\tR\bplanCode\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\x04R\aversion\x12\x1f\n" +
 	"\vsales_scope\x18\x03 \x01(\tR\n" +
-	"salesScope2\xce\x19\n" +
-	"\x19PlanManagementApplication\x12\x82\x02\n" +
-	"\x0fCreatePlanDraft\x12%.commercial.v1.CreatePlanDraftRequest\x1a\x1d.commercial.v1.PlanVersionDTO\"\xa8\x01\xe2\xf3\x18\x86\x01\n" +
-	"\x16commercial.plan.create\x12\x11create_plan_draft\x1a\x14platform.plan.manage\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/platform/plans\x12\x9c\x02\n" +
-	"\x11CreatePlanVersion\x12'.commercial.v1.CreatePlanVersionRequest\x1a\x1d.commercial.v1.PlanVersionDTO\"\xbe\x01\xe2\xf3\x18\x87\x01\n" +
-	"\x15commercial.plan.clone\x12\x13create_plan_version\x1a\x14platform.plan.manage\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/platform/plans/{plan_code}/versions\x12\xa1\x02\n" +
-	"\x0fUpdatePlanDraft\x12%.commercial.v1.UpdatePlanDraftRequest\x1a\x1d.commercial.v1.PlanVersionDTO\"\xc7\x01\xe2\xf3\x18\x86\x01\n" +
-	"\x16commercial.plan.update\x12\x11update_plan_draft\x1a\x14platform.plan.manage\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x026:\x01*21/v1/platform/plans/{plan_code}/versions/{version}\x12\xb8\x02\n" +
-	"\x12PublishPlanVersion\x12,.commercial.v1.ChangePlanVersionStateRequest\x1a\x1d.commercial.v1.PlanVersionDTO\"\xd4\x01\xe2\xf3\x18\x8b\x01\n" +
-	"\x17commercial.plan.publish\x12\x14publish_plan_version\x1a\x15platform.plan.publish\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02>:\x01*\"9/v1/platform/plans/{plan_code}/versions/{version}/publish\x12\xb4\x02\n" +
+	"salesScope2\xd2\x1a\n" +
+	"\x19PlanManagementApplication\x12\xa3\x02\n" +
+	"\x0fCreatePlanDraft\x12%.commercial.v1.CreatePlanDraftRequest\x1a\x1d.commercial.v1.PlanVersionDTO\"\xc9\x01\xe2\xf3\x18\xa7\x01\n" +
+	"\x16commercial.plan.create\x12\x11create_plan_draft\x1a\x14platform.plan.manage\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogB\x1fcommercial.feature.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/platform/plans\x12\xbd\x02\n" +
+	"\x11CreatePlanVersion\x12'.commercial.v1.CreatePlanVersionRequest\x1a\x1d.commercial.v1.PlanVersionDTO\"\xdf\x01\xe2\xf3\x18\xa8\x01\n" +
+	"\x15commercial.plan.clone\x12\x13create_plan_version\x1a\x14platform.plan.manage\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogB\x1fcommercial.feature.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/platform/plans/{plan_code}/versions\x12\xc2\x02\n" +
+	"\x0fUpdatePlanDraft\x12%.commercial.v1.UpdatePlanDraftRequest\x1a\x1d.commercial.v1.PlanVersionDTO\"\xe8\x01\xe2\xf3\x18\xa7\x01\n" +
+	"\x16commercial.plan.update\x12\x11update_plan_draft\x1a\x14platform.plan.manage\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogB\x1fcommercial.feature.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x026:\x01*21/v1/platform/plans/{plan_code}/versions/{version}\x12\xd9\x02\n" +
+	"\x12PublishPlanVersion\x12,.commercial.v1.ChangePlanVersionStateRequest\x1a\x1d.commercial.v1.PlanVersionDTO\"\xf5\x01\xe2\xf3\x18\xac\x01\n" +
+	"\x17commercial.plan.publish\x12\x14publish_plan_version\x1a\x15platform.plan.publish\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogB\x1fcommercial.feature.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02>:\x01*\"9/v1/platform/plans/{plan_code}/versions/{version}/publish\x12\xb4\x02\n" +
 	"\x11RetirePlanVersion\x12,.commercial.v1.ChangePlanVersionStateRequest\x1a\x1d.commercial.v1.PlanVersionDTO\"\xd1\x01\xe2\xf3\x18\x89\x01\n" +
 	"\x16commercial.plan.retire\x12\x13retire_plan_version\x1a\x15platform.plan.publish\x1a\x17commercial.catalog.read2\x02\x02\x04B\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02=:\x01*\"8/v1/platform/plans/{plan_code}/versions/{version}/retire\x12\xb2\x01\n" +
 	"\tListPlans\x12\x1f.commercial.v1.ListPlansRequest\x1a .commercial.v1.ListPlansResponse\"b\xe2\xf3\x18D\n" +

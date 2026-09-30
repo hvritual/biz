@@ -5857,6 +5857,14 @@
           "number": 5,
           "kind": "scalar",
           "type": "string"
+        },
+        {
+          "name": "feature_codes",
+          "jsonName": "featureCodes",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
         }
       ],
       "dto": {
@@ -12146,6 +12154,24 @@
         "name": "module_catalog",
         "operations": [
           {
+            "id": "commercial.feature.plan_catalog",
+            "useCase": "read_plan_feature_catalog",
+            "permissions": [
+              "commercial.catalog.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            },
+            "requestType": "commercial.v1.ListCommercialFeaturesRequest",
+            "responseType": "commercial.v1.ListCommercialFeaturesResponse",
+            "applicationMethod": "ReadPlanFeatureCatalog"
+          },
+          {
             "id": "commercial.module.entitlement_catalog",
             "useCase": "read_entitlement_catalog",
             "permissions": [
@@ -12967,6 +12993,7 @@
               "web-session"
             ],
             "requiresOperations": [
+              "commercial.feature.plan_catalog",
               "commercial.module.plan_catalog"
             ],
             "composition": "local",
@@ -13013,6 +13040,7 @@
               "web-session"
             ],
             "requiresOperations": [
+              "commercial.feature.plan_catalog",
               "commercial.module.plan_catalog"
             ],
             "composition": "local",
@@ -13176,6 +13204,7 @@
               "web-session"
             ],
             "requiresOperations": [
+              "commercial.feature.plan_catalog",
               "commercial.module.plan_catalog"
             ],
             "composition": "local",
@@ -13268,6 +13297,7 @@
               "web-session"
             ],
             "requiresOperations": [
+              "commercial.feature.plan_catalog",
               "commercial.module.plan_catalog"
             ],
             "composition": "local",

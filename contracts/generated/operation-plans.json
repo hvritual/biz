@@ -468,6 +468,29 @@
       }
     },
     {
+      "operationId": "commercial.feature.plan_catalog",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "read_plan_feature_catalog",
+      "requestType": "commercial.v1.ListCommercialFeaturesRequest",
+      "responseType": "commercial.v1.ListCommercialFeaturesResponse",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "commercial.catalog.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {}
+    },
+    {
       "operationId": "commercial.feature.plan_sunset",
       "domain": "commercial",
       "application": "module_catalog",
@@ -1000,6 +1023,7 @@
       "composition": {
         "boundary": "local",
         "requiresOperations": [
+          "commercial.feature.plan_catalog",
           "commercial.module.plan_catalog"
         ],
         "permissionClosure": [
@@ -1045,6 +1069,7 @@
       "composition": {
         "boundary": "local",
         "requiresOperations": [
+          "commercial.feature.plan_catalog",
           "commercial.module.plan_catalog"
         ],
         "permissionClosure": [
@@ -1240,6 +1265,7 @@
       "composition": {
         "boundary": "local",
         "requiresOperations": [
+          "commercial.feature.plan_catalog",
           "commercial.module.plan_catalog"
         ],
         "permissionClosure": [
@@ -1356,6 +1382,7 @@
       "composition": {
         "boundary": "local",
         "requiresOperations": [
+          "commercial.feature.plan_catalog",
           "commercial.module.plan_catalog"
         ],
         "permissionClosure": [

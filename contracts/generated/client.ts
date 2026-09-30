@@ -1014,6 +1014,7 @@ export interface Commercial_V1_PlanTerms {
   validityMode?: string;
   validityDays?: number;
   priceRef?: string;
+  featureCodes?: readonly string[];
 }
 
 export interface Commercial_V1_PlanVersionDTO {

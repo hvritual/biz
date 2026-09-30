@@ -52,6 +52,7 @@ type Module struct {
 }
 type Terms struct {
 	Modules      []Module `json:"modules"`
+	FeatureCodes []string `json:"feature_codes"`
 	SalesScope   []string `json:"sales_scope"`
 	ValidityMode string   `json:"validity_mode"`
 	ValidityDays uint32   `json:"validity_days"`
@@ -99,7 +100,7 @@ func allowedScope(scopes []string, target string) bool {
 }
 
 func (t Terms) Validate(c Catalog) error {
-	if len(t.Modules) == 0 || len(t.Modules) > 100 || len(t.SalesScope) == 0 || len(t.SalesScope) > 64 || len(t.PriceRef) > 128 || strings.TrimSpace(t.PriceRef) != t.PriceRef {
+	if len(t.Modules) == 0 || len(t.Modules) > 100 || len(t.FeatureCodes) > 100 || len(t.SalesScope) == 0 || len(t.SalesScope) > 64 || len(t.PriceRef) > 128 || strings.TrimSpace(t.PriceRef) != t.PriceRef {
 		return ErrInvalid
 	}
 	if !((t.ValidityMode == "unlimited" && t.ValidityDays == 0) || (t.ValidityMode == "fixed_days" && t.ValidityDays >= 1 && t.ValidityDays <= 36500)) {
@@ -111,6 +112,13 @@ func (t Terms) Validate(c Catalog) error {
 			return ErrInvalid
 		}
 		seenScope[s] = true
+	}
+	seenFeature := map[string]bool{}
+	for _, feature := range t.FeatureCodes {
+		if !Code(feature) || seenFeature[feature] {
+			return ErrInvalid
+		}
+		seenFeature[feature] = true
 	}
 	selected := map[string]bool{}
 	caps := map[string]bool{}
@@ -175,6 +183,7 @@ func (t Terms) Canonical() Terms {
 	var out Terms
 	_ = json.Unmarshal(b, &out)
 	sort.Strings(out.SalesScope)
+	sort.Strings(out.FeatureCodes)
 	sort.Slice(out.Modules, func(i, j int) bool { return out.Modules[i].Code < out.Modules[j].Code })
 	for i := range out.Modules {
 		m := &out.Modules[i]

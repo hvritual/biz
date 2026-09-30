@@ -98,6 +98,28 @@ func (s *service) catalog(ctx context.Context) (plan.Catalog, error) {
 	return out, nil
 }
 
+func (s *service) validatePlanFeatures(ctx context.Context, terms plan.Terms) error {
+	if len(terms.FeatureCodes) == 0 {
+		return nil
+	}
+	response, err := s.capabilities.CommercialModuleCatalog().ReadPlanFeatureCatalog(ctx, &v1.ListCommercialFeaturesRequest{})
+	if err != nil || response == nil {
+		return plan.ErrCatalog
+	}
+	available := map[string]bool{}
+	for _, feature := range response.Features {
+		if feature != nil && feature.ProductState == "PUBLISHED" && feature.SalesState == "SELLABLE" {
+			available[feature.FeatureCode] = true
+		}
+	}
+	for _, code := range terms.FeatureCodes {
+		if !available[code] {
+			return plan.ErrCatalog
+		}
+	}
+	return nil
+}
+
 type command struct {
 	operation, key, code, name, reason string
 	number, expected                   uint64
@@ -213,6 +235,9 @@ func (s *service) mutate(ctx context.Context, c command) (*v1.PlanVersionDTO, er
 			}
 		}
 		v.Terms = v.Terms.Canonical()
+		if err := s.validatePlanFeatures(call, v.Terms); err != nil {
+			return v, err
+		}
 		v.ContentSHA256 = plan.Hash(v.Name, v.Terms)
 		v.ActorID = a
 		v.Reason = c.reason

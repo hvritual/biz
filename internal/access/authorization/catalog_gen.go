@@ -4,7 +4,7 @@ package authorization
 
 import "yunka.io/gateway/authz"
 
-const CommercialCapabilityMappingVersion = "28"
+const CommercialCapabilityMappingVersion = "29"
 
 var generatedActions = []Action{
 	{
@@ -90,6 +90,13 @@ var generatedActions = []Action{
 		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.module.read")}, PermissionMode: "all",
 		Classification: "platform_management", ModuleCode: "", CapabilityCodes: []string{},
 		RPC: "/commercial.v1.ModuleCatalogApplication/ListCommercialFeatures", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/platform/commercial-features"}},
+	},
+	{
+		Code: "commercial.feature.plan_catalog", Domain: "commercial", Application: "module_catalog", UseCase: "read_plan_feature_catalog",
+		TenantRequired: false, Authentication: []string{"api-key"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("commercial.catalog.read")}, PermissionMode: "all",
+		Classification: "foundation_exempt", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "", HTTP: []HTTPBinding{},
 	},
 	{
 		Code: "commercial.feature.plan_sunset", Domain: "commercial", Application: "module_catalog", UseCase: "plan_commercial_feature_sunset",

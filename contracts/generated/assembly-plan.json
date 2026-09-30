@@ -1147,6 +1147,15 @@
       }
     },
     {
+      "id": "commercial.feature.plan_catalog",
+      "application": "commercial/module_catalog",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.feature.plan_catalog"
+      }
+    },
+    {
       "id": "commercial.feature.plan_sunset",
       "application": "commercial/module_catalog",
       "bindings": [
@@ -4937,11 +4946,29 @@
     },
     {
       "from": "commercial.plan.clone",
+      "to": "commercial.feature.plan_catalog",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.plan.clone/requiresOperations/commercial.feature.plan_catalog"
+      }
+    },
+    {
+      "from": "commercial.plan.clone",
       "to": "commercial.module.plan_catalog",
       "evidence": {
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/commercial.plan.clone/requiresOperations/commercial.module.plan_catalog"
+      }
+    },
+    {
+      "from": "commercial.plan.create",
+      "to": "commercial.feature.plan_catalog",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.plan.create/requiresOperations/commercial.feature.plan_catalog"
       }
     },
     {
@@ -4964,6 +4991,15 @@
     },
     {
       "from": "commercial.plan.publish",
+      "to": "commercial.feature.plan_catalog",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.plan.publish/requiresOperations/commercial.feature.plan_catalog"
+      }
+    },
+    {
+      "from": "commercial.plan.publish",
       "to": "commercial.module.plan_catalog",
       "evidence": {
         "ownership": "reused",
@@ -4978,6 +5014,15 @@
         "ownership": "reused",
         "source": "operation-plans.json",
         "ref": "operations/commercial.plan.retire/requiresOperations/commercial.module.plan_catalog"
+      }
+    },
+    {
+      "from": "commercial.plan.update",
+      "to": "commercial.feature.plan_catalog",
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.plan.update/requiresOperations/commercial.feature.plan_catalog"
       }
     },
     {
@@ -5623,6 +5668,7 @@
         "tenant.update"
       ],
       "internalOperations": [
+        "commercial.feature.plan_catalog",
         "commercial.module.entitlement_catalog",
         "commercial.module.plan_catalog",
         "commercial.plan.change_target.list",

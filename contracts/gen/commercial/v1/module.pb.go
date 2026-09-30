@@ -1555,7 +1555,7 @@ const file_commercial_v1_module_proto_rawDesc = "" +
 	"\x11ModuleSalesStatus\x12#\n" +
 	"\x1fMODULE_SALES_STATUS_UNSPECIFIED\x10\x00\x12 \n" +
 	"\x1cMODULE_SALES_STATUS_SELLABLE\x10\x01\x12\x1f\n" +
-	"\x1bMODULE_SALES_STATUS_RETIRED\x10\x022\xf6\"\n" +
+	"\x1bMODULE_SALES_STATUS_RETIRED\x10\x022\xca$\n" +
 	"\x18ModuleCatalogApplication\x12\xbc\x01\n" +
 	"\fCreateModule\x12\".commercial.v1.CreateModuleRequest\x1a\x18.commercial.v1.ModuleDTO\"n\xe2\xf3\x18K\n" +
 	"\x18commercial.module.create\x12\rcreate_module\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/platform/modules\x12\xb9\x01\n" +
@@ -1589,10 +1589,11 @@ const file_commercial_v1_module_proto_rawDesc = "" +
 	"\"CompleteCommercialFeatureMigration\x120.commercial.v1.CommercialFeatureLifecycleRequest\x1a#.commercial.v1.CommercialFeatureDTO\"\xc1\x01\xe2\xf3\x18p\n" +
 	"%commercial.feature.complete_migration\x12%complete_commercial_feature_migration\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02G:\x01*\"B/v1/platform/commercial-features/{feature_code}/complete-migration\x12\x90\x02\n" +
 	"\x17RetireCommercialFeature\x120.commercial.v1.CommercialFeatureLifecycleRequest\x1a#.commercial.v1.CommercialFeatureDTO\"\x9d\x01\xe2\xf3\x18X\n" +
-	"\x19commercial.feature.retire\x12\x19retire_commercial_feature\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02;:\x01*\"6/v1/platform/commercial-features/{feature_code}/retire\x1a\x86\x03\xda\xf3\x18\x81\x03\n" +
+	"\x19commercial.feature.retire\x12\x19retire_commercial_feature\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02;:\x01*\"6/v1/platform/commercial-features/{feature_code}/retire\x1a\xda\x04\xda\xf3\x18\xd5\x04\n" +
 	"\x0emodule_catalog\x1a\xab\x01\n" +
 	"\x1ecommercial.module.plan_catalog\x12\x11read_plan_catalog\x1a\x17commercial.catalog.read2\x01\x02R\x04\b\x02\x10\x01Z commercial.v1.ListModulesRequestb!commercial.v1.ListModulesResponsej\x0fReadPlanCatalog\x1a\xc0\x01\n" +
-	"%commercial.module.entitlement_catalog\x12\x18read_entitlement_catalog\x1a\x17commercial.catalog.read2\x01\x02R\x04\b\x02\x10\x01Z commercial.v1.ListModulesRequestb!commercial.v1.ListModulesResponsej\x16ReadEntitlementCatalogBV\xca\xf3\x18\x10\n" +
+	"%commercial.module.entitlement_catalog\x12\x18read_entitlement_catalog\x1a\x17commercial.catalog.read2\x01\x02R\x04\b\x02\x10\x01Z commercial.v1.ListModulesRequestb!commercial.v1.ListModulesResponsej\x16ReadEntitlementCatalog\x1a\xd1\x01\n" +
+	"\x1fcommercial.feature.plan_catalog\x12\x19read_plan_feature_catalog\x1a\x17commercial.catalog.read2\x01\x02R\x04\b\x02\x10\x01Z+commercial.v1.ListCommercialFeaturesRequestb,commercial.v1.ListCommercialFeaturesResponsej\x16ReadPlanFeatureCatalogBV\xca\xf3\x18\x10\n" +
 	"\n" +
 	"commercial\x12\x02v1Z@github.com/hvritual/biz/contracts/gen/commercial/v1;commercialv1b\x06proto3"
 

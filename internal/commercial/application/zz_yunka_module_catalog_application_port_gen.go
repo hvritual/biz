@@ -21,6 +21,7 @@ type ModuleCatalogApplication interface {
 	PublishCommercialFeature(context.Context, *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error)
 	ReadEntitlementCatalog(context.Context, *commercialv1.ListModulesRequest) (*commercialv1.ListModulesResponse, error)
 	ReadPlanCatalog(context.Context, *commercialv1.ListModulesRequest) (*commercialv1.ListModulesResponse, error)
+	ReadPlanFeatureCatalog(context.Context, *commercialv1.ListCommercialFeaturesRequest) (*commercialv1.ListCommercialFeaturesResponse, error)
 	RecordModuleRuntimeVerification(context.Context, *commercialv1.RecordModuleRuntimeVerificationRequest) (*commercialv1.ModuleDTO, error)
 	RetireCommercialFeature(context.Context, *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error)
 	SetModuleSalesStatus(context.Context, *commercialv1.SetModuleSalesStatusRequest) (*commercialv1.ModuleDTO, error)
