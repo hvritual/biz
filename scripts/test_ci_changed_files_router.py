@@ -32,6 +32,15 @@ class RouteTests(unittest.TestCase):
         self.assertFalse(result["merge_gate_required"])
         self.assertFalse(result["web_product"])
 
+    def test_renamed_runtime_source_into_skill_stays_product_change(self):
+        result = route([
+            "internal/access/application/runtime.go",
+            ".agents/skills/b2b-product-ux/runtime.go",
+        ])
+        self.assertEqual(result["change_class"], "product_change")
+        self.assertTrue(result["domains"]["access"])
+        self.assertTrue(result["merge_gate_required"])
+
     def test_skill_mixed_with_product_source_escalates_fail_closed(self):
         result = route([
             ".agents/skills/b2b-product-ux/SKILL.md",
