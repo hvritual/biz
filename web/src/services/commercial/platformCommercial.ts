@@ -249,6 +249,20 @@ export interface SubscriptionChangeQuotaImpact {
   evidence: string
 }
 
+export interface SubscriptionChangeImpact {
+  code: string
+  severity: 'INFO' | 'WARNING' | 'DANGER' | string
+  subject: string
+  before: string
+  after: string
+  usageKnown: boolean
+  currentUsage: string | number
+  blocking: boolean
+  actionRequired: string
+  messageKey: string
+  messageParameters: Record<string, string>
+}
+
 export interface SubscriptionChangePreviewDTO {
   changeId: string
   tenantId: string
@@ -273,6 +287,7 @@ export interface SubscriptionChangePreviewDTO {
   dependencies: SubscriptionChangeDependency[]
   quotaImpacts: SubscriptionChangeQuotaImpact[]
   impacts: string[]
+  impactDetails: SubscriptionChangeImpact[]
   pricingBasis: string
   quotaValidationRequired: boolean
   provisioningRequirements: ProvisioningRequirementDTO[]

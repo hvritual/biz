@@ -126,6 +126,19 @@ func (server *SubscriptionChangesOperationServer) ListMySubscriptionChangeTarget
 	return response, nil
 }
 
+func (server *SubscriptionChangesOperationServer) ListMySubscriptionChanges(ctx context.Context, request *commercialv1.ListMySubscriptionChangesRequest) (*commercialv1.ListMySubscriptionChangesResponse, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanSubscriptionChangesListMySubscriptionChanges(), request, server.application.ListMySubscriptionChanges)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *SubscriptionChangesOperationServer) PreviewMySubscriptionChange(ctx context.Context, request *commercialv1.PreviewMySubscriptionChangeRequest) (*commercialv1.SubscriptionChangePreviewDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {

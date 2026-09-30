@@ -840,6 +840,18 @@ export interface Commercial_V1_ListMySubscriptionChangeTargetsResponse {
   targets?: readonly Commercial_V1_PlanVersionDTO[];
 }
 
+export interface Commercial_V1_ListMySubscriptionChangesRequest {
+  pageSize?: number;
+  beforeConfirmedAt?: string;
+  beforeChangeId?: string;
+}
+
+export interface Commercial_V1_ListMySubscriptionChangesResponse {
+  receipts?: readonly Commercial_V1_SubscriptionChangeReceiptDTO[];
+  nextBeforeConfirmedAt?: string;
+  nextBeforeChangeId?: string;
+}
+
 export interface Commercial_V1_ListPlanVersionsRequest {
   planCode?: string;
   afterVersion?: string;
@@ -1080,6 +1092,14 @@ export interface Commercial_V1_ReadSubscriptionChangeRequest {
   changeId?: string;
 }
 
+export interface Commercial_V1_RecordModuleRuntimeVerificationRequest {
+  requestId?: string;
+  moduleCode?: string;
+  moduleVersion?: string;
+  evidenceDigest?: string;
+  sourceTree?: string;
+}
+
 export interface Commercial_V1_RevokeEntitlementOverrideRequest {
   requestId?: string;
   tenantId?: string;
@@ -1109,6 +1129,20 @@ export interface Commercial_V1_SubscriptionChangeDependency {
   requiresModules?: readonly string[];
 }
 
+export interface Commercial_V1_SubscriptionChangeImpact {
+  code?: string;
+  severity?: string;
+  subject?: string;
+  before?: string;
+  after?: string;
+  usageKnown?: boolean;
+  currentUsage?: string;
+  blocking?: boolean;
+  actionRequired?: string;
+  messageKey?: string;
+  messageParameters?: Record<string, string>;
+}
+
 export interface Commercial_V1_SubscriptionChangePreviewDTO {
   changeId?: string;
   tenantId?: string;
@@ -1136,6 +1170,7 @@ export interface Commercial_V1_SubscriptionChangePreviewDTO {
   pricingBasis?: string;
   quotaValidationRequired?: boolean;
   provisioningRequirements?: readonly Commercial_V1_ProvisioningRequirementDTO[];
+  impactDetails?: readonly Commercial_V1_SubscriptionChangeImpact[];
 }
 
 export interface Commercial_V1_SubscriptionChangeQuotaImpact {
@@ -2005,6 +2040,15 @@ export const operations = {
       { method: "GET", path: "/v1/platform/modules" },
     ]
   },
+  "commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification": {
+    fullName: "commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/RecordModuleRuntimeVerification",
+    requestType: "commercial.v1.RecordModuleRuntimeVerificationRequest",
+    responseType: "commercial.v1.ModuleDTO",
+    http: [
+      { method: "POST", path: "/v1/internal/commercial/modules/{module_code}/runtime-verifications", body: "*" },
+    ]
+  },
   "commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus": {
     fullName: "commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus",
     rpcPath: "/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus",
@@ -2219,6 +2263,15 @@ export const operations = {
     responseType: "commercial.v1.ListMySubscriptionChangeTargetsResponse",
     http: [
       { method: "GET", path: "/v1/tenant/subscription/change-targets" },
+    ]
+  },
+  "commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChanges": {
+    fullName: "commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChanges",
+    rpcPath: "/commercial.v1.SubscriptionChangesApplication/ListMySubscriptionChanges",
+    requestType: "commercial.v1.ListMySubscriptionChangesRequest",
+    responseType: "commercial.v1.ListMySubscriptionChangesResponse",
+    http: [
+      { method: "GET", path: "/v1/tenant/subscription/changes" },
     ]
   },
   "commercial.v1.SubscriptionChangesApplication.PreviewMySubscriptionChange": {
@@ -2751,6 +2804,10 @@ export class Commercial_V1_ModuleCatalogApplicationClient {
     return this.transport.call<Commercial_V1_ListModulesRequest, Commercial_V1_ListModulesResponse>(operations["commercial.v1.ModuleCatalogApplication.ListModules"], request);
   }
 
+  recordModuleRuntimeVerification(request: Commercial_V1_RecordModuleRuntimeVerificationRequest): Promise<Commercial_V1_ModuleDTO> {
+    return this.transport.call<Commercial_V1_RecordModuleRuntimeVerificationRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification"], request);
+  }
+
   setModuleSalesStatus(request: Commercial_V1_SetModuleSalesStatusRequest): Promise<Commercial_V1_ModuleDTO> {
     return this.transport.call<Commercial_V1_SetModuleSalesStatusRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus"], request);
   }
@@ -2860,6 +2917,10 @@ export class Commercial_V1_SubscriptionChangesApplicationClient {
 
   listMySubscriptionChangeTargets(request: Commercial_V1_ListMySubscriptionChangeTargetsRequest): Promise<Commercial_V1_ListMySubscriptionChangeTargetsResponse> {
     return this.transport.call<Commercial_V1_ListMySubscriptionChangeTargetsRequest, Commercial_V1_ListMySubscriptionChangeTargetsResponse>(operations["commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChangeTargets"], request);
+  }
+
+  listMySubscriptionChanges(request: Commercial_V1_ListMySubscriptionChangesRequest): Promise<Commercial_V1_ListMySubscriptionChangesResponse> {
+    return this.transport.call<Commercial_V1_ListMySubscriptionChangesRequest, Commercial_V1_ListMySubscriptionChangesResponse>(operations["commercial.v1.SubscriptionChangesApplication.ListMySubscriptionChanges"], request);
   }
 
   previewMySubscriptionChange(request: Commercial_V1_PreviewMySubscriptionChangeRequest): Promise<Commercial_V1_SubscriptionChangePreviewDTO> {

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	access "github.com/hvritual/biz/internal/access/infrastructure/persistence"
+	"github.com/hvritual/biz/internal/commercial/modulecatalog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -43,6 +44,15 @@ func ce07New(t *testing.T) *ce07Environment {
 		t.Fatal(err)
 	}
 	e.token = token
+	moduleStore, err := modulecatalog.NewStore(e.db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	moduleService, err := modulecatalog.NewService(moduleStore, modulecatalog.ProductionRegistry())
+	if err != nil {
+		t.Fatal(err)
+	}
+	verifier := ce04RuntimeVerifier()
 	conn, err := grpc.DialContext(context.Background(), e.runtime.GRPCAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatal(err)
@@ -53,11 +63,17 @@ func ce07New(t *testing.T) *ce07Environment {
 		if err != nil {
 			t.Fatal(err)
 		}
+		if m.Version == 0 {
+			t.Fatalf("catalog get omitted authoritative version for %s: %+v", code, m)
+		}
+		if err := moduleService.RecordRuntimeVerification(verifier, modulecatalog.RuntimeVerificationCommand{ModuleCode: code, ModuleVersion: m.Version, EvidenceDigest: strings.Repeat("a", 64), SourceTree: strings.Repeat("b", 64)}); err != nil {
+			t.Fatalf("record runtime verification for %s v%d: %v", code, m.Version, err)
+		}
 		if m.SalesStatus != v1.ModuleSalesStatus_MODULE_SALES_STATUS_SELLABLE {
 			k := ce04Random(t)
 			m, err = e.catalog.SetModuleSalesStatus(ce04Context(token, k), &v1.SetModuleSalesStatusRequest{RequestId: k, ModuleCode: code, Version: m.Version, SalesStatus: v1.ModuleSalesStatus_MODULE_SALES_STATUS_SELLABLE, Reason: "CE07 isolated fixture restoration"})
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("set sellable status for %s v%d after runtime verification: %v", code, m.Version, err)
 			}
 		}
 		if len(m.SalesScope) > 0 {

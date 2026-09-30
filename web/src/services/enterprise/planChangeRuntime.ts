@@ -16,6 +16,12 @@ export type TenantChangeTargets = Readonly<{
   targets: PlanVersionDTO[]
 }>
 
+export type TenantChangeHistory = Readonly<{
+  receipts: SubscriptionChangeReceiptDTO[]
+  nextBeforeConfirmedAt?: string
+  nextBeforeChangeId?: string
+}>
+
 export type TenantChangeAction = SubscriptionChangeAction
 
 export type TenantChangePreviewInput = Readonly<{
@@ -23,7 +29,6 @@ export type TenantChangePreviewInput = Readonly<{
   targetPlanCode?: string
   targetPlanVersion?: string | number
   effectiveAt?: string
-  reason: string
 }>
 
 function requireTenantSession(session: TrustedSession) {
@@ -46,6 +51,13 @@ export function listMySubscriptionChangeTargets(session: TrustedSession) {
   })
 }
 
+export function listMySubscriptionChanges(session: TrustedSession, pageSize = 20) {
+  const size = Math.max(1, Math.min(100, Math.trunc(pageSize) || 20))
+  return request<TenantChangeHistory>(`/v1/tenant/subscription/changes?pageSize=${size}`, {
+    headers: trustedHeaders(session),
+  })
+}
+
 export function previewMySubscriptionChange(
   session: TrustedSession,
   input: TenantChangePreviewInput,
@@ -61,7 +73,6 @@ export function previewMySubscriptionChange(
       targetPlanCode: input.action === 'SWITCH' ? String(input.targetPlanCode ?? '').trim() : '',
       targetPlanVersion: input.action === 'SWITCH' ? String(input.targetPlanVersion ?? '') : '0',
       effectiveAt: input.action === 'STOP_RENEWAL' ? '' : String(input.effectiveAt ?? '').trim(),
-      reason: input.reason.trim(),
     },
     { idempotencyKey: requestId, sessionContext: sessionContext(session) },
   )
@@ -80,7 +91,6 @@ export function getMySubscriptionChangePreview(
 export function confirmMySubscriptionChange(
   session: TrustedSession,
   preview: SubscriptionChangePreviewDTO,
-  reason: string,
   requestId = createTenantChangeRequestId('tenant-plan-confirm'),
 ) {
   requireTenantSession(session)
@@ -91,7 +101,6 @@ export function confirmMySubscriptionChange(
       changeId: preview.changeId,
       requestId,
       previewHash: preview.previewHash,
-      reason: reason.trim(),
     },
     { idempotencyKey: requestId, sessionContext: sessionContext(session) },
   )
@@ -112,6 +121,7 @@ export function tenantChangeRuntimeError(error: unknown) {
   if (error instanceof CommercialApiError) {
     if (error.code === 'unauthenticated') return '登录会话已失效，请重新登录。'
     if (error.code === 'forbidden') return '当前账号没有变更套餐的权限。'
+    if (error.message.includes('SUBSCRIPTION_CHANGE_PREVIEW_EXPIRED')) return '变更方案已过期，请重新生成方案。'
     if (error.code === 'conflict') return '套餐状态已变化，请重新生成变更方案。'
     if (error.message.includes('SUBSCRIPTION_CHANGE_EXTERNAL_APPROVAL_REQUIRED')) {
       return '该套餐存在价格引用，需要先完成外部商业或支付审批，当前页面不会绕过审批直接生效。'

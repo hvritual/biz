@@ -8,12 +8,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	"github.com/hvritual/biz/internal/bizruntime"
+	"github.com/hvritual/biz/internal/commercial/modulecatalog"
 	"github.com/hvritual/biz/modules/deviceops"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -67,11 +69,11 @@ func startB122Runtime(t *testing.T, db *gorm.DB, token string) *bizruntime.Start
 		defer done()
 		_ = started.App.Shutdown(shutdown)
 	})
-	seedB122DefaultSubscription(t, started, token)
+	seedB122DefaultSubscription(t, started, db, token)
 	return started
 }
 
-func seedB122DefaultSubscription(t *testing.T, started *bizruntime.Started, token string) {
+func seedB122DefaultSubscription(t *testing.T, started *bizruntime.Started, db *gorm.DB, token string) {
 	t.Helper()
 	dialCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -100,13 +102,6 @@ func seedB122DefaultSubscription(t *testing.T, started *bizruntime.Started, toke
 			t.Fatal(err)
 		}
 	}
-	if module.GetSalesStatus() != commercialv1.ModuleSalesStatus_MODULE_SALES_STATUS_SELLABLE {
-		key := "b12-module-sales-" + ce04Random(t)
-		module, err = catalog.SetModuleSalesStatus(ctx(), &commercialv1.SetModuleSalesStatusRequest{RequestId: key, ModuleCode: module.GetModuleCode(), Version: module.GetVersion(), SalesStatus: commercialv1.ModuleSalesStatus_MODULE_SALES_STATUS_SELLABLE, Reason: "B12 runtime CE08 default fixture"})
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
 	if len(module.GetSalesScope()) > 0 {
 		key := "b12-module-scope-" + ce04Random(t)
 		module, err = catalog.UpdateModule(ctx(), &commercialv1.UpdateModuleRequest{RequestId: key, ModuleCode: module.GetModuleCode(), Version: module.GetVersion(), Name: module.GetName(), Category: module.GetCategory(), Reason: "B12 runtime CE08 global fixture"})
@@ -114,7 +109,32 @@ func seedB122DefaultSubscription(t *testing.T, started *bizruntime.Started, toke
 			t.Fatal(err)
 		}
 	}
-
+	moduleStore, err := modulecatalog.NewStore(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	moduleService, err := modulecatalog.NewService(moduleStore, modulecatalog.ProductionRegistry())
+	if err != nil {
+		t.Fatal(err)
+	}
+	verifier := ce04RuntimeVerifier()
+	if err := moduleService.RecordRuntimeVerification(verifier, modulecatalog.RuntimeVerificationCommand{ModuleCode: module.GetModuleCode(), ModuleVersion: module.GetVersion(), EvidenceDigest: strings.Repeat("a", 64), SourceTree: strings.Repeat("b", 64)}); err != nil {
+		t.Fatal(err)
+	}
+	if module.GetSalesStatus() != commercialv1.ModuleSalesStatus_MODULE_SALES_STATUS_SELLABLE {
+		key := "b12-module-sales-" + ce04Random(t)
+		module, err = catalog.SetModuleSalesStatus(ctx(), &commercialv1.SetModuleSalesStatusRequest{RequestId: key, ModuleCode: module.GetModuleCode(), Version: module.GetVersion(), SalesStatus: commercialv1.ModuleSalesStatus_MODULE_SALES_STATUS_SELLABLE, Reason: "B12 runtime CE08 default fixture"})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	module, err = catalog.GetModule(ctx(), &commercialv1.GetModuleRequest{ModuleCode: module.GetModuleCode()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if module.GetTechnicalStatus() != commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_READY || module.GetSalesStatus() != commercialv1.ModuleSalesStatus_MODULE_SALES_STATUS_SELLABLE {
+		t.Fatalf("B12 default module is not eligible after verification: %+v", module)
+	}
 	planCode := "b12-default-" + ce04Random(t)
 	draft, err := plans.CreatePlanDraft(ctx(), &commercialv1.CreatePlanDraftRequest{
 		RequestId: "b12-plan-create-" + ce04Random(t),

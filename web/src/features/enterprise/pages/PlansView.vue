@@ -11,6 +11,9 @@ import StatusBadge from '@/ui/common/StatusBadge.vue'
 import UiDialog from '@/ui/common/UiDialog.vue'
 import PlanChangeLifecycle from '@/features/enterprise/components/PlanChangeLifecycle.vue'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
+import { listMySubscriptionChanges, tenantChangeRuntimeError } from '@/services/enterprise/planChangeRuntime'
+import type { SubscriptionChangeReceiptDTO } from '@/services/commercial/platformCommercial'
+import { backendTermLabel } from '@/i18n/backend-terms'
 
 const store = useEnterpriseStore()
 const plan = useEnterprisePlanStore()
@@ -23,6 +26,9 @@ const lifecycleOpen = ref(false)
 const targetPlan = ref('企业版')
 const note = ref('')
 const tab = ref('套餐概览')
+const changeHistory = ref<SubscriptionChangeReceiptDTO[]>([])
+const historyLoading = ref(false)
+const historyError = ref('')
 
 const canChangePlan = computed(() => store.previewMode || currentAuthorizationAllows('commercial.subscription.change.targets_my'))
 const enabledCount = computed(() => plan.features.filter((feature) => feature.enabled).length)
@@ -37,6 +43,33 @@ watch(
       else requestOpen.value = true
       void router.replace({ path: route.path, query: {} })
     }
+  },
+  { immediate: true },
+)
+
+async function loadChangeHistory() {
+  const context = plan.serverChangeContext
+  if (!context || historyLoading.value) return
+  historyLoading.value = true
+  historyError.value = ''
+  try {
+    changeHistory.value = (await listMySubscriptionChanges(context.session)).receipts
+  } catch (error) {
+    changeHistory.value = []
+    historyError.value = tenantChangeRuntimeError(error)
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+watch(tab, (value) => {
+  if (value === '变更记录' && plan.isServerBacked) void loadChangeHistory()
+})
+
+watch(
+  () => plan.serverChangeContext?.subscription.pendingChangeId,
+  (pendingChangeId) => {
+    if (plan.isServerBacked && String(pendingChangeId ?? '').trim()) lifecycleOpen.value = true
   },
   { immediate: true },
 )
@@ -149,8 +182,8 @@ function submitDemoChange() {
       />
 
       <section class="card panel-pad" data-ui-region="workspace">
-        <div class="tabs">
-          <UiButton v-for="item in ['套餐概览', '功能权益', '使用额度', '变更记录']" :key="item" :class="['tab', { active: tab === item }]" @click="tab = item">
+        <div class="tabs" aria-label="套餐信息">
+          <UiButton v-for="item in ['套餐概览', '功能权益', '使用额度', '变更记录']" :key="item" :role="item === '变更记录' ? 'tab' : undefined" :aria-selected="item === '变更记录' ? tab === item : undefined" :class="['tab', { active: tab === item }]" @click="tab = item">
             {{ item }}
           </UiButton>
         </div>
@@ -199,15 +232,16 @@ function submitDemoChange() {
         <template v-else>
           <div class="timeline plan-timeline">
             <template v-if="plan.isServerBacked && plan.model">
-              <div class="timeline-item">
-                <strong>当前套餐信息</strong>
-                <p>{{ plan.currentPlan }} · {{ plan.subscriptionState }}</p>
-                <small>{{ plan.model.subscription.updatedAt || plan.model.subscription.createdAt || '最近更新' }}</small>
-              </div>
-              <div v-if="plan.model.subscription.pendingChangeId" class="timeline-item">
-                <strong>存在待处理套餐变更</strong>
-                <p>已有一项套餐变更正在处理中。</p>
-              </div>
+              <div v-if="historyLoading" class="timeline-item" role="status">正在读取套餐变更记录…</div>
+              <Notice v-else-if="historyError" tone="danger" role="alert">{{ historyError }}</Notice>
+              <template v-else-if="changeHistory.length">
+                <div v-for="receipt in changeHistory" :key="receipt.changeId" class="timeline-item">
+                  <strong>{{ backendTermLabel('changeAction', receipt.action) }} · {{ backendTermLabel('receiptStatus', receipt.status) }}</strong>
+                  <p>{{ backendTermLabel('plan', receipt.before?.planCode) }} → {{ backendTermLabel('plan', receipt.after?.planCode) }}</p>
+                  <small>{{ receipt.confirmedAt }} · {{ receipt.changeId }}</small>
+                </div>
+              </template>
+              <div v-else class="timeline-item"><strong>暂无套餐变更记录</strong><small>新的套餐变更将在此显示其申请、确认和生效状态。</small></div>
             </template>
             <template v-else>
               <div v-for="log in store.logs.filter((item) => item.module === '套餐信息')" :key="log.id" class="timeline-item">

@@ -110,6 +110,38 @@ type QuotaImpact struct {
 	Policy     string            `json:"policy"`
 	Evidence   string            `json:"evidence"`
 }
+
+// Impact is a structured preview fact. It describes a consequence and the
+// next action without granting, calculating or mutating any entitlement.
+type Impact struct {
+	Code              string            `json:"code"`
+	Severity          string            `json:"severity"`
+	Subject           string            `json:"subject"`
+	Before            string            `json:"before,omitempty"`
+	After             string            `json:"after,omitempty"`
+	UsageKnown        bool              `json:"usage_known"`
+	CurrentUsage      uint64            `json:"current_usage,omitempty"`
+	Blocking          bool              `json:"blocking"`
+	ActionRequired    string            `json:"action_required,omitempty"`
+	MessageKey        string            `json:"message_key"`
+	MessageParameters map[string]string `json:"message_parameters,omitempty"`
+}
+
+func (i Impact) Valid() bool {
+	if !Key(i.Code) || !Key(i.Subject) || !Key(i.MessageKey) || (i.Severity != "INFO" && i.Severity != "WARNING" && i.Severity != "DANGER") {
+		return false
+	}
+	if i.Blocking && i.ActionRequired == "" {
+		return false
+	}
+	for key := range i.MessageParameters {
+		if !Key(key) {
+			return false
+		}
+	}
+	return true
+}
+
 type Preview struct {
 	ProvisioningRequirements []pv.Requirement          `json:"provisioning_requirements,omitempty"`
 	ChangeID                 string                    `json:"change_id"`
@@ -130,6 +162,7 @@ type Preview struct {
 	Dependencies             []Dependency              `json:"dependencies"`
 	Quotas                   []QuotaImpact             `json:"quotas"`
 	Impacts                  []string                  `json:"impacts"`
+	ImpactDetails            []Impact                  `json:"impact_details,omitempty"`
 	QuotaValidationRequired  bool                      `json:"quota_validation_required"`
 	PricingBasis             string                    `json:"pricing_basis"`
 }
@@ -138,6 +171,11 @@ func (p Preview) Seal() Preview { p.Hash = ""; p.Hash = Digest(p); return p }
 func (p Preview) Integrity() error {
 	if pv.ValidateRequirements(p.ProvisioningRequirements) != nil || p.Input.Validate() != nil || p.ActorID == "" || p.ChangeID != ID(p.ActorID, p.Input.TenantID, p.Input.RequestID) || p.Fingerprint != Digest(p.Input) || !p.CreatedAt.Before(p.ExpiresAt) || p.Hash != p.Seal().Hash || p.Before.TenantID != p.Input.TenantID || p.Before.Revision == 0 || p.Current.SourceVersion == 0 || p.Current.EntitlementVersion == 0 || p.Target.Integrity() != nil {
 		return ErrCorrupt
+	}
+	for _, impact := range p.ImpactDetails {
+		if !impact.Valid() {
+			return ErrCorrupt
+		}
 	}
 	return nil
 }

@@ -7,17 +7,20 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	"github.com/hvritual/biz/internal/bizruntime"
+	"github.com/hvritual/biz/internal/commercial/modulecatalog"
 	"github.com/hvritual/biz/modules/deviceops"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"gorm.io/gorm"
+	"yunka.io/framework/core/identity"
 	"yunka.io/framework/platform"
 	"yunka.io/gateway/authz"
 	"yunka.io/pkg/logExt"
@@ -32,6 +35,10 @@ type ce04Environment struct {
 	client                                  commercialv1.EntitlementManagementApplicationClient
 	catalog                                 commercialv1.ModuleCatalogApplicationClient
 	token, tenantA, tenantB, tokenA, tokenB string
+}
+
+func ce04RuntimeVerifier() context.Context {
+	return identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:ce04", Roles: []string{"signed-service-api"}, Authenticated: true, AuthMethod: identity.AuthMethodAPIKey})
 }
 
 func ce04Random(t *testing.T) string {
@@ -108,10 +115,21 @@ func ce04NewEnvironment(t *testing.T, prefix string) *ce04Environment {
 		}
 		if m.TechnicalStatus != commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_READY {
 			key := ce04Random(t)
-			_, err = e.catalog.SetModuleTechnicalStatus(ce04Context(token, key), &commercialv1.SetModuleTechnicalStatusRequest{RequestId: key, ModuleCode: code, TechnicalStatus: commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_READY, Version: m.Version, Reason: "CE04 restore qualification fixture"})
+			m, err = e.catalog.SetModuleTechnicalStatus(ce04Context(token, key), &commercialv1.SetModuleTechnicalStatusRequest{RequestId: key, ModuleCode: code, TechnicalStatus: commercialv1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_READY, Version: m.Version, Reason: "CE04 restore qualification fixture"})
 			if err != nil {
 				t.Fatal(err)
 			}
+		}
+		store, err := modulecatalog.NewStore(db)
+		if err != nil {
+			t.Fatal(err)
+		}
+		service, err := modulecatalog.NewService(store, modulecatalog.ProductionRegistry())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := service.RecordRuntimeVerification(ce04RuntimeVerifier(), modulecatalog.RuntimeVerificationCommand{ModuleCode: code, ModuleVersion: m.Version, EvidenceDigest: strings.Repeat("a", 64), SourceTree: strings.Repeat("b", 64)}); err != nil {
+			t.Fatal(err)
 		}
 	}
 	return e

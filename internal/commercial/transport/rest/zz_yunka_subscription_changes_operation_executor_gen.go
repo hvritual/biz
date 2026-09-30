@@ -12,6 +12,7 @@ import (
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	io "io"
 	"net/http"
+	strconv "strconv"
 	execution "yunka.io/framework/execution"
 	operation "yunka.io/framework/operation"
 	authz "yunka.io/gateway/authz"
@@ -53,6 +54,9 @@ func RegisterSubscriptionChangesOperationExecutor(mux *http.ServeMux, applicatio
 		return err
 	}
 	if err := httpbinding.Register(mux, "GET", "/v1/tenant/subscription/change-targets", handler.handleOperationListMySubscriptionChangeTargets); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/tenant/subscription/changes", handler.handleOperationListMySubscriptionChanges); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "POST", "/v1/tenant/subscription/change-previews", handler.handleOperationPreviewMySubscriptionChange); err != nil {
@@ -230,6 +234,37 @@ func (handler *SubscriptionChangesOperationHandler) handleOperationListMySubscri
 	wire := &commercialv1.ListMySubscriptionChangeTargetsRequest{}
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionChangesListMySubscriptionChangeTargets(), wire, handler.application.ListMySubscriptionChangeTargets)
+	if err != nil {
+		writeSubscriptionChangesOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *SubscriptionChangesOperationHandler) handleOperationListMySubscriptionChanges(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.ListMySubscriptionChangesRequest{}
+	if raw := request.URL.Query().Get("page_size"); raw != "" {
+		parsed, err := strconv.ParseUint(raw, 10, 32)
+		if err != nil {
+			http.Error(writer, "invalid request parameter", http.StatusBadRequest)
+			return
+		}
+		wire.PageSize = uint32(parsed)
+	}
+	if raw := request.URL.Query().Get("before_confirmed_at"); raw != "" {
+		wire.BeforeConfirmedAt = raw
+	}
+	if raw := request.URL.Query().Get("before_change_id"); raw != "" {
+		wire.BeforeChangeId = raw
+	}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanSubscriptionChangesListMySubscriptionChanges(), wire, handler.application.ListMySubscriptionChanges)
 	if err != nil {
 		writeSubscriptionChangesOperationError(writer, err)
 		return

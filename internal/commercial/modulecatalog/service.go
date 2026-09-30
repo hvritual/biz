@@ -12,6 +12,11 @@ import (
 	"yunka.io/framework/core/identity"
 )
 
+type RuntimeVerificationCommand struct {
+	ModuleCode, EvidenceDigest, SourceTree string
+	ModuleVersion                          uint64
+}
+
 type Service struct {
 	store    *Store
 	registry Registry
@@ -51,6 +56,23 @@ func platformActor(ctx context.Context) (string, error) {
 	p, ok := identity.FromContext(ctx)
 	if !ok || !p.Authenticated || p.Subject == "" || p.TenantID != "" {
 		return "", ErrPlatformPrincipalRequired
+	}
+	return p.Subject, nil
+}
+func runtimeVerifier(ctx context.Context) (string, error) {
+	p, ok := identity.FromContext(ctx)
+	// Runtime admission is deliberately narrower than a generic service token.
+	// The HTTP authenticator verifies the credential signature; this namespace
+	// confines the resulting principal to the controlled CI verifier identity.
+	signed := false
+	for _, role := range p.Roles {
+		if role == "signed-service-api" {
+			signed = true
+			break
+		}
+	}
+	if !ok || !p.Authenticated || !signed || !strings.HasPrefix(p.Subject, "ci-verifier:") || p.TenantID != "" || p.AuthMethod != identity.AuthMethodAPIKey {
+		return "", ErrRuntimeVerifierRequired
 	}
 	return p.Subject, nil
 }
@@ -99,7 +121,7 @@ func (s *Service) Create(ctx context.Context, c CreateCommand) (Module, error) {
 		if def.ImplementationReady {
 			tech = TechnicalReady
 		}
-		row := moduleRow{Code: c.Code, Name: c.Name, Category: c.Category, SalesScopeJSON: encode(normalized(c.SalesScope)), TechnicalStatus: string(tech), SalesStatus: string(SalesSellable), Version: 1, CreatedAt: now, UpdatedAt: now}
+		row := moduleRow{Code: c.Code, Name: c.Name, Category: c.Category, SalesScopeJSON: encode(normalized(c.SalesScope)), TechnicalStatus: string(tech), SalesStatus: string(SalesRetired), Version: 1, CreatedAt: now, UpdatedAt: now}
 		if err := tx.Create(&row).Error; err != nil {
 			return err
 		}
@@ -146,7 +168,7 @@ func (s *Service) List(ctx context.Context) ([]Module, error) {
 }
 
 func (s *Service) Update(ctx context.Context, c UpdateCommand) (Module, error) {
-	return s.mutate(ctx, c.RequestID, c.Code, c.Reason, c.Version, "update", func(row *moduleRow, def Definition) error {
+	return s.mutate(ctx, c.RequestID, c.Code, c.Reason, c.Version, "update", false, func(row *moduleRow, def Definition) error {
 		if strings.TrimSpace(c.Name) == "" {
 			return ErrInvalidRequest
 		}
@@ -160,13 +182,53 @@ func (s *Service) SetSalesStatus(ctx context.Context, c StatusCommand) (Module, 
 	if c.Sales != SalesSellable && c.Sales != SalesRetired {
 		return Module{}, ErrInvalidRequest
 	}
-	return s.mutate(ctx, c.RequestID, c.Code, c.Reason, c.Version, "sales_status", func(row *moduleRow, _ Definition) error { row.SalesStatus = string(c.Sales); return nil })
+	return s.mutate(ctx, c.RequestID, c.Code, c.Reason, c.Version, "sales_status", c.Sales == SalesSellable, func(row *moduleRow, _ Definition) error { row.SalesStatus = string(c.Sales); return nil })
+}
+
+// RecordRuntimeVerification is intentionally service-token-only. A human
+// platform principal can still manage catalog metadata but cannot turn a
+// source report or UI assertion into sales admission.
+func (s *Service) RecordRuntimeVerification(ctx context.Context, c RuntimeVerificationCommand) error {
+	actor, err := runtimeVerifier(ctx)
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(c.ModuleCode) == "" || c.ModuleVersion == 0 || len(c.EvidenceDigest) != 64 || len(c.SourceTree) != 64 {
+		return ErrInvalidRequest
+	}
+	if _, ok := s.registry.Definition(c.ModuleCode); !ok {
+		return ErrUnknownDefinition
+	}
+	return s.transact(ctx, func(tx *gorm.DB) error {
+		var row moduleRow
+		if err := tx.Where("module_code = ?", c.ModuleCode).First(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrNotFound
+			}
+			return err
+		}
+		if row.Version != c.ModuleVersion {
+			return ErrConflict
+		}
+		var prior runtimeVerificationRow
+		err := tx.Where("module_code = ? AND module_version = ?", c.ModuleCode, c.ModuleVersion).First(&prior).Error
+		if err == nil {
+			if prior.EvidenceDigest != c.EvidenceDigest || prior.SourceTree != c.SourceTree || prior.Actor != actor {
+				return ErrInvalidRequest
+			}
+			return nil
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		return tx.Create(&runtimeVerificationRow{ModuleCode: c.ModuleCode, ModuleVersion: c.ModuleVersion, EvidenceDigest: c.EvidenceDigest, SourceTree: c.SourceTree, Actor: actor, CreatedAt: time.Now().UTC()}).Error
+	})
 }
 func (s *Service) SetTechnicalStatus(ctx context.Context, c StatusCommand) (Module, error) {
 	if c.Technical != TechnicalNotReady && c.Technical != TechnicalReady && c.Technical != TechnicalDisabled {
 		return Module{}, ErrInvalidRequest
 	}
-	return s.mutate(ctx, c.RequestID, c.Code, c.Reason, c.Version, "technical_status", func(row *moduleRow, d Definition) error {
+	return s.mutate(ctx, c.RequestID, c.Code, c.Reason, c.Version, "technical_status", false, func(row *moduleRow, d Definition) error {
 		if c.Technical == TechnicalReady && !d.ImplementationReady {
 			return ErrImplementationUnavailable
 		}
@@ -174,7 +236,7 @@ func (s *Service) SetTechnicalStatus(ctx context.Context, c StatusCommand) (Modu
 		return nil
 	})
 }
-func (s *Service) mutate(ctx context.Context, requestID, code, reason string, version uint64, op string, change func(*moduleRow, Definition) error) (Module, error) {
+func (s *Service) mutate(ctx context.Context, requestID, code, reason string, version uint64, op string, requireRuntimeAdmission bool, change func(*moduleRow, Definition) error) (Module, error) {
 	actor, err := platformActor(ctx)
 	if err != nil {
 		return Module{}, err
@@ -204,19 +266,39 @@ func (s *Service) mutate(ctx context.Context, requestID, code, reason string, ve
 		if row.Version != version {
 			return ErrConflict
 		}
+		if requireRuntimeAdmission {
+			verified, err := runtimeVerified(tx, code, version)
+			if err != nil {
+				return err
+			}
+			if !verified {
+				return ErrRuntimeAdmissionRequired
+			}
+		}
 		before := rowToModule(row, def)
 		if err := change(&row, def); err != nil {
 			return err
 		}
+		if op == "update" || op == "technical_status" {
+			// A changed catalog version has no matching runtime receipt. It remains
+			// technically available but cannot stay sellable until CI re-verifies it.
+			row.SalesStatus = string(SalesRetired)
+		}
 		now := time.Now().UTC()
-		res := tx.Model(&moduleRow{}).Where("module_code = ? AND version = ?", code, version).Updates(map[string]any{"name": row.Name, "category": row.Category, "sales_scope_json": row.SalesScopeJSON, "technical_status": row.TechnicalStatus, "sales_status": row.SalesStatus, "version": gorm.Expr("version + 1"), "updated_at": now})
+		updates := map[string]any{"name": row.Name, "category": row.Category, "sales_scope_json": row.SalesScopeJSON, "technical_status": row.TechnicalStatus, "sales_status": row.SalesStatus, "updated_at": now}
+		if op != "sales_status" {
+			updates["version"] = gorm.Expr("version + 1")
+		}
+		res := tx.Model(&moduleRow{}).Where("module_code = ? AND version = ?", code, version).Updates(updates)
 		if res.Error != nil {
 			return res.Error
 		}
 		if res.RowsAffected != 1 {
 			return ErrConflict
 		}
-		row.Version = version + 1
+		if op != "sales_status" {
+			row.Version = version + 1
+		}
 		row.UpdatedAt = now
 		out = rowToModule(row, def)
 		if err := writeAudit(tx, code, actor, op, before, out, reason, requestID); err != nil {
@@ -225,6 +307,14 @@ func (s *Service) mutate(ctx context.Context, requestID, code, reason string, ve
 		return saveIdempotent(tx, requestID, op, code, out)
 	})
 	return out, err
+}
+
+func runtimeVerified(tx *gorm.DB, code string, version uint64) (bool, error) {
+	var count int64
+	if err := tx.Model(&runtimeVerificationRow{}).Where("module_code = ? AND module_version = ?", code, version).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count == 1, nil
 }
 
 func (s *Service) Delete(ctx context.Context, c DeleteCommand) error {

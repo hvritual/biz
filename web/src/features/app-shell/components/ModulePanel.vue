@@ -4,7 +4,7 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
-import { enterpriseNavigation, platformCommercialNavigation, platformCommercialQuickActions, systemNavigation, systemQuickActions, quickActions, primaryNavigation, type NavigationItem } from '@/router/navigation'
+import { enterpriseNavigation, visiblePlatformCommercialNavigation, platformCommercialQuickActions, systemNavigation, systemQuickActions, quickActions, primaryNavigation, type NavigationItem } from '@/router/navigation'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import coffee from '@/assets/coffee-menu.webp'
 import { customerDomains } from '@/router/customerNavigation'
@@ -17,7 +17,7 @@ import {
 const ui=useUiStore(),route=useRoute(),router=useRouter(); const {t}=useI18n(); const closeButton=ref<HTMLButtonElement|null>(null)
 onMounted(()=>{void nextTick(()=>closeButton.value?.focus())})
 const primaryTitle=computed(()=>{const item=primaryNavigation.find(p=>p.id===ui.module);return item?t(`navigation.primary.${item.id}`):t('navigation.primary.enterprise')})
-const links=computed(()=>ui.module==='enterprise'?enterpriseNavigation:ui.module==='platform-commercial'?platformCommercialNavigation:ui.module==='system'?systemNavigation:(customerDomains[ui.module??'']?.links??[]))
+const links=computed(()=>ui.module==='enterprise'?enterpriseNavigation:ui.module==='platform-commercial'?visiblePlatformCommercialNavigation():ui.module==='system'?systemNavigation:(customerDomains[ui.module??'']?.links??[]))
 const visibleLinks=computed(()=>links.value.filter((item)=>{
   if(!authorizationApiMode())return true
   if(ui.module==='platform-commercial')return true

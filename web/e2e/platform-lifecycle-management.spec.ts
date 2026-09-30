@@ -70,11 +70,13 @@ test('platform lifecycle navigation stays grouped in the joined 480px flyout', a
   await page.getByRole('button', { name: '平台管理', exact: true }).click()
   const drawer = page.getByRole('dialog', { name: '平台管理导航' })
   await expect(drawer).toBeVisible()
-  for (const group of ['租户生命周期', '产品与定价', '权益与授权', '计量与治理']) {
+  for (const group of ['租户生命周期', '产品与定价', '权益与授权']) {
     await expect(drawer.getByText(group, { exact: true })).toBeVisible()
   }
-  await expect(drawer.getByRole('button', { name: '商业功能', exact: true })).toBeVisible()
-  await expect(drawer.getByRole('button', { name: '用量计费', exact: true })).toBeVisible()
+  // Preview-only commercial routes are intentionally absent from formal navigation.
+  await expect(drawer.getByText('计量与治理', { exact: true })).toHaveCount(0)
+  await expect(drawer.getByRole('button', { name: '商业功能', exact: true })).toHaveCount(0)
+  await expect(drawer.getByRole('button', { name: '用量计费', exact: true })).toHaveCount(0)
   const box = await drawer.boundingBox()
   expect(box?.width).toBe(480)
   expect(await main.boundingBox()).toEqual(before)

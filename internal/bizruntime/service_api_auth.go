@@ -93,6 +93,9 @@ func (config ServiceAPIAuthConfig) Validate() error {
 			return fmt.Errorf("biz runtime: service api key %q requires at least one operation", keyID)
 		}
 		for _, operation := range operations {
+			if operation == "commercial.module.runtime.verify" && !strings.HasPrefix(subject, "ci-verifier:") {
+				return fmt.Errorf("biz runtime: runtime verification service api key %q requires a controlled ci-verifier subject", keyID)
+			}
 			action, ok := actions[operation]
 			if !ok || !containsExact(action.Authentication, "api-key") || len(action.HTTP) == 0 {
 				return fmt.Errorf("biz runtime: service api operation %q is not an HTTP api-key operation", operation)
@@ -297,7 +300,10 @@ func (auth *serviceAPIAuthenticator) authenticate(request *http.Request) (identi
 		}
 		return identity.Principal{}, accesspersistence.ErrUnauthorized
 	}
-	return identity.Principal{Subject: fact.Subject, AuthMethod: identity.AuthMethodAPIKey, Authenticated: true}, nil
+	// Existing operation contracts authorize machine credentials as api-key.
+	// Preserve that transport-compatible method while attaching a role that is
+	// minted only after this HMAC verifier has accepted the credential.
+	return identity.Principal{Subject: fact.Subject, Roles: []string{"signed-service-api"}, AuthMethod: identity.AuthMethodAPIKey, Authenticated: true}, nil
 }
 
 func (auth *serviceAPIAuthenticator) resolveRoute(method, requestPath string) (serviceAPIResolvedRoute, error) {

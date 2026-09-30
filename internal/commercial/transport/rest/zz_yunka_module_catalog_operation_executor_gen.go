@@ -47,6 +47,9 @@ func RegisterModuleCatalogOperationExecutor(mux *http.ServeMux, application appl
 	if err := httpbinding.Register(mux, "GET", "/v1/platform/modules", handler.handleOperationListModules); err != nil {
 		return err
 	}
+	if err := httpbinding.Register(mux, "POST", "/v1/internal/commercial/modules/{module_code}/runtime-verifications", handler.handleOperationRecordModuleRuntimeVerification); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "POST", "/v1/platform/modules/{module_code}/sales-status", handler.handleOperationSetModuleSalesStatus); err != nil {
 		return err
 	}
@@ -170,6 +173,35 @@ func (handler *ModuleCatalogOperationHandler) handleOperationListModules(writer 
 	wire := &commercialv1.ListModulesRequest{}
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogListModules(), wire, handler.application.ListModules)
+	if err != nil {
+		writeModuleCatalogOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *ModuleCatalogOperationHandler) handleOperationRecordModuleRuntimeVerification(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.RecordModuleRuntimeVerificationRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	wire.ModuleCode = request.PathValue("module_code")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogRecordModuleRuntimeVerification(), wire, handler.application.RecordModuleRuntimeVerification)
 	if err != nil {
 		writeModuleCatalogOperationError(writer, err)
 		return

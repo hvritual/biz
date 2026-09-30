@@ -513,6 +513,38 @@
       "bindings": {}
     },
     {
+      "operationId": "commercial.module.runtime.verify",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "record_module_runtime_verification",
+      "requestType": "commercial.v1.RecordModuleRuntimeVerificationRequest",
+      "responseType": "commercial.v1.ModuleDTO",
+      "security": {
+        "authentication": [
+          "api-key"
+        ],
+        "permissions": [
+          "platform.module.runtime.verify"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/RecordModuleRuntimeVerification",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/internal/commercial/modules/{module_code}/runtime-verifications",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "commercial.module.set_sales_status",
       "domain": "commercial",
       "application": "module_catalog",
@@ -1648,6 +1680,43 @@
           {
             "method": "GET",
             "path": "/v1/tenant/subscription/changes/{change_id}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.subscription.change.list_my",
+      "domain": "commercial",
+      "application": "subscription_changes",
+      "useCase": "list_my_subscription_changes",
+      "requestType": "commercial.v1.ListMySubscriptionChangesRequest",
+      "responseType": "commercial.v1.ListMySubscriptionChangesResponse",
+      "security": {
+        "tenantRequired": true,
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "tenant.subscription.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "applicationRequires": [
+        "commercial/module_catalog",
+        "commercial/plan_management"
+      ],
+      "bindings": {
+        "rpc": "/commercial.v1.SubscriptionChangesApplication/ListMySubscriptionChanges",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/tenant/subscription/changes"
           }
         ]
       }

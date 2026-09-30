@@ -4,7 +4,7 @@ package authorization
 
 import "yunka.io/gateway/authz"
 
-const CommercialCapabilityMappingVersion = "26"
+const CommercialCapabilityMappingVersion = "27"
 
 var generatedActions = []Action{
 	{
@@ -104,6 +104,13 @@ var generatedActions = []Action{
 		Permissions: []authz.PermissionKey{authz.PermissionKey("commercial.catalog.read")}, PermissionMode: "all",
 		Classification: "foundation_exempt", ModuleCode: "", CapabilityCodes: []string{},
 		RPC: "", HTTP: []HTTPBinding{},
+	},
+	{
+		Code: "commercial.module.runtime.verify", Domain: "commercial", Application: "module_catalog", UseCase: "record_module_runtime_verification",
+		TenantRequired: false, Authentication: []string{"api-key"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.module.runtime.verify")}, PermissionMode: "all",
+		Classification: "platform_management", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "/commercial.v1.ModuleCatalogApplication/RecordModuleRuntimeVerification", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/internal/commercial/modules/{module_code}/runtime-verifications"}},
 	},
 	{
 		Code: "commercial.module.set_sales_status", Domain: "commercial", Application: "module_catalog", UseCase: "set_module_sales_status",
@@ -321,6 +328,13 @@ var generatedActions = []Action{
 		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.subscription.manage")}, PermissionMode: "all",
 		Classification: "recovery", ModuleCode: "", CapabilityCodes: []string{},
 		RPC: "/commercial.v1.SubscriptionChangesApplication/GetMySubscriptionChangeReceipt", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/subscription/changes/{change_id}"}},
+	},
+	{
+		Code: "commercial.subscription.change.list_my", Domain: "commercial", Application: "subscription_changes", UseCase: "list_my_subscription_changes",
+		TenantRequired: true, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("tenant.subscription.manage")}, PermissionMode: "all",
+		Classification: "recovery", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "/commercial.v1.SubscriptionChangesApplication/ListMySubscriptionChanges", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/tenant/subscription/changes"}},
 	},
 	{
 		Code: "commercial.subscription.change.preparation.cancel", Domain: "commercial", Application: "subscription_changes", UseCase: "cancel_prepared_subscription_change",

@@ -79,7 +79,7 @@ func ce09WithPolicy(t *testing.T, policy ports.QuotaChangePolicy) *ce09Environme
 		defer done()
 		_ = started.App.Shutdown(ctx)
 	})
-	seedB122DefaultSubscription(t, started, token)
+	seedB122DefaultSubscription(t, started, db, token)
 	conn, err := grpc.DialContext(context.Background(), started.GRPCAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatal(err)

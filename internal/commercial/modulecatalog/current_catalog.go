@@ -34,7 +34,15 @@ func (s *Service) ReadCurrentCatalog(ctx context.Context) (entitlement.Catalog, 
 		if !def.ImplementationReady {
 			status = string(TechnicalNotReady)
 		}
-		out = append(out, entitlement.ModuleDefinition{Code: row.Code, TechnicalStatus: status, SalesStatus: row.SalesStatus, Version: row.Version, Capabilities: append([]string(nil), def.CapabilityCodes...), QuotaKeys: append([]string(nil), def.QuotaSchemaKeys...), FieldKeys: append([]string(nil), def.FieldPolicySchemaKeys...), Dependencies: append([]string(nil), def.Dependencies...)})
+		sales := row.SalesStatus
+		verified, err := runtimeVerified(s.store.db.WithContext(ctx), row.Code, row.Version)
+		if err != nil {
+			return nil, err
+		}
+		if !verified {
+			sales = string(SalesRetired)
+		}
+		out = append(out, entitlement.ModuleDefinition{Code: row.Code, TechnicalStatus: status, SalesStatus: sales, Version: row.Version, Capabilities: append([]string(nil), def.CapabilityCodes...), QuotaKeys: append([]string(nil), def.QuotaSchemaKeys...), FieldKeys: append([]string(nil), def.FieldPolicySchemaKeys...), Dependencies: append([]string(nil), def.Dependencies...)})
 	}
 	return out, out.Validate()
 }

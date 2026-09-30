@@ -15,6 +15,7 @@ type SubscriptionChangeRepository interface {
 	PreviewForRequest(context.Context, string, string, string) (*change.Preview, error)
 	SavePreview(context.Context, change.Preview) error
 	Receipt(context.Context, string, string, bool) (*change.Receipt, error)
+	ListReceipts(context.Context, string, time.Time, string, int) ([]change.Receipt, error)
 	ReceiptForRequest(context.Context, string, string, string, string) (*change.Receipt, error)
 	SaveCurrent(context.Context, subscription.Subscription, subscription.Subscription) error
 	Complete(context.Context, change.Receipt) error
