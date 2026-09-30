@@ -319,6 +319,31 @@ export interface SubscriptionChangeReceiptDTO {
   failureCode: string
 }
 
+export interface CommercialFeatureModuleReferenceDTO {
+  moduleCode: string
+  capabilityCodes: string[]
+}
+
+export interface CommercialFeatureReferenceImpactDTO {
+  publishedPlans: string | number
+  addOns: string | number
+  activeSubscriptions: string | number
+  entitlementSources: string | number
+}
+
+export interface CommercialFeatureDTO {
+  featureCode: string
+  name: string
+  version: string | number
+  moduleRefs: CommercialFeatureModuleReferenceDTO[]
+  productState: string
+  salesState: string
+  runtimeState: string
+  migrationState: string
+  replacementCode: string
+  referenceImpact?: CommercialFeatureReferenceImpactDTO
+}
+
 export interface PreviewSubscriptionChangeInput {
   requestId: string
   action: SubscriptionChangeAction

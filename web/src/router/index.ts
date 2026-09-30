@@ -69,8 +69,8 @@ export const router = createRouter({
     },
     {
       path: '/platform/commercial/features',
-      component: () => import('@/features/platform/pages/LifecycleManagementView.vue'),
-      meta: { title: '商业功能', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', lifecycleKey: 'features', commercialAuthority: 'preview' },
+      component: () => import('@/features/platform/pages/CommercialFeaturesView.vue'),
+      meta: { title: '商业功能', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', commercialAuthority: 'real' },
     },
     {
       path: '/platform/commercial/add-ons',

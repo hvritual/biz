@@ -627,6 +627,40 @@ export interface Commercial_V1_CheckPlanEligibilityRequest {
   salesScope?: string;
 }
 
+export interface Commercial_V1_CommercialFeatureDTO {
+  featureCode?: string;
+  name?: string;
+  version?: string;
+  moduleRefs?: readonly Commercial_V1_CommercialFeatureModuleReference[];
+  productState?: string;
+  salesState?: string;
+  runtimeState?: string;
+  migrationState?: string;
+  replacementCode?: string;
+  referenceImpact?: Commercial_V1_CommercialFeatureReferenceImpact;
+}
+
+export interface Commercial_V1_CommercialFeatureLifecycleRequest {
+  requestId?: string;
+  featureCode?: string;
+  version?: string;
+  reason?: string;
+  replacementCode?: string;
+  migrationState?: string;
+}
+
+export interface Commercial_V1_CommercialFeatureModuleReference {
+  moduleCode?: string;
+  capabilityCodes?: readonly string[];
+}
+
+export interface Commercial_V1_CommercialFeatureReferenceImpact {
+  publishedPlans?: string;
+  addOns?: string;
+  activeSubscriptions?: string;
+  entitlementSources?: string;
+}
+
 export interface Commercial_V1_ConfirmMySubscriptionChangeRequest {
   changeId?: string;
   requestId?: string;
@@ -639,6 +673,14 @@ export interface Commercial_V1_ConfirmSubscriptionChangeRequest {
   changeId?: string;
   requestId?: string;
   previewHash?: string;
+  reason?: string;
+}
+
+export interface Commercial_V1_CreateCommercialFeatureRequest {
+  requestId?: string;
+  featureCode?: string;
+  name?: string;
+  moduleRefs?: readonly Commercial_V1_CommercialFeatureModuleReference[];
   reason?: string;
 }
 
@@ -782,6 +824,10 @@ export interface Commercial_V1_ExplainEntitlementsRequest {
   capabilityCodes?: readonly string[];
 }
 
+export interface Commercial_V1_GetCommercialFeatureRequest {
+  featureCode?: string;
+}
+
 export interface Commercial_V1_GetModuleRequest {
   moduleCode?: string;
 }
@@ -807,6 +853,13 @@ export interface Commercial_V1_GetPlanVersionRequest {
 
 export interface Commercial_V1_GetTenantSubscriptionRequest {
   tenantId?: string;
+}
+
+export interface Commercial_V1_ListCommercialFeaturesRequest {
+}
+
+export interface Commercial_V1_ListCommercialFeaturesResponse {
+  features?: readonly Commercial_V1_CommercialFeatureDTO[];
 }
 
 export interface Commercial_V1_ListDefaultSubscriptionRulesRequest {
@@ -2005,6 +2058,24 @@ export const operations = {
       { method: "POST", path: "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke", body: "*" },
     ]
   },
+  "commercial.v1.ModuleCatalogApplication.CompleteCommercialFeatureMigration": {
+    fullName: "commercial.v1.ModuleCatalogApplication.CompleteCommercialFeatureMigration",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/CompleteCommercialFeatureMigration",
+    requestType: "commercial.v1.CommercialFeatureLifecycleRequest",
+    responseType: "commercial.v1.CommercialFeatureDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/commercial-features/{feature_code}/complete-migration", body: "*" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.CreateCommercialFeature": {
+    fullName: "commercial.v1.ModuleCatalogApplication.CreateCommercialFeature",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/CreateCommercialFeature",
+    requestType: "commercial.v1.CreateCommercialFeatureRequest",
+    responseType: "commercial.v1.CommercialFeatureDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/commercial-features", body: "*" },
+    ]
+  },
   "commercial.v1.ModuleCatalogApplication.CreateModule": {
     fullName: "commercial.v1.ModuleCatalogApplication.CreateModule",
     rpcPath: "/commercial.v1.ModuleCatalogApplication/CreateModule",
@@ -2023,6 +2094,15 @@ export const operations = {
       { method: "DELETE", path: "/v1/platform/modules/{module_code}" },
     ]
   },
+  "commercial.v1.ModuleCatalogApplication.GetCommercialFeature": {
+    fullName: "commercial.v1.ModuleCatalogApplication.GetCommercialFeature",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/GetCommercialFeature",
+    requestType: "commercial.v1.GetCommercialFeatureRequest",
+    responseType: "commercial.v1.CommercialFeatureDTO",
+    http: [
+      { method: "GET", path: "/v1/platform/commercial-features/{feature_code}" },
+    ]
+  },
   "commercial.v1.ModuleCatalogApplication.GetModule": {
     fullName: "commercial.v1.ModuleCatalogApplication.GetModule",
     rpcPath: "/commercial.v1.ModuleCatalogApplication/GetModule",
@@ -2030,6 +2110,15 @@ export const operations = {
     responseType: "commercial.v1.ModuleDTO",
     http: [
       { method: "GET", path: "/v1/platform/modules/{module_code}" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.ListCommercialFeatures": {
+    fullName: "commercial.v1.ModuleCatalogApplication.ListCommercialFeatures",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/ListCommercialFeatures",
+    requestType: "commercial.v1.ListCommercialFeaturesRequest",
+    responseType: "commercial.v1.ListCommercialFeaturesResponse",
+    http: [
+      { method: "GET", path: "/v1/platform/commercial-features" },
     ]
   },
   "commercial.v1.ModuleCatalogApplication.ListModules": {
@@ -2041,6 +2130,24 @@ export const operations = {
       { method: "GET", path: "/v1/platform/modules" },
     ]
   },
+  "commercial.v1.ModuleCatalogApplication.PlanCommercialFeatureSunset": {
+    fullName: "commercial.v1.ModuleCatalogApplication.PlanCommercialFeatureSunset",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/PlanCommercialFeatureSunset",
+    requestType: "commercial.v1.CommercialFeatureLifecycleRequest",
+    responseType: "commercial.v1.CommercialFeatureDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/commercial-features/{feature_code}/sunset", body: "*" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.PublishCommercialFeature": {
+    fullName: "commercial.v1.ModuleCatalogApplication.PublishCommercialFeature",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/PublishCommercialFeature",
+    requestType: "commercial.v1.CommercialFeatureLifecycleRequest",
+    responseType: "commercial.v1.CommercialFeatureDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/commercial-features/{feature_code}/publish", body: "*" },
+    ]
+  },
   "commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification": {
     fullName: "commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification",
     rpcPath: "/commercial.v1.ModuleCatalogApplication/RecordModuleRuntimeVerification",
@@ -2048,6 +2155,15 @@ export const operations = {
     responseType: "commercial.v1.ModuleDTO",
     http: [
       { method: "POST", path: "/v1/internal/commercial/modules/{module_code}/runtime-verifications", body: "*" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.RetireCommercialFeature": {
+    fullName: "commercial.v1.ModuleCatalogApplication.RetireCommercialFeature",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/RetireCommercialFeature",
+    requestType: "commercial.v1.CommercialFeatureLifecycleRequest",
+    responseType: "commercial.v1.CommercialFeatureDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/commercial-features/{feature_code}/retire", body: "*" },
     ]
   },
   "commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus": {
@@ -2066,6 +2182,15 @@ export const operations = {
     responseType: "commercial.v1.ModuleDTO",
     http: [
       { method: "POST", path: "/v1/platform/modules/{module_code}/technical-status", body: "*" },
+    ]
+  },
+  "commercial.v1.ModuleCatalogApplication.StopSellingCommercialFeature": {
+    fullName: "commercial.v1.ModuleCatalogApplication.StopSellingCommercialFeature",
+    rpcPath: "/commercial.v1.ModuleCatalogApplication/StopSellingCommercialFeature",
+    requestType: "commercial.v1.CommercialFeatureLifecycleRequest",
+    responseType: "commercial.v1.CommercialFeatureDTO",
+    http: [
+      { method: "POST", path: "/v1/platform/commercial-features/{feature_code}/stop-selling", body: "*" },
     ]
   },
   "commercial.v1.ModuleCatalogApplication.UpdateModule": {
@@ -2789,6 +2914,14 @@ export class Commercial_V1_EntitlementManagementApplicationClient {
 export class Commercial_V1_ModuleCatalogApplicationClient {
   constructor(private readonly transport: RpcTransport) {}
 
+  completeCommercialFeatureMigration(request: Commercial_V1_CommercialFeatureLifecycleRequest): Promise<Commercial_V1_CommercialFeatureDTO> {
+    return this.transport.call<Commercial_V1_CommercialFeatureLifecycleRequest, Commercial_V1_CommercialFeatureDTO>(operations["commercial.v1.ModuleCatalogApplication.CompleteCommercialFeatureMigration"], request);
+  }
+
+  createCommercialFeature(request: Commercial_V1_CreateCommercialFeatureRequest): Promise<Commercial_V1_CommercialFeatureDTO> {
+    return this.transport.call<Commercial_V1_CreateCommercialFeatureRequest, Commercial_V1_CommercialFeatureDTO>(operations["commercial.v1.ModuleCatalogApplication.CreateCommercialFeature"], request);
+  }
+
   createModule(request: Commercial_V1_CreateModuleRequest): Promise<Commercial_V1_ModuleDTO> {
     return this.transport.call<Commercial_V1_CreateModuleRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.CreateModule"], request);
   }
@@ -2797,16 +2930,36 @@ export class Commercial_V1_ModuleCatalogApplicationClient {
     return this.transport.call<Commercial_V1_DeleteModuleRequest, Commercial_V1_DeleteModuleResponse>(operations["commercial.v1.ModuleCatalogApplication.DeleteModule"], request);
   }
 
+  getCommercialFeature(request: Commercial_V1_GetCommercialFeatureRequest): Promise<Commercial_V1_CommercialFeatureDTO> {
+    return this.transport.call<Commercial_V1_GetCommercialFeatureRequest, Commercial_V1_CommercialFeatureDTO>(operations["commercial.v1.ModuleCatalogApplication.GetCommercialFeature"], request);
+  }
+
   getModule(request: Commercial_V1_GetModuleRequest): Promise<Commercial_V1_ModuleDTO> {
     return this.transport.call<Commercial_V1_GetModuleRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.GetModule"], request);
+  }
+
+  listCommercialFeatures(request: Commercial_V1_ListCommercialFeaturesRequest): Promise<Commercial_V1_ListCommercialFeaturesResponse> {
+    return this.transport.call<Commercial_V1_ListCommercialFeaturesRequest, Commercial_V1_ListCommercialFeaturesResponse>(operations["commercial.v1.ModuleCatalogApplication.ListCommercialFeatures"], request);
   }
 
   listModules(request: Commercial_V1_ListModulesRequest): Promise<Commercial_V1_ListModulesResponse> {
     return this.transport.call<Commercial_V1_ListModulesRequest, Commercial_V1_ListModulesResponse>(operations["commercial.v1.ModuleCatalogApplication.ListModules"], request);
   }
 
+  planCommercialFeatureSunset(request: Commercial_V1_CommercialFeatureLifecycleRequest): Promise<Commercial_V1_CommercialFeatureDTO> {
+    return this.transport.call<Commercial_V1_CommercialFeatureLifecycleRequest, Commercial_V1_CommercialFeatureDTO>(operations["commercial.v1.ModuleCatalogApplication.PlanCommercialFeatureSunset"], request);
+  }
+
+  publishCommercialFeature(request: Commercial_V1_CommercialFeatureLifecycleRequest): Promise<Commercial_V1_CommercialFeatureDTO> {
+    return this.transport.call<Commercial_V1_CommercialFeatureLifecycleRequest, Commercial_V1_CommercialFeatureDTO>(operations["commercial.v1.ModuleCatalogApplication.PublishCommercialFeature"], request);
+  }
+
   recordModuleRuntimeVerification(request: Commercial_V1_RecordModuleRuntimeVerificationRequest): Promise<Commercial_V1_ModuleDTO> {
     return this.transport.call<Commercial_V1_RecordModuleRuntimeVerificationRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification"], request);
+  }
+
+  retireCommercialFeature(request: Commercial_V1_CommercialFeatureLifecycleRequest): Promise<Commercial_V1_CommercialFeatureDTO> {
+    return this.transport.call<Commercial_V1_CommercialFeatureLifecycleRequest, Commercial_V1_CommercialFeatureDTO>(operations["commercial.v1.ModuleCatalogApplication.RetireCommercialFeature"], request);
   }
 
   setModuleSalesStatus(request: Commercial_V1_SetModuleSalesStatusRequest): Promise<Commercial_V1_ModuleDTO> {
@@ -2815,6 +2968,10 @@ export class Commercial_V1_ModuleCatalogApplicationClient {
 
   setModuleTechnicalStatus(request: Commercial_V1_SetModuleTechnicalStatusRequest): Promise<Commercial_V1_ModuleDTO> {
     return this.transport.call<Commercial_V1_SetModuleTechnicalStatusRequest, Commercial_V1_ModuleDTO>(operations["commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus"], request);
+  }
+
+  stopSellingCommercialFeature(request: Commercial_V1_CommercialFeatureLifecycleRequest): Promise<Commercial_V1_CommercialFeatureDTO> {
+    return this.transport.call<Commercial_V1_CommercialFeatureLifecycleRequest, Commercial_V1_CommercialFeatureDTO>(operations["commercial.v1.ModuleCatalogApplication.StopSellingCommercialFeature"], request);
   }
 
   updateModule(request: Commercial_V1_UpdateModuleRequest): Promise<Commercial_V1_ModuleDTO> {

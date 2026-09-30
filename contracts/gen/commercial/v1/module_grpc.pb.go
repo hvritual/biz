@@ -19,14 +19,22 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ModuleCatalogApplication_CreateModule_FullMethodName                    = "/commercial.v1.ModuleCatalogApplication/CreateModule"
-	ModuleCatalogApplication_GetModule_FullMethodName                       = "/commercial.v1.ModuleCatalogApplication/GetModule"
-	ModuleCatalogApplication_ListModules_FullMethodName                     = "/commercial.v1.ModuleCatalogApplication/ListModules"
-	ModuleCatalogApplication_UpdateModule_FullMethodName                    = "/commercial.v1.ModuleCatalogApplication/UpdateModule"
-	ModuleCatalogApplication_SetModuleSalesStatus_FullMethodName            = "/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus"
-	ModuleCatalogApplication_SetModuleTechnicalStatus_FullMethodName        = "/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus"
-	ModuleCatalogApplication_DeleteModule_FullMethodName                    = "/commercial.v1.ModuleCatalogApplication/DeleteModule"
-	ModuleCatalogApplication_RecordModuleRuntimeVerification_FullMethodName = "/commercial.v1.ModuleCatalogApplication/RecordModuleRuntimeVerification"
+	ModuleCatalogApplication_CreateModule_FullMethodName                       = "/commercial.v1.ModuleCatalogApplication/CreateModule"
+	ModuleCatalogApplication_GetModule_FullMethodName                          = "/commercial.v1.ModuleCatalogApplication/GetModule"
+	ModuleCatalogApplication_ListModules_FullMethodName                        = "/commercial.v1.ModuleCatalogApplication/ListModules"
+	ModuleCatalogApplication_UpdateModule_FullMethodName                       = "/commercial.v1.ModuleCatalogApplication/UpdateModule"
+	ModuleCatalogApplication_SetModuleSalesStatus_FullMethodName               = "/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus"
+	ModuleCatalogApplication_SetModuleTechnicalStatus_FullMethodName           = "/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus"
+	ModuleCatalogApplication_DeleteModule_FullMethodName                       = "/commercial.v1.ModuleCatalogApplication/DeleteModule"
+	ModuleCatalogApplication_RecordModuleRuntimeVerification_FullMethodName    = "/commercial.v1.ModuleCatalogApplication/RecordModuleRuntimeVerification"
+	ModuleCatalogApplication_CreateCommercialFeature_FullMethodName            = "/commercial.v1.ModuleCatalogApplication/CreateCommercialFeature"
+	ModuleCatalogApplication_GetCommercialFeature_FullMethodName               = "/commercial.v1.ModuleCatalogApplication/GetCommercialFeature"
+	ModuleCatalogApplication_ListCommercialFeatures_FullMethodName             = "/commercial.v1.ModuleCatalogApplication/ListCommercialFeatures"
+	ModuleCatalogApplication_PublishCommercialFeature_FullMethodName           = "/commercial.v1.ModuleCatalogApplication/PublishCommercialFeature"
+	ModuleCatalogApplication_StopSellingCommercialFeature_FullMethodName       = "/commercial.v1.ModuleCatalogApplication/StopSellingCommercialFeature"
+	ModuleCatalogApplication_PlanCommercialFeatureSunset_FullMethodName        = "/commercial.v1.ModuleCatalogApplication/PlanCommercialFeatureSunset"
+	ModuleCatalogApplication_CompleteCommercialFeatureMigration_FullMethodName = "/commercial.v1.ModuleCatalogApplication/CompleteCommercialFeatureMigration"
+	ModuleCatalogApplication_RetireCommercialFeature_FullMethodName            = "/commercial.v1.ModuleCatalogApplication/RetireCommercialFeature"
 )
 
 // ModuleCatalogApplicationClient is the client API for ModuleCatalogApplication service.
@@ -41,6 +49,14 @@ type ModuleCatalogApplicationClient interface {
 	SetModuleTechnicalStatus(ctx context.Context, in *SetModuleTechnicalStatusRequest, opts ...grpc.CallOption) (*ModuleDTO, error)
 	DeleteModule(ctx context.Context, in *DeleteModuleRequest, opts ...grpc.CallOption) (*DeleteModuleResponse, error)
 	RecordModuleRuntimeVerification(ctx context.Context, in *RecordModuleRuntimeVerificationRequest, opts ...grpc.CallOption) (*ModuleDTO, error)
+	CreateCommercialFeature(ctx context.Context, in *CreateCommercialFeatureRequest, opts ...grpc.CallOption) (*CommercialFeatureDTO, error)
+	GetCommercialFeature(ctx context.Context, in *GetCommercialFeatureRequest, opts ...grpc.CallOption) (*CommercialFeatureDTO, error)
+	ListCommercialFeatures(ctx context.Context, in *ListCommercialFeaturesRequest, opts ...grpc.CallOption) (*ListCommercialFeaturesResponse, error)
+	PublishCommercialFeature(ctx context.Context, in *CommercialFeatureLifecycleRequest, opts ...grpc.CallOption) (*CommercialFeatureDTO, error)
+	StopSellingCommercialFeature(ctx context.Context, in *CommercialFeatureLifecycleRequest, opts ...grpc.CallOption) (*CommercialFeatureDTO, error)
+	PlanCommercialFeatureSunset(ctx context.Context, in *CommercialFeatureLifecycleRequest, opts ...grpc.CallOption) (*CommercialFeatureDTO, error)
+	CompleteCommercialFeatureMigration(ctx context.Context, in *CommercialFeatureLifecycleRequest, opts ...grpc.CallOption) (*CommercialFeatureDTO, error)
+	RetireCommercialFeature(ctx context.Context, in *CommercialFeatureLifecycleRequest, opts ...grpc.CallOption) (*CommercialFeatureDTO, error)
 }
 
 type moduleCatalogApplicationClient struct {
@@ -131,6 +147,86 @@ func (c *moduleCatalogApplicationClient) RecordModuleRuntimeVerification(ctx con
 	return out, nil
 }
 
+func (c *moduleCatalogApplicationClient) CreateCommercialFeature(ctx context.Context, in *CreateCommercialFeatureRequest, opts ...grpc.CallOption) (*CommercialFeatureDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommercialFeatureDTO)
+	err := c.cc.Invoke(ctx, ModuleCatalogApplication_CreateCommercialFeature_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moduleCatalogApplicationClient) GetCommercialFeature(ctx context.Context, in *GetCommercialFeatureRequest, opts ...grpc.CallOption) (*CommercialFeatureDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommercialFeatureDTO)
+	err := c.cc.Invoke(ctx, ModuleCatalogApplication_GetCommercialFeature_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moduleCatalogApplicationClient) ListCommercialFeatures(ctx context.Context, in *ListCommercialFeaturesRequest, opts ...grpc.CallOption) (*ListCommercialFeaturesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListCommercialFeaturesResponse)
+	err := c.cc.Invoke(ctx, ModuleCatalogApplication_ListCommercialFeatures_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moduleCatalogApplicationClient) PublishCommercialFeature(ctx context.Context, in *CommercialFeatureLifecycleRequest, opts ...grpc.CallOption) (*CommercialFeatureDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommercialFeatureDTO)
+	err := c.cc.Invoke(ctx, ModuleCatalogApplication_PublishCommercialFeature_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moduleCatalogApplicationClient) StopSellingCommercialFeature(ctx context.Context, in *CommercialFeatureLifecycleRequest, opts ...grpc.CallOption) (*CommercialFeatureDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommercialFeatureDTO)
+	err := c.cc.Invoke(ctx, ModuleCatalogApplication_StopSellingCommercialFeature_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moduleCatalogApplicationClient) PlanCommercialFeatureSunset(ctx context.Context, in *CommercialFeatureLifecycleRequest, opts ...grpc.CallOption) (*CommercialFeatureDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommercialFeatureDTO)
+	err := c.cc.Invoke(ctx, ModuleCatalogApplication_PlanCommercialFeatureSunset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moduleCatalogApplicationClient) CompleteCommercialFeatureMigration(ctx context.Context, in *CommercialFeatureLifecycleRequest, opts ...grpc.CallOption) (*CommercialFeatureDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommercialFeatureDTO)
+	err := c.cc.Invoke(ctx, ModuleCatalogApplication_CompleteCommercialFeatureMigration_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moduleCatalogApplicationClient) RetireCommercialFeature(ctx context.Context, in *CommercialFeatureLifecycleRequest, opts ...grpc.CallOption) (*CommercialFeatureDTO, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommercialFeatureDTO)
+	err := c.cc.Invoke(ctx, ModuleCatalogApplication_RetireCommercialFeature_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ModuleCatalogApplicationServer is the server API for ModuleCatalogApplication service.
 // All implementations should embed UnimplementedModuleCatalogApplicationServer
 // for forward compatibility.
@@ -143,6 +239,14 @@ type ModuleCatalogApplicationServer interface {
 	SetModuleTechnicalStatus(context.Context, *SetModuleTechnicalStatusRequest) (*ModuleDTO, error)
 	DeleteModule(context.Context, *DeleteModuleRequest) (*DeleteModuleResponse, error)
 	RecordModuleRuntimeVerification(context.Context, *RecordModuleRuntimeVerificationRequest) (*ModuleDTO, error)
+	CreateCommercialFeature(context.Context, *CreateCommercialFeatureRequest) (*CommercialFeatureDTO, error)
+	GetCommercialFeature(context.Context, *GetCommercialFeatureRequest) (*CommercialFeatureDTO, error)
+	ListCommercialFeatures(context.Context, *ListCommercialFeaturesRequest) (*ListCommercialFeaturesResponse, error)
+	PublishCommercialFeature(context.Context, *CommercialFeatureLifecycleRequest) (*CommercialFeatureDTO, error)
+	StopSellingCommercialFeature(context.Context, *CommercialFeatureLifecycleRequest) (*CommercialFeatureDTO, error)
+	PlanCommercialFeatureSunset(context.Context, *CommercialFeatureLifecycleRequest) (*CommercialFeatureDTO, error)
+	CompleteCommercialFeatureMigration(context.Context, *CommercialFeatureLifecycleRequest) (*CommercialFeatureDTO, error)
+	RetireCommercialFeature(context.Context, *CommercialFeatureLifecycleRequest) (*CommercialFeatureDTO, error)
 }
 
 // UnimplementedModuleCatalogApplicationServer should be embedded to have
@@ -175,6 +279,30 @@ func (UnimplementedModuleCatalogApplicationServer) DeleteModule(context.Context,
 }
 func (UnimplementedModuleCatalogApplicationServer) RecordModuleRuntimeVerification(context.Context, *RecordModuleRuntimeVerificationRequest) (*ModuleDTO, error) {
 	return nil, status.Error(codes.Unimplemented, "method RecordModuleRuntimeVerification not implemented")
+}
+func (UnimplementedModuleCatalogApplicationServer) CreateCommercialFeature(context.Context, *CreateCommercialFeatureRequest) (*CommercialFeatureDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateCommercialFeature not implemented")
+}
+func (UnimplementedModuleCatalogApplicationServer) GetCommercialFeature(context.Context, *GetCommercialFeatureRequest) (*CommercialFeatureDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCommercialFeature not implemented")
+}
+func (UnimplementedModuleCatalogApplicationServer) ListCommercialFeatures(context.Context, *ListCommercialFeaturesRequest) (*ListCommercialFeaturesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListCommercialFeatures not implemented")
+}
+func (UnimplementedModuleCatalogApplicationServer) PublishCommercialFeature(context.Context, *CommercialFeatureLifecycleRequest) (*CommercialFeatureDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method PublishCommercialFeature not implemented")
+}
+func (UnimplementedModuleCatalogApplicationServer) StopSellingCommercialFeature(context.Context, *CommercialFeatureLifecycleRequest) (*CommercialFeatureDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method StopSellingCommercialFeature not implemented")
+}
+func (UnimplementedModuleCatalogApplicationServer) PlanCommercialFeatureSunset(context.Context, *CommercialFeatureLifecycleRequest) (*CommercialFeatureDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method PlanCommercialFeatureSunset not implemented")
+}
+func (UnimplementedModuleCatalogApplicationServer) CompleteCommercialFeatureMigration(context.Context, *CommercialFeatureLifecycleRequest) (*CommercialFeatureDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method CompleteCommercialFeatureMigration not implemented")
+}
+func (UnimplementedModuleCatalogApplicationServer) RetireCommercialFeature(context.Context, *CommercialFeatureLifecycleRequest) (*CommercialFeatureDTO, error) {
+	return nil, status.Error(codes.Unimplemented, "method RetireCommercialFeature not implemented")
 }
 func (UnimplementedModuleCatalogApplicationServer) testEmbeddedByValue() {}
 
@@ -340,6 +468,150 @@ func _ModuleCatalogApplication_RecordModuleRuntimeVerification_Handler(srv inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ModuleCatalogApplication_CreateCommercialFeature_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCommercialFeatureRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModuleCatalogApplicationServer).CreateCommercialFeature(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModuleCatalogApplication_CreateCommercialFeature_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModuleCatalogApplicationServer).CreateCommercialFeature(ctx, req.(*CreateCommercialFeatureRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ModuleCatalogApplication_GetCommercialFeature_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCommercialFeatureRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModuleCatalogApplicationServer).GetCommercialFeature(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModuleCatalogApplication_GetCommercialFeature_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModuleCatalogApplicationServer).GetCommercialFeature(ctx, req.(*GetCommercialFeatureRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ModuleCatalogApplication_ListCommercialFeatures_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListCommercialFeaturesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModuleCatalogApplicationServer).ListCommercialFeatures(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModuleCatalogApplication_ListCommercialFeatures_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModuleCatalogApplicationServer).ListCommercialFeatures(ctx, req.(*ListCommercialFeaturesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ModuleCatalogApplication_PublishCommercialFeature_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommercialFeatureLifecycleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModuleCatalogApplicationServer).PublishCommercialFeature(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModuleCatalogApplication_PublishCommercialFeature_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModuleCatalogApplicationServer).PublishCommercialFeature(ctx, req.(*CommercialFeatureLifecycleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ModuleCatalogApplication_StopSellingCommercialFeature_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommercialFeatureLifecycleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModuleCatalogApplicationServer).StopSellingCommercialFeature(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModuleCatalogApplication_StopSellingCommercialFeature_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModuleCatalogApplicationServer).StopSellingCommercialFeature(ctx, req.(*CommercialFeatureLifecycleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ModuleCatalogApplication_PlanCommercialFeatureSunset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommercialFeatureLifecycleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModuleCatalogApplicationServer).PlanCommercialFeatureSunset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModuleCatalogApplication_PlanCommercialFeatureSunset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModuleCatalogApplicationServer).PlanCommercialFeatureSunset(ctx, req.(*CommercialFeatureLifecycleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ModuleCatalogApplication_CompleteCommercialFeatureMigration_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommercialFeatureLifecycleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModuleCatalogApplicationServer).CompleteCommercialFeatureMigration(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModuleCatalogApplication_CompleteCommercialFeatureMigration_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModuleCatalogApplicationServer).CompleteCommercialFeatureMigration(ctx, req.(*CommercialFeatureLifecycleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ModuleCatalogApplication_RetireCommercialFeature_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommercialFeatureLifecycleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModuleCatalogApplicationServer).RetireCommercialFeature(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModuleCatalogApplication_RetireCommercialFeature_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModuleCatalogApplicationServer).RetireCommercialFeature(ctx, req.(*CommercialFeatureLifecycleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ModuleCatalogApplication_ServiceDesc is the grpc.ServiceDesc for ModuleCatalogApplication service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -378,6 +650,38 @@ var ModuleCatalogApplication_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RecordModuleRuntimeVerification",
 			Handler:    _ModuleCatalogApplication_RecordModuleRuntimeVerification_Handler,
+		},
+		{
+			MethodName: "CreateCommercialFeature",
+			Handler:    _ModuleCatalogApplication_CreateCommercialFeature_Handler,
+		},
+		{
+			MethodName: "GetCommercialFeature",
+			Handler:    _ModuleCatalogApplication_GetCommercialFeature_Handler,
+		},
+		{
+			MethodName: "ListCommercialFeatures",
+			Handler:    _ModuleCatalogApplication_ListCommercialFeatures_Handler,
+		},
+		{
+			MethodName: "PublishCommercialFeature",
+			Handler:    _ModuleCatalogApplication_PublishCommercialFeature_Handler,
+		},
+		{
+			MethodName: "StopSellingCommercialFeature",
+			Handler:    _ModuleCatalogApplication_StopSellingCommercialFeature_Handler,
+		},
+		{
+			MethodName: "PlanCommercialFeatureSunset",
+			Handler:    _ModuleCatalogApplication_PlanCommercialFeatureSunset_Handler,
+		},
+		{
+			MethodName: "CompleteCommercialFeatureMigration",
+			Handler:    _ModuleCatalogApplication_CompleteCommercialFeatureMigration_Handler,
+		},
+		{
+			MethodName: "RetireCommercialFeature",
+			Handler:    _ModuleCatalogApplication_RetireCommercialFeature_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

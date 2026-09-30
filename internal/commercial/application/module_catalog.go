@@ -3,19 +3,24 @@ package application
 import (
 	"context"
 	"errors"
+	"strings"
 
 	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
+	"github.com/hvritual/biz/internal/commercial/featurecatalog"
 	"github.com/hvritual/biz/internal/commercial/modulecatalog"
 	"yunka.io/framework/core/identity"
 )
 
-type ModuleCatalogService struct{ catalog *modulecatalog.Service }
+type ModuleCatalogService struct {
+	catalog  *modulecatalog.Service
+	features *featurecatalog.Service
+}
 
-func NewModuleCatalogService(catalog *modulecatalog.Service) (*ModuleCatalogService, error) {
-	if catalog == nil {
-		return nil, errors.New("commercial application: module catalog required")
+func NewModuleCatalogService(catalog *modulecatalog.Service, features *featurecatalog.Service) (*ModuleCatalogService, error) {
+	if catalog == nil || features == nil {
+		return nil, errors.New("commercial application: module catalog and feature lifecycle required")
 	}
-	return &ModuleCatalogService{catalog: catalog}, nil
+	return &ModuleCatalogService{catalog: catalog, features: features}, nil
 }
 
 func requirePlatform(ctx context.Context) error {
@@ -122,6 +127,177 @@ func (s *ModuleCatalogService) RecordModuleRuntimeVerification(ctx context.Conte
 		return nil, err
 	}
 	return toDTO(m), nil
+}
+
+func (s *ModuleCatalogService) CreateCommercialFeature(ctx context.Context, req *commercialv1.CreateCommercialFeatureRequest) (*commercialv1.CommercialFeatureDTO, error) {
+	if req == nil || strings.TrimSpace(req.FeatureCode) == "" || strings.TrimSpace(req.Name) == "" {
+		return nil, featurecatalog.ErrInvalid
+	}
+	definition := featurecatalog.Definition{Code: req.FeatureCode, Name: req.Name, ModuleRefs: featureRefsFromDTO(req.ModuleRefs)}
+	if err := s.validateFeatureReferences(ctx, definition.ModuleRefs); err != nil {
+		return nil, err
+	}
+	feature, err := s.features.Create(ctx, definition, featurecatalog.Command{RequestID: req.RequestId, Reason: req.Reason})
+	if err != nil {
+		return nil, err
+	}
+	return s.featureDTO(ctx, feature)
+}
+
+func (s *ModuleCatalogService) GetCommercialFeature(ctx context.Context, req *commercialv1.GetCommercialFeatureRequest) (*commercialv1.CommercialFeatureDTO, error) {
+	if req == nil || strings.TrimSpace(req.FeatureCode) == "" {
+		return nil, featurecatalog.ErrInvalid
+	}
+	if err := requirePlatform(ctx); err != nil {
+		return nil, err
+	}
+	feature, err := s.features.Get(ctx, req.FeatureCode)
+	if err != nil {
+		return nil, err
+	}
+	return s.featureDTO(ctx, feature)
+}
+
+func (s *ModuleCatalogService) ListCommercialFeatures(ctx context.Context, _ *commercialv1.ListCommercialFeaturesRequest) (*commercialv1.ListCommercialFeaturesResponse, error) {
+	if err := requirePlatform(ctx); err != nil {
+		return nil, err
+	}
+	features, err := s.features.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := &commercialv1.ListCommercialFeaturesResponse{Features: make([]*commercialv1.CommercialFeatureDTO, 0, len(features))}
+	for _, feature := range features {
+		value, err := s.featureDTO(ctx, feature)
+		if err != nil {
+			return nil, err
+		}
+		result.Features = append(result.Features, value)
+	}
+	return result, nil
+}
+
+func (s *ModuleCatalogService) PublishCommercialFeature(ctx context.Context, req *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error) {
+	feature, err := s.featureForLifecycle(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.validateFeatureReferences(ctx, feature.ModuleRefs); err != nil {
+		return nil, err
+	}
+	feature, err = s.features.Publish(ctx, feature.Code, featureCommand(req))
+	if err != nil {
+		return nil, err
+	}
+	return s.featureDTO(ctx, feature)
+}
+
+func (s *ModuleCatalogService) StopSellingCommercialFeature(ctx context.Context, req *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error) {
+	feature, err := s.featureForLifecycle(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	feature, err = s.features.StopSell(ctx, feature.Code, featureCommand(req))
+	if err != nil {
+		return nil, err
+	}
+	return s.featureDTO(ctx, feature)
+}
+
+func (s *ModuleCatalogService) PlanCommercialFeatureSunset(ctx context.Context, req *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error) {
+	feature, err := s.featureForLifecycle(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	replacement, err := s.features.Get(ctx, req.ReplacementCode)
+	if err != nil || replacement.Code == feature.Code {
+		return nil, featurecatalog.ErrInvalid
+	}
+	migration := featurecatalog.MigrationState(strings.TrimSpace(req.MigrationState))
+	feature, err = s.features.PlanSunset(ctx, feature.Code, featurecatalog.SunsetPlan{ReplacementCode: replacement.Code, Migration: migration}, featureCommand(req))
+	if err != nil {
+		return nil, err
+	}
+	return s.featureDTO(ctx, feature)
+}
+
+func (s *ModuleCatalogService) CompleteCommercialFeatureMigration(ctx context.Context, req *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error) {
+	feature, err := s.featureForLifecycle(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	feature, err = s.features.CompleteMigration(ctx, feature.Code, featureCommand(req))
+	if err != nil {
+		return nil, err
+	}
+	return s.featureDTO(ctx, feature)
+}
+
+func (s *ModuleCatalogService) RetireCommercialFeature(ctx context.Context, req *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error) {
+	feature, err := s.featureForLifecycle(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	feature, err = s.features.Retire(ctx, feature.Code, featureCommand(req))
+	if err != nil {
+		return nil, err
+	}
+	return s.featureDTO(ctx, feature)
+}
+
+func featureCommand(req *commercialv1.CommercialFeatureLifecycleRequest) featurecatalog.Command {
+	return featurecatalog.Command{RequestID: req.RequestId, Version: req.Version, Reason: req.Reason}
+}
+
+func (s *ModuleCatalogService) featureForLifecycle(ctx context.Context, req *commercialv1.CommercialFeatureLifecycleRequest) (featurecatalog.Feature, error) {
+	if req == nil || strings.TrimSpace(req.FeatureCode) == "" || req.Version == 0 {
+		return featurecatalog.Feature{}, featurecatalog.ErrInvalid
+	}
+	if err := requirePlatform(ctx); err != nil {
+		return featurecatalog.Feature{}, err
+	}
+	return s.features.Get(ctx, req.FeatureCode)
+}
+
+func featureRefsFromDTO(values []*commercialv1.CommercialFeatureModuleReference) []featurecatalog.ModuleReference {
+	refs := make([]featurecatalog.ModuleReference, 0, len(values))
+	for _, value := range values {
+		if value != nil {
+			refs = append(refs, featurecatalog.ModuleReference{ModuleCode: value.ModuleCode, CapabilityCodes: append([]string(nil), value.CapabilityCodes...)})
+		}
+	}
+	return refs
+}
+
+func (s *ModuleCatalogService) validateFeatureReferences(ctx context.Context, refs []featurecatalog.ModuleReference) error {
+	for _, ref := range refs {
+		module, err := s.catalog.Get(ctx, ref.ModuleCode)
+		if err != nil || module.TechnicalStatus != modulecatalog.TechnicalReady || module.SalesStatus != modulecatalog.SalesSellable {
+			return featurecatalog.ErrInvalid
+		}
+		available := map[string]bool{}
+		for _, capability := range module.CapabilityCodes {
+			available[capability] = true
+		}
+		for _, capability := range ref.CapabilityCodes {
+			if !available[capability] {
+				return featurecatalog.ErrInvalid
+			}
+		}
+	}
+	return nil
+}
+
+func (s *ModuleCatalogService) featureDTO(ctx context.Context, feature featurecatalog.Feature) (*commercialv1.CommercialFeatureDTO, error) {
+	impact, err := s.features.ReferenceImpact(ctx, feature.Code)
+	if err != nil {
+		return nil, err
+	}
+	refs := make([]*commercialv1.CommercialFeatureModuleReference, 0, len(feature.ModuleRefs))
+	for _, ref := range feature.ModuleRefs {
+		refs = append(refs, &commercialv1.CommercialFeatureModuleReference{ModuleCode: ref.ModuleCode, CapabilityCodes: append([]string(nil), ref.CapabilityCodes...)})
+	}
+	return &commercialv1.CommercialFeatureDTO{FeatureCode: feature.Code, Name: feature.Name, Version: feature.Version, ModuleRefs: refs, ProductState: string(feature.Product), SalesState: string(feature.Sales), RuntimeState: string(feature.Runtime), MigrationState: string(feature.Migration), ReplacementCode: feature.ReplacementCode, ReferenceImpact: &commercialv1.CommercialFeatureReferenceImpact{PublishedPlans: impact.PublishedPlans, AddOns: impact.AddOns, ActiveSubscriptions: impact.ActiveSubscriptions, EntitlementSources: impact.EntitlementSources}}, nil
 }
 
 func toDTO(m modulecatalog.Module) *commercialv1.ModuleDTO {

@@ -338,6 +338,268 @@
       }
     },
     {
+      "operationId": "commercial.feature.complete_migration",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "complete_commercial_feature_migration",
+      "requestType": "commercial.v1.CommercialFeatureLifecycleRequest",
+      "responseType": "commercial.v1.CommercialFeatureDTO",
+      "security": {
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "platform.module.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/CompleteCommercialFeatureMigration",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/commercial-features/{feature_code}/complete-migration",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.feature.create",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "create_commercial_feature",
+      "requestType": "commercial.v1.CreateCommercialFeatureRequest",
+      "responseType": "commercial.v1.CommercialFeatureDTO",
+      "security": {
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "platform.module.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/CreateCommercialFeature",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/commercial-features",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.feature.get",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "get_commercial_feature",
+      "requestType": "commercial.v1.GetCommercialFeatureRequest",
+      "responseType": "commercial.v1.CommercialFeatureDTO",
+      "security": {
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "platform.module.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/GetCommercialFeature",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/commercial-features/{feature_code}"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.feature.list",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "list_commercial_features",
+      "requestType": "commercial.v1.ListCommercialFeaturesRequest",
+      "responseType": "commercial.v1.ListCommercialFeaturesResponse",
+      "security": {
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "platform.module.read"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "read_only",
+        "idempotency": "none"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/ListCommercialFeatures",
+        "http": [
+          {
+            "method": "GET",
+            "path": "/v1/platform/commercial-features"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.feature.plan_sunset",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "plan_commercial_feature_sunset",
+      "requestType": "commercial.v1.CommercialFeatureLifecycleRequest",
+      "responseType": "commercial.v1.CommercialFeatureDTO",
+      "security": {
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "platform.module.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/PlanCommercialFeatureSunset",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/commercial-features/{feature_code}/sunset",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.feature.publish",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "publish_commercial_feature",
+      "requestType": "commercial.v1.CommercialFeatureLifecycleRequest",
+      "responseType": "commercial.v1.CommercialFeatureDTO",
+      "security": {
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "platform.module.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/PublishCommercialFeature",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/commercial-features/{feature_code}/publish",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.feature.retire",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "retire_commercial_feature",
+      "requestType": "commercial.v1.CommercialFeatureLifecycleRequest",
+      "responseType": "commercial.v1.CommercialFeatureDTO",
+      "security": {
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "platform.module.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/RetireCommercialFeature",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/commercial-features/{feature_code}/retire",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "commercial.feature.stop_selling",
+      "domain": "commercial",
+      "application": "module_catalog",
+      "useCase": "stop_selling_commercial_feature",
+      "requestType": "commercial.v1.CommercialFeatureLifecycleRequest",
+      "responseType": "commercial.v1.CommercialFeatureDTO",
+      "security": {
+        "authentication": [
+          "api-key",
+          "web-session"
+        ],
+        "permissions": [
+          "platform.module.manage"
+        ],
+        "permissionMode": "all"
+      },
+      "execution": {
+        "transaction": "local",
+        "idempotency": "required"
+      },
+      "composition": {},
+      "bindings": {
+        "rpc": "/commercial.v1.ModuleCatalogApplication/StopSellingCommercialFeature",
+        "http": [
+          {
+            "method": "POST",
+            "path": "/v1/platform/commercial-features/{feature_code}/stop-selling",
+            "body": "*"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "commercial.module.create",
       "domain": "commercial",
       "application": "module_catalog",

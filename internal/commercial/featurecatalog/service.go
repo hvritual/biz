@@ -85,6 +85,34 @@ func (s *Service) Get(ctx context.Context, code string) (Feature, error) {
 	return rowToFeature(row, refs)
 }
 
+func (s *Service) List(ctx context.Context) ([]Feature, error) {
+	var rows []featureRow
+	if err := s.store.db.WithContext(ctx).Order("feature_code ASC").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	features := make([]Feature, 0, len(rows))
+	for _, row := range rows {
+		var refs []featureModuleRow
+		if err := s.store.db.WithContext(ctx).Where("feature_code = ?", row.Code).Order("module_code ASC").Find(&refs).Error; err != nil {
+			return nil, err
+		}
+		feature, err := rowToFeature(row, refs)
+		if err != nil {
+			return nil, err
+		}
+		features = append(features, feature)
+	}
+	return features, nil
+}
+
+func (s *Service) ReferenceImpact(ctx context.Context, code string) (ReferenceImpact, error) {
+	feature, err := s.Get(ctx, code)
+	if err != nil {
+		return ReferenceImpact{}, err
+	}
+	return s.store.ReferenceImpact(ctx, feature)
+}
+
 func (s *Service) StopSell(ctx context.Context, code string, command Command) (Feature, error) {
 	return s.mutate(ctx, code, command, "stop_sell", func(feature Feature) (Feature, error) { return feature.StopSell() })
 }

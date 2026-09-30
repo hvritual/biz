@@ -35,6 +35,32 @@ func RegisterModuleCatalogOperationExecutor(registrar grpc.ServiceRegistrar, app
 	return nil
 }
 
+func (server *ModuleCatalogOperationServer) CompleteCommercialFeatureMigration(ctx context.Context, request *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogCompleteCommercialFeatureMigration(), request, server.application.CompleteCommercialFeatureMigration)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *ModuleCatalogOperationServer) CreateCommercialFeature(ctx context.Context, request *commercialv1.CreateCommercialFeatureRequest) (*commercialv1.CommercialFeatureDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogCreateCommercialFeature(), request, server.application.CreateCommercialFeature)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *ModuleCatalogOperationServer) CreateModule(ctx context.Context, request *commercialv1.CreateModuleRequest) (*commercialv1.ModuleDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
@@ -61,6 +87,19 @@ func (server *ModuleCatalogOperationServer) DeleteModule(ctx context.Context, re
 	return response, nil
 }
 
+func (server *ModuleCatalogOperationServer) GetCommercialFeature(ctx context.Context, request *commercialv1.GetCommercialFeatureRequest) (*commercialv1.CommercialFeatureDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogGetCommercialFeature(), request, server.application.GetCommercialFeature)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *ModuleCatalogOperationServer) GetModule(ctx context.Context, request *commercialv1.GetModuleRequest) (*commercialv1.ModuleDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
@@ -68,6 +107,19 @@ func (server *ModuleCatalogOperationServer) GetModule(ctx context.Context, reque
 		}
 	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogGetModule(), request, server.application.GetModule)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *ModuleCatalogOperationServer) ListCommercialFeatures(ctx context.Context, request *commercialv1.ListCommercialFeaturesRequest) (*commercialv1.ListCommercialFeaturesResponse, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogListCommercialFeatures(), request, server.application.ListCommercialFeatures)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
@@ -87,6 +139,32 @@ func (server *ModuleCatalogOperationServer) ListModules(ctx context.Context, req
 	return response, nil
 }
 
+func (server *ModuleCatalogOperationServer) PlanCommercialFeatureSunset(ctx context.Context, request *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogPlanCommercialFeatureSunset(), request, server.application.PlanCommercialFeatureSunset)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *ModuleCatalogOperationServer) PublishCommercialFeature(ctx context.Context, request *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogPublishCommercialFeature(), request, server.application.PublishCommercialFeature)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
 func (server *ModuleCatalogOperationServer) RecordModuleRuntimeVerification(ctx context.Context, request *commercialv1.RecordModuleRuntimeVerificationRequest) (*commercialv1.ModuleDTO, error) {
 	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 		if values := metadata.Get("idempotency-key"); len(values) > 0 {
@@ -94,6 +172,19 @@ func (server *ModuleCatalogOperationServer) RecordModuleRuntimeVerification(ctx 
 		}
 	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogRecordModuleRuntimeVerification(), request, server.application.RecordModuleRuntimeVerification)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *ModuleCatalogOperationServer) RetireCommercialFeature(ctx context.Context, request *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogRetireCommercialFeature(), request, server.application.RetireCommercialFeature)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}
@@ -120,6 +211,19 @@ func (server *ModuleCatalogOperationServer) SetModuleTechnicalStatus(ctx context
 		}
 	}
 	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogSetModuleTechnicalStatus(), request, server.application.SetModuleTechnicalStatus)
+	if err != nil {
+		return nil, gatewaygrpc.OperationError(err)
+	}
+	return response, nil
+}
+
+func (server *ModuleCatalogOperationServer) StopSellingCommercialFeature(ctx context.Context, request *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error) {
+	if metadata, ok := grpcmetadata.FromIncomingContext(ctx); ok {
+		if values := metadata.Get("idempotency-key"); len(values) > 0 {
+			ctx = execution.WithIdempotencyKey(ctx, values[0])
+		}
+	}
+	response, err := operation.ExecuteTyped(ctx, server.executor, policy.OperationPlanModuleCatalogStopSellingCommercialFeature(), request, server.application.StopSellingCommercialFeature)
 	if err != nil {
 		return nil, gatewaygrpc.OperationError(err)
 	}

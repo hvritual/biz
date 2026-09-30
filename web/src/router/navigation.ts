@@ -64,7 +64,7 @@ export const platformCommercialNavigation: NavigationItem[] = [
   { id: 'changes', label: '套餐变更', icon: 'refresh', path: '/platform/commercial/changes', group: '租户生命周期', groupId: 'lifecycle', commercialAuthority: 'preview' },
   { id: 'expiry', label: '到期与宽限', icon: 'clock', path: '/platform/commercial/expiry', group: '租户生命周期', groupId: 'lifecycle', commercialAuthority: 'preview' },
   { id: 'modules', label: '模块目录', icon: 'database', path: '/platform/commercial/modules', group: '产品与定价', groupId: 'product', commercialAuthority: 'real' },
-  { id: 'features', label: '商业功能', icon: 'layers', path: '/platform/commercial/features', group: '产品与定价', groupId: 'product', commercialAuthority: 'preview' },
+  { id: 'features', label: '商业功能', icon: 'layers', path: '/platform/commercial/features', group: '产品与定价', groupId: 'product', commercialAuthority: 'real' },
   { id: 'plans', label: '套餐版本', icon: 'crown', path: '/platform/commercial/plans', group: '产品与定价', groupId: 'product', commercialAuthority: 'real' },
   { id: 'add-ons', label: '增购项', icon: 'plus', path: '/platform/commercial/add-ons', group: '产品与定价', groupId: 'product', commercialAuthority: 'preview' },
   { id: 'tenant-entitlements', label: '租户权益', icon: 'shield', path: '/platform/commercial/tenant-entitlements', group: '权益与授权', groupId: 'entitlement', commercialAuthority: 'real' },

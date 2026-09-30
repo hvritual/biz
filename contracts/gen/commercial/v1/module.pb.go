@@ -898,6 +898,528 @@ func (x *RecordModuleRuntimeVerificationRequest) GetSourceTree() string {
 	return ""
 }
 
+// CommercialFeature owns customer-facing lifecycle semantics while referring
+// to the technical Module/Capability authority by stable code.
+type CommercialFeatureModuleReference struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	ModuleCode      string                 `protobuf:"bytes,1,opt,name=module_code,json=moduleCode,proto3" json:"module_code,omitempty"`
+	CapabilityCodes []string               `protobuf:"bytes,2,rep,name=capability_codes,json=capabilityCodes,proto3" json:"capability_codes,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CommercialFeatureModuleReference) Reset() {
+	*x = CommercialFeatureModuleReference{}
+	mi := &file_commercial_v1_module_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommercialFeatureModuleReference) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommercialFeatureModuleReference) ProtoMessage() {}
+
+func (x *CommercialFeatureModuleReference) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_module_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommercialFeatureModuleReference.ProtoReflect.Descriptor instead.
+func (*CommercialFeatureModuleReference) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_module_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *CommercialFeatureModuleReference) GetModuleCode() string {
+	if x != nil {
+		return x.ModuleCode
+	}
+	return ""
+}
+
+func (x *CommercialFeatureModuleReference) GetCapabilityCodes() []string {
+	if x != nil {
+		return x.CapabilityCodes
+	}
+	return nil
+}
+
+type CommercialFeatureReferenceImpact struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	PublishedPlans      uint64                 `protobuf:"varint,1,opt,name=published_plans,json=publishedPlans,proto3" json:"published_plans,omitempty"`
+	AddOns              uint64                 `protobuf:"varint,2,opt,name=add_ons,json=addOns,proto3" json:"add_ons,omitempty"`
+	ActiveSubscriptions uint64                 `protobuf:"varint,3,opt,name=active_subscriptions,json=activeSubscriptions,proto3" json:"active_subscriptions,omitempty"`
+	EntitlementSources  uint64                 `protobuf:"varint,4,opt,name=entitlement_sources,json=entitlementSources,proto3" json:"entitlement_sources,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *CommercialFeatureReferenceImpact) Reset() {
+	*x = CommercialFeatureReferenceImpact{}
+	mi := &file_commercial_v1_module_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommercialFeatureReferenceImpact) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommercialFeatureReferenceImpact) ProtoMessage() {}
+
+func (x *CommercialFeatureReferenceImpact) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_module_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommercialFeatureReferenceImpact.ProtoReflect.Descriptor instead.
+func (*CommercialFeatureReferenceImpact) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_module_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *CommercialFeatureReferenceImpact) GetPublishedPlans() uint64 {
+	if x != nil {
+		return x.PublishedPlans
+	}
+	return 0
+}
+
+func (x *CommercialFeatureReferenceImpact) GetAddOns() uint64 {
+	if x != nil {
+		return x.AddOns
+	}
+	return 0
+}
+
+func (x *CommercialFeatureReferenceImpact) GetActiveSubscriptions() uint64 {
+	if x != nil {
+		return x.ActiveSubscriptions
+	}
+	return 0
+}
+
+func (x *CommercialFeatureReferenceImpact) GetEntitlementSources() uint64 {
+	if x != nil {
+		return x.EntitlementSources
+	}
+	return 0
+}
+
+type CommercialFeatureDTO struct {
+	state           protoimpl.MessageState              `protogen:"open.v1"`
+	FeatureCode     string                              `protobuf:"bytes,1,opt,name=feature_code,json=featureCode,proto3" json:"feature_code,omitempty"`
+	Name            string                              `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Version         uint64                              `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
+	ModuleRefs      []*CommercialFeatureModuleReference `protobuf:"bytes,4,rep,name=module_refs,json=moduleRefs,proto3" json:"module_refs,omitempty"`
+	ProductState    string                              `protobuf:"bytes,5,opt,name=product_state,json=productState,proto3" json:"product_state,omitempty"`
+	SalesState      string                              `protobuf:"bytes,6,opt,name=sales_state,json=salesState,proto3" json:"sales_state,omitempty"`
+	RuntimeState    string                              `protobuf:"bytes,7,opt,name=runtime_state,json=runtimeState,proto3" json:"runtime_state,omitempty"`
+	MigrationState  string                              `protobuf:"bytes,8,opt,name=migration_state,json=migrationState,proto3" json:"migration_state,omitempty"`
+	ReplacementCode string                              `protobuf:"bytes,9,opt,name=replacement_code,json=replacementCode,proto3" json:"replacement_code,omitempty"`
+	ReferenceImpact *CommercialFeatureReferenceImpact   `protobuf:"bytes,10,opt,name=reference_impact,json=referenceImpact,proto3" json:"reference_impact,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CommercialFeatureDTO) Reset() {
+	*x = CommercialFeatureDTO{}
+	mi := &file_commercial_v1_module_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommercialFeatureDTO) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommercialFeatureDTO) ProtoMessage() {}
+
+func (x *CommercialFeatureDTO) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_module_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommercialFeatureDTO.ProtoReflect.Descriptor instead.
+func (*CommercialFeatureDTO) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_module_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *CommercialFeatureDTO) GetFeatureCode() string {
+	if x != nil {
+		return x.FeatureCode
+	}
+	return ""
+}
+
+func (x *CommercialFeatureDTO) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CommercialFeatureDTO) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *CommercialFeatureDTO) GetModuleRefs() []*CommercialFeatureModuleReference {
+	if x != nil {
+		return x.ModuleRefs
+	}
+	return nil
+}
+
+func (x *CommercialFeatureDTO) GetProductState() string {
+	if x != nil {
+		return x.ProductState
+	}
+	return ""
+}
+
+func (x *CommercialFeatureDTO) GetSalesState() string {
+	if x != nil {
+		return x.SalesState
+	}
+	return ""
+}
+
+func (x *CommercialFeatureDTO) GetRuntimeState() string {
+	if x != nil {
+		return x.RuntimeState
+	}
+	return ""
+}
+
+func (x *CommercialFeatureDTO) GetMigrationState() string {
+	if x != nil {
+		return x.MigrationState
+	}
+	return ""
+}
+
+func (x *CommercialFeatureDTO) GetReplacementCode() string {
+	if x != nil {
+		return x.ReplacementCode
+	}
+	return ""
+}
+
+func (x *CommercialFeatureDTO) GetReferenceImpact() *CommercialFeatureReferenceImpact {
+	if x != nil {
+		return x.ReferenceImpact
+	}
+	return nil
+}
+
+type CreateCommercialFeatureRequest struct {
+	state         protoimpl.MessageState              `protogen:"open.v1"`
+	RequestId     string                              `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	FeatureCode   string                              `protobuf:"bytes,2,opt,name=feature_code,json=featureCode,proto3" json:"feature_code,omitempty"`
+	Name          string                              `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	ModuleRefs    []*CommercialFeatureModuleReference `protobuf:"bytes,4,rep,name=module_refs,json=moduleRefs,proto3" json:"module_refs,omitempty"`
+	Reason        string                              `protobuf:"bytes,5,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateCommercialFeatureRequest) Reset() {
+	*x = CreateCommercialFeatureRequest{}
+	mi := &file_commercial_v1_module_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateCommercialFeatureRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateCommercialFeatureRequest) ProtoMessage() {}
+
+func (x *CreateCommercialFeatureRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_module_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateCommercialFeatureRequest.ProtoReflect.Descriptor instead.
+func (*CreateCommercialFeatureRequest) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_module_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *CreateCommercialFeatureRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *CreateCommercialFeatureRequest) GetFeatureCode() string {
+	if x != nil {
+		return x.FeatureCode
+	}
+	return ""
+}
+
+func (x *CreateCommercialFeatureRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateCommercialFeatureRequest) GetModuleRefs() []*CommercialFeatureModuleReference {
+	if x != nil {
+		return x.ModuleRefs
+	}
+	return nil
+}
+
+func (x *CreateCommercialFeatureRequest) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type GetCommercialFeatureRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FeatureCode   string                 `protobuf:"bytes,1,opt,name=feature_code,json=featureCode,proto3" json:"feature_code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCommercialFeatureRequest) Reset() {
+	*x = GetCommercialFeatureRequest{}
+	mi := &file_commercial_v1_module_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCommercialFeatureRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCommercialFeatureRequest) ProtoMessage() {}
+
+func (x *GetCommercialFeatureRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_module_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCommercialFeatureRequest.ProtoReflect.Descriptor instead.
+func (*GetCommercialFeatureRequest) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_module_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *GetCommercialFeatureRequest) GetFeatureCode() string {
+	if x != nil {
+		return x.FeatureCode
+	}
+	return ""
+}
+
+type ListCommercialFeaturesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCommercialFeaturesRequest) Reset() {
+	*x = ListCommercialFeaturesRequest{}
+	mi := &file_commercial_v1_module_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCommercialFeaturesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCommercialFeaturesRequest) ProtoMessage() {}
+
+func (x *ListCommercialFeaturesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_module_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCommercialFeaturesRequest.ProtoReflect.Descriptor instead.
+func (*ListCommercialFeaturesRequest) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_module_proto_rawDescGZIP(), []int{16}
+}
+
+type ListCommercialFeaturesResponse struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Features      []*CommercialFeatureDTO `protobuf:"bytes,1,rep,name=features,proto3" json:"features,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCommercialFeaturesResponse) Reset() {
+	*x = ListCommercialFeaturesResponse{}
+	mi := &file_commercial_v1_module_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCommercialFeaturesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCommercialFeaturesResponse) ProtoMessage() {}
+
+func (x *ListCommercialFeaturesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_module_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCommercialFeaturesResponse.ProtoReflect.Descriptor instead.
+func (*ListCommercialFeaturesResponse) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_module_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ListCommercialFeaturesResponse) GetFeatures() []*CommercialFeatureDTO {
+	if x != nil {
+		return x.Features
+	}
+	return nil
+}
+
+type CommercialFeatureLifecycleRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	RequestId       string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	FeatureCode     string                 `protobuf:"bytes,2,opt,name=feature_code,json=featureCode,proto3" json:"feature_code,omitempty"`
+	Version         uint64                 `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
+	Reason          string                 `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
+	ReplacementCode string                 `protobuf:"bytes,5,opt,name=replacement_code,json=replacementCode,proto3" json:"replacement_code,omitempty"`
+	MigrationState  string                 `protobuf:"bytes,6,opt,name=migration_state,json=migrationState,proto3" json:"migration_state,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CommercialFeatureLifecycleRequest) Reset() {
+	*x = CommercialFeatureLifecycleRequest{}
+	mi := &file_commercial_v1_module_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommercialFeatureLifecycleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommercialFeatureLifecycleRequest) ProtoMessage() {}
+
+func (x *CommercialFeatureLifecycleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_v1_module_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommercialFeatureLifecycleRequest.ProtoReflect.Descriptor instead.
+func (*CommercialFeatureLifecycleRequest) Descriptor() ([]byte, []int) {
+	return file_commercial_v1_module_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *CommercialFeatureLifecycleRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *CommercialFeatureLifecycleRequest) GetFeatureCode() string {
+	if x != nil {
+		return x.FeatureCode
+	}
+	return ""
+}
+
+func (x *CommercialFeatureLifecycleRequest) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *CommercialFeatureLifecycleRequest) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *CommercialFeatureLifecycleRequest) GetReplacementCode() string {
+	if x != nil {
+		return x.ReplacementCode
+	}
+	return ""
+}
+
+func (x *CommercialFeatureLifecycleRequest) GetMigrationState() string {
+	if x != nil {
+		return x.MigrationState
+	}
+	return ""
+}
+
 var File_commercial_v1_module_proto protoreflect.FileDescriptor
 
 const file_commercial_v1_module_proto_rawDesc = "" +
@@ -980,7 +1502,51 @@ const file_commercial_v1_module_proto_rawDesc = "" +
 	"\x0emodule_version\x18\x03 \x01(\x04R\rmoduleVersion\x12'\n" +
 	"\x0fevidence_digest\x18\x04 \x01(\tR\x0eevidenceDigest\x12\x1f\n" +
 	"\vsource_tree\x18\x05 \x01(\tR\n" +
-	"sourceTree*\xb0\x01\n" +
+	"sourceTree\"n\n" +
+	" CommercialFeatureModuleReference\x12\x1f\n" +
+	"\vmodule_code\x18\x01 \x01(\tR\n" +
+	"moduleCode\x12)\n" +
+	"\x10capability_codes\x18\x02 \x03(\tR\x0fcapabilityCodes\"\xc8\x01\n" +
+	" CommercialFeatureReferenceImpact\x12'\n" +
+	"\x0fpublished_plans\x18\x01 \x01(\x04R\x0epublishedPlans\x12\x17\n" +
+	"\aadd_ons\x18\x02 \x01(\x04R\x06addOns\x121\n" +
+	"\x14active_subscriptions\x18\x03 \x01(\x04R\x13activeSubscriptions\x12/\n" +
+	"\x13entitlement_sources\x18\x04 \x01(\x04R\x12entitlementSources\"\xdc\x03\n" +
+	"\x14CommercialFeatureDTO\x12!\n" +
+	"\ffeature_code\x18\x01 \x01(\tR\vfeatureCode\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\x04R\aversion\x12P\n" +
+	"\vmodule_refs\x18\x04 \x03(\v2/.commercial.v1.CommercialFeatureModuleReferenceR\n" +
+	"moduleRefs\x12#\n" +
+	"\rproduct_state\x18\x05 \x01(\tR\fproductState\x12\x1f\n" +
+	"\vsales_state\x18\x06 \x01(\tR\n" +
+	"salesState\x12#\n" +
+	"\rruntime_state\x18\a \x01(\tR\fruntimeState\x12'\n" +
+	"\x0fmigration_state\x18\b \x01(\tR\x0emigrationState\x12)\n" +
+	"\x10replacement_code\x18\t \x01(\tR\x0freplacementCode\x12Z\n" +
+	"\x10reference_impact\x18\n" +
+	" \x01(\v2/.commercial.v1.CommercialFeatureReferenceImpactR\x0freferenceImpact:\x06\xd2\xf3\x18\x02\b\x02\"\xe0\x01\n" +
+	"\x1eCreateCommercialFeatureRequest\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12!\n" +
+	"\ffeature_code\x18\x02 \x01(\tR\vfeatureCode\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12P\n" +
+	"\vmodule_refs\x18\x04 \x03(\v2/.commercial.v1.CommercialFeatureModuleReferenceR\n" +
+	"moduleRefs\x12\x16\n" +
+	"\x06reason\x18\x05 \x01(\tR\x06reason\"@\n" +
+	"\x1bGetCommercialFeatureRequest\x12!\n" +
+	"\ffeature_code\x18\x01 \x01(\tR\vfeatureCode\"\x1f\n" +
+	"\x1dListCommercialFeaturesRequest\"a\n" +
+	"\x1eListCommercialFeaturesResponse\x12?\n" +
+	"\bfeatures\x18\x01 \x03(\v2#.commercial.v1.CommercialFeatureDTOR\bfeatures\"\xeb\x01\n" +
+	"!CommercialFeatureLifecycleRequest\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12!\n" +
+	"\ffeature_code\x18\x02 \x01(\tR\vfeatureCode\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\x04R\aversion\x12\x16\n" +
+	"\x06reason\x18\x04 \x01(\tR\x06reason\x12)\n" +
+	"\x10replacement_code\x18\x05 \x01(\tR\x0freplacementCode\x12'\n" +
+	"\x0fmigration_state\x18\x06 \x01(\tR\x0emigrationState*\xb0\x01\n" +
 	"\x15ModuleTechnicalStatus\x12'\n" +
 	"#MODULE_TECHNICAL_STATUS_UNSPECIFIED\x10\x00\x12%\n" +
 	"!MODULE_TECHNICAL_STATUS_NOT_READY\x10\x01\x12!\n" +
@@ -989,7 +1555,7 @@ const file_commercial_v1_module_proto_rawDesc = "" +
 	"\x11ModuleSalesStatus\x12#\n" +
 	"\x1fMODULE_SALES_STATUS_UNSPECIFIED\x10\x00\x12 \n" +
 	"\x1cMODULE_SALES_STATUS_SELLABLE\x10\x01\x12\x1f\n" +
-	"\x1bMODULE_SALES_STATUS_RETIRED\x10\x022\xd4\x11\n" +
+	"\x1bMODULE_SALES_STATUS_RETIRED\x10\x022\xf6\"\n" +
 	"\x18ModuleCatalogApplication\x12\xbc\x01\n" +
 	"\fCreateModule\x12\".commercial.v1.CreateModuleRequest\x1a\x18.commercial.v1.ModuleDTO\"n\xe2\xf3\x18K\n" +
 	"\x18commercial.module.create\x12\rcreate_module\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/platform/modules\x12\xb9\x01\n" +
@@ -1007,7 +1573,23 @@ const file_commercial_v1_module_proto_rawDesc = "" +
 	"\fDeleteModule\x12\".commercial.v1.DeleteModuleRequest\x1a#.commercial.v1.DeleteModuleResponse\"y\xe2\xf3\x18K\n" +
 	"\x18commercial.module.delete\x12\rdelete_module\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02$*\"/v1/platform/modules/{module_code}\x12\xb6\x02\n" +
 	"\x1fRecordModuleRuntimeVerification\x125.commercial.v1.RecordModuleRuntimeVerificationRequest\x1a\x18.commercial.v1.ModuleDTO\"\xc1\x01\xe2\xf3\x18o\n" +
-	" commercial.module.runtime.verify\x12\"record_module_runtime_verification\x1a\x1eplatform.module.runtime.verify2\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02H:\x01*\"C/v1/internal/commercial/modules/{module_code}/runtime-verifications\x1a\x86\x03\xda\xf3\x18\x81\x03\n" +
+	" commercial.module.runtime.verify\x12\"record_module_runtime_verification\x1a\x1eplatform.module.runtime.verify2\x01\x02R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02H:\x01*\"C/v1/internal/commercial/modules/{module_code}/runtime-verifications\x12\xf7\x01\n" +
+	"\x17CreateCommercialFeature\x12-.commercial.v1.CreateCommercialFeatureRequest\x1a#.commercial.v1.CommercialFeatureDTO\"\x87\x01\xe2\xf3\x18X\n" +
+	"\x19commercial.feature.create\x12\x19create_commercial_feature\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02%:\x01*\" /v1/platform/commercial-features\x12\xf5\x01\n" +
+	"\x14GetCommercialFeature\x12*.commercial.v1.GetCommercialFeatureRequest\x1a#.commercial.v1.CommercialFeatureDTO\"\x8b\x01\xe2\xf3\x18P\n" +
+	"\x16commercial.feature.get\x12\x16get_commercial_feature\x1a\x14platform.module.read2\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x021\x12//v1/platform/commercial-features/{feature_code}\x12\xf6\x01\n" +
+	"\x16ListCommercialFeatures\x12,.commercial.v1.ListCommercialFeaturesRequest\x1a-.commercial.v1.ListCommercialFeaturesResponse\"\x7f\xe2\xf3\x18S\n" +
+	"\x17commercial.feature.list\x12\x18list_commercial_features\x1a\x14platform.module.read2\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/platform/commercial-features\x12\x94\x02\n" +
+	"\x18PublishCommercialFeature\x120.commercial.v1.CommercialFeatureLifecycleRequest\x1a#.commercial.v1.CommercialFeatureDTO\"\xa0\x01\xe2\xf3\x18Z\n" +
+	"\x1acommercial.feature.publish\x12\x1apublish_commercial_feature\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02<:\x01*\"7/v1/platform/commercial-features/{feature_code}/publish\x12\xa7\x02\n" +
+	"\x1cStopSellingCommercialFeature\x120.commercial.v1.CommercialFeatureLifecycleRequest\x1a#.commercial.v1.CommercialFeatureDTO\"\xaf\x01\xe2\xf3\x18d\n" +
+	"\x1fcommercial.feature.stop_selling\x12\x1fstop_selling_commercial_feature\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02A:\x01*\"</v1/platform/commercial-features/{feature_code}/stop-selling\x12\x9e\x02\n" +
+	"\x1bPlanCommercialFeatureSunset\x120.commercial.v1.CommercialFeatureLifecycleRequest\x1a#.commercial.v1.CommercialFeatureDTO\"\xa7\x01\xe2\xf3\x18b\n" +
+	"\x1ecommercial.feature.plan_sunset\x12\x1eplan_commercial_feature_sunset\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02;:\x01*\"6/v1/platform/commercial-features/{feature_code}/sunset\x12\xbf\x02\n" +
+	"\"CompleteCommercialFeatureMigration\x120.commercial.v1.CommercialFeatureLifecycleRequest\x1a#.commercial.v1.CommercialFeatureDTO\"\xc1\x01\xe2\xf3\x18p\n" +
+	"%commercial.feature.complete_migration\x12%complete_commercial_feature_migration\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02G:\x01*\"B/v1/platform/commercial-features/{feature_code}/complete-migration\x12\x90\x02\n" +
+	"\x17RetireCommercialFeature\x120.commercial.v1.CommercialFeatureLifecycleRequest\x1a#.commercial.v1.CommercialFeatureDTO\"\x9d\x01\xe2\xf3\x18X\n" +
+	"\x19commercial.feature.retire\x12\x19retire_commercial_feature\x1a\x16platform.module.manage2\x02\x02\x04R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02;:\x01*\"6/v1/platform/commercial-features/{feature_code}/retire\x1a\x86\x03\xda\xf3\x18\x81\x03\n" +
 	"\x0emodule_catalog\x1a\xab\x01\n" +
 	"\x1ecommercial.module.plan_catalog\x12\x11read_plan_catalog\x1a\x17commercial.catalog.read2\x01\x02R\x04\b\x02\x10\x01Z commercial.v1.ListModulesRequestb!commercial.v1.ListModulesResponsej\x0fReadPlanCatalog\x1a\xc0\x01\n" +
 	"%commercial.module.entitlement_catalog\x12\x18read_entitlement_catalog\x1a\x17commercial.catalog.read2\x01\x02R\x04\b\x02\x10\x01Z commercial.v1.ListModulesRequestb!commercial.v1.ListModulesResponsej\x16ReadEntitlementCatalogBV\xca\xf3\x18\x10\n" +
@@ -1027,7 +1609,7 @@ func file_commercial_v1_module_proto_rawDescGZIP() []byte {
 }
 
 var file_commercial_v1_module_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_commercial_v1_module_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_commercial_v1_module_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_commercial_v1_module_proto_goTypes = []any{
 	(ModuleTechnicalStatus)(0),                     // 0: commercial.v1.ModuleTechnicalStatus
 	(ModuleSalesStatus)(0),                         // 1: commercial.v1.ModuleSalesStatus
@@ -1042,6 +1624,14 @@ var file_commercial_v1_module_proto_goTypes = []any{
 	(*DeleteModuleRequest)(nil),                    // 10: commercial.v1.DeleteModuleRequest
 	(*DeleteModuleResponse)(nil),                   // 11: commercial.v1.DeleteModuleResponse
 	(*RecordModuleRuntimeVerificationRequest)(nil), // 12: commercial.v1.RecordModuleRuntimeVerificationRequest
+	(*CommercialFeatureModuleReference)(nil),       // 13: commercial.v1.CommercialFeatureModuleReference
+	(*CommercialFeatureReferenceImpact)(nil),       // 14: commercial.v1.CommercialFeatureReferenceImpact
+	(*CommercialFeatureDTO)(nil),                   // 15: commercial.v1.CommercialFeatureDTO
+	(*CreateCommercialFeatureRequest)(nil),         // 16: commercial.v1.CreateCommercialFeatureRequest
+	(*GetCommercialFeatureRequest)(nil),            // 17: commercial.v1.GetCommercialFeatureRequest
+	(*ListCommercialFeaturesRequest)(nil),          // 18: commercial.v1.ListCommercialFeaturesRequest
+	(*ListCommercialFeaturesResponse)(nil),         // 19: commercial.v1.ListCommercialFeaturesResponse
+	(*CommercialFeatureLifecycleRequest)(nil),      // 20: commercial.v1.CommercialFeatureLifecycleRequest
 }
 var file_commercial_v1_module_proto_depIdxs = []int32{
 	0,  // 0: commercial.v1.ModuleDTO.technical_status:type_name -> commercial.v1.ModuleTechnicalStatus
@@ -1049,27 +1639,47 @@ var file_commercial_v1_module_proto_depIdxs = []int32{
 	2,  // 2: commercial.v1.ListModulesResponse.modules:type_name -> commercial.v1.ModuleDTO
 	1,  // 3: commercial.v1.SetModuleSalesStatusRequest.sales_status:type_name -> commercial.v1.ModuleSalesStatus
 	0,  // 4: commercial.v1.SetModuleTechnicalStatusRequest.technical_status:type_name -> commercial.v1.ModuleTechnicalStatus
-	3,  // 5: commercial.v1.ModuleCatalogApplication.CreateModule:input_type -> commercial.v1.CreateModuleRequest
-	4,  // 6: commercial.v1.ModuleCatalogApplication.GetModule:input_type -> commercial.v1.GetModuleRequest
-	5,  // 7: commercial.v1.ModuleCatalogApplication.ListModules:input_type -> commercial.v1.ListModulesRequest
-	7,  // 8: commercial.v1.ModuleCatalogApplication.UpdateModule:input_type -> commercial.v1.UpdateModuleRequest
-	8,  // 9: commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus:input_type -> commercial.v1.SetModuleSalesStatusRequest
-	9,  // 10: commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus:input_type -> commercial.v1.SetModuleTechnicalStatusRequest
-	10, // 11: commercial.v1.ModuleCatalogApplication.DeleteModule:input_type -> commercial.v1.DeleteModuleRequest
-	12, // 12: commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification:input_type -> commercial.v1.RecordModuleRuntimeVerificationRequest
-	2,  // 13: commercial.v1.ModuleCatalogApplication.CreateModule:output_type -> commercial.v1.ModuleDTO
-	2,  // 14: commercial.v1.ModuleCatalogApplication.GetModule:output_type -> commercial.v1.ModuleDTO
-	6,  // 15: commercial.v1.ModuleCatalogApplication.ListModules:output_type -> commercial.v1.ListModulesResponse
-	2,  // 16: commercial.v1.ModuleCatalogApplication.UpdateModule:output_type -> commercial.v1.ModuleDTO
-	2,  // 17: commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus:output_type -> commercial.v1.ModuleDTO
-	2,  // 18: commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus:output_type -> commercial.v1.ModuleDTO
-	11, // 19: commercial.v1.ModuleCatalogApplication.DeleteModule:output_type -> commercial.v1.DeleteModuleResponse
-	2,  // 20: commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification:output_type -> commercial.v1.ModuleDTO
-	13, // [13:21] is the sub-list for method output_type
-	5,  // [5:13] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	13, // 5: commercial.v1.CommercialFeatureDTO.module_refs:type_name -> commercial.v1.CommercialFeatureModuleReference
+	14, // 6: commercial.v1.CommercialFeatureDTO.reference_impact:type_name -> commercial.v1.CommercialFeatureReferenceImpact
+	13, // 7: commercial.v1.CreateCommercialFeatureRequest.module_refs:type_name -> commercial.v1.CommercialFeatureModuleReference
+	15, // 8: commercial.v1.ListCommercialFeaturesResponse.features:type_name -> commercial.v1.CommercialFeatureDTO
+	3,  // 9: commercial.v1.ModuleCatalogApplication.CreateModule:input_type -> commercial.v1.CreateModuleRequest
+	4,  // 10: commercial.v1.ModuleCatalogApplication.GetModule:input_type -> commercial.v1.GetModuleRequest
+	5,  // 11: commercial.v1.ModuleCatalogApplication.ListModules:input_type -> commercial.v1.ListModulesRequest
+	7,  // 12: commercial.v1.ModuleCatalogApplication.UpdateModule:input_type -> commercial.v1.UpdateModuleRequest
+	8,  // 13: commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus:input_type -> commercial.v1.SetModuleSalesStatusRequest
+	9,  // 14: commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus:input_type -> commercial.v1.SetModuleTechnicalStatusRequest
+	10, // 15: commercial.v1.ModuleCatalogApplication.DeleteModule:input_type -> commercial.v1.DeleteModuleRequest
+	12, // 16: commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification:input_type -> commercial.v1.RecordModuleRuntimeVerificationRequest
+	16, // 17: commercial.v1.ModuleCatalogApplication.CreateCommercialFeature:input_type -> commercial.v1.CreateCommercialFeatureRequest
+	17, // 18: commercial.v1.ModuleCatalogApplication.GetCommercialFeature:input_type -> commercial.v1.GetCommercialFeatureRequest
+	18, // 19: commercial.v1.ModuleCatalogApplication.ListCommercialFeatures:input_type -> commercial.v1.ListCommercialFeaturesRequest
+	20, // 20: commercial.v1.ModuleCatalogApplication.PublishCommercialFeature:input_type -> commercial.v1.CommercialFeatureLifecycleRequest
+	20, // 21: commercial.v1.ModuleCatalogApplication.StopSellingCommercialFeature:input_type -> commercial.v1.CommercialFeatureLifecycleRequest
+	20, // 22: commercial.v1.ModuleCatalogApplication.PlanCommercialFeatureSunset:input_type -> commercial.v1.CommercialFeatureLifecycleRequest
+	20, // 23: commercial.v1.ModuleCatalogApplication.CompleteCommercialFeatureMigration:input_type -> commercial.v1.CommercialFeatureLifecycleRequest
+	20, // 24: commercial.v1.ModuleCatalogApplication.RetireCommercialFeature:input_type -> commercial.v1.CommercialFeatureLifecycleRequest
+	2,  // 25: commercial.v1.ModuleCatalogApplication.CreateModule:output_type -> commercial.v1.ModuleDTO
+	2,  // 26: commercial.v1.ModuleCatalogApplication.GetModule:output_type -> commercial.v1.ModuleDTO
+	6,  // 27: commercial.v1.ModuleCatalogApplication.ListModules:output_type -> commercial.v1.ListModulesResponse
+	2,  // 28: commercial.v1.ModuleCatalogApplication.UpdateModule:output_type -> commercial.v1.ModuleDTO
+	2,  // 29: commercial.v1.ModuleCatalogApplication.SetModuleSalesStatus:output_type -> commercial.v1.ModuleDTO
+	2,  // 30: commercial.v1.ModuleCatalogApplication.SetModuleTechnicalStatus:output_type -> commercial.v1.ModuleDTO
+	11, // 31: commercial.v1.ModuleCatalogApplication.DeleteModule:output_type -> commercial.v1.DeleteModuleResponse
+	2,  // 32: commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification:output_type -> commercial.v1.ModuleDTO
+	15, // 33: commercial.v1.ModuleCatalogApplication.CreateCommercialFeature:output_type -> commercial.v1.CommercialFeatureDTO
+	15, // 34: commercial.v1.ModuleCatalogApplication.GetCommercialFeature:output_type -> commercial.v1.CommercialFeatureDTO
+	19, // 35: commercial.v1.ModuleCatalogApplication.ListCommercialFeatures:output_type -> commercial.v1.ListCommercialFeaturesResponse
+	15, // 36: commercial.v1.ModuleCatalogApplication.PublishCommercialFeature:output_type -> commercial.v1.CommercialFeatureDTO
+	15, // 37: commercial.v1.ModuleCatalogApplication.StopSellingCommercialFeature:output_type -> commercial.v1.CommercialFeatureDTO
+	15, // 38: commercial.v1.ModuleCatalogApplication.PlanCommercialFeatureSunset:output_type -> commercial.v1.CommercialFeatureDTO
+	15, // 39: commercial.v1.ModuleCatalogApplication.CompleteCommercialFeatureMigration:output_type -> commercial.v1.CommercialFeatureDTO
+	15, // 40: commercial.v1.ModuleCatalogApplication.RetireCommercialFeature:output_type -> commercial.v1.CommercialFeatureDTO
+	25, // [25:41] is the sub-list for method output_type
+	9,  // [9:25] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_commercial_v1_module_proto_init() }
@@ -1083,7 +1693,7 @@ func file_commercial_v1_module_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_commercial_v1_module_proto_rawDesc), len(file_commercial_v1_module_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   11,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
