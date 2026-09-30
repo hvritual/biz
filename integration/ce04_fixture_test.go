@@ -124,7 +124,7 @@ func ce04NewEnvironment(t *testing.T, prefix string) *ce04Environment {
 		if err != nil {
 			t.Fatal(err)
 		}
-		verifier := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:ce04", Authenticated: true, AuthMethod: identity.AuthMethodServiceToken})
+		verifier := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:ce04", Roles: []string{"signed-service-api"}, Authenticated: true, AuthMethod: identity.AuthMethodAPIKey})
 		if err := service.RecordRuntimeVerification(verifier, modulecatalog.RuntimeVerificationCommand{ModuleCode: code, ModuleVersion: m.Version, EvidenceDigest: strings.Repeat("a", 64), SourceTree: strings.Repeat("b", 64)}); err != nil {
 			t.Fatal(err)
 		}

@@ -118,7 +118,7 @@ func seedB122DefaultSubscription(t *testing.T, started *bizruntime.Started, db *
 	if err != nil {
 		t.Fatal(err)
 	}
-	verifier := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:b12", Authenticated: true, AuthMethod: identity.AuthMethodServiceToken})
+	verifier := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:b12", Roles: []string{"signed-service-api"}, Authenticated: true, AuthMethod: identity.AuthMethodAPIKey})
 	if err := moduleService.RecordRuntimeVerification(verifier, modulecatalog.RuntimeVerificationCommand{ModuleCode: module.GetModuleCode(), ModuleVersion: module.GetVersion(), EvidenceDigest: strings.Repeat("a", 64), SourceTree: strings.Repeat("b", 64)}); err != nil {
 		t.Fatal(err)
 	}

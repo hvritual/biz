@@ -300,10 +300,10 @@ func (auth *serviceAPIAuthenticator) authenticate(request *http.Request) (identi
 		}
 		return identity.Principal{}, accesspersistence.ErrUnauthorized
 	}
-	// A signed service credential is not an interchangeable platform API key.
-	// Downstream admission flows use this distinct principal kind to prevent a
-	// normal administrator from self-signing release evidence.
-	return identity.Principal{Subject: fact.Subject, AuthMethod: identity.AuthMethodServiceToken, Authenticated: true}, nil
+	// Existing operation contracts authorize machine credentials as api-key.
+	// Preserve that transport-compatible method while attaching a role that is
+	// minted only after this HMAC verifier has accepted the credential.
+	return identity.Principal{Subject: fact.Subject, Roles: []string{"signed-service-api"}, AuthMethod: identity.AuthMethodAPIKey, Authenticated: true}, nil
 }
 
 func (auth *serviceAPIAuthenticator) resolveRoute(method, requestPath string) (serviceAPIResolvedRoute, error) {

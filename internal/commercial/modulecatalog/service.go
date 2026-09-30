@@ -64,7 +64,14 @@ func runtimeVerifier(ctx context.Context) (string, error) {
 	// Runtime admission is deliberately narrower than a generic service token.
 	// The HTTP authenticator verifies the credential signature; this namespace
 	// confines the resulting principal to the controlled CI verifier identity.
-	if !ok || !p.Authenticated || !strings.HasPrefix(p.Subject, "ci-verifier:") || p.TenantID != "" || p.AuthMethod != identity.AuthMethodServiceToken {
+	signed := false
+	for _, role := range p.Roles {
+		if role == "signed-service-api" {
+			signed = true
+			break
+		}
+	}
+	if !ok || !p.Authenticated || !signed || !strings.HasPrefix(p.Subject, "ci-verifier:") || p.TenantID != "" || p.AuthMethod != identity.AuthMethodAPIKey {
 		return "", ErrRuntimeVerifierRequired
 	}
 	return p.Subject, nil
