@@ -131,6 +131,7 @@ review:
   actor_kind: null
   scope: null
   reference: null
+  analysis_ref: null
   reviewed_at: null
   candidate_sha: null
   decision: not_reviewed

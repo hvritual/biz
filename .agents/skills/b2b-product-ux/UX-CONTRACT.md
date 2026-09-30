@@ -23,7 +23,7 @@
 | `acceptance` | 场景、自动检查、人工检查和测量方法；包括适用失败/权限/异步路径 |
 | `open_questions` | 缺口、是否阻塞、需哪个角色确认；没有答案不能伪装完成 |
 | `handoff` | 允许/禁止文件、需复用来源、gate 与结果；不是自动执行授权 |
-| `review` | reviewer、actor_kind、scope、reference、日期、候选 SHA 和结论；引用真实审阅记录，作者不能代签 |
+| `review` | reviewer、actor_kind、scope、reference、日期、产品 candidate_sha、analysis_ref 和结论；产品与被审分析分别绑定，作者不能代签 |
 
 `source_refs` 必须引用 `sources.id`。sources.kind 区分 `repository_contract`、`implementation`、`user_requirement`、`validated_runbook`、`hypothesis`；假设可以支持设计建议，不能证明生产能力。历史文档来源写明日期/commit，若描述与当前源码不同需标冲突。`outcome.result_contract_refs` 与 `outcome.recovery_contract_refs` 也必须解析为 `sources.id`，不能只检查 context 中的引用。
 
@@ -51,11 +51,24 @@
 
 模板和本目录示例只允许 draft；applicability 可分析，但 verification 只能是 not_verified 或有理由的 not_applicable。要记录执行证据，另在当前任务已授权的位置使用 artifact_kind: analysis，不能把教学示例转成生产验收回执。
 
-review.decision 使用 not_reviewed、approved、changes_requested；actor_kind 使用 human、automated 或 null；scope 明确审阅的是文档/设计还是实际任务体验。reference 必须指向真实审阅提交/评论/记录，并与 reviewer、日期和候选一致。身份字段非空不证明有独立审阅，实施 Agent 不能自己填写另一个名字。
+review.decision 使用 not_reviewed、approved、changes_requested；actor_kind 使用 human、automated 或 null；scope 只使用 document_design、task_experience 或 null，不能用任意文字模糊审阅对象。reference 必须指向真实审阅提交/评论/记录，并与 reviewer、日期、scope、产品候选及被审分析一致。身份字段非空不证明有独立审阅，实施 Agent 不能自己填写另一个名字。
+
+审阅对象必须分别绑定，不允许仅检查记录自身的字段相互一致：
+
+| scope | 产品绑定 | 分析制品绑定 |
+|---|---|---|
+| `task_experience` | `task_ref.candidate_commit` 必须是已核验目标，`review.candidate_sha` 必须与它严格相等；外部任务/PR 的预期候选也必须相等 | 必须提供 `review.analysis_ref`，并核对被审分析与当前分析内容一致 |
+| `document_design` | 已确定产品候选时，同样要求两处 SHA 相等；尚未确定时两处只能同时为 null，审阅记录必须明确不包含产品执行验收 | 同样必须提供 `review.analysis_ref`，绑定实际被审的分析版本，而不是拿产品 SHA 代替 |
+
+`review.analysis_ref` 在未审时为 null；审阅完成时包含 `path`、`commit`、`blob_sha`。path 是当前分析在本仓库的精确相对路径，commit 是实际提交版本，blob_sha 是该版本路径处的 Git blob SHA，均须从可信 Git 对象/connector 回读核验，不接受分支名或填写者自报的摘要。验证者使用当前任务的真实分析路径与预期产品候选，不能只信文档内的值；审阅 reference 必须确实针对这个分析 path/commit/blob 及该 scope 下的产品候选。
+
+避免分析文档给自己的审阅记录签名：先提交待审分析，再让独立 reviewer 引用该提交中的分析 blob；回写 review 后，仅顶层 `review` 与顶层 `status` 可以不同。把被审 blob 与当前分析严格解析为数据结构（拒绝重复键；类型必须一致，映射键顺序不影响，列表顺序有意义），剔除且只剔除这两个顶层字段，再比较全部剩余内容。任何任务、来源、目标候选、上下文、义务、证据、指标、未决项或交接范围变化，都使旧审阅不再覆盖当前分析。不得扩大排除集合，不能靠换一个旧 blob 或重算 hash 保留 approved。Git 历史引用不是第二份可编辑规格库，也无需维护新摘要算法。
+
+一旦产品目标变更、分析载荷变更、审阅源无法核验或分析路径不匹配，当前 status 必须退回 draft/ready_for_review，review.decision 退回 not_reviewed；旧审阅保留在原 PR/不可变历史记录，不能复制为当前批准。仅填写审阅元数据/状态不造成分析自包含 SHA 循环，但这些回填值仍须与真实独立记录吻合。没有源记录时保持 not_reviewed，不由结构校验授予批准。
 
 status: reviewed 只表示所声明范围的审阅已完成，decision 必须是 approved 或 changes_requested；它不自动表示业务完成或所有九维通过。approved 不能带有该 scope 内未解决的 blocking 问题；有阻塞可以记录 changes_requested。draft/ready_for_review 对应 not_reviewed，review 字段默认 null。人工 UX 批准需要 human 及对应范围的真实记录；自动审查不能冒充人工批准。设计分析可以在执行测试尚未开展时获得“设计范围”审阅，但未测量维度仍保留 not_verified。
 
-本次是在首版合并前补齐 v1 草案字段；旧草案补入 candidate_commit 和 review 的 actor_kind/scope/reference 为 null，再按真实记录填写，不自动迁移成已验收。后续已发布格式的变化仍须按版本迁移审查。
+本次是在首版合并前补齐 v1 草案字段；旧草案补入 candidate_commit 和 review 的 actor_kind/scope/reference/analysis_ref 为 null，再按真实记录填写，不自动迁移成已验收。后续已发布格式的变化仍须按版本迁移审查。
 
 ## 写操作的条件义务
 
