@@ -10,6 +10,7 @@ import re
 import sys
 from delivery_execution import API, matching_runs, run_ref, root_causes, require, digest
 from delivery_execution import verify_receipt, read_receipt_zip, expected_jobs, assert_single_full, verify_main
+from delivery_execution import verify_lightweight_receipt, verify_lightweight_jobs
 from ci_changed_files_router import route as route_changes
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,7 +72,8 @@ def derive(pull, files, runs, jobs, issue, ui_required=True):
         if not jobs.get(lightweight['id']):
             return {**report, 'state': 'LIGHTWEIGHT_GATE_EVIDENCE_MISSING',
                     'next_action': 'fetch_actual_jobs_not_assume_success'}
-        return {**report, 'state': 'LIGHTWEIGHT_MERGE_READY', 'next_action': 'merge_exact_candidate'}
+        return {**report, 'state': 'LIGHTWEIGHT_GATE_SUCCEEDED_PENDING_RECEIPT',
+                'next_action': 'verify_exact_lightweight_receipt'}
 
     if not full:
         return {**report, 'state': 'QUALIFIED', 'next_action': 'freeze_exact_candidate_and_mark_ready'}
@@ -115,7 +117,7 @@ def observe(api, issue, pr, ui_required=True):
     contract_raw = (ROOT / 'scripts/delivery_execution_contract.json').read_bytes()
     contract = json.loads(contract_raw)
     expected = expected_jobs(json.loads((ROOT / 'scripts/ci_topology_contract.json').read_bytes()))
-    if report['state'] == 'FULL_GATE_SUCCEEDED_PENDING_RECEIPT':
+    if report['state'] in {'FULL_GATE_SUCCEEDED_PENDING_RECEIPT', 'LIGHTWEIGHT_GATE_SUCCEEDED_PENDING_RECEIPT'}:
         full = matching_runs(runs, MERGE, candidate, pr)[0]
         q = matching_runs(runs, QUALIFICATION, candidate, pr)[0]
         assert_single_full(runs, contract, candidate, pr, full['id'], full['run_attempt'])
@@ -125,10 +127,15 @@ def observe(api, issue, pr, ui_required=True):
         data = api.raw(api.prefix + f"/actions/artifacts/{artifacts[0]['id']}/zip", cap=contract['limits']['max_receipt_bytes'])
         receipt = read_receipt_zip(data, contract['limits']['max_receipt_bytes'])
         tree = api.get('/git/commits/' + candidate)['tree']['sha']
-        verify_receipt(receipt, digest(contract_raw), candidate, tree, pr, full, q, expected)
+        if report['merge_gate_required']:
+            verify_receipt(receipt, digest(contract_raw), candidate, tree, pr, full, q, expected)
+            ready_state = 'MERGE_READY'
+        else:
+            verify_lightweight_receipt(receipt, digest(contract_raw), candidate, tree, pr, full, q, report)
+            verify_lightweight_jobs(jobs[full['id']])
+            ready_state = 'LIGHTWEIGHT_MERGE_READY'
         require(receipt.get('repository') == api.prefix.removeprefix('/repos/'), 'RECEIPT_REPOSITORY_MISMATCH')
-        require(api.get('/git/ref/heads/main')['object']['sha'] == receipt['frozen_main_sha'], 'MAIN_CHANGED_REQUALIFY')
-        report.update(state='MERGE_READY', next_action='merge_exact_candidate', expected_head_sha=candidate,
+        report.update(state=ready_state, next_action='merge_exact_candidate', expected_head_sha=candidate,
                       merge_receipt_artifact=artifacts[0]['id'])
     elif report['state'] == 'MERGED_PENDING_MAIN_VERIFICATION':
         main_sha = pull['merge_commit_sha']
@@ -142,7 +149,14 @@ def observe(api, issue, pr, ui_required=True):
             require(api.jobs(main_run), 'MAIN_QUALIFICATION_JOBS_MISSING')
             receipt = verify_main(api, contract, digest(contract_raw), api.prefix.removeprefix('/repos/'), main_sha, expected)
             report.update(state='MAIN_VERIFIED', next_action='review_issue_acceptance_before_closure', main_sha=receipt['main_sha'])
-    require(api.get(f'/pulls/{pr}')['head']['sha'] == candidate, 'HEAD_CHANGED_DURING_OBSERVATION')
+    current_pull = api.get(f'/pulls/{pr}')
+    require(current_pull['head']['sha'] == candidate, 'HEAD_CHANGED_DURING_OBSERVATION')
+    if report['state'] in {'MERGE_READY', 'LIGHTWEIGHT_MERGE_READY'}:
+        require(current_pull.get('state') == 'open' and current_pull.get('draft') is False and
+                current_pull.get('base', {}).get('ref') == 'main', 'PR_NOT_READY_TO_MERGE')
+        # Check the live main tip last for both paths; a green workflow alone is not merge authority.
+        require(api.get('/git/ref/heads/main')['object']['sha'] == receipt.get('frozen_main_sha'),
+                'MAIN_CHANGED_REQUALIFY')
     report['observed_at'] = datetime.now(timezone.utc).isoformat()
     report['source'] = 'github_api'
     return report
