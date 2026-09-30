@@ -230,6 +230,9 @@ async function confirmPreview() {
   if (!preview.value || approvalRequired.value) return
   working.value = true
   errorMessage.value = ''
+  // The confirmation is complete once the trusted request begins. Keeping its
+  // modal layer open would cover the receipt's recovery controls.
+  confirmationOpen.value = false
   try {
     receipt.value = await confirmMySubscriptionChange(props.session, preview.value)
     if (receiptNeedsSync(receipt.value)) startReceiptSync()
