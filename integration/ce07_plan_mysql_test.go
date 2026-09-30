@@ -53,7 +53,7 @@ func ce07New(t *testing.T) *ce07Environment {
 	if err != nil {
 		t.Fatal(err)
 	}
-	verifier := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:ce07", Authenticated: true, AuthMethod: identity.AuthMethodServiceToken})
+	verifier := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:ce07", Roles: []string{"signed-service-api"}, Authenticated: true, AuthMethod: identity.AuthMethodAPIKey})
 	conn, err := grpc.DialContext(context.Background(), e.runtime.GRPCAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatal(err)

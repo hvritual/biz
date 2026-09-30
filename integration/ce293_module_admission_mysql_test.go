@@ -13,7 +13,7 @@ import (
 )
 
 func ce293Verifier() context.Context {
-	return identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:ce293", Authenticated: true, AuthMethod: identity.AuthMethodServiceToken})
+	return identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:ce293", Roles: []string{"signed-service-api"}, Authenticated: true, AuthMethod: identity.AuthMethodAPIKey})
 }
 
 func TestCE293MySQLSignedRuntimeVerificationIsExactVersionSalesAdmission(t *testing.T) {
@@ -34,7 +34,7 @@ func TestCE293MySQLSignedRuntimeVerificationIsExactVersionSalesAdmission(t *test
 	if err := service.RecordRuntimeVerification(ce02Platform(), proof); !errors.Is(err, modulecatalog.ErrRuntimeVerifierRequired) {
 		t.Fatalf("platform self-verification err=%v", err)
 	}
-	nonCIService := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "automation:release", Authenticated: true, AuthMethod: identity.AuthMethodServiceToken})
+	nonCIService := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "automation:release", Roles: []string{"signed-service-api"}, Authenticated: true, AuthMethod: identity.AuthMethodAPIKey})
 	if err := service.RecordRuntimeVerification(nonCIService, proof); !errors.Is(err, modulecatalog.ErrRuntimeVerifierRequired) {
 		t.Fatalf("non-CI service verification err=%v", err)
 	}
