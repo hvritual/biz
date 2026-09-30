@@ -31,6 +31,41 @@ class ProgressTests(unittest.TestCase):
         result = derive(self.pull, self.files, [self.q], self.jobs, 182)
         self.assertEqual(result['next_action'], 'freeze_exact_candidate_and_mark_ready')
 
+    def test_skill_only_uses_lightweight_gate_without_ui_requirement(self):
+        self.files = [
+            {'filename': '.agents/skills/b2b-product-ux/SKILL.md', 'status': 'modified'},
+            {'filename': 'docs/design/B2B-PRODUCT-UX.md', 'status': 'modified'},
+        ]
+        result = derive(self.pull, self.files, [self.q], self.jobs, 182)
+        self.assertEqual(result['change_class'], 'skill_only')
+        self.assertFalse(result['merge_gate_required'])
+        self.assertEqual(result['state'], 'LIGHTWEIGHT_QUALIFIED')
+        self.assertEqual(result['next_action'], 'mark_ready_for_lightweight_gate')
+
+    def test_skill_lightweight_green_can_merge_without_full_receipt(self):
+        self.files = [{'filename': '.agents/skills/b2b-product-ux/SKILL.md', 'status': 'modified'}]
+        merge = {**self.q, 'id': 20, 'path': MERGE}
+        jobs = {**self.jobs, 20: [{'id': 2, 'name': 'lightweight-ready', 'conclusion': 'success'}]}
+        result = derive(self.pull, self.files, [self.q, merge], jobs, 182)
+        self.assertEqual(result['state'], 'LIGHTWEIGHT_MERGE_READY')
+        self.assertEqual(result['next_action'], 'merge_exact_candidate')
+
+    def test_design_governance_uses_lightweight_gate(self):
+        self.files = [{'filename': 'web/ui-contracts.json', 'status': 'modified'}]
+        result = derive(self.pull, self.files, [self.q], self.jobs, 182)
+        self.assertEqual(result['change_class'], 'design_governance')
+        self.assertEqual(result['state'], 'LIGHTWEIGHT_QUALIFIED')
+
+    def test_skill_plus_runtime_escalates_to_full_product_gate(self):
+        self.files = [
+            {'filename': '.agents/skills/b2b-product-ux/SKILL.md', 'status': 'modified'},
+            {'filename': 'internal/access/application/tenant_member_lifecycle.go', 'status': 'modified'},
+        ]
+        result = derive(self.pull, self.files, [self.q], self.jobs, 182, ui_required=False)
+        self.assertEqual(result['change_class'], 'product_change')
+        self.assertTrue(result['merge_gate_required'])
+        self.assertEqual(result['state'], 'QUALIFIED')
+
     def test_terminal_failure_never_waits(self):
         self.q['conclusion'] = 'failure'
         self.assertEqual(derive(self.pull, self.files, [self.q], self.jobs, 182)['next_action'], 'collect_terminal_failure_and_repair')
