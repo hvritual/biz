@@ -90,8 +90,8 @@ func TestCE09DeclaredChangeSecurityAndTransportAreExact(t *testing.T) {
 	}
 
 	descriptor := v1.File_commercial_v1_subscription_change_proto.Services().ByName("SubscriptionChangesApplication")
-	if descriptor == nil || descriptor.Methods().Len() != 12 {
-		t.Fatalf("subscription change RPC count=%v, want 12", func() int {
+	if descriptor == nil || descriptor.Methods().Len() != 10 {
+		t.Fatalf("subscription change RPC count=%v, want 10", func() int {
 			if descriptor == nil {
 				return -1
 			}
@@ -121,18 +121,6 @@ func TestCE09DeclaredChangeSecurityAndTransportAreExact(t *testing.T) {
 	}
 	for _, message := range tenantMessages {
 		assertNoCE09AuthorityFields(t, message, true)
-	}
-	paymentMessages := []protoreflect.MessageDescriptor{
-		(&v1.CreateMyPaymentOrderRequest{}).ProtoReflect().Descriptor(),
-		(&v1.GetMyPaymentOrderRequest{}).ProtoReflect().Descriptor(),
-	}
-	for _, message := range paymentMessages {
-		assertNoCE09AuthorityFields(t, message, true)
-		for _, name := range []protoreflect.Name{"amount_minor", "currency", "plan_code", "plan_version"} {
-			if message.Fields().ByName(name) != nil {
-				t.Fatalf("payment request must not accept client settlement fact %s", name)
-			}
-		}
 	}
 }
 
