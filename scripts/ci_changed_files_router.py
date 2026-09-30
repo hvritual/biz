@@ -313,7 +313,7 @@ def route(paths: list[str]) -> dict[str, object]:
     docs_only = bool(files) and not skill_only and not design_governance and all(
         is_docs_only_path(path) for path in files
     )
-    product_change = bool(files) and not docs_only and not skill_only and not design_governance
+    product_change = not docs_only and not skill_only and not design_governance
     change_class = (
         "skill_only" if skill_only else
         "design_governance" if design_governance else
