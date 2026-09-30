@@ -38,6 +38,7 @@ export interface PlanModule {
 
 export interface PlanTerms {
   modules: PlanModule[]
+  featureCodes?: string[]
   salesScope: string[]
   validityMode: string
   validityDays: number
