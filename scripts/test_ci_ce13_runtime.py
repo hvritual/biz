@@ -51,6 +51,35 @@ class SourceContractTests(unittest.TestCase):
         self.mutated(".github/workflows/ce13-plan-catalog-qualification.yml",
                      lambda s: s.replace("go -C biz vet", "go -C biz test -count=1 -tags=integration ./integration -run '^TestCE07MySQL'\n          go -C biz vet", 1))
 
+
+    def test_plan_browser_prep_before_generation_rejected(self):
+        block = (
+            "      - name: Start CE13 browser dependency preparation\n"
+            "        run: bash biz/scripts/ci_ce13_browser.sh start plan\n\n"
+        )
+        self.mutated(
+            ".github/workflows/ce13-plan-catalog-qualification.yml",
+            lambda s: s.replace(block, "", 1).replace(
+                "      - name: Verify deterministic contract generation\n",
+                block + "      - name: Verify deterministic contract generation\n",
+                1,
+            ),
+        )
+
+    def test_session_browser_prep_before_generation_rejected(self):
+        block = (
+            "      - name: Start CE13 browser dependency preparation\n"
+            "        run: bash biz/scripts/ci_ce13_browser.sh start session\n\n"
+        )
+        self.mutated(
+            ".github/workflows/ce13-platform-web-session.yml",
+            lambda s: s.replace(block, "", 1).replace(
+                "      - name: Verify exact source, format and deterministic generation\n",
+                block + "      - name: Verify exact source, format and deterministic generation\n",
+                1,
+            ),
+        )
+
     def test_go_run_recompile_rejected(self):
         self.mutated(".github/workflows/ce13-platform-web-session.yml",
                      lambda s: s.replace('nohup "$RUNNER_TEMP/ce13-session-idp"', "nohup go -C biz run ./cmd/biz-idp"))

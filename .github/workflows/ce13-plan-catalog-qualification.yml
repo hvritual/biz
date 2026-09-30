@@ -101,9 +101,6 @@ jobs:
           GOBIN="$RUNNER_TEMP/protobuf-bin" go install "google.golang.org/grpc/cmd/protoc-gen-go-grpc@${{ steps.lock.outputs.protoc_gen_go_grpc_version }}"
           echo "$RUNNER_TEMP/protobuf-bin" >> "$GITHUB_PATH"
 
-      - name: Start CE13 browser dependency preparation
-        run: bash biz/scripts/ci_ce13_browser.sh start plan
-
       - name: Verify deterministic contract generation
         shell: bash
         run: |
@@ -115,6 +112,9 @@ jobs:
           make -C biz check YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
           make -C biz generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
           test -z "$(git -C biz status --porcelain)" || { git -C biz status --short; git -C biz diff --stat; exit 1; }
+
+      - name: Start CE13 browser dependency preparation
+        run: bash biz/scripts/ci_ce13_browser.sh start plan
 
       - name: Wait for workflow-owned CE13 MySQL
         run: bash biz/scripts/ci_ce13_mysql.sh wait plan

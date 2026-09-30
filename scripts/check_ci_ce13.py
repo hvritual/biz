@@ -41,10 +41,13 @@ def check(root=ROOT):
                 f"ci_ce13_mysql.sh wait {lane}" in text and
                 f"ci_ce13_mysql.sh stop {lane}" in text,
                 "CE13_OWNED_MYSQL_REQUIRED:" + lane)
-        require(f"ci_ce13_browser.sh start {lane}" in text and
+        browser_start = f"ci_ce13_browser.sh start {lane}"
+        require(browser_start in text and
                 f"ci_ce13_browser.sh wait {lane}" in text and
                 f"ci_ce13_browser.sh stop {lane}" in text,
                 "CE13_BROWSER_PREP_REQUIRED:" + lane)
+        require(text.index("make -C biz generate") < text.index(browser_start),
+                "CE13_BROWSER_PREP_MUST_START_AFTER_GENERATION:" + lane)
         require("go -C biz run" not in text, "CE13_GO_RUN_RECOMPILE_REINTRODUCED:" + lane)
         for marker in spec["builds"]:
             require(marker in text, "CE13_PREBUILT_RUNTIME_MISSING:" + lane + ":" + marker)
