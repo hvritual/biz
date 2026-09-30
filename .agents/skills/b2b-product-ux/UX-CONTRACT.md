@@ -1,0 +1,66 @@
+# UX Contract：设计分析格式 v1
+
+[模板](templates/ux-contract.template.yaml) 是一份供 Human 和 Agent 共读的任务分析，不是前端配置或后端协议。`schema_version` 只表示此分析格式版本，不改变 `web/ui-contracts.json` 的版本。数据可用 YAML 表达，但不得新增运行期解析器/Renderer。
+
+## 使用方式
+
+复制模板到当前任务已经授权的文档位置，填写同一份内容；不要另建可编辑的摘要副本或 `web/ux-contracts.json`。简短 Human 摘要引用分析中的条目。示例位置只收示例，不用作生产任务或业务状态台账。
+
+## 字段与责任
+
+| 字段 | 定义 |
+|---|---|
+| `schema_version` | 当前为 1；格式变更须有明确迁移和审查 |
+| `artifact_kind` | `template`、`analysis` 或 `example`；template/example 不能充当已执行证据 |
+| `status` | `draft`、`ready_for_review` 或 `reviewed`；独立 reviewer 未记录不能置为 reviewed |
+| `task_ref` | 对应 Issue/用户任务和分析基线；例子不创造已接入的 operation ID |
+| `classification` | 八维参考中的任务类型、理由和业务/授权/异步影响；未知项不默认 false |
+| `context` | role/task/entity/workflow/state/action/risk/decision；每项 summary + source_refs |
+| `sources` | ID、kind、path/URI、commit/版本、定位、支持的 claim；引用当前权威，不复制实现 |
+| `page_pattern` | 选用现有模式、理由、实际合同引用及能力/组件缺口；不重新声明 props/regions |
+| `outcome` | 用户结束条件、实际结果/恢复契约引用；只读任务不伪造写回读义务 |
+| `humanized_ux` | 固定九个键；每维 applicability/reason/requirements/evidence_types/verification/evidence |
+| `acceptance` | 场景、自动检查、人工检查和测量方法；包括适用失败/权限/异步路径 |
+| `open_questions` | 缺口、是否阻塞、需哪个角色确认；没有答案不能伪装完成 |
+| `handoff` | 允许/禁止文件、需复用来源、gate 与结果；不是自动执行授权 |
+| `review` | 真实 reviewer、日期、候选 SHA 和结论；作者不能代签 |
+
+`source_refs` 必须引用 `sources.id`。sources.kind 区分 `repository_contract`、`implementation`、`user_requirement`、`validated_runbook`、`hypothesis`；假设可以支持设计建议，不能证明生产能力。历史文档来源写明日期/commit，若描述与当前源码不同需标冲突。
+
+## 九维的稳定键
+
+`time_to_information`、`time_to_action`、`context_switching`、`decision_load`、`interaction_cost`、`error_recoverability`、`how_to_guidance`、`operation_effect_transparency`、`problem_resolution_guidance`。
+
+具体定义只在 [Humanized UX](references/humanized-ux.md) 维护。每个键必须出现，不意味着九项都适用于每个任务。
+
+## 适用性不是验证结果
+
+- `applicability: applies`：写清本任务义务和证据；不能只有 true。
+- `applicability: not_applicable`：写清不适用理由；安全/授权/真实结果不可借此豁免。已有业务问题不能因为暂无处理接口而标不适用，应记 gap。
+- `applicability: unknown`：证据不足，列入待确认；不能自动视为 not_applicable。
+
+`verification` 允许 `not_verified`、`pass`、`fail`、`not_applicable`。unknown 只能是 not_verified；不适用对应 not_applicable 并有理由。applies 的 pass/fail 必须附针对该义务的证据，不能只填仓库整体 build 结果。
+
+`evidence_types` 可用 `source_review`、`static_check`、`browser_test`、`api_test`、`user_test`、`independent_review`。`evidence` 每条至少含 type、reference、candidate_sha、scope、result；失败/未运行也诚实记录。语义理解、人类耗时需 user_test；对真实 API 的声明需要 API 证据；所有适用证据未满足前不能给该维综合 pass。
+
+## 写操作的条件义务
+
+存在业务写操作时，context.action/risk 与 outcome 至少引用：允许执行的前提和作用域、操作前影响、真实受理/进度/结果、适用幂等/并发规则、失败/结果未知的处理路径及权威回读。引用缺失则记录阻塞，不允许在模板中写虚构实现。
+
+金钱、额度、权限、设备等事实由后端决定。操作影响必须对应已知契约；“不会重复扣款”“额度已释放”“已恢复制作”均不能由提示文案自行宣布。结果 unknown 要保留，先查原操作状态；没有查询能力则说明限制并交接。
+
+只读/本地交互仍需说明真实 UI 结果及失败反馈，但不应为普通打开详情建立业务命令、计费确认或新的后端任务。
+
+## 测量
+
+每个 metric 记录 ID、定义/起止点、角色/任务/设备条件、baseline、target、observed、unit、sample_size、失败/放弃口径及 evidence_ref。未测量数值使用 null，不用 0；sample_size 的 0 只表示确实尚无样本。
+
+历史例子中的 3 秒、5 秒、两次跳转不预填为目标。先确认能测什么；Playwright 速度不等于真人 TTI/TTA。没有基线不写效率改善百分比。
+
+## 验收分层与负例
+
+结构层可以检查字段/引用、九维覆盖和明确违规状态；浏览器层验证控件可达、上下文/焦点、提示可见；API 层验证结果和恢复的真实性；用户层验证理解和操作负担；独立 reviewer 决定是否批准。任何层的结果不能冒充其他层。
+
+以下即使文件能解析也不得作为完整分析接受：unknown + pass；无理由 N/A；没有样本但 observed=0；写操作只写成功 toast；给所有失败加一个“重试”；把未接入能力标成已实现；只通过 hash 检查却填写 human review approved。
+
+本切片提供格式与例子，不提供持续 checker。正式检查入口和正反例接入由 #312 实施；试点和指标硬化在 #313–#316。模板通过解析不等于任一业务任务完成。

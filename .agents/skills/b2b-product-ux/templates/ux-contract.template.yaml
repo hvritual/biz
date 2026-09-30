@@ -1,0 +1,132 @@
+# 设计分析模板；不是运行配置。单一字段定义见 ../UX-CONTRACT.md。
+schema_version: 1
+artifact_kind: template
+status: draft
+task_ref:
+  issue: null
+  baseline_commit: null
+  name: null
+classification:
+  type: unknown
+  reason: 待按实际行为和风险核验
+  business_state_mutation: unknown
+  authorization_sensitive: unknown
+  asynchronous_effect: unknown
+context:
+  role:
+    summary: null
+    source_refs: []
+  task:
+    summary: null
+    source_refs: []
+  entity:
+    summary: null
+    source_refs: []
+  workflow:
+    summary: null
+    source_refs: []
+  state:
+    summary: null
+    source_refs: []
+  action:
+    summary: null
+    source_refs: []
+  risk:
+    summary: null
+    source_refs: []
+  decision:
+    summary: null
+    source_refs: []
+sources: []
+page_pattern:
+  name: null
+  reason: null
+  contract_ref: null
+  gaps: []
+outcome:
+  definition: null
+  result_contract_refs: []
+  recovery_contract_refs: []
+humanized_ux:
+  time_to_information:
+    applicability: unknown
+    reason: 待按具体任务确定
+    requirements: []
+    evidence_types: []
+    verification: not_verified
+    evidence: []
+  time_to_action:
+    applicability: unknown
+    reason: 待按具体任务确定
+    requirements: []
+    evidence_types: []
+    verification: not_verified
+    evidence: []
+  context_switching:
+    applicability: unknown
+    reason: 待按具体任务确定
+    requirements: []
+    evidence_types: []
+    verification: not_verified
+    evidence: []
+  decision_load:
+    applicability: unknown
+    reason: 待按具体任务确定
+    requirements: []
+    evidence_types: []
+    verification: not_verified
+    evidence: []
+  interaction_cost:
+    applicability: unknown
+    reason: 待按具体任务确定
+    requirements: []
+    evidence_types: []
+    verification: not_verified
+    evidence: []
+  error_recoverability:
+    applicability: unknown
+    reason: 待按具体任务确定
+    requirements: []
+    evidence_types: []
+    verification: not_verified
+    evidence: []
+  how_to_guidance:
+    applicability: unknown
+    reason: 待按具体任务确定
+    requirements: []
+    evidence_types: []
+    verification: not_verified
+    evidence: []
+  operation_effect_transparency:
+    applicability: unknown
+    reason: 待按具体任务确定
+    requirements: []
+    evidence_types: []
+    verification: not_verified
+    evidence: []
+  problem_resolution_guidance:
+    applicability: unknown
+    reason: 待按具体任务确定
+    requirements: []
+    evidence_types: []
+    verification: not_verified
+    evidence: []
+acceptance:
+  scenarios: []
+  automated_checks: []
+  human_checks: []
+  metrics: []
+open_questions:
+- question: 当前任务、角色、真实能力、允许文件与证据是否已确认？
+  blocking: true
+  owner_role: 产品/技术负责人
+handoff:
+  allowed_paths: []
+  forbidden_paths: []
+  reuse_refs: []
+  gates: []
+review:
+  reviewer: null
+  reviewed_at: null
+  candidate_sha: null
+  decision: not_reviewed
