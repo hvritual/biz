@@ -76,6 +76,7 @@ const currentEntitlementSummary = computed(() => {
 })
 const targetEntitlementSummary = computed(() => ({
   modules: targetModules.value.length,
+  features: preview.value?.target?.terms?.featureCodes?.length ?? 0,
   capabilities: targetModules.value.reduce((total, module) => total + module.capabilityCount, 0),
   quotas: targetModules.value.reduce((total, module) => total + module.quotaCount, 0),
   fields: targetModules.value.reduce((total, module) => total + module.fieldCount, 0),
@@ -358,7 +359,7 @@ async function confirmPreview() {
           </div>
           <div class="comparison-summary">
             <div><span>当前套餐</span><strong>{{ currentPlanKey }}</strong><small>{{ currentEntitlementSummary.modules }} 个模块 · {{ currentEntitlementSummary.capabilities }} 项能力</small></div>
-            <div><span>目标套餐</span><strong>{{ previewTargetName }} · v{{ preview.target?.version }}</strong><small>{{ targetEntitlementSummary.modules }} 个模块 · {{ targetEntitlementSummary.capabilities }} 项能力</small></div>
+            <div><span>目标套餐</span><strong>{{ previewTargetName }} · v{{ preview.target?.version }}</strong><small>{{ targetEntitlementSummary.modules }} 个模块 · {{ targetEntitlementSummary.features }} 项商业功能 · {{ targetEntitlementSummary.capabilities }} 项能力</small></div>
             <div><span>权益周期</span><strong>{{ validityLabel(preview.target) }}</strong></div>
           </div>
           <div class="comparison-modules">
