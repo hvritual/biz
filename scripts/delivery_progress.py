@@ -10,6 +10,7 @@ import re
 import sys
 from delivery_execution import API, matching_runs, run_ref, root_causes, require, digest
 from delivery_execution import verify_receipt, read_receipt_zip, expected_jobs, assert_single_full, verify_main
+from ci_changed_files_router import route as route_changes
 
 ROOT = Path(__file__).resolve().parents[1]
 QUALIFICATION = '.github/workflows/pr-qualification.yml'
@@ -22,9 +23,12 @@ def derive(pull, files, runs, jobs, issue, ui_required=True):
     changed = sorted(f['filename'] for f in files if f.get('status') != 'removed')
     ui = [p for p in changed if p.startswith('web/src/features/') and p.endswith('.vue')]
     ui_tests = [p for p in changed if p.startswith(('web/e2e/', 'web/tests/')) and p.endswith(('.spec.ts', '.test.ts'))]
+    routing = route_changes(changed)
     report = {
         'issue': issue, 'pr': pull['number'], 'candidate_sha': candidate,
         'base_sha': pull['base']['sha'], 'changed_files': changed,
+        'change_class': routing['change_class'],
+        'merge_gate_required': routing['merge_gate_required'],
         'ui_source_committed': ui, 'ui_tests_committed': ui_tests,
         'ui_state': 'COMMITTED_UNVERIFIED' if ui else 'NO_INCREMENTAL_UI_COMMIT',
         'baseline_ui_is_not_reset_or_counted_as_new_work': True,
@@ -44,9 +48,24 @@ def derive(pull, files, runs, jobs, issue, ui_required=True):
                 'root_causes': root_causes(jobs.get(q['id'], []))}
     if not jobs.get(q['id']):
         return {**report, 'state': 'QUALIFICATION_EVIDENCE_MISSING', 'next_action': 'fetch_actual_jobs_not_assume_success'}
-    if ui_required and (not ui or not ui_tests):
+    if ui_required and not routing['skill_only'] and not routing['design_governance'] and (not ui or not ui_tests):
         return {**report, 'state': 'BACKEND_QUALIFIED_UI_INCOMPLETE', 'next_action': 'implement_missing_ui_and_acceptance'}
     full = matching_runs(runs, MERGE, candidate, pull['number'])
+    if not routing['merge_gate_required']:
+        if not full:
+            return {**report, 'state': 'LIGHTWEIGHT_QUALIFIED', 'next_action': 'mark_ready_for_lightweight_gate'}
+        lightweight = full[0]
+        report['merge_gate'] = run_ref(lightweight)
+        if lightweight.get('status') != 'completed':
+            return {**report, 'state': 'LIGHTWEIGHT_GATE_RUNNING', 'next_action': 'observe_nonterminal_run_with_budget'}
+        if lightweight.get('conclusion') != 'success':
+            return {**report, 'state': 'LIGHTWEIGHT_GATE_FAILED', 'next_action': 'collect_terminal_failure_and_repair',
+                    'root_causes': root_causes(jobs.get(lightweight['id'], []))}
+        if not jobs.get(lightweight['id']):
+            return {**report, 'state': 'LIGHTWEIGHT_GATE_EVIDENCE_MISSING',
+                    'next_action': 'fetch_actual_jobs_not_assume_success'}
+        return {**report, 'state': 'LIGHTWEIGHT_MERGE_READY', 'next_action': 'merge_exact_candidate'}
+
     if not full:
         return {**report, 'state': 'QUALIFIED', 'next_action': 'freeze_exact_candidate_and_mark_ready'}
     full = full[0]
