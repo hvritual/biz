@@ -79,7 +79,7 @@ func TestCE02MySQLCreateUpdateRetireAndIdempotency(t *testing.T) {
 	if _, err := svc.Update(ctx, modulecatalog.UpdateCommand{RequestID: "ce02-stale", Code: m.Code, Name: "stale", Version: 1, Reason: "stale"}); !errors.Is(err, modulecatalog.ErrConflict) {
 		t.Fatalf("stale err=%v", err)
 	}
-	verifier := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:ce02", Authenticated: true, AuthMethod: identity.AuthMethodServiceToken})
+	verifier := identity.WithPrincipal(context.Background(), identity.Principal{Subject: "ci-verifier:ce02", Roles: []string{"signed-service-api"}, Authenticated: true, AuthMethod: identity.AuthMethodAPIKey})
 	if err := svc.RecordRuntimeVerification(verifier, modulecatalog.RuntimeVerificationCommand{ModuleCode: m.Code, ModuleVersion: m.Version, EvidenceDigest: strings.Repeat("a", 64), SourceTree: strings.Repeat("b", 64)}); err != nil {
 		t.Fatal(err)
 	}
