@@ -102,7 +102,7 @@ func TestCE02MySQLCreateUpdateRetireAndIdempotency(t *testing.T) {
 		t.Fatalf("audit rows=%d want 4", count)
 	}
 	var audit struct{ Actor, Action, BeforeJSON, AfterJSON, Reason, RequestID string }
-	if err := db.Table("biz_commercial_module_audit").Where("module_code = ? AND action = ?", m.Code, "sales_status").First(&audit).Error; err != nil {
+	if err := db.Table("biz_commercial_module_audit").Where("module_code = ? AND action = ? AND request_id = ?", m.Code, "sales_status", "ce02-retire").First(&audit).Error; err != nil {
 		t.Fatal(err)
 	}
 	if audit.Actor != "platform-admin:ce02" || audit.Reason != "stop new sales" || audit.RequestID != "ce02-retire" || !strings.Contains(audit.BeforeJSON, "sellable") || !strings.Contains(audit.AfterJSON, "retired") {
