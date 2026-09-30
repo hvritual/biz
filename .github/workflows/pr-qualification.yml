@@ -22,7 +22,13 @@ jobs:
       deviceops: ${{ steps.route.outputs.deviceops }}
       web: ${{ steps.route.outputs.web }}
       core: ${{ steps.route.outputs.core }}
+      change_class: ${{ steps.route.outputs.change_class }}
       docs_only: ${{ steps.route.outputs.docs_only }}
+      skill_only: ${{ steps.route.outputs.skill_only }}
+      design_governance: ${{ steps.route.outputs.design_governance }}
+      design_web_check: ${{ steps.route.outputs.design_web_check }}
+      product_change: ${{ steps.route.outputs.product_change }}
+      merge_gate_required: ${{ steps.route.outputs.merge_gate_required }}
       domain_count: ${{ steps.route.outputs.domain_count }}
       native_login: ${{ steps.route.outputs.native_login }}
       delivery_isolation: ${{ steps.route.outputs.delivery_isolation }}
@@ -55,12 +61,66 @@ jobs:
             echo "## PR Qualification route"
             echo
             echo "- candidate: \`$HEAD_SHA\`"
-            echo "- domains: \`$(python3 -c 'import json,sys; d=json.load(sys.stdin); print(",".join(x["domain"] for x in d["domain_matrix"]) or "docs-only")' < <(python3 scripts/ci_changed_files_router.py < "$RUNNER_TEMP/changed-files.txt"))\`"
+            echo "- class: \`$(python3 -c 'import json,sys; print(json.load(sys.stdin)["change_class"])' < <(python3 scripts/ci_changed_files_router.py < "$RUNNER_TEMP/changed-files.txt"))\`"
+            echo "- domains: \`$(python3 -c 'import json,sys; d=json.load(sys.stdin); print(",".join(x["domain"] for x in d["domain_matrix"]) or "none")' < <(python3 scripts/ci_changed_files_router.py < "$RUNNER_TEMP/changed-files.txt"))\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  skill-governance:
+    needs: route
+    if: needs.route.outputs.skill_only == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Skill source, routing and contract checks
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$BASE_SHA" --depth=1
+          python3 -m pip install --disable-pip-version-check -q PyYAML==6.0.3
+          if git cat-file -e "$BASE_SHA:scripts/check_ci_source_safety.py" 2>/dev/null; then
+            git show "$BASE_SHA:scripts/check_ci_source_safety.py" > "$RUNNER_TEMP/base-ci-source-safety.py"
+            python3 "$RUNNER_TEMP/base-ci-source-safety.py" --root "$GITHUB_WORKSPACE" --base-ref "$BASE_SHA"
+          fi
+          python3 scripts/check_ci_source_safety.py --base-ref "$BASE_SHA"
+          python3 scripts/test_ci_changed_files_router.py
+          make ui-skill-check
+          if test -f scripts/check_b2b_ux_skill.py; then
+            python3 -B scripts/check_b2b_ux_skill.py
+          fi
+          if test -f scripts/test_b2b_ux_skill.py; then
+            python3 -B -m unittest discover -s scripts -p 'test_b2b_ux_skill.py' -v
+          fi
+      - name: Preserve exact Skill candidate source
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          mkdir -p "$RUNNER_TEMP/skill-source"
+          git archive --format=tar.gz --output="$RUNNER_TEMP/skill-source/candidate-source.tar.gz" HEAD
+          git ls-tree -r HEAD > "$RUNNER_TEMP/skill-source/tree.txt"
+          printf 'candidate_sha=%s\ncandidate_tree=%s\nchange_class=skill_only\n' "$CANDIDATE_SHA" "$(git rev-parse HEAD^{tree})" > "$RUNNER_TEMP/skill-source/provenance.txt"
+          (cd "$RUNNER_TEMP/skill-source" && sha256sum candidate-source.tar.gz tree.txt provenance.txt > SHA256SUMS)
+      - name: Retain exact Skill source
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: skill-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/skill-source/
+          if-no-files-found: error
+          retention-days: 30
 
   governance:
     needs: route
-    if: needs.route.outputs.docs_only != 'true'
+    if: needs.route.outputs.product_change == 'true' || needs.route.outputs.design_governance == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -152,7 +212,7 @@ jobs:
 
   fast-web:
     needs: [route, governance]
-    if: needs.route.outputs.docs_only != 'true'
+    if: needs.route.outputs.product_change == 'true' || needs.route.outputs.design_web_check == 'true'
     uses: ./.github/workflows/candidate-qualification.yml
 
   access-role:
