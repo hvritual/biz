@@ -108,6 +108,9 @@ message SubscriptionChangeReceiptDTO {
  bool quota_validation_required = 19; string pricing_authority = 20;
  repeated SubscriptionChangeQuotaImpact quota_impacts = 21;
  string provisioning_task_id = 22;
+ // Stable, user-actionable reason when a scheduled change reaches FAILED.
+ // It is empty for non-failed receipts and never replaces the audit reason.
+ string failure_code = 23;
 }
 message ClaimCommercialTimeTransitionRequest { string worker_id=1; uint32 lease_seconds=2; }
 message CommercialTimeTransitionDTO { string transition_id=1; string kind=2; string tenant_id=3; string authority_id=4; uint64 authority_version=5; string due_at=6; string state=7; uint64 revision=8; string outcome=9; string business_timezone=10; }

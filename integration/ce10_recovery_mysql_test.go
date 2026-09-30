@@ -298,6 +298,44 @@ func TestCE16ScheduledChangeExecutesOnceThroughProvisioningWorker(t *testing.T) 
 	}
 }
 
+func TestCE291MySQLScheduledFailureReleasesPendingChangeAndExplainsRecovery(t *testing.T) {
+	e := ce10New(t)
+	target := e.plan(ce09Terms(20, 30))
+	e.policy.selectPlan(target.PlanCode)
+	key := ce04Random(t)
+	due := time.Now().UTC().Add(1500 * time.Millisecond)
+	preview, err := e.changes.PreviewSubscriptionChange(ce04Context(e.token, key), &v1.PreviewSubscriptionChangeRequest{
+		TenantId: e.tenant, RequestId: key, Action: "SWITCH", TargetPlanCode: target.PlanCode,
+		TargetPlanVersion: target.Version, EffectiveAt: due.Format(time.RFC3339Nano), Reason: "CE291 scheduled recovery",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	receipt, err := e.confirm(e.confirmation(preview))
+	if err != nil || receipt.Status != "SCHEDULED" {
+		t.Fatalf("scheduled receipt=%+v err=%v", receipt, err)
+	}
+	// The approval's preparation requirement changed before the boundary. This
+	// is a real revalidation failure, not a test-only mutation of receipt data.
+	e.policy.selectPlan("")
+	time.Sleep(time.Until(due) + 50*time.Millisecond)
+	tick, err := e.started.RunProvisioningOnce(context.Background())
+	if err != nil || tick.TransitionState != "RECONCILIATION_REQUIRED" {
+		t.Fatalf("scheduled failure tick=%+v err=%v", tick, err)
+	}
+	failed, err := e.changes.GetSubscriptionChangeReceipt(ce04Context(e.token, ce04Random(t)), &v1.ReadSubscriptionChangeRequest{TenantId: e.tenant, ChangeId: receipt.ChangeId})
+	if err != nil || failed.Status != "FAILED" || failed.FailureCode != "PREPARATION_REQUIREMENTS_CHANGED" || failed.After.PendingChangeId != "" {
+		t.Fatalf("failed recovery receipt=%+v err=%v", failed, err)
+	}
+	current := e.getSubscription(e.tenant)
+	if current.PendingChangeId != "" || current.PlanCode != e.old.PlanCode || current.Revision != failed.After.Revision {
+		t.Fatalf("failure changed current authority=%+v receipt=%+v", current, failed)
+	}
+	if replacement := e.preview(target); replacement.ChangeId == receipt.ChangeId {
+		t.Fatalf("recovery reused failed change=%+v", replacement)
+	}
+}
+
 func TestCE16MySQLConcurrentWorkersClaimOneScheduledTransition(t *testing.T) {
 	e := ce10New(t)
 	target := e.plan(ce09Terms(20, 30))

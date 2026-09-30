@@ -397,8 +397,19 @@ func (s *service) failScheduledTransition(ctx context.Context, repos ports.Subsc
 	}
 	next := receipt
 	next.Status = change.Failed
-	next.After = raw
-	next.AfterSourceVersion = raw.EntitlementSourceVersion
+	next.FailureCode = reason
+	// A terminal failure releases the reservation without changing the current
+	// plan or entitlement facts. Otherwise the stale pending pointer would
+	// prevent a tenant from creating the replacement change promised by the
+	// recovery receipt.
+	after := raw
+	after.PendingChangeID = ""
+	after.Revision++
+	if err := repos.Changes.SaveCurrent(ctx, raw, after); err != nil {
+		return transitionResult{}, err
+	}
+	next.After = after
+	next.AfterSourceVersion = after.EntitlementSourceVersion
 	view, err := s.snapshots.ReadSnapshot(ctx, raw.TenantID, nil)
 	if err != nil {
 		return transitionResult{}, err
@@ -410,5 +421,5 @@ func (s *service) failScheduledTransition(ctx context.Context, repos ports.Subsc
 		return transitionResult{}, err
 	}
 	finished, err := finishTransition(ctx, repos.Transitions, *current, worker, token, transition.ReconcileRequired, reason, now)
-	return transitionResult{Task: finished, SubscriptionRevision: raw.Revision, SourceVersion: view.SourceVersion, EntitlementVersion: view.EntitlementVersion}, err
+	return transitionResult{Task: finished, SubscriptionRevision: after.Revision, SourceVersion: view.SourceVersion, EntitlementVersion: view.EntitlementVersion}, err
 }

@@ -1208,6 +1208,7 @@ export interface Commercial_V1_SubscriptionChangeReceiptDTO {
   pricingAuthority?: string;
   quotaImpacts?: readonly Commercial_V1_SubscriptionChangeQuotaImpact[];
   provisioningTaskId?: string;
+  failureCode?: string;
 }
 
 export interface Commercial_V1_TenantQuotaUsageDTO {
