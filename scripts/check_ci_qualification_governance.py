@@ -307,9 +307,10 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
             "design_governance:",
             "lightweight-ready:",
             "needs.route.outputs.merge_gate_required == 'true'",
-            "needs.route.outputs.skill_only == 'true' || needs.route.outputs.design_governance == 'true'",
+            "needs.route.outputs.merge_gate_required == 'false'",
             "Require fresh main and matching PR Qualification",
-            "lightweight-qualification-",
+            "Authorize bounded lightweight merge",
+            "delivery-execution-",
         ):
             if required not in text:
                 errors.append("pr-merge-gate.yml: missing bounded lightweight/full routing invariant " + required)
