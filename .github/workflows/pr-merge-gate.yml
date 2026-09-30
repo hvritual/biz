@@ -19,7 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
+      change_class: ${{ steps.route.outputs.change_class }}
       docs_only: ${{ steps.route.outputs.docs_only }}
+      skill_only: ${{ steps.route.outputs.skill_only }}
+      design_governance: ${{ steps.route.outputs.design_governance }}
+      product_change: ${{ steps.route.outputs.product_change }}
+      merge_gate_required: ${{ steps.route.outputs.merge_gate_required }}
       enterprise180: ${{ steps.route.outputs.enterprise180 }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -39,7 +44,7 @@ jobs:
 
   freeze-candidate:
     needs: route
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -71,7 +76,7 @@ jobs:
 
   wait-qualification:
     needs: [route, freeze-candidate]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     outputs:
@@ -101,183 +106,228 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  lightweight-ready:
+    needs: route
+    if: github.event.pull_request.draft == false && (needs.route.outputs.skill_only == 'true' || needs.route.outputs.design_governance == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout exact lightweight candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require fresh main and matching PR Qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin +refs/heads/main:refs/remotes/origin/main
+          python3 scripts/candidate_lifecycle.py validate-contract
+          python3 scripts/candidate_lifecycle.py assert-fresh --main-ref origin/main --candidate-ref HEAD
+          python3 scripts/delivery_execution.py wait-qualification
+          {
+            echo "## Lightweight merge qualification"
+            echo
+            echo "- class: \`${{ needs.route.outputs.change_class }}\`"
+            echo "- candidate: \`$CANDIDATE_SHA\`"
+            echo "- full merge gate: not required for this bounded change class"
+            echo "- main push qualification: still required after merge"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain lightweight qualification receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lightweight-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/delivery-execution.json
+          if-no-files-found: error
+          retention-days: 30
+
   full-01-mysql-runtime-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/mysql-runtime-qualification.yml
 
   full-02-b12-7-runtime-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/b12-7-runtime-qualification.yml
 
   full-03-b12-8-framework-pressure-disposition:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/b12-8-framework-pressure-disposition.yml
 
   full-04-b12-multitenant-access-pressure:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/b12-multitenant-access-pressure.yml
 
   full-05-c9-pressure:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/c9-pressure.yml
 
   full-06-ce01-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ce01-qualification.yml
 
   full-07-ce02-bootstrap:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ce02-bootstrap.yml
 
   full-08-ce03-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ce03-qualification.yml
 
   full-09-ce04-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ce04-qualification.yml
 
   full-10-ce05-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ce05-qualification.yml
 
   full-11-ce06-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ce06-qualification.yml
 
   full-12-ce07-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ce07-qualification.yml
 
   full-13-ce08-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ce08-qualification.yml
 
   full-14-ce09-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ce09-qualification.yml
 
   full-15-ce10-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ce10-qualification.yml
 
   full-16-ce12-browser-e2e:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ce12-browser-e2e.yml
 
   full-17-ce12-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ce12-qualification.yml
 
   full-18-ce13-plan-catalog-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ce13-plan-catalog-qualification.yml
 
   full-19-ce13-platform-web-session:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ce13-platform-web-session.yml
 
   full-20-coffeelink-web:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/coffeelink-web.yml
     with:
       skip_fast_check: true
 
   full-21-ec-ri-04-web-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ec-ri-04-web-qualification.yml
 
   full-22-ec-ri-05-web-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ec-ri-05-web-qualification.yml
 
   full-23-ec-ri-06-plan-change-web:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ec-ri-06-plan-change-web.yml
 
   full-24-ec-ri-06-plan-read-web:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ec-ri-06-plan-read-web.yml
 
   full-25-ec-ri-07-web-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/ec-ri-07-web-qualification.yml
 
   full-26-enterprise-168-sensitive-contacts:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/enterprise-168-sensitive-contacts.yml
 
   full-27-enterprise-169-privacy-consent:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/enterprise-169-privacy-consent.yml
 
   full-28-enterprise-170-verification-notification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/enterprise-170-verification-notification.yml
 
   full-29-enterprise-171-session-isolation:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/enterprise-171-session-isolation.yml
 
   full-30-enterprise-173-password-security:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/enterprise-173-password-security.yml
 
   full-31-enterprise-174-current-authorization:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/enterprise-174-current-authorization.yml
 
   full-32-enterprise-175-authorized-navigation:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/enterprise-175-authorized-navigation.yml
 
   full-33-enterprise-177-member-lifecycle:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/enterprise-177-member-lifecycle.yml
 
   full-34-enterprise-role-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/enterprise-role-qualification.yml
     with:
       enforce_enterprise180_admission: ${{ needs.route.outputs.enterprise180 == 'true' }}
 
   full-35-evolution-qualification:
     needs: [route, wait-qualification]
-    if: github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true' && needs.wait-qualification.result == 'success'
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true' && needs.wait-qualification.result == 'success'
     uses: ./.github/workflows/evolution-qualification.yml
 
   merge-ready:
@@ -320,7 +370,7 @@ jobs:
       - full-33-enterprise-177-member-lifecycle
       - full-34-enterprise-role-qualification
       - full-35-evolution-qualification
-    if: always() && github.event.pull_request.draft == false && needs.route.outputs.docs_only != 'true'
+    if: always() && github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
