@@ -11,6 +11,67 @@ class RouteTests(unittest.TestCase):
         self.assertEqual(result["domain_count"], 0)
         self.assertFalse(result["merge_gate_required"])
 
+
+    def test_skill_only_routes_to_lightweight_skill_lane(self):
+        result = route([
+            ".agents/skills/b2b-product-ux/SKILL.md",
+            ".agents/skills/b2b-product-ux/UX-CONTRACT.md",
+            "docs/design/B2B-PRODUCT-UX.md",
+        ])
+        self.assertEqual(result["change_class"], "skill_only")
+        self.assertTrue(result["skill_only"])
+        self.assertFalse(result["design_governance"])
+        self.assertFalse(result["product_change"])
+        self.assertEqual(result["domain_count"], 0)
+        self.assertFalse(result["merge_gate_required"])
+        self.assertFalse(result["web_product"])
+
+    def test_skill_mixed_with_product_source_escalates_fail_closed(self):
+        result = route([
+            ".agents/skills/b2b-product-ux/SKILL.md",
+            "web/src/features/enterprise/pages/MembersView.vue",
+        ])
+        self.assertEqual(result["change_class"], "product_change")
+        self.assertFalse(result["skill_only"])
+        self.assertTrue(result["product_change"])
+        self.assertTrue(result["domains"]["web"])
+        self.assertTrue(result["merge_gate_required"])
+
+    def test_design_docs_use_design_governance_without_product_domains(self):
+        result = route(["docs/design/PAGE-PATTERNS.md"])
+        self.assertEqual(result["change_class"], "design_governance")
+        self.assertTrue(result["design_governance"])
+        self.assertFalse(result["docs_only"])
+        self.assertEqual(result["domain_count"], 0)
+        self.assertFalse(result["merge_gate_required"])
+        self.assertFalse(result["design_web_check"])
+
+    def test_design_machine_contract_requests_fast_web_without_product_gate(self):
+        result = route(["web/ui-contracts.json"])
+        self.assertEqual(result["change_class"], "design_governance")
+        self.assertTrue(result["design_web_check"])
+        self.assertFalse(result["web_product"])
+        self.assertFalse(result["domains"]["web"])
+        self.assertFalse(result["merge_gate_required"])
+
+    def test_design_governance_mixed_with_runtime_escalates_to_product(self):
+        result = route([
+            "web/ui-contracts.json",
+            "internal/access/application/tenant_member_lifecycle.go",
+        ])
+        self.assertEqual(result["change_class"], "product_change")
+        self.assertTrue(result["domains"]["access"])
+        self.assertTrue(result["merge_gate_required"])
+
+    def test_root_makefile_never_becomes_lightweight_design_change(self):
+        result = route([
+            "Makefile",
+            "scripts/check_b2b_ux_skill.py",
+        ])
+        self.assertEqual(result["change_class"], "product_change")
+        self.assertTrue(result["domains"]["core"])
+        self.assertTrue(result["merge_gate_required"])
+
     def test_access_and_web_do_not_select_deviceops_or_core(self):
         result = route([
             "internal/access/application/tenant_member_lifecycle.go",
