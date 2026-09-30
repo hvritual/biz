@@ -193,6 +193,71 @@ def bound_refs(api, pr, candidate, allow_draft=False):
             "issue_numbers": sorted(set(int(n) for n in re.findall(r"(?i)\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)", pull.get("body") or "")))}
 
 
+def route_for_pr(api, pr):
+    from ci_changed_files_router import route
+    files = [item.get("filename", "") for item in api.pages(f"/pulls/{pr}/files") if item.get("filename")]
+    require(files, "PR_CHANGED_FILES_MISSING")
+    return route(files)
+
+
+def verify_lightweight_jobs(jobs):
+    light = [job for job in jobs if job.get("name") == "lightweight-ready"]
+    require(len(light) == 1 and light[0].get("status") == "completed" and
+            light[0].get("conclusion") == "success", "LIGHTWEIGHT_JOB_NOT_SUCCESS")
+    full = [job for job in jobs if job.get("name", "").startswith("full-")]
+    require(all(job.get("status") == "completed" and job.get("conclusion") == "skipped"
+                for job in full), "LIGHTWEIGHT_FULL_JOB_EXECUTED")
+    return light[0]
+
+
+def verify_lightweight_receipt(receipt, contract_hash, candidate, tree, pr,
+                               merge_run, qualification_run, routing):
+    required = {
+        "schema_version": 1,
+        "state": "LIGHTWEIGHT_MERGE_READY",
+        "contract_sha256": contract_hash,
+        "candidate_sha": candidate,
+        "candidate_tree": tree,
+        "pr_number": pr,
+        "merge_run_id": str(merge_run["id"]),
+        "merge_run_attempt": int(merge_run["run_attempt"]),
+        "change_class": routing["change_class"],
+        "merge_gate_required": False,
+        "full_results": {},
+        "root_cause_signatures": [],
+    }
+    for field, value in required.items():
+        require(type(receipt.get(field)) is type(value) and receipt.get(field) == value,
+                "LIGHTWEIGHT_RECEIPT_BINDING_MISMATCH", field)
+    require(receipt.get("qualification_run") == run_ref(qualification_run),
+            "QUALIFICATION_PROOF_SUPERSEDED")
+
+
+def lightweight_ready(api, contract, pr, candidate, run_id, attempt):
+    bound = bound_refs(api, pr, candidate)
+    routing = route_for_pr(api, pr)
+    require(not routing["merge_gate_required"] and
+            routing["change_class"] in {"docs_only", "skill_only", "design_governance"},
+            "LIGHTWEIGHT_CLASS_REQUIRED", routing["change_class"])
+    runs = api.runs(candidate)
+    assert_single_full(runs, contract, candidate, pr, run_id, attempt)
+    qualification = latest_success(runs, contract["qualification_workflow"], candidate, pr)
+    current = api.get(f"/actions/runs/{run_id}")
+    require(current.get("head_sha") == candidate and current.get("run_attempt") == attempt and
+            current.get("path", "").split("@")[0] == contract["merge_workflow"] and
+            run_binds_pr(current, pr), "LIGHTWEIGHT_RUN_BINDING_MISMATCH")
+    return {
+        **bound,
+        "state": "LIGHTWEIGHT_MERGE_READY",
+        "change_class": routing["change_class"],
+        "merge_gate_required": False,
+        "qualification_run": run_ref(qualification),
+        "full_results": {},
+        "root_cause_signatures": [],
+        "verification_scope": "lightweight",
+    }
+
+
 def assert_single_full(runs, contract, candidate, pr, run_id, attempt):
     full = matching_runs(runs, contract["merge_workflow"], candidate, pr)
     require(len(full) == contract["limits"]["full_runs_per_candidate"] and str(full[0]["id"]) == str(run_id), "FULL_RUN_BUDGET_EXCEEDED")
@@ -257,6 +322,7 @@ def verify_main(api, contract, contract_hash, repository, main_sha, expected):
     candidate, pr = pull["head"]["sha"], pull["number"]
     tree = api.get(f"/git/commits/{candidate}")["tree"]["sha"]
     require(api.get(f"/git/commits/{main_sha}")["tree"]["sha"] == tree, "MAIN_CANDIDATE_TREE_MISMATCH")
+    routing = route_for_pr(api, pr)
     runs = api.runs(candidate)
     merge_run = latest_success(runs, contract["merge_workflow"], candidate, pr)
     assert_single_full(runs, contract, candidate, pr, merge_run["id"], merge_run["run_attempt"])
@@ -269,12 +335,23 @@ def verify_main(api, contract, contract_hash, repository, main_sha, expected):
     data = api.raw(api.prefix + f"/actions/artifacts/{artifact['id']}/zip", cap=limit)
     receipt = read_receipt_zip(data, limit)
     require(receipt.get("repository") == repository, "RECEIPT_REPOSITORY_MISMATCH")
-    verify_receipt(receipt, contract_hash, candidate, tree, pr, merge_run, qualification, expected)
-    from ci_dependency_recovery import verify_run
-    recovery = verify_run(api, ROOT, repository, candidate, tree, pr, merge_run, receipt["frozen_main_sha"])
-    require(receipt.get("dependency_preparation") == recovery, "RECOVERY_PROOF_EXECUTION_DRIFT")
+
+    if routing["merge_gate_required"]:
+        verify_receipt(receipt, contract_hash, candidate, tree, pr, merge_run, qualification, expected)
+        from ci_dependency_recovery import verify_run
+        recovery = verify_run(api, ROOT, repository, candidate, tree, pr, merge_run, receipt["frozen_main_sha"])
+        require(receipt.get("dependency_preparation") == recovery, "RECOVERY_PROOF_EXECUTION_DRIFT")
+        verification_scope = "full"
+    else:
+        verify_lightweight_receipt(receipt, contract_hash, candidate, tree, pr,
+                                   merge_run, qualification, routing)
+        verify_lightweight_jobs(api.jobs(merge_run))
+        verification_scope = "lightweight"
+
     require(api.get("/git/ref/heads/main")["object"]["sha"] == main_sha, "MAIN_TIP_CHANGED")
-    return {**receipt, "state": "MAIN_VERIFIED", "main_sha": main_sha, "merge_receipt_artifact_id": artifact["id"]}
+    return {**receipt, "state": "MAIN_VERIFIED", "main_sha": main_sha,
+            "change_class": routing["change_class"], "verification_scope": verification_scope,
+            "merge_receipt_artifact_id": artifact["id"]}
 
 
 def validate_contract(contract):
@@ -285,7 +362,7 @@ def validate_contract(contract):
         require(type(contract["limits"].get(key)) is int and contract["limits"][key] > 0, "CONTRACT_LIMIT_INVALID", key)
     require(contract["limits"]["full_runs_per_candidate"] == contract["limits"]["full_attempts_per_candidate"] == 1, "FULL_BUDGET_DRIFT")
     hooks = {"pr-qualification.yml": ["delivery_execution.py validate-contract", "test_delivery_execution.py"],
-             "pr-merge-gate.yml": ["delivery_execution.py wait-qualification", "delivery_execution.py merge-ready"],
+             "pr-merge-gate.yml": ["delivery_execution.py wait-qualification", "delivery_execution.py lightweight-ready", "delivery_execution.py merge-ready"],
              "main-receipt.yml": ["delivery_execution.py verify-main"]}
     for name, commands in hooks.items():
         text = (ROOT / ".github/workflows" / name).read_text()
@@ -329,7 +406,7 @@ def emit(report, output):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["validate-contract", "wait-qualification", "merge-ready", "verify-main"])
+    parser.add_argument("command", choices=["validate-contract", "wait-qualification", "lightweight-ready", "merge-ready", "verify-main"])
     parser.add_argument("--output", default=str(pathlib.Path(os.getenv("RUNNER_TEMP", ".")) / RECEIPT))
     parser.add_argument("--proof-receipt", type=pathlib.Path)
     args = parser.parse_args()
@@ -357,6 +434,8 @@ def main():
                 if os.getenv("GITHUB_OUTPUT"):
                     with open(os.environ["GITHUB_OUTPUT"], "a") as handle:
                         handle.write(f"qualification_run_id={report['qualification_run']['id']}\nqualification_attempt={report['qualification_run']['run_attempt']}\nfrozen_main_sha={report['frozen_main_sha']}\n")
+            elif args.command == "lightweight-ready":
+                report.update(lightweight_ready(api, contract, pr, candidate, run_id, attempt))
             else:
                 report.update(bound_refs(api, pr, candidate))
                 report["dependency_preparation"] = require_proof_receipt(args.proof_receipt, report, run_id, attempt, report["repository"])
@@ -374,7 +453,7 @@ def main():
                 require(str(qualification["id"]) == outputs.get("qualification_run_id") and str(qualification["run_attempt"]) == outputs.get("qualification_attempt"), "QUALIFICATION_PROOF_SUPERSEDED")
                 require(report["frozen_main_sha"] == outputs.get("frozen_main_sha"), "FROZEN_MAIN_CHANGED")
                 report.update(state="MERGE_READY", qualification_run=run_ref(qualification))
-        report["next_action"] = "merge_exact_candidate" if report["state"] == "MERGE_READY" else "continue_canonical_lifecycle"
+        report["next_action"] = "merge_exact_candidate" if report["state"] in {"MERGE_READY", "LIGHTWEIGHT_MERGE_READY"} else "continue_canonical_lifecycle"
         emit(report, args.output)
         return 0
     except Blocked as error:
