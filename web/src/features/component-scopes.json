@@ -111,6 +111,18 @@
     "scenario": "企业中心 · 套餐变更 · 额度与准备影响展示",
     "scope": "仅展示服务端返回的额度、依赖和开通准备影响；不创建预览、确认变更或执行额度操作。"
   },
+  "enterprise/components/PlanChangeReceipt.vue": {
+    "scenario": "企业中心 · 套餐变更 · 回执展示",
+    "scope": "仅展示当前租户服务端回执并请求刷新；不创建订单、不自行改变权益。"
+  },
+  "enterprise/components/PlanChangeConfirmDialog.vue": {
+    "scenario": "企业中心 · 套餐变更 · 最终确认",
+    "scope": "仅确认已生成预览；写入仍由父组件通过可信会话提交。"
+  },
+  "enterprise/components/PlanTargetDetails.vue": {
+    "scenario": "企业中心 · 套餐变更 · 已选套餐条款",
+    "scope": "仅展示服务端已发布套餐条款，不持有租户身份、支付状态或写入逻辑。"
+  },
   "enterprise/components/members/MemberActionDialog.vue": {
     "scenario": "企业中心 · 业务操作弹窗 · MemberActionDialog",
     "scope": "仅用于企业中心业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"

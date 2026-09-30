@@ -5,6 +5,9 @@ import { currentUiLocale } from '@/i18n'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import { UiButton, UiInput } from '@/ui/base'
+import PlanTargetDetails from '@/features/enterprise/components/PlanTargetDetails.vue'
+import PlanChangeReceipt from '@/features/enterprise/components/PlanChangeReceipt.vue'
+import PlanChangeConfirmDialog from '@/features/enterprise/components/PlanChangeConfirmDialog.vue'
 import PlanChangeImpactList from '@/features/enterprise/components/PlanChangeImpactList.vue'
 import PlanChangePreparationImpact from '@/features/enterprise/components/PlanChangePreparationImpact.vue'
 import type {
@@ -41,6 +44,7 @@ const receipt = ref<SubscriptionChangeReceiptDTO | null>(null)
 const working = ref(false)
 const errorMessage = ref('')
 const receiptRefreshing = ref(false)
+const confirmationOpen = ref(false)
 let receiptTimer: ReturnType<typeof setInterval> | undefined
 let restoredPendingKey = ''
 
@@ -143,6 +147,7 @@ async function openLifecycle() {
 
 function resetLifecycle() {
   stopReceiptSync()
+  confirmationOpen.value = false
   preview.value = null
   receipt.value = null
   errorMessage.value = ''
@@ -163,6 +168,7 @@ async function restorePendingChange() {
   receiptRefreshing.value = true
   errorMessage.value = ''
   try {
+    confirmationOpen.value = false
     const recovered = await getMySubscriptionChangeReceipt(props.session, changeId)
     if (recovered.changeId !== changeId || recovered.tenantId !== activeTenant) {
       throw new Error('套餐变更回执与当前企业不一致。')
@@ -275,6 +281,7 @@ async function confirmPreview() {
               <strong>停止续费</strong><small>仅停止续费意图，不缩短当前权益期</small>
             </UiButton>
           </div>
+          <PlanTargetDetails v-if="selectedTarget" :target="selectedTarget" />
         </div>
 
         <div v-if="action === 'SWITCH'" class="choice-block">
@@ -367,14 +374,15 @@ async function confirmPreview() {
             class="btn primary"
             :disabled="working || approvalRequired || preview.quotaValidationRequired"
             data-plan-change-confirm
-            @click="confirmPreview"
+            @click="confirmationOpen = true"
           >
             {{ approvalRequired ? '等待外部审批' : working ? '正在确认…' : '确认变更' }}
           </UiButton>
         </div>
       </template>
 
-      <div v-else-if="stage === 'receipt' && receipt" class="result-hero" data-plan-change-receipt><span class="result-icon"><AppIcon name="check" :size="28" /></span><div><span class="field-label">套餐变更结果</span><h3>{{ backendTermLabel('receiptStatus', receipt.status) }}</h3><p>确认时间 {{ formatDate(receipt.confirmedAt) }} · 生效时间 {{ formatDate(receipt.effectiveAt) }}</p></div><StatusBadge :text="backendTermLabel('receiptStatus', receipt.status)" :dot="false" /><UiButton class="btn" @click="resetLifecycle">发起其他变更</UiButton></div>
+      <PlanChangeReceipt v-else-if="stage === 'receipt' && receipt" :receipt="receipt" :refreshing="receiptRefreshing" @refresh="refreshReceipt" @reset="resetLifecycle" />
+      <PlanChangeConfirmDialog v-if="preview" :open="confirmationOpen" :preview="preview" :pending="working" @close="confirmationOpen = false" @confirm="confirmPreview" />
     </div>
   </section>
 </template>
