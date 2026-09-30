@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { backendBusinessText } from '@/i18n/backend-terms'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import type { SubscriptionChangeImpact } from '@/services/commercial/platformCommercial'
 
@@ -11,7 +10,7 @@ const description = (impact: SubscriptionChangeImpact) => ({ DATA_PRESERVED: '�
 const tone = (impact: SubscriptionChangeImpact) => impact.severity === 'DANGER' ? 'danger' : impact.severity === 'WARNING' ? 'warning' : 'neutral'
 </script>
 <template>
-  <div class="impact-card impacts"><h4>变更影响</h4><div v-if="structured.length" class="structured-impact-list"><article v-for="impact in structured" :key="impact.code" :class="['structured-impact',{blocking:impact.blocking}]"><StatusBadge :text="impact.blocking?'需要处理':'已说明'" :tone="tone(impact)" :dot="false"/><div><strong>{{ title(impact) }}</strong><p>{{ description(impact) }}</p><small v-if="impact.usageKnown">当前用量：{{ impact.currentUsage }}</small><small v-if="impact.actionRequired" class="impact-action">下一步：{{ title(impact) }}</small></div></article></div><ul v-else><li v-for="impact in legacyImpacts" :key="impact">{{ backendBusinessText(impact) }}</li></ul></div>
+  <div class="impact-card impacts"><h4>变更影响</h4><div v-if="structured.length" class="structured-impact-list"><article v-for="impact in structured" :key="impact.code" :class="['structured-impact',{blocking:impact.blocking}]"><StatusBadge :text="impact.blocking?'需要处理':'已说明'" :tone="tone(impact)" :dot="false"/><div><strong>{{ title(impact) }}</strong><p>{{ description(impact) }}</p><small v-if="impact.usageKnown">当前用量：{{ impact.currentUsage }}</small><small v-if="impact.actionRequired" class="impact-action">下一步：{{ title(impact) }}</small></div></article></div><p v-else-if="legacyImpacts.length" class="legacy-summary">现有租户数据将被保留，本次操作不会删除资源；确认时将按服务端当前事实重新核对。</p></div>
 </template>
 <style scoped>
 .impacts{margin-top:14px}.impacts ul{margin:0;padding-left:18px}.structured-impact-list{display:grid;gap:8px}.structured-impact{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:10px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface-soft)}.structured-impact.blocking{border-color:var(--color-warning)}.structured-impact strong,.structured-impact p,.structured-impact small{display:block}.structured-impact p{margin-top:3px;color:var(--color-text-secondary);font-size:var(--text-xs);line-height:1.5}.structured-impact small{margin-top:4px;color:var(--color-text-muted);font-size:var(--text-xs)}.structured-impact .impact-action{color:var(--color-text-secondary)}
