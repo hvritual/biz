@@ -266,6 +266,8 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
             errors.append("pr-qualification.yml: missing Enterprise180 pre-Fast admission gate")
         if "enterprise180-admission-pr-" not in text:
             errors.append("pr-qualification.yml: missing retained Enterprise180 admission receipt")
+        if "git diff --no-renames --name-only" not in text:
+            errors.append("pr-qualification.yml: routing must retain rename source paths with --no-renames")
         for required in (
             "skill_only:",
             "design_governance:",
@@ -318,6 +320,8 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
             errors.append("pr-merge-gate.yml: Full Gate must route on merge_gate_required, not docs_only")
         if text.count("candidate_lifecycle.py assert-fresh") < 3:
             errors.append("pr-merge-gate.yml: skill/design lightweight gate must also bind current-main freshness")
+        if "git diff --no-renames --name-only" not in text:
+            errors.append("pr-merge-gate.yml: routing must retain rename source paths with --no-renames")
         max_full = int(budget.get("max_full_merge_gate_units", 0) or 0)
         if max_full and len(manifest_names) > max_full:
             errors.append(
