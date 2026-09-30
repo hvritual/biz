@@ -316,6 +316,7 @@ export interface SubscriptionChangeReceiptDTO {
   pricingAuthority: string
   quotaImpacts: SubscriptionChangeQuotaImpact[]
   provisioningTaskId: string
+  failureCode: string
 }
 
 export interface PreviewSubscriptionChangeInput {

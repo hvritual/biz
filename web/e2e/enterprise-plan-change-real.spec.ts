@@ -4,7 +4,7 @@ import { mkdirSync } from 'node:fs'
 
 test.skip(!process.env.ENTERPRISE_PLAN_CHANGE_E2E, 'runs only against the VITE_DATA_MODE=api build')
 
-type ReceiptStatus = 'APPLIED' | 'SCHEDULED' | 'PROVISIONING'
+type ReceiptStatus = 'APPLIED' | 'SCHEDULED' | 'PROVISIONING' | 'FAILED'
 type Options = {
   paid?: boolean
   receiptStatus?: ReceiptStatus
@@ -147,7 +147,7 @@ function previewBody(options: Options = {}) {
 }
 
 function receiptBody(status: ReceiptStatus) {
-  const pending = status === 'APPLIED' ? '' : 'chg-tenant-preview-001'
+  const pending = status === 'SCHEDULED' || status === 'PROVISIONING' ? 'chg-tenant-preview-001' : ''
   return {
     changeId: 'chg-tenant-preview-001',
     tenantId: 'tenant-001',
@@ -171,6 +171,7 @@ function receiptBody(status: ReceiptStatus) {
     pricingAuthority: 'TENANT_SELF_SERVICE_NO_PRICE_REFERENCE',
     quotaImpacts: [],
     provisioningTaskId: status === 'PROVISIONING' ? 'task-chg-tenant-preview-001' : '',
+    failureCode: status === 'FAILED' ? 'PREPARATION_REQUIREMENTS_CHANGED' : '',
   }
 }
 
@@ -390,6 +391,17 @@ test('tenant restores a pending change from trusted subscription state after rel
   const receipt = lifecycle.locator('[data-plan-change-receipt]')
   await expect(receipt).toContainText('已预约')
   await expect(receipt).toContainText('chg-tenant-preview-001')
+  expect(captured.receiptReads).toEqual(['GET'])
+})
+
+test('tenant restores a failed pending change with an actionable recovery', async ({ page }) => {
+  const captured = await mockServer(page, { pendingStatus: 'FAILED' })
+  await page.goto('/#/enterprise/plan')
+  const receipt = page.locator('[data-plan-change-receipt]')
+  await expect(receipt).toContainText('处理失败')
+  await expect(receipt.locator('[data-plan-change-recovery]')).toContainText('开通条件已经变化')
+  await receipt.getByRole('button', { name: '重新生成变更方案', exact: true }).click()
+  await expect(page.locator('[data-plan-change-lifecycle]')).toContainText('可切换套餐')
   expect(captured.receiptReads).toEqual(['GET'])
 })
 

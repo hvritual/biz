@@ -7306,6 +7306,13 @@
           "number": 22,
           "kind": "scalar",
           "type": "string"
+        },
+        {
+          "name": "failure_code",
+          "jsonName": "failureCode",
+          "number": 23,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {

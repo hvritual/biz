@@ -1262,8 +1262,11 @@ type SubscriptionChangeReceiptDTO struct {
 	PricingAuthority         string                           `protobuf:"bytes,20,opt,name=pricing_authority,json=pricingAuthority,proto3" json:"pricing_authority,omitempty"`
 	QuotaImpacts             []*SubscriptionChangeQuotaImpact `protobuf:"bytes,21,rep,name=quota_impacts,json=quotaImpacts,proto3" json:"quota_impacts,omitempty"`
 	ProvisioningTaskId       string                           `protobuf:"bytes,22,opt,name=provisioning_task_id,json=provisioningTaskId,proto3" json:"provisioning_task_id,omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	// Stable, user-actionable reason when a scheduled change reaches FAILED.
+	// It is empty for non-failed receipts and never replaces the audit reason.
+	FailureCode   string `protobuf:"bytes,23,opt,name=failure_code,json=failureCode,proto3" json:"failure_code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SubscriptionChangeReceiptDTO) Reset() {
@@ -1446,6 +1449,13 @@ func (x *SubscriptionChangeReceiptDTO) GetQuotaImpacts() []*SubscriptionChangeQu
 func (x *SubscriptionChangeReceiptDTO) GetProvisioningTaskId() string {
 	if x != nil {
 		return x.ProvisioningTaskId
+	}
+	return ""
+}
+
+func (x *SubscriptionChangeReceiptDTO) GetFailureCode() string {
+	if x != nil {
+		return x.FailureCode
 	}
 	return ""
 }
@@ -1953,7 +1963,7 @@ const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\rpricing_basis\x18\x18 \x01(\tR\fpricingBasis\x12:\n" +
 	"\x19quota_validation_required\x18\x19 \x01(\bR\x17quotaValidationRequired\x12f\n" +
 	"\x19provisioning_requirements\x18\x1a \x03(\v2).commercial.v1.ProvisioningRequirementDTOR\x18provisioningRequirements\x12N\n" +
-	"\x0eimpact_details\x18\x1b \x03(\v2'.commercial.v1.SubscriptionChangeImpactR\rimpactDetails\"\xd5\a\n" +
+	"\x0eimpact_details\x18\x1b \x03(\v2'.commercial.v1.SubscriptionChangeImpactR\rimpactDetails\"\xf8\a\n" +
 	"\x1cSubscriptionChangeReceiptDTO\x12\x1b\n" +
 	"\tchange_id\x18\x01 \x01(\tR\bchangeId\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x19\n" +
@@ -1978,7 +1988,8 @@ const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\x19quota_validation_required\x18\x13 \x01(\bR\x17quotaValidationRequired\x12+\n" +
 	"\x11pricing_authority\x18\x14 \x01(\tR\x10pricingAuthority\x12Q\n" +
 	"\rquota_impacts\x18\x15 \x03(\v2,.commercial.v1.SubscriptionChangeQuotaImpactR\fquotaImpacts\x120\n" +
-	"\x14provisioning_task_id\x18\x16 \x01(\tR\x12provisioningTaskId\"h\n" +
+	"\x14provisioning_task_id\x18\x16 \x01(\tR\x12provisioningTaskId\x12!\n" +
+	"\ffailure_code\x18\x17 \x01(\tR\vfailureCode\"h\n" +
 	"$ClaimCommercialTimeTransitionRequest\x12\x1b\n" +
 	"\tworker_id\x18\x01 \x01(\tR\bworkerId\x12#\n" +
 	"\rlease_seconds\x18\x02 \x01(\rR\fleaseSeconds\"\xd3\x02\n" +

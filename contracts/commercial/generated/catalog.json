@@ -3,7 +3,7 @@
   "mapping_version": "27",
   "inputs_sha256": {
     "contracts/commercial/operation-capabilities.v1.json": "f49e77e0309415773c72a6c538ce136fef4077ed9fd8694bb48e62f8a9cee7e7",
-    "contracts/generated/manifest.json": "290744901ddc5194734b88f70cb9f59554a7eb6af284a4ab718e486cf7c1149b",
+    "contracts/generated/manifest.json": "d59050bb45f47b8f485adf68f4e8a651d71cfadb09d1a67f0ed5630f9d6f0871",
     "contracts/generated/operation-plans.json": "a73a10df9cee13b8ead49e87d8144e4581e3628e6013adfdd32b3a1fd8b5715d",
     "internal/access/application/member_business_scope.go": "9401a3c99e75c62aeb364d49d21ef6028e32be54d6daf8c75f393e62f09ba76e",
     "internal/access/application/tenant_data_policy.go": "e50a4bbf3ce4b7eca729278a92c5be04676dfa0375d3e73b637b3befefea6cf2",
