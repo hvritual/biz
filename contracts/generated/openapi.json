@@ -1740,6 +1740,114 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.CheckPlanEligibilityRequest"
       },
+      "commercial_v1_CommercialFeatureDTO": {
+        "properties": {
+          "featureCode": {
+            "type": "string"
+          },
+          "migrationState": {
+            "type": "string"
+          },
+          "moduleRefs": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_CommercialFeatureModuleReference"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "productState": {
+            "type": "string"
+          },
+          "referenceImpact": {
+            "$ref": "#/components/schemas/commercial_v1_CommercialFeatureReferenceImpact"
+          },
+          "replacementCode": {
+            "type": "string"
+          },
+          "runtimeState": {
+            "type": "string"
+          },
+          "salesState": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.CommercialFeatureDTO"
+      },
+      "commercial_v1_CommercialFeatureLifecycleRequest": {
+        "properties": {
+          "featureCode": {
+            "type": "string"
+          },
+          "migrationState": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "replacementCode": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "version": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.CommercialFeatureLifecycleRequest"
+      },
+      "commercial_v1_CommercialFeatureModuleReference": {
+        "properties": {
+          "capabilityCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "moduleCode": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.CommercialFeatureModuleReference"
+      },
+      "commercial_v1_CommercialFeatureReferenceImpact": {
+        "properties": {
+          "activeSubscriptions": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "addOns": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "entitlementSources": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          },
+          "publishedPlans": {
+            "format": "uint64",
+            "type": "string",
+            "x-yunka-protobuf-json-integer": true
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.CommercialFeatureReferenceImpact"
+      },
       "commercial_v1_ConfirmMySubscriptionChangeRequest": {
         "properties": {
           "changeId": {
@@ -1778,6 +1886,30 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.ConfirmSubscriptionChangeRequest"
+      },
+      "commercial_v1_CreateCommercialFeatureRequest": {
+        "properties": {
+          "featureCode": {
+            "type": "string"
+          },
+          "moduleRefs": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_CommercialFeatureModuleReference"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.CreateCommercialFeatureRequest"
       },
       "commercial_v1_CreateEntitlementOverrideRequest": {
         "properties": {
@@ -2222,6 +2354,15 @@
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.ExplainEntitlementsRequest"
       },
+      "commercial_v1_GetCommercialFeatureRequest": {
+        "properties": {
+          "featureCode": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.GetCommercialFeatureRequest"
+      },
       "commercial_v1_GetModuleRequest": {
         "properties": {
           "moduleCode": {
@@ -2287,6 +2428,23 @@
         },
         "type": "object",
         "x-yunka-proto-full-name": "commercial.v1.GetTenantSubscriptionRequest"
+      },
+      "commercial_v1_ListCommercialFeaturesRequest": {
+        "properties": {},
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListCommercialFeaturesRequest"
+      },
+      "commercial_v1_ListCommercialFeaturesResponse": {
+        "properties": {
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/commercial_v1_CommercialFeatureDTO"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "x-yunka-proto-full-name": "commercial.v1.ListCommercialFeaturesResponse"
       },
       "commercial_v1_ListDefaultSubscriptionRulesRequest": {
         "properties": {},
@@ -4558,6 +4716,292 @@
           "commercial.v1.ModuleCatalogApplication"
         ],
         "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/RecordModuleRuntimeVerification"
+      }
+    },
+    "/v1/platform/commercial-features": {
+      "get": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.ListCommercialFeatures",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_ListCommercialFeaturesResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/ListCommercialFeatures"
+      },
+      "post": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.CreateCommercialFeature",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_CreateCommercialFeatureRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_CommercialFeatureDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/CreateCommercialFeature"
+      }
+    },
+    "/v1/platform/commercial-features/{feature_code}": {
+      "get": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.GetCommercialFeature",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "featureCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_CommercialFeatureDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/GetCommercialFeature"
+      }
+    },
+    "/v1/platform/commercial-features/{feature_code}/complete-migration": {
+      "post": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.CompleteCommercialFeatureMigration",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "featureCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_CommercialFeatureLifecycleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_CommercialFeatureDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/CompleteCommercialFeatureMigration"
+      }
+    },
+    "/v1/platform/commercial-features/{feature_code}/publish": {
+      "post": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.PublishCommercialFeature",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "featureCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_CommercialFeatureLifecycleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_CommercialFeatureDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/PublishCommercialFeature"
+      }
+    },
+    "/v1/platform/commercial-features/{feature_code}/retire": {
+      "post": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.RetireCommercialFeature",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "featureCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_CommercialFeatureLifecycleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_CommercialFeatureDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/RetireCommercialFeature"
+      }
+    },
+    "/v1/platform/commercial-features/{feature_code}/stop-selling": {
+      "post": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.StopSellingCommercialFeature",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "featureCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_CommercialFeatureLifecycleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_CommercialFeatureDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/StopSellingCommercialFeature"
+      }
+    },
+    "/v1/platform/commercial-features/{feature_code}/sunset": {
+      "post": {
+        "operationId": "commercial.v1.ModuleCatalogApplication.PlanCommercialFeatureSunset",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "featureCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commercial_v1_CommercialFeatureLifecycleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/commercial_v1_CommercialFeatureDTO"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "commercial.v1.ModuleCatalogApplication"
+        ],
+        "x-yunka-rpc": "/commercial.v1.ModuleCatalogApplication/PlanCommercialFeatureSunset"
       }
     },
     "/v1/platform/modules": {

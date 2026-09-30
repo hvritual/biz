@@ -35,25 +35,49 @@ func RegisterModuleCatalogOperationExecutor(mux *http.ServeMux, application appl
 		return errors.New("contract C9 REST adapter: operation executor is required")
 	}
 	handler := &ModuleCatalogOperationHandler{application: application, executor: executor}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/commercial-features/{feature_code}/complete-migration", handler.handleOperationCompleteCommercialFeatureMigration); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/commercial-features", handler.handleOperationCreateCommercialFeature); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "POST", "/v1/platform/modules", handler.handleOperationCreateModule); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "DELETE", "/v1/platform/modules/{module_code}", handler.handleOperationDeleteModule); err != nil {
 		return err
 	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/commercial-features/{feature_code}", handler.handleOperationGetCommercialFeature); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "GET", "/v1/platform/modules/{module_code}", handler.handleOperationGetModule); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "GET", "/v1/platform/commercial-features", handler.handleOperationListCommercialFeatures); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "GET", "/v1/platform/modules", handler.handleOperationListModules); err != nil {
 		return err
 	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/commercial-features/{feature_code}/sunset", handler.handleOperationPlanCommercialFeatureSunset); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/commercial-features/{feature_code}/publish", handler.handleOperationPublishCommercialFeature); err != nil {
+		return err
+	}
 	if err := httpbinding.Register(mux, "POST", "/v1/internal/commercial/modules/{module_code}/runtime-verifications", handler.handleOperationRecordModuleRuntimeVerification); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/commercial-features/{feature_code}/retire", handler.handleOperationRetireCommercialFeature); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "POST", "/v1/platform/modules/{module_code}/sales-status", handler.handleOperationSetModuleSalesStatus); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "POST", "/v1/platform/modules/{module_code}/technical-status", handler.handleOperationSetModuleTechnicalStatus); err != nil {
+		return err
+	}
+	if err := httpbinding.Register(mux, "POST", "/v1/platform/commercial-features/{feature_code}/stop-selling", handler.handleOperationStopSellingCommercialFeature); err != nil {
 		return err
 	}
 	if err := httpbinding.Register(mux, "PATCH", "/v1/platform/modules/{module_code}", handler.handleOperationUpdateModule); err != nil {
@@ -89,6 +113,63 @@ func writeModuleCatalogOperationError(writer http.ResponseWriter, err error) {
 		return
 	}
 	http.Error(writer, "application request failed", http.StatusBadRequest)
+}
+
+func (handler *ModuleCatalogOperationHandler) handleOperationCompleteCommercialFeatureMigration(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.CommercialFeatureLifecycleRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	wire.FeatureCode = request.PathValue("feature_code")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogCompleteCommercialFeatureMigration(), wire, handler.application.CompleteCommercialFeatureMigration)
+	if err != nil {
+		writeModuleCatalogOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *ModuleCatalogOperationHandler) handleOperationCreateCommercialFeature(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.CreateCommercialFeatureRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogCreateCommercialFeature(), wire, handler.application.CreateCommercialFeature)
+	if err != nil {
+		writeModuleCatalogOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
 }
 
 func (handler *ModuleCatalogOperationHandler) handleOperationCreateModule(writer http.ResponseWriter, request *http.Request) {
@@ -151,11 +232,46 @@ func (handler *ModuleCatalogOperationHandler) handleOperationDeleteModule(writer
 	_, _ = writer.Write(payload)
 }
 
+func (handler *ModuleCatalogOperationHandler) handleOperationGetCommercialFeature(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.GetCommercialFeatureRequest{}
+	wire.FeatureCode = request.PathValue("feature_code")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogGetCommercialFeature(), wire, handler.application.GetCommercialFeature)
+	if err != nil {
+		writeModuleCatalogOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
 func (handler *ModuleCatalogOperationHandler) handleOperationGetModule(writer http.ResponseWriter, request *http.Request) {
 	wire := &commercialv1.GetModuleRequest{}
 	wire.ModuleCode = request.PathValue("module_code")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogGetModule(), wire, handler.application.GetModule)
+	if err != nil {
+		writeModuleCatalogOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *ModuleCatalogOperationHandler) handleOperationListCommercialFeatures(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.ListCommercialFeaturesRequest{}
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogListCommercialFeatures(), wire, handler.application.ListCommercialFeatures)
 	if err != nil {
 		writeModuleCatalogOperationError(writer, err)
 		return
@@ -186,6 +302,64 @@ func (handler *ModuleCatalogOperationHandler) handleOperationListModules(writer 
 	_, _ = writer.Write(payload)
 }
 
+func (handler *ModuleCatalogOperationHandler) handleOperationPlanCommercialFeatureSunset(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.CommercialFeatureLifecycleRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	wire.FeatureCode = request.PathValue("feature_code")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogPlanCommercialFeatureSunset(), wire, handler.application.PlanCommercialFeatureSunset)
+	if err != nil {
+		writeModuleCatalogOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *ModuleCatalogOperationHandler) handleOperationPublishCommercialFeature(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.CommercialFeatureLifecycleRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	wire.FeatureCode = request.PathValue("feature_code")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogPublishCommercialFeature(), wire, handler.application.PublishCommercialFeature)
+	if err != nil {
+		writeModuleCatalogOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
 func (handler *ModuleCatalogOperationHandler) handleOperationRecordModuleRuntimeVerification(writer http.ResponseWriter, request *http.Request) {
 	wire := &commercialv1.RecordModuleRuntimeVerificationRequest{}
 	body, err := io.ReadAll(request.Body)
@@ -202,6 +376,35 @@ func (handler *ModuleCatalogOperationHandler) handleOperationRecordModuleRuntime
 	wire.ModuleCode = request.PathValue("module_code")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogRecordModuleRuntimeVerification(), wire, handler.application.RecordModuleRuntimeVerification)
+	if err != nil {
+		writeModuleCatalogOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *ModuleCatalogOperationHandler) handleOperationRetireCommercialFeature(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.CommercialFeatureLifecycleRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	wire.FeatureCode = request.PathValue("feature_code")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogRetireCommercialFeature(), wire, handler.application.RetireCommercialFeature)
 	if err != nil {
 		writeModuleCatalogOperationError(writer, err)
 		return
@@ -260,6 +463,35 @@ func (handler *ModuleCatalogOperationHandler) handleOperationSetModuleTechnicalS
 	wire.ModuleCode = request.PathValue("module_code")
 	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
 	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogSetModuleTechnicalStatus(), wire, handler.application.SetModuleTechnicalStatus)
+	if err != nil {
+		writeModuleCatalogOperationError(writer, err)
+		return
+	}
+	payload, err := protojson.Marshal(output)
+	if err != nil {
+		http.Error(writer, "response encoding failed", http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+	_, _ = writer.Write(payload)
+}
+
+func (handler *ModuleCatalogOperationHandler) handleOperationStopSellingCommercialFeature(writer http.ResponseWriter, request *http.Request) {
+	wire := &commercialv1.CommercialFeatureLifecycleRequest{}
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		http.Error(writer, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > 0 {
+		if err := protojson.Unmarshal(body, wire); err != nil {
+			http.Error(writer, "invalid request body", http.StatusBadRequest)
+			return
+		}
+	}
+	wire.FeatureCode = request.PathValue("feature_code")
+	callContext := execution.WithIdempotencyKey(request.Context(), request.Header.Get("Idempotency-Key"))
+	output, err := operation.ExecuteTyped(callContext, handler.executor, policy.OperationPlanModuleCatalogStopSellingCommercialFeature(), wire, handler.application.StopSellingCommercialFeature)
 	if err != nil {
 		writeModuleCatalogOperationError(writer, err)
 		return

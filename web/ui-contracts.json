@@ -297,15 +297,12 @@
     },
     {
       "path": "/platform/commercial/features",
-      "component": "@/features/platform/pages/LifecycleManagementView.vue",
+      "component": "@/features/platform/pages/CommercialFeaturesView.vue",
       "surface": "platform",
       "template": "WorkbenchPage",
-      "commercial_authority": "preview",
+      "commercial_authority": "real",
       "required_regions": [
         "page-heading",
-        "preview",
-        "metrics",
-        "lifecycle",
         "query",
         "data",
         "detail"

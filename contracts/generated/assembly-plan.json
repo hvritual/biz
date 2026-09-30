@@ -1023,6 +1023,254 @@
       }
     },
     {
+      "id": "commercial.feature.complete_migration",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.feature.complete_migration",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.complete_migration/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.feature.complete_migration",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.complete_migration/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.feature.complete_migration"
+      }
+    },
+    {
+      "id": "commercial.feature.create",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.feature.create",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.create/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.feature.create",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.create/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.feature.create"
+      }
+    },
+    {
+      "id": "commercial.feature.get",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.feature.get",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.get/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.feature.get",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.get/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.feature.get"
+      }
+    },
+    {
+      "id": "commercial.feature.list",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.feature.list",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.list/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.feature.list",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.list/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.feature.list"
+      }
+    },
+    {
+      "id": "commercial.feature.plan_sunset",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.feature.plan_sunset",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.plan_sunset/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.feature.plan_sunset",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.plan_sunset/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.feature.plan_sunset"
+      }
+    },
+    {
+      "id": "commercial.feature.publish",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.feature.publish",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.publish/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.feature.publish",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.publish/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.feature.publish"
+      }
+    },
+    {
+      "id": "commercial.feature.retire",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.feature.retire",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.retire/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.feature.retire",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.retire/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.feature.retire"
+      }
+    },
+    {
+      "id": "commercial.feature.stop_selling",
+      "application": "commercial/module_catalog",
+      "bindings": [
+        {
+          "operationId": "commercial.feature.stop_selling",
+          "transport": "http",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.stop_selling/bindings/http/0"
+          }
+        },
+        {
+          "operationId": "commercial.feature.stop_selling",
+          "transport": "rpc",
+          "index": 0,
+          "evidence": {
+            "ownership": "reused",
+            "source": "operation-plans.json",
+            "ref": "operations/commercial.feature.stop_selling/bindings/rpc"
+          }
+        }
+      ],
+      "evidence": {
+        "ownership": "reused",
+        "source": "operation-plans.json",
+        "ref": "operations/commercial.feature.stop_selling"
+      }
+    },
+    {
       "id": "commercial.module.create",
       "application": "commercial/module_catalog",
       "bindings": [
@@ -5257,6 +5505,14 @@
         "commercial.entitlement.override.create",
         "commercial.entitlement.override.list",
         "commercial.entitlement.override.revoke",
+        "commercial.feature.complete_migration",
+        "commercial.feature.create",
+        "commercial.feature.get",
+        "commercial.feature.list",
+        "commercial.feature.plan_sunset",
+        "commercial.feature.publish",
+        "commercial.feature.retire",
+        "commercial.feature.stop_selling",
         "commercial.module.create",
         "commercial.module.delete",
         "commercial.module.get",

@@ -4,7 +4,7 @@ package authorization
 
 import "yunka.io/gateway/authz"
 
-const CommercialCapabilityMappingVersion = "27"
+const CommercialCapabilityMappingVersion = "28"
 
 var generatedActions = []Action{
 	{
@@ -62,6 +62,62 @@ var generatedActions = []Action{
 		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.entitlement.manage"), authz.PermissionKey("platform.tenant.read")}, PermissionMode: "all",
 		Classification: "platform_management", ModuleCode: "", CapabilityCodes: []string{},
 		RPC: "/commercial.v1.EntitlementManagementApplication/RevokeEntitlementOverride", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/platform/tenants/{tenant_id}/entitlement-overrides/{id}/revoke"}},
+	},
+	{
+		Code: "commercial.feature.complete_migration", Domain: "commercial", Application: "module_catalog", UseCase: "complete_commercial_feature_migration",
+		TenantRequired: false, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.module.manage")}, PermissionMode: "all",
+		Classification: "platform_management", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "/commercial.v1.ModuleCatalogApplication/CompleteCommercialFeatureMigration", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/platform/commercial-features/{feature_code}/complete-migration"}},
+	},
+	{
+		Code: "commercial.feature.create", Domain: "commercial", Application: "module_catalog", UseCase: "create_commercial_feature",
+		TenantRequired: false, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.module.manage")}, PermissionMode: "all",
+		Classification: "platform_management", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "/commercial.v1.ModuleCatalogApplication/CreateCommercialFeature", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/platform/commercial-features"}},
+	},
+	{
+		Code: "commercial.feature.get", Domain: "commercial", Application: "module_catalog", UseCase: "get_commercial_feature",
+		TenantRequired: false, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.module.read")}, PermissionMode: "all",
+		Classification: "platform_management", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "/commercial.v1.ModuleCatalogApplication/GetCommercialFeature", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/platform/commercial-features/{feature_code}"}},
+	},
+	{
+		Code: "commercial.feature.list", Domain: "commercial", Application: "module_catalog", UseCase: "list_commercial_features",
+		TenantRequired: false, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.module.read")}, PermissionMode: "all",
+		Classification: "platform_management", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "/commercial.v1.ModuleCatalogApplication/ListCommercialFeatures", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/platform/commercial-features"}},
+	},
+	{
+		Code: "commercial.feature.plan_sunset", Domain: "commercial", Application: "module_catalog", UseCase: "plan_commercial_feature_sunset",
+		TenantRequired: false, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.module.manage")}, PermissionMode: "all",
+		Classification: "platform_management", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "/commercial.v1.ModuleCatalogApplication/PlanCommercialFeatureSunset", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/platform/commercial-features/{feature_code}/sunset"}},
+	},
+	{
+		Code: "commercial.feature.publish", Domain: "commercial", Application: "module_catalog", UseCase: "publish_commercial_feature",
+		TenantRequired: false, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.module.manage")}, PermissionMode: "all",
+		Classification: "platform_management", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "/commercial.v1.ModuleCatalogApplication/PublishCommercialFeature", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/platform/commercial-features/{feature_code}/publish"}},
+	},
+	{
+		Code: "commercial.feature.retire", Domain: "commercial", Application: "module_catalog", UseCase: "retire_commercial_feature",
+		TenantRequired: false, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.module.manage")}, PermissionMode: "all",
+		Classification: "platform_management", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "/commercial.v1.ModuleCatalogApplication/RetireCommercialFeature", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/platform/commercial-features/{feature_code}/retire"}},
+	},
+	{
+		Code: "commercial.feature.stop_selling", Domain: "commercial", Application: "module_catalog", UseCase: "stop_selling_commercial_feature",
+		TenantRequired: false, Authentication: []string{"api-key", "web-session"},
+		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.module.manage")}, PermissionMode: "all",
+		Classification: "platform_management", ModuleCode: "", CapabilityCodes: []string{},
+		RPC: "/commercial.v1.ModuleCatalogApplication/StopSellingCommercialFeature", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/platform/commercial-features/{feature_code}/stop-selling"}},
 	},
 	{
 		Code: "commercial.module.create", Domain: "commercial", Application: "module_catalog", UseCase: "create_module",

@@ -590,7 +590,15 @@ func bindRuntimeWithSecurity(
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}
-	commercialApplication, err := commercialapp.NewModuleCatalogService(commercialCatalogService)
+	commercialFeatureStore, err := featurecatalog.NewStore(commercialStore.DB())
+	if err != nil {
+		return generatedassembly.RuntimeBindings{}, err
+	}
+	commercialFeatureService, err := featurecatalog.NewService(commercialFeatureStore)
+	if err != nil {
+		return generatedassembly.RuntimeBindings{}, err
+	}
+	commercialApplication, err := commercialapp.NewModuleCatalogService(commercialCatalogService, commercialFeatureService)
 	if err != nil {
 		return generatedassembly.RuntimeBindings{}, err
 	}

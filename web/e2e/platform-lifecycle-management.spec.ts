@@ -2,7 +2,6 @@ import { expect, test, type Page } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 
 const pages = [
-  ['features', '商业功能'],
   ['subscriptions', '租户订阅'],
   ['authorization', '授权诊断'],
   ['quotas', '额度管理'],
@@ -75,7 +74,7 @@ test('platform lifecycle navigation stays grouped in the joined 480px flyout', a
   }
   // Preview-only commercial routes are intentionally absent from formal navigation.
   await expect(drawer.getByText('计量与治理', { exact: true })).toHaveCount(0)
-  await expect(drawer.getByRole('button', { name: '商业功能', exact: true })).toHaveCount(0)
+  await expect(drawer.getByRole('button', { name: '商业功能', exact: true })).toBeVisible()
   await expect(drawer.getByRole('button', { name: '用量计费', exact: true })).toHaveCount(0)
   const box = await drawer.boundingBox()
   expect(box?.width).toBe(480)

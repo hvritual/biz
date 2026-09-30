@@ -125,7 +125,7 @@ describe('primary navigation information architecture', () => {
 
   it('exposes only real commercial authority in production navigation and quick actions', () => {
     expect(visiblePlatformCommercialNavigation().map((item) => item.id)).toEqual([
-      'overview', 'tenants', 'modules', 'plans', 'tenant-entitlements',
+      'overview', 'tenants', 'modules', 'features', 'plans', 'tenant-entitlements',
     ])
     const authorityByPath = new Map(platformCommercialNavigation.map((item) => [item.path, item.commercialAuthority]))
     expect(platformCommercialQuickActions.every((item) => authorityByPath.get(item.path) === 'real')).toBe(true)

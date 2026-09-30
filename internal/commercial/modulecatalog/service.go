@@ -351,6 +351,31 @@ func (s *Service) Delete(ctx context.Context, c DeleteCommand) error {
 		if refs > 0 {
 			return ErrReferenced
 		}
+		// A technical Module may be archived only after every commercial
+		// consumer has released it. These references intentionally remain in
+		// their owning authorities so historical plans and entitlements retain
+		// their original meaning.
+		for _, reference := range []struct {
+			table string
+			where string
+		}{
+			{table: "biz_commercial_feature_modules", where: "module_code = ?"},
+			{table: "biz_commercial_plan_module_refs", where: "module_code = ?"},
+			{table: "biz_commercial_entitlement_sources", where: "module_code = ?"},
+		} {
+			// CE02's historical catalog-only schema predates CommercialFeature.
+			// A missing table means no such reference authority exists yet; once
+			// the lifecycle migration is installed the same query is mandatory.
+			if !tx.Migrator().HasTable(reference.table) {
+				continue
+			}
+			if err := tx.Table(reference.table).Where(reference.where, c.Code).Count(&refs).Error; err != nil {
+				return err
+			}
+			if refs > 0 {
+				return ErrReferenced
+			}
+		}
 		def, _ := s.registry.Definition(c.Code)
 		before := rowToModule(row, def)
 		if err := tx.Where("module_code = ?", c.Code).Delete(&dependencyRow{}).Error; err != nil {

@@ -9,14 +9,22 @@ import (
 
 // ModuleCatalogApplication is generated from PB and contains no business implementation.
 type ModuleCatalogApplication interface {
+	CompleteCommercialFeatureMigration(context.Context, *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error)
+	CreateCommercialFeature(context.Context, *commercialv1.CreateCommercialFeatureRequest) (*commercialv1.CommercialFeatureDTO, error)
 	CreateModule(context.Context, *commercialv1.CreateModuleRequest) (*commercialv1.ModuleDTO, error)
 	DeleteModule(context.Context, *commercialv1.DeleteModuleRequest) (*commercialv1.DeleteModuleResponse, error)
+	GetCommercialFeature(context.Context, *commercialv1.GetCommercialFeatureRequest) (*commercialv1.CommercialFeatureDTO, error)
 	GetModule(context.Context, *commercialv1.GetModuleRequest) (*commercialv1.ModuleDTO, error)
+	ListCommercialFeatures(context.Context, *commercialv1.ListCommercialFeaturesRequest) (*commercialv1.ListCommercialFeaturesResponse, error)
 	ListModules(context.Context, *commercialv1.ListModulesRequest) (*commercialv1.ListModulesResponse, error)
+	PlanCommercialFeatureSunset(context.Context, *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error)
+	PublishCommercialFeature(context.Context, *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error)
 	ReadEntitlementCatalog(context.Context, *commercialv1.ListModulesRequest) (*commercialv1.ListModulesResponse, error)
 	ReadPlanCatalog(context.Context, *commercialv1.ListModulesRequest) (*commercialv1.ListModulesResponse, error)
 	RecordModuleRuntimeVerification(context.Context, *commercialv1.RecordModuleRuntimeVerificationRequest) (*commercialv1.ModuleDTO, error)
+	RetireCommercialFeature(context.Context, *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error)
 	SetModuleSalesStatus(context.Context, *commercialv1.SetModuleSalesStatusRequest) (*commercialv1.ModuleDTO, error)
 	SetModuleTechnicalStatus(context.Context, *commercialv1.SetModuleTechnicalStatusRequest) (*commercialv1.ModuleDTO, error)
+	StopSellingCommercialFeature(context.Context, *commercialv1.CommercialFeatureLifecycleRequest) (*commercialv1.CommercialFeatureDTO, error)
 	UpdateModule(context.Context, *commercialv1.UpdateModuleRequest) (*commercialv1.ModuleDTO, error)
 }

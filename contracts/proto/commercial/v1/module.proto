@@ -55,6 +55,50 @@ message RecordModuleRuntimeVerificationRequest {
   string source_tree = 5;
 }
 
+// CommercialFeature owns customer-facing lifecycle semantics while referring
+// to the technical Module/Capability authority by stable code.
+message CommercialFeatureModuleReference {
+  string module_code = 1;
+  repeated string capability_codes = 2;
+}
+message CommercialFeatureReferenceImpact {
+  uint64 published_plans = 1;
+  uint64 add_ons = 2;
+  uint64 active_subscriptions = 3;
+  uint64 entitlement_sources = 4;
+}
+message CommercialFeatureDTO {
+  option (yunka.dsl.v1.dto) = { kind: DTO_OUTPUT };
+  string feature_code = 1;
+  string name = 2;
+  uint64 version = 3;
+  repeated CommercialFeatureModuleReference module_refs = 4;
+  string product_state = 5;
+  string sales_state = 6;
+  string runtime_state = 7;
+  string migration_state = 8;
+  string replacement_code = 9;
+  CommercialFeatureReferenceImpact reference_impact = 10;
+}
+message CreateCommercialFeatureRequest {
+  string request_id = 1;
+  string feature_code = 2;
+  string name = 3;
+  repeated CommercialFeatureModuleReference module_refs = 4;
+  string reason = 5;
+}
+message GetCommercialFeatureRequest { string feature_code = 1; }
+message ListCommercialFeaturesRequest {}
+message ListCommercialFeaturesResponse { repeated CommercialFeatureDTO features = 1; }
+message CommercialFeatureLifecycleRequest {
+  string request_id = 1;
+  string feature_code = 2;
+  uint64 version = 3;
+  string reason = 4;
+  string replacement_code = 5;
+  string migration_state = 6;
+}
+
 service ModuleCatalogApplication {
   option (yunka.dsl.v1.application) = {
     name: "module_catalog"
@@ -115,5 +159,37 @@ service ModuleCatalogApplication {
   rpc RecordModuleRuntimeVerification(RecordModuleRuntimeVerificationRequest) returns (ModuleDTO) {
     option (google.api.http) = { post: "/v1/internal/commercial/modules/{module_code}/runtime-verifications" body: "*" };
     option (yunka.dsl.v1.operation) = { id: "commercial.module.runtime.verify" use_case: "record_module_runtime_verification" permissions: "platform.module.runtime.verify" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  }
+  rpc CreateCommercialFeature(CreateCommercialFeatureRequest) returns (CommercialFeatureDTO) {
+    option (google.api.http) = { post: "/v1/platform/commercial-features" body: "*" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.feature.create" use_case: "create_commercial_feature" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  }
+  rpc GetCommercialFeature(GetCommercialFeatureRequest) returns (CommercialFeatureDTO) {
+    option (google.api.http) = { get: "/v1/platform/commercial-features/{feature_code}" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.feature.get" use_case: "get_commercial_feature" permissions: "platform.module.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
+  }
+  rpc ListCommercialFeatures(ListCommercialFeaturesRequest) returns (ListCommercialFeaturesResponse) {
+    option (google.api.http) = { get: "/v1/platform/commercial-features" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.feature.list" use_case: "list_commercial_features" permissions: "platform.module.read" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_READ_ONLY idempotency: IDEMPOTENCY_NONE } };
+  }
+  rpc PublishCommercialFeature(CommercialFeatureLifecycleRequest) returns (CommercialFeatureDTO) {
+    option (google.api.http) = { post: "/v1/platform/commercial-features/{feature_code}/publish" body: "*" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.feature.publish" use_case: "publish_commercial_feature" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  }
+  rpc StopSellingCommercialFeature(CommercialFeatureLifecycleRequest) returns (CommercialFeatureDTO) {
+    option (google.api.http) = { post: "/v1/platform/commercial-features/{feature_code}/stop-selling" body: "*" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.feature.stop_selling" use_case: "stop_selling_commercial_feature" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  }
+  rpc PlanCommercialFeatureSunset(CommercialFeatureLifecycleRequest) returns (CommercialFeatureDTO) {
+    option (google.api.http) = { post: "/v1/platform/commercial-features/{feature_code}/sunset" body: "*" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.feature.plan_sunset" use_case: "plan_commercial_feature_sunset" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  }
+  rpc CompleteCommercialFeatureMigration(CommercialFeatureLifecycleRequest) returns (CommercialFeatureDTO) {
+    option (google.api.http) = { post: "/v1/platform/commercial-features/{feature_code}/complete-migration" body: "*" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.feature.complete_migration" use_case: "complete_commercial_feature_migration" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
+  }
+  rpc RetireCommercialFeature(CommercialFeatureLifecycleRequest) returns (CommercialFeatureDTO) {
+    option (google.api.http) = { post: "/v1/platform/commercial-features/{feature_code}/retire" body: "*" };
+    option (yunka.dsl.v1.operation) = { id: "commercial.feature.retire" use_case: "retire_commercial_feature" permissions: "platform.module.manage" permission_mode: PERMISSION_ALL tenant_required: false authentication: AUTHENTICATION_API_KEY authentication: AUTHENTICATION_WEB_SESSION execution: { transaction: TRANSACTION_LOCAL idempotency: IDEMPOTENCY_REQUIRED } };
   }
 }

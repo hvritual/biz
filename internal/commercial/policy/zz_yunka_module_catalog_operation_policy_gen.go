@@ -4,13 +4,21 @@ package policy
 
 import "yunka.io/gateway/authz"
 
+const OperationModuleCatalogCompleteCommercialFeatureMigration authz.OperationID = "commercial.feature.complete_migration"
+const OperationModuleCatalogCreateCommercialFeature authz.OperationID = "commercial.feature.create"
 const OperationModuleCatalogCreateModule authz.OperationID = "commercial.module.create"
 const OperationModuleCatalogDeleteModule authz.OperationID = "commercial.module.delete"
+const OperationModuleCatalogGetCommercialFeature authz.OperationID = "commercial.feature.get"
 const OperationModuleCatalogGetModule authz.OperationID = "commercial.module.get"
+const OperationModuleCatalogListCommercialFeatures authz.OperationID = "commercial.feature.list"
 const OperationModuleCatalogListModules authz.OperationID = "commercial.module.list"
+const OperationModuleCatalogPlanCommercialFeatureSunset authz.OperationID = "commercial.feature.plan_sunset"
+const OperationModuleCatalogPublishCommercialFeature authz.OperationID = "commercial.feature.publish"
 const OperationModuleCatalogRecordModuleRuntimeVerification authz.OperationID = "commercial.module.runtime.verify"
+const OperationModuleCatalogRetireCommercialFeature authz.OperationID = "commercial.feature.retire"
 const OperationModuleCatalogSetModuleSalesStatus authz.OperationID = "commercial.module.set_sales_status"
 const OperationModuleCatalogSetModuleTechnicalStatus authz.OperationID = "commercial.module.set_technical_status"
+const OperationModuleCatalogStopSellingCommercialFeature authz.OperationID = "commercial.feature.stop_selling"
 const OperationModuleCatalogUpdateModule authz.OperationID = "commercial.module.update"
 
 func ModuleCatalogPermissions() []authz.PermissionKey {
@@ -23,13 +31,21 @@ func ModuleCatalogResolver() authz.StaticResolver {
 
 func moduleCatalogPolicies() map[string]authz.Policy {
 	return map[string]authz.Policy{
-		"/commercial.v1.ModuleCatalogApplication/CreateModule":                    {Operation: OperationModuleCatalogCreateModule, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
-		"/commercial.v1.ModuleCatalogApplication/DeleteModule":                    {Operation: OperationModuleCatalogDeleteModule, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
-		"/commercial.v1.ModuleCatalogApplication/GetModule":                       {Operation: OperationModuleCatalogGetModule, Permissions: []authz.PermissionKey{"platform.module.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
-		"/commercial.v1.ModuleCatalogApplication/ListModules":                     {Operation: OperationModuleCatalogListModules, Permissions: []authz.PermissionKey{"platform.module.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
-		"/commercial.v1.ModuleCatalogApplication/RecordModuleRuntimeVerification": {Operation: OperationModuleCatalogRecordModuleRuntimeVerification, Permissions: []authz.PermissionKey{"platform.module.runtime.verify"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
-		"/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus":            {Operation: OperationModuleCatalogSetModuleSalesStatus, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
-		"/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus":        {Operation: OperationModuleCatalogSetModuleTechnicalStatus, Permissions: []authz.PermissionKey{"platform.module.technical.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
-		"/commercial.v1.ModuleCatalogApplication/UpdateModule":                    {Operation: OperationModuleCatalogUpdateModule, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/CompleteCommercialFeatureMigration": {Operation: OperationModuleCatalogCompleteCommercialFeatureMigration, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/CreateCommercialFeature":            {Operation: OperationModuleCatalogCreateCommercialFeature, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/CreateModule":                       {Operation: OperationModuleCatalogCreateModule, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/DeleteModule":                       {Operation: OperationModuleCatalogDeleteModule, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/GetCommercialFeature":               {Operation: OperationModuleCatalogGetCommercialFeature, Permissions: []authz.PermissionKey{"platform.module.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/GetModule":                          {Operation: OperationModuleCatalogGetModule, Permissions: []authz.PermissionKey{"platform.module.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/ListCommercialFeatures":             {Operation: OperationModuleCatalogListCommercialFeatures, Permissions: []authz.PermissionKey{"platform.module.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/ListModules":                        {Operation: OperationModuleCatalogListModules, Permissions: []authz.PermissionKey{"platform.module.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/PlanCommercialFeatureSunset":        {Operation: OperationModuleCatalogPlanCommercialFeatureSunset, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/PublishCommercialFeature":           {Operation: OperationModuleCatalogPublishCommercialFeature, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/RecordModuleRuntimeVerification":    {Operation: OperationModuleCatalogRecordModuleRuntimeVerification, Permissions: []authz.PermissionKey{"platform.module.runtime.verify"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
+		"/commercial.v1.ModuleCatalogApplication/RetireCommercialFeature":            {Operation: OperationModuleCatalogRetireCommercialFeature, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/SetModuleSalesStatus":               {Operation: OperationModuleCatalogSetModuleSalesStatus, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/SetModuleTechnicalStatus":           {Operation: OperationModuleCatalogSetModuleTechnicalStatus, Permissions: []authz.PermissionKey{"platform.module.technical.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/StopSellingCommercialFeature":       {Operation: OperationModuleCatalogStopSellingCommercialFeature, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
+		"/commercial.v1.ModuleCatalogApplication/UpdateModule":                       {Operation: OperationModuleCatalogUpdateModule, Permissions: []authz.PermissionKey{"platform.module.manage"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
 	}
 }

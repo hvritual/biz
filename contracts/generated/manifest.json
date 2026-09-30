@@ -3538,6 +3538,198 @@
       }
     },
     {
+      "name": "CommercialFeatureDTO",
+      "fullName": "commercial.v1.CommercialFeatureDTO",
+      "fields": [
+        {
+          "name": "feature_code",
+          "jsonName": "featureCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "module_refs",
+          "jsonName": "moduleRefs",
+          "number": 4,
+          "kind": "message",
+          "type": "commercial.v1.CommercialFeatureModuleReference",
+          "repeated": true
+        },
+        {
+          "name": "product_state",
+          "jsonName": "productState",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "sales_state",
+          "jsonName": "salesState",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "runtime_state",
+          "jsonName": "runtimeState",
+          "number": 7,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "migration_state",
+          "jsonName": "migrationState",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "replacement_code",
+          "jsonName": "replacementCode",
+          "number": 9,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "reference_impact",
+          "jsonName": "referenceImpact",
+          "number": 10,
+          "kind": "message",
+          "type": "commercial.v1.CommercialFeatureReferenceImpact"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
+      "name": "CommercialFeatureLifecycleRequest",
+      "fullName": "commercial.v1.CommercialFeatureLifecycleRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "feature_code",
+          "jsonName": "featureCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "jsonName": "version",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 4,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "replacement_code",
+          "jsonName": "replacementCode",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "migration_state",
+          "jsonName": "migrationState",
+          "number": 6,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "CommercialFeatureModuleReference",
+      "fullName": "commercial.v1.CommercialFeatureModuleReference",
+      "fields": [
+        {
+          "name": "module_code",
+          "jsonName": "moduleCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "capability_codes",
+          "jsonName": "capabilityCodes",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "shared"
+      }
+    },
+    {
+      "name": "CommercialFeatureReferenceImpact",
+      "fullName": "commercial.v1.CommercialFeatureReferenceImpact",
+      "fields": [
+        {
+          "name": "published_plans",
+          "jsonName": "publishedPlans",
+          "number": 1,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "add_ons",
+          "jsonName": "addOns",
+          "number": 2,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "active_subscriptions",
+          "jsonName": "activeSubscriptions",
+          "number": 3,
+          "kind": "scalar",
+          "type": "uint64"
+        },
+        {
+          "name": "entitlement_sources",
+          "jsonName": "entitlementSources",
+          "number": 4,
+          "kind": "scalar",
+          "type": "uint64"
+        }
+      ],
+      "dto": {
+        "kind": "output"
+      }
+    },
+    {
       "name": "CommercialTimeTransitionDTO",
       "fullName": "commercial.v1.CommercialTimeTransitionDTO",
       "fields": [
@@ -3809,6 +4001,51 @@
           "number": 4,
           "kind": "scalar",
           "type": "string"
+        },
+        {
+          "name": "reason",
+          "jsonName": "reason",
+          "number": 5,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "CreateCommercialFeatureRequest",
+      "fullName": "commercial.v1.CreateCommercialFeatureRequest",
+      "fields": [
+        {
+          "name": "request_id",
+          "jsonName": "requestId",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "feature_code",
+          "jsonName": "featureCode",
+          "number": 2,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "jsonName": "name",
+          "number": 3,
+          "kind": "scalar",
+          "type": "string"
+        },
+        {
+          "name": "module_refs",
+          "jsonName": "moduleRefs",
+          "number": 4,
+          "kind": "message",
+          "type": "commercial.v1.CommercialFeatureModuleReference",
+          "repeated": true
         },
         {
           "name": "reason",
@@ -4665,6 +4902,22 @@
       }
     },
     {
+      "name": "GetCommercialFeatureRequest",
+      "fullName": "commercial.v1.GetCommercialFeatureRequest",
+      "fields": [
+        {
+          "name": "feature_code",
+          "jsonName": "featureCode",
+          "number": 1,
+          "kind": "scalar",
+          "type": "string"
+        }
+      ],
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
       "name": "GetModuleRequest",
       "fullName": "commercial.v1.GetModuleRequest",
       "fields": [
@@ -4767,6 +5020,31 @@
       ],
       "dto": {
         "kind": "input"
+      }
+    },
+    {
+      "name": "ListCommercialFeaturesRequest",
+      "fullName": "commercial.v1.ListCommercialFeaturesRequest",
+      "fields": null,
+      "dto": {
+        "kind": "input"
+      }
+    },
+    {
+      "name": "ListCommercialFeaturesResponse",
+      "fullName": "commercial.v1.ListCommercialFeaturesResponse",
+      "fields": [
+        {
+          "name": "features",
+          "jsonName": "features",
+          "number": 1,
+          "kind": "message",
+          "type": "commercial.v1.CommercialFeatureDTO",
+          "repeated": true
+        }
+      ],
+      "dto": {
+        "kind": "output"
       }
     },
     {
@@ -11907,6 +12185,86 @@
       },
       "methods": [
         {
+          "name": "CompleteCommercialFeatureMigration",
+          "fullName": "commercial.v1.ModuleCatalogApplication.CompleteCommercialFeatureMigration",
+          "request": "commercial.v1.CommercialFeatureLifecycleRequest",
+          "response": "commercial.v1.CommercialFeatureDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/commercial-features/{feature_code}/complete-migration",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.feature.complete_migration",
+            "useCase": "complete_commercial_feature_migration",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.feature.complete_migration",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "CreateCommercialFeature",
+          "fullName": "commercial.v1.ModuleCatalogApplication.CreateCommercialFeature",
+          "request": "commercial.v1.CreateCommercialFeatureRequest",
+          "response": "commercial.v1.CommercialFeatureDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/commercial-features",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.feature.create",
+            "useCase": "create_commercial_feature",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.feature.create",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "CreateModule",
           "fullName": "commercial.v1.ModuleCatalogApplication.CreateModule",
           "request": "commercial.v1.CreateModuleRequest",
@@ -11986,6 +12344,45 @@
           }
         },
         {
+          "name": "GetCommercialFeature",
+          "fullName": "commercial.v1.ModuleCatalogApplication.GetCommercialFeature",
+          "request": "commercial.v1.GetCommercialFeatureRequest",
+          "response": "commercial.v1.CommercialFeatureDTO",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/commercial-features/{feature_code}"
+            }
+          ],
+          "operation": {
+            "id": "commercial.feature.get",
+            "useCase": "get_commercial_feature",
+            "permissions": [
+              "platform.module.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.feature.get",
+            "permissions": [
+              "platform.module.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "GetModule",
           "fullName": "commercial.v1.ModuleCatalogApplication.GetModule",
           "request": "commercial.v1.GetModuleRequest",
@@ -12014,6 +12411,45 @@
           },
           "authorization": {
             "operationId": "commercial.module.get",
+            "permissions": [
+              "platform.module.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "ListCommercialFeatures",
+          "fullName": "commercial.v1.ModuleCatalogApplication.ListCommercialFeatures",
+          "request": "commercial.v1.ListCommercialFeaturesRequest",
+          "response": "commercial.v1.ListCommercialFeaturesResponse",
+          "http": [
+            {
+              "method": "GET",
+              "path": "/v1/platform/commercial-features"
+            }
+          ],
+          "operation": {
+            "id": "commercial.feature.list",
+            "useCase": "list_commercial_features",
+            "permissions": [
+              "platform.module.read"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "read_only",
+              "idempotency": "none"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.feature.list",
             "permissions": [
               "platform.module.read"
             ],
@@ -12064,6 +12500,86 @@
           }
         },
         {
+          "name": "PlanCommercialFeatureSunset",
+          "fullName": "commercial.v1.ModuleCatalogApplication.PlanCommercialFeatureSunset",
+          "request": "commercial.v1.CommercialFeatureLifecycleRequest",
+          "response": "commercial.v1.CommercialFeatureDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/commercial-features/{feature_code}/sunset",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.feature.plan_sunset",
+            "useCase": "plan_commercial_feature_sunset",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.feature.plan_sunset",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "PublishCommercialFeature",
+          "fullName": "commercial.v1.ModuleCatalogApplication.PublishCommercialFeature",
+          "request": "commercial.v1.CommercialFeatureLifecycleRequest",
+          "response": "commercial.v1.CommercialFeatureDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/commercial-features/{feature_code}/publish",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.feature.publish",
+            "useCase": "publish_commercial_feature",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.feature.publish",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
           "name": "RecordModuleRuntimeVerification",
           "fullName": "commercial.v1.ModuleCatalogApplication.RecordModuleRuntimeVerification",
           "request": "commercial.v1.RecordModuleRuntimeVerificationRequest",
@@ -12098,6 +12614,46 @@
             "permissionMode": "all",
             "authentication": [
               "api-key"
+            ]
+          }
+        },
+        {
+          "name": "RetireCommercialFeature",
+          "fullName": "commercial.v1.ModuleCatalogApplication.RetireCommercialFeature",
+          "request": "commercial.v1.CommercialFeatureLifecycleRequest",
+          "response": "commercial.v1.CommercialFeatureDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/commercial-features/{feature_code}/retire",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.feature.retire",
+            "useCase": "retire_commercial_feature",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.feature.retire",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -12173,6 +12729,46 @@
             "operationId": "commercial.module.set_technical_status",
             "permissions": [
               "platform.module.technical.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ]
+          }
+        },
+        {
+          "name": "StopSellingCommercialFeature",
+          "fullName": "commercial.v1.ModuleCatalogApplication.StopSellingCommercialFeature",
+          "request": "commercial.v1.CommercialFeatureLifecycleRequest",
+          "response": "commercial.v1.CommercialFeatureDTO",
+          "http": [
+            {
+              "method": "POST",
+              "path": "/v1/platform/commercial-features/{feature_code}/stop-selling",
+              "body": "*"
+            }
+          ],
+          "operation": {
+            "id": "commercial.feature.stop_selling",
+            "useCase": "stop_selling_commercial_feature",
+            "permissions": [
+              "platform.module.manage"
+            ],
+            "permissionMode": "all",
+            "authentication": [
+              "api-key",
+              "web-session"
+            ],
+            "execution": {
+              "transaction": "local",
+              "idempotency": "required"
+            }
+          },
+          "authorization": {
+            "operationId": "commercial.feature.stop_selling",
+            "permissions": [
+              "platform.module.manage"
             ],
             "permissionMode": "all",
             "authentication": [
