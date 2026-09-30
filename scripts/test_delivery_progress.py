@@ -31,6 +31,13 @@ class ProgressTests(unittest.TestCase):
         result = derive(self.pull, self.files, [self.q], self.jobs, 182)
         self.assertEqual(result['next_action'], 'freeze_exact_candidate_and_mark_ready')
 
+    def test_docs_only_uses_lightweight_gate_without_ui_requirement(self):
+        self.files = [{'filename': 'docs/design-notes.md', 'status': 'modified'}]
+        result = derive(self.pull, self.files, [self.q], self.jobs, 182)
+        self.assertEqual(result['change_class'], 'docs_only')
+        self.assertFalse(result['merge_gate_required'])
+        self.assertEqual(result['state'], 'LIGHTWEIGHT_QUALIFIED')
+
     def test_skill_only_uses_lightweight_gate_without_ui_requirement(self):
         self.files = [
             {'filename': '.agents/skills/b2b-product-ux/SKILL.md', 'status': 'modified'},
