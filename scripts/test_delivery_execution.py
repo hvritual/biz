@@ -220,6 +220,17 @@ class ControlTests(unittest.TestCase):
                     self.check_lightweight_receipt(receipt)
                 self.assertEqual(caught.exception.code, 'LIGHTWEIGHT_RECEIPT_BINDING_MISMATCH')
 
+    def test_route_for_pr_includes_previous_filename(self):
+        class API:
+            def pages(self, path):
+                self.path = path
+                return [{'filename': '.agents/skills/b2b-product-ux/runtime.go',
+                         'previous_filename': 'Makefile', 'status': 'renamed'}]
+
+        result = d.route_for_pr(API(), PR)
+        self.assertEqual(result['change_class'], 'product_change')
+        self.assertTrue(result['merge_gate_required'])
+
     def test_lightweight_jobs_require_success_and_skipped_full_jobs(self):
         good = [{'name': 'route', 'status': 'completed', 'conclusion': 'success'},
                 {'name': 'lightweight-ready', 'status': 'completed', 'conclusion': 'success'},
