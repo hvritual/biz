@@ -367,6 +367,7 @@ async function confirmPreview() {
         <PlanChangePreparationImpact :preview="preview" />
 
         <PlanChangeImpactList :impacts="preview.impactDetails ?? []" :legacy-impacts="preview.impacts ?? []" />
+        <p class="boundary-note">现有租户数据将被保留，本次操作不会删除资源。</p>
 
         <div class="action-row">
           <UiButton class="btn" @click="resetLifecycle">返回重选</UiButton>
