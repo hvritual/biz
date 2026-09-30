@@ -195,7 +195,15 @@ def bound_refs(api, pr, candidate, allow_draft=False):
 
 def route_for_pr(api, pr):
     from ci_changed_files_router import route
-    files = [item.get("filename", "") for item in api.pages(f"/pulls/{pr}/files") if item.get("filename")]
+    files = []
+    for item in api.pages(f"/pulls/{pr}/files"):
+        filename = item.get("filename")
+        previous = item.get("previous_filename")
+        if filename:
+            files.append(filename)
+        if previous:
+            files.append(previous)
+    files = sorted(set(files))
     require(files, "PR_CHANGED_FILES_MISSING")
     return route(files)
 
