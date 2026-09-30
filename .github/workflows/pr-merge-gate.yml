@@ -108,7 +108,7 @@ jobs:
 
   lightweight-ready:
     needs: route
-    if: github.event.pull_request.draft == false && (needs.route.outputs.skill_only == 'true' || needs.route.outputs.design_governance == 'true')
+    if: github.event.pull_request.draft == false && needs.route.outputs.merge_gate_required == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -142,11 +142,13 @@ jobs:
             echo "- full merge gate: not required for this bounded change class"
             echo "- main push qualification: still required after merge"
           } >> "$GITHUB_STEP_SUMMARY"
-      - name: Retain lightweight qualification receipt
+      - name: Authorize bounded lightweight merge
+        run: python3 scripts/delivery_execution.py lightweight-ready
+      - name: Retain canonical lightweight delivery receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: lightweight-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          name: delivery-execution-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/delivery-execution.json
           if-no-files-found: error
           retention-days: 30
