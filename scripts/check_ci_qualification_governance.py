@@ -275,6 +275,8 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
             "needs.route.outputs.skill_only == 'true'",
             "needs.route.outputs.product_change == 'true' || needs.route.outputs.design_governance == 'true'",
             "needs.route.outputs.product_change == 'true' || needs.route.outputs.design_web_check == 'true'",
+            "Design governance Skill checks",
+            "needs.route.outputs.design_governance == 'true'",
         ):
             if required not in text:
                 errors.append("pr-qualification.yml: missing change-class routing invariant " + required)
