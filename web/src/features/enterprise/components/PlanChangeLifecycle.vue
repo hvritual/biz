@@ -156,6 +156,11 @@ function resetLifecycle() {
 function receiptNeedsSync(value: SubscriptionChangeReceiptDTO | null) { return value?.status === 'SCHEDULED' || value?.status === 'PROVISIONING' }
 function stopReceiptSync() { if (receiptTimer) clearInterval(receiptTimer); receiptTimer = undefined }
 function startReceiptSync() { stopReceiptSync(); if (receiptNeedsSync(receipt.value)) receiptTimer = setInterval(() => { void refreshReceipt() }, 15_000) }
+function rememberReceipt(changeId: string) {
+  const activeTenant = String(props.session.active_tenant_id ?? '').trim()
+  const subscriptionTenant = String(props.subscription.tenantId ?? '').trim()
+  if (changeId && activeTenant && activeTenant === subscriptionTenant) restoredPendingKey = `${activeTenant}:${subscriptionTenant}:${changeId}`
+}
 
 async function restorePendingChange() {
   const changeId = String(props.subscription.pendingChangeId ?? '').trim()
@@ -235,6 +240,7 @@ async function confirmPreview() {
   confirmationOpen.value = false
   try {
     receipt.value = await confirmMySubscriptionChange(props.session, preview.value)
+    rememberReceipt(receipt.value.changeId)
     if (receiptNeedsSync(receipt.value)) startReceiptSync()
     else emit('changed')
   } catch (error) {
