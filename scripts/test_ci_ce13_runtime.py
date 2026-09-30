@@ -51,6 +51,40 @@ class SourceContractTests(unittest.TestCase):
         self.mutated(".github/workflows/ce13-plan-catalog-qualification.yml",
                      lambda s: s.replace("go -C biz vet", "go -C biz test -count=1 -tags=integration ./integration -run '^TestCE07MySQL'\n          go -C biz vet", 1))
 
+
+    def test_plan_browser_prep_after_generation_rejected(self):
+        block = (
+            "      - name: Start CE13 browser dependency preparation\n"
+            "        run: bash biz/scripts/ci_ce13_browser.sh start plan\n\n"
+        )
+        self.mutated(
+            ".github/workflows/ce13-plan-catalog-qualification.yml",
+            lambda s: s.replace(block, "", 1).replace(
+                "      - name: Wait for workflow-owned CE13 MySQL\n",
+                block + "      - name: Wait for workflow-owned CE13 MySQL\n",
+                1,
+            ),
+        )
+
+    def test_session_source_web_working_directory_rejected(self):
+        self.mutated(
+            ".github/workflows/ce13-platform-web-session.yml",
+            lambda s: s.replace(
+                'cd "$RUNNER_TEMP/ce13-session/web"',
+                'cd "$GITHUB_WORKSPACE/biz/web"',
+            ),
+        )
+
+    def test_browser_helper_source_tree_write_rejected(self):
+        self.mutated(
+            "scripts/ci_ce13_browser.sh",
+            lambda s: s.replace(
+                'cd "$isolated_web"',
+                'cd "${GITHUB_WORKSPACE:?}/biz/web"',
+                1,
+            ),
+        )
+
     def test_go_run_recompile_rejected(self):
         self.mutated(".github/workflows/ce13-platform-web-session.yml",
                      lambda s: s.replace('nohup "$RUNNER_TEMP/ce13-session-idp"', "nohup go -C biz run ./cmd/biz-idp"))
