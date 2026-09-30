@@ -164,6 +164,18 @@ jobs:
           python3 scripts/test_ci_performance_receipt.py
           node --test .github/scripts/main-qualification.test.mjs
 
+      - name: Design governance Skill checks
+        if: needs.route.outputs.design_governance == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          make ui-skill-check
+          if test -f scripts/check_b2b_ux_skill.py; then
+            python3 -B scripts/check_b2b_ux_skill.py
+          fi
+          if test -f scripts/test_b2b_ux_skill.py; then
+            python3 -B -m unittest discover -s scripts -p 'test_b2b_ux_skill.py' -v
+          fi
       - name: Retain proof ownership contract decision
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
