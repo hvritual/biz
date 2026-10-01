@@ -87,7 +87,7 @@ class MemberBrowserSetupTest(unittest.TestCase):
         self.assertIn('python3 -B scripts/test_ci_member_browser.py', source)
         self.assertIn('bash scripts/ci_member_browser.sh', source)
         self.assertIn('ENTERPRISE_MEMBER_REAL_E2E=1 npx playwright test e2e/enterprise-members-real.spec.ts', source)
-        self.assertNotIn('playwright install --with-deps chromium', source)
+        self.assertNotRegex(source, r'playwright\s+install\s+--with-deps\s+chromium')
 
     def test_organization_keeps_e2e_and_four_viewport_evidence(self):
         source = (ROOT / '.github/workflows/ec-ri-04-web-qualification.yml').read_text()
@@ -143,7 +143,7 @@ class MemberBrowserSetupTest(unittest.TestCase):
     def test_plan_read_installs_full_chromium_before_native_zoom(self):
         result, trace = self.full_chromium_probe()
         self.assertEqual(0, result.returncode, result.stderr)
-        self.assertEqual('--no-install playwright install chromium\n', trace)
+        self.assertEqual(['--no-install', 'playwright', 'install', 'chromium'], trace.split())
         self.assertNotIn('--with-deps', trace)
         self.assertNotIn('--only-shell', trace)
 
