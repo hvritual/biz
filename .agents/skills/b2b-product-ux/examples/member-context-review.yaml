@@ -1,0 +1,216 @@
+# 设计样例；没有执行 UI/API/用户测试；不是生产状态或权限来源。
+schema_version: 1
+artifact_kind: example
+status: draft
+task_ref:
+  issue: '#310'
+  baseline_commit: fad8dd14f1b7cc33b5432dbb108b03e0596f1ee6
+  candidate_commit: null
+  name: 找到成员，查看后返回原列表（设计示例，未执行）
+classification:
+  type: ui_interaction
+  reason: 样例限定为筛选、查看和返回，不含新增、修改、批量写或导出。
+  business_state_mutation: false
+  authorization_sensitive: false
+  asynchronous_effect: false
+context:
+  role:
+    summary: 具有当前企业成员查看授权的运营管理员；这是设计假设，不据此授予权限。
+    source_refs:
+    - scenario
+  task:
+    summary: 筛选目标成员、读详情并返回继续处理同一列表；用户是否独立完成尚未测试。
+    source_refs:
+    - scenario
+  entity:
+    summary: 主对象为成员；当前查看对象和已选集合是独立概念；不使用真实客户资料。
+    source_refs:
+    - page-patterns
+  workflow:
+    summary: 进入已有成员列表→筛选→查看→关闭→继续原列表；具体源码和消费者由试点读取。
+    source_refs:
+    - page-patterns
+    - scenario
+  state:
+    summary: 区分读取中、空集合、无结果、无权限和读取错误；切身份清理旧数据。
+    source_refs:
+    - page-patterns
+  action:
+    summary: 本样例仅筛选、查看、关闭；写操作、导出、额度和设备控制不在范围。
+    source_refs:
+    - scenario
+  risk:
+    summary: 主要风险是上下文丢失、查看误改选择和显示旧租户内容；不改变现有授权规则。
+    source_refs:
+    - page-patterns
+  decision:
+    summary: 用户需识别成员身份、是否为目标及信息是否可信；缺权限/读取失败不伪装空结果。
+    source_refs:
+    - page-patterns
+sources:
+- id: page-patterns
+  kind: repository_contract
+  path: docs/design/PAGE-PATTERNS.md
+  commit: fad8dd14f1b7cc33b5432dbb108b03e0596f1ee6
+  locator: 必须区分的交互 / 页面义务与状态
+  claim: 规范要求查看与勾选分离，关闭详情保留查询、分页、滚动及选择并恢复焦点；不是本例运行证据。
+- id: scenario
+  kind: hypothesis
+  path: null
+  commit: null
+  locator: 本样例的限定任务
+  claim: 假定使用者已有当前企业成员查看授权；实际权限、页面行为及性能需在试点核验。
+page_pattern:
+  name: ListPage
+  reason: 对同类成员集合检索与查看；不以示例强制重做页面。
+  contract_ref: 'web/ui-contracts.json: /enterprise/members（试点需核对当前版本）'
+  gaps:
+  - 当前浏览器及真实 API 尚未在本例执行。
+outcome:
+  definition: 找到正确成员后能回到原筛选/分页/滚动/选择上下文，焦点恢复；这是验收目标，不是已测结果。
+  result_contract_refs:
+  - page-patterns
+  recovery_contract_refs:
+  - page-patterns
+humanized_ux:
+  time_to_information:
+    applicability: applies
+    reason: 用户需要识别当前企业、目标成员和读取状态。
+    requirements:
+    - 关键身份与状态可见，长名称能访问完整值。
+    evidence_types:
+    - browser_test
+    - user_test
+    verification: not_verified
+    evidence: []
+  time_to_action:
+    applicability: applies
+    reason: 识别成员后应能进入查看并返回。
+    requirements:
+    - 查看与关闭入口可键盘到达，标签可理解。
+    evidence_types:
+    - browser_test
+    - user_test
+    verification: not_verified
+    evidence: []
+  context_switching:
+    applicability: applies
+    reason: 详情关闭后继续原列表。
+    requirements:
+    - 筛选、分页、滚动、选择保持；关闭后焦点恢复；切身份则清理。
+    evidence_types:
+    - browser_test
+    verification: not_verified
+    evidence: []
+  decision_load:
+    applicability: applies
+    reason: 用户需要区分目标与读取失败。
+    requirements:
+    - 状态说明与可信来源一致，不用空表格掩盖无权限/错误。
+    evidence_types:
+    - source_review
+    - browser_test
+    - user_test
+    verification: not_verified
+    evidence: []
+  interaction_cost:
+    applicability: applies
+    reason: 避免返回后重复输入查询。
+    requirements:
+    - 保留适用上下文；不为只读查看增加无必要确认。
+    evidence_types:
+    - browser_test
+    - user_test
+    verification: not_verified
+    evidence: []
+  error_recoverability:
+    applicability: applies
+    reason: 详情读取可失败。
+    requirements:
+    - 保留查询，呈现真实读取错误及安全重读/返回入口；不降级为假数据。
+    evidence_types:
+    - browser_test
+    - api_test
+    verification: not_verified
+    evidence: []
+  how_to_guidance:
+    applicability: applies
+    reason: 首次使用者可能不了解查看和勾选区别。
+    requirements:
+    - 必要时就近说明，允许按需访问，不强制反复新手导览。
+    evidence_types:
+    - browser_test
+    - user_test
+    verification: not_verified
+    evidence: []
+  operation_effect_transparency:
+    applicability: applies
+    reason: 即便是本地交互也需明确效果。
+    requirements:
+    - 查看不选中、关闭不改变成员资料；此只读场景不添加删除/计费弹窗。
+    evidence_types:
+    - browser_test
+    - user_test
+    verification: not_verified
+    evidence: []
+  problem_resolution_guidance:
+    applicability: not_applicable
+    reason: 限定样例是只读成员检索，没有待解决业务异常；系统读取错误由 error_recoverability 覆盖。后续加入停用/权限问题需重新评估。
+    requirements: []
+    evidence_types: []
+    verification: not_applicable
+    evidence: []
+acceptance:
+  scenarios:
+  - 筛选→查看→关闭→继续列表
+  - 查看不改变勾选
+  - 读取失败保留上下文
+  - 无权限不伪装空集合
+  - 身份切换无旧详情残留
+  automated_checks:
+  - 核对实际 Page Contract 与源码
+  - 浏览器键盘/焦点及上下文状态断言
+  - 适用的真实 API 读取失败/授权回归
+  human_checks:
+  - 用户能识别正确成员和当前企业
+  - 长中英文名称、缩放及移动端可理解
+  - 指引未增加重复操作负担
+  metrics:
+  - id: time_to_information
+    definition: 从进入任务到正确指出目标成员；需预先统一计时口径。
+    conditions: 按目标角色、设备和使用熟练度分组；尚未采样。
+    baseline: null
+    target: null
+    observed: null
+    unit: seconds
+    sample_size: 0
+    failure_policy: 答错、放弃和未完成单列，不从成功率分母删除。
+    evidence_ref: null
+open_questions:
+- question: 实际角色/数据范围与服务端读取能力需要当前源码/API 核验。
+  blocking: true
+  owner_role: 前端/后端维护者
+- question: 本例无浏览器或真人数据，不能声明完成率、耗时或 UX 已批准。
+  blocking: true
+  owner_role: QA / 产品 Owner
+handoff:
+  allowed_paths: []
+  forbidden_paths:
+  - 本例不授权修改任何产品文件
+  reuse_refs:
+  - docs/design/PAGE-PATTERNS.md
+  - web/ui-contracts.json
+  gates:
+  - name: browser_and_api_evidence
+    status: not_run
+  - name: independent_ux_review
+    status: not_run
+review:
+  reviewer: null
+  actor_kind: null
+  scope: null
+  reference: null
+  analysis_ref: null
+  reviewed_at: null
+  candidate_sha: null
+  decision: not_reviewed
