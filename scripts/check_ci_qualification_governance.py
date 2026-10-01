@@ -266,6 +266,22 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
             errors.append("pr-qualification.yml: missing Enterprise180 pre-Fast admission gate")
         if "enterprise180-admission-pr-" not in text:
             errors.append("pr-qualification.yml: missing retained Enterprise180 admission receipt")
+        if "git diff --no-renames --name-only" not in text:
+            errors.append("pr-qualification.yml: routing must retain rename source paths with --no-renames")
+        for required in (
+            "skill_only:",
+            "design_governance:",
+            "product_change:",
+            "merge_gate_required:",
+            "skill-governance:",
+            "needs.route.outputs.skill_only == 'true'",
+            "needs.route.outputs.product_change == 'true' || needs.route.outputs.design_governance == 'true'",
+            "needs.route.outputs.product_change == 'true' || needs.route.outputs.design_web_check == 'true'",
+            "Design governance Skill checks",
+            "needs.route.outputs.design_governance == 'true'",
+        ):
+            if required not in text:
+                errors.append("pr-qualification.yml: missing change-class routing invariant " + required)
 
     merge_path = workflows / "pr-merge-gate.yml"
     if merge_path.exists():
@@ -287,6 +303,25 @@ def validate(root: pathlib.Path = ROOT) -> list[str]:
             errors.append("pr-merge-gate.yml: missing CANDIDATE_FROZEN/MERGE_READY lifecycle jobs")
         if "enterprise180:" not in text or "enforce_enterprise180_admission:" not in text:
             errors.append("pr-merge-gate.yml: #180 admission is not carried into canonical Full Gate")
+        for required in (
+            "merge_gate_required:",
+            "skill_only:",
+            "design_governance:",
+            "lightweight-ready:",
+            "needs.route.outputs.merge_gate_required == 'true'",
+            "needs.route.outputs.merge_gate_required == 'false'",
+            "Require fresh main and matching PR Qualification",
+            "Authorize bounded lightweight merge",
+            "delivery-execution-",
+        ):
+            if required not in text:
+                errors.append("pr-merge-gate.yml: missing bounded lightweight/full routing invariant " + required)
+        if "needs.route.outputs.docs_only != 'true'" in text:
+            errors.append("pr-merge-gate.yml: Full Gate must route on merge_gate_required, not docs_only")
+        if text.count("candidate_lifecycle.py assert-fresh") < 3:
+            errors.append("pr-merge-gate.yml: skill/design lightweight gate must also bind current-main freshness")
+        if "git diff --no-renames --name-only" not in text:
+            errors.append("pr-merge-gate.yml: routing must retain rename source paths with --no-renames")
         max_full = int(budget.get("max_full_merge_gate_units", 0) or 0)
         if max_full and len(manifest_names) > max_full:
             errors.append(

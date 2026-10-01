@@ -29,11 +29,16 @@ jobs:
         working-directory: web
       - run: npm run check
         working-directory: web
-      - name: Install Chromium and Chinese fonts
-        working-directory: web
+      - name: Verify bounded headless browser and Chinese font prerequisites
+        shell: bash
         run: |
-          npx playwright install --with-deps chromium
-          sudo apt-get install -y fonts-noto-cjk
+          set -euo pipefail
+          python3 -B scripts/test_ci_member_browser.py
+          bash scripts/ci_member_browser.sh
+      - name: Install Chromium channel for native browser zoom
+        working-directory: web
+        shell: bash
+        run: npx --no-install playwright install chromium
       - name: Run tenant plan and usage API-mode E2E
         working-directory: web
         shell: bash

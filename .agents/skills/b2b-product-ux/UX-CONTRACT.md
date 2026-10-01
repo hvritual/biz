@@ -66,7 +66,13 @@ review.decision 使用 not_reviewed、approved、changes_requested；actor_kind 
 
 一旦产品目标变更、分析载荷变更、审阅源无法核验或分析路径不匹配，当前 status 必须退回 draft/ready_for_review，review.decision 退回 not_reviewed；旧审阅保留在原 PR/不可变历史记录，不能复制为当前批准。仅填写审阅元数据/状态不造成分析自包含 SHA 循环，但这些回填值仍须与真实独立记录吻合。没有源记录时保持 not_reviewed，不由结构校验授予批准。
 
-status: reviewed 只表示所声明范围的审阅已完成，decision 必须是 approved 或 changes_requested；它不自动表示业务完成或所有九维通过。approved 不能带有该 scope 内未解决的 blocking 问题；有阻塞可以记录 changes_requested。draft/ready_for_review 对应 not_reviewed，review 字段默认 null。人工 UX 批准需要 human 及对应范围的真实记录；自动审查不能冒充人工批准。设计分析可以在执行测试尚未开展时获得“设计范围”审阅，但未测量维度仍保留 not_verified。
+status: reviewed 只表示所声明范围的审阅已完成，decision 必须是 approved 或 changes_requested，不自动表示业务完成。approved 不能带有该 scope 内未解决的 blocking 问题；有阻塞或验证缺口可以记录 changes_requested，但不能当作批准。draft/ready_for_review 对应 not_reviewed，review 字段默认 null。
+
+**体验批准的必要条件**：review.scope: task_experience 且 decision: approved 时，九维不得存在 unknown；所有 applies 维度必须 verification: pass，义务和必需证据类型已明确且非空，并满足上文当前候选、具体义务、全部必需类型的真实通过证据及失败处置规则。applies 中仍有 not_verified/fail，或证据缺失、错误类型、旧候选、尚未处置的失败，都不得批准；将缺口改为非阻塞不能绕过这些条件。not_applicable 维度必须有有效理由且 verification: not_applicable，N/A 理由也必须纳入真实审阅，不能因接口缺失或执行成本而豁免安全、授权和真实结果义务。存在这些缺口时保留实际未验证状态，未审则 not_reviewed；已完成审阅可为 reviewed + changes_requested，不得 approved。
+
+只有 document_design 范围允许未执行验证仍获设计批准：明确记录这是设计分析审阅，未测量和 unknown 维度保持 not_verified，未决项保留且不存在设计 scope 内未解决的 blocking 问题。此例外不构成 task_experience 批准、产品执行验收或业务完成，不能通过更换 scope 标签复用原审阅记录。
+
+上述条件不是可信外部审阅的替代品；产品/分析双目标绑定、外部预期候选和真实审阅来源仍须全部核验。人工 UX 批准需要 human 及对应范围的真实记录；自动审查、填写者自报状态和结构检查都不能冒充人工批准。
 
 本次是在首版合并前补齐 v1 草案字段；旧草案补入 candidate_commit 和 review 的 actor_kind/scope/reference/analysis_ref 为 null，再按真实记录填写，不自动迁移成已验收。后续已发布格式的变化仍须按版本迁移审查。
 

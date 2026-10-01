@@ -77,8 +77,17 @@ def check(root=ROOT):
     browser_helper = (root / "scripts/ci_ce13_browser.sh").read_text()
     require("GITHUB_ACTIONS" in browser_helper,
             "CE13_BROWSER_OWNERSHIP_GUARD_MISSING")
-    require("npx playwright install --with-deps --only-shell chromium" in browser_helper,
+    require("npx --no-install playwright install --only-shell chromium" in browser_helper,
             "CE13_HEADLESS_ONLY_REQUIRED")
+    require("--with-deps" not in browser_helper and "playwright install-deps" not in browser_helper,
+            "CE13_FULL_OS_BOOTSTRAP_REINTRODUCED")
+    require("chromium.launch({ headless: true, timeout: 20000 })" in browser_helper and
+            "await browser.close()" in browser_helper and
+            "CE13_BROWSER_LAUNCH=PASS" in browser_helper and
+            browser_helper.index("CE13_BROWSER_LAUNCH=PASS") < browser_helper.index('date +%s > "$out/browser-prep.ready"'),
+            "CE13_REAL_BROWSER_PROBE_REQUIRED")
+    require("CE13_CHINESE_FONT_UNAVAILABLE" in browser_helper,
+            "CE13_FONT_READINESS_GUARD_MISSING")
     require('source_web="${GITHUB_WORKSPACE:?}/biz/web"' in browser_helper and
             'isolated_web="$out/web"' in browser_helper and
             'tar -C "$source_web"' in browser_helper and
