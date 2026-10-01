@@ -4,8 +4,10 @@
 
 ## 来源与边界
 
-源码阅读基线：`c91f515f4fb1335b4b80c130e6e230e5fb359432`。
+源码阅读基线：`9bbef8faf1e90e9617dafcb0a462e1ae0cd027ba`。
 [CustomerAreaView](../../../../web/src/features/customer/pages/CustomerAreaView.vue) 明示演示内容，部分操作不影响真实合同、财务或设备；[SiteDetailView](../../../../web/src/features/site-rental/pages/SiteDetailView.vue) 有点位关联和服务事项展示。它们只作结构阅读起点，不证明真实经营数据/工单闭环已接通。
+
+快照复核：上述源码基线为本 PR 的前序提交；其 `web` tree 为 `b0c66f1d879bacf0d2caeb7b21fc06eabd07415e`，与首次阅读快照的前端内容一致。相对链接仅供导航；证据复核使用 `git show 9bbef8faf1e90e9617dafcb0a462e1ae0cd027ba:<上述仓库路径>`，或访问 [固定源码快照](https://github.com/hvritual/biz/tree/9bbef8faf1e90e9617dafcb0a462e1ae0cd027ba/web)。
 
 ## 八维上下文
 

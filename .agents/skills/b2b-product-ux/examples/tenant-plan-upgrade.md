@@ -4,8 +4,10 @@
 
 ## 来源与边界
 
-源码阅读基线：`c91f515f4fb1335b4b80c130e6e230e5fb359432`。
+源码阅读基线：`9bbef8faf1e90e9617dafcb0a462e1ae0cd027ba`。
 [PlanChangeLifecycle](../../../../web/src/features/enterprise/components/PlanChangeLifecycle.vue) 包含目标选择、预览、确认和回执读取入口，并区分外部商业审批；[PlanChangeConfirmDialog](../../../../web/src/features/enterprise/components/PlanChangeConfirmDialog.vue) 与 [PlanChangeReceipt](../../../../web/src/features/enterprise/components/PlanChangeReceipt.vue) 是现有组件阅读入口。源码存在不证明支付服务、真实商业报价或整个任务已验收。
+
+快照复核：上述源码基线为本 PR 的前序提交；其 `web` tree 为 `b0c66f1d879bacf0d2caeb7b21fc06eabd07415e`，与首次阅读快照的前端内容一致。相对链接仅供导航；证据复核使用 `git show 9bbef8faf1e90e9617dafcb0a462e1ae0cd027ba:<上述仓库路径>`，或访问 [固定源码快照](https://github.com/hvritual/biz/tree/9bbef8faf1e90e9617dafcb0a462e1ae0cd027ba/web)。
 
 ## 八维上下文
 
