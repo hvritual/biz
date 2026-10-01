@@ -22,3 +22,10 @@
 - Before UI implementation or review, read `.agents/skills/better-typography/PROJECT-INTEGRATION.md`, its `SKILL.md`, and the relevant bundled references. The source is pinned and MIT-licensed; this is a repository Agent Skill, not a runtime dependency.
 - Preserve the current approved CoffeeLink contracts/tokens and system font stack. The current `web/ui-contracts.json` declares V1.2; older roadmap wording does not authorize a downgrade or replacement. Do not add font binaries or run unpinned skill installers in CI.
 - Run `make ui-skill-check` to verify source provenance. For actual UI changes, record the typography review, four viewports, 200% browser zoom and long-text/numeric cases required by #296. Source hash checks do not constitute visual approval; report unexecuted checks as Not verified.
+
+## B2B task experience skill
+
+- Before designing or changing a business task, read `.agents/skills/b2b-product-ux/PROJECT-INTEGRATION.md` and `SKILL.md`. Load business context, the nine UX dimensions, then only the relevant task patterns and recovery references. Keep the existing typography loading and source checks unchanged.
+- Use one UX analysis in the task's authorized documentation path; read `UX-CONTRACT.md` and `CHECKING.md`. Do not create a second Page Contract, component API, permission catalog or runtime renderer. Pure backend/engineering work does not need a complete UX analysis.
+- Run `make b2b-ux-skill-check` for Skill structure and regression fixtures. Validate a real analysis explicitly with `python3 -B scripts/check_b2b_ux_skill.py --analysis <repo-relative-path> --expected-candidate <product-sha-from-task-or-PR>`. An analysis document's own candidate value is not an external expectation.
+- This offline gate returns structure-only results. Exit zero is not UX approval: unknown, semantic concerns, unverified measurements and external review records stay `NEEDS_REVIEW`. `--require-verified` exits nonzero for them. Never promote `approval_granted: false` or template/example data to task acceptance; independently read actual API/browser/user/reviewer evidence. Existing candidate/main gates still apply.

@@ -40,3 +40,9 @@ Read README.md before editing. Work only under `web/` unless the user explicitly
 - For UI application work, follow [`../docs/design/REGISTRY-FIRST-WORKFLOW.md`](../docs/design/REGISTRY-FIRST-WORKFLOW.md): read the requirement and constraints, query the generated design index, inspect the selected real source/API, make the smallest Page Contract delta, compose Vue, then run checks and browser/API evidence.
 - Record only bounded search terms, candidate IDs and selection/rejection reasons in the task/PR evidence. Do not create a second editable Props, token, route, permission or business-state catalog.
 - Application work consumes existing Token/Shell/Pattern/public components. A real gap that requires a new shared primitive, Token or Pattern is a design-system maintenance change and must be reviewed as such; do not weaken a checker or rewrite expected screenshots to manufacture success.
+
+## Task experience before page composition
+
+- For business-task UI work, load `../.agents/skills/b2b-product-ux/PROJECT-INTEGRATION.md`, `SKILL.md`, and only the needed context/UX/pattern references before Registry-first component lookup. Keep the existing CoffeeLink, typography, real-session and verification rules.
+- Maintain one task analysis rather than a second editable UI/API specification. Costs, authorization, quotas, device outcomes and safe recovery remain server/runbook facts; a page declaration, toast or timeout cannot establish them.
+- From the repository root run `make b2b-ux-skill-check`; pass actual task documents through `--analysis` with the externally observed product SHA. `NEEDS_REVIEW` is not an accepted UX result. For actual UI changes also execute the existing browser/API and visual checks above; this Skill gate does not replace them or sign for a reviewer.
