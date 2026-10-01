@@ -640,6 +640,39 @@ test('canonical recycle bin restores removed member with one authoritative write
   })
 })
 
+test('uncertain single-member state write cannot be dismissed or resubmitted before read-only verification', async ({ page }) => {
+  const options: MockOptions = { readbackStatus: 500 }
+  const server = await mockMemberServer(page, options)
+  await openCanonicalMembers(page)
+  await page.getByRole('button', { name: 'Alice Chen 更多操作', exact: true }).click()
+  await page.getByRole('button', { name: '禁用当前企业访问', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '禁用成员', exact: true })
+  await dialog.getByRole('checkbox').check()
+  await dialog.getByLabel('操作原因', { exact: true }).fill('单成员结果核对 request-313-single-0001')
+  await dialog.getByRole('button', { name: '确认禁用', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toContainText('成员信息暂不可用')
+  await expect(dialog.getByText('结果尚未确认', { exact: false })).toBeVisible()
+  expect(server.getWrites().filter((item) => item.path.endsWith('/suspend'))).toHaveLength(1)
+
+  await dialog.getByRole('button', { name: '关闭弹窗', exact: true }).click()
+  await expect(dialog).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('button', { name: '取消', exact: true })).toBeDisabled()
+  await expect(dialog.getByRole('button', { name: '确认禁用', exact: true })).toBeDisabled()
+
+  await dialog.getByRole('button', { name: '只读核对当前状态', exact: true }).click()
+  await expect(dialog).toBeVisible()
+  expect(server.getWrites().filter((item) => item.path.endsWith('/suspend'))).toHaveLength(1)
+
+  options.readbackStatus = undefined
+  await dialog.getByRole('button', { name: '只读核对当前状态', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+  await expect(page.getByRole('status')).toContainText('已通过当前状态与版本确认本次变更完成')
+  await expect(page.locator('[data-member-id="user-001"]')).toContainText('已禁用')
+  expect(server.getWrites().filter((item) => item.path.endsWith('/suspend'))).toHaveLength(1)
+})
+
 test('canonical profile 409 preserves draft and reuses the same idempotency key', async ({ page }) => {
   const server = await mockMemberServer(page, { mutationStatus: 409 })
   await openCanonicalMembers(page)
@@ -754,6 +787,7 @@ test('member task API fixture: uncertain batch cannot be dismissed and retains p
   await expect(dialog).toHaveCount(0)
   const inspection = page.getByLabel('待核对批次', { exact: true })
   await expect(inspection).toBeVisible()
+  await expect(inspection).toBeFocused()
   await expect(inspection.locator('[data-batch-inspection-id="user-001"]')).toContainText('Alice Chen')
   await expect(inspection.locator('[data-batch-inspection-id="user-extra-03"]')).toContainText('Member 03')
   await expect(inspection.getByText('待确认', { exact: true })).toHaveCount(2)

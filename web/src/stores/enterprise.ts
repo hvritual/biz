@@ -965,9 +965,9 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
 
   async function inspectMemberStatusBatch(
     targets: { id: string; version: number }[],
-    action: 'activate' | 'suspend',
+    action: 'activate' | 'suspend' | 'remove',
   ): Promise<MemberBatchInspection[]> {
-    const expected = action === 'activate' ? 'active' : 'suspended'
+    const expected = action === 'activate' ? 'active' : action === 'suspend' ? 'suspended' : 'removed'
     if (previewMode) {
       return targets.map(({ id, version }) => {
         const current = members.value.find((member) => member.id === id)
