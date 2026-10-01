@@ -691,3 +691,78 @@ test('restricted member appeal never requests tenant business APIs and exposes a
     reason: 'please review my suspended access',
   })
 })
+
+// #313 evidence is explicitly API-mode route interception, not a live service.
+test('member task API fixture: query failure retains filters and recovery performs no writes', async ({ page }) => {
+  const options: MockOptions = {}
+  const server = await mockMemberServer(page, options)
+  await openCanonicalMembers(page)
+  options.listStatus = 500
+  await page.getByLabel('搜索成员', { exact: true }).fill('Alice')
+  await page.getByRole('button', { name: '查询', exact: true }).click()
+  const error = page.locator('.member-task-state[role="alert"]')
+  await expect(error).toContainText('筛选输入已保留')
+  await expect(page.locator('.member-table')).toHaveCount(0)
+  await expect(page.getByLabel('搜索成员', { exact: true })).toHaveValue('Alice')
+  options.listStatus = undefined
+  await page.getByRole('button', { name: '重新读取成员', exact: true }).click()
+  await expect(page.locator('[data-member-id="user-001"]')).toBeVisible()
+  await expect(error).toHaveCount(0)
+  expect(server.getWrites()).toEqual([])
+  expect(server.getListReads().at(-1)).toContain('query=Alice')
+})
+
+test('member task API fixture: duplicate submit is ignored and uncertain batch stops for read-only inspection', async ({ page }) => {
+  const options: MockOptions = { memberCount: 4 }
+  const server = await mockMemberServer(page, options)
+  await openCanonicalMembers(page)
+  await page.getByLabel('选择 Alice Chen', { exact: true }).check()
+  await page.getByLabel('选择 Member 03', { exact: true }).check()
+  await page.getByRole('button', { name: '批量停用', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '批量停用成员', exact: true })
+  await expect(dialog).toContainText('可能部分完成')
+  await dialog.getByLabel('操作原因', { exact: true }).fill('离岗复核 request-313-0000000000000001')
+  await dialog.getByRole('checkbox').check()
+  let finish!: () => void
+  const pending = new Promise<void>((resolve) => { finish = resolve })
+  let posts = 0
+  await page.route(/\/v1\/tenant\/members\/[^/]+\/suspend$/, async (route) => {
+    posts += 1
+    await pending
+    await route.fallback()
+  })
+  const confirm = dialog.getByRole('button', { name: '确认批量停用', exact: true })
+  await confirm.evaluate((element) => { (element as HTMLButtonElement).click(); (element as HTMLButtonElement).click() })
+  await expect.poll(() => posts).toBe(1)
+  await expect(dialog.getByRole('button', { name: '取消', exact: true })).toBeDisabled()
+  await expect(dialog.getByLabel('操作原因', { exact: true })).toBeDisabled()
+  options.readbackStatus = 500
+  finish()
+  await expect(dialog.getByRole('alert')).toContainText('不要直接重复提交整批')
+  await expect(dialog.getByLabel('操作原因', { exact: true })).toHaveValue('离岗复核 request-313-0000000000000001')
+  await expect(dialog).toContainText('Alice Chen')
+  await expect(confirm).toBeDisabled()
+  expect(posts).toBe(1)
+  expect(server.getWrites()).toHaveLength(1)
+  const reads = server.getListReads().length
+  options.readbackStatus = undefined
+  await dialog.getByRole('button', { name: '返回列表核对', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+  await expect.poll(() => server.getListReads().length).toBeGreaterThan(reads)
+  await expect(page.locator('[data-member-id="user-001"]')).toContainText('已禁用')
+  await expect(page.locator('[data-member-id="user-extra-03"]')).toContainText('正常')
+  expect(server.getWrites()).toHaveLength(1)
+})
+
+test('member task API fixture: permission error is not an empty result and cannot expose stale member actions', async ({ page }) => {
+  const options: MockOptions = {}
+  const server = await mockMemberServer(page, options)
+  await openCanonicalMembers(page)
+  options.listStatus = 403
+  await page.getByLabel('搜索成员', { exact: true }).fill('Alice')
+  await page.getByRole('button', { name: '查询', exact: true }).click()
+  await expect(page.locator('.member-task-state[role="alert"]')).toContainText('权限')
+  await expect(page.locator('.member-table')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '批量停用', exact: true })).toBeDisabled()
+  expect(server.getWrites()).toEqual([])
+})

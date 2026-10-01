@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { t } from '@/i18n'
 import { computed, ref } from 'vue'
 import {
   createEnterpriseDataSource,
@@ -114,6 +115,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   const settings = computed(() => snapshot.value.settings)
   const previewMode = dataSource.kind === 'demo'
   const memberTotal = ref(previewMode ? members.value.filter((member) => member.status !== 'removed').length : 0)
+  const memberQueryLoading = ref(false)
+  const memberQueryError = ref('')
   const removedMembers = ref<Member[]>([])
   const removedMemberTotal = ref(0)
   const sourceKind = dataSource.kind
@@ -145,6 +148,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   let memberMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let memberListQuery: EnterpriseMemberListQuery | null = null
   let memberListGeneration = 0
+  let removedListGeneration = 0
   let roleMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let departmentMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let brandingMutation: { tenantId: string; signature: string; key: string } | null = null
@@ -162,7 +166,10 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     companyMutation = null
     memberMutation = null
     memberListQuery = null
+    memberQueryLoading.value = false
+    memberQueryError.value = ''
     memberListGeneration++
+    removedListGeneration++
     memberTotal.value = 0
     removedMembers.value = []
     removedMemberTotal.value = 0
@@ -534,9 +541,13 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   }
 
   async function stableMemberSession() {
+    const epoch = sessionEpoch
     const expected = session.value
     if (!expected?.authenticated || !expected.active_tenant_id) throw new Error('请先登录并选择可访问租户。')
     const current = await readEnterpriseMemberSession()
+    if (epoch !== sessionEpoch || !session.value || !sameTrustedSession(expected, session.value)) {
+      throw new Error('会话或当前租户已变化，请刷新后重新操作。')
+    }
     if (!sameTrustedSession(expected, current)) {
       await refresh()
       throw new Error('会话或当前租户已变化，请刷新后重新操作。')
@@ -545,11 +556,14 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   }
 
 
-  async function applyMemberPage(trusted: TrustedSession, query: EnterpriseMemberListQuery) {
+  async function applyMemberPage(trusted: TrustedSession, query: EnterpriseMemberListQuery,
+    generation = ++memberListGeneration, epoch = sessionEpoch) {
     const targetTenant = tenantId.value
-    const generation = ++memberListGeneration
+    const current = () => generation === memberListGeneration && epoch === sessionEpoch &&
+      tenantId.value === targetTenant && Boolean(session.value && sameTrustedSession(trusted, session.value))
+    if (!current()) return false
     const result = await queryEnterpriseMembers(trusted, query)
-    if (generation !== memberListGeneration || tenantId.value !== targetTenant) return false
+    if (!current()) return false
     snapshot.value = {
       ...snapshot.value,
       members: result.members.map(projectMember),
@@ -579,16 +593,22 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       page: Math.max(1, Math.trunc(input.page)),
       pageSize: Math.max(1, Math.min(100, Math.trunc(input.pageSize))),
     }
-    loading.value = true
-    sourceError.value = ''
+    const epoch = sessionEpoch
+    const generation = ++memberListGeneration
+    const targetTenant = tenantId.value
+    const current = () => epoch === sessionEpoch && generation === memberListGeneration && tenantId.value === targetTenant
+    memberQueryLoading.value = true
+    memberQueryError.value = ''
     try {
       const trusted = await stableMemberSession()
-      return await applyMemberPage(trusted, query)
+      if (!current()) return false
+      return await applyMemberPage(trusted, query, generation, epoch)
     } catch (error) {
-      sourceError.value = memberRuntimeError(error)
-      throw new Error(sourceError.value)
+      if (!current()) return false
+      memberQueryError.value = memberRuntimeError(error)
+      throw new Error(memberQueryError.value)
     } finally {
-      loading.value = false
+      if (current()) memberQueryLoading.value = false
     }
   }
 
@@ -598,8 +618,12 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       removedMemberTotal.value = removedMembers.value.length
       return true
     }
+    const epoch = sessionEpoch
+    const generation = ++removedListGeneration
     const trusted = await stableMemberSession()
+    if (epoch !== sessionEpoch || generation !== removedListGeneration) return false
     const result = await listRemovedEnterpriseMembers(trusted, page, pageSize)
+    if (epoch !== sessionEpoch || generation !== removedListGeneration || !session.value || !sameTrustedSession(trusted, session.value)) return false
     removedMembers.value = result.members.map(projectMember)
     removedMemberTotal.value = result.total
     return true
@@ -822,6 +846,15 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     }
   }
 
+  async function confirmStatusReadback(trusted: TrustedSession, receipt: EnterpriseTenantMember,
+    action: 'activate' | 'suspend' | 'remove') {
+    const current = await getEnterpriseMember(trusted, receipt.userId)
+    const expected = serverMemberStatus(action === 'activate' ? 'active' : action === 'suspend' ? 'suspended' : 'removed')
+    if (current.status !== expected || String(current.version) !== String(receipt.version)) {
+      throw new Error(t('members.task.readbackMismatch'))
+    }
+  }
+
   async function changeStatus(
     id: string,
     action: 'activate' | 'suspend' | 'remove',
@@ -858,7 +891,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       : action === 'suspend'
         ? await suspendEnterpriseMember(trusted, server, key, reason)
         : await removeEnterpriseMember(trusted, server, key, reason)
-    await getEnterpriseMember(trusted, receipt.userId)
+    await confirmStatusReadback(trusted, receipt, action)
     await refreshMemberQuery()
   }
 
@@ -896,19 +929,26 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     }
 
     prepareMemberStatusBatch(members.value, roles.value, targets, action)
+    const epoch = sessionEpoch
     const trusted = await stableMemberSession()
+    const current = () => epoch === sessionEpoch && Boolean(session.value && sameTrustedSession(trusted, session.value))
     let failure: unknown = null
     try {
       for (const target of targets) {
+        if (!current()) throw new Error(t('members.task.contextChanged'))
         const member = members.value.find((value) => value.id === target.id)
         if (!member) throw new Error('批量操作中存在已不存在的成员，请刷新后重试。')
         const server = asServerMember(member)
-        if (action === 'activate') await activateEnterpriseMember(trusted, server, memberRequestId('activate'), reason)
-        else await suspendEnterpriseMember(trusted, server, memberRequestId('suspend'), reason)
+        const receipt = action === 'activate'
+          ? await activateEnterpriseMember(trusted, server, memberRequestId('activate'), reason)
+          : await suspendEnterpriseMember(trusted, server, memberRequestId('suspend'), reason)
+        if (!current()) throw new Error(t('members.task.contextChanged'))
+        await confirmStatusReadback(trusted, receipt, action)
       }
     } catch (error) {
       failure = error
     }
+    if (!current()) throw new Error(t('members.task.contextChanged'))
     await refreshMemberQuery()
     if (failure) throw failure
   }
@@ -1213,6 +1253,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     tenantId,
     members,
     memberTotal,
+    memberQueryLoading,
+    memberQueryError,
     removedMembers,
     removedMemberTotal,
     roles,
