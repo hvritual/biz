@@ -35,6 +35,10 @@ jobs:
           set -euo pipefail
           python3 -B scripts/test_ci_member_browser.py
           bash scripts/ci_member_browser.sh
+      - name: Install Chromium channel for native browser zoom
+        working-directory: web
+        shell: bash
+        run: npx --no-install playwright install chromium
       - name: Run tenant plan and usage API-mode E2E
         working-directory: web
         shell: bash
