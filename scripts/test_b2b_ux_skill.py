@@ -245,6 +245,70 @@ class AnalysisTests(unittest.TestCase):
                 item['evidence'] = value
                 self.rejected('PASS_WITHOUT_REQUIRED_EVIDENCE')
 
+    def test_passing_retest_preserves_failed_history_for_review(self):
+        item = self.evidence()
+        current = copy.deepcopy(item['evidence'][0])
+        failed = dict(current, result='fail', reference='https://example.invalid/failed-run')
+        for entries in ([failed, current], [current, failed]):
+            with self.subTest(order=[e['result'] for e in entries]):
+                item['evidence'] = entries
+                before = copy.deepcopy(self.doc)
+                pending = self.check()
+                self.assertIn({'code': 'NONPASS_HISTORY_REQUIRES_REVIEW',
+                               'location': 'time_to_information.evidence:' + failed['reference']}, pending)
+                self.assertIn('EXTERNAL_EVIDENCE_NOT_VERIFIED', {p['code'] for p in pending})
+                self.assertEqual(self.doc, before)
+
+    def test_unrun_history_is_retained_without_counting_as_passing_evidence(self):
+        item = self.evidence()
+        unrun = dict(item['evidence'][0], result='not_run', reference='https://example.invalid/unrun')
+        item['evidence'].append(unrun)
+        pending = self.check()
+        self.assertIn({'code': 'NONPASS_HISTORY_REQUIRES_REVIEW',
+                       'location': 'time_to_information.evidence:' + unrun['reference']}, pending)
+        self.assertEqual(item['evidence'][1]['result'], 'not_run')
+
+    def test_failure_cannot_supply_a_missing_required_evidence_type(self):
+        item = self.evidence()
+        item['evidence_types'].append('api_test')
+        item['evidence'].append(dict(item['evidence'][0], type='api_test', result='fail',
+                                     reference='https://example.invalid/failed-api'))
+        self.rejected('PASS_WITHOUT_REQUIRED_EVIDENCE')
+
+    def test_unrun_cannot_supply_a_missing_required_evidence_type(self):
+        item = self.evidence()
+        item['evidence_types'].append('user_test')
+        item['evidence'].append(dict(item['evidence'][0], type='user_test', result='not_run',
+                                     reference='https://example.invalid/unrun-user-test'))
+        self.rejected('PASS_WITHOUT_REQUIRED_EVIDENCE')
+
+    def test_each_required_type_needs_a_pass_despite_retained_failure(self):
+        item = self.evidence()
+        item['evidence_types'].append('api_test')
+        api_pass = dict(item['evidence'][0], type='api_test', reference='https://example.invalid/api-retest')
+        item['evidence'].extend([
+            dict(api_pass, result='fail', reference='https://example.invalid/failed-api'), api_pass])
+        self.assertIn('NONPASS_HISTORY_REQUIRES_REVIEW', {p['code'] for p in self.check()})
+        item['evidence'].remove(api_pass)
+        self.rejected('PASS_WITHOUT_REQUIRED_EVIDENCE')
+
+    def test_retained_failure_does_not_bypass_current_candidate_binding(self):
+        item = self.evidence()
+        item['evidence'].append(dict(item['evidence'][0], result='fail', candidate_sha=OTHER,
+                                     reference='https://example.invalid/other-candidate-failure'))
+        self.rejected('EVIDENCE_CANDIDATE_MISMATCH')
+
+    def test_retained_failure_does_not_bypass_dimension_scope_binding(self):
+        item = self.evidence()
+        item['evidence'].append(dict(item['evidence'][0], result='fail', scope='unrelated_build',
+                                     reference='https://example.invalid/unrelated-failure'))
+        self.rejected('EVIDENCE_SCOPE_MISMATCH')
+
+    def test_same_run_cannot_be_relabelled_as_both_failure_and_pass(self):
+        item = self.evidence()
+        item['evidence'].append(dict(item['evidence'][0], result='fail'))
+        self.rejected('DUPLICATE_EVIDENCE')
+
     def test_old_candidate_and_wrong_scope_cannot_pass(self):
         item = self.evidence()
         item['evidence'][0]['candidate_sha'] = OTHER

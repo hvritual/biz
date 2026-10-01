@@ -324,9 +324,16 @@ def analyze(root, path, doc, expected_candidate=None):
             needs('EXTERNAL_EVIDENCE_NOT_VERIFIED', dimension)
             evidence.append(entry)
         if verification == 'pass':
-            require(bool(item['evidence']) and all(e['result'] == 'pass' for e in item['evidence']) and
-                    set(item['evidence_types']) <= {e['type'] for e in item['evidence']},
+            # Retained failures are history, not proof of a pass. All entries have
+            # already passed candidate/scope checks; each required type still
+            # needs its own passing record. Never infer retest order from a list.
+            passing_types = {e['type'] for e in item['evidence'] if e['result'] == 'pass'}
+            require(set(item['evidence_types']) <= passing_types,
                     'PASS_WITHOUT_REQUIRED_EVIDENCE', dimension)
+            for entry in item['evidence']:
+                if entry['result'] != 'pass':
+                    needs('NONPASS_HISTORY_REQUIRES_REVIEW',
+                          dimension + '.evidence:' + entry['reference'])
         elif verification == 'fail':
             require(any(e['result'] == 'fail' for e in item['evidence']), 'FAIL_WITHOUT_EVIDENCE', dimension)
             needs('DIMENSION_FAILED', dimension)
