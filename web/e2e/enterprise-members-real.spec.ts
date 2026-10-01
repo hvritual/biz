@@ -712,7 +712,7 @@ test('member task API fixture: query failure retains filters and recovery perfor
   expect(server.getListReads().at(-1)).toContain('query=Alice')
 })
 
-test('member task API fixture: duplicate submit is ignored and uncertain batch stops for read-only inspection', async ({ page }) => {
+test('member task API fixture: uncertain batch cannot be dismissed and retains per-target inspection through list failure', async ({ page }) => {
   const options: MockOptions = { memberCount: 4 }
   const server = await mockMemberServer(page, options)
   await openCanonicalMembers(page)
@@ -740,17 +740,41 @@ test('member task API fixture: duplicate submit is ignored and uncertain batch s
   finish()
   await expect(dialog.getByRole('alert')).toContainText('不要直接重复提交整批')
   await expect(dialog.getByLabel('操作原因', { exact: true })).toHaveValue('离岗复核 request-313-0000000000000001')
-  await expect(dialog).toContainText('Alice Chen')
   await expect(confirm).toBeDisabled()
   expect(posts).toBe(1)
   expect(server.getWrites()).toHaveLength(1)
-  const reads = server.getListReads().length
-  options.readbackStatus = undefined
+
+  await dialog.getByRole('button', { name: '关闭弹窗', exact: true }).click()
+  await expect(dialog).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeVisible()
+
+  options.listStatus = 500
   await dialog.getByRole('button', { name: '返回列表核对', exact: true }).click()
   await expect(dialog).toHaveCount(0)
-  await expect.poll(() => server.getListReads().length).toBeGreaterThan(reads)
+  const inspection = page.getByLabel('待核对批次', { exact: true })
+  await expect(inspection).toBeVisible()
+  await expect(inspection.locator('[data-batch-inspection-id="user-001"]')).toContainText('Alice Chen')
+  await expect(inspection.locator('[data-batch-inspection-id="user-extra-03"]')).toContainText('Member 03')
+  await expect(inspection.getByText('待确认', { exact: true })).toHaveCount(2)
+  await expect(page.getByRole('button', { name: '批量停用', exact: true })).toBeDisabled()
+  await expect(page.locator('.member-task-state[role="alert"]')).toBeVisible()
+  expect(server.getWrites()).toHaveLength(1)
+
+  options.readbackStatus = undefined
+  await inspection.getByRole('button', { name: '重新核对批次', exact: true }).click()
+  await expect(inspection.locator('[data-batch-inspection-id="user-001"]')).toContainText('已确认完成')
+  await expect(inspection.locator('[data-batch-inspection-id="user-extra-03"]')).toContainText('未发现本次变更')
+  await expect(inspection.getByRole('button', { name: '完成本次核对', exact: true })).toBeVisible()
+  expect(server.getWrites()).toHaveLength(1)
+
+  options.listStatus = undefined
+  await page.getByRole('button', { name: '重新读取成员', exact: true }).click()
   await expect(page.locator('[data-member-id="user-001"]')).toContainText('已禁用')
   await expect(page.locator('[data-member-id="user-extra-03"]')).toContainText('正常')
+  await expect(inspection).toBeVisible()
+  await inspection.getByRole('button', { name: '完成本次核对', exact: true }).click()
+  await expect(inspection).toHaveCount(0)
   expect(server.getWrites()).toHaveLength(1)
 })
 

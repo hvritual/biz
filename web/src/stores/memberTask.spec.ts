@@ -170,4 +170,30 @@ describe('member task state confirmation', () => {
     await expect(store.changeStatus('member-2', 'suspend', 1, 'synthetic test reason')).rejects.toThrow()
     expect(remote.suspend).toHaveBeenCalledTimes(1)
   })
+  it('inspects every batch target with reads only and distinguishes confirmed from unchanged', async () => {
+    const store = useEnterpriseStore()
+    remote.get
+      .mockResolvedValueOnce(member('member-2', 2, 'TENANT_MEMBER_STATUS_SUSPENDED'))
+      .mockResolvedValueOnce(member('member-3', 1, 'TENANT_MEMBER_STATUS_ACTIVE'))
+    const result = await store.inspectMemberStatusBatch(targets, 'suspend')
+    expect(result.map((item) => [item.id, item.state])).toEqual([
+      ['member-2', 'confirmed'],
+      ['member-3', 'not_applied'],
+    ])
+    expect(remote.get.mock.calls.map((call) => call[1])).toEqual(['member-2', 'member-3'])
+    expect(remote.suspend).not.toHaveBeenCalled()
+    expect(remote.activate).not.toHaveBeenCalled()
+  })
+  it('keeps failed inspection reads unknown while continuing to inspect the remaining targets', async () => {
+    const store = useEnterpriseStore()
+    remote.get
+      .mockRejectedValueOnce(new Error('inspection read failed'))
+      .mockResolvedValueOnce(member('member-3', 1, 'TENANT_MEMBER_STATUS_ACTIVE'))
+    const result = await store.inspectMemberStatusBatch(targets, 'suspend')
+    expect(result[0]?.state).toBe('unknown')
+    expect(result[0]?.message).toContain('inspection read failed')
+    expect(result[1]?.state).toBe('not_applied')
+    expect(remote.get).toHaveBeenCalledTimes(2)
+    expect(remote.suspend).not.toHaveBeenCalled()
+  })
 })

@@ -91,6 +91,16 @@ function serverMemberStatus(status: Member['status']) {
   }
 }
 
+export type MemberBatchInspectionState = 'confirmed' | 'not_applied' | 'unknown'
+export type MemberBatchInspection = {
+  id: string
+  baselineVersion: number
+  state: MemberBatchInspectionState
+  status: Member['status'] | null
+  currentVersion: number | null
+  message: string
+}
+
 function grantScope(scope: DataScope) {
   if (scope === 'all') return 'all'
   if (scope === 'self') return 'self'
@@ -953,6 +963,47 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     if (failure) throw failure
   }
 
+  async function inspectMemberStatusBatch(
+    targets: { id: string; version: number }[],
+    action: 'activate' | 'suspend',
+  ): Promise<MemberBatchInspection[]> {
+    const expected = action === 'activate' ? 'active' : 'suspended'
+    if (previewMode) {
+      return targets.map(({ id, version }) => {
+        const current = members.value.find((member) => member.id === id)
+        if (!current) return { id, baselineVersion: version, state: 'unknown', status: null, currentVersion: null, message: t('members.task.inspectionMissing') }
+        const state = current.status === expected && current.version > version
+          ? 'confirmed'
+          : current.version === version && current.status !== expected
+            ? 'not_applied'
+            : 'unknown'
+        return { id, baselineVersion: version, state, status: current.status, currentVersion: current.version, message: '' }
+      })
+    }
+
+    const epoch = sessionEpoch
+    const trusted = await stableMemberSession()
+    const currentContext = () => epoch === sessionEpoch && Boolean(session.value && sameTrustedSession(trusted, session.value))
+    const result: MemberBatchInspection[] = []
+    for (const { id, version } of targets) {
+      if (!currentContext()) throw new Error(t('members.task.contextChanged'))
+      try {
+        const remote = projectMember(await getEnterpriseMember(trusted, id))
+        if (!currentContext()) throw new Error(t('members.task.contextChanged'))
+        const state = remote.status === expected && remote.version > version
+          ? 'confirmed'
+          : remote.version === version && remote.status !== expected
+            ? 'not_applied'
+            : 'unknown'
+        result.push({ id, baselineVersion: version, state, status: remote.status, currentVersion: remote.version, message: '' })
+      } catch (error) {
+        if (!currentContext()) throw new Error(t('members.task.contextChanged'))
+        result.push({ id, baselineVersion: version, state: 'unknown', status: null, currentVersion: null, message: memberRuntimeError(error) })
+      }
+    }
+    return result
+  }
+
   function asServerRole(role: Role): EnterpriseTenantRole {
     return {
       id: role.id,
@@ -1290,6 +1341,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     saveMember,
     changeStatus,
     changeStatuses,
+    inspectMemberStatusBatch,
     queryRoles,
     saveRole,
     deleteRole,
