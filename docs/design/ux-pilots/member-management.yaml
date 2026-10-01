@@ -1,0 +1,356 @@
+# product候选为文档提交的真实父提交06eb128；最终PR的web树应与其相同，正式证据仍须绑定最终SHA。
+# 实际任务分析，不是运行配置；证据与真人测量未完成，不授予批准。
+schema_version: 1
+artifact_kind: analysis
+status: draft
+task_ref:
+  issue: https://github.com/hvritual/biz/issues/313
+  baseline_commit: f5a30acd8e5a3e42523315541f969ee5223d5555
+  candidate_commit: 06eb12837af5d7db81a0d51a0377981eb50a7385
+  name: 成员检索与状态操作：保留工作上下文，明确影响和安全核对路径
+classification:
+  type: business_task
+  reason: 保留既有受授权成员状态操作，仅调整任务指引、请求归属、重复提交保护和回读核对；不增加权限或后端能力。
+  business_state_mutation: true
+  authorization_sensitive: true
+  asynchronous_effect: true
+context:
+  role:
+    summary: 具有当前企业对应成员查看/状态操作权限的管理员；身份与按钮授权仍来自可信会话。
+    source_refs:
+    - requirement
+    - api
+    - contract
+  task:
+    summary: 查找→筛选→查看→关闭→继续原列表；必要时对明确的当前页名单执行已有启停操作并确认结果。
+    source_refs:
+    - requirement
+    - page
+  entity:
+    summary: 主对象是当前企业成员；正在查看的一个成员与勾选集合独立；不携带其他企业草稿或选择。
+    source_refs:
+    - page
+    - store
+  workflow:
+    summary: 默认列表与抽屉保持现状；按需打开指引；读失败保留查询并提供只读重试；写入不确定先停止再回列表核对。
+    source_refs:
+    - page
+    - api
+    - store
+  state:
+    summary: 区分准备/查询中、有效结果、查询失败、确认中、逐项回读、结果未确认、切企业已失效。未知状态不等同于失败或空列表。
+    source_refs:
+    - store
+    - api
+  action:
+    summary: 只保留既有查询、详情、profile更新、启用/停用/移除/恢复；不新增批量后端、资金流、额度购买或设备命令。
+    source_refs:
+    - page
+    - contract
+  risk:
+    summary: 迟到响应污染当前列表，旧finally清除新加载态，双击重复写，批量部分完成被当成全成/全败，操作后误宣称业务交接或额度释放。
+    source_refs:
+    - store
+    - api
+    - authority
+  decision:
+    summary: 让管理员知道操作谁/当前页范围/影响/是否已逐项核实；额度不足等结构化原因不足时不猜测。
+    source_refs:
+    - requirement
+    - authority
+    - api
+sources:
+- id: requirement
+  kind: user_requirement
+  path: https://github.com/hvritual/biz/issues/313
+  commit: f5a30acd8e5a3e42523315541f969ee5223d5555
+  locator: 目标/验收/文件边界
+  claim: 要求真实成员任务试点；关闭Issue前需要独立产品/QA审阅；本分析不代签。
+- id: page
+  kind: implementation
+  path: web/src/features/enterprise/pages/MembersView.vue
+  commit: f5a30acd8e5a3e42523315541f969ee5223d5555
+  locator: MembersView / filters / selected / detailId
+  claim: 基线已有同页列表和抽屉、独立勾选集合；本轮保持列表构型和组件，不新增共享框架。
+- id: drawer
+  kind: implementation
+  path: web/src/features/enterprise/components/members/MemberDetailDrawer.vue
+  commit: f5a30acd8e5a3e42523315541f969ee5223d5555
+  locator: watch(props.member.id)
+  claim: 基线只在首次打开捕获焦点触发器；桌面切换查看对象后可能恢复到旧行，本轮更新最近触发器。此项来自源码检查而非本地浏览器复现。
+- id: store
+  kind: implementation
+  path: web/src/stores/enterprise.ts
+  commit: f5a30acd8e5a3e42523315541f969ee5223d5555
+  locator: queryMembers / applyMemberPage / changeStatuses
+  claim: 基线分页请求的session等待发生在generation建立前，catch/finally未按同一请求保护；批量API顺序调用，不是整批事务。
+- id: api
+  kind: implementation
+  path: web/src/services/enterprise/memberRuntime.ts
+  commit: f5a30acd8e5a3e42523315541f969ee5223d5555
+  locator: sameTrustedSession / memberRuntimeError / status methods
+  claim: 现有服务封装承担真实session/CSRF/idempotency请求；具备401/403/409分类，没有可据此独立确认额度不足的稳定分类。
+- id: authority
+  kind: implementation
+  path: internal/access/application/tenant_member_lifecycle.go
+  commit: f5a30acd8e5a3e42523315541f969ee5223d5555
+  locator: ListTenantMembers / SuspendTenantMember / RemoveTenantMember / RestoreTenantMember
+  claim: 成员状态变更按可信租户、版本和既有用例处理；页面不推导责任交接、额度释放或所有历史登录会话立即结束。
+- id: contract
+  kind: repository_contract
+  path: contracts/proto/access/v1/tenant_member.proto
+  commit: f5a30acd8e5a3e42523315541f969ee5223d5555
+  locator: 成员读取/activate/suspend/remove/restore RPC及请求版本
+  claim: 保留既有命令与读取契约，不修改RPC、角色目录或写入协议。
+- id: pattern
+  kind: repository_contract
+  path: docs/design/PAGE-PATTERNS.md
+  commit: f5a30acd8e5a3e42523315541f969ee5223d5555
+  locator: ListPage / 上下文保持
+  claim: ListPage及既有详情抽屉适用于本任务；不造页面DSL，不修改Page Contract或Token。
+- id: baseline-visual
+  kind: repository_contract
+  path: https://github.com/hvritual/biz/actions/runs/36823690114/artifacts/11144232206
+  commit: f5a30acd8e5a3e42523315541f969ee5223d5555
+  locator: test-results/provenance/manifest.json / member-reference
+  claim: 历史截图来自同一源码树2a515ee；只能支持基线视觉检查，不是本次候选测试结果。
+page_pattern:
+  name: ListPage
+  reason: 保持现有同类对象检索、列表与详情抽屉组合，复用已登记业务组件。
+  contract_ref: 'web/ui-contracts.json: /enterprise/members'
+  gaps:
+  - 本地浏览器导航被环境策略阻止，必须以实际CI截图/运行另行核对。
+  - 当前API-mode E2E使用拦截fixture；真实端到端与真人效率不得由这些测试代替。
+outcome:
+  definition: 在当前企业找到正确成员，查看与勾选不互相改变，关闭回原查询/排序/分页/滚动和最近触发器；写入影响清楚且不能由成功toast推断业务责任或额度结果。
+  result_contract_refs:
+  - contract
+  - authority
+  - store
+  recovery_contract_refs:
+  - contract
+  - authority
+  - api
+humanized_ux:
+  time_to_information:
+    applicability: applies
+    reason: 识别当前企业、目标成员和读取可信状态。
+    requirements:
+    - 读取中/错误/有效空结果分别展示。
+    - 长名称可在详情核对，不仅依赖截断表格。
+    evidence_types:
+    - browser_test
+    - user_test
+    verification: not_verified
+    evidence: []
+  time_to_action:
+    applicability: applies
+    reason: 识别成员后能直接进入查看和既有动作。
+    requirements:
+    - 查看、关闭与指引可键盘触达。
+    - 读取失败提供当前查询的只读重试。
+    evidence_types:
+    - browser_test
+    - user_test
+    verification: not_verified
+    evidence: []
+  context_switching:
+    applicability: applies
+    reason: 关闭详情后继续当前工作，切企业必须清空。
+    requirements:
+    - 关闭保持筛选、排序、分页、滚动、已选集合，焦点返回最近查看按钮。
+    - 迟到成功、失败和finally不得覆盖后发请求；切企业/同租户返回也拒绝旧代际。
+    evidence_types:
+    - static_check
+    - browser_test
+    - api_test
+    verification: not_verified
+    evidence: []
+  decision_load:
+    applicability: applies
+    reason: 区别查看与选择、请求受理与结果核实、部分完成与全成。
+    requirements:
+    - 批量名单显式固定，说明逐项执行及可能部分完成。
+    - 不从当前页面推断其他业务责任已交接或额度已释放。
+    evidence_types:
+    - source_review
+    - browser_test
+    - user_test
+    verification: not_verified
+    evidence: []
+  interaction_cost:
+    applicability: applies
+    reason: 避免重复查询和重填，同时不取消必要确认。
+    requirements:
+    - 同次筛选/分页反应只安排一次查询；用户条件保留。
+    - 读取安全重试不产生写请求；写入忙时防重复提交。
+    evidence_types:
+    - static_check
+    - browser_test
+    - user_test
+    verification: not_verified
+    evidence: []
+  error_recoverability:
+    applicability: applies
+    reason: 不确定写结果不能直接整批重提。
+    requirements:
+    - 批量失败保留原因与原名单，停止后续目标，提供返回列表核对；不承诺原子回滚。
+    - 单个状态变更失败先读新状态；原profile409的幂等键保留策略不删除。
+    evidence_types:
+    - browser_test
+    - api_test
+    verification: not_verified
+    evidence: []
+  how_to_guidance:
+    applicability: applies
+    reason: 首次操作者需要知道找、看、选的区别。
+    requirements:
+    - 按需展开说明，不强制导览；说明搜索、当前页批量范围与核对顺序。
+    evidence_types:
+    - browser_test
+    - user_test
+    verification: not_verified
+    evidence: []
+  operation_effect_transparency:
+    applicability: applies
+    reason: 敏感变更必须说明对象、范围、影响和实际回读。
+    requirements:
+    - 关键后果使用可见正文而非仅hover；角色和状态命令保持已有授权。
+    - 逐项读取状态/版本吻合才计为已核实；不把指令返回等同于交接/额度释放。
+    evidence_types:
+    - source_review
+    - browser_test
+    - api_test
+    verification: not_verified
+    evidence: []
+  problem_resolution_guidance:
+    applicability: applies
+    reason: 管理员面对无法确认操作完成的业务事项。
+    requirements:
+    - 显示下一步只读核对入口和授权不足时的管理员接管方向。
+    - 配额不足或更深业务处置缺契约时明确缺口，不生成假的购买/恢复能力。
+    evidence_types:
+    - source_review
+    - browser_test
+    - user_test
+    verification: not_verified
+    evidence: []
+acceptance:
+  scenarios:
+  - 桌面切换查看两名成员后Escape返回最近行，选择不变。
+  - 筛选、排序、分页后键盘详情往返，行顺序/页码/滚动/勾选保持。
+  - 切换企业清查询、排序、选择、对话框和迟到结果。
+  - API fixture查询500/403保留输入，只读重试无写。
+  - 双次提交只有一次写；首目标回读失败时第二目标未执行。
+  - 92项Skill结构回归与原有成员测试保留；本次不改期望图。
+  automated_checks:
+  - npm run design:index；design:find members/dialog
+  - npm run check；npm run test:e2e
+  - API-mode现有enterprise-members-real.spec.ts及新合成单测
+  - make b2b-ux-skill-check；显式--analysis和从GitHub回读的product候选
+  - 四视口截图和页面错误检查；真实200%缩放必须单独取得，不用DPR/CSS模拟替代
+  human_checks:
+  - 产品/QA独立审阅真实界面、恢复文案和业务边界。
+  - 目标操作者按统一脚本测试TTI/TTA，记录误操作、放弃和未知。
+  - 长中英文与数字、四视口、实际200%浏览器缩放及键盘任务复核。
+  metrics:
+  - id: time_to_information
+    definition: 从任务页面可交互起，到操作者准确说出目标成员与当前企业；错误回答/放弃计入失败。
+    conditions: 同一角色、同一数据集，按熟练度、语言、视口分组；基线和候选相同脚本，真人尚未采样。
+    baseline: null
+    target: null
+    observed: null
+    unit: seconds
+    sample_size: 0
+    failure_policy: 报告错误、放弃、未完成和等待；不删失败样本，不以Playwright时间充当真人时间。
+    evidence_ref: null
+  - id: time_to_action
+    definition: 从正确识别对象起，到进入正确动作而尚未提交风险变更。
+    conditions: 同一角色、同一数据集，按熟练度、语言、视口分组；基线和候选相同脚本，真人尚未采样。
+    baseline: null
+    target: null
+    observed: null
+    unit: seconds
+    sample_size: 0
+    failure_policy: 报告错误、放弃、未完成和等待；不删失败样本，不以Playwright时间充当真人时间。
+    evidence_ref: null
+  - id: context_switching
+    definition: 完成一次查找→查看→返回任务时离开当前工作上下文的次数，区分有必要与无必要跳转。
+    conditions: 同一角色、同一数据集，按熟练度、语言、视口分组；基线和候选相同脚本，真人尚未采样。
+    baseline: null
+    target: null
+    observed: null
+    unit: transitions
+    sample_size: 0
+    failure_policy: 报告错误、放弃、未完成和等待；不删失败样本，不以Playwright时间充当真人时间。
+    evidence_ref: null
+  - id: interaction_cost
+    definition: 记录点击/键盘确认、输入、重复输入及等待，分别报告，不能按点击少就判好。
+    conditions: 同一角色、同一数据集，按熟练度、语言、视口分组；基线和候选相同脚本，真人尚未采样。
+    baseline: null
+    target: null
+    observed: null
+    unit: actions
+    sample_size: 0
+    failure_policy: 报告错误、放弃、未完成和等待；不删失败样本，不以Playwright时间充当真人时间。
+    evidence_ref: null
+open_questions:
+- question: 产品/QA独立审阅与目标操作者样本尚未获得，工程测试不能替代体验批准。
+  blocking: true
+  owner_role: 产品Owner / 独立QA
+- question: 当前错误封装仅稳定区分401/403/409；成员额度不足缺少独立结构化错误证据，本轮不编造购买/扩容入口。
+  blocking: true
+  owner_role: 后端/商业契约Owner
+- question: 真实200%浏览器缩放、长中英文数字和实际API全链路尚未在本候选验证；fixture明确另栏。
+  blocking: true
+  owner_role: QA
+- question: 恢复成员和多字段profile修改仍沿用原有用例，不把本次有界启停/检索改进当成所有成员操作均完成验收。
+  blocking: true
+  owner_role: 产品/前端Owner
+handoff:
+  allowed_paths:
+  - web/src/features/enterprise/components/members/MemberDetailDrawer.vue
+  - web/src/features/enterprise/components/members/MemberActionDialog.vue
+  - web/src/features/enterprise/components/members/MemberBulkDialog.vue
+  - web/src/features/enterprise/pages/MembersView.vue
+  - web/src/stores/enterprise.ts
+  - web/src/stores/memberTask.spec.ts
+  - web/src/i18n/index.ts
+  - web/src/i18n/member-task-messages.ts
+  - web/e2e/members-layout.spec.ts
+  - web/e2e/enterprise-members-real.spec.ts
+  - docs/design/ux-pilots/member-management.yaml
+  forbidden_paths:
+  - web/src/ui/**
+  - web/src/styles/**
+  - web/ui-contracts.json
+  - internal/**
+  - contracts/**
+  - .github/**
+  - Makefile
+  - .agents/skills/**
+  reuse_refs:
+  - web/src/features/enterprise/components/members/MemberTable.vue
+  - web/src/ui/common/UiDialog.vue
+  - web/src/ui/common/AppPagination.vue
+  - web/src/services/enterprise/memberRuntime.ts
+  gates:
+  - name: candidate_frontend_qualification
+    status: not_run
+  - name: browser_demo
+    status: not_run
+  - name: api_fixture
+    status: not_run
+  - name: real_api
+    status: not_run
+  - name: human_ux_review
+    status: not_run
+review:
+  reviewer: null
+  actor_kind: null
+  scope: null
+  reference: null
+  analysis_ref: null
+  reviewed_at: null
+  candidate_sha: null
+  decision: not_reviewed
