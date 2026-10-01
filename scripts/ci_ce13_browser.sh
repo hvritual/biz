@@ -28,12 +28,37 @@ prepare)
     --exclude='./dist' \
     -cf - . | tar -C "$isolated_web" -xf -
   cd "$isolated_web"
+  echo 'CE13_BROWSER_PREP_STAGE=npm'
   npm ci
-  npx playwright install --with-deps --only-shell chromium
+  echo 'CE13_BROWSER_PREP_STAGE=browser'
+  # Follow the existing member-browser setup: use runner libraries, not a full
+  # OS/font bootstrap on every run. A real launch below fails closed if a
+  # runner image loses a required library. Keep the lockfile-selected browser.
+  npx --no-install playwright install --only-shell chromium
+  echo 'CE13_BROWSER_PREP_STAGE=font'
   if ! fc-match "Noto Sans CJK SC" | grep -qi 'Noto Sans CJK'; then
+    sudo apt-get update -qq -o Acquire::Retries=1 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15
     sudo apt-get install -y --no-install-recommends fonts-noto-cjk
   fi
-  fc-match "Noto Sans CJK SC"
+  fc-match "Noto Sans CJK SC" | grep -qi 'Noto Sans CJK' || {
+    echo 'CE13_CHINESE_FONT_UNAVAILABLE' >&2
+    exit 1
+  }
+  echo 'CE13_BROWSER_PREP_STAGE=launch'
+  node --input-type=module <<'JS'
+import { chromium } from '@playwright/test'
+const browser = await chromium.launch({ headless: true, timeout: 20000 })
+try {
+  const page = await browser.newPage()
+  await page.setContent('<html lang="zh-CN"><body>套餐与会话验证</body></html>')
+  if (await page.locator('body').innerText() !== '套餐与会话验证') {
+    throw new Error('CE13 browser prerequisite smoke failed')
+  }
+} finally {
+  await browser.close()
+}
+JS
+  echo 'CE13_BROWSER_LAUNCH=PASS'
   date +%s > "$out/browser-prep.ready"
   ;;
 wait)

@@ -214,6 +214,48 @@ class RuntimeTests(unittest.TestCase):
             with self.subTest(key=key):
                 with self.assertRaises(g.Violation):verify({**receipt,key:value})
 
+    def test_lightweight_main_treats_full_proof_ownership_as_not_applicable(self):
+        main_sha, tree, pr = 'd' * 40, 'b' * 40, 321
+        merge = {'id': 20, 'run_attempt': 1}
+        qualification = {'id': 10, 'run_attempt': 1}
+
+        class API:
+            def __init__(self):
+                self.prefix = '/repos/hvritual/biz'
+
+            def get(self, path):
+                if path == '/git/ref/heads/main':
+                    return {'object': {'sha': main_sha}}
+                if path in {'/git/commits/' + SHA, '/git/commits/' + main_sha}:
+                    return {'tree': {'sha': tree}}
+                raise AssertionError(path)
+
+            def pages(self, path, key=None):
+                if path == '/commits/' + main_sha + '/pulls':
+                    return [{'number': pr, 'merged_at': '2026-09-30T00:00:00Z',
+                             'merge_commit_sha': main_sha, 'base': {'ref': 'main'},
+                             'head': {'sha': SHA}}]
+                raise AssertionError(path)
+
+            def runs(self, candidate):
+                self.last_candidate = candidate
+                return []
+
+        delivery_result = {
+            'verification_scope': 'lightweight',
+            'change_class': 'skill_only',
+            'merge_receipt_artifact_id': 99,
+        }
+        with patch('delivery_execution.route_for_pr',
+                   return_value={'change_class': 'skill_only', 'merge_gate_required': False}),              patch('delivery_execution.verify_main', return_value=delivery_result),              patch('delivery_execution.expected_jobs', return_value=['unused']),              patch('delivery_execution.latest_success', side_effect=[merge, qualification]):
+            result = g.verify_main(API(), C, T, 'hvritual/biz', main_sha, 'contract', 'topology')
+
+        self.assertEqual(result['state'], 'MAIN_VERIFIED')
+        self.assertEqual(result['proof_scope'], 'LIGHTWEIGHT_NOT_APPLICABLE')
+        self.assertEqual(result['change_class'], 'skill_only')
+        self.assertEqual(result['expanded_jobs'], 0)
+        self.assertEqual(result['delivery_receipt_artifact_id'], 99)
+
     def test_zip_requires_single_named_receipt(self):
         for names in [[g.RECEIPT],[g.RECEIPT,'extra'],['../'+g.RECEIPT]]:
             data=io.BytesIO()

@@ -192,8 +192,57 @@ class ControlTests(unittest.TestCase):
         return d.verify_receipt(receipt, 'contract', CANDIDATE, TREE, PR,
                                 run(20, 'merge_workflow'), run(), ['full-01-one'])
 
+    def lightweight_receipt(self, change_class='skill_only'):
+        return {'schema_version': 1, 'state': 'LIGHTWEIGHT_MERGE_READY', 'contract_sha256': 'contract',
+                'candidate_sha': CANDIDATE, 'candidate_tree': TREE, 'pr_number': PR,
+                'merge_run_id': '20', 'merge_run_attempt': 1, 'change_class': change_class,
+                'merge_gate_required': False, 'full_results': {}, 'root_cause_signatures': [],
+                'qualification_run': d.run_ref(run())}
+
+    def check_lightweight_receipt(self, receipt, change_class='skill_only'):
+        routing = {'change_class': change_class, 'merge_gate_required': False}
+        return d.verify_lightweight_receipt(receipt, 'contract', CANDIDATE, TREE, PR,
+                                            run(20, 'merge_workflow'), run(), routing)
+
     def test_exact_receipt_passes(self):
         self.check_receipt(self.receipt())
+
+    def test_exact_lightweight_receipt_passes(self):
+        self.check_lightweight_receipt(self.lightweight_receipt())
+
+    def test_lightweight_receipt_cannot_change_class_or_claim_full_gate(self):
+        for field, value in [('change_class', 'design_governance'), ('merge_gate_required', True),
+                             ('full_results', {'full-01-one': 'success'})]:
+            with self.subTest(field=field):
+                receipt = self.lightweight_receipt()
+                receipt[field] = value
+                with self.assertRaises(d.Blocked) as caught:
+                    self.check_lightweight_receipt(receipt)
+                self.assertEqual(caught.exception.code, 'LIGHTWEIGHT_RECEIPT_BINDING_MISMATCH')
+
+    def test_route_for_pr_includes_previous_filename(self):
+        class API:
+            def pages(self, path):
+                self.path = path
+                return [{'filename': '.agents/skills/b2b-product-ux/runtime.go',
+                         'previous_filename': 'Makefile', 'status': 'renamed'}]
+
+        result = d.route_for_pr(API(), PR)
+        self.assertEqual(result['change_class'], 'product_change')
+        self.assertTrue(result['merge_gate_required'])
+
+    def test_lightweight_jobs_require_success_and_skipped_full_jobs(self):
+        good = [{'name': 'route', 'status': 'completed', 'conclusion': 'success'},
+                {'name': 'lightweight-ready', 'status': 'completed', 'conclusion': 'success'},
+                {'name': 'full-01-one', 'status': 'completed', 'conclusion': 'skipped'}]
+        self.assertEqual(d.verify_lightweight_jobs(good)['name'], 'lightweight-ready')
+        for jobs in [
+            [{'name': 'lightweight-ready', 'status': 'completed', 'conclusion': 'failure'}],
+            [{'name': 'lightweight-ready', 'status': 'completed', 'conclusion': 'success'},
+             {'name': 'full-01-one', 'status': 'completed', 'conclusion': 'success'}],
+        ]:
+            with self.subTest(jobs=jobs), self.assertRaises(d.Blocked):
+                d.verify_lightweight_jobs(jobs)
 
     def test_receipt_binding_tampering_fails_closed(self):
         for field in ['schema_version', 'state', 'contract_sha256', 'candidate_sha', 'candidate_tree',
@@ -245,6 +294,7 @@ class MainFacts(Facts):
         self.tip = 'd' * 40
         self.tree = TREE
         self.receipt = receipt
+        self.changed_files = [{'filename': 'internal/access/application/example.go', 'status': 'modified'}]
         self.pull = {'number': PR, 'merged_at': '2026-09-21T12:00:00Z',
                      'merge_commit_sha': self.tip, 'base': {'ref': 'main'}, 'head': {'sha': CANDIDATE}}
         self.artifact = {'id': 99, 'name': 'delivery-execution-20-1', 'expired': False, 'size_in_bytes': 100}
@@ -264,6 +314,8 @@ class MainFacts(Facts):
             return [self.pull]
         if path == '/actions/runs/20/artifacts':
             return [self.artifact]
+        if path == f'/pulls/{PR}/files':
+            return self.changed_files
         raise AssertionError(path)
 
     def raw(self, path, cap):
@@ -294,6 +346,34 @@ class MainProofTests(unittest.TestCase):
 
     def test_main_exact_chain_passes(self):
         self.assertEqual(self.verify()['state'], 'MAIN_VERIFIED')
+
+    def test_main_lightweight_chain_passes_without_full_proof(self):
+        self.receipt.clear()
+        self.receipt.update(ControlTests().lightweight_receipt())
+        self.receipt['repository'] = 'hvritual/biz'
+        self.receipt['frozen_main_sha'] = 'c' * 40
+        self.api.changed_files = [
+            {'filename': '.agents/skills/b2b-product-ux/SKILL.md', 'status': 'modified'},
+            {'filename': 'docs/design/B2B-PRODUCT-UX.md', 'status': 'modified'},
+        ]
+        self.api.job_items = [
+            {'name': 'route', 'status': 'completed', 'conclusion': 'success'},
+            {'name': 'lightweight-ready', 'status': 'completed', 'conclusion': 'success'},
+            {'name': 'full-01-one', 'status': 'completed', 'conclusion': 'skipped'},
+        ]
+        result = self.verify()
+        self.assertEqual(result['state'], 'MAIN_VERIFIED')
+        self.assertEqual(result['verification_scope'], 'lightweight')
+        self.assertEqual(result['change_class'], 'skill_only')
+
+    def test_main_lightweight_receipt_cannot_be_replayed_for_other_class(self):
+        self.receipt.clear()
+        self.receipt.update(ControlTests().lightweight_receipt('design_governance'))
+        self.receipt['repository'] = 'hvritual/biz'
+        self.receipt['frozen_main_sha'] = 'c' * 40
+        self.api.changed_files = [{'filename': '.agents/skills/b2b-product-ux/SKILL.md', 'status': 'modified'}]
+        self.api.job_items = [{'name': 'lightweight-ready', 'status': 'completed', 'conclusion': 'success'}]
+        self.blocked('LIGHTWEIGHT_RECEIPT_BINDING_MISMATCH')
 
     def test_direct_main_push_is_rejected(self):
         self.api.pull['merged_at'] = None
