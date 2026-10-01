@@ -53,6 +53,14 @@ python3 -B scripts/check_b2b_ux_skill.py \
 
 保留非通过记录时，结构层不要求删除它们，而是逐条输出 `NONPASS_HISTORY_REQUIRES_REVIEW`，定位至对应 reference。引用的实际记录仍须说明失败的处置、修复、复测及被替代关系；本离线 checker 不通过数组先后顺序推定“已修好”，也不自动判定失败已解决。即使当前所需类型均有通过记录，`result` 仍为 `NEEDS_REVIEW`，严格模式保持退出 2，不授予 UX/人工批准。原有失败不得改写或删除来制造全绿。
 
+## 设计审阅与体验批准的不同前提
+
+`review.scope: task_experience` 且 `decision: approved` 时，九维不得有 `unknown`，所有 `applies` 必须为 `verification: pass`。非空义务、必需证据类型、当前候选/范围和真实通过记录的结构要求继续执行；缺口标成非阻塞也不能跳过验证。合法 `not_applicable` 的理由仍须外部复核，不能用 N/A 豁免写操作的结果、恢复或影响义务。
+
+只有 `document_design` 的设计批准允许尚未执行的验证，且必须保留真实 `unknown/not_verified` 状态并无该范围的阻塞项；不是产品体验批准。`changes_requested` 可以保留 unknown、未验证或失败，不能强迫把缺口改写成通过以记录审阅意见。
+
+上述检查只拒绝确定的矛盾。即使批准声明结构合法，外部身份、当前义务覆盖、N/A 理由及失败处置仍为 `NEEDS_REVIEW`；旧失败不删除，也不会因后来出现 pass 而自动判为已处置。`approval_granted` / `delivery_granted` 始终为 false，严格模式仍拒绝未完成的外部核验。
+
 ## 审阅绑定
 
 按 v1 的双目标规则核对 product candidate 与 analysis_ref。Git 回读使用 SHA、精确相对路径和真实 blob；仅排除顶层 review/status 后做类型敏感的完整比较，映射顺序忽略、列表顺序保留，true、1、1.0 不相等。回填 reviewer 元数据不会造成自 SHA 循环，但任务、证据、指标、未决项或交接范围一旦改变，旧审阅不再覆盖。

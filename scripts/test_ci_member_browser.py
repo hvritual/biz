@@ -1,6 +1,7 @@
 """Bounded command probes for CI browser setup, not rendered UI evidence."""
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import unittest
@@ -86,7 +87,7 @@ class MemberBrowserSetupTest(unittest.TestCase):
         self.assertIn('python3 -B scripts/test_ci_member_browser.py', source)
         self.assertIn('bash scripts/ci_member_browser.sh', source)
         self.assertIn('ENTERPRISE_MEMBER_REAL_E2E=1 npx playwright test e2e/enterprise-members-real.spec.ts', source)
-        self.assertNotIn('playwright install --with-deps chromium', source)
+        self.assertNotRegex(source, r'playwright\s+install\s+--with-deps\s+chromium')
 
     def test_organization_keeps_e2e_and_four_viewport_evidence(self):
         source = (ROOT / '.github/workflows/ec-ri-04-web-qualification.yml').read_text()
@@ -97,6 +98,58 @@ class MemberBrowserSetupTest(unittest.TestCase):
         self.assertIn('assert got == (width, height)', source)
         self.assertNotIn('playwright install --with-deps', source)
         self.assertNotIn('apt-get install -y fonts-noto-cjk', source)
+
+
+    def test_plan_read_reuses_setup_without_weakening_api_evidence(self):
+        source = (ROOT / '.github/workflows/ec-ri-06-plan-read-web.yml').read_text()
+        self.assertIn('python3 -B scripts/test_ci_member_browser.py', source)
+        self.assertIn('bash scripts/ci_member_browser.sh', source)
+        self.assertNotIn('playwright install --with-deps', source)
+        self.assertNotIn('apt-get install -y fonts-noto-cjk', source)
+        self.assertIn('VITE_DATA_MODE=api npm run build', source)
+        self.assertIn('ENTERPRISE_PLAN_REAL_E2E=1 npx playwright test e2e/enterprise-plan-real.spec.ts', source)
+        self.assertIn("assert stats.get('unexpected', 0) == 0", source)
+        self.assertIn('for width, height in [(1366, 768), (1440, 900), (1536, 1024), (390, 844)]', source)
+        self.assertIn('assert got == (width, height)', source)
+
+
+    def full_chromium_probe(self, install_exit='0'):
+        source = (ROOT / '.github/workflows/ec-ri-06-plan-read-web.yml').read_text()
+        pattern = (r'^      - name: Install Chromium channel for native browser zoom\n'
+                   r'        working-directory: web\n'
+                   r'        shell: bash\n'
+                   r'        run: ([^\n]+)\n')
+        steps = list(re.finditer(pattern, source, re.M))
+        self.assertEqual(1, len(steps), 'native zoom needs an executed full Chromium install step')
+        self.assertLess(source.index('bash scripts/ci_member_browser.sh'), steps[0].start())
+        self.assertLessEqual(steps[0].end(), source.index('      - name: Run tenant plan and usage API-mode E2E'))
+        self.assertIn("channel: 'chromium'", (ROOT / 'web/e2e/commercial-state-zoom.helpers.ts').read_text())
+        self.assertNotIn('continue-on-error:', source)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'web').mkdir()
+            bindir = root / 'bin'
+            bindir.mkdir()
+            npx = bindir / 'npx'
+            npx.write_text('#!/usr/bin/env bash\nset -euo pipefail\nprintf "%s\\n" "$*" > "$TRACE"\nexit "$INSTALL_EXIT"\n')
+            npx.chmod(0o755)
+            env = {**os.environ, 'PATH': str(bindir) + os.pathsep + os.environ['PATH'],
+                   'TRACE': str(root / 'trace'), 'INSTALL_EXIT': install_exit}
+            result = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', steps[0].group(1)],
+                                    cwd=root / 'web', env=env, capture_output=True, text=True, timeout=10)
+            trace = (root / 'trace').read_text() if (root / 'trace').exists() else ''
+        return result, trace
+
+    def test_plan_read_installs_full_chromium_before_native_zoom(self):
+        result, trace = self.full_chromium_probe()
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual(['--no-install', 'playwright', 'install', 'chromium'], trace.split())
+        self.assertNotIn('--with-deps', trace)
+        self.assertNotIn('--only-shell', trace)
+
+    def test_plan_read_full_chromium_install_failure_stays_failure(self):
+        result, _ = self.full_chromium_probe(install_exit='23')
+        self.assertEqual(23, result.returncode)
 
 
 if __name__ == '__main__':

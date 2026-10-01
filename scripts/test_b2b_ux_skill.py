@@ -434,18 +434,22 @@ class AnalysisTests(unittest.TestCase):
         self.rejected('REVIEW_CANDIDATE_MISMATCH')
 
     def test_review_must_bind_actual_analysis_path(self):
+        self.evidence()  # Synthetic fixture, not externally verified evidence.
         self.reviewed()['analysis_ref']['path'] = 'docs/another.yaml'
         self.rejected('ANALYSIS_PATH_MISMATCH')
 
     def test_review_must_bind_real_git_blob(self):
+        self.evidence()  # Synthetic fixture, not externally verified evidence.
         self.reviewed()['analysis_ref']['blob_sha'] = OTHER
         self.rejected('ANALYSIS_BLOB_MISMATCH')
 
     def test_review_backfill_avoids_self_sha_loop_but_does_not_grant_approval(self):
+        self.evidence()  # Synthetic fixture, not externally verified evidence.
         self.reviewed()
         self.assertIn('EXTERNAL_REVIEW_NOT_VERIFIED', {p['code'] for p in self.check()})
 
     def test_analysis_payload_changes_invalidate_review(self):
+        self.evidence()  # Synthetic fixture, not externally verified evidence.
         self.reviewed()
         for key in ('task_ref', 'sources', 'context', 'acceptance', 'open_questions', 'handoff'):
             with self.subTest(key=key):
@@ -460,6 +464,7 @@ class AnalysisTests(unittest.TestCase):
                 self.doc = original
 
     def test_recomputing_git_blob_still_cannot_verify_old_external_review(self):
+        self.evidence()  # Synthetic fixture, not externally verified evidence.
         review = self.reviewed()
         self.doc['context']['task']['summary'] += ' revised'
         self.doc['status'] = 'draft'
@@ -472,15 +477,114 @@ class AnalysisTests(unittest.TestCase):
         self.assertIn('EXTERNAL_REVIEW_NOT_VERIFIED', {p['code'] for p in self.check()})
 
     def test_unavailable_commit_cannot_approve(self):
+        self.evidence()  # Synthetic fixture, not externally verified evidence.
         self.reviewed()['analysis_ref']['commit'] = OTHER
         self.assertIn('ANALYSIS_GIT_OBJECT_NOT_AVAILABLE', {p['code'] for p in self.check()})
 
     def test_tree_object_cannot_impersonate_review_commit(self):
+        self.evidence()  # Synthetic fixture, not externally verified evidence.
         review = self.reviewed()
         review['analysis_ref']['commit'] = self.git('rev-parse', 'HEAD^{tree}')
         self.rejected('GIT_NOT_COMMIT')
 
+    def test_experience_approval_rejects_unverified_dimension(self):
+        self.reviewed()
+        self.rejected('EXPERIENCE_DIMENSION_NOT_PASSED:time_to_information')
+
+    def test_nonblocking_label_cannot_waive_experience_verification(self):
+        self.doc['open_questions'] = [{'question': 'Test not executed', 'blocking': False, 'owner_role': 'QA'}]
+        self.reviewed()
+        self.rejected('EXPERIENCE_DIMENSION_NOT_PASSED')
+
+    def test_experience_approval_rejects_unknown_in_any_dimension(self):
+        self.evidence()
+        self.doc['open_questions'] = [{'question': 'Applicability unknown', 'blocking': False, 'owner_role': 'Product'}]
+        original = copy.deepcopy(self.doc)
+        for dimension in ux.DIMENSIONS:
+            with self.subTest(dimension=dimension):
+                self.doc = copy.deepcopy(original)
+                self.doc['humanized_ux'][dimension].update(applicability='unknown', verification='not_verified', evidence=[])
+                self.reviewed()
+                self.rejected('EXPERIENCE_APPLICABILITY_UNKNOWN:' + dimension)
+
+    def test_experience_approval_requires_every_applicable_dimension(self):
+        for dimension in ux.DIMENSIONS:
+            self.evidence(dimension)
+        original = copy.deepcopy(self.doc)
+        for dimension in ux.DIMENSIONS:
+            with self.subTest(dimension=dimension):
+                self.doc = copy.deepcopy(original)
+                self.active(dimension)
+                self.reviewed()
+                self.rejected('EXPERIENCE_DIMENSION_NOT_PASSED:' + dimension)
+
+    def test_experience_approval_rejects_a_failed_dimension(self):
+        item = self.evidence()
+        item['verification'] = 'fail'
+        item['evidence'][0]['result'] = 'fail'
+        self.reviewed()
+        self.rejected('EXPERIENCE_DIMENSION_NOT_PASSED')
+
+    def test_experience_pass_cannot_omit_required_evidence(self):
+        self.evidence()['evidence'] = []
+        self.reviewed()
+        self.rejected('PASS_WITHOUT_REQUIRED_EVIDENCE')
+
+    def test_experience_pass_cannot_omit_declared_obligation(self):
+        self.evidence()['requirements'] = []
+        self.reviewed()
+        self.rejected('APPLICABLE_OBLIGATION_EMPTY')
+
+    def test_experience_pass_cannot_omit_required_evidence_types(self):
+        self.evidence()['evidence_types'] = []
+        self.reviewed()
+        self.rejected('APPLICABLE_OBLIGATION_EMPTY')
+
+    def test_experience_approval_with_current_pass_remains_pending_external_review(self):
+        self.evidence()
+        self.reviewed()
+        before = copy.deepcopy(self.doc)
+        codes = {p['code'] for p in self.check()}
+        self.assertTrue({'EXTERNAL_REVIEW_NOT_VERIFIED', 'EXTERNAL_EVIDENCE_NOT_VERIFIED',
+                         'NA_REASON_REQUIRES_REVIEW'} <= codes)
+        self.assertEqual(self.doc, before)
+
+    def test_experience_changes_requested_can_retain_unverified_dimension(self):
+        self.reviewed(decision='changes_requested')
+        codes = {p['code'] for p in self.check()}
+        self.assertTrue({'DIMENSION_NOT_VERIFIED', 'EXTERNAL_REVIEW_NOT_VERIFIED'} <= codes)
+
+    def test_experience_changes_requested_can_retain_unknown_dimension(self):
+        self.active().update(applicability='unknown')
+        self.doc['open_questions'] = [{'question': 'Unknown', 'blocking': True, 'owner_role': 'Product'}]
+        self.reviewed(decision='changes_requested')
+        self.assertIn('APPLICABILITY_UNKNOWN', {p['code'] for p in self.check()})
+
+    def test_document_design_approval_can_retain_unknown_and_unexecuted_validation(self):
+        self.active().update(applicability='unknown')
+        self.doc['open_questions'] = [{'question': 'Future task validation', 'blocking': False, 'owner_role': 'QA'}]
+        self.reviewed(scope='document_design')
+        codes = {p['code'] for p in self.check()}
+        self.assertTrue({'APPLICABILITY_UNKNOWN', 'DIMENSION_NOT_VERIFIED', 'EXTERNAL_REVIEW_NOT_VERIFIED'} <= codes)
+
+    def test_changing_design_scope_cannot_replay_unverified_experience_approval(self):
+        self.reviewed(scope='document_design')
+        self.assertIn('DIMENSION_NOT_VERIFIED', {p['code'] for p in self.check()})
+        self.doc['review']['scope'] = 'task_experience'
+        self.rejected('EXPERIENCE_DIMENSION_NOT_PASSED')
+
+    def test_experience_approval_preserves_failed_history_as_pending_not_resolved(self):
+        item = self.evidence()
+        failed = dict(item['evidence'][0], result='fail', reference='https://example.invalid/unresolved-old-run')
+        item['evidence'].append(failed)
+        self.reviewed()
+        before = copy.deepcopy(self.doc)
+        codes = {p['code'] for p in self.check()}
+        self.assertTrue({'NONPASS_HISTORY_REQUIRES_REVIEW', 'EXTERNAL_REVIEW_NOT_VERIFIED'} <= codes)
+        self.assertEqual(self.doc, before)
+
     def test_git_uses_literal_paths_and_no_shell_or_network(self):
+        self.evidence()  # Synthetic fixture, not externally verified evidence.
         self.reviewed()
         original = subprocess.run
         def bounded(*args, **kwargs):

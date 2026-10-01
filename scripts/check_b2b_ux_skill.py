@@ -439,6 +439,17 @@ def analyze(root, path, doc, expected_candidate=None):
             require(saved[0] == ref['blob_sha'], 'ANALYSIS_BLOB_MISMATCH', path)
             original = parse(saved[1])
             require(type(original) is dict and payload(original) == payload(doc), 'ANALYSIS_PAYLOAD_CHANGED', path)
+        if review['scope'] == 'task_experience' and review['decision'] == 'approved':
+            # Design approval may precede execution; experience approval may not.
+            # Per-dimension checks above enforce nonempty obligations, required
+            # evidence types and current candidate/scope bindings. Retained
+            # failures and all external claims still require independent review.
+            for dimension, item in doc['humanized_ux'].items():
+                require(item['applicability'] != 'unknown',
+                        'EXPERIENCE_APPLICABILITY_UNKNOWN', dimension)
+                if item['applicability'] == 'applies':
+                    require(item['verification'] == 'pass',
+                            'EXPERIENCE_DIMENSION_NOT_PASSED', dimension)
         # A Git blob proves bytes, NOT the reviewer identity, scope, independence or external decision.
         needs('EXTERNAL_REVIEW_NOT_VERIFIED', path)
 
