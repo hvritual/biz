@@ -28,7 +28,7 @@ UI UX Pro Max 是可选外部设计知识来源，不是本批安装内容、运
 
 #309/#310 只新增核心、八维/九维参考、分析模板、一个设计示例和入口说明。没有修改业务页面、Token、Shell、Router、Page Contract、后端、数据库、Makefile 或 CI，也没有安装全局插件。
 
-自动入口接线和持续 checker 属于 #312。现有 `make ui-skill-check` 仍仅验证已接入的 typography 来源；不能把其 PASS 说成本 Skill 通过。没有新增 `web/ux-contracts.json`、Skill registry 服务、向量库或 Schema Renderer。
+#312 的开发期入口为 `make b2b-ux-skill-check`，并接入根 `make check`；具体命令、退出码和未验证边界见 [CHECKING](CHECKING.md)。现有 `make ui-skill-check` 仍仅验证 typography 来源，原 pin/checker/安全测试保持不变。没有新增 `web/ux-contracts.json`、Skill registry 服务、向量库或 Schema Renderer。分支内入口实现不等于已合并 main。
 
 ## 验证与证据
 

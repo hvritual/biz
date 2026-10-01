@@ -14,7 +14,7 @@ generate: toolchain-check
 	@$(MAKE) commercial-generate
 	@$(MAKE) authorization-generate
 
-check: toolchain-check commercial-delivery-check ui-skill-check
+check: toolchain-check commercial-delivery-check ui-skill-check b2b-ux-skill-check
 	@cd $(YUNKA_APP) && go run ./cmd check --root $(CURDIR) --protoc $(PROTOC)
 	@$(MAKE) commercial-check
 	@$(MAKE) authorization-check
@@ -84,3 +84,9 @@ commercial-delivery-check:
 ui-skill-check:
 	@python3 -B scripts/check_ui_skill_source.py
 	@python3 -B -m unittest discover -s scripts -p 'test_ui_skill_source.py' -v
+
+# B2B UX document structure only; pending review is never product acceptance.
+.PHONY: b2b-ux-skill-check
+b2b-ux-skill-check:
+	@python3 -B scripts/check_b2b_ux_skill.py
+	@python3 -B -m unittest discover -s scripts -p 'test_b2b_ux_skill.py' -v

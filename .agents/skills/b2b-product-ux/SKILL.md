@@ -31,7 +31,7 @@ description: "Design or review B2B task experiences before UI implementation: ro
 | 查看已填示例的写法 | [成员上下文示例](examples/member-context-review.yaml) |
 | 租赁、设备与套餐任务推演 | [客户工作区](examples/customer-workspace.md)、[设备问题](examples/device-incident.md)、[套餐升级](examples/tenant-plan-upgrade.md) |
 
-示例是设计样例，不证明页面已通过测试。#311 的模式库仅提供设计选择与真实源码检索入口；自动入口接线和持续检查仍由 #312 实施。不要把静态覆盖、假数据或源码存在当作真实任务验收。
+示例是设计样例，不证明页面已通过测试。#311 的模式库仅提供设计选择与真实源码检索入口；#312 提供 [结构检查与证据边界](CHECKING.md) 及 Agent/Makefile 入口；结构通过不代表外部证据已核验。不要把静态覆盖、假数据或源码存在当作真实任务验收。
 
 ## 执行流程
 
