@@ -22,6 +22,26 @@ DERIVED_PREFIXES = (
     "contracts/commercial/generated/",
 )
 
+SKILL_PREFIXES = (".agents/skills/",)
+SKILL_COMPANION_FILES = {
+    "docs/design/B2B-PRODUCT-UX.md",
+}
+DESIGN_GOVERNANCE_PREFIXES = (
+    "docs/design/",
+)
+DESIGN_GOVERNANCE_FILES = {
+    "web/ui-contracts.json",
+    "web/AGENTS.md",
+    "scripts/check_ui_skill_source.py",
+    "scripts/test_ui_skill_source.py",
+    "scripts/check_b2b_ux_skill.py",
+    "scripts/test_b2b_ux_skill.py",
+}
+DESIGN_WEB_FILES = {
+    "web/ui-contracts.json",
+    "web/AGENTS.md",
+}
+
 ACCESS_PREFIXES = (
     "internal/access/",
     "internal/bizruntime/",
@@ -222,6 +242,20 @@ def clean(path: str) -> str:
     return str(PurePosixPath(value))
 
 
+def is_skill_path(path: str) -> bool:
+    return any(path.startswith(prefix) for prefix in SKILL_PREFIXES)
+
+
+def is_skill_companion_path(path: str) -> bool:
+    return path in SKILL_COMPANION_FILES
+
+
+def is_design_governance_path(path: str) -> bool:
+    return path in DESIGN_GOVERNANCE_FILES or any(
+        path.startswith(prefix) for prefix in DESIGN_GOVERNANCE_PREFIXES
+    )
+
+
 def is_docs_only_path(path: str) -> bool:
     if path in ENTERPRISE_180_FILES:
         return False
@@ -266,7 +300,27 @@ def classify_path(path: str) -> set[str]:
 
 def route(paths: list[str]) -> dict[str, object]:
     files = [clean(p) for p in paths if p.strip()]
-    docs_only = bool(files) and all(is_docs_only_path(p) for p in files)
+
+    has_skill_source = any(is_skill_path(path) for path in files)
+    skill_only = bool(files) and has_skill_source and all(
+        is_skill_path(path) or is_skill_companion_path(path) for path in files
+    )
+    design_governance = bool(files) and not skill_only and any(
+        is_design_governance_path(path) for path in files
+    ) and all(
+        is_design_governance_path(path) or is_docs_only_path(path) for path in files
+    )
+    docs_only = bool(files) and not skill_only and not design_governance and all(
+        is_docs_only_path(path) for path in files
+    )
+    product_change = not docs_only and not skill_only and not design_governance
+    change_class = (
+        "skill_only" if skill_only else
+        "design_governance" if design_governance else
+        "docs_only" if docs_only else
+        "product_change"
+    )
+    design_web_check = design_governance and any(path in DESIGN_WEB_FILES for path in files)
 
     native_login = any(
         path in NATIVE_LOGIN_FILES or any(path.startswith(prefix) for prefix in NATIVE_LOGIN_PATH_PREFIXES)
@@ -290,6 +344,7 @@ def route(paths: list[str]) -> dict[str, object]:
     )
     web_product = coffeelink_governance or any(
         path.startswith("web/")
+        and not is_design_governance_path(path)
         and path not in WEB_E2E_HARNESS_FILES
         and not any(path.startswith(prefix) for prefix in WEB_E2E_HARNESS_PREFIXES)
         for path in files
@@ -308,31 +363,36 @@ def route(paths: list[str]) -> dict[str, object]:
     domains: set[str] = set()
     non_derived_source = False
     for path in files:
-        if is_docs_only_path(path):
+        if is_docs_only_path(path) or is_skill_path(path) or is_skill_companion_path(path) or is_design_governance_path(path):
             continue
         is_derived = any(path.startswith(prefix) for prefix in DERIVED_PREFIXES)
         if not is_derived:
             non_derived_source = True
-        domains.update(classify_path(path))
+        classified = classify_path(path)
+        domains.update(classified)
 
-        if not is_derived and not classify_path(path):
-            # Unknown non-document source/config paths must not bypass qualification.
+        if not is_derived and not classified:
             domains.add("core")
 
-    if files and not domains and not docs_only:
+    if product_change and files and not domains:
         domains.add("core")
-    if not non_derived_source and domains == set() and files and not docs_only:
+    if product_change and not non_derived_source and domains == set() and files:
         domains.add("core")
 
     selected = {domain: domain in domains for domain in DOMAINS}
     matrix = [{"domain": domain} for domain in DOMAINS if selected[domain]]
     return {
         "files": files,
+        "change_class": change_class,
         "docs_only": docs_only,
+        "skill_only": skill_only,
+        "design_governance": design_governance,
+        "design_web_check": design_web_check,
+        "product_change": product_change,
         "domains": selected,
         "domain_matrix": matrix,
         "domain_count": len(matrix),
-        "merge_gate_required": not docs_only,
+        "merge_gate_required": product_change,
         "native_login": native_login,
         "delivery_isolation": delivery_isolation,
         "ce_receipts": ce_receipts,
@@ -349,7 +409,12 @@ def emit_github_output(path: str, result: dict[str, object]) -> None:
     domains = result["domains"]
     assert isinstance(domains, dict)
     with open(path, "a", encoding="utf-8") as handle:
+        handle.write(f"change_class={result['change_class']}\n")
         handle.write(f"docs_only={str(result['docs_only']).lower()}\n")
+        handle.write(f"skill_only={str(result['skill_only']).lower()}\n")
+        handle.write(f"design_governance={str(result['design_governance']).lower()}\n")
+        handle.write(f"design_web_check={str(result['design_web_check']).lower()}\n")
+        handle.write(f"product_change={str(result['product_change']).lower()}\n")
         handle.write(f"merge_gate_required={str(result['merge_gate_required']).lower()}\n")
         handle.write(f"domain_count={result['domain_count']}\n")
         handle.write(f"native_login={str(result['native_login']).lower()}\n")

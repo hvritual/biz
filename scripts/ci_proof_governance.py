@@ -343,8 +343,12 @@ def api_audit(api, contract, topology, repository, candidate, pr, run_id, attemp
 
 
 def verify_main(api, contract, topology, repository, main_sha, contract_hash, topology_hash):
-    from delivery_execution import latest_success, assert_single_full
-    delivery = strict_json(read(ROOT, 'scripts/delivery_execution_contract.json'))
+    from delivery_execution import (
+        latest_success, assert_single_full, expected_jobs as delivery_expected_jobs,
+        route_for_pr, verify_main as verify_delivery_main,
+    )
+    delivery_raw = read(ROOT, 'scripts/delivery_execution_contract.json')
+    delivery = strict_json(delivery_raw)
     require(api.get('/git/ref/heads/main')['object']['sha'] == main_sha, 'MAIN_TIP_CHANGED')
     pulls = [p for p in api.pages('/commits/' + main_sha + '/pulls') if p.get('merged_at') and
              p.get('merge_commit_sha') == main_sha and p.get('base', {}).get('ref') == 'main']
@@ -353,6 +357,41 @@ def verify_main(api, contract, topology, repository, main_sha, contract_hash, to
     candidate, pr = pull['head']['sha'], pull['number']
     tree = api.get('/git/commits/' + candidate)['tree']['sha']
     require(tree == api.get('/git/commits/' + main_sha)['tree']['sha'], 'MAIN_CANDIDATE_TREE_MISMATCH')
+    routing = route_for_pr(api, pr)
+
+    if not routing['merge_gate_required']:
+        delivery_result = verify_delivery_main(
+            api, delivery, sha(delivery_raw.encode()), repository, main_sha,
+            delivery_expected_jobs(topology),
+        )
+        require(delivery_result.get('verification_scope') == 'lightweight' and
+                delivery_result.get('change_class') == routing['change_class'],
+                'LIGHTWEIGHT_DELIVERY_PROOF_MISMATCH')
+        runs = api.runs(candidate)
+        run = latest_success(runs, delivery['merge_workflow'], candidate, pr)
+        qualification = latest_success(runs, delivery['qualification_workflow'], candidate, pr)
+        require(api.get('/git/ref/heads/main')['object']['sha'] == main_sha, 'MAIN_TIP_CHANGED')
+        return {
+            'repository': repository,
+            'evidence_source': 'github_api',
+            'candidate_sha': candidate,
+            'candidate_tree': tree,
+            'pr_number': pr,
+            'run_id': str(run['id']),
+            'run_attempt': run['run_attempt'],
+            'qualification_run_id': str(qualification['id']),
+            'qualification_run_attempt': qualification['run_attempt'],
+            'change_class': routing['change_class'],
+            'proof_scope': 'LIGHTWEIGHT_NOT_APPLICABLE',
+            'expanded_jobs': 0,
+            'jobs': [],
+            'hard_violations': [],
+            'target_violations': [],
+            'delivery_receipt_artifact_id': delivery_result['merge_receipt_artifact_id'],
+            'state': 'MAIN_VERIFIED',
+            'main_sha': main_sha,
+        }
+
     runs = api.runs(candidate)
     run = latest_success(runs, delivery['merge_workflow'], candidate, pr)
     qualification = latest_success(runs, delivery['qualification_workflow'], candidate, pr)
@@ -372,7 +411,8 @@ def verify_main(api, contract, topology, repository, main_sha, contract_hash, to
     recovery = verify_run(api, ROOT, repository, candidate, tree, pr, run, receipt['frozen_main_sha'])
     require(receipt.get('dependency_preparation') == recovery, 'RECOVERY_PROOF_EXECUTION_DRIFT')
     require(api.get('/git/ref/heads/main')['object']['sha'] == main_sha, 'MAIN_TIP_CHANGED')
-    return {**receipt, 'state': 'MAIN_VERIFIED', 'main_sha': main_sha, 'artifact_id': artifact['id']}
+    return {**receipt, 'state': 'MAIN_VERIFIED', 'main_sha': main_sha, 'artifact_id': artifact['id'],
+            'change_class': routing['change_class'], 'proof_scope': 'FULL'}
 
 
 def emit(report, output):
