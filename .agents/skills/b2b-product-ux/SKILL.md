@@ -24,9 +24,14 @@ description: "Design or review B2B task experiences before UI implementation: ro
 | 用户、目标、对象、流程或风险不清楚 | [八维业务上下文](references/business-context.md) |
 | 确定九维义务与评审方法 | [Humanized UX](references/humanized-ux.md) |
 | 产出可复核设计分析 | [UX Contract](UX-CONTRACT.md)、[单一模板](templates/ux-contract.template.yaml) |
+| 选择任务承载结构与复用入口 | [页面模式选择](references/page-pattern-selection.md) |
+| 组合任务与交互模式 | [B 端交互模式库](references/b2b-interaction-patterns.md) |
+| How-to、操作后果、系统恢复或业务问题处理 | [指导与恢复](references/guidance-and-recovery.md) |
+| 检查设计是否制造负担或假成功 | [反模式](references/anti-patterns.md) |
 | 查看已填示例的写法 | [成员上下文示例](examples/member-context-review.yaml) |
+| 租赁、设备与套餐任务推演 | [客户工作区](examples/customer-workspace.md)、[设备问题](examples/device-incident.md)、[套餐升级](examples/tenant-plan-upgrade.md) |
 
-示例是设计样例，不证明页面已通过测试。任务模式库、入口接线和持续检查分别由 #311 / #312 实施；不要引用尚未交付的命令或文件。
+示例是设计样例，不证明页面已通过测试。#311 的模式库仅提供设计选择与真实源码检索入口；自动入口接线和持续检查仍由 #312 实施。不要把静态覆盖、假数据或源码存在当作真实任务验收。
 
 ## 执行流程
 
