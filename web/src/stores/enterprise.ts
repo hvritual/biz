@@ -72,7 +72,7 @@ import {
   type EnterpriseTenantBrandingDraft,
 } from '@/services/enterprise/tenantBrandingRuntime'
 import { loginUrl, logoutSession, type PermissionGrant, type TrustedSession } from '@/services/runtime/api'
-import { cancelTrustedSessionRequests } from '@/services/commercial/platformCommercial'
+import { cancelTrustedSessionRequests, CommercialApiError } from '@/services/commercial/platformCommercial'
 import { publishSessionContextChange, subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
 import {
   authorizationApiMode,
@@ -99,6 +99,36 @@ export type MemberBatchInspection = {
   status: Member['status'] | null
   currentVersion: number | null
   message: string
+}
+
+export type MemberMutationOutcome = 'pre_write_failure' | 'rejected' | 'write_uncertain' | 'write_confirmed'
+export type MemberMutationTargetOutcome = {
+  id: string
+  baselineVersion: number
+  outcome: 'not_started' | 'rejected' | 'write_uncertain' | 'write_confirmed'
+  message: string
+}
+export type MemberMutationConfirmation = {
+  outcome: 'write_confirmed'
+  targets: MemberMutationTargetOutcome[]
+  projectionRefreshed: boolean
+}
+export class MemberStatusMutationError extends Error {
+  constructor(
+    readonly outcome: MemberMutationOutcome,
+    message: string,
+    readonly targets: MemberMutationTargetOutcome[],
+  ) {
+    super(message)
+    this.name = 'MemberStatusMutationError'
+  }
+}
+export function memberMutationNeedsInspection(error: unknown) {
+  return error instanceof MemberStatusMutationError && error.outcome === 'write_uncertain'
+}
+
+function memberWriteWasRejected(error: unknown) {
+  return error instanceof CommercialApiError && error.code !== 'invalid-response' && error.status >= 400 && error.status < 500
 }
 
 function grantScope(scope: DataScope) {
@@ -865,18 +895,31 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     }
   }
 
+  function mutationTarget(id: string, baselineVersion: number): MemberMutationTargetOutcome {
+    return { id, baselineVersion, outcome: 'not_started', message: '' }
+  }
+
+  function mutationFailure(
+    outcome: MemberMutationOutcome,
+    error: unknown,
+    targets: MemberMutationTargetOutcome[],
+  ) {
+    return new MemberStatusMutationError(outcome, memberRuntimeError(error), targets.map((target) => ({ ...target })))
+  }
+
   async function changeStatus(
     id: string,
     action: 'activate' | 'suspend' | 'remove',
     version: number,
     reason: string,
-  ) {
+  ): Promise<MemberMutationConfirmation> {
+    const targets = [mutationTarget(id, version)]
     const member = members.value.find((value) => value.id === id)
-    if (!member) throw new Error('成员不存在。')
-    if (member.version !== version) throw new Error('成员状态已变化，请刷新后重试。')
+    if (!member) throw mutationFailure('pre_write_failure', new Error('成员不存在。'), targets)
+    if (member.version !== version) throw mutationFailure('pre_write_failure', new Error('成员状态已变化，请刷新后重试。'), targets)
     const policy = memberActionError(action, member, members.value, roles.value)
-    if (policy) throw new Error(policy)
-    if (!reason.trim()) throw new Error('请填写操作原因。')
+    if (policy) throw mutationFailure('pre_write_failure', new Error(policy), targets)
+    if (!reason.trim()) throw mutationFailure('pre_write_failure', new Error('请填写操作原因。'), targets)
 
     if (previewMode) {
       const updated = applyStatusAction(action, member)
@@ -890,27 +933,62 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
         reason,
         'high',
       )
-      return
+      targets[0]!.outcome = 'write_confirmed'
+      return { outcome: 'write_confirmed', targets, projectionRefreshed: true }
     }
 
-    const trusted = await stableMemberSession()
+    let trusted: TrustedSession
+    try {
+      trusted = await stableMemberSession()
+    } catch (error) {
+      throw mutationFailure('pre_write_failure', error, targets)
+    }
+
     const server = asServerMember(member)
     const key = memberRequestId(action)
-    const receipt = action === 'activate'
-      ? await activateEnterpriseMember(trusted, server, key, reason)
-      : action === 'suspend'
-        ? await suspendEnterpriseMember(trusted, server, key, reason)
-        : await removeEnterpriseMember(trusted, server, key, reason)
-    await confirmStatusReadback(trusted, receipt, action)
-    await refreshMemberQuery()
+    let receipt: EnterpriseTenantMember
+    try {
+      receipt = action === 'activate'
+        ? await activateEnterpriseMember(trusted, server, key, reason)
+        : action === 'suspend'
+          ? await suspendEnterpriseMember(trusted, server, key, reason)
+          : await removeEnterpriseMember(trusted, server, key, reason)
+    } catch (error) {
+      const outcome: MemberMutationOutcome = memberWriteWasRejected(error) ? 'rejected' : 'write_uncertain'
+      targets[0]!.outcome = outcome
+      targets[0]!.message = memberRuntimeError(error)
+      throw mutationFailure(outcome, error, targets)
+    }
+
+    try {
+      await confirmStatusReadback(trusted, receipt, action)
+      targets[0]!.outcome = 'write_confirmed'
+    } catch (error) {
+      targets[0]!.outcome = 'write_uncertain'
+      targets[0]!.message = memberRuntimeError(error)
+      throw mutationFailure('write_uncertain', error, targets)
+    }
+
+    try {
+      await refreshMemberQuery()
+      return { outcome: 'write_confirmed', targets, projectionRefreshed: true }
+    } catch (error) {
+      throw mutationFailure('write_confirmed', error, targets)
+    }
   }
 
   async function changeStatuses(
     targets: { id: string; version: number }[],
     action: 'activate' | 'suspend',
     reason: string,
-  ) {
-    if (!reason.trim()) throw new Error('请填写操作原因。')
+  ): Promise<MemberMutationConfirmation> {
+    const outcomes = targets.map((target) => mutationTarget(target.id, target.version))
+    if (!reason.trim()) throw mutationFailure('pre_write_failure', new Error('请填写操作原因。'), outcomes)
+    try {
+      prepareMemberStatusBatch(members.value, roles.value, targets, action)
+    } catch (error) {
+      throw mutationFailure('pre_write_failure', error, outcomes)
+    }
     if (previewMode) {
       const updated = prepareMemberStatusBatch(members.value, roles.value, targets, action)
       const records = targets.map(({ id }) => {
@@ -935,32 +1013,65 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       snapshot.value.members = updated
       snapshot.value.logs.unshift(...records)
       persist()
-      return
+      outcomes.forEach((target) => { target.outcome = 'write_confirmed' })
+      return { outcome: 'write_confirmed', targets: outcomes, projectionRefreshed: true }
     }
 
-    prepareMemberStatusBatch(members.value, roles.value, targets, action)
     const epoch = sessionEpoch
-    const trusted = await stableMemberSession()
-    const current = () => epoch === sessionEpoch && Boolean(session.value && sameTrustedSession(trusted, session.value))
-    let failure: unknown = null
+    let trusted: TrustedSession
     try {
-      for (const target of targets) {
-        if (!current()) throw new Error(t('members.task.contextChanged'))
+      trusted = await stableMemberSession()
+    } catch (error) {
+      throw mutationFailure('pre_write_failure', error, outcomes)
+    }
+    const current = () => epoch === sessionEpoch && Boolean(session.value && sameTrustedSession(trusted, session.value))
+
+    try {
+      for (let index = 0; index < targets.length; index += 1) {
+        const target = targets[index]!
+        const targetOutcome = outcomes[index]!
+        if (!current()) throw mutationFailure('pre_write_failure', new Error(t('members.task.contextChanged')), outcomes)
         const member = members.value.find((value) => value.id === target.id)
-        if (!member) throw new Error('批量操作中存在已不存在的成员，请刷新后重试。')
+        if (!member) throw mutationFailure('pre_write_failure', new Error('批量操作中存在已不存在的成员，请刷新后重试。'), outcomes)
         const server = asServerMember(member)
-        const receipt = action === 'activate'
-          ? await activateEnterpriseMember(trusted, server, memberRequestId('activate'), reason)
-          : await suspendEnterpriseMember(trusted, server, memberRequestId('suspend'), reason)
-        if (!current()) throw new Error(t('members.task.contextChanged'))
-        await confirmStatusReadback(trusted, receipt, action)
+        let receipt: EnterpriseTenantMember
+        try {
+          receipt = action === 'activate'
+            ? await activateEnterpriseMember(trusted, server, memberRequestId('activate'), reason)
+            : await suspendEnterpriseMember(trusted, server, memberRequestId('suspend'), reason)
+        } catch (error) {
+          const outcome: MemberMutationOutcome = memberWriteWasRejected(error) ? 'rejected' : 'write_uncertain'
+          targetOutcome.outcome = outcome
+          targetOutcome.message = memberRuntimeError(error)
+          throw mutationFailure(outcome, error, outcomes)
+        }
+        if (!current()) {
+          targetOutcome.outcome = 'write_uncertain'
+          targetOutcome.message = t('members.task.contextChanged')
+          throw mutationFailure('write_uncertain', new Error(t('members.task.contextChanged')), outcomes)
+        }
+        try {
+          await confirmStatusReadback(trusted, receipt, action)
+          targetOutcome.outcome = 'write_confirmed'
+        } catch (error) {
+          targetOutcome.outcome = 'write_uncertain'
+          targetOutcome.message = memberRuntimeError(error)
+          throw mutationFailure('write_uncertain', error, outcomes)
+        }
       }
     } catch (error) {
-      failure = error
+      if (current()) {
+        try { await refreshMemberQuery() } catch { /* mutation certainty remains authoritative */ }
+      }
+      throw error
     }
-    if (!current()) throw new Error(t('members.task.contextChanged'))
-    await refreshMemberQuery()
-    if (failure) throw failure
+
+    try {
+      await refreshMemberQuery()
+      return { outcome: 'write_confirmed', targets: outcomes, projectionRefreshed: true }
+    } catch (error) {
+      throw mutationFailure('write_confirmed', error, outcomes)
+    }
   }
 
   async function inspectMemberStatusBatch(

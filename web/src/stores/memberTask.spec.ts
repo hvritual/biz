@@ -4,6 +4,7 @@ import { createSeed } from '@/services/demo/seed'
 import type { TrustedSession } from '@/services/runtime/api'
 import type { EnterpriseSourceState } from '@/services/enterprise/dataSource'
 import type { EnterpriseTenantMember } from '@/services/enterprise/memberRuntime'
+import { CommercialApiError } from '@/services/commercial/platformCommercial'
 
 // These are controlled API doubles, not evidence of real backend acceptance.
 const remote = vi.hoisted(() => ({
@@ -28,7 +29,7 @@ vi.mock('@/services/runtime/authorization', () => ({
   currentAuthorizationState: { status: 'idle', snapshot: null },
   ensureCurrentAuthorization: vi.fn(), invalidateCurrentAuthorization: vi.fn(),
 }))
-import { useEnterpriseStore } from './enterprise'
+import { MemberStatusMutationError, memberMutationNeedsInspection, useEnterpriseStore } from './enterprise'
 
 function trusted(tenant = 'shanghai', version = 1): TrustedSession {
   return { authenticated: true, actor_kind: 'tenant', user_id: 'viewer-1', active_tenant_id: tenant, context_version: version }
@@ -153,6 +154,64 @@ describe('member task state confirmation', () => {
     remote.get.mockRejectedValueOnce(new Error('read timed out'))
     await expect(store.changeStatuses(targets, 'suspend', 'synthetic test reason')).rejects.toThrow('read timed out')
     expect(remote.suspend).toHaveBeenCalledTimes(1)
+  })
+  it('classifies a session failure before any write as pre_write_failure', async () => {
+    const store = useEnterpriseStore()
+    remote.session.mockRejectedValueOnce(new Error('session unavailable'))
+    const error = await store.changeStatus('member-2', 'suspend', 1, 'synthetic test reason').catch((cause) => cause)
+    expect(error).toBeInstanceOf(MemberStatusMutationError)
+    expect(error).toMatchObject({ outcome: 'pre_write_failure' })
+    expect(memberMutationNeedsInspection(error)).toBe(false)
+    expect(remote.suspend).not.toHaveBeenCalled()
+    expect(remote.get).not.toHaveBeenCalled()
+  })
+  it('classifies an explicit 409 write rejection without locking inspection', async () => {
+    const store = useEnterpriseStore()
+    remote.suspend.mockRejectedValueOnce(new CommercialApiError('mutation conflict', 409, 'conflict'))
+    const error = await store.changeStatus('member-2', 'suspend', 1, 'synthetic test reason').catch((cause) => cause)
+    expect(error).toBeInstanceOf(MemberStatusMutationError)
+    expect(error).toMatchObject({ outcome: 'rejected' })
+    expect(memberMutationNeedsInspection(error)).toBe(false)
+    expect(remote.suspend).toHaveBeenCalledTimes(1)
+    expect(remote.get).not.toHaveBeenCalled()
+  })
+  it('classifies an unstructured mutation transport failure as write_uncertain', async () => {
+    const store = useEnterpriseStore()
+    remote.suspend.mockRejectedValueOnce(new TypeError('network failed'))
+    const error = await store.changeStatus('member-2', 'suspend', 1, 'synthetic test reason').catch((cause) => cause)
+    expect(error).toBeInstanceOf(MemberStatusMutationError)
+    expect(error).toMatchObject({ outcome: 'write_uncertain' })
+    expect(memberMutationNeedsInspection(error)).toBe(true)
+    expect(remote.suspend).toHaveBeenCalledTimes(1)
+    expect(remote.get).not.toHaveBeenCalled()
+  })
+  it('classifies a failed readback after a mutation receipt as write_uncertain', async () => {
+    const store = useEnterpriseStore()
+    remote.get.mockRejectedValueOnce(new Error('read timed out'))
+    const error = await store.changeStatus('member-2', 'suspend', 1, 'synthetic test reason').catch((cause) => cause)
+    expect(error).toBeInstanceOf(MemberStatusMutationError)
+    expect(error).toMatchObject({ outcome: 'write_uncertain' })
+    expect(memberMutationNeedsInspection(error)).toBe(true)
+    expect(remote.suspend).toHaveBeenCalledTimes(1)
+    expect(remote.get).toHaveBeenCalledTimes(1)
+  })
+  it('keeps batch certainty per target when a later write is explicitly rejected', async () => {
+    const store = useEnterpriseStore()
+    remote.suspend
+      .mockResolvedValueOnce(member('member-2'))
+      .mockRejectedValueOnce(new CommercialApiError('mutation conflict', 409, 'conflict'))
+    const error = await store.changeStatuses(targets, 'suspend', 'synthetic test reason').catch((cause) => cause)
+    expect(error).toBeInstanceOf(MemberStatusMutationError)
+    expect(error).toMatchObject({
+      outcome: 'rejected',
+      targets: [
+        { id: 'member-2', outcome: 'write_confirmed' },
+        { id: 'member-3', outcome: 'rejected' },
+      ],
+    })
+    expect(memberMutationNeedsInspection(error)).toBe(false)
+    expect(remote.suspend).toHaveBeenCalledTimes(2)
+    expect(remote.get).toHaveBeenCalledTimes(1)
   })
   it('stops between targets when the tenant changes during a mutation', async () => {
     const store = useEnterpriseStore(), receipt = deferred<EnterpriseTenantMember>()
