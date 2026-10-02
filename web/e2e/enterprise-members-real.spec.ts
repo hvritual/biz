@@ -661,12 +661,14 @@ test('uncertain single-member state write cannot be dismissed or resubmitted bef
   await expect(dialog.getByRole('button', { name: '取消', exact: true })).toBeDisabled()
   await expect(dialog.getByRole('button', { name: '确认禁用', exact: true })).toBeDisabled()
 
-  await dialog.getByRole('button', { name: '只读核对当前状态', exact: true }).click()
+  const inspectButton = dialog.getByRole('button', { name: '只读核对当前状态', exact: true })
+  await inspectButton.click()
   await expect(dialog).toBeVisible()
+  await expect(inspectButton).toBeEnabled()
   expect(server.getWrites().filter((item) => item.path.endsWith('/suspend'))).toHaveLength(1)
 
   options.readbackStatus = undefined
-  await dialog.getByRole('button', { name: '只读核对当前状态', exact: true }).click()
+  await inspectButton.click()
   await expect(dialog).toHaveCount(0)
   await expect(page.getByRole('status')).toContainText('已通过当前状态与版本确认本次变更完成')
   await expect(page.locator('[data-member-id="user-001"]')).toContainText('已禁用')
@@ -901,14 +903,19 @@ test('member task API fixture: uncertain batch cannot be dismissed and retains p
   expect(server.getWrites()).toHaveLength(1)
 
   options.readbackStatus = undefined
-  await inspection.getByRole('button', { name: '重新核对批次', exact: true }).click()
+  const retryInspection = inspection.getByRole('button', { name: '重新核对批次', exact: true })
+  await retryInspection.click()
   await expect(inspection.locator('[data-batch-inspection-id="user-001"]')).toContainText('已确认完成')
   await expect(inspection.locator('[data-batch-inspection-id="user-extra-03"]')).toContainText('尚未执行')
-  await expect(inspection.getByRole('button', { name: '完成本次核对', exact: true })).toBeVisible()
+  await expect(retryInspection).toBeEnabled()
+  await expect(inspection.getByRole('button', { name: '完成本次核对', exact: true })).toHaveCount(0)
   expect(server.getWrites()).toHaveLength(1)
 
   options.listStatus = undefined
-  await page.getByRole('button', { name: '重新读取成员', exact: true }).click()
+  await retryInspection.click()
+  await expect(inspection.getByRole('button', { name: '完成本次核对', exact: true })).toBeVisible()
+  await expect(inspection).not.toContainText('列表刷新失败')
+  await expect(inspection).not.toContainText('不要再次提交同一状态变更')
   await expect(page.locator('[data-member-id="user-001"]')).toContainText('已禁用')
   await expect(page.locator('[data-member-id="user-extra-03"]')).toContainText('正常')
   await expect(inspection).toBeVisible()
