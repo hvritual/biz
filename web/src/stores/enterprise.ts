@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { t } from '@/i18n'
 import { computed, ref } from 'vue'
 import {
   createEnterpriseDataSource,
@@ -71,7 +72,7 @@ import {
   type EnterpriseTenantBrandingDraft,
 } from '@/services/enterprise/tenantBrandingRuntime'
 import { loginUrl, logoutSession, type PermissionGrant, type TrustedSession } from '@/services/runtime/api'
-import { cancelTrustedSessionRequests } from '@/services/commercial/platformCommercial'
+import { cancelTrustedSessionRequests, CommercialApiError } from '@/services/commercial/platformCommercial'
 import { publishSessionContextChange, subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
 import {
   authorizationApiMode,
@@ -88,6 +89,49 @@ function serverMemberStatus(status: Member['status']) {
     case 'removed': return 'TENANT_MEMBER_STATUS_REMOVED'
     default: return 'TENANT_MEMBER_STATUS_INVITED'
   }
+}
+
+export type MemberBatchInspectionState = 'confirmed' | 'not_applied' | 'unknown'
+export type MemberBatchInspection = {
+  id: string
+  baselineVersion: number
+  state: MemberBatchInspectionState
+  status: Member['status'] | null
+  currentVersion: number | null
+  message: string
+}
+
+export type MemberMutationOutcome = 'pre_write_failure' | 'rejected' | 'write_uncertain' | 'write_confirmed'
+export type MemberMutationTargetOutcome = {
+  id: string
+  baselineVersion: number
+  outcome: 'not_started' | 'rejected' | 'write_uncertain' | 'write_confirmed'
+  message: string
+}
+export type MemberMutationConfirmation = {
+  outcome: 'write_confirmed'
+  targets: MemberMutationTargetOutcome[]
+  projectionRefreshed: boolean
+}
+export class MemberStatusMutationError extends Error {
+  constructor(
+    readonly outcome: MemberMutationOutcome,
+    message: string,
+    readonly targets: MemberMutationTargetOutcome[],
+    readonly projectionRefreshed = false,
+  ) {
+    super(message)
+    this.name = 'MemberStatusMutationError'
+  }
+}
+export function memberMutationNeedsInspection(error: unknown) {
+  return error instanceof MemberStatusMutationError && error.outcome === 'write_uncertain'
+}
+
+function memberWriteWasRejected(error: unknown) {
+  return error instanceof CommercialApiError &&
+    error.code !== 'invalid-response' &&
+    [400, 401, 403, 404, 409, 410, 412, 422, 429].includes(error.status)
 }
 
 function grantScope(scope: DataScope) {
@@ -114,6 +158,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   const settings = computed(() => snapshot.value.settings)
   const previewMode = dataSource.kind === 'demo'
   const memberTotal = ref(previewMode ? members.value.filter((member) => member.status !== 'removed').length : 0)
+  const memberQueryLoading = ref(false)
+  const memberQueryError = ref('')
   const removedMembers = ref<Member[]>([])
   const removedMemberTotal = ref(0)
   const sourceKind = dataSource.kind
@@ -145,6 +191,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   let memberMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let memberListQuery: EnterpriseMemberListQuery | null = null
   let memberListGeneration = 0
+  let removedListGeneration = 0
   let roleMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let departmentMutation: { tenantId: string; signature: string; keys: Record<string, string> } | null = null
   let brandingMutation: { tenantId: string; signature: string; key: string } | null = null
@@ -162,7 +209,10 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     companyMutation = null
     memberMutation = null
     memberListQuery = null
+    memberQueryLoading.value = false
+    memberQueryError.value = ''
     memberListGeneration++
+    removedListGeneration++
     memberTotal.value = 0
     removedMembers.value = []
     removedMemberTotal.value = 0
@@ -534,9 +584,13 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   }
 
   async function stableMemberSession() {
+    const epoch = sessionEpoch
     const expected = session.value
     if (!expected?.authenticated || !expected.active_tenant_id) throw new Error('请先登录并选择可访问租户。')
     const current = await readEnterpriseMemberSession()
+    if (epoch !== sessionEpoch || !session.value || !sameTrustedSession(expected, session.value)) {
+      throw new Error('会话或当前租户已变化，请刷新后重新操作。')
+    }
     if (!sameTrustedSession(expected, current)) {
       await refresh()
       throw new Error('会话或当前租户已变化，请刷新后重新操作。')
@@ -545,11 +599,14 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   }
 
 
-  async function applyMemberPage(trusted: TrustedSession, query: EnterpriseMemberListQuery) {
+  async function applyMemberPage(trusted: TrustedSession, query: EnterpriseMemberListQuery,
+    generation = ++memberListGeneration, epoch = sessionEpoch) {
     const targetTenant = tenantId.value
-    const generation = ++memberListGeneration
+    const current = () => generation === memberListGeneration && epoch === sessionEpoch &&
+      tenantId.value === targetTenant && Boolean(session.value && sameTrustedSession(trusted, session.value))
+    if (!current()) return false
     const result = await queryEnterpriseMembers(trusted, query)
-    if (generation !== memberListGeneration || tenantId.value !== targetTenant) return false
+    if (!current()) return false
     snapshot.value = {
       ...snapshot.value,
       members: result.members.map(projectMember),
@@ -579,16 +636,22 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       page: Math.max(1, Math.trunc(input.page)),
       pageSize: Math.max(1, Math.min(100, Math.trunc(input.pageSize))),
     }
-    loading.value = true
-    sourceError.value = ''
+    const epoch = sessionEpoch
+    const generation = ++memberListGeneration
+    const targetTenant = tenantId.value
+    const current = () => epoch === sessionEpoch && generation === memberListGeneration && tenantId.value === targetTenant
+    memberQueryLoading.value = true
+    memberQueryError.value = ''
     try {
       const trusted = await stableMemberSession()
-      return await applyMemberPage(trusted, query)
+      if (!current()) return false
+      return await applyMemberPage(trusted, query, generation, epoch)
     } catch (error) {
-      sourceError.value = memberRuntimeError(error)
-      throw new Error(sourceError.value)
+      if (!current()) return false
+      memberQueryError.value = memberRuntimeError(error)
+      throw new Error(memberQueryError.value)
     } finally {
-      loading.value = false
+      if (current()) memberQueryLoading.value = false
     }
   }
 
@@ -598,8 +661,12 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       removedMemberTotal.value = removedMembers.value.length
       return true
     }
+    const epoch = sessionEpoch
+    const generation = ++removedListGeneration
     const trusted = await stableMemberSession()
+    if (epoch !== sessionEpoch || generation !== removedListGeneration) return false
     const result = await listRemovedEnterpriseMembers(trusted, page, pageSize)
+    if (epoch !== sessionEpoch || generation !== removedListGeneration || !session.value || !sameTrustedSession(trusted, session.value)) return false
     removedMembers.value = result.members.map(projectMember)
     removedMemberTotal.value = result.total
     return true
@@ -822,18 +889,46 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     }
   }
 
+  async function confirmStatusReadback(trusted: TrustedSession, receipt: EnterpriseTenantMember,
+    action: 'activate' | 'suspend' | 'remove') {
+    const current = await getEnterpriseMember(trusted, receipt.userId)
+    const expected = serverMemberStatus(action === 'activate' ? 'active' : action === 'suspend' ? 'suspended' : 'removed')
+    if (current.status !== expected || String(current.version) !== String(receipt.version)) {
+      throw new Error(t('members.task.readbackMismatch'))
+    }
+  }
+
+  function mutationTarget(id: string, baselineVersion: number): MemberMutationTargetOutcome {
+    return { id, baselineVersion, outcome: 'not_started', message: '' }
+  }
+
+  function mutationFailure(
+    outcome: MemberMutationOutcome,
+    error: unknown,
+    targets: MemberMutationTargetOutcome[],
+    projectionRefreshed = false,
+  ) {
+    return new MemberStatusMutationError(
+      outcome,
+      memberRuntimeError(error),
+      targets.map((target) => ({ ...target })),
+      projectionRefreshed,
+    )
+  }
+
   async function changeStatus(
     id: string,
     action: 'activate' | 'suspend' | 'remove',
     version: number,
     reason: string,
-  ) {
+  ): Promise<MemberMutationConfirmation> {
+    const targets = [mutationTarget(id, version)]
     const member = members.value.find((value) => value.id === id)
-    if (!member) throw new Error('成员不存在。')
-    if (member.version !== version) throw new Error('成员状态已变化，请刷新后重试。')
+    if (!member) throw mutationFailure('pre_write_failure', new Error('成员不存在。'), targets)
+    if (member.version !== version) throw mutationFailure('pre_write_failure', new Error('成员状态已变化，请刷新后重试。'), targets)
     const policy = memberActionError(action, member, members.value, roles.value)
-    if (policy) throw new Error(policy)
-    if (!reason.trim()) throw new Error('请填写操作原因。')
+    if (policy) throw mutationFailure('pre_write_failure', new Error(policy), targets)
+    if (!reason.trim()) throw mutationFailure('pre_write_failure', new Error('请填写操作原因。'), targets)
 
     if (previewMode) {
       const updated = applyStatusAction(action, member)
@@ -847,27 +942,62 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
         reason,
         'high',
       )
-      return
+      targets[0]!.outcome = 'write_confirmed'
+      return { outcome: 'write_confirmed', targets, projectionRefreshed: true }
     }
 
-    const trusted = await stableMemberSession()
+    let trusted: TrustedSession
+    try {
+      trusted = await stableMemberSession()
+    } catch (error) {
+      throw mutationFailure('pre_write_failure', error, targets)
+    }
+
     const server = asServerMember(member)
     const key = memberRequestId(action)
-    const receipt = action === 'activate'
-      ? await activateEnterpriseMember(trusted, server, key, reason)
-      : action === 'suspend'
-        ? await suspendEnterpriseMember(trusted, server, key, reason)
-        : await removeEnterpriseMember(trusted, server, key, reason)
-    await getEnterpriseMember(trusted, receipt.userId)
-    await refreshMemberQuery()
+    let receipt: EnterpriseTenantMember
+    try {
+      receipt = action === 'activate'
+        ? await activateEnterpriseMember(trusted, server, key, reason)
+        : action === 'suspend'
+          ? await suspendEnterpriseMember(trusted, server, key, reason)
+          : await removeEnterpriseMember(trusted, server, key, reason)
+    } catch (error) {
+      const outcome: MemberMutationOutcome = memberWriteWasRejected(error) ? 'rejected' : 'write_uncertain'
+      targets[0]!.outcome = outcome
+      targets[0]!.message = memberRuntimeError(error)
+      throw mutationFailure(outcome, error, targets)
+    }
+
+    try {
+      await confirmStatusReadback(trusted, receipt, action)
+      targets[0]!.outcome = 'write_confirmed'
+    } catch (error) {
+      targets[0]!.outcome = 'write_uncertain'
+      targets[0]!.message = memberRuntimeError(error)
+      throw mutationFailure('write_uncertain', error, targets)
+    }
+
+    try {
+      await refreshMemberQuery()
+      return { outcome: 'write_confirmed', targets, projectionRefreshed: true }
+    } catch (error) {
+      throw mutationFailure('write_confirmed', error, targets)
+    }
   }
 
   async function changeStatuses(
     targets: { id: string; version: number }[],
     action: 'activate' | 'suspend',
     reason: string,
-  ) {
-    if (!reason.trim()) throw new Error('请填写操作原因。')
+  ): Promise<MemberMutationConfirmation> {
+    const outcomes = targets.map((target) => mutationTarget(target.id, target.version))
+    if (!reason.trim()) throw mutationFailure('pre_write_failure', new Error('请填写操作原因。'), outcomes)
+    try {
+      prepareMemberStatusBatch(members.value, roles.value, targets, action)
+    } catch (error) {
+      throw mutationFailure('pre_write_failure', error, outcomes)
+    }
     if (previewMode) {
       const updated = prepareMemberStatusBatch(members.value, roles.value, targets, action)
       const records = targets.map(({ id }) => {
@@ -892,25 +1022,115 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       snapshot.value.members = updated
       snapshot.value.logs.unshift(...records)
       persist()
-      return
+      outcomes.forEach((target) => { target.outcome = 'write_confirmed' })
+      return { outcome: 'write_confirmed', targets: outcomes, projectionRefreshed: true }
     }
 
-    prepareMemberStatusBatch(members.value, roles.value, targets, action)
-    const trusted = await stableMemberSession()
-    let failure: unknown = null
+    const epoch = sessionEpoch
+    let trusted: TrustedSession
     try {
-      for (const target of targets) {
+      trusted = await stableMemberSession()
+    } catch (error) {
+      throw mutationFailure('pre_write_failure', error, outcomes)
+    }
+    const current = () => epoch === sessionEpoch && Boolean(session.value && sameTrustedSession(trusted, session.value))
+
+    try {
+      for (let index = 0; index < targets.length; index += 1) {
+        const target = targets[index]!
+        const targetOutcome = outcomes[index]!
+        if (!current()) throw mutationFailure('pre_write_failure', new Error(t('members.task.contextChanged')), outcomes)
         const member = members.value.find((value) => value.id === target.id)
-        if (!member) throw new Error('批量操作中存在已不存在的成员，请刷新后重试。')
+        if (!member) throw mutationFailure('pre_write_failure', new Error('批量操作中存在已不存在的成员，请刷新后重试。'), outcomes)
         const server = asServerMember(member)
-        if (action === 'activate') await activateEnterpriseMember(trusted, server, memberRequestId('activate'), reason)
-        else await suspendEnterpriseMember(trusted, server, memberRequestId('suspend'), reason)
+        let receipt: EnterpriseTenantMember
+        try {
+          receipt = action === 'activate'
+            ? await activateEnterpriseMember(trusted, server, memberRequestId('activate'), reason)
+            : await suspendEnterpriseMember(trusted, server, memberRequestId('suspend'), reason)
+        } catch (error) {
+          const outcome: MemberMutationOutcome = memberWriteWasRejected(error) ? 'rejected' : 'write_uncertain'
+          targetOutcome.outcome = outcome
+          targetOutcome.message = memberRuntimeError(error)
+          throw mutationFailure(outcome, error, outcomes)
+        }
+        if (!current()) {
+          targetOutcome.outcome = 'write_uncertain'
+          targetOutcome.message = t('members.task.contextChanged')
+          throw mutationFailure('write_uncertain', new Error(t('members.task.contextChanged')), outcomes)
+        }
+        try {
+          await confirmStatusReadback(trusted, receipt, action)
+          targetOutcome.outcome = 'write_confirmed'
+        } catch (error) {
+          targetOutcome.outcome = 'write_uncertain'
+          targetOutcome.message = memberRuntimeError(error)
+          throw mutationFailure('write_uncertain', error, outcomes)
+        }
       }
     } catch (error) {
-      failure = error
+      let projectionRefreshed = false
+      if (current()) {
+        try {
+          await refreshMemberQuery()
+          projectionRefreshed = true
+        } catch {
+          // Per-target mutation certainty remains authoritative even when the list projection cannot refresh.
+        }
+      }
+      if (error instanceof MemberStatusMutationError) {
+        throw new MemberStatusMutationError(error.outcome, error.message, error.targets, projectionRefreshed)
+      }
+      throw error
     }
-    await refreshMemberQuery()
-    if (failure) throw failure
+
+    try {
+      await refreshMemberQuery()
+      return { outcome: 'write_confirmed', targets: outcomes, projectionRefreshed: true }
+    } catch (error) {
+      throw mutationFailure('write_confirmed', error, outcomes)
+    }
+  }
+
+  async function inspectMemberStatusBatch(
+    targets: { id: string; version: number }[],
+    action: 'activate' | 'suspend' | 'remove',
+  ): Promise<MemberBatchInspection[]> {
+    const expected = action === 'activate' ? 'active' : action === 'suspend' ? 'suspended' : 'removed'
+    if (previewMode) {
+      return targets.map(({ id, version }) => {
+        const current = members.value.find((member) => member.id === id)
+        if (!current) return { id, baselineVersion: version, state: 'unknown', status: null, currentVersion: null, message: t('members.task.inspectionMissing') }
+        const state = current.status === expected && current.version > version
+          ? 'confirmed'
+          : current.version === version && current.status !== expected
+            ? 'not_applied'
+            : 'unknown'
+        return { id, baselineVersion: version, state, status: current.status, currentVersion: current.version, message: '' }
+      })
+    }
+
+    const epoch = sessionEpoch
+    const trusted = await stableMemberSession()
+    const currentContext = () => epoch === sessionEpoch && Boolean(session.value && sameTrustedSession(trusted, session.value))
+    const result: MemberBatchInspection[] = []
+    for (const { id, version } of targets) {
+      if (!currentContext()) throw new Error(t('members.task.contextChanged'))
+      try {
+        const remote = projectMember(await getEnterpriseMember(trusted, id))
+        if (!currentContext()) throw new Error(t('members.task.contextChanged'))
+        const state = remote.status === expected && remote.version > version
+          ? 'confirmed'
+          : remote.version === version && remote.status !== expected
+            ? 'not_applied'
+            : 'unknown'
+        result.push({ id, baselineVersion: version, state, status: remote.status, currentVersion: remote.version, message: '' })
+      } catch (error) {
+        if (!currentContext()) throw new Error(t('members.task.contextChanged'))
+        result.push({ id, baselineVersion: version, state: 'unknown', status: null, currentVersion: null, message: memberRuntimeError(error) })
+      }
+    }
+    return result
   }
 
   function asServerRole(role: Role): EnterpriseTenantRole {
@@ -1213,6 +1433,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     tenantId,
     members,
     memberTotal,
+    memberQueryLoading,
+    memberQueryError,
     removedMembers,
     removedMemberTotal,
     roles,
@@ -1248,6 +1470,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     saveMember,
     changeStatus,
     changeStatuses,
+    inspectMemberStatusBatch,
     queryRoles,
     saveRole,
     deleteRole,

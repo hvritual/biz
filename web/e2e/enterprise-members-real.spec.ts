@@ -640,6 +640,145 @@ test('canonical recycle bin restores removed member with one authoritative write
   })
 })
 
+test('uncertain single-member state write cannot be dismissed or resubmitted before read-only verification', async ({ page }) => {
+  const options: MockOptions = { readbackStatus: 500 }
+  const server = await mockMemberServer(page, options)
+  await openCanonicalMembers(page)
+  await page.getByRole('button', { name: 'Alice Chen 更多操作', exact: true }).click()
+  await page.getByRole('button', { name: '禁用当前企业访问', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '禁用成员', exact: true })
+  await dialog.getByRole('checkbox').check()
+  await dialog.getByLabel('操作原因', { exact: true }).fill('单成员结果核对 request-313-single-0001')
+  await dialog.getByRole('button', { name: '确认禁用', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toContainText('成员信息暂不可用')
+  await expect(dialog.getByText('结果尚未确认', { exact: false })).toBeVisible()
+  expect(server.getWrites().filter((item) => item.path.endsWith('/suspend'))).toHaveLength(1)
+
+  await dialog.getByRole('button', { name: '关闭弹窗', exact: true }).click()
+  await expect(dialog).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('button', { name: '取消', exact: true })).toBeDisabled()
+  await expect(dialog.getByRole('button', { name: '确认禁用', exact: true })).toBeDisabled()
+
+  const inspectButton = dialog.getByRole('button', { name: '只读核对当前状态', exact: true })
+  await inspectButton.click()
+  await expect(dialog).toBeVisible()
+  await expect(inspectButton).toBeEnabled()
+  expect(server.getWrites().filter((item) => item.path.endsWith('/suspend'))).toHaveLength(1)
+
+  options.readbackStatus = undefined
+  await inspectButton.click()
+  await expect(dialog).toHaveCount(0)
+  await expect(page.getByRole('status')).toContainText('已通过当前状态与版本确认本次变更完成')
+  await expect(page.locator('[data-member-id="user-001"]')).toContainText('已禁用')
+  expect(server.getWrites().filter((item) => item.path.endsWith('/suspend'))).toHaveLength(1)
+})
+
+test('explicit 409 single-member state rejection remains dismissible and does not enter inspection', async ({ page }) => {
+  const server = await mockMemberServer(page, { mutationStatus: 409 })
+  await openCanonicalMembers(page)
+  await page.getByRole('button', { name: 'Alice Chen 更多操作', exact: true }).click()
+  await page.getByRole('button', { name: '禁用当前企业访问', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '禁用成员', exact: true })
+  await dialog.getByRole('checkbox').check()
+  await dialog.getByLabel('操作原因', { exact: true }).fill('明确拒绝 request-313-rejected-single')
+  await dialog.getByRole('button', { name: '确认禁用', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toContainText('成员状态或请求版本已发生变化')
+  await expect(dialog.getByText('结果尚未确认', { exact: false })).toHaveCount(0)
+  await expect(dialog.getByRole('button', { name: '只读核对当前状态', exact: true })).toHaveCount(0)
+  await expect(dialog.getByRole('button', { name: '取消', exact: true })).toBeEnabled()
+  expect(server.getWrites().filter((item) => item.path.endsWith('/suspend'))).toHaveLength(1)
+  await dialog.getByRole('button', { name: '取消', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+})
+
+test('explicit 409 batch rejection does not create a locked inspection flow', async ({ page }) => {
+  const server = await mockMemberServer(page, { memberCount: 4, mutationStatus: 409 })
+  await openCanonicalMembers(page)
+  await page.getByLabel('选择 Alice Chen', { exact: true }).check()
+  await page.getByLabel('选择 Member 03', { exact: true }).check()
+  await page.getByRole('button', { name: '批量停用', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '批量停用成员', exact: true })
+  await dialog.getByLabel('操作原因', { exact: true }).fill('明确拒绝 request-313-rejected-batch')
+  await dialog.getByRole('checkbox').check()
+  await dialog.getByRole('button', { name: '确认批量停用', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toContainText('成员状态或请求版本已发生变化')
+  await expect(dialog.getByText('不要直接重复提交整批', { exact: false })).toHaveCount(0)
+  await expect(dialog.getByRole('button', { name: '返回列表核对', exact: true })).toHaveCount(0)
+  await expect(dialog.getByRole('button', { name: '取消', exact: true })).toBeEnabled()
+  expect(server.getWrites().filter((item) => item.path.endsWith('/suspend'))).toHaveLength(1)
+  await dialog.getByRole('button', { name: '取消', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+  await expect(page.getByLabel('批次结果核对', { exact: true })).toHaveCount(0)
+})
+
+test('partial batch rejection retains confirmed rejected and not-started targets until acknowledged', async ({ page }) => {
+  const server = await mockMemberServer(page, { memberCount: 5 })
+  await openCanonicalMembers(page)
+  await page.getByLabel('选择 Alice Chen', { exact: true }).check()
+  await page.getByLabel('选择 Member 03', { exact: true }).check()
+  await page.getByLabel('选择 Member 05', { exact: true }).check()
+  let attempts = 0
+  await page.route(/\/v1\/tenant\/members\/[^/]+\/suspend$/, async (route) => {
+    attempts += 1
+    if (attempts === 2) return json(route, 409, { message: 'mutation conflict' })
+    await route.fallback()
+  })
+  await page.getByRole('button', { name: '批量停用', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '批量停用成员', exact: true })
+  await dialog.getByLabel('操作原因', { exact: true }).fill('部分结果 request-313-partial')
+  await dialog.getByRole('checkbox').check()
+  await dialog.getByRole('button', { name: '确认批量停用', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+
+  const result = page.getByLabel('批次结果核对', { exact: true })
+  await expect(result).toBeVisible()
+  await expect(result).toBeFocused()
+  await expect(result.locator('[data-batch-inspection-id="user-001"]')).toContainText('已确认完成')
+  await expect(result.locator('[data-batch-inspection-id="user-extra-03"]')).toContainText('已明确拒绝')
+  await expect(result.locator('[data-batch-inspection-id="user-extra-05"]')).toContainText('尚未执行')
+  await expect(page.getByRole('button', { name: '批量停用', exact: true })).toBeDisabled()
+  await expect(result.getByRole('button', { name: '完成本次核对', exact: true })).toBeVisible()
+  expect(attempts).toBe(2)
+  expect(server.getWrites().filter((item) => item.path.endsWith('/suspend'))).toHaveLength(1)
+
+  await result.getByRole('button', { name: '完成本次核对', exact: true }).click()
+  await expect(result).toHaveCount(0)
+})
+
+test('confirmed batch with failed list refresh stays page-level until the list refresh succeeds', async ({ page }) => {
+  const options: MockOptions = { memberCount: 3 }
+  const server = await mockMemberServer(page, options)
+  await openCanonicalMembers(page)
+  await page.getByLabel('选择 Alice Chen', { exact: true }).check()
+  options.listStatus = 500
+
+  await page.getByRole('button', { name: '批量停用', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '批量停用成员', exact: true })
+  await dialog.getByLabel('操作原因', { exact: true }).fill('刷新恢复 request-313-projection')
+  await dialog.getByRole('checkbox').check()
+  await dialog.getByRole('button', { name: '确认批量停用', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+
+  const result = page.getByLabel('批次结果核对', { exact: true })
+  await expect(result.locator('[data-batch-inspection-id="user-001"]')).toContainText('已确认完成')
+  await expect(result.getByRole('button', { name: '重新核对批次', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '批量停用', exact: true })).toBeDisabled()
+  expect(server.getWrites().filter((item) => item.path.endsWith('/suspend'))).toHaveLength(1)
+
+  options.listStatus = undefined
+  await result.getByRole('button', { name: '重新核对批次', exact: true }).click()
+  await expect(result.getByRole('button', { name: '完成本次核对', exact: true })).toBeVisible()
+  await expect(result).not.toContainText('列表刷新失败')
+  await expect(result).not.toContainText('不要再次提交同一状态变更')
+  await expect(page.locator('[data-member-id="user-001"]')).toContainText('已禁用')
+  expect(server.getWrites().filter((item) => item.path.endsWith('/suspend'))).toHaveLength(1)
+
+  await result.getByRole('button', { name: '完成本次核对', exact: true }).click()
+  await expect(result).toHaveCount(0)
+})
+
 test('canonical profile 409 preserves draft and reuses the same idempotency key', async ({ page }) => {
   const server = await mockMemberServer(page, { mutationStatus: 409 })
   await openCanonicalMembers(page)
@@ -690,4 +829,110 @@ test('restricted member appeal never requests tenant business APIs and exposes a
     tenant_id: 'tenant-suspended-001',
     reason: 'please review my suspended access',
   })
+})
+
+// #313 evidence is explicitly API-mode route interception, not a live service.
+test('member task API fixture: query failure retains filters and recovery performs no writes', async ({ page }) => {
+  const options: MockOptions = {}
+  const server = await mockMemberServer(page, options)
+  await openCanonicalMembers(page)
+  options.listStatus = 500
+  await page.getByLabel('搜索成员', { exact: true }).fill('Alice')
+  await page.getByRole('button', { name: '查询', exact: true }).click()
+  const error = page.locator('.member-task-state[role="alert"]')
+  await expect(error).toContainText('筛选输入已保留')
+  await expect(page.locator('.member-table')).toHaveCount(0)
+  await expect(page.getByLabel('搜索成员', { exact: true })).toHaveValue('Alice')
+  options.listStatus = undefined
+  await page.getByRole('button', { name: '重新读取成员', exact: true }).click()
+  await expect(page.locator('[data-member-id="user-001"]')).toBeVisible()
+  await expect(error).toHaveCount(0)
+  expect(server.getWrites()).toEqual([])
+  expect(server.getListReads().at(-1)).toContain('query=Alice')
+})
+
+test('member task API fixture: uncertain batch cannot be dismissed and retains per-target inspection through list failure', async ({ page }) => {
+  const options: MockOptions = { memberCount: 4 }
+  const server = await mockMemberServer(page, options)
+  await openCanonicalMembers(page)
+  await page.getByLabel('选择 Alice Chen', { exact: true }).check()
+  await page.getByLabel('选择 Member 03', { exact: true }).check()
+  await page.getByRole('button', { name: '批量停用', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '批量停用成员', exact: true })
+  await expect(dialog).toContainText('可能部分完成')
+  await dialog.getByLabel('操作原因', { exact: true }).fill('离岗复核 request-313-0000000000000001')
+  await dialog.getByRole('checkbox').check()
+  let finish!: () => void
+  const pending = new Promise<void>((resolve) => { finish = resolve })
+  let posts = 0
+  await page.route(/\/v1\/tenant\/members\/[^/]+\/suspend$/, async (route) => {
+    posts += 1
+    await pending
+    await route.fallback()
+  })
+  const confirm = dialog.getByRole('button', { name: '确认批量停用', exact: true })
+  await confirm.evaluate((element) => { (element as HTMLButtonElement).click(); (element as HTMLButtonElement).click() })
+  await expect.poll(() => posts).toBe(1)
+  await expect(dialog.getByRole('button', { name: '取消', exact: true })).toBeDisabled()
+  await expect(dialog.getByLabel('操作原因', { exact: true })).toBeDisabled()
+  options.readbackStatus = 500
+  finish()
+  await expect(dialog.getByRole('alert')).toContainText('不要直接重复提交整批')
+  await expect(dialog.getByLabel('操作原因', { exact: true })).toHaveValue('离岗复核 request-313-0000000000000001')
+  await expect(confirm).toBeDisabled()
+  expect(posts).toBe(1)
+  expect(server.getWrites()).toHaveLength(1)
+
+  await dialog.getByRole('button', { name: '关闭弹窗', exact: true }).click()
+  await expect(dialog).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeVisible()
+
+  options.listStatus = 500
+  await dialog.getByRole('button', { name: '返回列表核对', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+  const inspection = page.getByLabel('批次结果核对', { exact: true })
+  await expect(inspection).toBeVisible()
+  await expect(inspection).toBeFocused()
+  await expect(inspection.locator('[data-batch-inspection-id="user-001"]')).toContainText('Alice Chen')
+  await expect(inspection.locator('[data-batch-inspection-id="user-extra-03"]')).toContainText('Member 03')
+  await expect(inspection.locator('[data-batch-inspection-id="user-001"]')).toContainText('待确认')
+  await expect(inspection.locator('[data-batch-inspection-id="user-extra-03"]')).toContainText('尚未执行')
+  await expect(page.getByRole('button', { name: '批量停用', exact: true })).toBeDisabled()
+  await expect(page.locator('.member-task-state[role="alert"]')).toBeVisible()
+  expect(server.getWrites()).toHaveLength(1)
+
+  options.readbackStatus = undefined
+  const retryInspection = inspection.getByRole('button', { name: '重新核对批次', exact: true })
+  await retryInspection.click()
+  await expect(inspection.locator('[data-batch-inspection-id="user-001"]')).toContainText('已确认完成')
+  await expect(inspection.locator('[data-batch-inspection-id="user-extra-03"]')).toContainText('尚未执行')
+  await expect(retryInspection).toBeEnabled()
+  await expect(inspection.getByRole('button', { name: '完成本次核对', exact: true })).toHaveCount(0)
+  expect(server.getWrites()).toHaveLength(1)
+
+  options.listStatus = undefined
+  await retryInspection.click()
+  await expect(inspection.getByRole('button', { name: '完成本次核对', exact: true })).toBeVisible()
+  await expect(inspection).not.toContainText('列表刷新失败')
+  await expect(inspection).not.toContainText('不要再次提交同一状态变更')
+  await expect(page.locator('[data-member-id="user-001"]')).toContainText('已禁用')
+  await expect(page.locator('[data-member-id="user-extra-03"]')).toContainText('正常')
+  await expect(inspection).toBeVisible()
+  await inspection.getByRole('button', { name: '完成本次核对', exact: true }).click()
+  await expect(inspection).toHaveCount(0)
+  expect(server.getWrites()).toHaveLength(1)
+})
+
+test('member task API fixture: permission error is not an empty result and cannot expose stale member actions', async ({ page }) => {
+  const options: MockOptions = {}
+  const server = await mockMemberServer(page, options)
+  await openCanonicalMembers(page)
+  options.listStatus = 403
+  await page.getByLabel('搜索成员', { exact: true }).fill('Alice')
+  await page.getByRole('button', { name: '查询', exact: true }).click()
+  await expect(page.locator('.member-task-state[role="alert"]')).toContainText('权限')
+  await expect(page.locator('.member-table')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '批量停用', exact: true })).toBeDisabled()
+  expect(server.getWrites()).toEqual([])
 })
