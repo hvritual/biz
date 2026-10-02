@@ -1,4 +1,4 @@
-# product候选为本分析文档提交的真实父提交7820cfb；最终PR只再变更本分析文档，正式证据仍须绑定最终PR SHA并核对web树不变。
+# product候选为本分析文档提交的真实父提交00db968；最终PR只再变更本分析文档，正式证据仍须绑定最终PR SHA并核对web树不变。
 # 实际任务分析，不是运行配置；证据与真人测量未完成，不授予批准。
 schema_version: 1
 artifact_kind: analysis
@@ -6,7 +6,7 @@ status: draft
 task_ref:
   issue: https://github.com/hvritual/biz/issues/313
   baseline_commit: f5a30acd8e5a3e42523315541f969ee5223d5555
-  candidate_commit: 7820cfb248cb5a9dc734f09d78e6a8f792613fa8
+  candidate_commit: 00db968f750d3c4e555c65460903f0f93dbd2d00
   name: 成员检索与状态操作：保留工作上下文，明确影响和安全核对路径
 classification:
   type: business_task
