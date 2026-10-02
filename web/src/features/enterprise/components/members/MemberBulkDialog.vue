@@ -2,22 +2,22 @@
 import { UiButton, UiInput, UiTextarea } from '@/ui/base'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { memberMutationNeedsInspection, MemberStatusMutationError, useEnterpriseStore } from '@/stores/enterprise'
+import { memberMutationNeedsInspection, MemberStatusMutationError, useEnterpriseStore, type MemberMutationTargetOutcome } from '@/stores/enterprise'
 import { useUiStore } from '@/stores/ui'
 import { prepareMemberStatusBatch } from '@/services/memberPolicy'
 import UiDialog from '@/ui/common/UiDialog.vue'
 const props=defineProps<{open:boolean;action:'activate'|'suspend';targets:{id:string;version:number}[]}>()
-const emit=defineEmits<{close:[];saved:[];inspect:[details:{reason:string;error:string}]}>(),store=useEnterpriseStore(),ui=useUiStore(),{t}=useI18n()
-const reason=ref(''),confirmed=ref(false),error=ref(''),busy=ref(false),needsInspection=ref(false),confirmedButStale=ref(false),names=ref<string[]>([])
+const emit=defineEmits<{close:[];saved:[];inspect:[details:{reason:string;error:string;targets?:MemberMutationTargetOutcome[];refreshRequired?:boolean}]}>(),store=useEnterpriseStore(),ui=useUiStore(),{t}=useI18n()
+const reason=ref(''),confirmed=ref(false),error=ref(''),busy=ref(false),needsInspection=ref(false),mutationTargets=ref<MemberMutationTargetOutcome[]>([]),names=ref<string[]>([])
 let generation=0
 const label=computed(()=>t(`members.bulk.${props.action}`))
 const policyError=computed(()=>{if(!props.open||busy.value||needsInspection.value)return'';try{prepareMemberStatusBatch(store.members,store.roles,props.targets,props.action);return''}catch(e){return(e as Error).message}})
-watch(()=>props.open,(open)=>{generation++;if(!open)return;reason.value='';confirmed.value=false;error.value='';busy.value=false;needsInspection.value=false;confirmedButStale.value=false;names.value=props.targets.map(x=>store.members.find(m=>m.id===x.id)?.name||x.id)})
+watch(()=>props.open,(open)=>{generation++;if(!open)return;reason.value='';confirmed.value=false;error.value='';busy.value=false;needsInspection.value=false;mutationTargets.value=[];names.value=props.targets.map(x=>store.members.find(m=>m.id===x.id)?.name||x.id)})
 onBeforeUnmount(()=>{generation++})
 function close(){if(!busy.value&&!needsInspection.value)emit('close')}
-function inspect(){if(!needsInspection.value||busy.value)return;emit('inspect',{reason:reason.value.trim(),error:error.value})}
+function inspect(){if(!needsInspection.value||busy.value)return;emit('inspect',{reason:reason.value.trim(),error:error.value,targets:mutationTargets.value.map(target=>({...target}))})}
 async function submit(){
-  if(busy.value||needsInspection.value||confirmedButStale.value||policyError.value)return
+  if(busy.value||needsInspection.value||policyError.value)return
   if(!reason.value.trim()){error.value=t('members.bulk.reasonRequired');return}
   if(!confirmed.value){error.value=t('members.bulk.confirmRequired');return}
   const token=++generation,tenant=store.tenantId,count=props.targets.length,actionLabel=label.value
@@ -30,12 +30,20 @@ async function submit(){
     emit('saved')
   }catch(e){
     if(!current())return
-    if(e instanceof MemberStatusMutationError&&e.outcome==='write_confirmed'){
-      confirmedButStale.value=true
-      error.value=t('members.task.confirmedProjectionRefresh')
-      return
-    }
     error.value=e instanceof Error?e.message:t('members.task.batchFailure')
+    if(e instanceof MemberStatusMutationError){
+      mutationTargets.value=e.targets.map(target=>({...target}))
+      const hasConfirmed=e.targets.some(target=>target.outcome==='write_confirmed')
+      if(e.outcome==='write_confirmed'||(e.outcome==='rejected'&&hasConfirmed)){
+        emit('inspect',{
+          reason:reason.value.trim(),
+          error:e.outcome==='write_confirmed'?t('members.task.confirmedProjectionRefresh'):error.value,
+          targets:mutationTargets.value.map(target=>({...target})),
+          refreshRequired:!e.projectionRefreshed,
+        })
+        return
+      }
+    }
     needsInspection.value=memberMutationNeedsInspection(e)
   }finally{if(current())busy.value=false}
 }
@@ -54,7 +62,7 @@ async function submit(){
     <template #footer>
       <UiButton v-if="needsInspection" class="btn" @click="inspect">{{ t('members.task.inspect') }}</UiButton>
       <UiButton v-else class="btn" :disabled="busy" @click="close">{{ t('common.cancel') }}</UiButton>
-      <UiButton class="btn" :class="action==='suspend'?'btn-danger':'btn-primary'" :disabled="busy||needsInspection||confirmedButStale||Boolean(policyError)" type="submit" form="member-batch-form">{{ busy?t('common.processing'):t('members.bulk.confirmAction',{action:label}) }}</UiButton>
+      <UiButton class="btn" :class="action==='suspend'?'btn-danger':'btn-primary'" :disabled="busy||needsInspection||Boolean(policyError)" type="submit" form="member-batch-form">{{ busy?t('common.processing'):t('members.bulk.confirmAction',{action:label}) }}</UiButton>
     </template>
   </UiDialog>
 </template>

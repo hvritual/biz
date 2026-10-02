@@ -204,6 +204,7 @@ describe('member task state confirmation', () => {
     expect(error).toBeInstanceOf(MemberStatusMutationError)
     expect(error).toMatchObject({
       outcome: 'rejected',
+      projectionRefreshed: true,
       targets: [
         { id: 'member-2', outcome: 'write_confirmed' },
         { id: 'member-3', outcome: 'rejected' },

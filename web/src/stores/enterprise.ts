@@ -118,6 +118,7 @@ export class MemberStatusMutationError extends Error {
     readonly outcome: MemberMutationOutcome,
     message: string,
     readonly targets: MemberMutationTargetOutcome[],
+    readonly projectionRefreshed = false,
   ) {
     super(message)
     this.name = 'MemberStatusMutationError'
@@ -128,7 +129,9 @@ export function memberMutationNeedsInspection(error: unknown) {
 }
 
 function memberWriteWasRejected(error: unknown) {
-  return error instanceof CommercialApiError && error.code !== 'invalid-response' && error.status >= 400 && error.status < 500
+  return error instanceof CommercialApiError &&
+    error.code !== 'invalid-response' &&
+    [400, 401, 403, 404, 409, 410, 412, 422, 429].includes(error.status)
 }
 
 function grantScope(scope: DataScope) {
@@ -903,8 +906,14 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     outcome: MemberMutationOutcome,
     error: unknown,
     targets: MemberMutationTargetOutcome[],
+    projectionRefreshed = false,
   ) {
-    return new MemberStatusMutationError(outcome, memberRuntimeError(error), targets.map((target) => ({ ...target })))
+    return new MemberStatusMutationError(
+      outcome,
+      memberRuntimeError(error),
+      targets.map((target) => ({ ...target })),
+      projectionRefreshed,
+    )
   }
 
   async function changeStatus(
@@ -1060,8 +1069,17 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
         }
       }
     } catch (error) {
+      let projectionRefreshed = false
       if (current()) {
-        try { await refreshMemberQuery() } catch { /* mutation certainty remains authoritative */ }
+        try {
+          await refreshMemberQuery()
+          projectionRefreshed = true
+        } catch {
+          // Per-target mutation certainty remains authoritative even when the list projection cannot refresh.
+        }
+      }
+      if (error instanceof MemberStatusMutationError) {
+        throw new MemberStatusMutationError(error.outcome, error.message, error.targets, projectionRefreshed)
       }
       throw error
     }
