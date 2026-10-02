@@ -167,6 +167,25 @@ test('member task: close returns focus to the most recently viewed row without c
   await expect(page.getByLabel('选择 王五', { exact: true })).not.toBeChecked()
 })
 
+test('member task: more-menu detail consumes the previous restore target and returns to the current member', async ({ page }) => {
+  await page.setViewportSize({ width: 1536, height: 1024 })
+  await ready(page)
+
+  const firstView = page.getByRole('button', { name: '查看 李四', exact: true })
+  await firstView.click()
+  await page.keyboard.press('Escape')
+  await expect(firstView).toBeFocused()
+
+  const currentMore = page.getByRole('button', { name: '王五 更多操作', exact: true })
+  await currentMore.click()
+  await page.getByRole('button', { name: '查看完整资料', exact: true }).click()
+  await expect(page.locator('.member-detail-panel')).toContainText('王五')
+  await page.keyboard.press('Escape')
+
+  await expect(currentMore).toBeFocused()
+  await expect(firstView).not.toBeFocused()
+})
+
 test('member task: filtered sorted paginated list and scroll survive a keyboard detail round trip', async ({ page }) => {
   await page.setViewportSize({ width: 1536, height: 1024 })
   await ready(page)
