@@ -78,7 +78,9 @@ async function verifyBatchInspection(){
       })
     }
     if(context!==contextKey.value||!mounted.value||batchInspection.value!==inspection)return
-    inspection.refreshRequired=!(await loadMembers())
+    const refreshed=await loadMembers()
+    inspection.refreshRequired=!refreshed
+    if(refreshed&&!inspection.items.some(item=>item.state==='unknown'||item.state==='rejected'))inspection.error=''
   }catch(error){
     if(context!==contextKey.value||!mounted.value||batchInspection.value!==inspection)return
     const message=error instanceof Error?error.message:t('members.task.batchFailure')

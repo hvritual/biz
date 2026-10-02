@@ -768,6 +768,8 @@ test('confirmed batch with failed list refresh stays page-level until the list r
   options.listStatus = undefined
   await result.getByRole('button', { name: '重新核对批次', exact: true }).click()
   await expect(result.getByRole('button', { name: '完成本次核对', exact: true })).toBeVisible()
+  await expect(result).not.toContainText('列表刷新失败')
+  await expect(result).not.toContainText('不要再次提交同一状态变更')
   await expect(page.locator('[data-member-id="user-001"]')).toContainText('已禁用')
   expect(server.getWrites().filter((item) => item.path.endsWith('/suspend'))).toHaveLength(1)
 
