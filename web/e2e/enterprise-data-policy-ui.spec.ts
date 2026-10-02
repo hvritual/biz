@@ -220,6 +220,10 @@ test('member scope readback recovery and CAS conflict never manufacture confirme
   await expect(page.getByRole('status')).toContainText('成员数据权限已保存并确认')
   expect(server.getWrites().filter(item=>item.path.endsWith('/user-001/business-scope'))).toHaveLength(1)
 
+  // Stop the live SPA before removing route interceptors. Otherwise a background
+  // members refresh can escape to the local proxy between unrouteAll and the
+  // replacement fixture, making the second half of this test nondeterministic.
+  await page.goto('about:blank')
   await page.unrouteAll({behavior:'ignoreErrors'})
   server=await mockPermissionServer(page,{scopeConflict:true});drawer=await openMemberScope(page)
   await drawer.getByRole('button',{name:'调整范围'}).click();dialog=page.getByRole('dialog',{name:'Alice Chen · 数据权限'})
