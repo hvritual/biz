@@ -1,4 +1,4 @@
-# product候选为本分析文档提交的真实父提交00db968；最终PR只再变更本分析文档，正式证据仍须绑定最终PR SHA并核对web树不变。
+# 产品源码候选固定为00db968；后续提交仅追加分析/交付证据，不改变Web产品树。正式证据必须绑定实际最终PR SHA，且不得复用已取消candidate的Full Merge Gate结果。
 # 实际任务分析，不是运行配置；证据与真人测量未完成，不授予批准。
 schema_version: 1
 artifact_kind: analysis
@@ -251,6 +251,7 @@ acceptance:
   - API-mode现有enterprise-members-real.spec.ts及新合成单测
   - make b2b-ux-skill-check；显式--analysis和从GitHub回读的product候选
   - 四视口截图和页面错误检查；真实200%缩放必须单独取得，不用DPR/CSS模拟替代
+  - 交付控制面：候选29139f4的PR Qualification已成功，但Full Merge Gate #125被workflow-level取消；该candidate的单次full-run预算已消耗。后续candidate必须重新Qualification并获得自身唯一Full Merge Gate回执，旧run不得作为merge-ready证据。
   human_checks:
   - 产品/QA独立审阅真实界面、恢复文案和业务边界。
   - 目标操作者按统一脚本测试TTI/TTA，记录误操作、放弃和未知。
