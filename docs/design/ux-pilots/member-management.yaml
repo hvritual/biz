@@ -1,4 +1,4 @@
-# product候选为本分析文档提交的真实父提交923ff6c；最终PR只再变更本分析文档，正式证据仍须绑定最终PR SHA并核对web树不变。
+# product候选为本分析文档提交的真实父提交5b21246；最终PR只再变更本分析文档，正式证据仍须绑定最终PR SHA并核对web树不变。
 # 实际任务分析，不是运行配置；证据与真人测量未完成，不授予批准。
 schema_version: 1
 artifact_kind: analysis
@@ -6,7 +6,7 @@ status: draft
 task_ref:
   issue: https://github.com/hvritual/biz/issues/313
   baseline_commit: f5a30acd8e5a3e42523315541f969ee5223d5555
-  candidate_commit: 923ff6c16f00d30101461a690caf93f77be7879b
+  candidate_commit: 5b212463b841752d9f099573b36a44b1eda9c03d
   name: 成员检索与状态操作：保留工作上下文，明确影响和安全核对路径
 classification:
   type: business_task
@@ -195,6 +195,7 @@ humanized_ux:
     reason: 不确定写结果不能直接整批重提。
     requirements:
     - 批量失败保留原因与原名单，停止后续目标，提供返回列表核对；不承诺原子回滚。
+    - Store 明确区分 pre_write_failure / rejected / write_uncertain / write_confirmed；只有 write_uncertain 进入锁定只读核对，明确 4xx 拒绝不伪装成未知写入。
     - 单个状态变更失败先读新状态；原profile409的幂等键保留策略不删除。
     evidence_types:
     - browser_test
@@ -242,6 +243,7 @@ acceptance:
   - 切换企业清查询、排序、选择、对话框和迟到结果。
   - API fixture查询500/403保留输入，只读重试无写。
   - 双次提交只有一次写；首目标回读失败时第二目标未执行。
+  - 单成员/批量 409 明确拒绝可安全关闭且不进入 inspection；网络或写后回读失败保持 write_uncertain、禁止重复写并要求只读核对。
   - 92项Skill结构回归与原有成员测试保留；本次不改期望图。
   automated_checks:
   - npm run design:index；design:find members/dialog
