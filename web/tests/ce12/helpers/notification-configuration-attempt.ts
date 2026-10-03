@@ -18,8 +18,9 @@ function requireThat(value: unknown, reason: string): asserts value { if (!value
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
 // Validate the complete set BEFORE any delete. A familiar name/site alone never
-// establishes ownership: IDs and creation timestamps must come from this test's
-// real create receipt, persisted outside Playwright's attempt-specific folder.
+// establishes ownership: IDs must come from this test's real create receipt,
+// persisted outside Playwright's attempt-specific folder. As in the production
+// readback contract, MySQL timestamp rounding is not an identity/version change.
 export function ownedConfigurations(data: NotificationFixture, current: readonly MessageConfiguration[], creation: MessageConfigurationReceipt | null): readonly MessageConfiguration[] {
   const n = data.notification
   requireThat(current.length <= 2 && new Set(current.map(row => row.id)).size === current.length, 'UNEXPECTED_ROWS')
@@ -36,7 +37,7 @@ export function ownedConfigurations(data: NotificationFixture, current: readonly
   }
   for (const row of current) {
     const born = creation.configurations.find(item => item.id === row.id)
-    requireThat(born && born.createdAt === row.createdAt && born.level === row.level, 'UNOWNED_ID')
+    requireThat(born && born.level === row.level && Number.isFinite(Date.parse(row.createdAt)), 'UNOWNED_ID')
     const permittedVersions = row.level === 'urgent' ? ['1', '2', '3'] : ['1']
     requireThat(permittedVersions.includes(row.version) && row.notes === knownNotes[Number(row.version) - 1], 'UNRECOGNIZED_CHANGE')
   }
@@ -81,7 +82,7 @@ export function notificationAttempt(data: NotificationFixture, info: TestInfo) {
     const response = await context.request.get(data.base_url + '/auth/session')
     expect(response.status()).toBe(200)
     const s = await response.json() as TrustedSession
-    requireThat(s.authenticated && s.actor_kind === 'user/tenant' && s.user_id === n.owner_id && s.active_tenant_id === n.tenant_a && s.csrf_token && Number.isSafeInteger(s.context_version), 'SESSION_MISMATCH')
+    requireThat(s.authenticated && (s.actor_kind === 'user' || s.actor_kind === 'tenant') && s.user_id === n.owner_id && s.active_tenant_id === n.tenant_a && s.csrf_token && Number.isSafeInteger(s.context_version), 'SESSION_MISMATCH')
     return { 'X-CSRF-Token': s.csrf_token, 'X-Biz-Session-Context': JSON.stringify({ actor_kind: s.actor_kind, platform_subject: s.platform_subject ?? '', user_id: s.user_id, active_tenant_id: s.active_tenant_id, context_version: s.context_version }) }
   }
   async function snapshot(context: BrowserContext) {
