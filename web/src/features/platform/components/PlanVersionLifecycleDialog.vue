@@ -60,7 +60,9 @@ const localChecks = computed(() => {
       Boolean(quota.key)
       && (quota.unlimited || (Number.isFinite(Number(quota.value)) && Number(quota.value) >= 0)))
     && (item.fields ?? []).every((field) => Boolean(field.key && field.action && field.mode)))
-  const knownModules = modules.every((item) => !props.modules.length || knownModuleCodes.value.has(item.moduleCode))
+  const catalogState = modules.length && !props.modules.length
+    ? null
+    : modules.every((item) => knownModuleCodes.value.has(item.moduleCode))
 
   return [
     {
@@ -87,10 +89,12 @@ const localChecks = computed(() => {
     },
     {
       label: '当前模块目录',
-      detail: knownModules
-        ? '页面已读取到当前模块目录中的对应模块。'
-        : '存在当前目录未识别的模块；发布时系统会再次核对。',
-      ok: knownModules,
+      detail: catalogState == null
+        ? '当前模块目录暂未加载；发布时系统会再次核对。'
+        : catalogState
+          ? '页面已读取到当前模块目录中的对应模块。'
+          : '存在当前目录未识别的模块；发布时系统会再次核对。',
+      ok: catalogState,
       blocking: false,
     },
     {
