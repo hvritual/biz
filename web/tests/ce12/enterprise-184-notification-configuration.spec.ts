@@ -92,7 +92,8 @@ async function edit(page: Page, notes: string) {
   await expect(dialog(page)).toBeVisible(); await dialog(page).getByRole('textbox', { name: '备注', exact: true }).fill(notes)
 }
 
-// Proof-only: this deliberate first-attempt failure must never be merged into main.\ntest('TestIssue334RealWorkerRetryRestoresOwnedNotificationAttempt', async ({ page, context }, testInfo) => {
+// Proof-only: this deliberate first-attempt failure must never be merged into main.
+test('TestIssue334RealWorkerRetryRestoresOwnedNotificationAttempt', async ({ page, context }, testInfo) => {
   const data = fixture(), n = data.notification, attempt = notificationAttempt(data, testInfo)
   await login(page, data); await selectTenant(context, data, n.tenant_a)
   await attempt.prepare(context)
