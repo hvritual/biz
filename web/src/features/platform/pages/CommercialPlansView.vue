@@ -209,8 +209,8 @@ async function runMutation(operation: () => Promise<PlanVersionDTO>, success: st
 
 async function handleMutationError(error: unknown) {
   if (error instanceof CommercialApiError && error.code === 'conflict') {
-    actionError.value = '版本已被其他操作修改，已重新读取最新状态；请核对后再提交。'
     await loadVersions(true)
+    actionError.value = '版本已被其他操作修改，已重新读取最新状态；请核对后再提交。'
     return
   }
   if (error instanceof CommercialApiError && ['unauthenticated', 'forbidden'].includes(error.code)) {
