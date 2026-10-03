@@ -92,6 +92,48 @@ async function edit(page: Page, notes: string) {
   await expect(dialog(page)).toBeVisible(); await dialog(page).getByRole('textbox', { name: '备注', exact: true }).fill(notes)
 }
 
+test('TestIssue334RealWorkerRetryRestoresOwnedNotificationAttempt', async ({ page, context }, testInfo) => {
+  const data = fixture(), n = data.notification, attempt = notificationAttempt(data, testInfo)
+  await login(page, data); await selectTenant(context, data, n.tenant_a)
+  await attempt.prepare(context)
+  const proofPath = 'test-results/issue334-real-worker-retry-proof.json'
+  if (testInfo.retry === 0) {
+    await open(page, data); await fillCreate(page, data)
+    const creation = createdResponse(page)
+    await dialog(page).getByRole('button', { name: '确认保存', exact: true }).click()
+    await attempt.rememberCreate(await creation)
+    await expectRulesReady(page, 2, '1')
+    expect((await list(context, data)).total).toBe(2)
+    writeFileSync(proofPath, JSON.stringify({
+      first_pid: process.pid,
+      first_worker_index: testInfo.workerIndex,
+      first_parallel_index: testInfo.parallelIndex,
+      first_retry: testInfo.retry,
+    }) + '\n')
+    throw new Error('ISSUE334_FORCE_REAL_WORKER_RETRY')
+  }
+  expect(testInfo.retry).toBe(1)
+  const first = JSON.parse(readFileSync(proofPath, 'utf8')) as {
+    first_pid: number; first_worker_index: number; first_parallel_index: number; first_retry: number
+  }
+  expect(first.first_retry).toBe(0)
+  expect(first.first_pid).not.toBe(process.pid)
+  expect(first.first_worker_index).not.toBe(testInfo.workerIndex)
+  expect(first.first_parallel_index).toBe(testInfo.parallelIndex)
+  expect((await list(context, data)).total).toBe(0)
+  await testInfo.attach('issue334-real-worker-retry-proof', {
+    body: Buffer.from(JSON.stringify({
+      ...first,
+      retry_pid: process.pid,
+      retry_worker_index: testInfo.workerIndex,
+      retry_parallel_index: testInfo.parallelIndex,
+      retry: testInfo.retry,
+      restored_total: 0,
+    })),
+    contentType: 'application/json',
+  })
+})
+
 test('TestEnterprise184AttemptRecoveryAfterInterruptedWrite', async ({ page, context, browser }, testInfo) => {
   const data = fixture(), n = data.notification, attempt = notificationAttempt(data, testInfo)
   await login(page, data); await selectTenant(context, data, n.tenant_a)
