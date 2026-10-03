@@ -7,7 +7,7 @@ task_ref:
   candidate_commit: 48ef660b0cab01200bb40e51a1f0a166e268e02c
   name: 平台管理员套餐版本生命周期前端旅程
 classification:
-  type: full_business_task
+  type: business_task
   reason: 平台管理员会创建和修改套餐草稿，并执行发布、创建新版本和停售等业务写操作。
   business_state_mutation: true
   authorization_sensitive: true
