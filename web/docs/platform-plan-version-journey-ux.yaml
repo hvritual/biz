@@ -2,9 +2,9 @@ schema_version: 1
 artifact_kind: analysis
 status: ready_for_review
 task_ref:
-  issue: null
+  issue: PR#329
   baseline_commit: cd4a4ead993c914bc7d23ffcfb6e06d4bb23ba49
-  candidate_commit: null
+  candidate_commit: 48ef660b0cab01200bb40e51a1f0a166e268e02c
   name: 平台管理员套餐版本生命周期前端旅程
 classification:
   type: full_business_task
