@@ -40,38 +40,38 @@ context:
 sources:
 - id: user_requirement
   kind: user_requirement
-  path: chat://platform-plan-version-journey
+  path: https://github.com/hvritual/biz/pull/329
   commit: null
   locator: 套餐版本列表 → 创建草稿 → 编辑模块/权益 → 校验 → 发布 → 新版本 → 停售
-  supports: 要求保持当前 Platform Surface 并实现完整平台管理员旅程。
+  claim: 要求保持当前 Platform Surface 并实现完整平台管理员旅程。
 - id: ce07_decision
   kind: repository_contract
   path: docs/commercial-entitlements/decisions/CE-07-plan-versions.md
   commit: cd4a4ead993c914bc7d23ffcfb6e06d4bb23ba49
   locator: 版本与接口；资格与安全默认；事务、锁与引用
-  supports: 定义版本状态机、不可变发布版本、停售语义、CAS/幂等与服务端校验边界。
+  claim: 定义版本状态机、不可变发布版本、停售语义、CAS/幂等与服务端校验边界。
 - id: proto_contract
   kind: repository_contract
   path: contracts/proto/commercial/v1/plan.proto
   commit: cd4a4ead993c914bc7d23ffcfb6e06d4bb23ba49
   locator: PlanManagementApplication
-  supports: 定义创建、克隆、修改、发布、停售、读取和资格检查接口及权限。
+  claim: 定义创建、克隆、修改、发布、停售、读取和资格检查接口及权限。
 - id: current_page
   kind: implementation
   path: web/src/features/platform/pages/CommercialPlansView.vue
   commit: cd4a4ead993c914bc7d23ffcfb6e06d4bb23ba49
   locator: CommercialPlansView
-  supports: 当前 Platform Surface、版本工作台、版本历史和详情组合。
+  claim: 当前 Platform Surface、版本工作台、版本历史和详情组合。
 - id: platform_service
   kind: implementation
   path: web/src/services/commercial/platformCommercial.ts
   commit: cd4a4ead993c914bc7d23ffcfb6e06d4bb23ba49
   locator: plan management client functions
-  supports: 当前前端真实请求、CSRF、幂等键和版本写操作调用方式。
+  claim: 当前前端真实请求、CSRF、幂等键和版本写操作调用方式。
 page_pattern:
   name: WorkbenchPage
   reason: 套餐版本历史、当前版本详情及相关版本操作需要在同一对象上下文中协作。
-  contract_ref: web/ui-contracts.json#/platform/commercial/plans
+  contract_ref: web/ui-contracts.json:/platform/commercial/plans
   gaps:
   - 现有发布和停售使用浏览器原生确认，缺少操作影响、发布前核对和创建新版本的明确上下文。
 outcome:
@@ -199,8 +199,10 @@ handoff:
   - web/src/features/platform/components/PlanVersionDetail.vue
   - web/src/ui/common/UiDialog.vue
   gates:
-  - cd web && npm run check
-  - cd web && npm run test:e2e
+  - name: web_fast_gate
+    status: not_verified
+  - name: browser_e2e
+    status: not_verified
 review:
   reviewer: null
   actor_kind: null
