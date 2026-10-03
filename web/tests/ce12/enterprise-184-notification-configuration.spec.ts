@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { selectUiOption } from '../../e2e/ui.helpers'
 import type { TrustedSession } from '../../src/services/runtime/api'
 import type { MessageConfiguration } from '../../src/services/enterprise/notificationConfigurationRuntime'
+import { notificationAttempt, ownedConfigurations } from './helpers/notification-configuration-attempt'
 interface Fixture {
   base_url: string; ui_base_url: string
   notification: { email: string; password: string; reader_email: string; reader_password: string; tenant_a: string; tenant_b: string; site_id: string; site_b_id: string; owner_id: string; reader_id: string; contact_id: string }
@@ -74,18 +75,66 @@ async function fillCreate(page: Page, data: Fixture) {
   await form.getByRole('textbox', { name: '备注', exact: true }).fill('browser initial')
 }
 function rule(page: Page, priority = '紧急') { return panel(page).getByRole('region', { name: '点位通知规则' }).getByRole('row').filter({ hasText: priority }) }
+// A hidden editor confirms neither list completion nor query availability.
+async function expectRulesReady(page: Page, count: number, urgentVersion?: string) {
+  const rules = panel(page).getByRole('region', { name: '点位通知规则' })
+  await expect(panel(page)).toHaveAttribute('aria-busy', 'false')
+  await expect(rules.getByRole('button', { name: '查询', exact: true }).last()).toBeEnabled()
+  await expect(rules.getByText(`筛选结果 ${count} 条`, { exact: true })).toBeVisible()
+  await expect(rules.locator('tbody tr')).toHaveCount(count)
+  if (urgentVersion) await expect(rule(page).getByRole('cell').nth(4)).toHaveText(urgentVersion)
+}
+function createdResponse(page: Page) {
+  return page.waitForResponse(response => response.request().method() === 'POST' && new URL(response.url()).pathname === '/api/v1/tenant/notification/configurations')
+}
 async function edit(page: Page, notes: string) {
   await rule(page).getByRole('button', { name: '编辑', exact: true }).click()
   await expect(dialog(page)).toBeVisible(); await dialog(page).getByRole('textbox', { name: '备注', exact: true }).fill(notes)
 }
 
+test('TestEnterprise184AttemptRecoveryAfterInterruptedWrite', async ({ page, context, browser }, testInfo) => {
+  const data = fixture(), n = data.notification, attempt = notificationAttempt(data, testInfo)
+  await login(page, data); await selectTenant(context, data, n.tenant_a)
+  await attempt.prepare(context)
+  const otherTenantBefore = persisted(n.tenant_b)
+  await open(page, data)
+  await expect(async () => {
+    await fillCreate(page, data)
+    const created = createdResponse(page)
+    await dialog(page).getByRole('button', { name: '确认保存', exact: true }).click()
+    await attempt.rememberCreate(await created)
+    await expectRulesReady(page, 2, '1')
+    throw new Error('controlled interruption after confirmed real create')
+  }).rejects.toThrow('controlled interruption')
+  const initial = await list(context, data), receipt = attempt.creation()!
+  // Reject foreign IDs, scopes, recipients, changed data and absent ownership
+  // BEFORE restore reaches a mutating API. These are policy tests, not real deletes.
+  for (const change of [{ id: 'unowned-record' }, { tenantId: n.tenant_b }, { groupId: n.site_b_id }, { primaryUserId: n.reader_id }, { notes: 'external change' }, { version: '9' }]) {
+    expect(() => ownedConfigurations(data, [initial.items[0]!, { ...initial.items[1]!, ...change }], receipt)).toThrow(/N184_ATTEMPT_/)
+  }
+  expect(() => ownedConfigurations(data, initial.items, null)).toThrow('MISSING_CREATE_RECEIPT')
+  await page.close()
+  const fresh = await browser.newContext({ locale: 'zh-CN', timezoneId: 'Asia/Shanghai' })
+  try {
+    const next = await fresh.newPage(); await login(next, data); await selectTenant(fresh, data, n.tenant_a)
+    // Reconstruct from disk, not the previous browser/closure's memory.
+    const recovered = notificationAttempt(data, testInfo)
+    expect((await recovered.restore(fresh)).map(row => row.id).sort()).toEqual(initial.items.map(row => row.id).sort())
+    expect((await list(fresh, data)).total).toBe(0)
+    expect(persisted(n.tenant_a).split('\n').at(-1)).toBe('0')
+    expect(persisted(n.tenant_b)).toBe(otherTenantBefore)
+  } finally { await fresh.close() }
+})
+
 // No successful API response is mocked. Only transport loss is injected; every
 // accepted write is executed by the real BFF, generated Action and MySQL UoW.
-test('TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports', async ({ page, context, browser }) => {
+test('TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports', async ({ page, context, browser }, testInfo) => {
   test.setTimeout(100000)
   const data = fixture(), n = data.notification, errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
-  await login(page, data); await selectTenant(context, data, n.tenant_a); await open(page, data)
+  await login(page, data); await selectTenant(context, data, n.tenant_a)
+  const attempt = notificationAttempt(data, testInfo)
+  await attempt.prepare(context); await open(page, data)
   expect((await list(context, data)).total).toBe(0)
   const before = persisted(n.tenant_a)
   await test.step('US040 types use independent filters and full counts', async () => {
@@ -101,9 +150,13 @@ test('TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewport
   await test.step('US042 cancel does not write; site beyond first 100 is selectable', async () => {
     await fillCreate(page, data); await dialog(page).getByRole('button', { name: '取消', exact: true }).click()
     expect(persisted(n.tenant_a)).toBe(before)
-    await fillCreate(page, data); await dialog(page).getByRole('button', { name: '确认保存', exact: true }).click()
+    await fillCreate(page, data)
+    const creation = createdResponse(page)
+    await dialog(page).getByRole('button', { name: '确认保存', exact: true }).click()
+    await attempt.rememberCreate(await creation)
     await expect(panel(page).getByText('配置已保存，最新状态已确认。', { exact: true })).toBeVisible()
   })
+  await expectRulesReady(page, 2, '1')
   const created = await list(context, data)
   expect(created.total).toBe(2); expect(created.items.every(row => row.groupId === n.site_id && row.version === '1')).toBe(true)
   expect(created.items.every(row => row.secondaryUserId === n.reader_id && row.additionalUserIds?.[0] === n.contact_id)).toBe(true)
@@ -128,6 +181,7 @@ test('TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewport
     await expect(dialog(page)).toBeHidden()
     expect(uncertain).toHaveLength(2); expect(uncertain[0]?.key).not.toBe(''); expect(uncertain[1]).toEqual(uncertain[0])
     expect((await list(context, data)).items.find(row => row.level === 'urgent')?.version).toBe('2')
+    await expectRulesReady(page, 2, '2')
     await page.unroute('**/api/v1/tenant/notification/configurations/*', intercept)
   })
   await test.step('acknowledged write with failed readback recovers using GET only', async () => {
@@ -141,9 +195,24 @@ test('TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewport
     await edit(page, 'readback recovered'); await dialog(page).getByRole('button', { name: '确认保存', exact: true }).click()
     await expect(dialog(page)).toContainText('配置修改已受理，但最新状态尚未确认')
     await expect(panel(page).getByText('配置已保存，最新状态已确认。', { exact: true })).toHaveCount(0)
-    await dialog(page).getByRole('button', { name: '核对本次操作', exact: true }).click()
-    await expect(dialog(page)).toBeHidden(); expect(writes).toBe(1)
-    expect((await list(context, data)).items.find(row => row.level === 'urgent')?.version).toBe('3')
+    // Hold only the post-recovery collection read. No successful response is
+    // mocked and no sleep is added: the test explicitly releases the real GET.
+    let releaseList!: () => void, sawList!: () => void
+    const released = new Promise<void>(resolve => { releaseList = resolve })
+    const arrived = new Promise<void>(resolve => { sawList = resolve })
+    const delayedList = async (route: Route) => { sawList(); await released; await route.continue() }
+    const listPattern = (url: URL) => url.pathname === '/api/v1/tenant/notification/configurations'
+    await page.route(listPattern, delayedList)
+    try {
+      await dialog(page).getByRole('button', { name: '核对本次操作', exact: true }).click()
+      await expect(dialog(page)).toBeHidden(); expect(writes).toBe(1)
+      await arrived
+      await expect(panel(page)).toHaveAttribute('aria-busy', 'true')
+      await expect(panel(page).getByRole('region', { name: '点位通知规则' }).getByRole('button', { name: '查询', exact: true }).last()).toBeDisabled()
+      releaseList()
+      await expectRulesReady(page, 2, '3')
+      expect((await list(context, data)).items.find(row => row.level === 'urgent')?.version).toBe('3')
+    } finally { releaseList(); await page.unroute(listPattern, delayedList) }
     await page.unroute('**/api/v1/tenant/notification/configurations/*', intercept)
   })
   await test.step('US041 recipient filters match actual API results', async () => {
@@ -152,6 +221,7 @@ test('TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewport
     await rules.getByRole('button', { name: '查询', exact: true }).last().click()
     await expect(rules.getByText('筛选结果 2 条', { exact: true })).toBeVisible()
     await rules.getByRole('button', { name: '清空筛选', exact: true }).click()
+    await expectRulesReady(page, 2, '3')
   })
   await test.step('four viewports, modal boundaries, Escape and return focus', async () => {
     for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1536, height: 1024 }, { width: 390, height: 844 }]) {
@@ -179,6 +249,7 @@ test('TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewport
     await deletion.getByRole('button', { name: '确认删除', exact: true }).click()
     await expect(panel(page).getByText('配置已删除，最新状态已确认。', { exact: true })).toBeVisible()
     expect((await list(context, data)).total).toBe(1); expect(persisted(n.tenant_a).split('\n').at(-1)).toBe('0')
+    await expectRulesReady(page, 1)
   })
   await test.step('tenant switching drops old rows; fresh login preserves saved state', async () => {
     await selectUiOption(page.getByRole('combobox', { name: '切换企业' }), n.tenant_b)
