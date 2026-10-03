@@ -216,3 +216,69 @@ test('TestEnterprise184ReadOnlyNavigationAndIndependentServerWriteDenial', async
   await page.goto(data.ui_base_url + '/#/system/general')
   await expect(page.getByRole('heading', { name: '没有访问权限', exact: true })).toBeVisible()
 })
+
+// #334 diagnostic-only hooks: preserve original tests verbatim; no fetch
+// interception, added waits, data cleanup, retries or assertion changes.
+let observation: { started: number; events: unknown[]; truncated: boolean } | null = null
+test.beforeEach(async ({ page }, info) => {
+  observation = null
+  if (info.title !== 'TestEnterprise184US040To044LiveBrowserConfigurationRecoveryAndFourViewports') return
+  const record = { started: Date.now(), events: [] as unknown[], truncated: false }
+  observation = record
+  const ids = new WeakMap<object, number>()
+  let sequence = 0
+  const append = (event: Record<string, unknown>) => {
+    if (record.events.length < 10000) record.events.push({ at: Date.now(), ...event })
+    else record.truncated = true
+  }
+  page.on('request', request => {
+    const url = new URL(request.url())
+    if (!url.pathname.includes('/auth/session') && !url.pathname.includes('/v1/tenant/notification/')) return
+    const id = ++sequence; ids.set(request, id)
+    append({ kind: 'request', id, method: request.method(), path: url.pathname })
+  })
+  page.on('response', response => {
+    const id = ids.get(response.request())
+    if (id !== undefined) append({ kind: 'response', id, status: response.status() })
+  })
+  page.on('requestfinished', request => {
+    const id = ids.get(request)
+    if (id !== undefined) append({ kind: 'finished', id })
+  })
+  page.on('requestfailed', request => {
+    const id = ids.get(request)
+    if (id !== undefined) append({ kind: 'failed', id, reason: request.failure()?.errorText ?? '' })
+  })
+  page.on('console', message => {
+    const prefix = '__ISSUE334_STATE__'
+    if (message.text().startsWith(prefix)) append({ kind: 'ui', state: JSON.parse(message.text().slice(prefix.length)) })
+  })
+  await page.addInitScript(() => {
+    let previous = '', queued = false
+    const sample = () => {
+      queued = false
+      const root = document.querySelector('[data-enterprise-page="notification-settings"]')
+      if (!root) return
+      const rules = root.querySelector('.configuration-panel')
+      const query = rules?.querySelector('.rule-filter-actions button:not([role="combobox"])')
+      const state = JSON.stringify({ busy: root.getAttribute('aria-busy'),
+        queryDisabled: query?.hasAttribute('disabled') ?? null,
+        listing: Array.from(rules?.querySelectorAll('[role="status"]') ?? []).some(node => node.textContent?.includes('正在读取')),
+        rowCount: rules?.querySelectorAll('tbody tr').length ?? 0,
+        outcome: root.querySelector('[data-notification-outcome]') !== null,
+        dialog: document.querySelector('[role="dialog"]') !== null,
+        error: root.querySelector('[role="alert"]') !== null })
+      if (state !== previous) { previous = state; console.debug('__ISSUE334_STATE__' + state) }
+    }
+    new MutationObserver(() => { if (!queued) { queued = true; queueMicrotask(sample) } })
+      .observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-busy', 'disabled'] })
+  })
+})
+test.afterEach(async ({}, info) => {
+  if (!observation) return
+  await info.attach('issue334-observation', { contentType: 'application/json', body: Buffer.from(JSON.stringify({
+    candidate: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+    test: info.title, retry: info.retry, status: info.status, ended: Date.now(), ...observation,
+  }, null, 2)) })
+  observation = null
+})
