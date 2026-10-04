@@ -34,8 +34,9 @@ const protectedActions = computed(() =>
     ? route.meta.authorizationActions.filter((value): value is string => typeof value === 'string' && value.length > 0)
     : [],
 )
-const protectedRoute = computed(() => authorizationApiMode() && protectedActions.value.length > 0)
-const authorizationContextCurrent = computed(() => currentAuthorizationMatchesSession(store.session))
+const protectedRoute = computed(() => authorizationApiMode() && (protectedActions.value.length > 0 || platformSurface.value))
+const authorizationSession = computed(() => platformSurface.value ? currentAuthorizationState.session : store.session)
+const authorizationContextCurrent = computed(() => currentAuthorizationMatchesSession(authorizationSession.value))
 const authorizationRenderable = computed(() =>
   !protectedRoute.value || (currentAuthorizationState.status === 'ready' && authorizationContextCurrent.value),
 )
@@ -43,7 +44,13 @@ const authorizationRenderable = computed(() =>
 watch(
   [() => currentAuthorizationState.status, protectedActions, authorizationContextCurrent] as const,
   ([status, required, contextCurrent]) => {
-    if (!authorizationApiMode() || !required.length) return
+    if (!authorizationApiMode()) return
+    if (!required.length) {
+      if (platformSurface.value && status === 'ready' && contextCurrent) {
+        void router.replace({ path: '/authorization-state', query: { reason: 'forbidden', from: route.fullPath } })
+      }
+      return
+    }
     if (status === 'unauthenticated') {
       redirectToTrustedLogin()
       return
@@ -56,7 +63,10 @@ watch(
       void router.replace({ path: '/authorization-state', query: { reason: 'unavailable', from: route.fullPath } })
       return
     }
-    if (status === 'forbidden' || (status === 'ready' && !currentAuthorizationAllowsAny(required))) {
+    const allowed = route.meta.authorizationMode === 'all'
+      ? required.every(currentAuthorizationAllows)
+      : currentAuthorizationAllowsAny(required)
+    if (status === 'forbidden' || (status === 'ready' && !allowed)) {
       void router.replace({ path: '/authorization-state', query: { reason: 'forbidden', from: route.fullPath } })
     }
   },

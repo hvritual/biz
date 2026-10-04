@@ -8,6 +8,7 @@ import { backendTermLabel } from '@/i18n/backend-terms'
 import type { ModuleDTO } from '@/services/commercial/platformCommercial'
 import type { ExistingModuleChangeKind } from '../composables/useModuleManagement'
 import { moduleAccessDefinitions, moduleChangeOperation, moduleMappingVersion, operationDefinition } from '@/services/commercial/moduleAccess'
+import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 
 const props = defineProps<{ module: ModuleDTO; busy: boolean; writeUnresolved: boolean }>()
 const emit = defineEmits<{ change: [kind: ExistingModuleChangeKind] }>()
@@ -22,6 +23,9 @@ const definitions = computed(() => moduleAccessDefinitions(props.module, router.
 const selectedPage = computed(() => definitions.value.pages.find((page) => page.path === routeSelection.value))
 const managementDefinitions = computed(() => ['commercial.module.get', ...Object.values(moduleChangeOperation)]
   .map(operationDefinition).filter((item) => item !== undefined))
+const canMetadata = computed(() => currentAuthorizationAllows(moduleChangeOperation.metadata))
+const canSales = computed(() => currentAuthorizationAllows(moduleChangeOperation.sales))
+const canTechnical = computed(() => currentAuthorizationAllows(moduleChangeOperation.technical))
 function changeTab(id: string) { tab.value = id; routeSelection.value = '' }
 function navigateTabs(event: KeyboardEvent) {
   const index = tabs.findIndex((item) => item.id === tab.value)
@@ -69,7 +73,7 @@ function navigateTabs(event: KeyboardEvent) {
             <h3>基础配置</h3>
             <p>平台全局模块，不属于某个租户。只修改名称、分类和销售范围。</p>
           </div>
-          <UiButton class="btn" :disabled="busy || writeUnresolved" @click="emit('change', 'metadata')">编辑基础配置</UiButton>
+          <UiButton class="btn" :disabled="busy || writeUnresolved || !canMetadata" :title="canMetadata ? undefined : '当前账号没有模块管理权限'" @click="emit('change', 'metadata')">编辑基础配置</UiButton>
         </div>
         <dl class="module-facts">
           <div><dt>模块名称</dt><dd>{{ module.name }}</dd></div>
@@ -113,8 +117,8 @@ function navigateTabs(event: KeyboardEvent) {
           </div>
         </div>
         <div class="module-actions">
-          <UiButton class="btn" :disabled="busy || writeUnresolved" @click="emit('change', 'technical')">调整技术状态</UiButton>
-          <UiButton class="btn" :disabled="busy || writeUnresolved" @click="emit('change', 'sales')">{{ module.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? '停售销售' : '恢复销售' }}</UiButton>
+          <UiButton class="btn" :disabled="busy || writeUnresolved || !canTechnical" :title="canTechnical ? undefined : '当前账号没有模块技术状态管理权限'" @click="emit('change', 'technical')">调整技术状态</UiButton>
+          <UiButton class="btn" :disabled="busy || writeUnresolved || !canSales" :title="canSales ? undefined : '当前账号没有模块管理权限'" @click="emit('change', 'sales')">{{ module.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? '停售销售' : '恢复销售' }}</UiButton>
         </div>
         <p class="module-note">额度定义不是租户剩余额度，字段规则不是当前成员权限。当前目录接口不提供历史审计或权限预览。</p>
       </template>
@@ -204,7 +208,7 @@ function navigateTabs(event: KeyboardEvent) {
         <dl class="module-verification">
           <div><dt>模块定义</dt><dd>来自系统模块目录</dd></div>
           <div><dt>权限与页面映射</dt><dd>来自当前构建的操作契约和真实路由，只读</dd></div>
-          <div><dt>当前平台账号权限</dt><dd>暂无预览；提交操作时系统逐项校验</dd></div>
+          <div><dt>当前平台账号权限</dt><dd>来自实时平台授权投影；不可执行操作会禁用，服务端仍逐项最终校验</dd></div>
           <div><dt>租户成员、数据范围与额度</dt><dd>尚未执行核验</dd></div>
           <div><dt>运行验证证据</dt><dd>当前模块接口不提供；不能由管理员自行勾选通过</dd></div>
         </dl>

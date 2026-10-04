@@ -20,9 +20,11 @@ const primaryTitle=computed(()=>{const item=primaryNavigation.find(p=>p.id===ui.
 const links=computed(()=>ui.module==='enterprise'?enterpriseNavigation:ui.module==='platform-commercial'?visiblePlatformCommercialNavigation():ui.module==='system'?systemNavigation:(customerDomains[ui.module??'']?.links??[]))
 const visibleLinks=computed(()=>links.value.filter((item)=>{
   if(!authorizationApiMode())return true
-  if(ui.module==='platform-commercial')return true
   if(!item.authorizationActions?.length)return false
-  return currentAuthorizationState.status==='ready'&&currentAuthorizationAllowsAny(item.authorizationActions)
+  if(currentAuthorizationState.status!=='ready')return false
+  return item.authorizationMode==='all'
+    ? item.authorizationActions.every(currentAuthorizationAllows)
+    : currentAuthorizationAllowsAny(item.authorizationActions)
 }))
 const linkLabel=(item:NavigationItem)=>ui.module==='enterprise'?t(`navigation.enterprise.${item.id}`):ui.module==='platform-commercial'?t(`navigation.platform.${item.id}`):ui.module==='system'?t(`navigation.system.${item.id}`):item.label
 const translatedPlatformGroups=new Set(['overview','lifecycle','product','entitlement','governance'])
@@ -32,7 +34,6 @@ const actions=computed(()=>ui.module==='enterprise'?quickActions:ui.module==='pl
 const visibleActions=computed(()=>actions.value.filter((action)=>{
   const required='authorizationActions' in action&&Array.isArray(action.authorizationActions)?action.authorizationActions:[]
   if(!authorizationApiMode())return true
-  if(ui.module==='platform-commercial')return true
   if(!required.length)return false
   if(currentAuthorizationState.status!=='ready')return false
   return 'authorizationMode' in action&&action.authorizationMode==='all'

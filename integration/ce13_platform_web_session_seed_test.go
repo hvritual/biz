@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"gorm.io/gorm"
 	"yunka.io/gateway/authz"
 )
 
@@ -104,6 +105,7 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	assertCE13PlatformGrantRevocationIsLive(t, db, store, allowedSubject, allowedAPIKey)
 	tenantID := seedCE13TenantSubscription(t, started.GRPCAddress(), allowedAPIKey)
 	seedCE13WebUser(t, store, tenantID, tenantUserID, tenantEmail, tenantPassword)
 	if err := store.BootstrapPlatform(ctx, accesspersistence.PlatformBootstrap{
@@ -202,5 +204,64 @@ func seedCE13WebUser(t *testing.T, store *accesspersistence.Store, tenantID, use
 	}
 	if err := store.SetUserPassword(ctx, userID, password); err != nil {
 		t.Fatal(err)
+	}
+}
+
+
+func assertCE13PlatformGrantRevocationIsLive(t *testing.T, db *gorm.DB, store *accesspersistence.Store, subject, token string) {
+	t.Helper()
+	ctx := context.Background()
+	principal, err := store.AuthenticatePlatform(ctx, token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolver, err := accesspersistence.NewPrincipalGrantResolver(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolve := func() []authz.Grant {
+		grants, resolveErr := resolver.ResolveGrants(ctx, authz.GrantRequest{
+			Principal: principal,
+			TenantBound: false,
+			Operation: "ce13.platform.authorization.revoke",
+			Permissions: []authz.PermissionKey{"platform.module.read", "platform.module.manage"},
+		})
+		if resolveErr != nil {
+			t.Fatal(resolveErr)
+		}
+		return grants
+	}
+	has := func(grants []authz.Grant, permission authz.PermissionKey) bool {
+		for _, grant := range grants {
+			if grant.Permission == permission {
+				return true
+			}
+		}
+		return false
+	}
+
+	before := resolve()
+	if !has(before, "platform.module.read") || !has(before, "platform.module.manage") {
+		t.Fatalf("pre-revoke grants=%v want read+manage", before)
+	}
+	if err := db.WithContext(ctx).Exec(
+		"DELETE FROM biz_platform_permission_grants WHERE subject = ? AND permission = ?",
+		subject, "platform.module.manage",
+	).Error; err != nil {
+		t.Fatal(err)
+	}
+	after := resolve()
+	if !has(after, "platform.module.read") || has(after, "platform.module.manage") {
+		t.Fatalf("post-revoke grants=%v want read without manage", after)
+	}
+	if err := store.BootstrapPlatform(ctx, accesspersistence.PlatformBootstrap{
+		Subject: subject,
+		Token: token,
+		Permissions: []authz.PermissionKey{"platform.module.manage"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if restored := resolve(); !has(restored, "platform.module.manage") {
+		t.Fatalf("restored grants=%v want manage", restored)
 	}
 }

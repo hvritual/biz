@@ -21,8 +21,17 @@ const definitions = [
 ]
 const output = 'test-results/screenshots/module-journey'
 type FixtureMode = 'normal' | 'denied' | 'conflict' | 'unknown' | 'stale-readback'
-async function install(page: Page, mode: FixtureMode = 'normal') {
+const allModuleActions = [
+  'commercial.module.list',
+  'commercial.module.get',
+  'commercial.module.create',
+  'commercial.module.update',
+  'commercial.module.set_sales_status',
+  'commercial.module.set_technical_status',
+]
+async function install(page: Page, mode: FixtureMode = 'normal', initialAuthorization = allModuleActions) {
   let current = { ...initial }
+  let authorization = [...initialAuthorization]
   let created: typeof initial | null = null
   let writes = 0
   let readable = mode !== 'stale-readback'
@@ -30,7 +39,28 @@ async function install(page: Page, mode: FixtureMode = 'normal') {
   await page.route('**/api/**', async (route) => {
     const req = route.request()
     const path = new URL(req.url()).pathname
-    if (path === '/api/auth/session') return route.fulfill({ json: { authenticated: true, actor_kind: 'platform', platform_subject: 'module-test-admin', csrf_token: 'module-test-csrf' } })
+    if (path === '/api/auth/session') return route.fulfill({ json: { authenticated: true, actor_kind: 'platform', platform_subject: 'module-test-admin', context_version: 1, csrf_token: 'module-test-csrf' } })
+    if (path === '/api/auth/authorization' && req.method() === 'GET') return route.fulfill({ json: {
+      authenticated: true,
+      actor_kind: 'platform',
+      platform_subject: 'module-test-admin',
+      roles: [],
+      grants: [],
+      data_policies: [],
+      site_ids: [],
+      modules: [],
+      actions: authorization.map((code) => ({
+        code,
+        domain: 'commercial',
+        application: 'module_catalog',
+        use_case: code,
+        tenant_required: false,
+        authentication: ['web-session'],
+        permissions: [],
+        permission_mode: 'all',
+      })),
+      button_codes: authorization,
+    } })
     if (path === '/api/auth/action-catalog' && req.method() === 'GET') return route.fulfill({ json: { module_definitions: definitions } })
     if (path === '/api/v1/platform/modules' && req.method() === 'GET') return route.fulfill({ json: { modules: created ? [current, created] : [current] } })
     if (path === '/api/v1/platform/modules' && req.method() === 'POST') {
@@ -73,7 +103,14 @@ async function install(page: Page, mode: FixtureMode = 'normal') {
     }
     return route.fulfill({ status: 404, json: { message: 'No fixture for this endpoint' } })
   })
-  return { writes: () => writes, headers, created: () => created, current: () => current, allowReadback: () => { readable = true } }
+  return {
+    writes: () => writes,
+    headers,
+    created: () => created,
+    current: () => current,
+    allowReadback: () => { readable = true },
+    setAuthorization: (actions: string[]) => { authorization = [...actions] },
+  }
 }
 async function open(page: Page) {
   await page.goto('/#/platform/commercial/modules')
@@ -257,5 +294,63 @@ test('keyboard tabs and cancelling an edit preserve context and never write', as
   await page.getByRole('button', { name: '放弃编辑' }).click()
   await page.getByRole('button', { name: '关闭', exact: true }).click()
   await expect(page.getByRole('button', { name: '查看详情' })).toBeFocused()
+  expect(fixture.writes()).toBe(0)
+})
+
+
+test('read-only platform authorization keeps module inspection but disables every module write', async ({ page }) => {
+  const fixture = await install(page, 'normal', ['commercial.module.list', 'commercial.module.get'])
+  await page.goto('/#/platform/commercial/modules')
+  await expect(page.getByRole('button', { name: '新增模块', exact: true })).toBeDisabled()
+  await page.getByRole('button', { name: '查看详情', exact: true }).click()
+  await expect(page.getByRole('button', { name: '编辑基础配置', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: /^(停售销售|恢复销售)$/ })).toBeDisabled()
+  await expect(page.getByRole('button', { name: '调整技术状态', exact: true })).toBeDisabled()
+  expect(fixture.writes()).toBe(0)
+})
+
+test('module manage authorization enables metadata and sales changes but not technical status', async ({ page }) => {
+  const fixture = await install(page, 'normal', [
+    'commercial.module.list',
+    'commercial.module.get',
+    'commercial.module.create',
+    'commercial.module.update',
+    'commercial.module.set_sales_status',
+  ])
+  await page.goto('/#/platform/commercial/modules')
+  await expect(page.getByRole('button', { name: '新增模块', exact: true })).toBeEnabled()
+  await page.getByRole('button', { name: '查看详情', exact: true }).click()
+  await expect(page.getByRole('button', { name: '编辑基础配置', exact: true })).toBeEnabled()
+  await expect(page.getByRole('button', { name: /^(停售销售|恢复销售)$/ })).toBeEnabled()
+  await expect(page.getByRole('button', { name: '调整技术状态', exact: true })).toBeDisabled()
+  expect(fixture.writes()).toBe(0)
+})
+
+test('technical authorization enables technical status without granting general module management', async ({ page }) => {
+  const fixture = await install(page, 'normal', [
+    'commercial.module.list',
+    'commercial.module.get',
+    'commercial.module.set_technical_status',
+  ])
+  await page.goto('/#/platform/commercial/modules')
+  await expect(page.getByRole('button', { name: '新增模块', exact: true })).toBeDisabled()
+  await page.getByRole('button', { name: '查看详情', exact: true }).click()
+  await expect(page.getByRole('button', { name: '编辑基础配置', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: /^(停售销售|恢复销售)$/ })).toBeDisabled()
+  await expect(page.getByRole('button', { name: '调整技术状态', exact: true })).toBeEnabled()
+  expect(fixture.writes()).toBe(0)
+})
+
+test('revoked manage grant is re-read before submit and preserves the unsubmitted draft', async ({ page }) => {
+  const fixture = await install(page)
+  await open(page)
+  await page.getByRole('button', { name: '编辑基础配置', exact: true }).click()
+  await page.getByLabel('模块名称').fill('撤权后仍保留的草稿')
+  await page.getByLabel('变更原因').fill('验证实时撤权')
+  fixture.setAuthorization(['commercial.module.list', 'commercial.module.get'])
+  await page.getByRole('button', { name: '保存基础配置', exact: true }).click()
+
+  await expect(page.getByText(/当前平台授权已变化，已阻止变更提交/)).toBeVisible()
+  await expect(page.getByLabel('模块名称')).toHaveValue('撤权后仍保留的草稿')
   expect(fixture.writes()).toBe(0)
 })

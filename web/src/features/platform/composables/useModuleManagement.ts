@@ -10,7 +10,8 @@ import {
   updatePlatformModule,
   type PlatformModuleDefinitionDTO,
 } from '@/services/commercial/platformModules'
-import { moduleReadbackMatches, type ModuleChangeKind } from '@/services/commercial/moduleAccess'
+import { moduleChangeOperation, moduleReadbackMatches, type ModuleChangeKind } from '@/services/commercial/moduleAccess'
+import { currentAuthorizationAllows, ensureCurrentAuthorization } from '@/services/runtime/authorization'
 import { subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
 
 export type ModuleScreen = 'detail' | 'create' | 'createConfirm' | 'createResult' | 'metadata' | 'sales' | 'technical' | 'result' | 'conflict' | 'discard'
@@ -87,6 +88,12 @@ export function useModuleManagement() {
   const scopes = () => [...new Set(draft.salesScope.split(/[,，\n]/).map((value) => value.trim()).filter(Boolean))]
   const createScopes = () => [...new Set(createDraft.salesScope.split(/[,，\n]/).map((value) => value.trim()).filter(Boolean))]
 
+  async function operationAllowed(operation: string, label: string) {
+    await ensureCurrentAuthorization(true)
+    if (currentAuthorizationAllows(operation)) return true
+    actionError.value = `当前平台授权已变化，已阻止${label}。草稿仍保留；请联系平台管理员核对授权。`
+    return false
+  }
   function resetFilters() {
     keyword.value = ''; technicalFilter.value = ''; salesFilter.value = ''
   }
@@ -146,7 +153,9 @@ export function useModuleManagement() {
       definitionError.value = '无法读取可新增模块定义。请确认当前账号具备平台模块读取权限后重试。'
     }
   }
-  function openCreate() {
+  async function openCreate() {
+    actionError.value = ''
+    if (!await operationAllowed(moduleChangeOperation.create, '新增模块')) return
     resetCreate()
     selected.value = null
     before.value = null
@@ -194,6 +203,7 @@ export function useModuleManagement() {
   async function submitCreate() {
     if (busy.value || createUnresolved.value || screen.value !== 'createConfirm' || !selectedCreateDefinition.value) return
     actionError.value = ''
+    if (!await operationAllowed(moduleChangeOperation.create, '创建提交')) return
     if (missingCreateDependencies.value.length) { actionError.value = '模块依赖已变化，请返回重新核对。'; return }
     const generation = epoch
     pending.value = true
@@ -255,8 +265,10 @@ export function useModuleManagement() {
       screen.value = 'result'
     }
   }
-  function startChange(value: ExistingModuleChangeKind) {
+  async function startChange(value: ExistingModuleChangeKind) {
     if (!selected.value || busy.value || writeUnresolved.value) return
+    actionError.value = ''
+    if (!await operationAllowed(moduleChangeOperation[value], '打开该变更')) return
     kind.value = value
     nextSales.value = selected.value.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? 'MODULE_SALES_STATUS_RETIRED' : 'MODULE_SALES_STATUS_SELLABLE'
     before.value = copy(selected.value)
@@ -359,6 +371,7 @@ export function useModuleManagement() {
     const base = before.value
     if (!base || busy.value || writeUnresolved.value || !['metadata', 'sales', 'technical'].includes(screen.value)) return
     actionError.value = ''
+    if (!await operationAllowed(moduleChangeOperation[kind.value], '变更提交')) return
     if (!draft.reason.trim()) { actionError.value = '请填写本次变更原因。'; return }
     if (kind.value === 'metadata' && (!draft.name.trim() || !draft.category.trim())) {
       actionError.value = '模块名称和分类不能为空。'; return

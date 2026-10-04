@@ -132,6 +132,20 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
   expect(denied.session.actor_kind).toBe("platform");
   expect(denied.session.platform_subject).toBe(data.denied_subject);
   expect(denied.session.active_tenant_id ?? "").toBe("");
+  const deniedAuthorization = await browserRequest(denied.page, data.web_base_url, "/auth/authorization");
+  expect(deniedAuthorization.status, deniedAuthorization.text).toBe(200);
+  const deniedProjection = deniedAuthorization.json as {
+    actor_kind: string;
+    platform_subject?: string;
+    tenant_id?: string;
+    button_codes?: string[];
+  };
+  expect(deniedProjection.actor_kind).toBe("platform");
+  expect(deniedProjection.platform_subject).toBe(data.denied_subject);
+  expect(deniedProjection.tenant_id ?? "").toBe("");
+  expect(deniedProjection.button_codes ?? []).toContain("tenant.list");
+  expect(deniedProjection.button_codes ?? []).not.toContain("commercial.module.list");
+
   const deniedModules = await browserRequest(denied.page, data.web_base_url, "/v1/platform/modules");
   expect(deniedModules.status, deniedModules.text).toBe(403);
   await denied.context.close();
@@ -145,6 +159,25 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
   expect(allowed.session.platform_subject).toBe(data.allowed_subject);
   expect(allowed.session.active_tenant_id ?? "").toBe("");
   expect(allowed.session.csrf_token).toBeTruthy();
+
+  const allowedAuthorization = await browserRequest(allowed.page, data.web_base_url, "/auth/authorization");
+  expect(allowedAuthorization.status, allowedAuthorization.text).toBe(200);
+  const allowedProjection = allowedAuthorization.json as {
+    actor_kind: string;
+    platform_subject?: string;
+    tenant_id?: string;
+    button_codes?: string[];
+  };
+  expect(allowedProjection.actor_kind).toBe("platform");
+  expect(allowedProjection.platform_subject).toBe(data.allowed_subject);
+  expect(allowedProjection.tenant_id ?? "").toBe("");
+  expect(allowedProjection.button_codes ?? []).toEqual(expect.arrayContaining([
+    "commercial.module.list",
+    "commercial.module.create",
+    "commercial.module.update",
+    "commercial.module.set_sales_status",
+    "commercial.module.set_technical_status",
+  ]));
 
   const modules = await browserRequest(allowed.page, data.web_base_url, "/v1/platform/modules");
   expect(modules.status, modules.text).toBe(200);
@@ -409,8 +442,8 @@ test("TestCE13TenantSessionCannotUsePlatformConsole", async ({ browser }) => {
   const data = fixture();
   const tenant = await login(browser, data, data.tenant_email, data.tenant_password);
   await tenant.page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
-  await expect(tenant.page.getByRole("heading", { name: "模块目录", exact: true })).toBeVisible();
-  await expect(tenant.page.getByText("当前账号无平台商业管理权限")).toBeVisible();
-  await expect(tenant.page.getByRole("button", { name: "查看详情" })).toHaveCount(0);
+  await expect(tenant.page).toHaveURL(/#\/authorization-state\?reason=forbidden/);
+  await expect(tenant.page.getByRole("heading", { name: "没有访问权限", exact: true })).toBeVisible();
+  await expect(tenant.page.getByRole("heading", { name: "模块目录", exact: true })).toHaveCount(0);
   await tenant.context.close();
 });
