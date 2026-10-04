@@ -186,6 +186,42 @@
           "file": "integration/enterprise_177_member_lifecycle_mysql_test.go"
         }
       ]
+    },
+    {
+      "id": "enterprise-191-login-metrics",
+      "tests": [
+        {
+          "name": "TestEnterprise191LegalLoginSuccessRateAndP95",
+          "file": "integration/enterprise_172_native_login_mysql_test.go"
+        }
+      ]
+    },
+    {
+      "id": "enterprise-191-password-reset-metrics",
+      "tests": [
+        {
+          "name": "TestEnterprise191PasswordRecoverySuccessRate",
+          "file": "integration/enterprise_173_recovery_mysql_test.go"
+        }
+      ]
+    },
+    {
+      "id": "enterprise-191-member-write-metrics",
+      "tests": [
+        {
+          "name": "TestEnterprise191LegalMemberWriteSuccessRate",
+          "file": "integration/ec_ri_02_member_profile_mysql_test.go"
+        }
+      ]
+    },
+    {
+      "id": "enterprise-191-revocation-metrics",
+      "tests": [
+        {
+          "name": "TestEnterprise179RoleRevocationLatencyP95",
+          "file": "integration/role_revocation_latency_mysql_test.go"
+        }
+      ]
     }
   ]
 }
