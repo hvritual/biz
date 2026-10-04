@@ -160,7 +160,7 @@ export async function ensureCurrentAuthorization(force = false): Promise<Current
         return priorSnapshot
       }
 
-      state.status = 'loading'
+      if (!priorReady) state.status = 'loading'
       const snapshot = await readCurrentAuthorization()
       if (requestGeneration !== generation) return null
       const matchesContext = platformActor

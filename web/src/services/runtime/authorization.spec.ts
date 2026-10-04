@@ -282,6 +282,27 @@ describe('platform authorization projection', () => {
     expect(auth.currentAuthorizationAllows('commercial.module.list')).toBe(true)
   })
 
+  it('keeps the current platform view mounted while a live revalidation is pending', async () => {
+    let resolveRefresh!: (value: ReturnType<typeof platformSnapshot>) => void
+    mocks.readSession.mockResolvedValue(platformSession)
+    mocks.readCurrentAuthorization
+      .mockResolvedValueOnce(platformSnapshot(['commercial.module.list', 'commercial.module.update']))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveRefresh = resolve }))
+    const auth = await runtime()
+
+    await auth.ensureCurrentAuthorization()
+    const refresh = auth.ensureCurrentAuthorization(true)
+
+    expect(auth.currentAuthorizationState.status).toBe('ready')
+    expect(auth.currentAuthorizationAllows('commercial.module.update')).toBe(true)
+
+    await Promise.resolve()
+    resolveRefresh(platformSnapshot(['commercial.module.list']))
+    await refresh
+    expect(auth.currentAuthorizationState.status).toBe('ready')
+    expect(auth.currentAuthorizationAllows('commercial.module.update')).toBe(false)
+  })
+
   it('does not allow an older forced projection response to overwrite a newer revoke result', async () => {
     let resolveOld!: (value: ReturnType<typeof platformSnapshot>) => void
     mocks.readSession.mockResolvedValue(platformSession)
