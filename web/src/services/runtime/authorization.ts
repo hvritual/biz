@@ -46,7 +46,16 @@ function isPlatformActor(actorKind: string | undefined) {
   return actorKind === 'platform'
 }
 
-function sessionKey(session: TrustedSession) {
+type TrustedSessionContext = {
+  readonly authenticated: boolean
+  readonly actor_kind?: string
+  readonly platform_subject?: string
+  readonly user_id?: string
+  readonly active_tenant_id?: string
+  readonly context_version?: number
+}
+
+function sessionKey(session: TrustedSessionContext) {
   return [
     session.actor_kind ?? '',
     session.platform_subject ?? '',
@@ -78,7 +87,7 @@ export function currentAuthorizationAllows(actionCode: string) {
   return state.snapshot.button_codes.includes(actionCode)
 }
 
-export function currentAuthorizationMatchesSession(session: TrustedSession | null | undefined) {
+export function currentAuthorizationMatchesSession(session: TrustedSessionContext | null | undefined) {
   if (!apiMode) return true
   if (!session?.authenticated) return false
   const tenantActor = isTenantUserActor(session.actor_kind)
