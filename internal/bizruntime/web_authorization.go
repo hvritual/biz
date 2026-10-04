@@ -10,6 +10,7 @@ import (
 	accessauthorization "github.com/hvritual/biz/internal/access/authorization"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
+	"github.com/hvritual/biz/internal/commercial/modulecatalog"
 	"yunka.io/gateway/authz"
 )
 
@@ -47,6 +48,30 @@ type authorizationEntitlementVersionSummary struct {
 	Version         uint64 `json:"version"`
 	SourceVersion   uint64 `json:"source_version"`
 	CatalogRevision uint64 `json:"catalog_revision"`
+}
+
+type platformModuleDefinitionView struct {
+	ModuleCode            string   `json:"moduleCode"`
+	CapabilityCodes       []string `json:"capabilityCodes"`
+	QuotaSchemaKeys       []string `json:"quotaSchemaKeys"`
+	FieldPolicySchemaKeys []string `json:"fieldPolicySchemaKeys"`
+	Dependencies          []string `json:"dependencies"`
+	ImplementationReady   bool     `json:"implementationReady"`
+}
+
+func platformModuleDefinitionViews(definitions []modulecatalog.Definition) []platformModuleDefinitionView {
+	result := make([]platformModuleDefinitionView, 0, len(definitions))
+	for _, definition := range definitions {
+		result = append(result, platformModuleDefinitionView{
+			ModuleCode:            definition.Code,
+			CapabilityCodes:       append([]string(nil), definition.CapabilityCodes...),
+			QuotaSchemaKeys:       append([]string(nil), definition.QuotaSchemaKeys...),
+			FieldPolicySchemaKeys: append([]string(nil), definition.FieldPolicySchemaKeys...),
+			Dependencies:          append([]string(nil), definition.Dependencies...),
+			ImplementationReady:   definition.ImplementationReady,
+		})
+	}
+	return result
 }
 
 func (auth *runtimeWebAuth) setAuthorizationEntitlements(reader currentAuthorizationEntitlementReader) {
@@ -104,11 +129,39 @@ func (auth *runtimeWebAuth) handleActionCatalog(writer http.ResponseWriter, requ
 			}
 		}
 	}
+	moduleDefinitions := []platformModuleDefinitionView{}
+	if authentication.Session.ActorKind == accesspersistence.WebActorPlatform && strings.TrimSpace(authentication.Session.PlatformSubject) != "" {
+		store, _ := auth.currentAuthorizationDependencies()
+		if store == nil {
+			http.Error(writer, "authorization unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		resolver, resolverErr := accesspersistence.NewPrincipalGrantResolver(store)
+		if resolverErr != nil {
+			http.Error(writer, "authorization unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		grants, grantErr := resolver.ResolveGrants(request.Context(), authz.GrantRequest{
+			Principal: authentication.Principal, TenantBound: false, Operation: "commercial.module.list",
+			Permissions: []authz.PermissionKey{"platform.module.read"},
+		})
+		if grantErr != nil {
+			http.Error(writer, "authorization unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		for _, grant := range grants {
+			if grant.Permission == authz.PermissionKey("platform.module.read") {
+				moduleDefinitions = platformModuleDefinitionViews(modulecatalog.ProductionRegistry().Definitions())
+				break
+			}
+		}
+	}
 	writeJSON(writer, http.StatusOK, map[string]any{
-		"schema_version": "v1",
-		"actions":        tenantActions,
-		"permissions":    accessauthorization.TenantRolePermissionsForActions(tenantActions),
-		"entitlement":    entitlementSummary,
+		"schema_version":     "v1",
+		"actions":            tenantActions,
+		"permissions":        accessauthorization.TenantRolePermissionsForActions(tenantActions),
+		"entitlement":        entitlementSummary,
+		"module_definitions": moduleDefinitions,
 	})
 }
 
