@@ -208,7 +208,7 @@ function navigateTabs(event: KeyboardEvent) {
         <dl class="module-verification">
           <div><dt>模块定义</dt><dd>来自系统模块目录</dd></div>
           <div><dt>权限与页面映射</dt><dd>来自当前构建的操作契约和真实路由，只读</dd></div>
-          <div><dt>当前平台账号权限</dt><dd>来自实时平台授权投影；不可执行操作会禁用，服务端仍逐项最终校验</dd></div>
+          <div><dt>当前平台账号权限</dt><dd>根据当前账号实时权限显示；不可执行操作会禁用，提交时会重新确认当前权限</dd></div>
           <div><dt>租户成员、数据范围与额度</dt><dd>尚未执行核验</dd></div>
           <div><dt>运行验证证据</dt><dd>当前模块接口不提供；不能由管理员自行勾选通过</dd></div>
         </dl>
