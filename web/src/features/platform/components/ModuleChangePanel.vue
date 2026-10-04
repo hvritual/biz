@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
 import { backendTermLabel } from '@/i18n/backend-terms'
 import type { ModuleDTO, ModuleSalesStatus } from '@/services/commercial/platformCommercial'
 import { moduleChangeOperation, operationDefinition, type ModuleChangeKind } from '@/services/commercial/moduleAccess'
+import { readActionCatalog, type ActionCatalogAction } from '@/services/runtime/api'
 import type { ModuleDraft, ModuleScreen, ModuleResultState } from '../composables/useModuleManagement'
 
 const vm = defineProps<{
@@ -14,7 +15,15 @@ const vm = defineProps<{
   busy: boolean; resultState: ModuleResultState; resultMessage: string; draft: ModuleDraft;
 }>()
 const emit = defineEmits<{ draft: [value: ModuleDraft] }>()
-const permissionRequirement = computed(() => operationDefinition(moduleChangeOperation[vm.kind])?.permissions.join('、') || '未取得权限定义')
+const catalogActions = ref<ActionCatalogAction[]>([])
+const permissionRequirement = computed(() => operationDefinition(catalogActions.value, moduleChangeOperation[vm.kind])?.permissions.join('、') || '未取得权限定义')
+onMounted(async () => {
+  try {
+    catalogActions.value = (await readActionCatalog()).actions ?? []
+  } catch {
+    catalogActions.value = []
+  }
+})
 const isStopSale = computed(() => vm.nextSales === 'MODULE_SALES_STATUS_RETIRED')
 function updateDraft(key: keyof ModuleDraft, value: unknown) {
   if (typeof value !== 'string' && typeof value !== 'number') return
