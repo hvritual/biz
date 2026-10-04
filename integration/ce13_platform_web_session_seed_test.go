@@ -325,7 +325,6 @@ func assertCE13PlatformGrantRevocationIsLive(t *testing.T, db *gorm.DB, store *a
 	}
 }
 
-
 func TestCE13PlatformGrantControl(t *testing.T) {
 	action := strings.TrimSpace(os.Getenv("CE13_GRANT_CONTROL_ACTION"))
 	if action == "" {
