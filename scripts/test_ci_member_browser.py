@@ -50,6 +50,15 @@ class MemberBrowserSetupTest(unittest.TestCase):
         self.assertIn('finally', smoke)
         self.assertIn('MEMBER_BROWSER_PREREQUISITES=PASS', result.stdout)
 
+    def test_browser_download_and_missing_font_install_are_parallelized(self):
+        source = (ROOT / 'scripts/ci_member_browser.sh').read_text()
+        self.assertIn('playwright install --only-shell chromium &', source)
+        self.assertIn('font_pid=$!', source)
+        self.assertIn('wait "$browser_pid"', source)
+        self.assertIn('wait "$font_pid"', source)
+        self.assertIn('(( browser_status == 0 )) || exit "$browser_status"', source)
+        self.assertIn('(( font_status == 0 )) || exit "$font_status"', source)
+
     def test_missing_chinese_font_installs_only_required_font(self):
         result, trace, _ = self.run_probe(missing_font=True)
         self.assertEqual(0, result.returncode, result.stderr)
@@ -88,6 +97,20 @@ class MemberBrowserSetupTest(unittest.TestCase):
         self.assertIn('bash scripts/ci_member_browser.sh', source)
         self.assertIn('ENTERPRISE_MEMBER_REAL_E2E=1 npx playwright test e2e/enterprise-members-real.spec.ts', source)
         self.assertNotRegex(source, r'playwright\s+install\s+--with-deps\s+chromium')
+
+    def test_coffeelink_reuses_bounded_browser_setup_without_weakening_evidence(self):
+        source = (ROOT / '.github/workflows/coffeelink-web.yml').read_text()
+        self.assertEqual(2, source.count('bash scripts/ci_member_browser.sh'))
+        self.assertIn('python3 -B scripts/test_ci_member_browser.py', source)
+        self.assertNotIn('playwright install --with-deps', source)
+        self.assertNotIn('fonts-noto-cjk', source)
+        self.assertIn('timeout-minutes: 6', source)
+        self.assertIn('default: 180', source)
+        self.assertIn('default: 240', source)
+        self.assertIn('Run CoffeeLink core E2E', source)
+        self.assertIn('Verify visual contract evidence', source)
+        self.assertIn('Run serial site-rental E2E', source)
+        self.assertIn('Verify site-rental evidence', source)
 
     def test_organization_keeps_e2e_and_four_viewport_evidence(self):
         source = (ROOT / '.github/workflows/ec-ri-04-web-qualification.yml').read_text()
