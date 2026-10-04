@@ -524,7 +524,15 @@ test("TestCE13PlatformGrantRevocationThroughActiveOIDCSession", async ({ browser
     expect(readback.status, readback.text).toBe(200);
     expect(moduleFingerprint(readback.json as ModuleView)).toEqual(before);
 
-    await page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
+    await page.getByRole("button", { name: "取消", exact: true }).click();
+    const discard = page.getByRole("dialog", { name: "放弃本次编辑？" });
+    await expect(discard).toBeVisible();
+    await discard.getByRole("button", { name: "放弃编辑", exact: true }).click();
+    const detail = page.getByRole("dialog", { name: /模块详情/ });
+    await expect(detail).toBeVisible();
+    await detail.getByRole("button", { name: "关闭", exact: true }).click();
+    await expect(detail).toBeHidden();
+
     await expect(page.getByRole("button", { name: "新增模块", exact: true })).toBeDisabled();
     await page.getByRole("button", { name: "查看详情", exact: true }).first().click();
     await expect(page.getByRole("button", { name: "编辑基础配置", exact: true })).toBeDisabled();
