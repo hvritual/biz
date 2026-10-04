@@ -220,9 +220,9 @@ func assertCE13PlatformGrantRevocationIsLive(t *testing.T, db *gorm.DB, store *a
 	}
 	resolve := func() []authz.Grant {
 		grants, resolveErr := resolver.ResolveGrants(ctx, authz.GrantRequest{
-			Principal: principal,
+			Principal:   principal,
 			TenantBound: false,
-			Operation: "ce13.platform.authorization.revoke",
+			Operation:   "ce13.platform.authorization.revoke",
 			Permissions: []authz.PermissionKey{"platform.module.read", "platform.module.manage"},
 		})
 		if resolveErr != nil {
@@ -254,8 +254,8 @@ func assertCE13PlatformGrantRevocationIsLive(t *testing.T, db *gorm.DB, store *a
 		t.Fatalf("post-revoke grants=%v want read without manage", after)
 	}
 	if err := store.BootstrapPlatform(ctx, accesspersistence.PlatformBootstrap{
-		Subject: subject,
-		Token: token,
+		Subject:     subject,
+		Token:       token,
 		Permissions: []authz.PermissionKey{"platform.module.manage"},
 	}); err != nil {
 		t.Fatal(err)
