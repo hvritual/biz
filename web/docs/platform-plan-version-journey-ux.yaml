@@ -1,0 +1,214 @@
+schema_version: 1
+artifact_kind: analysis
+status: ready_for_review
+task_ref:
+  issue: PR#329
+  baseline_commit: cd4a4ead993c914bc7d23ffcfb6e06d4bb23ba49
+  candidate_commit: 48ef660b0cab01200bb40e51a1f0a166e268e02c
+  name: 平台管理员套餐版本生命周期前端旅程
+classification:
+  type: business_task
+  reason: 平台管理员会创建和修改套餐草稿，并执行发布、创建新版本和停售等业务写操作。
+  business_state_mutation: true
+  authorization_sensitive: true
+  asynchronous_effect: false
+context:
+  role:
+    summary: 具备平台套餐读取、管理及对应发布权限的平台管理员。
+    source_refs: [proto_contract, current_page]
+  task:
+    summary: 在当前 Platform Surface 中完成版本列表、草稿创建与编辑、发布前核对、发布、新版本和停售。
+    source_refs: [user_requirement, current_page, ce07_decision]
+  entity:
+    summary: 稳定套餐代码及其不可变版本、草稿修订、完整条款和状态。
+    source_refs: [proto_contract, ce07_decision]
+  workflow:
+    summary: 读取版本历史 → 创建/编辑草稿 → 发布前检查 → 发布 → 必要时基于历史版本创建新草稿或停售已发布版本。
+    source_refs: [user_requirement, ce07_decision, current_page]
+  state:
+    summary: DRAFT → PUBLISHED → RETIRED；不提供逆向恢复和硬删除。
+    source_refs: [ce07_decision, proto_contract]
+  action:
+    summary: 所有写操作沿用现有平台接口、可信会话、幂等键与修订号；成功后重新读取版本事实。
+    source_refs: [proto_contract, platform_service, current_page]
+  risk:
+    summary: 错误发布、覆盖历史版本、把前端检查误解为最终校验、并发修订冲突及把停售误解为删除。
+    source_refs: [ce07_decision, proto_contract]
+  decision:
+    summary: 管理员需要在执行前理解当前版本、影响和不可逆边界，并根据重新读取结果判断是否真正完成。
+    source_refs: [user_requirement, ce07_decision]
+sources:
+- id: user_requirement
+  kind: user_requirement
+  path: https://github.com/hvritual/biz/pull/329
+  commit: null
+  locator: 套餐版本列表 → 创建草稿 → 编辑模块/权益 → 校验 → 发布 → 新版本 → 停售
+  claim: 要求保持当前 Platform Surface 并实现完整平台管理员旅程。
+- id: ce07_decision
+  kind: repository_contract
+  path: docs/commercial-entitlements/decisions/CE-07-plan-versions.md
+  commit: cd4a4ead993c914bc7d23ffcfb6e06d4bb23ba49
+  locator: 版本与接口；资格与安全默认；事务、锁与引用
+  claim: 定义版本状态机、不可变发布版本、停售语义、CAS/幂等与服务端校验边界。
+- id: proto_contract
+  kind: repository_contract
+  path: contracts/proto/commercial/v1/plan.proto
+  commit: cd4a4ead993c914bc7d23ffcfb6e06d4bb23ba49
+  locator: PlanManagementApplication
+  claim: 定义创建、克隆、修改、发布、停售、读取和资格检查接口及权限。
+- id: current_page
+  kind: implementation
+  path: web/src/features/platform/pages/CommercialPlansView.vue
+  commit: cd4a4ead993c914bc7d23ffcfb6e06d4bb23ba49
+  locator: CommercialPlansView
+  claim: 当前 Platform Surface、版本工作台、版本历史和详情组合。
+- id: platform_service
+  kind: implementation
+  path: web/src/services/commercial/platformCommercial.ts
+  commit: cd4a4ead993c914bc7d23ffcfb6e06d4bb23ba49
+  locator: plan management client functions
+  claim: 当前前端真实请求、CSRF、幂等键和版本写操作调用方式。
+page_pattern:
+  name: WorkbenchPage
+  reason: 套餐版本历史、当前版本详情及相关版本操作需要在同一对象上下文中协作。
+  contract_ref: web/ui-contracts.json:/platform/commercial/plans
+  gaps:
+  - 现有发布和停售使用浏览器原生确认，缺少操作影响、发布前核对和创建新版本的明确上下文。
+outcome:
+  definition: 管理员完成操作后仍停留在同一套餐工作台，并以重新读取的版本状态确认结果；前端检查本身不构成发布成功。
+  result_contract_refs: [proto_contract, ce07_decision]
+  recovery_contract_refs: [proto_contract, ce07_decision]
+humanized_ux:
+  time_to_information:
+    applicability: applies
+    reason: 版本状态、来源版本和操作后果必须在当前工作台直接可见。
+    requirements:
+    - 版本历史与详情保持在同一 Platform Surface。
+    - 发布、克隆和停售确认展示当前套餐、版本和关键影响。
+    evidence_types: [browser_test]
+    verification: not_verified
+    evidence: []
+  time_to_action:
+    applicability: applies
+    reason: DRAFT、PUBLISHED、RETIRED 对应不同动作，入口需要随真实状态变化。
+    requirements:
+    - 草稿直接进入编辑或发布前检查。
+    - 已发布版本可创建新版本或停售，停售版本仍可创建新草稿。
+    evidence_types: [browser_test]
+    verification: not_verified
+    evidence: []
+  context_switching:
+    applicability: applies
+    reason: 创建、编辑、发布和停售都围绕同一套餐代码及当前选中版本。
+    requirements:
+    - 弹窗保持来源套餐和版本上下文。
+    - 操作完成后回到原工作台并选中重新读取的结果。
+    evidence_types: [browser_test]
+    verification: not_verified
+    evidence: []
+  decision_load:
+    applicability: applies
+    reason: 发布和停售具有历史影响，不能只提供一个无解释确认按钮。
+    requirements:
+    - 发布前将页面可确认项与系统最终校验边界分开。
+    - 停售明确不是删除，不自动迁移既有引用。
+    evidence_types: [source_review, browser_test]
+    verification: not_verified
+    evidence: []
+  interaction_cost:
+    applicability: applies
+    reason: 复用当前 PlanEditorDialog、PlanVersionDetail 和工作台，不新增第二套路由或流程页。
+    requirements:
+    - 使用当前 Platform Surface 与现有基础控件。
+    - 不要求管理员离开版本工作台完成生命周期操作。
+    evidence_types: [static_check, browser_test]
+    verification: not_verified
+    evidence: []
+  error_recoverability:
+    applicability: applies
+    reason: CAS 冲突、权限拒绝或其他写失败必须保留当前上下文并重新读取。
+    requirements:
+    - 409 重新读取后提示再次核对。
+    - 写失败不关闭操作上下文，也不展示成功状态。
+    evidence_types: [api_test, browser_test]
+    verification: not_verified
+    evidence: []
+  how_to_guidance:
+    applicability: applies
+    reason: 管理员需要理解草稿、发布版本、新版本和停售之间的关系。
+    requirements:
+    - 创建草稿说明可继续编辑。
+    - 发布和新版本说明已发布内容不可原地覆盖。
+    evidence_types: [browser_test]
+    verification: not_verified
+    evidence: []
+  operation_effect_transparency:
+    applicability: applies
+    reason: 发布和停售直接改变套餐版本生命周期状态。
+    requirements:
+    - 发布前展示不可覆盖影响。
+    - 创建新版本说明来源版本保持不变。
+    - 停售说明历史内容和已有引用保留。
+    evidence_types: [source_review, browser_test, api_test]
+    verification: not_verified
+    evidence: []
+  problem_resolution_guidance:
+    applicability: applies
+    reason: 发布校验和并发冲突可能阻止任务完成。
+    requirements:
+    - 页面检查失败引导返回编辑。
+    - 服务端拒绝或冲突保留真实错误并重新读取，不伪造发布成功。
+    evidence_types: [browser_test, api_test]
+    verification: not_verified
+    evidence: []
+acceptance:
+  scenarios:
+  - 套餐版本列表展示 DRAFT、PUBLISHED、RETIRED 历史且选中详情同步。
+  - 创建草稿后重新读取并显示新草稿。
+  - 草稿模块、能力、额度和字段策略可继续编辑。
+  - 发布前检查不冒充服务端最终校验，确认发布后重新读取 PUBLISHED。
+  - 已发布版本可创建新草稿且来源版本保持不变。
+  - 停售后重新读取 RETIRED，历史版本仍可查看。
+  - 409、403 与普通失败不显示假成功。
+  automated_checks:
+  - cd web && npm run check
+  - cd web && npm run test:e2e
+  human_checks:
+  - 四视口检查版本列表与生命周期弹窗的可读性、焦点和操作影响文案。
+  - 独立产品/UX 评审发布、停售和新版本的业务理解。
+  metrics: []
+open_questions:
+- question: 独立产品/UX 评审及真实生产数据端到端尚未完成。
+  blocking: false
+  owner_role: 产品/QA
+handoff:
+  allowed_paths:
+  - web/src/features/platform/**
+  - web/src/features/component-scopes.json
+  - web/e2e/ce13-plan-management.spec.ts
+  - web/docs/platform-plan-version-journey-ux.yaml
+  forbidden_paths:
+  - web/src/features/app-shell/**
+  - web/src/styles/tokens.css
+  - contracts/**
+  - internal/**
+  - .github/workflows/**
+  reuse_refs:
+  - web/src/features/platform/pages/CommercialPlansView.vue
+  - web/src/features/platform/components/PlanEditorDialog.vue
+  - web/src/features/platform/components/PlanVersionDetail.vue
+  - web/src/ui/common/UiDialog.vue
+  gates:
+  - name: web_fast_gate
+    status: not_verified
+  - name: browser_e2e
+    status: not_verified
+review:
+  reviewer: null
+  actor_kind: null
+  scope: null
+  reference: null
+  analysis_ref: null
+  reviewed_at: null
+  candidate_sha: null
+  decision: not_reviewed

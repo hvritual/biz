@@ -259,5 +259,9 @@
   "system/components/settings/NotificationConfigurationEditor.vue": {
     "scenario": "企业消息配置 · 创建、编辑、确认及不确定结果恢复",
     "scope": "消费不可变操作与回执；依赖父级流程控制，禁止直接网络访问、跨租户数据保留或重新生成重试幂等键。"
+  },
+  "platform/components/PlanVersionLifecycleDialog.vue": {
+    "scenario": "平台管理 · 套餐版本生命周期 · PlanVersionLifecycleDialog",
+    "scope": "仅用于平台套餐版本的发布前检查、发布确认、基于历史版本创建新草稿及停售确认；不定义后端校验规则，不修改套餐状态，不绕过可信平台会话。"
   }
 }

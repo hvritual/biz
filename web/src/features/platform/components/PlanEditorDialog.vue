@@ -146,8 +146,8 @@ function submit() {
     <section class="plan-editor card" role="dialog" aria-modal="true" aria-labelledby="plan-editor-title">
       <header class="plan-editor-header">
         <div>
-          <h2 id="plan-editor-title">{{ mode === 'create' ? '新建套餐首稿' : '编辑套餐草稿' }}</h2>
-          <p>发布后版本内容不可直接覆盖；提交前会再次校验完整性和依赖关系。</p>
+          <h2 id="plan-editor-title">{{ mode === 'create' ? '创建套餐草稿' : '编辑套餐草稿' }}</h2>
+          <p>{{ mode === 'create' ? '先建立可编辑草稿；可现在配置模块与权益，也可创建后继续编辑。' : '只允许修改草稿；发布后版本内容不可直接覆盖。' }}</p>
         </div>
         <UiButton class="btn" type="button" @click="emit('close')">关闭</UiButton>
       </header>
@@ -157,13 +157,13 @@ function submit() {
         <label><span>套餐名称</span><UiInput v-model="editor.name" class="input" autocomplete="off" /></label>
         <label><span>有效期模式</span><UiSelect v-model="editor.terms.validityMode" class="input"><UiOption value="unlimited">unlimited</UiOption><UiOption value="fixed_days">fixed_days</UiOption></UiSelect></label>
         <label v-if="editor.terms.validityMode === 'fixed_days'"><span>有效天数</span><UiInput v-model.number="editor.terms.validityDays" class="input" type="number" min="1" max="36500" /></label>
-        <label><span>价格引用 price_ref</span><UiInput v-model="editor.terms.priceRef" class="input" autocomplete="off" /></label>
+        <label><span>价格引用 <small>可选</small></span><UiInput v-model="editor.terms.priceRef" class="input" autocomplete="off" /></label>
         <label class="wide"><span>变更原因</span><UiInput v-model="editor.reason" class="input" autocomplete="off" /></label>
       </div>
 
       <section class="editor-section">
         <div class="section-head">
-          <div><h3>销售范围 sales_scope</h3><p>使用 * 表示全范围；适用资格查询本身不能用 *。</p></div>
+          <div><h3>销售范围</h3><p>使用 * 表示全部已声明范围；具体适用资格仍需按实际范围检查。</p></div>
           <UiButton class="btn" type="button" @click="addSalesScope">添加范围</UiButton>
         </div>
         <div v-for="(_, index) in editor.terms.salesScope" :key="`scope-${index}`" class="inline-row">
@@ -219,7 +219,7 @@ function submit() {
       <div v-if="localError || serverError" class="notice danger" role="alert">{{ localError || serverError }}</div>
       <footer class="plan-editor-footer">
         <UiButton class="btn" type="button" @click="emit('close')">取消</UiButton>
-        <UiButton class="btn primary" type="button" :disabled="pending" @click="submit">{{ pending ? '提交中…' : '提交' }}</UiButton>
+        <UiButton class="btn primary" type="button" :disabled="pending" @click="submit">{{ pending ? '提交中…' : mode === 'create' ? '创建草稿' : '保存草稿' }}</UiButton>
       </footer>
     </section>
   </div>
@@ -235,6 +235,7 @@ function submit() {
 .plan-editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px 0; }
 .plan-editor-grid label { display: grid; gap: 6px; }
 .plan-editor-grid label > span, .module-head label > span { font-size: 12px; color: var(--color-text-secondary); }
+.plan-editor-grid label > span small { color: var(--color-text-muted); font-weight: 400; }
 .plan-editor-grid .wide { grid-column: 1 / -1; }
 .input { width: 100%; min-height: 36px; border: 1px solid var(--color-border); border-radius: 7px; padding: 7px 10px; background: var(--color-surface); color: var(--color-text-primary); font: inherit; }
 .input:focus { outline: 2px solid var(--color-primary-soft); border-color: var(--color-primary); }

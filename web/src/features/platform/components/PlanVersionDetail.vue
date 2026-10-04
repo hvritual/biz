@@ -56,8 +56,8 @@ function moduleName(code: string) {
       </div>
       <div class="actions">
         <UiButton v-if="version.state === 'DRAFT'" class="btn" type="button" @click="emit('edit')">编辑草稿</UiButton>
-        <UiButton v-if="version.state === 'DRAFT'" class="btn primary" type="button" :disabled="pending" @click="emit('publish')">发布</UiButton>
-        <UiButton v-if="version.state === 'PUBLISHED'" class="btn" type="button" :disabled="pending" @click="emit('retire')">停售</UiButton>
+        <UiButton v-if="version.state === 'DRAFT'" class="btn primary" type="button" :disabled="pending" @click="emit('publish')">发布前检查</UiButton>
+        <UiButton v-if="version.state === 'PUBLISHED'" class="btn danger-text" type="button" :disabled="pending" @click="emit('retire')">停售</UiButton>
         <UiButton v-if="version.state !== 'DRAFT'" class="btn" type="button" :disabled="pending" @click="emit('clone')">创建新版本</UiButton>
         <UiButton class="btn" type="button" @click="emit('eligibility')">资格预检</UiButton>
       </div>
@@ -111,7 +111,8 @@ function moduleName(code: string) {
 .detail-header p { margin: 5px 0 0; color: var(--color-text-muted); font-size: 12px; }
 .title-row, .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .actions { justify-content: flex-end; }
-.btn.primary { background: var(--color-primary); border-color: var(--color-primary); color: white; }
+.btn.primary { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-on-primary); }
+.btn.danger-text { color: var(--color-danger); }
 .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; padding: 16px 20px; gap: 14px 20px; border-bottom: 1px solid var(--color-border); }
 .facts div { min-width: 0; }
 .facts dt { font-size: var(--text-xs); color: var(--color-text-muted); }

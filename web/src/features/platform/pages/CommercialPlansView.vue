@@ -8,6 +8,7 @@ import StatusBadge from '@/ui/common/StatusBadge.vue'
 import { backendStateTone, backendTermLabel } from '@/i18n/backend-terms'
 import PlanEditorDialog from '@/features/platform/components/PlanEditorDialog.vue'
 import PlanVersionDetail from '@/features/platform/components/PlanVersionDetail.vue'
+import PlanVersionLifecycleDialog from '@/features/platform/components/PlanVersionLifecycleDialog.vue'
 import {
   CommercialApiError,
   checkPlanEligibility,
@@ -25,6 +26,7 @@ import {
 } from '@/services/commercial/platformCommercial'
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'empty' | 'blocked' | 'error'
+type LifecycleDialogMode = 'preflight' | 'publish' | 'clone' | 'retire'
 type EditorPayload = { planCode: string; name: string; reason: string; terms: PlanTerms }
 
 const planCodeInput = ref('')
@@ -42,6 +44,7 @@ const modules = ref<ModuleDTO[]>([])
 const moduleLoadError = ref('')
 const editorOpen = ref(false)
 const editorMode = ref<'create' | 'edit'>('create')
+const lifecycleDialogMode = ref<LifecycleDialogMode | null>(null)
 const eligibilityOpen = ref(false)
 const eligibilityScope = ref('')
 const eligibilityResult = ref<{ eligible: boolean; reason: string } | null>(null)
@@ -195,8 +198,10 @@ async function runMutation(operation: () => Promise<PlanVersionDTO>, success: st
     await loadVersions(true)
     selectedVersionKey.value = versionKey(result)
     actionMessage.value = success
+    return true
   } catch (error) {
     await handleMutationError(error)
+    return false
   } finally {
     actionPending.value = false
   }
@@ -204,8 +209,8 @@ async function runMutation(operation: () => Promise<PlanVersionDTO>, success: st
 
 async function handleMutationError(error: unknown) {
   if (error instanceof CommercialApiError && error.code === 'conflict') {
-    actionError.value = '版本已被其他操作修改，已重新读取最新状态；请核对后再提交。'
     await loadVersions(true)
+    actionError.value = '版本已被其他操作修改，已重新读取最新状态；请核对后再提交。'
     return
   }
   if (error instanceof CommercialApiError && ['unauthenticated', 'forbidden'].includes(error.code)) {
@@ -215,37 +220,71 @@ async function handleMutationError(error: unknown) {
   actionError.value = error instanceof Error ? error.message : '套餐操作失败'
 }
 
-async function cloneSelected() {
+function openPublishCheck() {
+  const selected = selectedVersion.value
+  if (!selected || selected.state !== 'DRAFT') return
+  actionError.value = ''
+  lifecycleDialogMode.value = 'preflight'
+}
+
+function continuePublish() {
+  if (lifecycleDialogMode.value !== 'preflight') return
+  actionError.value = ''
+  lifecycleDialogMode.value = 'publish'
+}
+
+function openClone() {
   const selected = selectedVersion.value
   if (!selected || selected.state === 'DRAFT') return
-  await runMutation(() => createPlanVersion(selected.planCode, {
+  actionError.value = ''
+  lifecycleDialogMode.value = 'clone'
+}
+
+function openRetire() {
+  const selected = selectedVersion.value
+  if (!selected || selected.state !== 'PUBLISHED') return
+  actionError.value = ''
+  lifecycleDialogMode.value = 'retire'
+}
+
+function closeLifecycleDialog() {
+  if (actionPending.value) return
+  lifecycleDialogMode.value = null
+  actionError.value = ''
+}
+
+async function cloneSelected(reason: string) {
+  const selected = selectedVersion.value
+  if (!selected || selected.state === 'DRAFT') return
+  const succeeded = await runMutation(() => createPlanVersion(selected.planCode, {
     requestId: commercialRequestId('ce13-plan-clone'),
     fromVersion: selected.version,
     expectedPlanRevision: selected.planRevision,
-    reason: '平台控制台基于历史版本创建新草稿',
-  }), '已创建新的不可变版本草稿。')
+    reason,
+  }), '新版本草稿已创建；来源版本保持不变。')
+  if (succeeded) lifecycleDialogMode.value = null
 }
 
-async function publishSelected() {
+async function publishSelected(reason: string) {
   const selected = selectedVersion.value
   if (!selected || selected.state !== 'DRAFT') return
-  if (!window.confirm(`确认发布 ${selected.planCode} v${selected.version}？发布后内容不可覆盖。`)) return
-  await runMutation(() => publishPlanVersion(selected.planCode, selected.version, {
+  const succeeded = await runMutation(() => publishPlanVersion(selected.planCode, selected.version, {
     requestId: commercialRequestId('ce13-plan-publish'),
     expectedRevision: selected.revision,
-    reason: '平台控制台发布套餐版本',
-  }), '套餐版本已发布；后续修订必须创建新版本。')
+    reason,
+  }), '套餐版本已发布；后续修订需要创建新版本。')
+  if (succeeded) lifecycleDialogMode.value = null
 }
 
-async function retireSelected() {
+async function retireSelected(reason: string) {
   const selected = selectedVersion.value
   if (!selected || selected.state !== 'PUBLISHED') return
-  if (!window.confirm(`确认停售 ${selected.planCode} v${selected.version}？历史引用仍会保留。`)) return
-  await runMutation(() => retirePlanVersion(selected.planCode, selected.version, {
+  const succeeded = await runMutation(() => retirePlanVersion(selected.planCode, selected.version, {
     requestId: commercialRequestId('ce13-plan-retire'),
     expectedRevision: selected.revision,
-    reason: '平台控制台停售套餐版本',
-  }), '套餐版本已停售，历史内容与引用保持可读。')
+    reason,
+  }), '套餐版本已停售；历史内容与已有引用继续保留。')
+  if (succeeded) lifecycleDialogMode.value = null
 }
 
 function openEligibility() {
@@ -279,7 +318,7 @@ onMounted(loadModules)
     <div data-ui-region="page-heading">
       <PageHeading
         title="套餐版本"
-        description="围绕真实 plan_code 管理套餐草稿、不可变版本、发布停售与适用资格"
+        description="管理套餐草稿、已发布版本、后续新版本和停售状态，保留完整版本历史"
       />
     </div>
 
@@ -297,23 +336,23 @@ onMounted(loadModules)
         <UiInput id="plan-code" v-model="planCodeInput" class="input" autocomplete="off" placeholder="例如 office-pro" />
         <UiButton class="btn" type="submit" :disabled="loadState === 'loading'">读取版本</UiButton>
       </form>
-      <p class="scope-note">创建/查询/编辑/发布/停售均调用真实 commercial.plan.* API；浏览器只携带 HttpOnly 会话 Cookie。</p>
+      <p class="scope-note">所有写操作都会基于当前版本状态提交，并在完成后重新读取最新结果；页面不会把请求受理直接当作发布完成。</p>
     </section>
 
     <section v-if="actionMessage" class="notice success" role="status">{{ actionMessage }}</section>
-    <section v-if="actionError && !editorOpen" class="notice danger" role="alert">{{ actionError }}</section>
+    <section v-if="actionError && !editorOpen && !lifecycleDialogMode" class="notice danger" role="alert">{{ actionError }}</section>
 
     <section v-if="loadState === 'idle'" class="card state-card"><strong>输入套餐代码或新建套餐</strong><p>不会自动展示本地保存过的套餐代码。</p></section>
-    <section v-else-if="loadState === 'loading'" class="card state-card" aria-live="polite"><strong>正在读取 {{ activePlanCode }} 的真实版本记录</strong><p>请求 /v1/platform/plans/{plan_code}/versions。</p></section>
+    <section v-else-if="loadState === 'loading'" class="card state-card" aria-live="polite"><strong>正在读取 {{ activePlanCode }} 的版本记录</strong><p>请稍候，读取完成后会保留当前套餐的完整版本历史。</p></section>
     <section v-else-if="loadState === 'blocked'" class="card state-card warning" role="alert"><strong>当前会话无套餐管理读取权限</strong><p>{{ errorMessage }}</p><UiButton class="btn" type="button" @click="loadVersions(true)">重新检查</UiButton></section>
     <section v-else-if="loadState === 'error'" class="card state-card danger" role="alert"><strong>套餐版本读取失败</strong><p>{{ errorMessage }}</p><UiButton class="btn" type="button" @click="loadVersions(true)">重试</UiButton></section>
 
     <template v-else>
       <section class="metric-grid" data-ui-region="metrics">
         <article class="card metric"><span>已读取版本</span><strong>{{ summary.count }}</strong><small>{{ activePlanCode }}</small></article>
-        <article class="card metric"><span>草稿</span><strong>{{ summary.drafts }}</strong><small>DRAFT</small></article>
-        <article class="card metric"><span>已发布</span><strong>{{ summary.published }}</strong><small>PUBLISHED</small></article>
-        <article class="card metric"><span>已停售</span><strong>{{ summary.retired }}</strong><small>RETIRED</small></article>
+        <article class="card metric"><span>草稿</span><strong>{{ summary.drafts }}</strong><small>可继续编辑</small></article>
+        <article class="card metric"><span>已发布</span><strong>{{ summary.published }}</strong><small>可用于后续业务</small></article>
+        <article class="card metric"><span>已停售</span><strong>{{ summary.retired }}</strong><small>停止新的销售选择</small></article>
       </section>
 
       <section v-if="loadState === 'empty'" class="card state-card"><strong>没有找到 {{ activePlanCode }} 的版本记录</strong><p>若这是新套餐，可点击“新建套餐”；页面不会将 404/空结果替换为演示数据。</p></section>
@@ -356,9 +395,9 @@ onMounted(loadModules)
             :modules="modules"
             :pending="actionPending"
             @edit="openEdit"
-            @publish="publishSelected"
-            @retire="retireSelected"
-            @clone="cloneSelected"
+            @publish="openPublishCheck"
+            @retire="openRetire"
+            @clone="openClone"
             @eligibility="openEligibility"
           />
         </div>
@@ -376,6 +415,20 @@ onMounted(loadModules)
       :module-error="moduleLoadError"
       @close="editorOpen = false"
       @submit="saveEditor"
+    />
+
+    <PlanVersionLifecycleDialog
+      :open="Boolean(lifecycleDialogMode)"
+      :mode="lifecycleDialogMode || 'preflight'"
+      :version="selectedVersion"
+      :modules="modules"
+      :pending="actionPending"
+      :server-error="actionError"
+      @close="closeLifecycleDialog"
+      @advance="continuePublish"
+      @publish="publishSelected"
+      @clone="cloneSelected"
+      @retire="retireSelected"
     />
 
     <div v-if="eligibilityOpen" class="eligibility-backdrop" role="presentation" @click.self="eligibilityOpen = false">
