@@ -19,20 +19,29 @@ import (
 )
 
 type ce13PlatformBrowserFixture struct {
-	BaseURL            string `json:"base_url"`
-	WebBaseURL         string `json:"web_base_url"`
-	DiscoveryURL       string `json:"discovery_url"`
-	AllowedEmail       string `json:"allowed_email"`
-	AllowedPassword    string `json:"allowed_password"`
-	DeniedEmail        string `json:"denied_email"`
-	DeniedPassword     string `json:"denied_password"`
-	TenantEmail        string `json:"tenant_email"`
-	TenantPassword     string `json:"tenant_password"`
-	TenantID           string `json:"tenant_id"`
-	AllowedAPIKey      string `json:"allowed_api_key"`
-	AllowedSubject     string `json:"allowed_subject"`
-	DeniedSubject      string `json:"denied_subject"`
-	PlatformOIDCIssuer string `json:"platform_oidc_issuer"`
+	BaseURL                 string `json:"base_url"`
+	WebBaseURL              string `json:"web_base_url"`
+	DiscoveryURL            string `json:"discovery_url"`
+	AllowedEmail            string `json:"allowed_email"`
+	AllowedPassword         string `json:"allowed_password"`
+	DeniedEmail             string `json:"denied_email"`
+	DeniedPassword          string `json:"denied_password"`
+	TenantEmail             string `json:"tenant_email"`
+	TenantPassword          string `json:"tenant_password"`
+	TenantID                string `json:"tenant_id"`
+	AllowedAPIKey           string `json:"allowed_api_key"`
+	AllowedSubject          string `json:"allowed_subject"`
+	DeniedSubject           string `json:"denied_subject"`
+	ModuleReadEmail         string `json:"module_read_email"`
+	ModuleReadPassword      string `json:"module_read_password"`
+	ModuleReadSubject       string `json:"module_read_subject"`
+	ModuleManageEmail       string `json:"module_manage_email"`
+	ModuleManagePassword    string `json:"module_manage_password"`
+	ModuleManageSubject     string `json:"module_manage_subject"`
+	ModuleTechnicalEmail    string `json:"module_technical_email"`
+	ModuleTechnicalPassword string `json:"module_technical_password"`
+	ModuleTechnicalSubject  string `json:"module_technical_subject"`
+	PlatformOIDCIssuer      string `json:"platform_oidc_issuer"`
 }
 
 func TestCE13PlatformWebSessionSeed(t *testing.T) {
@@ -65,20 +74,31 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 	webBaseURL := valueOrDefault(os.Getenv("CE13_WEB_BASE_URL"), baseURL)
 	issuer := valueOrDefault(os.Getenv("CE13_IDP_ISSUER"), "http://127.0.0.1:18081/idp")
 	const (
-		allowedUserID   = "ce13-platform-allow-user"
-		allowedEmail    = "ce13.platform.allow@example.invalid"
-		allowedPassword = "CE13-Allow-Correct-Horse-2026!"
-		allowedSubject  = "ce13-platform-allow"
-		allowedAPIKey   = "ce13-platform-api-key-allow"
-		deniedUserID    = "ce13-platform-denied-user"
-		deniedEmail     = "ce13.platform.denied@example.invalid"
-		deniedPassword  = "CE13-Denied-Correct-Horse-2026!"
-		deniedSubject   = "ce13-platform-denied"
-		tenantUserID    = "ce13-tenant-only-user"
-		tenantEmail     = "ce13.tenant.only@example.invalid"
-		tenantPassword  = "CE13-Tenant-Correct-Horse-2026!"
+		allowedUserID           = "ce13-platform-allow-user"
+		allowedEmail            = "ce13.platform.allow@example.invalid"
+		allowedPassword         = "CE13-Allow-Correct-Horse-2026!"
+		allowedSubject          = "ce13-platform-allow"
+		allowedAPIKey           = "ce13-platform-api-key-allow"
+		deniedUserID            = "ce13-platform-denied-user"
+		deniedEmail             = "ce13.platform.denied@example.invalid"
+		deniedPassword          = "CE13-Denied-Correct-Horse-2026!"
+		deniedSubject           = "ce13-platform-denied"
+		moduleReadUserID        = "ce13-platform-module-read-user"
+		moduleReadEmail         = "ce13.platform.module.read@example.invalid"
+		moduleReadPassword      = "CE13-Module-Read-Correct-Horse-2026!"
+		moduleReadSubject       = "ce13-platform-module-read"
+		moduleManageUserID      = "ce13-platform-module-manage-user"
+		moduleManageEmail       = "ce13.platform.module.manage@example.invalid"
+		moduleManagePassword    = "CE13-Module-Manage-Correct-Horse-2026!"
+		moduleManageSubject     = "ce13-platform-module-manage"
+		moduleTechnicalUserID   = "ce13-platform-module-technical-user"
+		moduleTechnicalEmail    = "ce13.platform.module.technical@example.invalid"
+		moduleTechnicalPassword = "CE13-Module-Technical-Correct-Horse-2026!"
+		moduleTechnicalSubject  = "ce13-platform-module-technical"
+		tenantUserID            = "ce13-tenant-only-user"
+		tenantEmail             = "ce13.tenant.only@example.invalid"
+		tenantPassword          = "CE13-Tenant-Correct-Horse-2026!"
 	)
-
 	seedCE13WebUser(t, store, "ce13-platform-allow-home", allowedUserID, allowedEmail, allowedPassword)
 	seedCE13WebUser(t, store, "ce13-platform-denied-home", deniedUserID, deniedEmail, deniedPassword)
 
@@ -117,6 +137,15 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	seedCE13PlatformBrowserActor(t, store, issuer, "ce13-platform-module-read-home",
+		moduleReadUserID, moduleReadEmail, moduleReadPassword, moduleReadSubject, "ce13-platform-api-key-module-read",
+		[]authz.PermissionKey{"platform.module.read"})
+	seedCE13PlatformBrowserActor(t, store, issuer, "ce13-platform-module-manage-home",
+		moduleManageUserID, moduleManageEmail, moduleManagePassword, moduleManageSubject, "ce13-platform-api-key-module-manage",
+		[]authz.PermissionKey{"platform.module.read", "platform.module.manage"})
+	seedCE13PlatformBrowserActor(t, store, issuer, "ce13-platform-module-technical-home",
+		moduleTechnicalUserID, moduleTechnicalEmail, moduleTechnicalPassword, moduleTechnicalSubject, "ce13-platform-api-key-module-technical",
+		[]authz.PermissionKey{"platform.module.read", "platform.module.technical.manage"})
 	if err := store.BindOIDCPlatformIdentity(ctx, issuer, "biz-user:"+allowedUserID, allowedSubject, allowedEmail); err != nil {
 		t.Fatal(err)
 	}
@@ -125,20 +154,29 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 	}
 
 	fixture := ce13PlatformBrowserFixture{
-		BaseURL:            baseURL,
-		WebBaseURL:         webBaseURL,
-		DiscoveryURL:       issuer + "/.well-known/openid-configuration",
-		AllowedEmail:       allowedEmail,
-		AllowedPassword:    allowedPassword,
-		DeniedEmail:        deniedEmail,
-		DeniedPassword:     deniedPassword,
-		TenantEmail:        tenantEmail,
-		TenantPassword:     tenantPassword,
-		TenantID:           tenantID,
-		AllowedAPIKey:      allowedAPIKey,
-		AllowedSubject:     allowedSubject,
-		DeniedSubject:      deniedSubject,
-		PlatformOIDCIssuer: issuer,
+		BaseURL:                 baseURL,
+		WebBaseURL:              webBaseURL,
+		DiscoveryURL:            issuer + "/.well-known/openid-configuration",
+		AllowedEmail:            allowedEmail,
+		AllowedPassword:         allowedPassword,
+		DeniedEmail:             deniedEmail,
+		DeniedPassword:          deniedPassword,
+		TenantEmail:             tenantEmail,
+		TenantPassword:          tenantPassword,
+		TenantID:                tenantID,
+		AllowedAPIKey:           allowedAPIKey,
+		AllowedSubject:          allowedSubject,
+		DeniedSubject:           deniedSubject,
+		ModuleReadEmail:         moduleReadEmail,
+		ModuleReadPassword:      moduleReadPassword,
+		ModuleReadSubject:       moduleReadSubject,
+		ModuleManageEmail:       moduleManageEmail,
+		ModuleManagePassword:    moduleManagePassword,
+		ModuleManageSubject:     moduleManageSubject,
+		ModuleTechnicalEmail:    moduleTechnicalEmail,
+		ModuleTechnicalPassword: moduleTechnicalPassword,
+		ModuleTechnicalSubject:  moduleTechnicalSubject,
+		PlatformOIDCIssuer:      issuer,
 	}
 	payload, err := json.MarshalIndent(fixture, "", "  ")
 	if err != nil {
@@ -203,6 +241,27 @@ func seedCE13WebUser(t *testing.T, store *accesspersistence.Store, tenantID, use
 		t.Fatal(err)
 	}
 	if err := store.SetUserPassword(ctx, userID, password); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func seedCE13PlatformBrowserActor(
+	t *testing.T,
+	store *accesspersistence.Store,
+	issuer, homeTenantID, userID, email, password, subject, token string,
+	permissions []authz.PermissionKey,
+) {
+	t.Helper()
+	ctx := context.Background()
+	seedCE13WebUser(t, store, homeTenantID, userID, email, password)
+	if err := store.BootstrapPlatform(ctx, accesspersistence.PlatformBootstrap{
+		Subject:     subject,
+		Token:       token,
+		Permissions: permissions,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.BindOIDCPlatformIdentity(ctx, issuer, "biz-user:"+userID, subject, email); err != nil {
 		t.Fatal(err)
 	}
 }

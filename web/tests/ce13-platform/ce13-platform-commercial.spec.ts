@@ -15,6 +15,15 @@ interface Fixture {
   allowed_api_key: string;
   allowed_subject: string;
   denied_subject: string;
+  module_read_email: string;
+  module_read_password: string;
+  module_read_subject: string;
+  module_manage_email: string;
+  module_manage_password: string;
+  module_manage_subject: string;
+  module_technical_email: string;
+  module_technical_password: string;
+  module_technical_subject: string;
   platform_oidc_issuer: string;
 }
 
@@ -202,6 +211,65 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
   await allowed.context.close();
 });
 
+test("TestCE13PlatformModuleAuthorizationMatrix", async ({ browser }) => {
+  const data = fixture();
+  const cases = [
+    {
+      email: data.module_read_email,
+      password: data.module_read_password,
+      subject: data.module_read_subject,
+      allowed: ["commercial.module.list", "commercial.module.get"],
+      denied: ["commercial.module.create", "commercial.module.update", "commercial.module.set_sales_status", "commercial.module.set_technical_status"],
+      create: false, metadata: false, sales: false, technical: false,
+    },
+    {
+      email: data.module_manage_email,
+      password: data.module_manage_password,
+      subject: data.module_manage_subject,
+      allowed: ["commercial.module.list", "commercial.module.get", "commercial.module.create", "commercial.module.update", "commercial.module.set_sales_status"],
+      denied: ["commercial.module.set_technical_status"],
+      create: true, metadata: true, sales: true, technical: false,
+    },
+    {
+      email: data.module_technical_email,
+      password: data.module_technical_password,
+      subject: data.module_technical_subject,
+      allowed: ["commercial.module.list", "commercial.module.get", "commercial.module.set_technical_status"],
+      denied: ["commercial.module.create", "commercial.module.update", "commercial.module.set_sales_status"],
+      create: false, metadata: false, sales: false, technical: true,
+    },
+  ];
+
+  for (const item of cases) {
+    const actor = await login(browser, data, item.email, item.password);
+    expect(actor.session.actor_kind).toBe("platform");
+    expect(actor.session.platform_subject).toBe(item.subject);
+    expect(actor.session.active_tenant_id ?? "").toBe("");
+
+    const authorization = await browserRequest(actor.page, data.web_base_url, "/auth/authorization");
+    expect(authorization.status, authorization.text).toBe(200);
+    const codes = (authorization.json as { button_codes?: string[] }).button_codes ?? [];
+    for (const action of item.allowed) expect(codes).toContain(action);
+    for (const action of item.denied) expect(codes).not.toContain(action);
+
+    await actor.page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
+    await expect(actor.page.getByRole("heading", { name: "模块目录", exact: true })).toBeVisible();
+    const create = actor.page.getByRole("button", { name: "新增模块", exact: true });
+    if (item.create) await expect(create).toBeEnabled();
+    else await expect(create).toBeDisabled();
+
+    await actor.page.getByRole("button", { name: "查看详情", exact: true }).first().click();
+    const metadata = actor.page.getByRole("button", { name: "编辑基础配置", exact: true });
+    const sales = actor.page.getByRole("button", { name: /^(停售销售|恢复销售)$/ });
+    const technical = actor.page.getByRole("button", { name: "调整技术状态", exact: true });
+    if (item.metadata) await expect(metadata).toBeEnabled(); else await expect(metadata).toBeDisabled();
+    if (item.sales) await expect(sales).toBeEnabled(); else await expect(sales).toBeDisabled();
+    if (item.technical) await expect(technical).toBeEnabled(); else await expect(technical).toBeDisabled();
+
+    await actor.context.close();
+  }
+});
+
 test("TestCE13PlatformCommercialLifecycleThroughTrustedWebSession", async ({ browser }) => {
   const data = fixture();
   const allowed = await login(browser, data, data.allowed_email, data.allowed_password);
@@ -359,7 +427,7 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await expect(page).toHaveURL(/#\/platform\/commercial\/plans/);
 
   await page.getByRole("button", { name: "新建套餐" }).click();
-  const editor = page.getByRole("dialog", { name: "新建套餐首稿" });
+  const editor = page.getByRole("dialog", { name: "创建套餐草稿" });
   await editor.getByLabel("套餐代码").fill(code);
   await editor.getByLabel("套餐名称").fill("CE-13 可见控制台套餐");
   await editor.getByRole("button", { name: "添加模块" }).click();
@@ -368,7 +436,7 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await editor.getByLabel("device.lifecycle").check();
   await editor.getByRole("button", { name: "添加范围" }).click();
   await editor.getByPlaceholder("default").fill("default");
-  await editor.getByRole("button", { name: "提交", exact: true }).click();
+  await editor.getByRole("button", { name: "创建草稿", exact: true }).click();
   await expect(page.getByText("套餐草稿已创建。")).toBeVisible();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "发布", exact: true }).click();
