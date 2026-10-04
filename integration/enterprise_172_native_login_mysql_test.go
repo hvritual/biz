@@ -5,6 +5,7 @@ package integration
 import (
 	"context"
 	"errors"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -220,5 +221,66 @@ func TestEnterprise172NoActiveTenantStillAuthenticatesGlobalAccount(t *testing.T
 	}
 	if authentication.Session.ActiveTenantID != "" || len(authentication.Session.Tenants) != 0 {
 		t.Fatalf("global account without active memberships guessed tenant: %+v", authentication.Session)
+	}
+}
+
+func TestEnterprise191LegalLoginSuccessRateAndP95(t *testing.T) {
+	db := ce08FreshFixtureDB(t)
+	ctx := context.Background()
+	store, err := accesspersistence.New(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.AutoMigrate(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.EnsureFirstPartyIDPSchema(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.EnsureFirstPartyIDPSecuritySchema(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	const (
+		sampleCount = 100
+		userID      = "enterprise191-login-user"
+		email       = "enterprise191.login@example.invalid"
+		password    = "Enterprise191-Login9A"
+	)
+	if err := store.BootstrapGlobalUser(ctx, accesspersistence.GlobalUserBootstrap{ID: userID, Email: email}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SetUserPassword(ctx, userID, password); err != nil {
+		t.Fatal(err)
+	}
+
+	policy := accesspersistence.DefaultFirstPartyLoginPolicy()
+	latencies := make([]time.Duration, 0, sampleCount)
+	successes := 0
+	for sample := 0; sample < sampleCount; sample++ {
+		started := time.Now()
+		identity, _, err := store.AuthenticateFirstPartyLoginWithAudit(
+			ctx, email, password, "127.0.0.1:19191", policy,
+		)
+		latencies = append(latencies, time.Since(started))
+		if err == nil && identity.UserID == userID {
+			successes++
+			continue
+		}
+		t.Logf("ENTERPRISE191_LOGIN_FAILURE sample=%d identity=%q err=%v", sample+1, identity.UserID, err)
+	}
+	sort.Slice(latencies, func(i, j int) bool { return latencies[i] < latencies[j] })
+	p95 := latencies[(95*len(latencies)+99)/100-1]
+	rate := float64(successes) / float64(sampleCount)
+	t.Logf(
+		"ENTERPRISE191_LOGIN_METRIC samples=%d successes=%d success_rate=%.5f p95_ms=%.3f max_ms=%.3f environment=ci_mysql",
+		sampleCount, successes, rate, float64(p95)/float64(time.Millisecond),
+		float64(latencies[len(latencies)-1])/float64(time.Millisecond),
+	)
+	if rate < 0.995 {
+		t.Fatalf("legal login success rate %.5f below 0.995", rate)
+	}
+	if p95 > 2*time.Second {
+		t.Fatalf("legal login p95=%s exceeds 2s", p95)
 	}
 }

@@ -3,7 +3,7 @@ YUNKA_APP := $(YUNKA_ROOT)/app
 PROTOC ?= protoc
 COMMERCIAL_BASELINE ?=
 
-.PHONY: init generate check test verify pressure run workspace-check yunka-source-check consumer-certify authorization-generate authorization-check
+.PHONY: init generate check test verify pressure run workspace-check yunka-source-check consumer-certify authorization-generate authorization-check enterprise191-check
 
 init:
 	@cd $(YUNKA_APP) && go run ./cmd init --root $(CURDIR) --db-prefix biz
@@ -18,6 +18,7 @@ check: toolchain-check commercial-delivery-check ui-skill-check b2b-ux-skill-che
 	@cd $(YUNKA_APP) && go run ./cmd check --root $(CURDIR) --protoc $(PROTOC)
 	@$(MAKE) commercial-check
 	@$(MAKE) authorization-check
+	@$(MAKE) enterprise191-check
 
 workspace-check:
 	@./scripts/consumer-resolution-check.sh
@@ -90,3 +91,7 @@ ui-skill-check:
 b2b-ux-skill-check:
 	@python3 -B scripts/check_b2b_ux_skill.py
 	@python3 -B -m unittest discover -s scripts -p 'test_b2b_ux_skill.py' -v
+
+# Enterprise center full acceptance contract.
+enterprise191-check:
+	@python3 scripts/ci_enterprise191_acceptance.py
