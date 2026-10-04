@@ -253,7 +253,7 @@ test("TestCE13PlatformModuleAuthorizationMatrix", async ({ browser }) => {
     for (const action of item.denied) expect(codes).not.toContain(action);
 
     await actor.page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
-    await expect(actor.page.getByRole("heading", { name: "模块目录", exact: true })).toBeVisible();
+    await expect(actor.page.getByRole("heading", { name: "模块目录", level: 1, exact: true })).toBeVisible();
     const create = actor.page.getByRole("button", { name: "新增模块", exact: true });
     if (item.create) await expect(create).toBeEnabled();
     else await expect(create).toBeDisabled();
