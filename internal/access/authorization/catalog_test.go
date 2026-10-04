@@ -199,6 +199,38 @@ func TestPlatformWebCatalogDerivesOnlyBoundWebSessionOperations(t *testing.T) {
 	}
 }
 
+func TestPlatformModuleWebActionsAreOnlyPublicModuleManagementOperations(t *testing.T) {
+	actions := PlatformModuleWebActions()
+	if len(actions) == 0 {
+		t.Fatal("platform module web action catalog is empty")
+	}
+	seen := map[string]bool{}
+	for _, action := range actions {
+		seen[action.Code] = true
+		if action.TenantRequired || action.Classification != "platform_management" || action.Application != "module_catalog" {
+			t.Fatalf("unexpected platform module action: %+v", action)
+		}
+		if !containsString(action.Authentication, "web-session") || (action.RPC == "" && len(action.HTTP) == 0) {
+			t.Fatalf("platform module action is not public web-bound: %+v", action)
+		}
+	}
+	for _, code := range []string{
+		"commercial.module.list",
+		"commercial.module.get",
+		"commercial.module.create",
+		"commercial.module.update",
+		"commercial.module.set_sales_status",
+		"commercial.module.set_technical_status",
+	} {
+		if !seen[code] {
+			t.Fatalf("platform module operation missing: %s", code)
+		}
+	}
+	if seen["commercial.plan.list"] || seen["tenant.list"] || seen["commercial.module.runtime.verify"] {
+		t.Fatalf("non-module-web operation leaked into platform module catalog: %v", seen)
+	}
+}
+
 func TestPlatformAuthorizedActionsKeepReadManageAndTechnicalAuthoritySeparate(t *testing.T) {
 	readOnly := AuthorizedPlatformActions([]authz.Grant{{Permission: "platform.module.read"}})
 	readCodes := map[string]bool{}

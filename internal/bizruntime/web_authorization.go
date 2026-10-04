@@ -152,6 +152,7 @@ func (auth *runtimeWebAuth) handleActionCatalog(writer http.ResponseWriter, requ
 		for _, grant := range grants {
 			if grant.Permission == authz.PermissionKey("platform.module.read") {
 				moduleDefinitions = platformModuleDefinitionViews(modulecatalog.ProductionRegistry().Definitions())
+				tenantActions = append(tenantActions, accessauthorization.PlatformModuleWebActions()...)
 				break
 			}
 		}

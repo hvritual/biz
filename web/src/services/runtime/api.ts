@@ -34,6 +34,9 @@ export type ActionCatalogAction = {
   authentication: string[]
   permissions: string[]
   permission_mode: string
+  classification?: string
+  module_code?: string
+  capability_codes?: string[]
   rpc?: string
   http?: Array<{ method: string; path: string }>
 }

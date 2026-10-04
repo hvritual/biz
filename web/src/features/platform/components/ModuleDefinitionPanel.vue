@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { UiButton } from '@/ui/base'
 import AppIcon from '@/ui/common/AppIcon.vue'
@@ -7,8 +7,9 @@ import StatusBadge from '@/ui/common/StatusBadge.vue'
 import { backendTermLabel } from '@/i18n/backend-terms'
 import type { ModuleDTO } from '@/services/commercial/platformCommercial'
 import type { ExistingModuleChangeKind } from '../composables/useModuleManagement'
-import { moduleAccessDefinitions, moduleChangeOperation, moduleMappingVersion, operationDefinition } from '@/services/commercial/moduleAccess'
+import { moduleAccessDefinitions, moduleChangeOperation, operationDefinition } from '@/services/commercial/moduleAccess'
 import { currentAuthorizationAllows } from '@/services/runtime/authorization'
+import { readActionCatalog, type ActionCatalogAction } from '@/services/runtime/api'
 
 const props = defineProps<{ module: ModuleDTO; busy: boolean; writeUnresolved: boolean }>()
 const emit = defineEmits<{ change: [kind: ExistingModuleChangeKind] }>()
@@ -19,10 +20,29 @@ const tabs = [
   { id: 'overview', label: '概览' }, { id: 'permissions', label: '能力与权限' },
   { id: 'pages', label: '关联页面' }, { id: 'verification', label: '可用性核验' },
 ]
-const definitions = computed(() => moduleAccessDefinitions(props.module, router.getRoutes()))
+const catalogActions = ref<ActionCatalogAction[]>([])
+const catalogState = ref<'loading' | 'ready' | 'error'>('loading')
+const catalogError = ref('')
+const definitions = computed(() => moduleAccessDefinitions(props.module, router.getRoutes(), catalogActions.value))
 const selectedPage = computed(() => definitions.value.pages.find((page) => page.path === routeSelection.value))
 const managementDefinitions = computed(() => ['commercial.module.get', ...Object.values(moduleChangeOperation)]
-  .map(operationDefinition).filter((item) => item !== undefined))
+  .map((operationId) => operationDefinition(catalogActions.value, operationId))
+  .filter((item) => item !== undefined))
+
+async function loadActionCatalog() {
+  catalogState.value = 'loading'
+  catalogError.value = ''
+  try {
+    const response = await readActionCatalog()
+    catalogActions.value = response.actions ?? []
+    catalogState.value = 'ready'
+  } catch (error) {
+    catalogActions.value = []
+    catalogState.value = 'error'
+    catalogError.value = error instanceof Error ? error.message : '操作契约读取失败'
+  }
+}
+onMounted(loadActionCatalog)
 const canMetadata = computed(() => currentAuthorizationAllows(moduleChangeOperation.metadata))
 const canSales = computed(() => currentAuthorizationAllows(moduleChangeOperation.sales))
 const canTechnical = computed(() => currentAuthorizationAllows(moduleChangeOperation.technical))
@@ -143,11 +163,13 @@ function navigateTabs(event: KeyboardEvent) {
         <div class="module-section-header">
           <div>
             <h3>能力与业务操作</h3>
-            <p>商业映射版本 {{ moduleMappingVersion }}；仅展示当前构建中的公开业务操作定义，不授予租户能力。</p>
+            <p>来自当前服务端操作契约；仅展示公开业务操作定义，不授予租户能力。</p>
           </div>
         </div>
-        <div v-if="definitions.catalogMismatch || definitions.unmappedCapabilities.length" class="module-notice warning" role="status">当前模块能力与此版本前端契约并非全部匹配。缺失映射不表示没有权限；请先核对部署版本。</div>
-        <div v-if="definitions.operations.length" class="module-table-scroll" tabindex="0" role="region" aria-label="能力权限关联">
+        <div v-if="catalogState === 'loading'" class="module-notice" role="status">正在读取当前操作契约…</div>
+        <div v-else-if="catalogState === 'error'" class="module-notice warning" role="status">操作契约读取失败：{{ catalogError }}。此处不据此推断权限。</div>
+        <div v-if="catalogState === 'ready' && (definitions.catalogMismatch || definitions.unmappedCapabilities.length)" class="module-notice warning" role="status">当前模块能力与服务端操作契约并非全部匹配。缺失映射不表示没有权限；请先核对部署版本。</div>
+        <div v-if="catalogState === 'ready' && definitions.operations.length" class="module-table-scroll" tabindex="0" role="region" aria-label="能力权限关联">
           <table class="module-definition-table">
             <thead><tr><th>能力标识</th><th>业务操作</th><th>IAM 权限与组合</th></tr></thead>
             <tbody>
@@ -162,7 +184,7 @@ function navigateTabs(event: KeyboardEvent) {
             </tbody>
           </table>
         </div>
-        <p v-else class="module-empty">当前构建未找到该模块的公开业务操作映射，不能据此推断权限或能力已就绪。</p>
+        <p v-else-if="catalogState === 'ready'" class="module-empty">当前服务端操作契约未找到该模块的公开业务操作映射，不能据此推断权限或能力已就绪。</p>
       </template>
       <template v-else-if="tab === 'pages'">
         <div class="module-section-header">
@@ -172,7 +194,7 @@ function navigateTabs(event: KeyboardEvent) {
           </div>
         </div>
         <div class="module-notice">关联范围：页面入口声明。页面内按钮、组合调用、数据范围与对象状态仍需独立核验；不提供手工绑定入口。</div>
-        <div v-if="definitions.pages.length" class="module-table-scroll" tabindex="0" role="region" aria-label="模块关联页面">
+        <div v-if="catalogState === 'ready' && definitions.pages.length" class="module-table-scroll" tabindex="0" role="region" aria-label="模块关联页面">
           <table class="module-definition-table">
             <thead><tr><th>页面</th><th>路由</th><th>关联入口操作</th><th>操作</th></tr></thead>
             <tbody>
@@ -185,7 +207,7 @@ function navigateTabs(event: KeyboardEvent) {
             </tbody>
           </table>
         </div>
-        <p v-else class="module-empty">当前构建没有找到使用该模块业务操作的页面入口。无页面关联不等于系统没有该能力。</p>
+        <p v-else-if="catalogState === 'ready'" class="module-empty">当前操作契约没有找到使用该模块业务操作的页面入口。无页面关联不等于系统没有该能力。</p>
         <section v-if="selectedPage" class="module-route-detail" aria-live="polite">
           <h4>{{ selectedPage.title }} · 页面入口定义</h4>
           <code>{{ selectedPage.path }}</code>

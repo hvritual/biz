@@ -59,6 +59,17 @@ func PlatformWebActionsForActions(actions []Action) []Action {
 	return out
 }
 
+func PlatformModuleWebActions() []Action {
+	out := []Action{}
+	for _, action := range PlatformWebActions() {
+		if action.Classification != "platform_management" || action.Application != "module_catalog" {
+			continue
+		}
+		out = append(out, cloneAction(action))
+	}
+	return out
+}
+
 func AuthorizedPlatformActions(grants []authz.Grant) []Action {
 	allowed := map[authz.PermissionKey]struct{}{}
 	for _, grant := range grants {
