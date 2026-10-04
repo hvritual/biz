@@ -100,25 +100,25 @@ test('TestCE13ModuleSalesStatusUsesTrustedSessionCsrfAndServerVersion', async ({
 
   let mutationBody: Record<string, unknown> | undefined
   let mutationHeaders: Record<string, string> | undefined
+  const changedModule = { ...readyModule, salesStatus: 'MODULE_SALES_STATUS_RETIRED', version: '1' }
+  await page.route('**/api/v1/platform/modules/customer', (route) => fulfillJson(route, changedModule))
   await page.route('**/api/v1/platform/modules/customer/sales-status', async (route) => {
     mutationBody = route.request().postDataJSON() as Record<string, unknown>
     mutationHeaders = route.request().headers()
-    await fulfillJson(route, {
-      ...readyModule,
-      salesStatus: 'MODULE_SALES_STATUS_RETIRED',
-      version: '2',
-    })
+    await fulfillJson(route, changedModule)
   })
 
   await page.goto('/#/platform/commercial/modules')
   await page.getByRole('button', { name: '查看详情' }).click()
-  const dialog = page.getByRole('dialog', { name: /模块详情/ })
-  await expect(dialog.getByText('查看客户')).toBeVisible()
-  await expect(dialog.getByText('租户基础能力')).toBeVisible()
-  await dialog.getByLabel('变更原因').fill('CE-13 销售状态收口验证')
-  await dialog.getByRole('button', { name: '停售销售' }).click()
+  const detail = page.getByRole('dialog', { name: /模块详情/ })
+  await expect(detail.getByText('查看客户')).toBeVisible()
+  await expect(detail.getByText('租户基础能力')).toBeVisible()
+  await detail.getByRole('button', { name: '停售销售' }).click()
+  const confirmation = page.getByRole('dialog', { name: '确认模块停售', exact: true })
+  await confirmation.getByLabel('变更原因').fill('CE-13 销售状态收口验证')
+  await confirmation.getByRole('button', { name: '确认停售', exact: true }).click()
 
-  await expect(dialog.getByText('模块已停售；技术状态未被自动修改。')).toBeVisible()
+  await expect(page.getByRole('dialog', { name: '模块变更结果' }).getByText('模块已停售；目录版本与技术状态未改变。')).toBeVisible()
   expect(mutationBody).toMatchObject({
     moduleCode: 'customer',
     salesStatus: 'MODULE_SALES_STATUS_RETIRED',

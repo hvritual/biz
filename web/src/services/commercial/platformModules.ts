@@ -70,6 +70,43 @@ async function mutate<T>(path: string, method: 'POST' | 'PATCH', body: Record<st
   })
 }
 
+export interface PlatformModuleDefinitionDTO {
+  moduleCode: string
+  capabilityCodes: string[]
+  quotaSchemaKeys: string[]
+  fieldPolicySchemaKeys: string[]
+  dependencies: string[]
+  implementationReady: boolean
+}
+
+export async function listPlatformModuleDefinitions() {
+  const payload = await request<{ module_definitions?: PlatformModuleDefinitionDTO[] }>('/auth/action-catalog')
+  return Array.isArray(payload.module_definitions) ? payload.module_definitions : []
+}
+
+export function createPlatformModule(input: {
+  moduleCode: string
+  name: string
+  category: string
+  salesScope: string[]
+  reason: string
+}) {
+  const requestId = commercialRequestId('platform-module-create')
+  return mutate<ModuleDTO>(
+    '/v1/platform/modules',
+    'POST',
+    {
+      requestId,
+      moduleCode: input.moduleCode.trim(),
+      name: input.name.trim(),
+      category: input.category.trim(),
+      salesScope: input.salesScope.map((value) => value.trim()).filter(Boolean),
+      reason: input.reason.trim(),
+    },
+    requestId,
+  )
+}
+
 export function getPlatformModule(moduleCode: string) {
   return request<ModuleDTO>(`/v1/platform/modules/${encoded(moduleCode)}`)
 }

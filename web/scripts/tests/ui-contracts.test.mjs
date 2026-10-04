@@ -92,9 +92,13 @@ test('declared backend-error consumers must not expose raw backend messages', (t
 
 test('raw backend collections cannot be rendered directly', (t) => {
   const root = fixture(t)
-  edit(root, 'src/features/platform/pages/CommercialModulesView.vue', (source) =>
-    source.replace("{{ backendTermLabel('entitlementKey', item) }}", '{{ item }}'),
-  )
+  // Inject the forbidden binding into the canonical page. Collection rendering may
+  // move into a child component, so replacing an old expression can be a no-op.
+  edit(root, 'src/features/platform/pages/CommercialModulesView.vue', (source) => {
+    const marker = '<div data-ui-region="page-heading">'
+    assert.ok(source.includes(marker), 'negative fixture must mutate real template markup')
+    return source.replace(marker, `${marker}<span v-for="item in vm.selected?.capabilityCodes" :key="item">{{ item }}</span>`)
+  })
   assert.ok(checkUiModel(root).failures.some((error) => error.includes('raw backend collection value')))
 })
 
