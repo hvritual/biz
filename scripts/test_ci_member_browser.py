@@ -89,6 +89,20 @@ class MemberBrowserSetupTest(unittest.TestCase):
         self.assertIn('ENTERPRISE_MEMBER_REAL_E2E=1 npx playwright test e2e/enterprise-members-real.spec.ts', source)
         self.assertNotRegex(source, r'playwright\s+install\s+--with-deps\s+chromium')
 
+    def test_coffeelink_reuses_bounded_browser_setup_without_weakening_evidence(self):
+        source = (ROOT / '.github/workflows/coffeelink-web.yml').read_text()
+        self.assertEqual(2, source.count('bash scripts/ci_member_browser.sh'))
+        self.assertIn('python3 -B scripts/test_ci_member_browser.py', source)
+        self.assertNotIn('playwright install --with-deps', source)
+        self.assertNotIn('fonts-noto-cjk', source)
+        self.assertIn('timeout-minutes: 6', source)
+        self.assertIn('default: 180', source)
+        self.assertIn('default: 240', source)
+        self.assertIn('Run CoffeeLink core E2E', source)
+        self.assertIn('Verify visual contract evidence', source)
+        self.assertIn('Run serial site-rental E2E', source)
+        self.assertIn('Verify site-rental evidence', source)
+
     def test_organization_keeps_e2e_and_four_viewport_evidence(self):
         source = (ROOT / '.github/workflows/ec-ri-04-web-qualification.yml').read_text()
         self.assertIn('python3 -B scripts/test_ci_member_browser.py', source)
