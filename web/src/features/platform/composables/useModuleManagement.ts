@@ -227,6 +227,7 @@ export function useModuleManagement() {
     } catch (error) {
       if (generation !== epoch) return
       if (error instanceof CommercialApiError && [401, 403].includes(error.status)) {
+        await ensureCurrentAuthorization(true)
         createUnresolved.value = false
         resultState.value = 'denied'
         resultMessage.value = '当前账号没有执行创建操作的权限或会话已失效。没有显示为成功。'
@@ -408,6 +409,7 @@ export function useModuleManagement() {
         pending.value = false
         await refreshModule()
       } else if (error instanceof CommercialApiError && [401, 403].includes(error.status)) {
+        await ensureCurrentAuthorization(true)
         screen.value = 'result'
         resultState.value = 'denied'
         resultMessage.value = '当前账号没有执行该操作的权限或会话已失效。没有显示为成功；请联系平台管理员核对授权。'

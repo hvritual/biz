@@ -20,7 +20,7 @@ const definitions = [
   },
 ]
 const output = 'test-results/screenshots/module-journey'
-type FixtureMode = 'normal' | 'denied' | 'conflict' | 'unknown' | 'stale-readback'
+type FixtureMode = 'normal' | 'denied' | 'revoke-on-write' | 'conflict' | 'unknown' | 'stale-readback'
 const allModuleActions = [
   'commercial.module.list',
   'commercial.module.get',
@@ -68,6 +68,10 @@ async function install(page: Page, mode: FixtureMode = 'normal', initialAuthoriz
       headers.push(req.headers())
       const body = req.postDataJSON()
       if (mode === 'denied') return route.fulfill({ status: 403, json: { message: 'forbidden' } })
+      if (mode === 'revoke-on-write') {
+        authorization = ['commercial.module.list', 'commercial.module.get']
+        return route.fulfill({ status: 403, json: { message: 'forbidden after grant revoke' } })
+      }
       created = {
         ...initial, moduleCode: body.moduleCode, name: body.name, category: body.category, salesScope: body.salesScope,
         technicalStatus: 'MODULE_TECHNICAL_STATUS_READY', salesStatus: 'MODULE_SALES_STATUS_RETIRED',
@@ -86,6 +90,10 @@ async function install(page: Page, mode: FixtureMode = 'normal', initialAuthoriz
       headers.push(req.headers())
       const body = req.postDataJSON()
       if (mode === 'denied') return route.fulfill({ status: 403, json: { message: 'forbidden' } })
+      if (mode === 'revoke-on-write') {
+        authorization = ['commercial.module.list', 'commercial.module.get']
+        return route.fulfill({ status: 403, json: { message: 'forbidden after grant revoke' } })
+      }
       if (mode === 'conflict' && writes === 1) {
         current = { ...current, version: '10', name: '其他管理员更新的模块名' }
         return route.fulfill({ status: 409, json: { message: 'conflict' } })
@@ -242,6 +250,22 @@ test('a forbidden write is not success and read access does not imply manage acc
   await expect(page.getByText('未获操作授权', { exact: true })).toBeVisible()
   await expect(page.getByText('变更已确认生效', { exact: true })).toHaveCount(0)
   await capture(page, '14-write-forbidden')
+})
+
+test('executor 403 after a last-moment revoke refreshes the projection and disables later writes', async ({ page }) => {
+  const fixture = await install(page, 'revoke-on-write')
+  await open(page)
+  await page.getByRole('button', { name: '编辑基础配置', exact: true }).click()
+  await page.getByLabel('模块名称').fill('权限竞态草稿')
+  await page.getByLabel('变更原因').fill('提交前允许，执行前撤权')
+  await page.getByRole('button', { name: '保存基础配置', exact: true }).click()
+
+  await expect(page.getByText('未获操作授权', { exact: true })).toBeVisible()
+  expect(fixture.writes()).toBe(1)
+  await page.getByRole('button', { name: '返回模块详情' }).click()
+  await expect(page.getByRole('button', { name: '编辑基础配置', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: /^(停售销售|恢复销售)$/ })).toBeDisabled()
+  await expect(page.getByRole('button', { name: '调整技术状态', exact: true })).toBeDisabled()
 })
 
 test('uncertain writes survive closing and reopening without a second submission', async ({ page }) => {
