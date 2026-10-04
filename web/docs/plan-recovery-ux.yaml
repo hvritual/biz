@@ -1,0 +1,169 @@
+schema_version: 1
+artifact_kind: analysis
+status: ready_for_review
+task_ref:
+  issue: '#315 / PR #325'
+  baseline_commit: 878f5e200c57186fb84389abbc60f65c394aa6d9
+  candidate_commit: null
+  name: 套餐操作权限分流与读取恢复
+classification:
+  type: business_task
+  reason: 补齐套餐旅程21和22；重读不得重新发起变更，权限不足不得转为购买提示。
+  business_state_mutation: true
+  authorization_sensitive: true
+  asynchronous_effect: true
+context:
+  role:
+    summary: 当前企业成员；读取和管理套餐分别消费已核验会话及授权投影。
+    source_refs: [authorization, request]
+  task:
+    summary: 识别无法操作的原因，安全重新读取套餐信息并继续原任务。
+    source_refs: [request]
+  entity:
+    summary: 当前企业、当前订阅及同一变更回执；切换企业或会话版本清空旧状态。
+    source_refs: [runtime, authorization]
+  workflow:
+    summary: 读取→区分权限/权益/未知限制或读取失败→只读重查→继续原页；不创建第二条购买流程。
+    source_refs: [runtime, request]
+  state:
+    summary: 初次失败不返回演示默认值；同域暂时失败保留标为未更新的数据；身份边界错误清除受保护数据。
+    source_refs: [runtime, hypothesis]
+  action:
+    summary: 重读现有只读接口；按钮仅反映授权，不取代后端检查；不确定的确认结果查询原changeId。
+    source_refs: [authorization, change]
+  risk:
+    summary: 跨企业迟到响应、未知用量当0、权限不足诱导付费、把确认超时当失败而重复提交。
+    source_refs: [runtime, change]
+  decision:
+    summary: 当前企业、上次读取时间、限制原因与安全下一步常驻显示；403本身不足以区分IAM与商业权益。
+    source_refs: [authorization, runtime, request]
+sources:
+  - id: request
+    kind: user_requirement
+    path: https://github.com/hvritual/biz/pull/325
+    commit: null
+    locator: 本会话，开始完成下一阶段任务；套餐旅程21/22
+    claim: 复用现有前端实现、规范与Skill，不重新设计Shell。
+  - id: authorization
+    kind: implementation
+    path: web/src/services/runtime/authorization.ts
+    commit: 878f5e200c57186fb84389abbc60f65c394aa6d9
+    locator: currentAuthorizationAllows/currentAuthorizationMatchesSession
+    claim: 可信当前投影才可决定前端动作展示；grant存在不能代替button_codes允许。
+  - id: runtime
+    kind: implementation
+    path: web/src/services/enterprise/planRuntime.ts
+    commit: 878f5e200c57186fb84389abbc60f65c394aa6d9
+    locator: loadEnterprisePlanReadModel/getMyTenantUsage
+    claim: 套餐/权益/用量分别读取；权益POST是查询，不是订阅写操作。
+  - id: change
+    kind: repository_contract
+    path: contracts/proto/commercial/v1/subscription_change.proto
+    commit: 878f5e200c57186fb84389abbc60f65c394aa6d9
+    locator: PreviewMySubscriptionChange/ConfirmMySubscriptionChange/GetMySubscriptionChangeReceipt
+    claim: 预览、确认与回执查询独立；RENEW和STOP_RENEWAL不接受客户端目标套餐。
+  - id: hypothesis
+    kind: hypothesis
+    path: null
+    commit: null
+    locator: 本轮呈现决策
+    claim: 同域暂时读取失败保留清楚标记的旧数据可减少上下文重建；尚无人类任务样本验证效果。
+page_pattern:
+  name: WorkbenchPage
+  reason: 同一套餐页继续处置权限和读取失败，复用UiButton、AppIcon、StatusBadge、UiDialog。
+  contract_ref: 'web/ui-contracts.json: /enterprise/plan'
+  gaps: [未执行真人任务验证；无法用源码或CI绿色代替体验批准。]
+outcome:
+  definition: 用户能识别当前公司和限制原因，安全读取恢复；未知原因不猜测为未购买，重读不产生套餐变更。
+  result_contract_refs: [runtime, change]
+  recovery_contract_refs: [runtime, change, authorization]
+humanized_ux:
+  time_to_information:
+    applicability: applies
+    reason: 需要快速辨认当前企业和数据新鲜度。
+    requirements: [企业名称和上次成功读取时间可见；初次读取无假数据。]
+    evidence_types: [browser_test, user_test]
+    verification: not_verified
+    evidence: []
+  time_to_action:
+    applicability: applies
+    reason: 用户需找到获准且不会重复变更的恢复操作。
+    requirements: [权限重查和读取重试可键盘到达；读取中禁止重复点击。]
+    evidence_types: [browser_test, user_test]
+    verification: not_verified
+    evidence: []
+  context_switching:
+    applicability: applies
+    reason: 同域恢复保留任务上下文，跨域则必须清理。
+    requirements: [保留同企业Tab；切企业或会话版本清空旧数据及弹窗；旧响应不覆盖新域。]
+    evidence_types: [browser_test, api_test]
+    verification: not_verified
+    evidence: []
+  decision_load:
+    applicability: applies
+    reason: 成员权限与商业权益不是同一限制。
+    requirements: [有对应投影才分类；未知维持未知；不将所有403当作需升级。]
+    evidence_types: [source_review, browser_test, user_test]
+    verification: not_verified
+    evidence: []
+  interaction_cost:
+    applicability: applies
+    reason: 避免整页刷新或重新填写业务表单。
+    requirements: [读重试仅更新数据；恢复后继续原Tab。]
+    evidence_types: [browser_test, user_test]
+    verification: not_verified
+    evidence: []
+  error_recoverability:
+    applicability: applies
+    reason: 套餐或用量读取均可单独失败。
+    requirements: [部分读取失败不清零；未知确认结果查询原操作；401/403/409清除缓存。]
+    evidence_types: [browser_test, api_test]
+    verification: not_verified
+    evidence: []
+  how_to_guidance:
+    applicability: applies
+    reason: 无权成员需要明确接管角色。
+    requirements: [成员缺权限联系企业管理员；商业限制查看功能权益；不伪造申请发送接口。]
+    evidence_types: [browser_test, user_test]
+    verification: not_verified
+    evidence: []
+  operation_effect_transparency:
+    applicability: applies
+    reason: 重读、确认、已生效是不同事实。
+    requirements: [常驻说明重读不会续订或购买；原回执保留且未生效状态不呈现成功。]
+    evidence_types: [browser_test, api_test, user_test]
+    verification: not_verified
+    evidence: []
+  problem_resolution_guidance:
+    applicability: applies
+    reason: 重读成功不保证权限或商业条件已经改变。
+    requirements: [无新的授权事实仍保持受限；不自动解锁能力。]
+    evidence_types: [browser_test, api_test, user_test]
+    verification: not_verified
+    evidence: []
+acceptance:
+  scenarios: [成员无权, 关联商业能力受限, 未知限制, 初次503恢复, 同域旧数据标记, 用量部分失败, 重复重读, 跨企业迟到响应, 同企业会话版本切换, 确认超时查询原单]
+  automated_checks: []
+  human_checks: [四视口和长中英文阅读, 200%真实浏览器缩放, 理解权限与购买区别]
+  metrics: []
+open_questions:
+  - question: 当前授权投影未提供所有拒绝的细分原因；未知分支需要保留，不得臆造未购买状态。
+    blocking: false
+    owner_role: 产品与后端负责人
+  - question: 真实API、真人理解与独立视觉批准尚无本候选证据，不能宣称完整验收或合并资格。
+    blocking: true
+    owner_role: QA与产品负责人
+handoff:
+  allowed_paths: [web/src/features/enterprise/, web/src/stores/enterprisePlan.ts, web/src/services/enterprise/, web/src/i18n/, web/e2e/, web/docs/plan-recovery-ux.yaml]
+  forbidden_paths: [server/, internal/, contracts/, .github/workflows/, web/src/features/app-shell/, web/src/styles/tokens.css, web/scripts/]
+  reuse_refs: [web/src/services/runtime/authorization.ts, web/src/services/enterprise/planRuntime.ts, contracts/proto/commercial/v1/subscription_change.proto]
+  gates: []
+review:
+  reviewer: null
+  actor_kind: null
+  scope: null
+  reference: null
+  analysis_ref: null
+  reviewed_at: null
+  candidate_sha: null
+  decision: not_reviewed
