@@ -7,74 +7,345 @@
   "roadmap_issue": 296,
   "tracking_note": "Tracking issues indicate current scope ownership, not historical implementation authorship or live GitHub state. Status and acceptance remain exclusively in tasks.json and its evidence.",
   "task_links": {
-    "CE-01": {"tracking_issues": [112]},
-    "CE-02": {"tracking_issues": [112, 290]},
-    "CE-03": {"tracking_issues": [112, 293]},
-    "CE-04": {"tracking_issues": [112]},
-    "CE-05": {"tracking_issues": [112, 294]},
-    "CE-06": {"tracking_issues": [112]},
-    "CE-07": {"tracking_issues": [112, 295]},
-    "CE-08": {"tracking_issues": [112]},
-    "CE-09": {"tracking_issues": [112, 291]},
-    "CE-10": {"tracking_issues": [112]},
-    "CE-11": {"tracking_issues": [112]},
-    "CE-12": {"tracking_issues": [112]},
-    "CE-13": {"tracking_issues": [112, 132]},
+    "CE-01": {
+      "tracking_issues": [
+        112
+      ]
+    },
+    "CE-02": {
+      "tracking_issues": [
+        112,
+        290
+      ]
+    },
+    "CE-03": {
+      "tracking_issues": [
+        112,
+        293
+      ]
+    },
+    "CE-04": {
+      "tracking_issues": [
+        112
+      ]
+    },
+    "CE-05": {
+      "tracking_issues": [
+        112,
+        294
+      ]
+    },
+    "CE-06": {
+      "tracking_issues": [
+        112
+      ]
+    },
+    "CE-07": {
+      "tracking_issues": [
+        112,
+        295
+      ]
+    },
+    "CE-08": {
+      "tracking_issues": [
+        112
+      ]
+    },
+    "CE-09": {
+      "tracking_issues": [
+        112,
+        291
+      ]
+    },
+    "CE-10": {
+      "tracking_issues": [
+        112
+      ]
+    },
+    "CE-11": {
+      "tracking_issues": [
+        112
+      ]
+    },
+    "CE-12": {
+      "tracking_issues": [
+        112
+      ]
+    },
+    "CE-13": {
+      "tracking_issues": [
+        112,
+        132
+      ]
+    },
     "CE-14": {
-      "tracking_issues": [131, 288, 294],
+      "tracking_issues": [
+        131,
+        288,
+        294
+      ],
       "sources": [
-        {"path": "web/src/stores/enterprisePlan.ts", "symbol": "loadEnterprisePlanReadModel"},
-        {"path": "internal/commercial/application/subscriptionmanagement/internal/usecase/usage.go", "symbol": "GetMyTenantUsage"}
+        {
+          "path": "web/src/stores/enterprisePlan.ts",
+          "symbol": "loadEnterprisePlanReadModel"
+        },
+        {
+          "path": "internal/commercial/application/subscriptionmanagement/internal/usecase/usage.go",
+          "symbol": "GetMyTenantUsage"
+        }
       ],
       "tests": [
-        {"path": "web/e2e/enterprise-plan-real.spec.ts", "kind": "ui_mock"},
-        {"path": "integration/ec_ri_06_tenant_usage_mysql_test.go", "kind": "mysql_source"}
+        {
+          "path": "web/e2e/enterprise-plan-real.spec.ts",
+          "kind": "ui_mock"
+        },
+        {
+          "path": "integration/ec_ri_06_tenant_usage_mysql_test.go",
+          "kind": "mysql_source"
+        }
       ],
-      "unresolved_scope": ["Full CE-14 navigation, source explanation and tenant-switch acceptance remains with #131; a source file or a mocked browser test is not acceptance.", "Subscription states and real-mode fallback values need #288/#131 review."]
+      "unresolved_scope": [
+        "Full CE-14 navigation, source explanation and tenant-switch acceptance remains with #131; a source file or a mocked browser test is not acceptance.",
+        "Subscription states and real-mode fallback values need #288/#131 review."
+      ]
     },
     "CE-15": {
-      "tracking_issues": [133, 291, 295],
-      "sources": [
-        {"path": "internal/commercial/application/subscriptionchanges/internal/usecase/selfservice.go", "symbol": "PreviewMySubscriptionChange"},
-        {"path": "web/src/features/enterprise/components/PlanChangeLifecycle.vue", "symbol": "confirmMySubscriptionChange"}
+      "tracking_issues": [
+        133,
+        291,
+        295
       ],
-      "tests": [{"path": "web/e2e/enterprise-plan-change-real.spec.ts", "kind": "ui_mock"}],
-      "unresolved_scope": ["Restore pending changes and stable retry identity; implement actual history and complete impact/recovery journey (#291).", "Priced targets still require external commercial approval; actual purchase consumers remain #124/#125/#133. No price or payment completion is asserted.", "Independent CE acceptance and main receipt are still required."]
+      "sources": [
+        {
+          "path": "internal/commercial/application/subscriptionchanges/internal/usecase/selfservice.go",
+          "symbol": "PreviewMySubscriptionChange"
+        },
+        {
+          "path": "web/src/services/enterprise/planChangeRuntime.ts",
+          "symbol": "confirmMySubscriptionChange"
+        }
+      ],
+      "tests": [
+        {
+          "path": "web/e2e/enterprise-plan-change-real.spec.ts",
+          "kind": "ui_mock"
+        }
+      ],
+      "unresolved_scope": [
+        "Restore pending changes and stable retry identity; implement actual history and complete impact/recovery journey (#291).",
+        "Priced targets still require external commercial approval; actual purchase consumers remain #124/#125/#133. No price or payment completion is asserted.",
+        "Independent CE acceptance and main receipt are still required."
+      ]
     },
-    "CE-16": {"tracking_issues": [112]},
-    "CE-17": {"tracking_issues": [137], "unresolved_scope": ["Recovery, reconciliation and operator disposition with real task/receipt facts."]},
-    "CE-18": {"tracking_issues": [116], "unresolved_scope": ["Atomic quota reserve/commit/release and concurrency acceptance; reading usage is not enforcement."]},
-    "CE-19": {"tracking_issues": [116], "unresolved_scope": ["Real member AND device quota consumers, including downgrade/new-resource races; customer quota cannot replace device scope."]},
-    "CE-20": {"tracking_issues": [120, 129], "unresolved_scope": ["Field policy on every applicable read/write/export output; only actual #120 overlap counts."]},
-    "CE-21": {"tracking_issues": [130], "unresolved_scope": ["Versioned add-ons, independent expiry and compatibility with base plan changes."]},
-    "CE-22": {"tracking_issues": [125, 137], "unresolved_scope": ["Real payment provider sandbox, callback verification and reconciliation; payment readiness unresolved."]},
-    "CE-23": {"tracking_issues": [135, 129], "unresolved_scope": ["A real queued IoT operation with execution-time checks and safe in-flight receipt handling; marketing overlap is not full IoT coverage."]},
-    "CE-24": {"tracking_issues": [128], "unresolved_scope": ["Approved migration data, batched migration, rollback and reconciliation."]},
-    "CE-25": {"tracking_issues": [129], "unresolved_scope": ["Full security/concurrency/recovery qualification after the underlying consumers are accepted."]},
-    "CE-26": {"tracking_issues": [129], "unresolved_scope": ["Deployment readiness, rollout, observability and final acceptance; not certified by this checker."]}
+    "CE-16": {
+      "tracking_issues": [
+        112
+      ]
+    },
+    "CE-17": {
+      "tracking_issues": [
+        137
+      ],
+      "unresolved_scope": [
+        "Recovery, reconciliation and operator disposition with real task/receipt facts."
+      ]
+    },
+    "CE-18": {
+      "tracking_issues": [
+        116
+      ],
+      "unresolved_scope": [
+        "Atomic quota reserve/commit/release and concurrency acceptance; reading usage is not enforcement."
+      ]
+    },
+    "CE-19": {
+      "tracking_issues": [
+        116
+      ],
+      "unresolved_scope": [
+        "Real member AND device quota consumers, including downgrade/new-resource races; customer quota cannot replace device scope."
+      ]
+    },
+    "CE-20": {
+      "tracking_issues": [
+        120,
+        129
+      ],
+      "unresolved_scope": [
+        "Field policy on every applicable read/write/export output; only actual #120 overlap counts."
+      ]
+    },
+    "CE-21": {
+      "tracking_issues": [
+        130
+      ],
+      "unresolved_scope": [
+        "Versioned add-ons, independent expiry and compatibility with base plan changes."
+      ]
+    },
+    "CE-22": {
+      "tracking_issues": [
+        125,
+        137
+      ],
+      "unresolved_scope": [
+        "Real payment provider sandbox, callback verification and reconciliation; payment readiness unresolved."
+      ]
+    },
+    "CE-23": {
+      "tracking_issues": [
+        135,
+        129
+      ],
+      "unresolved_scope": [
+        "A real queued IoT operation with execution-time checks and safe in-flight receipt handling; marketing overlap is not full IoT coverage."
+      ]
+    },
+    "CE-24": {
+      "tracking_issues": [
+        128
+      ],
+      "unresolved_scope": [
+        "Approved migration data, batched migration, rollback and reconciliation."
+      ]
+    },
+    "CE-25": {
+      "tracking_issues": [
+        129
+      ],
+      "unresolved_scope": [
+        "Full security/concurrency/recovery qualification after the underlying consumers are accepted."
+      ]
+    },
+    "CE-26": {
+      "tracking_issues": [
+        129
+      ],
+      "unresolved_scope": [
+        "Deployment readiness, rollout, observability and final acceptance; not certified by this checker."
+      ]
+    }
   },
   "authority_owners": [
-    {"operation": "commercial.module.list", "task": "CE-02", "source": {"path": "internal/commercial/application/module_catalog.go", "symbol": "ListModules"}},
-    {"operation": "commercial.plan.list", "task": "CE-07", "source": {"path": "internal/commercial/application/planmanagement/internal/usecase/service.go", "symbol": "ListPlanVersions"}},
-    {"operation": "commercial.subscription.get", "task": "CE-08", "source": {"path": "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go", "symbol": "GetTenantSubscription"}},
-    {"operation": "commercial.subscription.get_my", "task": "CE-08", "source": {"path": "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go", "symbol": "GetMySubscription"}},
-    {"operation": "commercial.subscription.get_my_usage", "task": "CE-14", "source": {"path": "internal/commercial/application/subscriptionmanagement/internal/usecase/usage.go", "symbol": "GetMyTenantUsage"}},
-    {"operation": "commercial.subscription.change.preview_my", "task": "CE-15", "source": {"path": "internal/commercial/application/subscriptionchanges/internal/usecase/selfservice.go", "symbol": "PreviewMySubscriptionChange"}}
+    {
+      "operation": "commercial.module.list",
+      "task": "CE-02",
+      "source": {
+        "path": "internal/commercial/application/module_catalog.go",
+        "symbol": "ListModules"
+      }
+    },
+    {
+      "operation": "commercial.plan.list",
+      "task": "CE-07",
+      "source": {
+        "path": "internal/commercial/application/planmanagement/internal/usecase/service.go",
+        "symbol": "ListPlanVersions"
+      }
+    },
+    {
+      "operation": "commercial.subscription.get",
+      "task": "CE-08",
+      "source": {
+        "path": "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go",
+        "symbol": "GetTenantSubscription"
+      }
+    },
+    {
+      "operation": "commercial.subscription.get_my",
+      "task": "CE-08",
+      "source": {
+        "path": "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go",
+        "symbol": "GetMySubscription"
+      }
+    },
+    {
+      "operation": "commercial.subscription.get_my_usage",
+      "task": "CE-14",
+      "source": {
+        "path": "internal/commercial/application/subscriptionmanagement/internal/usecase/usage.go",
+        "symbol": "GetMyTenantUsage"
+      }
+    },
+    {
+      "operation": "commercial.subscription.change.preview_my",
+      "task": "CE-15",
+      "source": {
+        "path": "internal/commercial/application/subscriptionchanges/internal/usecase/selfservice.go",
+        "symbol": "PreviewMySubscriptionChange"
+      }
+    }
   ],
   "consumers": {
-    "/platform/commercial/modules": {"task": "CE-13", "kind": "api_implementation", "operations": ["commercial.module.list"]},
-    "/platform/commercial/plans": {"task": "CE-13", "kind": "api_implementation", "operations": ["commercial.plan.list"]},
-    "/platform/commercial/tenant-entitlements": {"task": "CE-13", "kind": "api_implementation", "operations": ["commercial.subscription.get"]},
-    "/enterprise/plan": {"task": "CE-14", "kind": "api_implementation", "operations": ["commercial.subscription.get_my", "commercial.subscription.get_my_usage", "commercial.subscription.change.preview_my"]},
-    "/platform/commercial/features": {"task": "CE-13", "kind": "design_preview"},
-    "/platform/commercial/add-ons": {"task": "CE-21", "kind": "design_preview"},
-    "/platform/commercial/subscriptions": {"task": "CE-13", "kind": "design_preview"},
-    "/platform/commercial/changes": {"task": "CE-17", "kind": "design_preview"},
-    "/platform/commercial/expiry": {"task": "CE-17", "kind": "design_preview"},
-    "/platform/commercial/authorization": {"task": "CE-13", "kind": "design_preview"},
-    "/platform/commercial/quotas": {"task": "CE-18", "kind": "design_preview"},
-    "/platform/commercial/overrides": {"task": "CE-13", "kind": "design_preview"},
-    "/platform/commercial/usage-billing": {"task": "CE-22", "kind": "design_preview"},
-    "/platform/commercial/audit": {"task": "CE-17", "kind": "design_preview"}
+    "/platform/commercial/modules": {
+      "task": "CE-13",
+      "kind": "api_implementation",
+      "operations": [
+        "commercial.module.list"
+      ]
+    },
+    "/platform/commercial/plans": {
+      "task": "CE-13",
+      "kind": "api_implementation",
+      "operations": [
+        "commercial.plan.list"
+      ]
+    },
+    "/platform/commercial/tenant-entitlements": {
+      "task": "CE-13",
+      "kind": "api_implementation",
+      "operations": [
+        "commercial.subscription.get"
+      ]
+    },
+    "/enterprise/plan": {
+      "task": "CE-14",
+      "kind": "api_implementation",
+      "operations": [
+        "commercial.subscription.get_my",
+        "commercial.subscription.get_my_usage",
+        "commercial.subscription.change.preview_my"
+      ]
+    },
+    "/platform/commercial/features": {
+      "task": "CE-13",
+      "kind": "design_preview"
+    },
+    "/platform/commercial/add-ons": {
+      "task": "CE-21",
+      "kind": "design_preview"
+    },
+    "/platform/commercial/subscriptions": {
+      "task": "CE-13",
+      "kind": "design_preview"
+    },
+    "/platform/commercial/changes": {
+      "task": "CE-17",
+      "kind": "design_preview"
+    },
+    "/platform/commercial/expiry": {
+      "task": "CE-17",
+      "kind": "design_preview"
+    },
+    "/platform/commercial/authorization": {
+      "task": "CE-13",
+      "kind": "design_preview"
+    },
+    "/platform/commercial/quotas": {
+      "task": "CE-18",
+      "kind": "design_preview"
+    },
+    "/platform/commercial/overrides": {
+      "task": "CE-13",
+      "kind": "design_preview"
+    },
+    "/platform/commercial/usage-billing": {
+      "task": "CE-22",
+      "kind": "design_preview"
+    },
+    "/platform/commercial/audit": {
+      "task": "CE-17",
+      "kind": "design_preview"
+    }
   }
 }

@@ -5,6 +5,7 @@ package integration
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -126,4 +127,59 @@ func TestEnterprise173PasswordRecoveryReplayExpiryAndConcurrentConsumption(t *te
 		enterprise188RequireAuditOutcome(t, fixture.DB, "tenant-173-concurrent", "identity.password.recover", "success", 1)
 		enterprise188RequireAuditOutcome(t, fixture.DB, "tenant-173-concurrent", "identity.password.recover", "failure", 1)
 	})
+}
+
+func TestEnterprise191PasswordRecoverySuccessRate(t *testing.T) {
+	fixture := newEnterprise173Fixture(t)
+	ctx := context.Background()
+	const sampleCount = 100
+	successes := 0
+
+	for sample := 0; sample < sampleCount; sample++ {
+		userID := fmt.Sprintf("enterprise191-reset-%03d", sample)
+		email := fmt.Sprintf("enterprise191-reset-%03d@example.invalid", sample)
+		oldPassword := "OldPass9A"
+		newPassword := "NewPass9A"
+		if err := fixture.Store.BootstrapGlobalUser(ctx, accesspersistence.GlobalUserBootstrap{ID: userID, Email: email}); err != nil {
+			t.Fatal(err)
+		}
+		if err := fixture.Store.SetUserPassword(ctx, userID, oldPassword); err != nil {
+			t.Fatal(err)
+		}
+		flowID := fmt.Sprintf("enterprise191-reset-flow-%03d", sample)
+		challenge, code := fixture.sendRecoveryOTP(
+			t,
+			fmt.Sprintf("enterprise191/reset/%03d", sample),
+			flowID,
+			userID,
+			email,
+		)
+		_, err := fixture.Store.RecoverPasswordWithCode(ctx, fixture.Protection, domain.VerifyChallengeRequest{
+			ChallengeID: challenge.ChallengeID,
+			FlowID: flowID,
+			Purpose: domain.VerificationPurposePasswordRecovery,
+			UserID: userID,
+			Channel: domain.SecurityNotificationEmail,
+			Destination: email,
+			Code: code,
+		}, 5*time.Minute, newPassword, newPassword)
+		if err != nil {
+			t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=recover err=%v", sample+1, err)
+			continue
+		}
+		identity, err := fixture.Store.AuthenticateUserPassword(ctx, email, newPassword)
+		if err == nil && identity.UserID == userID {
+			successes++
+			continue
+		}
+		t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=readback identity=%q err=%v", sample+1, identity.UserID, err)
+	}
+	rate := float64(successes) / float64(sampleCount)
+	t.Logf(
+		"ENTERPRISE191_PASSWORD_RESET_METRIC samples=%d successes=%d success_rate=%.5f environment=ci_mysql",
+		sampleCount, successes, rate,
+	)
+	if rate < 0.99 {
+		t.Fatalf("password recovery success rate %.5f below 0.99", rate)
+	}
 }
