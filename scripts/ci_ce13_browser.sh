@@ -17,16 +17,22 @@ start)
   ;;
 prepare)
   trap 'rc=$?; echo "$rc" > "$out/browser-prep.exit"' EXIT
-  source_web="${GITHUB_WORKSPACE:?}/biz/web"
+  source_root="${GITHUB_WORKSPACE:?}/biz"
+  source_web="$source_root/web"
   isolated_web="$out/web"
-  rm -rf "$isolated_web"
-  mkdir -p "$isolated_web"
+  rm -rf "$isolated_web" "$out/contracts"
+  mkdir -p "$isolated_web" "$out/contracts/generated" "$out/contracts/commercial"
   tar -C "$source_web" \
     --exclude='./node_modules' \
     --exclude='./test-results' \
     --exclude='./playwright-report' \
     --exclude='./dist' \
     -cf - . | tar -C "$isolated_web" -xf -
+  # The console reads canonical operation metadata at build/runtime. Keep the
+  # CE13 browser workspace hermetic by staging only those declared inputs next
+  # to the isolated web tree, preserving the same relative paths as the repo.
+  cp "$source_root/contracts/generated/operation-plans.json" "$out/contracts/generated/operation-plans.json"
+  cp "$source_root/contracts/commercial/operation-capabilities.v1.json" "$out/contracts/commercial/operation-capabilities.v1.json"
   cd "$isolated_web"
   echo 'CE13_BROWSER_PREP_STAGE=npm'
   npm ci
