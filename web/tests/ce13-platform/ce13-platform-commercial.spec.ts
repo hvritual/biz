@@ -478,17 +478,22 @@ test("TestCE13PlatformGrantRevocationThroughActiveOIDCSession", async ({ browser
     const save = page.getByRole("button", { name: "保存基础配置", exact: true });
     await save.click();
     await captured;
+    await expect(save).toBeDisabled();
 
     controlModuleManageGrant("revoke");
     revoked = true;
 
-    await save.click();
-    await expect(page.getByText(/当前平台授权已变化，已阻止变更提交/)).toBeVisible();
-    await expect(page.getByLabel("模块名称")).toHaveValue(draftName);
-    expect(uiPatchWrites).toBe(0);
+    await page.evaluate(async () => {
+      const modulePath = "/src/services/runtime/authorization.ts";
+      const authorization = await import(/* @vite-ignore */ modulePath);
+      await authorization.ensureCurrentAuthorization(true);
+    });
+    await expect(save).toBeDisabled();
 
     releaseStale?.();
     releaseStale = undefined;
+    await expect(page.getByText(/当前平台授权已变化，已阻止变更提交/)).toBeVisible();
+    await expect(page.getByLabel("模块名称")).toHaveValue(draftName);
     await expect.poll(() => uiPatchWrites, { timeout: 3_000 }).toBe(0);
 
     const authorization = await browserRequest(page, data.web_base_url, "/auth/authorization");
