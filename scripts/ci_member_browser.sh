@@ -7,11 +7,24 @@ started="$(date +%s)"
 # The Ubuntu runner already supplies Chromium's shared libraries. Do not upgrade
 # the OS or download unrelated language fonts merely to run a headless test.
 # A real browser launch below fails closed if the image loses a required library.
-npx --no-install playwright install --only-shell chromium
+browser_status=0
+font_status=0
+npx --no-install playwright install --only-shell chromium &
+browser_pid=$!
+font_pid=''
 if [[ -z "$(fc-list :lang=zh)" ]]; then
-  sudo apt-get update -qq
-  sudo apt-get install -y --no-install-recommends fonts-wqy-zenhei
+  (
+    sudo apt-get update -qq
+    sudo apt-get install -y --no-install-recommends fonts-wqy-zenhei
+  ) &
+  font_pid=$!
 fi
+wait "$browser_pid" || browser_status=$?
+if [[ -n "$font_pid" ]]; then
+  wait "$font_pid" || font_status=$?
+fi
+(( browser_status == 0 )) || exit "$browser_status"
+(( font_status == 0 )) || exit "$font_status"
 [[ -n "$(fc-list :lang=zh)" ]] || { echo 'CHINESE_FONT_UNAVAILABLE' >&2; exit 1; }
 node --input-type=module <<'JS'
 import { chromium } from '@playwright/test'
