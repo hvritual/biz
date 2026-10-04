@@ -43,16 +43,10 @@ jobs:
         if: ${{ !inputs.skip_fast_check }}
         run: npm run check
         working-directory: web
+      - name: Verify bounded browser setup
+        run: python3 -B scripts/test_ci_member_browser.py
       - name: Install core headless browser and Chinese text support
-        working-directory: web
-        shell: bash
-        run: |
-          set -euo pipefail
-          npx playwright install --with-deps --only-shell chromium
-          if ! fc-match "Noto Sans CJK SC" | grep -qi 'Noto Sans CJK'; then
-            sudo apt-get install -y --no-install-recommends fonts-noto-cjk
-          fi
-          fc-match "Noto Sans CJK SC"
+        run: bash scripts/ci_member_browser.sh
       - name: Build default CoffeeLink bundle
         run: npx vite build
         working-directory: web
@@ -202,15 +196,7 @@ jobs:
       - run: npm ci
         working-directory: web
       - name: Install site-rental headless browser and Chinese text support
-        working-directory: web
-        shell: bash
-        run: |
-          set -euo pipefail
-          npx playwright install --with-deps --only-shell chromium
-          if ! fc-match "Noto Sans CJK SC" | grep -qi 'Noto Sans CJK'; then
-            sudo apt-get install -y --no-install-recommends fonts-noto-cjk
-          fi
-          fc-match "Noto Sans CJK SC"
+        run: bash scripts/ci_member_browser.sh
       - name: Build default CoffeeLink bundle
         run: npx vite build
         working-directory: web
