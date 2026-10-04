@@ -148,3 +148,49 @@ func TestB123ECIR02MemberProfileRoleBindingIsAuthoritativeAndTenantScoped(t *tes
 		t.Fatalf("stale profile update status=%d want=%d body=%s", statusCode, http.StatusConflict, body)
 	}
 }
+
+func TestEnterprise191LegalMemberWriteSuccessRate(t *testing.T) {
+	db := ce08FreshFixtureDB(t)
+	stamp := fmt.Sprint(time.Now().UnixNano())
+	started := startB123Runtime(t, db)
+	base := "http://" + started.HTTPAddress()
+	tenant := "enterprise191-member-" + stamp
+	token := "enterprise191-member-token-" + stamp
+	seedB123TenantAdmin(t, db, tenant, "enterprise191-admin-"+stamp, "enterprise191-admin-"+stamp+"@example.invalid", token)
+
+	current, statusCode, body := inviteB123HTTP(
+		t, base, token, "enterprise191-member-"+stamp+"@example.invalid", "enterprise191-member-invite:"+stamp,
+	)
+	if statusCode != http.StatusOK {
+		t.Fatalf("member metric fixture invite status=%d body=%s", statusCode, body)
+	}
+
+	const sampleCount = 200
+	successes := 0
+	for sample := 0; sample < sampleCount; sample++ {
+		updated, statusCode, body := updateB123ProfileHTTP(t, base, token, fmt.Sprintf("enterprise191-member-write:%s:%03d", stamp, sample), &accessv1.UpdateTenantMemberProfileRequest{
+			UserId: current.GetUserId(),
+			Name: fmt.Sprintf("Enterprise 191 Member %03d", sample),
+			Version: current.GetVersion(),
+		})
+		if statusCode == http.StatusOK && updated != nil && updated.GetVersion() == current.GetVersion()+1 {
+			successes++
+			current = updated
+			continue
+		}
+		t.Logf("ENTERPRISE191_MEMBER_WRITE_FAILURE sample=%d status=%d body=%s", sample+1, statusCode, body)
+		readback, readStatus, readBody := getB123HTTP(t, base, token, current.GetUserId())
+		if readStatus != http.StatusOK {
+			t.Fatalf("member write failure recovery readback status=%d body=%s", readStatus, readBody)
+		}
+		current = readback
+	}
+	rate := float64(successes) / float64(sampleCount)
+	t.Logf(
+		"ENTERPRISE191_MEMBER_WRITE_METRIC samples=%d successes=%d success_rate=%.5f environment=ci_mysql_http",
+		sampleCount, successes, rate,
+	)
+	if rate < 0.995 {
+		t.Fatalf("legal member write success rate %.5f below 0.995", rate)
+	}
+}
