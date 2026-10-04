@@ -35,6 +35,8 @@ description: "Design or review B2B task experiences before UI implementation: ro
 
 ## 执行流程
 
+每次启动、续跑、阶段切换和交付先执行 [任务推进检查](../task-progression/SKILL.md) 的适用检查点；保留原始必做任务、真实契约依据和未完项。本 Skill 继续负责 UX 分析，不以只读关联、占位提示或截图数量替代用户任务完成。
+
 1. **限定任务。** 写清用户结果、输入、允许/禁止修改范围；依据行为影响选择工程、展示、交互、后台能力或完整业务任务。未知风险先核实。
 2. **确认来源。** 读取当前 Issue、合同、源码和已有消费者；标注路径、精确 commit 与定位。历史笔记只作背景，不能替代当前实现；缺证据写未知。
 3. **建立八维上下文。** role / task / entity / workflow / state / action / risk / decision。页面参数中的 ID 不等于用户可理解的对象身份。
