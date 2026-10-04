@@ -95,12 +95,14 @@ export function checkCommercialOnboardingUI(webRoot) {
         }
         continue
       }
-      if (!op.security?.tenantRequired || !webSession || !bound || mapping.classification !== 'tenant_business') {
+      if (!op.security?.tenantRequired || !webSession || !bound) {
         findings.push(`${location}: ${action} is not a public tenant action`)
         continue
       }
-      requiredModules.add(mapping.module_code)
-      if (expectedModule && expectedModule !== mapping.module_code) findings.push(`${location}: module ${expectedModule} conflicts with ${action} owner ${mapping.module_code}`)
+      if (mapping.classification === 'tenant_business') {
+        requiredModules.add(mapping.module_code)
+        if (expectedModule && expectedModule !== mapping.module_code) findings.push(`${location}: module ${expectedModule} conflicts with ${action} owner ${mapping.module_code}`)
+      }
     }
     return requiredModules
   }

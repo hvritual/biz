@@ -67,6 +67,13 @@ test('internal or platform operations cannot be exposed as tenant UI actions', (
   assert.match(checkCommercialOnboardingUI(f.root).findings.join('\n'),/not a public tenant action/)
 })
 
+test('tenant-required recovery operations remain valid tenant web actions without becoming module owners', (t) => {
+  const f=fixture(t)
+  f.mutate('contracts/commercial/generated/catalog.json', text => text.replace('"classification":"tenant_business"','"classification":"recovery"'))
+  f.mutate('contracts/commercial/onboarding.v1.json', text => text.replace('"ui_routes":["/example"]','"ui_routes":[]'))
+  assert.deepEqual(checkCommercialOnboardingUI(f.root).findings,[])
+})
+
 test('a public platform web action is valid only on a platform surface', (t) => {
   const f=fixture(t)
   f.mutate('contracts/generated/operation-plans.json', text => text.replace('"tenantRequired":true','"tenantRequired":false'))
