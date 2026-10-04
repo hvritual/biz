@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -321,5 +322,65 @@ func assertCE13PlatformGrantRevocationIsLive(t *testing.T, db *gorm.DB, store *a
 	}
 	if restored := resolve(); !has(restored, "platform.module.manage") {
 		t.Fatalf("restored grants=%v want manage", restored)
+	}
+}
+
+
+func TestCE13PlatformGrantControl(t *testing.T) {
+	action := strings.TrimSpace(os.Getenv("CE13_GRANT_CONTROL_ACTION"))
+	if action == "" {
+		t.Skip("CE13_GRANT_CONTROL_ACTION is not configured")
+	}
+	subject := strings.TrimSpace(os.Getenv("CE13_GRANT_CONTROL_SUBJECT"))
+	permission := strings.TrimSpace(os.Getenv("CE13_GRANT_CONTROL_PERMISSION"))
+	if subject != "ce13-platform-module-manage" || permission != "platform.module.manage" {
+		t.Fatalf("unsupported CE13 grant control subject=%q permission=%q", subject, permission)
+	}
+
+	db := openDB(t)
+	ctx := context.Background()
+	store, err := accesspersistence.New(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.EnsurePlatformSchema(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	switch action {
+	case "revoke":
+		result := db.WithContext(ctx).Exec(
+			"DELETE FROM biz_platform_permission_grants WHERE subject = ? AND permission = ?",
+			subject, permission,
+		)
+		if result.Error != nil {
+			t.Fatal(result.Error)
+		}
+		if result.RowsAffected != 1 {
+			t.Fatalf("revoke rows=%d want 1", result.RowsAffected)
+		}
+	case "restore":
+		if err := db.WithContext(ctx).Exec(
+			"INSERT INTO biz_platform_permission_grants (subject, permission) VALUES (?, ?) ON DUPLICATE KEY UPDATE permission = VALUES(permission)",
+			subject, permission,
+		).Error; err != nil {
+			t.Fatal(err)
+		}
+	default:
+		t.Fatalf("unsupported CE13 grant control action %q", action)
+	}
+
+	var count int64
+	if err := db.WithContext(ctx).Raw(
+		"SELECT COUNT(*) FROM biz_platform_permission_grants WHERE subject = ? AND permission = ?",
+		subject, permission,
+	).Scan(&count).Error; err != nil {
+		t.Fatal(err)
+	}
+	if action == "revoke" && count != 0 {
+		t.Fatalf("grant remains after revoke count=%d", count)
+	}
+	if action == "restore" && count != 1 {
+		t.Fatalf("grant not restored count=%d", count)
 	}
 }

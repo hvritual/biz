@@ -1,5 +1,7 @@
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 interface Fixture {
   base_url: string;
@@ -40,6 +42,16 @@ interface BrowserResult {
   status: number;
   text: string;
   json: unknown;
+}
+
+interface ModuleView {
+  moduleCode: string;
+  name: string;
+  category: string;
+  salesScope?: string[];
+  technicalStatus: string;
+  salesStatus: string;
+  version: string | number;
 }
 
 function fixture(): Fixture {
@@ -104,6 +116,60 @@ async function login(
   const result = await browserRequest(page, data.web_base_url, "/auth/session");
   expect(result.status, result.text).toBe(200);
   return { context, page, session: result.json as SessionView };
+}
+
+
+function ce13RequestId(label: string) {
+  return `ce13-${label}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function moduleFingerprint(module: ModuleView) {
+  return {
+    moduleCode: module.moduleCode,
+    name: module.name,
+    category: module.category,
+    salesScope: [...(module.salesScope ?? [])].sort(),
+    technicalStatus: module.technicalStatus,
+    salesStatus: module.salesStatus,
+    version: String(module.version),
+  };
+}
+
+async function platformWrite(
+  page: Page,
+  data: Fixture,
+  csrf: string,
+  path: string,
+  method: "POST" | "PATCH",
+  body: Record<string, unknown>,
+) {
+  const id = typeof body.requestId === "string" && body.requestId ? body.requestId : ce13RequestId("module-write");
+  return browserRequest(page, data.web_base_url, path, {
+    method,
+    headers: { "X-CSRF-Token": csrf, "Idempotency-Key": id },
+    body: { ...body, requestId: id },
+  });
+}
+
+function controlModuleManageGrant(action: "revoke" | "restore") {
+  const workspace = process.env.GITHUB_WORKSPACE;
+  const repoRoot = process.env.CE13_BIZ_REPO_ROOT || (workspace ? join(workspace, "biz") : "");
+  if (!repoRoot) throw new Error("CE13_BIZ_REPO_ROOT or GITHUB_WORKSPACE is required for live grant control");
+  execFileSync(
+    "go",
+    ["-C", repoRoot, "test", "-count=1", "-tags=integration", "./integration", "-run", "^TestCE13PlatformGrantControl$"],
+    {
+      env: {
+        ...process.env,
+        CE13_GRANT_CONTROL_ACTION: action,
+        CE13_GRANT_CONTROL_SUBJECT: "ce13-platform-module-manage",
+        CE13_GRANT_CONTROL_PERMISSION: "platform.module.manage",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+      encoding: "utf8",
+      timeout: 30_000,
+    },
+  );
 }
 
 test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request }) => {
@@ -266,6 +332,210 @@ test("TestCE13PlatformModuleAuthorizationMatrix", async ({ browser }) => {
     if (item.sales) await expect(sales).toBeEnabled(); else await expect(sales).toBeDisabled();
     if (item.technical) await expect(technical).toBeEnabled(); else await expect(technical).toBeDisabled();
 
+    const csrf = actor.session.csrf_token;
+    expect(csrf).toBeTruthy();
+    const listedBefore = await browserRequest(actor.page, data.web_base_url, "/v1/platform/modules");
+    expect(listedBefore.status, listedBefore.text).toBe(200);
+    const baseline = (listedBefore.json as { modules?: ModuleView[] }).modules?.[0];
+    expect(baseline).toBeTruthy();
+    const before = moduleFingerprint(baseline!);
+    const deniedCreateCode = `ce13-denied-${item.subject}-${Date.now()}-${Math.random().toString(16).slice(2, 7)}`;
+    const deniedRequests: Array<Promise<BrowserResult>> = [];
+
+    if (!item.create) {
+      deniedRequests.push(platformWrite(actor.page, data, String(csrf), "/v1/platform/modules", "POST", {
+        moduleCode: deniedCreateCode,
+        name: "CE13 denied create",
+        category: "ce13",
+        salesScope: ["default"],
+        reason: "executor must deny missing platform.module.manage",
+      }));
+    }
+    if (!item.metadata) {
+      deniedRequests.push(platformWrite(
+        actor.page,
+        data,
+        String(csrf),
+        `/v1/platform/modules/${encodeURIComponent(baseline!.moduleCode)}`,
+        "PATCH",
+        {
+          moduleCode: baseline!.moduleCode,
+          name: baseline!.name + " denied",
+          category: baseline!.category,
+          salesScope: baseline!.salesScope ?? [],
+          version: String(baseline!.version),
+          reason: "executor must deny metadata change",
+        },
+      ));
+    }
+    if (!item.sales) {
+      deniedRequests.push(platformWrite(
+        actor.page,
+        data,
+        String(csrf),
+        `/v1/platform/modules/${encodeURIComponent(baseline!.moduleCode)}/sales-status`,
+        "POST",
+        {
+          moduleCode: baseline!.moduleCode,
+          salesStatus: baseline!.salesStatus === "MODULE_SALES_STATUS_SELLABLE"
+            ? "MODULE_SALES_STATUS_RETIRED"
+            : "MODULE_SALES_STATUS_SELLABLE",
+          version: String(baseline!.version),
+          reason: "executor must deny sales change",
+        },
+      ));
+    }
+    if (!item.technical) {
+      deniedRequests.push(platformWrite(
+        actor.page,
+        data,
+        String(csrf),
+        `/v1/platform/modules/${encodeURIComponent(baseline!.moduleCode)}/technical-status`,
+        "POST",
+        {
+          moduleCode: baseline!.moduleCode,
+          technicalStatus: baseline!.technicalStatus === "MODULE_TECHNICAL_STATUS_READY"
+            ? "MODULE_TECHNICAL_STATUS_DISABLED"
+            : "MODULE_TECHNICAL_STATUS_READY",
+          version: String(baseline!.version),
+          reason: "executor must deny technical change",
+        },
+      ));
+    }
+
+    for (const deniedRequest of deniedRequests) {
+      const denied = await deniedRequest;
+      expect(denied.status, denied.text).toBe(403);
+    }
+
+    const readback = await browserRequest(
+      actor.page,
+      data.web_base_url,
+      `/v1/platform/modules/${encodeURIComponent(baseline!.moduleCode)}`,
+    );
+    expect(readback.status, readback.text).toBe(200);
+    expect(moduleFingerprint(readback.json as ModuleView)).toEqual(before);
+    const listedAfter = await browserRequest(actor.page, data.web_base_url, "/v1/platform/modules");
+    expect(listedAfter.status, listedAfter.text).toBe(200);
+    expect(((listedAfter.json as { modules?: ModuleView[] }).modules ?? []).some((module) => module.moduleCode === deniedCreateCode)).toBe(false);
+
+    await actor.context.close();
+  }
+});
+
+test("TestCE13PlatformGrantRevocationThroughActiveOIDCSession", async ({ browser }) => {
+  const data = fixture();
+  const actor = await login(browser, data, data.module_manage_email, data.module_manage_password);
+  const page = actor.page;
+  const csrf = actor.session.csrf_token;
+  expect(csrf).toBeTruthy();
+  let revoked = false;
+  let releaseStale: (() => void) | undefined;
+
+  try {
+    const listed = await browserRequest(page, data.web_base_url, "/v1/platform/modules");
+    expect(listed.status, listed.text).toBe(200);
+    const baseline = (listed.json as { modules?: ModuleView[] }).modules?.[0];
+    expect(baseline).toBeTruthy();
+    const before = moduleFingerprint(baseline!);
+
+    await page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
+    await expect(page.getByRole("heading", { name: "模块目录", level: 1, exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "查看详情", exact: true }).first().click();
+    await page.getByRole("button", { name: "编辑基础配置", exact: true }).click();
+    const draftName = `${baseline!.name} · 撤权草稿`;
+    await page.getByLabel("模块名称").fill(draftName);
+    await page.getByLabel("变更原因").fill("CE13 active-session revoke");
+
+    let captureNext = true;
+    let capturedResolve: (() => void) | undefined;
+    const captured = new Promise<void>((resolve) => { capturedResolve = resolve; });
+    const release = new Promise<void>((resolve) => { releaseStale = resolve; });
+    let uiPatchWrites = 0;
+    const writeListener = (request: import("@playwright/test").Request) => {
+      const url = new URL(request.url());
+      if (
+        request.method() === "PATCH"
+        && url.pathname === `/api/v1/platform/modules/${encodeURIComponent(baseline!.moduleCode)}`
+      ) {
+        uiPatchWrites += 1;
+      }
+    };
+    page.on("request", writeListener);
+
+    await page.route("**/api/auth/authorization", async (route) => {
+      if (!captureNext) {
+        await route.continue();
+        return;
+      }
+      captureNext = false;
+      const staleResponse = await route.fetch();
+      capturedResolve?.();
+      await release;
+      await route.fulfill({ response: staleResponse });
+    });
+
+    const save = page.getByRole("button", { name: "保存基础配置", exact: true });
+    await save.click();
+    await captured;
+
+    controlModuleManageGrant("revoke");
+    revoked = true;
+
+    await save.click();
+    await expect(page.getByText(/当前平台授权已变化，已阻止变更提交/)).toBeVisible();
+    await expect(page.getByLabel("模块名称")).toHaveValue(draftName);
+    expect(uiPatchWrites).toBe(0);
+
+    releaseStale?.();
+    releaseStale = undefined;
+    await expect.poll(() => uiPatchWrites, { timeout: 3_000 }).toBe(0);
+
+    const authorization = await browserRequest(page, data.web_base_url, "/auth/authorization");
+    expect(authorization.status, authorization.text).toBe(200);
+    const codes = (authorization.json as { button_codes?: string[] }).button_codes ?? [];
+    expect(codes).toContain("commercial.module.list");
+    expect(codes).not.toContain("commercial.module.create");
+    expect(codes).not.toContain("commercial.module.update");
+    expect(codes).not.toContain("commercial.module.set_sales_status");
+
+    const deniedWrite = await platformWrite(
+      page,
+      data,
+      String(csrf),
+      `/v1/platform/modules/${encodeURIComponent(baseline!.moduleCode)}`,
+      "PATCH",
+      {
+        moduleCode: baseline!.moduleCode,
+        name: baseline!.name + " forbidden",
+        category: baseline!.category,
+        salesScope: baseline!.salesScope ?? [],
+        version: String(baseline!.version),
+        reason: "same active OIDC session must be denied after revoke",
+      },
+    );
+    expect(deniedWrite.status, deniedWrite.text).toBe(403);
+
+    const readback = await browserRequest(
+      page,
+      data.web_base_url,
+      `/v1/platform/modules/${encodeURIComponent(baseline!.moduleCode)}`,
+    );
+    expect(readback.status, readback.text).toBe(200);
+    expect(moduleFingerprint(readback.json as ModuleView)).toEqual(before);
+
+    await page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
+    await expect(page.getByRole("button", { name: "新增模块", exact: true })).toBeDisabled();
+    await page.getByRole("button", { name: "查看详情", exact: true }).first().click();
+    await expect(page.getByRole("button", { name: "编辑基础配置", exact: true })).toBeDisabled();
+    await expect(page.getByRole("button", { name: /^(停售销售|恢复销售)$/ })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "调整技术状态", exact: true })).toBeDisabled();
+
+    page.off("request", writeListener);
+    await page.unroute("**/api/auth/authorization");
+  } finally {
+    releaseStale?.();
+    if (revoked) controlModuleManageGrant("restore");
     await actor.context.close();
   }
 });
