@@ -163,12 +163,12 @@ function navigateTabs(event: KeyboardEvent) {
         <div class="module-section-header">
           <div>
             <h3>能力与业务操作</h3>
-            <p>来自当前服务端操作契约；仅展示公开业务操作定义，不授予租户能力。</p>
+            <p>来自当前系统权限定义；仅展示公开业务操作定义，不授予租户能力。</p>
           </div>
         </div>
         <div v-if="catalogState === 'loading'" class="module-notice" role="status">正在读取当前操作契约…</div>
         <div v-else-if="catalogState === 'error'" class="module-notice warning" role="status">操作契约读取失败：{{ catalogError }}。此处不据此推断权限。</div>
-        <div v-if="catalogState === 'ready' && (definitions.catalogMismatch || definitions.unmappedCapabilities.length)" class="module-notice warning" role="status">当前模块能力与服务端操作契约并非全部匹配。缺失映射不表示没有权限；请先核对部署版本。</div>
+        <div v-if="catalogState === 'ready' && (definitions.catalogMismatch || definitions.unmappedCapabilities.length)" class="module-notice warning" role="status">当前模块能力与系统权限定义并非全部匹配。缺失映射不表示没有权限；请先核对当前版本。</div>
         <div v-if="catalogState === 'ready' && definitions.operations.length" class="module-table-scroll" tabindex="0" role="region" aria-label="能力权限关联">
           <table class="module-definition-table">
             <thead><tr><th>能力标识</th><th>业务操作</th><th>IAM 权限与组合</th></tr></thead>
@@ -184,7 +184,7 @@ function navigateTabs(event: KeyboardEvent) {
             </tbody>
           </table>
         </div>
-        <p v-else-if="catalogState === 'ready'" class="module-empty">当前服务端操作契约未找到该模块的公开业务操作映射，不能据此推断权限或能力已就绪。</p>
+        <p v-else-if="catalogState === 'ready'" class="module-empty">当前系统权限定义未找到该模块的公开业务操作映射，不能据此推断权限或能力已就绪。</p>
       </template>
       <template v-else-if="tab === 'pages'">
         <div class="module-section-header">
