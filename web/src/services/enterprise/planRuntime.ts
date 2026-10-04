@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { backendErrorFallback } from '@/i18n/backend-terms'
 import {
   CommercialApiError,
@@ -15,16 +16,8 @@ export type EnterpriseQuotaUsage = Readonly<{
   used: string | number
   evidence: string
 }>
-
-export type EnterpriseTenantUsage = Readonly<{
-  usages: EnterpriseQuotaUsage[]
-}>
-
-export type EnterprisePlanSubscription = TenantSubscriptionDTO &
-  Readonly<{
-    updatedAt?: string
-  }>
-
+export type EnterpriseTenantUsage = Readonly<{ usages: EnterpriseQuotaUsage[] }>
+export type EnterprisePlanSubscription = TenantSubscriptionDTO & Readonly<{ updatedAt?: string }>
 export type EnterprisePlanReadModel = Readonly<{
   session: TrustedSession
   subscription: EnterprisePlanSubscription
@@ -32,25 +25,32 @@ export type EnterprisePlanReadModel = Readonly<{
   usage: EnterpriseTenantUsage
   usageError: string
 }>
+export type PlanReadIssue = 'login' | 'denied' | 'context' | 'unavailable' | 'usage'
 
-function requireTenantSession(session: TrustedSession) {
-  if (!session.authenticated) throw new Error('请先登录业务账号。')
-  if (!session.active_tenant_id) throw new Error('请选择可访问的租户。')
+export function enterprisePlanReadIssue(error: unknown): PlanReadIssue {
+  if (error instanceof CommercialApiError) {
+    if (error.status === 401) return 'login'
+    if (error.status === 403) return 'denied'
+    if (error.status === 409) return 'context'
+  }
+  return 'unavailable'
 }
 
 export function enterprisePlanRuntimeError(error: unknown) {
-  if (error instanceof CommercialApiError) {
-    if (error.code === 'unauthenticated') return '登录会话已失效，请重新登录。'
-    if (error.code === 'forbidden') return '当前账号没有查看套餐与权益的权限。'
-    if (error.code === 'conflict') return '租户上下文已变化，请刷新后重试。'
-    return backendErrorFallback('planRead')
-  }
-  return error instanceof Error ? error.message : backendErrorFallback('planRead')
+  const issue = enterprisePlanReadIssue(error)
+  if (issue === 'login') return t('planFeedback.access.login')
+  if (issue === 'denied') return t('planFeedback.readDeniedBody')
+  if (issue === 'context') return t('planFeedback.contextChangedBody')
+  // Never render arbitrary transport messages, stack traces, or HTML as copy.
+  return backendErrorFallback('planRead')
 }
 
-export async function readEnterprisePlanSession() {
-  return readSession()
+function requireTenantSession(session: TrustedSession) {
+  if (!session.authenticated) throw new CommercialApiError('Unauthenticated plan read', 401, 'unauthenticated')
+  if (!session.active_tenant_id) throw new CommercialApiError('No active tenant', 409, 'conflict')
 }
+
+export async function readEnterprisePlanSession() { return readSession() }
 
 export async function getMyTenantSubscription(session: TrustedSession) {
   requireTenantSession(session)
@@ -62,9 +62,7 @@ export async function getMyTenantSubscription(session: TrustedSession) {
 export async function getMyTenantEntitlements(session: TrustedSession) {
   requireTenantSession(session)
   return mutate<EntitlementView>(
-    '/v1/tenant/entitlements',
-    'POST',
-    { capabilityCodes: [] },
+    '/v1/tenant/entitlements', 'POST', { capabilityCodes: [] },
     { sessionContext: sessionContext(session) },
   )
 }
@@ -76,35 +74,29 @@ export async function getMyTenantUsage(session: TrustedSession) {
   })
 }
 
-function isUsageAuthBoundaryError(error: unknown) {
-  return (
-    error instanceof CommercialApiError &&
-    (error.code === 'unauthenticated' || error.code === 'forbidden' || error.code === 'conflict')
-  )
-}
-
-export async function loadEnterprisePlanReadModel(): Promise<EnterprisePlanReadModel> {
+export async function loadEnterprisePlanReadModel(expectedSession?: TrustedSession): Promise<EnterprisePlanReadModel> {
   const session = await readEnterprisePlanSession()
   requireTenantSession(session)
+  if (expectedSession && sessionContext(expectedSession) !== sessionContext(session)) {
+    throw new CommercialApiError('Plan session changed', 409, 'conflict')
+  }
   const [subscription, entitlements] = await Promise.all([
-    getMyTenantSubscription(session),
-    getMyTenantEntitlements(session),
+    getMyTenantSubscription(session), getMyTenantEntitlements(session),
   ])
-  if (subscription.tenantId && subscription.tenantId !== session.active_tenant_id) {
-    throw new Error('套餐信息与当前企业不匹配，请刷新后重试。')
+  if (subscription.tenantId !== session.active_tenant_id || entitlements.tenantId !== session.active_tenant_id) {
+    throw new CommercialApiError('Plan response scope mismatch', 409, 'conflict')
   }
-  if (entitlements.tenantId && entitlements.tenantId !== session.active_tenant_id) {
-    throw new Error('权益信息与当前企业不匹配，请刷新后重试。')
-  }
+  if (!Array.isArray(entitlements.decisions)) throw new Error('Invalid entitlement response')
 
   let usage: EnterpriseTenantUsage = { usages: [] }
   let usageError = ''
   try {
     usage = await getMyTenantUsage(session)
+    if (!Array.isArray(usage.usages)) throw new Error('Invalid usage response')
   } catch (error) {
-    if (isUsageAuthBoundaryError(error)) throw error
+    if (enterprisePlanReadIssue(error) !== 'unavailable') throw error
+    usage = { usages: [] }
     usageError = enterprisePlanRuntimeError(error)
   }
-
   return Object.freeze({ session, subscription, entitlements, usage, usageError })
 }

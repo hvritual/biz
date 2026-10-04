@@ -2,12 +2,17 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import {
+  enterprisePlanReadIssue,
   enterprisePlanRuntimeError,
   loadEnterprisePlanReadModel,
   type EnterprisePlanReadModel,
+  type PlanReadIssue,
 } from '@/services/enterprise/planRuntime'
-import type { EntitlementDecisionDTO } from '@/services/commercial/platformCommercial'
+import { createPlanLoadCoordinator } from '@/services/enterprise/planLoadCoordinator'
+import { knownQuotaNumber } from '@/services/enterprise/planAccess'
+import { sessionContext } from '@/services/runtime/api'
 import { backendStateTone, backendTermLabel } from '@/i18n/backend-terms'
+import { t } from '@/i18n'
 
 export type EnterprisePlanFeature = {
   key: string
@@ -16,7 +21,6 @@ export type EnterprisePlanFeature = {
   enabled: boolean
   icon: string
 }
-
 export type EnterprisePlanQuota = {
   key: string
   label: string
@@ -26,11 +30,6 @@ export type EnterprisePlanQuota = {
   unlimited: boolean
   status: string
   icon: string
-}
-
-function parseNumber(value: unknown) {
-  const number = Number(value)
-  return Number.isFinite(number) && number >= 0 ? number : null
 }
 
 function demoFeatures(): EnterprisePlanFeature[] {
@@ -46,37 +45,39 @@ function demoFeatures(): EnterprisePlanFeature[] {
   ]
 }
 
-function decisionLabel(decision: EntitlementDecisionDTO) {
-  return backendTermLabel('entitlementKey', decision.key || decision.moduleCode)
-}
-
-function decisionDescription(decision: EntitlementDecisionDTO) {
-  return decision.allowed ? '当前套餐已包含该能力。' : '当前套餐未包含该能力。'
-}
-
 export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
   const enterprise = useEnterpriseStore()
   const loading = ref(false)
   const error = ref('')
+  const readIssue = ref<PlanReadIssue | null>(null)
   const model = ref<EnterprisePlanReadModel | null>(null)
+  const lastReadAt = ref('')
   const demoRequestCount = ref(0)
-
+  const reads = createPlanLoadCoordinator<EnterprisePlanReadModel>()
   const isServerBacked = computed(() => enterprise.sourceKind === 'api')
-  const currentPlan = computed(() => model.value ? backendTermLabel('plan', model.value.subscription.planCode) : '标准版')
-  const periodStart = computed(() => model.value?.subscription.periodStart || model.value?.subscription.createdAt || '2026-09-08')
-  const periodEnd = computed(() => model.value?.subscription.periodEnd || '2027-09-07')
-  const cycle = computed(() => model.value ? '按订阅有效期' : '按年')
-  const subscriptionState = computed(() => model.value ? backendTermLabel('subscriptionState', model.value.subscription.state) : '使用中')
-  const subscriptionTone = computed(() => model.value ? backendStateTone('subscriptionState', model.value.subscription.state) : 'success')
+  const scopeKey = computed(() => JSON.stringify([
+    enterprise.sourceKind, enterprise.tenantId,
+    enterprise.session ? sessionContext(enterprise.session) : '',
+    Boolean(enterprise.session?.authenticated),
+  ]))
+  const stale = computed(() => Boolean(model.value && readIssue.value && readIssue.value !== 'usage'))
+  const canUseCurrentFacts = computed(() => !isServerBacked.value || Boolean(model.value && !loading.value && !readIssue.value))
+  const currentPlan = computed(() => model.value ? backendTermLabel('plan', model.value.subscription.planCode) : isServerBacked.value ? '—' : '标准版')
+  const periodStart = computed(() => model.value?.subscription.periodStart || model.value?.subscription.createdAt || (isServerBacked.value ? '' : '2026-09-08'))
+  const periodEnd = computed(() => model.value?.subscription.periodEnd || (isServerBacked.value ? '' : '2027-09-07'))
+  const cycle = computed(() => model.value ? '按订阅有效期' : isServerBacked.value ? '—' : '按年')
+  const subscriptionState = computed(() => model.value ? backendTermLabel('subscriptionState', model.value.subscription.state) : isServerBacked.value ? t('planFeedback.unknown') : '使用中')
+  const subscriptionTone = computed(() => model.value ? backendStateTone('subscriptionState', model.value.subscription.state) : isServerBacked.value ? 'neutral' : 'success')
+  // Preserve a visible receipt during a same-context reload. The consumer must
+  // also use canUseCurrentFacts to block new writes while data is stale/loading.
   const serverChangeContext = computed(() => model.value ? { session: model.value.session, subscription: model.value.subscription } : null)
 
   const features = computed<EnterprisePlanFeature[]>(() => {
-    if (!model.value) return demoFeatures()
-    const rows = model.value.entitlements.decisions.filter((decision) => decision.kind === 'module')
-    return rows.map((decision) => ({
+    if (!model.value) return isServerBacked.value ? [] : demoFeatures()
+    return model.value.entitlements.decisions.filter((decision) => decision.kind === 'module').map((decision) => ({
       key: `${decision.moduleCode}:${decision.key}`,
       label: backendTermLabel('module', decision.moduleCode),
-      description: decisionDescription(decision),
+      description: decision.allowed ? '当前套餐已包含该能力。' : t('planFeedback.featureUnavailable'),
       icon: 'shield',
       enabled: Boolean(decision.allowed),
     }))
@@ -84,6 +85,7 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
 
   const quotas = computed<EnterprisePlanQuota[]>(() => {
     if (!model.value) {
+      if (isServerBacked.value) return []
       const memberUsed = enterprise.members.filter((member) => member.status !== 'removed').length
       return [
         { key: 'members', label: '成员账号', used: memberUsed, total: 500, unit: '人', unlimited: false, status: '正常', icon: 'users' },
@@ -92,101 +94,73 @@ export const useEnterprisePlanStore = defineStore('enterprise-plan', () => {
         { key: 'storage', label: '数据存储', used: 128, total: 500, unit: 'GB', unlimited: false, status: '正常', icon: 'database' },
       ]
     }
-
-    const usage = new Map<string, number | null>(
-      model.value.usage.usages
-        .filter((item) => item.known)
-        .map((item): [string, number | null] => [`${item.moduleCode}:${item.key}`, parseNumber(item.used)]),
-    )
-    return model.value.entitlements.decisions
-      .filter((decision) => decision.kind === 'quota')
-      .map((decision) => {
-        const key = `${decision.moduleCode}:${decision.key}`
-        const unlimited = Boolean(decision.limit?.unlimited)
-        const total = unlimited ? null : parseNumber(decision.limit?.value)
-        const used = usage.get(key) ?? null
-        return {
-          key,
-          label: decisionLabel(decision),
-          used,
-          total,
-          unit: '',
-          unlimited,
-          status: !decision.allowed
-            ? '未开放'
-            : unlimited
-              ? '无限额度'
-              : used == null
-                ? '用量未知'
-                : total != null && used >= total
-                  ? '额度已用尽'
-                  : '正常',
-          icon: 'database',
-        }
-      })
+    const usage = new Map<string, number | null>(model.value.usage.usages
+      .filter((item) => item.known)
+      .map((item): [string, number | null] => [`${item.moduleCode}:${item.key}`, knownQuotaNumber(item.used)]))
+    return model.value.entitlements.decisions.filter((decision) => decision.kind === 'quota').map((decision) => {
+      const key = `${decision.moduleCode}:${decision.key}`
+      const unlimited = Boolean(decision.limit?.unlimited)
+      const total = unlimited ? null : knownQuotaNumber(decision.limit?.value)
+      const used = usage.get(key) ?? null
+      return {
+        key, label: backendTermLabel('entitlementKey', decision.key || decision.moduleCode),
+        used, total, unit: '', unlimited,
+        status: !decision.allowed ? '未开放' : unlimited ? '无限额度' : used == null ? '用量未知' : total != null && used >= total ? '额度已用尽' : '正常',
+        icon: 'database',
+      }
+    })
   })
 
-  async function load() {
-    if (!isServerBacked.value) {
-      model.value = null
-      error.value = ''
-      return
-    }
-    loading.value = true
+  function resetReadState() {
+    reads.invalidate()
+    model.value = null
+    loading.value = false
     error.value = ''
-    try {
-      model.value = await loadEnterprisePlanReadModel()
-      if (model.value.usageError) error.value = '额度使用信息暂不可用，请稍后重试。'
-    } catch (cause) {
-      model.value = null
-      error.value = enterprisePlanRuntimeError(cause)
-      throw cause
-    } finally {
-      loading.value = false
-    }
+    readIssue.value = null
+    lastReadAt.value = ''
   }
 
-  async function refreshAfterChange() {
-    await load()
+  function load(): Promise<void> {
+    if (!isServerBacked.value) { resetReadState(); return Promise.resolve() }
+    const session = enterprise.session
+    if (!session?.authenticated || !enterprise.tenantId || session.active_tenant_id !== enterprise.tenantId) {
+      resetReadState()
+      return Promise.resolve()
+    }
+    return reads.run(scopeKey.value, () => loadEnterprisePlanReadModel(session), () => scopeKey.value, {
+      start: () => { loading.value = true; error.value = '' },
+      success: (value) => {
+        model.value = value
+        lastReadAt.value = new Date().toISOString()
+        readIssue.value = value.usageError ? 'usage' : null
+        error.value = value.usageError ? t('planFeedback.usageBody') : ''
+      },
+      failure: (cause) => {
+        readIssue.value = enterprisePlanReadIssue(cause)
+        error.value = enterprisePlanRuntimeError(cause)
+        if (readIssue.value !== 'unavailable') {
+          model.value = null
+          lastReadAt.value = ''
+        }
+      },
+      finish: () => { loading.value = false },
+    })
   }
+
+  async function refreshAfterChange() { await load() }
 
   function recordDemoChange(targetPlan: string, note: string) {
     if (isServerBacked.value) throw new Error('套餐变更请通过正式的套餐变更流程完成。')
     demoRequestCount.value += 1
-    enterprise.audit(
-      '套餐信息',
-      '创建套餐调整申请（演示）',
-      targetPlan,
-      currentPlan.value,
-      '待商务确认',
-      note,
-      'medium',
-    )
+    enterprise.audit('套餐信息', '创建套餐调整申请（演示）', targetPlan, currentPlan.value, '待商务确认', note, 'medium')
   }
 
-  watch(
-    () => enterprise.tenantId,
-    () => void load().catch(() => undefined),
-    { immediate: true },
-  )
+  watch(scopeKey, () => { resetReadState(); void load() }, { immediate: true, flush: 'sync' })
 
   return {
-    loading,
-    error,
-    model,
-    isServerBacked,
-    currentPlan,
-    periodStart,
-    periodEnd,
-    cycle,
-    subscriptionState,
-    subscriptionTone,
-    serverChangeContext,
-    features,
-    quotas,
-    demoRequestCount,
-    load,
-    refreshAfterChange,
-    recordDemoChange,
+    loading, error, readIssue, model, lastReadAt, stale, canUseCurrentFacts, scopeKey,
+    isServerBacked, currentPlan, periodStart, periodEnd, cycle, subscriptionState,
+    subscriptionTone, serverChangeContext, features, quotas, demoRequestCount,
+    load, refreshAfterChange, recordDemoChange,
   }
 })

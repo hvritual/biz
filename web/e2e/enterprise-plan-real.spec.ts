@@ -2,6 +2,7 @@ import { expect, test, type Page, type Route } from '@playwright/test'
 import { installApiFailFast } from './ui.helpers'
 import { mkdirSync } from 'node:fs'
 import { qualifyCommercialStateZoom } from './commercial-state-zoom.helpers'
+import { registerPlanFeedbackScenarios } from './plan-feedback.scenarios'
 
 test.skip(!process.env.ENTERPRISE_PLAN_REAL_E2E, 'runs only against the VITE_DATA_MODE=api build')
 
@@ -290,3 +291,5 @@ test('commercial status typography (API fixture): actual 200 percent browser zoo
   expect(browserName).toBe('chromium')
   await qualifyCommercialStateZoom(info, (page) => mockPlanServer(page, { subscriptionState: 'GRACE' }))
 })
+
+registerPlanFeedbackScenarios(mockPlanServer)
