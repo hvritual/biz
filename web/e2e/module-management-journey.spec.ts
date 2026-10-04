@@ -126,7 +126,6 @@ async function capture(page: Page, name: string) {
 
 test.beforeEach(() => mkdirSync(output, { recursive: true }))
 
-
 test('registered module onboarding creates a retired catalog record and confirms it by GET', async ({ page }) => {
   const fixture = await install(page)
   await page.goto('/#/platform/commercial/modules')
@@ -296,7 +295,6 @@ test('keyboard tabs and cancelling an edit preserve context and never write', as
   await expect(page.getByRole('button', { name: '查看详情' })).toBeFocused()
   expect(fixture.writes()).toBe(0)
 })
-
 
 test('read-only platform authorization keeps module inspection but disables every module write', async ({ page }) => {
   const fixture = await install(page, 'normal', ['commercial.module.list', 'commercial.module.get'])

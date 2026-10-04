@@ -142,7 +142,6 @@ describe('primary navigation information architecture', () => {
   })
 })
 
-
 describe('platform authorization navigation contract', () => {
   it('binds every real platform entry to operation catalog action codes', () => {
     const real = visiblePlatformCommercialNavigation()

@@ -216,7 +216,6 @@ describe('current authorization runtime', () => {
   })
 })
 
-
 describe('platform authorization projection', () => {
   const platformSession = {
     authenticated: true,

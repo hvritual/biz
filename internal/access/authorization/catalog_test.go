@@ -176,7 +176,6 @@ func TestEnterprise174BrandingMembershipPermissionHasSingleOperation(t *testing.
 	}
 }
 
-
 func TestPlatformWebCatalogDerivesOnlyBoundWebSessionOperations(t *testing.T) {
 	actions := PlatformWebActions()
 	if len(actions) == 0 {

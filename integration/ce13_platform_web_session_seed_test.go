@@ -207,7 +207,6 @@ func seedCE13WebUser(t *testing.T, store *accesspersistence.Store, tenantID, use
 	}
 }
 
-
 func assertCE13PlatformGrantRevocationIsLive(t *testing.T, db *gorm.DB, store *accesspersistence.Store, subject, token string) {
 	t.Helper()
 	ctx := context.Background()
