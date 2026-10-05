@@ -129,9 +129,16 @@ class ContractTests(unittest.TestCase):
         lifecycle = jobs['b12-2-tenant-lifecycle-mysql']
         self.assertEqual(lifecycle.get('needs'), 'b12-1-contract-closure')
 
-        expected_paths = ['biz/go.sum', 'yunka.io/go.sum']
+        expected_paths = ['.b12-cache-candidate', 'biz/go.sum', 'yunka.io/go.sum']
         for job in (closure, lifecycle):
-            setup = next(step for step in job['steps'] if step.get('name') == 'Setup locked Go')
+            steps = job['steps']
+            bind_index = next(i for i, step in enumerate(steps) if step.get('name') == 'Bind Go cache to exact candidate')
+            setup_index = next(i for i, step in enumerate(steps) if step.get('name') == 'Setup locked Go')
+            self.assertLess(bind_index, setup_index)
+            bind = steps[bind_index]['run']
+            self.assertIn('$GITHUB_SHA', bind)
+            self.assertIn('$GITHUB_WORKSPACE/.b12-cache-candidate', bind)
+            setup = steps[setup_index]
             self.assertIs(setup['with']['cache'], True)
             paths = [line.strip() for line in setup['with']['cache-dependency-path'].splitlines() if line.strip()]
             self.assertEqual(paths, expected_paths)
