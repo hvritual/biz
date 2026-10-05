@@ -91,14 +91,16 @@ export function useModuleManagement() {
 
   async function operationAllowed(operation: string, label: string) {
     if (authorizationPending.value) return false
+    const generation = epoch
     authorizationPending.value = true
     try {
       await ensureCurrentAuthorization(true)
+      if (generation !== epoch) return false
       if (currentAuthorizationAllows(operation)) return true
       actionError.value = `当前平台授权已变化，已阻止${label}。草稿仍保留；请联系平台管理员核对授权。`
       return false
     } finally {
-      authorizationPending.value = false
+      if (generation === epoch) authorizationPending.value = false
     }
   }
   function resetFilters() {
@@ -161,8 +163,10 @@ export function useModuleManagement() {
     }
   }
   async function openCreate() {
+    const generation = epoch
     actionError.value = ''
     if (!await operationAllowed(moduleChangeOperation.create, '新增模块')) return
+    if (generation !== epoch) return
     resetCreate()
     selected.value = null
     before.value = null
@@ -275,18 +279,22 @@ export function useModuleManagement() {
     }
   }
   async function startChange(value: ExistingModuleChangeKind) {
-    if (!selected.value || busy.value || writeUnresolved.value) return
+    const target = selected.value
+    if (!target || busy.value || writeUnresolved.value) return
+    const generation = epoch
+    const targetCode = target.moduleCode
     actionError.value = ''
     if (!await operationAllowed(moduleChangeOperation[value], '打开该变更')) return
+    if (generation !== epoch || selected.value?.moduleCode !== targetCode) return
     kind.value = value
-    nextSales.value = selected.value.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? 'MODULE_SALES_STATUS_RETIRED' : 'MODULE_SALES_STATUS_SELLABLE'
-    before.value = copy(selected.value)
+    nextSales.value = target.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? 'MODULE_SALES_STATUS_RETIRED' : 'MODULE_SALES_STATUS_SELLABLE'
+    before.value = copy(target)
     receipt.value = null
     fresh.value = null
     Object.assign(draft, {
-      name: selected.value.name, category: selected.value.category,
-      salesScope: (selected.value.salesScope ?? []).join(', '),
-      technicalStatus: selected.value.technicalStatus, reason: '',
+      name: target.name, category: target.category,
+      salesScope: (target.salesScope ?? []).join(', '),
+      technicalStatus: target.technicalStatus, reason: '',
     })
     actionError.value = ''
     screen.value = value

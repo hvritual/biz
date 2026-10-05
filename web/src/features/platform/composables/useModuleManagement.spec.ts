@@ -132,6 +132,52 @@ describe('module write authorization mutex', () => {
     wrapper.unmount()
   })
 
+  it('does not open create after the session context changes during authorization', async () => {
+    const auth = deferredAuthorization()
+    mocks.ensureCurrentAuthorization.mockImplementationOnce(() => auth.promise)
+
+    const { vm, wrapper } = mountManagement()
+    await nextTick()
+    const contextChanged = mocks.subscribe.mock.calls[0]?.[0] as (() => void) | undefined
+    expect(contextChanged).toBeTypeOf('function')
+
+    const opening = vm.openCreate()
+    expect(vm.busy.value).toBe(true)
+    contextChanged?.()
+    auth.release()
+    await opening
+    await nextTick()
+
+    expect(vm.dialogOpen.value).toBe(false)
+    expect(vm.screen.value).toBe('detail')
+    expect(vm.selected.value).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('does not continue an old module change after the session context changes during authorization', async () => {
+    const { vm, wrapper } = mountManagement()
+    await nextTick()
+    vm.openDetail(initial)
+
+    const auth = deferredAuthorization()
+    mocks.ensureCurrentAuthorization.mockImplementationOnce(() => auth.promise)
+    const contextChanged = mocks.subscribe.mock.calls[0]?.[0] as (() => void) | undefined
+    expect(contextChanged).toBeTypeOf('function')
+
+    const changing = vm.startChange('metadata')
+    expect(vm.busy.value).toBe(true)
+    contextChanged?.()
+    auth.release()
+    await expect(changing).resolves.toBeUndefined()
+    await nextTick()
+
+    expect(vm.dialogOpen.value).toBe(false)
+    expect(vm.selected.value).toBeNull()
+    expect(vm.before.value).toBeNull()
+    expect(vm.screen.value).toBe('detail')
+    wrapper.unmount()
+  })
+
   it('allows only one create request while live authorization revalidation is pending', async () => {
     const created: ModuleDTO = {
       ...initial,
