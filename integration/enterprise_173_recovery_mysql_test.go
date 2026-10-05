@@ -167,32 +167,50 @@ func TestEnterprise191PasswordRecoverySuccessRate(t *testing.T) {
 				userID := fmt.Sprintf("enterprise191-reset-%03d", sample)
 				email := fmt.Sprintf("enterprise191-reset-%03d@example.invalid", sample)
 				if err := fixture.Store.BootstrapGlobalUser(ctx, accesspersistence.GlobalUserBootstrap{ID: userID, Email: email}); err != nil {
-					t.Fatal(err)
+					t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=bootstrap-user err=%v", sample+1, err)
+					return
 				}
 				now := time.Now().UTC()
 				if err := fixture.DB.WithContext(ctx).Exec(
 					"INSERT INTO biz_user_password_credentials (user_id, salt, password_hash, iterations, disabled, must_change, temporary_expires_at, password_changed_at, updated_at) VALUES (?, ?, ?, ?, FALSE, FALSE, NULL, ?, ?)",
 					userID, seedSalt, seedHash, seedIterations, now, now,
 				).Error; err != nil {
-					t.Fatal(err)
+					t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=seed-credential err=%v", sample+1, err)
+					return
 				}
 
 				flowID := fmt.Sprintf("enterprise191-reset-flow-%03d", sample)
-				challenge, code := fixture.sendRecoveryOTP(
-					t,
-					fmt.Sprintf("enterprise191/reset/%03d", sample),
-					flowID,
-					userID,
-					email,
-				)
-				_, err := fixture.Store.RecoverPasswordWithCode(ctx, fixture.Protection, domain.VerifyChallengeRequest{
+				challenge, delivery, err := fixture.Service.SendVerificationCode(ctx, domain.VerificationChallengeRequest{
+					BusinessEventID: fmt.Sprintf("enterprise191/reset/%03d", sample),
+					FlowID:          flowID,
+					Purpose:         domain.VerificationPurposePasswordRecovery,
+					UserID:          userID,
+					Channel:         domain.SecurityNotificationEmail,
+					Destination:     email,
+				})
+				if err != nil || delivery.State != domain.NotificationStatePending {
+					t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=queue-otp delivery=%+v err=%v", sample+1, delivery, err)
+					return
+				}
+				delivery, err = fixture.Service.DeliverSecurityNotification(ctx, challenge.NotificationEventID)
+				if err != nil || delivery.State != domain.NotificationStateDelivered {
+					t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=deliver-otp delivery=%+v err=%v", sample+1, delivery, err)
+					return
+				}
+				message, ok := fixture.Sender.Message(challenge.NotificationEventID)
+				if !ok || message.Secret == "" {
+					t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=otp-evidence-missing", sample+1)
+					return
+				}
+
+				_, err = fixture.Store.RecoverPasswordWithCode(ctx, fixture.Protection, domain.VerifyChallengeRequest{
 					ChallengeID: challenge.ChallengeID,
 					FlowID:      flowID,
 					Purpose:     domain.VerificationPurposePasswordRecovery,
 					UserID:      userID,
 					Channel:     domain.SecurityNotificationEmail,
 					Destination: email,
-					Code:        code,
+					Code:        message.Secret,
 				}, 5*time.Minute, newPassword, newPassword)
 				if err != nil {
 					t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=recover err=%v", sample+1, err)
