@@ -121,27 +121,208 @@ class ContractTests(unittest.TestCase):
                 g.read(Path(d), 'file')
 
     def test_b12_mysql_reuses_locked_go_cache_after_contract_closure(self):
-        import yaml
+        workflow = (ROOT / '.github/workflows/b12-multitenant-access-pressure.yml').read_text()
+        marker = '\n  b12-2-tenant-lifecycle-mysql:\n'
+        self.assertIn('\n  b12-1-contract-closure:\n', workflow)
+        self.assertIn(marker, workflow)
 
-        doc = yaml.safe_load((ROOT / '.github/workflows/b12-multitenant-access-pressure.yml').read_text())
-        jobs = doc['jobs']
-        closure = jobs['b12-1-contract-closure']
-        lifecycle = jobs['b12-2-tenant-lifecycle-mysql']
-        self.assertEqual(lifecycle.get('needs'), 'b12-1-contract-closure')
+        closure, lifecycle = workflow.split(marker, 1)
+        self.assertRegex(lifecycle, r'(?m)^    needs: b12-1-contract-closure
+    def test_current_hooks(self):
+        g.hook_check(ROOT)
 
-        expected_paths = ['.b12-cache-candidate', 'biz/go.sum', 'yunka.io/go.sum']
+    def test_new_nested_duplicate_detected(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / '.github/workflows').mkdir(parents=True)
+            (root / 'scripts').mkdir()
+            (root / '.github/workflows/ce07-qualification.yml').write_text('jobs:\n  qualify:\n    steps:\n      - run: bash scripts/outer.sh\n')
+            (root / 'scripts/outer.sh').write_text('bash scripts/inner.sh\n')
+            (root / 'scripts/inner.sh').write_text("go test -tags=integration ./integration -run '^TestCE06MySQL'\n")
+            obs = g.inventory(root, 'ce07-qualification.yml')
+            self.assertEqual(obs['cost_candidates']['overlap.ce06.mysql'], 1)
+            self.assertIn('scripts/inner.sh', obs['source_sha256'])
+
+    def test_comment_is_not_execution(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d, '.github/workflows'); p.mkdir(parents=True)
+            (p / 'a.yml').write_text('jobs:\n  qualify:\n    # go test ./...\n')
+            self.assertEqual(g.inventory(Path(d), 'a.yml')['cost_candidates'], {})
+
+
+class RuntimeTests(unittest.TestCase):
+    def audit(self, jobs):
+        return g.audit_jobs(C, T, jobs, 101, 1, SHA)
+
+    def test_exact_complete_execution(self):
+        rows = self.audit(jobs_fixture())
+        self.assertEqual(len(rows), 42)
+        self.assertTrue(all(r['job_wall_seconds'] == 100 and r['queue_seconds'] == 10 for r in rows))
+
+    def test_missing_job(self):
+        with self.assertRaisesRegex(g.Violation, 'EXPANDED_JOB_SET'):
+            self.audit(jobs_fixture()[:-1])
+
+    def test_duplicated_job(self):
+        jobs = jobs_fixture();jobs[0] = jobs[1]
+        with self.assertRaises(g.Violation): self.audit(jobs)
+
+    def test_extra_job(self):
+        jobs = jobs_fixture();jobs.append({**jobs[0], 'name':'full-36-extra / ghost'})
+        with self.assertRaises(g.Violation): self.audit(jobs)
+
+    def test_skipped_cancelled_failed_running_rejected(self):
+        for status, result in [('completed','skipped'),('completed','cancelled'),('completed','failure'),('in_progress',None)]:
+            with self.subTest(result=result):
+                jobs=jobs_fixture();jobs[0].update(status=status, conclusion=result)
+                with self.assertRaises(g.Violation): self.audit(jobs)
+
+    def test_wrong_sha_run_attempt_rejected(self):
+        for key, value in [('head_sha','b'*40),('run_id',999),('run_attempt',2)]:
+            with self.subTest(key=key):
+                jobs=jobs_fixture();jobs[0][key]=value
+                with self.assertRaises(g.Violation):self.audit(jobs)
+
+    def test_negative_or_missing_time(self):
+        for end in [None, '2020-01-01T00:00:00Z', '2026-09-22T09:02:00']:
+            jobs=jobs_fixture();jobs[0]['completed_at']=end
+            with self.assertRaises(g.Violation):self.audit(jobs)
+
+    def test_hard_budget_not_hidden_by_test_time(self):
+        jobs=jobs_fixture();jobs[0]['completed_at']='2026-09-22T09:10:00Z'
+        rows=self.audit(jobs)
+        self.assertEqual(rows[0]['performance'],'HARD_EXCEEDED')
+        self.assertEqual(rows[0]['job_wall_seconds'],590)
+
+    def test_target_breach_reported_separately(self):
+        jobs=jobs_fixture();jobs[0]['completed_at']='2026-09-22T09:02:05Z'
+        row=next(r for r in self.audit(jobs) if r['job_id']==jobs[0]['id'])
+        self.assertEqual(row['performance'],'TARGET_EXCEEDED')
+
+    def test_control_jobs_not_counted_as_coverage(self):
+        jobs=jobs_fixture();jobs.append({'name':'merge-ready','status':'in_progress'})
+        self.assertEqual(len(self.audit(jobs)),42)
+
+    def test_fast_gate_skip_does_not_prove_delegation(self):
+        class API:
+            def jobs(self, run):
+                return [{'name':'fast-web / qualify','run_id':3,'run_attempt':1,'head_sha':SHA,
+                         'status':'completed','conclusion':'skipped'}]
+        with self.assertRaises(g.Violation):g.check_fast_gate(API(), {'id':3,'run_attempt':1}, C, SHA)
+
+    def test_receipt_identity_is_exact(self):
+        run={'id':101,'run_attempt':1};q={'id':100,'run_attempt':1}
+        receipt={'schema_version':1,'state':'VERIFIED','evidence_source':'github_api','repository':'hvritual/biz',
+                 'contract_sha256':'c','topology_sha256':'t','candidate_sha':SHA,'candidate_tree':'tree',
+                 'pr_number':180,'run_id':'101','run_attempt':1,'qualification_run_id':'100','qualification_run_attempt':1}
+        def verify(r):g.verify_binding(r,'hvritual/biz','c','t',SHA,'tree',180,run,q)
+        verify(receipt)
+        for key,value in [('state','PASS'),('evidence_source','fixture'),('candidate_tree','old'),
+                          ('contract_sha256','old'),('qualification_run_attempt',2),('run_attempt',True)]:
+            with self.subTest(key=key):
+                with self.assertRaises(g.Violation):verify({**receipt,key:value})
+
+    def test_lightweight_main_treats_full_proof_ownership_as_not_applicable(self):
+        main_sha, tree, pr = 'd' * 40, 'b' * 40, 321
+        merge = {'id': 20, 'run_attempt': 1}
+        qualification = {'id': 10, 'run_attempt': 1}
+
+        class API:
+            def __init__(self):
+                self.prefix = '/repos/hvritual/biz'
+
+            def get(self, path):
+                if path == '/git/ref/heads/main':
+                    return {'object': {'sha': main_sha}}
+                if path in {'/git/commits/' + SHA, '/git/commits/' + main_sha}:
+                    return {'tree': {'sha': tree}}
+                raise AssertionError(path)
+
+            def pages(self, path, key=None):
+                if path == '/commits/' + main_sha + '/pulls':
+                    return [{'number': pr, 'merged_at': '2026-09-30T00:00:00Z',
+                             'merge_commit_sha': main_sha, 'base': {'ref': 'main'},
+                             'head': {'sha': SHA}}]
+                raise AssertionError(path)
+
+            def runs(self, candidate):
+                self.last_candidate = candidate
+                return []
+
+        delivery_result = {
+            'verification_scope': 'lightweight',
+            'change_class': 'skill_only',
+            'merge_receipt_artifact_id': 99,
+        }
+        with patch('delivery_execution.route_for_pr',
+                   return_value={'change_class': 'skill_only', 'merge_gate_required': False}),              patch('delivery_execution.verify_main', return_value=delivery_result),              patch('delivery_execution.expected_jobs', return_value=['unused']),              patch('delivery_execution.latest_success', side_effect=[merge, qualification]):
+            result = g.verify_main(API(), C, T, 'hvritual/biz', main_sha, 'contract', 'topology')
+
+        self.assertEqual(result['state'], 'MAIN_VERIFIED')
+        self.assertEqual(result['proof_scope'], 'LIGHTWEIGHT_NOT_APPLICABLE')
+        self.assertEqual(result['change_class'], 'skill_only')
+        self.assertEqual(result['expanded_jobs'], 0)
+        self.assertEqual(result['delivery_receipt_artifact_id'], 99)
+
+    def test_zip_requires_single_named_receipt(self):
+        for names in [[g.RECEIPT],[g.RECEIPT,'extra'],['../'+g.RECEIPT]]:
+            data=io.BytesIO()
+            with zipfile.ZipFile(data,'w') as z:
+                for name in names:z.writestr(name,'{}')
+            if names==[g.RECEIPT]:self.assertEqual(g.receipt_zip(data.getvalue()),{})
+            else:
+                with self.assertRaises(g.Violation):g.receipt_zip(data.getvalue())
+
+
+class BasePolicyTests(unittest.TestCase):
+    def test_bootstrap_requires_exact_base_and_governance_branch(self):
+        from types import SimpleNamespace
+        with patch.object(g.subprocess, 'run', return_value=SimpleNamespace(returncode=1, stdout='')):
+            with patch.dict(os.environ, {'GITHUB_HEAD_REF':'feat/enterprise-180'}):
+                with self.assertRaisesRegex(g.Violation,'UNAPPROVED'):
+                    g.check_base(ROOT,C['baseline_main'],C)
+            with patch.dict(os.environ, {'GITHUB_HEAD_REF':'chore/ci-proof-production'}):
+                g.check_base(ROOT,C['baseline_main'],C)
+                with self.assertRaises(g.Violation):g.check_base(ROOT,'b'*40,C)
+
+    def test_business_branch_cannot_edit_contract(self):
+        from types import SimpleNamespace
+        calls=[SimpleNamespace(returncode=0,stdout=json.dumps(C)), SimpleNamespace(returncode=0,stdout=b'altered')]
+        with patch.object(g.subprocess,'run',side_effect=calls), patch.dict(os.environ,{'GITHUB_HEAD_REF':'chore/ci-enterprise-policy-contract'}):
+            with self.assertRaisesRegex(g.Violation,'REQUIRES_GOVERNANCE'):
+                g.check_base(ROOT,'a'*40,C)
+
+    def test_governance_cannot_raise_hard_budget(self):
+        from types import SimpleNamespace
+        changed=copy.deepcopy(C);changed['gates']['ce06-qualification.yml']['hard_seconds']+=1
+        with patch.object(g.subprocess,'run',return_value=SimpleNamespace(returncode=0,stdout=json.dumps(C))), patch.dict(os.environ,{'GITHUB_HEAD_REF':'chore/ci-proof-production'}):
+            with self.assertRaisesRegex(g.Violation,'HARD_BUDGET_INCREASE'):
+                g.check_base(ROOT,'a'*40,changed)
+
+    def test_governance_cannot_raise_debt_ceiling(self):
+        from types import SimpleNamespace
+        changed=copy.deepcopy(C);changed['gates']['ce06-qualification.yml']['legacy_cost_ceiling']['go.all.test']=1
+        with patch.object(g.subprocess,'run',return_value=SimpleNamespace(returncode=0,stdout=json.dumps(C))), patch.dict(os.environ,{'GITHUB_HEAD_REF':'chore/ci-proof-production'}):
+            with self.assertRaisesRegex(g.Violation,'LEGACY_DEBT_INCREASE'):
+                g.check_base(ROOT,'a'*40,changed)
+
+
+if __name__ == '__main__':
+    unittest.main()
+)
+
+        expected_paths = '.b12-cache-candidate\n            biz/go.sum\n            yunka.io/go.sum'
         for job in (closure, lifecycle):
-            steps = job['steps']
-            bind_index = next(i for i, step in enumerate(steps) if step.get('name') == 'Bind Go cache to exact candidate')
-            setup_index = next(i for i, step in enumerate(steps) if step.get('name') == 'Setup locked Go')
-            self.assertLess(bind_index, setup_index)
-            bind = steps[bind_index]['run']
-            self.assertIn('$GITHUB_SHA', bind)
-            self.assertIn('$GITHUB_WORKSPACE/.b12-cache-candidate', bind)
-            setup = steps[setup_index]
-            self.assertIs(setup['with']['cache'], True)
-            paths = [line.strip() for line in setup['with']['cache-dependency-path'].splitlines() if line.strip()]
-            self.assertEqual(paths, expected_paths)
+            bind = '      - name: Bind Go cache to exact candidate'
+            setup = '      - name: Setup locked Go'
+            self.assertEqual(job.count(bind), 1)
+            self.assertEqual(job.count(setup), 1)
+            self.assertLess(job.index(bind), job.index(setup))
+            self.assertIn('printf \'%s\\n\' "$GITHUB_SHA" > "$GITHUB_WORKSPACE/.b12-cache-candidate"', job)
+
+            setup_block = job[job.index(setup):]
+            self.assertIn('          cache: true', setup_block)
+            self.assertIn('          cache-dependency-path: |\n            ' + expected_paths, setup_block)
 
     def test_current_hooks(self):
         g.hook_check(ROOT)
