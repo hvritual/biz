@@ -19,6 +19,7 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -279,6 +280,38 @@ def audit_jobs(contract, topology, jobs, run_id, attempt, candidate):
     return rows
 
 
+AUDIT_JOB_POLL_ATTEMPTS = 6
+AUDIT_JOB_POLL_SECONDS = 2
+
+
+def audit_jobs_eventually(api, run, contract, topology, run_id, attempt, candidate,
+                          attempts=AUDIT_JOB_POLL_ATTEMPTS, delay=AUDIT_JOB_POLL_SECONDS,
+                          sleeper=time.sleep):
+    """Read expanded reusable-workflow jobs until GitHub exposes their terminal state.
+
+    merge-ready already depends on every full-* reusable workflow. The Actions Jobs
+    API can still lag that scheduler state briefly. Retry only observation-shape or
+    terminal-state lag; source-binding, timestamp and other proof violations remain
+    immediate failures. The bounded retry therefore cannot turn a real failed job
+    into proof success.
+    """
+    require(type(attempts) is int and attempts > 0, 'AUDIT_JOB_POLL_ATTEMPTS_INVALID')
+    require(type(delay) in {int, float} and delay >= 0, 'AUDIT_JOB_POLL_DELAY_INVALID')
+    retryable = ('FULL_EXPANDED_JOB_SET_MISMATCH', 'REQUIRED_JOB_NOT_SUCCESS:')
+    for observation in range(1, attempts + 1):
+        try:
+            return audit_jobs(contract, topology, api.jobs(run), run_id, attempt, candidate)
+        except Violation as exc:
+            if not str(exc).startswith(retryable) or observation == attempts:
+                raise
+            print(
+                f'CI_PROOF_PROGRESS=wait_expanded_jobs observation={observation}/{attempts} reason={exc}',
+                flush=True,
+            )
+            sleeper(delay)
+    raise AssertionError('unreachable')
+
+
 def check_fast_gate(api, run, contract, candidate):
     spec = contract['prerequisites']['repository.web.fast']
     jobs = api.jobs(run)
@@ -329,7 +362,7 @@ def api_audit(api, contract, topology, repository, candidate, pr, run_id, attemp
     for ref in refs:
         require(api.get('/git/commits/' + ref)['tree']['sha'] == bound['candidate_tree'], 'WORKFLOW_SOURCE_TREE_MISMATCH')
     print('CI_PROOF_PROGRESS=verify_all_expanded_jobs', flush=True)
-    rows = audit_jobs(contract, topology, api.jobs(run), run_id, attempt, candidate)
+    rows = audit_jobs_eventually(api, run, contract, topology, run_id, attempt, candidate)
     from ci_dependency_recovery import verify_run
     recovery = verify_run(api, ROOT, repository, candidate, bound['candidate_tree'], pr, run, bound['frozen_main_sha'])
     require(bound_refs(api, pr, candidate) == bound, 'FROZEN_BINDING_CHANGED_DURING_AUDIT')
@@ -405,7 +438,7 @@ def verify_main(api, contract, topology, repository, main_sha, contract_hash, to
     require(artifact.get('digest') == 'sha256:' + sha(data), 'PROOF_ARCHIVE_DIGEST_MISMATCH')
     receipt = receipt_zip(data)
     verify_binding(receipt, repository, contract_hash, topology_hash, candidate, tree, pr, run, qualification)
-    rows = audit_jobs(contract, topology, api.jobs(run), run['id'], run['run_attempt'], candidate)
+    rows = audit_jobs_eventually(api, run, contract, topology, run['id'], run['run_attempt'], candidate)
     require(receipt.get('jobs') == rows and not any(r['performance'] == 'HARD_EXCEEDED' for r in rows), 'PROOF_EXECUTION_DRIFT')
     from ci_dependency_recovery import verify_run
     recovery = verify_run(api, ROOT, repository, candidate, tree, pr, run, receipt['frozen_main_sha'])
