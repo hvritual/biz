@@ -224,6 +224,16 @@ class RuntimeTests(unittest.TestCase):
             )
         self.assertEqual(calls, 1)
 
+    def test_api_job_poll_configuration_is_fail_closed(self):
+        class API:
+            def jobs(self, run):
+                raise AssertionError("invalid configuration must fail before API access")
+
+        with self.assertRaisesRegex(g.Violation, 'AUDIT_JOB_POLL_ATTEMPTS_INVALID'):
+            g.audit_jobs_eventually(API(), {'id': 101}, C, T, 101, 1, SHA, attempts=0)
+        with self.assertRaisesRegex(g.Violation, 'AUDIT_JOB_POLL_DELAY_INVALID'):
+            g.audit_jobs_eventually(API(), {'id': 101}, C, T, 101, 1, SHA, delay=-1)
+
     def test_wrong_sha_run_attempt_rejected(self):
         for key, value in [('head_sha','b'*40),('run_id',999),('run_attempt',2)]:
             with self.subTest(key=key):
