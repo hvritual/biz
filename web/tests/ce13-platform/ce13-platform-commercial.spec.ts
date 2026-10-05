@@ -326,7 +326,7 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await expect(page).toHaveURL(/#\/platform\/commercial\/plans/);
 
   await page.getByRole("button", { name: "新建套餐" }).click();
-  const editor = page.getByRole("dialog", { name: "新建套餐首稿" });
+  const editor = page.getByRole("dialog", { name: "创建套餐草稿" });
   await editor.getByLabel("套餐代码").fill(code);
   await editor.getByLabel("套餐名称").fill("CE-13 可见控制台套餐");
   await editor.getByRole("button", { name: "添加模块" }).click();
@@ -335,11 +335,16 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await editor.getByLabel("device.lifecycle").check();
   await editor.getByRole("button", { name: "添加范围" }).click();
   await editor.getByPlaceholder("default").fill("default");
-  await editor.getByRole("button", { name: "提交", exact: true }).click();
+  await editor.getByRole("button", { name: "创建草稿", exact: true }).click();
   await expect(page.getByText("套餐草稿已创建。")).toBeVisible();
-  page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "发布", exact: true }).click();
-  await expect(page.getByText("套餐版本已发布；后续修订必须创建新版本。")).toBeVisible();
+  await page.getByRole("button", { name: "发布前检查", exact: true }).click();
+  const preflight = page.getByRole("dialog", { name: "发布前检查" });
+  await expect(preflight.getByText("此检查不是“发布成功”证明")).toBeVisible();
+  await preflight.getByRole("button", { name: "继续发布", exact: true }).click();
+  const publish = page.getByRole("dialog", { name: "确认发布套餐版本" });
+  await expect(publish.getByText("发布后内容不可直接覆盖")).toBeVisible();
+  await publish.getByRole("button", { name: "确认发布", exact: true }).click();
+  await expect(page.getByText("套餐版本已发布；后续修订需要创建新版本。")).toBeVisible();
   for (const [width, height] of [[1536, 1024], [1440, 900], [1366, 768], [390, 844]]) {
     await page.setViewportSize({ width, height });
     await page.evaluate(() => window.scrollTo(0, 0));
