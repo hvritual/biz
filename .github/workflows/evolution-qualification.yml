@@ -96,6 +96,8 @@ jobs:
 
       - name: Consumer generation, unit, vet and build
         working-directory: biz
+        env:
+          GODEBUG: http2client=0
         run: |
           set -euo pipefail
           make yunka-source-check workspace-check

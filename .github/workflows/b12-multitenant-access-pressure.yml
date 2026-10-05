@@ -53,11 +53,20 @@ jobs:
           echo "protoc_release=${PROTOC_RELEASE}" >> "$GITHUB_OUTPUT"
           echo "protoc_sha256=${PROTOC_LINUX_X86_64_SHA256}" >> "$GITHUB_OUTPUT"
 
+      - name: Bind Go cache to exact candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$GITHUB_SHA" > "$GITHUB_WORKSPACE/.b12-cache-candidate"
       - name: Setup locked Go
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
           go-version: ${{ steps.lock.outputs.go_version }}
-          cache: false
+          cache: true
+          cache-dependency-path: |
+            .b12-cache-candidate
+            biz/go.sum
+            yunka.io/go.sum
 
       - name: Install locked protoc
         shell: bash
@@ -188,6 +197,7 @@ jobs:
           retention-days: 2
 
   b12-2-tenant-lifecycle-mysql:
+    needs: b12-1-contract-closure
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -232,11 +242,20 @@ jobs:
           source yunka.io/tools/toolchain.env
           echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
 
+      - name: Bind Go cache to exact candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$GITHUB_SHA" > "$GITHUB_WORKSPACE/.b12-cache-candidate"
       - name: Setup locked Go
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
           go-version: ${{ steps.lock.outputs.go_version }}
-          cache: false
+          cache: true
+          cache-dependency-path: |
+            .b12-cache-candidate
+            biz/go.sum
+            yunka.io/go.sum
 
       - name: Verify exact sources
         shell: bash

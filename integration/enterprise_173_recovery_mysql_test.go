@@ -131,53 +131,101 @@ func TestEnterprise173PasswordRecoveryReplayExpiryAndConcurrentConsumption(t *te
 
 func TestEnterprise191PasswordRecoverySuccessRate(t *testing.T) {
 	fixture := newEnterprise173Fixture(t)
+	const (
+		sampleCount = 100
+		oldPassword = "OldPass9A"
+		newPassword = "NewPass9A"
+	)
 	ctx := context.Background()
-	const sampleCount = 100
-	successes := 0
-
-	for sample := 0; sample < sampleCount; sample++ {
-		userID := fmt.Sprintf("enterprise191-reset-%03d", sample)
-		email := fmt.Sprintf("enterprise191-reset-%03d@example.invalid", sample)
-		oldPassword := "OldPass9A"
-		newPassword := "NewPass9A"
-		if err := fixture.Store.BootstrapGlobalUser(ctx, accesspersistence.GlobalUserBootstrap{ID: userID, Email: email}); err != nil {
-			t.Fatal(err)
-		}
-		if err := fixture.Store.SetUserPassword(ctx, userID, oldPassword); err != nil {
-			t.Fatal(err)
-		}
-		flowID := fmt.Sprintf("enterprise191-reset-flow-%03d", sample)
-		challenge, code := fixture.sendRecoveryOTP(
-			t,
-			fmt.Sprintf("enterprise191/reset/%03d", sample),
-			flowID,
-			userID,
-			email,
-		)
-		_, err := fixture.Store.RecoverPasswordWithCode(ctx, fixture.Protection, domain.VerifyChallengeRequest{
-			ChallengeID: challenge.ChallengeID,
-			FlowID: flowID,
-			Purpose: domain.VerificationPurposePasswordRecovery,
-			UserID: userID,
-			Channel: domain.SecurityNotificationEmail,
-			Destination: email,
-			Code: code,
-		}, 5*time.Minute, newPassword, newPassword)
-		if err != nil {
-			t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=recover err=%v", sample+1, err)
-			continue
-		}
-		identity, err := fixture.Store.AuthenticateUserPassword(ctx, email, newPassword)
-		if err == nil && identity.UserID == userID {
-			successes++
-			continue
-		}
-		t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=readback identity=%q err=%v", sample+1, identity.UserID, err)
+	if err := fixture.Store.BootstrapGlobalUser(ctx, accesspersistence.GlobalUserBootstrap{
+		ID: "enterprise191-reset-seed", Email: "enterprise191.reset.seed@example.invalid",
+	}); err != nil {
+		t.Fatal(err)
 	}
-	rate := float64(successes) / float64(sampleCount)
+	if err := fixture.Store.SetUserPassword(ctx, "enterprise191-reset-seed", oldPassword); err != nil {
+		t.Fatal(err)
+	}
+	var seedSalt, seedHash string
+	var seedIterations int
+	if err := fixture.DB.Raw(
+		"SELECT salt, password_hash, iterations FROM biz_user_password_credentials WHERE user_id = ?",
+		"enterprise191-reset-seed",
+	).Row().Scan(&seedSalt, &seedHash, &seedIterations); err != nil {
+		t.Fatal(err)
+	}
+
+	var successes atomic.Int32
+	t.Run("samples", func(t *testing.T) {
+		for sample := 0; sample < sampleCount; sample++ {
+			sample := sample
+			t.Run(fmt.Sprintf("sample-%03d", sample), func(t *testing.T) {
+				ctx := context.Background()
+				userID := fmt.Sprintf("enterprise191-reset-%03d", sample)
+				email := fmt.Sprintf("enterprise191-reset-%03d@example.invalid", sample)
+				if err := fixture.Store.BootstrapGlobalUser(ctx, accesspersistence.GlobalUserBootstrap{ID: userID, Email: email}); err != nil {
+					t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=bootstrap-user err=%v", sample+1, err)
+					return
+				}
+				now := time.Now().UTC()
+				if err := fixture.DB.WithContext(ctx).Exec(
+					"INSERT INTO biz_user_password_credentials (user_id, salt, password_hash, iterations, disabled, must_change, temporary_expires_at, password_changed_at, updated_at) VALUES (?, ?, ?, ?, FALSE, FALSE, NULL, ?, ?)",
+					userID, seedSalt, seedHash, seedIterations, now, now,
+				).Error; err != nil {
+					t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=seed-credential err=%v", sample+1, err)
+					return
+				}
+
+				flowID := fmt.Sprintf("enterprise191-reset-flow-%03d", sample)
+				challenge, delivery, err := fixture.Service.SendVerificationCode(ctx, domain.VerificationChallengeRequest{
+					BusinessEventID: fmt.Sprintf("enterprise191/reset/%03d", sample),
+					FlowID:          flowID,
+					Purpose:         domain.VerificationPurposePasswordRecovery,
+					UserID:          userID,
+					Channel:         domain.SecurityNotificationEmail,
+					Destination:     email,
+				})
+				if err != nil || delivery.State != domain.NotificationStatePending {
+					t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=queue-otp delivery=%+v err=%v", sample+1, delivery, err)
+					return
+				}
+				delivery, err = fixture.Service.DeliverSecurityNotification(ctx, challenge.NotificationEventID)
+				if err != nil || delivery.State != domain.NotificationStateDelivered {
+					t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=deliver-otp delivery=%+v err=%v", sample+1, delivery, err)
+					return
+				}
+				message, ok := fixture.Sender.Message(challenge.NotificationEventID)
+				if !ok || message.Secret == "" {
+					t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=otp-evidence-missing", sample+1)
+					return
+				}
+
+				_, err = fixture.Store.RecoverPasswordWithCode(ctx, fixture.Protection, domain.VerifyChallengeRequest{
+					ChallengeID: challenge.ChallengeID,
+					FlowID:      flowID,
+					Purpose:     domain.VerificationPurposePasswordRecovery,
+					UserID:      userID,
+					Channel:     domain.SecurityNotificationEmail,
+					Destination: email,
+					Code:        message.Secret,
+				}, 5*time.Minute, newPassword, newPassword)
+				if err != nil {
+					t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=recover err=%v", sample+1, err)
+					return
+				}
+				identity, err := fixture.Store.AuthenticateUserPassword(ctx, email, newPassword)
+				if err == nil && identity.UserID == userID {
+					successes.Add(1)
+					return
+				}
+				t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=readback identity=%q err=%v", sample+1, identity.UserID, err)
+			})
+		}
+	})
+
+	rate := float64(successes.Load()) / float64(sampleCount)
 	t.Logf(
 		"ENTERPRISE191_PASSWORD_RESET_METRIC samples=%d successes=%d success_rate=%.5f environment=ci_mysql",
-		sampleCount, successes, rate,
+		sampleCount, successes.Load(), rate,
 	)
 	if rate < 0.99 {
 		t.Fatalf("password recovery success rate %.5f below 0.99", rate)

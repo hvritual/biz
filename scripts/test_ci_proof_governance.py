@@ -120,6 +120,17 @@ class ContractTests(unittest.TestCase):
             with self.assertRaises(g.Violation):
                 g.read(Path(d), 'file')
 
+    def test_b12_mysql_reuses_locked_go_cache_after_contract_closure(self):
+        workflow = (ROOT / '.github/workflows/b12-multitenant-access-pressure.yml').read_text()
+        marker = '  b12-2-tenant-lifecycle-mysql:'
+        self.assertIn(marker, workflow)
+        closure, lifecycle = workflow.split(marker, 1)
+        self.assertIn('needs: b12-1-contract-closure', lifecycle)
+        for job in (closure, lifecycle):
+            self.assertLess(job.index('Bind Go cache to exact candidate'), job.index('Setup locked Go'))
+            for expected in ('$GITHUB_SHA', '.b12-cache-candidate', 'cache: true', 'biz/go.sum', 'yunka.io/go.sum'):
+                self.assertIn(expected, job)
+
     def test_current_hooks(self):
         g.hook_check(ROOT)
 
