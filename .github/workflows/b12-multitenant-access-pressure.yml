@@ -57,7 +57,10 @@ jobs:
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
           go-version: ${{ steps.lock.outputs.go_version }}
-          cache: false
+          cache: true
+          cache-dependency-path: |
+            biz/go.sum
+            yunka.io/go.sum
 
       - name: Install locked protoc
         shell: bash
@@ -188,6 +191,7 @@ jobs:
           retention-days: 2
 
   b12-2-tenant-lifecycle-mysql:
+    needs: b12-1-contract-closure
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -236,7 +240,10 @@ jobs:
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
           go-version: ${{ steps.lock.outputs.go_version }}
-          cache: false
+          cache: true
+          cache-dependency-path: |
+            biz/go.sum
+            yunka.io/go.sum
 
       - name: Verify exact sources
         shell: bash
