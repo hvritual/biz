@@ -169,6 +169,71 @@ class RuntimeTests(unittest.TestCase):
                 jobs=jobs_fixture();jobs[0].update(status=status, conclusion=result)
                 with self.assertRaises(g.Violation): self.audit(jobs)
 
+    def test_api_job_snapshot_eventually_observes_terminal_success(self):
+        stale = jobs_fixture()
+        stale[0] = {**stale[0], 'status': 'in_progress', 'conclusion': None,
+                    'completed_at': None}
+        snapshots = [stale, jobs_fixture()]
+        sleeps = []
+
+        class API:
+            def jobs(self, run):
+                return snapshots.pop(0)
+
+        rows = g.audit_jobs_eventually(
+            API(), {'id': 101, 'run_attempt': 1}, C, T, 101, 1, SHA,
+            attempts=2, delay=0.25, sleeper=sleeps.append,
+        )
+        self.assertEqual(len(rows), 42)
+        self.assertEqual(sleeps, [0.25])
+        self.assertEqual(snapshots, [])
+
+    def test_api_job_snapshot_stays_fail_closed_after_bound(self):
+        calls = 0
+
+        class API:
+            def jobs(self, run):
+                nonlocal calls
+                calls += 1
+                failed = jobs_fixture()
+                failed[0] = {**failed[0], 'conclusion': 'failure'}
+                return failed
+
+        with self.assertRaisesRegex(g.Violation, 'REQUIRED_JOB_NOT_SUCCESS'):
+            g.audit_jobs_eventually(
+                API(), {'id': 101, 'run_attempt': 1}, C, T, 101, 1, SHA,
+                attempts=3, delay=0, sleeper=lambda _: None,
+            )
+        self.assertEqual(calls, 3)
+
+    def test_api_job_snapshot_binding_violation_is_not_retried(self):
+        calls = 0
+
+        class API:
+            def jobs(self, run):
+                nonlocal calls
+                calls += 1
+                wrong = jobs_fixture()
+                wrong[0] = {**wrong[0], 'head_sha': 'b' * 40}
+                return wrong
+
+        with self.assertRaisesRegex(g.Violation, 'JOB_SOURCE_BINDING_MISMATCH'):
+            g.audit_jobs_eventually(
+                API(), {'id': 101, 'run_attempt': 1}, C, T, 101, 1, SHA,
+                attempts=3, delay=0, sleeper=lambda _: None,
+            )
+        self.assertEqual(calls, 1)
+
+    def test_api_job_poll_configuration_is_fail_closed(self):
+        class API:
+            def jobs(self, run):
+                raise AssertionError("invalid configuration must fail before API access")
+
+        with self.assertRaisesRegex(g.Violation, 'AUDIT_JOB_POLL_ATTEMPTS_INVALID'):
+            g.audit_jobs_eventually(API(), {'id': 101}, C, T, 101, 1, SHA, attempts=0)
+        with self.assertRaisesRegex(g.Violation, 'AUDIT_JOB_POLL_DELAY_INVALID'):
+            g.audit_jobs_eventually(API(), {'id': 101}, C, T, 101, 1, SHA, delay=-1)
+
     def test_wrong_sha_run_attempt_rejected(self):
         for key, value in [('head_sha','b'*40),('run_id',999),('run_attempt',2)]:
             with self.subTest(key=key):
