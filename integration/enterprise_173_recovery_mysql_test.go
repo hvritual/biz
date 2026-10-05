@@ -155,14 +155,10 @@ func TestEnterprise191PasswordRecoverySuccessRate(t *testing.T) {
 	}
 
 	var successes atomic.Int32
-	slots := make(chan struct{}, 2)
 	t.Run("samples", func(t *testing.T) {
 		for sample := 0; sample < sampleCount; sample++ {
 			sample := sample
 			t.Run(fmt.Sprintf("sample-%03d", sample), func(t *testing.T) {
-				t.Parallel()
-				slots <- struct{}{}
-				defer func() { <-slots }()
 				ctx := context.Background()
 				userID := fmt.Sprintf("enterprise191-reset-%03d", sample)
 				email := fmt.Sprintf("enterprise191-reset-%03d@example.invalid", sample)
