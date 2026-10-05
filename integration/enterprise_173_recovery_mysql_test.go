@@ -131,9 +131,30 @@ func TestEnterprise173PasswordRecoveryReplayExpiryAndConcurrentConsumption(t *te
 
 func TestEnterprise191PasswordRecoverySuccessRate(t *testing.T) {
 	fixture := newEnterprise173Fixture(t)
-	const sampleCount = 100
-	var successes atomic.Int32
+	const (
+		sampleCount = 100
+		oldPassword = "OldPass9A"
+		newPassword = "NewPass9A"
+	)
+	ctx := context.Background()
+	if err := fixture.Store.BootstrapGlobalUser(ctx, accesspersistence.GlobalUserBootstrap{
+		ID: "enterprise191-reset-seed", Email: "enterprise191.reset.seed@example.invalid",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := fixture.Store.SetUserPassword(ctx, "enterprise191-reset-seed", oldPassword); err != nil {
+		t.Fatal(err)
+	}
+	var seedSalt, seedHash string
+	var seedIterations int
+	if err := fixture.DB.Raw(
+		"SELECT salt, password_hash, iterations FROM biz_user_password_credentials WHERE user_id = ?",
+		"enterprise191-reset-seed",
+	).Row().Scan(&seedSalt, &seedHash, &seedIterations); err != nil {
+		t.Fatal(err)
+	}
 
+	var successes atomic.Int32
 	t.Run("samples", func(t *testing.T) {
 		for sample := 0; sample < sampleCount; sample++ {
 			sample := sample
@@ -142,14 +163,17 @@ func TestEnterprise191PasswordRecoverySuccessRate(t *testing.T) {
 				ctx := context.Background()
 				userID := fmt.Sprintf("enterprise191-reset-%03d", sample)
 				email := fmt.Sprintf("enterprise191-reset-%03d@example.invalid", sample)
-				oldPassword := "OldPass9A"
-				newPassword := "NewPass9A"
 				if err := fixture.Store.BootstrapGlobalUser(ctx, accesspersistence.GlobalUserBootstrap{ID: userID, Email: email}); err != nil {
 					t.Fatal(err)
 				}
-				if err := fixture.Store.SetUserPassword(ctx, userID, oldPassword); err != nil {
+				now := time.Now().UTC()
+				if err := fixture.DB.WithContext(ctx).Exec(
+					"INSERT INTO biz_user_password_credentials (user_id, salt, password_hash, iterations, disabled, must_change, temporary_expires_at, password_changed_at, updated_at) VALUES (?, ?, ?, ?, FALSE, FALSE, NULL, ?, ?)",
+					userID, seedSalt, seedHash, seedIterations, now, now,
+				).Error; err != nil {
 					t.Fatal(err)
 				}
+
 				flowID := fmt.Sprintf("enterprise191-reset-flow-%03d", sample)
 				challenge, code := fixture.sendRecoveryOTP(
 					t,
@@ -160,12 +184,12 @@ func TestEnterprise191PasswordRecoverySuccessRate(t *testing.T) {
 				)
 				_, err := fixture.Store.RecoverPasswordWithCode(ctx, fixture.Protection, domain.VerifyChallengeRequest{
 					ChallengeID: challenge.ChallengeID,
-					FlowID: flowID,
-					Purpose: domain.VerificationPurposePasswordRecovery,
-					UserID: userID,
-					Channel: domain.SecurityNotificationEmail,
+					FlowID:      flowID,
+					Purpose:     domain.VerificationPurposePasswordRecovery,
+					UserID:      userID,
+					Channel:     domain.SecurityNotificationEmail,
 					Destination: email,
-					Code: code,
+					Code:        code,
 				}, 5*time.Minute, newPassword, newPassword)
 				if err != nil {
 					t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=recover err=%v", sample+1, err)
