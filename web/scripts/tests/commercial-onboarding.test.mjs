@@ -14,7 +14,7 @@ function fixture(t) {
     mkdirSync(dirname(target), { recursive: true })
     writeFileSync(target, typeof value === 'string' ? value : JSON.stringify(value))
   }
-  const op = { operationId: 'example.list', security: {tenantRequired: true}, bindings: {rpc: '/example.v1.App/List'} }
+  const op = { operationId: 'example.list', security: {tenantRequired: true, authentication: ['web-session']}, bindings: {rpc: '/example.v1.App/List'} }
   write('contracts/generated/operation-plans.json', {schemaVersion: 2, operations: [op]})
   write('contracts/commercial/generated/catalog.json', {schema_version: 1, capabilities: [{capability_code: 'example.use', module_code: 'example'}], operations: [{operation_id: 'example.list', classification: 'tenant_business', module_code: 'example', capability_codes: ['example.use']}]})
   write('contracts/commercial/onboarding.v1.json', {schema_version: 1, modules: [{module_code: 'example', ui_routes: ['/example'], acceptance: []}]})
@@ -65,6 +65,49 @@ test('internal or platform operations cannot be exposed as tenant UI actions', (
   const f=fixture(t)
   f.mutate('contracts/generated/operation-plans.json',text=>text.replace('"tenantRequired":true','"tenantRequired":false'))
   assert.match(checkCommercialOnboardingUI(f.root).findings.join('\n'),/not a public tenant action/)
+})
+
+test('tenant-required recovery operations remain valid tenant web actions without becoming module owners', (t) => {
+  const f=fixture(t)
+  f.mutate('contracts/commercial/generated/catalog.json', text => text.replace('"classification":"tenant_business"','"classification":"recovery"'))
+  f.mutate('contracts/commercial/onboarding.v1.json', text => text.replace('"ui_routes":["/example"]','"ui_routes":[]'))
+  assert.deepEqual(checkCommercialOnboardingUI(f.root).findings,[])
+})
+
+test('a public platform web action is valid only on a platform surface', (t) => {
+  const f=fixture(t)
+  f.mutate('contracts/generated/operation-plans.json', text => text.replace('"tenantRequired":true','"tenantRequired":false'))
+  f.mutate('contracts/commercial/generated/catalog.json', text => text.replace('"classification":"tenant_business"','"classification":"platform_management"'))
+  f.mutate('contracts/commercial/onboarding.v1.json', text => text.replace('"ui_routes":["/example"]','"ui_routes":[]'))
+  f.write('web/src/router/index.ts', "import {createRouter} from 'vue-router'; export const router=createRouter({routes:[{path:'/platform/example',component:()=>import('../Page.vue'),meta:{surface:'platform',authorizationActions:['example.list']}}]})")
+  f.write('web/src/router/navigation.ts', "export const navigation=[{id:'platform-commercial',authorizationActions:['example.list']},{path:'/platform/example',authorizationActions:['example.list']}]")
+  assert.deepEqual(checkCommercialOnboardingUI(f.root).findings,[])
+})
+
+test('a platform action is rejected from a tenant surface', (t) => {
+  const f=fixture(t)
+  f.mutate('contracts/generated/operation-plans.json', text => text.replace('"tenantRequired":true','"tenantRequired":false'))
+  f.mutate('contracts/commercial/generated/catalog.json', text => text.replace('"classification":"tenant_business"','"classification":"platform_management"'))
+  assert.match(checkCommercialOnboardingUI(f.root).findings.join('\n'),/not a public tenant action/)
+})
+
+test('a tenant business action is rejected from a platform surface', (t) => {
+  const f=fixture(t)
+  f.write('web/src/router/index.ts', "import {createRouter} from 'vue-router'; export const router=createRouter({routes:[{path:'/platform/example',component:()=>import('../Page.vue'),meta:{surface:'platform',authorizationActions:['example.list']}}]})")
+  f.write('web/src/router/navigation.ts', "export const navigation=[{path:'/platform/example',authorizationActions:['example.list']}]")
+  assert.match(checkCommercialOnboardingUI(f.root).findings.join('\n'),/not a public platform web action/)
+})
+
+test('api-key-only or unbound platform operations cannot be exposed to platform UI', (t) => {
+  const f=fixture(t)
+  f.mutate('contracts/generated/operation-plans.json', text => text
+    .replace('"tenantRequired":true','"tenantRequired":false')
+    .replace('"authentication":["web-session"]','"authentication":["api-key"]'))
+  f.mutate('contracts/commercial/generated/catalog.json', text => text.replace('"classification":"tenant_business"','"classification":"platform_management"'))
+  f.mutate('contracts/commercial/onboarding.v1.json', text => text.replace('"ui_routes":["/example"]','"ui_routes":[]'))
+  f.write('web/src/router/index.ts', "import {createRouter} from 'vue-router'; export const router=createRouter({routes:[{path:'/platform/example',component:()=>import('../Page.vue'),meta:{surface:'platform',authorizationActions:['example.list']}}]})")
+  f.write('web/src/router/navigation.ts', "export const navigation=[{path:'/platform/example',authorizationActions:['example.list']}]")
+  assert.match(checkCommercialOnboardingUI(f.root).findings.join('\n'),/not a public platform web action/)
 })
 
 test('a commented authorization declaration cannot satisfy an indexed route', (t) => {

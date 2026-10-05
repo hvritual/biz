@@ -41,6 +41,73 @@ func Catalog() []Action {
 	return out
 }
 
+func PlatformWebActions() []Action {
+	return PlatformWebActionsForActions(generatedActions)
+}
+
+func PlatformWebActionsForActions(actions []Action) []Action {
+	out := make([]Action, 0, len(actions))
+	for _, action := range actions {
+		if action.TenantRequired || !containsString(action.Authentication, "web-session") {
+			continue
+		}
+		if action.RPC == "" && len(action.HTTP) == 0 {
+			continue
+		}
+		out = append(out, cloneAction(action))
+	}
+	return out
+}
+
+func PlatformModuleWebActions() []Action {
+	out := []Action{}
+	for _, action := range PlatformWebActions() {
+		if action.Classification != "platform_management" || action.Application != "module_catalog" {
+			continue
+		}
+		out = append(out, cloneAction(action))
+	}
+	return out
+}
+
+func AuthorizedPlatformActions(grants []authz.Grant) []Action {
+	allowed := map[authz.PermissionKey]struct{}{}
+	for _, grant := range grants {
+		if grant.Permission != "" {
+			allowed[grant.Permission] = struct{}{}
+		}
+	}
+	out := []Action{}
+	for _, action := range PlatformWebActions() {
+		if !actionAllowed(action, allowed) {
+			continue
+		}
+		out = append(out, cloneAction(action))
+	}
+	return out
+}
+
+func PermissionsForActions(actions []Action) []authz.PermissionKey {
+	seen := map[authz.PermissionKey]struct{}{}
+	for _, action := range actions {
+		for _, permission := range action.Permissions {
+			if permission != "" {
+				seen[permission] = struct{}{}
+			}
+		}
+	}
+	keys := make([]string, 0, len(seen))
+	for permission := range seen {
+		keys = append(keys, string(permission))
+	}
+	sort.Strings(keys)
+	out := make([]authz.PermissionKey, 0, len(keys))
+	for _, key := range keys {
+		out = append(out, authz.PermissionKey(key))
+	}
+	return out
+}
+
 func TenantRolePermissions() []PermissionDefinition {
 	return TenantRolePermissionsForActions(RoleAssignableActions(generatedActions))
 }

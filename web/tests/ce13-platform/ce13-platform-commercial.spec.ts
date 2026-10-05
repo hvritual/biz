@@ -1,5 +1,7 @@
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 interface Fixture {
   base_url: string;
@@ -15,6 +17,15 @@ interface Fixture {
   allowed_api_key: string;
   allowed_subject: string;
   denied_subject: string;
+  module_read_email: string;
+  module_read_password: string;
+  module_read_subject: string;
+  module_manage_email: string;
+  module_manage_password: string;
+  module_manage_subject: string;
+  module_technical_email: string;
+  module_technical_password: string;
+  module_technical_subject: string;
   platform_oidc_issuer: string;
 }
 
@@ -31,6 +42,16 @@ interface BrowserResult {
   status: number;
   text: string;
   json: unknown;
+}
+
+interface ModuleView {
+  moduleCode: string;
+  name: string;
+  category: string;
+  salesScope?: string[];
+  technicalStatus: string;
+  salesStatus: string;
+  version: string | number;
 }
 
 function fixture(): Fixture {
@@ -97,6 +118,60 @@ async function login(
   return { context, page, session: result.json as SessionView };
 }
 
+
+function ce13RequestId(label: string) {
+  return `ce13-${label}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function moduleFingerprint(module: ModuleView) {
+  return {
+    moduleCode: module.moduleCode,
+    name: module.name,
+    category: module.category,
+    salesScope: [...(module.salesScope ?? [])].sort(),
+    technicalStatus: module.technicalStatus,
+    salesStatus: module.salesStatus,
+    version: String(module.version),
+  };
+}
+
+async function platformWrite(
+  page: Page,
+  data: Fixture,
+  csrf: string,
+  path: string,
+  method: "POST" | "PATCH",
+  body: Record<string, unknown>,
+) {
+  const id = typeof body.requestId === "string" && body.requestId ? body.requestId : ce13RequestId("module-write");
+  return browserRequest(page, data.web_base_url, path, {
+    method,
+    headers: { "X-CSRF-Token": csrf, "Idempotency-Key": id },
+    body: { ...body, requestId: id },
+  });
+}
+
+function controlModuleManageGrant(action: "revoke" | "restore") {
+  const workspace = process.env.GITHUB_WORKSPACE;
+  const repoRoot = process.env.CE13_BIZ_REPO_ROOT || (workspace ? join(workspace, "biz") : "");
+  if (!repoRoot) throw new Error("CE13_BIZ_REPO_ROOT or GITHUB_WORKSPACE is required for live grant control");
+  execFileSync(
+    "go",
+    ["-C", repoRoot, "test", "-count=1", "-tags=integration", "./integration", "-run", "^TestCE13PlatformGrantControl$"],
+    {
+      env: {
+        ...process.env,
+        CE13_GRANT_CONTROL_ACTION: action,
+        CE13_GRANT_CONTROL_SUBJECT: "ce13-platform-module-manage",
+        CE13_GRANT_CONTROL_PERMISSION: "platform.module.manage",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+      encoding: "utf8",
+      timeout: 30_000,
+    },
+  );
+}
+
 test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request }) => {
   const data = fixture();
 
@@ -132,6 +207,20 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
   expect(denied.session.actor_kind).toBe("platform");
   expect(denied.session.platform_subject).toBe(data.denied_subject);
   expect(denied.session.active_tenant_id ?? "").toBe("");
+  const deniedAuthorization = await browserRequest(denied.page, data.web_base_url, "/auth/authorization");
+  expect(deniedAuthorization.status, deniedAuthorization.text).toBe(200);
+  const deniedProjection = deniedAuthorization.json as {
+    actor_kind: string;
+    platform_subject?: string;
+    tenant_id?: string;
+    button_codes?: string[];
+  };
+  expect(deniedProjection.actor_kind).toBe("platform");
+  expect(deniedProjection.platform_subject).toBe(data.denied_subject);
+  expect(deniedProjection.tenant_id ?? "").toBe("");
+  expect(deniedProjection.button_codes ?? []).toContain("tenant.list");
+  expect(deniedProjection.button_codes ?? []).not.toContain("commercial.module.list");
+
   const deniedModules = await browserRequest(denied.page, data.web_base_url, "/v1/platform/modules");
   expect(deniedModules.status, deniedModules.text).toBe(403);
   await denied.context.close();
@@ -145,6 +234,25 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
   expect(allowed.session.platform_subject).toBe(data.allowed_subject);
   expect(allowed.session.active_tenant_id ?? "").toBe("");
   expect(allowed.session.csrf_token).toBeTruthy();
+
+  const allowedAuthorization = await browserRequest(allowed.page, data.web_base_url, "/auth/authorization");
+  expect(allowedAuthorization.status, allowedAuthorization.text).toBe(200);
+  const allowedProjection = allowedAuthorization.json as {
+    actor_kind: string;
+    platform_subject?: string;
+    tenant_id?: string;
+    button_codes?: string[];
+  };
+  expect(allowedProjection.actor_kind).toBe("platform");
+  expect(allowedProjection.platform_subject).toBe(data.allowed_subject);
+  expect(allowedProjection.tenant_id ?? "").toBe("");
+  expect(allowedProjection.button_codes ?? []).toEqual(expect.arrayContaining([
+    "commercial.module.list",
+    "commercial.module.create",
+    "commercial.module.update",
+    "commercial.module.set_sales_status",
+    "commercial.module.set_technical_status",
+  ]));
 
   const modules = await browserRequest(allowed.page, data.web_base_url, "/v1/platform/modules");
   expect(modules.status, modules.text).toBe(200);
@@ -167,6 +275,282 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
   });
   expect(noCSRF.status, noCSRF.text).toBe(401);
   await allowed.context.close();
+});
+
+test("TestCE13PlatformModuleAuthorizationMatrix", async ({ browser }) => {
+  const data = fixture();
+  const cases = [
+    {
+      email: data.module_read_email,
+      password: data.module_read_password,
+      subject: data.module_read_subject,
+      allowed: ["commercial.module.list", "commercial.module.get"],
+      denied: ["commercial.module.create", "commercial.module.update", "commercial.module.set_sales_status", "commercial.module.set_technical_status"],
+      create: false, metadata: false, sales: false, technical: false,
+    },
+    {
+      email: data.module_manage_email,
+      password: data.module_manage_password,
+      subject: data.module_manage_subject,
+      allowed: ["commercial.module.list", "commercial.module.get", "commercial.module.create", "commercial.module.update", "commercial.module.set_sales_status"],
+      denied: ["commercial.module.set_technical_status"],
+      create: true, metadata: true, sales: true, technical: false,
+    },
+    {
+      email: data.module_technical_email,
+      password: data.module_technical_password,
+      subject: data.module_technical_subject,
+      allowed: ["commercial.module.list", "commercial.module.get", "commercial.module.set_technical_status"],
+      denied: ["commercial.module.create", "commercial.module.update", "commercial.module.set_sales_status"],
+      create: false, metadata: false, sales: false, technical: true,
+    },
+  ];
+
+  for (const item of cases) {
+    const actor = await login(browser, data, item.email, item.password);
+    expect(actor.session.actor_kind).toBe("platform");
+    expect(actor.session.platform_subject).toBe(item.subject);
+    expect(actor.session.active_tenant_id ?? "").toBe("");
+
+    const authorization = await browserRequest(actor.page, data.web_base_url, "/auth/authorization");
+    expect(authorization.status, authorization.text).toBe(200);
+    const codes = (authorization.json as { button_codes?: string[] }).button_codes ?? [];
+    for (const action of item.allowed) expect(codes).toContain(action);
+    for (const action of item.denied) expect(codes).not.toContain(action);
+
+    await actor.page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
+    await expect(actor.page.getByRole("heading", { name: "模块目录", level: 1, exact: true })).toBeVisible();
+    const create = actor.page.getByRole("button", { name: "新增模块", exact: true });
+    if (item.create) await expect(create).toBeEnabled();
+    else await expect(create).toBeDisabled();
+
+    await actor.page.getByRole("button", { name: "查看详情", exact: true }).first().click();
+    const metadata = actor.page.getByRole("button", { name: "编辑基础配置", exact: true });
+    const sales = actor.page.getByRole("button", { name: /^(停售销售|恢复销售)$/ });
+    const technical = actor.page.getByRole("button", { name: "调整技术状态", exact: true });
+    if (item.metadata) await expect(metadata).toBeEnabled(); else await expect(metadata).toBeDisabled();
+    if (item.sales) await expect(sales).toBeEnabled(); else await expect(sales).toBeDisabled();
+    if (item.technical) await expect(technical).toBeEnabled(); else await expect(technical).toBeDisabled();
+
+    const csrf = actor.session.csrf_token;
+    expect(csrf).toBeTruthy();
+    const listedBefore = await browserRequest(actor.page, data.web_base_url, "/v1/platform/modules");
+    expect(listedBefore.status, listedBefore.text).toBe(200);
+    const baseline = (listedBefore.json as { modules?: ModuleView[] }).modules?.[0];
+    expect(baseline).toBeTruthy();
+    const before = moduleFingerprint(baseline!);
+    const deniedCreateCode = `ce13-denied-${item.subject}-${Date.now()}-${Math.random().toString(16).slice(2, 7)}`;
+    const deniedRequests: Array<Promise<BrowserResult>> = [];
+
+    if (!item.create) {
+      deniedRequests.push(platformWrite(actor.page, data, String(csrf), "/v1/platform/modules", "POST", {
+        moduleCode: deniedCreateCode,
+        name: "CE13 denied create",
+        category: "ce13",
+        salesScope: ["default"],
+        reason: "executor must deny missing platform.module.manage",
+      }));
+    }
+    if (!item.metadata) {
+      deniedRequests.push(platformWrite(
+        actor.page,
+        data,
+        String(csrf),
+        `/v1/platform/modules/${encodeURIComponent(baseline!.moduleCode)}`,
+        "PATCH",
+        {
+          moduleCode: baseline!.moduleCode,
+          name: baseline!.name + " denied",
+          category: baseline!.category,
+          salesScope: baseline!.salesScope ?? [],
+          version: String(baseline!.version),
+          reason: "executor must deny metadata change",
+        },
+      ));
+    }
+    if (!item.sales) {
+      deniedRequests.push(platformWrite(
+        actor.page,
+        data,
+        String(csrf),
+        `/v1/platform/modules/${encodeURIComponent(baseline!.moduleCode)}/sales-status`,
+        "POST",
+        {
+          moduleCode: baseline!.moduleCode,
+          salesStatus: baseline!.salesStatus === "MODULE_SALES_STATUS_SELLABLE"
+            ? "MODULE_SALES_STATUS_RETIRED"
+            : "MODULE_SALES_STATUS_SELLABLE",
+          version: String(baseline!.version),
+          reason: "executor must deny sales change",
+        },
+      ));
+    }
+    if (!item.technical) {
+      deniedRequests.push(platformWrite(
+        actor.page,
+        data,
+        String(csrf),
+        `/v1/platform/modules/${encodeURIComponent(baseline!.moduleCode)}/technical-status`,
+        "POST",
+        {
+          moduleCode: baseline!.moduleCode,
+          technicalStatus: baseline!.technicalStatus === "MODULE_TECHNICAL_STATUS_READY"
+            ? "MODULE_TECHNICAL_STATUS_DISABLED"
+            : "MODULE_TECHNICAL_STATUS_READY",
+          version: String(baseline!.version),
+          reason: "executor must deny technical change",
+        },
+      ));
+    }
+
+    for (const deniedRequest of deniedRequests) {
+      const denied = await deniedRequest;
+      expect(denied.status, denied.text).toBe(403);
+    }
+
+    const readback = await browserRequest(
+      actor.page,
+      data.web_base_url,
+      `/v1/platform/modules/${encodeURIComponent(baseline!.moduleCode)}`,
+    );
+    expect(readback.status, readback.text).toBe(200);
+    expect(moduleFingerprint(readback.json as ModuleView)).toEqual(before);
+    const listedAfter = await browserRequest(actor.page, data.web_base_url, "/v1/platform/modules");
+    expect(listedAfter.status, listedAfter.text).toBe(200);
+    expect(((listedAfter.json as { modules?: ModuleView[] }).modules ?? []).some((module) => module.moduleCode === deniedCreateCode)).toBe(false);
+
+    await actor.context.close();
+  }
+});
+
+test("TestCE13PlatformGrantRevocationThroughActiveOIDCSession", async ({ browser }) => {
+  const data = fixture();
+  const actor = await login(browser, data, data.module_manage_email, data.module_manage_password);
+  const page = actor.page;
+  const csrf = actor.session.csrf_token;
+  expect(csrf).toBeTruthy();
+  let revoked = false;
+  let releaseStale: (() => void) | undefined;
+
+  try {
+    const listed = await browserRequest(page, data.web_base_url, "/v1/platform/modules");
+    expect(listed.status, listed.text).toBe(200);
+    const baseline = (listed.json as { modules?: ModuleView[] }).modules?.[0];
+    expect(baseline).toBeTruthy();
+    const before = moduleFingerprint(baseline!);
+
+    await page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
+    await expect(page.getByRole("heading", { name: "模块目录", level: 1, exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "查看详情", exact: true }).first().click();
+    await page.getByRole("button", { name: "编辑基础配置", exact: true }).click();
+    const draftName = `${baseline!.name} · 撤权草稿`;
+    await page.getByLabel("模块名称").fill(draftName);
+    await page.getByLabel("变更原因").fill("CE13 active-session revoke");
+
+    let captureNext = true;
+    let capturedResolve: (() => void) | undefined;
+    const captured = new Promise<void>((resolve) => { capturedResolve = resolve; });
+    const release = new Promise<void>((resolve) => { releaseStale = resolve; });
+    let uiPatchWrites = 0;
+    const writeListener = (request: import("@playwright/test").Request) => {
+      const url = new URL(request.url());
+      if (
+        request.method() === "PATCH"
+        && url.pathname === `/api/v1/platform/modules/${encodeURIComponent(baseline!.moduleCode)}`
+      ) {
+        uiPatchWrites += 1;
+      }
+    };
+    page.on("request", writeListener);
+
+    await page.route("**/api/auth/authorization", async (route) => {
+      if (!captureNext) {
+        await route.continue();
+        return;
+      }
+      captureNext = false;
+      const staleResponse = await route.fetch();
+      capturedResolve?.();
+      await release;
+      await route.fulfill({ response: staleResponse });
+    });
+
+    const save = page.getByRole("button", { name: "保存基础配置", exact: true });
+    await save.click();
+    await captured;
+    await expect(save).toBeDisabled();
+
+    controlModuleManageGrant("revoke");
+    revoked = true;
+
+    await page.evaluate(async () => {
+      const modulePath = "/src/services/runtime/authorization.ts";
+      const authorization = await import(/* @vite-ignore */ modulePath);
+      await authorization.ensureCurrentAuthorization(true);
+    });
+    await expect(save).toBeDisabled();
+
+    releaseStale?.();
+    releaseStale = undefined;
+    await expect(page.getByText(/当前平台授权已变化，已阻止变更提交/)).toBeVisible();
+    await expect(page.getByLabel("模块名称")).toHaveValue(draftName);
+    await expect.poll(() => uiPatchWrites, { timeout: 3_000 }).toBe(0);
+
+    const authorization = await browserRequest(page, data.web_base_url, "/auth/authorization");
+    expect(authorization.status, authorization.text).toBe(200);
+    const codes = (authorization.json as { button_codes?: string[] }).button_codes ?? [];
+    expect(codes).toContain("commercial.module.list");
+    expect(codes).not.toContain("commercial.module.create");
+    expect(codes).not.toContain("commercial.module.update");
+    expect(codes).not.toContain("commercial.module.set_sales_status");
+
+    const deniedWrite = await platformWrite(
+      page,
+      data,
+      String(csrf),
+      `/v1/platform/modules/${encodeURIComponent(baseline!.moduleCode)}`,
+      "PATCH",
+      {
+        moduleCode: baseline!.moduleCode,
+        name: baseline!.name + " forbidden",
+        category: baseline!.category,
+        salesScope: baseline!.salesScope ?? [],
+        version: String(baseline!.version),
+        reason: "same active OIDC session must be denied after revoke",
+      },
+    );
+    expect(deniedWrite.status, deniedWrite.text).toBe(403);
+
+    const readback = await browserRequest(
+      page,
+      data.web_base_url,
+      `/v1/platform/modules/${encodeURIComponent(baseline!.moduleCode)}`,
+    );
+    expect(readback.status, readback.text).toBe(200);
+    expect(moduleFingerprint(readback.json as ModuleView)).toEqual(before);
+
+    await page.getByRole("button", { name: "取消", exact: true }).click();
+    const discard = page.getByRole("dialog", { name: "放弃本次编辑？" });
+    await expect(discard).toBeVisible();
+    await discard.getByRole("button", { name: "放弃编辑", exact: true }).click();
+    const detail = page.getByRole("dialog", { name: /模块详情/ });
+    await expect(detail).toBeVisible();
+    await detail.getByRole("button", { name: "关闭", exact: true }).click();
+    await expect(detail).toBeHidden();
+
+    await expect(page.getByRole("button", { name: "新增模块", exact: true })).toBeDisabled();
+    await page.getByRole("button", { name: "查看详情", exact: true }).first().click();
+    await expect(page.getByRole("button", { name: "编辑基础配置", exact: true })).toBeDisabled();
+    await expect(page.getByRole("button", { name: /^(停售销售|恢复销售)$/ })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "调整技术状态", exact: true })).toBeDisabled();
+
+    page.off("request", writeListener);
+    await page.unroute("**/api/auth/authorization");
+  } finally {
+    releaseStale?.();
+    if (revoked) controlModuleManageGrant("restore");
+    await actor.context.close();
+  }
 });
 
 test("TestCE13PlatformCommercialLifecycleThroughTrustedWebSession", async ({ browser }) => {
@@ -326,7 +710,7 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await expect(page).toHaveURL(/#\/platform\/commercial\/plans/);
 
   await page.getByRole("button", { name: "新建套餐" }).click();
-  const editor = page.getByRole("dialog", { name: "新建套餐首稿" });
+  const editor = page.getByRole("dialog", { name: "创建套餐草稿" });
   await editor.getByLabel("套餐代码").fill(code);
   await editor.getByLabel("套餐名称").fill("CE-13 可见控制台套餐");
   await editor.getByRole("button", { name: "添加模块" }).click();
@@ -335,11 +719,16 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await editor.getByLabel("device.lifecycle").check();
   await editor.getByRole("button", { name: "添加范围" }).click();
   await editor.getByPlaceholder("default").fill("default");
-  await editor.getByRole("button", { name: "提交", exact: true }).click();
+  await editor.getByRole("button", { name: "创建草稿", exact: true }).click();
   await expect(page.getByText("套餐草稿已创建。")).toBeVisible();
-  page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "发布", exact: true }).click();
-  await expect(page.getByText("套餐版本已发布；后续修订必须创建新版本。")).toBeVisible();
+  await page.getByRole("button", { name: "发布前检查", exact: true }).click();
+  const preflight = page.getByRole("dialog", { name: "发布前检查" });
+  await expect(preflight).toBeVisible();
+  await preflight.getByRole("button", { name: "继续发布", exact: true }).click();
+  const publish = page.getByRole("dialog", { name: "确认发布套餐版本" });
+  await expect(publish).toBeVisible();
+  await publish.getByRole("button", { name: "确认发布", exact: true }).click();
+  await expect(page.getByText("套餐版本已发布；后续修订需要创建新版本。")).toBeVisible();
   for (const [width, height] of [[1536, 1024], [1440, 900], [1366, 768], [390, 844]]) {
     await page.setViewportSize({ width, height });
     await page.evaluate(() => window.scrollTo(0, 0));
@@ -409,8 +798,8 @@ test("TestCE13TenantSessionCannotUsePlatformConsole", async ({ browser }) => {
   const data = fixture();
   const tenant = await login(browser, data, data.tenant_email, data.tenant_password);
   await tenant.page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
-  await expect(tenant.page.getByRole("heading", { name: "模块目录", exact: true })).toBeVisible();
-  await expect(tenant.page.getByText("当前账号无平台商业管理权限")).toBeVisible();
-  await expect(tenant.page.getByRole("button", { name: "查看详情" })).toHaveCount(0);
+  await expect(tenant.page).toHaveURL(/#\/authorization-state\?reason=forbidden/);
+  await expect(tenant.page.getByRole("heading", { name: "没有访问权限", exact: true })).toBeVisible();
+  await expect(tenant.page.getByRole("heading", { name: "模块目录", exact: true })).toHaveCount(0);
   await tenant.context.close();
 });

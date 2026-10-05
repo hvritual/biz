@@ -141,3 +141,22 @@ describe('primary navigation information architecture', () => {
     expect(systemQuickActions.every((item) => item.path.startsWith('/system/'))).toBe(true)
   })
 })
+
+describe('platform authorization navigation contract', () => {
+  it('binds every real platform entry to operation catalog action codes', () => {
+    const real = visiblePlatformCommercialNavigation()
+    expect(real.every((item) => item.authorizationActions?.length)).toBe(true)
+    expect(real.find((item) => item.id === 'modules')?.authorizationActions).toEqual(['commercial.module.list'])
+    expect(real.find((item) => item.id === 'tenant-entitlements')).toMatchObject({
+      authorizationMode: 'all',
+      authorizationActions: [
+        'commercial.subscription.get',
+        'commercial.entitlement.override.list',
+        'commercial.entitlement.explain',
+        'commercial.module.list',
+      ],
+    })
+    expect(primaryNavigation.find((item) => item.id === 'platform-commercial')?.authorizationActions).toContain('commercial.module.list')
+    expect(platformCommercialQuickActions.every((item) => item.authorizationActions?.length)).toBe(true)
+  })
+})

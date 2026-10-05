@@ -215,3 +215,109 @@ describe('current authorization runtime', () => {
     expect(auth.currentAuthorizationAllows('tenant.member.list')).toBe(false)
   })
 })
+
+describe('platform authorization projection', () => {
+  const platformSession = {
+    authenticated: true,
+    actor_kind: 'platform',
+    platform_subject: 'platform-admin',
+    context_version: 7,
+  }
+  const platformSnapshot = (buttonCodes: string[]) => snapshot({
+    actor_kind: 'platform',
+    user_id: undefined,
+    tenant_id: undefined,
+    tenant_name: undefined,
+    platform_subject: 'platform-admin',
+    roles: [],
+    grants: [],
+    data_policies: [],
+    site_ids: [],
+    modules: [],
+    actions: buttonCodes.map((code) => ({
+      code,
+      domain: 'commercial',
+      application: 'module_catalog',
+      use_case: code,
+      tenant_required: false,
+      authentication: ['web-session'],
+      permissions: [],
+      permission_mode: 'all',
+    })),
+    button_codes: buttonCodes,
+  })
+
+  beforeEach(() => {
+    mocks.readSession.mockReset()
+    mocks.readCurrentAuthorization.mockReset()
+    mocks.subscribe.mockClear()
+    mocks.cancelTrusted.mockClear()
+  })
+
+  it('accepts a matching tenantless platform projection', async () => {
+    mocks.readSession.mockResolvedValue(platformSession)
+    mocks.readCurrentAuthorization.mockResolvedValue(platformSnapshot(['commercial.module.list']))
+    const auth = await runtime()
+
+    await auth.ensureCurrentAuthorization()
+
+    expect(auth.currentAuthorizationState.status).toBe('ready')
+    expect(auth.currentAuthorizationMatchesSession(platformSession)).toBe(true)
+    expect(auth.currentAuthorizationAllows('commercial.module.list')).toBe(true)
+  })
+
+  it('re-reads live platform grants without waiting for the web session context to change', async () => {
+    mocks.readSession.mockResolvedValue(platformSession)
+    mocks.readCurrentAuthorization
+      .mockResolvedValueOnce(platformSnapshot(['commercial.module.list', 'commercial.module.update']))
+      .mockResolvedValueOnce(platformSnapshot(['commercial.module.list']))
+    const auth = await runtime()
+
+    await auth.ensureCurrentAuthorization()
+    expect(auth.currentAuthorizationAllows('commercial.module.update')).toBe(true)
+
+    await auth.ensureCurrentAuthorization()
+    expect(mocks.readCurrentAuthorization).toHaveBeenCalledTimes(2)
+    expect(auth.currentAuthorizationAllows('commercial.module.update')).toBe(false)
+    expect(auth.currentAuthorizationAllows('commercial.module.list')).toBe(true)
+  })
+
+  it('keeps the current platform view mounted while a live revalidation is pending', async () => {
+    let resolveRefresh!: (value: ReturnType<typeof platformSnapshot>) => void
+    mocks.readSession.mockResolvedValue(platformSession)
+    mocks.readCurrentAuthorization
+      .mockResolvedValueOnce(platformSnapshot(['commercial.module.list', 'commercial.module.update']))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveRefresh = resolve }))
+    const auth = await runtime()
+
+    await auth.ensureCurrentAuthorization()
+    const refresh = auth.ensureCurrentAuthorization(true)
+
+    expect(auth.currentAuthorizationState.status).toBe('ready')
+    expect(auth.currentAuthorizationAllows('commercial.module.update')).toBe(true)
+
+    await Promise.resolve()
+    resolveRefresh(platformSnapshot(['commercial.module.list']))
+    await refresh
+    expect(auth.currentAuthorizationState.status).toBe('ready')
+    expect(auth.currentAuthorizationAllows('commercial.module.update')).toBe(false)
+  })
+
+  it('does not allow an older forced projection response to overwrite a newer revoke result', async () => {
+    let resolveOld!: (value: ReturnType<typeof platformSnapshot>) => void
+    mocks.readSession.mockResolvedValue(platformSession)
+    mocks.readCurrentAuthorization
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve }))
+      .mockResolvedValueOnce(platformSnapshot(['commercial.module.list']))
+    const auth = await runtime()
+
+    const oldRequest = auth.ensureCurrentAuthorization(true)
+    await Promise.resolve()
+    await auth.ensureCurrentAuthorization(true)
+    resolveOld(platformSnapshot(['commercial.module.list', 'commercial.module.update']))
+    await oldRequest
+
+    expect(auth.currentAuthorizationAllows('commercial.module.update')).toBe(false)
+    expect(auth.currentAuthorizationAllows('commercial.module.list')).toBe(true)
+  })
+})

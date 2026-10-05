@@ -1,6 +1,5 @@
-import operationPlans from '../../../../contracts/generated/operation-plans.json'
-import commercialMappings from '../../../../contracts/commercial/operation-capabilities.v1.json'
 import type { ModuleDTO } from './platformCommercial'
+import type { ActionCatalogAction } from '@/services/runtime/api'
 
 /** Definition metadata only. Never use this index as an authorization decision. */
 export interface ModuleOperationDefinition {
@@ -25,39 +24,29 @@ export interface ModulePageDefinition {
   matchedOperations: string[]
 }
 
-type Mapping = {
-  operation_id: string
-  classification: string
-  module_code?: string
-  capability_codes: string[]
-}
-
-const mappings: Mapping[] = commercialMappings.operations
-type OperationPlan = {
-  operationId: string
-  security: { permissions?: string[]; permissionMode?: string }
-  bindings: { http?: Array<{ method: string; path: string }> }
-}
-const plans: OperationPlan[] = operationPlans.operations
-export const moduleMappingVersion = commercialMappings.mapping_version
-
-export function operationDefinition(operationId: string): ModuleOperationDefinition | undefined {
-  const plan = plans.find((item) => item.operationId === operationId)
-  if (!plan) return undefined
-  const mapping = mappings.find((item) => item.operation_id === operationId)
+export function operationDefinition(
+  actions: readonly ActionCatalogAction[],
+  operationId: string,
+): ModuleOperationDefinition | undefined {
+  const action = actions.find((item) => item.code === operationId)
+  if (!action) return undefined
   return {
     operationId,
-    permissions: [...(plan.security.permissions ?? [])],
-    permissionMode: plan.security.permissionMode ?? 'all',
-    capabilityCodes: [...(mapping?.capability_codes ?? [])],
-    http: (plan.bindings.http ?? []).map(({ method, path }) => ({ method, path })),
+    permissions: [...(action.permissions ?? [])],
+    permissionMode: action.permission_mode ?? 'all',
+    capabilityCodes: [...(action.capability_codes ?? [])],
+    http: (action.http ?? []).map(({ method, path }) => ({ method, path })),
   }
 }
 
-export function moduleAccessDefinitions(module: ModuleDTO, routes: readonly ModuleRouteDefinition[]) {
-  const operations = mappings
+export function moduleAccessDefinitions(
+  module: ModuleDTO,
+  routes: readonly ModuleRouteDefinition[],
+  actions: readonly ActionCatalogAction[],
+) {
+  const operations = actions
     .filter((item) => item.module_code === module.moduleCode && item.classification === 'tenant_business')
-    .map((item) => operationDefinition(item.operation_id))
+    .map((item) => operationDefinition(actions, item.code))
     .filter((item): item is ModuleOperationDefinition => Boolean(item?.http.length))
   const operationIds = new Set(operations.map((item) => item.operationId))
   const pages: ModulePageDefinition[] = []

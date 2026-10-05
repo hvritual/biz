@@ -11,6 +11,8 @@ import ModuleDefinitionPanel from '../components/ModuleDefinitionPanel.vue'
 import ModuleCreatePanel from '../components/ModuleCreatePanel.vue'
 import ModuleChangePanel from '../components/ModuleChangePanel.vue'
 import { useModuleManagement } from '../composables/useModuleManagement'
+import { currentAuthorizationAllows } from '@/services/runtime/authorization'
+import { moduleChangeOperation } from '@/services/commercial/moduleAccess'
 import '../styles/moduleManagement.css'
 
 const vm = reactive(useModuleManagement())
@@ -21,6 +23,8 @@ watch(() => vm.screen, async () => {
   journeyPanel.value?.focus()
 })
 const isStopSale = computed(() => vm.nextSales === 'MODULE_SALES_STATUS_RETIRED')
+const canCreate = computed(() => currentAuthorizationAllows(moduleChangeOperation.create))
+const canCurrentChange = computed(() => currentAuthorizationAllows(moduleChangeOperation[vm.kind]))
 const heading = computed(() => ({
   detail: `模块详情 · ${vm.selected?.name || vm.selected?.moduleCode || ''}`,
   create: '新增模块', createConfirm: '确认新增模块', createResult: '模块创建结果',
@@ -107,7 +111,7 @@ const submitLabel = computed(() => vm.kind === 'metadata' ? '保存基础配置'
             <p>技术与销售状态分别操作；配置或技术变更会按目录规则自动停售。</p>
           </div>
           <div class="module-actions">
-            <UiButton class="btn btn-primary" @click="vm.openCreate"><AppIcon name="plus" :size="16" />新增模块</UiButton>
+            <UiButton class="btn btn-primary" :disabled="!canCreate" :title="canCreate ? undefined : '当前账号没有新增模块权限'" @click="vm.openCreate"><AppIcon name="plus" :size="16" />新增模块</UiButton>
             <UiButton class="btn" @click="vm.loadModules"><AppIcon name="refresh" :size="16" />刷新</UiButton>
           </div>
         </div>
@@ -170,7 +174,7 @@ const submitLabel = computed(() => vm.kind === 'metadata' ? '保存基础配置'
           </template>
           <template v-else-if="vm.screen === 'createConfirm'">
             <UiButton class="btn" :disabled="vm.busy" @click="vm.screen = 'create'">返回修改</UiButton>
-            <UiButton class="btn btn-primary" :disabled="vm.busy || vm.createUnresolved" @click="vm.submitCreate">确认创建</UiButton>
+            <UiButton class="btn btn-primary" :disabled="vm.busy || vm.createUnresolved || !canCreate" @click="vm.submitCreate">确认创建</UiButton>
           </template>
           <template v-else-if="vm.screen === 'createResult'">
             <UiButton class="btn" :disabled="vm.busy" @click="vm.requestClose">关闭</UiButton>
@@ -197,7 +201,7 @@ const submitLabel = computed(() => vm.kind === 'metadata' ? '保存基础配置'
           </template>
           <template v-else>
             <UiButton class="btn" :disabled="vm.busy" @click="vm.requestClose">取消</UiButton>
-            <UiButton :class="['btn', (vm.screen === 'sales' && isStopSale) || (vm.screen === 'technical' && vm.draft.technicalStatus === 'MODULE_TECHNICAL_STATUS_DISABLED') ? 'module-destructive' : 'btn-primary']" :disabled="vm.busy" @click="vm.submit">{{ submitLabel }}</UiButton>
+            <UiButton :class="['btn', (vm.screen === 'sales' && isStopSale) || (vm.screen === 'technical' && vm.draft.technicalStatus === 'MODULE_TECHNICAL_STATUS_DISABLED') ? 'module-destructive' : 'btn-primary']" :disabled="vm.busy || !canCurrentChange" @click="vm.submit">{{ submitLabel }}</UiButton>
           </template>
         </div>
       </template>

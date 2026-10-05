@@ -68,7 +68,13 @@ export function checkCommercialOnboardingUI(webRoot) {
     if (mappings.has(mapping.operation_id)) throw new Error(`Duplicate compiled operation ${mapping.operation_id}`)
     mappings.set(mapping.operation_id, mapping)
   }
-  const validateActions = (values, location, expectedModule, mode) => {
+  const inferSurface = (declared, object = {}) => {
+    if (declared === 'tenant' || declared === 'platform') return declared
+    if (typeof object.path === 'string' && object.path.startsWith('/platform/')) return 'platform'
+    if (object.id === 'platform-commercial') return 'platform'
+    return 'tenant'
+  }
+  const validateActions = (values, location, expectedModule, mode, surface = 'tenant') => {
     const requiredModules = new Set()
     if (!Array.isArray(values) || values.length === 0 || new Set(values).size !== values.length || values.some((value) => typeof value !== 'string' || !value)) {
       findings.push(`${location}: explicit nonempty unique authorizationActions required`)
@@ -80,7 +86,19 @@ export function checkCommercialOnboardingUI(webRoot) {
       const op = operations.get(action)
       const mapping = mappings.get(action)
       if (!op || !mapping) { findings.push(`${location}: unknown authorization action ${action}`); continue }
-      if (!op.security?.tenantRequired || (!op.bindings?.rpc && !op.bindings?.http?.length)) findings.push(`${location}: ${action} is not a public tenant action`)
+      const authentication = Array.isArray(op.security?.authentication) ? op.security.authentication : []
+      const webSession = authentication.includes('web-session')
+      const bound = Boolean(op.bindings?.rpc || op.bindings?.http?.length)
+      if (surface === 'platform') {
+        if (op.security?.tenantRequired || !webSession || !bound || mapping.classification !== 'platform_management') {
+          findings.push(`${location}: ${action} is not a public platform web action`)
+        }
+        continue
+      }
+      if (!op.security?.tenantRequired || !webSession || !bound) {
+        findings.push(`${location}: ${action} is not a public tenant action`)
+        continue
+      }
       if (mapping.classification === 'tenant_business') {
         requiredModules.add(mapping.module_code)
         if (expectedModule && expectedModule !== mapping.module_code) findings.push(`${location}: module ${expectedModule} conflicts with ${action} owner ${mapping.module_code}`)
@@ -96,7 +114,13 @@ export function checkCommercialOnboardingUI(webRoot) {
     if (routeMap.has(route.path)) findings.push(`Duplicate concrete route ${route.path}`)
     routeMap.set(route.path, route)
     if (!route.meta?.authorizationActions) continue
-    const needed = validateActions(route.meta.authorizationActions, route.path, route.meta.authorizationModule, route.meta.authorizationMode)
+    const needed = validateActions(
+      route.meta.authorizationActions,
+      route.path,
+      route.meta.authorizationModule,
+      route.meta.authorizationMode,
+      inferSurface(route.meta.surface, route),
+    )
     for (const module of needed) {
       if (!modules.get(module)?.ui_routes.includes(route.path)) findings.push(`${route.path}: missing onboarding consumer reference for ${module}`)
     }
@@ -123,7 +147,17 @@ export function checkCommercialOnboardingUI(webRoot) {
         if (props.has('authorizationActions') || props.has('authorizationModule')) {
           const value = (key) => props.has(key) ? reader.value(context, props.get(key).initializer) : undefined
           const line = context.ast.getLineAndCharacterOfPosition(node.getStart(context.ast)).line + 1
-          validateActions(value('authorizationActions'), `${local}:${line}`, value('authorizationModule'), value('authorizationMode'))
+          const object = {
+            id: value('id'),
+            path: value('path'),
+          }
+          validateActions(
+            value('authorizationActions'),
+            `${local}:${line}`,
+            value('authorizationModule'),
+            value('authorizationMode'),
+            inferSurface(value('surface'), object),
+          )
         }
       }
       ts.forEachChild(node, visit)

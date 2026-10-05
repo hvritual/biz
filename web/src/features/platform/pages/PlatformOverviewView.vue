@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import AppIcon from '@/ui/common/AppIcon.vue'
 import PageHeading from '@/ui/common/PageHeading.vue'
+import { authorizationApiMode, currentAuthorizationAllows, currentAuthorizationAllowsAny, currentAuthorizationState } from '@/services/runtime/authorization'
+import { platformTenantEntitlementActions } from '@/router/navigation'
 
 const domains = [
   {
@@ -9,6 +12,7 @@ const domains = [
     icon: 'company',
     path: '/platform/tenants',
     capability: '租户生命周期',
+    authorizationActions: ['tenant.list'],
   },
   {
     title: '模块目录',
@@ -16,6 +20,7 @@ const domains = [
     icon: 'database',
     path: '/platform/commercial/modules',
     capability: '能力目录',
+    authorizationActions: ['commercial.module.list'],
   },
   {
     title: '套餐版本',
@@ -23,6 +28,7 @@ const domains = [
     icon: 'crown',
     path: '/platform/commercial/plans',
     capability: '套餐治理',
+    authorizationActions: ['commercial.plan.list'],
   },
   {
     title: '租户权益',
@@ -30,8 +36,20 @@ const domains = [
     icon: 'shield',
     path: '/platform/commercial/tenant-entitlements',
     capability: '权益控制',
+    authorizationActions: platformTenantEntitlementActions,
+    authorizationMode: 'all' as const,
   },
 ]
+
+const visibleDomains = computed(() => domains.filter((item) => {
+  if (!authorizationApiMode()) return true
+  if (currentAuthorizationState.status !== 'ready') return false
+  return item.authorizationMode === 'all'
+    ? item.authorizationActions.every(currentAuthorizationAllows)
+    : currentAuthorizationAllowsAny(item.authorizationActions)
+}))
+const canOpenEntitlements = computed(() => !authorizationApiMode()
+  || (currentAuthorizationState.status === 'ready' && platformTenantEntitlementActions.every(currentAuthorizationAllows)))
 
 const guardrails = [
   ['身份边界', '平台管理只接受平台可信会话；租户身份不能读取平台租户目录。'],
@@ -60,7 +78,7 @@ const guardrails = [
     </section>
 
     <section class="management-grid" data-ui-region="management-domains" aria-label="平台管理功能">
-      <RouterLink v-for="item in domains" :key="item.title" :to="item.path" class="management-card card">
+      <RouterLink v-for="item in visibleDomains" :key="item.title" :to="item.path" class="management-card card">
         <div class="management-icon"><AppIcon :name="item.icon" :size="23" /></div>
         <div class="management-copy">
           <div class="row-between">
@@ -79,7 +97,7 @@ const guardrails = [
           <h2>平台治理边界</h2>
           <p>页面可见不代表具备操作权限；所有变更只有在结果确认后才视为完成。</p>
         </div>
-        <RouterLink class="btn" to="/platform/commercial/tenant-entitlements"><AppIcon name="shield" :size="15" />查看租户权益</RouterLink>
+        <RouterLink v-if="canOpenEntitlements" class="btn" to="/platform/commercial/tenant-entitlements"><AppIcon name="shield" :size="15" />查看租户权益</RouterLink>
       </div>
       <div class="guardrail-grid">
         <article v-for="item in guardrails" :key="item[0]" class="guardrail-item">

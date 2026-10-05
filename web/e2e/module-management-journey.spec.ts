@@ -19,6 +19,51 @@ const definitions = [
     fieldPolicySchemaKeys: ['device.identity'], dependencies: [], implementationReady: true,
   },
 ]
+const actionCatalogActions = [
+  {
+    code: 'commercial.module.get', domain: 'commercial', application: 'module_catalog', use_case: 'get_module',
+    tenant_required: false, authentication: ['web-session'], permissions: ['platform.module.read'], permission_mode: 'all',
+    classification: 'platform_management', http: [{ method: 'GET', path: '/v1/platform/modules/{module_code}' }],
+  },
+  {
+    code: 'commercial.module.create', domain: 'commercial', application: 'module_catalog', use_case: 'create_module',
+    tenant_required: false, authentication: ['web-session'], permissions: ['platform.module.manage'], permission_mode: 'all',
+    classification: 'platform_management', http: [{ method: 'POST', path: '/v1/platform/modules' }],
+  },
+  {
+    code: 'commercial.module.update', domain: 'commercial', application: 'module_catalog', use_case: 'update_module',
+    tenant_required: false, authentication: ['web-session'], permissions: ['platform.module.manage'], permission_mode: 'all',
+    classification: 'platform_management', http: [{ method: 'PATCH', path: '/v1/platform/modules/{module_code}' }],
+  },
+  {
+    code: 'commercial.module.set_sales_status', domain: 'commercial', application: 'module_catalog', use_case: 'set_module_sales_status',
+    tenant_required: false, authentication: ['web-session'], permissions: ['platform.module.manage'], permission_mode: 'all',
+    classification: 'platform_management', http: [{ method: 'POST', path: '/v1/platform/modules/{module_code}/sales-status' }],
+  },
+  {
+    code: 'commercial.module.set_technical_status', domain: 'commercial', application: 'module_catalog', use_case: 'set_module_technical_status',
+    tenant_required: false, authentication: ['web-session'], permissions: ['platform.module.technical.manage'], permission_mode: 'all',
+    classification: 'platform_management', http: [{ method: 'POST', path: '/v1/platform/modules/{module_code}/technical-status' }],
+  },
+  {
+    code: 'tenant.member.list', domain: 'access', application: 'tenant_member', use_case: 'list_members',
+    tenant_required: true, authentication: ['web-session'], permissions: ['tenant.member.read'], permission_mode: 'all',
+    classification: 'tenant_business', module_code: 'access-management', capability_codes: ['tenant.member.lifecycle'],
+    http: [{ method: 'GET', path: '/v1/tenants/{tenant_id}/members' }],
+  },
+  {
+    code: 'tenant.role.list', domain: 'access', application: 'tenant_role', use_case: 'list_roles',
+    tenant_required: true, authentication: ['web-session'], permissions: ['tenant.role.read'], permission_mode: 'all',
+    classification: 'tenant_business', module_code: 'access-management', capability_codes: ['tenant.role.permission'],
+    http: [{ method: 'GET', path: '/v1/tenants/{tenant_id}/roles' }],
+  },
+  {
+    code: 'tenant.profile.get', domain: 'access', application: 'tenant_profile', use_case: 'get_profile',
+    tenant_required: true, authentication: ['web-session'], permissions: ['tenant.organization.read'], permission_mode: 'all',
+    classification: 'tenant_business', module_code: 'access-management', capability_codes: ['tenant.lifecycle'],
+    http: [{ method: 'GET', path: '/v1/tenants/{tenant_id}/profile' }],
+  },
+]
 const output = 'test-results/screenshots/module-journey'
 type FixtureMode = 'normal' | 'denied' | 'conflict' | 'unknown' | 'stale-readback'
 async function install(page: Page, mode: FixtureMode = 'normal') {
@@ -31,7 +76,12 @@ async function install(page: Page, mode: FixtureMode = 'normal') {
     const req = route.request()
     const path = new URL(req.url()).pathname
     if (path === '/api/auth/session') return route.fulfill({ json: { authenticated: true, actor_kind: 'platform', platform_subject: 'module-test-admin', csrf_token: 'module-test-csrf' } })
-    if (path === '/api/auth/action-catalog' && req.method() === 'GET') return route.fulfill({ json: { module_definitions: definitions } })
+    if (path === '/api/auth/action-catalog' && req.method() === 'GET') return route.fulfill({ json: {
+      schema_version: 'v1',
+      actions: actionCatalogActions,
+      permissions: [],
+      module_definitions: definitions,
+    } })
     if (path === '/api/v1/platform/modules' && req.method() === 'GET') return route.fulfill({ json: { modules: created ? [current, created] : [current] } })
     if (path === '/api/v1/platform/modules' && req.method() === 'POST') {
       writes += 1

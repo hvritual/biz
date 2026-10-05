@@ -175,3 +175,93 @@ func TestEnterprise174BrandingMembershipPermissionHasSingleOperation(t *testing.
 		t.Fatalf("tenant.branding.read membership grant expanded beyond its frozen operation: %v", operations)
 	}
 }
+
+func TestPlatformWebCatalogDerivesOnlyBoundWebSessionOperations(t *testing.T) {
+	actions := PlatformWebActions()
+	if len(actions) == 0 {
+		t.Fatal("platform web action catalog is empty")
+	}
+	seen := map[string]bool{}
+	for _, action := range actions {
+		seen[action.Code] = true
+		if action.TenantRequired || !containsString(action.Authentication, "web-session") {
+			t.Fatalf("non-platform web action leaked into platform catalog: %+v", action)
+		}
+		if action.RPC == "" && len(action.HTTP) == 0 {
+			t.Fatalf("unbound internal action leaked into platform catalog: %+v", action)
+		}
+	}
+	if !seen["commercial.module.list"] || !seen["commercial.module.set_technical_status"] {
+		t.Fatalf("expected platform module operations missing: %v", seen)
+	}
+	if seen["commercial.module.runtime.verify"] || seen["tenant.member.list"] {
+		t.Fatalf("api-key-only or tenant operation leaked into platform catalog: %v", seen)
+	}
+}
+
+func TestPlatformModuleWebActionsAreOnlyPublicModuleManagementOperations(t *testing.T) {
+	actions := PlatformModuleWebActions()
+	if len(actions) == 0 {
+		t.Fatal("platform module web action catalog is empty")
+	}
+	seen := map[string]bool{}
+	for _, action := range actions {
+		seen[action.Code] = true
+		if action.TenantRequired || action.Classification != "platform_management" || action.Application != "module_catalog" {
+			t.Fatalf("unexpected platform module action: %+v", action)
+		}
+		if !containsString(action.Authentication, "web-session") || (action.RPC == "" && len(action.HTTP) == 0) {
+			t.Fatalf("platform module action is not public web-bound: %+v", action)
+		}
+	}
+	for _, code := range []string{
+		"commercial.module.list",
+		"commercial.module.get",
+		"commercial.module.create",
+		"commercial.module.update",
+		"commercial.module.set_sales_status",
+		"commercial.module.set_technical_status",
+	} {
+		if !seen[code] {
+			t.Fatalf("platform module operation missing: %s", code)
+		}
+	}
+	if seen["commercial.plan.list"] || seen["tenant.list"] || seen["commercial.module.runtime.verify"] {
+		t.Fatalf("non-module-web operation leaked into platform module catalog: %v", seen)
+	}
+}
+
+func TestPlatformAuthorizedActionsKeepReadManageAndTechnicalAuthoritySeparate(t *testing.T) {
+	readOnly := AuthorizedPlatformActions([]authz.Grant{{Permission: "platform.module.read"}})
+	readCodes := map[string]bool{}
+	for _, action := range readOnly {
+		readCodes[action.Code] = true
+	}
+	if !readCodes["commercial.module.list"] || !readCodes["commercial.module.get"] {
+		t.Fatalf("read-only grant did not expose module reads: %v", readCodes)
+	}
+	if readCodes["commercial.module.create"] || readCodes["commercial.module.set_sales_status"] || readCodes["commercial.module.set_technical_status"] {
+		t.Fatalf("read-only grant exposed module writes: %v", readCodes)
+	}
+
+	manageOnly := AuthorizedPlatformActions([]authz.Grant{{Permission: "platform.module.manage"}})
+	manageCodes := map[string]bool{}
+	for _, action := range manageOnly {
+		manageCodes[action.Code] = true
+	}
+	if !manageCodes["commercial.module.create"] || !manageCodes["commercial.module.update"] || !manageCodes["commercial.module.set_sales_status"] {
+		t.Fatalf("manage grant did not expose expected module writes: %v", manageCodes)
+	}
+	if manageCodes["commercial.module.set_technical_status"] {
+		t.Fatalf("manage grant incorrectly exposed technical management: %v", manageCodes)
+	}
+
+	technicalOnly := AuthorizedPlatformActions([]authz.Grant{{Permission: "platform.module.technical.manage"}})
+	technicalCodes := map[string]bool{}
+	for _, action := range technicalOnly {
+		technicalCodes[action.Code] = true
+	}
+	if !technicalCodes["commercial.module.set_technical_status"] || technicalCodes["commercial.module.update"] || technicalCodes["commercial.module.set_sales_status"] {
+		t.Fatalf("technical grant did not remain isolated: %v", technicalCodes)
+	}
+}

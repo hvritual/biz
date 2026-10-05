@@ -1,6 +1,7 @@
 import { siteRentalRoutes } from './siteRentalRoutes'
 import { customerRoutes } from './customerRoutes'
 import { rentalWorkRoutes } from './rentalWorkRoutes'
+import { platformOverviewActions, platformTenantEntitlementActions } from './navigation'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import {
   authorizationApiMode,
@@ -24,6 +25,7 @@ export const router = createRouter({
         module: 'platform-commercial',
         surface: 'platform',
         pageTemplate: 'WorkbenchPage',
+        authorizationActions: platformOverviewActions,
       },
     },
     {
@@ -34,6 +36,7 @@ export const router = createRouter({
         module: 'platform-commercial',
         surface: 'platform',
         pageTemplate: 'ListPage',
+        authorizationActions: ['tenant.list'],
       },
     },
     {
@@ -55,22 +58,22 @@ export const router = createRouter({
     {
       path: '/platform/commercial/modules',
       component: () => import('@/features/platform/pages/CommercialModulesView.vue'),
-      meta: { title: '模块目录', module: 'platform-commercial', surface: 'platform', pageTemplate: 'ListPage', commercialAuthority: 'real' },
+      meta: { title: '模块目录', module: 'platform-commercial', surface: 'platform', pageTemplate: 'ListPage', commercialAuthority: 'real', authorizationActions: ['commercial.module.list'] },
     },
     {
       path: '/platform/commercial/plans',
       component: () => import('@/features/platform/pages/CommercialPlansView.vue'),
-      meta: { title: '套餐版本', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', commercialAuthority: 'real' },
+      meta: { title: '套餐版本', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', commercialAuthority: 'real', authorizationActions: ['commercial.plan.list'] },
     },
     {
       path: '/platform/commercial/tenant-entitlements',
       component: () => import('@/features/platform/pages/CommercialTenantEntitlementsView.vue'),
-      meta: { title: '租户权益', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', commercialAuthority: 'real' },
+      meta: { title: '租户权益', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', commercialAuthority: 'real', authorizationActions: platformTenantEntitlementActions, authorizationMode: 'all' },
     },
     {
       path: '/platform/commercial/features',
       component: () => import('@/features/platform/pages/CommercialFeaturesView.vue'),
-      meta: { title: '商业功能', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', commercialAuthority: 'real' },
+      meta: { title: '商业功能', module: 'platform-commercial', surface: 'platform', pageTemplate: 'WorkbenchPage', commercialAuthority: 'real', authorizationActions: ['commercial.feature.list'] },
     },
     {
       path: '/platform/commercial/add-ons',
@@ -196,13 +199,14 @@ router.beforeEach(async (to) => {
     ? to.meta.authorizationActions.filter((value): value is string => typeof value === 'string' && value.length > 0)
     : []
   const moduleCode = typeof to.meta.module === 'string' ? to.meta.module : ''
+  const platformRoute = to.meta.surface === 'platform'
   const tenantModules = new Set(['customers', 'success', 'sites', 'rental', 'device-operations', 'enterprise', 'system'])
-  if (!required.length && tenantModules.has(moduleCode)) {
+  if (!required.length && (tenantModules.has(moduleCode) || platformRoute)) {
     return { path: '/authorization-state', query: { reason: 'forbidden', from: to.fullPath } }
   }
   if (!required.length) return true
 
-  await ensureCurrentAuthorization()
+  await ensureCurrentAuthorization(platformRoute)
   if (currentAuthorizationState.status === 'unauthenticated') {
     redirectToTrustedLogin()
     return false
@@ -210,7 +214,14 @@ router.beforeEach(async (to) => {
   if (currentAuthorizationState.status === 'error') {
     return { path: '/authorization-state', query: { reason: 'unavailable', from: to.fullPath } }
   }
-  if (currentAuthorizationState.status !== 'ready' || !currentAuthorizationAllowsAny(required)) {
+  const session = currentAuthorizationState.session
+  if (platformRoute && session?.actor_kind !== 'platform') {
+    return { path: '/authorization-state', query: { reason: 'forbidden', from: to.fullPath } }
+  }
+  const authorized = to.meta.authorizationMode === 'all'
+    ? required.every((action) => currentAuthorizationState.snapshot?.button_codes.includes(action))
+    : currentAuthorizationAllowsAny(required)
+  if (currentAuthorizationState.status !== 'ready' || !authorized) {
     return { path: '/authorization-state', query: { reason: 'forbidden', from: to.fullPath } }
   }
   return true

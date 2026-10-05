@@ -10,7 +10,8 @@ import {
   updatePlatformModule,
   type PlatformModuleDefinitionDTO,
 } from '@/services/commercial/platformModules'
-import { moduleReadbackMatches, type ModuleChangeKind } from '@/services/commercial/moduleAccess'
+import { moduleChangeOperation, moduleReadbackMatches, type ModuleChangeKind } from '@/services/commercial/moduleAccess'
+import { currentAuthorizationAllows, ensureCurrentAuthorization } from '@/services/runtime/authorization'
 import { subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
 
 export type ModuleScreen = 'detail' | 'create' | 'createConfirm' | 'createResult' | 'metadata' | 'sales' | 'technical' | 'result' | 'conflict' | 'discard'
@@ -53,6 +54,7 @@ export function useModuleManagement() {
   const kind = ref<ExistingModuleChangeKind>('metadata')
   const pending = ref(false)
   const readPending = ref(false)
+  const authorizationPending = ref(false)
   const actionError = ref('')
   const resultState = ref<ModuleResultState>('unknown')
   const resultMessage = ref('')
@@ -82,11 +84,25 @@ export function useModuleManagement() {
   const selectedCreateDefinition = computed(() => creatableDefinitions.value.find((item) => item.moduleCode === createDraft.moduleCode) ?? null)
   const missingCreateDependencies = computed(() => (selectedCreateDefinition.value?.dependencies ?? []).filter((code) => !existingCodes.value.has(code)))
   const nextSales = ref<ModuleSalesStatus>('MODULE_SALES_STATUS_RETIRED')
-  const busy = computed(() => pending.value || readPending.value)
+  const busy = computed(() => pending.value || readPending.value || authorizationPending.value)
   const writeUnresolved = computed(() => selected.value ? unresolved.has(selected.value.moduleCode) : false)
   const scopes = () => [...new Set(draft.salesScope.split(/[,，\n]/).map((value) => value.trim()).filter(Boolean))]
   const createScopes = () => [...new Set(createDraft.salesScope.split(/[,，\n]/).map((value) => value.trim()).filter(Boolean))]
 
+  async function operationAllowed(operation: string, label: string) {
+    if (authorizationPending.value) return false
+    const generation = epoch
+    authorizationPending.value = true
+    try {
+      await ensureCurrentAuthorization(true)
+      if (generation !== epoch) return false
+      if (currentAuthorizationAllows(operation)) return true
+      actionError.value = `当前平台授权已变化，已阻止${label}。草稿仍保留；请联系平台管理员核对授权。`
+      return false
+    } finally {
+      if (generation === epoch) authorizationPending.value = false
+    }
+  }
   function resetFilters() {
     keyword.value = ''; technicalFilter.value = ''; salesFilter.value = ''
   }
@@ -146,7 +162,11 @@ export function useModuleManagement() {
       definitionError.value = '无法读取可新增模块定义。请确认当前账号具备平台模块读取权限后重试。'
     }
   }
-  function openCreate() {
+  async function openCreate() {
+    const generation = epoch
+    actionError.value = ''
+    if (!await operationAllowed(moduleChangeOperation.create, '新增模块')) return
+    if (generation !== epoch) return
     resetCreate()
     selected.value = null
     before.value = null
@@ -194,8 +214,10 @@ export function useModuleManagement() {
   async function submitCreate() {
     if (busy.value || createUnresolved.value || screen.value !== 'createConfirm' || !selectedCreateDefinition.value) return
     actionError.value = ''
-    if (missingCreateDependencies.value.length) { actionError.value = '模块依赖已变化，请返回重新核对。'; return }
     const generation = epoch
+    if (!await operationAllowed(moduleChangeOperation.create, '创建提交')) return
+    if (generation !== epoch || busy.value || createUnresolved.value || screen.value !== 'createConfirm' || !selectedCreateDefinition.value) return
+    if (missingCreateDependencies.value.length) { actionError.value = '模块依赖已变化，请返回重新核对。'; return }
     pending.value = true
     try {
       const value = await createPlatformModule({
@@ -217,6 +239,7 @@ export function useModuleManagement() {
     } catch (error) {
       if (generation !== epoch) return
       if (error instanceof CommercialApiError && [401, 403].includes(error.status)) {
+        await ensureCurrentAuthorization(true)
         createUnresolved.value = false
         resultState.value = 'denied'
         resultMessage.value = '当前账号没有执行创建操作的权限或会话已失效。没有显示为成功。'
@@ -255,17 +278,23 @@ export function useModuleManagement() {
       screen.value = 'result'
     }
   }
-  function startChange(value: ExistingModuleChangeKind) {
-    if (!selected.value || busy.value || writeUnresolved.value) return
+  async function startChange(value: ExistingModuleChangeKind) {
+    const target = selected.value
+    if (!target || busy.value || writeUnresolved.value) return
+    const generation = epoch
+    const targetCode = target.moduleCode
+    actionError.value = ''
+    if (!await operationAllowed(moduleChangeOperation[value], '打开该变更')) return
+    if (generation !== epoch || selected.value?.moduleCode !== targetCode) return
     kind.value = value
-    nextSales.value = selected.value.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? 'MODULE_SALES_STATUS_RETIRED' : 'MODULE_SALES_STATUS_SELLABLE'
-    before.value = copy(selected.value)
+    nextSales.value = target.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? 'MODULE_SALES_STATUS_RETIRED' : 'MODULE_SALES_STATUS_SELLABLE'
+    before.value = copy(target)
     receipt.value = null
     fresh.value = null
     Object.assign(draft, {
-      name: selected.value.name, category: selected.value.category,
-      salesScope: (selected.value.salesScope ?? []).join(', '),
-      technicalStatus: selected.value.technicalStatus, reason: '',
+      name: target.name, category: target.category,
+      salesScope: (target.salesScope ?? []).join(', '),
+      technicalStatus: target.technicalStatus, reason: '',
     })
     actionError.value = ''
     screen.value = value
@@ -359,6 +388,11 @@ export function useModuleManagement() {
     const base = before.value
     if (!base || busy.value || writeUnresolved.value || !['metadata', 'sales', 'technical'].includes(screen.value)) return
     actionError.value = ''
+    const generation = epoch
+    const expectedScreen = screen.value
+    const expectedKind = kind.value
+    if (!await operationAllowed(moduleChangeOperation[expectedKind], '变更提交')) return
+    if (generation !== epoch || busy.value || before.value !== base || screen.value !== expectedScreen || kind.value !== expectedKind || writeUnresolved.value) return
     if (!draft.reason.trim()) { actionError.value = '请填写本次变更原因。'; return }
     if (kind.value === 'metadata' && (!draft.name.trim() || !draft.category.trim())) {
       actionError.value = '模块名称和分类不能为空。'; return
@@ -369,12 +403,11 @@ export function useModuleManagement() {
     if (kind.value === 'technical' && draft.technicalStatus === base.technicalStatus) {
       actionError.value = '请选择不同的目标技术状态。'; return
     }
-    const generation = epoch
     pending.value = true
     try {
-      const value = kind.value === 'metadata'
+      const value = expectedKind === 'metadata'
         ? await updatePlatformModule(base, { name: draft.name, category: draft.category, salesScope: scopes(), reason: draft.reason })
-        : kind.value === 'sales' ? await setPlatformModuleSalesStatus(base, nextSales.value, draft.reason)
+        : expectedKind === 'sales' ? await setPlatformModuleSalesStatus(base, nextSales.value, draft.reason)
           : await setPlatformModuleTechnicalStatus(base, draft.technicalStatus, draft.reason)
       if (generation !== epoch) return
       if (!intendedReceipt(value)) {
@@ -395,6 +428,7 @@ export function useModuleManagement() {
         pending.value = false
         await refreshModule()
       } else if (error instanceof CommercialApiError && [401, 403].includes(error.status)) {
+        await ensureCurrentAuthorization(true)
         screen.value = 'result'
         resultState.value = 'denied'
         resultMessage.value = '当前账号没有执行该操作的权限或会话已失效。没有显示为成功；请联系平台管理员核对授权。'
@@ -426,6 +460,7 @@ export function useModuleManagement() {
     created.value = null
     pending.value = false
     readPending.value = false
+    authorizationPending.value = false
     definitions.value = []
     definitionState.value = 'idle'
     unresolved.clear()

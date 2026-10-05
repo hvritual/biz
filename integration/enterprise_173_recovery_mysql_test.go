@@ -156,12 +156,12 @@ func TestEnterprise191PasswordRecoverySuccessRate(t *testing.T) {
 		)
 		_, err := fixture.Store.RecoverPasswordWithCode(ctx, fixture.Protection, domain.VerifyChallengeRequest{
 			ChallengeID: challenge.ChallengeID,
-			FlowID: flowID,
-			Purpose: domain.VerificationPurposePasswordRecovery,
-			UserID: userID,
-			Channel: domain.SecurityNotificationEmail,
+			FlowID:      flowID,
+			Purpose:     domain.VerificationPurposePasswordRecovery,
+			UserID:      userID,
+			Channel:     domain.SecurityNotificationEmail,
 			Destination: email,
-			Code: code,
+			Code:        code,
 		}, 5*time.Minute, newPassword, newPassword)
 		if err != nil {
 			t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=recover err=%v", sample+1, err)
