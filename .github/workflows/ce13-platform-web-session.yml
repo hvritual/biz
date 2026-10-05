@@ -201,6 +201,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          rm -rf "$RUNNER_TEMP/ce13-session/contracts"
+          cp -a "$GITHUB_WORKSPACE/biz/contracts" "$RUNNER_TEMP/ce13-session/contracts"
           cd "$RUNNER_TEMP/ce13-session/web"
           VITE_DATA_MODE=api BIZ_DEV_API_TARGET="http://127.0.0.1:18080" nohup node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 14183 >"$RUNNER_TEMP/ce13-vite.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/ce13-vite.pid"
