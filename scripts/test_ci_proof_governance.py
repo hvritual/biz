@@ -122,12 +122,15 @@ class ContractTests(unittest.TestCase):
 
     def test_b12_mysql_reuses_locked_go_cache_after_contract_closure(self):
         workflow = (ROOT / '.github/workflows/b12-multitenant-access-pressure.yml').read_text()
-        marker = '\n  b12-2-tenant-lifecycle-mysql:\n'
-        self.assertIn('\n  b12-1-contract-closure:\n', workflow)
+        marker = '  b12-2-tenant-lifecycle-mysql:'
         self.assertIn(marker, workflow)
-
         closure, lifecycle = workflow.split(marker, 1)
-        self.assertRegex(lifecycle, r'(?m)^    needs: b12-1-contract-closure
+        self.assertIn('needs: b12-1-contract-closure', lifecycle)
+        for job in (closure, lifecycle):
+            self.assertLess(job.index('Bind Go cache to exact candidate'), job.index('Setup locked Go'))
+            for expected in ('$GITHUB_SHA', '.b12-cache-candidate', 'cache: true', 'biz/go.sum', 'yunka.io/go.sum'):
+                self.assertIn(expected, job)
+
     def test_current_hooks(self):
         g.hook_check(ROOT)
 
