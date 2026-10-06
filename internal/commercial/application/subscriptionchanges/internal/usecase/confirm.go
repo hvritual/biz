@@ -6,6 +6,7 @@ import (
 
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	pv "github.com/hvritual/biz/internal/commercial/domain/provisioning"
+	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	change "github.com/hvritual/biz/internal/commercial/domain/subscriptionchange"
 	"github.com/hvritual/biz/internal/commercial/ports"
 	"yunka.io/framework/requestscope"
@@ -31,7 +32,23 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 	result, err := requestscope.JoinValue(ctx, s.repositories, func(sc *requestscope.View[ports.SubscriptionChangeRepositories]) (change.Receipt, error) {
 		repos, call := sc.Repositories(), sc.Context()
 		repo := repos.Changes
-		raw, err := repo.LockTenant(call, tenantID)
+		hint, err := repo.Preview(call, tenantID, changeID, false)
+		if err != nil {
+			return change.Receipt{}, err
+		}
+		if hint == nil {
+			return change.Receipt{}, change.ErrNotFound
+		}
+		var raw subscription.Subscription
+		var current *subscription.Subscription
+		if hint.Input.Action == change.Initial {
+			if tenantSelfService {
+				return change.Receipt{}, change.ErrScope
+			}
+			current, err = repo.LockTenantOptional(call, tenantID)
+		} else {
+			raw, err = repo.LockTenant(call, tenantID)
+		}
 		if err != nil {
 			return change.Receipt{}, err
 		}
@@ -72,11 +89,17 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 		if !now.Before(preview.ExpiresAt) {
 			return change.Receipt{}, change.ErrExpired
 		}
-		if raw.PendingChangeID != "" {
+		if preview.Input.Action == change.Initial {
+			if current != nil {
+				return change.Receipt{}, change.ErrConflict
+			}
+		} else if raw.PendingChangeID != "" {
 			return change.Receipt{}, change.ErrPending
 		}
 		var material material
-		if tenantSelfService {
+		if preview.Input.Action == change.Initial {
+			material, err = s.captureInitial(call, repos, preview.Input)
+		} else if tenantSelfService {
 			material, err = s.captureTenant(call, repos, raw, preview.Input)
 		} else {
 			material, err = s.capture(call, repos, raw, preview.Input)
@@ -132,10 +155,30 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 			}
 		}
 		after := material.before
-		after.Revision++
-		after.EntitlementSourceVersion = material.state.Version
-		if preview.Input.Action != change.StopRenewal {
-			after.State = s.lifecycle.StateFor(material.target.PlanCode, material.target.Number)
+		if preview.Input.Action == change.Initial {
+			after = subscription.Subscription{
+				Origin:                   subscription.OriginInitialActivation,
+				ID:                       subscription.ID(tenantID),
+				TenantID:                 tenantID,
+				Kind:                     subscription.KindBase,
+				State:                    s.lifecycle.StateFor(material.target.PlanCode, material.target.Number),
+				PlanCode:                 material.target.PlanCode,
+				PlanVersion:              material.target.Number,
+				SalesScope:               preview.Input.SalesScope,
+				EntitlementSourceVersion: material.state.Version,
+				CreatedAt:                admitted,
+				MatchExplanation:         "initial activation " + changeID,
+				Revision:                 1,
+				PeriodStart:              at,
+				PeriodEnd:                end,
+				SourceNamespace:          changeID,
+			}
+		} else {
+			after.Revision++
+			after.EntitlementSourceVersion = material.state.Version
+			if preview.Input.Action != change.StopRenewal {
+				after.State = s.lifecycle.StateFor(material.target.PlanCode, material.target.Number)
+			}
 		}
 		pricingAuthority := "PLATFORM_MANUAL_APPROVAL"
 		if tenantSelfService {
@@ -144,6 +187,9 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 		receipt := change.Receipt{ChangeID: changeID, TenantID: tenantID, ActorID: actorID, RequestID: requestID, Fingerprint: fingerprint, PreviewHash: preview.Hash, Action: preview.Input.Action, Status: change.Applied, Mode: mode, ConfirmedAt: admitted, EffectiveAt: at, EntitlementExpiresAt: end, Reason: reason, Before: material.before, BeforeSourceVersion: material.state.Version, AfterSourceVersion: material.state.Version, BeforeEntitlementVersion: material.current.EntitlementVersion, AfterEntitlementVersion: material.current.EntitlementVersion, QuotaValidationRequired: deferred, Quotas: quotas, PricingAuthority: pricingAuthority}
 		if mode == change.Immediate && len(requirements) > 0 {
 			after.PendingChangeID = changeID
+			if preview.Input.Action == change.Initial {
+				after.State = subscription.StateProvisioning
+			}
 			task, err := pv.New(tenantID, pv.Approval{ChangeID: changeID, ActorID: actorID, PreviewHash: preview.Hash, TargetHash: material.target.ContentSHA256, TargetPlanCode: material.target.PlanCode, TargetPlanVersion: material.target.Number, SubscriptionRevision: after.Revision, SourceVersion: material.state.Version, EntitlementVersion: material.current.EntitlementVersion, CatalogRevision: material.current.CatalogRevision}, requirements, admitted)
 			if err != nil {
 				return receipt, err
@@ -165,12 +211,21 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 		} else if preview.Input.Action == change.StopRenewal {
 			after.RenewalStopped = true
 		} else {
-			receipt.AfterSourceVersion, receipt.AfterEntitlementVersion, err = s.applySources(call, repos, material, &after, changeID, at, end)
+			if preview.Input.Action == change.Initial {
+				receipt.AfterSourceVersion, receipt.AfterEntitlementVersion, err = s.applyInitialSources(call, repos, material, &after, changeID, at, end)
+			} else {
+				receipt.AfterSourceVersion, receipt.AfterEntitlementVersion, err = s.applySources(call, repos, material, &after, changeID, at, end)
+			}
 			if err != nil {
 				return receipt, err
 			}
 		}
-		if err = repo.SaveCurrent(call, material.before, after); err != nil {
+		if preview.Input.Action == change.Initial {
+			err = repo.CreateCurrent(call, after)
+		} else {
+			err = repo.SaveCurrent(call, material.before, after)
+		}
+		if err != nil {
 			return receipt, err
 		}
 		receipt.After = after
