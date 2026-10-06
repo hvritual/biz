@@ -25,6 +25,11 @@ type AuthorizationState = {
   error: string
 }
 
+type AuthorizationSessionContext = Readonly<Pick<
+  TrustedSession,
+  'authenticated' | 'actor_kind' | 'platform_subject' | 'user_id' | 'active_tenant_id' | 'context_version'
+>>
+
 const apiMode = (import.meta.env.VITE_DATA_MODE ?? 'demo') === 'api'
 const state = reactive<AuthorizationState>({
   status: apiMode ? 'idle' : 'ready',
@@ -46,13 +51,13 @@ function isPlatformActor(actorKind: string | undefined) {
   return actorKind === 'platform'
 }
 
-function hasAuthorizationContext(session: TrustedSession) {
+function hasAuthorizationContext(session: AuthorizationSessionContext) {
   if (!session.authenticated) return false
   if (isPlatformActor(session.actor_kind)) return Boolean(session.platform_subject)
   return isTenantUserActor(session.actor_kind) && Boolean(session.active_tenant_id)
 }
 
-function sessionKey(session: TrustedSession) {
+function sessionKey(session: AuthorizationSessionContext) {
   return [
     session.actor_kind ?? '',
     session.platform_subject ?? '',
@@ -62,7 +67,7 @@ function sessionKey(session: TrustedSession) {
   ].join(':')
 }
 
-function authorizationMatchesSession(snapshot: CurrentAuthorizationResponse, session: TrustedSession) {
+function authorizationMatchesSession(snapshot: CurrentAuthorizationResponse, session: AuthorizationSessionContext) {
   if (!snapshot.authenticated || snapshot.actor_kind !== session.actor_kind) return false
   if (isPlatformActor(session.actor_kind)) {
     return Boolean(session.platform_subject) && snapshot.platform_subject === session.platform_subject
@@ -94,7 +99,7 @@ export function currentAuthorizationAllows(actionCode: string) {
   return state.snapshot.button_codes.includes(actionCode)
 }
 
-export function currentAuthorizationMatchesSession(session: TrustedSession | null | undefined) {
+export function currentAuthorizationMatchesSession(session: AuthorizationSessionContext | null | undefined) {
   if (!apiMode) return true
   if (!session || !hasAuthorizationContext(session)) return false
   const authorizationSession = state.session
