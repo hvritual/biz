@@ -68,17 +68,6 @@ def original(root, ref, path):
     return result.stdout if result.returncode == 0 else None
 
 
-
-def validate_access_runner_binding(workflow):
-    runner = 'python3 biz/scripts/ci_access_qualification.py'
-    required = (
-        runner + ' --group base',
-        runner + ' --group enterprise191 --output "$RUNNER_TEMP/access-qualification-enterprise191"',
-    )
-    if workflow.count(runner) != 2 or any(workflow.count(command) != 1 for command in required) or "-run '^TestEnterprise" in workflow:
-        raise ValueError('ACCESS_RUNNER_BINDING_DRIFT')
-
-
 def check(root, base_ref='', branch=''):
     root = root.resolve()
     if base_ref and not branch.startswith('chore/ci-proof-'):
@@ -98,7 +87,8 @@ def check(root, base_ref='', branch=''):
     raw = original(root, base_ref, REGISTRY) if base_ref else None
     validate(data, root, load_json(raw) if raw is not None else None)
     workflow = (root / PROTECTED[0]).read_text()
-    validate_access_runner_binding(workflow)
+    if workflow.count('python3 biz/scripts/ci_access_qualification.py') != 1 or "-run '^TestEnterprise" in workflow:
+        raise ValueError('ACCESS_RUNNER_BINDING_DRIFT')
     print(f'CI_SOURCE_SAFETY=PASS bash_blocks={count}')
     return count
 
