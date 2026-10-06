@@ -290,6 +290,36 @@ describe('current authorization runtime', () => {
     expect(mocks.readCurrentAuthorization).toHaveBeenCalledTimes(2)
   })
 
+  it('does not let an older platform projection overwrite a forced revocation refresh', async () => {
+    let resolveOldProjection!: (value: ReturnType<typeof platformSnapshot>) => void
+    const oldProjection = new Promise<ReturnType<typeof platformSnapshot>>((resolve) => {
+      resolveOldProjection = resolve
+    })
+    mocks.readSession.mockResolvedValue(platformSession)
+    mocks.readCurrentAuthorization
+      .mockReturnValueOnce(oldProjection)
+      .mockResolvedValueOnce(platformSnapshot(['commercial.module.list']))
+    const auth = await runtime()
+
+    const stale = auth.ensureCurrentAuthorization()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    await auth.ensureCurrentAuthorization(true)
+    expect(auth.currentAuthorizationState.status).toBe('ready')
+    expect(auth.currentAuthorizationAllows('commercial.module.create')).toBe(false)
+
+    resolveOldProjection(platformSnapshot([
+      'commercial.module.list',
+      'commercial.module.create',
+    ]))
+    await stale
+
+    expect(auth.currentAuthorizationState.status).toBe('ready')
+    expect(auth.currentAuthorizationAllows('commercial.module.list')).toBe(true)
+    expect(auth.currentAuthorizationAllows('commercial.module.create')).toBe(false)
+  })
+
   it('does not turn authorization read failure into demo or cached allow', async () => {
     mocks.readSession.mockResolvedValue(session)
     mocks.readCurrentAuthorization.mockRejectedValue(new Error('authorization unavailable'))
