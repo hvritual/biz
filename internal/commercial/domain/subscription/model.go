@@ -22,8 +22,9 @@ const (
 	StateTrial      = "TRIAL"
 	StateActive     = "ACTIVE"
 	StateGrace      = "GRACE"
-	StateRestricted = "RESTRICTED"
-	StateEnded      = "ENDED"
+	StateRestricted   = "RESTRICTED"
+	StateProvisioning = "PROVISIONING"
+	StateEnded        = "ENDED"
 
 	// OriginDefaultRule is the explicit provenance for CE-08 default-rule
 	// bootstrap. Historical payloads predate this field and remain valid when
@@ -39,7 +40,7 @@ var code = regexp.MustCompile(`^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$`)
 func ValidCode(v string) bool { return len(v) > 0 && len(v) <= 96 && code.MatchString(v) }
 func ValidState(v string) bool {
 	switch v {
-	case StateTrial, StateActive, StateGrace, StateRestricted, StateEnded:
+	case StateTrial, StateActive, StateGrace, StateRestricted, StateProvisioning, StateEnded:
 		return true
 	default:
 		return false
@@ -122,7 +123,11 @@ func (s Subscription) Validate() error {
 	if s.Revision > 0 && (s.PeriodStart.IsZero() || (s.PeriodEnd != nil && !s.PeriodEnd.After(s.PeriodStart)) || s.SourceNamespace == "" || len(s.SourceNamespace) > 64 || len(s.PendingChangeID) > 64) {
 		return ErrInvalid
 	}
-	if s.ID == "" || s.TenantID == "" || s.Kind != KindBase || !ValidState(s.State) || !ValidCode(s.PlanCode) || s.PlanVersion == 0 || !s.validOrigin() || (s.SalesScope != "*" && !ValidCode(s.SalesScope)) || s.EntitlementSourceVersion == 0 || s.CreatedAt.IsZero() || s.MatchExplanation == "" {
+	pendingInitial := s.Origin == OriginInitialActivation && s.State == StateProvisioning && s.PendingChangeID != ""
+	if s.ID == "" || s.TenantID == "" || s.Kind != KindBase || !ValidState(s.State) || !ValidCode(s.PlanCode) || s.PlanVersion == 0 || !s.validOrigin() || (s.SalesScope != "*" && !ValidCode(s.SalesScope)) || (!pendingInitial && s.EntitlementSourceVersion == 0) || s.CreatedAt.IsZero() || s.MatchExplanation == "" {
+		return ErrInvalid
+	}
+	if s.State == StateProvisioning && !pendingInitial {
 		return ErrInvalid
 	}
 	return nil
