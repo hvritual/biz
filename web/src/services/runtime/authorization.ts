@@ -121,7 +121,12 @@ export function redirectToTrustedLogin() {
 
 export async function ensureCurrentAuthorization(force = false): Promise<CurrentAuthorizationResponse | null> {
   if (!apiMode) return null
-  if (inFlight && !force) return inFlight
+  if (force) {
+    generation += 1
+    inFlight = null
+  } else if (inFlight) {
+    return inFlight
+  }
 
   const requestGeneration = generation
   const task = (async () => {
