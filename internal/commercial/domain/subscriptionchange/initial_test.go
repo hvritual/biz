@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
 	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 )
 
@@ -69,5 +70,54 @@ func TestInitialSubscriptionPeriodStartsAtAuthoritativeAdmissionTime(t *testing.
 	}
 	if mode != Immediate || !at.Equal(now) || end == nil || !end.Equal(now.AddDate(0, 0, int(terms.ValidityDays))) {
 		t.Fatalf("unexpected initial period mode=%s at=%s end=%v", mode, at, end)
+	}
+}
+
+func TestProjectInitialSourcesPreservesExistingNonPlanAuthority(t *testing.T) {
+	at := time.Date(2026, 10, 6, 10, 0, 0, 0, time.UTC)
+	target := ce09Version("office-pro", ce09Terms(20, false), at)
+	end := at.AddDate(0, 0, 30)
+	existing := []entitlement.Source{{
+		ID: "override-initial",
+		TenantID: "tenant-initial",
+		SourceKind: entitlement.OverrideSource,
+		ModuleCode: "device-operations",
+		Kind: entitlement.Capability,
+		Key: "device.lifecycle",
+		Effect: entitlement.Grant,
+		EffectiveAt: at.Add(-time.Hour),
+		Reason: "existing explicit override",
+		ActorID: "platform",
+		Version: 1,
+	}}
+	before := Digest(existing)
+
+	projected, err := ProjectInitialSources("tenant-initial", target, existing, "chg-initial", at, &end)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if Digest(existing) != before {
+		t.Fatal("initial projection mutated existing authority")
+	}
+	if len(projected) <= len(existing) || Digest(projected[0]) != Digest(existing[0]) {
+		t.Fatal("initial projection did not preserve existing non-plan authority")
+	}
+	livePlanSources := 0
+	for _, source := range projected {
+		if source.SourceKind == entitlement.PlanSource && source.RevokedAt == nil {
+			livePlanSources++
+			if !source.EffectiveAt.Equal(at) || source.ExpiresAt == nil || !source.ExpiresAt.Equal(end) {
+				t.Fatal("initial plan source has the wrong effective period")
+			}
+		}
+	}
+	if livePlanSources == 0 {
+		t.Fatal("initial projection did not add target plan authority")
+	}
+
+	withUnexpectedPlan := append([]entitlement.Source(nil), existing...)
+	withUnexpectedPlan = append(withUnexpectedPlan, subscription.Sources("tenant-initial", "old-plan", at.Add(-time.Hour), target.Terms)[0])
+	if _, err = ProjectInitialSources("tenant-initial", target, withUnexpectedPlan, "chg-initial", at, &end); !errors.Is(err, ErrConflict) {
+		t.Fatal("first activation accepted an already-live plan source")
 	}
 }
