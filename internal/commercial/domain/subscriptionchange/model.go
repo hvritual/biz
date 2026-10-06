@@ -81,12 +81,16 @@ func (i Input) Validate() error {
 		return ErrInvalid
 	}
 	switch i.Action {
+	case Initial:
+		if !plan.Code(i.TargetPlanCode) || i.TargetPlanVersion == 0 || !subscription.ValidCode(i.SalesScope) || i.EffectiveAt != nil {
+			return ErrInvalid
+		}
 	case Switch, Renew:
-		if !plan.Code(i.TargetPlanCode) || i.TargetPlanVersion == 0 {
+		if !plan.Code(i.TargetPlanCode) || i.TargetPlanVersion == 0 || i.SalesScope != "" {
 			return ErrInvalid
 		}
 	case StopRenewal:
-		if i.TargetPlanCode != "" || i.TargetPlanVersion != 0 || i.EffectiveAt != nil {
+		if i.TargetPlanCode != "" || i.TargetPlanVersion != 0 || i.SalesScope != "" || i.EffectiveAt != nil {
 			return ErrInvalid
 		}
 	default:
@@ -169,7 +173,11 @@ type Preview struct {
 
 func (p Preview) Seal() Preview { p.Hash = ""; p.Hash = Digest(p); return p }
 func (p Preview) Integrity() error {
-	if pv.ValidateRequirements(p.ProvisioningRequirements) != nil || p.Input.Validate() != nil || p.ActorID == "" || p.ChangeID != ID(p.ActorID, p.Input.TenantID, p.Input.RequestID) || p.Fingerprint != Digest(p.Input) || !p.CreatedAt.Before(p.ExpiresAt) || p.Hash != p.Seal().Hash || p.Before.TenantID != p.Input.TenantID || p.Before.Revision == 0 || p.Current.SourceVersion == 0 || p.Current.EntitlementVersion == 0 || p.Target.Integrity() != nil {
+	beforeValid := p.Before.TenantID == p.Input.TenantID && p.Before.Revision > 0
+	if p.Input.Action == Initial {
+		beforeValid = p.Before == (subscription.Subscription{})
+	}
+	if pv.ValidateRequirements(p.ProvisioningRequirements) != nil || p.Input.Validate() != nil || p.ActorID == "" || p.ChangeID != ID(p.ActorID, p.Input.TenantID, p.Input.RequestID) || p.Fingerprint != Digest(p.Input) || !p.CreatedAt.Before(p.ExpiresAt) || p.Hash != p.Seal().Hash || !beforeValid || p.Current.SourceVersion == 0 || p.Current.EntitlementVersion == 0 || p.Target.Integrity() != nil {
 		return ErrCorrupt
 	}
 	for _, impact := range p.ImpactDetails {
@@ -210,7 +218,13 @@ type Receipt struct {
 
 func (r Receipt) Seal() Receipt { r.Hash = ""; r.Hash = Digest(r); return r }
 func (r Receipt) Integrity() error {
-	if !Tenant(r.TenantID) || !Key(r.RequestID) || !Key(r.ChangeID) || r.ActorID == "" || r.Hash != r.Seal().Hash || r.Before.TenantID != r.TenantID || r.After.TenantID != r.TenantID || r.After.Revision < r.Before.Revision+1 || r.After.Revision == 0 || r.ConfirmedAt.IsZero() || len(r.PreviewHash) != 64 || (r.Status != Applied && r.Status != Scheduled && r.Status != Provisioning && r.Status != Failed) || (r.Status == Failed && !Key(r.FailureCode)) || (r.Status != Failed && r.FailureCode != "") || (r.Status == Provisioning && (r.ProvisioningTaskID != pv.TaskID(r.ChangeID) || r.After.PendingChangeID != r.ChangeID || (r.Mode != Immediate && r.Mode != Scheduled))) {
+	transitionValid := r.Before.TenantID == r.TenantID && r.After.TenantID == r.TenantID && r.After.Revision >= r.Before.Revision+1 && r.After.Revision > 0
+	if r.Action == Initial {
+		transitionValid = r.Before == (subscription.Subscription{}) && r.After.TenantID == r.TenantID && r.After.Revision == 1 && r.Mode == Immediate
+	} else if r.Action != Switch && r.Action != Renew && r.Action != StopRenewal {
+		transitionValid = false
+	}
+	if !Tenant(r.TenantID) || !Key(r.RequestID) || !Key(r.ChangeID) || r.ActorID == "" || r.Hash != r.Seal().Hash || !transitionValid || r.ConfirmedAt.IsZero() || len(r.PreviewHash) != 64 || (r.Status != Applied && r.Status != Scheduled && r.Status != Provisioning && r.Status != Failed) || (r.Status == Failed && !Key(r.FailureCode)) || (r.Status != Failed && r.FailureCode != "") || (r.Status == Provisioning && (r.ProvisioningTaskID != pv.TaskID(r.ChangeID) || r.After.PendingChangeID != r.ChangeID || (r.Mode != Immediate && r.Mode != Scheduled))) {
 		return ErrCorrupt
 	}
 	return nil
