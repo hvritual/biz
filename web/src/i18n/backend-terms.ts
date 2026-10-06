@@ -49,6 +49,7 @@ export const backendTermCatalog = {
     TRIAL: 'trial', trial: 'trial',
     GRACE: 'grace', grace: 'grace',
     RESTRICTED: 'restricted', restricted: 'restricted',
+    PROVISIONING: 'provisioning', provisioning: 'provisioning',
     ENDED: 'ended', ended: 'ended',
     // Display-only legacy aliases; they never determine subscription behavior.
     // Compatibility owner: #288; read-only aliases retained through 2026-12-31.
@@ -92,7 +93,7 @@ export const backendTermCatalog = {
   disposition: { applied: 'applied', effective: 'effective', used: 'used', ignored: 'ignored', skipped: 'skipped' },
   decisionKind: { capability: 'capability', quota: 'quota', field: 'field', module: 'module' },
   changeClassification: {
-    UPGRADE: 'upgrade', DOWNGRADE: 'downgrade', SAME_TIER: 'sameTier',
+    INITIAL: 'initial', UPGRADE: 'upgrade', DOWNGRADE: 'downgrade', SAME_TIER: 'sameTier',
     RENEW: 'renewal', RENEWAL: 'renewal', STOP_RENEWAL: 'stopRenewal', SWITCH: 'switch',
   },
   effectiveMode: { IMMEDIATE: 'immediate', SCHEDULED: 'scheduled', PROVISIONING: 'provisioning' },
