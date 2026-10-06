@@ -16,12 +16,6 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = 'scripts/ci_access_tests.json'
 PACKAGE = 'github.com/hvritual/biz/integration'
-ENTERPRISE191_METRIC_SUITES = {
-    'enterprise-191-login-metrics',
-    'enterprise-191-password-reset-metrics',
-    'enterprise-191-member-write-metrics',
-    'enterprise-191-revocation-metrics',
-}
 
 
 def require(ok, reason):
@@ -71,17 +65,6 @@ def validate(data, root=ROOT, baseline=None):
 def test_argv(suite):
     pattern = '^(' + '|'.join(test['name'] for test in suite['tests']) + ')$'
     return ['go', 'test', '-json', '-count=1', '-tags=integration', './integration', '-run', pattern]
-
-
-def select_suites(data, group):
-    suites = data['suites']
-    if group == 'all':
-        return suites
-    if group == 'base':
-        return [suite for suite in suites if suite['id'] not in ENTERPRISE191_METRIC_SUITES]
-    if group == 'enterprise191':
-        return [suite for suite in suites if suite['id'] in ENTERPRISE191_METRIC_SUITES]
-    raise ValueError('UNKNOWN_SUITE_GROUP:' + group)
 
 
 def verify_events(events, expected, exit_code):
@@ -136,7 +119,6 @@ def main():
     parser.add_argument('--check', action='store_true')
     parser.add_argument('--base-ref', default='')
     parser.add_argument('--output', default=str(Path(os.getenv('RUNNER_TEMP', '.')) / 'access-qualification'))
-    parser.add_argument('--group', choices=['all', 'base', 'enterprise191'], default='all')
     args = parser.parse_args()
     report = {'state': 'BLOCKED', 'schema_version': 1, 'suites': [],
               'observed_at': datetime.now(timezone.utc).isoformat()}
@@ -169,10 +151,7 @@ def main():
         report['candidate_sha'] = candidate
         report['run_id'] = os.environ['GITHUB_RUN_ID']
         report['run_attempt'] = os.environ['GITHUB_RUN_ATTEMPT']
-        selected_suites = select_suites(data, args.group)
-        require(selected_suites, 'EMPTY_SELECTED_SUITE_GROUP:' + args.group)
-        report['group'] = args.group
-        for suite in selected_suites:
+        for suite in data['suites']:
             print('ACCESS_QUALIFICATION=RUN ' + suite['id'], flush=True)
             report['suites'].append(execute(suite, output, 180))
             print('ACCESS_QUALIFICATION=PASS ' + suite['id'], flush=True)
