@@ -1,0 +1,233 @@
+schema_version: 1
+artifact_kind: analysis
+status: ready_for_review
+task_ref:
+  issue: "#340"
+  baseline_commit: 25859945399a7f5ad90c04c3a0a19abbea063fcf
+  candidate_commit: 9566b8b59849fc8e9d6d61df08f90cf2118372a5
+  name: 平台管理员租户首次订阅与模块开通
+classification:
+  type: business_task
+  reason: 平台管理员会为无基础订阅租户创建真实 Subscription，可能触发 Provisioning，并最终改变租户 Entitlement。
+  business_state_mutation: true
+  authorization_sensitive: true
+  asynchronous_effect: true
+context:
+  role:
+    summary: 具备平台租户读取、套餐读取、商业目录读取和订阅管理权限的平台管理员。
+    source_refs: [issue_340, proto_contract]
+  task:
+    summary: 为当前无基础订阅的租户选择精确已发布套餐版本，核对范围和影响，确认开通并验证最终权益。
+    source_refs: [issue_340]
+  entity:
+    summary: 无基础订阅租户、精确 PlanVersion、首次开通 Change/Receipt、可选 ProvisioningTask 和最终 EntitlementView。
+    source_refs: [issue_340, proto_contract, subscription_model]
+  workflow:
+    summary: 读取租户权益 → 发现可用 Published PlanVersion → 服务端资格检查 → 预览 → 确认 → 必要准备 → Subscription/Entitlement 权威回读。
+    source_refs: [issue_340, change_authority]
+  state:
+    summary: 无订阅 → INITIAL 预览 → APPLIED 或 PROVISIONING；只有最终权益回读成功后页面才宣告已开通。
+    source_refs: [issue_340, change_authority, provisioning_authority]
+  action:
+    summary: 复用平台 Subscription Change Authority；INITIAL 显式携带 sales_scope，确认只绑定 preview_hash，不在浏览器生成权益事实。
+    source_refs: [proto_contract, platform_service]
+  risk:
+    summary: 错选版本、范围不匹配、并发双开通、预览过期、Provisioning 失败或未知、回读失败以及把租户权益误当成成员 IAM。
+    source_refs: [issue_340, subscription_model, provisioning_authority]
+  decision:
+    summary: 管理员必须理解将开通的精确版本、模块/能力/额度/期限、是否需要准备以及最终结果是否已被权威回读确认。
+    source_refs: [issue_340]
+sources:
+- id: issue_340
+  kind: user_requirement
+  path: https://github.com/hvritual/biz/issues/340
+  commit: null
+  locator: 用户旅程、实施范围、异常与恢复、验收
+  claim: 定义平台管理员为无订阅租户首次开通的完整任务与恢复要求。
+- id: proto_contract
+  kind: repository_contract
+  path: contracts/proto/commercial/v1/subscription_change.proto
+  commit: 9566b8b59849fc8e9d6d61df08f90cf2118372a5
+  locator: PreviewSubscriptionChangeRequest / ConfirmSubscriptionChangeRequest
+  claim: INITIAL 复用现有平台变更协议，首次预览显式携带 sales_scope，确认绑定 preview_hash。
+- id: subscription_model
+  kind: implementation
+  path: internal/commercial/domain/subscription/model.go
+  commit: 9566b8b59849fc8e9d6d61df08f90cf2118372a5
+  locator: OriginInitialActivation / StateProvisioning / Subscription.Validate
+  claim: 首次开通具有独立来源事实，准备期间不冒充已激活权益。
+- id: change_authority
+  kind: implementation
+  path: internal/commercial/application/subscriptionchanges/internal/usecase
+  commit: 9566b8b59849fc8e9d6d61df08f90cf2118372a5
+  locator: preview / confirm / prepared
+  claim: 首次开通复用目标资格、目录、快照、回执和 Provisioning 状态机。
+- id: provisioning_authority
+  kind: implementation
+  path: internal/commercial/domain/provisioning/model.go
+  commit: 9566b8b59849fc8e9d6d61df08f90cf2118372a5
+  locator: Task / Retry / Complete
+  claim: 准备任务有独立状态、重试和最终完成事实；INITIAL 禁止用通用取消恢复不存在的旧套餐。
+- id: platform_service
+  kind: implementation
+  path: web/src/services/commercial/platformCommercial.ts
+  commit: 9566b8b59849fc8e9d6d61df08f90cf2118372a5
+  locator: listPlans / previewSubscriptionChange / confirmSubscriptionChange
+  claim: 前端使用可信会话、CSRF、幂等键和真实平台商业接口。
+- id: current_page
+  kind: implementation
+  path: web/src/features/platform/pages/CommercialTenantEntitlementsView.vue
+  commit: 25859945399a7f5ad90c04c3a0a19abbea063fcf
+  locator: CommercialTenantEntitlementsView
+  claim: 当前真实租户权益工作台已区分订阅读取、权益解释、专项权益和已有订阅变更。
+page_pattern:
+  name: WorkbenchPage
+  reason: 首次开通需要在同一租户上下文内协作展示订阅状态、目标版本、影响、处理状态和最终权益回读。
+  contract_ref: web/ui-contracts.json:/platform/commercial/tenant-entitlements
+  gaps:
+  - 当前无订阅状态只有空提示，缺少首次开通入口和完整任务恢复。
+outcome:
+  definition: 管理员只有在 Subscription 已生效且 Entitlement 权威回读确认目标套餐权益后才看到完成；处理中、失败、未知和回读失败保持独立状态及恢复入口。
+  result_contract_refs: [issue_340, change_authority, provisioning_authority]
+  recovery_contract_refs: [issue_340, change_authority, provisioning_authority]
+humanized_ux:
+  time_to_information:
+    applicability: applies
+    reason: 无订阅原因、目标套餐版本和当前处理状态必须立即可见。
+    requirements:
+    - 无订阅时直接显示首次开通任务，不展示无意义的套餐切换表单。
+    - 目标卡明确 plan_code、exact version、模块、能力、额度、有效期和 sales scope。
+    evidence_types: [browser_test]
+    verification: not_verified
+    evidence: []
+  time_to_action:
+    applicability: applies
+    reason: 管理员应从无订阅状态直接进入目标发现、预览和确认。
+    requirements:
+    - sales scope 明确后才能发现服务端判定可用的版本。
+    - 无可用版本时显示阻断原因和重新检查入口。
+    evidence_types: [browser_test, api_test]
+    verification: not_verified
+    evidence: []
+  context_switching:
+    applicability: applies
+    reason: 全流程绑定同一 tenant、scope、target version 和 change id。
+    requirements:
+    - 切换租户清空目标、预览、回执和迟到结果。
+    - 冲突后回读当前租户订阅，不把旧租户结果继续显示。
+    evidence_types: [browser_test]
+    verification: not_verified
+    evidence: []
+  decision_load:
+    applicability: applies
+    reason: 首次开通会改变租户能力上限，需要在确认前展示真实差异和准备要求。
+    requirements:
+    - 不用套餐名称或 latest 推断目标，始终显示 exact version。
+    - 费用只展示现有 pricing authority 事实，不由页面计算价格。
+    evidence_types: [source_review, browser_test]
+    verification: not_verified
+    evidence: []
+  interaction_cost:
+    applicability: applies
+    reason: 应复用当前租户权益工作台与真实商业接口，不新增第二套商业控制台。
+    requirements:
+    - 有订阅继续使用现有 SubscriptionChangeWorkspace。
+    - 无订阅仅显示 InitialSubscriptionWorkspace，避免两个任务同时出现。
+    evidence_types: [static_check, browser_test]
+    verification: not_verified
+    evidence: []
+  error_recoverability:
+    applicability: applies
+    reason: 并发确认、Provisioning、网络未知和最终回读都可能留下真实业务事实。
+    requirements:
+    - 409 后重新读取 Subscription；若其他管理员已完成则展示真实现状。
+    - Provisioning Failed/Unknown 恢复同一任务，不重复创建订阅。
+    - Entitlement readback 失败显示待确认并保留 receipt/change id。
+    evidence_types: [api_test, browser_test]
+    verification: not_verified
+    evidence: []
+  how_to_guidance:
+    applicability: applies
+    reason: 平台管理员需要理解“首次开通”“处理中”和“已获得权益”的区别。
+    requirements:
+    - 就地说明套餐权益不会自动授予成员 IAM 权限。
+    - Provisioning 状态说明模块尚未正式可用。
+    evidence_types: [browser_test]
+    verification: not_verified
+    evidence: []
+  operation_effect_transparency:
+    applicability: applies
+    reason: INITIAL 会创建 Base Subscription 并可能异步产生最终权益。
+    requirements:
+    - 预览明确目标 exact version、预计有效期、依赖、额度和准备项。
+    - 确认后的 APPLIED/PROVISIONING/FAILED/UNKNOWN 与最终权益回读分别展示。
+    evidence_types: [source_review, api_test, browser_test]
+    verification: not_verified
+    evidence: []
+  problem_resolution_guidance:
+    applicability: applies
+    reason: scope 不匹配、目标变化、并发开通和异步失败需要不同下一步。
+    requirements:
+    - scope 不匹配或目标失效时返回目标重新发现。
+    - 并发冲突先读取当前订阅，不重复确认。
+    - 未知结果先查回执/任务/权益状态，不生成第二个 INITIAL。
+    evidence_types: [browser_test, api_test]
+    verification: not_verified
+    evidence: []
+acceptance:
+  scenarios:
+  - 无订阅租户看到明确首次开通入口，有订阅租户继续看到套餐变更任务。
+  - 只展示真实 PUBLISHED 且服务端 eligibility 允许的 exact PlanVersion 候选。
+  - 预览显示模块、能力、额度、有效期、sales scope、依赖和 Provisioning 要求。
+  - 直接开通后只有 Entitlement readback 与目标权益一致才显示完成。
+  - 需要 Provisioning 时订阅显示处理中，目标 Plan 权益不会提前出现。
+  - 两个管理员并发首次确认只产生一份 Base Subscription，冲突方回读现有事实。
+  - 成员 IAM 未授权时首次开通不自动授予成员操作权限。
+  - 401、403、409、ProvisioningFailed、Unknown、ReadbackFailed 有独立反馈和下一步。
+  automated_checks:
+  - make check
+  - go test ./...
+  - cd web && npm run check
+  - cd web && npm run test:e2e
+  human_checks:
+  - 1366x768、1440x900、1536x1024、390x844 检查目标信息、处理中、失败恢复与回读待确认状态。
+  - 200% 浏览器缩放及长套餐名、长能力名、长 change id 的可读性检查。
+  - 独立产品/UX 评审确认“订阅开通不等于成员授权”和最终 readback 语义。
+  metrics: []
+open_questions:
+- question: 收费首次开通的 Quote/Payment authority 仍由 #124/#125/#132 提供，本 Issue 不自行定义价格或扣款结果。
+  blocking: false
+  owner_role: 商业化产品
+handoff:
+  allowed_paths:
+  - web/src/features/platform/**
+  - web/src/services/commercial/**
+  - web/src/i18n/**
+  - web/src/features/component-scopes.json
+  - web/e2e/**
+  - web/docs/platform-first-subscription-journey-ux.yaml
+  forbidden_paths:
+  - web/src/features/app-shell/**
+  - web/src/styles/tokens.css
+  - server/**
+  reuse_refs:
+  - web/src/features/platform/pages/CommercialTenantEntitlementsView.vue
+  - web/src/features/platform/components/SubscriptionChangeWorkspace.vue
+  - web/src/services/commercial/platformCommercial.ts
+  - web/src/ui/common/StatusBadge.vue
+  gates:
+  - name: web_fast_gate
+    status: not_verified
+  - name: browser_e2e
+    status: not_verified
+  - name: entitlement_readback
+    status: not_verified
+review:
+  reviewer: null
+  actor_kind: null
+  scope: null
+  reference: null
+  analysis_ref: null
+  reviewed_at: null
+  candidate_sha: null
+  decision: not_reviewed
