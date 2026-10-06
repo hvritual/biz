@@ -97,7 +97,7 @@ export const backendTermCatalog = {
   },
   effectiveMode: { IMMEDIATE: 'immediate', SCHEDULED: 'scheduled', PROVISIONING: 'provisioning' },
   receiptStatus: { APPLIED: 'applied', SCHEDULED: 'scheduled', PROVISIONING: 'provisioning', FAILED: 'failed', PENDING: 'pending' },
-  changeAction: { SWITCH: 'switch', RENEW: 'renew', STOP_RENEWAL: 'stopRenewal' },
+  changeAction: { INITIAL: 'initial', SWITCH: 'switch', RENEW: 'renew', STOP_RENEWAL: 'stopRenewal' },
   salesScope: { rental: 'rental', office: 'office', default: 'default', enterprise: 'enterprise' },
   technicalStatus: {
     ready: 'ready', not_ready: 'notReady', disabled: 'disabled',
