@@ -187,10 +187,30 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 		receipt := change.Receipt{ChangeID: changeID, TenantID: tenantID, ActorID: actorID, RequestID: requestID, Fingerprint: fingerprint, PreviewHash: preview.Hash, Action: preview.Input.Action, Status: change.Applied, Mode: mode, ConfirmedAt: admitted, EffectiveAt: at, EntitlementExpiresAt: end, Reason: reason, Before: material.before, BeforeSourceVersion: material.state.Version, AfterSourceVersion: material.state.Version, BeforeEntitlementVersion: material.current.EntitlementVersion, AfterEntitlementVersion: material.current.EntitlementVersion, QuotaValidationRequired: deferred, Quotas: quotas, PricingAuthority: pricingAuthority}
 		if mode == change.Immediate && len(requirements) > 0 {
 			after.PendingChangeID = changeID
+			approvalSourceVersion := material.state.Version
+			approvalEntitlementVersion := material.current.EntitlementVersion
 			if preview.Input.Action == change.Initial {
 				after.State = subscription.StateProvisioning
+				// A first activation can legitimately start at source version zero.
+				// Provisioning approvals require a positive, durable generation, so
+				// reserve an empty entitlement generation before any plan grant.
+				if err = repos.Entitlements.Advance(call, tenantID, material.state.Version); err != nil {
+					return receipt, err
+				}
+				after.EntitlementSourceVersion = material.state.Version + 1
+				baseline, readErr := s.snapshots.ReadSnapshot(call, tenantID, nil)
+				if readErr != nil {
+					return receipt, readErr
+				}
+				if baseline.SourceVersion != after.EntitlementSourceVersion || baseline.EntitlementVersion <= material.current.EntitlementVersion {
+					return receipt, change.ErrCorrupt
+				}
+				approvalSourceVersion = baseline.SourceVersion
+				approvalEntitlementVersion = baseline.EntitlementVersion
+				receipt.AfterSourceVersion = baseline.SourceVersion
+				receipt.AfterEntitlementVersion = baseline.EntitlementVersion
 			}
-			task, err := pv.New(tenantID, pv.Approval{ChangeID: changeID, ActorID: actorID, PreviewHash: preview.Hash, TargetHash: material.target.ContentSHA256, TargetPlanCode: material.target.PlanCode, TargetPlanVersion: material.target.Number, SubscriptionRevision: after.Revision, SourceVersion: material.state.Version, EntitlementVersion: material.current.EntitlementVersion, CatalogRevision: material.current.CatalogRevision}, requirements, admitted)
+			task, err := pv.New(tenantID, pv.Approval{ChangeID: changeID, ActorID: actorID, PreviewHash: preview.Hash, TargetHash: material.target.ContentSHA256, TargetPlanCode: material.target.PlanCode, TargetPlanVersion: material.target.Number, SubscriptionRevision: after.Revision, SourceVersion: approvalSourceVersion, EntitlementVersion: approvalEntitlementVersion, CatalogRevision: material.current.CatalogRevision}, requirements, admitted)
 			if err != nil {
 				return receipt, err
 			}
