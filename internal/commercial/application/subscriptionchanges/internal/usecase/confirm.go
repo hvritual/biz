@@ -41,11 +41,17 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 		}
 		var raw subscription.Subscription
 		var current *subscription.Subscription
+		var initialRepo ports.InitialSubscriptionChangeRepository
 		if hint.Input.Action == change.Initial {
 			if tenantSelfService {
 				return change.Receipt{}, change.ErrScope
 			}
-			current, err = repo.LockTenantOptional(call, tenantID)
+			var ok bool
+			initialRepo, ok = repo.(ports.InitialSubscriptionChangeRepository)
+			if !ok {
+				return change.Receipt{}, change.ErrCorrupt
+			}
+			current, err = initialRepo.LockTenantOptional(call, tenantID)
 		} else {
 			raw, err = repo.LockTenant(call, tenantID)
 		}
@@ -248,7 +254,10 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 			}
 		}
 		if preview.Input.Action == change.Initial {
-			err = repo.CreateCurrent(call, after)
+			if initialRepo == nil {
+				return receipt, change.ErrCorrupt
+			}
+			err = initialRepo.CreateCurrent(call, after)
 		} else {
 			err = repo.SaveCurrent(call, material.before, after)
 		}
