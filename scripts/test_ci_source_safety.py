@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 import unittest
 from unittest.mock import patch
-from check_ci_source_safety import check, PROTECTED, validate_workflow
+from check_ci_source_safety import check, PROTECTED, validate_access_runner_binding, validate_workflow
 
 
 def workflow(script):
@@ -35,6 +35,18 @@ class SourceTests(unittest.TestCase):
     def test_registry_routes_to_access_without_workflow_changes(self):
         from ci_changed_files_router import classify_path
         self.assertIn('access', classify_path('scripts/ci_access_tests.json'))
+
+    def test_split_access_runner_binding_is_explicit(self):
+        source = (
+            'python3 biz/scripts/ci_access_qualification.py --group base\n'
+            'python3 biz/scripts/ci_access_qualification.py --group enterprise191 '
+            '--output "$RUNNER_TEMP/access-qualification-enterprise191"\n'
+        )
+        validate_access_runner_binding(source)
+
+    def test_legacy_single_access_runner_binding_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'ACCESS_RUNNER_BINDING_DRIFT'):
+            validate_access_runner_binding('python3 biz/scripts/ci_access_qualification.py\n')
 
     def test_business_control_mutation_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
