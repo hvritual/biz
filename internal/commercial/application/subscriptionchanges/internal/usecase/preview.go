@@ -6,6 +6,7 @@ import (
 
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
+	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	change "github.com/hvritual/biz/internal/commercial/domain/subscriptionchange"
 	"github.com/hvritual/biz/internal/commercial/ports"
 	"yunka.io/framework/requestscope"
