@@ -234,9 +234,10 @@ func TestPlatformCurrentGrantsShrinkWithoutSessionExpiry(t *testing.T) {
 		t.Fatalf("initial platform manage grant missing: grants=%+v err=%v", grants, err)
 	}
 
-	if err := db.Table("biz_platform_permission_grants").
-		Where("subject = ? AND permission = ?", subject, "platform.module.manage").
-		Delete(nil).Error; err != nil {
+	if err := db.Exec(
+		"DELETE FROM biz_platform_permission_grants WHERE subject = ? AND permission = ?",
+		subject, "platform.module.manage",
+	).Error; err != nil {
 		t.Fatal(err)
 	}
 	grants, err = resolver.ResolveGrants(ctx, request)
