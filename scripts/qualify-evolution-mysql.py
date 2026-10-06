@@ -118,7 +118,10 @@ try:
             groups = {}
             for name in names:
                 match = re.match(r'Test(CE\d+)', name)
-                group = match[1] if match else label
+                if name.startswith('TestEnterprise191'):
+                    group = 'enterprise191-metrics'
+                else:
+                    group = match[1] if match else label
                 if 'PersistenceBeforeRestart' in name or 'PersistenceAfterRestart' in name:
                     group += '-restart'
                 if name.endswith('Seed'):
