@@ -59,6 +59,11 @@ class MemberBrowserSetupTest(unittest.TestCase):
         self.assertIn('(( browser_status == 0 )) || exit "$browser_status"', source)
         self.assertIn('(( font_status == 0 )) || exit "$font_status"', source)
 
+    def test_success_receipt_exposes_bounded_elapsed_seconds(self):
+        result, _, _ = self.run_probe()
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertRegex(result.stdout, r'^MEMBER_BROWSER_PREREQUISITES=PASS elapsed_seconds=\d+\n$')
+
     def test_missing_chinese_font_installs_only_required_font(self):
         result, trace, _ = self.run_probe(missing_font=True)
         self.assertEqual(0, result.returncode, result.stderr)
