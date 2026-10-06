@@ -459,7 +459,7 @@ test("TestCE13PlatformModuleAuthorizationProjectionAndOperationQuadrants", async
 
   async function openModuleDetail(page: Page) {
     await page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
-    await expect(page.getByRole("heading", { name: "模块目录", exact: true })).toBeVisible();
+    await expect(page.getByTestId("ce13-module-catalog")).toBeVisible();
     await expect(page.getByRole("button", { name: "查看详情" }).first()).toBeVisible();
     await page.getByRole("button", { name: "查看详情" }).first().click();
     await expect(page.getByRole("dialog", { name: /模块详情/ })).toBeVisible();
