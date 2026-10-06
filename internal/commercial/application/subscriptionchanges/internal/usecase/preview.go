@@ -40,7 +40,11 @@ func (s *service) preview(ctx context.Context, actorID string, input change.Inpu
 			if tenantSelfService {
 				return change.Preview{}, change.ErrScope
 			}
-			current, err = repo.LockTenantOptional(call, i.TenantID)
+			initialRepo, ok := repo.(ports.InitialSubscriptionChangeRepository)
+			if !ok {
+				return change.Preview{}, change.ErrCorrupt
+			}
+			current, err = initialRepo.LockTenantOptional(call, i.TenantID)
 		} else {
 			raw, err = repo.LockTenant(call, i.TenantID)
 		}
