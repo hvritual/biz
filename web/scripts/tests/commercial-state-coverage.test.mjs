@@ -23,6 +23,8 @@ test('all canonical commercial wire values have Chinese and English projections'
   assert.equal(Object.keys(result.groups).length, 13)
   assert.ok(result.groups.subscriptionState.includes('GRACE'))
   assert.ok(result.groups.changeClassification.includes('SAME_TIER'))
+  assert.ok(result.groups.changeClassification.includes('INITIAL'))
+  assert.ok(result.groups.changeAction.includes('INITIAL'))
   assert.ok(result.groups.changeClassification.includes('RENEW'))
 })
 
