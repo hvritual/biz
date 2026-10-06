@@ -69,7 +69,7 @@ export const backendTermMessages = {
     moduleCategory: { operations: '运营能力', crm: '客户经营', growth: '增长能力' },
     planState: { draft: '草稿', published: '已发布', retired: '已停售' },
     subscriptionState: {
-      grace: '宽限期', restricted: '受限', ended: '已结束',
+      grace: '宽限期', restricted: '受限', provisioning: '开通处理中', ended: '已结束',
       active: '有效',
       trial: '试用',
       gracePeriod: '宽限期',
@@ -121,6 +121,7 @@ export const backendTermMessages = {
       module: '模块权益',
     },
     changeClassification: {
+      initial: '首次开通',
       sameTier: '同级调整',
       upgrade: '升级',
       downgrade: '降级',
@@ -304,7 +305,7 @@ export const backendTermMessages = {
     moduleCategory: { operations: 'Operations', crm: 'Customer operations', growth: 'Growth' },
     planState: { draft: 'Draft', published: 'Published', retired: 'Retired' },
     subscriptionState: {
-      grace: 'Grace period', restricted: 'Restricted', ended: 'Ended',
+      grace: 'Grace period', restricted: 'Restricted', provisioning: 'Provisioning', ended: 'Ended',
       active: 'Active',
       trial: 'Trial',
       gracePeriod: 'Grace period',
@@ -356,6 +357,7 @@ export const backendTermMessages = {
       module: 'Module entitlement',
     },
     changeClassification: {
+      initial: 'First activation',
       sameTier: 'Same-tier change',
       upgrade: 'Upgrade',
       downgrade: 'Downgrade',
