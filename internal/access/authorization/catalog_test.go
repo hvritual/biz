@@ -241,4 +241,3 @@ func TestAuthorizedPlatformActionsShrinkWithCurrentGrantSet(t *testing.T) {
 		t.Fatalf("technical grant incorrectly implied general management: %v", technicalCodes)
 	}
 }
-
