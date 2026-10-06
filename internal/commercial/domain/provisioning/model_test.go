@@ -105,6 +105,22 @@ func TestCE10SafeCancellationAndVersionBoundCompletion(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+
+func TestProvisioningApprovalCanDisableCancellationWithoutDisablingRetry(t *testing.T) {
+	task := example(t)
+	task.CancellationDisabled = true
+	task = task.Seal()
+	if task.Integrity() != nil {
+		t.Fatal("non-cancellable approval became corrupt")
+	}
+	if task.Cancellable() {
+		t.Fatal("non-cancellable approval exposed cancellation")
+	}
+	if err := task.Cancel(task.CreatedAt); !errors.Is(err, ErrCancellation) {
+		t.Fatal("disabled cancellation was accepted")
+	}
+}
+
 func TestCE10InboxDuplicatesAndOlderEventsNeverOverwrite(t *testing.T) {
 	now := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
 	e := Event{TenantID: "t", AggregateID: "s", AggregateVersion: 2, ChangeID: "c", Status: Applied, SourceVersion: 2, EntitlementVersion: 3, OccurredAt: now}.Seal()
