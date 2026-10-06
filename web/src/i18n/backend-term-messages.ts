@@ -141,6 +141,7 @@ export const backendTermMessages = {
       pending: '待处理',
     },
     changeAction: {
+      initial: '首次开通套餐',
       switch: '切换套餐',
       renew: '续订当前套餐',
       stopRenewal: '关闭自动续费',
@@ -375,6 +376,7 @@ export const backendTermMessages = {
       pending: 'Pending',
     },
     changeAction: {
+      initial: 'Activate first plan',
       switch: 'Switch plan',
       renew: 'Renew current plan',
       stopRenewal: 'Turn off auto-renewal',
