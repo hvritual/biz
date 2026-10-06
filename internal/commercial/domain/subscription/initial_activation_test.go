@@ -81,3 +81,22 @@ func TestSubscriptionOriginRejectsAmbiguousOrForgedProvenance(t *testing.T) {
 		})
 	}
 }
+
+func TestInitialProvisioningSubscriptionCanExistWithoutEntitlementSources(t *testing.T) {
+	value := validSubscriptionForOriginTest()
+	value.Origin = OriginInitialActivation
+	value.RuleID = ""
+	value.RuleVersion = 0
+	value.State = StateProvisioning
+	value.PendingChangeID = "chg-initial-pending"
+	value.EntitlementSourceVersion = 0
+	value.MatchExplanation = "initial activation pending chg-initial-pending"
+	if err := value.Validate(); err != nil {
+		t.Fatalf("pending first activation should remain a valid subscription fact: %v", err)
+	}
+
+	value.PendingChangeID = ""
+	if err := value.Validate(); err == nil {
+		t.Fatal("provisioning subscription without a pending change was accepted")
+	}
+}
