@@ -174,10 +174,14 @@ type Preview struct {
 func (p Preview) Seal() Preview { p.Hash = ""; p.Hash = Digest(p); return p }
 func (p Preview) Integrity() error {
 	beforeValid := p.Before.TenantID == p.Input.TenantID && p.Before.Revision > 0
+	currentValid := p.Current.SourceVersion > 0 && p.Current.EntitlementVersion > 0
 	if p.Input.Action == Initial {
 		beforeValid = p.Before == (subscription.Subscription{})
+		// A legacy/no-subscription tenant can legitimately have no entitlement
+		// sources yet. The snapshot version must still prove a real readback.
+		currentValid = p.Current.EntitlementVersion > 0
 	}
-	if pv.ValidateRequirements(p.ProvisioningRequirements) != nil || p.Input.Validate() != nil || p.ActorID == "" || p.ChangeID != ID(p.ActorID, p.Input.TenantID, p.Input.RequestID) || p.Fingerprint != Digest(p.Input) || !p.CreatedAt.Before(p.ExpiresAt) || p.Hash != p.Seal().Hash || !beforeValid || p.Current.SourceVersion == 0 || p.Current.EntitlementVersion == 0 || p.Target.Integrity() != nil {
+	if pv.ValidateRequirements(p.ProvisioningRequirements) != nil || p.Input.Validate() != nil || p.ActorID == "" || p.ChangeID != ID(p.ActorID, p.Input.TenantID, p.Input.RequestID) || p.Fingerprint != Digest(p.Input) || !p.CreatedAt.Before(p.ExpiresAt) || p.Hash != p.Seal().Hash || !beforeValid || !currentValid || p.Target.Integrity() != nil {
 		return ErrCorrupt
 	}
 	for _, impact := range p.ImpactDetails {
