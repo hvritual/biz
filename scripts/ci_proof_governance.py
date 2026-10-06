@@ -19,6 +19,7 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -258,6 +259,21 @@ def seconds(start, end):
     return round((b - a).total_seconds(), 3)
 
 
+def wait_for_job_terminal_snapshot(api, run, expected_names, attempts=4, delay_seconds=2):
+    """Bound GitHub Jobs API eventual consistency without weakening success checks."""
+    expected = set(expected_names)
+    last = []
+    for attempt in range(attempts):
+        last = api.jobs(run)
+        matched = [job for job in last if job.get('name') in expected]
+        if (len(matched) == len(expected) and {job.get('name') for job in matched} == expected and
+                all(job.get('status') == 'completed' and job.get('conclusion') is not None for job in matched)):
+            return last
+        if attempt + 1 < attempts:
+            time.sleep(delay_seconds)
+    return last
+
+
 def audit_jobs(contract, topology, jobs, run_id, attempt, candidate):
     expected = expected_full(contract, topology)
     actual = [j for j in jobs if j.get('name', '').startswith('full-')]
@@ -329,7 +345,8 @@ def api_audit(api, contract, topology, repository, candidate, pr, run_id, attemp
     for ref in refs:
         require(api.get('/git/commits/' + ref)['tree']['sha'] == bound['candidate_tree'], 'WORKFLOW_SOURCE_TREE_MISMATCH')
     print('CI_PROOF_PROGRESS=verify_all_expanded_jobs', flush=True)
-    rows = audit_jobs(contract, topology, api.jobs(run), run_id, attempt, candidate)
+    jobs = wait_for_job_terminal_snapshot(api, run, expected_full(contract, topology))
+    rows = audit_jobs(contract, topology, jobs, run_id, attempt, candidate)
     from ci_dependency_recovery import verify_run
     recovery = verify_run(api, ROOT, repository, candidate, bound['candidate_tree'], pr, run, bound['frozen_main_sha'])
     require(bound_refs(api, pr, candidate) == bound, 'FROZEN_BINDING_CHANGED_DURING_AUDIT')
@@ -405,7 +422,8 @@ def verify_main(api, contract, topology, repository, main_sha, contract_hash, to
     require(artifact.get('digest') == 'sha256:' + sha(data), 'PROOF_ARCHIVE_DIGEST_MISMATCH')
     receipt = receipt_zip(data)
     verify_binding(receipt, repository, contract_hash, topology_hash, candidate, tree, pr, run, qualification)
-    rows = audit_jobs(contract, topology, api.jobs(run), run['id'], run['run_attempt'], candidate)
+    jobs = wait_for_job_terminal_snapshot(api, run, expected_full(contract, topology))
+    rows = audit_jobs(contract, topology, jobs, run['id'], run['run_attempt'], candidate)
     require(receipt.get('jobs') == rows and not any(r['performance'] == 'HARD_EXCEEDED' for r in rows), 'PROOF_EXECUTION_DRIFT')
     from ci_dependency_recovery import verify_run
     recovery = verify_run(api, ROOT, repository, candidate, tree, pr, run, receipt['frozen_main_sha'])

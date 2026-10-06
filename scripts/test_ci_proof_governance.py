@@ -151,6 +151,49 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(len(rows), 42)
         self.assertTrue(all(r['job_wall_seconds'] == 100 and r['queue_seconds'] == 10 for r in rows))
 
+    def test_terminal_snapshot_waits_for_eventual_job_completion(self):
+        first = jobs_fixture()
+        first[0] = {**first[0], 'status': 'in_progress', 'conclusion': None, 'completed_at': None}
+        final = jobs_fixture()
+
+        class API:
+            def __init__(self):
+                self.calls = 0
+
+            def jobs(self, run):
+                self.calls += 1
+                return first if self.calls == 1 else final
+
+        api = API()
+        with patch.object(g.time, 'sleep') as sleep:
+            jobs = g.wait_for_job_terminal_snapshot(
+                api, {'id': 101, 'run_attempt': 1}, g.expected_full(C, T), attempts=2, delay_seconds=0.01,
+            )
+        self.assertEqual(api.calls, 2)
+        sleep.assert_called_once_with(0.01)
+        self.assertEqual(len(self.audit(jobs)), 42)
+
+    def test_terminal_snapshot_remains_fail_closed_after_budget(self):
+        pending = jobs_fixture()
+        pending[0] = {**pending[0], 'status': 'in_progress', 'conclusion': None, 'completed_at': None}
+
+        class API:
+            def __init__(self):
+                self.calls = 0
+
+            def jobs(self, run):
+                self.calls += 1
+                return pending
+
+        api = API()
+        with patch.object(g.time, 'sleep'):
+            jobs = g.wait_for_job_terminal_snapshot(
+                api, {'id': 101, 'run_attempt': 1}, g.expected_full(C, T), attempts=3, delay_seconds=0,
+            )
+        self.assertEqual(api.calls, 3)
+        with self.assertRaisesRegex(g.Violation, 'REQUIRED_JOB_NOT_SUCCESS'):
+            self.audit(jobs)
+
     def test_missing_job(self):
         with self.assertRaisesRegex(g.Violation, 'EXPANDED_JOB_SET'):
             self.audit(jobs_fixture()[:-1])

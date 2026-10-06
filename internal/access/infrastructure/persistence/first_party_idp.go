@@ -380,17 +380,19 @@ func pbkdf2SHA256(password, salt []byte, iterations, keyLength int) []byte {
 	blocks := (keyLength + digestLength - 1) / digestLength
 	result := make([]byte, 0, blocks*digestLength)
 	counter := make([]byte, 4)
+	mac := hmac.New(sha256.New, password)
+	u := make([]byte, 0, digestLength)
 	for block := 1; block <= blocks; block++ {
 		binary.BigEndian.PutUint32(counter, uint32(block))
-		mac := hmac.New(sha256.New, password)
+		mac.Reset()
 		_, _ = mac.Write(salt)
 		_, _ = mac.Write(counter)
-		u := mac.Sum(nil)
+		u = mac.Sum(u[:0])
 		t := append([]byte(nil), u...)
 		for i := 1; i < iterations; i++ {
-			mac = hmac.New(sha256.New, password)
+			mac.Reset()
 			_, _ = mac.Write(u)
-			u = mac.Sum(nil)
+			u = mac.Sum(u[:0])
 			for j := range t {
 				t[j] ^= u[j]
 			}

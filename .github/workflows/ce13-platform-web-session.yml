@@ -197,6 +197,18 @@ jobs:
       - name: Wait for CE13 browser dependencies
         run: bash biz/scripts/ci_ce13_browser.sh wait session
 
+      - name: Stage CE13 browser commercial contract metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          contract_root="$RUNNER_TEMP/ce13-session/contracts"
+          rm -rf "$contract_root"
+          mkdir -p "$contract_root/generated" "$contract_root/commercial"
+          cp biz/contracts/generated/operation-plans.json "$contract_root/generated/operation-plans.json"
+          cp biz/contracts/commercial/operation-capabilities.v1.json "$contract_root/commercial/operation-capabilities.v1.json"
+          cmp biz/contracts/generated/operation-plans.json "$contract_root/generated/operation-plans.json"
+          cmp biz/contracts/commercial/operation-capabilities.v1.json "$contract_root/commercial/operation-capabilities.v1.json"
+
       - name: Start Vue console proxy
         shell: bash
         run: |
