@@ -214,6 +214,13 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 			if err != nil {
 				return receipt, err
 			}
+			if preview.Input.Action == change.Initial {
+				task.CancellationDisabled = true
+				task = task.Seal()
+				if err = task.Integrity(); err != nil {
+					return receipt, err
+				}
+			}
 			if err = repos.Tasks.Insert(call, task); err != nil {
 				return receipt, err
 			}
