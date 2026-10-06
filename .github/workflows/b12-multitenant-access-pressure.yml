@@ -250,7 +250,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 biz/scripts/ci_access_qualification.py --group base
+          python3 biz/scripts/ci_access_qualification.py
           test -z "$(git -C biz status --porcelain)"
 
       - name: Retain Access qualification identities and logs
@@ -261,78 +261,3 @@ jobs:
           path: ${{ runner.temp }}/access-qualification/
           if-no-files-found: warn
           retention-days: 7
-
-  b12-3-enterprise191-metrics:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      YUNKA_SHA: 9ee6640f5e19777b4c04d9e4937a93e2035eacda
-      YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_b12_metrics?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: biz_b12_metrics
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=30
-    steps:
-      - name: Checkout exact Biz candidate
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          ref: ${{ github.sha }}
-          path: biz
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Checkout exact Yunka baseline
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          repository: hvritual/yunka.io
-          ref: ${{ env.YUNKA_SHA }}
-          path: yunka.io
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Load locked Go
-        id: lock
-        shell: bash
-        run: |
-          set -euo pipefail
-          source yunka.io/tools/toolchain.env
-          echo "go_version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
-
-      - name: Setup locked Go
-        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
-        with:
-          go-version: ${{ steps.lock.outputs.go_version }}
-          cache: false
-
-      - name: Verify exact sources
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git -C biz rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
-
-      - name: Run Enterprise191 required metric samples
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 biz/scripts/ci_access_qualification.py --group enterprise191 --output "$RUNNER_TEMP/access-qualification-enterprise191"
-          test -z "$(git -C biz status --porcelain)"
-
-      - name: Retain Enterprise191 metric evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: access-qualification-enterprise191-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/access-qualification-enterprise191/
-          if-no-files-found: warn
-          retention-days: 7
-
